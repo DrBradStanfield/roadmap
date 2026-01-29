@@ -1,0 +1,32 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "YOUR_CLIENT_ID"
+name = "health-tool"
+application_url = "https://your-app.fly.dev"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = false
+
+[webhooks]
+api_version = "2025-10"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products,write_app_proxy,read_customers"
+
+[auth]
+redirect_urls = [ "https://your-app.fly.dev/api/auth" ]
+
+[app_proxy]
+url = "https://your-app.fly.dev"
+subpath = "health-tool-1"
+prefix = "apps"

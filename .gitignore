@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+dist/
+build/
+.cache/
+*.log
+.DS_Store
+.shopify/
+.claude/
+shopify.app.toml
+fly.toml
+prisma/*.sqlite

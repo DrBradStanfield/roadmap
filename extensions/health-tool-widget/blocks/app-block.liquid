@@ -1,0 +1,33 @@
+<!-- Health Roadmap Tool - React Version -->
+<div id="health-tool-root"
+  {% if customer %}
+    data-logged-in="true"
+  {% else %}
+    data-logged-in="false"
+  {% endif %}
+></div>
+
+<!-- Load the bundled React app -->
+{{ 'health-tool.js' | asset_url | script_tag }}
+{{ 'health-tool.css' | asset_url | stylesheet_tag }}
+
+{% schema %}
+{
+  "name": "Health Roadmap Tool",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Health Roadmap Tool"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Description",
+      "default": "Enter your health information to receive personalized suggestions."
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,37 @@
+# fly.toml app configuration file
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'your-app-name'
+primary_region = 'iad'
+
+[build]
+
+[env]
+  HOST = '0.0.0.0'
+  PORT = '3000'
+
+[processes]
+  app = 'node ./dbsetup.js npm run docker-start'
+
+[[mounts]]
+  source = 'data'
+  destination = '/data'
+  auto_extend_size_threshold = 80
+  auto_extend_size_increment = '1GB'
+  auto_extend_size_limit = '10GB'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024

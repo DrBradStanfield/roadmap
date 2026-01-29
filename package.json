@@ -1,0 +1,91 @@
+{
+  "name": "health-tool",
+  "private": true,
+  "scripts": {
+    "build": "remix vite:build",
+    "build:widget": "cd widget-src && npm run build",
+    "dev": "shopify app dev",
+    "dev:widget": "cd widget-src && npm run dev",
+    "config:link": "shopify app config link",
+    "generate": "shopify app generate",
+    "deploy": "shopify app deploy",
+    "config:use": "shopify app config use",
+    "env": "shopify app env",
+    "start": "remix-serve ./build/server/index.js",
+    "docker-start": "npm run setup && npm run start",
+    "setup": "prisma generate && prisma migrate deploy",
+    "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
+    "shopify": "shopify",
+    "prisma": "prisma",
+    "graphql-codegen": "graphql-codegen",
+    "vite": "vite",
+    "test": "npm run test --workspace=@roadmap/health-core",
+    "test:watch": "npm run test --workspace=@roadmap/health-core -- --watch"
+  },
+  "type": "module",
+  "engines": {
+    "node": "^18.20 || ^20.10 || >=21.0.0"
+  },
+  "dependencies": {
+    "@flydotio/litestream": "^1.0.1",
+    "@prisma/client": "^6.2.1",
+    "@remix-run/dev": "^2.16.1",
+    "@remix-run/fs-routes": "^2.16.1",
+    "@remix-run/node": "^2.16.1",
+    "@remix-run/react": "^2.16.1",
+    "@remix-run/serve": "^2.16.1",
+    "@shopify/app-bridge-react": "^4.1.6",
+    "@shopify/polaris": "^12.0.0",
+    "@shopify/shopify-app-remix": "^3.7.0",
+    "@shopify/shopify-app-session-storage-prisma": "^6.0.0",
+    "@supabase/supabase-js": "^2.93.2",
+    "esbuild": "^0.25.9",
+    "isbot": "^5.1.0",
+    "prisma": "^6.2.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vite-tsconfig-paths": "^5.0.1",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@flydotio/dockerfile": "^0.7.10",
+    "@remix-run/eslint-config": "^2.16.1",
+    "@remix-run/route-config": "^2.16.1",
+    "@shopify/api-codegen-preset": "^1.1.1",
+    "@types/eslint": "^9.6.1",
+    "@types/node": "^22.2.0",
+    "@types/react": "^18.2.31",
+    "@types/react-dom": "^18.2.14",
+    "@vitejs/plugin-react": "^4.2.0",
+    "eslint": "^8.42.0",
+    "eslint-config-prettier": "^10.0.1",
+    "prettier": "^3.2.4",
+    "typescript": "^5.2.2",
+    "vite": "^6.2.2"
+  },
+  "workspaces": [
+    "packages/*",
+    "widget-src"
+  ],
+  "trustedDependencies": [
+    "@shopify/plugin-cloudflare"
+  ],
+  "resolutions": {
+    "@graphql-tools/url-loader": "8.0.16",
+    "@graphql-codegen/client-preset": "4.7.0",
+    "@graphql-codegen/typescript-operations": "4.5.0",
+    "minimatch": "9.0.5",
+    "vite": "^6.2.2"
+  },
+  "overrides": {
+    "@graphql-tools/url-loader": "8.0.16",
+    "@graphql-codegen/client-preset": "4.7.0",
+    "@graphql-codegen/typescript-operations": "4.5.0",
+    "minimatch": "9.0.5",
+    "vite": "^6.2.2"
+  },
+  "author": "bradstanfield",
+  "dockerfile": {
+    "litestream": true
+  }
+}
