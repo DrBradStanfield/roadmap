@@ -24,7 +24,7 @@
   },
   "type": "module",
   "engines": {
-    "node": "^18.20 || ^20.10 || >=21.0.0"
+    "node": "^20.10 || >=21.0.0"
   },
   "dependencies": {
     "@flydotio/litestream": "^1.0.1",
@@ -39,8 +39,10 @@
     "@shopify/shopify-app-remix": "^3.7.0",
     "@shopify/shopify-app-session-storage-prisma": "^6.0.0",
     "@supabase/supabase-js": "^2.93.2",
+    "@types/jsonwebtoken": "^9.0.10",
     "esbuild": "^0.25.9",
     "isbot": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
     "prisma": "^6.2.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

@@ -6,6 +6,7 @@ import {
   saveHealthProfile,
   type HealthProfile,
 } from '../lib/supabase.server';
+import { healthInputSchema } from '../../packages/health-core/src/validation';
 
 // Map HealthInputs (camelCase) to database columns (snake_case)
 interface HealthInputs {
@@ -131,7 +132,17 @@ export async function action({ request }: ActionFunctionArgs) {
 
   try {
     const body = await request.json();
-    const { inputs, migrate } = body as { inputs: HealthInputs; migrate?: boolean };
+    const { inputs, migrate } = body as { inputs: unknown; migrate?: boolean };
+
+    // Validate inputs against Zod schema (partial — all fields optional for saves)
+    const validation = healthInputSchema.partial().safeParse(inputs);
+    if (!validation.success) {
+      return json(
+        { success: false, error: 'Invalid input', details: validation.error.issues },
+        { status: 400 },
+      );
+    }
+    const validatedInputs = validation.data as HealthInputs;
 
     const email = admin ? await getCustomerEmail(admin, customerId) : null;
     const profile = await findOrCreateProfile(customerId, email || undefined);
@@ -152,7 +163,7 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
-    const dbData = inputsToDb(inputs);
+    const dbData = inputsToDb(validatedInputs);
     const savedProfile = await saveHealthProfile(profile.id, dbData);
 
     if (!savedProfile) {

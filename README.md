@@ -10,11 +10,12 @@ A personalized health management tool embedded in a Shopify storefront. Users in
 - **Shopify login sync**: Logged-in customers automatically save data to cloud (HMAC-verified)
 - **Data migration**: Guest data migrates to account on first login
 - **Customer Account dashboard**: View health summary in Shopify account
+- **Full-page Health Roadmap**: Logged-in customers access a full interactive health tool from their customer account navigation, with all inputs, real-time calculations, and personalized suggestions
 - **Personalized suggestions**: Based on clinical guidelines for BMI, HbA1c, LDL, blood pressure, etc.
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - A [Shopify Partner](https://partners.shopify.com/) account
 - A [Supabase](https://supabase.com/) project
 - A [Fly.io](https://fly.io/) account (for backend hosting)
@@ -126,13 +127,13 @@ fly secrets set SUPABASE_SERVICE_KEY=your-service-key
 │  └── Calls backend API for cloud sync                           │
 ├─────────────────────────────────────────────────────────────────┤
 │  Backend API (Remix App on Fly.io)                                │
-│  ├── GET/POST /api/health-profile                               │
-│  ├── Verifies Shopify customer identity via HMAC                │
+│  ├── GET/POST /api/health-profile (storefront, HMAC auth)       │
+│  ├── GET/POST /api/customer-health-profile (account, JWT auth)  │
 │  └── Uses Supabase service key for DB access                    │
 ├─────────────────────────────────────────────────────────────────┤
-│  Customer Account Extension                                      │
-│  ├── Shows health summary in customer profile                   │
-│  └── Links to full health tool                                  │
+│  Customer Account Extensions                                     │
+│  ├── Profile block: health summary in customer profile           │
+│  └── Full page: complete health tool (inputs + results)          │
 ├─────────────────────────────────────────────────────────────────┤
 │  Supabase Database                                               │
 │  ├── profiles (shopify_customer_id → user mapping)              │
@@ -151,12 +152,19 @@ All health data for logged-in customers is protected by Shopify's app proxy HMAC
 Guest (not logged in):
   Widget → localStorage (no server calls)
 
-Logged-in customer:
+Logged-in customer (storefront widget):
   Widget → /apps/health-tool-1/api/health-profile (same-origin request)
          → Shopify app proxy adds logged_in_customer_id + HMAC signature
          → Fly.io backend verifies HMAC via authenticate.public.appProxy()
          → Extracts verified customer ID from signed query params
          → Reads/writes Supabase via service key
+
+Logged-in customer (customer account page):
+  Extension → sessionToken.get() obtains JWT
+           → GET/POST https://health-tool-app.fly.dev/api/customer-health-profile
+           → Backend verifies JWT (HS256, SHOPIFY_API_SECRET)
+           → Customer ID from JWT sub claim (gid://shopify/Customer/<id>)
+           → Reads/writes Supabase via service key
 ```
 
 ### Why This Is Secure
@@ -174,7 +182,8 @@ Logged-in customer:
 │   ├── /lib
 │   │   └── supabase.server.ts    # Supabase client (service key)
 │   └── /routes
-│       └── api.health-profile.ts # Health profile API endpoints
+│       ├── api.health-profile.ts          # Storefront API (HMAC auth)
+│       └── api.customer-health-profile.ts # Customer account API (JWT auth)
 ├── /widget-src                   # React widget source code
 │   ├── /src
 │   │   ├── /components           # HealthTool, InputPanel, ResultsPanel
@@ -187,9 +196,13 @@ Logged-in customer:
 │   │   ├── /blocks
 │   │   │   └── app-block.liquid  # Passes customer data to React
 │   │   └── /assets               # Built JS/CSS
-│   └── /health-tool-customer-account
+│   ├── /health-tool-customer-account
+│   │   └── /src
+│   │       └── HealthProfileBlock.tsx  # Customer account profile block
+│   └── /health-tool-full-page
 │       └── /src
-│           └── HealthProfileBlock.tsx  # Customer account health view
+│           ├── HealthToolPage.tsx      # Full-page health tool (customer account)
+│           └── /lib/api.ts            # API client (JWT auth)
 ├── /packages
 │   └── /health-core              # Shared calculations library
 ├── /prisma                       # Database schema

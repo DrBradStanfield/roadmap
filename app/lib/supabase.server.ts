@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Supabase client using service role key (bypasses RLS)
-// Only use server-side - never expose service key to client
+// Supabase client using service role key (bypasses RLS).
+// Only use server-side — never expose service key to client.
+// SECURITY: Authorization is enforced in application code (each route scopes queries
+// to the authenticated customer's profile). Consider adding RLS policies as an
+// additional defense-in-depth layer so that even a code bug cannot leak cross-user data.
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 

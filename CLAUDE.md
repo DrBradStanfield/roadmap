@@ -2,9 +2,13 @@
 
 This file provides context for Claude Code when working on this project.
 
+## Model
+
+Always use the **Opus 4.5** model (`claude-opus-4-5-20251101`) for all tasks in this project.
+
 ## Project Overview
 
-This is a **Health Roadmap Tool** - a Shopify app that helps users track health metrics and receive personalized suggestions. It's embedded in a Shopify storefront as a theme extension with automatic cloud sync for logged-in customers.
+This is a **Health Roadmap Tool** - a Shopify app that helps users track health metrics and receive personalized suggestions. It's available as both a storefront theme extension (for guests and logged-in users) and a full-page customer account extension (for logged-in users to manage their health data directly from their Shopify account).
 
 ## Tech Stack
 
@@ -22,6 +26,7 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 /packages/health-core/src/     # Shared health calculations library (with tests)
 /widget-src/src/               # React widget source code
 /extensions/health-tool-widget/assets/  # Built widget JS/CSS
+/extensions/health-tool-full-page/src/ # Customer account full-page health tool
 /app/                          # Remix admin app + API routes
 /app/lib/                      # Server utilities (Supabase client)
 /app/routes/                   # API endpoints
@@ -31,7 +36,8 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 
 **Backend API:**
 - `app/lib/supabase.server.ts` - Supabase client with service key
-- `app/routes/api.health-profile.ts` - Health profile CRUD API
+- `app/routes/api.health-profile.ts` - Health profile CRUD API (storefront, HMAC auth)
+- `app/routes/api.customer-health-profile.ts` - Health profile CRUD API (customer account, JWT auth)
 
 **Health Core Library:**
 - `packages/health-core/src/calculations.ts` - Health formulas (IBW, BMI, protein)
@@ -49,7 +55,9 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 
 **Shopify Extensions:**
 - `extensions/health-tool-widget/blocks/app-block.liquid` - Passes customer data to React
-- `extensions/health-tool-customer-account/src/HealthProfileBlock.tsx` - Customer account view
+- `extensions/health-tool-customer-account/src/HealthProfileBlock.tsx` - Customer account profile block (summary view, links to full page)
+- `extensions/health-tool-full-page/src/HealthToolPage.tsx` - Full-page health tool in customer account (input form + results + suggestions)
+- `extensions/health-tool-full-page/src/lib/api.ts` - API client for customer account extension (JWT auth)
 
 ## Common Commands
 
@@ -100,6 +108,25 @@ Logged-in Shopify customer:
 
 **Migration flow:** When a guest user logs in and has existing localStorage data, the widget prompts them to migrate that data to their account. On confirmation, data is sent via the app proxy (authenticated) and localStorage is cleared.
 
+## Customer Account Extension Auth
+
+The full-page customer account extension (`health-tool-full-page`) uses a different auth flow than the storefront widget. Customer account extensions run on `extensions.shopifycdn.com` and use Shopify session token JWTs instead of HMAC app proxy signatures.
+
+```
+Logged-in customer (customer account page):
+  → Extension calls sessionToken.get() to obtain a JWT
+  → Extension sends GET/POST to https://health-tool-app.fly.dev/api/customer-health-profile
+  → Request includes Authorization: Bearer <JWT> header
+  → Backend verifies JWT using SHOPIFY_API_SECRET (HS256, audience = SHOPIFY_API_KEY)
+  → Customer ID extracted from JWT `sub` claim (gid://shopify/Customer/<id>)
+  → CORS allows origins from *.shopify.com, *.myshopify.com, *.shopifycdn.com
+```
+
+**Key differences from storefront widget auth:**
+- Direct API calls (no app proxy) — requires CORS headers
+- JWT session tokens instead of HMAC signatures
+- Extension runs on Shopify's CDN (`extensions.shopifycdn.com`), not the storefront domain
+
 ## API Endpoints
 
 All endpoints are accessed via the Shopify app proxy at `/apps/health-tool-1/api/health-profile`. Shopify appends `logged_in_customer_id`, `shop`, `timestamp`, and `signature` query parameters automatically.
@@ -116,6 +143,14 @@ All endpoints are accessed via the Shopify app proxy at `/apps/health-tool-1/api
 **PUT `/api/health-profile`** (via app proxy)
 - Body: `{ inputs, migrate: true }`
 - Migrates localStorage data (won't overwrite existing cloud data)
+
+**GET `/api/customer-health-profile`** (direct, JWT auth)
+- Returns health profile for the JWT-verified customer
+- Used by the customer account full-page extension
+
+**POST `/api/customer-health-profile`** (direct, JWT auth)
+- Body: `{ inputs }`
+- Saves/updates health profile, validates with Zod schema
 
 ## Database
 
@@ -151,7 +186,7 @@ The Remix backend is hosted on **Fly.io**:
 
 - **Region**: USA recommended (prefer US regions for new infrastructure)
 - **Config**: `fly.toml` (processes, env vars, VM size)
-- **Docker**: `Dockerfile` (Node 18 Alpine)
+- **Docker**: `Dockerfile` (Node 20 Alpine)
 
 Shopify extensions (theme widget, customer account block) are hosted on Shopify's CDN and deployed via `npm run deploy`.
 

@@ -43,44 +43,28 @@ export default reactExtension(
 );
 
 function HealthProfileBlock() {
-  const { authenticatedAccount, sessionToken } = useApi<"customer-account.profile.block.render">();
+  const { sessionToken } = useApi<"customer-account.profile.block.render">();
   const [healthData, setHealthData] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [customerId, setCustomerId] = useState<string | null>(null);
 
-  // Get customer ID on mount
+  const appUrl = 'https://health-tool-app.fly.dev';
+
+  // Fetch health profile using JWT session token for authentication
+  // Customer identity is extracted server-side from the JWT `sub` claim
   useEffect(() => {
-    const unsubscribe = authenticatedAccount.customer.subscribe((customer: { id?: string } | undefined) => {
-      if (customer?.id) {
-        // Extract numeric ID from 'gid://shopify/Customer/123'
-        const id = customer.id.split('/').pop() || customer.id;
-        setCustomerId(id);
-      }
-    });
-
-    return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe();
-      }
-    };
-  }, [authenticatedAccount]);
-
-  // Fetch health profile when customer ID is available
-  useEffect(() => {
-    if (!customerId) return;
-
     async function fetchHealthProfile() {
       try {
         setLoading(true);
         setError(null);
 
-        // Get session token for authenticated request
+        // Get a fresh session token for each request (tokens expire every minute)
         const token = await sessionToken.get();
 
-        // Fetch health profile from our API
+        // Call the backend directly (not via app proxy — customer account
+        // extensions run in a web worker that doesn't share the storefront session)
         const response = await fetch(
-          `/apps/health-tool-1/api/health-profile?customerId=${encodeURIComponent(customerId || '')}`,
+          `${appUrl}/api/customer-health-profile`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -95,7 +79,6 @@ function HealthProfileBlock() {
         const result: HealthProfileResponse = await response.json();
 
         if (result.success && result.data) {
-          // Calculate derived values
           const data = result.data;
           const healthData: HealthData = {
             heightCm: data.heightCm,
@@ -130,7 +113,7 @@ function HealthProfileBlock() {
     }
 
     fetchHealthProfile();
-  }, [customerId, sessionToken]);
+  }, [sessionToken]);
 
   // Loading state
   if (loading) {
@@ -154,7 +137,7 @@ function HealthProfileBlock() {
             <Text>{error}</Text>
           </Banner>
           <Button
-            to="/pages/test"
+            to="extension:health-tool-page/"
             kind="secondary"
           >
             Set up your health profile
@@ -175,7 +158,7 @@ function HealthProfileBlock() {
             to get personalized suggestions.
           </TextBlock>
           <Button
-            to="/pages/test"
+            to="extension:health-tool-page/"
             kind="primary"
           >
             Set up your health profile
@@ -223,7 +206,7 @@ function HealthProfileBlock() {
 
         {/* Link to full tool */}
         <Button
-          to="/pages/test"
+          to="extension:health-tool-page/"
           kind="secondary"
         >
           View full health tool
