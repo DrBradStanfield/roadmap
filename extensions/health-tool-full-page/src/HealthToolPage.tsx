@@ -4,6 +4,7 @@ import {
   Card,
   BlockStack,
   InlineStack,
+  Grid,
   Text,
   TextField,
   Select,
@@ -130,183 +131,198 @@ function HealthToolPage() {
           <Banner status="info" title="Saving..." />
         )}
 
-        {/* Basic Information */}
-        <Card>
-          <BlockStack spacing="base">
-            <Heading level={2}>Basic Information</Heading>
-
-            <Select
-              label="Sex"
-              value={inputs.sex || ''}
-              onChange={(value) => updateField('sex', value as 'male' | 'female')}
-              options={[
-                { label: 'Select...', value: '' },
-                { label: 'Male', value: 'male' },
-                { label: 'Female', value: 'female' },
-              ]}
-            />
-
-            <TextField
-              label="Height (cm)"
-              type="number"
-              value={inputs.heightCm?.toString() || ''}
-              onChange={(value) => updateField('heightCm', parseNum(value))}
-            />
-
-            <TextField
-              label="Weight (kg)"
-              type="number"
-              value={inputs.weightKg?.toString() || ''}
-              onChange={(value) => updateField('weightKg', parseNum(value))}
-            />
-
-            <TextField
-              label="Waist Circumference (cm)"
-              type="number"
-              value={inputs.waistCm?.toString() || ''}
-              onChange={(value) => updateField('waistCm', parseNum(value))}
-            />
-
-            <InlineStack spacing="base">
-              <View>
-                <Select
-                  label="Birth Month"
-                  value={inputs.birthMonth?.toString() || ''}
-                  onChange={(value) => updateField('birthMonth', parseNum(value))}
-                  options={MONTH_OPTIONS}
-                />
-              </View>
-              <View>
-                <TextField
-                  label="Birth Year"
-                  type="number"
-                  value={inputs.birthYear?.toString() || ''}
-                  onChange={(value) => updateField('birthYear', parseNum(value))}
-                />
-              </View>
-            </InlineStack>
-          </BlockStack>
-        </Card>
-
-        {/* Blood Test Results */}
-        <Card>
-          <BlockStack spacing="base">
-            <Heading level={2}>Blood Test Results</Heading>
-            <Text appearance="subdued">Enter your most recent blood test values (optional)</Text>
-
-            <TextField
-              label="HbA1c (%)"
-              type="number"
-              value={inputs.hba1c?.toString() || ''}
-              onChange={(value) => updateField('hba1c', parseNum(value))}
-            />
-
-            <TextField
-              label="LDL Cholesterol (mg/dL)"
-              type="number"
-              value={inputs.ldlC?.toString() || ''}
-              onChange={(value) => updateField('ldlC', parseNum(value))}
-            />
-
-            <TextField
-              label="HDL Cholesterol (mg/dL)"
-              type="number"
-              value={inputs.hdlC?.toString() || ''}
-              onChange={(value) => updateField('hdlC', parseNum(value))}
-            />
-
-            <TextField
-              label="Triglycerides (mg/dL)"
-              type="number"
-              value={inputs.triglycerides?.toString() || ''}
-              onChange={(value) => updateField('triglycerides', parseNum(value))}
-            />
-
-            <TextField
-              label="Fasting Glucose (mg/dL)"
-              type="number"
-              value={inputs.fastingGlucose?.toString() || ''}
-              onChange={(value) => updateField('fastingGlucose', parseNum(value))}
-            />
-
-            <InlineStack spacing="base">
-              <View>
-                <TextField
-                  label="Systolic BP (mmHg)"
-                  type="number"
-                  value={inputs.systolicBp?.toString() || ''}
-                  onChange={(value) => updateField('systolicBp', parseNum(value))}
-                />
-              </View>
-              <View>
-                <TextField
-                  label="Diastolic BP (mmHg)"
-                  type="number"
-                  value={inputs.diastolicBp?.toString() || ''}
-                  onChange={(value) => updateField('diastolicBp', parseNum(value))}
-                />
-              </View>
-            </InlineStack>
-          </BlockStack>
-        </Card>
-
-        {/* Manual Save */}
-        <Button
-          kind="primary"
-          onPress={async () => {
-            await doSave(inputs);
-          }}
-        >
-          Save
-        </Button>
-
-        <Divider />
-
-        {/* Results */}
-        {!isValid && (
-          <Card>
-            <BlockStack spacing="base">
-              <Heading level={2}>Your Results</Heading>
-              <Text>Enter your height and sex above to see personalized health metrics and suggestions.</Text>
-            </BlockStack>
-          </Card>
-        )}
-
-        {results && (
-          <>
-            {/* Health Snapshot */}
+        <Grid columns={['2fr', '1fr']} spacing="loose" blockAlignment="start">
+          {/* Left column: Inputs */}
+          <BlockStack spacing="loose">
+            {/* Basic Information */}
             <Card>
               <BlockStack spacing="base">
-                <Heading level={2}>Health Snapshot</Heading>
-                <InlineStack spacing="base" blockAlignment="start">
-                  <StatCard label="Ideal Body Weight" value={`${results.idealBodyWeight} kg`} />
-                  <StatCard label="Protein Target" value={`${results.proteinTarget}g/day`} />
-                  {results.bmi !== undefined && (
-                    <StatCard label="BMI" value={`${results.bmi}`} />
-                  )}
-                  {results.age !== undefined && (
-                    <StatCard label="Age" value={`${results.age} years`} />
-                  )}
-                  {results.waistToHeightRatio !== undefined && (
-                    <StatCard label="Waist-to-Height" value={`${results.waistToHeightRatio}`} />
-                  )}
+                <Heading level={2}>Basic Information</Heading>
+
+                <Select
+                  label="Sex"
+                  value={inputs.sex || ''}
+                  onChange={(value) => updateField('sex', value as 'male' | 'female')}
+                  options={[
+                    { label: 'Select...', value: '' },
+                    { label: 'Male', value: 'male' },
+                    { label: 'Female', value: 'female' },
+                  ]}
+                />
+
+                <TextField
+                  label="Height (cm)"
+                  type="number"
+                  value={inputs.heightCm?.toString() || ''}
+                  onChange={(value) => updateField('heightCm', parseNum(value))}
+                />
+
+                <TextField
+                  label="Weight (kg)"
+                  type="number"
+                  value={inputs.weightKg?.toString() || ''}
+                  onChange={(value) => updateField('weightKg', parseNum(value))}
+                />
+
+                <TextField
+                  label="Waist Circumference (cm)"
+                  type="number"
+                  value={inputs.waistCm?.toString() || ''}
+                  onChange={(value) => updateField('waistCm', parseNum(value))}
+                />
+
+                <InlineStack spacing="base">
+                  <View>
+                    <Select
+                      label="Birth Month"
+                      value={inputs.birthMonth?.toString() || ''}
+                      onChange={(value) => updateField('birthMonth', parseNum(value))}
+                      options={MONTH_OPTIONS}
+                    />
+                  </View>
+                  <View>
+                    <TextField
+                      label="Birth Year"
+                      type="number"
+                      value={inputs.birthYear?.toString() || ''}
+                      onChange={(value) => updateField('birthYear', parseNum(value))}
+                    />
+                  </View>
                 </InlineStack>
               </BlockStack>
             </Card>
 
-            {/* Suggestions */}
-            <SuggestionsSection suggestions={results.suggestions} />
-          </>
-        )}
+            {/* Blood Test Results */}
+            <Card>
+              <BlockStack spacing="base">
+                <Heading level={2}>Blood Test Results</Heading>
+                <Text appearance="subdued">Enter your most recent blood test values (optional)</Text>
 
-        {/* Disclaimer */}
-        <Card>
-          <Text appearance="subdued" size="small">
-            Disclaimer: This tool is for educational purposes only and is not a substitute for
-            professional medical advice. Always consult with your healthcare provider before
-            making any health decisions.
-          </Text>
-        </Card>
+                <TextField
+                  label="HbA1c (%)"
+                  type="number"
+                  value={inputs.hba1c?.toString() || ''}
+                  onChange={(value) => updateField('hba1c', parseNum(value))}
+                />
+
+                <TextField
+                  label="LDL Cholesterol (mg/dL)"
+                  type="number"
+                  value={inputs.ldlC?.toString() || ''}
+                  onChange={(value) => updateField('ldlC', parseNum(value))}
+                />
+
+                <TextField
+                  label="HDL Cholesterol (mg/dL)"
+                  type="number"
+                  value={inputs.hdlC?.toString() || ''}
+                  onChange={(value) => updateField('hdlC', parseNum(value))}
+                />
+
+                <TextField
+                  label="Triglycerides (mg/dL)"
+                  type="number"
+                  value={inputs.triglycerides?.toString() || ''}
+                  onChange={(value) => updateField('triglycerides', parseNum(value))}
+                />
+
+                <TextField
+                  label="Fasting Glucose (mg/dL)"
+                  type="number"
+                  value={inputs.fastingGlucose?.toString() || ''}
+                  onChange={(value) => updateField('fastingGlucose', parseNum(value))}
+                />
+
+                <InlineStack spacing="base">
+                  <View>
+                    <TextField
+                      label="Systolic BP (mmHg)"
+                      type="number"
+                      value={inputs.systolicBp?.toString() || ''}
+                      onChange={(value) => updateField('systolicBp', parseNum(value))}
+                    />
+                  </View>
+                  <View>
+                    <TextField
+                      label="Diastolic BP (mmHg)"
+                      type="number"
+                      value={inputs.diastolicBp?.toString() || ''}
+                      onChange={(value) => updateField('diastolicBp', parseNum(value))}
+                    />
+                  </View>
+                </InlineStack>
+              </BlockStack>
+            </Card>
+
+            {/* Manual Save */}
+            <Button
+              kind="primary"
+              onPress={async () => {
+                await doSave(inputs);
+              }}
+            >
+              Save
+            </Button>
+          </BlockStack>
+
+          {/* Right column: Results */}
+          <BlockStack spacing="loose">
+            {!isValid && (
+              <Card>
+                <BlockStack spacing="base">
+                  <Heading level={2}>Your Results</Heading>
+                  <Text>Enter your height and sex above to see personalized health metrics and suggestions.</Text>
+                </BlockStack>
+              </Card>
+            )}
+
+            {results && (
+              <>
+                {/* Health Snapshot */}
+                <Card>
+                  <BlockStack spacing="base">
+                    <Heading level={2}>Your Health Snapshot</Heading>
+                    <InlineStack spacing="base" blockAlignment="start">
+                      <StatCard label="Ideal Body Weight" value={`${results.idealBodyWeight} kg`} />
+                      <StatCard label="Protein Target" value={`${results.proteinTarget}g/day`} />
+                      {results.bmi !== undefined && (
+                        <StatCard label="BMI" value={`${results.bmi}`} />
+                      )}
+                    </InlineStack>
+                    {(results.age !== undefined || results.waistToHeightRatio !== undefined) && (
+                      <InlineStack spacing="base" blockAlignment="start">
+                        {results.age !== undefined && (
+                          <StatCard label="Age" value={`${results.age} years`} />
+                        )}
+                        {results.waistToHeightRatio !== undefined && (
+                          <StatCard label="Waist-to-Height" value={`${results.waistToHeightRatio}`} />
+                        )}
+                      </InlineStack>
+                    )}
+                  </BlockStack>
+                </Card>
+
+                {/* Suggestions */}
+                <SuggestionsSection suggestions={results.suggestions} />
+              </>
+            )}
+
+            {/* Disclaimer */}
+            <Card>
+              <View background="subdued" padding="base" cornerRadius="base">
+                <BlockStack spacing="tight">
+                  <Text emphasis="bold" size="small">Disclaimer:</Text>
+                  <Text appearance="subdued" size="small">
+                    This tool is for educational purposes only and is not a substitute for
+                    professional medical advice. Always consult with your healthcare provider before
+                    making any health decisions. Suggestions are based on general guidelines and may
+                    not apply to your individual situation.
+                  </Text>
+                </BlockStack>
+              </View>
+            </Card>
+          </BlockStack>
+        </Grid>
       </BlockStack>
     </Page>
   );
@@ -314,7 +330,7 @@ function HealthToolPage() {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <View padding="base" border="base" cornerRadius="base">
+    <View padding="base" border="base" cornerRadius="base" background="subdued">
       <BlockStack spacing="extraTight">
         <Text appearance="subdued" size="small">{label}</Text>
         <Text size="large" emphasis="bold">{value}</Text>
@@ -333,25 +349,28 @@ function SuggestionsSection({ suggestions }: { suggestions: Suggestion[] }) {
   return (
     <Card>
       <BlockStack spacing="base">
-        <Heading level={2}>Suggestions</Heading>
+        <Heading level={2}>Suggestions to Discuss with Your Doctor</Heading>
 
         {urgent.length > 0 && (
           <BlockStack spacing="base">
-            <Text emphasis="bold">Requires Attention</Text>
+            <Divider />
+            <Text emphasis="bold" appearance="critical">REQUIRES ATTENTION</Text>
             {urgent.map(s => <SuggestionCard key={s.id} suggestion={s} />)}
           </BlockStack>
         )}
 
         {attention.length > 0 && (
           <BlockStack spacing="base">
-            <Text emphasis="bold">Worth Discussing</Text>
+            <Divider />
+            <Text emphasis="bold" appearance="warning">WORTH DISCUSSING</Text>
             {attention.map(s => <SuggestionCard key={s.id} suggestion={s} />)}
           </BlockStack>
         )}
 
         {info.length > 0 && (
           <BlockStack spacing="base">
-            <Text emphasis="bold">For Your Information</Text>
+            <Divider />
+            <Text emphasis="bold" appearance="info">FOR YOUR INFORMATION</Text>
             {info.map(s => <SuggestionCard key={s.id} suggestion={s} />)}
           </BlockStack>
         )}
@@ -368,7 +387,7 @@ function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
   };
 
   return (
-    <View padding="base" border="base" cornerRadius="base">
+    <View padding="base" border="base" cornerRadius="base" background="subdued">
       <BlockStack spacing="tight">
         <InlineStack spacing="tight">
           <Badge tone={toneMap[suggestion.priority]}>{suggestion.category}</Badge>
