@@ -1,7 +1,8 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import { authenticate } from '../shopify.server';
 import {
-  findOrCreateProfile,
+  getOrCreateSupabaseUser,
+  createUserClient,
   getMeasurements,
   getLatestMeasurements,
   addMeasurement,
@@ -24,8 +25,8 @@ async function getCustomerEmail(admin: any, customerId: string): Promise<string 
         }
       }
     `, { variables: { id: `gid://shopify/Customer/${customerId}` } });
-    const { data } = await response.json();
-    return data?.customer?.email || null;
+    const result = await response.json();
+    return result?.data?.customer?.email || null;
   } catch (error) {
     console.error('Error looking up customer email:', error);
     return null;
@@ -45,10 +46,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   try {
     const email = admin ? await getCustomerEmail(admin, customerId) : null;
-    const profile = await findOrCreateProfile(customerId, email || undefined);
-    if (!profile) {
-      return json({ success: false, error: 'Could not find or create profile' }, { status: 500 });
+    if (!email) {
+      return json({ success: false, error: 'Could not retrieve customer email' }, { status: 500 });
     }
+
+    const userId = await getOrCreateSupabaseUser(customerId, email);
+    const client = createUserClient(userId);
 
     const url = new URL(request.url);
     const metricType = url.searchParams.get('metric_type');
@@ -58,12 +61,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
         return json({ success: false, error: 'Invalid metric_type' }, { status: 400 });
       }
       const limit = Math.min(parseInt(url.searchParams.get('limit') || '50') || 50, 200);
-      const measurements = await getMeasurements(profile.id, metricType, limit);
+      const measurements = await getMeasurements(client, metricType, limit);
       return json({ success: true, data: measurements.map(toApiMeasurement) });
     }
 
-    // No metric_type — return latest for each metric
-    const latest = await getLatestMeasurements(profile.id);
+    const latest = await getLatestMeasurements(client);
     return json({ success: true, data: latest.map(toApiMeasurement) });
   } catch (error) {
     console.error('Error loading measurements:', error);
@@ -83,10 +85,12 @@ export async function action({ request }: ActionFunctionArgs) {
 
   try {
     const email = admin ? await getCustomerEmail(admin, customerId) : null;
-    const profile = await findOrCreateProfile(customerId, email || undefined);
-    if (!profile) {
-      return json({ success: false, error: 'Could not find or create profile' }, { status: 500 });
+    if (!email) {
+      return json({ success: false, error: 'Could not retrieve customer email' }, { status: 500 });
     }
+
+    const userId = await getOrCreateSupabaseUser(customerId, email);
+    const client = createUserClient(userId);
 
     const body = await request.json();
 
@@ -100,7 +104,7 @@ export async function action({ request }: ActionFunctionArgs) {
       }
 
       const { metricType, value, recordedAt } = validation.data;
-      const measurement = await addMeasurement(profile.id, metricType, value, recordedAt);
+      const measurement = await addMeasurement(client, userId, metricType, value, recordedAt);
 
       if (!measurement) {
         return json({ success: false, error: 'Failed to save' }, { status: 500 });
@@ -115,7 +119,7 @@ export async function action({ request }: ActionFunctionArgs) {
         return json({ success: false, error: 'measurementId required' }, { status: 400 });
       }
 
-      const deleted = await deleteMeasurement(profile.id, measurementId);
+      const deleted = await deleteMeasurement(client, measurementId);
       return json({ success: deleted });
     }
 

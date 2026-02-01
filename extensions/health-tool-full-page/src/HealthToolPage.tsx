@@ -96,7 +96,7 @@ function parseNum(value: string): number | undefined {
 }
 
 function HealthToolPage() {
-  const { sessionToken } = useApi<'customer-account.page.render'>();
+  const { sessionToken, storage } = useApi<'customer-account.page.render'>();
   const [inputs, setInputs] = useState<Partial<HealthInputs>>({});
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -129,6 +129,15 @@ function HealthToolPage() {
     if (!metric) return name;
     return `${name} (${getDisplayLabel(metric, unitSystem)})`;
   }, [unitSystem]);
+
+  // Load saved unit preference on mount
+  useEffect(() => {
+    storage.read('unit_system').then((saved) => {
+      if (saved === 'si' || saved === 'conventional') {
+        setUnitSystem(saved as UnitSystem);
+      }
+    });
+  }, [storage]);
 
   // Load existing measurements on mount
   useEffect(() => {
@@ -220,7 +229,7 @@ function HealthToolPage() {
               <Select
                 label="Units"
                 value={unitSystem}
-                onChange={(value) => setUnitSystem(value as UnitSystem)}
+                onChange={(value) => { setUnitSystem(value as UnitSystem); storage.write('unit_system', value); }}
                 options={UNIT_OPTIONS}
               />
             </Card>

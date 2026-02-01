@@ -35,7 +35,7 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 ## Important Files
 
 **Backend API:**
-- `app/lib/supabase.server.ts` - Supabase client, measurement CRUD helpers, `toApiMeasurement()`
+- `app/lib/supabase.server.ts` - Supabase dual-client (admin + user), JWT signing, `getOrCreateSupabaseUser()`, measurement CRUD helpers, `toApiMeasurement()`
 - `app/lib/rate-limit.server.ts` - In-memory rate limiter (60 req/min per IP)
 - `app/routes/api.measurements.ts` - Measurement CRUD API (storefront, HMAC auth)
 - `app/routes/api.customer-measurements.ts` - Measurement CRUD API (customer account, JWT auth, rate limited)
@@ -64,7 +64,7 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 - `extensions/health-tool-full-page/src/lib/api.ts` - Measurement API client for customer account extension (JWT auth)
 
 **Infrastructure:**
-- `supabase/rls-policies.sql` - Database schema (health_measurements table) + RLS policies
+- `supabase/rls-policies.sql` - Database schema, RLS policies, auth trigger, `get_latest_measurements()` RPC
 - `.github/workflows/ci.yml` - CI pipeline (runs tests on PRs and pushes to main)
 
 ## Common Commands
@@ -119,7 +119,20 @@ The UI auto-detects the user's preferred unit system from browser locale (US, Li
 
 ## Authentication & Security Flow
 
-Customer health data is protected by Shopify's app proxy HMAC signature verification. The widget never calls the backend directly — all requests go through Shopify's proxy, which cryptographically signs each request.
+Customer health data is protected by two layers: **Shopify identity verification** (HMAC or JWT) and **Supabase RLS** (database-level row isolation). The backend never trusts client-supplied identity.
+
+### Supabase Auth Integration
+
+Shopify customers are mapped 1:1 to Supabase Auth users. On each request:
+1. Shopify identity is verified (HMAC or JWT — see below)
+2. `getOrCreateSupabaseUser(shopifyCustomerId, email)` finds or creates the Supabase Auth user
+3. `createUserClient(userId)` creates a Supabase client with a custom HS256 JWT (`sub = userId`)
+4. All data queries use this RLS-enforced client — `auth.uid()` scopes every query to the user
+5. The service key (`supabaseAdmin`) is only used for user creation and profile lookups
+
+A DB trigger on `auth.users` auto-creates the `profiles` row when a new Supabase Auth user is created, using `user_metadata.shopify_customer_id` and the user's email.
+
+### Storefront Widget Auth (HMAC)
 
 ```
 Guest user (not logged in):
@@ -132,9 +145,10 @@ Logged-in Shopify customer:
   → Request goes through Shopify's app proxy (same-origin, no CORS needed)
   → Shopify adds logged_in_customer_id + HMAC signature to the request
   → Backend calls authenticate.public.appProxy(request) to verify HMAC
-  → HMAC is computed using the app's API secret key (SHOPIFY_API_SECRET)
-  → Customer ID is extracted from the verified logged_in_customer_id param
-  → Backend NEVER trusts client-supplied customer identity
+  → Customer email fetched via Shopify Admin GraphQL API
+  → getOrCreateSupabaseUser() maps customer to Supabase Auth user
+  → createUserClient() creates RLS-enforced Supabase client
+  → All queries scoped to auth.uid() by RLS
 ```
 
 **Why this is secure:**
@@ -142,11 +156,9 @@ Logged-in Shopify customer:
 - `logged_in_customer_id` cannot be forged — any tampering invalidates the HMAC
 - No CORS needed — requests go through Shopify's proxy (same origin as the storefront)
 - No tokens, API keys, or secrets are exposed to the client
-- Works on any store the app is installed on — no per-store configuration needed
+- RLS enforces data isolation at the database level — even a code bug can't leak cross-user data
 
-## Customer Account Extension Auth
-
-The full-page customer account extension (`health-tool-full-page`) uses a different auth flow than the storefront widget. Customer account extensions run on `extensions.shopifycdn.com` and use Shopify session token JWTs instead of HMAC app proxy signatures.
+### Customer Account Extension Auth (JWT)
 
 ```
 Logged-in customer (customer account page):
@@ -155,12 +167,16 @@ Logged-in customer (customer account page):
   → Request includes Authorization: Bearer <JWT> header
   → Backend verifies JWT using SHOPIFY_API_SECRET (HS256, audience = SHOPIFY_API_KEY)
   → Customer ID extracted from JWT `sub` claim (gid://shopify/Customer/<id>)
+  → Shop domain extracted from JWT `dest` claim
+  → Customer email fetched via unauthenticated.admin(shopDomain) GraphQL
+  → getOrCreateSupabaseUser() + createUserClient() → RLS-enforced queries
   → CORS allows origins from *.shopify.com, *.myshopify.com, *.shopifycdn.com
 ```
 
 **Key differences from storefront widget auth:**
 - Direct API calls (no app proxy) — requires CORS headers
 - JWT session tokens instead of HMAC signatures
+- Uses `unauthenticated.admin()` (Shopify's offline access token from Prisma session storage) for email lookup
 - Extension runs on Shopify's CDN (`extensions.shopifycdn.com`), not the storefront domain
 
 ## API Endpoints
@@ -182,13 +198,17 @@ Uses **Supabase** (PostgreSQL). Tables:
 - `profiles` — User accounts linked to Shopify customers (shopify_customer_id, email)
 - `health_measurements` — Immutable time-series health records (metric_type, value in SI, recorded_at)
 
-The `health_measurements` table has no UPDATE policy — records are immutable. A `get_latest_measurements()` RPC function efficiently returns the latest value per metric type using `DISTINCT ON`.
+The `health_measurements` table has no UPDATE policy — records are immutable. A `get_latest_measurements()` RPC function (using `auth.uid()`, no parameters) efficiently returns the latest value per metric type using `DISTINCT ON`. A `CASE`-based CHECK constraint (`value_range`) enforces per-metric-type value ranges at the database level (e.g., weight 20–300 kg, LDL 0–12.9 mmol/L), mirroring the Zod validation as defense-in-depth. Shopify customers are mapped to Supabase Auth users via `getOrCreateSupabaseUser()` — a DB trigger on `auth.users` auto-creates the `profiles` row when a new auth user is created.
 
-Run `supabase/rls-policies.sql` in the Supabase SQL Editor to set up the schema and RLS policies.
+Run `supabase/rls-policies.sql` in the Supabase SQL Editor to set up the schema and RLS policies. The SQL includes `GRANT EXECUTE ON FUNCTION get_latest_measurements() TO authenticated` — without this grant, the `authenticated` role (used by the custom JWT) cannot call the RPC, and queries silently return empty data.
 
 ## Environment Variables
 
-See `.env.example` for required variables. Set Supabase credentials from your project's Settings > API page.
+See `.env` for required variables. Key Supabase variables:
+- `SUPABASE_URL` — Project URL (Settings > API)
+- `SUPABASE_ANON_KEY` — Public anon key (Settings > API)
+- `SUPABASE_SERVICE_KEY` — Service role key (Settings > API) — used only for admin operations
+- `SUPABASE_JWT_SECRET` — Legacy JWT secret (Settings > JWT Keys > "Legacy JWT Secret" tab) — used to sign custom JWTs for RLS
 
 ## Health Calculation Reference
 
@@ -237,7 +257,7 @@ The widget calls the backend through Shopify's app proxy (`/apps/health-tool-1/*
 - Widget uses Vite's alias to import directly from health-core source
 - Widget source is in `/widget-src`, builds to `/extensions/health-tool-widget/assets/`
 - Run `npm test` before deploying to verify calculations
-- Backend uses service key (bypasses RLS) - authorization handled in code. RLS policies are enabled as defense-in-depth (see `supabase/rls-policies.sql`)
+- Backend uses a dual-client Supabase pattern: `supabaseAdmin` (service key) for user creation/profile lookups only, and `createUserClient(userId)` (anon key + custom HS256 JWT) for all data queries. RLS is enforced at the database level — every query is scoped to `auth.uid()` automatically. See `supabase/rls-policies.sql` for policies and `app/lib/supabase.server.ts` for the JWT signing logic.
 - The customer account JWT endpoint (`/api/customer-measurements`) is rate limited at 60 requests/minute per IP via `app/lib/rate-limit.server.ts`
 - All React surfaces (widget, customer account extensions) have error boundaries to prevent component crashes from breaking the entire UI
 - CI pipeline (`.github/workflows/ci.yml`) runs tests on every PR and push to main
@@ -245,7 +265,9 @@ The widget calls the backend through Shopify's app proxy (`/apps/health-tool-1/*
 - **Shopify Partner/Dev Dashboard is read-only**: You cannot manually change or check any app configuration (app URL, redirect URLs, app proxy, scopes, extensions, etc.) in the Shopify Partner Dashboard or Dev Dashboard. The only things accessible there are the client ID and client secret. All configuration must be updated in `shopify.app.toml` and pushed via `npx shopify app deploy --force`. Do NOT suggest checking or modifying settings in the dashboard — it is not possible.
 - `automatically_update_urls_on_dev` is set to `false` to prevent `npm run dev` from overwriting production URLs with temporary tunnel URLs
 - **NEVER use `shopify app dev`**: It creates a "development preview" on the store that overrides the production app with a temporary Cloudflare tunnel URL. When the tunnel dies, the preview stays active and breaks the production app (all proxy requests go to the dead tunnel). If you accidentally run it, immediately run `npx shopify app dev clean` to restore the production version. For local development, run the Remix server directly and test API changes by deploying to Fly.io. Widget changes can be tested with `npm run dev:widget` + `npm run deploy`.
-- **Fly.io startup command**: The process command in `fly.toml` must be `node ./dbsetup.js npm run docker-start`. Do NOT try to simplify this by skipping `npm run docker-start` (which runs `npm run setup && npm run start`). The `setup` step runs `prisma generate && prisma migrate deploy` — `prisma generate` is required at runtime because the Docker image's `npm ci --omit=dev` does not generate the Prisma client. Skipping it causes `@prisma/client did not initialize yet` errors. Also, Fly.io's process command does not support shell operators like `&&` — the entire string is passed as arguments to `docker-entrypoint.sh`, so chaining commands with `&&` will silently fail (only the first command runs, then the process exits).
+- **Fly.io startup command**: The process command in `fly.toml` must be `node ./dbsetup.js npm run docker-start`. The startup sequence is: `dbsetup.js` creates a symlink from `prisma/dev.sqlite` → `/data/dev.sqlite` (persistent volume), runs `prisma migrate deploy`, then launches litestream which executes `npm run docker-start`. `docker-start` runs `prisma generate && npm run start` — it must NOT run `prisma migrate deploy` because litestream already has a lock on the SQLite file (running migrate again causes "SQLite database error" and a crash loop). `prisma generate` is required at runtime because the Docker image's `npm ci --omit=dev` does not generate the Prisma client. Fly.io's process command does not support shell operators like `&&` — the entire string is passed as arguments to `docker-entrypoint.sh`, so chaining commands with `&&` will silently fail.
+- **SQLite session persistence**: The Prisma schema uses `url = "file:dev.sqlite"` (relative to `prisma/` dir). `dbsetup.js` creates a symlink `prisma/dev.sqlite` → `/data/dev.sqlite` so the database lives on the persistent Fly.io volume. This is critical — without it, the Shopify offline access token (stored in the `Session` table) is lost on every deploy, causing `admin=false` in `authenticate.public.appProxy()` and all email lookups fail. If the session is lost, uninstall and reinstall the app on the Shopify store.
+- **getOrCreateSupabaseUser resilience**: The function handles the case where a Supabase Auth user already exists for an email but the `profiles` row is missing (e.g., profile was deleted or shopify_customer_id changed). It catches the "already been registered" error, looks up the existing auth user by email, and re-creates the profile row. Without this, any mismatch between auth.users and profiles causes a hard failure.
 - **Shopify access scopes**: The `write_app_proxy` scope is **required** for the app proxy to work — without it, Shopify silently ignores the `[app_proxy]` config in `shopify.app.toml` and all proxy requests return 404. The `read_customers` scope is needed to look up customer email via the Admin API GraphQL. After adding new scopes, you must `npx shopify app deploy --force`, then either accept the new permissions in the Shopify Admin or uninstall/reinstall the app on the store.
 - **Fly.io app suspension**: If the Fly.io app shows "Suspended" status, `fly deploy` alone won't unsuspend it. Run `fly machine start <machine-id> -a <your-app-name>` to manually start the machine. The `min_machines_running = 1` setting in `fly.toml` prevents the machine from stopping after it's running, but does not unsuspend a suspended app.
 
@@ -281,7 +303,6 @@ Test files:
 
 ## Future Plans
 
-1. **Measurement History UI**: Inline history below each input field (latest 5 entries with date + delete button)
 2. **Mobile App**: React Native + Expo with PowerSync for offline sync
 3. **HIPAA Compliance**: Upgrade Supabase to Pro, sign BAA, add audit logging
 4. **Healthcare Integrations**: Apple HealthKit, FHIR API for EHR import

@@ -1,15 +1,23 @@
 -- Supabase RLS Policies for Health Roadmap Tool
 -- Run this in the Supabase SQL Editor (Dashboard > SQL Editor)
 --
--- These policies provide defense-in-depth. The app currently uses the service
--- role key (which bypasses RLS), but these policies:
---   1. Document the intended access patterns
---   2. Protect against future code bugs if switching to anon key
---   3. Are a prerequisite for HIPAA compliance
+-- RLS is enforced at the database level. The app uses:
+--   - Service key (supabaseAdmin) for user creation and profile lookups only
+--   - Anon key + custom JWT (createUserClient) for all data queries
+-- RLS policies use auth.uid() to scope every query to the authenticated user.
 
 -- ===== Drop old table =====
 
 DROP TABLE IF EXISTS health_profiles;
+
+-- ===== Create profiles table =====
+
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  shopify_customer_id TEXT NOT NULL,
+  email TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
 -- ===== Create health_measurements table =====
 
@@ -24,15 +32,67 @@ CREATE TABLE IF NOT EXISTS health_measurements (
   )),
   value NUMERIC NOT NULL,
   recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT value_range CHECK (
+    CASE metric_type
+      WHEN 'height'          THEN value BETWEEN 50 AND 250
+      WHEN 'weight'          THEN value BETWEEN 20 AND 300
+      WHEN 'waist'           THEN value BETWEEN 40 AND 200
+      WHEN 'hba1c'           THEN value BETWEEN 9 AND 195
+      WHEN 'ldl'             THEN value BETWEEN 0 AND 12.9
+      WHEN 'hdl'             THEN value BETWEEN 0 AND 5.2
+      WHEN 'triglycerides'   THEN value BETWEEN 0 AND 22.6
+      WHEN 'fasting_glucose' THEN value BETWEEN 0 AND 27.8
+      WHEN 'systolic_bp'     THEN value BETWEEN 60 AND 250
+      WHEN 'diastolic_bp'    THEN value BETWEEN 40 AND 150
+      WHEN 'sex'             THEN value IN (1, 2)
+      WHEN 'birth_year'      THEN value BETWEEN 1900 AND 2100
+      WHEN 'birth_month'     THEN value BETWEEN 1 AND 12
+      ELSE false
+    END
+  )
 );
 
 CREATE INDEX IF NOT EXISTS idx_measurements_user_type_date
   ON health_measurements(user_id, metric_type, recorded_at DESC);
 
--- ===== Optional RPC for efficient "latest per metric" query =====
+-- ===== Trigger: auto-create profile when Supabase Auth user is created =====
 
-CREATE OR REPLACE FUNCTION get_latest_measurements(p_user_id UUID)
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, shopify_customer_id, email)
+  VALUES (
+    NEW.id,
+    NEW.raw_user_meta_data->>'shopify_customer_id',
+    NEW.email
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- ===== Unique constraint on shopify_customer_id =====
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'profiles_shopify_customer_id_unique'
+  ) THEN
+    ALTER TABLE profiles ADD CONSTRAINT profiles_shopify_customer_id_unique
+      UNIQUE (shopify_customer_id);
+  END IF;
+END $$;
+
+-- ===== RPC for efficient "latest per metric" query =====
+-- Uses auth.uid() so it works with RLS on the anon key.
+
+CREATE OR REPLACE FUNCTION get_latest_measurements()
 RETURNS TABLE (
   id UUID,
   user_id UUID,
@@ -51,17 +111,18 @@ BEGIN
     m.recorded_at,
     m.created_at
   FROM health_measurements m
-  WHERE m.user_id = p_user_id
+  WHERE m.user_id = auth.uid()
   ORDER BY m.metric_type, m.recorded_at DESC;
 END;
 $$ LANGUAGE plpgsql;
 
+-- Grant execute to authenticated role so custom JWT users can call this RPC
+GRANT EXECUTE ON FUNCTION get_latest_measurements() TO authenticated;
+
 -- ===== Drop previous policies =====
--- (Must come AFTER table creation so the table exists for DROP POLICY)
 
 DROP POLICY IF EXISTS "Users can read own profile" ON profiles;
 DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
--- Note: health_profiles policies were dropped with the table above
 DROP POLICY IF EXISTS "Users can read own measurements" ON health_measurements;
 DROP POLICY IF EXISTS "Users can insert own measurements" ON health_measurements;
 DROP POLICY IF EXISTS "Users can delete own measurements" ON health_measurements;
@@ -75,34 +136,23 @@ ALTER TABLE health_measurements ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can read own profile"
   ON profiles FOR SELECT
-  USING (id::text = auth.uid()::text);
+  USING (id = auth.uid());
 
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
-  USING (id::text = auth.uid()::text);
+  USING (id = auth.uid());
 
 -- ===== Health measurements policies =====
 -- No UPDATE policy — records are immutable (Apple Health model: delete + re-add).
 
 CREATE POLICY "Users can read own measurements"
   ON health_measurements FOR SELECT
-  USING (user_id::text IN (SELECT id::text FROM profiles WHERE id::text = auth.uid()::text));
+  USING (user_id = auth.uid());
 
 CREATE POLICY "Users can insert own measurements"
   ON health_measurements FOR INSERT
-  WITH CHECK (user_id::text IN (SELECT id::text FROM profiles WHERE id::text = auth.uid()::text));
+  WITH CHECK (user_id = auth.uid());
 
 CREATE POLICY "Users can delete own measurements"
   ON health_measurements FOR DELETE
-  USING (user_id::text IN (SELECT id::text FROM profiles WHERE id::text = auth.uid()::text));
-
--- Note: The service role key bypasses all RLS policies, so the existing
--- application code continues to work unchanged. These policies only take
--- effect for requests using the anon key or authenticated user tokens.
---
--- When you're ready to switch from service key to anon key (recommended
--- for HIPAA), you'll need to:
---   1. Set up Supabase Auth for your users
---   2. Map Shopify customer IDs to Supabase auth.uid()
---   3. Switch the client to use the anon key
---   4. Test thoroughly — RLS will then enforce these policies
+  USING (user_id = auth.uid());

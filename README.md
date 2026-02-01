@@ -74,10 +74,12 @@ Run the SQL migration in your Supabase SQL Editor:
 ```
 
 This creates:
-- **profiles** table — Maps Shopify customer IDs to internal user IDs
+- **profiles** table — Maps Shopify customer IDs to Supabase Auth user IDs
 - **health_measurements** table — Immutable time-series health records with `metric_type`, `value` (SI canonical units), and `recorded_at`
-- **get_latest_measurements()** RPC — Efficiently returns the latest value per metric type
-- **RLS policies** — Defense-in-depth access control (SELECT, INSERT, DELETE; no UPDATE)
+- **Auth trigger** — Auto-creates a profile row when a Supabase Auth user is created
+- **get_latest_measurements()** RPC — Efficiently returns the latest value per metric type (scoped by `auth.uid()`)
+- **CHECK constraints** — Per-metric-type value range validation at the database level
+- **RLS policies** — Enforced access control using `auth.uid()` (SELECT, INSERT, DELETE; no UPDATE)
 
 ### 7. Deploy
 
@@ -92,6 +94,8 @@ fly deploy
 # Set secrets on Fly.io
 fly secrets set SUPABASE_URL=https://your-project.supabase.co
 fly secrets set SUPABASE_SERVICE_KEY=your-service-key
+fly secrets set SUPABASE_ANON_KEY=your-anon-key
+fly secrets set SUPABASE_JWT_SECRET=your-jwt-secret
 ```
 
 ### 8. Install on your store
@@ -112,7 +116,7 @@ fly secrets set SUPABASE_SERVICE_KEY=your-service-key
 │  Backend API (Remix App on Fly.io)                                │
 │  ├── GET/POST/DELETE /api/measurements (storefront, HMAC auth)  │
 │  ├── GET/POST/DELETE /api/customer-measurements (JWT auth)      │
-│  └── Uses Supabase service key for DB access                    │
+│  └── Dual Supabase clients (admin + RLS-enforced user client)   │
 ├─────────────────────────────────────────────────────────────────┤
 │  Customer Account Extensions                                     │
 │  ├── Profile block: health summary in customer profile           │
@@ -145,14 +149,18 @@ Logged-in customer (storefront widget):
          → Shopify app proxy adds logged_in_customer_id + HMAC signature
          → Fly.io backend verifies HMAC via authenticate.public.appProxy()
          → Extracts verified customer ID from signed query params
-         → Reads/writes Supabase via service key
+         → Maps Shopify customer → Supabase Auth user
+         → Creates RLS-scoped client (anon key + custom JWT)
+         → RLS enforces auth.uid() on every query
 
 Logged-in customer (customer account page):
   Extension → sessionToken.get() obtains JWT
            → GET/POST/DELETE https://health-tool-app.fly.dev/api/customer-measurements
            → Backend verifies JWT (HS256, SHOPIFY_API_SECRET)
            → Customer ID from JWT sub claim (gid://shopify/Customer/<id>)
-           → Reads/writes Supabase via service key
+           → Maps Shopify customer → Supabase Auth user
+           → Creates RLS-scoped client (anon key + custom JWT)
+           → RLS enforces auth.uid() on every query
 ```
 
 ### Why This Is Secure
@@ -162,7 +170,7 @@ Logged-in customer (customer account page):
 - **No CORS**: Requests go through Shopify's proxy (same origin as the storefront).
 - **Server-side authorization**: The backend never trusts client-supplied identity. Customer ID always comes from the HMAC-verified query parameters.
 - **Rate limiting**: The customer account JWT endpoint is rate-limited (60 requests/minute per IP) to prevent abuse.
-- **Row Level Security**: Supabase RLS policies are enabled as defense-in-depth on all health data tables.
+- **Row Level Security**: Supabase RLS policies enforce data isolation at the database level. All data queries use an anon key + custom JWT scoped to `auth.uid()` — the service key is only used for user creation.
 - **Error boundaries**: React error boundaries prevent component crashes from taking down the entire tool.
 
 ## Project Structure
@@ -171,7 +179,7 @@ Logged-in customer (customer account page):
 /roadmap
 ├── /app                          # Remix app (Shopify admin + API)
 │   ├── /lib
-│   │   ├── supabase.server.ts    # Supabase client + measurement CRUD
+│   │   ├── supabase.server.ts    # Dual Supabase clients, JWT signing, CRUD
 │   │   └── rate-limit.server.ts  # Rate limiter for JWT endpoint
 │   └── /routes
 │       ├── api.measurements.ts            # Storefront API (HMAC auth)
@@ -224,6 +232,24 @@ npm run dev:widget       # Watch widget for changes
 npm run deploy           # Deploy extensions to Shopify CDN
 fly deploy               # Deploy backend to Fly.io
 ```
+
+## Troubleshooting
+
+### Measurements not saving (500 errors)
+
+If measurements return 500 errors after deployment, check the Fly.io logs (`fly logs --no-tail`) for these common issues:
+
+**`admin=false` / email is null**: The Shopify offline access token is missing. This happens when the SQLite session database is on ephemeral storage instead of the persistent volume. The `dbsetup.js` script creates a symlink from `prisma/dev.sqlite` → `/data/dev.sqlite` so Prisma writes to the persistent volume. If the session is lost, uninstall and reinstall the app on the Shopify store to get a new access token.
+
+**"A user with this email address has already been registered"**: The Supabase Auth user exists but the `profiles` row is missing or doesn't match the `shopify_customer_id`. The `getOrCreateSupabaseUser()` function handles this by looking up the existing auth user by email and re-creating the profile row.
+
+**"violates foreign key constraint health_measurements_user_id_fkey"**: The `user_id` doesn't exist in the `profiles` table. This is a symptom of the above issue — the profile wasn't created properly.
+
+**"SQLite database error" on startup (crash loop)**: The `docker-start` script must NOT run `prisma migrate deploy` because litestream already has a lock on the SQLite file. The `dbsetup.js` script handles migration before litestream starts. `docker-start` should only run `prisma generate && npm run start`.
+
+### After redeploying to Fly.io
+
+Every `fly deploy` rebuilds the Docker image with a fresh filesystem. The Shopify session (offline access token) is preserved on the persistent volume at `/data/dev.sqlite` via the symlink created by `dbsetup.js`. If the symlink path or volume mount changes, the session will be lost and you'll need to reinstall the app.
 
 ## Disclaimer
 

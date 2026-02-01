@@ -6,9 +6,10 @@ import fs from 'node:fs'
 
 const env = { ...process.env }
 
-// place Sqlite3 database on volume
-const source = path.resolve('/dev.sqlite')
-const target = '/data/' + path.basename(source)
+// place Sqlite3 database on persistent volume
+// Prisma uses "file:dev.sqlite" relative to prisma/ dir, so symlink prisma/dev.sqlite → /data/dev.sqlite
+const source = path.resolve('prisma/dev.sqlite')
+const target = '/data/dev.sqlite'
 if (!fs.existsSync(source) && fs.existsSync('/data')) fs.symlinkSync(target, source)
 const newDb = !fs.existsSync(target)
 if (newDb && process.env.BUCKET_NAME) {

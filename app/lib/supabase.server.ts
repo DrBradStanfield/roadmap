@@ -1,28 +1,175 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import jwt from 'jsonwebtoken';
 
-// Supabase client using service role key (bypasses RLS).
-// Only use server-side — never expose service key to client.
-// SECURITY: Authorization is enforced in application code (each route scopes queries
-// to the authenticated customer's profile). RLS policies provide defense-in-depth.
+// ---------------------------------------------------------------------------
+// Environment
+// ---------------------------------------------------------------------------
+
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseJwtSecret = process.env.SUPABASE_JWT_SECRET;
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn('Supabase environment variables not configured');
+if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey || !supabaseJwtSecret) {
+  console.warn('Supabase environment variables not fully configured');
 }
 
-export const supabase = supabaseUrl && supabaseServiceKey
+// ---------------------------------------------------------------------------
+// Admin client — service key, bypasses RLS.
+// Used ONLY for user creation and profile lookups.
+// ---------------------------------------------------------------------------
+
+const supabaseAdmin = supabaseUrl && supabaseServiceKey
   ? createClient(supabaseUrl, supabaseServiceKey)
   : null;
 
-// Type definitions for database tables
-export interface Profile {
-  id: string;
-  shopify_customer_id: string;
-  email: string | null;
-  created_at: string;
-  updated_at: string;
+// ---------------------------------------------------------------------------
+// User client — anon key + custom JWT. RLS enforces auth.uid() on every query.
+// ---------------------------------------------------------------------------
+
+export function createUserClient(userId: string): SupabaseClient {
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseJwtSecret) {
+    throw new Error('Supabase environment variables not configured');
+  }
+
+  const token = jwt.sign(
+    { sub: userId, role: 'authenticated', aud: 'authenticated' },
+    supabaseJwtSecret,
+    { algorithm: 'HS256', expiresIn: '1h' },
+  );
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
 }
+
+// ---------------------------------------------------------------------------
+// User ID cache — avoids repeated profile lookups for the same customer.
+// ---------------------------------------------------------------------------
+
+const USER_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+const USER_CACHE_MAX = 10_000;
+const userIdCache = new Map<string, { userId: string; expiresAt: number }>();
+
+function getCachedUserId(shopifyCustomerId: string): string | null {
+  const entry = userIdCache.get(shopifyCustomerId);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    userIdCache.delete(shopifyCustomerId);
+    return null;
+  }
+  return entry.userId;
+}
+
+function cacheUserId(shopifyCustomerId: string, userId: string): void {
+  if (userIdCache.size >= USER_CACHE_MAX) {
+    const firstKey = userIdCache.keys().next().value;
+    if (firstKey) userIdCache.delete(firstKey);
+  }
+  userIdCache.set(shopifyCustomerId, {
+    userId,
+    expiresAt: Date.now() + USER_CACHE_TTL,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// getOrCreateSupabaseUser — maps a Shopify customer to a Supabase Auth user.
+// Both params are required; throws if either is missing.
+// ---------------------------------------------------------------------------
+
+export async function getOrCreateSupabaseUser(
+  shopifyCustomerId: string,
+  email: string,
+): Promise<string> {
+  if (!shopifyCustomerId || !email) {
+    throw new Error('shopifyCustomerId and email are both required');
+  }
+  if (!supabaseAdmin) {
+    throw new Error('Supabase admin client not configured');
+  }
+
+  const cached = getCachedUserId(shopifyCustomerId);
+  if (cached) return cached;
+
+  // Check if profile already exists
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('id')
+    .eq('shopify_customer_id', shopifyCustomerId)
+    .single();
+
+  if (profile) {
+    cacheUserId(shopifyCustomerId, profile.id);
+    return profile.id;
+  }
+
+  // Create Supabase Auth user (or find existing one by email)
+  let userId: string;
+  const { data: authUser, error } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    user_metadata: { shopify_customer_id: shopifyCustomerId },
+  });
+
+  if (error) {
+    if (error.message.includes('already been registered')) {
+      // User exists in auth.users but profile row is missing or has different shopify_customer_id.
+      // Look up existing auth user by email.
+      const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      if (listError) {
+        throw new Error(`Failed to list users: ${listError.message}`);
+      }
+      const existingUser = listData.users.find((u) => u.email === email);
+      if (!existingUser) {
+        throw new Error(`User with email ${email} reported as registered but not found`);
+      }
+      userId = existingUser.id;
+    } else {
+      throw new Error(`Failed to create Supabase user: ${error.message}`);
+    }
+  } else {
+    userId = authUser.user.id;
+  }
+
+  // Explicitly create profile row — this is the primary mechanism.
+  // The DB trigger on auth.users is defense-in-depth only.
+  const { error: upsertError } = await supabaseAdmin
+    .from('profiles')
+    .upsert(
+      { id: userId, shopify_customer_id: shopifyCustomerId, email },
+      { onConflict: 'id' },
+    );
+
+  if (upsertError) {
+    console.error('Failed to create profile:', upsertError);
+    throw new Error(`Failed to create profile: ${upsertError.message}`);
+  }
+
+  // Verify profile was actually created — catches silent failures
+  const { data: verifiedProfile, error: verifyError } = await supabaseAdmin
+    .from('profiles')
+    .select('id')
+    .eq('id', userId)
+    .single();
+
+  if (verifyError || !verifiedProfile) {
+    console.error('Profile verification failed after upsert:', {
+      userId,
+      shopifyCustomerId,
+      verifyError,
+    });
+    throw new Error(
+      `Profile not found after upsert: ${verifyError?.message || 'row missing'}`,
+    );
+  }
+
+  cacheUserId(shopifyCustomerId, userId);
+  return userId;
+}
+
+// ---------------------------------------------------------------------------
+// Type definitions
+// ---------------------------------------------------------------------------
 
 export interface DbMeasurement {
   id: string;
@@ -44,67 +191,21 @@ export function toApiMeasurement(m: DbMeasurement) {
   };
 }
 
-// Helper to find or create a profile for a Shopify customer
-export async function findOrCreateProfile(
-  shopifyCustomerId: string,
-  email?: string
-): Promise<Profile | null> {
-  if (!supabase) return null;
-
-  // Try to find existing profile
-  const { data: existing } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('shopify_customer_id', shopifyCustomerId)
-    .single();
-
-  if (existing) {
-    // Backfill email if missing
-    if (!existing.email && email) {
-      await supabase
-        .from('profiles')
-        .update({ email })
-        .eq('id', existing.id);
-      existing.email = email;
-    }
-    return existing as Profile;
-  }
-
-  // Create new profile
-  const { data: newProfile, error } = await supabase
-    .from('profiles')
-    .insert({
-      shopify_customer_id: shopifyCustomerId,
-      email: email || null,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error creating profile:', error);
-    return null;
-  }
-
-  return newProfile as Profile;
-}
-
 // ---------------------------------------------------------------------------
-// Measurement CRUD (health_measurements table)
+// Measurement CRUD — all queries use the RLS-enforced user client.
+// No userId parameter needed; RLS scopes to auth.uid() automatically.
 // All values are in SI canonical units.
 // ---------------------------------------------------------------------------
 
 /** Get measurements for a specific metric, ordered by recorded_at DESC. */
 export async function getMeasurements(
-  userId: string,
+  client: SupabaseClient,
   metricType: string,
   limit = 50,
 ): Promise<DbMeasurement[]> {
-  if (!supabase) return [];
-
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('health_measurements')
     .select('*')
-    .eq('user_id', userId)
     .eq('metric_type', metricType)
     .order('recorded_at', { ascending: false })
     .limit(limit);
@@ -117,64 +218,30 @@ export async function getMeasurements(
   return (data ?? []) as DbMeasurement[];
 }
 
-/** Get the latest measurement for each metric_type for a user. */
+/** Get the latest measurement for each metric_type for the authenticated user. */
 export async function getLatestMeasurements(
-  userId: string,
+  client: SupabaseClient,
 ): Promise<DbMeasurement[]> {
-  if (!supabase) return [];
-
-  // Use a raw query with DISTINCT ON for efficiency
-  const { data, error } = await supabase
-    .rpc('get_latest_measurements', { p_user_id: userId });
+  const { data, error } = await client.rpc('get_latest_measurements');
 
   if (error) {
-    // Fallback: if RPC doesn't exist yet, do it in JS
-    console.warn('get_latest_measurements RPC not available, using fallback:', error.message);
-    return getLatestMeasurementsFallback(userId);
+    console.error('Error fetching latest measurements:', error);
+    return [];
   }
 
   return (data ?? []) as DbMeasurement[];
 }
 
-/** Fallback: fetch all measurements and deduplicate in JS. */
-async function getLatestMeasurementsFallback(
-  userId: string,
-): Promise<DbMeasurement[]> {
-  if (!supabase) return [];
-
-  const { data, error } = await supabase
-    .from('health_measurements')
-    .select('*')
-    .eq('user_id', userId)
-    .order('recorded_at', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching measurements (fallback):', error);
-    return [];
-  }
-
-  // Keep only the latest per metric_type
-  const seen = new Set<string>();
-  const latest: DbMeasurement[] = [];
-  for (const row of (data ?? []) as DbMeasurement[]) {
-    if (!seen.has(row.metric_type)) {
-      seen.add(row.metric_type);
-      latest.push(row);
-    }
-  }
-  return latest;
-}
-
-/** Insert a new measurement. Returns the created row. */
+/** Insert a new measurement. Returns the created row.
+ *  userId is required for the NOT NULL column; RLS verifies it matches auth.uid(). */
 export async function addMeasurement(
+  client: SupabaseClient,
   userId: string,
   metricType: string,
   value: number,
   recordedAt?: string,
 ): Promise<DbMeasurement | null> {
-  if (!supabase) return null;
-
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('health_measurements')
     .insert({
       user_id: userId,
@@ -193,23 +260,21 @@ export async function addMeasurement(
   return data as DbMeasurement;
 }
 
-/** Delete a measurement. Verifies user_id ownership. */
+/** Delete a measurement. RLS ensures the user owns it. */
 export async function deleteMeasurement(
-  userId: string,
+  client: SupabaseClient,
   measurementId: string,
 ): Promise<boolean> {
-  if (!supabase) return false;
-
-  const { error } = await supabase
+  const { data, error } = await client
     .from('health_measurements')
     .delete()
     .eq('id', measurementId)
-    .eq('user_id', userId); // Security: ensure user owns this measurement
+    .select('id');
 
   if (error) {
     console.error('Error deleting measurement:', error);
     return false;
   }
 
-  return true;
+  return (data?.length ?? 0) > 0;
 }

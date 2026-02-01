@@ -1,7 +1,9 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import jwt from 'jsonwebtoken';
+import { unauthenticated } from '../shopify.server';
 import {
-  findOrCreateProfile,
+  getOrCreateSupabaseUser,
+  createUserClient,
   getMeasurements,
   getLatestMeasurements,
   addMeasurement,
@@ -27,7 +29,12 @@ function corsHeaders(request?: Request) {
   };
 }
 
-function verifySessionToken(authHeader: string | null): string {
+interface SessionTokenPayload {
+  sub: string;
+  dest: string;
+}
+
+function verifySessionToken(authHeader: string | null): SessionTokenPayload {
   if (!authHeader?.startsWith('Bearer ')) {
     throw new Error('Missing or invalid Authorization header');
   }
@@ -53,7 +60,33 @@ function verifySessionToken(authHeader: string | null): string {
     throw new Error('Invalid customer GID format in sub claim');
   }
 
-  return match[1];
+  const dest = decoded.dest;
+  if (!dest) {
+    throw new Error('Token missing dest claim');
+  }
+
+  // dest may be "https://mystore.myshopify.com" or just "mystore.myshopify.com"
+  const shopDomain = dest.includes('://') ? new URL(dest).hostname : dest;
+
+  return { sub: match[1], dest: shopDomain };
+}
+
+async function getCustomerEmail(shopDomain: string, customerId: string): Promise<string | null> {
+  try {
+    const { admin } = await unauthenticated.admin(shopDomain);
+    const response = await admin.graphql(`
+      query getCustomer($id: ID!) {
+        customer(id: $id) {
+          email
+        }
+      }
+    `, { variables: { id: `gid://shopify/Customer/${customerId}` } });
+    const { data } = await response.json();
+    return data?.customer?.email || null;
+  } catch (error) {
+    console.error('Error looking up customer email:', error);
+    return null;
+  }
 }
 
 // GET — Load measurements (authenticated via JWT)
@@ -71,14 +104,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   try {
-    const customerId = verifySessionToken(request.headers.get('Authorization'));
-    const profile = await findOrCreateProfile(customerId);
-    if (!profile) {
+    const { sub: customerId, dest: shopDomain } = verifySessionToken(request.headers.get('Authorization'));
+    const email = await getCustomerEmail(shopDomain, customerId);
+    if (!email) {
       return json(
-        { success: false, error: 'Could not find or create profile' },
+        { success: false, error: 'Could not retrieve customer email' },
         { status: 500, headers: corsHeaders(request) },
       );
     }
+
+    const userId = await getOrCreateSupabaseUser(customerId, email);
+    const client = createUserClient(userId);
 
     const url = new URL(request.url);
     const metricType = url.searchParams.get('metric_type');
@@ -91,11 +127,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
         );
       }
       const limit = Math.min(parseInt(url.searchParams.get('limit') || '50') || 50, 200);
-      const measurements = await getMeasurements(profile.id, metricType, limit);
+      const measurements = await getMeasurements(client, metricType, limit);
       return json({ success: true, data: measurements.map(toApiMeasurement) }, { headers: corsHeaders(request) });
     }
 
-    const latest = await getLatestMeasurements(profile.id);
+    const latest = await getLatestMeasurements(client);
     return json({ success: true, data: latest.map(toApiMeasurement) }, { headers: corsHeaders(request) });
   } catch (error) {
     console.error('Customer measurements auth error:', error);
@@ -121,14 +157,17 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    const customerId = verifySessionToken(request.headers.get('Authorization'));
-    const profile = await findOrCreateProfile(customerId);
-    if (!profile) {
+    const { sub: customerId, dest: shopDomain } = verifySessionToken(request.headers.get('Authorization'));
+    const email = await getCustomerEmail(shopDomain, customerId);
+    if (!email) {
       return json(
-        { success: false, error: 'Could not find or create profile' },
+        { success: false, error: 'Could not retrieve customer email' },
         { status: 500, headers: corsHeaders(request) },
       );
     }
+
+    const userId = await getOrCreateSupabaseUser(customerId, email);
+    const client = createUserClient(userId);
 
     const body = await request.json();
 
@@ -142,7 +181,7 @@ export async function action({ request }: ActionFunctionArgs) {
       }
 
       const { metricType, value, recordedAt } = validation.data;
-      const measurement = await addMeasurement(profile.id, metricType, value, recordedAt);
+      const measurement = await addMeasurement(client, userId, metricType, value, recordedAt);
 
       if (!measurement) {
         return json(
@@ -166,7 +205,7 @@ export async function action({ request }: ActionFunctionArgs) {
         );
       }
 
-      const deleted = await deleteMeasurement(profile.id, measurementId);
+      const deleted = await deleteMeasurement(client, measurementId);
       return json({ success: deleted }, { headers: corsHeaders(request) });
     }
 

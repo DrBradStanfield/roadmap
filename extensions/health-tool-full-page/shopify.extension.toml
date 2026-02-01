@@ -12,3 +12,4 @@ target = "customer-account.page.render"
 
 [extensions.capabilities]
 network_access = true
+api_access = true
