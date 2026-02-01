@@ -158,3 +158,16 @@ CREATE POLICY "Users can insert own measurements"
 CREATE POLICY "Users can delete own measurements"
   ON health_measurements FOR DELETE
   USING (user_id = auth.uid());
+
+-- ===== Table grants for authenticated role =====
+-- Explicit grants ensure the authenticated role can access tables after DROP/CREATE.
+-- Without these, the anon key + custom JWT client silently fails.
+
+GRANT SELECT, UPDATE ON profiles TO authenticated;
+GRANT SELECT, INSERT, DELETE ON health_measurements TO authenticated;
+
+-- ===== Force PostgREST to reload schema cache =====
+-- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
+-- NOTE: This is not always reliable — if saves break after schema changes,
+-- restart the Supabase project (Settings > General > Restart project).
+NOTIFY pgrst, 'reload schema';
