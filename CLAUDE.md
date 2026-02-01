@@ -283,9 +283,9 @@ Previously the app had two Shopify customer account extensions (a profile summar
 
 ## Future Plans
 
-2. **Mobile App**: React Native + Expo with PowerSync for offline sync
-3. **HIPAA Compliance**: Upgrade Supabase to Pro, sign BAA, add audit logging
-4. **Healthcare Integrations**: Apple HealthKit, FHIR API for EHR import
+1. **Mobile App**: React Native + Expo with PowerSync for offline sync
+2. **HIPAA Compliance**: Upgrade Supabase to Pro, sign BAA, add audit logging
+3. **Healthcare Integrations**: Apple HealthKit, FHIR API for EHR import
 
 ## Disclaimer
 

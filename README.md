@@ -6,7 +6,7 @@ A personalized health management tool embedded in a Shopify storefront. Users in
 
 - **Two-panel interface**: Input form on the left, live results on the right
 - **Real-time calculations**: Results update as users type
-- **Unit system support**: Automatic locale detection (SI for NZ/AU/UK/EU, conventional for US) with manual toggle, synced across storefront and customer account via database
+- **Unit system support**: Automatic locale detection (SI for NZ/AU/UK/EU, conventional for US) with manual toggle, synced to database for logged-in users
 - **Immutable measurement history**: Apple Health-style data model (no edits, only add/delete)
 - **SI canonical storage**: All values stored in SI units (kg, cm, mmol/L, mmol/mol, mmHg) to eliminate unit ambiguity
 - **Guest mode**: Works without signup (data saved to localStorage)
@@ -203,7 +203,7 @@ Logged-in customer (storefront widget):
 ## Testing
 
 ```bash
-npm test              # Run all 148 tests once
+npm test              # Run all 126 tests once
 npm run test:watch    # Watch mode
 ```
 
