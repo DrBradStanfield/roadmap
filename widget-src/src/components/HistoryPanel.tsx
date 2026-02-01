@@ -34,7 +34,10 @@ interface HistoryPanelProps {
 export function HistoryPanel({ isLoggedIn, loginUrl }: HistoryPanelProps) {
   const [measurements, setMeasurements] = useState<ApiMeasurement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>('all');
+  const [filter, setFilter] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('metric') || 'all';
+  });
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [unitSystem] = useState<UnitSystem>(() => loadUnitPreference() ?? detectUnitSystem());

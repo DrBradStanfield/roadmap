@@ -87,6 +87,21 @@ export function InputPanel({
     return `${displayValue} ${unit} · ${date}`;
   };
 
+  // Render a clickable previous-value link that opens the history page filtered by metric
+  const PreviousLink = ({ field }: { field: string }) => {
+    const label = getPreviousLabel(field);
+    if (!label) return null;
+    const metric = FIELD_METRIC_MAP[field];
+    return (
+      <a
+        className="previous-value"
+        href={`/pages/health-history?metric=${metric}`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >{label}</a>
+    );
+  };
+
   // Check if any longitudinal field has a value (for save button)
   const hasLongitudinalValues = LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined);
 
@@ -159,7 +174,7 @@ export function InputPanel({
             <span className="error-message">{errors.weightKg}</span>
           )}
           {getPreviousLabel('weightKg') && (
-            <span className="previous-value">{getPreviousLabel('weightKg')}</span>
+            <PreviousLink field="weightKg" />
           )}
         </div>
 
@@ -180,7 +195,7 @@ export function InputPanel({
             <span className="error-message">{errors.waistCm}</span>
           )}
           {getPreviousLabel('waistCm') && (
-            <span className="previous-value">{getPreviousLabel('waistCm')}</span>
+            <PreviousLink field="waistCm" />
           )}
         </div>
 
@@ -237,7 +252,7 @@ export function InputPanel({
             max={range('hba1c').max}
           />
           {getPreviousLabel('hba1c') ? (
-            <span className="previous-value">{getPreviousLabel('hba1c')}</span>
+            <PreviousLink field="hba1c" />
           ) : (
             <span className="field-hint">
               Normal: &lt;{unitSystem === 'si' ? '39 mmol/mol' : '5.7%'}
@@ -258,7 +273,7 @@ export function InputPanel({
             max={range('ldlC').max}
           />
           {getPreviousLabel('ldlC') ? (
-            <span className="previous-value">{getPreviousLabel('ldlC')}</span>
+            <PreviousLink field="ldlC" />
           ) : (
             <span className="field-hint">
               Optimal: &lt;{unitSystem === 'si' ? '2.6 mmol/L' : '100 mg/dL'}
@@ -279,7 +294,7 @@ export function InputPanel({
             max={range('hdlC').max}
           />
           {getPreviousLabel('hdlC') ? (
-            <span className="previous-value">{getPreviousLabel('hdlC')}</span>
+            <PreviousLink field="hdlC" />
           ) : (
             <span className="field-hint">
               Optimal: &gt;{unitSystem === 'si' ? '1.0 mmol/L (men), 1.3 mmol/L (women)' : '40 mg/dL (men), 50 mg/dL (women)'}
@@ -300,7 +315,7 @@ export function InputPanel({
             max={range('triglycerides').max}
           />
           {getPreviousLabel('triglycerides') ? (
-            <span className="previous-value">{getPreviousLabel('triglycerides')}</span>
+            <PreviousLink field="triglycerides" />
           ) : (
             <span className="field-hint">
               Normal: &lt;{unitSystem === 'si' ? '1.7 mmol/L' : '150 mg/dL'}
@@ -321,7 +336,7 @@ export function InputPanel({
             max={range('fastingGlucose').max}
           />
           {getPreviousLabel('fastingGlucose') ? (
-            <span className="previous-value">{getPreviousLabel('fastingGlucose')}</span>
+            <PreviousLink field="fastingGlucose" />
           ) : (
             <span className="field-hint">
               Normal: &lt;{unitSystem === 'si' ? '5.6 mmol/L' : '100 mg/dL'}
@@ -342,7 +357,7 @@ export function InputPanel({
               max="250"
             />
             {getPreviousLabel('systolicBp') && (
-              <span className="previous-value">{getPreviousLabel('systolicBp')}</span>
+              <PreviousLink field="systolicBp" />
             )}
           </div>
 
@@ -358,7 +373,7 @@ export function InputPanel({
               max="150"
             />
             {getPreviousLabel('diastolicBp') && (
-              <span className="previous-value">{getPreviousLabel('diastolicBp')}</span>
+              <PreviousLink field="diastolicBp" />
             )}
           </div>
         </div>

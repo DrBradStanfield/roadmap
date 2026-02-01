@@ -505,6 +505,11 @@
   color: #0066cc;
   margin-top: 4px;
   font-style: italic;
+  text-decoration: none;
+}
+
+.previous-value:hover {
+  text-decoration: underline;
 }
 
 /* Save Longitudinal Button */
