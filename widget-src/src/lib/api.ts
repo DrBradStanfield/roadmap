@@ -2,12 +2,15 @@ import type { HealthInputs } from '@roadmap/health-core';
 import {
   measurementsToInputs,
   diffInputsToMeasurements,
+  diffProfileFields,
   type ApiMeasurement,
+  type ApiProfile,
 } from '@roadmap/health-core';
 
 interface MeasurementsResponse {
   success: boolean;
   data?: ApiMeasurement[];
+  profile?: ApiProfile | null;
   error?: string;
 }
 
@@ -22,7 +25,7 @@ interface SingleMeasurementResponse {
 const PROXY_PATH = '/apps/health-tool-1';
 
 /**
- * Load latest measurements (one per metric) from cloud storage.
+ * Load latest measurements (one per metric) + profile demographics from cloud storage.
  */
 export async function loadLatestMeasurements(): Promise<Partial<HealthInputs> | null> {
   try {
@@ -32,7 +35,7 @@ export async function loadLatestMeasurements(): Promise<Partial<HealthInputs> | 
     const result: MeasurementsResponse = await response.json();
     if (!result.success || !result.data) return null;
 
-    return measurementsToInputs(result.data);
+    return measurementsToInputs(result.data, result.profile);
   } catch (error) {
     console.warn('Error loading measurements:', error);
     return null;
@@ -105,17 +108,50 @@ export async function deleteMeasurement(measurementId: string): Promise<boolean>
 }
 
 /**
- * Save only changed fields as individual measurements.
+ * Save profile field updates (sex, birthYear, birthMonth, unitSystem).
+ */
+async function saveProfileChanges(profile: {
+  sex?: number;
+  birthYear?: number;
+  birthMonth?: number;
+  unitSystem?: number;
+}): Promise<boolean> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/measurements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile }),
+    });
+    if (!response.ok) return false;
+
+    const result: { success: boolean } = await response.json();
+    return result.success;
+  } catch (error) {
+    console.warn('Error saving profile:', error);
+    return false;
+  }
+}
+
+/**
+ * Save changed fields — profile fields go to profiles table, measurements stay immutable.
  */
 export async function saveChangedMeasurements(
   current: Partial<HealthInputs>,
   previous: Partial<HealthInputs>,
 ): Promise<boolean> {
-  const changes = diffInputsToMeasurements(current, previous);
-  if (changes.length === 0) return true;
+  // Save profile changes (if any)
+  const profileChanges = diffProfileFields(current, previous);
+  if (profileChanges) {
+    const profileSaved = await saveProfileChanges(profileChanges);
+    if (!profileSaved) return false;
+  }
+
+  // Save measurement changes (if any)
+  const measurementChanges = diffInputsToMeasurements(current, previous);
+  if (measurementChanges.length === 0) return true;
 
   const results = await Promise.all(
-    changes.map((c) => addMeasurement(c.metricType, c.value)),
+    measurementChanges.map((c) => addMeasurement(c.metricType, c.value)),
   );
   return results.every((r) => r !== null);
 }

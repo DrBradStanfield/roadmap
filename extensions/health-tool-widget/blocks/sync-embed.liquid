@@ -5,14 +5,12 @@
   var SYNC_FLAG = 'health_roadmap_sync_done';
   var PROXY = '/apps/health-tool-1/api/measurements';
 
-  // Field name → metric_type mapping (matches FIELD_TO_METRIC in health-core)
+  // Field name → metric_type mapping (health metrics only)
   var FIELD_MAP = {
     heightCm: 'height', weightKg: 'weight', waistCm: 'waist',
     hba1c: 'hba1c', ldlC: 'ldl', hdlC: 'hdl',
     triglycerides: 'triglycerides', fastingGlucose: 'fasting_glucose',
-    systolicBp: 'systolic_bp', diastolicBp: 'diastolic_bp',
-    sex: 'sex', birthYear: 'birth_year', birthMonth: 'birth_month',
-    unitSystem: 'unit_system'
+    systolicBp: 'systolic_bp', diastolicBp: 'diastolic_bp'
   };
 
   try {
@@ -27,36 +25,45 @@
 
     // Check if cloud already has data
     fetch(PROXY).then(function(r) { return r.json(); }).then(function(result) {
-      if (result.success && result.data && result.data.length > 0) {
+      if (result.success && ((result.data && result.data.length > 0) || result.profile)) {
         // Cloud has data — clear localStorage and mark done
         localStorage.removeItem(STORAGE_KEY);
         sessionStorage.setItem(SYNC_FLAG, '1');
         return;
       }
 
-      // Cloud empty — sync each field sequentially to avoid race conditions
+      // Build measurement entries (health metrics only)
       var entries = [];
       for (var field in FIELD_MAP) {
         var val = inputs[field];
         if (val === undefined || val === null || val === '') continue;
         var metricType = FIELD_MAP[field];
-        var numVal;
-        if (field === 'sex') {
-          numVal = val === 'male' ? 1 : 2;
-        } else if (field === 'unitSystem') {
-          numVal = val === 'si' ? 1 : 2;
-        } else {
-          numVal = Number(val);
-          if (isNaN(numVal)) continue;
-        }
+        var numVal = Number(val);
+        if (isNaN(numVal)) continue;
         entries.push({ metricType: metricType, value: numVal });
       }
 
-      if (entries.length === 0) return;
+      // Build profile object (demographics)
+      var profile = {};
+      if (inputs.sex !== undefined && inputs.sex !== null && inputs.sex !== '') {
+        profile.sex = inputs.sex === 'male' ? 1 : 2;
+      }
+      if (inputs.birthYear !== undefined && inputs.birthYear !== null && inputs.birthYear !== '') {
+        profile.birthYear = Number(inputs.birthYear);
+      }
+      if (inputs.birthMonth !== undefined && inputs.birthMonth !== null && inputs.birthMonth !== '') {
+        profile.birthMonth = Number(inputs.birthMonth);
+      }
+      if (inputs.unitSystem !== undefined && inputs.unitSystem !== null && inputs.unitSystem !== '') {
+        profile.unitSystem = inputs.unitSystem === 'si' ? 1 : 2;
+      }
 
-      // POST one at a time — the GET above already created the user in
-      // the server cache, so sequential POSTs avoid expensive race paths.
-      (function postNext(i) {
+      var hasProfile = Object.keys(profile).length > 0;
+      if (entries.length === 0 && !hasProfile) return;
+
+      // POST profile first (if present), then measurements sequentially.
+      // Sequential pattern avoids race conditions in getOrCreateSupabaseUser().
+      function postMeasurements(i) {
         if (i >= entries.length) {
           localStorage.removeItem(STORAGE_KEY);
           sessionStorage.setItem(SYNC_FLAG, '1');
@@ -66,8 +73,18 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(entries[i])
-        }).then(function() { postNext(i + 1); });
-      })(0);
+        }).then(function() { postMeasurements(i + 1); });
+      }
+
+      if (hasProfile) {
+        fetch(PROXY, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profile: profile })
+        }).then(function() { postMeasurements(0); });
+      } else {
+        postMeasurements(0);
+      }
     });
   } catch (e) {
     // Silent fail — don't break the page

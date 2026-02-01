@@ -3,13 +3,16 @@
  *
  * Used by both the storefront widget and customer account extension
  * to convert between API measurement records and HealthInputs objects.
+ *
+ * Demographics (sex, birthYear, birthMonth, unitSystem) are stored on the
+ * profiles table, not as measurements. Use diffProfileFields() for those.
  */
 import type { HealthInputs } from './types';
 import type { MetricType } from './units';
 
 /**
  * Maps HealthInputs field names to metric_type values used in the
- * health_measurements table and API.
+ * health_measurements table and API. Only health metrics — no demographics.
  */
 export const FIELD_TO_METRIC: Record<string, string> = {
   heightCm: 'height',
@@ -22,10 +25,6 @@ export const FIELD_TO_METRIC: Record<string, string> = {
   fastingGlucose: 'fasting_glucose',
   systolicBp: 'systolic_bp',
   diastolicBp: 'diastolic_bp',
-  sex: 'sex',
-  birthYear: 'birth_year',
-  birthMonth: 'birth_month',
-  unitSystem: 'unit_system',
 };
 
 /** Reverse mapping: metric_type → HealthInputs field name. */
@@ -40,10 +39,6 @@ export const METRIC_TO_FIELD: Record<string, keyof HealthInputs> = {
   fasting_glucose: 'fastingGlucose',
   systolic_bp: 'systolicBp',
   diastolic_bp: 'diastolicBp',
-  sex: 'sex',
-  birth_year: 'birthYear',
-  birth_month: 'birthMonth',
-  unit_system: 'unitSystem',
 };
 
 /**
@@ -72,24 +67,43 @@ export interface ApiMeasurement {
   createdAt: string;
 }
 
+/** API profile shape (camelCase, as returned by API endpoints). */
+export interface ApiProfile {
+  sex: number | null;
+  birthYear: number | null;
+  birthMonth: number | null;
+  unitSystem: number | null;
+}
+
 /**
- * Convert API measurement records into a partial HealthInputs object.
- * Sex is stored as numeric (1=male, 2=female) and converted back.
- * Unit system is stored as numeric (1=si, 2=conventional) and converted back.
+ * Convert API measurement records + optional profile data into a partial HealthInputs object.
+ * Profile demographics (sex, birthYear, birthMonth, unitSystem) come from the profile object.
  */
-export function measurementsToInputs(measurements: ApiMeasurement[]): Partial<HealthInputs> {
+export function measurementsToInputs(
+  measurements: ApiMeasurement[],
+  profile?: ApiProfile | null,
+): Partial<HealthInputs> {
   const inputs: Partial<HealthInputs> = {};
 
   for (const m of measurements) {
     const field = METRIC_TO_FIELD[m.metricType];
-    if (!field) continue;
-
-    if (field === 'sex') {
-      (inputs as any).sex = m.value === 1 ? 'male' : 'female';
-    } else if (field === 'unitSystem') {
-      (inputs as any).unitSystem = m.value === 1 ? 'si' : 'conventional';
-    } else {
+    if (field) {
       (inputs as any)[field] = m.value;
+    }
+  }
+
+  if (profile) {
+    if (profile.sex != null) {
+      (inputs as any).sex = profile.sex === 1 ? 'male' : 'female';
+    }
+    if (profile.birthYear != null) {
+      (inputs as any).birthYear = profile.birthYear;
+    }
+    if (profile.birthMonth != null) {
+      (inputs as any).birthMonth = profile.birthMonth;
+    }
+    if (profile.unitSystem != null) {
+      (inputs as any).unitSystem = profile.unitSystem === 1 ? 'si' : 'conventional';
     }
   }
 
@@ -97,9 +111,8 @@ export function measurementsToInputs(measurements: ApiMeasurement[]): Partial<He
 }
 
 /**
- * Determine which fields changed and return them as metric/value pairs
- * ready for the API. Sex is encoded as 1=male, 2=female.
- * Unit system is encoded as 1=si, 2=conventional.
+ * Determine which health measurement fields changed and return them as metric/value pairs
+ * ready for the API. Only includes health metrics — use diffProfileFields() for demographics.
  */
 export function diffInputsToMeasurements(
   current: Partial<HealthInputs>,
@@ -112,17 +125,36 @@ export function diffInputsToMeasurements(
     const previousVal = previous[field as keyof HealthInputs];
 
     if (currentVal !== undefined && currentVal !== previousVal) {
-      let value: number;
-      if (field === 'sex') {
-        value = currentVal === 'male' ? 1 : 2;
-      } else if (field === 'unitSystem') {
-        value = currentVal === 'si' ? 1 : 2;
-      } else {
-        value = currentVal as number;
-      }
-      changes.push({ metricType, value });
+      changes.push({ metricType, value: currentVal as number });
     }
   }
 
   return changes;
+}
+
+/**
+ * Determine which profile fields changed and return them as API-ready numeric values.
+ * Encodes sex (1=male, 2=female) and unitSystem (1=si, 2=conventional).
+ * Returns null if nothing changed.
+ */
+export function diffProfileFields(
+  current: Partial<HealthInputs>,
+  previous: Partial<HealthInputs>,
+): { sex?: number; birthYear?: number; birthMonth?: number; unitSystem?: number } | null {
+  const changes: Record<string, number> = {};
+
+  if (current.sex !== undefined && current.sex !== previous.sex) {
+    changes.sex = current.sex === 'male' ? 1 : 2;
+  }
+  if (current.birthYear !== undefined && current.birthYear !== previous.birthYear) {
+    changes.birthYear = current.birthYear;
+  }
+  if (current.birthMonth !== undefined && current.birthMonth !== previous.birthMonth) {
+    changes.birthMonth = current.birthMonth;
+  }
+  if (current.unitSystem !== undefined && current.unitSystem !== previous.unitSystem) {
+    changes.unitSystem = current.unitSystem === 'si' ? 1 : 2;
+  }
+
+  return Object.keys(changes).length > 0 ? changes : null;
 }

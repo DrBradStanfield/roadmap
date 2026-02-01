@@ -187,6 +187,17 @@ export interface DbMeasurement {
   created_at: string;
 }
 
+export interface DbProfile {
+  id: string;
+  shopify_customer_id: string;
+  email: string;
+  sex: number | null;
+  birth_year: number | null;
+  birth_month: number | null;
+  unit_system: number | null;
+  created_at: string;
+}
+
 /** Convert a DB measurement row to the camelCase API response format. */
 export function toApiMeasurement(m: DbMeasurement) {
   return {
@@ -195,6 +206,16 @@ export function toApiMeasurement(m: DbMeasurement) {
     value: m.value,
     recordedAt: m.recorded_at,
     createdAt: m.created_at,
+  };
+}
+
+/** Convert DB profile row to camelCase API format (demographics only). */
+export function toApiProfile(p: DbProfile) {
+  return {
+    sex: p.sex,
+    birthYear: p.birth_year,
+    birthMonth: p.birth_month,
+    unitSystem: p.unit_system,
   };
 }
 
@@ -284,4 +305,52 @@ export async function deleteMeasurement(
   }
 
   return (data?.length ?? 0) > 0;
+}
+
+// ---------------------------------------------------------------------------
+// Profile CRUD — demographics stored as columns on the profiles table.
+// RLS enforces auth.uid() on every query.
+// ---------------------------------------------------------------------------
+
+/** Get profile for the authenticated user. */
+export async function getProfile(
+  client: SupabaseClient,
+): Promise<DbProfile | null> {
+  const { data, error } = await client
+    .from('profiles')
+    .select('*')
+    .single();
+
+  if (error) {
+    console.error('Error fetching profile:', error);
+    return null;
+  }
+
+  return data as DbProfile;
+}
+
+/** Update profile demographics. RLS ensures the user owns it. */
+export async function updateProfile(
+  client: SupabaseClient,
+  userId: string,
+  updates: {
+    sex?: number;
+    birth_year?: number;
+    birth_month?: number;
+    unit_system?: number;
+  },
+): Promise<DbProfile | null> {
+  const { data, error } = await client
+    .from('profiles')
+    .update(updates)
+    .eq('id', userId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating profile:', error);
+    return null;
+  }
+
+  return data as DbProfile;
 }

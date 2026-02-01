@@ -19,7 +19,15 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ===== Add demographic columns to profiles =====
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS sex INTEGER CHECK (sex IN (1, 2));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birth_year INTEGER CHECK (birth_year BETWEEN 1900 AND 2100);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birth_month INTEGER CHECK (birth_month BETWEEN 1 AND 12);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS unit_system INTEGER CHECK (unit_system IN (1, 2));
+
 -- ===== Create health_measurements table =====
+-- Only health metrics — demographics are on the profiles table.
 
 CREATE TABLE IF NOT EXISTS health_measurements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -27,9 +35,7 @@ CREATE TABLE IF NOT EXISTS health_measurements (
   metric_type TEXT NOT NULL CHECK (metric_type IN (
     'height', 'weight', 'waist',
     'hba1c', 'ldl', 'hdl', 'triglycerides', 'fasting_glucose',
-    'systolic_bp', 'diastolic_bp',
-    'sex', 'birth_year', 'birth_month',
-    'unit_system'
+    'systolic_bp', 'diastolic_bp'
   )),
   value NUMERIC NOT NULL,
   recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -46,10 +52,6 @@ CREATE TABLE IF NOT EXISTS health_measurements (
       WHEN 'fasting_glucose' THEN value BETWEEN 0 AND 27.8
       WHEN 'systolic_bp'     THEN value BETWEEN 60 AND 250
       WHEN 'diastolic_bp'    THEN value BETWEEN 40 AND 150
-      WHEN 'sex'             THEN value IN (1, 2)
-      WHEN 'birth_year'      THEN value BETWEEN 1900 AND 2100
-      WHEN 'birth_month'     THEN value BETWEEN 1 AND 12
-      WHEN 'unit_system'     THEN value IN (1, 2)
       ELSE false
     END
   )
@@ -93,6 +95,7 @@ END $$;
 
 -- ===== RPC for efficient "latest per metric" query =====
 -- Uses auth.uid() so it works with RLS on the anon key.
+-- Returns only health metrics (not demographics, which live on profiles).
 
 CREATE OR REPLACE FUNCTION get_latest_measurements()
 RETURNS TABLE (

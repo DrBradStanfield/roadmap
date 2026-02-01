@@ -7,8 +7,6 @@ export const METRIC_TYPES = [
   'height', 'weight', 'waist',
   'hba1c', 'ldl', 'hdl', 'triglycerides', 'fasting_glucose',
   'systolic_bp', 'diastolic_bp',
-  'sex', 'birth_year', 'birth_month',
-  'unit_system',
 ] as const;
 
 export type MetricTypeValue = typeof METRIC_TYPES[number];
@@ -141,3 +139,26 @@ export const measurementSchema = z.object({
 });
 
 export type ValidatedMeasurement = z.infer<typeof measurementSchema>;
+
+/**
+ * Schema for updating profile demographics.
+ * All fields are optional integers with the same encoding as the DB.
+ */
+export const profileUpdateSchema = z.object({
+  sex: z.number().int().min(1).max(2).optional(),
+  birthYear: z
+    .number()
+    .int()
+    .min(1900, 'Birth year must be after 1900')
+    .max(new Date().getFullYear(), 'Birth year cannot be in the future')
+    .optional(),
+  birthMonth: z
+    .number()
+    .int()
+    .min(1, 'Month must be between 1 and 12')
+    .max(12, 'Month must be between 1 and 12')
+    .optional(),
+  unitSystem: z.number().int().min(1).max(2).optional(),
+});
+
+export type ValidatedProfileUpdate = z.infer<typeof profileUpdateSchema>;

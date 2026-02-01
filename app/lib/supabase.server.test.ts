@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toApiMeasurement, type DbMeasurement } from './supabase.server';
+import { toApiMeasurement, toApiProfile, type DbMeasurement, type DbProfile } from './supabase.server';
 
 describe('toApiMeasurement', () => {
   it('converts DB row to camelCase API format', () => {
@@ -49,5 +49,47 @@ describe('toApiMeasurement', () => {
     };
 
     expect(toApiMeasurement(dbRow).value).toBe(3.36);
+  });
+});
+
+describe('toApiProfile', () => {
+  it('converts DB profile to camelCase API format', () => {
+    const dbProfile: DbProfile = {
+      id: 'user-123',
+      shopify_customer_id: 'shop-456',
+      email: 'test@example.com',
+      sex: 1,
+      birth_year: 1990,
+      birth_month: 5,
+      unit_system: 2,
+      created_at: '2025-01-01T00:00:00Z',
+    };
+
+    expect(toApiProfile(dbProfile)).toEqual({
+      sex: 1,
+      birthYear: 1990,
+      birthMonth: 5,
+      unitSystem: 2,
+    });
+  });
+
+  it('handles null profile fields', () => {
+    const dbProfile: DbProfile = {
+      id: 'user-123',
+      shopify_customer_id: 'shop-456',
+      email: 'test@example.com',
+      sex: null,
+      birth_year: null,
+      birth_month: null,
+      unit_system: null,
+      created_at: '2025-01-01T00:00:00Z',
+    };
+
+    expect(toApiProfile(dbProfile)).toEqual({
+      sex: null,
+      birthYear: null,
+      birthMonth: null,
+      unitSystem: null,
+    });
   });
 });

@@ -5,6 +5,7 @@ import {
   FIELD_METRIC_MAP,
   measurementsToInputs,
   diffInputsToMeasurements,
+  diffProfileFields,
   type ApiMeasurement,
 } from './mappings';
 
@@ -15,9 +16,9 @@ describe('FIELD_TO_METRIC / METRIC_TO_FIELD', () => {
     }
   });
 
-  it('cover all 14 metric types', () => {
-    expect(Object.keys(FIELD_TO_METRIC)).toHaveLength(14);
-    expect(Object.keys(METRIC_TO_FIELD)).toHaveLength(14);
+  it('cover all 10 health metric types', () => {
+    expect(Object.keys(FIELD_TO_METRIC)).toHaveLength(10);
+    expect(Object.keys(METRIC_TO_FIELD)).toHaveLength(10);
   });
 });
 
@@ -42,28 +43,41 @@ describe('measurementsToInputs', () => {
     expect(inputs.weightKg).toBe(70);
   });
 
-  it('converts sex from numeric', () => {
-    const measurements: ApiMeasurement[] = [
-      { id: '1', metricType: 'sex', value: 1, recordedAt: '', createdAt: '' },
-    ];
-    expect(measurementsToInputs(measurements).sex).toBe('male');
+  it('converts profile data from profile parameter', () => {
+    const measurements: ApiMeasurement[] = [];
+    const profile = { sex: 1, birthYear: 1990, birthMonth: 5, unitSystem: 1 };
 
-    const female: ApiMeasurement[] = [
-      { id: '1', metricType: 'sex', value: 2, recordedAt: '', createdAt: '' },
-    ];
-    expect(measurementsToInputs(female).sex).toBe('female');
+    const inputs = measurementsToInputs(measurements, profile);
+    expect(inputs.sex).toBe('male');
+    expect(inputs.birthYear).toBe(1990);
+    expect(inputs.birthMonth).toBe(5);
+    expect(inputs.unitSystem).toBe('si');
   });
 
-  it('converts unit_system from numeric', () => {
-    const si: ApiMeasurement[] = [
-      { id: '1', metricType: 'unit_system', value: 1, recordedAt: '', createdAt: '' },
-    ];
-    expect(measurementsToInputs(si).unitSystem).toBe('si');
+  it('converts female sex and conventional unit system from profile', () => {
+    const inputs = measurementsToInputs([], { sex: 2, birthYear: null, birthMonth: null, unitSystem: 2 });
+    expect(inputs.sex).toBe('female');
+    expect(inputs.unitSystem).toBe('conventional');
+    expect(inputs.birthYear).toBeUndefined();
+  });
 
-    const conv: ApiMeasurement[] = [
-      { id: '1', metricType: 'unit_system', value: 2, recordedAt: '', createdAt: '' },
+  it('handles null profile fields', () => {
+    const inputs = measurementsToInputs([], { sex: null, birthYear: null, birthMonth: null, unitSystem: null });
+    expect(inputs.sex).toBeUndefined();
+    expect(inputs.birthYear).toBeUndefined();
+    expect(inputs.unitSystem).toBeUndefined();
+  });
+
+  it('merges measurements and profile data', () => {
+    const measurements: ApiMeasurement[] = [
+      { id: '1', metricType: 'height', value: 175, recordedAt: '', createdAt: '' },
     ];
-    expect(measurementsToInputs(conv).unitSystem).toBe('conventional');
+    const profile = { sex: 1, birthYear: 1990, birthMonth: null, unitSystem: null };
+
+    const inputs = measurementsToInputs(measurements, profile);
+    expect(inputs.heightCm).toBe(175);
+    expect(inputs.sex).toBe('male');
+    expect(inputs.birthYear).toBe(1990);
   });
 
   it('ignores unknown metric types', () => {
@@ -98,7 +112,7 @@ describe('measurementsToInputs', () => {
 
 describe('diffInputsToMeasurements', () => {
   it('returns empty array when nothing changed', () => {
-    const data = { heightCm: 175, sex: 'male' as const };
+    const data = { heightCm: 175 };
     expect(diffInputsToMeasurements(data, data)).toHaveLength(0);
   });
 
@@ -118,26 +132,11 @@ describe('diffInputsToMeasurements', () => {
     expect(changes[0]).toEqual({ metricType: 'weight', value: 70 });
   });
 
-  it('encodes unitSystem as numeric', () => {
+  it('does not include profile fields (sex, birthYear, etc)', () => {
     const prev = {};
-    const curr = { unitSystem: 'si' as const };
+    const curr = { sex: 'male' as const, birthYear: 1990, unitSystem: 'si' as const };
     const changes = diffInputsToMeasurements(curr, prev);
-    expect(changes).toEqual([{ metricType: 'unit_system', value: 1 }]);
-
-    const curr2 = { unitSystem: 'conventional' as const };
-    const changes2 = diffInputsToMeasurements(curr2, prev);
-    expect(changes2).toEqual([{ metricType: 'unit_system', value: 2 }]);
-  });
-
-  it('encodes sex as numeric', () => {
-    const prev = {};
-    const curr = { sex: 'male' as const };
-    const changes = diffInputsToMeasurements(curr, prev);
-    expect(changes).toEqual([{ metricType: 'sex', value: 1 }]);
-
-    const curr2 = { sex: 'female' as const };
-    const changes2 = diffInputsToMeasurements(curr2, prev);
-    expect(changes2).toEqual([{ metricType: 'sex', value: 2 }]);
+    expect(changes).toHaveLength(0);
   });
 
   it('ignores undefined current values', () => {
@@ -145,5 +144,42 @@ describe('diffInputsToMeasurements', () => {
     const curr = { heightCm: undefined };
     const changes = diffInputsToMeasurements(curr as any, prev);
     expect(changes).toHaveLength(0);
+  });
+});
+
+describe('diffProfileFields', () => {
+  it('returns null when nothing changed', () => {
+    const data = { sex: 'male' as const, birthYear: 1990 };
+    expect(diffProfileFields(data, data)).toBeNull();
+  });
+
+  it('detects sex change and encodes numerically', () => {
+    const prev = { sex: 'male' as const };
+    const curr = { sex: 'female' as const };
+    expect(diffProfileFields(curr, prev)).toEqual({ sex: 2 });
+  });
+
+  it('detects unit system change', () => {
+    const prev = { unitSystem: 'si' as const };
+    const curr = { unitSystem: 'conventional' as const };
+    expect(diffProfileFields(curr, prev)).toEqual({ unitSystem: 2 });
+  });
+
+  it('detects birth year/month changes', () => {
+    const prev = { birthYear: 1990, birthMonth: 5 };
+    const curr = { birthYear: 1991, birthMonth: 6 };
+    expect(diffProfileFields(curr, prev)).toEqual({ birthYear: 1991, birthMonth: 6 });
+  });
+
+  it('returns only changed fields', () => {
+    const prev = { sex: 'male' as const, birthYear: 1990, unitSystem: 'si' as const };
+    const curr = { sex: 'male' as const, birthYear: 1991, unitSystem: 'si' as const };
+    expect(diffProfileFields(curr, prev)).toEqual({ birthYear: 1991 });
+  });
+
+  it('does not include measurement fields', () => {
+    const prev = { heightCm: 175 };
+    const curr = { heightCm: 180 };
+    expect(diffProfileFields(curr, prev)).toBeNull();
   });
 });

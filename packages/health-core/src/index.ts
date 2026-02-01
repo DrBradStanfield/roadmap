@@ -25,11 +25,13 @@ export {
   METRIC_TYPES,
   healthInputSchema,
   measurementSchema,
+  profileUpdateSchema,
   validateHealthInputs,
   getValidationErrors,
   type MetricTypeValue,
   type ValidatedHealthInputs,
   type ValidatedMeasurement,
+  type ValidatedProfileUpdate,
 } from './validation';
 
 // Mappings (shared field↔metric conversions)
@@ -39,7 +41,9 @@ export {
   FIELD_METRIC_MAP,
   measurementsToInputs,
   diffInputsToMeasurements,
+  diffProfileFields,
   type ApiMeasurement,
+  type ApiProfile,
 } from './mappings';
 
 // Units

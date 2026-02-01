@@ -8,8 +8,11 @@ import {
   addMeasurement,
   deleteMeasurement,
   toApiMeasurement,
+  getProfile,
+  updateProfile,
+  toApiProfile,
 } from '../lib/supabase.server';
-import { measurementSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
+import { measurementSchema, profileUpdateSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
 
 function getCustomerId(request: Request): string | null {
   const url = new URL(request.url);
@@ -35,7 +38,7 @@ async function getCustomerEmail(admin: any, customerId: string): Promise<string 
 
 // GET — Load measurements (authenticated via app proxy HMAC)
 // ?metric_type=weight&limit=50  → list measurements for one metric
-// (no metric_type)              → latest value per metric
+// (no metric_type)              → latest value per metric + profile demographics
 export async function loader({ request }: LoaderFunctionArgs) {
   const { admin } = await authenticate.public.appProxy(request);
 
@@ -66,14 +69,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
 
     const latest = await getLatestMeasurements(client);
-    return json({ success: true, data: latest.map(toApiMeasurement) });
+    const profile = await getProfile(client);
+    return json({
+      success: true,
+      data: latest.map(toApiMeasurement),
+      profile: profile ? toApiProfile(profile) : null,
+    });
   } catch (error) {
     console.error('Error loading measurements:', error);
     return json({ success: false, error: 'Failed to load' }, { status: 500 });
   }
 }
 
-// POST — Add measurement
+// POST — Add measurement or update profile
 // DELETE — Remove measurement
 export async function action({ request }: ActionFunctionArgs) {
   const { admin } = await authenticate.public.appProxy(request);
@@ -95,6 +103,32 @@ export async function action({ request }: ActionFunctionArgs) {
     const body = await request.json();
 
     if (request.method === 'POST') {
+      // Profile update — POST { profile: { sex?, birthYear?, birthMonth?, unitSystem? } }
+      if (body.profile) {
+        const validation = profileUpdateSchema.safeParse(body.profile);
+        if (!validation.success) {
+          return json(
+            { success: false, error: 'Invalid profile data', details: validation.error.issues },
+            { status: 400 },
+          );
+        }
+
+        const { sex, birthYear, birthMonth, unitSystem } = validation.data;
+        const updates: Record<string, number> = {};
+        if (sex !== undefined) updates.sex = sex;
+        if (birthYear !== undefined) updates.birth_year = birthYear;
+        if (birthMonth !== undefined) updates.birth_month = birthMonth;
+        if (unitSystem !== undefined) updates.unit_system = unitSystem;
+
+        const updated = await updateProfile(client, userId, updates);
+        if (!updated) {
+          return json({ success: false, error: 'Failed to update profile' }, { status: 500 });
+        }
+
+        return json({ success: true, profile: toApiProfile(updated) });
+      }
+
+      // Measurement insert — POST { metricType, value, recordedAt? }
       const validation = measurementSchema.safeParse(body);
       if (!validation.success) {
         return json(

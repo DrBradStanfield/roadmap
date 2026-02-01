@@ -35,15 +35,15 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 ## Important Files
 
 **Backend API:**
-- `app/lib/supabase.server.ts` - Supabase dual-client (admin + user), JWT signing, `getOrCreateSupabaseUser()`, measurement CRUD helpers, `toApiMeasurement()`
-- `app/routes/api.measurements.ts` - Measurement CRUD API (storefront, HMAC auth)
+- `app/lib/supabase.server.ts` - Supabase dual-client (admin + user), JWT signing, `getOrCreateSupabaseUser()`, measurement CRUD helpers, profile CRUD helpers (`getProfile()`, `updateProfile()`, `toApiProfile()`), `toApiMeasurement()`
+- `app/routes/api.measurements.ts` - Measurement CRUD + profile update API (storefront, HMAC auth)
 
 **Health Core Library:**
 - `packages/health-core/src/calculations.ts` - Health formulas (IBW, BMI, protein)
 - `packages/health-core/src/suggestions.ts` - Recommendation generation logic (unit-system-aware)
-- `packages/health-core/src/validation.ts` - Zod schemas for health inputs and individual measurements
+- `packages/health-core/src/validation.ts` - Zod schemas for health inputs, individual measurements, and profile updates
 - `packages/health-core/src/units.ts` - Unit definitions, SI↔conventional conversions, locale detection, clinical thresholds
-- `packages/health-core/src/mappings.ts` - Shared field↔metric mappings, `measurementsToInputs()`, `diffInputsToMeasurements()`
+- `packages/health-core/src/mappings.ts` - Shared field↔metric mappings, `measurementsToInputs()`, `diffInputsToMeasurements()`, `diffProfileFields()`
 - `packages/health-core/src/types.ts` - TypeScript interfaces (HealthInputs, HealthResults, Suggestion, Measurement)
 - `packages/health-core/src/index.ts` - Barrel exports for all modules
 
@@ -81,6 +81,10 @@ npm run test:watch       # Run tests in watch mode
 
 Health data is stored as immutable time-series records in `health_measurements`. Each record has a `metric_type`, a `value` (always in SI canonical units), and a `recorded_at` timestamp. Records cannot be edited — to correct a value, delete the old record and insert a new one.
 
+### Profile Demographics
+
+Demographic and preference data (`sex`, `birth_year`, `birth_month`, `unit_system`) is stored as columns on the `profiles` table, not as measurements. These are mutable (updated via `updateProfile()`) and are returned alongside measurements in the GET API response as a `profile` object. Profile updates are sent as `POST { profile: { sex?, birthYear?, birthMonth?, unitSystem? } }` to the same measurements endpoint.
+
 ### Canonical Storage Units
 
 All values in the database and in `HealthInputs` are stored in **SI canonical units**. Conversion to/from display units is handled by `packages/health-core/src/units.ts`.
@@ -97,13 +101,16 @@ All values in the database and in `HealthInputs` are stored in **SI canonical un
 | fasting_glucose | mmol/L | mg/dL | × 18.016 |
 | systolic_bp | mmHg | mmHg | (same) |
 | diastolic_bp | mmHg | mmHg | (same) |
-| sex | 1=male, 2=female | — | — |
-| birth_year | year | — | — |
-| birth_month | 1-12 | — | — |
+
+Demographics (`sex`, `birth_year`, `birth_month`, `unit_system`) are stored as integer columns on the `profiles` table:
+- `sex`: 1=male, 2=female
+- `birth_year`: year (1900–2100)
+- `birth_month`: 1–12
+- `unit_system`: 1=si, 2=conventional
 
 ### Unit System Detection
 
-The UI auto-detects the user's preferred unit system from browser locale (US, Liberia, Myanmar → conventional; everyone else → SI). Users can override via a toggle. The preference is saved to localStorage and also stored as a `unit_system` measurement in the database (1=si, 2=conventional) for logged-in users.
+The UI auto-detects the user's preferred unit system from browser locale (US, Liberia, Myanmar → conventional; everyone else → SI). Users can override via a toggle. The preference is saved to localStorage and also stored on the `profiles` table (`unit_system` column: 1=si, 2=conventional) for logged-in users.
 
 ## CRITICAL: Security Rules
 
@@ -158,16 +165,17 @@ Logged-in Shopify customer:
 
 ### Storefront (via app proxy at `/apps/health-tool-1/api/measurements`)
 
-**GET** (no params) — Latest measurement per metric for the authenticated user
+**GET** (no params) — Latest measurement per metric + profile demographics for the authenticated user (returns `{ data: [...], profile: {...} }`)
 **GET** `?metric_type=weight&limit=50` — History for one metric, ordered by recorded_at DESC
 **POST** `{ metricType, value, recordedAt? }` — Add a measurement (value in SI canonical units)
+**POST** `{ profile: { sex?, birthYear?, birthMonth?, unitSystem? } }` — Update profile demographics
 **DELETE** `{ measurementId }` — Delete a measurement by ID (verifies user ownership)
 
 ## Database
 
 Uses **Supabase** (PostgreSQL). Tables:
-- `profiles` — User accounts linked to Shopify customers (shopify_customer_id, email)
-- `health_measurements` — Immutable time-series health records (metric_type, value in SI, recorded_at)
+- `profiles` — User accounts linked to Shopify customers (shopify_customer_id, email) + demographic columns (sex, birth_year, birth_month, unit_system)
+- `health_measurements` — Immutable time-series health records (metric_type, value in SI, recorded_at) for the 10 health metrics only
 
 The `health_measurements` table has no UPDATE policy — records are immutable. A `get_latest_measurements()` RPC function (using `auth.uid()`, no parameters) efficiently returns the latest value per metric type using `DISTINCT ON`. A `CASE`-based CHECK constraint (`value_range`) enforces per-metric-type value ranges at the database level (e.g., weight 20–300 kg, LDL 0–12.9 mmol/L), mirroring the Zod validation as defense-in-depth. Shopify customers are mapped to Supabase Auth users via `getOrCreateSupabaseUser()` — a DB trigger on `auth.users` auto-creates the `profiles` row when a new auth user is created.
 
