@@ -1,0 +1,31 @@
+<!-- Health History - React Version -->
+{% unless customer %}
+  {% assign login_url = routes.account_url %}
+{% endunless %}
+<div id="health-history-root"
+  {% if customer %}
+    data-logged-in="true"
+  {% else %}
+    data-logged-in="false"
+  {% endif %}
+  {% if login_url %}data-login-url="{{ login_url }}"{% endif %}
+></div>
+
+<!-- Load the bundled React app -->
+{{ 'health-history.js' | asset_url | script_tag }}
+{{ 'health-tool.css' | asset_url | stylesheet_tag }}
+
+{% schema %}
+{
+  "name": "Health History",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Health History"
+    }
+  ]
+}
+{% endschema %}

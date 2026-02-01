@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
-// Main health tool widget. History page built via vite.config.history.ts.
+// Health history page — separate IIFE bundle.
 export default defineConfig({
   plugins: [react()],
   define: {
@@ -10,16 +10,16 @@ export default defineConfig({
   },
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.tsx'),
-      name: 'HealthTool',
-      fileName: () => 'health-tool.js',
+      entry: resolve(__dirname, 'src/history.tsx'),
+      name: 'HealthHistory',
+      fileName: () => 'health-history.js',
       formats: ['iife'],
     },
     outDir: resolve(__dirname, '../extensions/health-tool-widget/assets'),
     emptyOutDir: false,
     rollupOptions: {
       output: {
-        assetFileNames: 'health-tool.[ext]',
+        assetFileNames: 'health-history.[ext]',
       },
     },
     cssCodeSplit: false,

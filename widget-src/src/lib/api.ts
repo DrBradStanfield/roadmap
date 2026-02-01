@@ -3,6 +3,7 @@ import {
   measurementsToInputs,
   diffInputsToMeasurements,
   diffProfileFields,
+  PREFILL_FIELDS,
   type ApiMeasurement,
   type ApiProfile,
 } from '@roadmap/health-core';
@@ -24,10 +25,19 @@ interface SingleMeasurementResponse {
 // Shopify adds logged_in_customer_id + HMAC signature automatically
 const PROXY_PATH = '/apps/health-tool-1';
 
+/** Result from loading latest measurements: pre-fill inputs + raw measurements for "Previous:" labels. */
+export interface LatestMeasurementsResult {
+  /** Only demographic/height fields for pre-filling the form. */
+  inputs: Partial<HealthInputs>;
+  /** Raw latest measurements with dates, for "Previous:" labels and results fallback. */
+  previousMeasurements: ApiMeasurement[];
+}
+
 /**
  * Load latest measurements (one per metric) + profile demographics from cloud storage.
+ * Returns pre-fill inputs (demographics + height only) and raw measurements separately.
  */
-export async function loadLatestMeasurements(): Promise<Partial<HealthInputs> | null> {
+export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult | null> {
   try {
     const response = await fetch(`${PROXY_PATH}/api/measurements`);
     if (!response.ok) return null;
@@ -35,7 +45,18 @@ export async function loadLatestMeasurements(): Promise<Partial<HealthInputs> | 
     const result: MeasurementsResponse = await response.json();
     if (!result.success || !result.data) return null;
 
-    return measurementsToInputs(result.data, result.profile);
+    // Build full inputs from measurements + profile
+    const allInputs = measurementsToInputs(result.data, result.profile);
+
+    // Extract only pre-fill fields (demographics + height)
+    const inputs: Partial<HealthInputs> = {};
+    for (const field of PREFILL_FIELDS) {
+      if (allInputs[field] !== undefined) {
+        (inputs as any)[field] = allInputs[field];
+      }
+    }
+
+    return { inputs, previousMeasurements: result.data };
   } catch (error) {
     console.warn('Error loading measurements:', error);
     return null;
@@ -129,6 +150,27 @@ async function saveProfileChanges(profile: {
   } catch (error) {
     console.warn('Error saving profile:', error);
     return false;
+  }
+}
+
+/**
+ * Load all measurement history across all metrics (for the History page).
+ */
+export async function loadAllHistory(
+  limit = 100,
+  offset = 0,
+): Promise<ApiMeasurement[]> {
+  try {
+    const response = await fetch(
+      `${PROXY_PATH}/api/measurements?all_history=true&limit=${limit}&offset=${offset}`,
+    );
+    if (!response.ok) return [];
+
+    const result: MeasurementsResponse = await response.json();
+    return result.success ? result.data || [] : [];
+  } catch (error) {
+    console.warn('Error loading all history:', error);
+    return [];
   }
 }
 

@@ -276,6 +276,26 @@ export async function getLatestMeasurements(
   return (data ?? []) as DbMeasurement[];
 }
 
+/** Get all measurements across all metrics, ordered by recorded_at DESC. */
+export async function getAllMeasurements(
+  client: SupabaseClient,
+  limit = 100,
+  offset = 0,
+): Promise<DbMeasurement[]> {
+  const { data, error } = await client
+    .from('health_measurements')
+    .select('*')
+    .order('recorded_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    console.error('Error fetching all measurements:', error);
+    return [];
+  }
+
+  return (data ?? []) as DbMeasurement[];
+}
+
 /** Insert a new measurement. Returns the created row.
  *  userId is required for the NOT NULL column; RLS verifies it matches auth.uid(). */
 export async function addMeasurement(

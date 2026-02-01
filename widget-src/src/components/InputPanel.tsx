@@ -1,4 +1,3 @@
-import React from 'react';
 import type { HealthInputs } from '@roadmap/health-core';
 import {
   type UnitSystem,
@@ -8,6 +7,8 @@ import {
   getDisplayRange,
   UNIT_DEFS,
   FIELD_METRIC_MAP,
+  LONGITUDINAL_FIELDS,
+  type ApiMeasurement,
 } from '@roadmap/health-core';
 
 interface InputPanelProps {
@@ -16,9 +17,16 @@ interface InputPanelProps {
   errors: Record<string, string>;
   unitSystem: UnitSystem;
   onUnitSystemChange: (system: UnitSystem) => void;
+  isLoggedIn: boolean;
+  previousMeasurements: ApiMeasurement[];
+  onSaveLongitudinal: () => void;
+  isSavingLongitudinal: boolean;
 }
 
-export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemChange }: InputPanelProps) {
+export function InputPanel({
+  inputs, onChange, errors, unitSystem, onUnitSystemChange,
+  isLoggedIn, previousMeasurements, onSaveLongitudinal, isSavingLongitudinal,
+}: InputPanelProps) {
   const updateField = <K extends keyof HealthInputs>(
     field: K,
     value: HealthInputs[K] | undefined
@@ -62,6 +70,25 @@ export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemC
     const num = parseFloat(value);
     return isNaN(num) ? undefined : num;
   };
+
+  // Get "Previous: value (date)" text for a longitudinal field
+  const getPreviousLabel = (field: string): string | null => {
+    if (!isLoggedIn) return null;
+    const metric = FIELD_METRIC_MAP[field];
+    if (!metric) return null;
+    const measurement = previousMeasurements.find(m => m.metricType === metric);
+    if (!measurement) return null;
+
+    const displayValue = toDisplay(field, measurement.value);
+    const unit = getDisplayLabel(metric, unitSystem);
+    const date = new Date(measurement.recordedAt).toLocaleDateString(undefined, {
+      month: 'short', day: 'numeric', year: 'numeric',
+    });
+    return `Previous: ${displayValue} ${unit} (${date})`;
+  };
+
+  // Check if any longitudinal field has a value (for save button)
+  const hasLongitudinalValues = LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined);
 
   return (
     <div className="health-input-panel">
@@ -115,6 +142,7 @@ export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemC
           )}
         </div>
 
+        {/* Weight — longitudinal for logged-in users */}
         <div className="health-field">
           <label htmlFor="weightKg">{label('weightKg', 'Weight')}</label>
           <input
@@ -130,8 +158,12 @@ export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemC
           {errors.weightKg && (
             <span className="error-message">{errors.weightKg}</span>
           )}
+          {getPreviousLabel('weightKg') && (
+            <span className="previous-value">{getPreviousLabel('weightKg')}</span>
+          )}
         </div>
 
+        {/* Waist — longitudinal for logged-in users */}
         <div className="health-field">
           <label htmlFor="waistCm">{label('waistCm', 'Waist Circumference')}</label>
           <input
@@ -146,6 +178,9 @@ export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemC
           />
           {errors.waistCm && (
             <span className="error-message">{errors.waistCm}</span>
+          )}
+          {getPreviousLabel('waistCm') && (
+            <span className="previous-value">{getPreviousLabel('waistCm')}</span>
           )}
         </div>
 
@@ -201,9 +236,13 @@ export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemC
             min={range('hba1c').min}
             max={range('hba1c').max}
           />
-          <span className="field-hint">
-            Normal: &lt;{unitSystem === 'si' ? '39 mmol/mol' : '5.7%'}
-          </span>
+          {getPreviousLabel('hba1c') ? (
+            <span className="previous-value">{getPreviousLabel('hba1c')}</span>
+          ) : (
+            <span className="field-hint">
+              Normal: &lt;{unitSystem === 'si' ? '39 mmol/mol' : '5.7%'}
+            </span>
+          )}
         </div>
 
         <div className="health-field">
@@ -218,9 +257,13 @@ export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemC
             min={range('ldlC').min}
             max={range('ldlC').max}
           />
-          <span className="field-hint">
-            Optimal: &lt;{unitSystem === 'si' ? '2.6 mmol/L' : '100 mg/dL'}
-          </span>
+          {getPreviousLabel('ldlC') ? (
+            <span className="previous-value">{getPreviousLabel('ldlC')}</span>
+          ) : (
+            <span className="field-hint">
+              Optimal: &lt;{unitSystem === 'si' ? '2.6 mmol/L' : '100 mg/dL'}
+            </span>
+          )}
         </div>
 
         <div className="health-field">
@@ -235,9 +278,13 @@ export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemC
             min={range('hdlC').min}
             max={range('hdlC').max}
           />
-          <span className="field-hint">
-            Optimal: &gt;{unitSystem === 'si' ? '1.0 mmol/L (men), 1.3 mmol/L (women)' : '40 mg/dL (men), 50 mg/dL (women)'}
-          </span>
+          {getPreviousLabel('hdlC') ? (
+            <span className="previous-value">{getPreviousLabel('hdlC')}</span>
+          ) : (
+            <span className="field-hint">
+              Optimal: &gt;{unitSystem === 'si' ? '1.0 mmol/L (men), 1.3 mmol/L (women)' : '40 mg/dL (men), 50 mg/dL (women)'}
+            </span>
+          )}
         </div>
 
         <div className="health-field">
@@ -252,9 +299,13 @@ export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemC
             min={range('triglycerides').min}
             max={range('triglycerides').max}
           />
-          <span className="field-hint">
-            Normal: &lt;{unitSystem === 'si' ? '1.7 mmol/L' : '150 mg/dL'}
-          </span>
+          {getPreviousLabel('triglycerides') ? (
+            <span className="previous-value">{getPreviousLabel('triglycerides')}</span>
+          ) : (
+            <span className="field-hint">
+              Normal: &lt;{unitSystem === 'si' ? '1.7 mmol/L' : '150 mg/dL'}
+            </span>
+          )}
         </div>
 
         <div className="health-field">
@@ -269,9 +320,13 @@ export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemC
             min={range('fastingGlucose').min}
             max={range('fastingGlucose').max}
           />
-          <span className="field-hint">
-            Normal: &lt;{unitSystem === 'si' ? '5.6 mmol/L' : '100 mg/dL'}
-          </span>
+          {getPreviousLabel('fastingGlucose') ? (
+            <span className="previous-value">{getPreviousLabel('fastingGlucose')}</span>
+          ) : (
+            <span className="field-hint">
+              Normal: &lt;{unitSystem === 'si' ? '5.6 mmol/L' : '100 mg/dL'}
+            </span>
+          )}
         </div>
 
         <div className="health-field-group">
@@ -286,6 +341,9 @@ export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemC
               min="60"
               max="250"
             />
+            {getPreviousLabel('systolicBp') && (
+              <span className="previous-value">{getPreviousLabel('systolicBp')}</span>
+            )}
           </div>
 
           <div className="health-field">
@@ -299,10 +357,26 @@ export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemC
               min="40"
               max="150"
             />
+            {getPreviousLabel('diastolicBp') && (
+              <span className="previous-value">{getPreviousLabel('diastolicBp')}</span>
+            )}
           </div>
         </div>
-        <span className="field-hint">Target: &lt;130/80 mmHg</span>
+        {!getPreviousLabel('systolicBp') && !getPreviousLabel('diastolicBp') && (
+          <span className="field-hint">Target: &lt;130/80 mmHg</span>
+        )}
       </section>
+
+      {/* Save button for longitudinal fields (logged-in users only) */}
+      {isLoggedIn && hasLongitudinalValues && (
+        <button
+          className="save-longitudinal-btn"
+          onClick={onSaveLongitudinal}
+          disabled={isSavingLongitudinal}
+        >
+          {isSavingLongitudinal ? 'Saving...' : 'Save New Values'}
+        </button>
+      )}
     </div>
   );
 }

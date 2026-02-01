@@ -39,6 +39,8 @@ export {
   FIELD_TO_METRIC,
   METRIC_TO_FIELD,
   FIELD_METRIC_MAP,
+  PREFILL_FIELDS,
+  LONGITUDINAL_FIELDS,
   measurementsToInputs,
   diffInputsToMeasurements,
   diffProfileFields,

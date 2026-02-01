@@ -43,7 +43,7 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 - `packages/health-core/src/suggestions.ts` - Recommendation generation logic (unit-system-aware)
 - `packages/health-core/src/validation.ts` - Zod schemas for health inputs, individual measurements, and profile updates
 - `packages/health-core/src/units.ts` - Unit definitions, SI↔conventional conversions, locale detection, clinical thresholds
-- `packages/health-core/src/mappings.ts` - Shared field↔metric mappings, `measurementsToInputs()`, `diffInputsToMeasurements()`, `diffProfileFields()`
+- `packages/health-core/src/mappings.ts` - Shared field↔metric mappings, `measurementsToInputs()`, `diffInputsToMeasurements()`, `diffProfileFields()`, field category constants (`PREFILL_FIELDS`, `LONGITUDINAL_FIELDS`)
 - `packages/health-core/src/types.ts` - TypeScript interfaces (HealthInputs, HealthResults, Suggestion, Measurement)
 - `packages/health-core/src/index.ts` - Barrel exports for all modules
 
@@ -54,10 +54,14 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 - `widget-src/src/components/ResultsPanel.tsx` - Results display with unit formatting (right panel)
 - `widget-src/src/lib/storage.ts` - localStorage helpers for guests + unit preference
 - `widget-src/src/lib/api.ts` - Measurement API client for logged-in users (app proxy)
+- `widget-src/src/components/HistoryPanel.tsx` - Health history page (table with filter, pagination)
+- `widget-src/src/history.tsx` - Entry point for the history page bundle
+- `widget-src/vite.config.history.ts` - Separate Vite config for the history bundle
 
 **Shopify Extensions:**
 - `extensions/health-tool-widget/blocks/app-block.liquid` - Passes customer data to React widget
 - `extensions/health-tool-widget/blocks/sync-embed.liquid` - App embed block: background localStorage→Supabase sync on every storefront page for logged-in users
+- `extensions/health-tool-widget/blocks/history-block.liquid` - Shopify theme block for the health history page (separate storefront page)
 
 **Infrastructure:**
 - `supabase/rls-policies.sql` - Database schema, RLS policies, auth trigger, `get_latest_measurements()` RPC
@@ -109,6 +113,19 @@ Demographics and identity fields are stored as columns on the `profiles` table:
 - `unit_system`: 1=si, 2=conventional
 - `first_name`: TEXT, auto-synced from Shopify on every API request
 - `last_name`: TEXT, auto-synced from Shopify on every API request
+
+### Field Categories (Longitudinal Data UX)
+
+Health input fields are split into two categories defined in `packages/health-core/src/mappings.ts`:
+
+- **`PREFILL_FIELDS`** (`heightCm`, `sex`, `birthYear`, `birthMonth`): Demographics and height. Pre-filled from saved data, editable in-place. Auto-saved with 500ms debounce for logged-in users.
+- **`LONGITUDINAL_FIELDS`** (`weightKg`, `waistCm`, `hba1c`, `ldlC`, `hdlC`, `triglycerides`, `fastingGlucose`, `systolicBp`, `diastolicBp`): Time-series metrics. Input fields start **empty** with a "Previous: value (date)" label underneath showing the last recorded value. Users enter new values and click "Save New Values" to create new immutable records. After save, fields clear and previous labels update.
+
+This design reflects the immutable measurement storage model — longitudinal values are never edited, only appended. Results and suggestions use an `effectiveInputs` pattern that merges current form inputs with fallback to previous measurements, so results are always up-to-date even before the user enters new values.
+
+### Health History Page
+
+A separate Shopify storefront page displays full longitudinal measurement history. It uses its own theme block (`history-block.liquid`) and JS bundle (`health-history.js`, built via `widget-src/vite.config.history.ts`). History data is only fetched when the page is opened — the main widget never loads full history. The history page supports metric filtering and pagination via `GET ?all_history=true&limit=100&offset=0`.
 
 ### Unit System Detection
 
@@ -169,6 +186,7 @@ Logged-in Shopify customer:
 
 **GET** (no params) — Latest measurement per metric + profile demographics for the authenticated user (returns `{ data: [...], profile: {...} }`)
 **GET** `?metric_type=weight&limit=50` — History for one metric, ordered by recorded_at DESC
+**GET** `?all_history=true&limit=100&offset=0` — All metrics history with pagination (for the history page)
 **POST** `{ metricType, value, recordedAt? }` — Add a measurement (value in SI canonical units)
 **POST** `{ profile: { sex?, birthYear?, birthMonth?, unitSystem? } }` — Update profile demographics
 **DELETE** `{ measurementId }` — Delete a measurement by ID (verifies user ownership)
@@ -236,7 +254,7 @@ The widget calls the backend through Shopify's app proxy (`/apps/health-tool-1/*
 - Always rebuild widget after changes: `npm run build:widget`
 - Both root and widget-src use Vite 6 (`^6.2.2`). The root `overrides`/`resolutions` in `package.json` enforce this across all workspaces. Keep these aligned when upgrading Vite.
 - Widget uses Vite's alias to import directly from health-core source
-- Widget source is in `/widget-src`, builds to `/extensions/health-tool-widget/assets/`
+- Widget source is in `/widget-src`, builds to `/extensions/health-tool-widget/assets/`. Two separate IIFE bundles are built: `health-tool.js` (main widget, `vite.config.ts`) and `health-history.js` (history page, `vite.config.history.ts`). Vite's IIFE format doesn't support multiple inputs in a single config, hence the two configs chained in the build script.
 - Run `npm test` before deploying to verify calculations
 - Backend uses a dual-client Supabase pattern: `supabaseAdmin` (service key) for user creation/profile lookups only, and `createUserClient(userId)` (anon key + custom HS256 JWT) for all data queries. RLS is enforced at the database level — every query is scoped to `auth.uid()` automatically. See `supabase/rls-policies.sql` for policies and `app/lib/supabase.server.ts` for the JWT signing logic.
 - The widget has an error boundary to prevent component crashes from breaking the entire UI
@@ -278,7 +296,7 @@ Test files:
 - `packages/health-core/src/calculations.test.ts` — IBW, BMI, protein, age, health results (27 tests)
 - `packages/health-core/src/suggestions.test.ts` — All suggestion categories, unit system display (33 tests)
 - `packages/health-core/src/units.test.ts` — Round-trip conversions, clinical values, thresholds, formatting, locale (52 tests)
-- `packages/health-core/src/mappings.test.ts` — Field↔metric mappings, measurementsToInputs, diffInputsToMeasurements, unit_system encoding (14 tests)
+- `packages/health-core/src/mappings.test.ts` — Field↔metric mappings, measurementsToInputs, diffInputsToMeasurements, field categories, unit_system encoding (21 tests)
 - `app/lib/supabase.server.test.ts` — toApiMeasurement helper (3 tests)
 
 ## Architecture Decision: Why No Customer Account Extensions

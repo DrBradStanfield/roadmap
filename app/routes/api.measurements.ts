@@ -4,6 +4,7 @@ import {
   getOrCreateSupabaseUser,
   createUserClient,
   getMeasurements,
+  getAllMeasurements,
   getLatestMeasurements,
   addMeasurement,
   deleteMeasurement,
@@ -62,6 +63,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     const url = new URL(request.url);
     const metricType = url.searchParams.get('metric_type');
+    const allHistory = url.searchParams.get('all_history');
+
+    if (allHistory) {
+      const limit = Math.min(parseInt(url.searchParams.get('limit') || '100') || 100, 200);
+      const offset = Math.max(parseInt(url.searchParams.get('offset') || '0') || 0, 0);
+      const measurements = await getAllMeasurements(client, limit, offset);
+      return json({ success: true, data: measurements.map(toApiMeasurement) });
+    }
 
     if (metricType) {
       if (!METRIC_TYPES.includes(metricType as any)) {

@@ -58,6 +58,23 @@ export const FIELD_METRIC_MAP: Record<string, MetricType> = {
   diastolicBp: 'diastolic_bp',
 };
 
+/**
+ * Fields that are always pre-filled from saved data (demographics + height).
+ * These are mutable profile-level data or rarely-changing measurements.
+ */
+export const PREFILL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
+  'heightCm', 'sex', 'birthYear', 'birthMonth',
+];
+
+/**
+ * Fields that use longitudinal UX: empty input + "Previous: value (date)" label.
+ * These are immutable time-series measurements that accumulate over time.
+ */
+export const LONGITUDINAL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
+  'weightKg', 'waistCm', 'hba1c', 'ldlC', 'hdlC',
+  'triglycerides', 'fastingGlucose', 'systolicBp', 'diastolicBp',
+];
+
 /** API measurement record shape (camelCase, as returned by API endpoints). */
 export interface ApiMeasurement {
   id: string;

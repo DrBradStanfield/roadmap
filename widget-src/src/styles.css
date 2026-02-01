@@ -497,3 +497,152 @@
 .migration-btn.secondary:hover {
   background: #e3f2fd;
 }
+
+/* Previous Value Label (longitudinal fields) */
+.previous-value {
+  display: block;
+  font-size: 12px;
+  color: #0066cc;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* Save Longitudinal Button */
+.save-longitudinal-btn {
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  background: #0066cc;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 8px;
+}
+
+.save-longitudinal-btn:hover {
+  background: #0052a3;
+}
+
+.save-longitudinal-btn:active {
+  transform: scale(0.98);
+}
+
+.save-longitudinal-btn:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+/* History Panel */
+.history-panel {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+  color: #1a1a1a;
+}
+
+.history-panel h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 20px;
+  color: #111;
+}
+
+.history-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.history-filter label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.history-filter select {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.history-table th {
+  background: #f8f9fa;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 2px solid #eee;
+}
+
+.history-table td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.history-table tr:last-child td {
+  border-bottom: none;
+}
+
+.history-table tr:hover td {
+  background: #f8f9fa;
+}
+
+.history-load-more {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  background: #f8f9fa;
+  color: #0066cc;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.history-load-more:hover {
+  background: #e3f2fd;
+}
+
+.history-load-more:disabled {
+  color: #999;
+  cursor: not-allowed;
+}
+
+.history-loading,
+.history-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: #666;
+  font-size: 15px;
+}
+
+.history-guest {
+  text-align: center;
+  padding: 48px 24px;
+  color: #666;
+}
