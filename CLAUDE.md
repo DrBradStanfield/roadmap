@@ -269,6 +269,18 @@ Test files:
 - `packages/health-core/src/mappings.test.ts` — Field↔metric mappings, measurementsToInputs, diffInputsToMeasurements, unit_system encoding (14 tests)
 - `app/lib/supabase.server.test.ts` — toApiMeasurement helper (3 tests)
 
+## Architecture Decision: Why No Customer Account Extensions
+
+Previously the app had two Shopify customer account extensions (a profile summary block and a full-page health tool). These were removed because:
+
+1. **Cross-origin localStorage barrier**: Customer account pages run on `shopify.com`, a different origin from the storefront (`your-store.myshopify.com`). Guest health data saved to localStorage on the storefront was completely inaccessible from customer account pages. This made guest→logged-in data migration impossible through the customer account.
+
+2. **Separate JWT auth endpoint was unnecessary complexity**: The customer account extensions required a dedicated `/api/customer-measurements` endpoint with Shopify session token (JWT) authentication, plus a rate limiter — all duplicating the existing HMAC-authenticated storefront endpoint.
+
+3. **Simpler alternative**: An app embed sync block (`sync-embed.liquid`) runs on every storefront page. When a logged-in customer has localStorage data, it syncs to Supabase in the background. This works because it runs on the same origin as the storefront widget, so it has full access to localStorage. The storefront widget link can be added to customer account navigation manually.
+
+4. **Sequential POST pattern**: The sync embed sends measurements one at a time (not in parallel) because parallel POSTs for a new user cause race conditions in `getOrCreateSupabaseUser()` — multiple requests simultaneously calling `listUsers()` (which lists ALL Supabase auth users) caused backend timeouts and 500 errors from Shopify's proxy.
+
 ## Future Plans
 
 2. **Mobile App**: React Native + Expo with PowerSync for offline sync
