@@ -125,7 +125,7 @@ This design reflects the immutable measurement storage model — longitudinal va
 
 ### Health History Page
 
-A separate Shopify storefront page displays full longitudinal measurement history. It uses its own theme block (`history-block.liquid`) and JS bundle (`health-history.js`, built via `widget-src/vite.config.history.ts`). History data is only fetched when the page is opened — the main widget never loads full history. The history page supports metric filtering and pagination via `GET ?all_history=true&limit=100&offset=0`.
+A separate Shopify storefront page displays full longitudinal measurement history using interactive **Chart.js line charts** (one chart per metric). Users select which metrics to view via checkboxes. Hovering over data points shows exact values and dates in tooltips. It uses its own theme block (`history-block.liquid`) and JS bundle (`health-history.js`, built via `widget-src/vite.config.history.ts`). History data is only fetched when the page is opened — the main widget never loads full history. The history page supports metric filtering and pagination via `GET ?all_history=true&limit=100&offset=0`. Chart.js dependencies (`chart.js`, `chartjs-adapter-date-fns`, `date-fns`) are in `widget-src/package.json`.
 
 ### Unit System Detection
 
