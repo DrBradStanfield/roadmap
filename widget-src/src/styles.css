@@ -649,3 +649,20 @@
   padding: 48px 24px;
   color: #666;
 }
+
+/* Skeleton Loading */
+.skeleton-block {
+  background: #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-block:last-child {
+  margin-bottom: 0;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

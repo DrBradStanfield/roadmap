@@ -2,6 +2,10 @@
 {% unless customer %}
   {% assign login_url = routes.account_url %}
 {% endunless %}
+
+<!-- CSS first so skeleton is styled immediately -->
+{{ 'health-tool.css' | asset_url | stylesheet_tag }}
+
 <div id="health-tool-root"
   {% if customer %}
     data-logged-in="true"
@@ -9,11 +13,29 @@
     data-logged-in="false"
   {% endif %}
   {% if login_url %}data-login-url="{{ login_url }}"{% endif %}
-></div>
+>
+  <!-- Static skeleton: replaced when React mounts -->
+  <div class="health-tool">
+    <div class="health-tool-header">
+      <h2>Health Roadmap Tool</h2>
+      <p>Enter your health information below to receive personalized
+        suggestions to discuss with your healthcare provider.</p>
+    </div>
+    <div class="health-tool-content">
+      <div class="health-tool-left">
+        <div class="skeleton-block" style="height:160px"></div>
+        <div class="skeleton-block" style="height:120px"></div>
+        <div class="skeleton-block" style="height:120px"></div>
+      </div>
+      <div class="health-tool-right">
+        <div class="skeleton-block" style="height:200px"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
-<!-- Load the bundled React app -->
-{{ 'health-tool.js' | asset_url | script_tag }}
-{{ 'health-tool.css' | asset_url | stylesheet_tag }}
+<!-- Load React app with defer so skeleton renders while JS downloads -->
+<script src="{{ 'health-tool.js' | asset_url }}" defer></script>
 
 {% schema %}
 {

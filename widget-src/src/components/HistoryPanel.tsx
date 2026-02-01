@@ -96,6 +96,12 @@ function MetricChart({
     const color = METRIC_COLORS[metricType] || '#0066cc';
     const unit = getUnitLabel(metricType, unitSystem);
 
+    // For single data points, add ±7 day padding so the x-axis date is visible
+    const timestamps = sorted.map((m) => new Date(m.recordedAt).getTime());
+    const DAY = 86400000;
+    const xMin = sorted.length === 1 ? timestamps[0] - 7 * DAY : undefined;
+    const xMax = sorted.length === 1 ? timestamps[0] + 7 * DAY : undefined;
+
     // Destroy previous chart
     if (chartRef.current) {
       chartRef.current.destroy();
@@ -143,12 +149,23 @@ function MetricChart({
         scales: {
           x: {
             type: 'time',
+            min: xMin,
+            max: xMax,
             time: {
+              minUnit: 'day',
               tooltipFormat: 'MMM d, yyyy',
-              unit: sorted.length > 60 ? 'month' : sorted.length > 14 ? 'week' : 'day',
+              displayFormats: {
+                day: 'MMM d',
+                week: 'MMM d',
+                month: 'MMM yyyy',
+                year: 'yyyy',
+              },
             },
             grid: { display: false },
-            ticks: { font: { size: 11 } },
+            ticks: {
+              font: { size: 11 },
+              maxTicksLimit: 8,
+            },
           },
           y: {
             beginAtZero: false,
