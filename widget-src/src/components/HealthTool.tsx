@@ -21,6 +21,7 @@ import { loadLatestMeasurements, saveChangedMeasurements } from '../lib/api';
 // Auth state from Liquid template
 interface AuthState {
   isLoggedIn: boolean;
+  loginUrl?: string;
 }
 
 // Get auth state from DOM data attributes
@@ -31,7 +32,8 @@ function getAuthState(): AuthState {
   }
 
   const isLoggedIn = root.dataset.loggedIn === 'true';
-  return { isLoggedIn };
+  const loginUrl = root.dataset.loginUrl || undefined;
+  return { isLoggedIn, loginUrl };
 }
 
 export function HealthTool() {
@@ -78,7 +80,14 @@ export function HealthTool() {
           }
         } else if (localData && Object.keys(localData).length > 0) {
           setInputs(localData);
-          previousInputsRef.current = {};
+          // Explicitly sync localStorage data to cloud on first login
+          const synced = await saveChangedMeasurements(localData, {});
+          if (synced) {
+            previousInputsRef.current = { ...localData };
+            clearLocalStorage();
+          } else {
+            previousInputsRef.current = {};
+          }
         }
       } else {
         const saved = loadFromLocalStorage();

@@ -9,6 +9,7 @@ import {
 // Auth state type (matches HealthTool)
 interface AuthState {
   isLoggedIn: boolean;
+  loginUrl?: string;
 }
 
 interface ResultsPanelProps {
@@ -78,7 +79,7 @@ function AccountStatus({ authState, saveStatus }: { authState?: AuthState; saveS
         <span className="guest-text">Data saved to this device only</span>
       </div>
       <p className="login-prompt">
-        <a href="/account/login" className="login-link">Log in</a> to save your data across devices
+        <a href={authState.loginUrl || "/account/login"} className="login-link">Log in</a> to save your data across devices
       </p>
     </div>
   );

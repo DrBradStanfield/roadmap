@@ -52,17 +52,6 @@ export function clearLocalStorage(): void {
 }
 
 /**
- * Check if there is stored data in localStorage
- */
-export function hasStoredData(): boolean {
-  try {
-    return localStorage.getItem(STORAGE_KEY) !== null;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Save the user's preferred unit system to localStorage.
  */
 export function saveUnitPreference(system: UnitSystem): void {

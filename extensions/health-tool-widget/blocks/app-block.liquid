@@ -1,10 +1,14 @@
 <!-- Health Roadmap Tool - React Version -->
+{% unless customer %}
+  {% assign login_url = routes.account_url %}
+{% endunless %}
 <div id="health-tool-root"
   {% if customer %}
     data-logged-in="true"
   {% else %}
     data-logged-in="false"
   {% endif %}
+  {% if login_url %}data-login-url="{{ login_url }}"{% endif %}
 ></div>
 
 <!-- Load the bundled React app -->

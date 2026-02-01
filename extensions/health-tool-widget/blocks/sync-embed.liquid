@@ -1,0 +1,85 @@
+{% if customer %}
+<script>
+(function() {
+  var STORAGE_KEY = 'health_roadmap_data';
+  var SYNC_FLAG = 'health_roadmap_sync_done';
+  var PROXY = '/apps/health-tool-1/api/measurements';
+
+  // Field name → metric_type mapping (matches FIELD_TO_METRIC in health-core)
+  var FIELD_MAP = {
+    heightCm: 'height', weightKg: 'weight', waistCm: 'waist',
+    hba1c: 'hba1c', ldlC: 'ldl', hdlC: 'hdl',
+    triglycerides: 'triglycerides', fastingGlucose: 'fasting_glucose',
+    systolicBp: 'systolic_bp', diastolicBp: 'diastolic_bp',
+    sex: 'sex', birthYear: 'birth_year', birthMonth: 'birth_month',
+    unitSystem: 'unit_system'
+  };
+
+  try {
+    // Skip if the health widget is on this page — it handles its own sync
+    if (document.getElementById('health-tool-root')) return;
+    if (sessionStorage.getItem(SYNC_FLAG)) return;
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    var stored = JSON.parse(raw);
+    var inputs = stored && stored.inputs;
+    if (!inputs || Object.keys(inputs).length === 0) return;
+
+    // Check if cloud already has data
+    fetch(PROXY).then(function(r) { return r.json(); }).then(function(result) {
+      if (result.success && result.data && result.data.length > 0) {
+        // Cloud has data — clear localStorage and mark done
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.setItem(SYNC_FLAG, '1');
+        return;
+      }
+
+      // Cloud empty — sync each field sequentially to avoid race conditions
+      var entries = [];
+      for (var field in FIELD_MAP) {
+        var val = inputs[field];
+        if (val === undefined || val === null || val === '') continue;
+        var metricType = FIELD_MAP[field];
+        var numVal;
+        if (field === 'sex') {
+          numVal = val === 'male' ? 1 : 2;
+        } else if (field === 'unitSystem') {
+          numVal = val === 'si' ? 1 : 2;
+        } else {
+          numVal = Number(val);
+          if (isNaN(numVal)) continue;
+        }
+        entries.push({ metricType: metricType, value: numVal });
+      }
+
+      if (entries.length === 0) return;
+
+      // POST one at a time — the GET above already created the user in
+      // the server cache, so sequential POSTs avoid expensive race paths.
+      (function postNext(i) {
+        if (i >= entries.length) {
+          localStorage.removeItem(STORAGE_KEY);
+          sessionStorage.setItem(SYNC_FLAG, '1');
+          return;
+        }
+        fetch(PROXY, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(entries[i])
+        }).then(function() { postNext(i + 1); });
+      })(0);
+    });
+  } catch (e) {
+    // Silent fail — don't break the page
+  }
+})();
+</script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Health Data Sync",
+  "target": "body",
+  "settings": []
+}
+{% endschema %}

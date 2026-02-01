@@ -112,21 +112,28 @@ export async function getOrCreateSupabaseUser(
   });
 
   if (error) {
-    if (error.message.includes('already been registered')) {
-      // User exists in auth.users but profile row is missing or has different shopify_customer_id.
-      // Look up existing auth user by email.
-      const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-      if (listError) {
-        throw new Error(`Failed to list users: ${listError.message}`);
+    // Race condition or existing user — try to find the auth user by email.
+    // This handles both "already been registered" and "Database error creating new user"
+    // (the latter occurs when parallel requests race to create the same user).
+    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    if (listError) {
+      throw new Error(`Failed to list users: ${listError.message}`);
+    }
+    const existingUser = listData.users.find((u) => u.email === email);
+    if (!existingUser) {
+      // Also re-check profiles in case a parallel request already completed
+      const { data: retryProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('shopify_customer_id', shopifyCustomerId)
+        .single();
+      if (retryProfile) {
+        cacheUserId(shopifyCustomerId, retryProfile.id);
+        return retryProfile.id;
       }
-      const existingUser = listData.users.find((u) => u.email === email);
-      if (!existingUser) {
-        throw new Error(`User with email ${email} reported as registered but not found`);
-      }
-      userId = existingUser.id;
-    } else {
       throw new Error(`Failed to create Supabase user: ${error.message}`);
     }
+    userId = existingUser.id;
   } else {
     userId = authUser.user.id;
   }
@@ -253,7 +260,7 @@ export async function addMeasurement(
     .single();
 
   if (error) {
-    console.error('Error adding measurement:', error);
+    console.error('Error adding measurement:', { error: error.message, code: error.code, userId, metricType, value });
     return null;
   }
 

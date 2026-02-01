@@ -11,8 +11,7 @@ A personalized health management tool embedded in a Shopify storefront. Users in
 - **SI canonical storage**: All values stored in SI units (kg, cm, mmol/L, mmol/mol, mmHg) to eliminate unit ambiguity
 - **Guest mode**: Works without signup (data saved to localStorage)
 - **Shopify login sync**: Logged-in customers automatically save data to cloud (HMAC-verified)
-- **Customer Account dashboard**: View health summary in Shopify account
-- **Full-page Health Roadmap**: Logged-in customers access a full interactive health tool from their customer account navigation
+- **Background sync**: App embed block syncs guest localStorage data to Supabase on any storefront page after login
 - **Personalized suggestions**: Based on clinical guidelines for BMI, HbA1c, LDL, blood pressure, etc.
 
 ## Prerequisites
@@ -84,7 +83,7 @@ This creates:
 ### 7. Deploy
 
 ```bash
-# Deploy Shopify extensions (widget + customer account block)
+# Deploy Shopify extensions (widget + sync embed)
 npm run build:widget
 npx shopify app deploy --force
 
@@ -113,14 +112,12 @@ fly secrets set SUPABASE_JWT_SECRET=your-jwt-secret
 │  ├── Logged in: Auto-detects Shopify customer                   │
 │  └── Calls backend measurement API for cloud sync               │
 ├─────────────────────────────────────────────────────────────────┤
-│  Backend API (Remix App on Fly.io)                                │
-│  ├── GET/POST/DELETE /api/measurements (storefront, HMAC auth)  │
-│  ├── GET/POST/DELETE /api/customer-measurements (JWT auth)      │
-│  └── Dual Supabase clients (admin + RLS-enforced user client)   │
+│  App Embed Sync Block (every storefront page)                    │
+│  └── Background localStorage→Supabase sync for logged-in users  │
 ├─────────────────────────────────────────────────────────────────┤
-│  Customer Account Extensions                                     │
-│  ├── Profile block: health summary in customer profile           │
-│  └── Full page: complete health tool (inputs + results)          │
+│  Backend API (Remix App on Fly.io)                                │
+│  ├── GET/POST/DELETE /api/measurements (HMAC auth)              │
+│  └── Dual Supabase clients (admin + RLS-enforced user client)   │
 ├─────────────────────────────────────────────────────────────────┤
 │  Shared Library (packages/health-core)                            │
 │  ├── Unit conversions (SI ↔ conventional)                        │
@@ -152,15 +149,6 @@ Logged-in customer (storefront widget):
          → Maps Shopify customer → Supabase Auth user
          → Creates RLS-scoped client (anon key + custom JWT)
          → RLS enforces auth.uid() on every query
-
-Logged-in customer (customer account page):
-  Extension → sessionToken.get() obtains JWT
-           → GET/POST/DELETE https://health-tool-app.fly.dev/api/customer-measurements
-           → Backend verifies JWT (HS256, SHOPIFY_API_SECRET)
-           → Customer ID from JWT sub claim (gid://shopify/Customer/<id>)
-           → Maps Shopify customer → Supabase Auth user
-           → Creates RLS-scoped client (anon key + custom JWT)
-           → RLS enforces auth.uid() on every query
 ```
 
 ### Why This Is Secure
@@ -169,7 +157,6 @@ Logged-in customer (customer account page):
 - **No client-side secrets**: No API keys, tokens, or customer IDs are exposed in client code.
 - **No CORS**: Requests go through Shopify's proxy (same origin as the storefront).
 - **Server-side authorization**: The backend never trusts client-supplied identity. Customer ID always comes from the HMAC-verified query parameters.
-- **Rate limiting**: The customer account JWT endpoint is rate-limited (60 requests/minute per IP) to prevent abuse.
 - **Row Level Security**: Supabase RLS policies enforce data isolation at the database level. All data queries use an anon key + custom JWT scoped to `auth.uid()` — the service key is only used for user creation.
 - **Error boundaries**: React error boundaries prevent component crashes from taking down the entire tool.
 
@@ -179,11 +166,9 @@ Logged-in customer (customer account page):
 /roadmap
 ├── /app                          # Remix app (Shopify admin + API)
 │   ├── /lib
-│   │   ├── supabase.server.ts    # Dual Supabase clients, JWT signing, CRUD
-│   │   └── rate-limit.server.ts  # Rate limiter for JWT endpoint
+│   │   └── supabase.server.ts    # Dual Supabase clients, JWT signing, CRUD
 │   └── /routes
-│       ├── api.measurements.ts            # Storefront API (HMAC auth)
-│       └── api.customer-measurements.ts   # Customer account API (JWT auth)
+│       └── api.measurements.ts   # Measurement CRUD API (HMAC auth)
 ├── /packages
 │   └── /health-core              # Shared library
 │       └── /src
@@ -200,9 +185,7 @@ Logged-in customer (customer account page):
 │           ├── storage.ts        # localStorage + unit preference
 │           └── api.ts            # Measurement API client (app proxy)
 ├── /extensions
-│   ├── /health-tool-widget       # Shopify theme extension
-│   ├── /health-tool-customer-account  # Customer account summary block
-│   └── /health-tool-full-page    # Full-page health tool (customer account)
+│   └── /health-tool-widget       # Shopify theme extension (widget + sync embed)
 ├── /supabase
 │   └── rls-policies.sql          # DB schema + RLS policies
 └── Dockerfile                    # Docker build for Fly.io
