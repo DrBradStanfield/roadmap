@@ -62,6 +62,8 @@ describe('toApiProfile', () => {
       birth_year: 1990,
       birth_month: 5,
       unit_system: 2,
+      first_name: 'John',
+      last_name: 'Doe',
       created_at: '2025-01-01T00:00:00Z',
     };
 
@@ -70,6 +72,8 @@ describe('toApiProfile', () => {
       birthYear: 1990,
       birthMonth: 5,
       unitSystem: 2,
+      firstName: 'John',
+      lastName: 'Doe',
     });
   });
 
@@ -82,6 +86,8 @@ describe('toApiProfile', () => {
       birth_year: null,
       birth_month: null,
       unit_system: null,
+      first_name: null,
+      last_name: null,
       created_at: '2025-01-01T00:00:00Z',
     };
 
@@ -90,6 +96,8 @@ describe('toApiProfile', () => {
       birthYear: null,
       birthMonth: null,
       unitSystem: null,
+      firstName: null,
+      lastName: null,
     });
   });
 });

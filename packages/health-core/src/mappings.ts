@@ -73,6 +73,8 @@ export interface ApiProfile {
   birthYear: number | null;
   birthMonth: number | null;
   unitSystem: number | null;
+  firstName: string | null;
+  lastName: string | null;
 }
 
 /**

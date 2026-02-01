@@ -19,19 +19,23 @@ function getCustomerId(request: Request): string | null {
   return url.searchParams.get('logged_in_customer_id') || null;
 }
 
-async function getCustomerEmail(admin: any, customerId: string): Promise<string | null> {
+async function getCustomerInfo(admin: any, customerId: string): Promise<{ email: string; firstName: string | null; lastName: string | null } | null> {
   try {
     const response = await admin.graphql(`
       query getCustomer($id: ID!) {
         customer(id: $id) {
           email
+          firstName
+          lastName
         }
       }
     `, { variables: { id: `gid://shopify/Customer/${customerId}` } });
     const result = await response.json();
-    return result?.data?.customer?.email || null;
+    const customer = result?.data?.customer;
+    if (!customer?.email) return null;
+    return { email: customer.email, firstName: customer.firstName || null, lastName: customer.lastName || null };
   } catch (error) {
-    console.error('Error looking up customer email:', error);
+    console.error('Error looking up customer info:', error);
     return null;
   }
 }
@@ -48,12 +52,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   try {
-    const email = admin ? await getCustomerEmail(admin, customerId) : null;
-    if (!email) {
-      return json({ success: false, error: 'Could not retrieve customer email' }, { status: 500 });
+    const customerInfo = admin ? await getCustomerInfo(admin, customerId) : null;
+    if (!customerInfo) {
+      return json({ success: false, error: 'Could not retrieve customer info' }, { status: 500 });
     }
 
-    const userId = await getOrCreateSupabaseUser(customerId, email);
+    const userId = await getOrCreateSupabaseUser(customerId, customerInfo.email, customerInfo.firstName, customerInfo.lastName);
     const client = createUserClient(userId);
 
     const url = new URL(request.url);
@@ -92,12 +96,12 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    const email = admin ? await getCustomerEmail(admin, customerId) : null;
-    if (!email) {
-      return json({ success: false, error: 'Could not retrieve customer email' }, { status: 500 });
+    const customerInfo = admin ? await getCustomerInfo(admin, customerId) : null;
+    if (!customerInfo) {
+      return json({ success: false, error: 'Could not retrieve customer info' }, { status: 500 });
     }
 
-    const userId = await getOrCreateSupabaseUser(customerId, email);
+    const userId = await getOrCreateSupabaseUser(customerId, customerInfo.email, customerInfo.firstName, customerInfo.lastName);
     const client = createUserClient(userId);
 
     const body = await request.json();
@@ -113,12 +117,14 @@ export async function action({ request }: ActionFunctionArgs) {
           );
         }
 
-        const { sex, birthYear, birthMonth, unitSystem } = validation.data;
-        const updates: Record<string, number> = {};
+        const { sex, birthYear, birthMonth, unitSystem, firstName, lastName } = validation.data;
+        const updates: Record<string, number | string> = {};
         if (sex !== undefined) updates.sex = sex;
         if (birthYear !== undefined) updates.birth_year = birthYear;
         if (birthMonth !== undefined) updates.birth_month = birthMonth;
         if (unitSystem !== undefined) updates.unit_system = unitSystem;
+        if (firstName !== undefined) updates.first_name = firstName;
+        if (lastName !== undefined) updates.last_name = lastName;
 
         const updated = await updateProfile(client, userId, updates);
         if (!updated) {

@@ -25,6 +25,8 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS sex INTEGER CHECK (sex IN (1, 2));
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birth_year INTEGER CHECK (birth_year BETWEEN 1900 AND 2100);
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birth_month INTEGER CHECK (birth_month BETWEEN 1 AND 12);
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS unit_system INTEGER CHECK (unit_system IN (1, 2));
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS first_name TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_name TEXT;
 
 -- ===== Create health_measurements table =====
 -- Only health metrics — demographics are on the profiles table.

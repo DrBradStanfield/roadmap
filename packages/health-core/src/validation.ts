@@ -159,6 +159,8 @@ export const profileUpdateSchema = z.object({
     .max(12, 'Month must be between 1 and 12')
     .optional(),
   unitSystem: z.number().int().min(1).max(2).optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
 });
 
 export type ValidatedProfileUpdate = z.infer<typeof profileUpdateSchema>;

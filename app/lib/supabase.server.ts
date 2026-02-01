@@ -80,6 +80,8 @@ function cacheUserId(shopifyCustomerId: string, userId: string): void {
 export async function getOrCreateSupabaseUser(
   shopifyCustomerId: string,
   email: string,
+  firstName?: string | null,
+  lastName?: string | null,
 ): Promise<string> {
   if (!shopifyCustomerId || !email) {
     throw new Error('shopifyCustomerId and email are both required');
@@ -94,11 +96,21 @@ export async function getOrCreateSupabaseUser(
   // Check if profile already exists
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id')
+    .select('id, first_name, last_name')
     .eq('shopify_customer_id', shopifyCustomerId)
     .single();
 
   if (profile) {
+    // Sync first/last name from Shopify only if changed
+    const nameUpdates: Record<string, string> = {};
+    if (firstName != null && firstName !== profile.first_name) nameUpdates.first_name = firstName;
+    if (lastName != null && lastName !== profile.last_name) nameUpdates.last_name = lastName;
+    if (Object.keys(nameUpdates).length > 0) {
+      await supabaseAdmin
+        .from('profiles')
+        .update(nameUpdates)
+        .eq('id', profile.id);
+    }
     cacheUserId(shopifyCustomerId, profile.id);
     return profile.id;
   }
@@ -143,7 +155,7 @@ export async function getOrCreateSupabaseUser(
   const { error: upsertError } = await supabaseAdmin
     .from('profiles')
     .upsert(
-      { id: userId, shopify_customer_id: shopifyCustomerId, email },
+      { id: userId, shopify_customer_id: shopifyCustomerId, email, first_name: firstName ?? null, last_name: lastName ?? null },
       { onConflict: 'id' },
     );
 
@@ -195,6 +207,8 @@ export interface DbProfile {
   birth_year: number | null;
   birth_month: number | null;
   unit_system: number | null;
+  first_name: string | null;
+  last_name: string | null;
   created_at: string;
 }
 
@@ -216,6 +230,8 @@ export function toApiProfile(p: DbProfile) {
     birthYear: p.birth_year,
     birthMonth: p.birth_month,
     unitSystem: p.unit_system,
+    firstName: p.first_name,
+    lastName: p.last_name,
   };
 }
 
@@ -338,6 +354,8 @@ export async function updateProfile(
     birth_year?: number;
     birth_month?: number;
     unit_system?: number;
+    first_name?: string;
+    last_name?: string;
   },
 ): Promise<DbProfile | null> {
   const { data, error } = await client

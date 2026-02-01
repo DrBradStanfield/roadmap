@@ -102,11 +102,13 @@ All values in the database and in `HealthInputs` are stored in **SI canonical un
 | systolic_bp | mmHg | mmHg | (same) |
 | diastolic_bp | mmHg | mmHg | (same) |
 
-Demographics (`sex`, `birth_year`, `birth_month`, `unit_system`) are stored as integer columns on the `profiles` table:
+Demographics and identity fields are stored as columns on the `profiles` table:
 - `sex`: 1=male, 2=female
 - `birth_year`: year (1900–2100)
 - `birth_month`: 1–12
 - `unit_system`: 1=si, 2=conventional
+- `first_name`: TEXT, auto-synced from Shopify on every API request
+- `last_name`: TEXT, auto-synced from Shopify on every API request
 
 ### Unit System Detection
 
