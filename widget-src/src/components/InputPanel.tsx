@@ -1,18 +1,61 @@
 import React from 'react';
 import type { HealthInputs } from '@roadmap/health-core';
+import {
+  type UnitSystem,
+  fromCanonicalValue,
+  toCanonicalValue,
+  getDisplayLabel,
+  getDisplayRange,
+  UNIT_DEFS,
+  FIELD_METRIC_MAP,
+} from '@roadmap/health-core';
 
 interface InputPanelProps {
   inputs: Partial<HealthInputs>;
   onChange: (inputs: Partial<HealthInputs>) => void;
   errors: Record<string, string>;
+  unitSystem: UnitSystem;
+  onUnitSystemChange: (system: UnitSystem) => void;
 }
 
-export function InputPanel({ inputs, onChange, errors }: InputPanelProps) {
+export function InputPanel({ inputs, onChange, errors, unitSystem, onUnitSystemChange }: InputPanelProps) {
   const updateField = <K extends keyof HealthInputs>(
     field: K,
     value: HealthInputs[K] | undefined
   ) => {
     onChange({ ...inputs, [field]: value });
+  };
+
+  // Parse a display-unit value and convert to SI canonical for storage
+  const parseAndConvert = (field: string, value: string): number | undefined => {
+    const num = parseFloat(value);
+    if (isNaN(num)) return undefined;
+    const metric = FIELD_METRIC_MAP[field];
+    if (!metric) return num;
+    return toCanonicalValue(metric, num, unitSystem);
+  };
+
+  // Convert a SI canonical value to display units for rendering
+  const toDisplay = (field: string, siValue: number | undefined): string => {
+    if (siValue === undefined) return '';
+    const metric = FIELD_METRIC_MAP[field];
+    if (!metric) return String(siValue);
+    const display = fromCanonicalValue(metric, siValue, unitSystem);
+    const dp = UNIT_DEFS[metric].decimalPlaces[unitSystem];
+    const rounded = parseFloat(display.toFixed(dp));
+    return String(rounded);
+  };
+
+  const label = (field: string, name: string): string => {
+    const metric = FIELD_METRIC_MAP[field];
+    if (!metric) return name;
+    return `${name} (${getDisplayLabel(metric, unitSystem)})`;
+  };
+
+  const range = (field: string): { min: number; max: number } => {
+    const metric = FIELD_METRIC_MAP[field];
+    if (!metric) return { min: 0, max: 999 };
+    return getDisplayRange(metric, unitSystem);
   };
 
   const parseNumber = (value: string): number | undefined => {
@@ -22,6 +65,18 @@ export function InputPanel({ inputs, onChange, errors }: InputPanelProps) {
 
   return (
     <div className="health-input-panel">
+      {/* Unit System Toggle */}
+      <div className="unit-toggle">
+        <label>Units:</label>
+        <select
+          value={unitSystem}
+          onChange={(e) => onUnitSystemChange(e.target.value as UnitSystem)}
+        >
+          <option value="si">Metric (kg, cm, mmol/L)</option>
+          <option value="conventional">US (lbs, in, mg/dL)</option>
+        </select>
+      </div>
+
       {/* Basic Info Section */}
       <section className="health-section">
         <h3 className="health-section-title">Basic Information</h3>
@@ -44,15 +99,15 @@ export function InputPanel({ inputs, onChange, errors }: InputPanelProps) {
         </div>
 
         <div className="health-field">
-          <label htmlFor="heightCm">Height (cm)</label>
+          <label htmlFor="heightCm">{label('heightCm', 'Height')}</label>
           <input
             type="number"
             id="heightCm"
-            value={inputs.heightCm || ''}
-            onChange={(e) => updateField('heightCm', parseNumber(e.target.value))}
-            placeholder="170"
-            min="50"
-            max="250"
+            value={toDisplay('heightCm', inputs.heightCm)}
+            onChange={(e) => updateField('heightCm', parseAndConvert('heightCm', e.target.value))}
+            placeholder={unitSystem === 'si' ? '170' : '67'}
+            min={range('heightCm').min}
+            max={range('heightCm').max}
             className={errors.heightCm ? 'error' : ''}
           />
           {errors.heightCm && (
@@ -61,15 +116,15 @@ export function InputPanel({ inputs, onChange, errors }: InputPanelProps) {
         </div>
 
         <div className="health-field">
-          <label htmlFor="weightKg">Weight (kg)</label>
+          <label htmlFor="weightKg">{label('weightKg', 'Weight')}</label>
           <input
             type="number"
             id="weightKg"
-            value={inputs.weightKg || ''}
-            onChange={(e) => updateField('weightKg', parseNumber(e.target.value))}
-            placeholder="70"
-            min="20"
-            max="300"
+            value={toDisplay('weightKg', inputs.weightKg)}
+            onChange={(e) => updateField('weightKg', parseAndConvert('weightKg', e.target.value))}
+            placeholder={unitSystem === 'si' ? '70' : '154'}
+            min={range('weightKg').min}
+            max={range('weightKg').max}
             className={errors.weightKg ? 'error' : ''}
           />
           {errors.weightKg && (
@@ -78,15 +133,15 @@ export function InputPanel({ inputs, onChange, errors }: InputPanelProps) {
         </div>
 
         <div className="health-field">
-          <label htmlFor="waistCm">Waist Circumference (cm)</label>
+          <label htmlFor="waistCm">{label('waistCm', 'Waist Circumference')}</label>
           <input
             type="number"
             id="waistCm"
-            value={inputs.waistCm || ''}
-            onChange={(e) => updateField('waistCm', parseNumber(e.target.value))}
-            placeholder="80"
-            min="40"
-            max="200"
+            value={toDisplay('waistCm', inputs.waistCm)}
+            onChange={(e) => updateField('waistCm', parseAndConvert('waistCm', e.target.value))}
+            placeholder={unitSystem === 'si' ? '80' : '31'}
+            min={range('waistCm').min}
+            max={range('waistCm').max}
             className={errors.waistCm ? 'error' : ''}
           />
           {errors.waistCm && (
@@ -135,74 +190,88 @@ export function InputPanel({ inputs, onChange, errors }: InputPanelProps) {
         </p>
 
         <div className="health-field">
-          <label htmlFor="hba1c">HbA1c (%)</label>
+          <label htmlFor="hba1c">{label('hba1c', 'HbA1c')}</label>
           <input
             type="number"
             id="hba1c"
-            value={inputs.hba1c || ''}
-            onChange={(e) => updateField('hba1c', parseNumber(e.target.value))}
-            placeholder="5.5"
-            step="0.1"
-            min="3"
-            max="20"
+            value={toDisplay('hba1c', inputs.hba1c)}
+            onChange={(e) => updateField('hba1c', parseAndConvert('hba1c', e.target.value))}
+            placeholder={unitSystem === 'si' ? '39' : '5.5'}
+            step={unitSystem === 'si' ? '1' : '0.1'}
+            min={range('hba1c').min}
+            max={range('hba1c').max}
           />
-          <span className="field-hint">Normal: &lt;5.7%</span>
+          <span className="field-hint">
+            Normal: &lt;{unitSystem === 'si' ? '39 mmol/mol' : '5.7%'}
+          </span>
         </div>
 
         <div className="health-field">
-          <label htmlFor="ldlC">LDL Cholesterol (mg/dL)</label>
+          <label htmlFor="ldlC">{label('ldlC', 'LDL Cholesterol')}</label>
           <input
             type="number"
             id="ldlC"
-            value={inputs.ldlC || ''}
-            onChange={(e) => updateField('ldlC', parseNumber(e.target.value))}
-            placeholder="100"
-            min="0"
-            max="500"
+            value={toDisplay('ldlC', inputs.ldlC)}
+            onChange={(e) => updateField('ldlC', parseAndConvert('ldlC', e.target.value))}
+            placeholder={unitSystem === 'si' ? '2.6' : '100'}
+            step={unitSystem === 'si' ? '0.1' : '1'}
+            min={range('ldlC').min}
+            max={range('ldlC').max}
           />
-          <span className="field-hint">Optimal: &lt;100 mg/dL</span>
+          <span className="field-hint">
+            Optimal: &lt;{unitSystem === 'si' ? '2.6 mmol/L' : '100 mg/dL'}
+          </span>
         </div>
 
         <div className="health-field">
-          <label htmlFor="hdlC">HDL Cholesterol (mg/dL)</label>
+          <label htmlFor="hdlC">{label('hdlC', 'HDL Cholesterol')}</label>
           <input
             type="number"
             id="hdlC"
-            value={inputs.hdlC || ''}
-            onChange={(e) => updateField('hdlC', parseNumber(e.target.value))}
-            placeholder="50"
-            min="0"
-            max="200"
+            value={toDisplay('hdlC', inputs.hdlC)}
+            onChange={(e) => updateField('hdlC', parseAndConvert('hdlC', e.target.value))}
+            placeholder={unitSystem === 'si' ? '1.3' : '50'}
+            step={unitSystem === 'si' ? '0.1' : '1'}
+            min={range('hdlC').min}
+            max={range('hdlC').max}
           />
-          <span className="field-hint">Optimal: &gt;40 (men), &gt;50 (women)</span>
+          <span className="field-hint">
+            Optimal: &gt;{unitSystem === 'si' ? '1.0 mmol/L (men), 1.3 mmol/L (women)' : '40 mg/dL (men), 50 mg/dL (women)'}
+          </span>
         </div>
 
         <div className="health-field">
-          <label htmlFor="triglycerides">Triglycerides (mg/dL)</label>
+          <label htmlFor="triglycerides">{label('triglycerides', 'Triglycerides')}</label>
           <input
             type="number"
             id="triglycerides"
-            value={inputs.triglycerides || ''}
-            onChange={(e) => updateField('triglycerides', parseNumber(e.target.value))}
-            placeholder="100"
-            min="0"
-            max="2000"
+            value={toDisplay('triglycerides', inputs.triglycerides)}
+            onChange={(e) => updateField('triglycerides', parseAndConvert('triglycerides', e.target.value))}
+            placeholder={unitSystem === 'si' ? '1.1' : '100'}
+            step={unitSystem === 'si' ? '0.1' : '1'}
+            min={range('triglycerides').min}
+            max={range('triglycerides').max}
           />
-          <span className="field-hint">Normal: &lt;150 mg/dL</span>
+          <span className="field-hint">
+            Normal: &lt;{unitSystem === 'si' ? '1.7 mmol/L' : '150 mg/dL'}
+          </span>
         </div>
 
         <div className="health-field">
-          <label htmlFor="fastingGlucose">Fasting Glucose (mg/dL)</label>
+          <label htmlFor="fastingGlucose">{label('fastingGlucose', 'Fasting Glucose')}</label>
           <input
             type="number"
             id="fastingGlucose"
-            value={inputs.fastingGlucose || ''}
-            onChange={(e) => updateField('fastingGlucose', parseNumber(e.target.value))}
-            placeholder="90"
-            min="0"
-            max="500"
+            value={toDisplay('fastingGlucose', inputs.fastingGlucose)}
+            onChange={(e) => updateField('fastingGlucose', parseAndConvert('fastingGlucose', e.target.value))}
+            placeholder={unitSystem === 'si' ? '5.0' : '90'}
+            step={unitSystem === 'si' ? '0.1' : '1'}
+            min={range('fastingGlucose').min}
+            max={range('fastingGlucose').max}
           />
-          <span className="field-hint">Normal: &lt;100 mg/dL</span>
+          <span className="field-hint">
+            Normal: &lt;{unitSystem === 'si' ? '5.6 mmol/L' : '100 mg/dL'}
+          </span>
         </div>
 
         <div className="health-field-group">

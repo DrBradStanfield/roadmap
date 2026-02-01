@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { Component, useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import type { ReactNode, ErrorInfo } from 'react';
 import {
   Page,
   Card,
@@ -18,12 +19,54 @@ import {
   useApi,
 } from '@shopify/ui-extensions-react/customer-account';
 import type { HealthInputs, HealthResults, Suggestion } from '../../../packages/health-core/src';
-import { calculateHealthResults } from '../../../packages/health-core/src';
-import { loadProfile, saveProfile } from './lib/api';
+import {
+  calculateHealthResults,
+  detectUnitSystem,
+  fromCanonicalValue,
+  toCanonicalValue,
+  getDisplayLabel,
+  formatDisplayValue,
+  UNIT_DEFS,
+  FIELD_METRIC_MAP,
+  type UnitSystem,
+} from '../../../packages/health-core/src';
+import { loadLatestMeasurements, saveChangedMeasurements } from './lib/api';
+
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Health tool error:', error, info.componentStack);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Page title="Health Roadmap">
+          <Card>
+            <Banner status="critical" title="Something went wrong. Please refresh the page." />
+          </Card>
+        </Page>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default reactExtension(
   'customer-account.page.render',
-  () => <HealthToolPage />,
+  () => (
+    <ErrorBoundary>
+      <HealthToolPage />
+    </ErrorBoundary>
+  ),
 );
 
 const MONTH_OPTIONS = [
@@ -42,6 +85,11 @@ const MONTH_OPTIONS = [
   { label: 'December', value: '12' },
 ];
 
+const UNIT_OPTIONS = [
+  { label: 'Metric (kg, cm, mmol/L)', value: 'si' },
+  { label: 'US (lbs, in, mg/dL)', value: 'conventional' },
+];
+
 function parseNum(value: string): number | undefined {
   const n = parseFloat(value);
   return isNaN(n) ? undefined : n;
@@ -52,21 +100,50 @@ function HealthToolPage() {
   const [inputs, setInputs] = useState<Partial<HealthInputs>>({});
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => detectUnitSystem());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasLoadedRef = useRef(false);
+  const previousInputsRef = useRef<Partial<HealthInputs>>({});
 
-  // Load existing profile on mount
+  // Convert SI canonical to display string
+  const toDisplay = useCallback((field: string, siValue: number | undefined): string => {
+    if (siValue === undefined) return '';
+    const metric = FIELD_METRIC_MAP[field];
+    if (!metric) return String(siValue);
+    const display = fromCanonicalValue(metric, siValue, unitSystem);
+    const dp = UNIT_DEFS[metric].decimalPlaces[unitSystem];
+    return String(parseFloat(display.toFixed(dp)));
+  }, [unitSystem]);
+
+  // Parse display value and convert to SI canonical
+  const parseAndConvert = useCallback((field: string, value: string): number | undefined => {
+    const num = parseFloat(value);
+    if (isNaN(num)) return undefined;
+    const metric = FIELD_METRIC_MAP[field];
+    if (!metric) return num;
+    return toCanonicalValue(metric, num, unitSystem);
+  }, [unitSystem]);
+
+  const fieldLabel = useCallback((field: string, name: string): string => {
+    const metric = FIELD_METRIC_MAP[field];
+    if (!metric) return name;
+    return `${name} (${getDisplayLabel(metric, unitSystem)})`;
+  }, [unitSystem]);
+
+  // Load existing measurements on mount
   useEffect(() => {
     async function load() {
       try {
         const token = await sessionToken.get();
-        const data = await loadProfile(token);
-        if (data) setInputs(data);
+        const data = await loadLatestMeasurements(token);
+        if (data) {
+          setInputs(data);
+          previousInputsRef.current = data;
+        }
       } catch (err) {
-        console.error('Failed to load profile:', err);
+        console.error('Failed to load measurements:', err);
       } finally {
         setLoading(false);
-        // Mark as loaded after a tick so the first setInputs doesn't trigger auto-save
         setTimeout(() => { hasLoadedRef.current = true; }, 0);
       }
     }
@@ -77,17 +154,18 @@ function HealthToolPage() {
   const isValid = !!(inputs.heightCm && inputs.sex);
   const results: HealthResults | null = useMemo(() => {
     if (!isValid) return null;
-    return calculateHealthResults(inputs as HealthInputs);
-  }, [inputs, isValid]);
+    return calculateHealthResults(inputs as HealthInputs, unitSystem);
+  }, [inputs, isValid, unitSystem]);
 
   // Auto-save with debounce
   const doSave = useCallback(async (data: Partial<HealthInputs>) => {
     setSaveStatus('saving');
     try {
       const token = await sessionToken.get();
-      const result = await saveProfile(token, data);
-      setSaveStatus(result.success ? 'saved' : 'error');
-      if (result.success) {
+      const success = await saveChangedMeasurements(token, data, previousInputsRef.current);
+      setSaveStatus(success ? 'saved' : 'error');
+      if (success) {
+        previousInputsRef.current = { ...data };
         setTimeout(() => setSaveStatus('idle'), 3000);
       }
     } catch {
@@ -117,6 +195,9 @@ function HealthToolPage() {
     );
   }
 
+  const weightUnit = getDisplayLabel('weight', unitSystem);
+  const ibwDisplay = results ? formatDisplayValue('weight', results.idealBodyWeight, unitSystem) : '';
+
   return (
     <Page title="Health Roadmap">
       <BlockStack spacing="loose">
@@ -134,6 +215,16 @@ function HealthToolPage() {
         <Grid columns={['2fr', '1fr']} spacing="loose" blockAlignment="start">
           {/* Left column: Inputs */}
           <BlockStack spacing="loose">
+            {/* Unit Toggle */}
+            <Card>
+              <Select
+                label="Units"
+                value={unitSystem}
+                onChange={(value) => setUnitSystem(value as UnitSystem)}
+                options={UNIT_OPTIONS}
+              />
+            </Card>
+
             {/* Basic Information */}
             <Card>
               <BlockStack spacing="base">
@@ -151,24 +242,24 @@ function HealthToolPage() {
                 />
 
                 <TextField
-                  label="Height (cm)"
+                  label={fieldLabel('heightCm', 'Height')}
                   type="number"
-                  value={inputs.heightCm?.toString() || ''}
-                  onChange={(value) => updateField('heightCm', parseNum(value))}
+                  value={toDisplay('heightCm', inputs.heightCm)}
+                  onChange={(value) => updateField('heightCm', parseAndConvert('heightCm', value))}
                 />
 
                 <TextField
-                  label="Weight (kg)"
+                  label={fieldLabel('weightKg', 'Weight')}
                   type="number"
-                  value={inputs.weightKg?.toString() || ''}
-                  onChange={(value) => updateField('weightKg', parseNum(value))}
+                  value={toDisplay('weightKg', inputs.weightKg)}
+                  onChange={(value) => updateField('weightKg', parseAndConvert('weightKg', value))}
                 />
 
                 <TextField
-                  label="Waist Circumference (cm)"
+                  label={fieldLabel('waistCm', 'Waist Circumference')}
                   type="number"
-                  value={inputs.waistCm?.toString() || ''}
-                  onChange={(value) => updateField('waistCm', parseNum(value))}
+                  value={toDisplay('waistCm', inputs.waistCm)}
+                  onChange={(value) => updateField('waistCm', parseAndConvert('waistCm', value))}
                 />
 
                 <InlineStack spacing="base">
@@ -199,38 +290,38 @@ function HealthToolPage() {
                 <Text appearance="subdued">Enter your most recent blood test values (optional)</Text>
 
                 <TextField
-                  label="HbA1c (%)"
+                  label={fieldLabel('hba1c', 'HbA1c')}
                   type="number"
-                  value={inputs.hba1c?.toString() || ''}
-                  onChange={(value) => updateField('hba1c', parseNum(value))}
+                  value={toDisplay('hba1c', inputs.hba1c)}
+                  onChange={(value) => updateField('hba1c', parseAndConvert('hba1c', value))}
                 />
 
                 <TextField
-                  label="LDL Cholesterol (mg/dL)"
+                  label={fieldLabel('ldlC', 'LDL Cholesterol')}
                   type="number"
-                  value={inputs.ldlC?.toString() || ''}
-                  onChange={(value) => updateField('ldlC', parseNum(value))}
+                  value={toDisplay('ldlC', inputs.ldlC)}
+                  onChange={(value) => updateField('ldlC', parseAndConvert('ldlC', value))}
                 />
 
                 <TextField
-                  label="HDL Cholesterol (mg/dL)"
+                  label={fieldLabel('hdlC', 'HDL Cholesterol')}
                   type="number"
-                  value={inputs.hdlC?.toString() || ''}
-                  onChange={(value) => updateField('hdlC', parseNum(value))}
+                  value={toDisplay('hdlC', inputs.hdlC)}
+                  onChange={(value) => updateField('hdlC', parseAndConvert('hdlC', value))}
                 />
 
                 <TextField
-                  label="Triglycerides (mg/dL)"
+                  label={fieldLabel('triglycerides', 'Triglycerides')}
                   type="number"
-                  value={inputs.triglycerides?.toString() || ''}
-                  onChange={(value) => updateField('triglycerides', parseNum(value))}
+                  value={toDisplay('triglycerides', inputs.triglycerides)}
+                  onChange={(value) => updateField('triglycerides', parseAndConvert('triglycerides', value))}
                 />
 
                 <TextField
-                  label="Fasting Glucose (mg/dL)"
+                  label={fieldLabel('fastingGlucose', 'Fasting Glucose')}
                   type="number"
-                  value={inputs.fastingGlucose?.toString() || ''}
-                  onChange={(value) => updateField('fastingGlucose', parseNum(value))}
+                  value={toDisplay('fastingGlucose', inputs.fastingGlucose)}
+                  onChange={(value) => updateField('fastingGlucose', parseAndConvert('fastingGlucose', value))}
                 />
 
                 <InlineStack spacing="base">
@@ -283,7 +374,7 @@ function HealthToolPage() {
                   <BlockStack spacing="base">
                     <Heading level={2}>Your Health Snapshot</Heading>
                     <InlineStack spacing="base" blockAlignment="start">
-                      <StatCard label="Ideal Body Weight" value={`${results.idealBodyWeight} kg`} />
+                      <StatCard label="Ideal Body Weight" value={`${ibwDisplay} ${weightUnit}`} />
                       <StatCard label="Protein Target" value={`${results.proteinTarget}g/day`} />
                       {results.bmi !== undefined && (
                         <StatCard label="BMI" value={`${results.bmi}`} />

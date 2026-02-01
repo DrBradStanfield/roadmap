@@ -8,7 +8,7 @@ Always use the **Opus 4.5** model (`claude-opus-4-5-20251101`) for all tasks in 
 
 ## Project Overview
 
-This is a **Health Roadmap Tool** - a Shopify app that helps users track health metrics and receive personalized suggestions. It's available as both a storefront theme extension (for guests and logged-in users) and a full-page customer account extension (for logged-in users to manage their health data directly from their Shopify account).
+This is a **Health Roadmap Tool** - a Shopify app that helps users track health metrics over time and receive personalized suggestions. It's available as both a storefront theme extension (for guests and logged-in users) and a full-page customer account extension (for logged-in users to manage their health data directly from their Shopify account).
 
 ## Tech Stack
 
@@ -23,7 +23,7 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 ## Key Directories
 
 ```
-/packages/health-core/src/     # Shared health calculations library (with tests)
+/packages/health-core/src/     # Shared health calculations, units, mappings library (with tests)
 /widget-src/src/               # React widget source code
 /extensions/health-tool-widget/assets/  # Built widget JS/CSS
 /extensions/health-tool-full-page/src/ # Customer account full-page health tool
@@ -35,29 +35,37 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 ## Important Files
 
 **Backend API:**
-- `app/lib/supabase.server.ts` - Supabase client with service key
-- `app/routes/api.health-profile.ts` - Health profile CRUD API (storefront, HMAC auth)
-- `app/routes/api.customer-health-profile.ts` - Health profile CRUD API (customer account, JWT auth)
+- `app/lib/supabase.server.ts` - Supabase client, measurement CRUD helpers, `toApiMeasurement()`
+- `app/lib/rate-limit.server.ts` - In-memory rate limiter (60 req/min per IP)
+- `app/routes/api.measurements.ts` - Measurement CRUD API (storefront, HMAC auth)
+- `app/routes/api.customer-measurements.ts` - Measurement CRUD API (customer account, JWT auth, rate limited)
 
 **Health Core Library:**
 - `packages/health-core/src/calculations.ts` - Health formulas (IBW, BMI, protein)
-- `packages/health-core/src/suggestions.ts` - Recommendation generation logic
-- `packages/health-core/src/validation.ts` - Zod schemas for input validation
-- `packages/health-core/src/calculations.test.ts` - Unit tests for calculations
-- `packages/health-core/src/suggestions.test.ts` - Unit tests for suggestions
+- `packages/health-core/src/suggestions.ts` - Recommendation generation logic (unit-system-aware)
+- `packages/health-core/src/validation.ts` - Zod schemas for health inputs and individual measurements
+- `packages/health-core/src/units.ts` - Unit definitions, SI↔conventional conversions, locale detection, clinical thresholds
+- `packages/health-core/src/mappings.ts` - Shared field↔metric mappings, `measurementsToInputs()`, `diffInputsToMeasurements()`
+- `packages/health-core/src/types.ts` - TypeScript interfaces (HealthInputs, HealthResults, Suggestion, Measurement)
+- `packages/health-core/src/index.ts` - Barrel exports for all modules
 
 **Widget Source:**
-- `widget-src/src/components/HealthTool.tsx` - Main widget (handles auth + sync)
-- `widget-src/src/components/InputPanel.tsx` - Form inputs (left panel)
-- `widget-src/src/components/ResultsPanel.tsx` - Results display (right panel)
-- `widget-src/src/lib/storage.ts` - localStorage helpers for guests
-- `widget-src/src/lib/api.ts` - Cloud API client for logged-in users
+- `widget-src/src/components/HealthTool.tsx` - Main widget (handles auth, unit system, measurement sync)
+- `widget-src/src/components/ErrorBoundary.tsx` - React error boundary for widget
+- `widget-src/src/components/InputPanel.tsx` - Form inputs with unit conversion (left panel)
+- `widget-src/src/components/ResultsPanel.tsx` - Results display with unit formatting (right panel)
+- `widget-src/src/lib/storage.ts` - localStorage helpers for guests + unit preference
+- `widget-src/src/lib/api.ts` - Measurement API client for logged-in users (app proxy)
 
 **Shopify Extensions:**
 - `extensions/health-tool-widget/blocks/app-block.liquid` - Passes customer data to React
 - `extensions/health-tool-customer-account/src/HealthProfileBlock.tsx` - Customer account profile block (summary view, links to full page)
 - `extensions/health-tool-full-page/src/HealthToolPage.tsx` - Full-page health tool in customer account (input form + results + suggestions)
-- `extensions/health-tool-full-page/src/lib/api.ts` - API client for customer account extension (JWT auth)
+- `extensions/health-tool-full-page/src/lib/api.ts` - Measurement API client for customer account extension (JWT auth)
+
+**Infrastructure:**
+- `supabase/rls-policies.sql` - Database schema (health_measurements table) + RLS policies
+- `.github/workflows/ci.yml` - CI pipeline (runs tests on PRs and pushes to main)
 
 ## Common Commands
 
@@ -71,11 +79,41 @@ npm test                 # Run unit tests
 npm run test:watch       # Run tests in watch mode
 ```
 
+## Data Model
+
+### Measurement Storage (Apple Health model)
+
+Health data is stored as immutable time-series records in `health_measurements`. Each record has a `metric_type`, a `value` (always in SI canonical units), and a `recorded_at` timestamp. Records cannot be edited — to correct a value, delete the old record and insert a new one.
+
+### Canonical Storage Units
+
+All values in the database and in `HealthInputs` are stored in **SI canonical units**. Conversion to/from display units is handled by `packages/health-core/src/units.ts`.
+
+| metric_type | Canonical (SI) | Conventional (US) | Conversion |
+|------------|---------------|-------------------|------------|
+| height | cm | inches | ÷ 2.54 |
+| weight | kg | lbs | × 2.20462 |
+| waist | cm | inches | ÷ 2.54 |
+| hba1c | mmol/mol (IFCC) | % (NGSP) | % = mmol/mol × 0.09148 + 2.152 |
+| ldl | mmol/L | mg/dL | × 38.67 |
+| hdl | mmol/L | mg/dL | × 38.67 |
+| triglycerides | mmol/L | mg/dL | × 88.57 |
+| fasting_glucose | mmol/L | mg/dL | × 18.016 |
+| systolic_bp | mmHg | mmHg | (same) |
+| diastolic_bp | mmHg | mmHg | (same) |
+| sex | 1=male, 2=female | — | — |
+| birth_year | year | — | — |
+| birth_month | 1-12 | — | — |
+
+### Unit System Detection
+
+The UI auto-detects the user's preferred unit system from browser locale (US, Liberia, Myanmar → conventional; everyone else → SI). Users can override via a toggle. The preference is saved to localStorage.
+
 ## CRITICAL: Security Rules
 
 - **NEVER compromise security or create attack vectors.** This app handles personal health data. Every change must maintain or strengthen security.
 - **NEVER trust client-supplied identity.** Customer identity must always come from Shopify's HMAC-verified `logged_in_customer_id` parameter, not from client-side code, request bodies, or URL parameters the client controls.
-- **NEVER expose API endpoints without authentication.** All health profile endpoints require Shopify app proxy HMAC verification.
+- **NEVER expose API endpoints without authentication.** All measurement endpoints require Shopify app proxy HMAC verification or JWT verification.
 - **NEVER add `Access-Control-Allow-Origin: *`** or weaken CORS. The app proxy approach avoids CORS entirely (same-origin requests).
 - **If you are ever unsure about a security implication, STOP and ask me.** Do not guess or assume. It is always better to pause and verify than to introduce a vulnerability.
 
@@ -90,7 +128,7 @@ Guest user (not logged in):
 
 Logged-in Shopify customer:
   → Liquid template sets data-logged-in="true" on widget root element
-  → Widget detects login, calls /apps/health-tool-1/api/health-profile
+  → Widget detects login, calls /apps/health-tool-1/api/measurements
   → Request goes through Shopify's app proxy (same-origin, no CORS needed)
   → Shopify adds logged_in_customer_id + HMAC signature to the request
   → Backend calls authenticate.public.appProxy(request) to verify HMAC
@@ -106,8 +144,6 @@ Logged-in Shopify customer:
 - No tokens, API keys, or secrets are exposed to the client
 - Works on any store the app is installed on — no per-store configuration needed
 
-**Migration flow:** When a guest user logs in and has existing localStorage data, the widget prompts them to migrate that data to their account. On confirmation, data is sent via the app proxy (authenticated) and localStorage is cleared.
-
 ## Customer Account Extension Auth
 
 The full-page customer account extension (`health-tool-full-page`) uses a different auth flow than the storefront widget. Customer account extensions run on `extensions.shopifycdn.com` and use Shopify session token JWTs instead of HMAC app proxy signatures.
@@ -115,7 +151,7 @@ The full-page customer account extension (`health-tool-full-page`) uses a differ
 ```
 Logged-in customer (customer account page):
   → Extension calls sessionToken.get() to obtain a JWT
-  → Extension sends GET/POST to https://health-tool-app.fly.dev/api/customer-health-profile
+  → Extension sends GET/POST/DELETE to https://health-tool-app.fly.dev/api/customer-measurements
   → Request includes Authorization: Bearer <JWT> header
   → Backend verifies JWT using SHOPIFY_API_SECRET (HS256, audience = SHOPIFY_API_KEY)
   → Customer ID extracted from JWT `sub` claim (gid://shopify/Customer/<id>)
@@ -129,35 +165,26 @@ Logged-in customer (customer account page):
 
 ## API Endpoints
 
-All endpoints are accessed via the Shopify app proxy at `/apps/health-tool-1/api/health-profile`. Shopify appends `logged_in_customer_id`, `shop`, `timestamp`, and `signature` query parameters automatically.
+### Storefront (via app proxy at `/apps/health-tool-1/api/measurements`)
 
-**GET `/api/health-profile`** (via app proxy)
-- Returns health profile for the HMAC-verified Shopify customer
-- Creates profile record if doesn't exist
-- Returns 401 if customer is not logged in
+**GET** (no params) — Latest measurement per metric for the authenticated user
+**GET** `?metric_type=weight&limit=50` — History for one metric, ordered by recorded_at DESC
+**POST** `{ metricType, value, recordedAt? }` — Add a measurement (value in SI canonical units)
+**DELETE** `{ measurementId }` — Delete a measurement by ID (verifies user ownership)
 
-**POST `/api/health-profile`** (via app proxy)
-- Body: `{ inputs }`
-- Saves/updates health profile for the verified customer
+### Customer Account (direct at `https://health-tool-app.fly.dev/api/customer-measurements`)
 
-**PUT `/api/health-profile`** (via app proxy)
-- Body: `{ inputs, migrate: true }`
-- Migrates localStorage data (won't overwrite existing cloud data)
-
-**GET `/api/customer-health-profile`** (direct, JWT auth)
-- Returns health profile for the JWT-verified customer
-- Used by the customer account full-page extension
-
-**POST `/api/customer-health-profile`** (direct, JWT auth)
-- Body: `{ inputs }`
-- Saves/updates health profile, validates with Zod schema
+Same API shape as storefront, but uses JWT auth + CORS headers. Rate limited at 60 req/min per IP.
 
 ## Database
 
 Uses **Supabase** (PostgreSQL). Tables:
-- `profiles` - User accounts linked to Shopify customers (shopify_customer_id)
-- `health_profiles` - All health data (measurements + blood tests)
-- `blood_tests` - Historical blood test records
+- `profiles` — User accounts linked to Shopify customers (shopify_customer_id, email)
+- `health_measurements` — Immutable time-series health records (metric_type, value in SI, recorded_at)
+
+The `health_measurements` table has no UPDATE policy — records are immutable. A `get_latest_measurements()` RPC function efficiently returns the latest value per metric type using `DISTINCT ON`.
+
+Run `supabase/rls-policies.sql` in the Supabase SQL Editor to set up the schema and RLS policies.
 
 ## Environment Variables
 
@@ -175,9 +202,14 @@ See `.env.example` for required variables. Set Supabase credentials from your pr
 
 ## Clinical Thresholds
 
-- **HbA1c**: Normal <5.7%, Prediabetes 5.7-6.4%, Diabetes ≥6.5%
-- **LDL**: Optimal <100, Borderline 130-159, High 160-189, Very High ≥190
-- **Blood Pressure**: Normal <120/80, Elevated 120-129/<80, Stage 1 130-139/80-89, Stage 2 ≥140/≥90
+All thresholds are defined as constants in `packages/health-core/src/units.ts` and compared in SI canonical units.
+
+- **HbA1c**: Normal <39 mmol/mol (<5.7%), Prediabetes 39-48 (5.7-6.4%), Diabetes ≥48 (≥6.5%)
+- **LDL**: Optimal <3.36 mmol/L (<130 mg/dL), Borderline 3.36-4.14 (130-159), High 4.14-4.91 (160-189), Very High ≥4.91 (≥190)
+- **HDL**: Low <1.03 mmol/L (<40 mg/dL men), <1.29 mmol/L (<50 mg/dL women)
+- **Triglycerides**: Normal <1.69 mmol/L (<150 mg/dL), Borderline 1.69-2.26 (150-199), High 2.26-5.64 (200-499), Very High ≥5.64 (≥500)
+- **Fasting Glucose**: Normal <5.55 mmol/L (<100 mg/dL), Prediabetes 5.55-6.99 (100-125), Diabetes ≥6.99 (≥126)
+- **Blood Pressure**: Normal <120/80, Elevated 120-129/<80, Stage 1 130-139/80-89, Stage 2 ≥140/≥90, Crisis ≥180/≥120
 - **Waist-to-Height**: Healthy <0.5, Elevated ≥0.5
 
 ## Hosting
@@ -201,10 +233,14 @@ The widget calls the backend through Shopify's app proxy (`/apps/health-tool-1/*
 ## Notes for Development
 
 - Always rebuild widget after changes: `npm run build:widget`
+- Both root and widget-src use Vite 6 (`^6.2.2`). The root `overrides`/`resolutions` in `package.json` enforce this across all workspaces. Keep these aligned when upgrading Vite.
 - Widget uses Vite's alias to import directly from health-core source
 - Widget source is in `/widget-src`, builds to `/extensions/health-tool-widget/assets/`
 - Run `npm test` before deploying to verify calculations
-- Backend uses service key (bypasses RLS) - authorization handled in code
+- Backend uses service key (bypasses RLS) - authorization handled in code. RLS policies are enabled as defense-in-depth (see `supabase/rls-policies.sql`)
+- The customer account JWT endpoint (`/api/customer-measurements`) is rate limited at 60 requests/minute per IP via `app/lib/rate-limit.server.ts`
+- All React surfaces (widget, customer account extensions) have error boundaries to prevent component crashes from breaking the entire UI
+- CI pipeline (`.github/workflows/ci.yml`) runs tests on every PR and push to main
 - All health suggestions include "discuss with doctor" flag for liability
 - **Shopify Partner/Dev Dashboard is read-only**: You cannot manually change or check any app configuration (app URL, redirect URLs, app proxy, scopes, extensions, etc.) in the Shopify Partner Dashboard or Dev Dashboard. The only things accessible there are the client ID and client secret. All configuration must be updated in `shopify.app.toml` and pushed via `npx shopify app deploy --force`. Do NOT suggest checking or modifying settings in the dashboard — it is not possible.
 - `automatically_update_urls_on_dev` is set to `false` to prevent `npm run dev` from overwriting production URLs with temporary tunnel URLs
@@ -213,20 +249,42 @@ The widget calls the backend through Shopify's app proxy (`/apps/health-tool-1/*
 - **Shopify access scopes**: The `write_app_proxy` scope is **required** for the app proxy to work — without it, Shopify silently ignores the `[app_proxy]` config in `shopify.app.toml` and all proxy requests return 404. The `read_customers` scope is needed to look up customer email via the Admin API GraphQL. After adding new scopes, you must `npx shopify app deploy --force`, then either accept the new permissions in the Shopify Admin or uninstall/reinstall the app on the store.
 - **Fly.io app suspension**: If the Fly.io app shows "Suspended" status, `fly deploy` alone won't unsuspend it. Run `fly machine start <machine-id> -a <your-app-name>` to manually start the machine. The `min_machines_running = 1` setting in `fly.toml` prevents the machine from stopping after it's running, but does not unsuspend a suspended app.
 
+## Code Sharing Strategy
+
+**Shared via `packages/health-core/`:**
+- Unit definitions, conversions, locale detection (`units.ts`)
+- Field↔metric mappings, measurement↔HealthInputs conversion (`mappings.ts`)
+- Validation schemas (`validation.ts`)
+- Health calculations (`calculations.ts`)
+- Suggestion generation (`suggestions.ts`)
+- TypeScript types (`types.ts`)
+
+**Not shared (different UI frameworks):**
+- Widget uses standard HTML/React (`<input>`, `<select>`, `<div>`)
+- Customer account extension uses Shopify UI Extensions (`TextField`, `Select`, `Card`, `View`)
+- Each frontend has its own component code but calls the same health-core logic
+
 ## Testing
 
-58 unit tests cover all health calculations and suggestion logic:
+124 unit tests cover health calculations, suggestions, unit conversions, and field mappings:
 
 ```bash
 npm test              # Run once
 npm run test:watch    # Watch mode
 ```
 
+Test files:
+- `packages/health-core/src/calculations.test.ts` — IBW, BMI, protein, age, health results (27 tests)
+- `packages/health-core/src/suggestions.test.ts` — All suggestion categories, unit system display (33 tests)
+- `packages/health-core/src/units.test.ts` — Round-trip conversions, clinical values, thresholds, formatting, locale (52 tests)
+- `packages/health-core/src/mappings.test.ts` — Field↔metric mappings, measurementsToInputs, diffInputsToMeasurements (12 tests)
+
 ## Future Plans
 
-1. **Mobile App**: React Native + Expo with PowerSync for offline sync
-2. **HIPAA Compliance**: Upgrade Supabase to Pro, sign BAA, add audit logging
-3. **Healthcare Integrations**: Apple HealthKit, FHIR API for EHR import
+1. **Measurement History UI**: Inline history below each input field (latest 5 entries with date + delete button)
+2. **Mobile App**: React Native + Expo with PowerSync for offline sync
+3. **HIPAA Compliance**: Upgrade Supabase to Pro, sign BAA, add audit logging
+4. **Healthcare Integrations**: Apple HealthKit, FHIR API for EHR import
 
 ## Disclaimer
 

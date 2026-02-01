@@ -1,6 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { HealthTool } from './components/HealthTool';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import './styles.css';
 
 // Find the mount point in the Shopify theme
@@ -15,7 +16,9 @@ function mount() {
   const root = createRoot(container);
   root.render(
     <React.StrictMode>
-      <HealthTool />
+      <ErrorBoundary>
+        <HealthTool />
+      </ErrorBoundary>
     </React.StrictMode>
   );
 }

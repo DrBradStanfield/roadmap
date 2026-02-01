@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { generateSuggestions } from './suggestions';
 import type { HealthInputs, HealthResults } from './types';
+import { toCanonicalValue } from './units';
+
+// Shorthand: convert conventional (US) blood test values to SI for test inputs
+const hba1c = (pct: number) => toCanonicalValue('hba1c', pct, 'conventional');
+const ldl = (mgdl: number) => toCanonicalValue('ldl', mgdl, 'conventional');
+const hdl = (mgdl: number) => toCanonicalValue('hdl', mgdl, 'conventional');
+const trig = (mgdl: number) => toCanonicalValue('triglycerides', mgdl, 'conventional');
+const glucose = (mgdl: number) => toCanonicalValue('fasting_glucose', mgdl, 'conventional');
 
 // Helper to create base inputs and results
 function createTestData(
@@ -98,8 +106,8 @@ describe('generateSuggestions', () => {
   });
 
   describe('HbA1c suggestions', () => {
-    it('generates diabetic suggestion for HbA1c >= 6.5', () => {
-      const { inputs, results } = createTestData({ hba1c: 7.2 });
+    it('generates diabetic suggestion for HbA1c >= 6.5% (≥47.5 mmol/mol)', () => {
+      const { inputs, results } = createTestData({ hba1c: hba1c(7.2) });
       const suggestions = generateSuggestions(inputs, results);
 
       const hba1cSuggestion = suggestions.find(s => s.id === 'hba1c-diabetic');
@@ -108,8 +116,8 @@ describe('generateSuggestions', () => {
       expect(hba1cSuggestion?.discussWithDoctor).toBe(true);
     });
 
-    it('generates prediabetic suggestion for HbA1c 5.7-6.4', () => {
-      const { inputs, results } = createTestData({ hba1c: 6.0 });
+    it('generates prediabetic suggestion for HbA1c 5.7-6.4% (38.8-47.5 mmol/mol)', () => {
+      const { inputs, results } = createTestData({ hba1c: hba1c(6.0) });
       const suggestions = generateSuggestions(inputs, results);
 
       const hba1cSuggestion = suggestions.find(s => s.id === 'hba1c-prediabetic');
@@ -117,8 +125,8 @@ describe('generateSuggestions', () => {
       expect(hba1cSuggestion?.priority).toBe('attention');
     });
 
-    it('generates normal suggestion for HbA1c < 5.7', () => {
-      const { inputs, results } = createTestData({ hba1c: 5.2 });
+    it('generates normal suggestion for HbA1c < 5.7% (<38.8 mmol/mol)', () => {
+      const { inputs, results } = createTestData({ hba1c: hba1c(5.2) });
       const suggestions = generateSuggestions(inputs, results);
 
       const hba1cSuggestion = suggestions.find(s => s.id === 'hba1c-normal');
@@ -129,8 +137,8 @@ describe('generateSuggestions', () => {
   });
 
   describe('LDL cholesterol suggestions', () => {
-    it('generates very high suggestion for LDL >= 190', () => {
-      const { inputs, results } = createTestData({ ldlC: 200 });
+    it('generates very high suggestion for LDL >= 190 mg/dL (≥4.91 mmol/L)', () => {
+      const { inputs, results } = createTestData({ ldlC: ldl(200) });
       const suggestions = generateSuggestions(inputs, results);
 
       const ldlSuggestion = suggestions.find(s => s.id === 'ldl-very-high');
@@ -138,8 +146,8 @@ describe('generateSuggestions', () => {
       expect(ldlSuggestion?.priority).toBe('urgent');
     });
 
-    it('generates high suggestion for LDL 160-189', () => {
-      const { inputs, results } = createTestData({ ldlC: 175 });
+    it('generates high suggestion for LDL 160-189 mg/dL (4.14-4.91 mmol/L)', () => {
+      const { inputs, results } = createTestData({ ldlC: ldl(175) });
       const suggestions = generateSuggestions(inputs, results);
 
       const ldlSuggestion = suggestions.find(s => s.id === 'ldl-high');
@@ -147,8 +155,8 @@ describe('generateSuggestions', () => {
       expect(ldlSuggestion?.priority).toBe('attention');
     });
 
-    it('generates borderline suggestion for LDL 130-159', () => {
-      const { inputs, results } = createTestData({ ldlC: 140 });
+    it('generates borderline suggestion for LDL 130-159 mg/dL (3.36-4.14 mmol/L)', () => {
+      const { inputs, results } = createTestData({ ldlC: ldl(140) });
       const suggestions = generateSuggestions(inputs, results);
 
       const ldlSuggestion = suggestions.find(s => s.id === 'ldl-borderline');
@@ -156,8 +164,8 @@ describe('generateSuggestions', () => {
       expect(ldlSuggestion?.priority).toBe('info');
     });
 
-    it('does not generate suggestion for optimal LDL < 130', () => {
-      const { inputs, results } = createTestData({ ldlC: 90 });
+    it('does not generate suggestion for optimal LDL < 130 mg/dL (<3.36 mmol/L)', () => {
+      const { inputs, results } = createTestData({ ldlC: ldl(90) });
       const suggestions = generateSuggestions(inputs, results);
 
       const ldlSuggestions = suggestions.filter(s => s.id.startsWith('ldl-'));
@@ -166,26 +174,24 @@ describe('generateSuggestions', () => {
   });
 
   describe('HDL cholesterol suggestions', () => {
-    it('generates low HDL suggestion for males with HDL < 40', () => {
-      const { inputs, results } = createTestData({ hdlC: 35, sex: 'male' });
+    it('generates low HDL suggestion for males with HDL < 40 mg/dL (<1.03 mmol/L)', () => {
+      const { inputs, results } = createTestData({ hdlC: hdl(35), sex: 'male' });
       const suggestions = generateSuggestions(inputs, results);
 
       const hdlSuggestion = suggestions.find(s => s.id === 'hdl-low');
       expect(hdlSuggestion).toBeDefined();
-      expect(hdlSuggestion?.description).toContain('40');
     });
 
-    it('generates low HDL suggestion for females with HDL < 50', () => {
-      const { inputs, results } = createTestData({ hdlC: 45, sex: 'female' });
+    it('generates low HDL suggestion for females with HDL < 50 mg/dL (<1.29 mmol/L)', () => {
+      const { inputs, results } = createTestData({ hdlC: hdl(45), sex: 'female' });
       const suggestions = generateSuggestions(inputs, results);
 
       const hdlSuggestion = suggestions.find(s => s.id === 'hdl-low');
       expect(hdlSuggestion).toBeDefined();
-      expect(hdlSuggestion?.description).toContain('50');
     });
 
     it('does not generate suggestion for normal HDL', () => {
-      const { inputs, results } = createTestData({ hdlC: 55, sex: 'male' });
+      const { inputs, results } = createTestData({ hdlC: hdl(55), sex: 'male' });
       const suggestions = generateSuggestions(inputs, results);
 
       const hdlSuggestion = suggestions.find(s => s.id === 'hdl-low');
@@ -194,8 +200,8 @@ describe('generateSuggestions', () => {
   });
 
   describe('Triglycerides suggestions', () => {
-    it('generates very high suggestion for triglycerides >= 500', () => {
-      const { inputs, results } = createTestData({ triglycerides: 550 });
+    it('generates very high suggestion for triglycerides >= 500 mg/dL (≥5.64 mmol/L)', () => {
+      const { inputs, results } = createTestData({ triglycerides: trig(550) });
       const suggestions = generateSuggestions(inputs, results);
 
       const trigSuggestion = suggestions.find(s => s.id === 'trig-very-high');
@@ -203,8 +209,8 @@ describe('generateSuggestions', () => {
       expect(trigSuggestion?.priority).toBe('urgent');
     });
 
-    it('generates high suggestion for triglycerides 200-499', () => {
-      const { inputs, results } = createTestData({ triglycerides: 300 });
+    it('generates high suggestion for triglycerides 200-499 mg/dL (2.26-5.64 mmol/L)', () => {
+      const { inputs, results } = createTestData({ triglycerides: trig(300) });
       const suggestions = generateSuggestions(inputs, results);
 
       const trigSuggestion = suggestions.find(s => s.id === 'trig-high');
@@ -212,8 +218,8 @@ describe('generateSuggestions', () => {
       expect(trigSuggestion?.priority).toBe('attention');
     });
 
-    it('generates borderline suggestion for triglycerides 150-199', () => {
-      const { inputs, results } = createTestData({ triglycerides: 175 });
+    it('generates borderline suggestion for triglycerides 150-199 mg/dL (1.69-2.26 mmol/L)', () => {
+      const { inputs, results } = createTestData({ triglycerides: trig(175) });
       const suggestions = generateSuggestions(inputs, results);
 
       const trigSuggestion = suggestions.find(s => s.id === 'trig-borderline');
@@ -223,8 +229,8 @@ describe('generateSuggestions', () => {
   });
 
   describe('Fasting glucose suggestions', () => {
-    it('generates diabetic suggestion for glucose >= 126', () => {
-      const { inputs, results } = createTestData({ fastingGlucose: 140 });
+    it('generates diabetic suggestion for glucose >= 126 mg/dL (≥7.0 mmol/L)', () => {
+      const { inputs, results } = createTestData({ fastingGlucose: glucose(140) });
       const suggestions = generateSuggestions(inputs, results);
 
       const glucoseSuggestion = suggestions.find(s => s.id === 'glucose-diabetic');
@@ -232,8 +238,8 @@ describe('generateSuggestions', () => {
       expect(glucoseSuggestion?.priority).toBe('urgent');
     });
 
-    it('generates prediabetic suggestion for glucose 100-125', () => {
-      const { inputs, results } = createTestData({ fastingGlucose: 110 });
+    it('generates prediabetic suggestion for glucose 100-125 mg/dL (5.55-6.99 mmol/L)', () => {
+      const { inputs, results } = createTestData({ fastingGlucose: glucose(110) });
       const suggestions = generateSuggestions(inputs, results);
 
       const glucoseSuggestion = suggestions.find(s => s.id === 'glucose-prediabetic');
@@ -241,8 +247,8 @@ describe('generateSuggestions', () => {
       expect(glucoseSuggestion?.priority).toBe('attention');
     });
 
-    it('does not generate suggestion for normal glucose < 100', () => {
-      const { inputs, results } = createTestData({ fastingGlucose: 90 });
+    it('does not generate suggestion for normal glucose < 100 mg/dL (<5.55 mmol/L)', () => {
+      const { inputs, results } = createTestData({ fastingGlucose: glucose(90) });
       const suggestions = generateSuggestions(inputs, results);
 
       const glucoseSuggestions = suggestions.filter(s => s.id.startsWith('glucose-'));
@@ -316,8 +322,8 @@ describe('generateSuggestions', () => {
     it('generates multiple suggestions for complex case', () => {
       const { inputs, results } = createTestData(
         {
-          hba1c: 6.8,
-          ldlC: 180,
+          hba1c: hba1c(6.8),
+          ldlC: ldl(180),
           systolicBp: 145,
           diastolicBp: 92,
         },
@@ -330,6 +336,24 @@ describe('generateSuggestions', () => {
 
       const urgentCount = suggestions.filter(s => s.priority === 'urgent').length;
       expect(urgentCount).toBeGreaterThanOrEqual(2); // hba1c and bp
+    });
+  });
+
+  describe('Unit system display in suggestion text', () => {
+    it('formats values in conventional units when specified', () => {
+      const { inputs, results } = createTestData({ ldlC: ldl(200) });
+      const suggestions = generateSuggestions(inputs, results, 'conventional');
+
+      const ldlSuggestion = suggestions.find(s => s.id === 'ldl-very-high');
+      expect(ldlSuggestion?.description).toContain('mg/dL');
+    });
+
+    it('formats values in SI units by default', () => {
+      const { inputs, results } = createTestData({ ldlC: ldl(200) });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const ldlSuggestion = suggestions.find(s => s.id === 'ldl-very-high');
+      expect(ldlSuggestion?.description).toContain('mmol/L');
     });
   });
 });

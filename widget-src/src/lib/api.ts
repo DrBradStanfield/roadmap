@@ -1,11 +1,20 @@
 import type { HealthInputs } from '@roadmap/health-core';
+import {
+  measurementsToInputs,
+  diffInputsToMeasurements,
+  type ApiMeasurement,
+} from '@roadmap/health-core';
 
-interface HealthProfileResponse {
+interface MeasurementsResponse {
   success: boolean;
-  data?: Partial<HealthInputs> | null;
+  data?: ApiMeasurement[];
   error?: string;
-  migrated?: boolean;
-  message?: string;
+}
+
+interface SingleMeasurementResponse {
+  success: boolean;
+  data?: ApiMeasurement;
+  error?: string;
 }
 
 // App proxy path — requests go through Shopify to the backend
@@ -13,84 +22,100 @@ interface HealthProfileResponse {
 const PROXY_PATH = '/apps/health-tool-1';
 
 /**
- * Load health profile from cloud storage (via app proxy)
+ * Load latest measurements (one per metric) from cloud storage.
  */
-export async function loadCloudProfile(): Promise<Partial<HealthInputs> | null> {
+export async function loadLatestMeasurements(): Promise<Partial<HealthInputs> | null> {
   try {
-    const response = await fetch(`${PROXY_PATH}/api/health-profile`);
+    const response = await fetch(`${PROXY_PATH}/api/measurements`);
+    if (!response.ok) return null;
 
-    if (!response.ok) {
-      console.warn('Failed to load cloud profile:', response.statusText);
-      return null;
-    }
+    const result: MeasurementsResponse = await response.json();
+    if (!result.success || !result.data) return null;
 
-    const result: HealthProfileResponse = await response.json();
-
-    if (!result.success) {
-      console.warn('Cloud profile error:', result.error);
-      return null;
-    }
-
-    return result.data || null;
+    return measurementsToInputs(result.data);
   } catch (error) {
-    console.warn('Error loading cloud profile:', error);
+    console.warn('Error loading measurements:', error);
     return null;
   }
 }
 
 /**
- * Save health profile to cloud storage (via app proxy)
+ * Load measurement history for a specific metric type.
  */
-export async function saveCloudProfile(
-  inputs: Partial<HealthInputs>
-): Promise<boolean> {
+export async function loadMeasurementHistory(
+  metricType: string,
+  limit = 50,
+): Promise<ApiMeasurement[]> {
   try {
-    const response = await fetch(`${PROXY_PATH}/api/health-profile`, {
+    const response = await fetch(
+      `${PROXY_PATH}/api/measurements?metric_type=${metricType}&limit=${limit}`,
+    );
+    if (!response.ok) return [];
+
+    const result: MeasurementsResponse = await response.json();
+    return result.success ? result.data || [] : [];
+  } catch (error) {
+    console.warn('Error loading history:', error);
+    return [];
+  }
+}
+
+/**
+ * Add a single measurement. Value must be in SI canonical units.
+ */
+export async function addMeasurement(
+  metricType: string,
+  value: number,
+  recordedAt?: string,
+): Promise<ApiMeasurement | null> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/measurements`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inputs }),
+      body: JSON.stringify({ metricType, value, recordedAt }),
     });
+    if (!response.ok) return null;
 
-    if (!response.ok) {
-      console.warn('Failed to save cloud profile:', response.statusText);
-      return false;
-    }
+    const result: SingleMeasurementResponse = await response.json();
+    return result.success ? result.data || null : null;
+  } catch (error) {
+    console.warn('Error adding measurement:', error);
+    return null;
+  }
+}
 
-    const result: HealthProfileResponse = await response.json();
+/**
+ * Delete a measurement by ID.
+ */
+export async function deleteMeasurement(measurementId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/measurements`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ measurementId }),
+    });
+    if (!response.ok) return false;
+
+    const result: { success: boolean } = await response.json();
     return result.success;
   } catch (error) {
-    console.warn('Error saving cloud profile:', error);
+    console.warn('Error deleting measurement:', error);
     return false;
   }
 }
 
 /**
- * Migrate localStorage data to cloud storage (via app proxy)
+ * Save only changed fields as individual measurements.
  */
-export async function migrateLocalData(
-  localInputs: Partial<HealthInputs>
-): Promise<{ success: boolean; migrated: boolean; cloudData?: Partial<HealthInputs> | null }> {
-  try {
-    const response = await fetch(`${PROXY_PATH}/api/health-profile`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inputs: localInputs, migrate: true }),
-    });
+export async function saveChangedMeasurements(
+  current: Partial<HealthInputs>,
+  previous: Partial<HealthInputs>,
+): Promise<boolean> {
+  const changes = diffInputsToMeasurements(current, previous);
+  if (changes.length === 0) return true;
 
-    if (!response.ok) {
-      console.warn('Failed to migrate data:', response.statusText);
-      return { success: false, migrated: false };
-    }
-
-    const result: HealthProfileResponse = await response.json();
-
-    return {
-      success: result.success,
-      migrated: result.migrated || false,
-      cloudData: result.data,
-    };
-  } catch (error) {
-    console.warn('Error migrating data:', error);
-    return { success: false, migrated: false };
-  }
+  const results = await Promise.all(
+    changes.map((c) => addMeasurement(c.metricType, c.value)),
+  );
+  return results.every((r) => r !== null);
 }

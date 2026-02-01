@@ -1,5 +1,10 @@
 import React from 'react';
 import type { HealthResults, Suggestion } from '@roadmap/health-core';
+import {
+  type UnitSystem,
+  formatDisplayValue,
+  getDisplayLabel,
+} from '@roadmap/health-core';
 
 // Auth state type (matches HealthTool)
 interface AuthState {
@@ -11,6 +16,7 @@ interface ResultsPanelProps {
   isValid: boolean;
   authState?: AuthState;
   saveStatus?: 'idle' | 'saving' | 'saved' | 'error';
+  unitSystem: UnitSystem;
 }
 
 function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
@@ -78,7 +84,7 @@ function AccountStatus({ authState, saveStatus }: { authState?: AuthState; saveS
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, authState, saveStatus, unitSystem }: ResultsPanelProps) {
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
@@ -96,6 +102,9 @@ export function ResultsPanel({ results, isValid, authState, saveStatus }: Result
     );
   }
 
+  const weightUnit = getDisplayLabel('weight', unitSystem);
+  const ibwDisplay = formatDisplayValue('weight', results.idealBodyWeight, unitSystem);
+
   const urgentSuggestions = results.suggestions.filter(s => s.priority === 'urgent');
   const attentionSuggestions = results.suggestions.filter(s => s.priority === 'attention');
   const infoSuggestions = results.suggestions.filter(s => s.priority === 'info');
@@ -111,7 +120,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus }: Result
         <div className="stats-grid">
           <div className="stat-card">
             <span className="stat-label">Ideal Body Weight</span>
-            <span className="stat-value">{results.idealBodyWeight} kg</span>
+            <span className="stat-value">{ibwDisplay} {weightUnit}</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Protein Target</span>

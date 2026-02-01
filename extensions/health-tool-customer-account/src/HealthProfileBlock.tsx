@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { Component, useEffect, useState } from "react";
+import type { ReactNode, ErrorInfo } from "react";
 import {
   BlockStack,
   Card,
@@ -12,6 +13,7 @@ import {
   reactExtension,
   useApi,
 } from "@shopify/ui-extensions-react/customer-account";
+import { calculateIBW, calculateProteinTarget, calculateBMI } from '../../../packages/health-core/src';
 
 // Health data type (simplified for display)
 interface HealthData {
@@ -37,9 +39,41 @@ interface HealthProfileResponse {
   error?: string;
 }
 
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Health profile block error:', error, info.componentStack);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Card padding>
+          <Banner status="warning">
+            <Text>Unable to load health profile. Please refresh the page.</Text>
+          </Banner>
+        </Card>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default reactExtension(
   "customer-account.profile.block.render",
-  () => <HealthProfileBlock />
+  () => (
+    <ErrorBoundary>
+      <HealthProfileBlock />
+    </ErrorBoundary>
+  ),
 );
 
 function HealthProfileBlock() {
@@ -88,16 +122,14 @@ function HealthProfileBlock() {
 
           // Calculate BMI if we have height and weight
           if (data.heightCm && data.weightKg) {
-            const heightM = data.heightCm / 100;
-            healthData.bmi = Math.round((data.weightKg / (heightM * heightM)) * 10) / 10;
+            healthData.bmi = calculateBMI(data.weightKg, data.heightCm);
           }
 
-          // Calculate IBW if we have height and sex
+          // Calculate IBW and protein target if we have height and sex
           if (data.heightCm && data.sex) {
-            const baseWeight = data.sex === 'male' ? 50 : 45.5;
-            const ibw = Math.max(30, baseWeight + 0.91 * (data.heightCm - 152.4));
-            healthData.idealBodyWeight = Math.round(ibw * 10) / 10;
-            healthData.proteinTarget = Math.round(ibw * 1.2);
+            const ibw = calculateIBW(data.heightCm, data.sex);
+            healthData.idealBodyWeight = ibw;
+            healthData.proteinTarget = calculateProteinTarget(ibw);
           }
 
           setHealthData(healthData);

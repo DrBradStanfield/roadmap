@@ -1,13 +1,49 @@
 import type { HealthInputs, HealthResults, Suggestion } from './types';
+import {
+  type UnitSystem,
+  formatDisplayValue,
+  getDisplayLabel,
+  HBA1C_THRESHOLDS,
+  LDL_THRESHOLDS,
+  HDL_THRESHOLDS,
+  TRIGLYCERIDES_THRESHOLDS,
+  GLUCOSE_THRESHOLDS,
+  BP_THRESHOLDS,
+} from './units';
+
+/** Format a blood-test value with its display unit, e.g. "5.7%" or "39 mmol/mol" */
+function fmtHba1c(value: number, us: UnitSystem): string {
+  return `${formatDisplayValue('hba1c', value, us)} ${getDisplayLabel('hba1c', us)}`;
+}
+function fmtLdl(value: number, us: UnitSystem): string {
+  return `${formatDisplayValue('ldl', value, us)} ${getDisplayLabel('ldl', us)}`;
+}
+function fmtHdl(value: number, us: UnitSystem): string {
+  return `${formatDisplayValue('hdl', value, us)} ${getDisplayLabel('hdl', us)}`;
+}
+function fmtTrig(value: number, us: UnitSystem): string {
+  return `${formatDisplayValue('triglycerides', value, us)} ${getDisplayLabel('triglycerides', us)}`;
+}
+function fmtGlucose(value: number, us: UnitSystem): string {
+  return `${formatDisplayValue('fasting_glucose', value, us)} ${getDisplayLabel('fasting_glucose', us)}`;
+}
+function fmtWeight(value: number, us: UnitSystem): string {
+  return `${formatDisplayValue('weight', value, us)} ${getDisplayLabel('weight', us)}`;
+}
 
 /**
- * Generate personalized health suggestions based on inputs and calculated results
+ * Generate personalized health suggestions based on inputs and calculated results.
+ *
+ * All input values and thresholds are in SI canonical units.
+ * The `unitSystem` parameter controls how values are formatted in suggestion text.
  */
 export function generateSuggestions(
   inputs: HealthInputs,
-  results: HealthResults
+  results: HealthResults,
+  unitSystem: UnitSystem = 'si',
 ): Suggestion[] {
   const suggestions: Suggestion[] = [];
+  const us = unitSystem;
 
   // Always show protein target (core recommendation)
   suggestions.push({
@@ -15,7 +51,7 @@ export function generateSuggestions(
     category: 'nutrition',
     priority: 'info',
     title: `Daily protein target: ${results.proteinTarget}g`,
-    description: `Based on your ideal body weight of ${results.idealBodyWeight}kg, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
+    description: `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us)}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
     discussWithDoctor: false,
   });
 
@@ -63,24 +99,24 @@ export function generateSuggestions(
     });
   }
 
-  // HbA1c suggestions
+  // HbA1c suggestions (thresholds in mmol/mol IFCC)
   if (inputs.hba1c !== undefined) {
-    if (inputs.hba1c >= 6.5) {
+    if (inputs.hba1c >= HBA1C_THRESHOLDS.diabetes) {
       suggestions.push({
         id: 'hba1c-diabetic',
         category: 'bloodwork',
         priority: 'urgent',
         title: 'HbA1c in diabetic range',
-        description: `Your HbA1c of ${inputs.hba1c}% is ≥6.5%, indicating diabetes. This requires medical management and lifestyle intervention.`,
+        description: `Your HbA1c of ${fmtHba1c(inputs.hba1c, us)} indicates diabetes. This requires medical management and lifestyle intervention.`,
         discussWithDoctor: true,
       });
-    } else if (inputs.hba1c >= 5.7) {
+    } else if (inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
       suggestions.push({
         id: 'hba1c-prediabetic',
         category: 'bloodwork',
         priority: 'attention',
         title: 'HbA1c indicates prediabetes',
-        description: `Your HbA1c of ${inputs.hba1c}% is in the prediabetic range (5.7-6.4%). Lifestyle changes now can prevent progression to diabetes.`,
+        description: `Your HbA1c of ${fmtHba1c(inputs.hba1c, us)} is in the prediabetic range. Lifestyle changes now can prevent progression to diabetes.`,
         discussWithDoctor: true,
       });
     } else {
@@ -89,120 +125,120 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'HbA1c in normal range',
-        description: `Your HbA1c of ${inputs.hba1c}% is in the normal range (<5.7%). Continue healthy habits to maintain this.`,
+        description: `Your HbA1c of ${fmtHba1c(inputs.hba1c, us)} is in the normal range. Continue healthy habits to maintain this.`,
         discussWithDoctor: false,
       });
     }
   }
 
-  // LDL cholesterol
+  // LDL cholesterol (thresholds in mmol/L)
   if (inputs.ldlC !== undefined) {
-    if (inputs.ldlC >= 190) {
+    if (inputs.ldlC >= LDL_THRESHOLDS.veryHigh) {
       suggestions.push({
         id: 'ldl-very-high',
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high LDL cholesterol',
-        description: `Your LDL of ${inputs.ldlC} mg/dL is significantly elevated (≥190). This may indicate familial hypercholesterolemia. Statin therapy is typically recommended.`,
+        description: `Your LDL of ${fmtLdl(inputs.ldlC, us)} is significantly elevated. This may indicate familial hypercholesterolemia. Statin therapy is typically recommended.`,
         discussWithDoctor: true,
       });
-    } else if (inputs.ldlC >= 160) {
+    } else if (inputs.ldlC >= LDL_THRESHOLDS.high) {
       suggestions.push({
         id: 'ldl-high',
         category: 'bloodwork',
         priority: 'attention',
         title: 'High LDL cholesterol',
-        description: `Your LDL of ${inputs.ldlC} mg/dL is high (160-189). Consider lifestyle modifications and discuss medication options.`,
+        description: `Your LDL of ${fmtLdl(inputs.ldlC, us)} is high. Consider lifestyle modifications and discuss medication options.`,
         discussWithDoctor: true,
       });
-    } else if (inputs.ldlC >= 130) {
+    } else if (inputs.ldlC >= LDL_THRESHOLDS.borderline) {
       suggestions.push({
         id: 'ldl-borderline',
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high LDL cholesterol',
-        description: `Your LDL of ${inputs.ldlC} mg/dL is borderline high (130-159). Optimal is <100 mg/dL for most adults.`,
+        description: `Your LDL of ${fmtLdl(inputs.ldlC, us)} is borderline high. Optimal is <${formatDisplayValue('ldl', 2.59, us)} ${getDisplayLabel('ldl', us)} for most adults.`,
         discussWithDoctor: false,
       });
     }
   }
 
-  // HDL cholesterol
+  // HDL cholesterol (thresholds in mmol/L)
   if (inputs.hdlC !== undefined) {
-    const lowThreshold = inputs.sex === 'male' ? 40 : 50;
+    const lowThreshold = inputs.sex === 'male' ? HDL_THRESHOLDS.lowMale : HDL_THRESHOLDS.lowFemale;
     if (inputs.hdlC < lowThreshold) {
       suggestions.push({
         id: 'hdl-low',
         category: 'bloodwork',
         priority: 'attention',
         title: 'Low HDL cholesterol',
-        description: `Your HDL of ${inputs.hdlC} mg/dL is below optimal (${lowThreshold} for ${inputs.sex === 'male' ? 'men' : 'women'}). Exercise and healthy fats can help raise HDL.`,
+        description: `Your HDL of ${fmtHdl(inputs.hdlC, us)} is below optimal (${formatDisplayValue('hdl', lowThreshold, us)} ${getDisplayLabel('hdl', us)} for ${inputs.sex === 'male' ? 'men' : 'women'}). Exercise and healthy fats can help raise HDL.`,
         discussWithDoctor: true,
       });
     }
   }
 
-  // Triglycerides
+  // Triglycerides (thresholds in mmol/L)
   if (inputs.triglycerides !== undefined) {
-    if (inputs.triglycerides >= 500) {
+    if (inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.veryHigh) {
       suggestions.push({
         id: 'trig-very-high',
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high triglycerides',
-        description: `Your triglycerides of ${inputs.triglycerides} mg/dL are very high (≥500), increasing risk of pancreatitis. Immediate intervention is recommended.`,
+        description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us)} are very high, increasing risk of pancreatitis. Immediate intervention is recommended.`,
         discussWithDoctor: true,
       });
-    } else if (inputs.triglycerides >= 200) {
+    } else if (inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.high) {
       suggestions.push({
         id: 'trig-high',
         category: 'bloodwork',
         priority: 'attention',
         title: 'High triglycerides',
-        description: `Your triglycerides of ${inputs.triglycerides} mg/dL are elevated (200-499). Reducing refined carbs and alcohol can help.`,
+        description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us)} are elevated. Reducing refined carbs and alcohol can help.`,
         discussWithDoctor: true,
       });
-    } else if (inputs.triglycerides >= 150) {
+    } else if (inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) {
       suggestions.push({
         id: 'trig-borderline',
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high triglycerides',
-        description: `Your triglycerides of ${inputs.triglycerides} mg/dL are borderline (150-199). Optimal is <150 mg/dL.`,
+        description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us)} are borderline. Optimal is <${formatDisplayValue('triglycerides', TRIGLYCERIDES_THRESHOLDS.borderline, us)} ${getDisplayLabel('triglycerides', us)}.`,
         discussWithDoctor: false,
       });
     }
   }
 
-  // Fasting glucose
+  // Fasting glucose (thresholds in mmol/L)
   if (inputs.fastingGlucose !== undefined) {
-    if (inputs.fastingGlucose >= 126) {
+    if (inputs.fastingGlucose >= GLUCOSE_THRESHOLDS.diabetes) {
       suggestions.push({
         id: 'glucose-diabetic',
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Fasting glucose in diabetic range',
-        description: `Your fasting glucose of ${inputs.fastingGlucose} mg/dL is ≥126, indicating diabetes. This requires medical evaluation.`,
+        description: `Your fasting glucose of ${fmtGlucose(inputs.fastingGlucose, us)} indicates diabetes. This requires medical evaluation.`,
         discussWithDoctor: true,
       });
-    } else if (inputs.fastingGlucose >= 100) {
+    } else if (inputs.fastingGlucose >= GLUCOSE_THRESHOLDS.prediabetes) {
       suggestions.push({
         id: 'glucose-prediabetic',
         category: 'bloodwork',
         priority: 'attention',
         title: 'Fasting glucose indicates prediabetes',
-        description: `Your fasting glucose of ${inputs.fastingGlucose} mg/dL is in the prediabetic range (100-125). Lifestyle changes can help prevent diabetes.`,
+        description: `Your fasting glucose of ${fmtGlucose(inputs.fastingGlucose, us)} is in the prediabetic range. Lifestyle changes can help prevent diabetes.`,
         discussWithDoctor: true,
       });
     }
   }
 
-  // Blood pressure
+  // Blood pressure (mmHg — same in both systems)
   if (inputs.systolicBp !== undefined && inputs.diastolicBp !== undefined) {
     const sys = inputs.systolicBp;
     const dia = inputs.diastolicBp;
 
-    if (sys >= 180 || dia >= 120) {
+    if (sys >= BP_THRESHOLDS.crisisSys || dia >= BP_THRESHOLDS.crisisDia) {
       suggestions.push({
         id: 'bp-crisis',
         category: 'bloodwork',
@@ -211,7 +247,7 @@ export function generateSuggestions(
         description: `Your BP of ${sys}/${dia} mmHg is dangerously high. Seek immediate medical attention if accompanied by symptoms.`,
         discussWithDoctor: true,
       });
-    } else if (sys >= 140 || dia >= 90) {
+    } else if (sys >= BP_THRESHOLDS.stage2Sys || dia >= BP_THRESHOLDS.stage2Dia) {
       suggestions.push({
         id: 'bp-stage2',
         category: 'bloodwork',
@@ -220,7 +256,7 @@ export function generateSuggestions(
         description: `Your BP of ${sys}/${dia} mmHg indicates stage 2 hypertension. Medication is typically recommended in addition to lifestyle changes.`,
         discussWithDoctor: true,
       });
-    } else if (sys >= 130 || dia >= 80) {
+    } else if (sys >= BP_THRESHOLDS.stage1Sys || dia >= BP_THRESHOLDS.stage1Dia) {
       suggestions.push({
         id: 'bp-stage1',
         category: 'bloodwork',
@@ -229,7 +265,7 @@ export function generateSuggestions(
         description: `Your BP of ${sys}/${dia} mmHg indicates stage 1 hypertension. Lifestyle modifications are recommended. Target is <130/80.`,
         discussWithDoctor: true,
       });
-    } else if (sys >= 120 && dia < 80) {
+    } else if (sys >= BP_THRESHOLDS.elevatedSys && dia < BP_THRESHOLDS.stage1Dia) {
       suggestions.push({
         id: 'bp-elevated',
         category: 'bloodwork',

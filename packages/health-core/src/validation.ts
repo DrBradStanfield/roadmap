@@ -1,7 +1,23 @@
 import { z } from 'zod';
 
 /**
- * Schema for validating health inputs
+ * Valid metric types for the health_measurements table.
+ */
+export const METRIC_TYPES = [
+  'height', 'weight', 'waist',
+  'hba1c', 'ldl', 'hdl', 'triglycerides', 'fasting_glucose',
+  'systolic_bp', 'diastolic_bp',
+  'sex', 'birth_year', 'birth_month',
+] as const;
+
+export type MetricTypeValue = typeof METRIC_TYPES[number];
+
+/**
+ * Schema for validating health inputs.
+ *
+ * ALL numeric values are in SI canonical units:
+ *   height/waist: cm | weight: kg | BP: mmHg
+ *   HbA1c: mmol/mol (IFCC) | lipids/glucose: mmol/L
  */
 export const healthInputSchema = z.object({
   // Required fields
@@ -37,31 +53,31 @@ export const healthInputSchema = z.object({
     .max(12, 'Month must be between 1 and 12')
     .optional(),
 
-  // Blood test values (optional)
+  // Blood test values — SI canonical units
   hba1c: z
     .number()
-    .min(3, 'HbA1c must be at least 3%')
-    .max(20, 'HbA1c must be at most 20%')
+    .min(9, 'HbA1c must be at least 9 mmol/mol')
+    .max(195, 'HbA1c must be at most 195 mmol/mol')
     .optional(),
   ldlC: z
     .number()
     .min(0, 'LDL must be positive')
-    .max(500, 'LDL must be at most 500 mg/dL')
+    .max(12.9, 'LDL must be at most 12.9 mmol/L')
     .optional(),
   hdlC: z
     .number()
     .min(0, 'HDL must be positive')
-    .max(200, 'HDL must be at most 200 mg/dL')
+    .max(5.2, 'HDL must be at most 5.2 mmol/L')
     .optional(),
   triglycerides: z
     .number()
     .min(0, 'Triglycerides must be positive')
-    .max(2000, 'Triglycerides must be at most 2000 mg/dL')
+    .max(22.6, 'Triglycerides must be at most 22.6 mmol/L')
     .optional(),
   fastingGlucose: z
     .number()
     .min(0, 'Fasting glucose must be positive')
-    .max(500, 'Fasting glucose must be at most 500 mg/dL')
+    .max(27.8, 'Fasting glucose must be at most 27.8 mmol/L')
     .optional(),
   systolicBp: z
     .number()
@@ -114,17 +130,13 @@ export function getValidationErrors(errors: z.ZodError): Record<string, string> 
 }
 
 /**
- * Schema for a single blood test record
+ * Schema for a single measurement record (used by API endpoints).
+ * Value is always in SI canonical units.
  */
-export const bloodTestSchema = z.object({
-  testDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format'),
-  hba1c: z.number().min(3).max(20).optional(),
-  ldlC: z.number().min(0).max(500).optional(),
-  hdlC: z.number().min(0).max(200).optional(),
-  triglycerides: z.number().min(0).max(2000).optional(),
-  fastingGlucose: z.number().min(0).max(500).optional(),
-  systolicBp: z.number().min(60).max(250).optional(),
-  diastolicBp: z.number().min(40).max(150).optional(),
+export const measurementSchema = z.object({
+  metricType: z.enum(METRIC_TYPES),
+  value: z.number(),
+  recordedAt: z.string().datetime().optional(), // defaults to now on server
 });
 
-export type ValidatedBloodTest = z.infer<typeof bloodTestSchema>;
+export type ValidatedMeasurement = z.infer<typeof measurementSchema>;

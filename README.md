@@ -1,16 +1,18 @@
 # Health Roadmap Tool
 
-A personalized health management tool embedded in a Shopify storefront. Users input their health metrics (body measurements, blood tests) and receive real-time personalized suggestions to discuss with their healthcare provider.
+A personalized health management tool embedded in a Shopify storefront. Users input their health metrics (body measurements, blood tests) and receive real-time personalized suggestions to discuss with their healthcare provider. Health data is stored as immutable time-series records, allowing users to track their metrics over time.
 
 ## Features
 
 - **Two-panel interface**: Input form on the left, live results on the right
 - **Real-time calculations**: Results update as users type
+- **Unit system support**: Automatic locale detection (SI for NZ/AU/UK/EU, conventional for US) with manual toggle
+- **Immutable measurement history**: Apple Health-style data model (no edits, only add/delete)
+- **SI canonical storage**: All values stored in SI units (kg, cm, mmol/L, mmol/mol, mmHg) to eliminate unit ambiguity
 - **Guest mode**: Works without signup (data saved to localStorage)
 - **Shopify login sync**: Logged-in customers automatically save data to cloud (HMAC-verified)
-- **Data migration**: Guest data migrates to account on first login
 - **Customer Account dashboard**: View health summary in Shopify account
-- **Full-page Health Roadmap**: Logged-in customers access a full interactive health tool from their customer account navigation, with all inputs, real-time calculations, and personalized suggestions
+- **Full-page Health Roadmap**: Logged-in customers access a full interactive health tool from their customer account navigation
 - **Personalized suggestions**: Based on clinical guidelines for BMI, HbA1c, LDL, blood pressure, etc.
 
 ## Prerequisites
@@ -65,36 +67,17 @@ Edit `.env` with your Supabase credentials (found in Supabase Dashboard > Settin
 
 ### 6. Set up Supabase database
 
-Create these tables in your Supabase project:
+Run the SQL migration in your Supabase SQL Editor:
 
-**profiles**
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | Primary key, default `gen_random_uuid()` |
-| shopify_customer_id | text | Unique, not null |
-| email | text | Nullable |
-| created_at | timestamptz | Default `now()` |
-| updated_at | timestamptz | Default `now()` |
+```bash
+# Copy the contents of supabase/rls-policies.sql into the Supabase SQL Editor and run it
+```
 
-**health_profiles**
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid | Primary key, default `gen_random_uuid()` |
-| user_id | uuid | Foreign key to profiles.id, unique |
-| height_cm | numeric | Nullable |
-| weight_kg | numeric | Nullable |
-| waist_cm | numeric | Nullable |
-| sex | text | Nullable (`male` or `female`) |
-| birth_year | integer | Nullable |
-| birth_month | integer | Nullable |
-| hba1c | numeric | Nullable |
-| ldl_c | numeric | Nullable |
-| hdl_c | numeric | Nullable |
-| triglycerides | numeric | Nullable |
-| fasting_glucose | numeric | Nullable |
-| systolic_bp | numeric | Nullable |
-| diastolic_bp | numeric | Nullable |
-| updated_at | timestamptz | Default `now()` |
+This creates:
+- **profiles** table — Maps Shopify customer IDs to internal user IDs
+- **health_measurements** table — Immutable time-series health records with `metric_type`, `value` (SI canonical units), and `recorded_at`
+- **get_latest_measurements()** RPC — Efficiently returns the latest value per metric type
+- **RLS policies** — Defense-in-depth access control (SELECT, INSERT, DELETE; no UPDATE)
 
 ### 7. Deploy
 
@@ -114,7 +97,7 @@ fly secrets set SUPABASE_SERVICE_KEY=your-service-key
 ### 8. Install on your store
 
 1. Install the app on your Shopify development store
-2. Accept the required scopes (`write_products`, `write_app_proxy`, `read_customers`)
+2. Accept the required scopes (`write_app_proxy`, `read_customers`)
 3. Add the Health Tool widget block to a page in your theme editor
 
 ## Architecture
@@ -124,21 +107,26 @@ fly secrets set SUPABASE_SERVICE_KEY=your-service-key
 │  Theme Widget (Storefront)                                       │
 │  ├── Guest: localStorage (works without login)                  │
 │  ├── Logged in: Auto-detects Shopify customer                   │
-│  └── Calls backend API for cloud sync                           │
+│  └── Calls backend measurement API for cloud sync               │
 ├─────────────────────────────────────────────────────────────────┤
 │  Backend API (Remix App on Fly.io)                                │
-│  ├── GET/POST /api/health-profile (storefront, HMAC auth)       │
-│  ├── GET/POST /api/customer-health-profile (account, JWT auth)  │
+│  ├── GET/POST/DELETE /api/measurements (storefront, HMAC auth)  │
+│  ├── GET/POST/DELETE /api/customer-measurements (JWT auth)      │
 │  └── Uses Supabase service key for DB access                    │
 ├─────────────────────────────────────────────────────────────────┤
 │  Customer Account Extensions                                     │
 │  ├── Profile block: health summary in customer profile           │
 │  └── Full page: complete health tool (inputs + results)          │
 ├─────────────────────────────────────────────────────────────────┤
-│  Supabase Database                                               │
+│  Shared Library (packages/health-core)                            │
+│  ├── Unit conversions (SI ↔ conventional)                        │
+│  ├── Health calculations (IBW, BMI, protein target)              │
+│  ├── Suggestion generation (unit-system-aware)                   │
+│  └── Field↔metric mappings, validation schemas                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Supabase Database (RLS enabled)                                  │
 │  ├── profiles (shopify_customer_id → user mapping)              │
-│  ├── health_profiles (body measurements + blood tests)          │
-│  └── blood_tests (historical records)                           │
+│  └── health_measurements (immutable time-series records)         │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -153,7 +141,7 @@ Guest (not logged in):
   Widget → localStorage (no server calls)
 
 Logged-in customer (storefront widget):
-  Widget → /apps/health-tool-1/api/health-profile (same-origin request)
+  Widget → /apps/health-tool-1/api/measurements (same-origin request)
          → Shopify app proxy adds logged_in_customer_id + HMAC signature
          → Fly.io backend verifies HMAC via authenticate.public.appProxy()
          → Extracts verified customer ID from signed query params
@@ -161,7 +149,7 @@ Logged-in customer (storefront widget):
 
 Logged-in customer (customer account page):
   Extension → sessionToken.get() obtains JWT
-           → GET/POST https://health-tool-app.fly.dev/api/customer-health-profile
+           → GET/POST/DELETE https://health-tool-app.fly.dev/api/customer-measurements
            → Backend verifies JWT (HS256, SHOPIFY_API_SECRET)
            → Customer ID from JWT sub claim (gid://shopify/Customer/<id>)
            → Reads/writes Supabase via service key
@@ -173,6 +161,9 @@ Logged-in customer (customer account page):
 - **No client-side secrets**: No API keys, tokens, or customer IDs are exposed in client code.
 - **No CORS**: Requests go through Shopify's proxy (same origin as the storefront).
 - **Server-side authorization**: The backend never trusts client-supplied identity. Customer ID always comes from the HMAC-verified query parameters.
+- **Rate limiting**: The customer account JWT endpoint is rate-limited (60 requests/minute per IP) to prevent abuse.
+- **Row Level Security**: Supabase RLS policies are enabled as defense-in-depth on all health data tables.
+- **Error boundaries**: React error boundaries prevent component crashes from taking down the entire tool.
 
 ## Project Structure
 
@@ -180,32 +171,32 @@ Logged-in customer (customer account page):
 /roadmap
 ├── /app                          # Remix app (Shopify admin + API)
 │   ├── /lib
-│   │   └── supabase.server.ts    # Supabase client (service key)
+│   │   ├── supabase.server.ts    # Supabase client + measurement CRUD
+│   │   └── rate-limit.server.ts  # Rate limiter for JWT endpoint
 │   └── /routes
-│       ├── api.health-profile.ts          # Storefront API (HMAC auth)
-│       └── api.customer-health-profile.ts # Customer account API (JWT auth)
+│       ├── api.measurements.ts            # Storefront API (HMAC auth)
+│       └── api.customer-measurements.ts   # Customer account API (JWT auth)
+├── /packages
+│   └── /health-core              # Shared library
+│       └── /src
+│           ├── calculations.ts   # IBW, BMI, protein target
+│           ├── suggestions.ts    # Recommendation generation (unit-aware)
+│           ├── units.ts          # Unit definitions, conversions, thresholds
+│           ├── mappings.ts       # Field↔metric mappings, data conversion
+│           ├── validation.ts     # Zod schemas
+│           └── types.ts          # TypeScript interfaces
 ├── /widget-src                   # React widget source code
-│   ├── /src
-│   │   ├── /components           # HealthTool, InputPanel, ResultsPanel
-│   │   └── /lib
-│   │       ├── storage.ts        # localStorage helpers
-│   │       └── api.ts            # Cloud API client
-│   └── vite.config.ts
+│   └── /src
+│       ├── /components           # HealthTool, InputPanel, ResultsPanel
+│       └── /lib
+│           ├── storage.ts        # localStorage + unit preference
+│           └── api.ts            # Measurement API client (app proxy)
 ├── /extensions
 │   ├── /health-tool-widget       # Shopify theme extension
-│   │   ├── /blocks
-│   │   │   └── app-block.liquid  # Passes customer data to React
-│   │   └── /assets               # Built JS/CSS
-│   ├── /health-tool-customer-account
-│   │   └── /src
-│   │       └── HealthProfileBlock.tsx  # Customer account profile block
-│   └── /health-tool-full-page
-│       └── /src
-│           ├── HealthToolPage.tsx      # Full-page health tool (customer account)
-│           └── /lib/api.ts            # API client (JWT auth)
-├── /packages
-│   └── /health-core              # Shared calculations library
-├── /prisma                       # Database schema
+│   ├── /health-tool-customer-account  # Customer account summary block
+│   └── /health-tool-full-page    # Full-page health tool (customer account)
+├── /supabase
+│   └── rls-policies.sql          # DB schema + RLS policies
 └── Dockerfile                    # Docker build for Fly.io
 ```
 
@@ -218,19 +209,10 @@ Logged-in customer (customer account page):
 | BMI | weight / height² | WHO standard |
 | Waist-to-Height Ratio | waist / height | Metabolic risk indicator |
 
-## Suggestions Logic
-
-Suggestions are generated based on clinical thresholds:
-
-- **HbA1c**: <5.7% normal, 5.7-6.4% prediabetes, ≥6.5% diabetes
-- **LDL Cholesterol**: <100 optimal, 130-159 borderline, ≥190 very high
-- **Blood Pressure**: <120/80 normal, 130-139/80-89 stage 1 hypertension
-- **Waist-to-Height**: >0.5 indicates elevated metabolic risk
-
 ## Testing
 
 ```bash
-npm test              # Run all tests once
+npm test              # Run all 124 tests once
 npm run test:watch    # Watch mode
 ```
 

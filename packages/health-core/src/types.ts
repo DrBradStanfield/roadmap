@@ -1,5 +1,11 @@
 /**
- * Health input data from user
+ * Health input data from user.
+ *
+ * ALL numeric values are in SI canonical units:
+ *   height/waist: cm | weight: kg | BP: mmHg
+ *   HbA1c: mmol/mol (IFCC) | lipids/glucose: mmol/L
+ *
+ * Conversion to/from display units is handled by units.ts.
  */
 export interface HealthInputs {
   heightCm: number;
@@ -8,14 +14,14 @@ export interface HealthInputs {
   sex: 'male' | 'female';
   birthYear?: number;
   birthMonth?: number;
-  // Blood test values
-  hba1c?: number;
-  ldlC?: number;
-  hdlC?: number;
-  triglycerides?: number;
-  fastingGlucose?: number;
-  systolicBp?: number;
-  diastolicBp?: number;
+  // Blood test values (SI canonical units)
+  hba1c?: number;       // mmol/mol (IFCC)
+  ldlC?: number;        // mmol/L
+  hdlC?: number;        // mmol/L
+  triglycerides?: number; // mmol/L
+  fastingGlucose?: number; // mmol/L
+  systolicBp?: number;  // mmHg
+  diastolicBp?: number; // mmHg
 }
 
 /**
@@ -43,33 +49,13 @@ export interface Suggestion {
 }
 
 /**
- * Stored health profile (for database)
+ * A single immutable measurement record (maps to health_measurements table).
  */
-export interface StoredHealthProfile {
+export interface Measurement {
   id: string;
   userId: string;
-  heightCm: number | null;
-  weightKg: number | null;
-  waistCm: number | null;
-  sex: 'male' | 'female' | null;
-  birthYear: number | null;
-  birthMonth: number | null;
-  updatedAt: string;
-}
-
-/**
- * Stored blood test record (for database)
- */
-export interface StoredBloodTest {
-  id: string;
-  userId: string;
-  testDate: string;
-  hba1c: number | null;
-  ldlC: number | null;
-  hdlC: number | null;
-  triglycerides: number | null;
-  fastingGlucose: number | null;
-  systolicBp: number | null;
-  diastolicBp: number | null;
-  createdAt: string;
+  metricType: string;
+  value: number; // SI canonical unit
+  recordedAt: string; // ISO 8601
+  createdAt: string;  // ISO 8601
 }

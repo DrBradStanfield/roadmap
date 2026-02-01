@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   calculateHealthResults,
   validateHealthInputs,
   getValidationErrors,
+  detectUnitSystem,
   type HealthInputs,
+  type UnitSystem,
 } from '@roadmap/health-core';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
@@ -11,9 +13,10 @@ import {
   saveToLocalStorage,
   loadFromLocalStorage,
   clearLocalStorage,
-  hasStoredData,
+  saveUnitPreference,
+  loadUnitPreference,
 } from '../lib/storage';
-import { loadCloudProfile, saveCloudProfile, migrateLocalData } from '../lib/api';
+import { loadLatestMeasurements, saveChangedMeasurements } from '../lib/api';
 
 // Auth state from Liquid template
 interface AuthState {
@@ -35,35 +38,43 @@ export function HealthTool() {
   const [inputs, setInputs] = useState<Partial<HealthInputs>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasLoadedData, setHasLoadedData] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [showMigrationPrompt, setShowMigrationPrompt] = useState(false);
-  const [localDataForMigration, setLocalDataForMigration] = useState<Partial<HealthInputs> | null>(null);
+
+  // Unit system: load saved preference or auto-detect
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
+    return loadUnitPreference() ?? detectUnitSystem();
+  });
+
+  // Track previously saved inputs to only save changed fields
+  const previousInputsRef = useRef<Partial<HealthInputs>>({});
 
   // Get auth state once on mount
   const [authState] = useState<AuthState>(() => getAuthState());
+
+  // Handle unit system change
+  const handleUnitSystemChange = useCallback((system: UnitSystem) => {
+    setUnitSystem(system);
+    saveUnitPreference(system);
+  }, []);
 
   // Load data on mount (from cloud if logged in, otherwise localStorage)
   useEffect(() => {
     async function loadData() {
       if (authState.isLoggedIn) {
-        // Load from cloud via app proxy (Shopify adds customer ID automatically)
-        const cloudData = await loadCloudProfile();
+        const cloudData = await loadLatestMeasurements();
         const localData = loadFromLocalStorage();
 
         if (cloudData && Object.keys(cloudData).length > 0) {
           setInputs(cloudData);
+          previousInputsRef.current = cloudData;
           if (localData && Object.keys(localData).length > 0) {
             clearLocalStorage();
           }
         } else if (localData && Object.keys(localData).length > 0) {
-          // No cloud data but local data exists - offer migration
-          setLocalDataForMigration(localData);
-          setShowMigrationPrompt(true);
           setInputs(localData);
+          previousInputsRef.current = {};
         }
       } else {
-        // Guest mode - load from localStorage
         const saved = loadFromLocalStorage();
         if (saved) {
           setInputs(saved);
@@ -81,46 +92,20 @@ export function HealthTool() {
 
     const timeout = setTimeout(async () => {
       if (authState.isLoggedIn) {
-        // Save to cloud via app proxy
-        setIsSaving(true);
         setSaveStatus('saving');
-        const success = await saveCloudProfile(inputs);
-        setIsSaving(false);
+        const success = await saveChangedMeasurements(inputs, previousInputsRef.current);
         setSaveStatus(success ? 'saved' : 'error');
-
-        // Reset status after a delay
+        if (success) {
+          previousInputsRef.current = { ...inputs };
+        }
         setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
-        // Guest mode - save to localStorage
         saveToLocalStorage(inputs);
       }
     }, 500);
 
     return () => clearTimeout(timeout);
   }, [inputs, hasLoadedData, authState.isLoggedIn]);
-
-  // Handle migration confirmation
-  const handleMigrate = useCallback(async () => {
-    if (!localDataForMigration) return;
-
-    const result = await migrateLocalData(localDataForMigration);
-
-    if (result.success) {
-      clearLocalStorage();
-      setShowMigrationPrompt(false);
-      setLocalDataForMigration(null);
-
-      if (!result.migrated && result.cloudData) {
-        setInputs(result.cloudData);
-      }
-    }
-  }, [localDataForMigration]);
-
-  // Skip migration and use local data
-  const handleSkipMigration = useCallback(() => {
-    setShowMigrationPrompt(false);
-    setLocalDataForMigration(null);
-  }, []);
 
   // Calculate results whenever inputs change
   const { results, isValid } = useMemo(() => {
@@ -136,9 +121,9 @@ export function HealthTool() {
     }
 
     setErrors({});
-    const healthResults = calculateHealthResults(inputs as HealthInputs);
+    const healthResults = calculateHealthResults(inputs as HealthInputs, unitSystem);
     return { results: healthResults, isValid: true };
-  }, [inputs]);
+  }, [inputs, unitSystem]);
 
   const handleInputChange = (newInputs: Partial<HealthInputs>) => {
     setInputs(newInputs);
@@ -154,32 +139,14 @@ export function HealthTool() {
         </p>
       </div>
 
-      {/* Migration Prompt */}
-      {showMigrationPrompt && (
-        <div className="health-tool-migration-prompt">
-          <div className="migration-content">
-            <p>
-              <strong>Welcome back!</strong> We found health data saved on this device.
-              Would you like to save it to your account?
-            </p>
-            <div className="migration-actions">
-              <button onClick={handleMigrate} className="migration-btn primary">
-                Save to Account
-              </button>
-              <button onClick={handleSkipMigration} className="migration-btn secondary">
-                Keep Local Only
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="health-tool-content">
         <div className="health-tool-left">
           <InputPanel
             inputs={inputs}
             onChange={handleInputChange}
             errors={errors}
+            unitSystem={unitSystem}
+            onUnitSystemChange={handleUnitSystemChange}
           />
         </div>
 
@@ -189,6 +156,7 @@ export function HealthTool() {
             isValid={isValid}
             authState={authState}
             saveStatus={saveStatus}
+            unitSystem={unitSystem}
           />
         </div>
       </div>
