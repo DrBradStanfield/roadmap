@@ -71,7 +71,7 @@ export function InputPanel({
     return isNaN(num) ? undefined : num;
   };
 
-  // Get "Previous: value (date)" text for a longitudinal field
+  // Get "value unit · date" text for a longitudinal field's last recorded value
   const getPreviousLabel = (field: string): string | null => {
     if (!isLoggedIn) return null;
     const metric = FIELD_METRIC_MAP[field];
@@ -84,7 +84,7 @@ export function InputPanel({
     const date = new Date(measurement.recordedAt).toLocaleDateString(undefined, {
       month: 'short', day: 'numeric', year: 'numeric',
     });
-    return `Previous: ${displayValue} ${unit} (${date})`;
+    return `${displayValue} ${unit} · ${date}`;
   };
 
   // Check if any longitudinal field has a value (for save button)
