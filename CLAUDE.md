@@ -50,16 +50,16 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 **Widget Source:**
 - `widget-src/src/components/HealthTool.tsx` - Main widget (handles auth, unit system, measurement sync)
 - `widget-src/src/components/ErrorBoundary.tsx` - React error boundary for widget
-- `widget-src/src/components/InputPanel.tsx` - Form inputs with unit conversion (left panel)
+- `widget-src/src/components/InputPanel.tsx` - Form inputs with unit conversion (left panel). Longitudinal fields are config-driven (`BASIC_LONGITUDINAL_FIELDS`, `BLOOD_TEST_FIELDS` arrays + shared `LongitudinalField` component). Blood pressure uses two separate numeric inputs (clinical standard pattern) with a `/` separator.
 - `widget-src/src/components/ResultsPanel.tsx` - Results display with unit formatting (right panel)
-- `widget-src/src/lib/storage.ts` - localStorage helpers for guests + unit preference
+- `widget-src/src/lib/storage.ts` - localStorage helpers for guests + unit preference + logged-in user cache (inputs + previousMeasurements)
 - `widget-src/src/lib/api.ts` - Measurement API client for logged-in users (app proxy)
 - `widget-src/src/components/HistoryPanel.tsx` - Health history page (table with filter, pagination)
 - `widget-src/src/history.tsx` - Entry point for the history page bundle
 - `widget-src/vite.config.history.ts` - Separate Vite config for the history bundle
 
 **Shopify Extensions:**
-- `extensions/health-tool-widget/blocks/app-block.liquid` - Passes customer data to React widget
+- `extensions/health-tool-widget/blocks/app-block.liquid` - Passes customer data to React widget; includes static HTML skeleton with pulse animation for instant loading
 - `extensions/health-tool-widget/blocks/sync-embed.liquid` - App embed block: background localStorage→Supabase sync on every storefront page for logged-in users
 - `extensions/health-tool-widget/blocks/history-block.liquid` - Shopify theme block for the health history page (separate storefront page)
 
@@ -130,6 +130,20 @@ A separate Shopify storefront page displays full longitudinal measurement histor
 ### Unit System Detection
 
 The UI auto-detects the user's preferred unit system from browser locale (US, Liberia, Myanmar → conventional; everyone else → SI). Users can override via a toggle. The preference is saved to localStorage and also stored on the `profiles` table (`unit_system` column: 1=si, 2=conventional) for logged-in users.
+
+### Widget Loading Strategy (Skeleton + Two-Phase Data)
+
+The widget uses a three-layer loading strategy to eliminate visible lag:
+
+1. **Static HTML skeleton** (`app-block.liquid`): CSS loads first via `stylesheet_tag`, then a static skeleton (header text + gray pulsing placeholder blocks) renders inside `#health-tool-root` before any JS executes. The JS bundle loads with `<script defer>` so the skeleton is visible while the 228KB bundle downloads and parses. React's `createRoot().render()` replaces the skeleton entirely on mount.
+
+2. **Two-phase data loading** (`HealthTool.tsx`): For logged-in users, `loadData()` runs in two phases:
+   - **Phase 1 (instant)**: Reads cached `inputs` and `previousMeasurements` from localStorage and populates the form immediately. This shows form fields with values and the blue "previous value" labels under longitudinal inputs.
+   - **Phase 2 (async)**: Awaits `loadLatestMeasurements()` API call. When the response arrives, it overwrites inputs and previousMeasurements with authoritative cloud data, and caches the result to localStorage for next time.
+
+3. **Auto-save safety**: A `hasApiResponse` state flag (starts `false`) prevents the auto-save `useEffect` from firing until Phase 2 completes. This ensures localStorage-cached data shown in Phase 1 doesn't trigger writes back to Supabase before we know what's in the cloud. For guests, `hasApiResponse` is set to `true` immediately since there's no API call.
+
+The localStorage cache (`StoredData` in `storage.ts`) stores both `inputs` (Partial<HealthInputs>) and `previousMeasurements` (ApiMeasurement[]). The first page visit for a new logged-in user will still show empty fields briefly (no cache yet), but every subsequent visit shows data instantly.
 
 ## CRITICAL: Security Rules
 

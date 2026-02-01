@@ -540,6 +540,82 @@
   cursor: not-allowed;
 }
 
+/* Inline save button next to longitudinal inputs */
+.longitudinal-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.longitudinal-input-row input {
+  flex: 1;
+}
+
+/* Blood pressure two-field input */
+.bp-fieldset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.bp-fieldset input {
+  width: 80px;
+  text-align: center;
+}
+
+.bp-separator {
+  font-size: 18px;
+  color: #666;
+  font-weight: 500;
+}
+
+.save-inline-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  background: #0066cc;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.save-inline-btn:hover {
+  background: #0052a3;
+}
+
+.save-inline-btn:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+/* Save button in account status area */
+.save-top-btn {
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  background: #0066cc;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.save-top-btn:hover {
+  background: #0052a3;
+}
+
+.save-top-btn:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
 /* History Panel */
 .history-panel {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,

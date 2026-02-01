@@ -18,6 +18,9 @@ interface ResultsPanelProps {
   authState?: AuthState;
   saveStatus?: 'idle' | 'saving' | 'saved' | 'error';
   unitSystem: UnitSystem;
+  hasUnsavedLongitudinal?: boolean;
+  onSaveLongitudinal?: () => void;
+  isSavingLongitudinal?: boolean;
 }
 
 function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
@@ -44,7 +47,13 @@ function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
   );
 }
 
-function AccountStatus({ authState, saveStatus }: { authState?: AuthState; saveStatus?: string }) {
+function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal }: {
+  authState?: AuthState;
+  saveStatus?: string;
+  hasUnsavedLongitudinal?: boolean;
+  onSaveLongitudinal?: () => void;
+  isSavingLongitudinal?: boolean;
+}) {
   if (!authState) return null;
 
   if (authState.isLoggedIn) {
@@ -68,6 +77,15 @@ function AccountStatus({ authState, saveStatus }: { authState?: AuthState; saveS
             <span className="save-indicator idle">Data synced to account</span>
           )}
         </div>
+        {hasUnsavedLongitudinal && onSaveLongitudinal && (
+          <button
+            className="save-top-btn"
+            onClick={onSaveLongitudinal}
+            disabled={isSavingLongitudinal}
+          >
+            {isSavingLongitudinal ? 'Saving...' : 'Save New Values'}
+          </button>
+        )}
       </div>
     );
   }
@@ -85,11 +103,11 @@ function AccountStatus({ authState, saveStatus }: { authState?: AuthState; saveS
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, unitSystem }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, authState, saveStatus, unitSystem, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal }: ResultsPanelProps) {
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
-        <AccountStatus authState={authState} saveStatus={saveStatus} />
+        <AccountStatus authState={authState} saveStatus={saveStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} />
         <div className="results-placeholder">
           <div className="placeholder-icon">📊</div>
           <h3>Enter your information</h3>
@@ -113,7 +131,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
   return (
     <div className="health-results-panel">
       {/* Account Status */}
-      <AccountStatus authState={authState} saveStatus={saveStatus} />
+      <AccountStatus authState={authState} saveStatus={saveStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} />
 
       {/* Quick Stats */}
       <section className="quick-stats">

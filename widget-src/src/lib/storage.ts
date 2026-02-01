@@ -1,4 +1,4 @@
-import type { HealthInputs } from '@roadmap/health-core';
+import type { HealthInputs, ApiMeasurement } from '@roadmap/health-core';
 import type { UnitSystem } from '@roadmap/health-core';
 
 const STORAGE_KEY = 'health_roadmap_data';
@@ -6,16 +6,23 @@ const UNIT_PREF_KEY = 'health_roadmap_unit_system';
 
 interface StoredData {
   inputs: Partial<HealthInputs>;
+  previousMeasurements?: ApiMeasurement[];
   savedAt: string;
 }
 
+export interface LoadedData {
+  inputs: Partial<HealthInputs>;
+  previousMeasurements: ApiMeasurement[];
+}
+
 /**
- * Save health inputs to localStorage (for guest users)
+ * Save health inputs (and optionally previousMeasurements) to localStorage.
  */
-export function saveToLocalStorage(inputs: Partial<HealthInputs>): void {
+export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[]): void {
   try {
     const data: StoredData = {
       inputs,
+      previousMeasurements,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -25,15 +32,18 @@ export function saveToLocalStorage(inputs: Partial<HealthInputs>): void {
 }
 
 /**
- * Load health inputs from localStorage
+ * Load health inputs and previousMeasurements from localStorage.
  */
-export function loadFromLocalStorage(): Partial<HealthInputs> | null {
+export function loadFromLocalStorage(): LoadedData | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return null;
 
     const data: StoredData = JSON.parse(stored);
-    return data.inputs;
+    return {
+      inputs: data.inputs,
+      previousMeasurements: data.previousMeasurements ?? [],
+    };
   } catch (error) {
     console.warn('Failed to load from localStorage:', error);
     return null;

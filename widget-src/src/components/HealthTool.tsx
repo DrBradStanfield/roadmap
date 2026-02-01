@@ -49,7 +49,7 @@ export function HealthTool() {
   const [inputs, setInputs] = useState<Partial<HealthInputs>>({});
   const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [hasLoadedData, setHasLoadedData] = useState(false);
+  const [hasApiResponse, setHasApiResponse] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
 
@@ -75,8 +75,17 @@ export function HealthTool() {
   useEffect(() => {
     async function loadData() {
       if (authState.isLoggedIn) {
+        // Phase 1: show cached data instantly
+        const cached = loadFromLocalStorage();
+        if (cached && Object.keys(cached.inputs).length > 0) {
+          setInputs(cached.inputs);
+          if (cached.previousMeasurements.length > 0) {
+            setPreviousMeasurements(cached.previousMeasurements);
+          }
+        }
+        // Phase 2: API response is authoritative
         const result = await loadLatestMeasurements();
-        const localData = loadFromLocalStorage();
+        setHasApiResponse(true);
 
         if (result && (Object.keys(result.inputs).length > 0 || result.previousMeasurements.length > 0)) {
           // Apply saved unit preference from cloud
@@ -85,19 +94,16 @@ export function HealthTool() {
             setUnitSystem(unitPref);
             saveUnitPreference(unitPref);
           }
-          // Only pre-fill demographic/height fields; longitudinal fields start empty
           setInputs(result.inputs);
           previousInputsRef.current = { ...result.inputs };
           setPreviousMeasurements(result.previousMeasurements);
-          if (localData && Object.keys(localData).length > 0) {
-            clearLocalStorage();
-          }
-        } else if (localData && Object.keys(localData).length > 0) {
-          setInputs(localData);
-          // Explicitly sync localStorage data to cloud on first login
-          const synced = await saveChangedMeasurements(localData, {});
+          // Cache to localStorage for instant display on next page load
+          saveToLocalStorage(result.inputs, result.previousMeasurements);
+        } else if (cached && Object.keys(cached.inputs).length > 0) {
+          // No cloud data — sync localStorage to cloud
+          const synced = await saveChangedMeasurements(cached.inputs, {});
           if (synced) {
-            previousInputsRef.current = { ...localData };
+            previousInputsRef.current = { ...cached.inputs };
             clearLocalStorage();
           } else {
             previousInputsRef.current = {};
@@ -106,10 +112,10 @@ export function HealthTool() {
       } else {
         const saved = loadFromLocalStorage();
         if (saved) {
-          setInputs(saved);
+          setInputs(saved.inputs);
         }
+        setHasApiResponse(true);
       }
-      setHasLoadedData(true);
     }
 
     loadData();
@@ -131,7 +137,7 @@ export function HealthTool() {
 
   // Auto-save demographics + height only (debounced)
   useEffect(() => {
-    if (!hasLoadedData) return;
+    if (!hasApiResponse) return;
 
     const timeout = setTimeout(async () => {
       if (authState.isLoggedIn) {
@@ -162,7 +168,7 @@ export function HealthTool() {
     }, 500);
 
     return () => clearTimeout(timeout);
-  }, [inputs, hasLoadedData, authState.isLoggedIn, effectiveInputs]);
+  }, [inputs, hasApiResponse, authState.isLoggedIn, effectiveInputs]);
 
   // Explicit save for longitudinal fields
   const handleSaveLongitudinal = useCallback(async () => {
@@ -276,6 +282,9 @@ export function HealthTool() {
             authState={authState}
             saveStatus={saveStatus}
             unitSystem={unitSystem}
+            hasUnsavedLongitudinal={authState.isLoggedIn && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined)}
+            onSaveLongitudinal={handleSaveLongitudinal}
+            isSavingLongitudinal={isSavingLongitudinal}
           />
         </div>
       </div>

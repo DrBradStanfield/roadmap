@@ -11,6 +11,52 @@ import {
   type ApiMeasurement,
 } from '@roadmap/health-core';
 
+interface FieldConfig {
+  field: keyof HealthInputs;
+  name: string;
+  placeholder: { si: string; conv: string };
+  step?: { si: string; conv: string };
+  hint?: { si: string; conv: string };
+}
+
+const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
+  { field: 'weightKg', name: 'Weight', placeholder: { si: '70', conv: '154' } },
+  { field: 'waistCm', name: 'Waist Circumference', placeholder: { si: '80', conv: '31' } },
+];
+
+const BLOOD_TEST_FIELDS: FieldConfig[] = [
+  {
+    field: 'hba1c', name: 'HbA1c',
+    placeholder: { si: '39', conv: '5.5' },
+    step: { si: '1', conv: '0.1' },
+    hint: { si: 'Normal: <39 mmol/mol', conv: 'Normal: <5.7%' },
+  },
+  {
+    field: 'ldlC', name: 'LDL Cholesterol',
+    placeholder: { si: '2.6', conv: '100' },
+    step: { si: '0.1', conv: '1' },
+    hint: { si: 'Optimal: <2.6 mmol/L', conv: 'Optimal: <100 mg/dL' },
+  },
+  {
+    field: 'hdlC', name: 'HDL Cholesterol',
+    placeholder: { si: '1.3', conv: '50' },
+    step: { si: '0.1', conv: '1' },
+    hint: { si: 'Optimal: >1.0 mmol/L (men), 1.3 mmol/L (women)', conv: 'Optimal: >40 mg/dL (men), 50 mg/dL (women)' },
+  },
+  {
+    field: 'triglycerides', name: 'Triglycerides',
+    placeholder: { si: '1.1', conv: '100' },
+    step: { si: '0.1', conv: '1' },
+    hint: { si: 'Normal: <1.7 mmol/L', conv: 'Normal: <150 mg/dL' },
+  },
+  {
+    field: 'fastingGlucose', name: 'Fasting Glucose',
+    placeholder: { si: '5.0', conv: '90' },
+    step: { si: '0.1', conv: '1' },
+    hint: { si: 'Normal: <5.6 mmol/L', conv: 'Normal: <100 mg/dL' },
+  },
+];
+
 interface InputPanelProps {
   inputs: Partial<HealthInputs>;
   onChange: (inputs: Partial<HealthInputs>) => void;
@@ -34,7 +80,6 @@ export function InputPanel({
     onChange({ ...inputs, [field]: value });
   };
 
-  // Parse a display-unit value and convert to SI canonical for storage
   const parseAndConvert = (field: string, value: string): number | undefined => {
     const num = parseFloat(value);
     if (isNaN(num)) return undefined;
@@ -43,7 +88,6 @@ export function InputPanel({
     return toCanonicalValue(metric, num, unitSystem);
   };
 
-  // Convert a SI canonical value to display units for rendering
   const toDisplay = (field: string, siValue: number | undefined): string => {
     if (siValue === undefined) return '';
     const metric = FIELD_METRIC_MAP[field];
@@ -54,7 +98,7 @@ export function InputPanel({
     return String(rounded);
   };
 
-  const label = (field: string, name: string): string => {
+  const fieldLabel = (field: string, name: string): string => {
     const metric = FIELD_METRIC_MAP[field];
     if (!metric) return name;
     return `${name} (${getDisplayLabel(metric, unitSystem)})`;
@@ -71,7 +115,6 @@ export function InputPanel({
     return isNaN(num) ? undefined : num;
   };
 
-  // Get "value unit · date" text for a longitudinal field's last recorded value
   const getPreviousLabel = (field: string): string | null => {
     if (!isLoggedIn) return null;
     const metric = FIELD_METRIC_MAP[field];
@@ -87,7 +130,6 @@ export function InputPanel({
     return `${displayValue} ${unit} · ${date}`;
   };
 
-  // Render a clickable previous-value link that opens the history page filtered by metric
   const PreviousLink = ({ field }: { field: string }) => {
     const label = getPreviousLabel(field);
     if (!label) return null;
@@ -102,8 +144,78 @@ export function InputPanel({
     );
   };
 
-  // Check if any longitudinal field has a value (for save button)
   const hasLongitudinalValues = LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined);
+
+  const InlineSaveBtn = ({ field }: { field: string }) => {
+    if (!isLoggedIn || inputs[field as keyof HealthInputs] === undefined) return null;
+    return (
+      <button
+        className="save-inline-btn"
+        onClick={onSaveLongitudinal}
+        disabled={isSavingLongitudinal}
+        title="Save new values"
+      >
+        {isSavingLongitudinal ? '...' : 'Save'}
+      </button>
+    );
+  };
+
+  // Shared component for longitudinal number fields
+  const LongitudinalField = ({ config }: { config: FieldConfig }) => {
+    const { field, name, placeholder, step, hint } = config;
+    const r = range(field);
+    return (
+      <div className="health-field">
+        <label htmlFor={field}>{fieldLabel(field, name)}</label>
+        <div className="longitudinal-input-row">
+          <input
+            type="number"
+            id={field}
+            value={toDisplay(field, inputs[field] as number | undefined)}
+            onChange={(e) => updateField(field, parseAndConvert(field, e.target.value))}
+            placeholder={unitSystem === 'si' ? placeholder.si : placeholder.conv}
+            step={step ? (unitSystem === 'si' ? step.si : step.conv) : undefined}
+            min={r.min}
+            max={r.max}
+            className={errors[field] ? 'error' : ''}
+          />
+          <InlineSaveBtn field={field} />
+        </div>
+        {errors[field] && (
+          <span className="error-message">{errors[field]}</span>
+        )}
+        {getPreviousLabel(field) ? (
+          <PreviousLink field={field} />
+        ) : hint ? (
+          <span className="field-hint">
+            {unitSystem === 'si' ? hint.si : hint.conv}
+          </span>
+        ) : null}
+      </div>
+    );
+  };
+
+  // Combined previous BP label
+  const getBpPreviousLabel = (): string | null => {
+    if (!isLoggedIn) return null;
+    const sysMetric = FIELD_METRIC_MAP['systolicBp'];
+    const diaMetric = FIELD_METRIC_MAP['diastolicBp'];
+    const sysMeasurement = sysMetric ? previousMeasurements.find(m => m.metricType === sysMetric) : null;
+    const diaMeasurement = diaMetric ? previousMeasurements.find(m => m.metricType === diaMetric) : null;
+    if (!sysMeasurement && !diaMeasurement) return null;
+
+    const sysVal = sysMeasurement ? Math.round(sysMeasurement.value) : '?';
+    const diaVal = diaMeasurement ? Math.round(diaMeasurement.value) : '?';
+    // Use the more recent date
+    const dates = [sysMeasurement?.recordedAt, diaMeasurement?.recordedAt].filter(Boolean) as string[];
+    const latestDate = dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+    const dateStr = new Date(latestDate).toLocaleDateString(undefined, {
+      month: 'short', day: 'numeric', year: 'numeric',
+    });
+    return `${sysVal}/${diaVal} mmHg · ${dateStr}`;
+  };
+
+  const hasBpValue = inputs.systolicBp !== undefined || inputs.diastolicBp !== undefined;
 
   return (
     <div className="health-input-panel">
@@ -141,7 +253,7 @@ export function InputPanel({
         </div>
 
         <div className="health-field">
-          <label htmlFor="heightCm">{label('heightCm', 'Height')}</label>
+          <label htmlFor="heightCm">{fieldLabel('heightCm', 'Height')}</label>
           <input
             type="number"
             id="heightCm"
@@ -157,47 +269,9 @@ export function InputPanel({
           )}
         </div>
 
-        {/* Weight — longitudinal for logged-in users */}
-        <div className="health-field">
-          <label htmlFor="weightKg">{label('weightKg', 'Weight')}</label>
-          <input
-            type="number"
-            id="weightKg"
-            value={toDisplay('weightKg', inputs.weightKg)}
-            onChange={(e) => updateField('weightKg', parseAndConvert('weightKg', e.target.value))}
-            placeholder={unitSystem === 'si' ? '70' : '154'}
-            min={range('weightKg').min}
-            max={range('weightKg').max}
-            className={errors.weightKg ? 'error' : ''}
-          />
-          {errors.weightKg && (
-            <span className="error-message">{errors.weightKg}</span>
-          )}
-          {getPreviousLabel('weightKg') && (
-            <PreviousLink field="weightKg" />
-          )}
-        </div>
-
-        {/* Waist — longitudinal for logged-in users */}
-        <div className="health-field">
-          <label htmlFor="waistCm">{label('waistCm', 'Waist Circumference')}</label>
-          <input
-            type="number"
-            id="waistCm"
-            value={toDisplay('waistCm', inputs.waistCm)}
-            onChange={(e) => updateField('waistCm', parseAndConvert('waistCm', e.target.value))}
-            placeholder={unitSystem === 'si' ? '80' : '31'}
-            min={range('waistCm').min}
-            max={range('waistCm').max}
-            className={errors.waistCm ? 'error' : ''}
-          />
-          {errors.waistCm && (
-            <span className="error-message">{errors.waistCm}</span>
-          )}
-          {getPreviousLabel('waistCm') && (
-            <PreviousLink field="waistCm" />
-          )}
-        </div>
+        {BASIC_LONGITUDINAL_FIELDS.map(cfg => (
+          <LongitudinalField key={cfg.field} config={cfg} />
+        ))}
 
         <div className="health-field-group">
           <div className="health-field">
@@ -239,147 +313,67 @@ export function InputPanel({
           Enter your most recent blood test values (optional)
         </p>
 
-        <div className="health-field">
-          <label htmlFor="hba1c">{label('hba1c', 'HbA1c')}</label>
-          <input
-            type="number"
-            id="hba1c"
-            value={toDisplay('hba1c', inputs.hba1c)}
-            onChange={(e) => updateField('hba1c', parseAndConvert('hba1c', e.target.value))}
-            placeholder={unitSystem === 'si' ? '39' : '5.5'}
-            step={unitSystem === 'si' ? '1' : '0.1'}
-            min={range('hba1c').min}
-            max={range('hba1c').max}
-          />
-          {getPreviousLabel('hba1c') ? (
-            <PreviousLink field="hba1c" />
-          ) : (
-            <span className="field-hint">
-              Normal: &lt;{unitSystem === 'si' ? '39 mmol/mol' : '5.7%'}
-            </span>
-          )}
-        </div>
+        {BLOOD_TEST_FIELDS.map(cfg => (
+          <LongitudinalField key={cfg.field} config={cfg} />
+        ))}
 
+        {/* Blood Pressure — two-field clinical pattern */}
         <div className="health-field">
-          <label htmlFor="ldlC">{label('ldlC', 'LDL Cholesterol')}</label>
-          <input
-            type="number"
-            id="ldlC"
-            value={toDisplay('ldlC', inputs.ldlC)}
-            onChange={(e) => updateField('ldlC', parseAndConvert('ldlC', e.target.value))}
-            placeholder={unitSystem === 'si' ? '2.6' : '100'}
-            step={unitSystem === 'si' ? '0.1' : '1'}
-            min={range('ldlC').min}
-            max={range('ldlC').max}
-          />
-          {getPreviousLabel('ldlC') ? (
-            <PreviousLink field="ldlC" />
-          ) : (
-            <span className="field-hint">
-              Optimal: &lt;{unitSystem === 'si' ? '2.6 mmol/L' : '100 mg/dL'}
-            </span>
-          )}
-        </div>
-
-        <div className="health-field">
-          <label htmlFor="hdlC">{label('hdlC', 'HDL Cholesterol')}</label>
-          <input
-            type="number"
-            id="hdlC"
-            value={toDisplay('hdlC', inputs.hdlC)}
-            onChange={(e) => updateField('hdlC', parseAndConvert('hdlC', e.target.value))}
-            placeholder={unitSystem === 'si' ? '1.3' : '50'}
-            step={unitSystem === 'si' ? '0.1' : '1'}
-            min={range('hdlC').min}
-            max={range('hdlC').max}
-          />
-          {getPreviousLabel('hdlC') ? (
-            <PreviousLink field="hdlC" />
-          ) : (
-            <span className="field-hint">
-              Optimal: &gt;{unitSystem === 'si' ? '1.0 mmol/L (men), 1.3 mmol/L (women)' : '40 mg/dL (men), 50 mg/dL (women)'}
-            </span>
-          )}
-        </div>
-
-        <div className="health-field">
-          <label htmlFor="triglycerides">{label('triglycerides', 'Triglycerides')}</label>
-          <input
-            type="number"
-            id="triglycerides"
-            value={toDisplay('triglycerides', inputs.triglycerides)}
-            onChange={(e) => updateField('triglycerides', parseAndConvert('triglycerides', e.target.value))}
-            placeholder={unitSystem === 'si' ? '1.1' : '100'}
-            step={unitSystem === 'si' ? '0.1' : '1'}
-            min={range('triglycerides').min}
-            max={range('triglycerides').max}
-          />
-          {getPreviousLabel('triglycerides') ? (
-            <PreviousLink field="triglycerides" />
-          ) : (
-            <span className="field-hint">
-              Normal: &lt;{unitSystem === 'si' ? '1.7 mmol/L' : '150 mg/dL'}
-            </span>
-          )}
-        </div>
-
-        <div className="health-field">
-          <label htmlFor="fastingGlucose">{label('fastingGlucose', 'Fasting Glucose')}</label>
-          <input
-            type="number"
-            id="fastingGlucose"
-            value={toDisplay('fastingGlucose', inputs.fastingGlucose)}
-            onChange={(e) => updateField('fastingGlucose', parseAndConvert('fastingGlucose', e.target.value))}
-            placeholder={unitSystem === 'si' ? '5.0' : '90'}
-            step={unitSystem === 'si' ? '0.1' : '1'}
-            min={range('fastingGlucose').min}
-            max={range('fastingGlucose').max}
-          />
-          {getPreviousLabel('fastingGlucose') ? (
-            <PreviousLink field="fastingGlucose" />
-          ) : (
-            <span className="field-hint">
-              Normal: &lt;{unitSystem === 'si' ? '5.6 mmol/L' : '100 mg/dL'}
-            </span>
-          )}
-        </div>
-
-        <div className="health-field-group">
-          <div className="health-field">
-            <label htmlFor="systolicBp">Systolic BP (mmHg)</label>
-            <input
-              type="number"
-              id="systolicBp"
-              value={inputs.systolicBp || ''}
-              onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
-              placeholder="120"
-              min="60"
-              max="250"
-            />
-            {getPreviousLabel('systolicBp') && (
-              <PreviousLink field="systolicBp" />
+          <label>Blood Pressure (mmHg)</label>
+          <div className="longitudinal-input-row">
+            <div className="bp-fieldset">
+              <input
+                type="number"
+                inputMode="numeric"
+                id="systolicBp"
+                value={inputs.systolicBp ?? ''}
+                onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
+                placeholder="120"
+                min={60}
+                max={250}
+                className={errors.systolicBp ? 'error' : ''}
+              />
+              <span className="bp-separator">/</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                id="diastolicBp"
+                value={inputs.diastolicBp ?? ''}
+                onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
+                placeholder="80"
+                min={40}
+                max={150}
+                className={errors.diastolicBp ? 'error' : ''}
+              />
+            </div>
+            {isLoggedIn && hasBpValue && (
+              <button
+                className="save-inline-btn"
+                onClick={onSaveLongitudinal}
+                disabled={isSavingLongitudinal}
+                title="Save new values"
+              >
+                {isSavingLongitudinal ? '...' : 'Save'}
+              </button>
             )}
           </div>
-
-          <div className="health-field">
-            <label htmlFor="diastolicBp">Diastolic BP (mmHg)</label>
-            <input
-              type="number"
-              id="diastolicBp"
-              value={inputs.diastolicBp || ''}
-              onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
-              placeholder="80"
-              min="40"
-              max="150"
-            />
-            {getPreviousLabel('diastolicBp') && (
-              <PreviousLink field="diastolicBp" />
-            )}
-          </div>
+          {errors.systolicBp && (
+            <span className="error-message">{errors.systolicBp}</span>
+          )}
+          {errors.diastolicBp && (
+            <span className="error-message">{errors.diastolicBp}</span>
+          )}
+          {getBpPreviousLabel() ? (
+            <a
+              className="previous-value"
+              href={`/pages/health-history?metric=systolic_bp`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >{getBpPreviousLabel()}</a>
+          ) : (
+            <span className="field-hint">Target: &lt;130/80 mmHg</span>
+          )}
         </div>
-        {!getPreviousLabel('systolicBp') && !getPreviousLabel('diastolicBp') && (
-          <span className="field-hint">Target: &lt;130/80 mmHg</span>
-        )}
       </section>
 
       {/* Save button for longitudinal fields (logged-in users only) */}
