@@ -8,6 +8,7 @@ export const METRIC_TYPES = [
   'hba1c', 'ldl', 'hdl', 'triglycerides', 'fasting_glucose',
   'systolic_bp', 'diastolic_bp',
   'sex', 'birth_year', 'birth_month',
+  'unit_system',
 ] as const;
 
 export type MetricTypeValue = typeof METRIC_TYPES[number];

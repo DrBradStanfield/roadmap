@@ -51,10 +51,11 @@ export function HealthTool() {
   // Get auth state once on mount
   const [authState] = useState<AuthState>(() => getAuthState());
 
-  // Handle unit system change
+  // Handle unit system change — save to localStorage and to inputs (for cloud sync)
   const handleUnitSystemChange = useCallback((system: UnitSystem) => {
     setUnitSystem(system);
     saveUnitPreference(system);
+    setInputs(prev => ({ ...prev, unitSystem: system }));
   }, []);
 
   // Load data on mount (from cloud if logged in, otherwise localStorage)
@@ -65,6 +66,11 @@ export function HealthTool() {
         const localData = loadFromLocalStorage();
 
         if (cloudData && Object.keys(cloudData).length > 0) {
+          // Apply saved unit preference from cloud
+          if (cloudData.unitSystem === 'si' || cloudData.unitSystem === 'conventional') {
+            setUnitSystem(cloudData.unitSystem);
+            saveUnitPreference(cloudData.unitSystem);
+          }
           setInputs(cloudData);
           previousInputsRef.current = cloudData;
           if (localData && Object.keys(localData).length > 0) {

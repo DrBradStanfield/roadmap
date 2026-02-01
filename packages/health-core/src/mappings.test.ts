@@ -15,9 +15,9 @@ describe('FIELD_TO_METRIC / METRIC_TO_FIELD', () => {
     }
   });
 
-  it('cover all 13 metric types', () => {
-    expect(Object.keys(FIELD_TO_METRIC)).toHaveLength(13);
-    expect(Object.keys(METRIC_TO_FIELD)).toHaveLength(13);
+  it('cover all 14 metric types', () => {
+    expect(Object.keys(FIELD_TO_METRIC)).toHaveLength(14);
+    expect(Object.keys(METRIC_TO_FIELD)).toHaveLength(14);
   });
 });
 
@@ -52,6 +52,18 @@ describe('measurementsToInputs', () => {
       { id: '1', metricType: 'sex', value: 2, recordedAt: '', createdAt: '' },
     ];
     expect(measurementsToInputs(female).sex).toBe('female');
+  });
+
+  it('converts unit_system from numeric', () => {
+    const si: ApiMeasurement[] = [
+      { id: '1', metricType: 'unit_system', value: 1, recordedAt: '', createdAt: '' },
+    ];
+    expect(measurementsToInputs(si).unitSystem).toBe('si');
+
+    const conv: ApiMeasurement[] = [
+      { id: '1', metricType: 'unit_system', value: 2, recordedAt: '', createdAt: '' },
+    ];
+    expect(measurementsToInputs(conv).unitSystem).toBe('conventional');
   });
 
   it('ignores unknown metric types', () => {
@@ -104,6 +116,17 @@ describe('diffInputsToMeasurements', () => {
     const changes = diffInputsToMeasurements(curr, prev);
     expect(changes).toHaveLength(1);
     expect(changes[0]).toEqual({ metricType: 'weight', value: 70 });
+  });
+
+  it('encodes unitSystem as numeric', () => {
+    const prev = {};
+    const curr = { unitSystem: 'si' as const };
+    const changes = diffInputsToMeasurements(curr, prev);
+    expect(changes).toEqual([{ metricType: 'unit_system', value: 1 }]);
+
+    const curr2 = { unitSystem: 'conventional' as const };
+    const changes2 = diffInputsToMeasurements(curr2, prev);
+    expect(changes2).toEqual([{ metricType: 'unit_system', value: 2 }]);
   });
 
   it('encodes sex as numeric', () => {

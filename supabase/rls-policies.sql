@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS health_measurements (
     'height', 'weight', 'waist',
     'hba1c', 'ldl', 'hdl', 'triglycerides', 'fasting_glucose',
     'systolic_bp', 'diastolic_bp',
-    'sex', 'birth_year', 'birth_month'
+    'sex', 'birth_year', 'birth_month',
+    'unit_system'
   )),
   value NUMERIC NOT NULL,
   recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -48,6 +49,7 @@ CREATE TABLE IF NOT EXISTS health_measurements (
       WHEN 'sex'             THEN value IN (1, 2)
       WHEN 'birth_year'      THEN value BETWEEN 1900 AND 2100
       WHEN 'birth_month'     THEN value BETWEEN 1 AND 12
+      WHEN 'unit_system'     THEN value IN (1, 2)
       ELSE false
     END
   )

@@ -22,6 +22,8 @@ export interface HealthInputs {
   fastingGlucose?: number; // mmol/L
   systolicBp?: number;  // mmHg
   diastolicBp?: number; // mmHg
+  // User preference (stored as 1=si, 2=conventional in DB)
+  unitSystem?: 'si' | 'conventional';
 }
 
 /**

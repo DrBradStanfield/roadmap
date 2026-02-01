@@ -25,6 +25,7 @@ export const FIELD_TO_METRIC: Record<string, string> = {
   sex: 'sex',
   birthYear: 'birth_year',
   birthMonth: 'birth_month',
+  unitSystem: 'unit_system',
 };
 
 /** Reverse mapping: metric_type → HealthInputs field name. */
@@ -42,6 +43,7 @@ export const METRIC_TO_FIELD: Record<string, keyof HealthInputs> = {
   sex: 'sex',
   birth_year: 'birthYear',
   birth_month: 'birthMonth',
+  unit_system: 'unitSystem',
 };
 
 /**
@@ -73,6 +75,7 @@ export interface ApiMeasurement {
 /**
  * Convert API measurement records into a partial HealthInputs object.
  * Sex is stored as numeric (1=male, 2=female) and converted back.
+ * Unit system is stored as numeric (1=si, 2=conventional) and converted back.
  */
 export function measurementsToInputs(measurements: ApiMeasurement[]): Partial<HealthInputs> {
   const inputs: Partial<HealthInputs> = {};
@@ -83,6 +86,8 @@ export function measurementsToInputs(measurements: ApiMeasurement[]): Partial<He
 
     if (field === 'sex') {
       (inputs as any).sex = m.value === 1 ? 'male' : 'female';
+    } else if (field === 'unitSystem') {
+      (inputs as any).unitSystem = m.value === 1 ? 'si' : 'conventional';
     } else {
       (inputs as any)[field] = m.value;
     }
@@ -94,6 +99,7 @@ export function measurementsToInputs(measurements: ApiMeasurement[]): Partial<He
 /**
  * Determine which fields changed and return them as metric/value pairs
  * ready for the API. Sex is encoded as 1=male, 2=female.
+ * Unit system is encoded as 1=si, 2=conventional.
  */
 export function diffInputsToMeasurements(
   current: Partial<HealthInputs>,
@@ -106,10 +112,14 @@ export function diffInputsToMeasurements(
     const previousVal = previous[field as keyof HealthInputs];
 
     if (currentVal !== undefined && currentVal !== previousVal) {
-      const value =
-        field === 'sex'
-          ? currentVal === 'male' ? 1 : 2
-          : (currentVal as number);
+      let value: number;
+      if (field === 'sex') {
+        value = currentVal === 'male' ? 1 : 2;
+      } else if (field === 'unitSystem') {
+        value = currentVal === 'si' ? 1 : 2;
+      } else {
+        value = currentVal as number;
+      }
       changes.push({ metricType, value });
     }
   }

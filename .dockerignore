@@ -8,6 +8,12 @@ build/
 *.log
 
 
+# test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
 # sqlite3 database
 /dev.sqlite
 prisma/dev.sqlite

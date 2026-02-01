@@ -107,7 +107,7 @@ All values in the database and in `HealthInputs` are stored in **SI canonical un
 
 ### Unit System Detection
 
-The UI auto-detects the user's preferred unit system from browser locale (US, Liberia, Myanmar → conventional; everyone else → SI). Users can override via a toggle. The preference is saved to localStorage.
+The UI auto-detects the user's preferred unit system from locale (US, Liberia, Myanmar → conventional; everyone else → SI). The storefront widget uses `navigator.language`; the customer account extension uses Shopify's `useLanguage()` hook (since `navigator.language` is unreliable in Shopify's sandboxed extension environment). Users can override via a toggle. The preference is stored as a `unit_system` measurement in the database (1=si, 2=conventional) so it syncs across both surfaces. For guests, it falls back to localStorage.
 
 ## CRITICAL: Security Rules
 
@@ -288,7 +288,7 @@ The widget calls the backend through Shopify's app proxy (`/apps/health-tool-1/*
 
 ## Testing
 
-124 unit tests cover health calculations, suggestions, unit conversions, and field mappings:
+148 unit tests cover health calculations, suggestions, unit conversions, field mappings, rate limiting, Supabase helpers, and API endpoints:
 
 ```bash
 npm test              # Run once
@@ -299,7 +299,10 @@ Test files:
 - `packages/health-core/src/calculations.test.ts` — IBW, BMI, protein, age, health results (27 tests)
 - `packages/health-core/src/suggestions.test.ts` — All suggestion categories, unit system display (33 tests)
 - `packages/health-core/src/units.test.ts` — Round-trip conversions, clinical values, thresholds, formatting, locale (52 tests)
-- `packages/health-core/src/mappings.test.ts` — Field↔metric mappings, measurementsToInputs, diffInputsToMeasurements (12 tests)
+- `packages/health-core/src/mappings.test.ts` — Field↔metric mappings, measurementsToInputs, diffInputsToMeasurements, unit_system encoding (14 tests)
+- `app/lib/rate-limit.server.test.ts` — Rate limiter logic (6 tests)
+- `app/lib/supabase.server.test.ts` — toApiMeasurement helper (3 tests)
+- `app/routes/api.customer-measurements.test.ts` — CORS headers, JWT verification (13 tests)
 
 ## Future Plans
 

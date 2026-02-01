@@ -17,6 +17,7 @@ import {
   View,
   reactExtension,
   useApi,
+  useLanguage,
 } from '@shopify/ui-extensions-react/customer-account';
 import type { HealthInputs, HealthResults, Suggestion } from '../../../packages/health-core/src';
 import {
@@ -96,11 +97,12 @@ function parseNum(value: string): number | undefined {
 }
 
 function HealthToolPage() {
-  const { sessionToken, storage } = useApi<'customer-account.page.render'>();
+  const { sessionToken } = useApi<'customer-account.page.render'>();
+  const language = useLanguage();
   const [inputs, setInputs] = useState<Partial<HealthInputs>>({});
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => detectUnitSystem());
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => detectUnitSystem(language.isoCode));
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasLoadedRef = useRef(false);
   const previousInputsRef = useRef<Partial<HealthInputs>>({});
@@ -130,22 +132,17 @@ function HealthToolPage() {
     return `${name} (${getDisplayLabel(metric, unitSystem)})`;
   }, [unitSystem]);
 
-  // Load saved unit preference on mount
-  useEffect(() => {
-    storage.read('unit_system').then((saved) => {
-      if (saved === 'si' || saved === 'conventional') {
-        setUnitSystem(saved as UnitSystem);
-      }
-    });
-  }, [storage]);
-
-  // Load existing measurements on mount
+  // Load existing measurements on mount (includes unit preference)
   useEffect(() => {
     async function load() {
       try {
         const token = await sessionToken.get();
         const data = await loadLatestMeasurements(token);
         if (data) {
+          // Apply saved unit preference from backend if present
+          if (data.unitSystem === 'si' || data.unitSystem === 'conventional') {
+            setUnitSystem(data.unitSystem);
+          }
           setInputs(data);
           previousInputsRef.current = data;
         }
@@ -229,7 +226,7 @@ function HealthToolPage() {
               <Select
                 label="Units"
                 value={unitSystem}
-                onChange={(value) => { setUnitSystem(value as UnitSystem); storage.write('unit_system', value); }}
+                onChange={(value) => { setUnitSystem(value as UnitSystem); setInputs(prev => ({ ...prev, unitSystem: value as UnitSystem })); }}
                 options={UNIT_OPTIONS}
               />
             </Card>
