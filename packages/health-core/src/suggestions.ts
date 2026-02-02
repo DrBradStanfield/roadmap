@@ -9,6 +9,7 @@ import {
   TRIGLYCERIDES_THRESHOLDS,
   GLUCOSE_THRESHOLDS,
   BP_THRESHOLDS,
+  APOB_THRESHOLDS,
 } from './units';
 
 /** Format a blood-test value with its display unit, e.g. "5.7%" or "39 mmol/mol" */
@@ -26,6 +27,9 @@ function fmtTrig(value: number, us: UnitSystem): string {
 }
 function fmtGlucose(value: number, us: UnitSystem): string {
   return `${formatDisplayValue('fasting_glucose', value, us)} ${getDisplayLabel('fasting_glucose', us)}`;
+}
+function fmtApoB(value: number, us: UnitSystem): string {
+  return `${formatDisplayValue('apob', value, us)} ${getDisplayLabel('apob', us)}`;
 }
 function fmtWeight(value: number, us: UnitSystem): string {
   return `${formatDisplayValue('weight', value, us)} ${getDisplayLabel('weight', us)}`;
@@ -229,6 +233,38 @@ export function generateSuggestions(
         title: 'Fasting glucose indicates prediabetes',
         description: `Your fasting glucose of ${fmtGlucose(inputs.fastingGlucose, us)} is in the prediabetic range. Lifestyle changes can help prevent diabetes.`,
         discussWithDoctor: true,
+      });
+    }
+  }
+
+  // ApoB (thresholds in g/L)
+  if (inputs.apoB !== undefined) {
+    if (inputs.apoB >= APOB_THRESHOLDS.veryHigh) {
+      suggestions.push({
+        id: 'apob-very-high',
+        category: 'bloodwork',
+        priority: 'urgent',
+        title: 'Very high ApoB',
+        description: `Your ApoB of ${fmtApoB(inputs.apoB, us)} is very high, indicating significantly elevated cardiovascular risk. Statin therapy and lifestyle intervention are typically recommended.`,
+        discussWithDoctor: true,
+      });
+    } else if (inputs.apoB >= APOB_THRESHOLDS.high) {
+      suggestions.push({
+        id: 'apob-high',
+        category: 'bloodwork',
+        priority: 'attention',
+        title: 'High ApoB',
+        description: `Your ApoB of ${fmtApoB(inputs.apoB, us)} is elevated. Consider lifestyle modifications and discuss treatment options to reduce cardiovascular risk.`,
+        discussWithDoctor: true,
+      });
+    } else if (inputs.apoB >= APOB_THRESHOLDS.borderline) {
+      suggestions.push({
+        id: 'apob-borderline',
+        category: 'bloodwork',
+        priority: 'info',
+        title: 'Borderline high ApoB',
+        description: `Your ApoB of ${fmtApoB(inputs.apoB, us)} is borderline. Optimal is <${formatDisplayValue('apob', APOB_THRESHOLDS.borderline, us)} ${getDisplayLabel('apob', us)}.`,
+        discussWithDoctor: false,
       });
     }
   }

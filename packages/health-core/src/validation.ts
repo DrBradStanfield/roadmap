@@ -6,7 +6,7 @@ import { z } from 'zod';
 export const METRIC_TYPES = [
   'height', 'weight', 'waist',
   'hba1c', 'ldl', 'hdl', 'triglycerides', 'fasting_glucose',
-  'systolic_bp', 'diastolic_bp',
+  'systolic_bp', 'diastolic_bp', 'apob',
 ] as const;
 
 export type MetricTypeValue = typeof METRIC_TYPES[number];
@@ -77,6 +77,11 @@ export const healthInputSchema = z.object({
     .number()
     .min(0, 'Fasting glucose must be positive')
     .max(27.8, 'Fasting glucose must be at most 27.8 mmol/L')
+    .optional(),
+  apoB: z
+    .number()
+    .min(0, 'ApoB must be positive')
+    .max(3, 'ApoB must be at most 3 g/L')
     .optional(),
   systolicBp: z
     .number()

@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS health_measurements (
   metric_type TEXT NOT NULL CHECK (metric_type IN (
     'height', 'weight', 'waist',
     'hba1c', 'ldl', 'hdl', 'triglycerides', 'fasting_glucose',
-    'systolic_bp', 'diastolic_bp'
+    'systolic_bp', 'diastolic_bp', 'apob'
   )),
   value NUMERIC NOT NULL,
   recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS health_measurements (
       WHEN 'fasting_glucose' THEN value BETWEEN 0 AND 27.8
       WHEN 'systolic_bp'     THEN value BETWEEN 60 AND 250
       WHEN 'diastolic_bp'    THEN value BETWEEN 40 AND 150
+      WHEN 'apob'            THEN value BETWEEN 0 AND 3
       ELSE false
     END
   )

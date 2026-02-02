@@ -9,6 +9,7 @@ const ldl = (mgdl: number) => toCanonicalValue('ldl', mgdl, 'conventional');
 const hdl = (mgdl: number) => toCanonicalValue('hdl', mgdl, 'conventional');
 const trig = (mgdl: number) => toCanonicalValue('triglycerides', mgdl, 'conventional');
 const glucose = (mgdl: number) => toCanonicalValue('fasting_glucose', mgdl, 'conventional');
+const apoB = (mgdl: number) => toCanonicalValue('apob', mgdl, 'conventional');
 
 // Helper to create base inputs and results
 function createTestData(
@@ -315,6 +316,47 @@ describe('generateSuggestions', () => {
 
       const bpSuggestion = suggestions.find(s => s.id === 'bp-stage2');
       expect(bpSuggestion).toBeDefined();
+    });
+  });
+
+  describe('ApoB suggestions', () => {
+    it('generates very high suggestion for ApoB >= 100 mg/dL', () => {
+      const { inputs, results } = createTestData({ apoB: apoB(110) });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'apob-very-high')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'apob-very-high')?.priority).toBe('urgent');
+    });
+
+    it('generates high suggestion for ApoB 70-99 mg/dL', () => {
+      const { inputs, results } = createTestData({ apoB: apoB(80) });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'apob-high')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'apob-high')?.priority).toBe('attention');
+    });
+
+    it('generates borderline suggestion for ApoB 50-69 mg/dL', () => {
+      const { inputs, results } = createTestData({ apoB: apoB(60) });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'apob-borderline')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'apob-borderline')?.priority).toBe('info');
+    });
+
+    it('does not generate suggestion for optimal ApoB < 50 mg/dL', () => {
+      const { inputs, results } = createTestData({ apoB: apoB(40) });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.filter(s => s.id.startsWith('apob-')).length).toBe(0);
+    });
+
+    it('formats ApoB in conventional units', () => {
+      const { inputs, results } = createTestData({ apoB: apoB(110) });
+      const suggestions = generateSuggestions(inputs, results, 'conventional');
+      expect(suggestions.find(s => s.id === 'apob-very-high')?.description).toContain('mg/dL');
+    });
+
+    it('formats ApoB in SI units', () => {
+      const { inputs, results } = createTestData({ apoB: apoB(110) });
+      const suggestions = generateSuggestions(inputs, results, 'si');
+      expect(suggestions.find(s => s.id === 'apob-very-high')?.description).toContain('g/L');
     });
   });
 

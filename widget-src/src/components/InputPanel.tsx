@@ -56,6 +56,12 @@ const BLOOD_TEST_FIELDS: FieldConfig[] = [
     step: { si: '0.1', conv: '1' },
     hint: { si: 'Normal: <5.6 mmol/L', conv: 'Normal: <100 mg/dL' },
   },
+  {
+    field: 'apoB', name: 'ApoB',
+    placeholder: { si: '0.5', conv: '50' },
+    step: { si: '0.01', conv: '1' },
+    hint: { si: 'Optimal: <0.5 g/L', conv: 'Optimal: <50 mg/dL' },
+  },
 ];
 
 interface InputPanelProps {

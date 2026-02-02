@@ -105,6 +105,7 @@ All values in the database and in `HealthInputs` are stored in **SI canonical un
 | hdl | mmol/L | mg/dL | × 38.67 |
 | triglycerides | mmol/L | mg/dL | × 88.57 |
 | fasting_glucose | mmol/L | mg/dL | × 18.016 |
+| apob | g/L | mg/dL | × 100 |
 | systolic_bp | mmHg | mmHg | (same) |
 | diastolic_bp | mmHg | mmHg | (same) |
 
@@ -255,6 +256,7 @@ All thresholds are defined as constants in `packages/health-core/src/units.ts` a
 - **LDL**: Optimal <3.36 mmol/L (<130 mg/dL), Borderline 3.36-4.14 (130-159), High 4.14-4.91 (160-189), Very High ≥4.91 (≥190)
 - **HDL**: Low <1.03 mmol/L (<40 mg/dL men), <1.29 mmol/L (<50 mg/dL women)
 - **Triglycerides**: Normal <1.69 mmol/L (<150 mg/dL), Borderline 1.69-2.26 (150-199), High 2.26-5.64 (200-499), Very High ≥5.64 (≥500)
+- **ApoB**: Optimal <0.5 g/L (<50 mg/dL), Borderline 0.5-0.7 (50-70), High 0.7-1.0 (70-100), Very High ≥1.0 (≥100)
 - **Fasting Glucose**: Normal <5.55 mmol/L (<100 mg/dL), Prediabetes 5.55-6.99 (100-125), Diabetes ≥6.99 (≥126)
 - **Blood Pressure**: Normal <120/80, Elevated 120-129/<80, Stage 1 130-139/80-89, Stage 2 ≥140/≥90, Crisis ≥180/≥120
 - **Waist-to-Height**: Healthy <0.5, Elevated ≥0.5

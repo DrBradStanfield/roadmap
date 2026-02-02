@@ -23,7 +23,8 @@ export type MetricType =
   | 'triglycerides'
   | 'fasting_glucose'
   | 'systolic_bp'
-  | 'diastolic_bp';
+  | 'diastolic_bp'
+  | 'apob';
 
 /** SI = metric + mmol/L (NZ, UK, AU, EU). Conventional = imperial + mg/dL (US). */
 export type UnitSystem = 'si' | 'conventional';
@@ -54,6 +55,7 @@ const CM_PER_INCH = 2.54;
 const CHOLESTEROL_FACTOR = 38.67; // LDL, HDL, total cholesterol
 const TRIGLYCERIDES_FACTOR = 88.57;
 const GLUCOSE_FACTOR = 18.016;
+const APOB_FACTOR = 100; // g/L ↔ mg/dL
 
 // HbA1c: NGSP % ↔ IFCC mmol/mol
 // NGSP = 0.09148 × IFCC + 2.152
@@ -243,6 +245,24 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     },
     decimalPlaces: { si: 0, conventional: 0 },
   },
+
+  apob: {
+    canonical: 'g/L',
+    label: { si: 'g/L', conventional: 'mg/dL' },
+    toCanonical: {
+      si: identity,
+      conventional: (v) => v / APOB_FACTOR,
+    },
+    fromCanonical: {
+      si: identity,
+      conventional: (v) => v * APOB_FACTOR,
+    },
+    validationRange: {
+      si: { min: 0, max: 3 },
+      conventional: { min: 0, max: 300 },
+    },
+    decimalPlaces: { si: 2, conventional: 0 },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -364,4 +384,11 @@ export const BP_THRESHOLDS = {
   stage2Dia: 90,
   crisisSys: 180,
   crisisDia: 120,
+} as const;
+
+/** ApoB thresholds in g/L */
+export const APOB_THRESHOLDS = {
+  borderline: 50 / APOB_FACTOR,  // 0.5
+  high: 70 / APOB_FACTOR,        // 0.7
+  veryHigh: 100 / APOB_FACTOR,   // 1.0
 } as const;
