@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { HealthInputs } from '@roadmap/health-core';
 import {
   type UnitSystem,
@@ -73,6 +74,10 @@ export function InputPanel({
   inputs, onChange, errors, unitSystem, onUnitSystemChange,
   isLoggedIn, previousMeasurements, onSaveLongitudinal, isSavingLongitudinal,
 }: InputPanelProps) {
+  const [prefillExpanded, setPrefillExpanded] = useState(false);
+  const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthMonth);
+  const showPrefill = !prefillComplete || prefillExpanded;
+
   const updateField = <K extends keyof HealthInputs>(
     field: K,
     value: HealthInputs[K] | undefined
@@ -219,75 +224,93 @@ export function InputPanel({
 
       {/* Basic Info Section */}
       <section className="health-section">
-        <h3 className="health-section-title">Basic Information</h3>
-
-        <div className="health-field">
-          <label htmlFor="sex">Sex</label>
-          <select
-            id="sex"
-            value={inputs.sex || ''}
-            onChange={(e) =>
-              updateField('sex', e.target.value as 'male' | 'female')
-            }
-            className={errors.sex ? 'error' : ''}
-          >
-            <option value="">Select...</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
-          {errors.sex && <span className="error-message">{errors.sex}</span>}
-        </div>
-
-        <div className="health-field">
-          <label htmlFor="heightCm">{fieldLabel('heightCm', 'Height')}</label>
-          <input
-            type="number"
-            id="heightCm"
-            value={toDisplay('heightCm', inputs.heightCm)}
-            onChange={(e) => updateField('heightCm', parseAndConvert('heightCm', e.target.value))}
-            placeholder={unitSystem === 'si' ? '170' : '67'}
-            min={range('heightCm').min}
-            max={range('heightCm').max}
-            className={errors.heightCm ? 'error' : ''}
-          />
-          {errors.heightCm && (
-            <span className="error-message">{errors.heightCm}</span>
+        <h3
+          className={`health-section-title${prefillComplete ? ' health-section-title--collapsible' : ''}`}
+          onClick={prefillComplete ? () => setPrefillExpanded(!prefillExpanded) : undefined}
+        >
+          Basic Information
+          {prefillComplete && (
+            <span className="collapse-chevron">{prefillExpanded ? '\u25BE' : '\u25B8'}</span>
           )}
-        </div>
+        </h3>
+
+        {prefillComplete && !prefillExpanded && (
+          <p className="prefill-summary" onClick={() => setPrefillExpanded(true)}>
+            {inputs.sex === 'male' ? 'Male' : 'Female'} · {toDisplay('heightCm', inputs.heightCm)} {getDisplayLabel(FIELD_METRIC_MAP['heightCm']!, unitSystem)} · Born {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(inputs.birthMonth || 1) - 1]} {inputs.birthYear}
+          </p>
+        )}
+
+        {showPrefill && (
+          <>
+            <div className="health-field">
+              <label htmlFor="sex">Sex</label>
+              <select
+                id="sex"
+                value={inputs.sex || ''}
+                onChange={(e) =>
+                  updateField('sex', e.target.value as 'male' | 'female')
+                }
+                className={errors.sex ? 'error' : ''}
+              >
+                <option value="">Select...</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+              {errors.sex && <span className="error-message">{errors.sex}</span>}
+            </div>
+
+            <div className="health-field">
+              <label htmlFor="heightCm">{fieldLabel('heightCm', 'Height')}</label>
+              <input
+                type="number"
+                id="heightCm"
+                value={toDisplay('heightCm', inputs.heightCm)}
+                onChange={(e) => updateField('heightCm', parseAndConvert('heightCm', e.target.value))}
+                placeholder={unitSystem === 'si' ? '170' : '67'}
+                min={range('heightCm').min}
+                max={range('heightCm').max}
+                className={errors.heightCm ? 'error' : ''}
+              />
+              {errors.heightCm && (
+                <span className="error-message">{errors.heightCm}</span>
+              )}
+            </div>
+
+            <div className="health-field-group">
+              <div className="health-field">
+                <label htmlFor="birthMonth">Birth Month</label>
+                <select
+                  id="birthMonth"
+                  value={inputs.birthMonth || ''}
+                  onChange={(e) => updateField('birthMonth', parseNumber(e.target.value))}
+                >
+                  <option value="">Month...</option>
+                  {[
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                  ].map((month, i) => (
+                    <option key={i + 1} value={i + 1}>{month}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="health-field">
+                <label htmlFor="birthYear">Birth Year</label>
+                <input
+                  type="number"
+                  id="birthYear"
+                  value={inputs.birthYear || ''}
+                  onChange={(e) => updateField('birthYear', parseNumber(e.target.value))}
+                  placeholder="1980"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         {BASIC_LONGITUDINAL_FIELDS.map(cfg => renderLongitudinalField(cfg))}
-
-        <div className="health-field-group">
-          <div className="health-field">
-            <label htmlFor="birthMonth">Birth Month</label>
-            <select
-              id="birthMonth"
-              value={inputs.birthMonth || ''}
-              onChange={(e) => updateField('birthMonth', parseNumber(e.target.value))}
-            >
-              <option value="">Month...</option>
-              {[
-                'January', 'February', 'March', 'April', 'May', 'June',
-                'July', 'August', 'September', 'October', 'November', 'December'
-              ].map((month, i) => (
-                <option key={i + 1} value={i + 1}>{month}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="health-field">
-            <label htmlFor="birthYear">Birth Year</label>
-            <input
-              type="number"
-              id="birthYear"
-              value={inputs.birthYear || ''}
-              onChange={(e) => updateField('birthYear', parseNumber(e.target.value))}
-              placeholder="1980"
-              min="1900"
-              max={new Date().getFullYear()}
-            />
-          </div>
-        </div>
       </section>
 
       {/* Blood Tests Section */}

@@ -82,6 +82,26 @@
   color: #333;
 }
 
+.health-section-title--collapsible {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+
+.collapse-chevron {
+  font-size: 14px;
+  color: #999;
+}
+
+.prefill-summary {
+  font-size: 14px;
+  color: #666;
+  margin: -8px 0 16px;
+  cursor: pointer;
+}
+
 .health-section-desc {
   font-size: 14px;
   color: #666;
