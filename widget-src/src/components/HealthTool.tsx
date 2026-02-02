@@ -228,22 +228,24 @@ export function HealthTool() {
   }, [authState.isLoggedIn, inputs, previousMeasurements]);
 
   // Calculate results using effective inputs (form + fallback to previous)
-  const { results, isValid } = useMemo(() => {
+  const { results, isValid, validationErrors } = useMemo(() => {
     if (!effectiveInputs.heightCm || !effectiveInputs.sex) {
-      return { results: null, isValid: false };
+      return { results: null, isValid: false, validationErrors: null };
     }
 
     const validation = validateHealthInputs(effectiveInputs);
 
     if (!validation.success && validation.errors) {
-      setErrors(getValidationErrors(validation.errors));
-      return { results: null, isValid: false };
+      return { results: null, isValid: false, validationErrors: getValidationErrors(validation.errors) };
     }
 
-    setErrors({});
     const healthResults = calculateHealthResults(effectiveInputs as HealthInputs, unitSystem);
-    return { results: healthResults, isValid: true };
+    return { results: healthResults, isValid: true, validationErrors: null };
   }, [effectiveInputs, unitSystem]);
+
+  useEffect(() => {
+    setErrors(validationErrors ?? {});
+  }, [validationErrors]);
 
   const handleDeleteData = useCallback(async () => {
     if (!authState.isLoggedIn) return;

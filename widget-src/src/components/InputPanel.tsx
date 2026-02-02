@@ -130,42 +130,14 @@ export function InputPanel({
     return `${displayValue} ${unit} · ${date}`;
   };
 
-  const PreviousLink = ({ field }: { field: string }) => {
-    const label = getPreviousLabel(field);
-    if (!label) return null;
-    const metric = FIELD_METRIC_MAP[field];
-    return (
-      <a
-        className="previous-value"
-        href={`/pages/health-history?metric=${metric}`}
-        target="_blank"
-        rel="noopener noreferrer"
-      >{label}</a>
-    );
-  };
-
   const hasLongitudinalValues = LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined);
 
-  const InlineSaveBtn = ({ field }: { field: string }) => {
-    if (!isLoggedIn || inputs[field as keyof HealthInputs] === undefined) return null;
-    return (
-      <button
-        className="save-inline-btn"
-        onClick={onSaveLongitudinal}
-        disabled={isSavingLongitudinal}
-        title="Save new values"
-      >
-        {isSavingLongitudinal ? '...' : 'Save'}
-      </button>
-    );
-  };
-
-  // Shared component for longitudinal number fields
-  const LongitudinalField = ({ config }: { config: FieldConfig }) => {
+  const renderLongitudinalField = (config: FieldConfig) => {
     const { field, name, placeholder, step, hint } = config;
     const r = range(field);
+    const previousLabel = getPreviousLabel(field);
     return (
-      <div className="health-field">
+      <div className="health-field" key={field}>
         <label htmlFor={field}>{fieldLabel(field, name)}</label>
         <div className="longitudinal-input-row">
           <input
@@ -179,13 +151,27 @@ export function InputPanel({
             max={r.max}
             className={errors[field] ? 'error' : ''}
           />
-          <InlineSaveBtn field={field} />
+          {isLoggedIn && inputs[field] !== undefined && (
+            <button
+              className="save-inline-btn"
+              onClick={onSaveLongitudinal}
+              disabled={isSavingLongitudinal}
+              title="Save new values"
+            >
+              {isSavingLongitudinal ? '...' : 'Save'}
+            </button>
+          )}
         </div>
         {errors[field] && (
           <span className="error-message">{errors[field]}</span>
         )}
-        {getPreviousLabel(field) ? (
-          <PreviousLink field={field} />
+        {previousLabel ? (
+          <a
+            className="previous-value"
+            href={`/pages/health-history?metric=${FIELD_METRIC_MAP[field]}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >{previousLabel}</a>
         ) : hint ? (
           <span className="field-hint">
             {unitSystem === 'si' ? hint.si : hint.conv}
@@ -269,9 +255,7 @@ export function InputPanel({
           )}
         </div>
 
-        {BASIC_LONGITUDINAL_FIELDS.map(cfg => (
-          <LongitudinalField key={cfg.field} config={cfg} />
-        ))}
+        {BASIC_LONGITUDINAL_FIELDS.map(cfg => renderLongitudinalField(cfg))}
 
         <div className="health-field-group">
           <div className="health-field">
@@ -313,9 +297,7 @@ export function InputPanel({
           Enter your most recent blood test values (optional)
         </p>
 
-        {BLOOD_TEST_FIELDS.map(cfg => (
-          <LongitudinalField key={cfg.field} config={cfg} />
-        ))}
+        {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg))}
 
         {/* Blood Pressure — two-field clinical pattern */}
         <div className="health-field">
