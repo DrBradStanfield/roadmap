@@ -412,9 +412,10 @@ export function InputPanel({
         </p>
 
         {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg))}
+      </section>
 
-        {/* Medication Cascade — shown when lipids are above treatment targets */}
-        {(() => {
+      {/* Cholesterol Medications Section — shown when lipids are above treatment targets */}
+      {(() => {
           // Compute effective inputs for cascade visibility (form values + previous measurements fallback)
           const effectiveApoB = inputs.apoB ?? previousMeasurements.find(m => m.metricType === 'apob')?.value;
           const effectiveLdl = inputs.ldlC ?? previousMeasurements.find(m => m.metricType === 'ldl')?.value;
@@ -444,9 +445,9 @@ export function InputPanel({
             ((!statinTolerated || statinTier >= MAX_STATIN_TIER) || (showStatinIncrease && statinIncreaseHandled));
 
           return (
-            <div className="medication-cascade">
-              <h4 className="medication-cascade-title">Cholesterol Medications</h4>
-              <p className="medication-cascade-desc">
+            <section className="health-section medication-cascade">
+              <h3 className="health-section-title">Cholesterol Medications</h3>
+              <p className="health-section-desc">
                 Your lipid levels are above target. Please indicate your current medications.
               </p>
 
@@ -516,10 +517,9 @@ export function InputPanel({
                   </select>
                 </div>
               )}
-            </div>
+            </section>
           );
         })()}
-      </section>
 
       {/* Save button for longitudinal fields (logged-in users only) */}
       {isLoggedIn && hasLongitudinalValues && (
