@@ -393,54 +393,67 @@
   border: 1px solid #ffe0b2;
 }
 
-.account-info,
-.guest-info {
+.account-status-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
+}
+
+.account-info-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #2e7d32;
 }
 
 .account-icon {
   font-size: 16px;
 }
 
-.account-email {
-  font-size: 14px;
-  font-weight: 500;
-  color: #2e7d32;
+.save-indicator-inline {
+  font-weight: 400;
+}
+
+.save-indicator-inline.saving {
+  color: #666;
+}
+
+.save-indicator-inline.error {
+  color: #dc3545;
+}
+
+.save-indicator-inline.idle {
+  color: #388e3c;
+}
+
+.feedback-btn-small {
+  font-size: 12px;
+  padding: 4px 12px;
+  background: #2563eb;
+  color: #fff;
+  border-radius: 6px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.feedback-btn-small:hover {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.guest-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .guest-text {
   font-size: 14px;
   font-weight: 500;
   color: #e65100;
-}
-
-.save-status {
-  margin-top: 6px;
-}
-
-.save-indicator {
-  font-size: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.save-indicator.saving {
-  color: #666;
-}
-
-.save-indicator.saved {
-  color: #2e7d32;
-}
-
-.save-indicator.error {
-  color: #dc3545;
-}
-
-.save-indicator.idle {
-  color: #388e3c;
 }
 
 .login-prompt {
@@ -746,35 +759,51 @@
   color: #666;
 }
 
+/* Feedback Button */
+.feedback-section {
+  text-align: center;
+  margin-top: 16px;
+}
+
+.feedback-btn {
+  display: inline-block;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background: #2563eb;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.feedback-btn:hover {
+  background: #1d4ed8;
+  color: #fff;
+}
+
 /* Delete Data Section */
 .delete-data-section {
   text-align: center;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
+  margin-top: 24px;
 }
 
-.delete-data-btn {
-  padding: 10px 20px;
-  font-size: 13px;
-  font-weight: 500;
-  background: #fff;
+.delete-data-link {
+  background: none;
+  border: none;
   color: #dc3545;
-  border: 1px solid #dc3545;
-  border-radius: 8px;
+  font-size: 12px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  text-decoration: underline;
+  padding: 0;
 }
 
-.delete-data-btn:hover {
-  background: #dc3545;
-  color: #fff;
+.delete-data-link:hover {
+  color: #a71d2a;
 }
 
-.delete-data-btn:disabled {
-  background: #999;
-  color: #fff;
-  border-color: #999;
+.delete-data-link:disabled {
+  color: #999;
   cursor: not-allowed;
 }
 

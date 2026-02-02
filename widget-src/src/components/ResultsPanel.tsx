@@ -59,25 +59,26 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
   if (!authState) return null;
 
   if (authState.isLoggedIn) {
+    const statusText = saveStatus === 'saving' ? 'Saving...'
+      : saveStatus === 'saved' ? '✓ Saved'
+      : saveStatus === 'error' ? 'Failed to save'
+      : 'Data synced';
+    const statusClass = saveStatus === 'error' ? 'error' : saveStatus === 'saving' ? 'saving' : 'idle';
     return (
       <div className="account-status logged-in">
-        <div className="account-info">
-          <span className="account-icon">👤</span>
-          <span className="account-email">Logged in</span>
-        </div>
-        <div className="save-status">
-          {saveStatus === 'saving' && (
-            <span className="save-indicator saving">Saving...</span>
-          )}
-          {saveStatus === 'saved' && (
-            <span className="save-indicator saved">✓ Saved to account</span>
-          )}
-          {saveStatus === 'error' && (
-            <span className="save-indicator error">Failed to save</span>
-          )}
-          {saveStatus === 'idle' && (
-            <span className="save-indicator idle">Data synced to account</span>
-          )}
+        <div className="account-status-row">
+          <span className="account-info-inline">
+            <span className="account-icon">👤</span>
+            Logged in · <span className={`save-indicator-inline ${statusClass}`}>{statusText}</span>
+          </span>
+          <a
+            href="https://github.com/DrBradStanfield/roadmap/issues/new/choose"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="feedback-btn-small"
+          >
+            Send feedback
+          </a>
         </div>
         {hasUnsavedLongitudinal && onSaveLongitudinal && (
           <button
@@ -211,12 +212,12 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
         individual situation.
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '13px', color: '#6b7280' }}>
+      <div className="feedback-section">
         <a
           href="https://github.com/DrBradStanfield/roadmap/issues/new/choose"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: '#6b7280', textDecoration: 'underline' }}
+          className="feedback-btn"
         >
           Send feedback
         </a>
@@ -225,7 +226,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
       {authState?.isLoggedIn && onDeleteData && (
         <div className="delete-data-section">
           <button
-            className="delete-data-btn"
+            className="delete-data-link"
             onClick={onDeleteData}
             disabled={isDeleting}
           >
