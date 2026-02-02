@@ -19,6 +19,7 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 - **Validation**: Zod
 - **Build**: Vite (widget), Remix (admin)
 - **Testing**: Vitest
+- **Error Monitoring**: Sentry (`@sentry/react` for widget, `@sentry/remix` for backend)
 
 ## Key Directories
 
@@ -222,6 +223,17 @@ See `.env` for required variables. Key Supabase variables:
 - `SUPABASE_ANON_KEY` — Public anon key (Settings > API)
 - `SUPABASE_SERVICE_KEY` — Service role key (Settings > API) — used only for admin operations
 - `SUPABASE_JWT_SECRET` — Legacy JWT secret (Settings > JWT Keys > "Legacy JWT Secret" tab) — used to sign custom JWTs for RLS
+- `SENTRY_DSN` — Sentry DSN for backend error reporting (set via `fly secrets set` on Fly.io). The widget DSN is hardcoded in `widget-src/src/lib/sentry.ts` since it's a public IIFE bundle.
+
+## Error Monitoring (Sentry)
+
+Sentry captures errors from both the widget (client-side) and the Remix backend (server-side). The widget DSN is baked into the JS bundle at build time (`widget-src/src/lib/sentry.ts`). The backend reads `SENTRY_DSN` from the environment.
+
+**Widget**: `initSentry()` is called in both entry points (`index.tsx`, `history.tsx`). The `ErrorBoundary` component reports React crashes with component stack traces. All API client functions in `widget-src/src/lib/api.ts` report caught errors. Sentry is disabled on localhost.
+
+**Backend**: Sentry is initialized in `app/entry.server.tsx`. Errors in `app/routes/api.measurements.ts` catch blocks are reported.
+
+**User feedback**: A "Send feedback" link appears below the disclaimer in `ResultsPanel.tsx` and a "Report this issue" link appears in the `ErrorBoundary` error UI. Both link to GitHub Issues (`https://github.com/bradstanfield/roadmap/issues/new`). GitHub issue templates are in `.github/ISSUE_TEMPLATE/` (bug report + feature request).
 
 ## Health Calculation Reference
 

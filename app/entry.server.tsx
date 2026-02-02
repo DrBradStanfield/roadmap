@@ -7,6 +7,13 @@ import {
 } from "@remix-run/node";
 import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
+import * as Sentry from "@sentry/remix";
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  tracesSampleRate: 0.2,
+  enabled: !!process.env.SENTRY_DSN,
+});
 
 export const streamTimeout = 5000;
 
@@ -43,11 +50,13 @@ export default async function handleRequest(
           pipe(body);
         },
         onShellError(error) {
+          Sentry.captureException(error);
           reject(error);
         },
         onError(error) {
           responseStatusCode = 500;
           console.error(error);
+          Sentry.captureException(error);
         },
       }
     );

@@ -1,4 +1,5 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
+import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
 import {
   getOrCreateSupabaseUser,
@@ -90,6 +91,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
   } catch (error) {
     console.error('Error loading measurements:', error);
+    Sentry.captureException(error);
     return json({ success: false, error: 'Failed to load' }, { status: 500 });
   }
 }
@@ -175,6 +177,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ success: false, error: 'Method not allowed' }, { status: 405 });
   } catch (error) {
     console.error('Error with measurement:', error);
+    Sentry.captureException(error);
     return json({ success: false, error: 'Server error' }, { status: 500 });
   }
 }

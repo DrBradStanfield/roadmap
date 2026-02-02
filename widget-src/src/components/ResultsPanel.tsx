@@ -208,6 +208,17 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
         Suggestions are based on general guidelines and may not apply to your
         individual situation.
       </div>
+
+      <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '13px', color: '#6b7280' }}>
+        <a
+          href="https://github.com/bradstanfield/roadmap/issues/new"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#6b7280', textDecoration: 'underline' }}
+        >
+          Send feedback
+        </a>
+      </div>
     </div>
   );
 }

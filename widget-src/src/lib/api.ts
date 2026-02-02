@@ -7,6 +7,7 @@ import {
   type ApiMeasurement,
   type ApiProfile,
 } from '@roadmap/health-core';
+import { Sentry } from './sentry';
 
 interface MeasurementsResponse {
   success: boolean;
@@ -59,6 +60,7 @@ export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult
     return { inputs, previousMeasurements: result.data };
   } catch (error) {
     console.warn('Error loading measurements:', error);
+    Sentry.captureException(error);
     return null;
   }
 }
@@ -80,6 +82,7 @@ export async function loadMeasurementHistory(
     return result.success ? result.data || [] : [];
   } catch (error) {
     console.warn('Error loading history:', error);
+    Sentry.captureException(error);
     return [];
   }
 }
@@ -104,6 +107,7 @@ export async function addMeasurement(
     return result.success ? result.data || null : null;
   } catch (error) {
     console.warn('Error adding measurement:', error);
+    Sentry.captureException(error);
     return null;
   }
 }
@@ -124,6 +128,7 @@ export async function deleteMeasurement(measurementId: string): Promise<boolean>
     return result.success;
   } catch (error) {
     console.warn('Error deleting measurement:', error);
+    Sentry.captureException(error);
     return false;
   }
 }
@@ -149,6 +154,7 @@ async function saveProfileChanges(profile: {
     return result.success;
   } catch (error) {
     console.warn('Error saving profile:', error);
+    Sentry.captureException(error);
     return false;
   }
 }
@@ -170,6 +176,7 @@ export async function loadAllHistory(
     return result.success ? result.data || [] : [];
   } catch (error) {
     console.warn('Error loading all history:', error);
+    Sentry.captureException(error);
     return [];
   }
 }

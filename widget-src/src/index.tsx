@@ -2,7 +2,10 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { HealthTool } from './components/HealthTool';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { initSentry } from './lib/sentry';
 import './styles.css';
+
+initSentry();
 
 // Find the mount point in the Shopify theme
 function mount() {

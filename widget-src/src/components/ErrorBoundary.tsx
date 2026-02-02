@@ -1,4 +1,5 @@
 import React from 'react';
+import { Sentry } from '../lib/sentry';
 
 interface Props {
   children: React.ReactNode;
@@ -7,6 +8,8 @@ interface Props {
 interface State {
   hasError: boolean;
 }
+
+const FEEDBACK_URL = 'https://github.com/bradstanfield/roadmap/issues/new';
 
 export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
@@ -20,6 +23,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('Health tool error:', error, info.componentStack);
+    Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
   }
 
   render() {
@@ -28,6 +32,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <div className="health-tool-error">
           <h3>Something went wrong</h3>
           <p>The health tool encountered an error. Please refresh the page to try again.</p>
+          <p style={{ marginTop: '8px', fontSize: '14px' }}>
+            <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer">Report this issue</a>
+          </p>
         </div>
       );
     }
