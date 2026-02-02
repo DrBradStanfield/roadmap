@@ -18,6 +18,8 @@ interface FieldConfig {
   placeholder: { si: string; conv: string };
   step?: { si: string; conv: string };
   hint?: { si: string; conv: string };
+  hintMale?: { si: string; conv: string };
+  hintFemale?: { si: string; conv: string };
 }
 
 const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
@@ -33,16 +35,30 @@ const BLOOD_TEST_FIELDS: FieldConfig[] = [
     hint: { si: 'Normal: <39 mmol/mol', conv: 'Normal: <5.7%' },
   },
   {
+    field: 'apoB', name: 'ApoB',
+    placeholder: { si: '0.5', conv: '50' },
+    step: { si: '0.01', conv: '1' },
+    hint: { si: 'Optimal: <0.5 g/L', conv: 'Optimal: <50 mg/dL' },
+  },
+  {
     field: 'ldlC', name: 'LDL Cholesterol',
     placeholder: { si: '2.6', conv: '100' },
     step: { si: '0.1', conv: '1' },
     hint: { si: 'Optimal: <2.6 mmol/L', conv: 'Optimal: <100 mg/dL' },
   },
   {
+    field: 'totalCholesterol', name: 'Total Cholesterol',
+    placeholder: { si: '5.0', conv: '190' },
+    step: { si: '0.1', conv: '1' },
+    hint: { si: 'Desirable: <5.2 mmol/L', conv: 'Desirable: <200 mg/dL' },
+  },
+  {
     field: 'hdlC', name: 'HDL Cholesterol',
     placeholder: { si: '1.3', conv: '50' },
     step: { si: '0.1', conv: '1' },
-    hint: { si: 'Optimal: >1.0 mmol/L (men), 1.3 mmol/L (women)', conv: 'Optimal: >40 mg/dL (men), 50 mg/dL (women)' },
+    hint: { si: 'Optimal: >1.0 mmol/L (men), >1.3 mmol/L (women)', conv: 'Optimal: >40 mg/dL (men), >50 mg/dL (women)' },
+    hintMale: { si: 'Optimal: >1.0 mmol/L', conv: 'Optimal: >40 mg/dL' },
+    hintFemale: { si: 'Optimal: >1.3 mmol/L', conv: 'Optimal: >50 mg/dL' },
   },
   {
     field: 'triglycerides', name: 'Triglycerides',
@@ -55,12 +71,6 @@ const BLOOD_TEST_FIELDS: FieldConfig[] = [
     placeholder: { si: '5.0', conv: '90' },
     step: { si: '0.1', conv: '1' },
     hint: { si: 'Normal: <5.6 mmol/L', conv: 'Normal: <100 mg/dL' },
-  },
-  {
-    field: 'apoB', name: 'ApoB',
-    placeholder: { si: '0.5', conv: '50' },
-    step: { si: '0.01', conv: '1' },
-    hint: { si: 'Optimal: <0.5 g/L', conv: 'Optimal: <50 mg/dL' },
   },
 ];
 
@@ -144,7 +154,10 @@ export function InputPanel({
   const hasLongitudinalValues = LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined);
 
   const renderLongitudinalField = (config: FieldConfig) => {
-    const { field, name, placeholder, step, hint } = config;
+    const { field, name, placeholder, step, hint, hintMale, hintFemale } = config;
+    const effectiveHint = (inputs.sex === 'male' && hintMale) ? hintMale
+      : (inputs.sex === 'female' && hintFemale) ? hintFemale
+      : hint;
     const r = range(field);
     const previousLabel = getPreviousLabel(field);
     return (
@@ -183,9 +196,9 @@ export function InputPanel({
             target="_blank"
             rel="noopener noreferrer"
           >{previousLabel}</a>
-        ) : hint ? (
+        ) : effectiveHint ? (
           <span className="field-hint">
-            {unitSystem === 'si' ? hint.si : hint.conv}
+            {unitSystem === 'si' ? effectiveHint.si : effectiveHint.conv}
           </span>
         ) : null}
       </div>

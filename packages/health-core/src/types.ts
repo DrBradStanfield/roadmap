@@ -17,6 +17,7 @@ export interface HealthInputs {
   // Blood test values (SI canonical units)
   hba1c?: number;       // mmol/mol (IFCC)
   ldlC?: number;        // mmol/L
+  totalCholesterol?: number; // mmol/L
   hdlC?: number;        // mmol/L
   triglycerides?: number; // mmol/L
   fastingGlucose?: number; // mmol/L
@@ -35,6 +36,7 @@ export interface HealthResults {
   proteinTarget: number;
   bmi?: number;
   waistToHeightRatio?: number;
+  nonHdlCholesterol?: number; // mmol/L (total cholesterol - HDL)
   age?: number;
   suggestions: Suggestion[];
 }

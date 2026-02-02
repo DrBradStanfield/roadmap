@@ -17,14 +17,14 @@ describe('FIELD_TO_METRIC / METRIC_TO_FIELD', () => {
   });
 
   it('cover all 11 health metric types', () => {
-    expect(Object.keys(FIELD_TO_METRIC)).toHaveLength(11);
-    expect(Object.keys(METRIC_TO_FIELD)).toHaveLength(11);
+    expect(Object.keys(FIELD_TO_METRIC)).toHaveLength(12);
+    expect(Object.keys(METRIC_TO_FIELD)).toHaveLength(12);
   });
 });
 
 describe('FIELD_METRIC_MAP', () => {
   it('contains only numeric fields (no sex, birth_year, birth_month)', () => {
-    expect(Object.keys(FIELD_METRIC_MAP)).toHaveLength(11);
+    expect(Object.keys(FIELD_METRIC_MAP)).toHaveLength(12);
     expect(FIELD_METRIC_MAP).not.toHaveProperty('sex');
     expect(FIELD_METRIC_MAP).not.toHaveProperty('birthYear');
     expect(FIELD_METRIC_MAP).not.toHaveProperty('birthMonth');

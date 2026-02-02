@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS health_measurements (
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   metric_type TEXT NOT NULL CHECK (metric_type IN (
     'height', 'weight', 'waist',
-    'hba1c', 'ldl', 'hdl', 'triglycerides', 'fasting_glucose',
+    'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'fasting_glucose',
     'systolic_bp', 'diastolic_bp', 'apob'
   )),
   value NUMERIC NOT NULL,
@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS health_measurements (
       WHEN 'waist'           THEN value BETWEEN 40 AND 200
       WHEN 'hba1c'           THEN value BETWEEN 9 AND 195
       WHEN 'ldl'             THEN value BETWEEN 0 AND 12.9
+      WHEN 'total_cholesterol' THEN value BETWEEN 0 AND 15
       WHEN 'hdl'             THEN value BETWEEN 0 AND 5.2
       WHEN 'triglycerides'   THEN value BETWEEN 0 AND 22.6
       WHEN 'fasting_glucose' THEN value BETWEEN 0 AND 27.8
@@ -62,6 +63,37 @@ CREATE TABLE IF NOT EXISTS health_measurements (
 
 CREATE INDEX IF NOT EXISTS idx_measurements_user_type_date
   ON health_measurements(user_id, metric_type, recorded_at DESC);
+
+-- ===== Migrate constraints for existing tables =====
+-- CREATE TABLE IF NOT EXISTS is a no-op on existing tables, so constraints
+-- must be updated via ALTER TABLE to add new metric types (e.g. apob).
+
+ALTER TABLE health_measurements DROP CONSTRAINT IF EXISTS health_measurements_metric_type_check;
+ALTER TABLE health_measurements ADD CONSTRAINT health_measurements_metric_type_check
+  CHECK (metric_type IN (
+    'height', 'weight', 'waist',
+    'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'fasting_glucose',
+    'systolic_bp', 'diastolic_bp', 'apob'
+  ));
+
+ALTER TABLE health_measurements DROP CONSTRAINT IF EXISTS value_range;
+ALTER TABLE health_measurements ADD CONSTRAINT value_range CHECK (
+  CASE metric_type
+    WHEN 'height'          THEN value BETWEEN 50 AND 250
+    WHEN 'weight'          THEN value BETWEEN 20 AND 300
+    WHEN 'waist'           THEN value BETWEEN 40 AND 200
+    WHEN 'hba1c'           THEN value BETWEEN 9 AND 195
+    WHEN 'ldl'             THEN value BETWEEN 0 AND 12.9
+    WHEN 'total_cholesterol' THEN value BETWEEN 0 AND 15
+    WHEN 'hdl'             THEN value BETWEEN 0 AND 5.2
+    WHEN 'triglycerides'   THEN value BETWEEN 0 AND 22.6
+    WHEN 'fasting_glucose' THEN value BETWEEN 0 AND 27.8
+    WHEN 'systolic_bp'     THEN value BETWEEN 60 AND 250
+    WHEN 'diastolic_bp'    THEN value BETWEEN 40 AND 150
+    WHEN 'apob'            THEN value BETWEEN 0 AND 3
+    ELSE false
+  END
+);
 
 -- ===== Trigger: auto-create profile when Supabase Auth user is created =====
 

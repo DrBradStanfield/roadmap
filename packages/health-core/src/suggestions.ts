@@ -7,6 +7,8 @@ import {
   LDL_THRESHOLDS,
   HDL_THRESHOLDS,
   TRIGLYCERIDES_THRESHOLDS,
+  TOTAL_CHOLESTEROL_THRESHOLDS,
+  NON_HDL_THRESHOLDS,
   GLUCOSE_THRESHOLDS,
   BP_THRESHOLDS,
   APOB_THRESHOLDS,
@@ -27,6 +29,9 @@ function fmtTrig(value: number, us: UnitSystem): string {
 }
 function fmtGlucose(value: number, us: UnitSystem): string {
   return `${formatDisplayValue('fasting_glucose', value, us)} ${getDisplayLabel('fasting_glucose', us)}`;
+}
+function fmtTotalChol(value: number, us: UnitSystem): string {
+  return `${formatDisplayValue('total_cholesterol', value, us)} ${getDisplayLabel('total_cholesterol', us)}`;
 }
 function fmtApoB(value: number, us: UnitSystem): string {
   return `${formatDisplayValue('apob', value, us)} ${getDisplayLabel('apob', us)}`;
@@ -162,6 +167,61 @@ export function generateSuggestions(
         priority: 'info',
         title: 'Borderline high LDL cholesterol',
         description: `Your LDL of ${fmtLdl(inputs.ldlC, us)} is borderline high. Optimal is <${formatDisplayValue('ldl', 2.59, us)} ${getDisplayLabel('ldl', us)} for most adults.`,
+        discussWithDoctor: false,
+      });
+    }
+  }
+
+  // Total cholesterol (thresholds in mmol/L)
+  if (inputs.totalCholesterol !== undefined) {
+    if (inputs.totalCholesterol >= TOTAL_CHOLESTEROL_THRESHOLDS.high) {
+      suggestions.push({
+        id: 'total-chol-high',
+        category: 'bloodwork',
+        priority: 'attention',
+        title: 'High total cholesterol',
+        description: `Your total cholesterol of ${fmtTotalChol(inputs.totalCholesterol, us)} is high. Desirable is <${formatDisplayValue('total_cholesterol', TOTAL_CHOLESTEROL_THRESHOLDS.borderline, us)} ${getDisplayLabel('total_cholesterol', us)}.`,
+        discussWithDoctor: true,
+      });
+    } else if (inputs.totalCholesterol >= TOTAL_CHOLESTEROL_THRESHOLDS.borderline) {
+      suggestions.push({
+        id: 'total-chol-borderline',
+        category: 'bloodwork',
+        priority: 'info',
+        title: 'Borderline high total cholesterol',
+        description: `Your total cholesterol of ${fmtTotalChol(inputs.totalCholesterol, us)} is borderline high. Desirable is <${formatDisplayValue('total_cholesterol', TOTAL_CHOLESTEROL_THRESHOLDS.borderline, us)} ${getDisplayLabel('total_cholesterol', us)}.`,
+        discussWithDoctor: false,
+      });
+    }
+  }
+
+  // Non-HDL cholesterol (calculated: total - HDL)
+  if (results.nonHdlCholesterol !== undefined) {
+    if (results.nonHdlCholesterol >= NON_HDL_THRESHOLDS.veryHigh) {
+      suggestions.push({
+        id: 'non-hdl-very-high',
+        category: 'bloodwork',
+        priority: 'urgent',
+        title: 'Very high non-HDL cholesterol',
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol, us)} ${getDisplayLabel('ldl', us)} is very high. This reflects total atherogenic particle burden and indicates significantly elevated cardiovascular risk.`,
+        discussWithDoctor: true,
+      });
+    } else if (results.nonHdlCholesterol >= NON_HDL_THRESHOLDS.high) {
+      suggestions.push({
+        id: 'non-hdl-high',
+        category: 'bloodwork',
+        priority: 'attention',
+        title: 'High non-HDL cholesterol',
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol, us)} ${getDisplayLabel('ldl', us)} is high. Consider lifestyle modifications to reduce cardiovascular risk.`,
+        discussWithDoctor: true,
+      });
+    } else if (results.nonHdlCholesterol >= NON_HDL_THRESHOLDS.borderline) {
+      suggestions.push({
+        id: 'non-hdl-borderline',
+        category: 'bloodwork',
+        priority: 'info',
+        title: 'Borderline high non-HDL cholesterol',
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol, us)} ${getDisplayLabel('ldl', us)} is borderline. Optimal is <${formatDisplayValue('ldl', NON_HDL_THRESHOLDS.borderline, us)} ${getDisplayLabel('ldl', us)}.`,
         discussWithDoctor: false,
       });
     }

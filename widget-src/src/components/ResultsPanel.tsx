@@ -160,6 +160,12 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
               <span className="stat-value">{results.age} years</span>
             </div>
           )}
+          {results.nonHdlCholesterol !== undefined && (
+            <div className="stat-card">
+              <span className="stat-label">Non-HDL Cholesterol</span>
+              <span className="stat-value">{formatDisplayValue('ldl', results.nonHdlCholesterol, unitSystem)} {getDisplayLabel('ldl', unitSystem)}</span>
+            </div>
+          )}
           {results.waistToHeightRatio !== undefined && (
             <div className="stat-card">
               <span className="stat-label">Waist-to-Height</span>

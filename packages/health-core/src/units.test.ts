@@ -15,7 +15,7 @@ import {
 
 describe('Unit conversions — round-trip accuracy', () => {
   const metrics: MetricType[] = [
-    'height', 'weight', 'waist', 'hba1c', 'ldl', 'hdl',
+    'height', 'weight', 'waist', 'hba1c', 'ldl', 'total_cholesterol', 'hdl',
     'triglycerides', 'fasting_glucose', 'systolic_bp', 'diastolic_bp', 'apob',
   ];
 

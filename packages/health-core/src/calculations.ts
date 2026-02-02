@@ -95,6 +95,12 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
     results.waistToHeightRatio = Math.round(ratio * 100) / 100;
   }
 
+  // Calculate non-HDL cholesterol if both total and HDL are provided
+  if (inputs.totalCholesterol !== undefined && inputs.hdlC !== undefined) {
+    const nonHdl = inputs.totalCholesterol - inputs.hdlC;
+    results.nonHdlCholesterol = Math.round(nonHdl * 10) / 10;
+  }
+
   // Calculate age if birth info is provided
   if (inputs.birthYear && inputs.birthMonth) {
     results.age = calculateAge(inputs.birthYear, inputs.birthMonth);

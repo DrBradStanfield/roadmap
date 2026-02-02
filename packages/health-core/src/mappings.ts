@@ -20,6 +20,7 @@ export const FIELD_TO_METRIC: Record<string, string> = {
   waistCm: 'waist',
   hba1c: 'hba1c',
   ldlC: 'ldl',
+  totalCholesterol: 'total_cholesterol',
   hdlC: 'hdl',
   triglycerides: 'triglycerides',
   fastingGlucose: 'fasting_glucose',
@@ -35,6 +36,7 @@ export const METRIC_TO_FIELD: Record<string, keyof HealthInputs> = {
   waist: 'waistCm',
   hba1c: 'hba1c',
   ldl: 'ldlC',
+  total_cholesterol: 'totalCholesterol',
   hdl: 'hdlC',
   triglycerides: 'triglycerides',
   fasting_glucose: 'fastingGlucose',
@@ -53,6 +55,7 @@ export const FIELD_METRIC_MAP: Record<string, MetricType> = {
   waistCm: 'waist',
   hba1c: 'hba1c',
   ldlC: 'ldl',
+  totalCholesterol: 'total_cholesterol',
   hdlC: 'hdl',
   triglycerides: 'triglycerides',
   fastingGlucose: 'fasting_glucose',
@@ -74,8 +77,8 @@ export const PREFILL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
  * These are immutable time-series measurements that accumulate over time.
  */
 export const LONGITUDINAL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
-  'weightKg', 'waistCm', 'hba1c', 'ldlC', 'hdlC',
-  'triglycerides', 'fastingGlucose', 'apoB', 'systolicBp', 'diastolicBp',
+  'weightKg', 'waistCm', 'hba1c', 'apoB', 'ldlC', 'totalCholesterol', 'hdlC',
+  'triglycerides', 'fastingGlucose', 'systolicBp', 'diastolicBp',
 ];
 
 /** API measurement record shape (camelCase, as returned by API endpoints). */

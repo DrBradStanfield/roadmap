@@ -5,7 +5,7 @@ import { z } from 'zod';
  */
 export const METRIC_TYPES = [
   'height', 'weight', 'waist',
-  'hba1c', 'ldl', 'hdl', 'triglycerides', 'fasting_glucose',
+  'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'fasting_glucose',
   'systolic_bp', 'diastolic_bp', 'apob',
 ] as const;
 
@@ -62,6 +62,11 @@ export const healthInputSchema = z.object({
     .number()
     .min(0, 'LDL must be positive')
     .max(12.9, 'LDL must be at most 12.9 mmol/L')
+    .optional(),
+  totalCholesterol: z
+    .number()
+    .min(0, 'Total cholesterol must be positive')
+    .max(15, 'Total cholesterol must be at most 15 mmol/L')
     .optional(),
   hdlC: z
     .number()

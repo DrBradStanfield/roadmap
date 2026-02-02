@@ -102,6 +102,7 @@ All values in the database and in `HealthInputs` are stored in **SI canonical un
 | waist | cm | inches | ÷ 2.54 |
 | hba1c | mmol/mol (IFCC) | % (NGSP) | % = mmol/mol × 0.09148 + 2.152 |
 | ldl | mmol/L | mg/dL | × 38.67 |
+| total_cholesterol | mmol/L | mg/dL | × 38.67 |
 | hdl | mmol/L | mg/dL | × 38.67 |
 | triglycerides | mmol/L | mg/dL | × 88.57 |
 | fasting_glucose | mmol/L | mg/dL | × 18.016 |
@@ -122,7 +123,7 @@ Demographics and identity fields are stored as columns on the `profiles` table:
 Health input fields are split into two categories defined in `packages/health-core/src/mappings.ts`:
 
 - **`PREFILL_FIELDS`** (`heightCm`, `sex`, `birthYear`, `birthMonth`): Demographics and height. Pre-filled from saved data, editable in-place. Auto-saved with 500ms debounce for logged-in users.
-- **`LONGITUDINAL_FIELDS`** (`weightKg`, `waistCm`, `hba1c`, `ldlC`, `hdlC`, `triglycerides`, `fastingGlucose`, `systolicBp`, `diastolicBp`): Time-series metrics. Input fields start **empty** with a clickable previous-value label underneath in the format **"value unit · date"** (e.g., "80 kg · Feb 2, 2026"). Clicking the label opens the history page filtered to that metric (`/pages/health-history?metric=weight`). Users enter new values and click "Save New Values" to create new immutable records. After save, fields clear and previous labels update. **All future longitudinal fields must follow this same pattern**: empty input, clickable "value unit · date" label linking to history, explicit save button.
+- **`LONGITUDINAL_FIELDS`** (`weightKg`, `waistCm`, `hba1c`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `fastingGlucose`, `systolicBp`, `diastolicBp`): Time-series metrics. Input fields start **empty** with a clickable previous-value label underneath in the format **"value unit · date"** (e.g., "80 kg · Feb 2, 2026"). Clicking the label opens the history page filtered to that metric (`/pages/health-history?metric=weight`). Users enter new values and click "Save New Values" to create new immutable records. After save, fields clear and previous labels update. **All future longitudinal fields must follow this same pattern**: empty input, clickable "value unit · date" label linking to history, explicit save button.
 
 This design reflects the immutable measurement storage model — longitudinal values are never edited, only appended. Results and suggestions use an `effectiveInputs` pattern that merges current form inputs with fallback to previous measurements, so results are always up-to-date even before the user enters new values.
 
@@ -254,6 +255,8 @@ All thresholds are defined as constants in `packages/health-core/src/units.ts` a
 
 - **HbA1c**: Normal <39 mmol/mol (<5.7%), Prediabetes 39-48 (5.7-6.4%), Diabetes ≥48 (≥6.5%)
 - **LDL**: Optimal <3.36 mmol/L (<130 mg/dL), Borderline 3.36-4.14 (130-159), High 4.14-4.91 (160-189), Very High ≥4.91 (≥190)
+- **Total Cholesterol**: Desirable <5.17 mmol/L (<200 mg/dL), Borderline 5.17-6.21 (200-239), High ≥6.21 (≥240)
+- **Non-HDL Cholesterol**: Optimal <3.36 mmol/L (<130 mg/dL), Borderline 3.36-4.14 (130-159), High 4.14-4.91 (160-189), Very High ≥4.91 (≥190)
 - **HDL**: Low <1.03 mmol/L (<40 mg/dL men), <1.29 mmol/L (<50 mg/dL women)
 - **Triglycerides**: Normal <1.69 mmol/L (<150 mg/dL), Borderline 1.69-2.26 (150-199), High 2.26-5.64 (200-499), Very High ≥5.64 (≥500)
 - **ApoB**: Optimal <0.5 g/L (<50 mg/dL), Borderline 0.5-0.7 (50-70), High 0.7-1.0 (70-100), Very High ≥1.0 (≥100)

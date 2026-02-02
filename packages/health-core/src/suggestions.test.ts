@@ -9,6 +9,7 @@ const ldl = (mgdl: number) => toCanonicalValue('ldl', mgdl, 'conventional');
 const hdl = (mgdl: number) => toCanonicalValue('hdl', mgdl, 'conventional');
 const trig = (mgdl: number) => toCanonicalValue('triglycerides', mgdl, 'conventional');
 const glucose = (mgdl: number) => toCanonicalValue('fasting_glucose', mgdl, 'conventional');
+const totalChol = (mgdl: number) => toCanonicalValue('total_cholesterol', mgdl, 'conventional');
 const apoB = (mgdl: number) => toCanonicalValue('apob', mgdl, 'conventional');
 
 // Helper to create base inputs and results
@@ -171,6 +172,69 @@ describe('generateSuggestions', () => {
 
       const ldlSuggestions = suggestions.filter(s => s.id.startsWith('ldl-'));
       expect(ldlSuggestions.length).toBe(0);
+    });
+  });
+
+  describe('Total cholesterol suggestions', () => {
+    it('generates high suggestion for total cholesterol >= 240 mg/dL', () => {
+      const { inputs, results } = createTestData({ totalCholesterol: totalChol(250) });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'total-chol-high')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'total-chol-high')?.priority).toBe('attention');
+    });
+
+    it('generates borderline suggestion for total cholesterol 200-239 mg/dL', () => {
+      const { inputs, results } = createTestData({ totalCholesterol: totalChol(220) });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'total-chol-borderline')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'total-chol-borderline')?.priority).toBe('info');
+    });
+
+    it('does not generate suggestion for desirable total cholesterol < 200 mg/dL', () => {
+      const { inputs, results } = createTestData({ totalCholesterol: totalChol(180) });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.filter(s => s.id.startsWith('total-chol-')).length).toBe(0);
+    });
+  });
+
+  describe('Non-HDL cholesterol suggestions', () => {
+    it('generates very high suggestion for non-HDL >= 190 mg/dL', () => {
+      const { inputs, results } = createTestData(
+        { totalCholesterol: totalChol(280), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(280) - hdl(50) }
+      );
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'non-hdl-very-high')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'non-hdl-very-high')?.priority).toBe('urgent');
+    });
+
+    it('generates high suggestion for non-HDL 160-189 mg/dL', () => {
+      const { inputs, results } = createTestData(
+        { totalCholesterol: totalChol(220), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(220) - hdl(50) }
+      );
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'non-hdl-high')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'non-hdl-high')?.priority).toBe('attention');
+    });
+
+    it('generates borderline suggestion for non-HDL 130-159 mg/dL', () => {
+      const { inputs, results } = createTestData(
+        { totalCholesterol: totalChol(190), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(190) - hdl(50) }
+      );
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'non-hdl-borderline')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'non-hdl-borderline')?.priority).toBe('info');
+    });
+
+    it('does not generate suggestion for optimal non-HDL < 130 mg/dL', () => {
+      const { inputs, results } = createTestData(
+        { totalCholesterol: totalChol(170), hdlC: hdl(60) },
+        { nonHdlCholesterol: totalChol(170) - hdl(60) }
+      );
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.filter(s => s.id.startsWith('non-hdl-')).length).toBe(0);
     });
   });
 

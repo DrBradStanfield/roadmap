@@ -65,6 +65,34 @@
   gap: 24px;
 }
 
+.unit-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.unit-toggle label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.unit-toggle select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.unit-toggle select:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
 .health-section {
   border-bottom: 1px solid #eee;
   padding-bottom: 24px;

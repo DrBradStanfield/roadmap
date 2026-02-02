@@ -21,6 +21,7 @@ export type MetricType =
   | 'ldl'
   | 'hdl'
   | 'triglycerides'
+  | 'total_cholesterol'
   | 'fasting_glucose'
   | 'systolic_bp'
   | 'diastolic_bp'
@@ -182,6 +183,24 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     validationRange: {
       si: { min: 0, max: 5.2 }, // ~0-200 mg/dL
       conventional: { min: 0, max: 200 },
+    },
+    decimalPlaces: { si: 1, conventional: 0 },
+  },
+
+  total_cholesterol: {
+    canonical: 'mmol/L',
+    label: { si: 'mmol/L', conventional: 'mg/dL' },
+    toCanonical: {
+      si: identity,
+      conventional: (v) => v / CHOLESTEROL_FACTOR,
+    },
+    fromCanonical: {
+      si: identity,
+      conventional: (v) => v * CHOLESTEROL_FACTOR,
+    },
+    validationRange: {
+      si: { min: 0, max: 15 }, // ~0-580 mg/dL
+      conventional: { min: 0, max: 580 },
     },
     decimalPlaces: { si: 1, conventional: 0 },
   },
@@ -354,6 +373,19 @@ export const LDL_THRESHOLDS = {
   borderline: 130 / CHOLESTEROL_FACTOR,  // ~3.36
   high: 160 / CHOLESTEROL_FACTOR,        // ~4.14
   veryHigh: 190 / CHOLESTEROL_FACTOR,    // ~4.91
+} as const;
+
+/** Total cholesterol thresholds in mmol/L */
+export const TOTAL_CHOLESTEROL_THRESHOLDS = {
+  borderline: 200 / CHOLESTEROL_FACTOR, // ~5.17
+  high: 240 / CHOLESTEROL_FACTOR,       // ~6.21
+} as const;
+
+/** Non-HDL cholesterol thresholds in mmol/L */
+export const NON_HDL_THRESHOLDS = {
+  borderline: 130 / CHOLESTEROL_FACTOR, // ~3.36
+  high: 160 / CHOLESTEROL_FACTOR,       // ~4.14
+  veryHigh: 190 / CHOLESTEROL_FACTOR,   // ~4.91
 } as const;
 
 /** HDL thresholds in mmol/L */
