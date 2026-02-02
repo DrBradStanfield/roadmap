@@ -13,6 +13,8 @@ A personalized health management tool embedded in a Shopify storefront. Users in
 - **Shopify login sync**: Logged-in customers automatically save data to cloud (HMAC-verified)
 - **Background sync**: App embed block syncs guest localStorage data to Supabase on any storefront page after login
 - **Personalized suggestions**: Based on clinical guidelines for BMI, HbA1c, LDL, blood pressure, etc.
+- **HIPAA audit logging**: All write operations logged for compliance (no PHI in metadata)
+- **Account data deletion**: Users can delete all their data with a single click (measurements, profile, auth user)
 
 ## Prerequisites
 
@@ -75,6 +77,7 @@ Run the SQL migration in your Supabase SQL Editor:
 This creates:
 - **profiles** table — Maps Shopify customer IDs to Supabase Auth user IDs
 - **health_measurements** table — Immutable time-series health records with `metric_type`, `value` (SI canonical units), and `recorded_at`
+- **audit_logs** table — HIPAA audit trail for all write operations (anonymized on account deletion)
 - **Auth trigger** — Auto-creates a profile row when a Supabase Auth user is created
 - **get_latest_measurements()** RPC — Efficiently returns the latest value per metric type (scoped by `auth.uid()`)
 - **CHECK constraints** — Per-metric-type value range validation at the database level
@@ -117,6 +120,7 @@ fly secrets set SUPABASE_JWT_SECRET=your-jwt-secret
 ├─────────────────────────────────────────────────────────────────┤
 │  Backend API (Remix App on Fly.io)                                │
 │  ├── GET/POST/DELETE /api/measurements (HMAC auth)              │
+│  ├── DELETE /api/user-data (account deletion, HMAC auth)        │
 │  └── Dual Supabase clients (admin + RLS-enforced user client)   │
 ├─────────────────────────────────────────────────────────────────┤
 │  Shared Library (packages/health-core)                            │
@@ -127,7 +131,8 @@ fly secrets set SUPABASE_JWT_SECRET=your-jwt-secret
 ├─────────────────────────────────────────────────────────────────┤
 │  Supabase Database (RLS enabled)                                  │
 │  ├── profiles (shopify_customer_id → user mapping)              │
-│  └── health_measurements (immutable time-series records)         │
+│  ├── health_measurements (immutable time-series records)         │
+│  └── audit_logs (HIPAA audit trail, anonymized on deletion)      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -168,7 +173,8 @@ Logged-in customer (storefront widget):
 │   ├── /lib
 │   │   └── supabase.server.ts    # Dual Supabase clients, JWT signing, CRUD
 │   └── /routes
-│       └── api.measurements.ts   # Measurement CRUD API (HMAC auth)
+│       ├── api.measurements.ts   # Measurement CRUD API (HMAC auth)
+│       └── api.user-data.ts     # Account data deletion (HMAC auth)
 ├── /packages
 │   └── /health-core              # Shared library
 │       └── /src
@@ -203,7 +209,7 @@ Logged-in customer (storefront widget):
 ## Testing
 
 ```bash
-npm test              # Run all 126 tests once
+npm test              # Run all 138 tests once
 npm run test:watch    # Watch mode
 ```
 

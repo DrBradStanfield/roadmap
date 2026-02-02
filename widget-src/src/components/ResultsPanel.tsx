@@ -21,6 +21,8 @@ interface ResultsPanelProps {
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => void;
   isSavingLongitudinal?: boolean;
+  onDeleteData?: () => void;
+  isDeleting?: boolean;
 }
 
 function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
@@ -103,7 +105,7 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, unitSystem, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, authState, saveStatus, unitSystem, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting }: ResultsPanelProps) {
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
@@ -219,6 +221,18 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
           Send feedback
         </a>
       </div>
+
+      {authState?.isLoggedIn && onDeleteData && (
+        <div className="delete-data-section">
+          <button
+            className="delete-data-btn"
+            onClick={onDeleteData}
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete All My Data'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

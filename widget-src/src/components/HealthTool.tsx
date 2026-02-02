@@ -25,6 +25,7 @@ import {
   loadLatestMeasurements,
   saveChangedMeasurements,
   addMeasurement,
+  deleteUserData,
 } from '../lib/api';
 
 // Auth state from Liquid template
@@ -52,6 +53,7 @@ export function HealthTool() {
   const [hasApiResponse, setHasApiResponse] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Unit system: load saved preference or auto-detect
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
@@ -99,14 +101,11 @@ export function HealthTool() {
           setPreviousMeasurements(result.previousMeasurements);
           // Cache to localStorage for instant display on next page load
           saveToLocalStorage(result.inputs, result.previousMeasurements);
-        } else if (cached && Object.keys(cached.inputs).length > 0) {
-          // No cloud data — sync localStorage to cloud
-          const synced = await saveChangedMeasurements(cached.inputs, {});
-          if (synced) {
+        } else {
+          // No cloud data — sync-embed.liquid handles localStorage→cloud migration.
+          // Just track current inputs so auto-save doesn't re-send them.
+          if (cached && Object.keys(cached.inputs).length > 0) {
             previousInputsRef.current = { ...cached.inputs };
-            clearLocalStorage();
-          } else {
-            previousInputsRef.current = {};
           }
         }
       } else {
@@ -246,6 +245,29 @@ export function HealthTool() {
     return { results: healthResults, isValid: true };
   }, [effectiveInputs, unitSystem]);
 
+  const handleDeleteData = useCallback(async () => {
+    if (!authState.isLoggedIn) return;
+    const confirmed = window.confirm(
+      'This will permanently delete all your health data and measurements. This action cannot be undone. Are you sure?',
+    );
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    const success = await deleteUserData();
+    setIsDeleting(false);
+
+    if (success) {
+      clearLocalStorage();
+      setInputs({});
+      setPreviousMeasurements([]);
+      previousInputsRef.current = {};
+      setSaveStatus('idle');
+      window.alert('All your health data has been deleted.');
+    } else {
+      window.alert('Failed to delete data. Please try again.');
+    }
+  }, [authState.isLoggedIn]);
+
   const handleInputChange = (newInputs: Partial<HealthInputs>) => {
     setInputs(newInputs);
   };
@@ -285,6 +307,8 @@ export function HealthTool() {
             hasUnsavedLongitudinal={authState.isLoggedIn && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined)}
             onSaveLongitudinal={handleSaveLongitudinal}
             isSavingLongitudinal={isSavingLongitudinal}
+            onDeleteData={handleDeleteData}
+            isDeleting={isDeleting}
           />
         </div>
       </div>

@@ -726,6 +726,38 @@
   color: #666;
 }
 
+/* Delete Data Section */
+.delete-data-section {
+  text-align: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
+}
+
+.delete-data-btn {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  background: #fff;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.delete-data-btn:hover {
+  background: #dc3545;
+  color: #fff;
+}
+
+.delete-data-btn:disabled {
+  background: #999;
+  color: #fff;
+  border-color: #999;
+  cursor: not-allowed;
+}
+
 /* Skeleton Loading */
 .skeleton-block {
   background: #e0e0e0;

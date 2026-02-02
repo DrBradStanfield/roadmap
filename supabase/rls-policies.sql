@@ -171,6 +171,32 @@ CREATE POLICY "Users can delete own measurements"
 GRANT SELECT, UPDATE ON profiles TO authenticated;
 GRANT SELECT, INSERT, DELETE ON health_measurements TO authenticated;
 
+-- ===== Audit logs table =====
+-- Tracks all write operations for HIPAA compliance.
+-- Inserted by the service-role admin client server-side.
+-- Users can read their own logs via RLS SELECT policy.
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID,  -- nullable (anonymized after account deletion)
+  action TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  resource_id TEXT,
+  metadata JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_user_created ON audit_logs(user_id, created_at DESC);
+
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own audit logs" ON audit_logs;
+CREATE POLICY "Users can read own audit logs"
+  ON audit_logs FOR SELECT
+  USING (user_id = auth.uid());
+
+GRANT SELECT ON audit_logs TO authenticated;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

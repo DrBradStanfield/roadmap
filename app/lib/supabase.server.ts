@@ -73,6 +73,34 @@ function cacheUserId(shopifyCustomerId: string, userId: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// Audit logging — fire-and-forget, never blocks or fails the request.
+// Uses supabaseAdmin (service role) because audit writes happen server-side
+// after the user is already authenticated via HMAC.
+// ---------------------------------------------------------------------------
+
+function logAudit(
+  userId: string,
+  action: string,
+  resourceType: string,
+  resourceId?: string,
+  metadata?: Record<string, unknown>,
+): void {
+  if (!supabaseAdmin) return;
+  supabaseAdmin
+    .from('audit_logs')
+    .insert({
+      user_id: userId,
+      action,
+      resource_type: resourceType,
+      resource_id: resourceId ?? null,
+      metadata: metadata ?? null,
+    })
+    .then(({ error }) => {
+      if (error) console.error('Audit log failed:', error.message);
+    });
+}
+
+// ---------------------------------------------------------------------------
 // getOrCreateSupabaseUser — maps a Shopify customer to a Supabase Auth user.
 // Both params are required; throws if either is missing.
 // ---------------------------------------------------------------------------
@@ -193,6 +221,7 @@ export async function getOrCreateSupabaseUser(
     );
   }
 
+  logAudit(userId, 'USER_CREATED', 'user', userId, { shopifyCustomerId });
   cacheUserId(shopifyCustomerId, userId);
   return userId;
 }
@@ -332,6 +361,7 @@ export async function addMeasurement(
     return null;
   }
 
+  logAudit(userId, 'MEASUREMENT_CREATED', 'measurement', data.id, { metricType });
   return data as DbMeasurement;
 }
 
@@ -344,13 +374,16 @@ export async function deleteMeasurement(
     .from('health_measurements')
     .delete()
     .eq('id', measurementId)
-    .select('id');
+    .select('id, user_id');
 
   if (error) {
     console.error('Error deleting measurement:', error);
     return false;
   }
 
+  if (data && data.length > 0) {
+    logAudit(data[0].user_id, 'MEASUREMENT_DELETED', 'measurement', measurementId);
+  }
   return (data?.length ?? 0) > 0;
 }
 
@@ -401,5 +434,68 @@ export async function updateProfile(
     return null;
   }
 
+  logAudit(userId, 'PROFILE_UPDATED', 'profile', userId, { fields: Object.keys(updates) });
   return data as DbProfile;
+}
+
+// ---------------------------------------------------------------------------
+// Account data deletion — deletes all user data and anonymizes audit logs.
+// Uses supabaseAdmin (service role) to ensure complete cleanup.
+// ---------------------------------------------------------------------------
+
+export async function deleteAllUserData(userId: string): Promise<{ measurementsDeleted: number }> {
+  if (!supabaseAdmin) {
+    throw new Error('Supabase admin client not configured');
+  }
+
+  // 1. Log the deletion before removing data
+  logAudit(userId, 'USER_DATA_DELETED', 'user', userId);
+
+  // 2. Count and delete all measurements
+  const { data: measurements } = await supabaseAdmin
+    .from('health_measurements')
+    .select('id')
+    .eq('user_id', userId);
+  const measurementsDeleted = measurements?.length ?? 0;
+
+  if (measurementsDeleted > 0) {
+    const { error: delError } = await supabaseAdmin
+      .from('health_measurements')
+      .delete()
+      .eq('user_id', userId);
+    if (delError) {
+      throw new Error(`Failed to delete measurements: ${delError.message}`);
+    }
+  }
+
+  // 3. Anonymize audit logs (set user_id to null)
+  await supabaseAdmin
+    .from('audit_logs')
+    .update({ user_id: null })
+    .eq('user_id', userId);
+
+  // 4. Delete profile row
+  const { error: profileError } = await supabaseAdmin
+    .from('profiles')
+    .delete()
+    .eq('id', userId);
+  if (profileError) {
+    throw new Error(`Failed to delete profile: ${profileError.message}`);
+  }
+
+  // 5. Delete Supabase Auth user
+  const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+  if (authError) {
+    throw new Error(`Failed to delete auth user: ${authError.message}`);
+  }
+
+  // 6. Clear from in-memory cache
+  for (const [key, entry] of userIdCache) {
+    if (entry.userId === userId) {
+      userIdCache.delete(key);
+      break;
+    }
+  }
+
+  return { measurementsDeleted };
 }

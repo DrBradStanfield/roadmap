@@ -36,8 +36,9 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 ## Important Files
 
 **Backend API:**
-- `app/lib/supabase.server.ts` - Supabase dual-client (admin + user), JWT signing, `getOrCreateSupabaseUser()`, measurement CRUD helpers, profile CRUD helpers (`getProfile()`, `updateProfile()`, `toApiProfile()`), `toApiMeasurement()`
+- `app/lib/supabase.server.ts` - Supabase dual-client (admin + user), JWT signing, `getOrCreateSupabaseUser()`, measurement CRUD helpers, profile CRUD helpers (`getProfile()`, `updateProfile()`, `toApiProfile()`), `toApiMeasurement()`, `logAudit()`, `deleteAllUserData()`
 - `app/routes/api.measurements.ts` - Measurement CRUD + profile update API (storefront, HMAC auth)
+- `app/routes/api.user-data.ts` - Account data deletion endpoint (DELETE, HMAC auth, rate-limited 1/hour)
 
 **Health Core Library:**
 - `packages/health-core/src/calculations.ts` - Health formulas (IBW, BMI, protein)
@@ -211,6 +212,7 @@ Logged-in Shopify customer:
 Uses **Supabase** (PostgreSQL). Tables:
 - `profiles` — User accounts linked to Shopify customers (shopify_customer_id, email) + demographic columns (sex, birth_year, birth_month, unit_system)
 - `health_measurements` — Immutable time-series health records (metric_type, value in SI, recorded_at) for the 10 health metrics only
+- `audit_logs` — HIPAA audit trail for all write operations (user_id nullable for anonymization after account deletion)
 
 The `health_measurements` table has no UPDATE policy — records are immutable. A `get_latest_measurements()` RPC function (using `auth.uid()`, no parameters) efficiently returns the latest value per metric type using `DISTINCT ON`. A `CASE`-based CHECK constraint (`value_range`) enforces per-metric-type value ranges at the database level (e.g., weight 20–300 kg, LDL 0–12.9 mmol/L), mirroring the Zod validation as defense-in-depth. Shopify customers are mapped to Supabase Auth users via `getOrCreateSupabaseUser()` — a DB trigger on `auth.users` auto-creates the `profiles` row when a new auth user is created.
 
@@ -337,10 +339,43 @@ Previously the app had two Shopify customer account extensions (a profile summar
 
 4. **Sequential POST pattern**: The sync embed sends measurements one at a time (not in parallel) because parallel POSTs for a new user cause race conditions in `getOrCreateSupabaseUser()` — multiple requests simultaneously calling `listUsers()` (which lists ALL Supabase auth users) caused backend timeouts and 500 errors from Shopify's proxy.
 
+## Audit Logging
+
+All write operations are logged to the `audit_logs` table for HIPAA compliance. The `logAudit()` helper in `supabase.server.ts` is fire-and-forget (never blocks or fails the request) and uses the service-role admin client.
+
+**Audited operations:**
+- `USER_CREATED` — new Supabase Auth user mapped from Shopify customer
+- `MEASUREMENT_CREATED` — new measurement added (metadata: `{ metricType }`, no PHI values)
+- `MEASUREMENT_DELETED` — measurement removed
+- `PROFILE_UPDATED` — demographics changed (metadata: `{ fields: [...] }`, no PHI values)
+- `USER_DATA_DELETED` — full account deletion triggered
+
+**On account deletion**, audit logs are anonymized (`user_id` set to NULL) rather than deleted, preserving the audit trail without identifying the user.
+
+Users can read their own audit logs via RLS SELECT policy (`auth.uid()`). No INSERT/UPDATE/DELETE policies exist for the `authenticated` role — only the service-role admin client inserts logs.
+
+## Account Data Deletion
+
+Users can delete all their data via a "Delete All My Data" button in the widget (visible when logged in). The deletion endpoint (`app/routes/api.user-data.ts`) requires `{ confirmDelete: true }` in the request body and is rate-limited to 1 request per hour per customer.
+
+**Deletion sequence:**
+1. Log `USER_DATA_DELETED` audit entry
+2. Delete all `health_measurements`
+3. Anonymize audit logs (set `user_id` to NULL)
+4. Delete `profiles` row
+5. Delete Supabase Auth user
+6. Clear in-memory user cache
+
+The widget clears localStorage and resets all React state after successful deletion.
+
+## Data Sync Architecture
+
+**localStorage→cloud sync is handled exclusively by the sync-embed block** (`sync-embed.liquid`), not by the widget. The widget only reads from the cloud and caches the response to localStorage for instant display on subsequent page loads. This prevents duplicate writes that would occur if both the widget and sync-embed tried to sync the same localStorage data simultaneously.
+
 ## Future Plans
 
 1. **Mobile App**: React Native + Expo with PowerSync for offline sync
-2. **HIPAA Compliance**: Upgrade Supabase to Pro, sign BAA, add audit logging
+2. **HIPAA Compliance**: Upgrade Supabase to Pro, sign BAA, encryption at rest
 3. **Healthcare Integrations**: Apple HealthKit, FHIR API for EHR import
 
 ## Disclaimer

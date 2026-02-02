@@ -38,6 +38,7 @@
     "@shopify/polaris": "^12.0.0",
     "@shopify/shopify-app-remix": "^3.7.0",
     "@shopify/shopify-app-session-storage-prisma": "^6.0.0",
+    "@sentry/remix": "^10.38.0",
     "@supabase/supabase-js": "^2.93.2",
     "@types/jsonwebtoken": "^9.0.10",
     "esbuild": "^0.25.9",
