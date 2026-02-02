@@ -9,7 +9,7 @@ interface State {
   hasError: boolean;
 }
 
-const FEEDBACK_URL = 'https://github.com/bradstanfield/roadmap/issues/new';
+const FEEDBACK_URL = 'https://github.com/DrBradStanfield/roadmap/issues/new';
 
 export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
