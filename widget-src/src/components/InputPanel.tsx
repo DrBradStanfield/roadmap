@@ -16,6 +16,7 @@ import {
   getStatinTier,
   MAX_STATIN_TIER,
   LIPID_TREATMENT_TARGETS,
+  calculateAge,
 } from '@roadmap/health-core';
 
 interface FieldConfig {
@@ -269,7 +270,7 @@ export function InputPanel({
 
         {prefillComplete && !prefillExpanded && (
           <p className="prefill-summary" onClick={() => setPrefillExpanded(true)}>
-            {inputs.sex === 'male' ? 'Male' : 'Female'} · {toDisplay('heightCm', inputs.heightCm)} {getDisplayLabel(FIELD_METRIC_MAP['heightCm']!, unitSystem)} · Born {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(inputs.birthMonth || 1) - 1]} {inputs.birthYear}
+            {inputs.sex === 'male' ? 'Male' : 'Female'} · Height {toDisplay('heightCm', inputs.heightCm)} {getDisplayLabel(FIELD_METRIC_MAP['heightCm']!, unitSystem)} · Born {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(inputs.birthMonth || 1) - 1]} {inputs.birthYear}
           </p>
         )}
 
@@ -397,7 +398,7 @@ export function InputPanel({
             <span className="error-message">{errors.diastolicBp}</span>
           )}
           <div className="field-meta">
-            <span className="field-hint">Target: &lt;130/80 mmHg</span>
+            <span className="field-hint">Target: &lt;{(inputs.birthYear && inputs.birthMonth && calculateAge(inputs.birthYear, inputs.birthMonth) >= 65) ? '130/80' : '120/80'} mmHg</span>
             {getBpPreviousLabel() && (
               <a
                 className="previous-value"
