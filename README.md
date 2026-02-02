@@ -75,7 +75,7 @@ Run the SQL migration in your Supabase SQL Editor:
 ```
 
 This creates:
-- **profiles** table — Maps Shopify customer IDs to Supabase Auth user IDs
+- **profiles** table — Maps Shopify customer IDs to Supabase Auth user IDs (`shopify_customer_id` is nullable for future mobile-only users)
 - **health_measurements** table — Immutable time-series health records with `metric_type`, `value` (SI canonical units), and `recorded_at`
 - **audit_logs** table — HIPAA audit trail for all write operations (anonymized on account deletion)
 - **Auth trigger** — Auto-creates a profile row when a Supabase Auth user is created

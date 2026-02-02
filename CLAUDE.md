@@ -210,7 +210,7 @@ Logged-in Shopify customer:
 ## Database
 
 Uses **Supabase** (PostgreSQL). Tables:
-- `profiles` — User accounts linked to Shopify customers (shopify_customer_id, email) + demographic columns (sex, birth_year, birth_month, unit_system)
+- `profiles` — User accounts (shopify_customer_id is nullable — NULL for future mobile-only users without Shopify accounts, email) + demographic columns (sex, birth_year, birth_month, unit_system)
 - `health_measurements` — Immutable time-series health records (metric_type, value in SI, recorded_at) for the 10 health metrics only
 - `audit_logs` — HIPAA audit trail for all write operations (user_id nullable for anonymization after account deletion)
 
@@ -374,7 +374,7 @@ The widget clears localStorage and resets all React state after successful delet
 
 ## Future Plans
 
-1. **Mobile App**: React Native + Expo with PowerSync for offline sync
+1. **Mobile App**: React Native + Expo with PowerSync for offline sync. Dual auth: Shopify Customer Account API OAuth for Shopify customers, Supabase Auth (email/magic link) for standalone mobile users. `profiles.shopify_customer_id` is already nullable to support this.
 2. **HIPAA Compliance**: Upgrade Supabase to Pro, sign BAA, encryption at rest
 3. **Healthcare Integrations**: Apple HealthKit, FHIR API for EHR import
 

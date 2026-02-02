@@ -14,7 +14,7 @@ DROP TABLE IF EXISTS health_profiles;
 
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  shopify_customer_id TEXT NOT NULL,
+  shopify_customer_id TEXT,  -- nullable for mobile-only users without Shopify accounts
   email TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
