@@ -6,6 +6,7 @@ import {
   PREFILL_FIELDS,
   type ApiMeasurement,
   type ApiProfile,
+  type ApiMedication,
 } from '@roadmap/health-core';
 import { Sentry } from './sentry';
 
@@ -13,6 +14,7 @@ interface MeasurementsResponse {
   success: boolean;
   data?: ApiMeasurement[];
   profile?: ApiProfile | null;
+  medications?: ApiMedication[];
   error?: string;
 }
 
@@ -32,6 +34,8 @@ export interface LatestMeasurementsResult {
   inputs: Partial<HealthInputs>;
   /** Raw latest measurements with dates, for "Previous:" labels and results fallback. */
   previousMeasurements: ApiMeasurement[];
+  /** Medication statuses from the medications table. */
+  medications: ApiMedication[];
 }
 
 /**
@@ -57,7 +61,7 @@ export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult
       }
     }
 
-    return { inputs, previousMeasurements: result.data };
+    return { inputs, previousMeasurements: result.data, medications: result.medications ?? [] };
   } catch (error) {
     console.warn('Error loading measurements:', error);
     Sentry.captureException(error);
@@ -197,6 +201,30 @@ export async function deleteUserData(): Promise<boolean> {
     return result.success;
   } catch (error) {
     console.warn('Error deleting user data:', error);
+    Sentry.captureException(error);
+    return false;
+  }
+}
+
+/**
+ * Save a medication status (upsert).
+ */
+export async function saveMedication(
+  medicationKey: string,
+  value: string,
+): Promise<boolean> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/measurements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ medication: { medicationKey, value } }),
+    });
+    if (!response.ok) return false;
+
+    const result: { success: boolean } = await response.json();
+    return result.success;
+  } catch (error) {
+    console.warn('Error saving medication:', error);
     Sentry.captureException(error);
     return false;
   }

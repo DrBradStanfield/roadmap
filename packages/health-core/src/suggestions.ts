@@ -1,4 +1,5 @@
-import type { HealthInputs, HealthResults, Suggestion } from './types';
+import type { HealthInputs, HealthResults, Suggestion, MedicationInputs } from './types';
+import { getStatinTier, MAX_STATIN_TIER } from './types';
 import {
   type UnitSystem,
   formatDisplayValue,
@@ -12,6 +13,13 @@ import {
   BP_THRESHOLDS,
   APOB_THRESHOLDS,
 } from './units';
+
+/** On-treatment lipid targets (SI canonical units) */
+export const LIPID_TREATMENT_TARGETS = {
+  apobGl: 0.5,       // g/L (50 mg/dL)
+  ldlMmol: 1.4,      // mmol/L (~54 mg/dL)
+  nonHdlMmol: 1.4,   // mmol/L (~54 mg/dL)
+} as const;
 
 /** Format a blood-test value with its display unit, e.g. "5.7%" or "39 mmol/mol" */
 function fmtHba1c(value: number, us: UnitSystem): string {
@@ -46,17 +54,62 @@ export function generateSuggestions(
   inputs: HealthInputs,
   results: HealthResults,
   unitSystem: UnitSystem = 'si',
+  medications?: MedicationInputs,
 ): Suggestion[] {
   const suggestions: Suggestion[] = [];
   const us = unitSystem;
 
-  // Always show protein target (core recommendation)
+  // === Always-show lifestyle suggestions ===
+
+  // Protein target (core recommendation)
   suggestions.push({
     id: 'protein-target',
     category: 'nutrition',
     priority: 'info',
     title: `Daily protein target: ${results.proteinTarget}g`,
     description: `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us)}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
+    discussWithDoctor: false,
+  });
+
+  // Low salt — only show if SBP ≥ 116
+  if (inputs.systolicBp !== undefined && inputs.systolicBp >= 116) {
+    suggestions.push({
+      id: 'low-salt',
+      category: 'nutrition',
+      priority: 'info',
+      title: 'Reduce sodium intake',
+      description: 'Aim for less than 2,300mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.',
+      discussWithDoctor: false,
+    });
+  }
+
+  // Fiber — always show
+  suggestions.push({
+    id: 'fiber',
+    category: 'nutrition',
+    priority: 'info',
+    title: 'Maximize fiber intake',
+    description: 'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.',
+    discussWithDoctor: true,
+  });
+
+  // Exercise — always show
+  suggestions.push({
+    id: 'exercise',
+    category: 'exercise',
+    priority: 'info',
+    title: 'Regular cardio and resistance training',
+    description: 'Aim for at least 150 minutes of moderate-intensity cardio plus 2-3 resistance training sessions per week. This combination supports cardiovascular health, muscle mass, and metabolic function.',
+    discussWithDoctor: false,
+  });
+
+  // Sleep — always show
+  suggestions.push({
+    id: 'sleep',
+    category: 'sleep',
+    priority: 'info',
+    title: 'Prioritize quality sleep',
+    description: 'Aim for 7-9 hours of sleep per night. Maintain a consistent sleep schedule, limit screens before bed, and keep your bedroom cool and dark.',
     discussWithDoctor: false,
   });
 
@@ -89,6 +142,31 @@ export function generateSuggestions(
         description: `Your BMI of ${results.bmi} is in the overweight range (25-29.9). Lifestyle modifications may help reduce health risks.`,
         discussWithDoctor: false,
       });
+    }
+
+    // GLP-1 medication suggestion for weight management
+    if (results.bmi > 27) {
+      suggestions.push({
+        id: 'weight-glp1',
+        category: 'medication',
+        priority: 'attention',
+        title: 'Weight management medication',
+        description: 'With a BMI over 27, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
+        discussWithDoctor: true,
+      });
+    } else if (results.bmi > 25) {
+      // BMI 25-27: only suggest if waist-to-height ≥ 0.5 or waist data unavailable
+      const whr = results.waistToHeightRatio;
+      if (whr === undefined || whr >= 0.5) {
+        suggestions.push({
+          id: 'weight-glp1',
+          category: 'medication',
+          priority: 'info',
+          title: 'Weight management medication',
+          description: 'With elevated BMI and waist measurements, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
+          discussWithDoctor: true,
+        });
+      }
     }
   }
 
@@ -343,6 +421,83 @@ export function generateSuggestions(
         description: `Your BP of ${sys}/${dia} mmHg is elevated. Lifestyle changes can help prevent progression to hypertension.`,
         discussWithDoctor: false,
       });
+    }
+  }
+
+  // === Medication cascade suggestions ===
+  // Only when lipids are above on-treatment targets
+  if (medications) {
+    const nonHdl = results.nonHdlCholesterol;
+    const lipidsElevated =
+      (inputs.apoB !== undefined && inputs.apoB > LIPID_TREATMENT_TARGETS.apobGl) ||
+      (inputs.ldlC !== undefined && inputs.ldlC > LIPID_TREATMENT_TARGETS.ldlMmol) ||
+      (nonHdl !== undefined && nonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol);
+
+    if (lipidsElevated) {
+      const statinTier = getStatinTier(medications.statin);
+      const statinTolerated = medications.statin !== 'not_tolerated';
+
+      // Step 1: Statin
+      if (!medications.statin || medications.statin === 'none') {
+        suggestions.push({
+          id: 'med-statin',
+          category: 'medication',
+          priority: 'attention',
+          title: 'Consider starting a statin',
+          description: 'Your lipid levels are above target. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.',
+          discussWithDoctor: true,
+        });
+      } else {
+        // On a statin or not tolerated — Step 2: Ezetimibe
+        if (!medications.ezetimibe || medications.ezetimibe === 'no') {
+          suggestions.push({
+            id: 'med-ezetimibe',
+            category: 'medication',
+            priority: 'attention',
+            title: 'Consider adding Ezetimibe',
+            description: 'Your lipid levels remain above target. Discuss adding Ezetimibe 10mg with your doctor.',
+            discussWithDoctor: true,
+          });
+        } else {
+          // Ezetimibe handled (yes or not tolerated) — Step 3: Increase statin dose
+          if (statinTolerated && statinTier > 0 && statinTier < MAX_STATIN_TIER) {
+            if (!medications.statinIncrease || medications.statinIncrease === 'not_yet') {
+              suggestions.push({
+                id: 'med-statin-increase',
+                category: 'medication',
+                priority: 'attention',
+                title: 'Consider increasing statin dose',
+                description: 'Your lipid levels remain above target. Discuss increasing your statin dose with your doctor.',
+                discussWithDoctor: true,
+              });
+            } else {
+              // Statin increase not tolerated — Step 4: PCSK9i
+              if (!medications.pcsk9i || medications.pcsk9i === 'no') {
+                suggestions.push({
+                  id: 'med-pcsk9i',
+                  category: 'medication',
+                  priority: 'attention',
+                  title: 'Consider a PCSK9 inhibitor',
+                  description: 'Your lipid levels remain above target despite current medications. Discuss a PCSK9 inhibitor with your doctor.',
+                  discussWithDoctor: true,
+                });
+              }
+            }
+          } else {
+            // Already on max statin or statin not tolerated — skip dose increase, go to PCSK9i
+            if (!medications.pcsk9i || medications.pcsk9i === 'no') {
+              suggestions.push({
+                id: 'med-pcsk9i',
+                category: 'medication',
+                priority: 'attention',
+                title: 'Consider a PCSK9 inhibitor',
+                description: 'Your lipid levels remain above target despite current medications. Discuss a PCSK9 inhibitor with your doctor.',
+                discussWithDoctor: true,
+              });
+            }
+          }
+        }
+      }
     }
   }
 

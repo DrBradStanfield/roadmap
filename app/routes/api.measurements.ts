@@ -38,8 +38,11 @@ import {
   getProfile,
   updateProfile,
   toApiProfile,
+  getMedications,
+  upsertMedication,
+  toApiMedication,
 } from '../lib/supabase.server';
-import { measurementSchema, profileUpdateSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
+import { measurementSchema, profileUpdateSchema, medicationSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
 
 function getCustomerId(request: Request): string | null {
   const url = new URL(request.url);
@@ -110,12 +113,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json({ success: true, data: measurements.map(toApiMeasurement) });
     }
 
-    const latest = await getLatestMeasurements(client);
-    const profile = await getProfile(client);
+    const [latest, profile, medications] = await Promise.all([
+      getLatestMeasurements(client),
+      getProfile(client),
+      getMedications(client),
+    ]);
     return json({
       success: true,
       data: latest.map(toApiMeasurement),
       profile: profile ? toApiProfile(profile) : null,
+      medications: medications.map(toApiMedication),
     });
   } catch (error) {
     console.error('Error loading measurements:', error);
@@ -174,6 +181,24 @@ export async function action({ request }: ActionFunctionArgs) {
         }
 
         return json({ success: true, profile: toApiProfile(updated) });
+      }
+
+      // Medication upsert — POST { medication: { medicationKey, value } }
+      if (body.medication) {
+        const medValidation = medicationSchema.safeParse(body.medication);
+        if (!medValidation.success) {
+          return json(
+            { success: false, error: 'Invalid medication data', details: medValidation.error.issues },
+            { status: 400 },
+          );
+        }
+
+        const med = await upsertMedication(client, userId, medValidation.data.medicationKey, medValidation.data.value);
+        if (!med) {
+          return json({ success: false, error: 'Failed to save medication' }, { status: 500 });
+        }
+
+        return json({ success: true, data: toApiMedication(med) });
       }
 
       // Measurement insert — POST { metricType, value, recordedAt? }

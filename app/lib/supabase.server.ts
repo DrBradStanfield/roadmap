@@ -439,6 +439,76 @@ export async function updateProfile(
 }
 
 // ---------------------------------------------------------------------------
+// Medication CRUD — mutable medication status for the cholesterol cascade.
+// Uses UPSERT pattern (unique on user_id + medication_key).
+// ---------------------------------------------------------------------------
+
+export interface DbMedication {
+  id: string;
+  user_id: string;
+  medication_key: string;
+  value: string;
+  updated_at: string;
+  created_at: string;
+}
+
+/** Convert DB medication row to camelCase API format. */
+export function toApiMedication(m: DbMedication) {
+  return {
+    id: m.id,
+    medicationKey: m.medication_key,
+    value: m.value,
+    updatedAt: m.updated_at,
+  };
+}
+
+/** Get all medications for the authenticated user. */
+export async function getMedications(
+  client: SupabaseClient,
+): Promise<DbMedication[]> {
+  const { data, error } = await client
+    .from('medications')
+    .select('*');
+
+  if (error) {
+    console.error('Error fetching medications:', error);
+    return [];
+  }
+
+  return (data ?? []) as DbMedication[];
+}
+
+/** Upsert a medication status. RLS verifies the user owns it. */
+export async function upsertMedication(
+  client: SupabaseClient,
+  userId: string,
+  medicationKey: string,
+  value: string,
+): Promise<DbMedication | null> {
+  const { data, error } = await client
+    .from('medications')
+    .upsert(
+      {
+        user_id: userId,
+        medication_key: medicationKey,
+        value,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,medication_key' },
+    )
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error upserting medication:', { error: error.message, medicationKey });
+    return null;
+  }
+
+  logAudit(userId, 'MEDICATION_UPDATED', 'medication', data.id, { medicationKey });
+  return data as DbMedication;
+}
+
+// ---------------------------------------------------------------------------
 // Account data deletion — deletes all user data and anonymizes audit logs.
 // Uses supabaseAdmin (service role) to ensure complete cleanup.
 // ---------------------------------------------------------------------------
@@ -468,13 +538,19 @@ export async function deleteAllUserData(userId: string): Promise<{ measurementsD
     }
   }
 
-  // 3. Anonymize audit logs (set user_id to null)
+  // 3. Delete all medications
+  await supabaseAdmin
+    .from('medications')
+    .delete()
+    .eq('user_id', userId);
+
+  // 4. Anonymize audit logs
   await supabaseAdmin
     .from('audit_logs')
     .update({ user_id: null })
     .eq('user_id', userId);
 
-  // 4. Delete profile row
+  // 5. Delete profile row
   const { error: profileError } = await supabaseAdmin
     .from('profiles')
     .delete()
@@ -483,13 +559,13 @@ export async function deleteAllUserData(userId: string): Promise<{ measurementsD
     throw new Error(`Failed to delete profile: ${profileError.message}`);
   }
 
-  // 5. Delete Supabase Auth user
+  // 6. Delete Supabase Auth user
   const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
   if (authError) {
     throw new Error(`Failed to delete auth user: ${authError.message}`);
   }
 
-  // 6. Clear from in-memory cache
+  // 7. Clear from in-memory cache
   for (const [key, entry] of userIdCache) {
     if (entry.userId === userId) {
       userIdCache.delete(key);

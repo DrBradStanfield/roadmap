@@ -1,4 +1,4 @@
-import type { HealthInputs, ApiMeasurement } from '@roadmap/health-core';
+import type { HealthInputs, ApiMeasurement, ApiMedication } from '@roadmap/health-core';
 import type { UnitSystem } from '@roadmap/health-core';
 
 const STORAGE_KEY = 'health_roadmap_data';
@@ -7,22 +7,25 @@ const UNIT_PREF_KEY = 'health_roadmap_unit_system';
 interface StoredData {
   inputs: Partial<HealthInputs>;
   previousMeasurements?: ApiMeasurement[];
+  medications?: ApiMedication[];
   savedAt: string;
 }
 
 export interface LoadedData {
   inputs: Partial<HealthInputs>;
   previousMeasurements: ApiMeasurement[];
+  medications: ApiMedication[];
 }
 
 /**
  * Save health inputs (and optionally previousMeasurements) to localStorage.
  */
-export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[]): void {
+export function saveToLocalStorage(inputs: Partial<HealthInputs>, previousMeasurements?: ApiMeasurement[], medications?: ApiMedication[]): void {
   try {
     const data: StoredData = {
       inputs,
       previousMeasurements,
+      medications,
       savedAt: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -43,6 +46,7 @@ export function loadFromLocalStorage(): LoadedData | null {
     return {
       inputs: data.inputs,
       previousMeasurements: data.previousMeasurements ?? [],
+      medications: data.medications ?? [],
     };
   } catch (error) {
     console.warn('Failed to load from localStorage:', error);

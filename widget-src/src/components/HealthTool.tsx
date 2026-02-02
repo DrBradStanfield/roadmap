@@ -8,9 +8,11 @@ import {
   LONGITUDINAL_FIELDS,
   METRIC_TO_FIELD,
   FIELD_TO_METRIC,
+  medicationsToInputs,
   type HealthInputs,
   type UnitSystem,
   type ApiMeasurement,
+  type ApiMedication,
 } from '@roadmap/health-core';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
@@ -25,6 +27,7 @@ import {
   loadLatestMeasurements,
   saveChangedMeasurements,
   addMeasurement,
+  saveMedication,
   deleteUserData,
 } from '../lib/api';
 
@@ -49,6 +52,7 @@ function getAuthState(): AuthState {
 export function HealthTool() {
   const [inputs, setInputs] = useState<Partial<HealthInputs>>({});
   const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>([]);
+  const [medications, setMedications] = useState<ApiMedication[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasApiResponse, setHasApiResponse] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -84,6 +88,9 @@ export function HealthTool() {
           if (cached.previousMeasurements.length > 0) {
             setPreviousMeasurements(cached.previousMeasurements);
           }
+          if (cached.medications.length > 0) {
+            setMedications(cached.medications);
+          }
         }
         // Phase 2: API response is authoritative
         const result = await loadLatestMeasurements();
@@ -99,8 +106,9 @@ export function HealthTool() {
           setInputs(result.inputs);
           previousInputsRef.current = { ...result.inputs };
           setPreviousMeasurements(result.previousMeasurements);
+          setMedications(result.medications);
           // Cache to localStorage for instant display on next page load
-          saveToLocalStorage(result.inputs, result.previousMeasurements);
+          saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications);
         } else {
           // No cloud data — sync-embed.liquid handles localStorage→cloud migration.
           // Just track current inputs so auto-save doesn't re-send them.
@@ -239,9 +247,13 @@ export function HealthTool() {
       return { results: null, isValid: false, validationErrors: getValidationErrors(validation.errors) };
     }
 
-    const healthResults = calculateHealthResults(effectiveInputs as HealthInputs, unitSystem);
+    const healthResults = calculateHealthResults(
+      effectiveInputs as HealthInputs,
+      unitSystem,
+      medicationsToInputs(medications),
+    );
     return { results: healthResults, isValid: true, validationErrors: null };
-  }, [effectiveInputs, unitSystem]);
+  }, [effectiveInputs, unitSystem, medications]);
 
   useEffect(() => {
     setErrors(validationErrors ?? {});
@@ -262,6 +274,7 @@ export function HealthTool() {
       clearLocalStorage();
       setInputs({});
       setPreviousMeasurements([]);
+      setMedications([]);
       previousInputsRef.current = {};
       setSaveStatus('idle');
       window.alert('All your health data has been deleted.');
@@ -273,6 +286,30 @@ export function HealthTool() {
   const handleInputChange = (newInputs: Partial<HealthInputs>) => {
     setInputs(newInputs);
   };
+
+  const handleMedicationChange = useCallback(async (medicationKey: string, value: string) => {
+    // Update local state immediately
+    setMedications(prev => {
+      const idx = prev.findIndex(m => m.medicationKey === medicationKey);
+      const updated: ApiMedication = {
+        id: idx >= 0 ? prev[idx].id : '',
+        medicationKey,
+        value,
+        updatedAt: new Date().toISOString(),
+      };
+      const next = idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
+
+      // Cache to localStorage
+      saveToLocalStorage(inputs, previousMeasurements, next);
+
+      return next;
+    });
+
+    // Save to cloud if logged in
+    if (authState.isLoggedIn) {
+      await saveMedication(medicationKey, value);
+    }
+  }, [authState.isLoggedIn, inputs, previousMeasurements]);
 
   return (
     <div className="health-tool">
@@ -294,6 +331,8 @@ export function HealthTool() {
             onUnitSystemChange={handleUnitSystemChange}
             isLoggedIn={authState.isLoggedIn}
             previousMeasurements={previousMeasurements}
+            medications={medications}
+            onMedicationChange={handleMedicationChange}
             onSaveLongitudinal={handleSaveLongitudinal}
             isSavingLongitudinal={isSavingLongitudinal}
           />

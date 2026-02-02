@@ -45,11 +45,46 @@ export interface HealthResults {
  */
 export interface Suggestion {
   id: string;
-  category: 'nutrition' | 'exercise' | 'bloodwork' | 'general';
+  category: 'nutrition' | 'exercise' | 'bloodwork' | 'general' | 'sleep' | 'medication';
   priority: 'info' | 'attention' | 'urgent';
   title: string;
   description: string;
   discussWithDoctor: boolean;
+}
+
+/**
+ * Statin tier groupings by equivalent potency.
+ */
+export const STATIN_OPTIONS = [
+  { value: 'none', label: "Haven't tried a statin yet", tier: 0 },
+  { value: 'tier_1', label: 'Rosuvastatin 5mg or Pravastatin 20mg or Atorvastatin 10mg', tier: 1 },
+  { value: 'tier_2', label: 'Rosuvastatin 10mg or Pravastatin 40mg or Atorvastatin 20mg', tier: 2 },
+  { value: 'tier_3', label: 'Rosuvastatin 20mg or Pravastatin 40mg or Atorvastatin 40mg', tier: 3 },
+  { value: 'tier_4', label: 'Rosuvastatin 40mg or Pravastatin 40mg or Atorvastatin 80mg', tier: 4 },
+  { value: 'not_tolerated', label: 'Statin not tolerated', tier: -1 },
+] as const;
+
+export const MAX_STATIN_TIER = 4;
+
+export type StatinValue = typeof STATIN_OPTIONS[number]['value'];
+
+/**
+ * Get the tier of a statin value. Returns 0 for 'none', -1 for 'not_tolerated'.
+ */
+export function getStatinTier(value: string | undefined): number {
+  if (!value) return 0;
+  const option = STATIN_OPTIONS.find(o => o.value === value);
+  return option ? option.tier : 0;
+}
+
+/**
+ * Medication inputs for the cholesterol medication cascade.
+ */
+export interface MedicationInputs {
+  statin?: string;                                    // StatinValue
+  ezetimibe?: 'yes' | 'no' | 'not_tolerated';
+  statinIncrease?: 'not_yet' | 'not_tolerated';
+  pcsk9i?: 'yes' | 'no' | 'not_tolerated';
 }
 
 /**

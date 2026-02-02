@@ -87,6 +87,40 @@ export interface ApiMeasurement {
   createdAt: string;
 }
 
+/** API medication record shape (camelCase, as returned by API endpoints). */
+export interface ApiMedication {
+  id: string;
+  medicationKey: string;
+  value: string;
+  updatedAt: string;
+}
+
+/**
+ * Convert API medication records into a MedicationInputs object.
+ */
+export function medicationsToInputs(
+  medications: ApiMedication[],
+): import('./types').MedicationInputs {
+  const inputs: import('./types').MedicationInputs = {};
+  for (const m of medications) {
+    switch (m.medicationKey) {
+      case 'statin':
+        inputs.statin = m.value;
+        break;
+      case 'ezetimibe':
+        inputs.ezetimibe = m.value as 'yes' | 'no' | 'not_tolerated';
+        break;
+      case 'statin_increase':
+        inputs.statinIncrease = m.value as 'not_yet' | 'not_tolerated';
+        break;
+      case 'pcsk9i':
+        inputs.pcsk9i = m.value as 'yes' | 'no' | 'not_tolerated';
+        break;
+    }
+  }
+  return inputs;
+}
+
 /** API profile shape (camelCase, as returned by API endpoints). */
 export interface ApiProfile {
   sex: number | null;

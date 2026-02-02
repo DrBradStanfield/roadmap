@@ -36,25 +36,25 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 ## Important Files
 
 **Backend API:**
-- `app/lib/supabase.server.ts` - Supabase dual-client (admin + user), JWT signing, `getOrCreateSupabaseUser()`, measurement CRUD helpers, profile CRUD helpers (`getProfile()`, `updateProfile()`, `toApiProfile()`), `toApiMeasurement()`, `logAudit()`, `deleteAllUserData()`
-- `app/routes/api.measurements.ts` - Measurement CRUD + profile update API (storefront, HMAC auth)
+- `app/lib/supabase.server.ts` - Supabase dual-client (admin + user), JWT signing, `getOrCreateSupabaseUser()`, measurement CRUD helpers, profile CRUD helpers (`getProfile()`, `updateProfile()`, `toApiProfile()`), medication CRUD helpers (`getMedications()`, `upsertMedication()`, `toApiMedication()`), `logAudit()`, `deleteAllUserData()`
+- `app/routes/api.measurements.ts` - Measurement CRUD + profile update + medication upsert API (storefront, HMAC auth)
 - `app/routes/api.user-data.ts` - Account data deletion endpoint (DELETE, HMAC auth, rate-limited 1/hour)
 
 **Health Core Library:**
 - `packages/health-core/src/calculations.ts` - Health formulas (IBW, BMI, protein)
-- `packages/health-core/src/suggestions.ts` - Recommendation generation logic (unit-system-aware)
-- `packages/health-core/src/validation.ts` - Zod schemas for health inputs, individual measurements, and profile updates
+- `packages/health-core/src/suggestions.ts` - Recommendation generation logic (unit-system-aware), medication cascade suggestions, on-treatment lipid targets
+- `packages/health-core/src/validation.ts` - Zod schemas for health inputs, individual measurements, profile updates, and medications
 - `packages/health-core/src/units.ts` - Unit definitions, SI↔conventional conversions, locale detection, clinical thresholds
-- `packages/health-core/src/mappings.ts` - Shared field↔metric mappings, `measurementsToInputs()`, `diffInputsToMeasurements()`, `diffProfileFields()`, field category constants (`PREFILL_FIELDS`, `LONGITUDINAL_FIELDS`)
-- `packages/health-core/src/types.ts` - TypeScript interfaces (HealthInputs, HealthResults, Suggestion, Measurement)
+- `packages/health-core/src/mappings.ts` - Shared field↔metric mappings, `measurementsToInputs()`, `diffInputsToMeasurements()`, `diffProfileFields()`, `medicationsToInputs()`, field category constants (`PREFILL_FIELDS`, `LONGITUDINAL_FIELDS`)
+- `packages/health-core/src/types.ts` - TypeScript interfaces (HealthInputs, HealthResults, Suggestion, Measurement, MedicationInputs), statin tier constants (`STATIN_OPTIONS`, `getStatinTier()`)
 - `packages/health-core/src/index.ts` - Barrel exports for all modules
 
 **Widget Source:**
 - `widget-src/src/components/HealthTool.tsx` - Main widget (handles auth, unit system, measurement sync)
 - `widget-src/src/components/ErrorBoundary.tsx` - React error boundary for widget
-- `widget-src/src/components/InputPanel.tsx` - Form inputs with unit conversion (left panel). Longitudinal fields are config-driven (`BASIC_LONGITUDINAL_FIELDS`, `BLOOD_TEST_FIELDS` arrays + shared `LongitudinalField` component). Blood pressure uses two separate numeric inputs (clinical standard pattern) with a `/` separator.
+- `widget-src/src/components/InputPanel.tsx` - Form inputs with unit conversion (left panel). Longitudinal fields are config-driven (`BASIC_LONGITUDINAL_FIELDS`, `BLOOD_TEST_FIELDS` arrays + shared `LongitudinalField` component). Blood pressure uses two separate numeric inputs (clinical standard pattern) with a `/` separator. Includes cholesterol medication cascade UI (statin tier dropdown, ezetimibe, statin dose increase, PCSK9i).
 - `widget-src/src/components/ResultsPanel.tsx` - Results display with unit formatting (right panel)
-- `widget-src/src/lib/storage.ts` - localStorage helpers for guests + unit preference + logged-in user cache (inputs + previousMeasurements)
+- `widget-src/src/lib/storage.ts` - localStorage helpers for guests + unit preference + logged-in user cache (inputs + previousMeasurements + medications)
 - `widget-src/src/lib/api.ts` - Measurement API client for logged-in users (app proxy)
 - `widget-src/src/components/HistoryPanel.tsx` - Health history page (table with filter, pagination)
 - `widget-src/src/history.tsx` - Entry point for the history page bundle
@@ -62,7 +62,7 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 
 **Shopify Extensions:**
 - `extensions/health-tool-widget/blocks/app-block.liquid` - Passes customer data to React widget; includes static HTML skeleton with pulse animation for instant loading
-- `extensions/health-tool-widget/blocks/sync-embed.liquid` - App embed block: background localStorage→Supabase sync on every storefront page for logged-in users
+- `extensions/health-tool-widget/blocks/sync-embed.liquid` - App embed block: background localStorage→Supabase sync (measurements + medications) on every storefront page for logged-in users
 - `extensions/health-tool-widget/blocks/history-block.liquid` - Shopify theme block for the health history page (separate storefront page)
 
 **Infrastructure:**
@@ -146,7 +146,7 @@ The widget uses a three-layer loading strategy to eliminate visible lag:
 
 3. **Auto-save safety**: A `hasApiResponse` state flag (starts `false`) prevents the auto-save `useEffect` from firing until Phase 2 completes. This ensures localStorage-cached data shown in Phase 1 doesn't trigger writes back to Supabase before we know what's in the cloud. For guests, `hasApiResponse` is set to `true` immediately since there's no API call.
 
-The localStorage cache (`StoredData` in `storage.ts`) stores both `inputs` (Partial<HealthInputs>) and `previousMeasurements` (ApiMeasurement[]). The first page visit for a new logged-in user will still show empty fields briefly (no cache yet), but every subsequent visit shows data instantly.
+The localStorage cache (`StoredData` in `storage.ts`) stores `inputs` (Partial<HealthInputs>), `previousMeasurements` (ApiMeasurement[]), and `medications` (ApiMedication[]). The first page visit for a new logged-in user will still show empty fields briefly (no cache yet), but every subsequent visit shows data instantly.
 
 ## CRITICAL: Security Rules
 
@@ -201,11 +201,12 @@ Logged-in Shopify customer:
 
 ### Storefront (via app proxy at `/apps/health-tool-1/api/measurements`)
 
-**GET** (no params) — Latest measurement per metric + profile demographics for the authenticated user (returns `{ data: [...], profile: {...} }`)
+**GET** (no params) — Latest measurement per metric + profile demographics + medications for the authenticated user (returns `{ data: [...], profile: {...}, medications: [...] }`)
 **GET** `?metric_type=weight&limit=50` — History for one metric, ordered by recorded_at DESC
 **GET** `?all_history=true&limit=100&offset=0` — All metrics history with pagination (for the history page)
 **POST** `{ metricType, value, recordedAt? }` — Add a measurement (value in SI canonical units)
 **POST** `{ profile: { sex?, birthYear?, birthMonth?, unitSystem? } }` — Update profile demographics
+**POST** `{ medication: { medicationKey, value } }` — Upsert a medication record
 **DELETE** `{ measurementId }` — Delete a measurement by ID (verifies user ownership)
 
 ## Database
@@ -213,6 +214,7 @@ Logged-in Shopify customer:
 Uses **Supabase** (PostgreSQL). Tables:
 - `profiles` — User accounts (shopify_customer_id is nullable — NULL for future mobile-only users without Shopify accounts, email) + demographic columns (sex, birth_year, birth_month, unit_system)
 - `health_measurements` — Immutable time-series health records (metric_type, value in SI, recorded_at) for the 11 health metrics only
+- `medications` — Mutable medication records (medication_key, value), UNIQUE per (user_id, medication_key), upserted on change. Keys: `statin` (tier values: `none`, `tier_1`–`tier_4`, `not_tolerated`), `ezetimibe` (`yes`/`no`/`not_tolerated`), `statin_increase` (`not_yet`/`not_tolerated`), `pcsk9i` (`yes`/`no`/`not_tolerated`)
 - `audit_logs` — HIPAA audit trail for all write operations (user_id nullable for anonymization after account deletion)
 
 The `health_measurements` table has no UPDATE policy — records are immutable. A `get_latest_measurements()` RPC function (using `auth.uid()`, no parameters) efficiently returns the latest value per metric type using `DISTINCT ON`. A `CASE`-based CHECK constraint (`value_range`) enforces per-metric-type value ranges at the database level (e.g., weight 20–300 kg, LDL 0–12.9 mmol/L), mirroring the Zod validation as defense-in-depth. Shopify customers are mapped to Supabase Auth users via `getOrCreateSupabaseUser()` — a DB trigger on `auth.users` auto-creates the `profiles` row when a new auth user is created.
@@ -261,6 +263,36 @@ All thresholds are defined as constants in `packages/health-core/src/units.ts` a
 - **ApoB**: Optimal <0.5 g/L (<50 mg/dL), Borderline 0.5-0.7 (50-70), High 0.7-1.0 (70-100), Very High ≥1.0 (≥100)
 - **Blood Pressure**: Normal <120/80, Elevated 120-129/<80, Stage 1 130-139/80-89, Stage 2 ≥140/≥90, Crisis ≥180/≥120
 - **Waist-to-Height**: Healthy <0.5, Elevated ≥0.5
+
+## Suggestion Categories
+
+Suggestions are generated by `generateSuggestions()` in `suggestions.ts` and accept optional `MedicationInputs` for the medication cascade.
+
+**Always-show suggestions** (when relevant inputs exist):
+- Protein target (nutrition) — always shown
+- Low salt <2,300mg/day (nutrition) — only when SBP ≥ 116 mmHg
+- Fiber 25-35g/day (nutrition) — always shown, `discussWithDoctor: true`
+- Exercise 150+ min cardio + 2-3 resistance/week (exercise) — always shown
+- Sleep 7-9 hours (sleep) — always shown
+
+**Conditional — GLP-1 weight management:**
+- BMI > 27: always suggest
+- BMI 25-27: suggest only if waist-to-height ≥ 0.5 (or no waist data)
+- BMI ≤ 25: no suggestion
+
+**Medication cascade** (only when lipids exceed **on-treatment targets**: ApoB > 0.5 g/L OR LDL > 1.4 mmol/L OR non-HDL > 1.4 mmol/L):
+1. **Statin**: suggest starting if none selected → once on statin, proceed
+2. **Ezetimibe 10mg**: suggest if not yet on it → once yes/not tolerated, proceed
+3. **Statin dose increase**: suggest if not on max tier and statin tolerated → once handled, proceed (skipped if max tier or statin not tolerated)
+4. **PCSK9 inhibitor**: suggest if not yet on it
+
+Statin tiers (grouped by equivalent potency):
+- Tier 1: Rosuvastatin 5mg / Pravastatin 20mg / Atorvastatin 10mg
+- Tier 2: Rosuvastatin 10mg / Pravastatin 40mg / Atorvastatin 20mg
+- Tier 3: Rosuvastatin 20mg / Pravastatin 40mg / Atorvastatin 40mg
+- Tier 4 (max): Rosuvastatin 40mg / Pravastatin 40mg / Atorvastatin 80mg
+
+The medication cascade UI in `InputPanel.tsx` mirrors this logic — it only appears when lipids are elevated (using `effectiveInputs` with previous measurement fallback), and each step conditionally shows based on the previous step's answer.
 
 ## Hosting
 
@@ -325,9 +357,9 @@ npm run test:watch    # Watch mode
 
 Test files:
 - `packages/health-core/src/calculations.test.ts` — IBW, BMI, protein, age, health results (27 tests)
-- `packages/health-core/src/suggestions.test.ts` — All suggestion categories, unit system display (33 tests)
+- `packages/health-core/src/suggestions.test.ts` — All suggestion categories, medication cascade, unit system display (65 tests)
 - `packages/health-core/src/units.test.ts` — Round-trip conversions, clinical values, thresholds, formatting, locale (52 tests)
-- `packages/health-core/src/mappings.test.ts` — Field↔metric mappings, measurementsToInputs, diffInputsToMeasurements, field categories, unit_system encoding (21 tests)
+- `packages/health-core/src/mappings.test.ts` — Field↔metric mappings, measurementsToInputs, diffInputsToMeasurements, medicationsToInputs, field categories, unit_system encoding (24 tests)
 - `app/lib/supabase.server.test.ts` — toApiMeasurement helper (3 tests)
 
 ## Architecture Decision: Why No Customer Account Extensions
@@ -351,6 +383,7 @@ All write operations are logged to the `audit_logs` table for HIPAA compliance. 
 - `MEASUREMENT_CREATED` — new measurement added (metadata: `{ metricType }`, no PHI values)
 - `MEASUREMENT_DELETED` — measurement removed
 - `PROFILE_UPDATED` — demographics changed (metadata: `{ fields: [...] }`, no PHI values)
+- `MEDICATION_UPSERTED` — medication record created or updated (metadata: `{ medicationKey }`)
 - `USER_DATA_DELETED` — full account deletion triggered
 
 **On account deletion**, audit logs are anonymized (`user_id` set to NULL) rather than deleted, preserving the audit trail without identifying the user.
@@ -364,10 +397,11 @@ Users can delete all their data via a "Delete All My Data" button in the widget 
 **Deletion sequence:**
 1. Log `USER_DATA_DELETED` audit entry
 2. Delete all `health_measurements`
-3. Anonymize audit logs (set `user_id` to NULL)
-4. Delete `profiles` row
-5. Delete Supabase Auth user
-6. Clear in-memory user cache
+3. Delete all `medications`
+4. Anonymize audit logs (set `user_id` to NULL)
+5. Delete `profiles` row
+6. Delete Supabase Auth user
+7. Clear in-memory user cache
 
 The widget clears localStorage and resets all React state after successful deletion.
 

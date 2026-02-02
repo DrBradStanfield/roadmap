@@ -4,6 +4,14 @@ export type {
   HealthResults,
   Suggestion,
   Measurement,
+  MedicationInputs,
+  StatinValue,
+} from './types';
+
+export {
+  STATIN_OPTIONS,
+  MAX_STATIN_TIER,
+  getStatinTier,
 } from './types';
 
 // Calculations
@@ -18,7 +26,7 @@ export {
 } from './calculations';
 
 // Suggestions
-export { generateSuggestions } from './suggestions';
+export { generateSuggestions, LIPID_TREATMENT_TARGETS } from './suggestions';
 
 // Validation
 export {
@@ -32,6 +40,9 @@ export {
   type ValidatedHealthInputs,
   type ValidatedMeasurement,
   type ValidatedProfileUpdate,
+  MEDICATION_KEYS,
+  medicationSchema,
+  type ValidatedMedication,
 } from './validation';
 
 // Mappings (shared field↔metric conversions)
@@ -46,6 +57,8 @@ export {
   diffProfileFields,
   type ApiMeasurement,
   type ApiProfile,
+  type ApiMedication,
+  medicationsToInputs,
 } from './mappings';
 
 // Units

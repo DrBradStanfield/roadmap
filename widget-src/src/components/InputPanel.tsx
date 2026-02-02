@@ -9,7 +9,13 @@ import {
   UNIT_DEFS,
   FIELD_METRIC_MAP,
   LONGITUDINAL_FIELDS,
+  medicationsToInputs,
   type ApiMeasurement,
+  type ApiMedication,
+  STATIN_OPTIONS,
+  getStatinTier,
+  MAX_STATIN_TIER,
+  LIPID_TREATMENT_TARGETS,
 } from '@roadmap/health-core';
 
 interface FieldConfig {
@@ -76,13 +82,16 @@ interface InputPanelProps {
   onUnitSystemChange: (system: UnitSystem) => void;
   isLoggedIn: boolean;
   previousMeasurements: ApiMeasurement[];
+  medications: ApiMedication[];
+  onMedicationChange: (medicationKey: string, value: string) => void;
   onSaveLongitudinal: () => void;
   isSavingLongitudinal: boolean;
 }
 
 export function InputPanel({
   inputs, onChange, errors, unitSystem, onUnitSystemChange,
-  isLoggedIn, previousMeasurements, onSaveLongitudinal, isSavingLongitudinal,
+  isLoggedIn, previousMeasurements, medications, onMedicationChange,
+  onSaveLongitudinal, isSavingLongitudinal,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
@@ -403,6 +412,113 @@ export function InputPanel({
         </p>
 
         {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg))}
+
+        {/* Medication Cascade — shown when lipids are above treatment targets */}
+        {(() => {
+          // Compute effective inputs for cascade visibility (form values + previous measurements fallback)
+          const effectiveApoB = inputs.apoB ?? previousMeasurements.find(m => m.metricType === 'apob')?.value;
+          const effectiveLdl = inputs.ldlC ?? previousMeasurements.find(m => m.metricType === 'ldl')?.value;
+          const effectiveTotalChol = inputs.totalCholesterol ?? previousMeasurements.find(m => m.metricType === 'total_cholesterol')?.value;
+          const effectiveHdl = inputs.hdlC ?? previousMeasurements.find(m => m.metricType === 'hdl')?.value;
+          const effectiveNonHdl = (effectiveTotalChol !== undefined && effectiveHdl !== undefined)
+            ? effectiveTotalChol - effectiveHdl : undefined;
+
+          const lipidsElevated =
+            (effectiveApoB !== undefined && effectiveApoB > LIPID_TREATMENT_TARGETS.apobGl) ||
+            (effectiveLdl !== undefined && effectiveLdl > LIPID_TREATMENT_TARGETS.ldlMmol) ||
+            (effectiveNonHdl !== undefined && effectiveNonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol);
+
+          if (!lipidsElevated) return null;
+
+          const medInputs = medicationsToInputs(medications);
+          const statinTier = getStatinTier(medInputs.statin);
+          const statinTolerated = medInputs.statin !== 'not_tolerated';
+          const onStatin = medInputs.statin && medInputs.statin !== 'none' && medInputs.statin !== 'not_tolerated';
+
+          // Determine which cascade steps to show
+          const showEzetimibe = onStatin || medInputs.statin === 'not_tolerated';
+          const ezetimibeHandled = medInputs.ezetimibe === 'yes' || medInputs.ezetimibe === 'not_tolerated';
+          const showStatinIncrease = showEzetimibe && ezetimibeHandled && statinTolerated && statinTier > 0 && statinTier < MAX_STATIN_TIER;
+          const statinIncreaseHandled = medInputs.statinIncrease === 'not_tolerated';
+          const showPcsk9i = (showEzetimibe && ezetimibeHandled) &&
+            ((!statinTolerated || statinTier >= MAX_STATIN_TIER) || (showStatinIncrease && statinIncreaseHandled));
+
+          return (
+            <div className="medication-cascade">
+              <h4 className="medication-cascade-title">Cholesterol Medications</h4>
+              <p className="medication-cascade-desc">
+                Your lipid levels are above target. Please indicate your current medications.
+              </p>
+
+              {/* Step 1: Statin selection */}
+              <div className="health-field">
+                <label htmlFor="statin">Current statin</label>
+                <select
+                  id="statin"
+                  value={medInputs.statin || 'none'}
+                  onChange={(e) => {
+                    onMedicationChange('statin', e.target.value);
+                    // Reset downstream selections when statin changes
+                    if (medInputs.ezetimibe) onMedicationChange('ezetimibe', 'no');
+                    if (medInputs.statinIncrease) onMedicationChange('statin_increase', 'not_yet');
+                    if (medInputs.pcsk9i) onMedicationChange('pcsk9i', 'no');
+                  }}
+                >
+                  {STATIN_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Step 2: Ezetimibe */}
+              {showEzetimibe && (
+                <div className="health-field">
+                  <label htmlFor="ezetimibe">On Ezetimibe 10mg?</label>
+                  <select
+                    id="ezetimibe"
+                    value={medInputs.ezetimibe || 'no'}
+                    onChange={e => onMedicationChange('ezetimibe', e.target.value)}
+                  >
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                    <option value="not_tolerated">Not tolerated</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Step 3: Statin dose increase */}
+              {showStatinIncrease && (
+                <div className="health-field">
+                  <label htmlFor="statin-increase">Tried increasing statin dose?</label>
+                  <select
+                    id="statin-increase"
+                    value={medInputs.statinIncrease || 'not_yet'}
+                    onChange={e => onMedicationChange('statin_increase', e.target.value)}
+                  >
+                    <option value="not_yet">Not yet</option>
+                    <option value="not_tolerated">Didn't tolerate a higher dose</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Step 4: PCSK9i */}
+              {showPcsk9i && (
+                <div className="health-field">
+                  <label htmlFor="pcsk9i">On a PCSK9 inhibitor?</label>
+                  <select
+                    id="pcsk9i"
+                    value={medInputs.pcsk9i || 'no'}
+                    onChange={e => onMedicationChange('pcsk9i', e.target.value)}
+                  >
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                    <option value="not_tolerated">Not tolerated</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </section>
 
       {/* Save button for longitudinal fields (logged-in users only) */}

@@ -228,6 +228,46 @@ CREATE POLICY "Users can read own audit logs"
 
 GRANT SELECT ON audit_logs TO authenticated;
 
+-- ===== Create medications table =====
+-- Tracks medication status for the cholesterol medication cascade.
+-- Each row = one medication at a specific dose. Uses UPSERT pattern (mutable, not time-series).
+
+CREATE TABLE IF NOT EXISTS medications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  medication_key TEXT NOT NULL CHECK (medication_key IN ('statin', 'ezetimibe', 'statin_increase', 'pcsk9i')),
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, medication_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_medications_user ON medications(user_id);
+
+ALTER TABLE medications ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own medications" ON medications;
+CREATE POLICY "Users can read own medications"
+  ON medications FOR SELECT
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can insert own medications" ON medications;
+CREATE POLICY "Users can insert own medications"
+  ON medications FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can update own medications" ON medications;
+CREATE POLICY "Users can update own medications"
+  ON medications FOR UPDATE
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can delete own medications" ON medications;
+CREATE POLICY "Users can delete own medications"
+  ON medications FOR DELETE
+  USING (user_id = auth.uid());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON medications TO authenticated;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

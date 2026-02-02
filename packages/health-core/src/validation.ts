@@ -169,3 +169,18 @@ export const profileUpdateSchema = z.object({
 });
 
 export type ValidatedProfileUpdate = z.infer<typeof profileUpdateSchema>;
+
+/**
+ * Valid medication keys for the medications table.
+ */
+export const MEDICATION_KEYS = ['statin', 'ezetimibe', 'statin_increase', 'pcsk9i'] as const;
+
+/**
+ * Schema for validating a medication upsert request.
+ */
+export const medicationSchema = z.object({
+  medicationKey: z.enum(MEDICATION_KEYS),
+  value: z.string().min(1, 'Medication value is required'),
+});
+
+export type ValidatedMedication = z.infer<typeof medicationSchema>;

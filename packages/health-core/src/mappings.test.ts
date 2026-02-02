@@ -6,7 +6,9 @@ import {
   measurementsToInputs,
   diffInputsToMeasurements,
   diffProfileFields,
+  medicationsToInputs,
   type ApiMeasurement,
+  type ApiMedication,
 } from './mappings';
 
 describe('FIELD_TO_METRIC / METRIC_TO_FIELD', () => {
@@ -179,5 +181,34 @@ describe('diffProfileFields', () => {
     const prev = { heightCm: 175 };
     const curr = { heightCm: 180 };
     expect(diffProfileFields(curr, prev)).toBeNull();
+  });
+});
+
+describe('medicationsToInputs', () => {
+  it('converts all medication keys', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'statin', value: 'tier_1', updatedAt: '' },
+      { id: '2', medicationKey: 'ezetimibe', value: 'yes', updatedAt: '' },
+      { id: '3', medicationKey: 'statin_increase', value: 'not_yet', updatedAt: '' },
+      { id: '4', medicationKey: 'pcsk9i', value: 'no', updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.statin).toBe('tier_1');
+    expect(inputs.ezetimibe).toBe('yes');
+    expect(inputs.statinIncrease).toBe('not_yet');
+    expect(inputs.pcsk9i).toBe('no');
+  });
+
+  it('returns empty object for empty array', () => {
+    const inputs = medicationsToInputs([]);
+    expect(inputs).toEqual({});
+  });
+
+  it('ignores unknown medication keys', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'unknown', value: 'yes', updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(Object.keys(inputs)).toHaveLength(0);
   });
 });

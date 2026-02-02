@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generateSuggestions } from './suggestions';
-import type { HealthInputs, HealthResults } from './types';
+import type { HealthInputs, HealthResults, MedicationInputs } from './types';
 import { toCanonicalValue } from './units';
 
 // Shorthand: convert conventional (US) blood test values to SI for test inputs
@@ -413,6 +413,175 @@ describe('generateSuggestions', () => {
 
       const urgentCount = suggestions.filter(s => s.priority === 'urgent').length;
       expect(urgentCount).toBeGreaterThanOrEqual(2); // hba1c and bp
+    });
+  });
+
+  describe('Always-show lifestyle suggestions', () => {
+    it('always includes fiber suggestion', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'fiber')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'fiber')?.category).toBe('nutrition');
+    });
+
+    it('always includes exercise suggestion', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'exercise')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'exercise')?.category).toBe('exercise');
+    });
+
+    it('always includes sleep suggestion', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'sleep')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'sleep')?.category).toBe('sleep');
+    });
+
+    it('shows low salt when SBP >= 116', () => {
+      const { inputs, results } = createTestData({ systolicBp: 120, diastolicBp: 75 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'low-salt')).toBeDefined();
+    });
+
+    it('hides low salt when SBP < 116', () => {
+      const { inputs, results } = createTestData({ systolicBp: 110, diastolicBp: 70 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'low-salt')).toBeUndefined();
+    });
+
+    it('hides low salt when no BP data', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'low-salt')).toBeUndefined();
+    });
+  });
+
+  describe('GLP-1 weight management suggestion', () => {
+    it('suggests GLP-1 when BMI > 27', () => {
+      const { inputs, results } = createTestData({}, { bmi: 28 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'weight-glp1')?.category).toBe('medication');
+    });
+
+    it('does not suggest GLP-1 when BMI <= 25', () => {
+      const { inputs, results } = createTestData({}, { bmi: 24 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
+    });
+
+    it('suggests GLP-1 when BMI 25-27 and waist-to-height >= 0.5', () => {
+      const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.52 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
+    });
+
+    it('does not suggest GLP-1 when BMI 25-27 and waist-to-height < 0.5', () => {
+      const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.45 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
+    });
+
+    it('suggests GLP-1 when BMI 25-27 and no waist data', () => {
+      const { inputs, results } = createTestData({}, { bmi: 26 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
+    });
+  });
+
+  describe('Medication cascade suggestions', () => {
+    // Helper: elevated lipids to trigger cascade
+    const elevatedLipids = { apoB: apoB(60) }; // 60 mg/dL = 0.6 g/L > 0.5 threshold
+
+    it('suggests statin when no medications set and lipids elevated', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
+    });
+
+    it('does not suggest medications when lipids below targets', () => {
+      const { inputs, results } = createTestData({ apoB: apoB(30) }); // below 50
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id?.startsWith('med-'))).toBeUndefined();
+    });
+
+    it('suggests ezetimibe when on statin but lipids still elevated', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      const meds: MedicationInputs = { statin: 'tier_1' };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-ezetimibe')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeUndefined();
+    });
+
+    it('suggests statin dose increase when on statin + ezetimibe, not max tier', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      const meds: MedicationInputs = { statin: 'tier_1', ezetimibe: 'yes' };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin-increase')).toBeDefined();
+    });
+
+    it('skips statin dose increase when already on max tier', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      const meds: MedicationInputs = { statin: 'tier_4', ezetimibe: 'yes' };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin-increase')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'med-pcsk9i')).toBeDefined();
+    });
+
+    it('skips statin dose increase when statin not tolerated', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      const meds: MedicationInputs = { statin: 'not_tolerated', ezetimibe: 'yes' };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin-increase')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'med-pcsk9i')).toBeDefined();
+    });
+
+    it('suggests PCSK9i when statin increase not tolerated', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      const meds: MedicationInputs = {
+        statin: 'tier_1',
+        ezetimibe: 'yes',
+        statinIncrease: 'not_tolerated',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-pcsk9i')).toBeDefined();
+    });
+
+    it('no medication suggestions when all cascade steps completed', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      const meds: MedicationInputs = {
+        statin: 'tier_4',
+        ezetimibe: 'yes',
+        pcsk9i: 'yes',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.filter(s => s.id?.startsWith('med-')).length).toBe(0);
+    });
+
+    it('triggers cascade on elevated LDL', () => {
+      const { inputs, results } = createTestData({ ldlC: ldl(60) }); // 60 mg/dL = ~1.55 mmol/L > 1.4
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
+    });
+
+    it('triggers cascade on elevated non-HDL', () => {
+      const { inputs, results } = createTestData(
+        { totalCholesterol: totalChol(200), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(200) - hdl(50) }, // ~3.88 mmol/L > 1.4
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
+    });
+
+    it('does not show cascade when medications param not provided', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id?.startsWith('med-'))).toBeUndefined();
     });
   });
 

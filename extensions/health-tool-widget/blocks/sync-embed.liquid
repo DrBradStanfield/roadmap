@@ -8,8 +8,8 @@
   // Field name → metric_type mapping (health metrics only)
   var FIELD_MAP = {
     heightCm: 'height', weightKg: 'weight', waistCm: 'waist',
-    hba1c: 'hba1c', ldlC: 'ldl', hdlC: 'hdl',
-    triglycerides: 'triglycerides', fastingGlucose: 'fasting_glucose',
+    hba1c: 'hba1c', ldlC: 'ldl', totalCholesterol: 'total_cholesterol', hdlC: 'hdl',
+    triglycerides: 'triglycerides', apoB: 'apob',
     systolicBp: 'systolic_bp', diastolicBp: 'diastolic_bp'
   };
 
@@ -43,6 +43,9 @@
         entries.push({ metricType: metricType, value: numVal });
       }
 
+      // Build medication entries from cached medications array
+      var medications = (stored && stored.medications) || [];
+
       // Build profile object (demographics)
       var profile = {};
       if (inputs.sex !== undefined && inputs.sex !== null && inputs.sex !== '') {
@@ -59,14 +62,28 @@
       }
 
       var hasProfile = Object.keys(profile).length > 0;
-      if (entries.length === 0 && !hasProfile) return;
+      if (entries.length === 0 && !hasProfile && medications.length === 0) return;
 
       // POST profile first (if present), then measurements sequentially.
       // Sequential pattern avoids race conditions in getOrCreateSupabaseUser().
-      function postMeasurements(i) {
-        if (i >= entries.length) {
+      function postMedications(i) {
+        if (i >= medications.length) {
           localStorage.removeItem(STORAGE_KEY);
           sessionStorage.setItem(SYNC_FLAG, '1');
+          return;
+        }
+        var med = medications[i];
+        if (!med.medicationKey || !med.value) { postMedications(i + 1); return; }
+        fetch(PROXY, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ medication: { medicationKey: med.medicationKey, value: med.value } })
+        }).then(function() { postMedications(i + 1); });
+      }
+
+      function postMeasurements(i) {
+        if (i >= entries.length) {
+          postMedications(0);
           return;
         }
         fetch(PROXY, {
