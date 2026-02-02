@@ -6,7 +6,7 @@
  *
  * Canonical units:
  *   height/waist: cm       | weight: kg          | BP: mmHg (universal)
- *   HbA1c: mmol/mol (IFCC) | lipids/glucose: mmol/L
+ *   HbA1c: mmol/mol (IFCC) | lipids: mmol/L
  */
 
 // ---------------------------------------------------------------------------
@@ -22,7 +22,7 @@ export type MetricType =
   | 'hdl'
   | 'triglycerides'
   | 'total_cholesterol'
-  | 'fasting_glucose'
+
   | 'systolic_bp'
   | 'diastolic_bp'
   | 'apob';
@@ -52,10 +52,10 @@ export interface UnitDef {
 const LBS_PER_KG = 2.20462;
 const CM_PER_INCH = 2.54;
 
-// Lipid & glucose molecular-weight factors (mg/dL ↔ mmol/L)
+// Lipid molecular-weight factors (mg/dL ↔ mmol/L)
 const CHOLESTEROL_FACTOR = 38.67; // LDL, HDL, total cholesterol
 const TRIGLYCERIDES_FACTOR = 88.57;
-const GLUCOSE_FACTOR = 18.016;
+
 const APOB_FACTOR = 100; // g/L ↔ mg/dL
 
 // HbA1c: NGSP % ↔ IFCC mmol/mol
@@ -223,24 +223,6 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     decimalPlaces: { si: 1, conventional: 0 },
   },
 
-  fasting_glucose: {
-    canonical: 'mmol/L',
-    label: { si: 'mmol/L', conventional: 'mg/dL' },
-    toCanonical: {
-      si: identity,
-      conventional: (v) => v / GLUCOSE_FACTOR,
-    },
-    fromCanonical: {
-      si: identity,
-      conventional: (v) => v * GLUCOSE_FACTOR,
-    },
-    validationRange: {
-      si: { min: 0, max: 27.8 }, // ~0-500 mg/dL
-      conventional: { min: 0, max: 500 },
-    },
-    decimalPlaces: { si: 1, conventional: 0 },
-  },
-
   systolic_bp: {
     canonical: 'mmHg',
     label: { si: 'mmHg', conventional: 'mmHg' },
@@ -399,12 +381,6 @@ export const TRIGLYCERIDES_THRESHOLDS = {
   borderline: 150 / TRIGLYCERIDES_FACTOR, // ~1.69
   high: 200 / TRIGLYCERIDES_FACTOR,       // ~2.26
   veryHigh: 500 / TRIGLYCERIDES_FACTOR,   // ~5.64
-} as const;
-
-/** Fasting glucose thresholds in mmol/L */
-export const GLUCOSE_THRESHOLDS = {
-  prediabetes: 100 / GLUCOSE_FACTOR, // ~5.55
-  diabetes: 126 / GLUCOSE_FACTOR,    // ~6.99
 } as const;
 
 /** Blood pressure thresholds (mmHg — same in both systems) */

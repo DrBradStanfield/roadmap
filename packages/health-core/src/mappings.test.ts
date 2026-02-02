@@ -16,15 +16,15 @@ describe('FIELD_TO_METRIC / METRIC_TO_FIELD', () => {
     }
   });
 
-  it('cover all 11 health metric types', () => {
-    expect(Object.keys(FIELD_TO_METRIC)).toHaveLength(12);
-    expect(Object.keys(METRIC_TO_FIELD)).toHaveLength(12);
+  it('cover all health metric types', () => {
+    expect(Object.keys(FIELD_TO_METRIC)).toHaveLength(11);
+    expect(Object.keys(METRIC_TO_FIELD)).toHaveLength(11);
   });
 });
 
 describe('FIELD_METRIC_MAP', () => {
   it('contains only numeric fields (no sex, birth_year, birth_month)', () => {
-    expect(Object.keys(FIELD_METRIC_MAP)).toHaveLength(12);
+    expect(Object.keys(FIELD_METRIC_MAP)).toHaveLength(11);
     expect(FIELD_METRIC_MAP).not.toHaveProperty('sex');
     expect(FIELD_METRIC_MAP).not.toHaveProperty('birthYear');
     expect(FIELD_METRIC_MAP).not.toHaveProperty('birthMonth');
@@ -94,9 +94,8 @@ describe('measurementsToInputs', () => {
       { id: '2', metricType: 'ldl', value: 2.6, recordedAt: '', createdAt: '' },
       { id: '3', metricType: 'hdl', value: 1.3, recordedAt: '', createdAt: '' },
       { id: '4', metricType: 'triglycerides', value: 1.1, recordedAt: '', createdAt: '' },
-      { id: '5', metricType: 'fasting_glucose', value: 5.0, recordedAt: '', createdAt: '' },
-      { id: '6', metricType: 'systolic_bp', value: 120, recordedAt: '', createdAt: '' },
-      { id: '7', metricType: 'diastolic_bp', value: 80, recordedAt: '', createdAt: '' },
+      { id: '5', metricType: 'systolic_bp', value: 120, recordedAt: '', createdAt: '' },
+      { id: '6', metricType: 'diastolic_bp', value: 80, recordedAt: '', createdAt: '' },
     ];
 
     const inputs = measurementsToInputs(measurements);
@@ -104,7 +103,6 @@ describe('measurementsToInputs', () => {
     expect(inputs.ldlC).toBe(2.6);
     expect(inputs.hdlC).toBe(1.3);
     expect(inputs.triglycerides).toBe(1.1);
-    expect(inputs.fastingGlucose).toBe(5.0);
     expect(inputs.systolicBp).toBe(120);
     expect(inputs.diastolicBp).toBe(80);
   });

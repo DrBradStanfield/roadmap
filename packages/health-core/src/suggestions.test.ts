@@ -8,7 +8,6 @@ const hba1c = (pct: number) => toCanonicalValue('hba1c', pct, 'conventional');
 const ldl = (mgdl: number) => toCanonicalValue('ldl', mgdl, 'conventional');
 const hdl = (mgdl: number) => toCanonicalValue('hdl', mgdl, 'conventional');
 const trig = (mgdl: number) => toCanonicalValue('triglycerides', mgdl, 'conventional');
-const glucose = (mgdl: number) => toCanonicalValue('fasting_glucose', mgdl, 'conventional');
 const totalChol = (mgdl: number) => toCanonicalValue('total_cholesterol', mgdl, 'conventional');
 const apoB = (mgdl: number) => toCanonicalValue('apob', mgdl, 'conventional');
 
@@ -290,34 +289,6 @@ describe('generateSuggestions', () => {
       const trigSuggestion = suggestions.find(s => s.id === 'trig-borderline');
       expect(trigSuggestion).toBeDefined();
       expect(trigSuggestion?.priority).toBe('info');
-    });
-  });
-
-  describe('Fasting glucose suggestions', () => {
-    it('generates diabetic suggestion for glucose >= 126 mg/dL (≥7.0 mmol/L)', () => {
-      const { inputs, results } = createTestData({ fastingGlucose: glucose(140) });
-      const suggestions = generateSuggestions(inputs, results);
-
-      const glucoseSuggestion = suggestions.find(s => s.id === 'glucose-diabetic');
-      expect(glucoseSuggestion).toBeDefined();
-      expect(glucoseSuggestion?.priority).toBe('urgent');
-    });
-
-    it('generates prediabetic suggestion for glucose 100-125 mg/dL (5.55-6.99 mmol/L)', () => {
-      const { inputs, results } = createTestData({ fastingGlucose: glucose(110) });
-      const suggestions = generateSuggestions(inputs, results);
-
-      const glucoseSuggestion = suggestions.find(s => s.id === 'glucose-prediabetic');
-      expect(glucoseSuggestion).toBeDefined();
-      expect(glucoseSuggestion?.priority).toBe('attention');
-    });
-
-    it('does not generate suggestion for normal glucose < 100 mg/dL (<5.55 mmol/L)', () => {
-      const { inputs, results } = createTestData({ fastingGlucose: glucose(90) });
-      const suggestions = generateSuggestions(inputs, results);
-
-      const glucoseSuggestions = suggestions.filter(s => s.id.startsWith('glucose-'));
-      expect(glucoseSuggestions.length).toBe(0);
     });
   });
 

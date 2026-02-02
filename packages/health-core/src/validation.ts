@@ -5,7 +5,7 @@ import { z } from 'zod';
  */
 export const METRIC_TYPES = [
   'height', 'weight', 'waist',
-  'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'fasting_glucose',
+  'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
   'systolic_bp', 'diastolic_bp', 'apob',
 ] as const;
 
@@ -16,7 +16,7 @@ export type MetricTypeValue = typeof METRIC_TYPES[number];
  *
  * ALL numeric values are in SI canonical units:
  *   height/waist: cm | weight: kg | BP: mmHg
- *   HbA1c: mmol/mol (IFCC) | lipids/glucose: mmol/L
+ *   HbA1c: mmol/mol (IFCC) | lipids: mmol/L
  */
 export const healthInputSchema = z.object({
   // Required fields
@@ -77,11 +77,6 @@ export const healthInputSchema = z.object({
     .number()
     .min(0, 'Triglycerides must be positive')
     .max(22.6, 'Triglycerides must be at most 22.6 mmol/L')
-    .optional(),
-  fastingGlucose: z
-    .number()
-    .min(0, 'Fasting glucose must be positive')
-    .max(27.8, 'Fasting glucose must be at most 27.8 mmol/L')
     .optional(),
   apoB: z
     .number()

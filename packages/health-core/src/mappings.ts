@@ -23,7 +23,6 @@ export const FIELD_TO_METRIC: Record<string, string> = {
   totalCholesterol: 'total_cholesterol',
   hdlC: 'hdl',
   triglycerides: 'triglycerides',
-  fastingGlucose: 'fasting_glucose',
   systolicBp: 'systolic_bp',
   diastolicBp: 'diastolic_bp',
   apoB: 'apob',
@@ -39,7 +38,6 @@ export const METRIC_TO_FIELD: Record<string, keyof HealthInputs> = {
   total_cholesterol: 'totalCholesterol',
   hdl: 'hdlC',
   triglycerides: 'triglycerides',
-  fasting_glucose: 'fastingGlucose',
   systolic_bp: 'systolicBp',
   diastolic_bp: 'diastolicBp',
   apob: 'apoB',
@@ -58,7 +56,6 @@ export const FIELD_METRIC_MAP: Record<string, MetricType> = {
   totalCholesterol: 'total_cholesterol',
   hdlC: 'hdl',
   triglycerides: 'triglycerides',
-  fastingGlucose: 'fasting_glucose',
   systolicBp: 'systolic_bp',
   diastolicBp: 'diastolic_bp',
   apoB: 'apob',
@@ -78,7 +75,7 @@ export const PREFILL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
  */
 export const LONGITUDINAL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
   'weightKg', 'waistCm', 'hba1c', 'apoB', 'ldlC', 'totalCholesterol', 'hdlC',
-  'triglycerides', 'fastingGlucose', 'systolicBp', 'diastolicBp',
+  'triglycerides', 'systolicBp', 'diastolicBp',
 ];
 
 /** API measurement record shape (camelCase, as returned by API endpoints). */

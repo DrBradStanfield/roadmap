@@ -66,12 +66,6 @@ const BLOOD_TEST_FIELDS: FieldConfig[] = [
     step: { si: '0.1', conv: '1' },
     hint: { si: 'Normal: <1.7 mmol/L', conv: 'Normal: <150 mg/dL' },
   },
-  {
-    field: 'fastingGlucose', name: 'Fasting Glucose',
-    placeholder: { si: '5.0', conv: '90' },
-    step: { si: '0.1', conv: '1' },
-    hint: { si: 'Normal: <5.6 mmol/L', conv: 'Normal: <100 mg/dL' },
-  },
 ];
 
 interface InputPanelProps {
@@ -91,6 +85,7 @@ export function InputPanel({
   isLoggedIn, previousMeasurements, onSaveLongitudinal, isSavingLongitudinal,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
+  const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthMonth);
   const showPrefill = !prefillComplete || prefillExpanded;
 
@@ -167,8 +162,13 @@ export function InputPanel({
           <input
             type="number"
             id={field}
-            value={toDisplay(field, inputs[field] as number | undefined)}
-            onChange={(e) => updateField(field, parseAndConvert(field, e.target.value))}
+            value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, inputs[field] as number | undefined)}
+            onChange={(e) => {
+              const raw = e.target.value;
+              setRawInputs(prev => ({ ...prev, [field]: raw }));
+              updateField(field, parseAndConvert(field, raw));
+            }}
+            onBlur={() => setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; })}
             placeholder={unitSystem === 'si' ? placeholder.si : placeholder.conv}
             step={step ? (unitSystem === 'si' ? step.si : step.conv) : undefined}
             min={r.min}
@@ -283,8 +283,13 @@ export function InputPanel({
               <input
                 type="number"
                 id="heightCm"
-                value={toDisplay('heightCm', inputs.heightCm)}
-                onChange={(e) => updateField('heightCm', parseAndConvert('heightCm', e.target.value))}
+                value={rawInputs['heightCm'] !== undefined ? rawInputs['heightCm'] : toDisplay('heightCm', inputs.heightCm)}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  setRawInputs(prev => ({ ...prev, heightCm: raw }));
+                  updateField('heightCm', parseAndConvert('heightCm', raw));
+                }}
+                onBlur={() => setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; })}
                 placeholder={unitSystem === 'si' ? '170' : '67'}
                 min={range('heightCm').min}
                 max={range('heightCm').max}
@@ -330,16 +335,6 @@ export function InputPanel({
         )}
 
         {BASIC_LONGITUDINAL_FIELDS.map(cfg => renderLongitudinalField(cfg))}
-      </section>
-
-      {/* Blood Tests Section */}
-      <section className="health-section">
-        <h3 className="health-section-title">Blood Test Results</h3>
-        <p className="health-section-desc">
-          Enter your most recent blood test values (optional)
-        </p>
-
-        {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg))}
 
         {/* Blood Pressure — two-field clinical pattern */}
         <div className="health-field">
@@ -398,6 +393,16 @@ export function InputPanel({
             <span className="field-hint">Target: &lt;130/80 mmHg</span>
           )}
         </div>
+      </section>
+
+      {/* Blood Tests Section */}
+      <section className="health-section">
+        <h3 className="health-section-title">Blood Test Results</h3>
+        <p className="health-section-desc">
+          Enter your most recent blood test values (optional)
+        </p>
+
+        {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg))}
       </section>
 
       {/* Save button for longitudinal fields (logged-in users only) */}

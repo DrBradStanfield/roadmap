@@ -9,7 +9,6 @@ import {
   TRIGLYCERIDES_THRESHOLDS,
   TOTAL_CHOLESTEROL_THRESHOLDS,
   NON_HDL_THRESHOLDS,
-  GLUCOSE_THRESHOLDS,
   BP_THRESHOLDS,
   APOB_THRESHOLDS,
 } from './units';
@@ -26,9 +25,6 @@ function fmtHdl(value: number, us: UnitSystem): string {
 }
 function fmtTrig(value: number, us: UnitSystem): string {
   return `${formatDisplayValue('triglycerides', value, us)} ${getDisplayLabel('triglycerides', us)}`;
-}
-function fmtGlucose(value: number, us: UnitSystem): string {
-  return `${formatDisplayValue('fasting_glucose', value, us)} ${getDisplayLabel('fasting_glucose', us)}`;
 }
 function fmtTotalChol(value: number, us: UnitSystem): string {
   return `${formatDisplayValue('total_cholesterol', value, us)} ${getDisplayLabel('total_cholesterol', us)}`;
@@ -270,29 +266,6 @@ export function generateSuggestions(
         title: 'Borderline high triglycerides',
         description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us)} are borderline. Optimal is <${formatDisplayValue('triglycerides', TRIGLYCERIDES_THRESHOLDS.borderline, us)} ${getDisplayLabel('triglycerides', us)}.`,
         discussWithDoctor: false,
-      });
-    }
-  }
-
-  // Fasting glucose (thresholds in mmol/L)
-  if (inputs.fastingGlucose !== undefined) {
-    if (inputs.fastingGlucose >= GLUCOSE_THRESHOLDS.diabetes) {
-      suggestions.push({
-        id: 'glucose-diabetic',
-        category: 'bloodwork',
-        priority: 'urgent',
-        title: 'Fasting glucose in diabetic range',
-        description: `Your fasting glucose of ${fmtGlucose(inputs.fastingGlucose, us)} indicates diabetes. This requires medical evaluation.`,
-        discussWithDoctor: true,
-      });
-    } else if (inputs.fastingGlucose >= GLUCOSE_THRESHOLDS.prediabetes) {
-      suggestions.push({
-        id: 'glucose-prediabetic',
-        category: 'bloodwork',
-        priority: 'attention',
-        title: 'Fasting glucose indicates prediabetes',
-        description: `Your fasting glucose of ${fmtGlucose(inputs.fastingGlucose, us)} is in the prediabetic range. Lifestyle changes can help prevent diabetes.`,
-        discussWithDoctor: true,
       });
     }
   }

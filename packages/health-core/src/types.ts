@@ -3,7 +3,7 @@
  *
  * ALL numeric values are in SI canonical units:
  *   height/waist: cm | weight: kg | BP: mmHg
- *   HbA1c: mmol/mol (IFCC) | lipids/glucose: mmol/L
+ *   HbA1c: mmol/mol (IFCC) | lipids: mmol/L
  *
  * Conversion to/from display units is handled by units.ts.
  */
@@ -20,7 +20,6 @@ export interface HealthInputs {
   totalCholesterol?: number; // mmol/L
   hdlC?: number;        // mmol/L
   triglycerides?: number; // mmol/L
-  fastingGlucose?: number; // mmol/L
   apoB?: number;          // g/L
   systolicBp?: number;  // mmHg
   diastolicBp?: number; // mmHg

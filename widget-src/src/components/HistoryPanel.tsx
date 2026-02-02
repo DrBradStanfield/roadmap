@@ -35,7 +35,8 @@ const METRIC_LABELS: Record<string, string> = {
   ldl: 'LDL Cholesterol',
   hdl: 'HDL Cholesterol',
   triglycerides: 'Triglycerides',
-  fasting_glucose: 'Fasting Glucose',
+  total_cholesterol: 'Total Cholesterol',
+  apob: 'ApoB',
   systolic_bp: 'Systolic BP',
   diastolic_bp: 'Diastolic BP',
 };
@@ -49,7 +50,8 @@ const METRIC_COLORS: Record<string, string> = {
   ldl: '#f97316',
   hdl: '#22c55e',
   triglycerides: '#a855f7',
-  fasting_glucose: '#ec4899',
+  total_cholesterol: '#ec4899',
+  apob: '#84cc16',
   systolic_bp: '#14b8a6',
   diastolic_bp: '#64748b',
 };

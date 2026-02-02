@@ -105,7 +105,6 @@ All values in the database and in `HealthInputs` are stored in **SI canonical un
 | total_cholesterol | mmol/L | mg/dL | × 38.67 |
 | hdl | mmol/L | mg/dL | × 38.67 |
 | triglycerides | mmol/L | mg/dL | × 88.57 |
-| fasting_glucose | mmol/L | mg/dL | × 18.016 |
 | apob | g/L | mg/dL | × 100 |
 | systolic_bp | mmHg | mmHg | (same) |
 | diastolic_bp | mmHg | mmHg | (same) |
@@ -123,7 +122,7 @@ Demographics and identity fields are stored as columns on the `profiles` table:
 Health input fields are split into two categories defined in `packages/health-core/src/mappings.ts`:
 
 - **`PREFILL_FIELDS`** (`heightCm`, `sex`, `birthYear`, `birthMonth`): Demographics and height. Pre-filled from saved data, editable in-place. Auto-saved with 500ms debounce for logged-in users.
-- **`LONGITUDINAL_FIELDS`** (`weightKg`, `waistCm`, `hba1c`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `fastingGlucose`, `systolicBp`, `diastolicBp`): Time-series metrics. Input fields start **empty** with a clickable previous-value label underneath in the format **"value unit · date"** (e.g., "80 kg · Feb 2, 2026"). Clicking the label opens the history page filtered to that metric (`/pages/health-history?metric=weight`). Users enter new values and click "Save New Values" to create new immutable records. After save, fields clear and previous labels update. **All future longitudinal fields must follow this same pattern**: empty input, clickable "value unit · date" label linking to history, explicit save button.
+- **`LONGITUDINAL_FIELDS`** (`weightKg`, `waistCm`, `hba1c`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `systolicBp`, `diastolicBp`): Time-series metrics. Input fields start **empty** with a clickable previous-value label underneath in the format **"value unit · date"** (e.g., "80 kg · Feb 2, 2026"). Clicking the label opens the history page filtered to that metric (`/pages/health-history?metric=weight`). Users enter new values and click "Save New Values" to create new immutable records. After save, fields clear and previous labels update. **All future longitudinal fields must follow this same pattern**: empty input, clickable "value unit · date" label linking to history, explicit save button.
 
 This design reflects the immutable measurement storage model — longitudinal values are never edited, only appended. Results and suggestions use an `effectiveInputs` pattern that merges current form inputs with fallback to previous measurements, so results are always up-to-date even before the user enters new values.
 
@@ -213,7 +212,7 @@ Logged-in Shopify customer:
 
 Uses **Supabase** (PostgreSQL). Tables:
 - `profiles` — User accounts (shopify_customer_id is nullable — NULL for future mobile-only users without Shopify accounts, email) + demographic columns (sex, birth_year, birth_month, unit_system)
-- `health_measurements` — Immutable time-series health records (metric_type, value in SI, recorded_at) for the 10 health metrics only
+- `health_measurements` — Immutable time-series health records (metric_type, value in SI, recorded_at) for the 11 health metrics only
 - `audit_logs` — HIPAA audit trail for all write operations (user_id nullable for anonymization after account deletion)
 
 The `health_measurements` table has no UPDATE policy — records are immutable. A `get_latest_measurements()` RPC function (using `auth.uid()`, no parameters) efficiently returns the latest value per metric type using `DISTINCT ON`. A `CASE`-based CHECK constraint (`value_range`) enforces per-metric-type value ranges at the database level (e.g., weight 20–300 kg, LDL 0–12.9 mmol/L), mirroring the Zod validation as defense-in-depth. Shopify customers are mapped to Supabase Auth users via `getOrCreateSupabaseUser()` — a DB trigger on `auth.users` auto-creates the `profiles` row when a new auth user is created.
@@ -260,7 +259,6 @@ All thresholds are defined as constants in `packages/health-core/src/units.ts` a
 - **HDL**: Low <1.03 mmol/L (<40 mg/dL men), <1.29 mmol/L (<50 mg/dL women)
 - **Triglycerides**: Normal <1.69 mmol/L (<150 mg/dL), Borderline 1.69-2.26 (150-199), High 2.26-5.64 (200-499), Very High ≥5.64 (≥500)
 - **ApoB**: Optimal <0.5 g/L (<50 mg/dL), Borderline 0.5-0.7 (50-70), High 0.7-1.0 (70-100), Very High ≥1.0 (≥100)
-- **Fasting Glucose**: Normal <5.55 mmol/L (<100 mg/dL), Prediabetes 5.55-6.99 (100-125), Diabetes ≥6.99 (≥126)
 - **Blood Pressure**: Normal <120/80, Elevated 120-129/<80, Stage 1 130-139/80-89, Stage 2 ≥140/≥90, Crisis ≥180/≥120
 - **Waist-to-Height**: Healthy <0.5, Elevated ≥0.5
 

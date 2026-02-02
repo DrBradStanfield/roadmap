@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS health_measurements (
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   metric_type TEXT NOT NULL CHECK (metric_type IN (
     'height', 'weight', 'waist',
-    'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'fasting_glucose',
+    'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
     'systolic_bp', 'diastolic_bp', 'apob'
   )),
   value NUMERIC NOT NULL,
@@ -52,7 +52,6 @@ CREATE TABLE IF NOT EXISTS health_measurements (
       WHEN 'total_cholesterol' THEN value BETWEEN 0 AND 15
       WHEN 'hdl'             THEN value BETWEEN 0 AND 5.2
       WHEN 'triglycerides'   THEN value BETWEEN 0 AND 22.6
-      WHEN 'fasting_glucose' THEN value BETWEEN 0 AND 27.8
       WHEN 'systolic_bp'     THEN value BETWEEN 60 AND 250
       WHEN 'diastolic_bp'    THEN value BETWEEN 40 AND 150
       WHEN 'apob'            THEN value BETWEEN 0 AND 3
@@ -72,7 +71,7 @@ ALTER TABLE health_measurements DROP CONSTRAINT IF EXISTS health_measurements_me
 ALTER TABLE health_measurements ADD CONSTRAINT health_measurements_metric_type_check
   CHECK (metric_type IN (
     'height', 'weight', 'waist',
-    'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'fasting_glucose',
+    'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
     'systolic_bp', 'diastolic_bp', 'apob'
   ));
 
@@ -87,7 +86,6 @@ ALTER TABLE health_measurements ADD CONSTRAINT value_range CHECK (
     WHEN 'total_cholesterol' THEN value BETWEEN 0 AND 15
     WHEN 'hdl'             THEN value BETWEEN 0 AND 5.2
     WHEN 'triglycerides'   THEN value BETWEEN 0 AND 22.6
-    WHEN 'fasting_glucose' THEN value BETWEEN 0 AND 27.8
     WHEN 'systolic_bp'     THEN value BETWEEN 60 AND 250
     WHEN 'diastolic_bp'    THEN value BETWEEN 40 AND 150
     WHEN 'apob'            THEN value BETWEEN 0 AND 3

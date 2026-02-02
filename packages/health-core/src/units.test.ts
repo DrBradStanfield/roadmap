@@ -9,14 +9,13 @@ import {
   UNIT_DEFS,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
-  GLUCOSE_THRESHOLDS,
   type MetricType,
 } from './units';
 
 describe('Unit conversions — round-trip accuracy', () => {
   const metrics: MetricType[] = [
     'height', 'weight', 'waist', 'hba1c', 'ldl', 'total_cholesterol', 'hdl',
-    'triglycerides', 'fasting_glucose', 'systolic_bp', 'diastolic_bp', 'apob',
+    'triglycerides', 'systolic_bp', 'diastolic_bp', 'apob',
   ];
 
   for (const metric of metrics) {
@@ -67,16 +66,6 @@ describe('Known clinical value conversions', () => {
     expect(mgdl).toBeCloseTo(100, 0);
   });
 
-  it('glucose: 100 mg/dL → ~5.55 mmol/L', () => {
-    const mmol = toCanonicalValue('fasting_glucose', 100, 'conventional');
-    expect(mmol).toBeCloseTo(5.55, 1);
-  });
-
-  it('glucose: 7.0 mmol/L → ~126 mg/dL', () => {
-    const mgdl = fromCanonicalValue('fasting_glucose', 7.0, 'conventional');
-    expect(mgdl).toBeCloseTo(126, 0);
-  });
-
   it('triglycerides: 150 mg/dL → ~1.69 mmol/L', () => {
     const mmol = toCanonicalValue('triglycerides', 150, 'conventional');
     expect(mmol).toBeCloseTo(1.69, 1);
@@ -119,10 +108,6 @@ describe('Clinical thresholds are correctly defined', () => {
     expect(mgdl).toBeCloseTo(130, 0);
   });
 
-  it('Glucose diabetes threshold matches 126 mg/dL', () => {
-    const mgdl = fromCanonicalValue('fasting_glucose', GLUCOSE_THRESHOLDS.diabetes, 'conventional');
-    expect(mgdl).toBeCloseTo(126, 0);
-  });
 });
 
 describe('formatDisplayValue', () => {
