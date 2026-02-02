@@ -233,7 +233,7 @@ Sentry captures errors from both the widget (client-side) and the Remix backend 
 
 **Backend**: Sentry is initialized in `app/entry.server.tsx`. Errors in `app/routes/api.measurements.ts` catch blocks are reported.
 
-**User feedback**: A "Send feedback" link appears below the disclaimer in `ResultsPanel.tsx` and a "Report this issue" link appears in the `ErrorBoundary` error UI. Both link to GitHub Issues (`https://github.com/DrBradStanfield/roadmap/issues/new`). GitHub issue templates are in `.github/ISSUE_TEMPLATE/` (bug report + feature request).
+**User feedback**: A "Send feedback" link appears below the disclaimer in `ResultsPanel.tsx` and a "Report this issue" link appears in the `ErrorBoundary` error UI. Both link to GitHub Issues (`https://github.com/DrBradStanfield/roadmap/issues/new/choose`). GitHub issue templates are in `.github/ISSUE_TEMPLATE/` (bug report + feature request).
 
 ## Health Calculation Reference
 
