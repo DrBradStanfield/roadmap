@@ -187,11 +187,15 @@
   margin-top: 4px;
 }
 
-.field-hint {
-  display: block;
-  font-size: 12px;
-  color: #888;
+.field-meta {
+  display: flex;
+  gap: 8px;
   margin-top: 4px;
+  font-size: 12px;
+}
+
+.field-hint {
+  color: #888;
 }
 
 .health-field-group {
@@ -567,6 +571,23 @@
   margin-top: 4px;
   font-style: italic;
   text-decoration: none;
+}
+
+.field-meta .previous-value {
+  display: inline;
+  margin-top: 0;
+  font-size: inherit;
+}
+
+.field-meta .field-hint {
+  font-size: inherit;
+}
+
+.field-meta .field-hint + .previous-value::before {
+  content: '|';
+  margin-right: 8px;
+  color: #ccc;
+  font-style: normal;
 }
 
 .previous-value:hover {

@@ -48,15 +48,15 @@ const BLOOD_TEST_FIELDS: FieldConfig[] = [
   },
   {
     field: 'ldlC', name: 'LDL Cholesterol',
-    placeholder: { si: '2.6', conv: '100' },
+    placeholder: { si: '1.4', conv: '55' },
     step: { si: '0.1', conv: '1' },
-    hint: { si: 'Optimal: <2.6 mmol/L', conv: 'Optimal: <100 mg/dL' },
+    hint: { si: 'Optimal: <1.4 mmol/L', conv: 'Optimal: <55 mg/dL' },
   },
   {
     field: 'totalCholesterol', name: 'Total Cholesterol',
-    placeholder: { si: '5.0', conv: '190' },
+    placeholder: { si: '3.5', conv: '135' },
     step: { si: '0.1', conv: '1' },
-    hint: { si: 'Desirable: <5.2 mmol/L', conv: 'Desirable: <200 mg/dL' },
+    hint: { si: 'Optimal: <3.5 mmol/L', conv: 'Optimal: <135 mg/dL' },
   },
   {
     field: 'hdlC', name: 'HDL Cholesterol',
@@ -198,18 +198,23 @@ export function InputPanel({
         {errors[field] && (
           <span className="error-message">{errors[field]}</span>
         )}
-        {previousLabel ? (
-          <a
-            className="previous-value"
-            href={`/pages/health-history?metric=${FIELD_METRIC_MAP[field]}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >{previousLabel}</a>
-        ) : effectiveHint ? (
-          <span className="field-hint">
-            {unitSystem === 'si' ? effectiveHint.si : effectiveHint.conv}
-          </span>
-        ) : null}
+        {(effectiveHint || previousLabel) && (
+          <div className="field-meta">
+            {effectiveHint && (
+              <span className="field-hint">
+                {unitSystem === 'si' ? effectiveHint.si : effectiveHint.conv}
+              </span>
+            )}
+            {previousLabel && (
+              <a
+                className="previous-value"
+                href={`/pages/health-history?metric=${FIELD_METRIC_MAP[field]}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >{previousLabel}</a>
+            )}
+          </div>
+        )}
       </div>
     );
   };
@@ -391,16 +396,17 @@ export function InputPanel({
           {errors.diastolicBp && (
             <span className="error-message">{errors.diastolicBp}</span>
           )}
-          {getBpPreviousLabel() ? (
-            <a
-              className="previous-value"
-              href={`/pages/health-history?metric=systolic_bp`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >{getBpPreviousLabel()}</a>
-          ) : (
+          <div className="field-meta">
             <span className="field-hint">Target: &lt;130/80 mmHg</span>
-          )}
+            {getBpPreviousLabel() && (
+              <a
+                className="previous-value"
+                href={`/pages/health-history?metric=systolic_bp`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >{getBpPreviousLabel()}</a>
+            )}
+          </div>
         </div>
       </section>
 
