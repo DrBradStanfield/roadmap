@@ -16,4 +16,5 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm audit --production --audit-level=high
       - run: npm test

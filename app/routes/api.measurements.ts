@@ -1,6 +1,31 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
+
+// In-memory rate limiter: 60 requests per minute per customer
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 60;
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+// Clean up stale entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitMap) {
+    if (now > entry.resetAt) rateLimitMap.delete(key);
+  }
+}, 5 * 60_000);
+
+function checkRateLimit(customerId: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(customerId);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(customerId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= RATE_LIMIT_MAX;
+}
+
 import {
   getOrCreateSupabaseUser,
   createUserClient,
@@ -51,6 +76,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const customerId = getCustomerId(request);
   if (!customerId) {
     return json({ success: false, error: 'Not logged in' }, { status: 401 });
+  }
+  if (!checkRateLimit(customerId)) {
+    return json({ success: false, error: 'Too many requests' }, { status: 429 });
   }
 
   try {
@@ -104,6 +132,9 @@ export async function action({ request }: ActionFunctionArgs) {
   const customerId = getCustomerId(request);
   if (!customerId) {
     return json({ success: false, error: 'Not logged in' }, { status: 401 });
+  }
+  if (!checkRateLimit(customerId)) {
+    return json({ success: false, error: 'Too many requests' }, { status: 429 });
   }
 
   try {
