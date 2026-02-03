@@ -283,13 +283,28 @@ describe('generateSuggestions', () => {
       expect(bpSuggestion?.priority).toBe('attention');
     });
 
-    it('generates elevated suggestion for BP 120-129/<80', () => {
+    it('does not generate suggestion for elevated BP 120-129/<80', () => {
       const { inputs, results } = createTestData({ systolicBp: 125, diastolicBp: 75 });
       const suggestions = generateSuggestions(inputs, results);
 
-      const bpSuggestion = suggestions.find(s => s.id === 'bp-elevated');
+      const bpSuggestions = suggestions.filter(s => s.id.startsWith('bp-'));
+      expect(bpSuggestions.length).toBe(0);
+    });
+
+    it('does not generate suggestion for BP 126/80 (diastolic 80 is not elevated)', () => {
+      const { inputs, results } = createTestData({ systolicBp: 126, diastolicBp: 80 }, { age: 55 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestions = suggestions.filter(s => s.id.startsWith('bp-'));
+      expect(bpSuggestions.length).toBe(0);
+    });
+
+    it('generates stage 1 for diastolic 81 when systolic is below 130', () => {
+      const { inputs, results } = createTestData({ systolicBp: 126, diastolicBp: 81 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
       expect(bpSuggestion).toBeDefined();
-      expect(bpSuggestion?.priority).toBe('info');
     });
 
     it('does not generate suggestion for normal BP < 120/80', () => {
@@ -298,6 +313,22 @@ describe('generateSuggestions', () => {
 
       const bpSuggestions = suggestions.filter(s => s.id.startsWith('bp-'));
       expect(bpSuggestions.length).toBe(0);
+    });
+
+    it('shows target <120/80 for stage 1 when age < 65', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { age: 55 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
+      expect(bpSuggestion?.description).toContain('Target is <120/80');
+    });
+
+    it('shows target <130/80 for stage 1 when age >= 65', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { age: 70 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
+      expect(bpSuggestion?.description).toContain('Target is <130/80');
     });
 
     it('triggers on systolic alone when diastolic is normal', () => {

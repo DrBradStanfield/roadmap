@@ -374,23 +374,15 @@ export function generateSuggestions(
         description: `Your BP of ${sys}/${dia} mmHg indicates stage 2 hypertension. Medication is typically recommended in addition to lifestyle changes.`,
         discussWithDoctor: true,
       });
-    } else if (sys >= BP_THRESHOLDS.stage1Sys || dia >= BP_THRESHOLDS.stage1Dia) {
+    } else if (sys >= BP_THRESHOLDS.stage1Sys || dia > BP_THRESHOLDS.stage1Dia) {
+      const bpTarget = results.age !== undefined && results.age >= 65 ? '<130/80' : '<120/80';
       suggestions.push({
         id: 'bp-stage1',
         category: 'bloodwork',
         priority: 'attention',
         title: 'Stage 1 hypertension',
-        description: `Your BP of ${sys}/${dia} mmHg indicates stage 1 hypertension. Lifestyle modifications are recommended. Target is <130/80.`,
+        description: `Your BP of ${sys}/${dia} mmHg indicates stage 1 hypertension. Lifestyle modifications are recommended. Target is ${bpTarget}.`,
         discussWithDoctor: true,
-      });
-    } else if (sys >= BP_THRESHOLDS.elevatedSys && dia < BP_THRESHOLDS.stage1Dia) {
-      suggestions.push({
-        id: 'bp-elevated',
-        category: 'bloodwork',
-        priority: 'info',
-        title: 'Elevated blood pressure',
-        description: `Your BP of ${sys}/${dia} mmHg is elevated. Lifestyle changes can help prevent progression to hypertension.`,
-        discussWithDoctor: false,
       });
     }
   }
