@@ -36,38 +36,36 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 ## Important Files
 
 **Backend API:**
-- `app/lib/supabase.server.ts` - Supabase dual-client (admin + user), JWT signing, `getOrCreateSupabaseUser()`, measurement CRUD helpers, profile CRUD helpers (`getProfile()`, `updateProfile()`, `toApiProfile()`), medication CRUD helpers (`getMedications()`, `upsertMedication()`, `toApiMedication()`), `logAudit()`, `deleteAllUserData()`
-- `app/routes/api.measurements.ts` - Measurement CRUD + profile update + medication upsert API (storefront, HMAC auth)
-- `app/routes/api.user-data.ts` - Account data deletion endpoint (DELETE, HMAC auth, rate-limited 1/hour)
+- `app/lib/supabase.server.ts` — Supabase dual-client, auth helpers, measurement/profile/medication CRUD, audit logging, `deleteAllUserData()`
+- `app/routes/api.measurements.ts` — Measurement CRUD + profile + medication API (HMAC auth)
+- `app/routes/api.user-data.ts` — Account deletion endpoint (DELETE, HMAC auth, rate-limited)
 
-**Health Core Library:**
-- `packages/health-core/src/calculations.ts` - Health formulas (IBW, BMI, protein)
-- `packages/health-core/src/suggestions.ts` - Recommendation generation logic (unit-system-aware), medication cascade suggestions, on-treatment lipid targets
-- `packages/health-core/src/validation.ts` - Zod schemas for health inputs, individual measurements, profile updates, and medications
-- `packages/health-core/src/units.ts` - Unit definitions, SI↔conventional conversions, locale detection, clinical thresholds
-- `packages/health-core/src/mappings.ts` - Shared field↔metric mappings, `measurementsToInputs()`, `diffInputsToMeasurements()`, `diffProfileFields()`, `medicationsToInputs()`, field category constants (`PREFILL_FIELDS`, `LONGITUDINAL_FIELDS`)
-- `packages/health-core/src/types.ts` - TypeScript interfaces (HealthInputs, HealthResults, Suggestion, Measurement, MedicationInputs), statin tier constants (`STATIN_OPTIONS`, `getStatinTier()`)
-- `packages/health-core/src/index.ts` - Barrel exports for all modules
+**Health Core Library (`packages/health-core/src/`):**
+- `calculations.ts` — Health formulas (IBW, BMI, protein, eGFR)
+- `suggestions.ts` — Recommendation generation, medication cascade, on-treatment lipid targets
+- `validation.ts` — Zod schemas for inputs, measurements, profiles, medications
+- `units.ts` — Unit definitions, SI↔conventional conversions, locale detection, clinical thresholds
+- `mappings.ts` — Field↔metric mappings, `measurementsToInputs()`, `diffInputsToMeasurements()`, field categories (`PREFILL_FIELDS`, `LONGITUDINAL_FIELDS`)
+- `types.ts` — TypeScript interfaces, statin tier constants (`STATIN_OPTIONS`, `getStatinTier()`)
+- `index.ts` — Barrel exports
 
-**Widget Source:**
-- `widget-src/src/components/HealthTool.tsx` - Main widget (handles auth, unit system, measurement sync)
-- `widget-src/src/components/ErrorBoundary.tsx` - React error boundary for widget
-- `widget-src/src/components/InputPanel.tsx` - Form inputs with unit conversion (left panel). Longitudinal fields are config-driven (`BASIC_LONGITUDINAL_FIELDS`, `BLOOD_TEST_FIELDS` arrays + shared `LongitudinalField` component). Blood pressure uses two separate numeric inputs (clinical standard pattern) with a `/` separator. Includes cholesterol medication cascade UI (statin tier dropdown, ezetimibe, statin dose increase, PCSK9i).
-- `widget-src/src/components/ResultsPanel.tsx` - Results display with unit formatting (right panel)
-- `widget-src/src/lib/storage.ts` - localStorage helpers for guests + unit preference + logged-in user cache (inputs + previousMeasurements + medications)
-- `widget-src/src/lib/api.ts` - Measurement API client for logged-in users (app proxy)
-- `widget-src/src/components/HistoryPanel.tsx` - Health history page (table with filter, pagination)
-- `widget-src/src/history.tsx` - Entry point for the history page bundle
-- `widget-src/vite.config.history.ts` - Separate Vite config for the history bundle
+**Widget Source (`widget-src/src/`):**
+- `components/HealthTool.tsx` — Main widget (auth, unit system, measurement sync)
+- `components/InputPanel.tsx` — Form inputs with unit conversion. Longitudinal fields are config-driven (`BASIC_LONGITUDINAL_FIELDS`, `BLOOD_TEST_FIELDS` + `LongitudinalField` component). Includes cholesterol medication cascade UI.
+- `components/ResultsPanel.tsx` — Results display with unit formatting
+- `components/HistoryPanel.tsx` — Health history page (charts, filter, pagination)
+- `lib/storage.ts` — localStorage helpers (guest data + logged-in user cache)
+- `lib/api.ts` — Measurement API client (app proxy)
+- `components/ErrorBoundary.tsx` — React error boundary
 
-**Shopify Extensions:**
-- `extensions/health-tool-widget/blocks/app-block.liquid` - Passes customer data to React widget; includes static HTML skeleton with pulse animation for instant loading
-- `extensions/health-tool-widget/blocks/sync-embed.liquid` - App embed block: background localStorage→Supabase sync (measurements + medications) on every storefront page for logged-in users
-- `extensions/health-tool-widget/blocks/history-block.liquid` - Shopify theme block for the health history page (separate storefront page)
+**Shopify Extensions (`extensions/health-tool-widget/blocks/`):**
+- `app-block.liquid` — Passes customer data to widget; static HTML skeleton with pulse animation
+- `sync-embed.liquid` — Background localStorage→Supabase sync on every storefront page
+- `history-block.liquid` — Theme block for health history page
 
 **Infrastructure:**
-- `supabase/rls-policies.sql` - Database schema, RLS policies, auth trigger, `get_latest_measurements()` RPC
-- `.github/workflows/ci.yml` - CI pipeline (runs tests on PRs and pushes to main)
+- `supabase/rls-policies.sql` — Schema, RLS policies, auth trigger, `get_latest_measurements()` RPC
+- `.github/workflows/ci.yml` — CI pipeline (tests on PRs and pushes to main)
 
 ## Common Commands
 
@@ -81,19 +79,40 @@ npm test                 # Run unit tests
 npm run test:watch       # Run tests in watch mode
 ```
 
+**Deploy workflow:** `npm run build:widget` → `npm run deploy` → `fly deploy`
+
+## Parallel Development (Git Worktrees)
+
+Use git worktrees to run multiple Claude Code sessions on separate features simultaneously.
+
+**Create a new feature worktree:**
+```bash
+scripts/new-worktree.sh feature-name
+```
+This creates branch `feature-name`, worktree at `../roadmap-feature-name`, and copies `.env` files.
+
+**Rules:**
+- Each Claude Code session must work in its own worktree/branch
+- Never push to a branch actively used by another worktree
+- Merge via PR, then clean up
+
+**Clean up after merge:** `git worktree remove ../roadmap-feature-name && git branch -d feature-name`
+**List active worktrees:** `git worktree list`
+
 ## Data Model
 
-### Measurement Storage (Apple Health model)
+### Tables
 
-Health data is stored as immutable time-series records in `health_measurements`. Each record has a `metric_type`, a `value` (always in SI canonical units), and a `recorded_at` timestamp. Records cannot be edited — to correct a value, delete the old record and insert a new one.
+- `profiles` — User accounts (shopify_customer_id nullable for future mobile users) + demographics (sex, birth_year, birth_month, unit_system, first_name, last_name)
+- `health_measurements` — Immutable time-series records (metric_type, value in SI, recorded_at). No UPDATE policy. `get_latest_measurements()` RPC returns latest per metric via `DISTINCT ON`. `CASE`-based CHECK constraint enforces per-metric value ranges.
+- `medications` — Mutable medication records (medication_key, value), UNIQUE per (user_id, medication_key). Keys: `statin` (`none`/`tier_1`–`tier_4`/`not_tolerated`), `ezetimibe` (`yes`/`no`/`not_tolerated`), `statin_increase` (`not_yet`/`not_tolerated`), `pcsk9i` (`yes`/`no`/`not_tolerated`)
+- `audit_logs` — HIPAA audit trail (user_id nullable for anonymization after deletion)
 
-### Profile Demographics
-
-Demographic and preference data (`sex`, `birth_year`, `birth_month`, `unit_system`) is stored as columns on the `profiles` table, not as measurements. These are mutable (updated via `updateProfile()`) and are returned alongside measurements in the GET API response as a `profile` object. Profile updates are sent as `POST { profile: { sex?, birthYear?, birthMonth?, unitSystem? } }` to the same measurements endpoint.
+Run `supabase/rls-policies.sql` in the SQL Editor to set up schema + RLS. Includes `GRANT EXECUTE ON FUNCTION get_latest_measurements() TO authenticated` — without this, queries silently return empty data.
 
 ### Canonical Storage Units
 
-All values in the database and in `HealthInputs` are stored in **SI canonical units**. Conversion to/from display units is handled by `packages/health-core/src/units.ts`.
+All values stored in **SI canonical units**. Conversion handled by `units.ts`.
 
 | metric_type | Canonical (SI) | Conventional (US) | Conversion |
 |------------|---------------|-------------------|------------|
@@ -110,136 +129,72 @@ All values in the database and in `HealthInputs` are stored in **SI canonical un
 | systolic_bp | mmHg | mmHg | (same) |
 | diastolic_bp | mmHg | mmHg | (same) |
 
-Demographics and identity fields are stored as columns on the `profiles` table:
-- `sex`: 1=male, 2=female
-- `birth_year`: year (1900–2100)
-- `birth_month`: 1–12
-- `unit_system`: 1=si, 2=conventional
-- `first_name`: TEXT, auto-synced from Shopify on every API request
-- `last_name`: TEXT, auto-synced from Shopify on every API request
+Profile demographics: `sex` (1=male, 2=female), `birth_year` (1900–2100), `birth_month` (1–12), `unit_system` (1=si, 2=conventional), `first_name`/`last_name` (auto-synced from Shopify).
 
-### Field Categories (Longitudinal Data UX)
+### Field Categories
 
-Health input fields are split into two categories defined in `packages/health-core/src/mappings.ts`:
+Defined in `mappings.ts`:
 
-- **`PREFILL_FIELDS`** (`heightCm`, `sex`, `birthYear`, `birthMonth`): Demographics and height. Pre-filled from saved data, editable in-place. Auto-saved with 500ms debounce for logged-in users.
-- **`LONGITUDINAL_FIELDS`** (`weightKg`, `waistCm`, `hba1c`, `creatinine`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `systolicBp`, `diastolicBp`): Time-series metrics. Input fields start **empty** with a clickable previous-value label underneath in the format **"value unit · date"** (e.g., "80 kg · Feb 2, 2026"). Clicking the label opens the history page filtered to that metric (`/pages/health-history?metric=weight`). Users enter new values and click "Save New Values" to create new immutable records. After save, fields clear and previous labels update. **All future longitudinal fields must follow this same pattern**: empty input, clickable "value unit · date" label linking to history, explicit save button.
+- **`PREFILL_FIELDS`** (`heightCm`, `sex`, `birthYear`, `birthMonth`): Pre-filled from saved data, auto-saved with 500ms debounce.
+- **`LONGITUDINAL_FIELDS`** (`weightKg`, `waistCm`, `hba1c`, `creatinine`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `systolicBp`, `diastolicBp`): Start **empty** with clickable previous-value label ("value unit · date") linking to history. Users enter new values and click "Save New Values" to append immutable records. **All future longitudinal fields must follow this pattern.**
 
-This design reflects the immutable measurement storage model — longitudinal values are never edited, only appended. Results and suggestions use an `effectiveInputs` pattern that merges current form inputs with fallback to previous measurements, so results are always up-to-date even before the user enters new values.
+Results use `effectiveInputs` (current form + fallback to previous measurements).
 
-### Health History Page
+### Widget Loading (Skeleton + Two-Phase Data)
 
-A separate Shopify storefront page displays full longitudinal measurement history using interactive **Chart.js line charts** (one chart per metric). Users select which metrics to view via checkboxes. Hovering over data points shows exact values and dates in tooltips. It uses its own theme block (`history-block.liquid`) and JS bundle (`health-history.js`, built via `widget-src/vite.config.history.ts`). History data is only fetched when the page is opened — the main widget never loads full history. The history page supports metric filtering and pagination via `GET ?all_history=true&limit=100&offset=0`. Chart.js dependencies (`chart.js`, `chartjs-adapter-date-fns`, `date-fns`) are in `widget-src/package.json`.
+1. **Static skeleton** (`app-block.liquid`): CSS + pulsing placeholder renders before JS loads (`<script defer>`)
+2. **Phase 1 (instant)**: Reads cached data from localStorage
+3. **Phase 2 (async)**: API response overwrites with authoritative cloud data, caches to localStorage
+4. **Auto-save safety**: `hasApiResponse` flag prevents writes to Supabase until Phase 2 completes
 
 ### Unit System Detection
 
-The UI auto-detects the user's preferred unit system from browser locale (US, Liberia, Myanmar → conventional; everyone else → SI). Users can override via a toggle. The preference is saved to localStorage and also stored on the `profiles` table (`unit_system` column: 1=si, 2=conventional) for logged-in users.
+Auto-detected from browser locale (US/Liberia/Myanmar → conventional, else SI). Override saved to localStorage + `profiles.unit_system`.
 
-### Widget Loading Strategy (Skeleton + Two-Phase Data)
+### Health History Page
 
-The widget uses a three-layer loading strategy to eliminate visible lag:
-
-1. **Static HTML skeleton** (`app-block.liquid`): CSS loads first via `stylesheet_tag`, then a static skeleton (header text + gray pulsing placeholder blocks) renders inside `#health-tool-root` before any JS executes. The JS bundle loads with `<script defer>` so the skeleton is visible while the 228KB bundle downloads and parses. React's `createRoot().render()` replaces the skeleton entirely on mount.
-
-2. **Two-phase data loading** (`HealthTool.tsx`): For logged-in users, `loadData()` runs in two phases:
-   - **Phase 1 (instant)**: Reads cached `inputs` and `previousMeasurements` from localStorage and populates the form immediately. This shows form fields with values and the blue "previous value" labels under longitudinal inputs.
-   - **Phase 2 (async)**: Awaits `loadLatestMeasurements()` API call. When the response arrives, it overwrites inputs and previousMeasurements with authoritative cloud data, and caches the result to localStorage for next time.
-
-3. **Auto-save safety**: A `hasApiResponse` state flag (starts `false`) prevents the auto-save `useEffect` from firing until Phase 2 completes. This ensures localStorage-cached data shown in Phase 1 doesn't trigger writes back to Supabase before we know what's in the cloud. For guests, `hasApiResponse` is set to `true` immediately since there's no API call.
-
-The localStorage cache (`StoredData` in `storage.ts`) stores `inputs` (Partial<HealthInputs>), `previousMeasurements` (ApiMeasurement[]), and `medications` (ApiMedication[]). The first page visit for a new logged-in user will still show empty fields briefly (no cache yet), but every subsequent visit shows data instantly.
+Separate bundle (`health-history.js`) with Chart.js line charts per metric. Fetched via `GET ?all_history=true&limit=100&offset=0`. Never loaded by the main widget.
 
 ## CRITICAL: Security Rules
 
-- **NEVER compromise security or create attack vectors.** This app handles personal health data. Every change must maintain or strengthen security.
-- **NEVER trust client-supplied identity.** Customer identity must always come from Shopify's HMAC-verified `logged_in_customer_id` parameter, not from client-side code, request bodies, or URL parameters the client controls.
-- **NEVER expose API endpoints without authentication.** All measurement endpoints require Shopify app proxy HMAC verification.
-- **NEVER add `Access-Control-Allow-Origin: *`** or weaken CORS. The app proxy approach avoids CORS entirely (same-origin requests).
-- **If you are ever unsure about a security implication, STOP and ask me.** Do not guess or assume. It is always better to pause and verify than to introduce a vulnerability.
+- **NEVER compromise security or create attack vectors.** This app handles personal health data.
+- **NEVER trust client-supplied identity.** Must come from Shopify's HMAC-verified `logged_in_customer_id`.
+- **NEVER expose API endpoints without authentication.** All endpoints require HMAC verification.
+- **NEVER add `Access-Control-Allow-Origin: *`** or weaken CORS.
+- **If unsure about a security implication, STOP and ask me.**
 
-## Authentication & Security Flow
+### Auth Flow (Shopify HMAC + Supabase RLS)
 
-Customer health data is protected by two layers: **Shopify identity verification** (HMAC) and **Supabase RLS** (database-level row isolation). The backend never trusts client-supplied identity.
+**Guest:** localStorage only, no server calls.
 
-### Supabase Auth Integration
+**Logged-in:** Shopify app proxy → HMAC verification → `getOrCreateSupabaseUser()` → `createUserClient(userId)` (anon key + custom HS256 JWT) → all queries scoped by `auth.uid()` via RLS. Service key (`supabaseAdmin`) used only for user creation and profile lookups. DB trigger auto-creates `profiles` row on new auth user.
 
-Shopify customers are mapped 1:1 to Supabase Auth users. On each request:
-1. Shopify identity is verified via app proxy HMAC
-2. `getOrCreateSupabaseUser(shopifyCustomerId, email)` finds or creates the Supabase Auth user
-3. `createUserClient(userId)` creates a Supabase client with a custom HS256 JWT (`sub = userId`)
-4. All data queries use this RLS-enforced client — `auth.uid()` scopes every query to the user
-5. The service key (`supabaseAdmin`) is only used for user creation and profile lookups
-
-A DB trigger on `auth.users` auto-creates the `profiles` row when a new Supabase Auth user is created, using `user_metadata.shopify_customer_id` and the user's email.
-
-### Storefront Widget Auth (HMAC)
-
-```
-Guest user (not logged in):
-  → Data saved to localStorage only
-  → No API calls, no server interaction
-
-Logged-in Shopify customer:
-  → Liquid template sets data-logged-in="true" on widget root element
-  → Widget detects login, calls /apps/health-tool-1/api/measurements
-  → Request goes through Shopify's app proxy (same-origin, no CORS needed)
-  → Shopify adds logged_in_customer_id + HMAC signature to the request
-  → Backend calls authenticate.public.appProxy(request) to verify HMAC
-  → Customer email fetched via Shopify Admin GraphQL API
-  → getOrCreateSupabaseUser() maps customer to Supabase Auth user
-  → createUserClient() creates RLS-enforced Supabase client
-  → All queries scoped to auth.uid() by RLS
-```
-
-**Why this is secure:**
-- The HMAC signature is computed by Shopify using the app's secret key, which only Shopify and the backend know
-- `logged_in_customer_id` cannot be forged — any tampering invalidates the HMAC
-- No CORS needed — requests go through Shopify's proxy (same origin as the storefront)
-- No tokens, API keys, or secrets are exposed to the client
-- RLS enforces data isolation at the database level — even a code bug can't leak cross-user data
+**Why secure:** HMAC computed by Shopify with app secret (unforgeable), no CORS needed (same-origin via proxy), no secrets exposed to client, RLS enforces data isolation at DB level.
 
 ## API Endpoint
 
 ### Storefront (via app proxy at `/apps/health-tool-1/api/measurements`)
 
-**GET** (no params) — Latest measurement per metric + profile demographics + medications for the authenticated user (returns `{ data: [...], profile: {...}, medications: [...] }`)
-**GET** `?metric_type=weight&limit=50` — History for one metric, ordered by recorded_at DESC
-**GET** `?all_history=true&limit=100&offset=0` — All metrics history with pagination (for the history page)
-**POST** `{ metricType, value, recordedAt? }` — Add a measurement (value in SI canonical units)
-**POST** `{ profile: { sex?, birthYear?, birthMonth?, unitSystem? } }` — Update profile demographics
-**POST** `{ medication: { medicationKey, value } }` — Upsert a medication record
-**DELETE** `{ measurementId }` — Delete a measurement by ID (verifies user ownership)
-
-## Database
-
-Uses **Supabase** (PostgreSQL). Tables:
-- `profiles` — User accounts (shopify_customer_id is nullable — NULL for future mobile-only users without Shopify accounts, email) + demographic columns (sex, birth_year, birth_month, unit_system)
-- `health_measurements` — Immutable time-series health records (metric_type, value in SI, recorded_at) for the 12 health metrics only
-- `medications` — Mutable medication records (medication_key, value), UNIQUE per (user_id, medication_key), upserted on change. Keys: `statin` (tier values: `none`, `tier_1`–`tier_4`, `not_tolerated`), `ezetimibe` (`yes`/`no`/`not_tolerated`), `statin_increase` (`not_yet`/`not_tolerated`), `pcsk9i` (`yes`/`no`/`not_tolerated`)
-- `audit_logs` — HIPAA audit trail for all write operations (user_id nullable for anonymization after account deletion)
-
-The `health_measurements` table has no UPDATE policy — records are immutable. A `get_latest_measurements()` RPC function (using `auth.uid()`, no parameters) efficiently returns the latest value per metric type using `DISTINCT ON`. A `CASE`-based CHECK constraint (`value_range`) enforces per-metric-type value ranges at the database level (e.g., weight 20–300 kg, LDL 0–12.9 mmol/L), mirroring the Zod validation as defense-in-depth. Shopify customers are mapped to Supabase Auth users via `getOrCreateSupabaseUser()` — a DB trigger on `auth.users` auto-creates the `profiles` row when a new auth user is created.
-
-Run `supabase/rls-policies.sql` in the Supabase SQL Editor to set up the schema and RLS policies. The SQL includes `GRANT EXECUTE ON FUNCTION get_latest_measurements() TO authenticated` — without this grant, the `authenticated` role (used by the custom JWT) cannot call the RPC, and queries silently return empty data.
+**GET** (no params) — Latest per metric + profile + medications (`{ data, profile, medications }`)
+**GET** `?metric_type=weight&limit=50` — History for one metric (DESC)
+**GET** `?all_history=true&limit=100&offset=0` — All history with pagination
+**POST** `{ metricType, value, recordedAt? }` — Add measurement (SI units)
+**POST** `{ profile: { sex?, birthYear?, birthMonth?, unitSystem? } }` — Update profile
+**POST** `{ medication: { medicationKey, value } }` — Upsert medication
+**DELETE** `{ measurementId }` — Delete measurement (verifies ownership)
 
 ## Environment Variables
 
-See `.env` for required variables. Key Supabase variables:
-- `SUPABASE_URL` — Project URL (Settings > API)
-- `SUPABASE_ANON_KEY` — Public anon key (Settings > API)
-- `SUPABASE_SERVICE_KEY` — Service role key (Settings > API) — used only for admin operations
-- `SUPABASE_JWT_SECRET` — Legacy JWT secret (Settings > JWT Keys > "Legacy JWT Secret" tab) — used to sign custom JWTs for RLS
-- `SENTRY_DSN` — Sentry DSN for backend error reporting (set via `fly secrets set` on Fly.io). The widget DSN is hardcoded in `widget-src/src/lib/sentry.ts` since it's a public IIFE bundle.
+See `.env` for required variables. Key variables:
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` — Supabase (Settings > API)
+- `SUPABASE_JWT_SECRET` — Legacy JWT secret (Settings > JWT Keys) for signing custom JWTs
+- `SENTRY_DSN` — Backend error reporting (set via `fly secrets set`). Widget DSN hardcoded in `widget-src/src/lib/sentry.ts`.
 
 ## Error Monitoring (Sentry)
 
-Sentry captures errors from both the widget (client-side) and the Remix backend (server-side). The widget DSN is baked into the JS bundle at build time (`widget-src/src/lib/sentry.ts`). The backend reads `SENTRY_DSN` from the environment.
-
-**Widget**: `initSentry()` is called in both entry points (`index.tsx`, `history.tsx`). The `ErrorBoundary` component reports React crashes with component stack traces. All API client functions in `widget-src/src/lib/api.ts` report caught errors. Sentry is disabled on localhost.
-
-**Backend**: Sentry is initialized in `app/entry.server.tsx`. Errors in `app/routes/api.measurements.ts` catch blocks are reported.
-
-**User feedback**: A "Send feedback" link appears below the disclaimer in `ResultsPanel.tsx` and a "Report this issue" link appears in the `ErrorBoundary` error UI. Both link to GitHub Issues (`https://github.com/DrBradStanfield/roadmap/issues/new/choose`). GitHub issue templates are in `.github/ISSUE_TEMPLATE/` (bug report + feature request).
+Widget: `initSentry()` in both entry points, `ErrorBoundary` reports crashes, API client reports errors. Disabled on localhost.
+Backend: Initialized in `app/entry.server.tsx`, errors reported in API catch blocks.
+User feedback: Links to GitHub Issues in `ResultsPanel.tsx` and `ErrorBoundary`.
 
 ## Health Calculation Reference
 
@@ -252,163 +207,72 @@ Sentry captures errors from both the widget (client-side) and the Remix backend 
 | Waist-to-Height | waist_cm / height_cm |
 | eGFR (CKD-EPI 2021) | Female, Cr≤0.7: 142×(Cr/0.7)^(-0.241)×0.9938^age×1.012; Female, Cr>0.7: 142×(Cr/0.7)^(-1.200)×0.9938^age×1.012; Male, Cr≤0.9: 142×(Cr/0.9)^(-0.302)×0.9938^age; Male, Cr>0.9: 142×(Cr/0.9)^(-1.200)×0.9938^age (Cr in mg/dL, stored as µmol/L ÷ 88.4) |
 
-## Clinical Thresholds
-
-All thresholds are defined as constants in `packages/health-core/src/units.ts` and compared in SI canonical units.
+Clinical thresholds defined in `units.ts` (SI canonical units).
 
 ## Suggestion Categories
 
-Suggestions are generated by `generateSuggestions()` in `suggestions.ts` and accept optional `MedicationInputs` for the medication cascade.
+Generated by `generateSuggestions()` in `suggestions.ts`. Accepts optional `MedicationInputs`.
 
-**Always-show suggestions** (when relevant inputs exist):
-- Protein target (nutrition) — always shown
-- Low salt <2,300mg/day (nutrition) — only when SBP ≥ 116 mmHg
-- Fiber 25-35g/day (nutrition) — always shown, `discussWithDoctor: true`
-- Exercise 150+ min cardio + 2-3 resistance/week (exercise) — always shown
-- High potassium 3,500-5,000mg/day (nutrition) — only when eGFR ≥ 45, `discussWithDoctor: true`
-- Sleep 7-9 hours (sleep) — always shown
+**Always-show:** Protein target, fiber 25-35g/day, exercise 150+ min cardio + 2-3 resistance/week, sleep 7-9 hours. **Conditional:** Low salt <2,300mg/day (SBP ≥ 116), high potassium 3,500-5,000mg/day (eGFR ≥ 45).
 
-**Conditional — GLP-1 weight management:**
-- BMI > 27: always suggest
-- BMI 25-27: suggest only if waist-to-height ≥ 0.5 (or no waist data)
-- BMI ≤ 25: no suggestion
+**GLP-1 weight management:** BMI > 27 always; BMI 25-27 only if waist-to-height ≥ 0.5; BMI ≤ 25 never.
 
-**Medication cascade** (only when lipids exceed **on-treatment targets**: ApoB > 0.5 g/L OR LDL > 1.4 mmol/L OR non-HDL > 1.4 mmol/L):
-1. **Statin**: suggest starting if none selected → once on statin, proceed
-2. **Ezetimibe 10mg**: suggest if not yet on it → once yes/not tolerated, proceed
-3. **Statin dose increase**: suggest if not on max tier and statin tolerated → once handled, proceed (skipped if max tier or statin not tolerated)
-4. **PCSK9 inhibitor**: suggest if not yet on it
+**Medication cascade** (when ApoB > 0.5 g/L OR LDL > 1.4 mmol/L OR non-HDL > 1.4 mmol/L):
+1. Statin → 2. Ezetimibe 10mg → 3. Statin dose increase (skip if max tier/not tolerated) → 4. PCSK9 inhibitor
 
-Statin tiers (grouped by equivalent potency):
-- Tier 1: Rosuvastatin 5mg / Pravastatin 20mg / Atorvastatin 10mg
-- Tier 2: Rosuvastatin 10mg / Pravastatin 40mg / Atorvastatin 20mg
-- Tier 3: Rosuvastatin 20mg / Pravastatin 40mg / Atorvastatin 40mg
-- Tier 4 (max): Rosuvastatin 40mg / Pravastatin 40mg / Atorvastatin 80mg
-
-The medication cascade UI in `InputPanel.tsx` mirrors this logic — it only appears when lipids are elevated (using `effectiveInputs` with previous measurement fallback), and each step conditionally shows based on the previous step's answer.
+Statin tiers: T1 (Rosu 5mg/Prava 20mg/Atorva 10mg), T2 (10/40/20), T3 (20/40/40), T4 max (40/40/80).
 
 ## Hosting
 
-The Remix backend is hosted on **Fly.io**:
-
-- **Region**: USA recommended (prefer US regions for new infrastructure)
-- **Config**: `fly.toml` (processes, env vars, VM size)
-- **Docker**: `Dockerfile` (Node 20 Alpine)
-
-Shopify extensions (theme widget + app embed sync block) are hosted on Shopify's CDN and deployed via `npm run deploy`.
-
-The widget calls the backend through Shopify's app proxy (`/apps/health-tool-1/*`), which provides HMAC-verified customer identity. The app proxy is configured in `shopify.app.toml` and routes requests to the Fly.io backend.
-
-**Deploy workflow:**
-1. `npm run build:widget` — rebuild widget assets
-2. `npm run deploy` — push extensions to Shopify
-3. `fly deploy` — push backend to Fly.io
-4. `fly secrets set KEY=value` — update env vars on Fly.io
+Backend on **Fly.io** (USA region, `fly.toml`, Dockerfile Node 20 Alpine). Extensions on Shopify CDN (`npm run deploy`). Widget calls backend via Shopify app proxy (`/apps/health-tool-1/*`, configured in `shopify.app.toml`).
 
 ## Notes for Development
 
-- Always rebuild widget after changes: `npm run build:widget`
-- Both root and widget-src use Vite 6 (`^6.2.2`). The root `overrides`/`resolutions` in `package.json` enforce this across all workspaces. Keep these aligned when upgrading Vite.
-- Widget uses Vite's alias to import directly from health-core source
-- Widget source is in `/widget-src`, builds to `/extensions/health-tool-widget/assets/`. Two separate IIFE bundles are built: `health-tool.js` (main widget, `vite.config.ts`) and `health-history.js` (history page, `vite.config.history.ts`). Vite's IIFE format doesn't support multiple inputs in a single config, hence the two configs chained in the build script.
-- Run `npm test` before deploying to verify calculations
-- Backend uses a dual-client Supabase pattern: `supabaseAdmin` (service key) for user creation/profile lookups only, and `createUserClient(userId)` (anon key + custom HS256 JWT) for all data queries. RLS is enforced at the database level — every query is scoped to `auth.uid()` automatically. See `supabase/rls-policies.sql` for policies and `app/lib/supabase.server.ts` for the JWT signing logic.
-- The widget has an error boundary to prevent component crashes from breaking the entire UI
-- CI pipeline (`.github/workflows/ci.yml`) runs tests on every PR and push to main
-- All health suggestions include "discuss with doctor" flag for liability
-- **Shopify Partner/Dev Dashboard is read-only**: You cannot manually change or check any app configuration (app URL, redirect URLs, app proxy, scopes, extensions, etc.) in the Shopify Partner Dashboard or Dev Dashboard. The only things accessible there are the client ID and client secret. All configuration must be updated in `shopify.app.toml` and pushed via `npx shopify app deploy --force`. Do NOT suggest checking or modifying settings in the dashboard — it is not possible.
-- `automatically_update_urls_on_dev` is set to `false` to prevent `npm run dev` from overwriting production URLs with temporary tunnel URLs
-- **NEVER use `shopify app dev`**: It creates a "development preview" on the store that overrides the production app with a temporary Cloudflare tunnel URL. When the tunnel dies, the preview stays active and breaks the production app (all proxy requests go to the dead tunnel). If you accidentally run it, immediately run `npx shopify app dev clean` to restore the production version. For local development, run the Remix server directly and test API changes by deploying to Fly.io. Widget changes can be tested with `npm run dev:widget` + `npm run deploy`.
-- **Fly.io startup command**: The process command in `fly.toml` must be `node ./dbsetup.js npm run docker-start`. The startup sequence is: `dbsetup.js` creates a symlink from `prisma/dev.sqlite` → `/data/dev.sqlite` (persistent volume), runs `prisma migrate deploy`, then launches litestream which executes `npm run docker-start`. `docker-start` runs `prisma generate && npm run start` — it must NOT run `prisma migrate deploy` because litestream already has a lock on the SQLite file (running migrate again causes "SQLite database error" and a crash loop). `prisma generate` is required at runtime because the Docker image's `npm ci --omit=dev` does not generate the Prisma client. Fly.io's process command does not support shell operators like `&&` — the entire string is passed as arguments to `docker-entrypoint.sh`, so chaining commands with `&&` will silently fail.
-- **SQLite session persistence**: The Prisma schema uses `url = "file:dev.sqlite"` (relative to `prisma/` dir). `dbsetup.js` creates a symlink `prisma/dev.sqlite` → `/data/dev.sqlite` so the database lives on the persistent Fly.io volume. This is critical — without it, the Shopify offline access token (stored in the `Session` table) is lost on every deploy, causing `admin=false` in `authenticate.public.appProxy()` and all email lookups fail. If the session is lost, uninstall and reinstall the app on the Shopify store.
-- **getOrCreateSupabaseUser resilience**: The function handles two error cases when creating a Supabase Auth user: (1) "already been registered" — user exists in auth.users but profile row is missing, and (2) "Database error creating new user" — race condition when multiple parallel requests try to create the same user simultaneously (e.g., the storefront widget fires several save requests at once). In both cases, it falls back to looking up the existing auth user by email and re-creating the profile row. Without this, parallel saves cause 500 errors with FK constraint violations.
-- **Shopify access scopes**: The `write_app_proxy` scope is **required** for the app proxy to work — without it, Shopify silently ignores the `[app_proxy]` config in `shopify.app.toml` and all proxy requests return 404. The `read_customers` scope is needed to look up customer email via the Admin API GraphQL. After adding new scopes, you must `npx shopify app deploy --force`, then either accept the new permissions in the Shopify Admin or uninstall/reinstall the app on the store.
-- **Fly.io app suspension**: If the Fly.io app shows "Suspended" status, `fly deploy` alone won't unsuspend it. Run `fly machine start <machine-id> -a <your-app-name>` to manually start the machine. The `min_machines_running = 1` setting in `fly.toml` prevents the machine from stopping after it's running, but does not unsuspend a suspended app.
-- **NEVER use DROP TABLE for existing Supabase tables**: PostgREST (Supabase's REST API layer) caches table OIDs in memory. If you drop and recreate a table, PostgREST silently routes operations to the old (non-existent) OIDs — upserts and inserts return no error but create no rows. `NOTIFY pgrst, 'reload schema'` is supposed to fix this but is unreliable. The only guaranteed fix is restarting the entire Supabase project (Settings > General > Restart project). Use `ALTER TABLE ADD COLUMN IF NOT EXISTS` for schema changes instead. The `rls-policies.sql` file uses `CREATE TABLE IF NOT EXISTS` which is safe — it's a no-op if the table already exists.
-- **In-memory user cache on Fly.io**: `getOrCreateSupabaseUser()` caches Shopify customer → Supabase user ID mappings in memory. If you delete profiles or auth users, you must restart the Fly.io machine (`fly machines restart <machine-id>`) to clear this cache. Otherwise the server returns stale user IDs that don't exist, causing FK constraint violations on every measurement insert. A `fly deploy` also restarts the machine and clears the cache.
-
-## Code Sharing Strategy
-
-**Shared via `packages/health-core/`:**
-- Unit definitions, conversions, locale detection (`units.ts`)
-- Field↔metric mappings, measurement↔HealthInputs conversion (`mappings.ts`)
-- Validation schemas (`validation.ts`)
-- Health calculations (`calculations.ts`)
-- Suggestion generation (`suggestions.ts`)
-- TypeScript types (`types.ts`)
-
-The widget uses standard HTML/React and calls health-core logic for all calculations, validations, and unit conversions.
+- Rebuild widget after changes: `npm run build:widget`
+- Vite 6 (`^6.2.2`) in both root and widget-src, enforced via `overrides`/`resolutions`. Keep aligned when upgrading.
+- Two IIFE bundles: `health-tool.js` (`vite.config.ts`) and `health-history.js` (`vite.config.history.ts`). Vite IIFE doesn't support multiple inputs per config.
+- **Every new feature/behavior change must include unit tests.** Run `npm test` before deploying.
+- **Shopify Dashboard is read-only** — all config via `shopify.app.toml` + `npx shopify app deploy --force`.
+- **NEVER use `shopify app dev`** — creates dev preview that overrides production app. Fix: `npx shopify app dev clean`.
+- **Fly.io startup**: `node ./dbsetup.js npm run docker-start`. `dbsetup.js` symlinks `prisma/dev.sqlite` → `/data/dev.sqlite`, runs migrate, launches litestream. `docker-start` runs `prisma generate && npm run start` (must NOT run migrate again — litestream has the lock).
+- **SQLite session persistence**: Symlink to persistent volume is critical. Without it, Shopify offline access token lost on every deploy (`admin=false`). Fix: uninstall/reinstall app.
+- **getOrCreateSupabaseUser resilience**: Handles "already registered" and race condition errors by falling back to email lookup + profile re-creation.
+- **Shopify scopes**: `write_app_proxy` required (else proxy returns 404), `read_customers` for email lookup. After adding scopes: deploy + accept permissions.
+- **Fly.io suspension**: `fly deploy` won't unsuspend. Use `fly machine start <id>`.
+- **NEVER DROP TABLE on Supabase** — PostgREST caches OIDs; use `ALTER TABLE ADD COLUMN IF NOT EXISTS`. Fix: restart Supabase project.
+- **In-memory user cache**: After deleting profiles/auth users, restart Fly.io machine to clear cache.
+- `automatically_update_urls_on_dev` is `false` to protect production URLs.
 
 ## Testing
 
-**Every new feature or behavior change must include corresponding unit tests.** If you add a new calculation, suggestion, field mapping, or modify existing logic, add or update tests in the relevant test file. Run `npm test` to verify all tests pass before considering the work complete.
-
-Unit tests cover health calculations, suggestions, unit conversions, field mappings, and Supabase helpers:
-
-```bash
-npm test              # Run once
-npm run test:watch    # Watch mode
-```
-
-Test files:
-- `packages/health-core/src/calculations.test.ts` — IBW, BMI, protein, age, eGFR, health results (34 tests)
-- `packages/health-core/src/suggestions.test.ts` — All suggestion categories, medication cascade, potassium/eGFR, unit system display (70 tests)
-- `packages/health-core/src/units.test.ts` — Round-trip conversions, clinical values, thresholds, formatting, locale (55 tests)
-- `packages/health-core/src/mappings.test.ts` — Field↔metric mappings, measurementsToInputs, diffInputsToMeasurements, medicationsToInputs, field categories, unit_system encoding (24 tests)
+**Every feature/behavior change needs tests.** Test files:
+- `packages/health-core/src/calculations.test.ts` — IBW, BMI, protein, age, eGFR (34 tests)
+- `packages/health-core/src/suggestions.test.ts` — Suggestions, medication cascade, unit display (70 tests)
+- `packages/health-core/src/units.test.ts` — Conversions, thresholds, formatting, locale (55 tests)
+- `packages/health-core/src/mappings.test.ts` — Field mappings, measurement conversion (24 tests)
 - `app/lib/supabase.server.test.ts` — toApiMeasurement helper (3 tests)
 
-## Architecture Decision: Why No Customer Account Extensions
+## Architecture Decision: No Customer Account Extensions
 
-Previously the app had two Shopify customer account extensions (a profile summary block and a full-page health tool). These were removed because:
-
-1. **Cross-origin localStorage barrier**: Customer account pages run on `shopify.com`, a different origin from the storefront (`your-store.myshopify.com`). Guest health data saved to localStorage on the storefront was completely inaccessible from customer account pages. This made guest→logged-in data migration impossible through the customer account.
-
-2. **Separate JWT auth endpoint was unnecessary complexity**: The customer account extensions required a dedicated `/api/customer-measurements` endpoint with Shopify session token (JWT) authentication, plus a rate limiter — all duplicating the existing HMAC-authenticated storefront endpoint.
-
-3. **Simpler alternative**: An app embed sync block (`sync-embed.liquid`) runs on every storefront page. When a logged-in customer has localStorage data, it syncs to Supabase in the background. This works because it runs on the same origin as the storefront widget, so it has full access to localStorage. The storefront widget link can be added to customer account navigation manually.
-
-4. **Sequential POST pattern**: The sync embed sends measurements one at a time (not in parallel) because parallel POSTs for a new user cause race conditions in `getOrCreateSupabaseUser()` — multiple requests simultaneously calling `listUsers()` (which lists ALL Supabase auth users) caused backend timeouts and 500 errors from Shopify's proxy.
+Removed because: (1) cross-origin localStorage barrier (customer accounts on `shopify.com` can't access storefront localStorage), (2) duplicate JWT auth endpoint was unnecessary. Instead, `sync-embed.liquid` runs on every storefront page (same origin) and syncs localStorage→Supabase in the background. Sync sends POSTs sequentially to avoid race conditions in `getOrCreateSupabaseUser()`.
 
 ## Audit Logging
 
-All write operations are logged to the `audit_logs` table for HIPAA compliance. The `logAudit()` helper in `supabase.server.ts` is fire-and-forget (never blocks or fails the request) and uses the service-role admin client.
-
-**Audited operations:**
-- `USER_CREATED` — new Supabase Auth user mapped from Shopify customer
-- `MEASUREMENT_CREATED` — new measurement added (metadata: `{ metricType }`, no PHI values)
-- `MEASUREMENT_DELETED` — measurement removed
-- `PROFILE_UPDATED` — demographics changed (metadata: `{ fields: [...] }`, no PHI values)
-- `MEDICATION_UPSERTED` — medication record created or updated (metadata: `{ medicationKey }`)
-- `USER_DATA_DELETED` — full account deletion triggered
-
-**On account deletion**, audit logs are anonymized (`user_id` set to NULL) rather than deleted, preserving the audit trail without identifying the user.
-
-Users can read their own audit logs via RLS SELECT policy (`auth.uid()`). No INSERT/UPDATE/DELETE policies exist for the `authenticated` role — only the service-role admin client inserts logs.
+All writes logged to `audit_logs` via `logAudit()` (fire-and-forget, service-role client). Actions: `USER_CREATED`, `MEASUREMENT_CREATED`, `MEASUREMENT_DELETED`, `PROFILE_UPDATED`, `MEDICATION_UPSERTED`, `USER_DATA_DELETED`. On account deletion, logs anonymized (`user_id` → NULL). Users can read own logs via RLS.
 
 ## Account Data Deletion
 
-Users can delete all their data via a "Delete All My Data" button in the widget (visible when logged in). The deletion endpoint (`app/routes/api.user-data.ts`) requires `{ confirmDelete: true }` in the request body and is rate-limited to 1 request per hour per customer.
-
-**Deletion sequence:**
-1. Log `USER_DATA_DELETED` audit entry
-2. Delete all `health_measurements`
-3. Delete all `medications`
-4. Anonymize audit logs (set `user_id` to NULL)
-5. Delete `profiles` row
-6. Delete Supabase Auth user
-7. Clear in-memory user cache
-
-The widget clears localStorage and resets all React state after successful deletion.
+"Delete All My Data" button (logged-in only). Endpoint requires `{ confirmDelete: true }`, rate-limited 1/hour. Sequence: audit log → delete measurements → delete medications → anonymize audit logs → delete profile → delete auth user → clear cache. Widget clears localStorage + React state.
 
 ## Data Sync Architecture
 
-**localStorage→cloud sync is handled exclusively by the sync-embed block** (`sync-embed.liquid`), not by the widget. The widget only reads from the cloud and caches the response to localStorage for instant display on subsequent page loads. This prevents duplicate writes that would occur if both the widget and sync-embed tried to sync the same localStorage data simultaneously.
+localStorage→cloud sync handled **exclusively by sync-embed**, not the widget. Widget only reads from cloud and caches to localStorage. Prevents duplicate writes.
 
 ## Future Plans
 
-1. **Mobile App**: React Native + Expo with PowerSync for offline sync. Dual auth: Shopify Customer Account API OAuth for Shopify customers, Supabase Auth (email/magic link) for standalone mobile users. `profiles.shopify_customer_id` is already nullable to support this.
-2. **HIPAA Compliance**: Upgrade Supabase to Pro, sign BAA, encryption at rest
-3. **Healthcare Integrations**: Apple HealthKit, FHIR API for EHR import
+1. **Mobile App**: React Native + Expo + PowerSync. Dual auth (Shopify OAuth + Supabase email/magic link).
+2. **HIPAA Compliance**: Supabase Pro, BAA, encryption at rest.
+3. **Healthcare Integrations**: Apple HealthKit, FHIR API.
 
 ## Disclaimer
 

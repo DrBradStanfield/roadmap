@@ -243,16 +243,29 @@ export function HealthTool() {
 
     const validation = validateHealthInputs(effectiveInputs);
 
+    let inputsForCalc = effectiveInputs;
+    let errors: Record<string, string> | null = null;
+
     if (!validation.success && validation.errors) {
-      return { results: null, isValid: false, validationErrors: getValidationErrors(validation.errors) };
+      errors = getValidationErrors(validation.errors);
+      // Strip invalid fields (all optional) so remaining suggestions still show
+      const invalidFields = new Set(validation.errors.issues.map((i) => i.path[0] as string));
+      if (invalidFields.has('heightCm') || invalidFields.has('sex')) {
+        return { results: null, isValid: false, validationErrors: errors };
+      }
+      const sanitized = { ...effectiveInputs };
+      for (const field of invalidFields) {
+        (sanitized as Record<string, unknown>)[field] = undefined;
+      }
+      inputsForCalc = sanitized;
     }
 
     const healthResults = calculateHealthResults(
-      effectiveInputs as HealthInputs,
+      inputsForCalc as HealthInputs,
       unitSystem,
       medicationsToInputs(medications),
     );
-    return { results: healthResults, isValid: true, validationErrors: null };
+    return { results: healthResults, isValid: true, validationErrors: errors };
   }, [effectiveInputs, unitSystem, medications]);
 
   useEffect(() => {
