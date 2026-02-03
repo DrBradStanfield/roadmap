@@ -26,6 +26,7 @@ export const FIELD_TO_METRIC: Record<string, string> = {
   systolicBp: 'systolic_bp',
   diastolicBp: 'diastolic_bp',
   apoB: 'apob',
+  creatinine: 'creatinine',
 };
 
 /** Reverse mapping: metric_type → HealthInputs field name. */
@@ -41,6 +42,7 @@ export const METRIC_TO_FIELD: Record<string, keyof HealthInputs> = {
   systolic_bp: 'systolicBp',
   diastolic_bp: 'diastolicBp',
   apob: 'apoB',
+  creatinine: 'creatinine',
 };
 
 /**
@@ -59,6 +61,7 @@ export const FIELD_METRIC_MAP: Record<string, MetricType> = {
   systolicBp: 'systolic_bp',
   diastolicBp: 'diastolic_bp',
   apoB: 'apob',
+  creatinine: 'creatinine',
 };
 
 /**
@@ -74,7 +77,7 @@ export const PREFILL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
  * These are immutable time-series measurements that accumulate over time.
  */
 export const LONGITUDINAL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
-  'weightKg', 'waistCm', 'hba1c', 'apoB', 'ldlC', 'totalCholesterol', 'hdlC',
+  'weightKg', 'waistCm', 'hba1c', 'creatinine', 'apoB', 'ldlC', 'totalCholesterol', 'hdlC',
   'triglycerides', 'systolicBp', 'diastolicBp',
 ];
 

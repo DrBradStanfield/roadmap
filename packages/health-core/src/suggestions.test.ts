@@ -47,58 +47,20 @@ describe('generateSuggestions', () => {
   });
 
   describe('BMI suggestions', () => {
-    it('generates underweight suggestion for BMI < 18.5', () => {
-      const { inputs, results } = createTestData({}, { bmi: 17.5 });
-      const suggestions = generateSuggestions(inputs, results);
+    it('does not generate BMI suggestion cards (status shown on snapshot tile)', () => {
+      const { inputs: i1, results: r1 } = createTestData({}, { bmi: 17.5 });
+      const { inputs: i2, results: r2 } = createTestData({}, { bmi: 27.5 });
+      const { inputs: i3, results: r3 } = createTestData({}, { bmi: 32 });
 
-      const bmiSuggestion = suggestions.find(s => s.id === 'bmi-underweight');
-      expect(bmiSuggestion).toBeDefined();
-      expect(bmiSuggestion?.priority).toBe('attention');
-      expect(bmiSuggestion?.discussWithDoctor).toBe(true);
-    });
-
-    it('generates overweight suggestion for BMI 25-29.9', () => {
-      const { inputs, results } = createTestData({}, { bmi: 27.5 });
-      const suggestions = generateSuggestions(inputs, results);
-
-      const bmiSuggestion = suggestions.find(s => s.id === 'bmi-overweight');
-      expect(bmiSuggestion).toBeDefined();
-      expect(bmiSuggestion?.priority).toBe('info');
-      expect(bmiSuggestion?.discussWithDoctor).toBe(false);
-    });
-
-    it('generates obese suggestion for BMI >= 30', () => {
-      const { inputs, results } = createTestData({}, { bmi: 32 });
-      const suggestions = generateSuggestions(inputs, results);
-
-      const bmiSuggestion = suggestions.find(s => s.id === 'bmi-obese');
-      expect(bmiSuggestion).toBeDefined();
-      expect(bmiSuggestion?.priority).toBe('attention');
-      expect(bmiSuggestion?.discussWithDoctor).toBe(true);
-    });
-
-    it('does not generate BMI suggestion for normal BMI', () => {
-      const { inputs, results } = createTestData({}, { bmi: 22 });
-      const suggestions = generateSuggestions(inputs, results);
-
-      const bmiSuggestions = suggestions.filter(s => s.id.startsWith('bmi-'));
-      expect(bmiSuggestions.length).toBe(0);
+      expect(generateSuggestions(i1, r1).filter(s => s.id.startsWith('bmi-')).length).toBe(0);
+      expect(generateSuggestions(i2, r2).filter(s => s.id.startsWith('bmi-')).length).toBe(0);
+      expect(generateSuggestions(i3, r3).filter(s => s.id.startsWith('bmi-')).length).toBe(0);
     });
   });
 
   describe('Waist-to-height ratio suggestions', () => {
-    it('generates suggestion for ratio > 0.5', () => {
+    it('does not generate waist-to-height suggestion card (status shown on snapshot tile)', () => {
       const { inputs, results } = createTestData({}, { waistToHeightRatio: 0.55 });
-      const suggestions = generateSuggestions(inputs, results);
-
-      const waistSuggestion = suggestions.find(s => s.id === 'waist-height-elevated');
-      expect(waistSuggestion).toBeDefined();
-      expect(waistSuggestion?.priority).toBe('attention');
-      expect(waistSuggestion?.discussWithDoctor).toBe(true);
-    });
-
-    it('does not generate suggestion for ratio <= 0.5', () => {
-      const { inputs, results } = createTestData({}, { waistToHeightRatio: 0.48 });
       const suggestions = generateSuggestions(inputs, results);
 
       const waistSuggestion = suggestions.find(s => s.id === 'waist-height-elevated');

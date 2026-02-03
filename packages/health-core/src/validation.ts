@@ -6,7 +6,7 @@ import { z } from 'zod';
 export const METRIC_TYPES = [
   'height', 'weight', 'waist',
   'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
-  'systolic_bp', 'diastolic_bp', 'apob',
+  'systolic_bp', 'diastolic_bp', 'apob', 'creatinine',
 ] as const;
 
 export type MetricTypeValue = typeof METRIC_TYPES[number];
@@ -82,6 +82,11 @@ export const healthInputSchema = z.object({
     .number()
     .min(0, 'ApoB must be positive')
     .max(3, 'ApoB must be at most 3 g/L')
+    .optional(),
+  creatinine: z
+    .number()
+    .min(10, 'Creatinine must be at least 10 µmol/L')
+    .max(2650, 'Creatinine must be at most 2650 µmol/L')
     .optional(),
   systolicBp: z
     .number()

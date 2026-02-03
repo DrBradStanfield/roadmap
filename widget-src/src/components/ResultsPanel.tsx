@@ -4,6 +4,9 @@ import {
   type UnitSystem,
   formatDisplayValue,
   getDisplayLabel,
+  APOB_THRESHOLDS,
+  NON_HDL_THRESHOLDS,
+  LDL_THRESHOLDS,
 } from '@roadmap/health-core';
 
 // Auth state type (matches HealthTool)
@@ -23,6 +26,25 @@ interface ResultsPanelProps {
   isSavingLongitudinal?: boolean;
   onDeleteData?: () => void;
   isDeleting?: boolean;
+}
+
+function getBmiStatus(bmi: number): { label: string; className: string } {
+  if (bmi < 18.5) return { label: 'Underweight', className: 'status-attention' };
+  if (bmi < 25) return { label: 'Normal', className: 'status-normal' };
+  if (bmi < 30) return { label: 'Overweight', className: 'status-info' };
+  return { label: 'Obese', className: 'status-attention' };
+}
+
+function getWaistToHeightStatus(ratio: number): { label: string; className: string } | null {
+  if (ratio >= 0.5) return { label: 'Elevated', className: 'status-attention' };
+  return { label: 'Healthy', className: 'status-normal' };
+}
+
+function getLipidStatus(value: number, thresholds: { borderline: number; high: number; veryHigh: number }): { label: string; className: string } {
+  if (value >= thresholds.veryHigh) return { label: 'Very High', className: 'status-urgent' };
+  if (value >= thresholds.high) return { label: 'High', className: 'status-attention' };
+  if (value >= thresholds.borderline) return { label: 'Borderline', className: 'status-info' };
+  return { label: 'Optimal', className: 'status-normal' };
 }
 
 function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
@@ -148,25 +170,57 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
             <span className="stat-label">Protein Target</span>
             <span className="stat-value">{results.proteinTarget}g/day</span>
           </div>
-          {results.bmi !== undefined && (
-            <div className="stat-card">
-              <span className="stat-label">BMI</span>
-              <span className="stat-value">{results.bmi}</span>
-            </div>
-          )}
+          {results.bmi !== undefined && (() => {
+            const status = getBmiStatus(results.bmi);
+            return (
+              <div className="stat-card">
+                <span className="stat-label">BMI</span>
+                <span className="stat-value">{results.bmi}</span>
+                <span className={`stat-status ${status.className}`}>{status.label}</span>
+              </div>
+            );
+          })()}
 
-          {results.nonHdlCholesterol !== undefined && (
-            <div className="stat-card">
-              <span className="stat-label">Non-HDL Cholesterol</span>
-              <span className="stat-value">{formatDisplayValue('ldl', results.nonHdlCholesterol, unitSystem)} {getDisplayLabel('ldl', unitSystem)}</span>
-            </div>
-          )}
-          {results.waistToHeightRatio !== undefined && (
-            <div className="stat-card">
-              <span className="stat-label">Waist-to-Height</span>
-              <span className="stat-value">{results.waistToHeightRatio}</span>
-            </div>
-          )}
+          {/* Lipid tile: ApoB → Non-HDL → LDL cascade */}
+          {results.apoB !== undefined ? (() => {
+            const status = getLipidStatus(results.apoB, APOB_THRESHOLDS);
+            return (
+              <div className="stat-card">
+                <span className="stat-label">ApoB</span>
+                <span className="stat-value">{formatDisplayValue('apob', results.apoB, unitSystem)} {getDisplayLabel('apob', unitSystem)}</span>
+                <span className={`stat-status ${status.className}`}>{status.label}</span>
+              </div>
+            );
+          })() : results.nonHdlCholesterol !== undefined ? (() => {
+            const status = getLipidStatus(results.nonHdlCholesterol, NON_HDL_THRESHOLDS);
+            return (
+              <div className="stat-card">
+                <span className="stat-label">Non-HDL Cholesterol</span>
+                <span className="stat-value">{formatDisplayValue('ldl', results.nonHdlCholesterol, unitSystem)} {getDisplayLabel('ldl', unitSystem)}</span>
+                <span className={`stat-status ${status.className}`}>{status.label}</span>
+              </div>
+            );
+          })() : results.ldlC !== undefined ? (() => {
+            const status = getLipidStatus(results.ldlC, LDL_THRESHOLDS);
+            return (
+              <div className="stat-card">
+                <span className="stat-label">LDL Cholesterol</span>
+                <span className="stat-value">{formatDisplayValue('ldl', results.ldlC, unitSystem)} {getDisplayLabel('ldl', unitSystem)}</span>
+                <span className={`stat-status ${status.className}`}>{status.label}</span>
+              </div>
+            );
+          })() : null}
+
+          {results.waistToHeightRatio !== undefined && (() => {
+            const status = getWaistToHeightStatus(results.waistToHeightRatio);
+            return (
+              <div className="stat-card">
+                <span className="stat-label">Waist-to-Height</span>
+                <span className="stat-value">{results.waistToHeightRatio}</span>
+                {status && <span className={`stat-status ${status.className}`}>{status.label}</span>}
+              </div>
+            );
+          })()}
         </div>
       </section>
 
@@ -187,7 +241,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
 
         {attentionSuggestions.length > 0 && (
           <div className="suggestions-group">
-            <h4 className="suggestions-group-title attention">Worth Discussing</h4>
+            <h4 className="suggestions-group-title attention">Next Steps</h4>
             {attentionSuggestions.map((s) => (
               <SuggestionCard key={s.id} suggestion={s} />
             ))}
@@ -196,7 +250,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
 
         {infoSuggestions.length > 0 && (
           <div className="suggestions-group">
-            <h4 className="suggestions-group-title info">For Your Information</h4>
+            <h4 className="suggestions-group-title info">Foundation</h4>
             {infoSuggestions.map((s) => (
               <SuggestionCard key={s.id} suggestion={s} />
             ))}

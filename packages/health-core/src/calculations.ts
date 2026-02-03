@@ -58,6 +58,25 @@ export function calculateAge(birthYear: number, birthMonth: number): number {
 }
 
 /**
+ * Calculate eGFR using the CKD-EPI 2021 equation (race-free).
+ * Creatinine input is in µmol/L (SI canonical). Internally converted to mg/dL.
+ * Returns eGFR in mL/min/1.73m².
+ */
+export function calculateEGFR(creatinineUmolL: number, age: number, sex: 'male' | 'female'): number {
+  const cr = creatinineUmolL / 88.4; // convert to mg/dL
+
+  if (sex === 'female') {
+    const kappa = 0.7;
+    const alpha = cr <= kappa ? -0.241 : -1.200;
+    return 142 * Math.pow(cr / kappa, alpha) * Math.pow(0.9938, age) * 1.012;
+  } else {
+    const kappa = 0.9;
+    const alpha = cr <= kappa ? -0.302 : -1.200;
+    return 142 * Math.pow(cr / kappa, alpha) * Math.pow(0.9938, age);
+  }
+}
+
+/**
  * Get BMI category
  */
 export function getBMICategory(bmi: number): string {
@@ -101,9 +120,22 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
     results.nonHdlCholesterol = Math.round(nonHdl * 10) / 10;
   }
 
+  // Pass through lipid values for snapshot tile cascade
+  if (inputs.apoB !== undefined) {
+    results.apoB = inputs.apoB;
+  }
+  if (inputs.ldlC !== undefined) {
+    results.ldlC = inputs.ldlC;
+  }
+
   // Calculate age if birth info is provided
   if (inputs.birthYear && inputs.birthMonth) {
     results.age = calculateAge(inputs.birthYear, inputs.birthMonth);
+  }
+
+  // Calculate eGFR if creatinine + age + sex are available
+  if (inputs.creatinine !== undefined && results.age !== undefined) {
+    results.eGFR = Math.round(calculateEGFR(inputs.creatinine, results.age, inputs.sex));
   }
 
   // Generate personalized suggestions based on all inputs and results

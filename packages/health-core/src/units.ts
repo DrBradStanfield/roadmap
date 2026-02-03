@@ -25,7 +25,8 @@ export type MetricType =
 
   | 'systolic_bp'
   | 'diastolic_bp'
-  | 'apob';
+  | 'apob'
+  | 'creatinine';
 
 /** SI = metric + mmol/L (NZ, UK, AU, EU). Conventional = imperial + mg/dL (US). */
 export type UnitSystem = 'si' | 'conventional';
@@ -57,6 +58,7 @@ const CHOLESTEROL_FACTOR = 38.67; // LDL, HDL, total cholesterol
 const TRIGLYCERIDES_FACTOR = 88.57;
 
 const APOB_FACTOR = 100; // g/L ↔ mg/dL
+const CREATININE_FACTOR = 88.4; // µmol/L ↔ mg/dL
 
 // HbA1c: NGSP % ↔ IFCC mmol/mol
 // NGSP = 0.09148 × IFCC + 2.152
@@ -264,6 +266,24 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     },
     decimalPlaces: { si: 2, conventional: 0 },
   },
+
+  creatinine: {
+    canonical: 'µmol/L',
+    label: { si: 'µmol/L', conventional: 'mg/dL' },
+    toCanonical: {
+      si: identity,
+      conventional: (v) => v * CREATININE_FACTOR,
+    },
+    fromCanonical: {
+      si: identity,
+      conventional: (v) => v / CREATININE_FACTOR,
+    },
+    validationRange: {
+      si: { min: 10, max: 2650 }, // ~0.1-30 mg/dL
+      conventional: { min: 0.1, max: 30 },
+    },
+    decimalPlaces: { si: 0, conventional: 2 },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -392,6 +412,14 @@ export const BP_THRESHOLDS = {
   stage2Dia: 90,
   crisisSys: 180,
   crisisDia: 120,
+} as const;
+
+/** eGFR thresholds in mL/min/1.73m² */
+export const EGFR_THRESHOLDS = {
+  mildlyDecreased: 60,   // G2: mildly decreased
+  mildToModerate: 45,    // G3a: mild-to-moderate decrease
+  moderateToSevere: 30,  // G3b: moderate-to-severe decrease
+  severelyDecreased: 15, // G4: severely decreased
 } as const;
 
 /** ApoB thresholds in g/L */

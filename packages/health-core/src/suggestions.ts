@@ -12,6 +12,7 @@ import {
   NON_HDL_THRESHOLDS,
   BP_THRESHOLDS,
   APOB_THRESHOLDS,
+  EGFR_THRESHOLDS,
 } from './units';
 
 /** On-treatment lipid targets (SI canonical units) */
@@ -103,6 +104,18 @@ export function generateSuggestions(
     discussWithDoctor: false,
   });
 
+  // High-potassium diet — only when eGFR ≥ 45 (safe kidney function)
+  if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildToModerate) {
+    suggestions.push({
+      id: 'high-potassium',
+      category: 'nutrition',
+      priority: 'info',
+      title: 'Increase potassium-rich foods',
+      description: 'Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.',
+      discussWithDoctor: true,
+    });
+  }
+
   // Sleep — always show
   suggestions.push({
     id: 'sleep',
@@ -113,38 +126,8 @@ export function generateSuggestions(
     discussWithDoctor: false,
   });
 
-  // BMI-based suggestions
+  // GLP-1 medication suggestion for weight management (BMI status shown on snapshot tile)
   if (results.bmi !== undefined) {
-    if (results.bmi < 18.5) {
-      suggestions.push({
-        id: 'bmi-underweight',
-        category: 'general',
-        priority: 'attention',
-        title: 'BMI indicates underweight',
-        description: `Your BMI of ${results.bmi} is below the healthy range (18.5-24.9). Consider discussing nutrition strategies to reach a healthy weight.`,
-        discussWithDoctor: true,
-      });
-    } else if (results.bmi >= 30) {
-      suggestions.push({
-        id: 'bmi-obese',
-        category: 'general',
-        priority: 'attention',
-        title: 'BMI in obese range',
-        description: `Your BMI of ${results.bmi} is in the obese range (≥30). This is associated with increased health risks. Consider discussing weight management strategies.`,
-        discussWithDoctor: true,
-      });
-    } else if (results.bmi >= 25) {
-      suggestions.push({
-        id: 'bmi-overweight',
-        category: 'general',
-        priority: 'info',
-        title: 'BMI indicates overweight',
-        description: `Your BMI of ${results.bmi} is in the overweight range (25-29.9). Lifestyle modifications may help reduce health risks.`,
-        discussWithDoctor: false,
-      });
-    }
-
-    // GLP-1 medication suggestion for weight management
     if (results.bmi > 27) {
       suggestions.push({
         id: 'weight-glp1',
@@ -161,25 +144,13 @@ export function generateSuggestions(
         suggestions.push({
           id: 'weight-glp1',
           category: 'medication',
-          priority: 'info',
+          priority: 'attention',
           title: 'Weight management medication',
           description: 'With elevated BMI and waist measurements, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
           discussWithDoctor: true,
         });
       }
     }
-  }
-
-  // Waist-to-height ratio
-  if (results.waistToHeightRatio !== undefined && results.waistToHeightRatio > 0.5) {
-    suggestions.push({
-      id: 'waist-height-elevated',
-      category: 'general',
-      priority: 'attention',
-      title: 'Elevated waist-to-height ratio',
-      description: `Your ratio of ${results.waistToHeightRatio} exceeds 0.5, which is associated with increased cardiometabolic risk. Reducing waist circumference can improve health outcomes.`,
-      discussWithDoctor: true,
-    });
   }
 
   // HbA1c suggestions (thresholds in mmol/mol IFCC)

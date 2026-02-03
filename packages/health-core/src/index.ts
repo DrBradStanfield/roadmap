@@ -23,6 +23,7 @@ export {
   calculateAge,
   getBMICategory,
   calculateHealthResults,
+  calculateEGFR,
 } from './calculations';
 
 // Suggestions
@@ -77,6 +78,8 @@ export {
   TOTAL_CHOLESTEROL_THRESHOLDS,
   NON_HDL_THRESHOLDS,
   BP_THRESHOLDS,
+  APOB_THRESHOLDS,
+  EGFR_THRESHOLDS,
   type MetricType,
   type UnitSystem,
   type UnitDef,

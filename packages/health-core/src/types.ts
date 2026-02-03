@@ -21,6 +21,7 @@ export interface HealthInputs {
   hdlC?: number;        // mmol/L
   triglycerides?: number; // mmol/L
   apoB?: number;          // g/L
+  creatinine?: number;  // µmol/L
   systolicBp?: number;  // mmHg
   diastolicBp?: number; // mmHg
   // User preference (stored as 1=si, 2=conventional in DB)
@@ -36,6 +37,9 @@ export interface HealthResults {
   bmi?: number;
   waistToHeightRatio?: number;
   nonHdlCholesterol?: number; // mmol/L (total cholesterol - HDL)
+  apoB?: number;              // g/L (passthrough from inputs)
+  ldlC?: number;              // mmol/L (passthrough from inputs)
+  eGFR?: number;              // mL/min/1.73m² (CKD-EPI 2021)
   age?: number;
   suggestions: Suggestion[];
 }
