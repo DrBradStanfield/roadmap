@@ -106,6 +106,7 @@ All values in the database and in `HealthInputs` are stored in **SI canonical un
 | hdl | mmol/L | mg/dL | × 38.67 |
 | triglycerides | mmol/L | mg/dL | × 88.57 |
 | apob | g/L | mg/dL | × 100 |
+| creatinine | µmol/L | mg/dL | ÷ 88.4 |
 | systolic_bp | mmHg | mmHg | (same) |
 | diastolic_bp | mmHg | mmHg | (same) |
 
@@ -122,7 +123,7 @@ Demographics and identity fields are stored as columns on the `profiles` table:
 Health input fields are split into two categories defined in `packages/health-core/src/mappings.ts`:
 
 - **`PREFILL_FIELDS`** (`heightCm`, `sex`, `birthYear`, `birthMonth`): Demographics and height. Pre-filled from saved data, editable in-place. Auto-saved with 500ms debounce for logged-in users.
-- **`LONGITUDINAL_FIELDS`** (`weightKg`, `waistCm`, `hba1c`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `systolicBp`, `diastolicBp`): Time-series metrics. Input fields start **empty** with a clickable previous-value label underneath in the format **"value unit · date"** (e.g., "80 kg · Feb 2, 2026"). Clicking the label opens the history page filtered to that metric (`/pages/health-history?metric=weight`). Users enter new values and click "Save New Values" to create new immutable records. After save, fields clear and previous labels update. **All future longitudinal fields must follow this same pattern**: empty input, clickable "value unit · date" label linking to history, explicit save button.
+- **`LONGITUDINAL_FIELDS`** (`weightKg`, `waistCm`, `hba1c`, `creatinine`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `systolicBp`, `diastolicBp`): Time-series metrics. Input fields start **empty** with a clickable previous-value label underneath in the format **"value unit · date"** (e.g., "80 kg · Feb 2, 2026"). Clicking the label opens the history page filtered to that metric (`/pages/health-history?metric=weight`). Users enter new values and click "Save New Values" to create new immutable records. After save, fields clear and previous labels update. **All future longitudinal fields must follow this same pattern**: empty input, clickable "value unit · date" label linking to history, explicit save button.
 
 This design reflects the immutable measurement storage model — longitudinal values are never edited, only appended. Results and suggestions use an `effectiveInputs` pattern that merges current form inputs with fallback to previous measurements, so results are always up-to-date even before the user enters new values.
 
@@ -213,7 +214,7 @@ Logged-in Shopify customer:
 
 Uses **Supabase** (PostgreSQL). Tables:
 - `profiles` — User accounts (shopify_customer_id is nullable — NULL for future mobile-only users without Shopify accounts, email) + demographic columns (sex, birth_year, birth_month, unit_system)
-- `health_measurements` — Immutable time-series health records (metric_type, value in SI, recorded_at) for the 11 health metrics only
+- `health_measurements` — Immutable time-series health records (metric_type, value in SI, recorded_at) for the 12 health metrics only
 - `medications` — Mutable medication records (medication_key, value), UNIQUE per (user_id, medication_key), upserted on change. Keys: `statin` (tier values: `none`, `tier_1`–`tier_4`, `not_tolerated`), `ezetimibe` (`yes`/`no`/`not_tolerated`), `statin_increase` (`not_yet`/`not_tolerated`), `pcsk9i` (`yes`/`no`/`not_tolerated`)
 - `audit_logs` — HIPAA audit trail for all write operations (user_id nullable for anonymization after account deletion)
 
@@ -249,20 +250,11 @@ Sentry captures errors from both the widget (client-side) and the Remix backend 
 | Protein Target | 1.2 × IBW (grams/day) |
 | BMI | weight_kg / (height_m)² |
 | Waist-to-Height | waist_cm / height_cm |
+| eGFR (CKD-EPI 2021) | Female, Cr≤0.7: 142×(Cr/0.7)^(-0.241)×0.9938^age×1.012; Female, Cr>0.7: 142×(Cr/0.7)^(-1.200)×0.9938^age×1.012; Male, Cr≤0.9: 142×(Cr/0.9)^(-0.302)×0.9938^age; Male, Cr>0.9: 142×(Cr/0.9)^(-1.200)×0.9938^age (Cr in mg/dL, stored as µmol/L ÷ 88.4) |
 
 ## Clinical Thresholds
 
 All thresholds are defined as constants in `packages/health-core/src/units.ts` and compared in SI canonical units.
-
-- **HbA1c**: Normal <39 mmol/mol (<5.7%), Prediabetes 39-48 (5.7-6.4%), Diabetes ≥48 (≥6.5%)
-- **LDL**: Optimal <3.36 mmol/L (<130 mg/dL), Borderline 3.36-4.14 (130-159), High 4.14-4.91 (160-189), Very High ≥4.91 (≥190)
-- **Total Cholesterol**: Desirable <5.17 mmol/L (<200 mg/dL), Borderline 5.17-6.21 (200-239), High ≥6.21 (≥240)
-- **Non-HDL Cholesterol**: Optimal <3.36 mmol/L (<130 mg/dL), Borderline 3.36-4.14 (130-159), High 4.14-4.91 (160-189), Very High ≥4.91 (≥190)
-- **HDL**: Low <1.03 mmol/L (<40 mg/dL men), <1.29 mmol/L (<50 mg/dL women)
-- **Triglycerides**: Normal <1.69 mmol/L (<150 mg/dL), Borderline 1.69-2.26 (150-199), High 2.26-5.64 (200-499), Very High ≥5.64 (≥500)
-- **ApoB**: Optimal <0.5 g/L (<50 mg/dL), Borderline 0.5-0.7 (50-70), High 0.7-1.0 (70-100), Very High ≥1.0 (≥100)
-- **Blood Pressure**: Normal <120/80, Elevated 120-129/<80, Stage 1 130-139/80-89, Stage 2 ≥140/≥90, Crisis ≥180/≥120
-- **Waist-to-Height**: Healthy <0.5, Elevated ≥0.5
 
 ## Suggestion Categories
 
@@ -273,6 +265,7 @@ Suggestions are generated by `generateSuggestions()` in `suggestions.ts` and acc
 - Low salt <2,300mg/day (nutrition) — only when SBP ≥ 116 mmHg
 - Fiber 25-35g/day (nutrition) — always shown, `discussWithDoctor: true`
 - Exercise 150+ min cardio + 2-3 resistance/week (exercise) — always shown
+- High potassium 3,500-5,000mg/day (nutrition) — only when eGFR ≥ 45, `discussWithDoctor: true`
 - Sleep 7-9 hours (sleep) — always shown
 
 **Conditional — GLP-1 weight management:**
@@ -348,6 +341,8 @@ The widget uses standard HTML/React and calls health-core logic for all calculat
 
 ## Testing
 
+**Every new feature or behavior change must include corresponding unit tests.** If you add a new calculation, suggestion, field mapping, or modify existing logic, add or update tests in the relevant test file. Run `npm test` to verify all tests pass before considering the work complete.
+
 Unit tests cover health calculations, suggestions, unit conversions, field mappings, and Supabase helpers:
 
 ```bash
@@ -356,9 +351,9 @@ npm run test:watch    # Watch mode
 ```
 
 Test files:
-- `packages/health-core/src/calculations.test.ts` — IBW, BMI, protein, age, health results (27 tests)
-- `packages/health-core/src/suggestions.test.ts` — All suggestion categories, medication cascade, unit system display (65 tests)
-- `packages/health-core/src/units.test.ts` — Round-trip conversions, clinical values, thresholds, formatting, locale (52 tests)
+- `packages/health-core/src/calculations.test.ts` — IBW, BMI, protein, age, eGFR, health results (34 tests)
+- `packages/health-core/src/suggestions.test.ts` — All suggestion categories, medication cascade, potassium/eGFR, unit system display (70 tests)
+- `packages/health-core/src/units.test.ts` — Round-trip conversions, clinical values, thresholds, formatting, locale (55 tests)
 - `packages/health-core/src/mappings.test.ts` — Field↔metric mappings, measurementsToInputs, diffInputsToMeasurements, medicationsToInputs, field categories, unit_system encoding (24 tests)
 - `app/lib/supabase.server.test.ts` — toApiMeasurement helper (3 tests)
 

@@ -7,6 +7,7 @@ import {
   calculateAge,
   getBMICategory,
   calculateHealthResults,
+  calculateEGFR,
 } from './calculations';
 
 describe('calculateIBW (Ideal Body Weight)', () => {
@@ -151,6 +152,40 @@ describe('getBMICategory', () => {
   });
 });
 
+describe('calculateEGFR (CKD-EPI 2021)', () => {
+  // Reference values verified against NIDDK CKD-EPI calculator
+  it('calculates eGFR for 50yo male with creatinine 80 µmol/L (~0.9 mg/dL)', () => {
+    const egfr = calculateEGFR(80, 50, 'male');
+    // 0.9 mg/dL is at the kappa boundary for males
+    expect(egfr).toBeGreaterThan(90);
+    expect(egfr).toBeLessThan(105);
+  });
+
+  it('calculates eGFR for 50yo female with creatinine 62 µmol/L (~0.7 mg/dL)', () => {
+    const egfr = calculateEGFR(62, 50, 'female');
+    // 0.7 mg/dL is at the kappa boundary for females
+    expect(egfr).toBeGreaterThan(90);
+    expect(egfr).toBeLessThan(115);
+  });
+
+  it('returns lower eGFR for high creatinine', () => {
+    const egfr = calculateEGFR(200, 50, 'male'); // ~2.26 mg/dL
+    expect(egfr).toBeLessThan(35);
+  });
+
+  it('returns lower eGFR for older age', () => {
+    const young = calculateEGFR(80, 30, 'male');
+    const old = calculateEGFR(80, 80, 'male');
+    expect(old).toBeLessThan(young);
+  });
+
+  it('produces different results for male vs female', () => {
+    const male = calculateEGFR(80, 50, 'male');
+    const female = calculateEGFR(80, 50, 'female');
+    expect(male).not.toEqual(female);
+  });
+});
+
 describe('calculateHealthResults', () => {
   it('calculates basic results with minimum inputs', () => {
     const results = calculateHealthResults({
@@ -158,6 +193,7 @@ describe('calculateHealthResults', () => {
       sex: 'male',
     });
 
+    expect(results.heightCm).toBe(175);
     expect(results.idealBodyWeight).toBeCloseTo(70.6, 0);
     expect(results.proteinTarget).toBe(85);
     expect(results.bmi).toBeUndefined();
@@ -209,6 +245,62 @@ describe('calculateHealthResults', () => {
 
     const decimalPlaces = (results.bmi!.toString().split('.')[1] || '').length;
     expect(decimalPlaces).toBeLessThanOrEqual(1);
+  });
+
+  it('includes eGFR when creatinine + age are available', () => {
+    const currentYear = new Date().getFullYear();
+    const results = calculateHealthResults({
+      heightCm: 175,
+      sex: 'male',
+      birthYear: currentYear - 50,
+      birthMonth: 1,
+      creatinine: 80, // µmol/L
+    });
+
+    expect(results.eGFR).toBeDefined();
+    expect(results.eGFR).toBeGreaterThan(85);
+    expect(results.eGFR).toBeLessThan(110);
+    expect(Number.isInteger(results.eGFR)).toBe(true);
+  });
+
+  it('does not include eGFR without birth info', () => {
+    const results = calculateHealthResults({
+      heightCm: 175,
+      sex: 'male',
+      creatinine: 80,
+    });
+
+    expect(results.eGFR).toBeUndefined();
+  });
+
+  it('passes through apoB when provided', () => {
+    const results = calculateHealthResults({
+      heightCm: 175,
+      sex: 'male',
+      apoB: 0.6,
+    });
+
+    expect(results.apoB).toBe(0.6);
+  });
+
+  it('passes through ldlC when provided', () => {
+    const results = calculateHealthResults({
+      heightCm: 175,
+      sex: 'male',
+      ldlC: 2.5,
+    });
+
+    expect(results.ldlC).toBe(2.5);
+  });
+
+  it('does not include apoB or ldlC when not provided', () => {
+    const results = calculateHealthResults({
+      heightCm: 175,
+      sex: 'male',
+    });
+
+    expect(results.apoB).toBeUndefined();
+    expect(results.ldlC).toBeUndefined();
   });
 
   it('rounds waist-to-height ratio to 2 decimal places', () => {

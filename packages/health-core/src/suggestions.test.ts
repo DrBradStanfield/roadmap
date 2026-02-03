@@ -23,6 +23,7 @@ function createTestData(
   };
 
   const results: HealthResults = {
+    heightCm: 175,
     idealBodyWeight: 70.6,
     proteinTarget: 85,
     suggestions: [],
@@ -562,6 +563,39 @@ describe('generateSuggestions', () => {
 
       const ldlSuggestion = suggestions.find(s => s.id === 'ldl-very-high');
       expect(ldlSuggestion?.description).toContain('mmol/L');
+    });
+  });
+
+  describe('High-potassium diet suggestion (eGFR-based)', () => {
+    it('suggests high potassium when eGFR >= 45', () => {
+      const { inputs, results } = createTestData({}, { eGFR: 90 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'high-potassium')).toBeDefined();
+    });
+
+    it('suggests high potassium at eGFR exactly 45', () => {
+      const { inputs, results } = createTestData({}, { eGFR: 45 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'high-potassium')).toBeDefined();
+    });
+
+    it('does not suggest high potassium when eGFR < 45', () => {
+      const { inputs, results } = createTestData({}, { eGFR: 44 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'high-potassium')).toBeUndefined();
+    });
+
+    it('does not suggest high potassium when eGFR is undefined', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'high-potassium')).toBeUndefined();
+    });
+
+    it('has discussWithDoctor flag set', () => {
+      const { inputs, results } = createTestData({}, { eGFR: 90 });
+      const suggestions = generateSuggestions(inputs, results);
+      const potassium = suggestions.find(s => s.id === 'high-potassium');
+      expect(potassium?.discussWithDoctor).toBe(true);
     });
   });
 });

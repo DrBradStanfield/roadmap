@@ -6,10 +6,6 @@
 --   - Anon key + custom JWT (createUserClient) for all data queries
 -- RLS policies use auth.uid() to scope every query to the authenticated user.
 
--- ===== Drop old table =====
-
-DROP TABLE IF EXISTS health_profiles;
-
 -- ===== Create profiles table =====
 
 CREATE TABLE IF NOT EXISTS profiles (
@@ -55,6 +51,7 @@ CREATE TABLE IF NOT EXISTS health_measurements (
       WHEN 'systolic_bp'     THEN value BETWEEN 60 AND 250
       WHEN 'diastolic_bp'    THEN value BETWEEN 40 AND 150
       WHEN 'apob'            THEN value BETWEEN 0 AND 3
+      WHEN 'creatinine'      THEN value BETWEEN 10 AND 2650
       ELSE false
     END
   )
@@ -89,6 +86,7 @@ ALTER TABLE health_measurements ADD CONSTRAINT value_range CHECK (
     WHEN 'systolic_bp'     THEN value BETWEEN 60 AND 250
     WHEN 'diastolic_bp'    THEN value BETWEEN 40 AND 150
     WHEN 'apob'            THEN value BETWEEN 0 AND 3
+    WHEN 'creatinine'      THEN value BETWEEN 10 AND 2650
     ELSE false
   END
 );

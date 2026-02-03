@@ -165,10 +165,12 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
           <div className="stat-card">
             <span className="stat-label">Ideal Body Weight</span>
             <span className="stat-value">{ibwDisplay} {weightUnit}</span>
+            <span className="stat-status status-normal">for {formatDisplayValue('height', results.heightCm, unitSystem)} {getDisplayLabel('height', unitSystem)} height</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Protein Target</span>
             <span className="stat-value">{results.proteinTarget}g/day</span>
+            <span className="stat-status status-normal">1.2g per kg IBW</span>
           </div>
           {results.bmi !== undefined && (() => {
             const status = getBmiStatus(results.bmi);
@@ -210,6 +212,22 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
               </div>
             );
           })() : null}
+
+          {results.eGFR !== undefined && (() => {
+            const status = results.eGFR >= 90 ? { label: 'Normal', className: 'status-normal' }
+              : results.eGFR >= 60 ? { label: 'Mildly Decreased', className: 'status-info' }
+              : results.eGFR >= 45 ? { label: 'Mild-Moderate Decrease', className: 'status-attention' }
+              : results.eGFR >= 30 ? { label: 'Moderate-Severe Decrease', className: 'status-attention' }
+              : results.eGFR >= 15 ? { label: 'Severely Decreased', className: 'status-urgent' }
+              : { label: 'Kidney Failure', className: 'status-urgent' };
+            return (
+              <div className="stat-card">
+                <span className="stat-label">eGFR</span>
+                <span className="stat-value">{results.eGFR} mL/min</span>
+                <span className={`stat-status ${status.className}`}>{status.label}</span>
+              </div>
+            );
+          })()}
 
           {results.waistToHeightRatio !== undefined && (() => {
             const status = getWaistToHeightStatus(results.waistToHeightRatio);

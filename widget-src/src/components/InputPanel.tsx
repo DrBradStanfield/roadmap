@@ -42,6 +42,14 @@ const BLOOD_TEST_FIELDS: FieldConfig[] = [
     hint: { si: 'Normal: <39 mmol/mol', conv: 'Normal: <5.7%' },
   },
   {
+    field: 'creatinine', name: 'Creatinine',
+    placeholder: { si: '80', conv: '0.9' },
+    step: { si: '1', conv: '0.01' },
+    hint: { si: 'Normal: 45–90 µmol/L', conv: 'Normal: 0.5–1.0 mg/dL' },
+    hintMale: { si: 'Normal: 60–110 µmol/L', conv: 'Normal: 0.7–1.2 mg/dL' },
+    hintFemale: { si: 'Normal: 45–90 µmol/L', conv: 'Normal: 0.5–1.0 mg/dL' },
+  },
+  {
     field: 'apoB', name: 'ApoB',
     placeholder: { si: '0.5', conv: '50' },
     step: { si: '0.01', conv: '1' },

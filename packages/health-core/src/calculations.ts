@@ -97,6 +97,7 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   const proteinTarget = calculateProteinTarget(ibw);
 
   const results: HealthResults = {
+    heightCm: inputs.heightCm,
     idealBodyWeight: Math.round(ibw * 10) / 10,
     proteinTarget,
     suggestions: [],

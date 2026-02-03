@@ -32,6 +32,7 @@ export interface HealthInputs {
  * Calculated health results
  */
 export interface HealthResults {
+  heightCm: number;
   idealBodyWeight: number;
   proteinTarget: number;
   bmi?: number;
