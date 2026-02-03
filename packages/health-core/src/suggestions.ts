@@ -94,16 +94,6 @@ export function generateSuggestions(
     discussWithDoctor: true,
   });
 
-  // Exercise — always show
-  suggestions.push({
-    id: 'exercise',
-    category: 'exercise',
-    priority: 'info',
-    title: 'Regular cardio and resistance training',
-    description: 'Aim for at least 150 minutes of moderate-intensity cardio plus 2-3 resistance training sessions per week. This combination supports cardiovascular health, muscle mass, and metabolic function.',
-    discussWithDoctor: false,
-  });
-
   // High-potassium diet — only when eGFR ≥ 45 (safe kidney function)
   if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildToModerate) {
     suggestions.push({
@@ -115,6 +105,16 @@ export function generateSuggestions(
       discussWithDoctor: true,
     });
   }
+
+  // Exercise — always show
+  suggestions.push({
+    id: 'exercise',
+    category: 'exercise',
+    priority: 'info',
+    title: 'Regular cardio and resistance training',
+    description: 'Aim for at least 150 minutes of moderate-intensity cardio plus 2-3 resistance training sessions per week. This combination supports cardiovascular health, muscle mass, and metabolic function.',
+    discussWithDoctor: false,
+  });
 
   // Sleep — always show
   suggestions.push({

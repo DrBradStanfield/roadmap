@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS health_measurements (
   metric_type TEXT NOT NULL CHECK (metric_type IN (
     'height', 'weight', 'waist',
     'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
-    'systolic_bp', 'diastolic_bp', 'apob'
+    'systolic_bp', 'diastolic_bp', 'apob', 'creatinine'
   )),
   value NUMERIC NOT NULL,
   recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -69,7 +69,7 @@ ALTER TABLE health_measurements ADD CONSTRAINT health_measurements_metric_type_c
   CHECK (metric_type IN (
     'height', 'weight', 'waist',
     'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
-    'systolic_bp', 'diastolic_bp', 'apob'
+    'systolic_bp', 'diastolic_bp', 'apob', 'creatinine'
   ));
 
 ALTER TABLE health_measurements DROP CONSTRAINT IF EXISTS value_range;
