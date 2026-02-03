@@ -154,12 +154,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
               <span className="stat-value">{results.bmi}</span>
             </div>
           )}
-          {results.age !== undefined && (
-            <div className="stat-card">
-              <span className="stat-label">Age</span>
-              <span className="stat-value">{results.age} years</span>
-            </div>
-          )}
+
           {results.nonHdlCholesterol !== undefined && (
             <div className="stat-card">
               <span className="stat-label">Non-HDL Cholesterol</span>
