@@ -249,6 +249,18 @@ ALTER TABLE medications ADD COLUMN IF NOT EXISTS drug_name TEXT;
 ALTER TABLE medications ADD COLUMN IF NOT EXISTS dose_value INTEGER;
 ALTER TABLE medications ADD COLUMN IF NOT EXISTS dose_unit TEXT;
 
+-- Migration: Handle old 'value' column from tier-based storage (if it exists)
+DO $$
+BEGIN
+  -- Make value nullable so new inserts don't require it
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'medications' AND column_name = 'value') THEN
+    ALTER TABLE medications ALTER COLUMN value DROP NOT NULL;
+    -- Migrate old tier-based data to new FHIR-compatible columns
+    UPDATE medications SET drug_name = value WHERE drug_name IS NULL AND value IS NOT NULL;
+  END IF;
+END $$;
+
 -- Update medication_key constraint to include 'statin_escalation' (replaces 'statin_increase')
 ALTER TABLE medications DROP CONSTRAINT IF EXISTS medications_medication_key_check;
 ALTER TABLE medications ADD CONSTRAINT medications_medication_key_check
