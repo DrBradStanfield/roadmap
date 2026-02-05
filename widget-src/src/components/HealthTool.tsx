@@ -320,14 +320,21 @@ export function HealthTool() {
     setInputs(newInputs);
   };
 
-  const handleMedicationChange = useCallback(async (medicationKey: string, value: string) => {
+  const handleMedicationChange = useCallback(async (
+    medicationKey: string,
+    drugName: string,
+    doseValue: number | null,
+    doseUnit: string | null,
+  ) => {
     // Update local state immediately
     setMedications(prev => {
       const idx = prev.findIndex(m => m.medicationKey === medicationKey);
       const updated: ApiMedication = {
         id: idx >= 0 ? prev[idx].id : '',
         medicationKey,
-        value,
+        drugName,
+        doseValue,
+        doseUnit,
         updatedAt: new Date().toISOString(),
       };
       const next = idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
@@ -340,7 +347,7 @@ export function HealthTool() {
 
     // Save to cloud if logged in
     if (authState.isLoggedIn) {
-      await saveMedication(medicationKey, value);
+      await saveMedication(medicationKey, drugName, doseValue, doseUnit);
     }
   }, [authState.isLoggedIn, inputs, previousMeasurements, screenings]);
 

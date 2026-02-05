@@ -215,17 +215,19 @@ export async function deleteUserData(): Promise<boolean> {
 }
 
 /**
- * Save a medication status (upsert).
+ * Save a medication status (upsert). FHIR-compatible with separate drug name and dose.
  */
 export async function saveMedication(
   medicationKey: string,
-  value: string,
+  drugName: string,
+  doseValue: number | null = null,
+  doseUnit: string | null = null,
 ): Promise<boolean> {
   try {
     const response = await fetch(`${PROXY_PATH}/api/measurements`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ medication: { medicationKey, value } }),
+      body: JSON.stringify({ medication: { medicationKey, drugName, doseValue, doseUnit } }),
     });
     if (!response.ok) return false;
 

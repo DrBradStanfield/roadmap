@@ -6,13 +6,28 @@ export type {
   Measurement,
   MedicationInputs,
   ScreeningInputs,
-  StatinValue,
+  StatinInput,
+  StatinNameValue,
+  EzetimibeValue,
+  Pcsk9iValue,
 } from './types';
 
 export {
-  STATIN_OPTIONS,
-  MAX_STATIN_TIER,
-  getStatinTier,
+  // Statin configuration (BPAC 2021)
+  STATIN_DRUGS,
+  STATIN_NAMES,
+  STATIN_POTENCY,
+  MAX_STATIN_POTENCY,
+  getStatinDoses,
+  getCurrentPotency,
+  canIncreaseDose,
+  shouldSuggestSwitch,
+  isOnMaxPotency,
+  getStatinEscalationType,
+  // Ezetimibe & PCSK9i options
+  EZETIMIBE_OPTIONS,
+  PCSK9I_OPTIONS,
+  // Screening
   SCREENING_INTERVALS,
 } from './types';
 

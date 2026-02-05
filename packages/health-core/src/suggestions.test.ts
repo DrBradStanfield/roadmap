@@ -225,7 +225,45 @@ describe('generateSuggestions', () => {
   });
 
   describe('Triglycerides suggestions', () => {
-    it('generates very high suggestion for triglycerides >= 500 mg/dL (≥5.64 mmol/L)', () => {
+    // Nutrition suggestion (diet is first-line treatment for elevated trigs)
+    it('generates nutrition suggestion with attention priority for borderline triglycerides', () => {
+      const { inputs, results } = createTestData({ triglycerides: trig(160) });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const nutritionSuggestion = suggestions.find(s => s.id === 'trig-nutrition');
+      expect(nutritionSuggestion).toBeDefined();
+      expect(nutritionSuggestion?.category).toBe('nutrition');
+      expect(nutritionSuggestion?.priority).toBe('attention');
+      expect(nutritionSuggestion?.description).toContain('limit alcohol');
+      expect(nutritionSuggestion?.description).toContain('reduce sugar');
+    });
+
+    it('generates nutrition suggestion for high triglycerides', () => {
+      const { inputs, results } = createTestData({ triglycerides: trig(250) });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const nutritionSuggestion = suggestions.find(s => s.id === 'trig-nutrition');
+      expect(nutritionSuggestion).toBeDefined();
+      expect(nutritionSuggestion?.priority).toBe('attention');
+    });
+
+    it('generates nutrition suggestion for very high triglycerides', () => {
+      const { inputs, results } = createTestData({ triglycerides: trig(550) });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const nutritionSuggestion = suggestions.find(s => s.id === 'trig-nutrition');
+      expect(nutritionSuggestion).toBeDefined();
+      expect(nutritionSuggestion?.priority).toBe('attention');
+    });
+
+    it('does not generate nutrition suggestion for normal triglycerides', () => {
+      const { inputs, results } = createTestData({ triglycerides: trig(120) });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'trig-nutrition')).toBeUndefined();
+    });
+
+    // Urgent bloodwork warning (pancreatitis risk at very high levels)
+    it('generates urgent bloodwork warning for very high triglycerides (>= 500 mg/dL)', () => {
       const { inputs, results } = createTestData({ triglycerides: trig(550) });
       const suggestions = generateSuggestions(inputs, results);
 
@@ -234,22 +272,20 @@ describe('generateSuggestions', () => {
       expect(trigSuggestion?.priority).toBe('urgent');
     });
 
-    it('generates high suggestion for triglycerides 200-499 mg/dL (2.26-5.64 mmol/L)', () => {
+    it('does not generate bloodwork suggestion for high triglycerides (handled by nutrition)', () => {
       const { inputs, results } = createTestData({ triglycerides: trig(300) });
       const suggestions = generateSuggestions(inputs, results);
 
-      const trigSuggestion = suggestions.find(s => s.id === 'trig-high');
-      expect(trigSuggestion).toBeDefined();
-      expect(trigSuggestion?.priority).toBe('attention');
+      expect(suggestions.find(s => s.id === 'trig-high')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'trig-nutrition')).toBeDefined();
     });
 
-    it('generates borderline suggestion for triglycerides 150-199 mg/dL (1.69-2.26 mmol/L)', () => {
+    it('does not generate bloodwork suggestion for borderline triglycerides (handled by nutrition)', () => {
       const { inputs, results } = createTestData({ triglycerides: trig(175) });
       const suggestions = generateSuggestions(inputs, results);
 
-      const trigSuggestion = suggestions.find(s => s.id === 'trig-borderline');
-      expect(trigSuggestion).toBeDefined();
-      expect(trigSuggestion?.priority).toBe('info');
+      expect(suggestions.find(s => s.id === 'trig-borderline')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'trig-nutrition')).toBeDefined();
     });
   });
 
@@ -480,6 +516,37 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
     });
+
+    it('suggests GLP-1 when BMI 25-27 and elevated triglycerides, even with normal waist', () => {
+      const { inputs, results } = createTestData(
+        { triglycerides: trig(160) },  // borderline elevated
+        { bmi: 26, waistToHeightRatio: 0.45 }  // normal waist
+      );
+      const suggestions = generateSuggestions(inputs, results);
+      const glp1 = suggestions.find(s => s.id === 'weight-glp1');
+      expect(glp1).toBeDefined();
+      expect(glp1?.description).toContain('triglycerides');
+    });
+
+    it('does not suggest GLP-1 when BMI 25-27 with normal trigs and normal waist', () => {
+      const { inputs, results } = createTestData(
+        { triglycerides: trig(120) },  // normal
+        { bmi: 26, waistToHeightRatio: 0.45 }  // normal waist
+      );
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
+    });
+
+    it('mentions waist in GLP-1 description when triggered by waist (not trigs)', () => {
+      const { inputs, results } = createTestData(
+        { triglycerides: trig(120) },  // normal
+        { bmi: 26, waistToHeightRatio: 0.52 }  // elevated waist
+      );
+      const suggestions = generateSuggestions(inputs, results);
+      const glp1 = suggestions.find(s => s.id === 'weight-glp1');
+      expect(glp1).toBeDefined();
+      expect(glp1?.description).toContain('waist');
+    });
   });
 
   describe('Medication cascade suggestions', () => {
@@ -493,6 +560,33 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
     });
 
+    it('suggests statin (not ezetimibe) when statin drug is null (migration edge case)', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      // Simulate old data from before migration: statin object exists but drug is null
+      const meds: MedicationInputs = { statin: { drug: null as unknown as string, dose: null } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'med-ezetimibe')).toBeUndefined();
+    });
+
+    it('suggests statin (not ezetimibe) when statin drug is undefined (edge case)', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      // Edge case: statin object exists but drug is undefined
+      const meds: MedicationInputs = { statin: { drug: undefined as unknown as string, dose: null } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'med-ezetimibe')).toBeUndefined();
+    });
+
+    it('suggests statin (not ezetimibe) when statin drug is empty string (edge case)', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      // Edge case: statin object exists but drug is empty string
+      const meds: MedicationInputs = { statin: { drug: '', dose: null } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'med-ezetimibe')).toBeUndefined();
+    });
+
     it('does not suggest medications when lipids below targets', () => {
       const { inputs, results } = createTestData({ apoB: apoB(30) }); // below 50
       const meds: MedicationInputs = {};
@@ -502,41 +596,53 @@ describe('generateSuggestions', () => {
 
     it('suggests ezetimibe when on statin but lipids still elevated', () => {
       const { inputs, results } = createTestData(elevatedLipids);
-      const meds: MedicationInputs = { statin: 'tier_1' };
+      const meds: MedicationInputs = { statin: { drug: 'atorvastatin', dose: 10 } };
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
       expect(suggestions.find(s => s.id === 'med-ezetimibe')).toBeDefined();
       expect(suggestions.find(s => s.id === 'med-statin')).toBeUndefined();
     });
 
-    it('suggests statin dose increase when on statin + ezetimibe, not max tier', () => {
+    it('suggests statin dose increase when on statin + ezetimibe, not max dose', () => {
       const { inputs, results } = createTestData(elevatedLipids);
-      const meds: MedicationInputs = { statin: 'tier_1', ezetimibe: 'yes' };
+      // Atorvastatin 10mg can be increased to 20, 40, 80
+      const meds: MedicationInputs = { statin: { drug: 'atorvastatin', dose: 10 }, ezetimibe: 'yes' };
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
       expect(suggestions.find(s => s.id === 'med-statin-increase')).toBeDefined();
     });
 
-    it('skips statin dose increase when already on max tier', () => {
+    it('suggests switching to more potent statin when on max dose of weaker statin', () => {
       const { inputs, results } = createTestData(elevatedLipids);
-      const meds: MedicationInputs = { statin: 'tier_4', ezetimibe: 'yes' };
+      // Simvastatin 40mg is max dose but not max potency
+      const meds: MedicationInputs = { statin: { drug: 'simvastatin', dose: 40 }, ezetimibe: 'yes' };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin-switch')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'med-statin-increase')).toBeUndefined();
+    });
+
+    it('skips statin escalation when already on max potency', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      // Rosuvastatin 40mg is max potency
+      const meds: MedicationInputs = { statin: { drug: 'rosuvastatin', dose: 40 }, ezetimibe: 'yes' };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin-increase')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'med-statin-switch')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'med-pcsk9i')).toBeDefined();
+    });
+
+    it('skips statin escalation when statin not tolerated', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      const meds: MedicationInputs = { statin: { drug: 'not_tolerated', dose: null }, ezetimibe: 'yes' };
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
       expect(suggestions.find(s => s.id === 'med-statin-increase')).toBeUndefined();
       expect(suggestions.find(s => s.id === 'med-pcsk9i')).toBeDefined();
     });
 
-    it('skips statin dose increase when statin not tolerated', () => {
-      const { inputs, results } = createTestData(elevatedLipids);
-      const meds: MedicationInputs = { statin: 'not_tolerated', ezetimibe: 'yes' };
-      const suggestions = generateSuggestions(inputs, results, 'si', meds);
-      expect(suggestions.find(s => s.id === 'med-statin-increase')).toBeUndefined();
-      expect(suggestions.find(s => s.id === 'med-pcsk9i')).toBeDefined();
-    });
-
-    it('suggests PCSK9i when statin increase not tolerated', () => {
+    it('suggests PCSK9i when statin escalation not tolerated', () => {
       const { inputs, results } = createTestData(elevatedLipids);
       const meds: MedicationInputs = {
-        statin: 'tier_1',
+        statin: { drug: 'atorvastatin', dose: 10 },
         ezetimibe: 'yes',
-        statinIncrease: 'not_tolerated',
+        statinEscalation: 'not_tolerated',
       };
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
       expect(suggestions.find(s => s.id === 'med-pcsk9i')).toBeDefined();
@@ -545,7 +651,7 @@ describe('generateSuggestions', () => {
     it('no medication suggestions when all cascade steps completed', () => {
       const { inputs, results } = createTestData(elevatedLipids);
       const meds: MedicationInputs = {
-        statin: 'tier_4',
+        statin: { drug: 'rosuvastatin', dose: 40 },
         ezetimibe: 'yes',
         pcsk9i: 'yes',
       };

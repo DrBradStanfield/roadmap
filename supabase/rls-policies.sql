@@ -229,17 +229,30 @@ GRANT SELECT ON audit_logs TO authenticated;
 
 -- ===== Create medications table =====
 -- Tracks medication status for the cholesterol medication cascade.
--- Each row = one medication at a specific dose. Uses UPSERT pattern (mutable, not time-series).
+-- FHIR-compatible structure with separate drug_name, dose_value, dose_unit columns.
+-- Uses UPSERT pattern (mutable, not time-series).
 
 CREATE TABLE IF NOT EXISTS medications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  medication_key TEXT NOT NULL CHECK (medication_key IN ('statin', 'ezetimibe', 'statin_increase', 'pcsk9i')),
-  value TEXT NOT NULL,
+  medication_key TEXT NOT NULL CHECK (medication_key IN ('statin', 'ezetimibe', 'statin_escalation', 'pcsk9i')),
+  drug_name TEXT,           -- e.g., 'atorvastatin', 'rosuvastatin', 'none', 'not_tolerated', 'yes', 'no'
+  dose_value INTEGER,       -- e.g., 40, null for non-drug fields
+  dose_unit TEXT,           -- e.g., 'mg', null for non-drug fields
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, medication_key)
 );
+
+-- Migration: Add new columns if table already exists
+ALTER TABLE medications ADD COLUMN IF NOT EXISTS drug_name TEXT;
+ALTER TABLE medications ADD COLUMN IF NOT EXISTS dose_value INTEGER;
+ALTER TABLE medications ADD COLUMN IF NOT EXISTS dose_unit TEXT;
+
+-- Update medication_key constraint to include 'statin_escalation' (replaces 'statin_increase')
+ALTER TABLE medications DROP CONSTRAINT IF EXISTS medications_medication_key_check;
+ALTER TABLE medications ADD CONSTRAINT medications_medication_key_check
+  CHECK (medication_key IN ('statin', 'ezetimibe', 'statin_escalation', 'statin_increase', 'pcsk9i'));
 
 CREATE INDEX IF NOT EXISTS idx_medications_user ON medications(user_id);
 

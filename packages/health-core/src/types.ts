@@ -58,30 +58,131 @@ export interface Suggestion {
   link?: string;
 }
 
+// ===== Statin Configuration (BPAC 2021) =====
+// Source: https://bpac.org.nz/2021/statins.aspx
+
 /**
- * Statin tier groupings by equivalent potency.
+ * Available statin drugs with their dose options.
+ * Alphabetical order for UI dropdown.
  */
-export const STATIN_OPTIONS = [
-  { value: 'none', label: "Haven't tried a statin yet", tier: 0 },
-  { value: 'tier_1', label: 'Rosuvastatin 5mg or Pravastatin 20mg or Atorvastatin 10mg', tier: 1 },
-  { value: 'tier_2', label: 'Rosuvastatin 10mg or Pravastatin 40mg or Atorvastatin 20mg', tier: 2 },
-  { value: 'tier_3', label: 'Rosuvastatin 20mg or Pravastatin 40mg or Atorvastatin 40mg', tier: 3 },
-  { value: 'tier_4', label: 'Rosuvastatin 40mg or Pravastatin 40mg or Atorvastatin 80mg', tier: 4 },
-  { value: 'not_tolerated', label: 'Statin not tolerated', tier: -1 },
+export const STATIN_DRUGS: Record<string, { doses: number[]; unit: string }> = {
+  atorvastatin: { doses: [10, 20, 40, 80], unit: 'mg' },
+  pitavastatin: { doses: [1, 2, 4], unit: 'mg' },
+  pravastatin: { doses: [20, 40], unit: 'mg' },
+  rosuvastatin: { doses: [5, 10, 20, 40], unit: 'mg' },
+  simvastatin: { doses: [10, 20, 40], unit: 'mg' }, // 80mg excluded (myopathy risk)
+};
+
+/**
+ * Statin names for dropdown selection.
+ */
+export const STATIN_NAMES = [
+  { value: 'none', label: "Haven't tried yet" },
+  { value: 'atorvastatin', label: 'Atorvastatin' },
+  { value: 'pitavastatin', label: 'Pitavastatin' },
+  { value: 'pravastatin', label: 'Pravastatin' },
+  { value: 'rosuvastatin', label: 'Rosuvastatin' },
+  { value: 'simvastatin', label: 'Simvastatin' },
+  { value: 'not_tolerated', label: 'Not tolerated' },
 ] as const;
 
-export const MAX_STATIN_TIER = 4;
-
-export type StatinValue = typeof STATIN_OPTIONS[number]['value'];
+export type StatinNameValue = typeof STATIN_NAMES[number]['value'];
 
 /**
- * Get the tier of a statin value. Returns 0 for 'none', -1 for 'not_tolerated'.
+ * Potency equivalency table: approximate % LDL-C reduction per dose.
+ * Based on BPAC 2021 statin potency table.
  */
-export function getStatinTier(value: string | undefined): number {
-  if (!value) return 0;
-  const option = STATIN_OPTIONS.find(o => o.value === value);
-  return option ? option.tier : 0;
+export const STATIN_POTENCY: Record<string, Record<number, number>> = {
+  rosuvastatin: { 5: 40, 10: 47, 20: 55, 40: 63 },
+  atorvastatin: { 10: 30, 20: 40, 40: 47, 80: 55 },
+  simvastatin: { 10: 30, 20: 35, 40: 40 },
+  pravastatin: { 20: 30, 40: 40 },
+  pitavastatin: { 1: 30, 2: 35, 4: 40 },
+};
+
+/**
+ * Maximum potency achievable (rosuvastatin 40mg = 63% LDL reduction).
+ */
+export const MAX_STATIN_POTENCY = 63;
+
+/**
+ * Get available doses for a statin drug.
+ */
+export function getStatinDoses(drug: string): number[] {
+  return STATIN_DRUGS[drug]?.doses ?? [];
 }
+
+/**
+ * Get the potency (% LDL reduction) of a statin/dose combination.
+ * Returns 0 for 'none' or invalid combinations.
+ */
+export function getCurrentPotency(drug: string | undefined, dose: number | null): number {
+  if (!drug || drug === 'none' || drug === 'not_tolerated' || dose === null) return 0;
+  return STATIN_POTENCY[drug]?.[dose] ?? 0;
+}
+
+/**
+ * Check if user can increase dose (has higher dose available for current statin).
+ */
+export function canIncreaseDose(drug: string | undefined, dose: number | null): boolean {
+  if (!drug || drug === 'none' || drug === 'not_tolerated' || dose === null) return false;
+  const doses = STATIN_DRUGS[drug]?.doses;
+  if (!doses) return false;
+  const currentIndex = doses.indexOf(dose);
+  return currentIndex >= 0 && currentIndex < doses.length - 1;
+}
+
+/**
+ * Check if user should be suggested to switch to a higher potency statin.
+ * Returns true if on max dose of current statin but not at max overall potency.
+ */
+export function shouldSuggestSwitch(drug: string | undefined, dose: number | null): boolean {
+  if (!drug || drug === 'none' || drug === 'not_tolerated' || dose === null) return false;
+  const currentPotency = getCurrentPotency(drug, dose);
+  const isOnMaxDose = !canIncreaseDose(drug, dose);
+  return isOnMaxDose && currentPotency > 0 && currentPotency < MAX_STATIN_POTENCY;
+}
+
+/**
+ * Check if user is on maximum possible potency (rosuvastatin 40mg).
+ */
+export function isOnMaxPotency(drug: string | undefined, dose: number | null): boolean {
+  return getCurrentPotency(drug, dose) >= MAX_STATIN_POTENCY;
+}
+
+/**
+ * Get the appropriate escalation suggestion type.
+ */
+export function getStatinEscalationType(drug: string | undefined, dose: number | null): 'increase_dose' | 'switch_statin' | 'none' {
+  if (!drug || drug === 'none' || drug === 'not_tolerated' || dose === null) return 'none';
+  if (canIncreaseDose(drug, dose)) return 'increase_dose';
+  if (shouldSuggestSwitch(drug, dose)) return 'switch_statin';
+  return 'none';
+}
+
+/**
+ * Ezetimibe options for dropdown.
+ */
+export const EZETIMIBE_OPTIONS = [
+  { value: 'not_yet', label: "Haven't tried yet" },
+  { value: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+  { value: 'not_tolerated', label: 'Not tolerated' },
+] as const;
+
+export type EzetimibeValue = typeof EZETIMIBE_OPTIONS[number]['value'];
+
+/**
+ * PCSK9i options for dropdown.
+ */
+export const PCSK9I_OPTIONS = [
+  { value: 'not_yet', label: "Haven't tried yet" },
+  { value: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+  { value: 'not_tolerated', label: 'Not tolerated' },
+] as const;
+
+export type Pcsk9iValue = typeof PCSK9I_OPTIONS[number]['value'];
 
 /**
  * Cancer screening inputs for the screening cascade.
@@ -132,13 +233,21 @@ export const SCREENING_INTERVALS: Record<string, number> = {
 };
 
 /**
+ * Statin medication input with separate drug and dose (FHIR-compatible).
+ */
+export interface StatinInput {
+  drug: string;        // e.g., 'atorvastatin', 'none', 'not_tolerated'
+  dose: number | null; // e.g., 40, null for 'none'/'not_tolerated'
+}
+
+/**
  * Medication inputs for the cholesterol medication cascade.
  */
 export interface MedicationInputs {
-  statin?: string;                                    // StatinValue
-  ezetimibe?: 'yes' | 'no' | 'not_tolerated';
-  statinIncrease?: 'not_yet' | 'not_tolerated';
-  pcsk9i?: 'yes' | 'no' | 'not_tolerated';
+  statin?: StatinInput;
+  ezetimibe?: EzetimibeValue;
+  statinEscalation?: 'not_yet' | 'not_tolerated';
+  pcsk9i?: Pcsk9iValue;
 }
 
 /**

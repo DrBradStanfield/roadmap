@@ -206,6 +206,20 @@
   gap: 12px;
 }
 
+/* Statin selection: drug name + dose side by side */
+.statin-selection-row {
+  display: flex;
+  gap: 8px;
+}
+
+.statin-selection-row select:first-child {
+  flex: 2;
+}
+
+.statin-selection-row select:last-child {
+  flex: 1;
+}
+
 .date-picker-row {
   display: flex;
   gap: 8px;

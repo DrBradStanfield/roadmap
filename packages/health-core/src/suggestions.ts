@@ -1,5 +1,5 @@
 import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from './types';
-import { getStatinTier, MAX_STATIN_TIER, SCREENING_INTERVALS } from './types';
+import { SCREENING_INTERVALS, canIncreaseDose, shouldSuggestSwitch, isOnMaxPotency } from './types';
 import {
   type UnitSystem,
   formatDisplayValue,
@@ -103,6 +103,17 @@ export function generateSuggestions(
     });
   }
 
+  // Triglycerides nutrition advice — diet is first-line treatment for elevated trigs
+  if (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) {
+    suggestions.push({
+      id: 'trig-nutrition',
+      category: 'nutrition',
+      priority: 'attention',
+      title: 'Reduce triglycerides with diet',
+      description: 'Blood triglycerides are very diet-sensitive—improvements can be seen within 2-3 weeks. Key measures: limit alcohol, reduce sugar intake, and reduce total fat and calorie intake.',
+    });
+  }
+
   // Exercise — always show
   suggestions.push({
     id: 'exercise',
@@ -132,15 +143,26 @@ export function generateSuggestions(
         description: 'With a BMI over 27, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
       });
     } else if (results.bmi > 25) {
-      // BMI 25-27: only suggest if waist-to-height ≥ 0.5 or waist data unavailable
+      // BMI 25-27: suggest if waist-to-height ≥ 0.5, waist data unavailable, or triglycerides elevated
       const whr = results.waistToHeightRatio;
-      if (whr === undefined || whr >= 0.5) {
+      const trigsElevated = inputs.triglycerides !== undefined &&
+        inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline;
+      if (whr === undefined || whr >= 0.5 || trigsElevated) {
+        // Determine reason: elevated waist takes priority, then trigs, then just BMI
+        let reason: string;
+        if (whr !== undefined && whr >= 0.5) {
+          reason = 'elevated BMI and waist measurements';
+        } else if (trigsElevated) {
+          reason = 'elevated BMI and triglycerides';
+        } else {
+          reason = 'an elevated BMI';
+        }
         suggestions.push({
           id: 'weight-glp1',
           category: 'medication',
           priority: 'attention',
           title: 'Weight management medication',
-          description: 'With elevated BMI and waist measurements, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
+          description: `With ${reason}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.`,
         });
       }
     }
@@ -268,33 +290,16 @@ export function generateSuggestions(
     }
   }
 
-  // Triglycerides (thresholds in mmol/L)
-  if (inputs.triglycerides !== undefined) {
-    if (inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.veryHigh) {
-      suggestions.push({
-        id: 'trig-very-high',
-        category: 'bloodwork',
-        priority: 'urgent',
-        title: 'Very high triglycerides',
-        description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us)} are very high, increasing risk of pancreatitis. Immediate intervention is recommended.`,
-      });
-    } else if (inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.high) {
-      suggestions.push({
-        id: 'trig-high',
-        category: 'bloodwork',
-        priority: 'attention',
-        title: 'High triglycerides',
-        description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us)} are elevated. Reducing refined carbs and alcohol can help.`,
-      });
-    } else if (inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) {
-      suggestions.push({
-        id: 'trig-borderline',
-        category: 'bloodwork',
-        priority: 'info',
-        title: 'Borderline high triglycerides',
-        description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us)} are borderline. Optimal is <${formatDisplayValue('triglycerides', TRIGLYCERIDES_THRESHOLDS.borderline, us)} ${getDisplayLabel('triglycerides', us)}.`,
-      });
-    }
+  // Triglycerides — only show urgent warning for very high (pancreatitis risk)
+  // Lower thresholds handled by trig-nutrition suggestion above
+  if (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.veryHigh) {
+    suggestions.push({
+      id: 'trig-very-high',
+      category: 'bloodwork',
+      priority: 'urgent',
+      title: 'Very high triglycerides',
+      description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us)} are very high, increasing risk of pancreatitis. Immediate intervention is recommended.`,
+    });
   }
 
   // ApoB (thresholds in g/L)
@@ -369,11 +374,13 @@ export function generateSuggestions(
       (nonHdl !== undefined && nonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol);
 
     if (lipidsElevated) {
-      const statinTier = getStatinTier(medications.statin);
-      const statinTolerated = medications.statin !== 'not_tolerated';
+      const statin = medications.statin;
+      const statinDrug = statin?.drug;
+      const statinTolerated = statinDrug !== 'not_tolerated';
+      const onStatin = statin && statinDrug && statinDrug !== 'none' && statinDrug !== 'not_tolerated';
 
-      // Step 1: Statin
-      if (!medications.statin || medications.statin === 'none') {
+      // Step 1: Statin (handle null/undefined drug from migration or missing data)
+      if (!statin || !statinDrug || statinDrug === 'none') {
         suggestions.push({
           id: 'med-statin',
           category: 'medication',
@@ -383,7 +390,8 @@ export function generateSuggestions(
         });
       } else {
         // On a statin or not tolerated — Step 2: Ezetimibe
-        if (!medications.ezetimibe || medications.ezetimibe === 'no') {
+        const ezetimibeNotHandled = !medications.ezetimibe || medications.ezetimibe === 'no' || medications.ezetimibe === 'not_yet';
+        if (ezetimibeNotHandled) {
           suggestions.push({
             id: 'med-ezetimibe',
             category: 'medication',
@@ -392,19 +400,35 @@ export function generateSuggestions(
             description: 'Your lipid levels remain above target. Discuss adding Ezetimibe 10mg with your doctor.',
           });
         } else {
-          // Ezetimibe handled (yes or not tolerated) — Step 3: Increase statin dose
-          if (statinTolerated && statinTier > 0 && statinTier < MAX_STATIN_TIER) {
-            if (!medications.statinIncrease || medications.statinIncrease === 'not_yet') {
-              suggestions.push({
-                id: 'med-statin-increase',
-                category: 'medication',
-                priority: 'attention',
-                title: 'Consider increasing statin dose',
-                description: 'Your lipid levels remain above target. Discuss increasing your statin dose with your doctor.',
-              });
+          // Ezetimibe handled (yes or not tolerated) — Step 3: Escalate statin
+          const canIncrease = onStatin && canIncreaseDose(statin.drug, statin.dose);
+          const shouldSwitch = onStatin && shouldSuggestSwitch(statin.drug, statin.dose);
+          const atMaxPotency = onStatin && isOnMaxPotency(statin.drug, statin.dose);
+
+          if (statinTolerated && (canIncrease || shouldSwitch)) {
+            if (!medications.statinEscalation || medications.statinEscalation === 'not_yet') {
+              if (canIncrease) {
+                suggestions.push({
+                  id: 'med-statin-increase',
+                  category: 'medication',
+                  priority: 'attention',
+                  title: 'Consider increasing statin dose',
+                  description: 'Your lipid levels remain above target. Discuss increasing your statin dose with your doctor.',
+                });
+              } else if (shouldSwitch) {
+                // Capitalize first letter of drug name
+                const drugName = statin.drug.charAt(0).toUpperCase() + statin.drug.slice(1);
+                suggestions.push({
+                  id: 'med-statin-switch',
+                  category: 'medication',
+                  priority: 'attention',
+                  title: 'Consider switching to a more potent statin',
+                  description: `You're on the maximum dose of ${drugName}. Discuss switching to a more potent statin (e.g. Rosuvastatin or Atorvastatin) with your doctor.`,
+                });
+              }
             } else {
-              // Statin increase not tolerated — Step 4: PCSK9i
-              if (!medications.pcsk9i || medications.pcsk9i === 'no') {
+              // Statin escalation not tolerated — Step 4: PCSK9i
+              if (!medications.pcsk9i || medications.pcsk9i === 'no' || medications.pcsk9i === 'not_yet') {
                 suggestions.push({
                   id: 'med-pcsk9i',
                   category: 'medication',
@@ -415,8 +439,8 @@ export function generateSuggestions(
               }
             }
           } else {
-            // Already on max statin or statin not tolerated — skip dose increase, go to PCSK9i
-            if (!medications.pcsk9i || medications.pcsk9i === 'no') {
+            // Already on max potency, statin not tolerated, or no escalation possible — go to PCSK9i
+            if (!medications.pcsk9i || medications.pcsk9i === 'no' || medications.pcsk9i === 'not_yet') {
               suggestions.push({
                 id: 'med-pcsk9i',
                 category: 'medication',

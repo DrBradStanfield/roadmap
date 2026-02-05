@@ -14,9 +14,13 @@ import {
   type ApiMeasurement,
   type ApiMedication,
   type ApiScreening,
-  STATIN_OPTIONS,
-  getStatinTier,
-  MAX_STATIN_TIER,
+  STATIN_NAMES,
+  STATIN_DRUGS,
+  EZETIMIBE_OPTIONS,
+  PCSK9I_OPTIONS,
+  canIncreaseDose,
+  shouldSuggestSwitch,
+  isOnMaxPotency,
   LIPID_TREATMENT_TARGETS,
   calculateAge,
   cmToFeetInches,
@@ -97,7 +101,7 @@ interface InputPanelProps {
   isLoggedIn: boolean;
   previousMeasurements: ApiMeasurement[];
   medications: ApiMedication[];
-  onMedicationChange: (medicationKey: string, value: string) => void;
+  onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];
   onScreeningChange: (screeningKey: string, value: string) => void;
   onSaveLongitudinal: (bloodTestDate?: string) => void;
@@ -227,6 +231,10 @@ export function InputPanel({
             value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, inputs[field] as number | undefined)}
             onChange={(e) => {
               const raw = e.target.value;
+              // Ignore browser auto-fill of 0 for empty fields (spinner click on empty input)
+              if (raw === '0' && inputs[field] === undefined && rawInputs[field] === undefined) {
+                return;
+              }
               setRawInputs(prev => ({ ...prev, [field]: raw }));
               updateField(field, parseAndConvert(field, raw));
             }}
@@ -604,17 +612,35 @@ export function InputPanel({
           if (!lipidsElevated) return null;
 
           const medInputs = medicationsToInputs(medications);
-          const statinTier = getStatinTier(medInputs.statin);
-          const statinTolerated = medInputs.statin !== 'not_tolerated';
-          const onStatin = medInputs.statin && medInputs.statin !== 'none' && medInputs.statin !== 'not_tolerated';
+          const statin = medInputs.statin;
+          const statinDrug = statin?.drug ?? 'none';
+          const statinDose = statin?.dose ?? null;
+          const statinTolerated = statinDrug !== 'not_tolerated';
+          const onStatin = statin && statinDrug !== 'none' && statinDrug !== 'not_tolerated';
+
+          // Get available doses for current statin
+          const availableDoses = STATIN_DRUGS[statinDrug]?.doses ?? [];
 
           // Determine which cascade steps to show
-          const showEzetimibe = onStatin || medInputs.statin === 'not_tolerated';
+          const showEzetimibe = onStatin || statinDrug === 'not_tolerated';
           const ezetimibeHandled = medInputs.ezetimibe === 'yes' || medInputs.ezetimibe === 'not_tolerated';
-          const showStatinIncrease = showEzetimibe && ezetimibeHandled && statinTolerated && statinTier > 0 && statinTier < MAX_STATIN_TIER;
-          const statinIncreaseHandled = medInputs.statinIncrease === 'not_tolerated';
+
+          // Escalation logic based on potency
+          const canIncrease = onStatin && canIncreaseDose(statinDrug, statinDose);
+          const shouldSwitch = onStatin && shouldSuggestSwitch(statinDrug, statinDose);
+          const atMaxPotency = onStatin && isOnMaxPotency(statinDrug, statinDose);
+
+          const showStatinEscalation = showEzetimibe && ezetimibeHandled && statinTolerated && (canIncrease || shouldSwitch);
+          const escalationHandled = medInputs.statinEscalation === 'not_tolerated';
           const showPcsk9i = (showEzetimibe && ezetimibeHandled) &&
-            ((!statinTolerated || statinTier >= MAX_STATIN_TIER) || (showStatinIncrease && statinIncreaseHandled));
+            ((!statinTolerated || atMaxPotency) || (showStatinEscalation && escalationHandled));
+
+          // Helper to reset downstream cascade
+          const resetDownstream = () => {
+            if (medInputs.ezetimibe) onMedicationChange('ezetimibe', 'not_yet', null, null);
+            if (medInputs.statinEscalation) onMedicationChange('statin_escalation', 'not_yet', null, null);
+            if (medInputs.pcsk9i) onMedicationChange('pcsk9i', 'not_yet', null, null);
+          };
 
           return (
             <div className="section-card">
@@ -624,24 +650,48 @@ export function InputPanel({
                 Your lipid levels are above target. Are you on any cholesterol-lowering medications?
               </p>
 
-              {/* Step 1: Statin selection */}
+              {/* Step 1: Statin selection - two dropdowns */}
               <div className="health-field">
-                <label htmlFor="statin">Current statin</label>
-                <select
-                  id="statin"
-                  value={medInputs.statin || 'none'}
-                  onChange={(e) => {
-                    onMedicationChange('statin', e.target.value);
-                    // Reset downstream selections when statin changes
-                    if (medInputs.ezetimibe) onMedicationChange('ezetimibe', 'no');
-                    if (medInputs.statinIncrease) onMedicationChange('statin_increase', 'not_yet');
-                    if (medInputs.pcsk9i) onMedicationChange('pcsk9i', 'no');
-                  }}
-                >
-                  {STATIN_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+                <label htmlFor="statin-name">Statin</label>
+                <div className="statin-selection-row">
+                  {/* Statin name dropdown */}
+                  <select
+                    id="statin-name"
+                    value={statinDrug}
+                    onChange={(e) => {
+                      const newDrug = e.target.value;
+                      resetDownstream();
+                      if (newDrug === 'none' || newDrug === 'not_tolerated') {
+                        onMedicationChange('statin', newDrug, null, null);
+                      } else {
+                        // Default to first dose when selecting a new statin
+                        const firstDose = STATIN_DRUGS[newDrug]?.doses[0] ?? null;
+                        onMedicationChange('statin', newDrug, firstDose, 'mg');
+                      }
+                    }}
+                  >
+                    {STATIN_NAMES.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+
+                  {/* Dose dropdown - only shown when a specific statin is selected */}
+                  {availableDoses.length > 0 && (
+                    <select
+                      id="statin-dose"
+                      value={statinDose ?? ''}
+                      onChange={(e) => {
+                        const newDose = parseInt(e.target.value, 10);
+                        resetDownstream();
+                        onMedicationChange('statin', statinDrug, newDose, 'mg');
+                      }}
+                    >
+                      {availableDoses.map(dose => (
+                        <option key={dose} value={dose}>{dose}mg</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
 
               {/* Step 2: Ezetimibe */}
@@ -650,27 +700,31 @@ export function InputPanel({
                   <label htmlFor="ezetimibe">On Ezetimibe 10mg?</label>
                   <select
                     id="ezetimibe"
-                    value={medInputs.ezetimibe || 'no'}
-                    onChange={e => onMedicationChange('ezetimibe', e.target.value)}
+                    value={medInputs.ezetimibe || 'not_yet'}
+                    onChange={e => onMedicationChange('ezetimibe', e.target.value, null, null)}
                   >
-                    <option value="no">No</option>
-                    <option value="yes">Yes</option>
-                    <option value="not_tolerated">Not tolerated</option>
+                    {EZETIMIBE_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
                 </div>
               )}
 
-              {/* Step 3: Statin dose increase */}
-              {showStatinIncrease && (
+              {/* Step 3: Statin escalation (dose increase or switch) */}
+              {showStatinEscalation && (
                 <div className="health-field">
-                  <label htmlFor="statin-increase">Tried increasing statin dose?</label>
+                  <label htmlFor="statin-escalation">
+                    {canIncrease ? 'Tried increasing statin dose?' : 'Tried switching to a more potent statin?'}
+                  </label>
                   <select
-                    id="statin-increase"
-                    value={medInputs.statinIncrease || 'not_yet'}
-                    onChange={e => onMedicationChange('statin_increase', e.target.value)}
+                    id="statin-escalation"
+                    value={medInputs.statinEscalation || 'not_yet'}
+                    onChange={e => onMedicationChange('statin_escalation', e.target.value, null, null)}
                   >
                     <option value="not_yet">Not yet</option>
-                    <option value="not_tolerated">Didn't tolerate a higher dose</option>
+                    <option value="not_tolerated">
+                      {canIncrease ? "Didn't tolerate a higher dose" : "Didn't tolerate switching"}
+                    </option>
                   </select>
                 </div>
               )}
@@ -681,12 +735,12 @@ export function InputPanel({
                   <label htmlFor="pcsk9i">On a PCSK9 inhibitor?</label>
                   <select
                     id="pcsk9i"
-                    value={medInputs.pcsk9i || 'no'}
-                    onChange={e => onMedicationChange('pcsk9i', e.target.value)}
+                    value={medInputs.pcsk9i || 'not_yet'}
+                    onChange={e => onMedicationChange('pcsk9i', e.target.value, null, null)}
                   >
-                    <option value="no">No</option>
-                    <option value="yes">Yes</option>
-                    <option value="not_tolerated">Not tolerated</option>
+                    {PCSK9I_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
                 </div>
               )}

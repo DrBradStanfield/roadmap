@@ -99,11 +99,13 @@ export interface ApiMeasurement {
   createdAt: string;
 }
 
-/** API medication record shape (camelCase, as returned by API endpoints). */
+/** API medication record shape (camelCase, as returned by API endpoints). FHIR-compatible. */
 export interface ApiMedication {
   id: string;
   medicationKey: string;
-  value: string;
+  drugName: string;           // e.g., 'atorvastatin', 'yes', 'not_yet'
+  doseValue: number | null;   // e.g., 40, null for non-drug fields
+  doseUnit: string | null;    // e.g., 'mg', null for non-drug fields
   updatedAt: string;
 }
 
@@ -117,16 +119,19 @@ export function medicationsToInputs(
   for (const m of medications) {
     switch (m.medicationKey) {
       case 'statin':
-        inputs.statin = m.value;
+        inputs.statin = {
+          drug: m.drugName,
+          dose: m.doseValue,
+        };
         break;
       case 'ezetimibe':
-        inputs.ezetimibe = m.value as 'yes' | 'no' | 'not_tolerated';
+        inputs.ezetimibe = m.drugName as 'not_yet' | 'yes' | 'no' | 'not_tolerated';
         break;
-      case 'statin_increase':
-        inputs.statinIncrease = m.value as 'not_yet' | 'not_tolerated';
+      case 'statin_escalation':
+        inputs.statinEscalation = m.drugName as 'not_yet' | 'not_tolerated';
         break;
       case 'pcsk9i':
-        inputs.pcsk9i = m.value as 'yes' | 'no' | 'not_tolerated';
+        inputs.pcsk9i = m.drugName as 'not_yet' | 'yes' | 'no' | 'not_tolerated';
         break;
     }
   }

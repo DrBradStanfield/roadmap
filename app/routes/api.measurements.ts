@@ -189,7 +189,7 @@ export async function action({ request }: ActionFunctionArgs) {
         return json({ success: true, profile: toApiProfile(updated) });
       }
 
-      // Medication upsert — POST { medication: { medicationKey, value } }
+      // Medication upsert — POST { medication: { medicationKey, drugName, doseValue?, doseUnit? } }
       if (body.medication) {
         const medValidation = medicationSchema.safeParse(body.medication);
         if (!medValidation.success) {
@@ -199,7 +199,8 @@ export async function action({ request }: ActionFunctionArgs) {
           );
         }
 
-        const med = await upsertMedication(client, userId, medValidation.data.medicationKey, medValidation.data.value);
+        const { medicationKey, drugName, doseValue, doseUnit } = medValidation.data;
+        const med = await upsertMedication(client, userId, medicationKey, drugName, doseValue ?? null, doseUnit ?? null);
         if (!med) {
           return json({ success: false, error: 'Failed to save medication' }, { status: 500 });
         }

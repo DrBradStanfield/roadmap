@@ -450,17 +450,21 @@ export interface DbMedication {
   id: string;
   user_id: string;
   medication_key: string;
-  value: string;
+  drug_name: string;
+  dose_value: number | null;
+  dose_unit: string | null;
   updated_at: string;
   created_at: string;
 }
 
-/** Convert DB medication row to camelCase API format. */
+/** Convert DB medication row to camelCase API format (FHIR-compatible). */
 export function toApiMedication(m: DbMedication) {
   return {
     id: m.id,
     medicationKey: m.medication_key,
-    value: m.value,
+    drugName: m.drug_name,
+    doseValue: m.dose_value,
+    doseUnit: m.dose_unit,
     updatedAt: m.updated_at,
   };
 }
@@ -481,12 +485,14 @@ export async function getMedications(
   return (data ?? []) as DbMedication[];
 }
 
-/** Upsert a medication status. RLS verifies the user owns it. */
+/** Upsert a medication status (FHIR-compatible). RLS verifies the user owns it. */
 export async function upsertMedication(
   client: SupabaseClient,
   userId: string,
   medicationKey: string,
-  value: string,
+  drugName: string,
+  doseValue: number | null = null,
+  doseUnit: string | null = null,
 ): Promise<DbMedication | null> {
   const { data, error } = await client
     .from('medications')
@@ -494,7 +500,9 @@ export async function upsertMedication(
       {
         user_id: userId,
         medication_key: medicationKey,
-        value,
+        drug_name: drugName,
+        dose_value: doseValue,
+        dose_unit: doseUnit,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'user_id,medication_key' },
@@ -507,7 +515,7 @@ export async function upsertMedication(
     return null;
   }
 
-  logAudit(userId, 'MEDICATION_UPDATED', 'medication', data.id, { medicationKey });
+  logAudit(userId, 'MEDICATION_UPDATED', 'medication', data.id, { medicationKey, drugName, doseValue });
   return data as DbMedication;
 }
 

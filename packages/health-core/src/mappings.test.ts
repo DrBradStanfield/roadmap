@@ -201,18 +201,26 @@ describe('diffProfileFields', () => {
 });
 
 describe('medicationsToInputs', () => {
-  it('converts all medication keys', () => {
+  it('converts all medication keys with FHIR-compatible structure', () => {
     const meds: ApiMedication[] = [
-      { id: '1', medicationKey: 'statin', value: 'tier_1', updatedAt: '' },
-      { id: '2', medicationKey: 'ezetimibe', value: 'yes', updatedAt: '' },
-      { id: '3', medicationKey: 'statin_increase', value: 'not_yet', updatedAt: '' },
-      { id: '4', medicationKey: 'pcsk9i', value: 'no', updatedAt: '' },
+      { id: '1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', updatedAt: '' },
+      { id: '2', medicationKey: 'ezetimibe', drugName: 'yes', doseValue: null, doseUnit: null, updatedAt: '' },
+      { id: '3', medicationKey: 'statin_escalation', drugName: 'not_yet', doseValue: null, doseUnit: null, updatedAt: '' },
+      { id: '4', medicationKey: 'pcsk9i', drugName: 'no', doseValue: null, doseUnit: null, updatedAt: '' },
     ];
     const inputs = medicationsToInputs(meds);
-    expect(inputs.statin).toBe('tier_1');
+    expect(inputs.statin).toEqual({ drug: 'atorvastatin', dose: 20 });
     expect(inputs.ezetimibe).toBe('yes');
-    expect(inputs.statinIncrease).toBe('not_yet');
+    expect(inputs.statinEscalation).toBe('not_yet');
     expect(inputs.pcsk9i).toBe('no');
+  });
+
+  it('handles statin special values (none, not_tolerated)', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'statin', drugName: 'not_tolerated', doseValue: null, doseUnit: null, updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.statin).toEqual({ drug: 'not_tolerated', dose: null });
   });
 
   it('returns empty object for empty array', () => {
@@ -222,7 +230,7 @@ describe('medicationsToInputs', () => {
 
   it('ignores unknown medication keys', () => {
     const meds: ApiMedication[] = [
-      { id: '1', medicationKey: 'unknown', value: 'yes', updatedAt: '' },
+      { id: '1', medicationKey: 'unknown', drugName: 'yes', doseValue: null, doseUnit: null, updatedAt: '' },
     ];
     const inputs = medicationsToInputs(meds);
     expect(Object.keys(inputs)).toHaveLength(0);
