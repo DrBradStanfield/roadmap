@@ -193,7 +193,7 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
         </div>
         {hasUnsavedLongitudinal && onSaveLongitudinal && (
           <button
-            className="save-top-btn"
+            className="btn-primary save-top-btn"
             onClick={onSaveLongitudinal}
             disabled={isSavingLongitudinal}
           >

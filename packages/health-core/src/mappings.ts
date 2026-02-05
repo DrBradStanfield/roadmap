@@ -8,11 +8,16 @@
  * profiles table, not as measurements. Use diffProfileFields() for those.
  */
 import type { HealthInputs } from './types';
+import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem } from './types';
 import type { MetricType } from './units';
 
 /**
- * Maps HealthInputs field names to metric_type values used in the
- * health_measurements table and API. Only health metrics — no demographics.
+ * Maps HealthInputs field names to metric_type values for storage in the
+ * health_measurements table. Used when saving longitudinal measurements.
+ *
+ * NOTE: Excludes heightCm because height is stored on the profiles table,
+ * not as a time-series measurement. For unit conversions (which include
+ * height), use FIELD_METRIC_MAP instead.
  */
 export const FIELD_TO_METRIC: Record<string, string> = {
   weightKg: 'weight',
@@ -46,8 +51,11 @@ export const METRIC_TO_FIELD: Record<string, keyof HealthInputs> = {
 };
 
 /**
- * Maps HealthInputs field names that have unit conversions to their MetricType.
- * Used by InputPanel components for display/canonical conversion.
+ * Maps HealthInputs field names to MetricType for unit conversions.
+ * Used by UI components to convert between SI and conventional units.
+ *
+ * NOTE: Includes heightCm (unlike FIELD_TO_METRIC) because height requires
+ * unit conversion even though it's stored on profiles, not measurements.
  */
 export const FIELD_METRIC_MAP: Record<string, MetricType> = {
   heightCm: 'height',
@@ -246,7 +254,7 @@ export function measurementsToInputs(
 
   if (profile) {
     if (profile.sex != null) {
-      (inputs as any).sex = profile.sex === 1 ? 'male' : 'female';
+      (inputs as any).sex = decodeSex(profile.sex);
     }
     if (profile.birthYear != null) {
       (inputs as any).birthYear = profile.birthYear;
@@ -255,7 +263,7 @@ export function measurementsToInputs(
       (inputs as any).birthMonth = profile.birthMonth;
     }
     if (profile.unitSystem != null) {
-      (inputs as any).unitSystem = profile.unitSystem === 1 ? 'si' : 'conventional';
+      (inputs as any).unitSystem = decodeUnitSystem(profile.unitSystem);
     }
     if (profile.height != null) {
       (inputs as any).heightCm = profile.height;
@@ -300,7 +308,7 @@ export function diffProfileFields(
   const changes: Record<string, number> = {};
 
   if (current.sex !== undefined && current.sex !== previous.sex) {
-    changes.sex = current.sex === 'male' ? 1 : 2;
+    changes.sex = encodeSex(current.sex);
   }
   if (current.birthYear !== undefined && current.birthYear !== previous.birthYear) {
     changes.birthYear = current.birthYear;
@@ -309,7 +317,7 @@ export function diffProfileFields(
     changes.birthMonth = current.birthMonth;
   }
   if (current.unitSystem !== undefined && current.unitSystem !== previous.unitSystem) {
-    changes.unitSystem = current.unitSystem === 'si' ? 1 : 2;
+    changes.unitSystem = encodeUnitSystem(current.unitSystem);
   }
   if (current.heightCm !== undefined && current.heightCm !== previous.heightCm) {
     changes.height = current.heightCm;

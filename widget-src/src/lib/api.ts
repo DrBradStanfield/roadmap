@@ -30,6 +30,24 @@ interface SingleMeasurementResponse {
 // Shopify adds logged_in_customer_id + HMAC signature automatically
 const PROXY_PATH = '/apps/health-tool-1';
 
+/**
+ * Helper to wrap API calls with consistent error handling.
+ * Logs warning, reports to Sentry, and returns fallback value.
+ */
+async function apiCall<T>(
+  operation: () => Promise<T>,
+  errorMessage: string,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    console.warn(errorMessage, error);
+    Sentry.captureException(error);
+    return fallback;
+  }
+}
+
 /** Result from loading latest measurements: pre-fill inputs + raw measurements for "Previous:" labels. */
 export interface LatestMeasurementsResult {
   /** Only demographic/height fields for pre-filling the form. */

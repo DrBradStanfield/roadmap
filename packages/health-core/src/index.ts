@@ -29,6 +29,13 @@ export {
   PCSK9I_OPTIONS,
   // Screening
   SCREENING_INTERVALS,
+  // Database encoding helpers
+  SEX_DB,
+  UNIT_SYSTEM_DB,
+  encodeSex,
+  decodeSex,
+  encodeUnitSystem,
+  decodeUnitSystem,
 } from './types';
 
 // Calculations

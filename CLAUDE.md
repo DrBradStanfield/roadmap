@@ -50,6 +50,7 @@ Store medications with separate fields for drug identity and dosage:
 ```
 /packages/health-core/src/     # Shared health calculations, units, mappings library (with tests)
 /widget-src/src/               # React widget source code
+/widget-src/src/lib/           # Widget utilities (api.ts, storage.ts, constants.ts)
 /extensions/health-tool-widget/assets/  # Built widget JS/CSS
 /extensions/health-tool-widget/blocks/  # Liquid blocks (app-block + sync-embed)
 /app/                          # Remix admin app + API routes
@@ -78,8 +79,10 @@ Store medications with separate fields for drug identity and dosage:
 - `components/InputPanel.tsx` — Form inputs with unit conversion. Longitudinal fields are config-driven (`BASIC_LONGITUDINAL_FIELDS`, `BLOOD_TEST_FIELDS` + `LongitudinalField` component). Includes cholesterol medication cascade UI.
 - `components/ResultsPanel.tsx` — Results display with unit formatting
 - `components/HistoryPanel.tsx` — Health history page (charts, filter, pagination)
+- `components/DatePicker.tsx` — Reusable month/year date picker with future-month filtering
+- `lib/constants.ts` — Shared UI constants (months, date formatting, clinical thresholds)
 - `lib/storage.ts` — localStorage helpers (guest data + logged-in user cache)
-- `lib/api.ts` — Measurement API client (app proxy)
+- `lib/api.ts` — Measurement API client (app proxy, with `apiCall()` error wrapper)
 - `components/ErrorBoundary.tsx` — React error boundary
 
 **Shopify Extensions (`extensions/health-tool-widget/blocks/`):**
@@ -284,6 +287,39 @@ This ensures the bug is properly understood and prevents regressions.
 - `packages/health-core/src/units.test.ts` — Conversions, thresholds, formatting, locale (55 tests)
 - `packages/health-core/src/mappings.test.ts` — Field mappings, measurement conversion (24 tests)
 - `app/lib/supabase.server.test.ts` — toApiMeasurement helper (3 tests)
+
+## Code Patterns
+
+### CSS Design Tokens
+Colors, spacing, and typography use CSS variables defined at the top of `styles.css`:
+- `--color-primary`, `--color-primary-hover` for buttons/links
+- `--color-gray-*` for text hierarchy
+- `--spacing-*` for consistent margins/padding
+
+### Button Classes
+Use `.btn-primary` as the base class for action buttons. Variant classes (`.save-inline-btn`, `.save-top-btn`) add size-specific styles.
+
+### Database Encoding
+Sex and unit system are stored as integers in the database. Use helpers from `types.ts`:
+- `encodeSex('male')` → `1`, `decodeSex(1)` → `'male'`
+- `encodeUnitSystem('si')` → `1`, `decodeUnitSystem(1)` → `'si'`
+
+### Date Pickers
+Use `<DatePicker>` or `<InlineDatePicker>` from `components/DatePicker.tsx` for month/year selection:
+```tsx
+<DatePicker value={date} onChange={setDate} label="When?" shortMonths={false} />
+<InlineDatePicker value={date} onChange={setDate} shortMonths={true} />
+```
+
+### Date Formatting
+Use `formatShortDate()` from `lib/constants.ts` for consistent date display:
+```tsx
+formatShortDate('2024-01-15') // "Jan 15, 2024"
+```
+
+### Field Mappings
+- `FIELD_TO_METRIC`: For saving measurements (excludes height, which is on profiles table)
+- `FIELD_METRIC_MAP`: For unit conversions (includes height)
 
 ## Architecture Decision: No Customer Account Extensions
 

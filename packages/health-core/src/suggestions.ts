@@ -22,28 +22,19 @@ export const LIPID_TREATMENT_TARGETS = {
   nonHdlMmol: 1.4,   // mmol/L (~54 mg/dL)
 } as const;
 
-/** Format a blood-test value with its display unit, e.g. "5.7%" or "39 mmol/mol" */
-function fmtHba1c(value: number, us: UnitSystem): string {
-  return `${formatDisplayValue('hba1c', value, us)} ${getDisplayLabel('hba1c', us)}`;
+/** Format a metric value with its display unit, e.g. "5.7%" or "39 mmol/mol" */
+function fmtMetric(metricType: string, value: number, us: UnitSystem): string {
+  return `${formatDisplayValue(metricType, value, us)} ${getDisplayLabel(metricType, us)}`;
 }
-function fmtLdl(value: number, us: UnitSystem): string {
-  return `${formatDisplayValue('ldl', value, us)} ${getDisplayLabel('ldl', us)}`;
-}
-function fmtHdl(value: number, us: UnitSystem): string {
-  return `${formatDisplayValue('hdl', value, us)} ${getDisplayLabel('hdl', us)}`;
-}
-function fmtTrig(value: number, us: UnitSystem): string {
-  return `${formatDisplayValue('triglycerides', value, us)} ${getDisplayLabel('triglycerides', us)}`;
-}
-function fmtTotalChol(value: number, us: UnitSystem): string {
-  return `${formatDisplayValue('total_cholesterol', value, us)} ${getDisplayLabel('total_cholesterol', us)}`;
-}
-function fmtApoB(value: number, us: UnitSystem): string {
-  return `${formatDisplayValue('apob', value, us)} ${getDisplayLabel('apob', us)}`;
-}
-function fmtWeight(value: number, us: UnitSystem): string {
-  return `${formatDisplayValue('weight', value, us)} ${getDisplayLabel('weight', us)}`;
-}
+
+// Metric-specific aliases for readability
+const fmtHba1c = (v: number, us: UnitSystem) => fmtMetric('hba1c', v, us);
+const fmtLdl = (v: number, us: UnitSystem) => fmtMetric('ldl', v, us);
+const fmtHdl = (v: number, us: UnitSystem) => fmtMetric('hdl', v, us);
+const fmtTrig = (v: number, us: UnitSystem) => fmtMetric('triglycerides', v, us);
+const fmtTotalChol = (v: number, us: UnitSystem) => fmtMetric('total_cholesterol', v, us);
+const fmtApoB = (v: number, us: UnitSystem) => fmtMetric('apob', v, us);
+const fmtWeight = (v: number, us: UnitSystem) => fmtMetric('weight', v, us);
 
 /**
  * Generate personalized health suggestions based on inputs and calculated results.

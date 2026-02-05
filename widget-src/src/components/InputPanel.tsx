@@ -27,6 +27,8 @@ import {
   feetInchesToCm,
   formatHeightDisplay,
 } from '@roadmap/health-core';
+import { formatShortDate } from '../lib/constants';
+import { DatePicker, InlineDatePicker, dateValueToISO, getCurrentDateValue, type DateValue } from './DatePicker';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -138,17 +140,10 @@ export function InputPanel({
   }, [inputs.heightCm, unitSystem]);
 
   // Blood test date picker state (defaults to current month/year)
-  const now = new Date();
-  const [bloodTestDate, setBloodTestDate] = useState<{ year: string; month: string }>({
-    year: String(now.getFullYear()),
-    month: String(now.getMonth() + 1).padStart(2, '0'),
-  });
+  const [bloodTestDate, setBloodTestDate] = useState<DateValue>(getCurrentDateValue);
 
   // PSA date picker state (separate from blood test date, for prostate section)
-  const [psaDate, setPsaDate] = useState<{ year: string; month: string }>({
-    year: String(now.getFullYear()),
-    month: String(now.getMonth() + 1).padStart(2, '0'),
-  });
+  const [psaDate, setPsaDate] = useState<DateValue>(getCurrentDateValue);
 
   const updateField = <K extends keyof HealthInputs>(
     field: K,
@@ -201,18 +196,10 @@ export function InputPanel({
 
     const displayValue = toDisplay(field, measurement.value);
     const unit = getDisplayLabel(metric, unitSystem);
-    const date = new Date(measurement.recordedAt).toLocaleDateString(undefined, {
-      month: 'short', day: 'numeric', year: 'numeric',
-    });
-    return `${displayValue} ${unit} · ${date}`;
+    return `${displayValue} ${unit} · ${formatShortDate(measurement.recordedAt)}`;
   };
 
   const hasLongitudinalValues = LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined);
-
-  // Helper to get blood test date as ISO string (first of selected month)
-  const getBloodTestDateISO = (): string => {
-    return `${bloodTestDate.year}-${bloodTestDate.month}-01T00:00:00.000Z`;
-  };
 
   const renderLongitudinalField = (config: FieldConfig, isBloodTest = false) => {
     const { field, name, placeholder, step, hint, hintMale, hintFemale } = config;
@@ -247,8 +234,8 @@ export function InputPanel({
           />
           {isLoggedIn && inputs[field] !== undefined && (
             <button
-              className="save-inline-btn"
-              onClick={() => onSaveLongitudinal(isBloodTest ? getBloodTestDateISO() : undefined)}
+              className="btn-primary save-inline-btn"
+              onClick={() => onSaveLongitudinal(isBloodTest ? dateValueToISO(bloodTestDate) : undefined)}
               disabled={isSavingLongitudinal}
               title="Save new values"
             >
@@ -294,10 +281,7 @@ export function InputPanel({
     // Use the more recent date
     const dates = [sysMeasurement?.recordedAt, diaMeasurement?.recordedAt].filter(Boolean) as string[];
     const latestDate = dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
-    const dateStr = new Date(latestDate).toLocaleDateString(undefined, {
-      month: 'short', day: 'numeric', year: 'numeric',
-    });
-    return `${sysVal}/${diaVal} mmHg · ${dateStr}`;
+    return `${sysVal}/${diaVal} mmHg · ${formatShortDate(latestDate)}`;
   };
 
   const hasBpValue = inputs.systolicBp !== undefined || inputs.diastolicBp !== undefined;
@@ -492,7 +476,7 @@ export function InputPanel({
             </div>
             {isLoggedIn && hasBpValue && (
               <button
-                className="save-inline-btn"
+                className="btn-primary save-inline-btn"
                 onClick={() => onSaveLongitudinal()}
                 disabled={isSavingLongitudinal}
                 title="Save new values"
@@ -528,67 +512,13 @@ export function InputPanel({
         <h3 className="health-section-title">Blood Test Results</h3>
 
         {/* Blood test date picker */}
-        {(() => {
-          const currentYear = now.getFullYear();
-          const currentMonth = now.getMonth() + 1;
-          const years = Array.from({ length: 11 }, (_, i) => currentYear - i);
-          const allMonths = [
-            { value: '01', label: 'January' },
-            { value: '02', label: 'February' },
-            { value: '03', label: 'March' },
-            { value: '04', label: 'April' },
-            { value: '05', label: 'May' },
-            { value: '06', label: 'June' },
-            { value: '07', label: 'July' },
-            { value: '08', label: 'August' },
-            { value: '09', label: 'September' },
-            { value: '10', label: 'October' },
-            { value: '11', label: 'November' },
-            { value: '12', label: 'December' },
-          ];
-          // Filter months if current year is selected
-          const availableMonths = bloodTestDate.year === String(currentYear)
-            ? allMonths.filter(m => parseInt(m.value, 10) <= currentMonth)
-            : allMonths;
-
-          return (
-            <div className="health-field blood-test-date">
-              <label>When were these tests done?</label>
-              <div className="date-picker-row">
-                <select
-                  value={bloodTestDate.month}
-                  onChange={(e) => {
-                    const newMonth = e.target.value;
-                    setBloodTestDate(prev => ({ ...prev, month: newMonth }));
-                  }}
-                  aria-label="Month"
-                >
-                  {availableMonths.map((m) => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </select>
-                <select
-                  value={bloodTestDate.year}
-                  onChange={(e) => {
-                    const newYear = e.target.value;
-                    // Reset month if switching to current year and month is in the future
-                    let newMonth = bloodTestDate.month;
-                    if (newYear === String(currentYear) && parseInt(bloodTestDate.month, 10) > currentMonth) {
-                      newMonth = String(currentMonth).padStart(2, '0');
-                    }
-                    setBloodTestDate({ year: newYear, month: newMonth });
-                  }}
-                  aria-label="Year"
-                >
-                  {years.map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-              </div>
-              <p className="health-section-desc">To enter results from different dates, save each batch separately.</p>
-            </div>
-          );
-        })()}
+        <DatePicker
+          value={bloodTestDate}
+          onChange={setBloodTestDate}
+          label="When were these tests done?"
+          className="blood-test-date"
+        />
+        <p className="health-section-desc">To enter results from different dates, save each batch separately.</p>
 
         {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg, true))}
       </section>
@@ -1115,27 +1045,9 @@ export function InputPanel({
                     {/* PSA input with inline date picker */}
                     {(() => {
                       const psaMeasurement = previousMeasurements.find(m => m.metricType === 'psa');
-                      const psaPreviousLabel = psaMeasurement ? (() => {
-                        const date = new Date(psaMeasurement.recordedAt).toLocaleDateString(undefined, {
-                          month: 'short', day: 'numeric', year: 'numeric',
-                        });
-                        return `${psaMeasurement.value.toFixed(1)} ng/mL · ${date}`;
-                      })() : null;
-
-                      // Short month labels for inline layout (reuse years from outer scope)
-                      const shortMonths = [
-                        { value: '01', label: 'Jan' }, { value: '02', label: 'Feb' },
-                        { value: '03', label: 'Mar' }, { value: '04', label: 'Apr' },
-                        { value: '05', label: 'May' }, { value: '06', label: 'Jun' },
-                        { value: '07', label: 'Jul' }, { value: '08', label: 'Aug' },
-                        { value: '09', label: 'Sep' }, { value: '10', label: 'Oct' },
-                        { value: '11', label: 'Nov' }, { value: '12', label: 'Dec' },
-                      ];
-                      const availableMonths = psaDate.year === String(currentYear)
-                        ? shortMonths.filter(m => parseInt(m.value, 10) <= currentMonth)
-                        : shortMonths;
-
-                      const getPsaDateISO = () => `${psaDate.year}-${psaDate.month}-01T00:00:00.000Z`;
+                      const psaPreviousLabel = psaMeasurement
+                        ? `${psaMeasurement.value.toFixed(1)} ng/mL · ${formatShortDate(psaMeasurement.recordedAt)}`
+                        : null;
 
                       return (
                         <div className="health-field">
@@ -1161,31 +1073,11 @@ export function InputPanel({
                               max="100"
                               className={errors.psa ? 'error' : ''}
                             />
-                            <select
-                              value={psaDate.month}
-                              onChange={(e) => setPsaDate(prev => ({ ...prev, month: e.target.value }))}
-                              aria-label="Month"
-                            >
-                              {availableMonths.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                            </select>
-                            <select
-                              value={psaDate.year}
-                              onChange={(e) => {
-                                const newYear = e.target.value;
-                                let newMonth = psaDate.month;
-                                if (newYear === String(currentYear) && parseInt(psaDate.month, 10) > currentMonth) {
-                                  newMonth = String(currentMonth).padStart(2, '0');
-                                }
-                                setPsaDate({ year: newYear, month: newMonth });
-                              }}
-                              aria-label="Year"
-                            >
-                              {years.map(y => <option key={y} value={y}>{y}</option>)}
-                            </select>
+                            <InlineDatePicker value={psaDate} onChange={setPsaDate} />
                             {isLoggedIn && inputs.psa !== undefined && (
                               <button
-                                className="save-inline-btn"
-                                onClick={() => onSaveLongitudinal(getPsaDateISO())}
+                                className="btn-primary save-inline-btn"
+                                onClick={() => onSaveLongitudinal(dateValueToISO(psaDate))}
                                 disabled={isSavingLongitudinal}
                                 title="Save PSA value"
                               >
@@ -1254,8 +1146,8 @@ export function InputPanel({
       {/* Save button for longitudinal fields (logged-in users only) */}
       {isLoggedIn && hasLongitudinalValues && (
         <button
-          className="save-longitudinal-btn"
-          onClick={() => onSaveLongitudinal(getBloodTestDateISO())}
+          className="btn-primary save-longitudinal-btn"
+          onClick={() => onSaveLongitudinal(dateValueToISO(bloodTestDate))}
           disabled={isSavingLongitudinal}
         >
           {isSavingLongitudinal ? 'Saving...' : 'Save New Values'}

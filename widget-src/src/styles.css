@@ -1,3 +1,32 @@
+/* Design Tokens */
+:root {
+  /* Primary */
+  --color-primary: #0066cc;
+  --color-primary-hover: #0052a3;
+
+  /* Grays */
+  --color-gray-light: #888;
+  --color-gray-medium: #666;
+  --color-gray-dark: #333;
+  --color-gray-border: #ddd;
+
+  /* Status */
+  --color-error: #dc3545;
+  --color-success: #16a34a;
+  --color-warning: #fd7e14;
+
+  /* Text */
+  --color-text: #1a1a1a;
+  --color-text-heading: #111;
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+}
+
 /* Health Tool Container */
 .health-tool {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
@@ -733,31 +762,36 @@
 }
 
 /* Save Longitudinal Button */
-.save-longitudinal-btn {
-  width: 100%;
-  padding: 12px 20px;
-  font-size: 15px;
+/* Primary Button Base */
+.btn-primary {
   font-weight: 500;
-  background: #0066cc;
+  background: var(--color-primary);
   color: #fff;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.2s, transform 0.1s;
-  margin-top: 8px;
 }
 
-.save-longitudinal-btn:hover {
-  background: #0052a3;
+.btn-primary:hover {
+  background: var(--color-primary-hover);
 }
 
-.save-longitudinal-btn:active {
+.btn-primary:active {
   transform: scale(0.98);
 }
 
-.save-longitudinal-btn:disabled {
+.btn-primary:disabled {
   background: #999;
   cursor: not-allowed;
+}
+
+/* Button Variants */
+.save-longitudinal-btn {
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 15px;
+  margin-top: 8px;
 }
 
 /* Inline save button next to longitudinal inputs */
@@ -811,23 +845,7 @@
 .save-inline-btn {
   padding: 8px 14px;
   font-size: 13px;
-  font-weight: 500;
-  background: #0066cc;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
   white-space: nowrap;
-  transition: background 0.2s;
-}
-
-.save-inline-btn:hover {
-  background: #0052a3;
-}
-
-.save-inline-btn:disabled {
-  background: #999;
-  cursor: not-allowed;
 }
 
 /* Save button in account status area */
@@ -836,22 +854,7 @@
   padding: 10px 16px;
   margin-top: 10px;
   font-size: 14px;
-  font-weight: 500;
-  background: #0066cc;
-  color: #fff;
-  border: none;
   border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.save-top-btn:hover {
-  background: #0052a3;
-}
-
-.save-top-btn:disabled {
-  background: #999;
-  cursor: not-allowed;
 }
 
 /* History Panel */

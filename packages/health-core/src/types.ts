@@ -261,3 +261,35 @@ export interface Measurement {
   recordedAt: string; // ISO 8601
   createdAt: string;  // ISO 8601
 }
+
+/**
+ * Database encoding for sex field (profiles table).
+ * 1 = male, 2 = female
+ */
+export const SEX_DB = { MALE: 1, FEMALE: 2 } as const;
+
+/**
+ * Database encoding for unit_system field (profiles table).
+ * 1 = SI, 2 = conventional (US)
+ */
+export const UNIT_SYSTEM_DB = { SI: 1, CONVENTIONAL: 2 } as const;
+
+/** Encode sex string to database integer */
+export function encodeSex(sex: 'male' | 'female'): number {
+  return sex === 'male' ? SEX_DB.MALE : SEX_DB.FEMALE;
+}
+
+/** Decode database integer to sex string */
+export function decodeSex(encoded: number): 'male' | 'female' {
+  return encoded === SEX_DB.MALE ? 'male' : 'female';
+}
+
+/** Encode unit system string to database integer */
+export function encodeUnitSystem(unitSystem: 'si' | 'conventional'): number {
+  return unitSystem === 'si' ? UNIT_SYSTEM_DB.SI : UNIT_SYSTEM_DB.CONVENTIONAL;
+}
+
+/** Decode database integer to unit system string */
+export function decodeUnitSystem(encoded: number): 'si' | 'conventional' {
+  return encoded === UNIT_SYSTEM_DB.SI ? 'si' : 'conventional';
+}
