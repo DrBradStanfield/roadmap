@@ -40,6 +40,7 @@ import {
 interface AuthState {
   isLoggedIn: boolean;
   loginUrl?: string;
+  accountUrl?: string;
 }
 
 // Get auth state from DOM data attributes
@@ -51,7 +52,8 @@ function getAuthState(): AuthState {
 
   const isLoggedIn = root.dataset.loggedIn === 'true';
   const loginUrl = root.dataset.loginUrl || undefined;
-  return { isLoggedIn, loginUrl };
+  const accountUrl = root.dataset.accountUrl || undefined;
+  return { isLoggedIn, loginUrl, accountUrl };
 }
 
 export function HealthTool() {

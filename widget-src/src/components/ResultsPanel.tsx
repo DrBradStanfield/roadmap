@@ -13,6 +13,7 @@ import {
 interface AuthState {
   isLoggedIn: boolean;
   loginUrl?: string;
+  accountUrl?: string;
 }
 
 interface ResultsPanelProps {
@@ -47,13 +48,19 @@ function getLipidStatus(value: number, thresholds: { borderline: number; high: n
   return { label: 'Optimal', className: 'status-normal' };
 }
 
-function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
-  const priorityColors = {
-    info: 'suggestion-info',
-    attention: 'suggestion-attention',
-    urgent: 'suggestion-urgent',
-  };
+// Categories that should be consolidated into grouped cards
+const GROUPED_CATEGORIES = ['nutrition', 'screening', 'bloodwork', 'medication'];
 
+// Display order for all categories (nutrition, exercise, sleep first, then others)
+const CATEGORY_ORDER = ['nutrition', 'exercise', 'sleep', 'screening', 'bloodwork', 'medication', 'blood_pressure', 'general'];
+
+const priorityColors = {
+  info: 'suggestion-info',
+  attention: 'suggestion-attention',
+  urgent: 'suggestion-urgent',
+};
+
+function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
   const isSupplementCard = suggestion.category === 'supplements';
 
   return (
@@ -83,6 +90,78 @@ function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
   );
 }
 
+function GroupedSuggestionCard({ suggestions, category }: { suggestions: Suggestion[]; category: string }) {
+  // Get highest priority for the card badge
+  const highestPriority = suggestions.some(s => s.priority === 'urgent') ? 'urgent'
+    : suggestions.some(s => s.priority === 'attention') ? 'attention' : 'info';
+
+  const hasDiscussWithDoctor = suggestions.some(s => s.discussWithDoctor);
+
+  return (
+    <div className={`suggestion-card grouped-card ${priorityColors[highestPriority]}`}>
+      <div className="suggestion-header">
+        <span className={`suggestion-badge ${priorityColors[highestPriority]}`}>
+          {highestPriority === 'urgent' && '⚠️ '}
+          {category.replace(/_/g, ' ')}
+        </span>
+        {hasDiscussWithDoctor && (
+          <span className="doctor-badge">Discuss with doctor</span>
+        )}
+      </div>
+      <div className="grouped-subsections">
+        {suggestions.map((s) => (
+          <div key={s.id} className="suggestion-subsection">
+            <h4 className="suggestion-title">{s.title}</h4>
+            <p className="suggestion-desc">{s.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Group suggestions by category for consolidation
+function groupSuggestionsByCategory(suggestions: Suggestion[]): Map<string, Suggestion[]> {
+  const groups = new Map<string, Suggestion[]>();
+  for (const s of suggestions) {
+    const key = s.category;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(s);
+  }
+  return groups;
+}
+
+// Render suggestions with grouping for specified categories
+function renderGroupedSuggestions(suggestions: Suggestion[]) {
+  const grouped = groupSuggestionsByCategory(suggestions);
+  const elements: React.ReactNode[] = [];
+
+  // Render categories in defined order
+  for (const cat of CATEGORY_ORDER) {
+    const items = grouped.get(cat);
+    if (!items || items.length === 0) continue;
+
+    // Use grouped card for multi-item grouped categories, individual cards otherwise
+    if (GROUPED_CATEGORIES.includes(cat) && items.length > 1) {
+      elements.push(<GroupedSuggestionCard key={cat} suggestions={items} category={cat} />);
+    } else {
+      for (const s of items) {
+        elements.push(<SuggestionCard key={s.id} suggestion={s} />);
+      }
+    }
+  }
+
+  // Render any remaining categories not in CATEGORY_ORDER
+  for (const [cat, items] of grouped.entries()) {
+    if (CATEGORY_ORDER.includes(cat)) continue;
+    for (const s of items) {
+      elements.push(<SuggestionCard key={s.id} suggestion={s} />);
+    }
+  }
+
+  return elements;
+}
+
 function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal }: {
   authState?: AuthState;
   saveStatus?: string;
@@ -103,7 +182,12 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
         <div className="account-status-row">
           <span className="account-info-inline">
             <span className="account-icon">👤</span>
-            Logged in · <span className={`save-indicator-inline ${statusClass}`}>{statusText}</span>
+            <a
+              href={authState.accountUrl || '/account'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="logged-in-link"
+            >Logged in</a> · <span className={`save-indicator-inline ${statusClass}`}>{statusText}</span>
           </span>
           <a
             href="https://github.com/DrBradStanfield/roadmap/issues/new/choose"
@@ -264,27 +348,21 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
         {urgentSuggestions.length > 0 && (
           <div className="suggestions-group">
             <h4 className="suggestions-group-title urgent">Requires Attention</h4>
-            {urgentSuggestions.map((s) => (
-              <SuggestionCard key={s.id} suggestion={s} />
-            ))}
+            {renderGroupedSuggestions(urgentSuggestions)}
           </div>
         )}
 
         {attentionSuggestions.length > 0 && (
           <div className="suggestions-group">
             <h4 className="suggestions-group-title attention">Next Steps</h4>
-            {attentionSuggestions.map((s) => (
-              <SuggestionCard key={s.id} suggestion={s} />
-            ))}
+            {renderGroupedSuggestions(attentionSuggestions)}
           </div>
         )}
 
         {infoSuggestions.length > 0 && (
           <div className="suggestions-group">
             <h4 className="suggestions-group-title info">Foundation</h4>
-            {infoSuggestions.map((s) => (
-              <SuggestionCard key={s.id} suggestion={s} />
-            ))}
+            {renderGroupedSuggestions(infoSuggestions)}
           </div>
         )}
 

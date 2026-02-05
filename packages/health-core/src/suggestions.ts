@@ -736,7 +736,7 @@ export function generateSuggestions(
       id: 'supplement-sleep',
       category: 'supplements',
       priority: 'info',
-      title: 'Sleep',
+      title: 'Sleep by Dr Brad',
       description: 'Support for quality sleep and recovery.',
       link: 'https://drstanfield.com/products/sleep',
       discussWithDoctor: false,

@@ -120,6 +120,12 @@ export function InputPanel({
     month: String(now.getMonth() + 1).padStart(2, '0'),
   });
 
+  // PSA date picker state (separate from blood test date, for prostate section)
+  const [psaDate, setPsaDate] = useState<{ year: string; month: string }>({
+    year: String(now.getFullYear()),
+    month: String(now.getMonth() + 1).padStart(2, '0'),
+  });
+
   const updateField = <K extends keyof HealthInputs>(
     field: K,
     value: HealthInputs[K] | undefined
@@ -966,7 +972,7 @@ export function InputPanel({
 
                 {getStr('prostate_discussion') === 'will_screen' && (
                   <>
-                    {/* PSA input using longitudinal field pattern */}
+                    {/* PSA input with inline date picker */}
                     {(() => {
                       const psaMeasurement = previousMeasurements.find(m => m.metricType === 'psa');
                       const psaPreviousLabel = psaMeasurement ? (() => {
@@ -976,10 +982,25 @@ export function InputPanel({
                         return `${psaMeasurement.value.toFixed(1)} ng/mL · ${date}`;
                       })() : null;
 
+                      // Short month labels for inline layout (reuse years from outer scope)
+                      const shortMonths = [
+                        { value: '01', label: 'Jan' }, { value: '02', label: 'Feb' },
+                        { value: '03', label: 'Mar' }, { value: '04', label: 'Apr' },
+                        { value: '05', label: 'May' }, { value: '06', label: 'Jun' },
+                        { value: '07', label: 'Jul' }, { value: '08', label: 'Aug' },
+                        { value: '09', label: 'Sep' }, { value: '10', label: 'Oct' },
+                        { value: '11', label: 'Nov' }, { value: '12', label: 'Dec' },
+                      ];
+                      const availableMonths = psaDate.year === String(currentYear)
+                        ? shortMonths.filter(m => parseInt(m.value, 10) <= currentMonth)
+                        : shortMonths;
+
+                      const getPsaDateISO = () => `${psaDate.year}-${psaDate.month}-01T00:00:00.000Z`;
+
                       return (
                         <div className="health-field">
                           <label htmlFor="psa-input">PSA (ng/mL)</label>
-                          <div className="input-with-save">
+                          <div className="psa-inline-row">
                             <input
                               type="number"
                               id="psa-input"
@@ -991,9 +1012,7 @@ export function InputPanel({
                                   updateField('psa', undefined);
                                 } else {
                                   const num = parseFloat(val);
-                                  if (!isNaN(num)) {
-                                    updateField('psa', num);
-                                  }
+                                  if (!isNaN(num)) updateField('psa', num);
                                 }
                               }}
                               placeholder="1.5"
@@ -1002,10 +1021,31 @@ export function InputPanel({
                               max="100"
                               className={errors.psa ? 'error' : ''}
                             />
+                            <select
+                              value={psaDate.month}
+                              onChange={(e) => setPsaDate(prev => ({ ...prev, month: e.target.value }))}
+                              aria-label="Month"
+                            >
+                              {availableMonths.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                            </select>
+                            <select
+                              value={psaDate.year}
+                              onChange={(e) => {
+                                const newYear = e.target.value;
+                                let newMonth = psaDate.month;
+                                if (newYear === String(currentYear) && parseInt(psaDate.month, 10) > currentMonth) {
+                                  newMonth = String(currentMonth).padStart(2, '0');
+                                }
+                                setPsaDate({ year: newYear, month: newMonth });
+                              }}
+                              aria-label="Year"
+                            >
+                              {years.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
                             {isLoggedIn && inputs.psa !== undefined && (
                               <button
                                 className="save-inline-btn"
-                                onClick={() => onSaveLongitudinal(getBloodTestDateISO())}
+                                onClick={() => onSaveLongitudinal(getPsaDateISO())}
                                 disabled={isSavingLongitudinal}
                                 title="Save PSA value"
                               >
@@ -1013,14 +1053,12 @@ export function InputPanel({
                               </button>
                             )}
                           </div>
-                          {errors.psa && (
-                            <span className="field-error">{errors.psa}</span>
-                          )}
-                          <div className="field-hint-row">
+                          {errors.psa && <span className="field-error">{errors.psa}</span>}
+                          <div className="field-meta">
                             <span className="field-hint">Normal: &lt;4.0 ng/mL</span>
                             {psaPreviousLabel && (
                               <a
-                                className="previous-value-link"
+                                className="previous-value"
                                 href="/pages/health-history?metric=psa"
                                 target="_blank"
                                 rel="noopener noreferrer"

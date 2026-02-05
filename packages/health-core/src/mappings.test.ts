@@ -90,6 +90,15 @@ describe('measurementsToInputs', () => {
     expect(Object.keys(inputs)).toHaveLength(0);
   });
 
+  it('preserves unitSystem from profile even when no measurements exist', () => {
+    // This is critical: unitSystem must be preserved from cloud data
+    // even when filtering to only PREFILL_FIELDS. Without this, the
+    // user's unit preference resets after data deletion + reload.
+    const profile = { sex: null, birthYear: null, birthMonth: null, unitSystem: 2 };
+    const inputs = measurementsToInputs([], profile);
+    expect(inputs.unitSystem).toBe('conventional');
+  });
+
   it('converts all blood test metrics', () => {
     const measurements: ApiMeasurement[] = [
       { id: '1', metricType: 'hba1c', value: 39, recordedAt: '', createdAt: '' },

@@ -9,6 +9,7 @@
 <div id="health-tool-root"
   {% if customer %}
     data-logged-in="true"
+    data-account-url="{{ routes.account_url }}"
   {% else %}
     data-logged-in="false"
   {% endif %}
