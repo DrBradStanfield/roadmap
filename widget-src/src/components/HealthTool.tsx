@@ -3,16 +3,19 @@ import {
   calculateHealthResults,
   validateHealthInputs,
   getValidationErrors,
+  convertValidationErrorsToUnits,
   detectUnitSystem,
   PREFILL_FIELDS,
   LONGITUDINAL_FIELDS,
   METRIC_TO_FIELD,
   FIELD_TO_METRIC,
   medicationsToInputs,
+  screeningsToInputs,
   type HealthInputs,
   type UnitSystem,
   type ApiMeasurement,
   type ApiMedication,
+  type ApiScreening,
 } from '@roadmap/health-core';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
@@ -28,6 +31,7 @@ import {
   saveChangedMeasurements,
   addMeasurement,
   saveMedication,
+  saveScreening,
   deleteUserData,
 } from '../lib/api';
 
@@ -53,6 +57,7 @@ export function HealthTool() {
   const [inputs, setInputs] = useState<Partial<HealthInputs>>({});
   const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>([]);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
+  const [screenings, setScreenings] = useState<ApiScreening[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasApiResponse, setHasApiResponse] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -91,6 +96,9 @@ export function HealthTool() {
           if (cached.medications.length > 0) {
             setMedications(cached.medications);
           }
+          if (cached.screenings.length > 0) {
+            setScreenings(cached.screenings);
+          }
         }
         // Phase 2: API response is authoritative
         const result = await loadLatestMeasurements();
@@ -107,8 +115,9 @@ export function HealthTool() {
           previousInputsRef.current = { ...result.inputs };
           setPreviousMeasurements(result.previousMeasurements);
           setMedications(result.medications);
+          setScreenings(result.screenings);
           // Cache to localStorage for instant display on next page load
-          saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications);
+          saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
         } else {
           // No cloud data — sync-embed.liquid handles localStorage→cloud migration.
           // Just track current inputs so auto-save doesn't re-send them.
@@ -247,7 +256,9 @@ export function HealthTool() {
     let errors: Record<string, string> | null = null;
 
     if (!validation.success && validation.errors) {
-      errors = getValidationErrors(validation.errors);
+      const rawErrors = getValidationErrors(validation.errors);
+      // Convert error messages to user's unit system (e.g., "20 kg" → "44 lbs")
+      errors = convertValidationErrorsToUnits(rawErrors, unitSystem);
       // Strip invalid fields (all optional) so remaining suggestions still show
       const invalidFields = new Set(validation.errors.issues.map((i) => i.path[0] as string));
       if (invalidFields.has('heightCm') || invalidFields.has('sex')) {
@@ -264,6 +275,7 @@ export function HealthTool() {
       inputsForCalc as HealthInputs,
       unitSystem,
       medicationsToInputs(medications),
+      screeningsToInputs(screenings),
     );
     return { results: healthResults, isValid: true, validationErrors: errors };
   }, [effectiveInputs, unitSystem, medications]);
@@ -288,6 +300,7 @@ export function HealthTool() {
       setInputs({});
       setPreviousMeasurements([]);
       setMedications([]);
+      setScreenings([]);
       previousInputsRef.current = {};
       setSaveStatus('idle');
       window.alert('All your health data has been deleted.');
@@ -313,7 +326,7 @@ export function HealthTool() {
       const next = idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
 
       // Cache to localStorage
-      saveToLocalStorage(inputs, previousMeasurements, next);
+      saveToLocalStorage(inputs, previousMeasurements, next, screenings);
 
       return next;
     });
@@ -322,7 +335,28 @@ export function HealthTool() {
     if (authState.isLoggedIn) {
       await saveMedication(medicationKey, value);
     }
-  }, [authState.isLoggedIn, inputs, previousMeasurements]);
+  }, [authState.isLoggedIn, inputs, previousMeasurements, screenings]);
+
+  const handleScreeningChange = useCallback(async (screeningKey: string, value: string) => {
+    setScreenings(prev => {
+      const idx = prev.findIndex(s => s.screeningKey === screeningKey);
+      const updated: ApiScreening = {
+        id: idx >= 0 ? prev[idx].id : '',
+        screeningKey,
+        value,
+        updatedAt: new Date().toISOString(),
+      };
+      const next = idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
+
+      saveToLocalStorage(inputs, previousMeasurements, medications, next);
+
+      return next;
+    });
+
+    if (authState.isLoggedIn) {
+      await saveScreening(screeningKey, value);
+    }
+  }, [authState.isLoggedIn, inputs, previousMeasurements, medications]);
 
   return (
     <div className="health-tool">
@@ -346,6 +380,8 @@ export function HealthTool() {
             previousMeasurements={previousMeasurements}
             medications={medications}
             onMedicationChange={handleMedicationChange}
+            screenings={screenings}
+            onScreeningChange={handleScreeningChange}
             onSaveLongitudinal={handleSaveLongitudinal}
             isSavingLongitudinal={isSavingLongitudinal}
           />

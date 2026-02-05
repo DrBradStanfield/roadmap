@@ -81,6 +81,14 @@ export const LONGITUDINAL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
   'triglycerides', 'systolicBp', 'diastolicBp',
 ];
 
+/**
+ * Metric types for blood test results (as opposed to body measurements).
+ * Used to determine which measurements should use the user-selected blood test date.
+ */
+export const BLOOD_TEST_METRICS: ReadonlyArray<string> = [
+  'hba1c', 'creatinine', 'apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
+];
+
 /** API measurement record shape (camelCase, as returned by API endpoints). */
 export interface ApiMeasurement {
   id: string;
@@ -118,6 +126,73 @@ export function medicationsToInputs(
         break;
       case 'pcsk9i':
         inputs.pcsk9i = m.value as 'yes' | 'no' | 'not_tolerated';
+        break;
+    }
+  }
+  return inputs;
+}
+
+/** API screening record shape (camelCase, as returned by API endpoints). */
+export interface ApiScreening {
+  id: string;
+  screeningKey: string;
+  value: string;
+  updatedAt: string;
+}
+
+/**
+ * Convert API screening records into a ScreeningInputs object.
+ */
+export function screeningsToInputs(
+  screenings: ApiScreening[],
+): import('./types').ScreeningInputs {
+  const inputs: import('./types').ScreeningInputs = {};
+  for (const s of screenings) {
+    switch (s.screeningKey) {
+      case 'colorectal_method':
+        inputs.colorectalMethod = s.value as any;
+        break;
+      case 'colorectal_last_date':
+        inputs.colorectalLastDate = s.value;
+        break;
+      case 'breast_frequency':
+        inputs.breastFrequency = s.value as any;
+        break;
+      case 'breast_last_date':
+        inputs.breastLastDate = s.value;
+        break;
+      case 'cervical_method':
+        inputs.cervicalMethod = s.value as any;
+        break;
+      case 'cervical_last_date':
+        inputs.cervicalLastDate = s.value;
+        break;
+      case 'lung_smoking_history':
+        inputs.lungSmokingHistory = s.value as any;
+        break;
+      case 'lung_pack_years':
+        inputs.lungPackYears = parseFloat(s.value);
+        break;
+      case 'lung_screening':
+        inputs.lungScreening = s.value as any;
+        break;
+      case 'lung_last_date':
+        inputs.lungLastDate = s.value;
+        break;
+      case 'prostate_discussion':
+        inputs.prostateDiscussion = s.value as any;
+        break;
+      case 'prostate_psa_value':
+        inputs.prostatePsaValue = parseFloat(s.value);
+        break;
+      case 'prostate_last_date':
+        inputs.prostateLastDate = s.value;
+        break;
+      case 'endometrial_discussion':
+        inputs.endometrialDiscussion = s.value as any;
+        break;
+      case 'endometrial_abnormal_bleeding':
+        inputs.endometrialAbnormalBleeding = s.value as any;
         break;
     }
   }

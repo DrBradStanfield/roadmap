@@ -62,14 +62,31 @@
       }
 
       var hasProfile = Object.keys(profile).length > 0;
-      if (entries.length === 0 && !hasProfile && medications.length === 0) return;
+      if (entries.length === 0 && !hasProfile && medications.length === 0 && screenings.length === 0) return;
 
       // POST profile first (if present), then measurements sequentially.
       // Sequential pattern avoids race conditions in getOrCreateSupabaseUser().
-      function postMedications(i) {
-        if (i >= medications.length) {
+      // Build screening entries from cached screenings array
+      var screenings = (stored && stored.screenings) || [];
+
+      function postScreenings(i) {
+        if (i >= screenings.length) {
           localStorage.removeItem(STORAGE_KEY);
           sessionStorage.setItem(SYNC_FLAG, '1');
+          return;
+        }
+        var scr = screenings[i];
+        if (!scr.screeningKey || !scr.value) { postScreenings(i + 1); return; }
+        fetch(PROXY, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ screening: { screeningKey: scr.screeningKey, value: scr.value } })
+        }).then(function() { postScreenings(i + 1); });
+      }
+
+      function postMedications(i) {
+        if (i >= medications.length) {
+          postScreenings(0);
           return;
         }
         var med = medications[i];

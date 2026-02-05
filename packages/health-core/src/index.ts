@@ -5,6 +5,7 @@ export type {
   Suggestion,
   Measurement,
   MedicationInputs,
+  ScreeningInputs,
   StatinValue,
 } from './types';
 
@@ -12,6 +13,7 @@ export {
   STATIN_OPTIONS,
   MAX_STATIN_TIER,
   getStatinTier,
+  SCREENING_INTERVALS,
 } from './types';
 
 // Calculations
@@ -37,6 +39,7 @@ export {
   profileUpdateSchema,
   validateHealthInputs,
   getValidationErrors,
+  convertValidationErrorsToUnits,
   type MetricTypeValue,
   type ValidatedHealthInputs,
   type ValidatedMeasurement,
@@ -44,6 +47,9 @@ export {
   MEDICATION_KEYS,
   medicationSchema,
   type ValidatedMedication,
+  SCREENING_KEYS,
+  screeningSchema,
+  type ValidatedScreening,
 } from './validation';
 
 // Mappings (shared field↔metric conversions)
@@ -53,6 +59,7 @@ export {
   FIELD_METRIC_MAP,
   PREFILL_FIELDS,
   LONGITUDINAL_FIELDS,
+  BLOOD_TEST_METRICS,
   measurementsToInputs,
   diffInputsToMeasurements,
   diffProfileFields,
@@ -60,6 +67,8 @@ export {
   type ApiProfile,
   type ApiMedication,
   medicationsToInputs,
+  type ApiScreening,
+  screeningsToInputs,
 } from './mappings';
 
 // Units

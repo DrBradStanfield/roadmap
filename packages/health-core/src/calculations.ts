@@ -1,4 +1,4 @@
-import type { HealthInputs, HealthResults, MedicationInputs } from './types';
+import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import type { UnitSystem } from './units';
 import { generateSuggestions } from './suggestions';
 
@@ -91,7 +91,7 @@ export function getBMICategory(bmi: number): string {
 /**
  * Main calculation function - takes all inputs and returns all results
  */
-export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSystem, medications?: MedicationInputs): HealthResults {
+export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSystem, medications?: MedicationInputs, screenings?: ScreeningInputs): HealthResults {
   // Calculate ideal body weight and protein target (always available with height + sex)
   const ibw = calculateIBW(inputs.heightCm, inputs.sex);
   const proteinTarget = calculateProteinTarget(ibw);
@@ -140,7 +140,7 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   }
 
   // Generate personalized suggestions based on all inputs and results
-  results.suggestions = generateSuggestions(inputs, results, unitSystem, medications);
+  results.suggestions = generateSuggestions(inputs, results, unitSystem, medications, screenings);
 
   return results;
 }

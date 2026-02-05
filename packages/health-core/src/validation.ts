@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { UNIT_DEFS, UnitSystem, MetricType } from './units';
+import { FIELD_METRIC_MAP } from './mappings';
 
 /**
  * Valid metric types for the health_measurements table.
@@ -189,3 +191,103 @@ export const medicationSchema = z.object({
 });
 
 export type ValidatedMedication = z.infer<typeof medicationSchema>;
+
+/**
+ * Valid screening keys for the screenings table.
+ */
+export const SCREENING_KEYS = [
+  'colorectal_method', 'colorectal_last_date',
+  'breast_frequency', 'breast_last_date',
+  'cervical_method', 'cervical_last_date',
+  'lung_smoking_history', 'lung_pack_years', 'lung_screening', 'lung_last_date',
+  'prostate_discussion', 'prostate_psa_value', 'prostate_last_date',
+  'endometrial_discussion', 'endometrial_abnormal_bleeding',
+] as const;
+
+/**
+ * Schema for validating a screening upsert request.
+ */
+export const screeningSchema = z.object({
+  screeningKey: z.enum(SCREENING_KEYS),
+  value: z.string().min(1, 'Screening value is required'),
+});
+
+export type ValidatedScreening = z.infer<typeof screeningSchema>;
+
+// ---------------------------------------------------------------------------
+// Unit-aware error message conversion
+// ---------------------------------------------------------------------------
+
+/**
+ * Escape special regex characters in a string.
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Convert a single validation error message from SI units to the user's display units.
+ */
+function convertErrorMessage(
+  field: string,
+  message: string,
+  unitSystem: UnitSystem
+): string {
+  // Get the metric type for this field
+  const metricType = FIELD_METRIC_MAP[field as keyof typeof FIELD_METRIC_MAP];
+  if (!metricType) {
+    return message; // Field not mapped, return as-is
+  }
+
+  const unitDef = UNIT_DEFS[metricType];
+  if (!unitDef) {
+    return message; // No unit definition, return as-is
+  }
+
+  const siLabel = unitDef.label.si;
+  const convLabel = unitDef.label[unitSystem];
+  const decimals = unitDef.decimalPlaces[unitSystem];
+  const fromCanonical = unitDef.fromCanonical[unitSystem];
+
+  // Pattern: "Value must be at least X unit" or "Value must be at most X unit"
+  // Match numbers followed by the SI unit label
+  const regex = new RegExp(`(\\d+\\.?\\d*)\\s*${escapeRegex(siLabel)}`, 'g');
+
+  return message.replace(regex, (_match, value) => {
+    const siValue = parseFloat(value);
+    const convValue = fromCanonical(siValue);
+    // Format with appropriate decimal places
+    const formatted = decimals === 0
+      ? Math.round(convValue).toString()
+      : convValue.toFixed(decimals);
+    return `${formatted} ${convLabel}`;
+  });
+}
+
+/**
+ * Convert validation error messages from SI units to the user's display units.
+ *
+ * When the user is in US (conventional) mode, error messages like
+ * "Weight must be at least 20 kg" will be converted to
+ * "Weight must be at least 44 lbs".
+ *
+ * @param errors - Record of field names to error messages
+ * @param unitSystem - The user's current unit system ('si' or 'conventional')
+ * @returns Record with error messages converted to the appropriate units
+ */
+export function convertValidationErrorsToUnits(
+  errors: Record<string, string>,
+  unitSystem: UnitSystem
+): Record<string, string> {
+  if (unitSystem === 'si') {
+    return errors; // No conversion needed for SI units
+  }
+
+  const converted: Record<string, string> = {};
+
+  for (const [field, message] of Object.entries(errors)) {
+    converted[field] = convertErrorMessage(field, message, unitSystem);
+  }
+
+  return converted;
+}

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generateSuggestions } from './suggestions';
-import type { HealthInputs, HealthResults, MedicationInputs } from './types';
+import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import { toCanonicalValue } from './units';
 
 // Shorthand: convert conventional (US) blood test values to SI for test inputs
@@ -627,6 +627,212 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
       const potassium = suggestions.find(s => s.id === 'high-potassium');
       expect(potassium?.discussWithDoctor).toBe(true);
+    });
+  });
+
+  describe('Cancer screening suggestions', () => {
+    // Colorectal
+    it('suggests colorectal screening for age 35+ with no method selected', () => {
+      const { inputs, results } = createTestData({ birthYear: 1985, birthMonth: 1 }, { age: 41 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-colorectal')).toBeDefined();
+    });
+
+    it('does not suggest colorectal screening for age 34', () => {
+      const { inputs, results } = createTestData({ birthYear: 1992, birthMonth: 1 }, { age: 34 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-colorectal')).toBeUndefined();
+    });
+
+    it('shows overdue when colorectal last date is past interval', () => {
+      const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = { colorectalMethod: 'fit_annual', colorectalLastDate: '2024-01' };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-colorectal-overdue')).toBeDefined();
+    });
+
+    it('shows up-to-date when colorectal screening is recent', () => {
+      const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const now = new Date();
+      const lastMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const scr: ScreeningInputs = { colorectalMethod: 'fit_annual', colorectalLastDate: lastMonth };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-colorectal-upcoming')).toBeDefined();
+    });
+
+    // Breast
+    it('suggests breast screening for female age 40+', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-breast')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'screening-breast')?.priority).toBe('attention');
+    });
+
+    it('does not suggest breast screening for males', () => {
+      const { inputs, results } = createTestData({ sex: 'male', birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-breast')).toBeUndefined();
+    });
+
+    it('breast screening is info priority for age 40-44', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1984, birthMonth: 1 }, { age: 42 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-breast')?.priority).toBe('info');
+    });
+
+    // Cervical
+    it('suggests cervical screening for female age 25-65', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 2000, birthMonth: 1 }, { age: 26 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-cervical')).toBeDefined();
+    });
+
+    it('does not suggest cervical screening for female age 66+', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1958, birthMonth: 1 }, { age: 68 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-cervical')).toBeUndefined();
+    });
+
+    // Lung
+    it('suggests lung screening for smoker 50+ with 20+ pack-years', () => {
+      const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = { lungSmokingHistory: 'current_smoker', lungPackYears: 25 };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-lung')).toBeDefined();
+    });
+
+    it('does not suggest lung screening for never smoker', () => {
+      const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = { lungSmokingHistory: 'never_smoked' };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-lung')).toBeUndefined();
+    });
+
+    it('does not suggest lung screening for smoker with <20 pack-years', () => {
+      const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = { lungSmokingHistory: 'former_smoker', lungPackYears: 15 };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-lung')).toBeUndefined();
+    });
+
+    // Prostate
+    it('suggests prostate discussion for male age 50+', () => {
+      const { inputs, results } = createTestData({ sex: 'male', birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-prostate')).toBeDefined();
+    });
+
+    it('does not suggest prostate for female', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-prostate')).toBeUndefined();
+    });
+
+    it('warns about elevated PSA > 4.0', () => {
+      const { inputs, results } = createTestData({ sex: 'male', birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = { prostateDiscussion: 'will_screen', prostatePsaValue: 5.2 };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-prostate-elevated')).toBeDefined();
+    });
+
+    it('no elevated PSA warning when PSA <= 4.0', () => {
+      const { inputs, results } = createTestData({ sex: 'male', birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = { prostateDiscussion: 'will_screen', prostatePsaValue: 2.1 };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-prostate-elevated')).toBeUndefined();
+    });
+
+    // Endometrial
+    it('shows urgent suggestion for unreported abnormal bleeding', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1975, birthMonth: 1 }, { age: 51 });
+      const scr: ScreeningInputs = { endometrialAbnormalBleeding: 'yes_need_to_report' };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const bleeding = suggestions.find(s => s.id === 'screening-endometrial-bleeding');
+      expect(bleeding).toBeDefined();
+      expect(bleeding?.priority).toBe('urgent');
+    });
+
+    it('suggests endometrial discussion for female 45+ who have not discussed', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1975, birthMonth: 1 }, { age: 51 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-endometrial')).toBeDefined();
+    });
+
+    it('no endometrial discussion suggestion if already discussed', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1975, birthMonth: 1 }, { age: 51 });
+      const scr: ScreeningInputs = { endometrialDiscussion: 'discussed' };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-endometrial')).toBeUndefined();
+    });
+
+    // No screening suggestions without age
+    it('no screening suggestions when age is undefined', () => {
+      const { inputs, results } = createTestData({});
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const screeningSuggestions = suggestions.filter(s => s.category === 'screening');
+      expect(screeningSuggestions).toHaveLength(0);
+    });
+
+    // All screening suggestions have 'screening' category
+    it('all screening suggestions use screening category', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1975, birthMonth: 1 }, { age: 51 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const screeningSuggestions = suggestions.filter(s => s.id.startsWith('screening-'));
+      expect(screeningSuggestions.length).toBeGreaterThan(0);
+      for (const s of screeningSuggestions) {
+        expect(s.category).toBe('screening');
+      }
+    });
+  });
+
+  describe('Supplement suggestions', () => {
+    it('always includes three supplement suggestions', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+
+      const supplements = suggestions.filter(s => s.category === 'supplements');
+      expect(supplements).toHaveLength(3);
+      expect(supplements.map(s => s.id)).toEqual([
+        'supplement-microvitamin',
+        'supplement-omega3',
+        'supplement-sleep',
+      ]);
+    });
+
+    it('all supplement suggestions have links', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+
+      const supplements = suggestions.filter(s => s.category === 'supplements');
+      expect(supplements.every(s => s.link)).toBe(true);
+    });
+
+    it('supplement suggestions have info priority', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+
+      const supplements = suggestions.filter(s => s.category === 'supplements');
+      expect(supplements.every(s => s.priority === 'info')).toBe(true);
+    });
+
+    it('supplement suggestions do not require doctor discussion', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+
+      const supplements = suggestions.filter(s => s.category === 'supplements');
+      expect(supplements.every(s => s.discussWithDoctor === false)).toBe(true);
     });
   });
 });

@@ -509,6 +509,76 @@ export async function upsertMedication(
 }
 
 // ---------------------------------------------------------------------------
+// Screening CRUD — mutable screening status for the cancer screening cascade.
+// Uses UPSERT pattern (unique on user_id + screening_key).
+// ---------------------------------------------------------------------------
+
+export interface DbScreening {
+  id: string;
+  user_id: string;
+  screening_key: string;
+  value: string;
+  updated_at: string;
+  created_at: string;
+}
+
+/** Convert DB screening row to camelCase API format. */
+export function toApiScreening(s: DbScreening) {
+  return {
+    id: s.id,
+    screeningKey: s.screening_key,
+    value: s.value,
+    updatedAt: s.updated_at,
+  };
+}
+
+/** Get all screenings for the authenticated user. */
+export async function getScreenings(
+  client: SupabaseClient,
+): Promise<DbScreening[]> {
+  const { data, error } = await client
+    .from('screenings')
+    .select('*');
+
+  if (error) {
+    console.error('Error fetching screenings:', error);
+    return [];
+  }
+
+  return (data ?? []) as DbScreening[];
+}
+
+/** Upsert a screening status. RLS verifies the user owns it. */
+export async function upsertScreening(
+  client: SupabaseClient,
+  userId: string,
+  screeningKey: string,
+  value: string,
+): Promise<DbScreening | null> {
+  const { data, error } = await client
+    .from('screenings')
+    .upsert(
+      {
+        user_id: userId,
+        screening_key: screeningKey,
+        value,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,screening_key' },
+    )
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error upserting screening:', { error: error.message, screeningKey });
+    return null;
+  }
+
+  logAudit(userId, 'SCREENING_UPDATED', 'screening', data.id, { screeningKey });
+  return data as DbScreening;
+}
+
+// ---------------------------------------------------------------------------
 // Account data deletion — deletes all user data and anonymizes audit logs.
 // Uses supabaseAdmin (service role) to ensure complete cleanup.
 // ---------------------------------------------------------------------------
@@ -541,6 +611,12 @@ export async function deleteAllUserData(userId: string): Promise<{ measurementsD
   // 3. Delete all medications
   await supabaseAdmin
     .from('medications')
+    .delete()
+    .eq('user_id', userId);
+
+  // 3b. Delete all screenings
+  await supabaseAdmin
+    .from('screenings')
     .delete()
     .eq('user_id', userId);
 

@@ -41,8 +41,11 @@ import {
   getMedications,
   upsertMedication,
   toApiMedication,
+  getScreenings,
+  upsertScreening,
+  toApiScreening,
 } from '../lib/supabase.server';
-import { measurementSchema, profileUpdateSchema, medicationSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
+import { measurementSchema, profileUpdateSchema, medicationSchema, screeningSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
 
 function getCustomerId(request: Request): string | null {
   const url = new URL(request.url);
@@ -113,16 +116,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json({ success: true, data: measurements.map(toApiMeasurement) });
     }
 
-    const [latest, profile, medications] = await Promise.all([
+    const [latest, profile, medications, screenings] = await Promise.all([
       getLatestMeasurements(client),
       getProfile(client),
       getMedications(client),
+      getScreenings(client),
     ]);
     return json({
       success: true,
       data: latest.map(toApiMeasurement),
       profile: profile ? toApiProfile(profile) : null,
       medications: medications.map(toApiMedication),
+      screenings: screenings.map(toApiScreening),
     });
   } catch (error) {
     console.error('Error loading measurements:', error);
@@ -199,6 +204,24 @@ export async function action({ request }: ActionFunctionArgs) {
         }
 
         return json({ success: true, data: toApiMedication(med) });
+      }
+
+      // Screening upsert — POST { screening: { screeningKey, value } }
+      if (body.screening) {
+        const scrValidation = screeningSchema.safeParse(body.screening);
+        if (!scrValidation.success) {
+          return json(
+            { success: false, error: 'Invalid screening data', details: scrValidation.error.issues },
+            { status: 400 },
+          );
+        }
+
+        const scr = await upsertScreening(client, userId, scrValidation.data.screeningKey, scrValidation.data.value);
+        if (!scr) {
+          return json({ success: false, error: 'Failed to save screening' }, { status: 500 });
+        }
+
+        return json({ success: true, data: toApiScreening(scr) });
       }
 
       // Measurement insert — POST { metricType, value, recordedAt? }

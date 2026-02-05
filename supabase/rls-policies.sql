@@ -266,6 +266,53 @@ CREATE POLICY "Users can delete own medications"
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON medications TO authenticated;
 
+-- ===== Create screenings table =====
+-- Tracks cancer screening status and last screening dates.
+-- Uses UPSERT pattern (mutable, not time-series) — same as medications.
+
+CREATE TABLE IF NOT EXISTS screenings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  screening_key TEXT NOT NULL CHECK (screening_key IN (
+    'colorectal_method', 'colorectal_last_date',
+    'breast_frequency', 'breast_last_date',
+    'cervical_method', 'cervical_last_date',
+    'lung_smoking_history', 'lung_pack_years', 'lung_screening', 'lung_last_date',
+    'prostate_discussion', 'prostate_psa_value', 'prostate_last_date',
+    'endometrial_discussion', 'endometrial_abnormal_bleeding'
+  )),
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, screening_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_screenings_user ON screenings(user_id);
+
+ALTER TABLE screenings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own screenings" ON screenings;
+CREATE POLICY "Users can read own screenings"
+  ON screenings FOR SELECT
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can insert own screenings" ON screenings;
+CREATE POLICY "Users can insert own screenings"
+  ON screenings FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can update own screenings" ON screenings;
+CREATE POLICY "Users can update own screenings"
+  ON screenings FOR UPDATE
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can delete own screenings" ON screenings;
+CREATE POLICY "Users can delete own screenings"
+  ON screenings FOR DELETE
+  USING (user_id = auth.uid());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON screenings TO authenticated;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,
