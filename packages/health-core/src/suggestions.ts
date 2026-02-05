@@ -1,5 +1,5 @@
-import type { HealthInputs, HealthResults, Suggestion, MedicationInputs } from './types';
-import { getStatinTier, MAX_STATIN_TIER } from './types';
+import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from './types';
+import { getStatinTier, MAX_STATIN_TIER, SCREENING_INTERVALS } from './types';
 import {
   type UnitSystem,
   formatDisplayValue,
@@ -56,6 +56,7 @@ export function generateSuggestions(
   results: HealthResults,
   unitSystem: UnitSystem = 'si',
   medications?: MedicationInputs,
+  screenings?: ScreeningInputs,
 ): Suggestion[] {
   const suggestions: Suggestion[] = [];
   const us = unitSystem;
@@ -359,7 +360,7 @@ export function generateSuggestions(
     if (sys >= BP_THRESHOLDS.crisisSys || dia >= BP_THRESHOLDS.crisisDia) {
       suggestions.push({
         id: 'bp-crisis',
-        category: 'bloodwork',
+        category: 'blood_pressure',
         priority: 'urgent',
         title: 'Hypertensive crisis',
         description: `Your BP of ${sys}/${dia} mmHg is dangerously high. Seek immediate medical attention if accompanied by symptoms.`,
@@ -368,7 +369,7 @@ export function generateSuggestions(
     } else if (sys >= BP_THRESHOLDS.stage2Sys || dia >= BP_THRESHOLDS.stage2Dia) {
       suggestions.push({
         id: 'bp-stage2',
-        category: 'bloodwork',
+        category: 'blood_pressure',
         priority: 'urgent',
         title: 'Stage 2 hypertension',
         description: `Your BP of ${sys}/${dia} mmHg indicates stage 2 hypertension. Medication is typically recommended in addition to lifestyle changes.`,
@@ -378,7 +379,7 @@ export function generateSuggestions(
       const bpTarget = results.age !== undefined && results.age >= 65 ? '<130/80' : '<120/80';
       suggestions.push({
         id: 'bp-stage1',
-        category: 'bloodwork',
+        category: 'blood_pressure',
         priority: 'attention',
         title: 'Stage 1 hypertension',
         description: `Your BP of ${sys}/${dia} mmHg indicates stage 1 hypertension. Lifestyle modifications are recommended. Target is ${bpTarget}.`,
@@ -463,6 +464,284 @@ export function generateSuggestions(
       }
     }
   }
+
+  // === Cancer screening suggestions ===
+  if (screenings && results.age !== undefined) {
+    const age = results.age;
+    const sex = inputs.sex;
+
+    /** Check if a screening is overdue given its last date and method's interval. */
+    function screeningStatus(lastDate: string | undefined, method: string | undefined): 'overdue' | 'upcoming' | 'unknown' {
+      if (!lastDate || !method) return 'unknown';
+      const intervalMonths = SCREENING_INTERVALS[method] ?? 12;
+      const [year, month] = lastDate.split('-').map(Number);
+      if (!year || !month) return 'unknown';
+      const nextDue = new Date(year, month - 1 + intervalMonths);
+      return new Date() > nextDue ? 'overdue' : 'upcoming';
+    }
+
+    function formatYYYYMM(yyyymm: string): string {
+      const [y, m] = yyyymm.split('-').map(Number);
+      if (!y || !m) return yyyymm;
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${months[m - 1]} ${y}`;
+    }
+
+    function nextDueStr(lastDate: string, method: string): string {
+      const intervalMonths = SCREENING_INTERVALS[method] ?? 12;
+      const [year, month] = lastDate.split('-').map(Number);
+      if (!year || !month) return '';
+      const d = new Date(year, month - 1 + intervalMonths);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    // Colorectal (age 35-75)
+    if (age >= 35 && age <= 75) {
+      if (!screenings.colorectalMethod || screenings.colorectalMethod === 'not_yet_started') {
+        suggestions.push({
+          id: 'screening-colorectal',
+          category: 'screening',
+          priority: 'attention',
+          title: 'Start colorectal cancer screening',
+          description: 'Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.',
+          discussWithDoctor: true,
+        });
+      } else if (screenings.colorectalLastDate) {
+        const status = screeningStatus(screenings.colorectalLastDate, screenings.colorectalMethod);
+        if (status === 'overdue') {
+          suggestions.push({
+            id: 'screening-colorectal-overdue',
+            category: 'screening',
+            priority: 'attention',
+            title: 'Colorectal screening overdue',
+            description: `Your next colorectal screening was due ${nextDueStr(screenings.colorectalLastDate, screenings.colorectalMethod)}. Please schedule your screening.`,
+            discussWithDoctor: true,
+          });
+        } else if (status === 'upcoming') {
+          suggestions.push({
+            id: 'screening-colorectal-upcoming',
+            category: 'screening',
+            priority: 'info',
+            title: 'Colorectal screening up to date',
+            description: `Next screening due ${nextDueStr(screenings.colorectalLastDate, screenings.colorectalMethod)}.`,
+            discussWithDoctor: false,
+          });
+        }
+      }
+    }
+
+    // Breast (female, age 40+)
+    if (sex === 'female' && age >= 40) {
+      if (!screenings.breastFrequency || screenings.breastFrequency === 'not_yet_started') {
+        suggestions.push({
+          id: 'screening-breast',
+          category: 'screening',
+          priority: age >= 45 ? 'attention' : 'info',
+          title: 'Start breast cancer screening',
+          description: age >= 45
+            ? 'Mammography is recommended at your age. Discuss with your doctor.'
+            : 'Mammography is optional at your age (40\u201344). Discuss with your doctor.',
+          discussWithDoctor: true,
+        });
+      } else if (screenings.breastLastDate) {
+        const status = screeningStatus(screenings.breastLastDate, screenings.breastFrequency);
+        if (status === 'overdue') {
+          suggestions.push({
+            id: 'screening-breast-overdue',
+            category: 'screening',
+            priority: 'attention',
+            title: 'Mammogram overdue',
+            description: `Your next mammogram was due ${nextDueStr(screenings.breastLastDate, screenings.breastFrequency)}. Please schedule your screening.`,
+            discussWithDoctor: true,
+          });
+        } else if (status === 'upcoming') {
+          suggestions.push({
+            id: 'screening-breast-upcoming',
+            category: 'screening',
+            priority: 'info',
+            title: 'Mammogram up to date',
+            description: `Next mammogram due ${nextDueStr(screenings.breastLastDate, screenings.breastFrequency)}.`,
+            discussWithDoctor: false,
+          });
+        }
+      }
+    }
+
+    // Cervical (female, age 25-65)
+    if (sex === 'female' && age >= 25 && age <= 65) {
+      if (!screenings.cervicalMethod || screenings.cervicalMethod === 'not_yet_started') {
+        suggestions.push({
+          id: 'screening-cervical',
+          category: 'screening',
+          priority: 'attention',
+          title: 'Start cervical cancer screening',
+          description: 'HPV testing every 5 years (preferred) or Pap test every 3 years is recommended. Discuss with your doctor.',
+          discussWithDoctor: true,
+        });
+      } else if (screenings.cervicalLastDate) {
+        const status = screeningStatus(screenings.cervicalLastDate, screenings.cervicalMethod);
+        if (status === 'overdue') {
+          suggestions.push({
+            id: 'screening-cervical-overdue',
+            category: 'screening',
+            priority: 'attention',
+            title: 'Cervical screening overdue',
+            description: `Your next cervical screening was due ${nextDueStr(screenings.cervicalLastDate, screenings.cervicalMethod)}. Please schedule your screening.`,
+            discussWithDoctor: true,
+          });
+        } else if (status === 'upcoming') {
+          suggestions.push({
+            id: 'screening-cervical-upcoming',
+            category: 'screening',
+            priority: 'info',
+            title: 'Cervical screening up to date',
+            description: `Next screening due ${nextDueStr(screenings.cervicalLastDate, screenings.cervicalMethod)}.`,
+            discussWithDoctor: false,
+          });
+        }
+      }
+    }
+
+    // Lung (age 50-80, smokers with 20+ pack-years)
+    if (age >= 50 && age <= 80 &&
+        (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker') &&
+        screenings.lungPackYears !== undefined && screenings.lungPackYears >= 20) {
+      if (!screenings.lungScreening || screenings.lungScreening === 'not_yet_started') {
+        suggestions.push({
+          id: 'screening-lung',
+          category: 'screening',
+          priority: 'attention',
+          title: 'Start lung cancer screening',
+          description: `With ${screenings.lungPackYears} pack-years of smoking history, annual low-dose CT screening is recommended. Discuss with your doctor.`,
+          discussWithDoctor: true,
+        });
+      } else if (screenings.lungLastDate) {
+        const status = screeningStatus(screenings.lungLastDate, screenings.lungScreening);
+        if (status === 'overdue') {
+          suggestions.push({
+            id: 'screening-lung-overdue',
+            category: 'screening',
+            priority: 'attention',
+            title: 'Lung screening overdue',
+            description: `Your next low-dose CT was due ${nextDueStr(screenings.lungLastDate, screenings.lungScreening)}. Please schedule your screening.`,
+            discussWithDoctor: true,
+          });
+        } else if (status === 'upcoming') {
+          suggestions.push({
+            id: 'screening-lung-upcoming',
+            category: 'screening',
+            priority: 'info',
+            title: 'Lung screening up to date',
+            description: `Next low-dose CT due ${nextDueStr(screenings.lungLastDate, screenings.lungScreening)}.`,
+            discussWithDoctor: false,
+          });
+        }
+      }
+    }
+
+    // Prostate (male, age 45+) — shared decision
+    if (sex === 'male' && age >= 45) {
+      if (!screenings.prostateDiscussion || screenings.prostateDiscussion === 'not_yet') {
+        suggestions.push({
+          id: 'screening-prostate',
+          category: 'screening',
+          priority: age >= 50 ? 'info' : 'info',
+          title: 'Discuss prostate cancer screening',
+          description: 'PSA testing is an option after an informed discussion with your doctor. Benefits and risks vary by individual.',
+          discussWithDoctor: true,
+        });
+      } else if (screenings.prostateDiscussion === 'will_screen' && screenings.prostateLastDate) {
+        const status = screeningStatus(screenings.prostateLastDate, 'will_screen');
+        if (status === 'overdue') {
+          suggestions.push({
+            id: 'screening-prostate-overdue',
+            category: 'screening',
+            priority: 'attention',
+            title: 'PSA test overdue',
+            description: `Your next PSA test was due ${nextDueStr(screenings.prostateLastDate, 'will_screen')}. Please schedule your test.`,
+            discussWithDoctor: true,
+          });
+        } else if (status === 'upcoming') {
+          suggestions.push({
+            id: 'screening-prostate-upcoming',
+            category: 'screening',
+            priority: 'info',
+            title: 'PSA test up to date',
+            description: `Next PSA test due ${nextDueStr(screenings.prostateLastDate, 'will_screen')}.`,
+            discussWithDoctor: false,
+          });
+        }
+      }
+
+      // Elevated PSA warning
+      if (screenings.prostatePsaValue !== undefined && screenings.prostatePsaValue > 4.0) {
+        suggestions.push({
+          id: 'screening-prostate-elevated',
+          category: 'screening',
+          priority: 'attention',
+          title: 'Elevated PSA',
+          description: `Your PSA of ${screenings.prostatePsaValue.toFixed(1)} ng/mL is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.`,
+          discussWithDoctor: true,
+        });
+      }
+    }
+
+    // Endometrial — abnormal bleeding (urgent)
+    if (sex === 'female' && age >= 45 && screenings.endometrialAbnormalBleeding === 'yes_need_to_report') {
+      suggestions.push({
+        id: 'screening-endometrial-bleeding',
+        category: 'screening',
+        priority: 'urgent',
+        title: 'Report abnormal uterine bleeding',
+        description: 'Abnormal uterine bleeding should be evaluated by your doctor promptly, especially after menopause.',
+        discussWithDoctor: true,
+      });
+    }
+
+    // Endometrial — discussion reminder
+    if (sex === 'female' && age >= 45 && (!screenings.endometrialDiscussion || screenings.endometrialDiscussion === 'not_yet')) {
+      suggestions.push({
+        id: 'screening-endometrial',
+        category: 'screening',
+        priority: 'info',
+        title: 'Discuss endometrial cancer awareness',
+        description: 'Women at menopause should be informed about the risks and symptoms of endometrial cancer. Discuss with your doctor.',
+        discussWithDoctor: true,
+      });
+    }
+  }
+
+  // === Supplement suggestions (always shown) ===
+  suggestions.push(
+    {
+      id: 'supplement-microvitamin',
+      category: 'supplements',
+      priority: 'info',
+      title: 'MicroVitamin+',
+      description: 'Daily all-in-one to support mental function, skin elasticity, exercise performance, and gut health.',
+      link: 'https://drstanfield.com/pages/my-supplements',
+      discussWithDoctor: false,
+    },
+    {
+      id: 'supplement-omega3',
+      category: 'supplements',
+      priority: 'info',
+      title: 'Omega-3',
+      description: 'Essential fatty acids for cardiovascular and brain health.',
+      link: 'https://amzn.to/4kgwthG',
+      discussWithDoctor: false,
+    },
+    {
+      id: 'supplement-sleep',
+      category: 'supplements',
+      priority: 'info',
+      title: 'Sleep',
+      description: 'Support for quality sleep and recovery.',
+      link: 'https://drstanfield.com/products/sleep',
+      discussWithDoctor: false,
+    },
+  );
 
   return suggestions;
 }

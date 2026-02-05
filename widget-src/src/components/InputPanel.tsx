@@ -10,8 +10,10 @@ import {
   FIELD_METRIC_MAP,
   LONGITUDINAL_FIELDS,
   medicationsToInputs,
+  screeningsToInputs,
   type ApiMeasurement,
   type ApiMedication,
+  type ApiScreening,
   STATIN_OPTIONS,
   getStatinTier,
   MAX_STATIN_TIER,
@@ -93,6 +95,8 @@ interface InputPanelProps {
   previousMeasurements: ApiMeasurement[];
   medications: ApiMedication[];
   onMedicationChange: (medicationKey: string, value: string) => void;
+  screenings: ApiScreening[];
+  onScreeningChange: (screeningKey: string, value: string) => void;
   onSaveLongitudinal: () => void;
   isSavingLongitudinal: boolean;
 }
@@ -100,10 +104,12 @@ interface InputPanelProps {
 export function InputPanel({
   inputs, onChange, errors, unitSystem, onUnitSystemChange,
   isLoggedIn, previousMeasurements, medications, onMedicationChange,
+  screenings, onScreeningChange,
   onSaveLongitudinal, isSavingLongitudinal,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
+  const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
   const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthMonth);
   const showPrefill = !prefillComplete || prefillExpanded;
 
@@ -252,7 +258,8 @@ export function InputPanel({
 
   return (
     <div className="health-input-panel">
-      {/* Unit System Toggle */}
+      {/* Card 1: Units + Basic Info */}
+      <div className="section-card">
       <div className="unit-toggle">
         <label>Units:</label>
         <select
@@ -418,8 +425,10 @@ export function InputPanel({
           </div>
         </div>
       </section>
+      </div>
 
-      {/* Blood Tests Section */}
+      {/* Card 2: Blood Tests */}
+      <div className="section-card">
       <section className="health-section">
         <h3 className="health-section-title">Blood Test Results</h3>
         <p className="health-section-desc">
@@ -428,6 +437,7 @@ export function InputPanel({
 
         {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg))}
       </section>
+      </div>
 
       {/* Cholesterol Medications Section — shown when lipids are above treatment targets */}
       {(() => {
@@ -460,6 +470,7 @@ export function InputPanel({
             ((!statinTolerated || statinTier >= MAX_STATIN_TIER) || (showStatinIncrease && statinIncreaseHandled));
 
           return (
+            <div className="section-card">
             <section className="health-section medication-cascade">
               <h3 className="health-section-title">Cholesterol Medications</h3>
               <p className="health-section-desc">
@@ -533,8 +544,418 @@ export function InputPanel({
                 </div>
               )}
             </section>
+            </div>
           );
         })()}
+
+      {/* Cancer Screening Section — shown when age is available */}
+      {(() => {
+        const age = (inputs.birthYear && inputs.birthMonth)
+          ? calculateAge(inputs.birthYear, inputs.birthMonth)
+          : undefined;
+        if (age === undefined) return null;
+
+        const sex = inputs.sex;
+        const scr = screeningsToInputs(screenings);
+
+        // Helper: render a month/year date input for last screening date
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const years = Array.from({ length: 11 }, (_, i) => currentYear - i);
+        const allMonths = [
+          { value: '01', label: 'January' },
+          { value: '02', label: 'February' },
+          { value: '03', label: 'March' },
+          { value: '04', label: 'April' },
+          { value: '05', label: 'May' },
+          { value: '06', label: 'June' },
+          { value: '07', label: 'July' },
+          { value: '08', label: 'August' },
+          { value: '09', label: 'September' },
+          { value: '10', label: 'October' },
+          { value: '11', label: 'November' },
+          { value: '12', label: 'December' },
+        ];
+
+        const renderDateInput = (key: string, label: string) => {
+          // Get saved value from screenings
+          const savedValue = getStr(key) || '';
+          const [savedYear, savedMonth] = savedValue.split('-');
+
+          // Use local state if user is mid-edit, otherwise use saved value
+          const localState = dateInputs[key];
+          const displayYear = localState?.year ?? savedYear ?? '';
+          const displayMonth = localState?.month ?? savedMonth ?? '';
+
+          // Filter months: if current year is selected, only show months up to current month
+          const availableMonths = displayYear === String(currentYear)
+            ? allMonths.filter(m => parseInt(m.value, 10) <= currentMonth)
+            : allMonths;
+
+          const handleDateChange = (newYear: string, newMonth: string) => {
+            // If switching to current year and month is in the future, reset month
+            let adjustedMonth = newMonth;
+            if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) > currentMonth) {
+              adjustedMonth = '';
+            }
+
+            // Always update local state so UI reflects the selection
+            setDateInputs(prev => ({
+              ...prev,
+              [key]: { year: newYear, month: adjustedMonth }
+            }));
+
+            // Only save to backend when both are filled
+            if (newYear && adjustedMonth) {
+              onScreeningChange(key, `${newYear}-${adjustedMonth}`);
+            } else if (!newYear && !adjustedMonth) {
+              onScreeningChange(key, '');
+            }
+          };
+
+          const isSaved = displayYear && displayMonth && savedValue === `${displayYear}-${displayMonth}`;
+
+          return (
+            <div className="health-field">
+              <label>{label}</label>
+              <div className="date-picker-row">
+                <select
+                  id={`${key}-month`}
+                  value={displayMonth}
+                  onChange={(e) => handleDateChange(displayYear, e.target.value)}
+                  aria-label="Month"
+                >
+                  <option value="">Month</option>
+                  {availableMonths.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <select
+                  id={`${key}-year`}
+                  value={displayYear}
+                  onChange={(e) => handleDateChange(e.target.value, displayMonth)}
+                  aria-label="Year"
+                >
+                  <option value="">Year</option>
+                  {years.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+              {isSaved && <span className="field-hint">Saved</span>}
+            </div>
+          );
+        };
+
+        // Helper to get screening value from scr object by DB key
+        const getVal = (dbKey: string): string | number | undefined => {
+          const camelKey = dbKey.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+          return scr[camelKey as keyof typeof scr];
+        };
+        const getStr = (dbKey: string): string | undefined => getVal(dbKey) as string | undefined;
+        const getNum = (dbKey: string): number | undefined => getVal(dbKey) as number | undefined;
+
+        const hasAnyEligible =
+          age >= 35 || // colorectal
+          (sex === 'female' && age >= 25) || // cervical
+          (sex === 'female' && age >= 40) || // breast
+          (age >= 50 && age <= 80) || // lung
+          (sex === 'male' && age >= 45) || // prostate
+          (sex === 'female' && age >= 45); // endometrial
+
+        if (!hasAnyEligible) return null;
+
+        return (
+          <div className="section-card">
+          <section className="health-section screening-cascade">
+            <h3 className="health-section-title">Cancer Screening</h3>
+            <p className="health-section-desc">
+              Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.
+            </p>
+
+            {/* Colorectal (age 35-75, all genders) */}
+            {age >= 35 && age <= 85 && (
+              <div className="screening-group">
+                <h4>Colorectal Cancer</h4>
+                <div className="screening-notice">
+                  Note: ACS guidelines recommend starting colorectal screening at age 45. Dr Brad personally starts at age 35 due to increasing rates of colorectal cancer in younger adults. Discuss timing with your doctor.
+                </div>
+
+                {age <= 75 ? (
+                  <>
+                    <div className="health-field">
+                      <label htmlFor="colorectal-method">Screening method</label>
+                      <select
+                        id="colorectal-method"
+                        value={getStr('colorectal_method') || ''}
+                        onChange={(e) => {
+                          onScreeningChange('colorectal_method', e.target.value);
+                          if (e.target.value === 'not_yet_started' || e.target.value === '') {
+                            if (getStr('colorectal_last_date')) onScreeningChange('colorectal_last_date', '');
+                          }
+                        }}
+                      >
+                        <option value="">Select...</option>
+                        <option value="fit_annual">FIT test (annual)</option>
+                        <option value="colonoscopy_10yr">Colonoscopy (every 10 years)</option>
+                        <option value="other">Other method</option>
+                        <option value="not_yet_started">Not yet started</option>
+                      </select>
+                    </div>
+
+                    {getStr('colorectal_method') && getStr('colorectal_method') !== 'not_yet_started' && (
+                      renderDateInput('colorectal_last_date', 'Date of last screening')
+                    )}
+                  </>
+                ) : (
+                  <p className="screening-age-message">
+                    {age <= 85
+                      ? 'Screening is individualized at your age. Discuss with your doctor whether continued screening is appropriate.'
+                      : 'Routine screening typically stops at age 85. Discuss with your doctor.'}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Breast (female, age 40+) */}
+            {sex === 'female' && age >= 40 && (
+              <div className="screening-group">
+                <h4>Breast Cancer</h4>
+                <p className="screening-age-message">
+                  {age <= 44
+                    ? 'Annual mammograms are optional at your age (40\u201344).'
+                    : age <= 54
+                    ? 'Annual mammograms are recommended at your age (45\u201354).'
+                    : 'Annual or biennial mammograms are recommended at your age (55+).'}
+                </p>
+
+                <div className="health-field">
+                  <label htmlFor="breast-frequency">Screening frequency</label>
+                  <select
+                    id="breast-frequency"
+                    value={getStr('breast_frequency') || ''}
+                    onChange={(e) => {
+                      onScreeningChange('breast_frequency', e.target.value);
+                      if (e.target.value === 'not_yet_started' || e.target.value === '') {
+                        if (getStr('breast_last_date')) onScreeningChange('breast_last_date', '');
+                      }
+                    }}
+                  >
+                    <option value="">Select...</option>
+                    <option value="annual">Annual</option>
+                    <option value="biennial">Every 2 years</option>
+                    <option value="not_yet_started">Not yet started</option>
+                  </select>
+                </div>
+
+                {getStr('breast_frequency') && getStr('breast_frequency') !== 'not_yet_started' && (
+                  renderDateInput('breast_last_date', 'Date of last mammogram')
+                )}
+              </div>
+            )}
+
+            {/* Cervical (female, age 25+) */}
+            {sex === 'female' && age >= 25 && (
+              <div className="screening-group">
+                <h4>Cervical Cancer</h4>
+                {age <= 65 ? (
+                  <>
+                    <div className="health-field">
+                      <label htmlFor="cervical-method">Screening method</label>
+                      <select
+                        id="cervical-method"
+                        value={getStr('cervical_method') || ''}
+                        onChange={(e) => {
+                          onScreeningChange('cervical_method', e.target.value);
+                          if (e.target.value === 'not_yet_started' || e.target.value === '') {
+                            if (getStr('cervical_last_date')) onScreeningChange('cervical_last_date', '');
+                          }
+                        }}
+                      >
+                        <option value="">Select...</option>
+                        <option value="hpv_every_5yr">HPV test every 5 years (preferred)</option>
+                        <option value="pap_every_3yr">Pap test every 3 years</option>
+                        <option value="other">Other method</option>
+                        <option value="not_yet_started">Not yet started</option>
+                      </select>
+                    </div>
+
+                    {getStr('cervical_method') && getStr('cervical_method') !== 'not_yet_started' && (
+                      renderDateInput('cervical_last_date', 'Date of last screening')
+                    )}
+                  </>
+                ) : (
+                  <p className="screening-age-message">
+                    Routine cervical screening typically stops at age 65 if you have no history of abnormal results. Discuss with your doctor.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Lung (age 50-80, all genders) */}
+            {age >= 50 && age <= 80 && (
+              <div className="screening-group">
+                <h4>Lung Cancer</h4>
+
+                <div className="health-field">
+                  <label htmlFor="lung-smoking-history">Smoking history</label>
+                  <select
+                    id="lung-smoking-history"
+                    value={getStr('lung_smoking_history') || ''}
+                    onChange={(e) => {
+                      onScreeningChange('lung_smoking_history', e.target.value);
+                      if (e.target.value === 'never_smoked' || e.target.value === '') {
+                        if (getStr('lung_pack_years') !== undefined) onScreeningChange('lung_pack_years', '');
+                        if (getStr('lung_screening')) onScreeningChange('lung_screening', '');
+                        if (getStr('lung_last_date')) onScreeningChange('lung_last_date', '');
+                      }
+                    }}
+                  >
+                    <option value="">Select...</option>
+                    <option value="never_smoked">Never smoked</option>
+                    <option value="former_smoker">Former smoker</option>
+                    <option value="current_smoker">Current smoker</option>
+                  </select>
+                </div>
+
+                {(getStr('lung_smoking_history') === 'former_smoker' || getStr('lung_smoking_history') === 'current_smoker') && (
+                  <>
+                    <div className="health-field">
+                      <label htmlFor="lung-pack-years">Pack-years (packs/day &times; years smoked)</label>
+                      <input
+                        type="number"
+                        id="lung-pack-years"
+                        value={getNum('lung_pack_years') ?? ''}
+                        onChange={(e) => onScreeningChange('lung_pack_years', e.target.value)}
+                        placeholder="20"
+                        min="0"
+                        max="200"
+                        step="1"
+                      />
+                      <span className="field-hint">Screening recommended if &ge;20 pack-years</span>
+                    </div>
+
+                    {getNum('lung_pack_years') !== undefined && getNum('lung_pack_years')! >= 20 && (
+                      <>
+                        <div className="health-field">
+                          <label htmlFor="lung-screening">Screening status</label>
+                          <select
+                            id="lung-screening"
+                            value={getStr('lung_screening') || ''}
+                            onChange={(e) => {
+                              onScreeningChange('lung_screening', e.target.value);
+                              if (e.target.value === 'not_yet_started' || e.target.value === '') {
+                                if (getStr('lung_last_date')) onScreeningChange('lung_last_date', '');
+                              }
+                            }}
+                          >
+                            <option value="">Select...</option>
+                            <option value="annual_ldct">Annual low-dose CT</option>
+                            <option value="not_yet_started">Not yet started</option>
+                          </select>
+                        </div>
+
+                        {getStr('lung_screening') === 'annual_ldct' && (
+                          renderDateInput('lung_last_date', 'Date of last low-dose CT')
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Prostate (male, age 45+) — shared decision */}
+            {sex === 'male' && age >= 45 && (
+              <div className="screening-group">
+                <h4>Prostate Cancer</h4>
+                <p className="screening-age-message">
+                  {age < 50
+                    ? 'Screening typically starts at 50, but consider at 45 if you are at higher risk (African American or family history).'
+                    : 'PSA testing is an option after an informed discussion with your doctor.'}
+                </p>
+
+                <div className="health-field">
+                  <label htmlFor="prostate-discussion">Discussed prostate screening with your doctor?</label>
+                  <select
+                    id="prostate-discussion"
+                    value={getStr('prostate_discussion') || ''}
+                    onChange={(e) => {
+                      onScreeningChange('prostate_discussion', e.target.value);
+                      if (e.target.value !== 'will_screen') {
+                        if (getStr('prostate_psa_value') !== undefined) onScreeningChange('prostate_psa_value', '');
+                        if (getStr('prostate_last_date')) onScreeningChange('prostate_last_date', '');
+                      }
+                    }}
+                  >
+                    <option value="">Select...</option>
+                    <option value="not_yet">Not yet</option>
+                    <option value="elected_not_to">Yes, and I've elected not to screen</option>
+                    <option value="will_screen">Yes, and I will screen</option>
+                  </select>
+                </div>
+
+                {getStr('prostate_discussion') === 'will_screen' && (
+                  <>
+                    <div className="health-field">
+                      <label htmlFor="prostate-psa">Most recent PSA (ng/mL)</label>
+                      <input
+                        type="number"
+                        id="prostate-psa"
+                        value={getNum('prostate_psa_value') ?? ''}
+                        onChange={(e) => onScreeningChange('prostate_psa_value', e.target.value)}
+                        placeholder="1.5"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                      />
+                      <span className="field-hint">Reference: &lt;4.0 ng/mL (varies by age)</span>
+                    </div>
+
+                    {renderDateInput('prostate_last_date', 'Date of last PSA test')}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Endometrial (female, age 45+) — awareness */}
+            {sex === 'female' && age >= 45 && (
+              <div className="screening-group">
+                <h4>Endometrial Cancer</h4>
+
+                <div className="health-field">
+                  <label htmlFor="endometrial-discussion">Discussed endometrial cancer risk at menopause?</label>
+                  <select
+                    id="endometrial-discussion"
+                    value={getStr('endometrial_discussion') || ''}
+                    onChange={(e) => onScreeningChange('endometrial_discussion', e.target.value)}
+                  >
+                    <option value="">Select...</option>
+                    <option value="not_yet">Not yet</option>
+                    <option value="discussed">Yes, discussed</option>
+                  </select>
+                </div>
+
+                <div className="health-field">
+                  <label htmlFor="endometrial-bleeding">Any abnormal uterine bleeding?</label>
+                  <select
+                    id="endometrial-bleeding"
+                    value={getStr('endometrial_abnormal_bleeding') || ''}
+                    onChange={(e) => onScreeningChange('endometrial_abnormal_bleeding', e.target.value)}
+                  >
+                    <option value="">Select...</option>
+                    <option value="no">No</option>
+                    <option value="yes_reported">Yes, reported to doctor</option>
+                    <option value="yes_need_to_report">Yes, need to report to doctor</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </section>
+          </div>
+        );
+      })()}
 
       {/* Save button for longitudinal fields (logged-in users only) */}
       {isLoggedIn && hasLongitudinalValues && (

@@ -54,18 +54,30 @@ function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
     urgent: 'suggestion-urgent',
   };
 
+  const isSupplementCard = suggestion.category === 'supplements';
+
   return (
-    <div className={`suggestion-card ${priorityColors[suggestion.priority]}`}>
-      <div className="suggestion-header">
-        <span className={`suggestion-badge ${priorityColors[suggestion.priority]}`}>
-          {suggestion.priority === 'urgent' && '⚠️ '}
-          {suggestion.category}
-        </span>
-        {suggestion.discussWithDoctor && (
-          <span className="doctor-badge">Discuss with doctor</span>
+    <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}`}>
+      {!isSupplementCard && (
+        <div className="suggestion-header">
+          <span className={`suggestion-badge ${priorityColors[suggestion.priority]}`}>
+            {suggestion.priority === 'urgent' && '⚠️ '}
+            {suggestion.category.replace(/_/g, ' ')}
+          </span>
+          {suggestion.discussWithDoctor && (
+            <span className="doctor-badge">Discuss with doctor</span>
+          )}
+        </div>
+      )}
+      <h4 className="suggestion-title">
+        {suggestion.link ? (
+          <a href={suggestion.link} target="_blank" rel="noopener noreferrer">
+            {suggestion.title}
+          </a>
+        ) : (
+          suggestion.title
         )}
-      </div>
-      <h4 className="suggestion-title">{suggestion.title}</h4>
+      </h4>
       <p className="suggestion-desc">{suggestion.description}</p>
     </div>
   );
@@ -151,7 +163,8 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
 
   const urgentSuggestions = results.suggestions.filter(s => s.priority === 'urgent');
   const attentionSuggestions = results.suggestions.filter(s => s.priority === 'attention');
-  const infoSuggestions = results.suggestions.filter(s => s.priority === 'info');
+  const infoSuggestions = results.suggestions.filter(s => s.priority === 'info' && s.category !== 'supplements');
+  const supplementSuggestions = results.suggestions.filter(s => s.category === 'supplements');
 
   return (
     <div className="health-results-panel">
@@ -270,6 +283,15 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
           <div className="suggestions-group">
             <h4 className="suggestions-group-title info">Foundation</h4>
             {infoSuggestions.map((s) => (
+              <SuggestionCard key={s.id} suggestion={s} />
+            ))}
+          </div>
+        )}
+
+        {infoSuggestions.length > 0 && supplementSuggestions.length > 0 && (
+          <div className="suggestions-group supplements-group">
+            <h4 className="suggestions-group-title supplements">Supplements</h4>
+            {supplementSuggestions.map((s) => (
               <SuggestionCard key={s.id} suggestion={s} />
             ))}
           </div>

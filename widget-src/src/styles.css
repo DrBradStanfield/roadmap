@@ -43,10 +43,9 @@
 }
 
 .health-tool-left {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .health-tool-right {
@@ -69,6 +68,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin-bottom: 8px;
 }
 
 .unit-toggle label {
@@ -94,13 +94,15 @@
 }
 
 .health-section {
-  border-bottom: 1px solid #eee;
-  padding-bottom: 24px;
+  padding-bottom: 16px;
 }
 
-.health-section:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+.section-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .health-section-title {
@@ -202,6 +204,53 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+.date-picker-row {
+  display: flex;
+  gap: 8px;
+}
+
+.date-picker-row select {
+  flex: 1;
+}
+
+/* Screening Section */
+.screening-group {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.screening-group:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.screening-group h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 12px;
+}
+
+.screening-notice {
+  font-size: 14px;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.screening-age-message {
+  font-size: 14px;
+  color: #666;
+  margin: -4px 0 12px;
+  line-height: 1.5;
 }
 
 /* Results Panel */
@@ -335,6 +384,11 @@
   border-color: #0066cc;
 }
 
+.suggestions-group-title.supplements {
+  color: #00A38B;
+  border-color: #00A38B;
+}
+
 /* Suggestion Cards */
 .suggestion-card {
   background: #fff;
@@ -359,6 +413,18 @@
 
 .suggestion-card.suggestion-info {
   border-left-color: #0066cc;
+}
+
+.suggestion-card.supplement-card {
+  border-left-color: #00A38B;
+}
+
+.supplement-card .suggestion-title a {
+  color: #00A38B;
+}
+
+.supplement-card .suggestion-title a:hover {
+  color: #008571;
 }
 
 .suggestion-header {

@@ -50,10 +50,11 @@ export interface HealthResults {
  */
 export interface Suggestion {
   id: string;
-  category: 'nutrition' | 'exercise' | 'bloodwork' | 'general' | 'sleep' | 'medication';
+  category: 'nutrition' | 'exercise' | 'bloodwork' | 'blood_pressure' | 'general' | 'sleep' | 'medication' | 'screening' | 'supplements';
   priority: 'info' | 'attention' | 'urgent';
   title: string;
   description: string;
+  link?: string;
   discussWithDoctor: boolean;
 }
 
@@ -81,6 +82,54 @@ export function getStatinTier(value: string | undefined): number {
   const option = STATIN_OPTIONS.find(o => o.value === value);
   return option ? option.tier : 0;
 }
+
+/**
+ * Cancer screening inputs for the screening cascade.
+ * Date fields use "YYYY-MM" format (month precision).
+ */
+export interface ScreeningInputs {
+  // Colorectal
+  colorectalMethod?: 'fit_annual' | 'colonoscopy_10yr' | 'other' | 'not_yet_started';
+  colorectalLastDate?: string; // YYYY-MM
+
+  // Breast
+  breastFrequency?: 'annual' | 'biennial' | 'not_yet_started';
+  breastLastDate?: string;
+
+  // Cervical
+  cervicalMethod?: 'hpv_every_5yr' | 'pap_every_3yr' | 'other' | 'not_yet_started';
+  cervicalLastDate?: string;
+
+  // Lung
+  lungSmokingHistory?: 'never_smoked' | 'former_smoker' | 'current_smoker';
+  lungPackYears?: number;
+  lungScreening?: 'annual_ldct' | 'not_yet_started';
+  lungLastDate?: string;
+
+  // Prostate
+  prostateDiscussion?: 'not_yet' | 'elected_not_to' | 'will_screen';
+  prostatePsaValue?: number;
+  prostateLastDate?: string;
+
+  // Endometrial
+  endometrialDiscussion?: 'not_yet' | 'discussed';
+  endometrialAbnormalBleeding?: 'no' | 'yes_reported' | 'yes_need_to_report';
+}
+
+/**
+ * Screening interval in months, keyed by screening method value.
+ */
+export const SCREENING_INTERVALS: Record<string, number> = {
+  fit_annual: 12,
+  colonoscopy_10yr: 120,
+  annual: 12,       // breast annual
+  biennial: 24,     // breast biennial
+  hpv_every_5yr: 60,
+  pap_every_3yr: 36,
+  annual_ldct: 12,
+  will_screen: 12,  // prostate PSA default
+  other: 12,        // fallback for "other" methods
+};
 
 /**
  * Medication inputs for the cholesterol medication cascade.
