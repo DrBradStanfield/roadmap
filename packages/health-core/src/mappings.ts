@@ -111,6 +111,7 @@ export interface ApiMedication {
 
 /**
  * Convert API medication records into a MedicationInputs object.
+ * Handles FHIR-compliant data (actual drug names) and converts to UI format.
  */
 export function medicationsToInputs(
   medications: ApiMedication[],
@@ -125,13 +126,23 @@ export function medicationsToInputs(
         };
         break;
       case 'ezetimibe':
-        inputs.ezetimibe = m.drugName as 'not_yet' | 'yes' | 'no' | 'not_tolerated';
+        // FHIR-compliant: 'ezetimibe' with dose means taking it, convert to 'yes'
+        if (m.drugName === 'ezetimibe' && m.doseValue !== null) {
+          inputs.ezetimibe = 'yes';
+        } else {
+          inputs.ezetimibe = m.drugName as 'not_yet' | 'yes' | 'no' | 'not_tolerated';
+        }
         break;
       case 'statin_escalation':
         inputs.statinEscalation = m.drugName as 'not_yet' | 'not_tolerated';
         break;
       case 'pcsk9i':
-        inputs.pcsk9i = m.drugName as 'not_yet' | 'yes' | 'no' | 'not_tolerated';
+        // FHIR-compliant: 'pcsk9i' with dose means taking it, convert to 'yes'
+        if (m.drugName === 'pcsk9i' && m.doseValue !== null) {
+          inputs.pcsk9i = 'yes';
+        } else {
+          inputs.pcsk9i = m.drugName as 'not_yet' | 'yes' | 'no' | 'not_tolerated';
+        }
         break;
     }
   }

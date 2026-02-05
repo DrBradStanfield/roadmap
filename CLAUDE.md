@@ -21,6 +21,30 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 - **Testing**: Vitest
 - **Error Monitoring**: Sentry (`@sentry/react` for widget, `@sentry/remix` for backend)
 
+## FHIR Compliance
+
+**All medication and health data must be FHIR-compliant.** This ensures future interoperability with Electronic Health Records (EHRs), Apple HealthKit, and healthcare APIs.
+
+### Medication Storage (FHIR MedicationStatement)
+
+Store medications with separate fields for drug identity and dosage:
+
+| medication_key | drug_name | dose_value | dose_unit | Notes |
+|---------------|-----------|------------|-----------|-------|
+| statin | atorvastatin | 10 | mg | Actual drug name + dose |
+| statin | none | NULL | NULL | Not taking any statin |
+| statin | not_tolerated | NULL | NULL | Tried but can't tolerate |
+| ezetimibe | ezetimibe | 10 | mg | Taking ezetimibe 10mg |
+| ezetimibe | not_yet | NULL | NULL | Haven't tried yet |
+| ezetimibe | not_tolerated | NULL | NULL | Tried but can't tolerate |
+| pcsk9i | evolocumab | 140 | mg | Or alirocumab |
+| pcsk9i | not_yet | NULL | NULL | Haven't tried yet |
+
+**Rules:**
+- When user is taking a medication, store the actual drug name and dose (not 'yes')
+- Use 'none', 'not_yet', 'not_tolerated' only for status (no dose data)
+- Never store 'yes'/'no' as drug_name — use actual drug names or status values
+
 ## Key Directories
 
 ```
@@ -105,7 +129,7 @@ This creates branch `feature-name`, worktree at `../roadmap-feature-name`, and c
 
 - `profiles` — User accounts (shopify_customer_id nullable for future mobile users) + demographics (sex, birth_year, birth_month, unit_system, first_name, last_name)
 - `health_measurements` — Immutable time-series records (metric_type, value in SI, recorded_at). No UPDATE policy. `get_latest_measurements()` RPC returns latest per metric via `DISTINCT ON`. `CASE`-based CHECK constraint enforces per-metric value ranges.
-- `medications` — FHIR-compatible medication records (medication_key, drug_name, dose_value, dose_unit), UNIQUE per (user_id, medication_key). Keys: `statin` (drug_name: `atorvastatin`/`rosuvastatin`/`simvastatin`/`pravastatin`/`pitavastatin`/`none`/`not_tolerated`, dose_value: mg), `ezetimibe` (drug_name: `not_yet`/`yes`/`no`/`not_tolerated`), `statin_escalation` (drug_name: `not_yet`/`not_tolerated`), `pcsk9i` (drug_name: `not_yet`/`yes`/`no`/`not_tolerated`)
+- `medications` — FHIR-compatible medication records (medication_key, drug_name, dose_value, dose_unit), UNIQUE per (user_id, medication_key). See **FHIR Compliance** section for storage rules. Keys: `statin`, `ezetimibe`, `statin_escalation`, `pcsk9i`
 - `audit_logs` — HIPAA audit trail (user_id nullable for anonymization after deletion)
 
 Run `supabase/rls-policies.sql` in the SQL Editor to set up schema + RLS. Includes `GRANT EXECUTE ON FUNCTION get_latest_measurements() TO authenticated` — without this, queries silently return empty data.

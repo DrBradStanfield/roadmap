@@ -235,4 +235,28 @@ describe('medicationsToInputs', () => {
     const inputs = medicationsToInputs(meds);
     expect(Object.keys(inputs)).toHaveLength(0);
   });
+
+  it('converts FHIR-compliant ezetimibe (actual drug data) to yes', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'ezetimibe', drugName: 'ezetimibe', doseValue: 10, doseUnit: 'mg', updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.ezetimibe).toBe('yes');
+  });
+
+  it('converts FHIR-compliant pcsk9i (actual drug data) to yes', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'pcsk9i', drugName: 'pcsk9i', doseValue: 140, doseUnit: 'mg', updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.pcsk9i).toBe('yes');
+  });
+
+  it('preserves ezetimibe status values without dose', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'ezetimibe', drugName: 'not_tolerated', doseValue: null, doseUnit: null, updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.ezetimibe).toBe('not_tolerated');
+  });
 });

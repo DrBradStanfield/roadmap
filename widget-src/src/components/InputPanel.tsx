@@ -701,7 +701,15 @@ export function InputPanel({
                   <select
                     id="ezetimibe"
                     value={medInputs.ezetimibe || 'not_yet'}
-                    onChange={e => onMedicationChange('ezetimibe', e.target.value, null, null)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      // FHIR-compliant: store actual drug data when taking medication
+                      if (val === 'yes') {
+                        onMedicationChange('ezetimibe', 'ezetimibe', 10, 'mg');
+                      } else {
+                        onMedicationChange('ezetimibe', val, null, null);
+                      }
+                    }}
                   >
                     {EZETIMIBE_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -736,7 +744,15 @@ export function InputPanel({
                   <select
                     id="pcsk9i"
                     value={medInputs.pcsk9i || 'not_yet'}
-                    onChange={e => onMedicationChange('pcsk9i', e.target.value, null, null)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      // FHIR-compliant: store actual drug data when taking medication
+                      if (val === 'yes') {
+                        onMedicationChange('pcsk9i', 'pcsk9i', 140, 'mg');
+                      } else {
+                        onMedicationChange('pcsk9i', val, null, null);
+                      }
+                    }}
                   >
                     {PCSK9I_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
