@@ -427,7 +427,7 @@ export function generateSuggestions(
                   category: 'medication',
                   priority: 'attention',
                   title: 'Consider switching to a more potent statin',
-                  description: `You're on the maximum dose of ${drugName}. Discuss switching to a more potent statin (e.g. Rosuvastatin or Atorvastatin) with your doctor.`,
+                  description: `You're on the maximum dose of ${drugName}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.`,
                 });
               }
             } else {
