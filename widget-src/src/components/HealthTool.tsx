@@ -7,6 +7,7 @@ import {
   detectUnitSystem,
   PREFILL_FIELDS,
   LONGITUDINAL_FIELDS,
+  BLOOD_TEST_METRICS,
   METRIC_TO_FIELD,
   FIELD_TO_METRIC,
   medicationsToInputs,
@@ -187,16 +188,20 @@ export function HealthTool() {
   }, [inputs, hasApiResponse, authState.isLoggedIn, effectiveInputs]);
 
   // Explicit save for longitudinal fields
-  const handleSaveLongitudinal = useCallback(async () => {
+  // bloodTestDate is an ISO string (e.g., "2026-01-01T00:00:00.000Z") for blood test metrics
+  const handleSaveLongitudinal = useCallback(async (bloodTestDate?: string) => {
     if (!authState.isLoggedIn) return;
 
-    const fieldsToSave: Array<{ metricType: string; value: number }> = [];
+    const bloodTestMetrics = new Set(BLOOD_TEST_METRICS);
+    const fieldsToSave: Array<{ metricType: string; value: number; recordedAt?: string }> = [];
     for (const field of LONGITUDINAL_FIELDS) {
       const value = inputs[field];
       if (value !== undefined) {
         const metricType = FIELD_TO_METRIC[field];
         if (metricType) {
-          fieldsToSave.push({ metricType, value: value as number });
+          // Use bloodTestDate for blood test metrics, undefined (server uses NOW) for body measurements
+          const recordedAt = bloodTestMetrics.has(metricType) ? bloodTestDate : undefined;
+          fieldsToSave.push({ metricType, value: value as number, recordedAt });
         }
       }
     }
@@ -207,7 +212,7 @@ export function HealthTool() {
     setSaveStatus('saving');
 
     const results = await Promise.all(
-      fieldsToSave.map(f => addMeasurement(f.metricType, f.value)),
+      fieldsToSave.map(f => addMeasurement(f.metricType, f.value, f.recordedAt)),
     );
     const allSaved = results.every(r => r !== null);
 

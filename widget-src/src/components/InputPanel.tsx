@@ -97,7 +97,7 @@ interface InputPanelProps {
   onMedicationChange: (medicationKey: string, value: string) => void;
   screenings: ApiScreening[];
   onScreeningChange: (screeningKey: string, value: string) => void;
-  onSaveLongitudinal: () => void;
+  onSaveLongitudinal: (bloodTestDate?: string) => void;
   isSavingLongitudinal: boolean;
 }
 
@@ -112,6 +112,13 @@ export function InputPanel({
   const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
   const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthMonth);
   const showPrefill = !prefillComplete || prefillExpanded;
+
+  // Blood test date picker state (defaults to current month/year)
+  const now = new Date();
+  const [bloodTestDate, setBloodTestDate] = useState<{ year: string; month: string }>({
+    year: String(now.getFullYear()),
+    month: String(now.getMonth() + 1).padStart(2, '0'),
+  });
 
   const updateField = <K extends keyof HealthInputs>(
     field: K,
@@ -172,7 +179,12 @@ export function InputPanel({
 
   const hasLongitudinalValues = LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined);
 
-  const renderLongitudinalField = (config: FieldConfig) => {
+  // Helper to get blood test date as ISO string (first of selected month)
+  const getBloodTestDateISO = (): string => {
+    return `${bloodTestDate.year}-${bloodTestDate.month}-01T00:00:00.000Z`;
+  };
+
+  const renderLongitudinalField = (config: FieldConfig, isBloodTest = false) => {
     const { field, name, placeholder, step, hint, hintMale, hintFemale } = config;
     const effectiveHint = (inputs.sex === 'male' && hintMale) ? hintMale
       : (inputs.sex === 'female' && hintFemale) ? hintFemale
@@ -202,7 +214,7 @@ export function InputPanel({
           {isLoggedIn && inputs[field] !== undefined && (
             <button
               className="save-inline-btn"
-              onClick={onSaveLongitudinal}
+              onClick={() => onSaveLongitudinal(isBloodTest ? getBloodTestDateISO() : undefined)}
               disabled={isSavingLongitudinal}
               title="Save new values"
             >
@@ -398,7 +410,7 @@ export function InputPanel({
             {isLoggedIn && hasBpValue && (
               <button
                 className="save-inline-btn"
-                onClick={onSaveLongitudinal}
+                onClick={() => onSaveLongitudinal()}
                 disabled={isSavingLongitudinal}
                 title="Save new values"
               >
@@ -432,10 +444,73 @@ export function InputPanel({
       <section className="health-section">
         <h3 className="health-section-title">Blood Test Results</h3>
         <p className="health-section-desc">
-          Enter your most recent blood test values (optional)
+          Enter your blood test values below.
         </p>
 
-        {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg))}
+        {/* Blood test date picker */}
+        {(() => {
+          const currentYear = now.getFullYear();
+          const currentMonth = now.getMonth() + 1;
+          const years = Array.from({ length: 11 }, (_, i) => currentYear - i);
+          const allMonths = [
+            { value: '01', label: 'January' },
+            { value: '02', label: 'February' },
+            { value: '03', label: 'March' },
+            { value: '04', label: 'April' },
+            { value: '05', label: 'May' },
+            { value: '06', label: 'June' },
+            { value: '07', label: 'July' },
+            { value: '08', label: 'August' },
+            { value: '09', label: 'September' },
+            { value: '10', label: 'October' },
+            { value: '11', label: 'November' },
+            { value: '12', label: 'December' },
+          ];
+          // Filter months if current year is selected
+          const availableMonths = bloodTestDate.year === String(currentYear)
+            ? allMonths.filter(m => parseInt(m.value, 10) <= currentMonth)
+            : allMonths;
+
+          return (
+            <div className="health-field blood-test-date">
+              <label>When were these tests done?</label>
+              <div className="date-picker-row">
+                <select
+                  value={bloodTestDate.month}
+                  onChange={(e) => {
+                    const newMonth = e.target.value;
+                    setBloodTestDate(prev => ({ ...prev, month: newMonth }));
+                  }}
+                  aria-label="Month"
+                >
+                  {availableMonths.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={bloodTestDate.year}
+                  onChange={(e) => {
+                    const newYear = e.target.value;
+                    // Reset month if switching to current year and month is in the future
+                    let newMonth = bloodTestDate.month;
+                    if (newYear === String(currentYear) && parseInt(bloodTestDate.month, 10) > currentMonth) {
+                      newMonth = String(currentMonth).padStart(2, '0');
+                    }
+                    setBloodTestDate({ year: newYear, month: newMonth });
+                  }}
+                  aria-label="Year"
+                >
+                  {years.map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="health-section-desc">To enter results from different dates, save each batch separately.</p>
+            </div>
+          );
+        })()}
+
+        {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg, true))}
       </section>
       </div>
 
@@ -674,13 +749,15 @@ export function InputPanel({
               Screening recommendations based on your age and sex. Discuss all screening decisions with your doctor.
             </p>
 
-            {/* Colorectal (age 35-75, all genders) */}
+            {/* Colorectal (age 35-85, all genders) */}
             {age >= 35 && age <= 85 && (
               <div className="screening-group">
                 <h4>Colorectal Cancer</h4>
-                <div className="screening-notice">
-                  Note: ACS guidelines recommend starting colorectal screening at age 45. Dr Brad personally starts at age 35 due to increasing rates of colorectal cancer in younger adults. Discuss timing with your doctor.
-                </div>
+                {age < 45 && (
+                  <div className="screening-notice">
+                    Note: ACS guidelines recommend starting colorectal screening at age 45. Dr Brad personally starts at age 35 due to increasing rates of colorectal cancer in younger adults. Discuss timing with your doctor.
+                  </div>
+                )}
 
                 {age <= 75 ? (
                   <>
@@ -896,26 +973,77 @@ export function InputPanel({
                   </select>
                 </div>
 
-                {getStr('prostate_discussion') === 'will_screen' && (
-                  <>
+                {getStr('prostate_discussion') === 'will_screen' && (() => {
+                  // Inline date handling for PSA
+                  const psaDateKey = 'prostate_last_date';
+                  const savedPsaDate = getStr(psaDateKey) || '';
+                  const [savedPsaYear, savedPsaMonth] = savedPsaDate.split('-');
+                  const localPsaState = dateInputs[psaDateKey];
+                  const displayPsaYear = localPsaState?.year ?? savedPsaYear ?? '';
+                  const displayPsaMonth = localPsaState?.month ?? savedPsaMonth ?? '';
+                  const availablePsaMonths = displayPsaYear === String(currentYear)
+                    ? allMonths.filter(m => parseInt(m.value, 10) <= currentMonth)
+                    : allMonths;
+
+                  const handlePsaDateChange = (newYear: string, newMonth: string) => {
+                    let adjustedMonth = newMonth;
+                    if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) > currentMonth) {
+                      adjustedMonth = '';
+                    }
+                    setDateInputs(prev => ({
+                      ...prev,
+                      [psaDateKey]: { year: newYear, month: adjustedMonth }
+                    }));
+                    if (newYear && adjustedMonth) {
+                      onScreeningChange(psaDateKey, `${newYear}-${adjustedMonth}`);
+                    } else if (!newYear && !adjustedMonth) {
+                      onScreeningChange(psaDateKey, '');
+                    }
+                  };
+
+                  const psaDateSaved = displayPsaYear && displayPsaMonth && savedPsaDate === `${displayPsaYear}-${displayPsaMonth}`;
+
+                  return (
                     <div className="health-field">
                       <label htmlFor="prostate-psa">Most recent PSA (ng/mL)</label>
-                      <input
-                        type="number"
-                        id="prostate-psa"
-                        value={getNum('prostate_psa_value') ?? ''}
-                        onChange={(e) => onScreeningChange('prostate_psa_value', e.target.value)}
-                        placeholder="1.5"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                      />
-                      <span className="field-hint">Reference: &lt;4.0 ng/mL (varies by age)</span>
+                      <div className="psa-inline-row">
+                        <input
+                          type="number"
+                          id="prostate-psa"
+                          value={getNum('prostate_psa_value') ?? ''}
+                          onChange={(e) => onScreeningChange('prostate_psa_value', e.target.value)}
+                          placeholder="1.5"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                        />
+                        <select
+                          id="prostate-last-date-month"
+                          value={displayPsaMonth}
+                          onChange={(e) => handlePsaDateChange(displayPsaYear, e.target.value)}
+                          aria-label="Month"
+                        >
+                          <option value="">Month</option>
+                          {availablePsaMonths.map((m) => (
+                            <option key={m.value} value={m.value}>{m.label}</option>
+                          ))}
+                        </select>
+                        <select
+                          id="prostate-last-date-year"
+                          value={displayPsaYear}
+                          onChange={(e) => handlePsaDateChange(e.target.value, displayPsaMonth)}
+                          aria-label="Year"
+                        >
+                          <option value="">Year</option>
+                          {years.map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <span className="field-hint">Reference: &lt;4.0 ng/mL (varies by age){psaDateSaved && ' · Saved'}</span>
                     </div>
-
-                    {renderDateInput('prostate_last_date', 'Date of last PSA test')}
-                  </>
-                )}
+                  );
+                })()}
               </div>
             )}
 
@@ -961,7 +1089,7 @@ export function InputPanel({
       {isLoggedIn && hasLongitudinalValues && (
         <button
           className="save-longitudinal-btn"
-          onClick={onSaveLongitudinal}
+          onClick={() => onSaveLongitudinal(getBloodTestDateISO())}
           disabled={isSavingLongitudinal}
         >
           {isSavingLongitudinal ? 'Saving...' : 'Save New Values'}

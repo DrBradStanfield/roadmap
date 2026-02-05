@@ -135,7 +135,7 @@
 .health-section-desc {
   font-size: 14px;
   color: #666;
-  margin: -8px 0 16px;
+  margin: 0 0 16px;
 }
 
 /* Form Fields */
@@ -215,6 +215,20 @@
   flex: 1;
 }
 
+/* PSA inline row: value input + month + year on one line */
+.psa-inline-row {
+  display: flex;
+  gap: 8px;
+}
+
+.psa-inline-row input[type="number"] {
+  flex: 0 0 80px;
+}
+
+.psa-inline-row select {
+  flex: 1;
+}
+
 /* Screening Section */
 .screening-group {
   margin-bottom: 20px;
@@ -249,7 +263,7 @@
 .screening-age-message {
   font-size: 14px;
   color: #666;
-  margin: -4px 0 12px;
+  margin: 0 0 12px;
   line-height: 1.5;
 }
 
