@@ -4,6 +4,7 @@ import {
   type UnitSystem,
   formatDisplayValue,
   getDisplayLabel,
+  formatHeightDisplay,
   APOB_THRESHOLDS,
   NON_HDL_THRESHOLDS,
   LDL_THRESHOLDS,
@@ -254,7 +255,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
           <div className="stat-card">
             <span className="stat-label">Ideal Body Weight</span>
             <span className="stat-value">{ibwDisplay} {weightUnit}</span>
-            <span className="stat-status status-normal">for {formatDisplayValue('height', results.heightCm, unitSystem)} {getDisplayLabel('height', unitSystem)} height</span>
+            <span className="stat-status status-normal">for {formatHeightDisplay(results.heightCm, unitSystem)} height</span>
           </div>
           <div className="stat-card">
             <span className="stat-label">Protein Target</span>

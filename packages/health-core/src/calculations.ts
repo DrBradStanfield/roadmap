@@ -129,9 +129,9 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
     results.ldlC = inputs.ldlC;
   }
 
-  // Calculate age if birth info is provided
-  if (inputs.birthYear && inputs.birthMonth) {
-    results.age = calculateAge(inputs.birthYear, inputs.birthMonth);
+  // Calculate age if birth year is provided (default to January if month not set)
+  if (inputs.birthYear) {
+    results.age = calculateAge(inputs.birthYear, inputs.birthMonth ?? 1);
   }
 
   // Calculate eGFR if creatinine + age + sex are available

@@ -776,6 +776,24 @@
   font-weight: 500;
 }
 
+/* Height feet/inches compound input */
+.height-fieldset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.height-fieldset input {
+  width: 60px;
+  text-align: center;
+}
+
+.height-unit {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
 .save-inline-btn {
   padding: 8px 14px;
   font-size: 13px;

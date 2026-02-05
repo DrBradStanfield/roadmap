@@ -9,6 +9,11 @@ import {
   UNIT_DEFS,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
+  inchesToFeetInches,
+  feetInchesToInches,
+  cmToFeetInches,
+  feetInchesToCm,
+  formatHeightDisplay,
   type MetricType,
 } from './units';
 
@@ -184,5 +189,94 @@ describe('detectUnitSystem', () => {
 
   it('returns si for language-only locale (no country)', () => {
     expect(detectUnitSystem('en')).toBe('si');
+  });
+});
+
+describe('Feet/inches conversions', () => {
+  describe('inchesToFeetInches', () => {
+    it('converts 70 inches to 5 ft 10 in', () => {
+      expect(inchesToFeetInches(70)).toEqual({ feet: 5, inches: 10 });
+    });
+
+    it('converts 72 inches to exactly 6 ft', () => {
+      expect(inchesToFeetInches(72)).toEqual({ feet: 6, inches: 0 });
+    });
+
+    it('handles fractional inches by rounding', () => {
+      expect(inchesToFeetInches(70.4)).toEqual({ feet: 5, inches: 10 });
+      expect(inchesToFeetInches(70.6)).toEqual({ feet: 5, inches: 11 });
+    });
+
+    it('handles 11.5+ rounding edge case', () => {
+      // 59.6 inches = 4 ft 11.6 in, rounds to 5 ft 0 in
+      expect(inchesToFeetInches(59.6)).toEqual({ feet: 5, inches: 0 });
+    });
+
+    it('handles short heights (less than 1 foot)', () => {
+      expect(inchesToFeetInches(10)).toEqual({ feet: 0, inches: 10 });
+    });
+  });
+
+  describe('feetInchesToInches', () => {
+    it('converts 5 ft 10 in to 70 inches', () => {
+      expect(feetInchesToInches(5, 10)).toBe(70);
+    });
+
+    it('handles just feet (no inches)', () => {
+      expect(feetInchesToInches(6, 0)).toBe(72);
+    });
+
+    it('handles just inches (no feet)', () => {
+      expect(feetInchesToInches(0, 10)).toBe(10);
+    });
+  });
+
+  describe('cmToFeetInches', () => {
+    it('converts 177.8 cm to 5 ft 10 in', () => {
+      expect(cmToFeetInches(177.8)).toEqual({ feet: 5, inches: 10 });
+    });
+
+    it('converts 152.4 cm to 5 ft 0 in', () => {
+      expect(cmToFeetInches(152.4)).toEqual({ feet: 5, inches: 0 });
+    });
+
+    it('converts 180 cm to approximately 5 ft 11 in', () => {
+      const result = cmToFeetInches(180);
+      expect(result.feet).toBe(5);
+      expect(result.inches).toBe(11);
+    });
+  });
+
+  describe('feetInchesToCm', () => {
+    it('converts 5 ft 10 in to ~177.8 cm', () => {
+      expect(feetInchesToCm(5, 10)).toBeCloseTo(177.8, 1);
+    });
+
+    it('converts 6 ft 0 in to ~182.88 cm', () => {
+      expect(feetInchesToCm(6, 0)).toBeCloseTo(182.88, 1);
+    });
+  });
+
+  describe('round-trip accuracy', () => {
+    it('cm → feet/inches → cm preserves value within 1 cm', () => {
+      const originalCm = 175;
+      const { feet, inches } = cmToFeetInches(originalCm);
+      const backToCm = feetInchesToCm(feet, inches);
+      expect(backToCm).toBeCloseTo(originalCm, 0);
+    });
+  });
+
+  describe('formatHeightDisplay', () => {
+    it('formats SI as cm', () => {
+      expect(formatHeightDisplay(177.8, 'si')).toBe('178 cm');
+    });
+
+    it('formats conventional as ft/in with prime notation', () => {
+      expect(formatHeightDisplay(177.8, 'conventional')).toBe('5\'10"');
+    });
+
+    it('handles 6 ft exactly', () => {
+      expect(formatHeightDisplay(182.88, 'conventional')).toBe('6\'0"');
+    });
   });
 });

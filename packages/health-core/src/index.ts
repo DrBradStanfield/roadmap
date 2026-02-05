@@ -90,6 +90,12 @@ export {
   APOB_THRESHOLDS,
   EGFR_THRESHOLDS,
   PSA_THRESHOLDS,
+  // Feet/inches height conversion helpers
+  inchesToFeetInches,
+  feetInchesToInches,
+  cmToFeetInches,
+  feetInchesToCm,
+  formatHeightDisplay,
   type MetricType,
   type UnitSystem,
   type UnitDef,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { HealthInputs } from '@roadmap/health-core';
 import {
   type UnitSystem,
@@ -19,6 +19,9 @@ import {
   MAX_STATIN_TIER,
   LIPID_TREATMENT_TARGETS,
   calculateAge,
+  cmToFeetInches,
+  feetInchesToCm,
+  formatHeightDisplay,
 } from '@roadmap/health-core';
 
 interface FieldConfig {
@@ -112,6 +115,23 @@ export function InputPanel({
   const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
   const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthMonth);
   const showPrefill = !prefillComplete || prefillExpanded;
+
+  // Feet/inches state for US height input
+  const [heightFeet, setHeightFeet] = useState<string>('');
+  const [heightInches, setHeightInches] = useState<string>('');
+
+  // Sync heightCm → feet/inches display when loading data or switching units
+  useEffect(() => {
+    if (unitSystem === 'conventional' && inputs.heightCm !== undefined) {
+      const { feet, inches } = cmToFeetInches(inputs.heightCm);
+      setHeightFeet(String(feet));
+      setHeightInches(String(inches));
+    } else if (unitSystem === 'si') {
+      // Clear feet/inches when switching to SI
+      setHeightFeet('');
+      setHeightInches('');
+    }
+  }, [inputs.heightCm, unitSystem]);
 
   // Blood test date picker state (defaults to current month/year)
   const now = new Date();
@@ -303,7 +323,7 @@ export function InputPanel({
 
         {prefillComplete && !prefillExpanded && (
           <p className="prefill-summary" onClick={() => setPrefillExpanded(true)}>
-            {inputs.sex === 'male' ? 'Male' : 'Female'} · Height {toDisplay('heightCm', inputs.heightCm)} {getDisplayLabel(FIELD_METRIC_MAP['heightCm']!, unitSystem)} · Born {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(inputs.birthMonth || 1) - 1]} {inputs.birthYear}{inputs.birthYear && inputs.birthMonth ? ` (Age ${calculateAge(inputs.birthYear, inputs.birthMonth)})` : ''}
+            {inputs.sex === 'male' ? 'Male' : 'Female'} · {formatHeightDisplay(inputs.heightCm!, unitSystem)} · Born {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(inputs.birthMonth || 1) - 1]} {inputs.birthYear}{inputs.birthYear && inputs.birthMonth ? ` (Age ${calculateAge(inputs.birthYear, inputs.birthMonth)})` : ''}
           </p>
         )}
 
@@ -327,22 +347,71 @@ export function InputPanel({
             </div>
 
             <div className="health-field">
-              <label htmlFor="heightCm">{fieldLabel('heightCm', 'Height')}</label>
-              <input
-                type="number"
-                id="heightCm"
-                value={rawInputs['heightCm'] !== undefined ? rawInputs['heightCm'] : toDisplay('heightCm', inputs.heightCm)}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  setRawInputs(prev => ({ ...prev, heightCm: raw }));
-                  updateField('heightCm', parseAndConvert('heightCm', raw));
-                }}
-                onBlur={() => setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; })}
-                placeholder={unitSystem === 'si' ? '170' : '67'}
-                min={range('heightCm').min}
-                max={range('heightCm').max}
-                className={errors.heightCm ? 'error' : ''}
-              />
+              <label htmlFor="heightCm">{unitSystem === 'si' ? 'Height (cm)' : 'Height'}</label>
+              {unitSystem === 'si' ? (
+                <input
+                  type="number"
+                  id="heightCm"
+                  value={rawInputs['heightCm'] !== undefined ? rawInputs['heightCm'] : toDisplay('heightCm', inputs.heightCm)}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setRawInputs(prev => ({ ...prev, heightCm: raw }));
+                    updateField('heightCm', parseAndConvert('heightCm', raw));
+                  }}
+                  onBlur={() => setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; })}
+                  placeholder="170"
+                  min={range('heightCm').min}
+                  max={range('heightCm').max}
+                  className={errors.heightCm ? 'error' : ''}
+                />
+              ) : (
+                <div className="height-fieldset">
+                  <input
+                    type="text"
+                    id="heightFeet"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={heightFeet}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setHeightFeet(val);
+                      const feet = parseInt(val, 10) || 0;
+                      const inches = parseInt(heightInches, 10) || 0;
+                      if (val !== '' || heightInches !== '') {
+                        updateField('heightCm', feetInchesToCm(feet, inches));
+                      } else {
+                        updateField('heightCm', undefined);
+                      }
+                    }}
+                    placeholder="5"
+                    maxLength={1}
+                    className={errors.heightCm ? 'error' : ''}
+                  />
+                  <span className="height-unit">ft</span>
+                  <input
+                    type="text"
+                    id="heightInches"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={heightInches}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      setHeightInches(val);
+                      const feet = parseInt(heightFeet, 10) || 0;
+                      const inches = parseInt(val, 10) || 0;
+                      if (heightFeet !== '' || val !== '') {
+                        updateField('heightCm', feetInchesToCm(feet, inches));
+                      } else {
+                        updateField('heightCm', undefined);
+                      }
+                    }}
+                    placeholder="10"
+                    maxLength={2}
+                    className={errors.heightCm ? 'error' : ''}
+                  />
+                  <span className="height-unit">in</span>
+                </div>
+              )}
               {errors.heightCm && (
                 <span className="error-message">{errors.heightCm}</span>
               )}
@@ -552,7 +621,7 @@ export function InputPanel({
             <section className="health-section medication-cascade">
               <h3 className="health-section-title">Cholesterol Medications</h3>
               <p className="health-section-desc">
-                Your lipid levels are above target. Please indicate your current medications.
+                Your lipid levels are above target. Are you on any cholesterol-lowering medications?
               </p>
 
               {/* Step 1: Statin selection */}
@@ -626,10 +695,11 @@ export function InputPanel({
           );
         })()}
 
-      {/* Cancer Screening Section — shown when age is available */}
+      {/* Cancer Screening Section — shown when birth year is available */}
       {(() => {
-        const age = (inputs.birthYear && inputs.birthMonth)
-          ? calculateAge(inputs.birthYear, inputs.birthMonth)
+        // Default to January if birthMonth not set (gives conservative age estimate)
+        const age = inputs.birthYear
+          ? calculateAge(inputs.birthYear, inputs.birthMonth ?? 1)
           : undefined;
         if (age === undefined) return null;
 

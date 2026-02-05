@@ -60,6 +60,9 @@ const TRIGLYCERIDES_FACTOR = 88.57;
 const APOB_FACTOR = 100; // g/L ↔ mg/dL
 const CREATININE_FACTOR = 88.4; // µmol/L ↔ mg/dL
 
+// Feet/inches conversion
+const INCHES_PER_FOOT = 12;
+
 // HbA1c: NGSP % ↔ IFCC mmol/mol
 // NGSP = 0.09148 × IFCC + 2.152
 // IFCC = (NGSP - 2.152) / 0.09148
@@ -450,3 +453,56 @@ export const APOB_THRESHOLDS = {
 export const PSA_THRESHOLDS = {
   normal: 4.0,  // General upper limit of normal (varies by age)
 } as const;
+
+// ---------------------------------------------------------------------------
+// Feet/inches conversion helpers (for US height display)
+// ---------------------------------------------------------------------------
+
+/**
+ * Convert total inches to feet and remaining inches.
+ * @returns { feet: number, inches: number } - feet is whole number, inches is 0-11
+ */
+export function inchesToFeetInches(totalInches: number): { feet: number; inches: number } {
+  const feet = Math.floor(totalInches / INCHES_PER_FOOT);
+  const inches = Math.round(totalInches % INCHES_PER_FOOT);
+  // Handle rounding edge case (11.5+ inches rounds to 12)
+  if (inches >= INCHES_PER_FOOT) {
+    return { feet: feet + 1, inches: 0 };
+  }
+  return { feet, inches };
+}
+
+/**
+ * Convert feet and inches to total inches.
+ */
+export function feetInchesToInches(feet: number, inches: number): number {
+  return feet * INCHES_PER_FOOT + inches;
+}
+
+/**
+ * Convert cm to feet and inches for display.
+ */
+export function cmToFeetInches(cm: number): { feet: number; inches: number } {
+  const totalInches = cm / CM_PER_INCH;
+  return inchesToFeetInches(totalInches);
+}
+
+/**
+ * Convert feet and inches to cm for storage.
+ */
+export function feetInchesToCm(feet: number, inches: number): number {
+  const totalInches = feetInchesToInches(feet, inches);
+  return totalInches * CM_PER_INCH;
+}
+
+/**
+ * Format height for display in the user's unit system.
+ * Returns "X'Y"" for conventional or "X cm" for SI.
+ */
+export function formatHeightDisplay(cm: number, unitSystem: UnitSystem): string {
+  if (unitSystem === 'si') {
+    return `${Math.round(cm)} cm`;
+  }
+  const { feet, inches } = cmToFeetInches(cm);
+  return `${feet}'${inches}"`;
+}
