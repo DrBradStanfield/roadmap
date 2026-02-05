@@ -77,7 +77,6 @@ describe('generateSuggestions', () => {
       const hba1cSuggestion = suggestions.find(s => s.id === 'hba1c-diabetic');
       expect(hba1cSuggestion).toBeDefined();
       expect(hba1cSuggestion?.priority).toBe('urgent');
-      expect(hba1cSuggestion?.discussWithDoctor).toBe(true);
     });
 
     it('generates prediabetic suggestion for HbA1c 5.7-6.4% (38.8-47.5 mmol/mol)', () => {
@@ -96,7 +95,6 @@ describe('generateSuggestions', () => {
       const hba1cSuggestion = suggestions.find(s => s.id === 'hba1c-normal');
       expect(hba1cSuggestion).toBeDefined();
       expect(hba1cSuggestion?.priority).toBe('info');
-      expect(hba1cSuggestion?.discussWithDoctor).toBe(false);
     });
   });
 
@@ -622,12 +620,6 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'high-potassium')).toBeUndefined();
     });
 
-    it('has discussWithDoctor flag set', () => {
-      const { inputs, results } = createTestData({}, { eGFR: 90 });
-      const suggestions = generateSuggestions(inputs, results);
-      const potassium = suggestions.find(s => s.id === 'high-potassium');
-      expect(potassium?.discussWithDoctor).toBe(true);
-    });
   });
 
   describe('Cancer screening suggestions', () => {
@@ -827,12 +819,5 @@ describe('generateSuggestions', () => {
       expect(supplements.every(s => s.priority === 'info')).toBe(true);
     });
 
-    it('supplement suggestions do not require doctor discussion', () => {
-      const { inputs, results } = createTestData();
-      const suggestions = generateSuggestions(inputs, results);
-
-      const supplements = suggestions.filter(s => s.category === 'supplements');
-      expect(supplements.every(s => s.discussWithDoctor === false)).toBe(true);
-    });
   });
 });

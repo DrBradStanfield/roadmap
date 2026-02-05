@@ -71,9 +71,6 @@ function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
             {suggestion.priority === 'urgent' && '⚠️ '}
             {suggestion.category.replace(/_/g, ' ')}
           </span>
-          {suggestion.discussWithDoctor && (
-            <span className="doctor-badge">Discuss with doctor</span>
-          )}
         </div>
       )}
       <h4 className="suggestion-title">
@@ -95,8 +92,6 @@ function GroupedSuggestionCard({ suggestions, category }: { suggestions: Suggest
   const highestPriority = suggestions.some(s => s.priority === 'urgent') ? 'urgent'
     : suggestions.some(s => s.priority === 'attention') ? 'attention' : 'info';
 
-  const hasDiscussWithDoctor = suggestions.some(s => s.discussWithDoctor);
-
   return (
     <div className={`suggestion-card grouped-card ${priorityColors[highestPriority]}`}>
       <div className="suggestion-header">
@@ -104,9 +99,6 @@ function GroupedSuggestionCard({ suggestions, category }: { suggestions: Suggest
           {highestPriority === 'urgent' && '⚠️ '}
           {category.replace(/_/g, ' ')}
         </span>
-        {hasDiscussWithDoctor && (
-          <span className="doctor-badge">Discuss with doctor</span>
-        )}
       </div>
       <div className="grouped-subsections">
         {suggestions.map((s) => (

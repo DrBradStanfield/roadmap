@@ -70,7 +70,6 @@ export function generateSuggestions(
     priority: 'info',
     title: `Daily protein target: ${results.proteinTarget}g`,
     description: `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us)}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
-    discussWithDoctor: false,
   });
 
   // Low salt — only show if SBP ≥ 116
@@ -81,7 +80,6 @@ export function generateSuggestions(
       priority: 'info',
       title: 'Reduce sodium intake',
       description: 'Aim for less than 2,300mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.',
-      discussWithDoctor: false,
     });
   }
 
@@ -92,7 +90,6 @@ export function generateSuggestions(
     priority: 'info',
     title: 'Maximize fiber intake',
     description: 'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.',
-    discussWithDoctor: true,
   });
 
   // High-potassium diet — only when eGFR ≥ 45 (safe kidney function)
@@ -103,7 +100,6 @@ export function generateSuggestions(
       priority: 'info',
       title: 'Increase potassium-rich foods',
       description: 'Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.',
-      discussWithDoctor: true,
     });
   }
 
@@ -114,7 +110,6 @@ export function generateSuggestions(
     priority: 'info',
     title: 'Regular cardio and resistance training',
     description: 'Aim for at least 150 minutes of moderate-intensity cardio plus 2-3 resistance training sessions per week. This combination supports cardiovascular health, muscle mass, and metabolic function.',
-    discussWithDoctor: false,
   });
 
   // Sleep — always show
@@ -124,7 +119,6 @@ export function generateSuggestions(
     priority: 'info',
     title: 'Prioritize quality sleep',
     description: 'Aim for 7-9 hours of sleep per night. Maintain a consistent sleep schedule, limit screens before bed, and keep your bedroom cool and dark.',
-    discussWithDoctor: false,
   });
 
   // GLP-1 medication suggestion for weight management (BMI status shown on snapshot tile)
@@ -136,7 +130,6 @@ export function generateSuggestions(
         priority: 'attention',
         title: 'Weight management medication',
         description: 'With a BMI over 27, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
-        discussWithDoctor: true,
       });
     } else if (results.bmi > 25) {
       // BMI 25-27: only suggest if waist-to-height ≥ 0.5 or waist data unavailable
@@ -148,7 +141,6 @@ export function generateSuggestions(
           priority: 'attention',
           title: 'Weight management medication',
           description: 'With elevated BMI and waist measurements, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
-          discussWithDoctor: true,
         });
       }
     }
@@ -163,7 +155,6 @@ export function generateSuggestions(
         priority: 'urgent',
         title: 'HbA1c in diabetic range',
         description: `Your HbA1c of ${fmtHba1c(inputs.hba1c, us)} indicates diabetes. This requires medical management and lifestyle intervention.`,
-        discussWithDoctor: true,
       });
     } else if (inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) {
       suggestions.push({
@@ -172,7 +163,6 @@ export function generateSuggestions(
         priority: 'attention',
         title: 'HbA1c indicates prediabetes',
         description: `Your HbA1c of ${fmtHba1c(inputs.hba1c, us)} is in the prediabetic range. Lifestyle changes now can prevent progression to diabetes.`,
-        discussWithDoctor: true,
       });
     } else {
       suggestions.push({
@@ -181,7 +171,6 @@ export function generateSuggestions(
         priority: 'info',
         title: 'HbA1c in normal range',
         description: `Your HbA1c of ${fmtHba1c(inputs.hba1c, us)} is in the normal range. Continue healthy habits to maintain this.`,
-        discussWithDoctor: false,
       });
     }
   }
@@ -195,7 +184,6 @@ export function generateSuggestions(
         priority: 'urgent',
         title: 'Very high LDL cholesterol',
         description: `Your LDL of ${fmtLdl(inputs.ldlC, us)} is significantly elevated. This may indicate familial hypercholesterolemia. Statin therapy is typically recommended.`,
-        discussWithDoctor: true,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.high) {
       suggestions.push({
@@ -204,7 +192,6 @@ export function generateSuggestions(
         priority: 'attention',
         title: 'High LDL cholesterol',
         description: `Your LDL of ${fmtLdl(inputs.ldlC, us)} is high. Consider lifestyle modifications and discuss medication options.`,
-        discussWithDoctor: true,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.borderline) {
       suggestions.push({
@@ -213,7 +200,6 @@ export function generateSuggestions(
         priority: 'info',
         title: 'Borderline high LDL cholesterol',
         description: `Your LDL of ${fmtLdl(inputs.ldlC, us)} is borderline high. Optimal is <${formatDisplayValue('ldl', 2.59, us)} ${getDisplayLabel('ldl', us)} for most adults.`,
-        discussWithDoctor: false,
       });
     }
   }
@@ -227,7 +213,6 @@ export function generateSuggestions(
         priority: 'attention',
         title: 'High total cholesterol',
         description: `Your total cholesterol of ${fmtTotalChol(inputs.totalCholesterol, us)} is high. Desirable is <${formatDisplayValue('total_cholesterol', TOTAL_CHOLESTEROL_THRESHOLDS.borderline, us)} ${getDisplayLabel('total_cholesterol', us)}.`,
-        discussWithDoctor: true,
       });
     } else if (inputs.totalCholesterol >= TOTAL_CHOLESTEROL_THRESHOLDS.borderline) {
       suggestions.push({
@@ -236,7 +221,6 @@ export function generateSuggestions(
         priority: 'info',
         title: 'Borderline high total cholesterol',
         description: `Your total cholesterol of ${fmtTotalChol(inputs.totalCholesterol, us)} is borderline high. Desirable is <${formatDisplayValue('total_cholesterol', TOTAL_CHOLESTEROL_THRESHOLDS.borderline, us)} ${getDisplayLabel('total_cholesterol', us)}.`,
-        discussWithDoctor: false,
       });
     }
   }
@@ -250,7 +234,6 @@ export function generateSuggestions(
         priority: 'urgent',
         title: 'Very high non-HDL cholesterol',
         description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol, us)} ${getDisplayLabel('ldl', us)} is very high. This reflects total atherogenic particle burden and indicates significantly elevated cardiovascular risk.`,
-        discussWithDoctor: true,
       });
     } else if (results.nonHdlCholesterol >= NON_HDL_THRESHOLDS.high) {
       suggestions.push({
@@ -259,7 +242,6 @@ export function generateSuggestions(
         priority: 'attention',
         title: 'High non-HDL cholesterol',
         description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol, us)} ${getDisplayLabel('ldl', us)} is high. Consider lifestyle modifications to reduce cardiovascular risk.`,
-        discussWithDoctor: true,
       });
     } else if (results.nonHdlCholesterol >= NON_HDL_THRESHOLDS.borderline) {
       suggestions.push({
@@ -268,7 +250,6 @@ export function generateSuggestions(
         priority: 'info',
         title: 'Borderline high non-HDL cholesterol',
         description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol, us)} ${getDisplayLabel('ldl', us)} is borderline. Optimal is <${formatDisplayValue('ldl', NON_HDL_THRESHOLDS.borderline, us)} ${getDisplayLabel('ldl', us)}.`,
-        discussWithDoctor: false,
       });
     }
   }
@@ -283,7 +264,6 @@ export function generateSuggestions(
         priority: 'attention',
         title: 'Low HDL cholesterol',
         description: `Your HDL of ${fmtHdl(inputs.hdlC, us)} is below optimal (${formatDisplayValue('hdl', lowThreshold, us)} ${getDisplayLabel('hdl', us)} for ${inputs.sex === 'male' ? 'men' : 'women'}). Exercise and healthy fats can help raise HDL.`,
-        discussWithDoctor: true,
       });
     }
   }
@@ -297,7 +277,6 @@ export function generateSuggestions(
         priority: 'urgent',
         title: 'Very high triglycerides',
         description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us)} are very high, increasing risk of pancreatitis. Immediate intervention is recommended.`,
-        discussWithDoctor: true,
       });
     } else if (inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.high) {
       suggestions.push({
@@ -306,7 +285,6 @@ export function generateSuggestions(
         priority: 'attention',
         title: 'High triglycerides',
         description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us)} are elevated. Reducing refined carbs and alcohol can help.`,
-        discussWithDoctor: true,
       });
     } else if (inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) {
       suggestions.push({
@@ -315,7 +293,6 @@ export function generateSuggestions(
         priority: 'info',
         title: 'Borderline high triglycerides',
         description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us)} are borderline. Optimal is <${formatDisplayValue('triglycerides', TRIGLYCERIDES_THRESHOLDS.borderline, us)} ${getDisplayLabel('triglycerides', us)}.`,
-        discussWithDoctor: false,
       });
     }
   }
@@ -329,7 +306,6 @@ export function generateSuggestions(
         priority: 'urgent',
         title: 'Very high ApoB',
         description: `Your ApoB of ${fmtApoB(inputs.apoB, us)} is very high, indicating significantly elevated cardiovascular risk. Statin therapy and lifestyle intervention are typically recommended.`,
-        discussWithDoctor: true,
       });
     } else if (inputs.apoB >= APOB_THRESHOLDS.high) {
       suggestions.push({
@@ -338,7 +314,6 @@ export function generateSuggestions(
         priority: 'attention',
         title: 'High ApoB',
         description: `Your ApoB of ${fmtApoB(inputs.apoB, us)} is elevated. Consider lifestyle modifications and discuss treatment options to reduce cardiovascular risk.`,
-        discussWithDoctor: true,
       });
     } else if (inputs.apoB >= APOB_THRESHOLDS.borderline) {
       suggestions.push({
@@ -347,7 +322,6 @@ export function generateSuggestions(
         priority: 'info',
         title: 'Borderline high ApoB',
         description: `Your ApoB of ${fmtApoB(inputs.apoB, us)} is borderline. Optimal is <${formatDisplayValue('apob', APOB_THRESHOLDS.borderline, us)} ${getDisplayLabel('apob', us)}.`,
-        discussWithDoctor: false,
       });
     }
   }
@@ -364,7 +338,6 @@ export function generateSuggestions(
         priority: 'urgent',
         title: 'Hypertensive crisis',
         description: `Your BP of ${sys}/${dia} mmHg is dangerously high. Seek immediate medical attention if accompanied by symptoms.`,
-        discussWithDoctor: true,
       });
     } else if (sys >= BP_THRESHOLDS.stage2Sys || dia >= BP_THRESHOLDS.stage2Dia) {
       suggestions.push({
@@ -373,7 +346,6 @@ export function generateSuggestions(
         priority: 'urgent',
         title: 'Stage 2 hypertension',
         description: `Your BP of ${sys}/${dia} mmHg indicates stage 2 hypertension. Medication is typically recommended in addition to lifestyle changes.`,
-        discussWithDoctor: true,
       });
     } else if (sys >= BP_THRESHOLDS.stage1Sys || dia > BP_THRESHOLDS.stage1Dia) {
       const bpTarget = results.age !== undefined && results.age >= 65 ? '<130/80' : '<120/80';
@@ -383,7 +355,6 @@ export function generateSuggestions(
         priority: 'attention',
         title: 'Stage 1 hypertension',
         description: `Your BP of ${sys}/${dia} mmHg indicates stage 1 hypertension. Lifestyle modifications are recommended. Target is ${bpTarget}.`,
-        discussWithDoctor: true,
       });
     }
   }
@@ -409,7 +380,6 @@ export function generateSuggestions(
           priority: 'attention',
           title: 'Consider starting a statin',
           description: 'Your lipid levels are above target. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.',
-          discussWithDoctor: true,
         });
       } else {
         // On a statin or not tolerated — Step 2: Ezetimibe
@@ -420,7 +390,6 @@ export function generateSuggestions(
             priority: 'attention',
             title: 'Consider adding Ezetimibe',
             description: 'Your lipid levels remain above target. Discuss adding Ezetimibe 10mg with your doctor.',
-            discussWithDoctor: true,
           });
         } else {
           // Ezetimibe handled (yes or not tolerated) — Step 3: Increase statin dose
@@ -432,7 +401,6 @@ export function generateSuggestions(
                 priority: 'attention',
                 title: 'Consider increasing statin dose',
                 description: 'Your lipid levels remain above target. Discuss increasing your statin dose with your doctor.',
-                discussWithDoctor: true,
               });
             } else {
               // Statin increase not tolerated — Step 4: PCSK9i
@@ -443,7 +411,6 @@ export function generateSuggestions(
                   priority: 'attention',
                   title: 'Consider a PCSK9 inhibitor',
                   description: 'Your lipid levels remain above target despite current medications. Discuss a PCSK9 inhibitor with your doctor.',
-                  discussWithDoctor: true,
                 });
               }
             }
@@ -456,7 +423,6 @@ export function generateSuggestions(
                 priority: 'attention',
                 title: 'Consider a PCSK9 inhibitor',
                 description: 'Your lipid levels remain above target despite current medications. Discuss a PCSK9 inhibitor with your doctor.',
-                discussWithDoctor: true,
               });
             }
           }
@@ -505,7 +471,6 @@ export function generateSuggestions(
           priority: 'attention',
           title: 'Start colorectal cancer screening',
           description: 'Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.',
-          discussWithDoctor: true,
         });
       } else if (screenings.colorectalLastDate) {
         const status = screeningStatus(screenings.colorectalLastDate, screenings.colorectalMethod);
@@ -516,7 +481,6 @@ export function generateSuggestions(
             priority: 'attention',
             title: 'Colorectal screening overdue',
             description: `Your next colorectal screening was due ${nextDueStr(screenings.colorectalLastDate, screenings.colorectalMethod)}. Please schedule your screening.`,
-            discussWithDoctor: true,
           });
         } else if (status === 'upcoming') {
           suggestions.push({
@@ -525,7 +489,6 @@ export function generateSuggestions(
             priority: 'info',
             title: 'Colorectal screening up to date',
             description: `Next screening due ${nextDueStr(screenings.colorectalLastDate, screenings.colorectalMethod)}.`,
-            discussWithDoctor: false,
           });
         }
       }
@@ -542,7 +505,6 @@ export function generateSuggestions(
           description: age >= 45
             ? 'Mammography is recommended at your age. Discuss with your doctor.'
             : 'Mammography is optional at your age (40\u201344). Discuss with your doctor.',
-          discussWithDoctor: true,
         });
       } else if (screenings.breastLastDate) {
         const status = screeningStatus(screenings.breastLastDate, screenings.breastFrequency);
@@ -553,7 +515,6 @@ export function generateSuggestions(
             priority: 'attention',
             title: 'Mammogram overdue',
             description: `Your next mammogram was due ${nextDueStr(screenings.breastLastDate, screenings.breastFrequency)}. Please schedule your screening.`,
-            discussWithDoctor: true,
           });
         } else if (status === 'upcoming') {
           suggestions.push({
@@ -562,7 +523,6 @@ export function generateSuggestions(
             priority: 'info',
             title: 'Mammogram up to date',
             description: `Next mammogram due ${nextDueStr(screenings.breastLastDate, screenings.breastFrequency)}.`,
-            discussWithDoctor: false,
           });
         }
       }
@@ -577,7 +537,6 @@ export function generateSuggestions(
           priority: 'attention',
           title: 'Start cervical cancer screening',
           description: 'HPV testing every 5 years (preferred) or Pap test every 3 years is recommended. Discuss with your doctor.',
-          discussWithDoctor: true,
         });
       } else if (screenings.cervicalLastDate) {
         const status = screeningStatus(screenings.cervicalLastDate, screenings.cervicalMethod);
@@ -588,7 +547,6 @@ export function generateSuggestions(
             priority: 'attention',
             title: 'Cervical screening overdue',
             description: `Your next cervical screening was due ${nextDueStr(screenings.cervicalLastDate, screenings.cervicalMethod)}. Please schedule your screening.`,
-            discussWithDoctor: true,
           });
         } else if (status === 'upcoming') {
           suggestions.push({
@@ -597,7 +555,6 @@ export function generateSuggestions(
             priority: 'info',
             title: 'Cervical screening up to date',
             description: `Next screening due ${nextDueStr(screenings.cervicalLastDate, screenings.cervicalMethod)}.`,
-            discussWithDoctor: false,
           });
         }
       }
@@ -614,7 +571,6 @@ export function generateSuggestions(
           priority: 'attention',
           title: 'Start lung cancer screening',
           description: `With ${screenings.lungPackYears} pack-years of smoking history, annual low-dose CT screening is recommended. Discuss with your doctor.`,
-          discussWithDoctor: true,
         });
       } else if (screenings.lungLastDate) {
         const status = screeningStatus(screenings.lungLastDate, screenings.lungScreening);
@@ -625,7 +581,6 @@ export function generateSuggestions(
             priority: 'attention',
             title: 'Lung screening overdue',
             description: `Your next low-dose CT was due ${nextDueStr(screenings.lungLastDate, screenings.lungScreening)}. Please schedule your screening.`,
-            discussWithDoctor: true,
           });
         } else if (status === 'upcoming') {
           suggestions.push({
@@ -634,7 +589,6 @@ export function generateSuggestions(
             priority: 'info',
             title: 'Lung screening up to date',
             description: `Next low-dose CT due ${nextDueStr(screenings.lungLastDate, screenings.lungScreening)}.`,
-            discussWithDoctor: false,
           });
         }
       }
@@ -649,7 +603,6 @@ export function generateSuggestions(
           priority: age >= 50 ? 'info' : 'info',
           title: 'Discuss prostate cancer screening',
           description: 'PSA testing is an option after an informed discussion with your doctor. Benefits and risks vary by individual.',
-          discussWithDoctor: true,
         });
       } else if (screenings.prostateDiscussion === 'will_screen' && screenings.prostateLastDate) {
         const status = screeningStatus(screenings.prostateLastDate, 'will_screen');
@@ -660,7 +613,6 @@ export function generateSuggestions(
             priority: 'attention',
             title: 'PSA test overdue',
             description: `Your next PSA test was due ${nextDueStr(screenings.prostateLastDate, 'will_screen')}. Please schedule your test.`,
-            discussWithDoctor: true,
           });
         } else if (status === 'upcoming') {
           suggestions.push({
@@ -669,7 +621,6 @@ export function generateSuggestions(
             priority: 'info',
             title: 'PSA test up to date',
             description: `Next PSA test due ${nextDueStr(screenings.prostateLastDate, 'will_screen')}.`,
-            discussWithDoctor: false,
           });
         }
       }
@@ -682,7 +633,6 @@ export function generateSuggestions(
           priority: 'attention',
           title: 'Elevated PSA',
           description: `Your PSA of ${screenings.prostatePsaValue.toFixed(1)} ng/mL is above the typical reference range (\u22644.0). Discuss with your doctor \u2014 elevated PSA can have multiple causes.`,
-          discussWithDoctor: true,
         });
       }
     }
@@ -695,7 +645,6 @@ export function generateSuggestions(
         priority: 'urgent',
         title: 'Report abnormal uterine bleeding',
         description: 'Abnormal uterine bleeding should be evaluated by your doctor promptly, especially after menopause.',
-        discussWithDoctor: true,
       });
     }
 
@@ -707,7 +656,6 @@ export function generateSuggestions(
         priority: 'info',
         title: 'Discuss endometrial cancer awareness',
         description: 'Women at menopause should be informed about the risks and symptoms of endometrial cancer. Discuss with your doctor.',
-        discussWithDoctor: true,
       });
     }
   }
@@ -721,7 +669,6 @@ export function generateSuggestions(
       title: 'MicroVitamin+',
       description: 'Daily all-in-one to support mental function, skin elasticity, exercise performance, and gut health.',
       link: 'https://drstanfield.com/pages/my-supplements',
-      discussWithDoctor: false,
     },
     {
       id: 'supplement-omega3',
@@ -730,7 +677,6 @@ export function generateSuggestions(
       title: 'Omega-3',
       description: 'Essential fatty acids for cardiovascular and brain health.',
       link: 'https://amzn.to/4kgwthG',
-      discussWithDoctor: false,
     },
     {
       id: 'supplement-sleep',
@@ -739,7 +685,6 @@ export function generateSuggestions(
       title: 'Sleep by Dr Brad',
       description: 'Support for quality sleep and recovery.',
       link: 'https://drstanfield.com/products/sleep',
-      discussWithDoctor: false,
     },
   );
 

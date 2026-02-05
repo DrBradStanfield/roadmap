@@ -47,7 +47,7 @@ export interface HealthResults {
 }
 
 /**
- * A health suggestion to discuss with doctor
+ * A health suggestion
  */
 export interface Suggestion {
   id: string;
@@ -56,7 +56,6 @@ export interface Suggestion {
   title: string;
   description: string;
   link?: string;
-  discussWithDoctor: boolean;
 }
 
 /**
