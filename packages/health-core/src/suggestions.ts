@@ -1,5 +1,5 @@
 import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from './types';
-import { SCREENING_INTERVALS, canIncreaseDose, shouldSuggestSwitch, isOnMaxPotency } from './types';
+import { SCREENING_INTERVALS, STATIN_DRUGS, canIncreaseDose, shouldSuggestSwitch, isOnMaxPotency } from './types';
 import {
   type UnitSystem,
   formatDisplayValue,
@@ -376,11 +376,15 @@ export function generateSuggestions(
     if (lipidsElevated) {
       const statin = medications.statin;
       const statinDrug = statin?.drug;
-      const statinTolerated = statinDrug !== 'not_tolerated';
-      const onStatin = statin && statinDrug && statinDrug !== 'none' && statinDrug !== 'not_tolerated';
+      // Check if drug is a known valid statin (handles old tier-based values like 'tier_1')
+      const isValidStatinDrug = statinDrug && statinDrug in STATIN_DRUGS;
+      const isNotTolerated = statinDrug === 'not_tolerated';
+      const statinTolerated = !isNotTolerated;
+      const onStatin = statin && isValidStatinDrug;
 
-      // Step 1: Statin (handle null/undefined drug from migration or missing data)
-      if (!statin || !statinDrug || statinDrug === 'none') {
+      // Step 1: Statin (handle null/undefined/invalid drug from migration or missing data)
+      // 'not_tolerated' is valid - user tried statins but can't take them
+      if (!statin || !statinDrug || statinDrug === 'none' || (!isValidStatinDrug && !isNotTolerated)) {
         suggestions.push({
           id: 'med-statin',
           category: 'medication',

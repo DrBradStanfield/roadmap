@@ -587,6 +587,30 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'med-ezetimibe')).toBeUndefined();
     });
 
+    it('suggests statin (not PCSK9i) when statin has old tier-based value (migration edge case)', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      // Old tier-based data: 'tier_1' is not a valid statin drug name
+      const meds: MedicationInputs = {
+        statin: { drug: 'tier_1', dose: null },
+        ezetimibe: 'yes', // Even with ezetimibe yes, should still suggest statin first
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'med-pcsk9i')).toBeUndefined();
+    });
+
+    it('suggests statin (not PCSK9i) when statin has unknown drug value', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      // Any unknown value that's not in STATIN_DRUGS should be treated as 'none'
+      const meds: MedicationInputs = {
+        statin: { drug: 'unknown_drug', dose: 10 },
+        ezetimibe: 'yes',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'med-pcsk9i')).toBeUndefined();
+    });
+
     it('does not suggest medications when lipids below targets', () => {
       const { inputs, results } = createTestData({ apoB: apoB(30) }); // below 50
       const meds: MedicationInputs = {};
