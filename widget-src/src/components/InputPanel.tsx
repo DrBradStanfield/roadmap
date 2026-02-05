@@ -52,6 +52,12 @@ const BLOOD_TEST_FIELDS: FieldConfig[] = [
     hintFemale: { si: 'Normal: 45–90 µmol/L', conv: 'Normal: 0.5–1.0 mg/dL' },
   },
   {
+    field: 'psa', name: 'PSA',
+    placeholder: { si: '1.5', conv: '1.5' },
+    step: { si: '0.1', conv: '0.1' },
+    hint: { si: 'Normal: <4.0 ng/mL', conv: 'Normal: <4.0 ng/mL' },
+  },
+  {
     field: 'apoB', name: 'ApoB',
     placeholder: { si: '0.5', conv: '50' },
     step: { si: '0.01', conv: '1' },
@@ -443,9 +449,6 @@ export function InputPanel({
       <div className="section-card">
       <section className="health-section">
         <h3 className="health-section-title">Blood Test Results</h3>
-        <p className="health-section-desc">
-          Enter your blood test values below.
-        </p>
 
         {/* Blood test date picker */}
         {(() => {
@@ -510,7 +513,9 @@ export function InputPanel({
           );
         })()}
 
-        {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg, true))}
+        {BLOOD_TEST_FIELDS
+          .filter(cfg => cfg.field !== 'psa' || inputs.sex === 'male')
+          .map(cfg => renderLongitudinalField(cfg, true))}
       </section>
       </div>
 
@@ -752,7 +757,7 @@ export function InputPanel({
             {/* Colorectal (age 35-85, all genders) */}
             {age >= 35 && age <= 85 && (
               <div className="screening-group">
-                <h4>Colorectal Cancer</h4>
+                <h4>Colorectal</h4>
                 {age < 45 && (
                   <div className="screening-notice">
                     Note: ACS guidelines recommend starting colorectal screening at age 45. Dr Brad personally starts at age 35 due to increasing rates of colorectal cancer in younger adults. Discuss timing with your doctor.
@@ -798,7 +803,7 @@ export function InputPanel({
             {/* Breast (female, age 40+) */}
             {sex === 'female' && age >= 40 && (
               <div className="screening-group">
-                <h4>Breast Cancer</h4>
+                <h4>Breast</h4>
                 <p className="screening-age-message">
                   {age <= 44
                     ? 'Annual mammograms are optional at your age (40\u201344).'
@@ -835,7 +840,7 @@ export function InputPanel({
             {/* Cervical (female, age 25+) */}
             {sex === 'female' && age >= 25 && (
               <div className="screening-group">
-                <h4>Cervical Cancer</h4>
+                <h4>Cervical</h4>
                 {age <= 65 ? (
                   <>
                     <div className="health-field">
@@ -873,7 +878,7 @@ export function InputPanel({
             {/* Lung (age 50-80, all genders) */}
             {age >= 50 && age <= 80 && (
               <div className="screening-group">
-                <h4>Lung Cancer</h4>
+                <h4>Lung</h4>
 
                 <div className="health-field">
                   <label htmlFor="lung-smoking-history">Smoking history</label>
@@ -946,7 +951,7 @@ export function InputPanel({
             {/* Prostate (male, age 45+) — shared decision */}
             {sex === 'male' && age >= 45 && (
               <div className="screening-group">
-                <h4>Prostate Cancer</h4>
+                <h4>Prostate</h4>
                 <p className="screening-age-message">
                   {age < 50
                     ? 'Screening typically starts at 50, but consider at 45 if you are at higher risk (African American or family history).'
@@ -958,13 +963,7 @@ export function InputPanel({
                   <select
                     id="prostate-discussion"
                     value={getStr('prostate_discussion') || ''}
-                    onChange={(e) => {
-                      onScreeningChange('prostate_discussion', e.target.value);
-                      if (e.target.value !== 'will_screen') {
-                        if (getStr('prostate_psa_value') !== undefined) onScreeningChange('prostate_psa_value', '');
-                        if (getStr('prostate_last_date')) onScreeningChange('prostate_last_date', '');
-                      }
-                    }}
+                    onChange={(e) => onScreeningChange('prostate_discussion', e.target.value)}
                   >
                     <option value="">Select...</option>
                     <option value="not_yet">Not yet</option>
@@ -973,84 +972,18 @@ export function InputPanel({
                   </select>
                 </div>
 
-                {getStr('prostate_discussion') === 'will_screen' && (() => {
-                  // Inline date handling for PSA
-                  const psaDateKey = 'prostate_last_date';
-                  const savedPsaDate = getStr(psaDateKey) || '';
-                  const [savedPsaYear, savedPsaMonth] = savedPsaDate.split('-');
-                  const localPsaState = dateInputs[psaDateKey];
-                  const displayPsaYear = localPsaState?.year ?? savedPsaYear ?? '';
-                  const displayPsaMonth = localPsaState?.month ?? savedPsaMonth ?? '';
-                  const availablePsaMonths = displayPsaYear === String(currentYear)
-                    ? allMonths.filter(m => parseInt(m.value, 10) <= currentMonth)
-                    : allMonths;
-
-                  const handlePsaDateChange = (newYear: string, newMonth: string) => {
-                    let adjustedMonth = newMonth;
-                    if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) > currentMonth) {
-                      adjustedMonth = '';
-                    }
-                    setDateInputs(prev => ({
-                      ...prev,
-                      [psaDateKey]: { year: newYear, month: adjustedMonth }
-                    }));
-                    if (newYear && adjustedMonth) {
-                      onScreeningChange(psaDateKey, `${newYear}-${adjustedMonth}`);
-                    } else if (!newYear && !adjustedMonth) {
-                      onScreeningChange(psaDateKey, '');
-                    }
-                  };
-
-                  const psaDateSaved = displayPsaYear && displayPsaMonth && savedPsaDate === `${displayPsaYear}-${displayPsaMonth}`;
-
-                  return (
-                    <div className="health-field">
-                      <label htmlFor="prostate-psa">Most recent PSA (ng/mL)</label>
-                      <div className="psa-inline-row">
-                        <input
-                          type="number"
-                          id="prostate-psa"
-                          value={getNum('prostate_psa_value') ?? ''}
-                          onChange={(e) => onScreeningChange('prostate_psa_value', e.target.value)}
-                          placeholder="1.5"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                        />
-                        <select
-                          id="prostate-last-date-month"
-                          value={displayPsaMonth}
-                          onChange={(e) => handlePsaDateChange(displayPsaYear, e.target.value)}
-                          aria-label="Month"
-                        >
-                          <option value="">Month</option>
-                          {availablePsaMonths.map((m) => (
-                            <option key={m.value} value={m.value}>{m.label}</option>
-                          ))}
-                        </select>
-                        <select
-                          id="prostate-last-date-year"
-                          value={displayPsaYear}
-                          onChange={(e) => handlePsaDateChange(e.target.value, displayPsaMonth)}
-                          aria-label="Year"
-                        >
-                          <option value="">Year</option>
-                          {years.map((y) => (
-                            <option key={y} value={y}>{y}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <span className="field-hint">Reference: &lt;4.0 ng/mL (varies by age){psaDateSaved && ' · Saved'}</span>
-                    </div>
-                  );
-                })()}
+                {getStr('prostate_discussion') === 'will_screen' && (
+                  <p className="screening-age-message">
+                    Enter your PSA results in the Blood Test Results section above.
+                  </p>
+                )}
               </div>
             )}
 
             {/* Endometrial (female, age 45+) — awareness */}
             {sex === 'female' && age >= 45 && (
               <div className="screening-group">
-                <h4>Endometrial Cancer</h4>
+                <h4>Endometrial</h4>
 
                 <div className="health-field">
                   <label htmlFor="endometrial-discussion">Discussed endometrial cancer risk at menopause?</label>

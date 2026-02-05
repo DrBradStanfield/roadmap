@@ -64,6 +64,10 @@ export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult
         (inputs as any)[field] = allInputs[field];
       }
     }
+    // Also include unitSystem preference from profile (not a form field, but needed for display)
+    if (allInputs.unitSystem !== undefined) {
+      inputs.unitSystem = allInputs.unitSystem;
+    }
 
     return { inputs, previousMeasurements: result.data, medications: result.medications ?? [], screenings: result.screenings ?? [] };
   } catch (error) {

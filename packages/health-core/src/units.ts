@@ -22,11 +22,11 @@ export type MetricType =
   | 'hdl'
   | 'triglycerides'
   | 'total_cholesterol'
-
   | 'systolic_bp'
   | 'diastolic_bp'
   | 'apob'
-  | 'creatinine';
+  | 'creatinine'
+  | 'psa';
 
 /** SI = metric + mmol/L (NZ, UK, AU, EU). Conventional = imperial + mg/dL (US). */
 export type UnitSystem = 'si' | 'conventional';
@@ -284,6 +284,23 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     },
     decimalPlaces: { si: 0, conventional: 2 },
   },
+  psa: {
+    canonical: 'ng/mL',
+    label: { si: 'ng/mL', conventional: 'ng/mL' }, // Same in both systems
+    toCanonical: {
+      si: identity,
+      conventional: identity,
+    },
+    fromCanonical: {
+      si: identity,
+      conventional: identity,
+    },
+    validationRange: {
+      si: { min: 0, max: 100 },
+      conventional: { min: 0, max: 100 },
+    },
+    decimalPlaces: { si: 1, conventional: 1 },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -427,4 +444,9 @@ export const APOB_THRESHOLDS = {
   borderline: 50 / APOB_FACTOR,  // 0.5
   high: 70 / APOB_FACTOR,        // 0.7
   veryHigh: 100 / APOB_FACTOR,   // 1.0
+} as const;
+
+/** PSA thresholds in ng/mL (same in both unit systems) */
+export const PSA_THRESHOLDS = {
+  normal: 4.0,  // General upper limit of normal (varies by age)
 } as const;

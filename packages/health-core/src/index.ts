@@ -89,6 +89,7 @@ export {
   BP_THRESHOLDS,
   APOB_THRESHOLDS,
   EGFR_THRESHOLDS,
+  PSA_THRESHOLDS,
   type MetricType,
   type UnitSystem,
   type UnitDef,

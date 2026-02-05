@@ -22,6 +22,7 @@ export interface HealthInputs {
   triglycerides?: number; // mmol/L
   apoB?: number;          // g/L
   creatinine?: number;  // µmol/L
+  psa?: number;         // ng/mL (no unit conversion)
   systolicBp?: number;  // mmHg
   diastolicBp?: number; // mmHg
   // User preference (stored as 1=si, 2=conventional in DB)

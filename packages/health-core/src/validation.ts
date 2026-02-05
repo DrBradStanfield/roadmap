@@ -8,7 +8,7 @@ import { FIELD_METRIC_MAP } from './mappings';
 export const METRIC_TYPES = [
   'height', 'weight', 'waist',
   'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
-  'systolic_bp', 'diastolic_bp', 'apob', 'creatinine',
+  'systolic_bp', 'diastolic_bp', 'apob', 'creatinine', 'psa',
 ] as const;
 
 export type MetricTypeValue = typeof METRIC_TYPES[number];
@@ -89,6 +89,11 @@ export const healthInputSchema = z.object({
     .number()
     .min(10, 'Creatinine must be at least 10 µmol/L')
     .max(2650, 'Creatinine must be at most 2650 µmol/L')
+    .optional(),
+  psa: z
+    .number()
+    .min(0, 'PSA must be positive')
+    .max(100, 'PSA must be at most 100 ng/mL')
     .optional(),
   systolicBp: z
     .number()

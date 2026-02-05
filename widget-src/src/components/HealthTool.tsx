@@ -283,7 +283,7 @@ export function HealthTool() {
       screeningsToInputs(screenings),
     );
     return { results: healthResults, isValid: true, validationErrors: errors };
-  }, [effectiveInputs, unitSystem, medications]);
+  }, [effectiveInputs, unitSystem, medications, screenings]);
 
   useEffect(() => {
     setErrors(validationErrors ?? {});
