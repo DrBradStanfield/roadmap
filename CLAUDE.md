@@ -116,7 +116,6 @@ All values stored in **SI canonical units**. Conversion handled by `units.ts`.
 
 | metric_type | Canonical (SI) | Conventional (US) | Conversion |
 |------------|---------------|-------------------|------------|
-| height | cm | inches | ÷ 2.54 |
 | weight | kg | lbs | × 2.20462 |
 | waist | cm | inches | ÷ 2.54 |
 | hba1c | mmol/mol (IFCC) | % (NGSP) | % = mmol/mol × 0.09148 + 2.152 |
@@ -129,7 +128,7 @@ All values stored in **SI canonical units**. Conversion handled by `units.ts`.
 | systolic_bp | mmHg | mmHg | (same) |
 | diastolic_bp | mmHg | mmHg | (same) |
 
-Profile demographics: `sex` (1=male, 2=female), `birth_year` (1900–2100), `birth_month` (1–12), `unit_system` (1=si, 2=conventional), `first_name`/`last_name` (auto-synced from Shopify).
+Profile demographics: `height` (50–250 cm), `sex` (1=male, 2=female), `birth_year` (1900–2100), `birth_month` (1–12), `unit_system` (1=si, 2=conventional), `first_name`/`last_name` (auto-synced from Shopify).
 
 ### Field Categories
 

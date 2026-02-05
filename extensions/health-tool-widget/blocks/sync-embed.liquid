@@ -5,9 +5,9 @@
   var SYNC_FLAG = 'health_roadmap_sync_done';
   var PROXY = '/apps/health-tool-1/api/measurements';
 
-  // Field name → metric_type mapping (health metrics only)
+  // Field name → metric_type mapping (health metrics only, no height — height goes to profile)
   var FIELD_MAP = {
-    heightCm: 'height', weightKg: 'weight', waistCm: 'waist',
+    weightKg: 'weight', waistCm: 'waist',
     hba1c: 'hba1c', ldlC: 'ldl', totalCholesterol: 'total_cholesterol', hdlC: 'hdl',
     triglycerides: 'triglycerides', apoB: 'apob',
     systolicBp: 'systolic_bp', diastolicBp: 'diastolic_bp'
@@ -59,6 +59,9 @@
       }
       if (inputs.unitSystem !== undefined && inputs.unitSystem !== null && inputs.unitSystem !== '') {
         profile.unitSystem = inputs.unitSystem === 'si' ? 1 : 2;
+      }
+      if (inputs.heightCm !== undefined && inputs.heightCm !== null && inputs.heightCm !== '') {
+        profile.height = Number(inputs.heightCm);
       }
 
       var hasProfile = Object.keys(profile).length > 0;

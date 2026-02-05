@@ -6,7 +6,7 @@ import { FIELD_METRIC_MAP } from './mappings';
  * Valid metric types for the health_measurements table.
  */
 export const METRIC_TYPES = [
-  'height', 'weight', 'waist',
+  'weight', 'waist',
   'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
   'systolic_bp', 'diastolic_bp', 'apob', 'creatinine', 'psa',
 ] as const;
@@ -178,6 +178,7 @@ export const profileUpdateSchema = z.object({
   unitSystem: z.number().int().min(1).max(2).optional(),
   firstName: z.string().optional(),
   lastName: z.string().optional(),
+  height: z.number().min(50).max(250).optional(),
 });
 
 export type ValidatedProfileUpdate = z.infer<typeof profileUpdateSchema>;

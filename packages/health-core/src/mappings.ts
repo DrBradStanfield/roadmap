@@ -15,7 +15,6 @@ import type { MetricType } from './units';
  * health_measurements table and API. Only health metrics — no demographics.
  */
 export const FIELD_TO_METRIC: Record<string, string> = {
-  heightCm: 'height',
   weightKg: 'weight',
   waistCm: 'waist',
   hba1c: 'hba1c',
@@ -32,7 +31,6 @@ export const FIELD_TO_METRIC: Record<string, string> = {
 
 /** Reverse mapping: metric_type → HealthInputs field name. */
 export const METRIC_TO_FIELD: Record<string, keyof HealthInputs> = {
-  height: 'heightCm',
   weight: 'weightKg',
   waist: 'waistCm',
   hba1c: 'hba1c',
@@ -210,6 +208,7 @@ export interface ApiProfile {
   unitSystem: number | null;
   firstName: string | null;
   lastName: string | null;
+  height: number | null;
 }
 
 /**
@@ -242,6 +241,9 @@ export function measurementsToInputs(
     if (profile.unitSystem != null) {
       (inputs as any).unitSystem = profile.unitSystem === 1 ? 'si' : 'conventional';
     }
+    if (profile.height != null) {
+      (inputs as any).heightCm = profile.height;
+    }
   }
 
   return inputs;
@@ -272,12 +274,13 @@ export function diffInputsToMeasurements(
 /**
  * Determine which profile fields changed and return them as API-ready numeric values.
  * Encodes sex (1=male, 2=female) and unitSystem (1=si, 2=conventional).
+ * Height is stored directly in cm.
  * Returns null if nothing changed.
  */
 export function diffProfileFields(
   current: Partial<HealthInputs>,
   previous: Partial<HealthInputs>,
-): { sex?: number; birthYear?: number; birthMonth?: number; unitSystem?: number } | null {
+): { sex?: number; birthYear?: number; birthMonth?: number; unitSystem?: number; height?: number } | null {
   const changes: Record<string, number> = {};
 
   if (current.sex !== undefined && current.sex !== previous.sex) {
@@ -291,6 +294,9 @@ export function diffProfileFields(
   }
   if (current.unitSystem !== undefined && current.unitSystem !== previous.unitSystem) {
     changes.unitSystem = current.unitSystem === 'si' ? 1 : 2;
+  }
+  if (current.heightCm !== undefined && current.heightCm !== previous.heightCm) {
+    changes.height = current.heightCm;
   }
 
   return Object.keys(changes).length > 0 ? changes : null;

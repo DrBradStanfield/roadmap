@@ -23,6 +23,7 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS birth_month INTEGER CHECK (birth_m
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS unit_system INTEGER CHECK (unit_system IN (1, 2));
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS first_name TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_name TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS height NUMERIC CHECK (height BETWEEN 50 AND 250);
 
 -- ===== Create health_measurements table =====
 -- Only health metrics — demographics are on the profiles table.
@@ -31,7 +32,7 @@ CREATE TABLE IF NOT EXISTS health_measurements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   metric_type TEXT NOT NULL CHECK (metric_type IN (
-    'height', 'weight', 'waist',
+    'weight', 'waist',
     'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
     'systolic_bp', 'diastolic_bp', 'apob', 'creatinine', 'psa'
   )),
@@ -40,7 +41,6 @@ CREATE TABLE IF NOT EXISTS health_measurements (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT value_range CHECK (
     CASE metric_type
-      WHEN 'height'          THEN value BETWEEN 50 AND 250
       WHEN 'weight'          THEN value BETWEEN 20 AND 300
       WHEN 'waist'           THEN value BETWEEN 40 AND 200
       WHEN 'hba1c'           THEN value BETWEEN 9 AND 195
@@ -68,7 +68,7 @@ CREATE INDEX IF NOT EXISTS idx_measurements_user_type_date
 ALTER TABLE health_measurements DROP CONSTRAINT IF EXISTS health_measurements_metric_type_check;
 ALTER TABLE health_measurements ADD CONSTRAINT health_measurements_metric_type_check
   CHECK (metric_type IN (
-    'height', 'weight', 'waist',
+    'weight', 'waist',
     'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
     'systolic_bp', 'diastolic_bp', 'apob', 'creatinine', 'psa'
   ));
@@ -76,7 +76,6 @@ ALTER TABLE health_measurements ADD CONSTRAINT health_measurements_metric_type_c
 ALTER TABLE health_measurements DROP CONSTRAINT IF EXISTS value_range;
 ALTER TABLE health_measurements ADD CONSTRAINT value_range CHECK (
   CASE metric_type
-    WHEN 'height'          THEN value BETWEEN 50 AND 250
     WHEN 'weight'          THEN value BETWEEN 20 AND 300
     WHEN 'waist'           THEN value BETWEEN 40 AND 200
     WHEN 'hba1c'           THEN value BETWEEN 9 AND 195

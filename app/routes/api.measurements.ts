@@ -171,7 +171,7 @@ export async function action({ request }: ActionFunctionArgs) {
           );
         }
 
-        const { sex, birthYear, birthMonth, unitSystem, firstName, lastName } = validation.data;
+        const { sex, birthYear, birthMonth, unitSystem, firstName, lastName, height } = validation.data;
         const updates: Record<string, number | string> = {};
         if (sex !== undefined) updates.sex = sex;
         if (birthYear !== undefined) updates.birth_year = birthYear;
@@ -179,6 +179,7 @@ export async function action({ request }: ActionFunctionArgs) {
         if (unitSystem !== undefined) updates.unit_system = unitSystem;
         if (firstName !== undefined) updates.first_name = firstName;
         if (lastName !== undefined) updates.last_name = lastName;
+        if (height !== undefined) updates.height = height;
 
         const updated = await updateProfile(client, userId, updates);
         if (!updated) {

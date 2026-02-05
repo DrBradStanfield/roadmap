@@ -249,6 +249,7 @@ export interface DbProfile {
   unit_system: number | null;
   first_name: string | null;
   last_name: string | null;
+  height: number | null;
   created_at: string;
 }
 
@@ -263,7 +264,7 @@ export function toApiMeasurement(m: DbMeasurement) {
   };
 }
 
-/** Convert DB profile row to camelCase API format (demographics only). */
+/** Convert DB profile row to camelCase API format (demographics + height). */
 export function toApiProfile(p: DbProfile) {
   return {
     sex: p.sex,
@@ -272,6 +273,7 @@ export function toApiProfile(p: DbProfile) {
     unitSystem: p.unit_system,
     firstName: p.first_name,
     lastName: p.last_name,
+    height: p.height,
   };
 }
 
@@ -409,7 +411,7 @@ export async function getProfile(
   return data as DbProfile;
 }
 
-/** Update profile demographics. RLS ensures the user owns it. */
+/** Update profile demographics + height. RLS ensures the user owns it. */
 export async function updateProfile(
   client: SupabaseClient,
   userId: string,
@@ -420,6 +422,7 @@ export async function updateProfile(
     unit_system?: number;
     first_name?: string;
     last_name?: string;
+    height?: number;
   },
 ): Promise<DbProfile | null> {
   const { data, error } = await client

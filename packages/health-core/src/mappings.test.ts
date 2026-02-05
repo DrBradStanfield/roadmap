@@ -18,9 +18,9 @@ describe('FIELD_TO_METRIC / METRIC_TO_FIELD', () => {
     }
   });
 
-  it('cover all health metric types', () => {
-    expect(Object.keys(FIELD_TO_METRIC)).toHaveLength(13);
-    expect(Object.keys(METRIC_TO_FIELD)).toHaveLength(13);
+  it('cover all health metric types (no height — stored on profile)', () => {
+    expect(Object.keys(FIELD_TO_METRIC)).toHaveLength(12);
+    expect(Object.keys(METRIC_TO_FIELD)).toHaveLength(12);
   });
 });
 
@@ -36,47 +36,48 @@ describe('FIELD_METRIC_MAP', () => {
 describe('measurementsToInputs', () => {
   it('converts basic measurements', () => {
     const measurements: ApiMeasurement[] = [
-      { id: '1', metricType: 'height', value: 175, recordedAt: '', createdAt: '' },
       { id: '2', metricType: 'weight', value: 70, recordedAt: '', createdAt: '' },
     ];
 
     const inputs = measurementsToInputs(measurements);
-    expect(inputs.heightCm).toBe(175);
     expect(inputs.weightKg).toBe(70);
   });
 
-  it('converts profile data from profile parameter', () => {
+  it('converts profile data from profile parameter (including height)', () => {
     const measurements: ApiMeasurement[] = [];
-    const profile = { sex: 1, birthYear: 1990, birthMonth: 5, unitSystem: 1 };
+    const profile = { sex: 1, birthYear: 1990, birthMonth: 5, unitSystem: 1, firstName: null, lastName: null, height: 175 };
 
     const inputs = measurementsToInputs(measurements, profile);
     expect(inputs.sex).toBe('male');
     expect(inputs.birthYear).toBe(1990);
     expect(inputs.birthMonth).toBe(5);
     expect(inputs.unitSystem).toBe('si');
+    expect(inputs.heightCm).toBe(175);
   });
 
   it('converts female sex and conventional unit system from profile', () => {
-    const inputs = measurementsToInputs([], { sex: 2, birthYear: null, birthMonth: null, unitSystem: 2 });
+    const inputs = measurementsToInputs([], { sex: 2, birthYear: null, birthMonth: null, unitSystem: 2, firstName: null, lastName: null, height: null });
     expect(inputs.sex).toBe('female');
     expect(inputs.unitSystem).toBe('conventional');
     expect(inputs.birthYear).toBeUndefined();
   });
 
   it('handles null profile fields', () => {
-    const inputs = measurementsToInputs([], { sex: null, birthYear: null, birthMonth: null, unitSystem: null });
+    const inputs = measurementsToInputs([], { sex: null, birthYear: null, birthMonth: null, unitSystem: null, firstName: null, lastName: null, height: null });
     expect(inputs.sex).toBeUndefined();
     expect(inputs.birthYear).toBeUndefined();
     expect(inputs.unitSystem).toBeUndefined();
+    expect(inputs.heightCm).toBeUndefined();
   });
 
-  it('merges measurements and profile data', () => {
+  it('merges measurements and profile data (height from profile)', () => {
     const measurements: ApiMeasurement[] = [
-      { id: '1', metricType: 'height', value: 175, recordedAt: '', createdAt: '' },
+      { id: '1', metricType: 'weight', value: 70, recordedAt: '', createdAt: '' },
     ];
-    const profile = { sex: 1, birthYear: 1990, birthMonth: null, unitSystem: null };
+    const profile = { sex: 1, birthYear: 1990, birthMonth: null, unitSystem: null, firstName: null, lastName: null, height: 175 };
 
     const inputs = measurementsToInputs(measurements, profile);
+    expect(inputs.weightKg).toBe(70);
     expect(inputs.heightCm).toBe(175);
     expect(inputs.sex).toBe('male');
     expect(inputs.birthYear).toBe(1990);
@@ -94,7 +95,7 @@ describe('measurementsToInputs', () => {
     // This is critical: unitSystem must be preserved from cloud data
     // even when filtering to only PREFILL_FIELDS. Without this, the
     // user's unit preference resets after data deletion + reload.
-    const profile = { sex: null, birthYear: null, birthMonth: null, unitSystem: 2 };
+    const profile = { sex: null, birthYear: null, birthMonth: null, unitSystem: 2, firstName: null, lastName: null, height: null };
     const inputs = measurementsToInputs([], profile);
     expect(inputs.unitSystem).toBe('conventional');
   });
@@ -121,36 +122,36 @@ describe('measurementsToInputs', () => {
 
 describe('diffInputsToMeasurements', () => {
   it('returns empty array when nothing changed', () => {
-    const data = { heightCm: 175 };
+    const data = { weightKg: 70 };
     expect(diffInputsToMeasurements(data, data)).toHaveLength(0);
   });
 
   it('detects changed numeric fields', () => {
-    const prev = { heightCm: 175, weightKg: 70 };
-    const curr = { heightCm: 175, weightKg: 72 };
+    const prev = { weightKg: 70, waistCm: 80 };
+    const curr = { weightKg: 72, waistCm: 80 };
     const changes = diffInputsToMeasurements(curr, prev);
     expect(changes).toHaveLength(1);
     expect(changes[0]).toEqual({ metricType: 'weight', value: 72 });
   });
 
   it('detects new fields', () => {
-    const prev = { heightCm: 175 };
-    const curr = { heightCm: 175, weightKg: 70 };
+    const prev = { waistCm: 80 };
+    const curr = { waistCm: 80, weightKg: 70 };
     const changes = diffInputsToMeasurements(curr, prev);
     expect(changes).toHaveLength(1);
     expect(changes[0]).toEqual({ metricType: 'weight', value: 70 });
   });
 
-  it('does not include profile fields (sex, birthYear, etc)', () => {
+  it('does not include profile fields (sex, birthYear, height, etc)', () => {
     const prev = {};
-    const curr = { sex: 'male' as const, birthYear: 1990, unitSystem: 'si' as const };
+    const curr = { sex: 'male' as const, birthYear: 1990, unitSystem: 'si' as const, heightCm: 175 };
     const changes = diffInputsToMeasurements(curr, prev);
     expect(changes).toHaveLength(0);
   });
 
   it('ignores undefined current values', () => {
-    const prev = { heightCm: 175 };
-    const curr = { heightCm: undefined };
+    const prev = { weightKg: 70 };
+    const curr = { weightKg: undefined };
     const changes = diffInputsToMeasurements(curr as any, prev);
     expect(changes).toHaveLength(0);
   });
@@ -186,9 +187,15 @@ describe('diffProfileFields', () => {
     expect(diffProfileFields(curr, prev)).toEqual({ birthYear: 1991 });
   });
 
-  it('does not include measurement fields', () => {
+  it('detects height change (height is now a profile field)', () => {
     const prev = { heightCm: 175 };
     const curr = { heightCm: 180 };
+    expect(diffProfileFields(curr, prev)).toEqual({ height: 180 });
+  });
+
+  it('does not include measurement fields (weight, waist, etc)', () => {
+    const prev = { weightKg: 70 };
+    const curr = { weightKg: 75 };
     expect(diffProfileFields(curr, prev)).toBeNull();
   });
 });

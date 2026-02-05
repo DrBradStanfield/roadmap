@@ -26,9 +26,8 @@ import { loadUnitPreference } from '../lib/storage';
 // Register only what we need
 Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Filler);
 
-// Human-readable metric names
+// Human-readable metric names (no height — stored on profile, not as time-series)
 const METRIC_LABELS: Record<string, string> = {
-  height: 'Height',
   weight: 'Weight',
   waist: 'Waist',
   hba1c: 'HbA1c',
@@ -43,7 +42,6 @@ const METRIC_LABELS: Record<string, string> = {
 
 // Chart colors per metric
 const METRIC_COLORS: Record<string, string> = {
-  height: '#6366f1',
   weight: '#0ea5e9',
   waist: '#f59e0b',
   hba1c: '#ef4444',
