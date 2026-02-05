@@ -52,12 +52,6 @@ const BLOOD_TEST_FIELDS: FieldConfig[] = [
     hintFemale: { si: 'Normal: 45–90 µmol/L', conv: 'Normal: 0.5–1.0 mg/dL' },
   },
   {
-    field: 'psa', name: 'PSA',
-    placeholder: { si: '1.5', conv: '1.5' },
-    step: { si: '0.1', conv: '0.1' },
-    hint: { si: 'Normal: <4.0 ng/mL', conv: 'Normal: <4.0 ng/mL' },
-  },
-  {
     field: 'apoB', name: 'ApoB',
     placeholder: { si: '0.5', conv: '50' },
     step: { si: '0.01', conv: '1' },
@@ -513,9 +507,7 @@ export function InputPanel({
           );
         })()}
 
-        {BLOOD_TEST_FIELDS
-          .filter(cfg => cfg.field !== 'psa' || inputs.sex === 'male')
-          .map(cfg => renderLongitudinalField(cfg, true))}
+        {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg, true))}
       </section>
       </div>
 
@@ -973,9 +965,72 @@ export function InputPanel({
                 </div>
 
                 {getStr('prostate_discussion') === 'will_screen' && (
-                  <p className="screening-age-message">
-                    Enter your PSA results in the Blood Test Results section above.
-                  </p>
+                  <>
+                    {/* PSA input using longitudinal field pattern */}
+                    {(() => {
+                      const psaMeasurement = previousMeasurements.find(m => m.metricType === 'psa');
+                      const psaPreviousLabel = psaMeasurement ? (() => {
+                        const date = new Date(psaMeasurement.recordedAt).toLocaleDateString(undefined, {
+                          month: 'short', day: 'numeric', year: 'numeric',
+                        });
+                        return `${psaMeasurement.value.toFixed(1)} ng/mL · ${date}`;
+                      })() : null;
+
+                      return (
+                        <div className="health-field">
+                          <label htmlFor="psa-input">PSA (ng/mL)</label>
+                          <div className="input-with-save">
+                            <input
+                              type="number"
+                              id="psa-input"
+                              value={rawInputs.psa ?? (inputs.psa !== undefined ? String(inputs.psa) : '')}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setRawInputs(prev => ({ ...prev, psa: val }));
+                                if (val === '') {
+                                  updateField('psa', undefined);
+                                } else {
+                                  const num = parseFloat(val);
+                                  if (!isNaN(num)) {
+                                    updateField('psa', num);
+                                  }
+                                }
+                              }}
+                              placeholder="1.5"
+                              step="0.1"
+                              min="0"
+                              max="100"
+                              className={errors.psa ? 'error' : ''}
+                            />
+                            {isLoggedIn && inputs.psa !== undefined && (
+                              <button
+                                className="save-inline-btn"
+                                onClick={() => onSaveLongitudinal(getBloodTestDateISO())}
+                                disabled={isSavingLongitudinal}
+                                title="Save PSA value"
+                              >
+                                {isSavingLongitudinal ? '...' : 'Save'}
+                              </button>
+                            )}
+                          </div>
+                          {errors.psa && (
+                            <span className="field-error">{errors.psa}</span>
+                          )}
+                          <div className="field-hint-row">
+                            <span className="field-hint">Normal: &lt;4.0 ng/mL</span>
+                            {psaPreviousLabel && (
+                              <a
+                                className="previous-value-link"
+                                href="/pages/health-history?metric=psa"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >{psaPreviousLabel}</a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </>
                 )}
               </div>
             )}
