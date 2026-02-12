@@ -23,9 +23,18 @@ import {
   isOnMaxPotency,
   LIPID_TREATMENT_TARGETS,
   calculateAge,
+  calculateBMI,
   cmToFeetInches,
   feetInchesToCm,
   formatHeightDisplay,
+  GLP1_NAMES,
+  GLP1_DRUGS,
+  SGLT2I_NAMES,
+  SGLT2I_DRUGS,
+  METFORMIN_OPTIONS,
+  HBA1C_THRESHOLDS,
+  TRIGLYCERIDES_THRESHOLDS,
+  BP_THRESHOLDS,
 } from '@roadmap/health-core';
 import { formatShortDate } from '../lib/constants';
 import { DatePicker, InlineDatePicker, dateValueToISO, getCurrentDateValue, type DateValue } from './DatePicker';
@@ -187,6 +196,15 @@ export function InputPanel({
     return isNaN(num) ? undefined : num;
   };
 
+  const getPreviousPlaceholder = (field: string): string | null => {
+    if (!isLoggedIn) return null;
+    const metric = FIELD_METRIC_MAP[field];
+    if (!metric) return null;
+    const measurement = previousMeasurements.find(m => m.metricType === metric);
+    if (!measurement) return null;
+    return toDisplay(field, measurement.value);
+  };
+
   const getPreviousLabel = (field: string): string | null => {
     if (!isLoggedIn) return null;
     const metric = FIELD_METRIC_MAP[field];
@@ -226,7 +244,7 @@ export function InputPanel({
               updateField(field, parseAndConvert(field, raw));
             }}
             onBlur={() => setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; })}
-            placeholder={unitSystem === 'si' ? placeholder.si : placeholder.conv}
+            placeholder={getPreviousPlaceholder(field) ?? (unitSystem === 'si' ? placeholder.si : placeholder.conv)}
             step={step ? (unitSystem === 'si' ? step.si : step.conv) : undefined}
             min={r.min}
             max={r.max}
@@ -456,7 +474,7 @@ export function InputPanel({
                 id="systolicBp"
                 value={inputs.systolicBp ?? ''}
                 onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
-                placeholder="120"
+                placeholder={getPreviousPlaceholder('systolicBp') ?? "120"}
                 min={60}
                 max={250}
                 className={errors.systolicBp ? 'error' : ''}
@@ -468,7 +486,7 @@ export function InputPanel({
                 id="diastolicBp"
                 value={inputs.diastolicBp ?? ''}
                 onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
-                placeholder="80"
+                placeholder={getPreviousPlaceholder('diastolicBp') ?? "80"}
                 min={40}
                 max={150}
                 className={errors.diastolicBp ? 'error' : ''}
@@ -694,6 +712,184 @@ export function InputPanel({
             </div>
           );
         })()}
+
+      {/* Weight & Diabetes Medications Section — shown when BMI > 25 AND secondary criteria */}
+      {(() => {
+        // Compute effective values from form inputs + previous measurements fallback
+        const effectiveWeight = inputs.weightKg ?? previousMeasurements.find(m => m.metricType === 'weight')?.value;
+        const effectiveHeight = inputs.heightCm ?? previousMeasurements.find(m => m.metricType === 'height')?.value;
+        const effectiveWaist = inputs.waistCm ?? previousMeasurements.find(m => m.metricType === 'waist')?.value;
+        const effectiveHba1c = inputs.hba1c ?? previousMeasurements.find(m => m.metricType === 'hba1c')?.value;
+        const effectiveTrigs = inputs.triglycerides ?? previousMeasurements.find(m => m.metricType === 'triglycerides')?.value;
+        const effectiveSbp = inputs.systolicBp ?? previousMeasurements.find(m => m.metricType === 'systolic_bp')?.value;
+
+        // Compute BMI and waist-to-height ratio
+        const effectiveBmi = (effectiveWeight !== undefined && effectiveHeight !== undefined)
+          ? calculateBMI(effectiveWeight, effectiveHeight) : undefined;
+        const effectiveWhr = (effectiveWaist !== undefined && effectiveHeight !== undefined)
+          ? effectiveWaist / effectiveHeight : undefined;
+
+        // Check trigger: BMI > 25 AND at least one secondary criterion
+        if (effectiveBmi === undefined || effectiveBmi <= 25) return null;
+
+        const hba1cElevated = effectiveHba1c !== undefined && effectiveHba1c >= HBA1C_THRESHOLDS.prediabetes;
+        const trigsElevated = effectiveTrigs !== undefined && effectiveTrigs >= TRIGLYCERIDES_THRESHOLDS.borderline;
+        const bpElevated = effectiveSbp !== undefined && effectiveSbp >= BP_THRESHOLDS.stage1Sys;
+        const waistElevated = effectiveWhr !== undefined && effectiveWhr >= 0.5;
+
+        if (!hba1cElevated && !trigsElevated && !bpElevated && !waistElevated) return null;
+
+        const medInputs = medicationsToInputs(medications);
+
+        // GLP-1 state
+        const glp1 = medInputs.glp1;
+        const glp1Drug = glp1?.drug ?? 'none';
+        const glp1Dose = glp1?.dose ?? null;
+        const onGlp1 = glp1 && glp1Drug !== 'none' && glp1Drug !== 'not_tolerated' && glp1Drug !== 'other';
+        const glp1OnOther = glp1Drug === 'other';
+        const glp1Handled = onGlp1 || glp1OnOther || glp1Drug === 'not_tolerated';
+        const availableGlp1Doses = GLP1_DRUGS[glp1Drug]?.doses ?? [];
+
+        // SGLT2i state
+        const showSglt2i = glp1Handled;
+        const sglt2i = medInputs.sglt2i;
+        const sglt2iDrug = sglt2i?.drug ?? 'none';
+        const sglt2iDose = sglt2i?.dose ?? null;
+        const onSglt2i = sglt2i && sglt2iDrug !== 'none' && sglt2iDrug !== 'not_tolerated';
+        const sglt2iHandled = onSglt2i || sglt2iDrug === 'not_tolerated';
+        const availableSglt2iDoses = SGLT2I_DRUGS[sglt2iDrug]?.doses ?? [];
+
+        // Metformin state
+        const showMetformin = showSglt2i && sglt2iHandled;
+
+        // Downstream reset helper
+        const resetWeightDownstream = (from: 'glp1' | 'sglt2i') => {
+          if (from === 'glp1') {
+            if (medInputs.sglt2i) onMedicationChange('sglt2i', 'none', null, null);
+            if (medInputs.metformin) onMedicationChange('metformin', 'none', null, null);
+          } else if (from === 'sglt2i') {
+            if (medInputs.metformin) onMedicationChange('metformin', 'none', null, null);
+          }
+        };
+
+        // Build description based on which criteria triggered
+        const reasons: string[] = [];
+        if (hba1cElevated) reasons.push('prediabetic HbA1c');
+        if (trigsElevated) reasons.push('elevated triglycerides');
+        if (bpElevated) reasons.push('elevated blood pressure');
+        if (waistElevated) reasons.push('elevated waist-to-height ratio');
+
+        return (
+          <div className="section-card">
+          <section className="health-section medication-cascade">
+            <h3 className="health-section-title">Weight & Diabetes Medications</h3>
+            <p className="health-section-desc">
+              Your BMI and {reasons.join(', ')} suggest you may benefit from medications that support weight management and metabolic health.
+            </p>
+
+            {/* Step 1: GLP-1 selection */}
+            <div className="health-field">
+              <label htmlFor="glp1-name">GLP-1 Medication</label>
+              <div className="statin-selection-row">
+                <select
+                  id="glp1-name"
+                  value={glp1Drug}
+                  onChange={(e) => {
+                    const newDrug = e.target.value;
+                    resetWeightDownstream('glp1');
+                    if (newDrug === 'none' || newDrug === 'not_tolerated' || newDrug === 'other') {
+                      onMedicationChange('glp1', newDrug, null, null);
+                    } else {
+                      const firstDose = GLP1_DRUGS[newDrug]?.doses[0] ?? null;
+                      onMedicationChange('glp1', newDrug, firstDose, 'mg');
+                    }
+                  }}
+                >
+                  {GLP1_NAMES.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+
+                {availableGlp1Doses.length > 0 && (
+                  <select
+                    id="glp1-dose"
+                    value={glp1Dose ?? ''}
+                    onChange={(e) => {
+                      const newDose = parseFloat(e.target.value);
+                      resetWeightDownstream('glp1');
+                      onMedicationChange('glp1', glp1Drug, newDose, 'mg');
+                    }}
+                  >
+                    {availableGlp1Doses.map(dose => (
+                      <option key={dose} value={dose}>{dose}mg</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+
+            {/* Step 2: SGLT2i selection */}
+            {showSglt2i && (
+              <div className="health-field">
+                <label htmlFor="sglt2i-name">SGLT2 Inhibitor</label>
+                <div className="statin-selection-row">
+                  <select
+                    id="sglt2i-name"
+                    value={sglt2iDrug}
+                    onChange={(e) => {
+                      const newDrug = e.target.value;
+                      resetWeightDownstream('sglt2i');
+                      if (newDrug === 'none' || newDrug === 'not_tolerated') {
+                        onMedicationChange('sglt2i', newDrug, null, null);
+                      } else {
+                        const firstDose = SGLT2I_DRUGS[newDrug]?.doses[0] ?? null;
+                        onMedicationChange('sglt2i', newDrug, firstDose, 'mg');
+                      }
+                    }}
+                  >
+                    {SGLT2I_NAMES.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+
+                  {availableSglt2iDoses.length > 0 && (
+                    <select
+                      id="sglt2i-dose"
+                      value={sglt2iDose ?? ''}
+                      onChange={(e) => {
+                        const newDose = parseFloat(e.target.value);
+                        resetWeightDownstream('sglt2i');
+                        onMedicationChange('sglt2i', sglt2iDrug, newDose, 'mg');
+                      }}
+                    >
+                      {availableSglt2iDoses.map(dose => (
+                        <option key={dose} value={dose}>{dose}mg</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Metformin */}
+            {showMetformin && (
+              <div className="health-field">
+                <label htmlFor="metformin">Metformin</label>
+                <select
+                  id="metformin"
+                  value={medInputs.metformin || 'none'}
+                  onChange={(e) => onMedicationChange('metformin', e.target.value, null, null)}
+                >
+                  {METFORMIN_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </section>
+          </div>
+        );
+      })()}
 
       {/* Cancer Screening Section — shown when birth year is available */}
       {(() => {

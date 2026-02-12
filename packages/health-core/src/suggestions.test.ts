@@ -919,6 +919,209 @@ describe('generateSuggestions', () => {
     });
   });
 
+  describe('Weight & diabetes medication cascade', () => {
+    // Trigger: BMI > 25 AND (HbA1c prediabetic OR trigs >= 150 OR SBP >= 130 OR WHR >= 0.5)
+    it('shows GLP-1 suggestion when BMI > 25 AND HbA1c prediabetic', () => {
+      const { inputs, results } = createTestData(
+        { hba1c: hba1c(5.8) },
+        { bmi: 27 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeDefined();
+    });
+
+    it('shows GLP-1 suggestion when BMI > 25 AND elevated triglycerides', () => {
+      const { inputs, results } = createTestData(
+        { triglycerides: trig(160) },
+        { bmi: 26 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeDefined();
+    });
+
+    it('shows GLP-1 suggestion when BMI > 25 AND SBP >= 130', () => {
+      const { inputs, results } = createTestData(
+        { systolicBp: 135 },
+        { bmi: 26 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeDefined();
+    });
+
+    it('shows GLP-1 suggestion when BMI > 25 AND waist-to-height >= 0.5', () => {
+      const { inputs, results } = createTestData(
+        {},
+        { bmi: 26, waistToHeightRatio: 0.55 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeDefined();
+    });
+
+    it('does NOT show cascade when BMI > 25 but no secondary criteria', () => {
+      const { inputs, results } = createTestData(
+        {},
+        { bmi: 28 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
+    });
+
+    it('does NOT show cascade when BMI <= 25 even with secondary criteria', () => {
+      const { inputs, results } = createTestData(
+        { hba1c: hba1c(6.0) },
+        { bmi: 24 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
+    });
+
+    it('does NOT show cascade when medications param not provided', () => {
+      const { inputs, results } = createTestData(
+        { hba1c: hba1c(6.0) },
+        { bmi: 28 },
+      );
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
+    });
+
+    // Cascade progression
+    it('shows SGLT2i when on GLP-1', () => {
+      const { inputs, results } = createTestData(
+        { hba1c: hba1c(5.8) },
+        { bmi: 28 },
+      );
+      const meds: MedicationInputs = { glp1: { drug: 'tirzepatide', dose: 5 } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeDefined();
+    });
+
+    it('shows SGLT2i when GLP-1 not tolerated', () => {
+      const { inputs, results } = createTestData(
+        { hba1c: hba1c(5.8) },
+        { bmi: 28 },
+      );
+      const meds: MedicationInputs = { glp1: { drug: 'not_tolerated', dose: null } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeDefined();
+    });
+
+    it('shows SGLT2i when GLP-1 is "other"', () => {
+      const { inputs, results } = createTestData(
+        { hba1c: hba1c(5.8) },
+        { bmi: 28 },
+      );
+      const meds: MedicationInputs = { glp1: { drug: 'other', dose: null } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeDefined();
+    });
+
+    it('shows metformin when on GLP-1 and SGLT2i', () => {
+      const { inputs, results } = createTestData(
+        { hba1c: hba1c(5.8) },
+        { bmi: 28 },
+      );
+      const meds: MedicationInputs = {
+        glp1: { drug: 'semaglutide_injection', dose: 1 },
+        sglt2i: { drug: 'empagliflozin', dose: 10 },
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-metformin')).toBeDefined();
+    });
+
+    it('shows metformin when SGLT2i not tolerated', () => {
+      const { inputs, results } = createTestData(
+        { hba1c: hba1c(5.8) },
+        { bmi: 28 },
+      );
+      const meds: MedicationInputs = {
+        glp1: { drug: 'tirzepatide', dose: 5 },
+        sglt2i: { drug: 'not_tolerated', dose: null },
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-metformin')).toBeDefined();
+    });
+
+    it('no weight-med suggestions when all cascade steps completed', () => {
+      const { inputs, results } = createTestData(
+        { hba1c: hba1c(5.8) },
+        { bmi: 28 },
+      );
+      const meds: MedicationInputs = {
+        glp1: { drug: 'tirzepatide', dose: 10 },
+        sglt2i: { drug: 'dapagliflozin', dose: 10 },
+        metformin: 'xr_1000',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.filter(s => s.id?.startsWith('weight-med-')).length).toBe(0);
+    });
+
+    // Suppresses standalone GLP-1 suggestion
+    it('suppresses standalone weight-glp1 when cascade is active', () => {
+      const { inputs, results } = createTestData(
+        { hba1c: hba1c(5.8) },
+        { bmi: 28 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      // Cascade suggestion should appear, standalone should not
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
+    });
+
+    it('shows standalone weight-glp1 when BMI > 27 and no secondary criteria (no cascade)', () => {
+      const { inputs, results } = createTestData(
+        {},
+        { bmi: 28 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      // No cascade (no secondary criteria), but standalone should appear
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
+    });
+
+    // Description context
+    it('mentions HbA1c in description when HbA1c is a trigger', () => {
+      const { inputs, results } = createTestData(
+        { hba1c: hba1c(6.0) },
+        { bmi: 26 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      const glp1 = suggestions.find(s => s.id === 'weight-med-glp1');
+      expect(glp1?.description).toContain('HbA1c');
+    });
+
+    it('mentions triglycerides in description when trigs are a trigger', () => {
+      const { inputs, results } = createTestData(
+        { triglycerides: trig(200) },
+        { bmi: 26 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      const glp1 = suggestions.find(s => s.id === 'weight-med-glp1');
+      expect(glp1?.description).toContain('triglycerides');
+    });
+
+    it('mentions blood pressure in description when BP is a trigger', () => {
+      const { inputs, results } = createTestData(
+        { systolicBp: 140 },
+        { bmi: 26 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      const glp1 = suggestions.find(s => s.id === 'weight-med-glp1');
+      expect(glp1?.description).toContain('blood pressure');
+    });
+  });
+
   describe('Supplement suggestions', () => {
     it('always includes three supplement suggestions', () => {
       const { inputs, results } = createTestData();

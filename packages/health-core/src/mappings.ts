@@ -152,6 +152,16 @@ export function medicationsToInputs(
           inputs.pcsk9i = m.drugName as 'not_yet' | 'yes' | 'no' | 'not_tolerated';
         }
         break;
+      // Weight & diabetes cascade
+      case 'glp1':
+        inputs.glp1 = { drug: m.drugName, dose: m.doseValue };
+        break;
+      case 'sglt2i':
+        inputs.sglt2i = { drug: m.drugName, dose: m.doseValue };
+        break;
+      case 'metformin':
+        inputs.metformin = m.drugName as import('./types').MetforminValue;
+        break;
     }
   }
   return inputs;

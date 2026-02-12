@@ -249,6 +249,9 @@ ALTER TABLE medications ADD COLUMN IF NOT EXISTS drug_name TEXT;
 ALTER TABLE medications ADD COLUMN IF NOT EXISTS dose_value INTEGER;
 ALTER TABLE medications ADD COLUMN IF NOT EXISTS dose_unit TEXT;
 
+-- Migration: Change dose_value from INTEGER to NUMERIC for decimal doses (e.g. GLP-1: 2.5mg)
+ALTER TABLE medications ALTER COLUMN dose_value TYPE NUMERIC USING dose_value::NUMERIC;
+
 -- Migration: Handle old 'value' column from tier-based storage (if it exists)
 DO $$
 BEGIN
@@ -261,10 +264,15 @@ BEGIN
   END IF;
 END $$;
 
--- Update medication_key constraint to include 'statin_escalation' (replaces 'statin_increase')
+-- Update medication_key constraint to include all medication cascades
 ALTER TABLE medications DROP CONSTRAINT IF EXISTS medications_medication_key_check;
 ALTER TABLE medications ADD CONSTRAINT medications_medication_key_check
-  CHECK (medication_key IN ('statin', 'ezetimibe', 'statin_escalation', 'statin_increase', 'pcsk9i'));
+  CHECK (medication_key IN (
+    -- Cholesterol medication cascade
+    'statin', 'ezetimibe', 'statin_escalation', 'statin_increase', 'pcsk9i',
+    -- Weight & diabetes medication cascade
+    'glp1', 'sglt2i', 'metformin'
+  ));
 
 CREATE INDEX IF NOT EXISTS idx_medications_user ON medications(user_id);
 

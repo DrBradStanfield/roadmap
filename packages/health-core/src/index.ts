@@ -10,6 +10,11 @@ export type {
   StatinNameValue,
   EzetimibeValue,
   Pcsk9iValue,
+  Glp1Input,
+  Glp1NameValue,
+  Sglt2iInput,
+  Sglt2iNameValue,
+  MetforminValue,
 } from './types';
 
 export {
@@ -27,6 +32,14 @@ export {
   // Ezetimibe & PCSK9i options
   EZETIMIBE_OPTIONS,
   PCSK9I_OPTIONS,
+  // GLP-1 configuration
+  GLP1_DRUGS,
+  GLP1_NAMES,
+  // SGLT2i configuration
+  SGLT2I_DRUGS,
+  SGLT2I_NAMES,
+  // Metformin options
+  METFORMIN_OPTIONS,
   // Screening
   SCREENING_INTERVALS,
   // Database encoding helpers

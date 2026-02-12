@@ -259,4 +259,59 @@ describe('medicationsToInputs', () => {
     const inputs = medicationsToInputs(meds);
     expect(inputs.ezetimibe).toBe('not_tolerated');
   });
+
+  // Weight & diabetes cascade medications
+  it('converts glp1 medication with drug and dose', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'glp1', drugName: 'tirzepatide', doseValue: 5, doseUnit: 'mg', updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.glp1).toEqual({ drug: 'tirzepatide', dose: 5 });
+  });
+
+  it('converts glp1 with decimal dose', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'glp1', drugName: 'semaglutide_injection', doseValue: 0.25, doseUnit: 'mg', updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.glp1).toEqual({ drug: 'semaglutide_injection', dose: 0.25 });
+  });
+
+  it('converts glp1 not_tolerated status', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'glp1', drugName: 'not_tolerated', doseValue: null, doseUnit: null, updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.glp1).toEqual({ drug: 'not_tolerated', dose: null });
+  });
+
+  it('converts sglt2i medication with drug and dose', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'sglt2i', drugName: 'empagliflozin', doseValue: 10, doseUnit: 'mg', updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.sglt2i).toEqual({ drug: 'empagliflozin', dose: 10 });
+  });
+
+  it('converts metformin formulation value', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'metformin', drugName: 'xr_1000', doseValue: null, doseUnit: null, updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.metformin).toBe('xr_1000');
+  });
+
+  it('converts all medication keys including weight/diabetes cascade', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', updatedAt: '' },
+      { id: '2', medicationKey: 'glp1', drugName: 'tirzepatide', doseValue: 2.5, doseUnit: 'mg', updatedAt: '' },
+      { id: '3', medicationKey: 'sglt2i', drugName: 'dapagliflozin', doseValue: 10, doseUnit: 'mg', updatedAt: '' },
+      { id: '4', medicationKey: 'metformin', drugName: 'ir_500', doseValue: null, doseUnit: null, updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.statin).toEqual({ drug: 'atorvastatin', dose: 20 });
+    expect(inputs.glp1).toEqual({ drug: 'tirzepatide', dose: 2.5 });
+    expect(inputs.sglt2i).toEqual({ drug: 'dapagliflozin', dose: 10 });
+    expect(inputs.metformin).toBe('ir_500');
+  });
 });

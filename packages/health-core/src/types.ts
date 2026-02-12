@@ -184,6 +184,77 @@ export const PCSK9I_OPTIONS = [
 
 export type Pcsk9iValue = typeof PCSK9I_OPTIONS[number]['value'];
 
+// ===== GLP-1 Configuration =====
+
+/**
+ * Available GLP-1 drugs with their dose options.
+ */
+export const GLP1_DRUGS: Record<string, { doses: number[]; unit: string }> = {
+  tirzepatide: { doses: [2.5, 5, 7.5, 10, 12.5, 15], unit: 'mg' },
+  semaglutide_injection: { doses: [0.25, 0.5, 1, 1.7, 2.4], unit: 'mg' },
+  semaglutide_oral: { doses: [3, 7, 14], unit: 'mg' },
+  dulaglutide: { doses: [0.75, 1.5, 3, 4.5], unit: 'mg' },
+};
+
+/**
+ * GLP-1 names for dropdown selection.
+ */
+export const GLP1_NAMES = [
+  { value: 'none', label: "Haven't tried yet" },
+  { value: 'tirzepatide', label: 'Tirzepatide (Mounjaro/Zepbound)' },
+  { value: 'semaglutide_injection', label: 'Semaglutide injection (Ozempic/Wegovy)' },
+  { value: 'semaglutide_oral', label: 'Semaglutide oral (Rybelsus)' },
+  { value: 'dulaglutide', label: 'Dulaglutide (Trulicity)' },
+  { value: 'other', label: 'Other GLP-1' },
+  { value: 'not_tolerated', label: 'Not tolerated' },
+] as const;
+
+export type Glp1NameValue = typeof GLP1_NAMES[number]['value'];
+
+// ===== SGLT2i Configuration =====
+
+/**
+ * Available SGLT2 inhibitor drugs with their dose options.
+ */
+export const SGLT2I_DRUGS: Record<string, { doses: number[]; unit: string }> = {
+  empagliflozin: { doses: [10, 25], unit: 'mg' },
+  dapagliflozin: { doses: [5, 10], unit: 'mg' },
+  canagliflozin: { doses: [100, 300], unit: 'mg' },
+};
+
+/**
+ * SGLT2i names for dropdown selection.
+ */
+export const SGLT2I_NAMES = [
+  { value: 'none', label: "Haven't tried yet" },
+  { value: 'empagliflozin', label: 'Empagliflozin (Jardiance)' },
+  { value: 'dapagliflozin', label: 'Dapagliflozin (Farxiga)' },
+  { value: 'canagliflozin', label: 'Canagliflozin (Invokana)' },
+  { value: 'not_tolerated', label: 'Not tolerated' },
+] as const;
+
+export type Sglt2iNameValue = typeof SGLT2I_NAMES[number]['value'];
+
+// ===== Metformin Configuration =====
+
+/**
+ * Metformin options for dropdown (formulation + daily dose).
+ */
+export const METFORMIN_OPTIONS = [
+  { value: 'none', label: "Haven't tried yet" },
+  { value: 'ir_500', label: 'IR 500mg/day' },
+  { value: 'ir_1000', label: 'IR 1000mg/day' },
+  { value: 'ir_1500', label: 'IR 1500mg/day' },
+  { value: 'ir_2000', label: 'IR 2000mg/day' },
+  { value: 'xr_500', label: 'XR 500mg/day' },
+  { value: 'xr_1000', label: 'XR 1000mg/day' },
+  { value: 'xr_1500', label: 'XR 1500mg/day' },
+  { value: 'xr_2000', label: 'XR 2000mg/day' },
+  { value: 'not_tolerated', label: 'Not tolerated' },
+] as const;
+
+export type MetforminValue = typeof METFORMIN_OPTIONS[number]['value'];
+
 /**
  * Cancer screening inputs for the screening cascade.
  * Date fields use "YYYY-MM" format (month precision).
@@ -241,13 +312,34 @@ export interface StatinInput {
 }
 
 /**
- * Medication inputs for the cholesterol medication cascade.
+ * GLP-1 medication input with separate drug and dose (FHIR-compatible).
+ */
+export interface Glp1Input {
+  drug: string;        // e.g., 'tirzepatide', 'semaglutide_injection', 'none', 'not_tolerated'
+  dose: number | null; // e.g., 2.5, null for 'none'/'not_tolerated'/'other'
+}
+
+/**
+ * SGLT2i medication input with separate drug and dose (FHIR-compatible).
+ */
+export interface Sglt2iInput {
+  drug: string;        // e.g., 'empagliflozin', 'none', 'not_tolerated'
+  dose: number | null; // e.g., 10, null for 'none'/'not_tolerated'
+}
+
+/**
+ * Medication inputs for the cholesterol and weight/diabetes medication cascades.
  */
 export interface MedicationInputs {
+  // Cholesterol cascade
   statin?: StatinInput;
   ezetimibe?: EzetimibeValue;
   statinEscalation?: 'not_yet' | 'not_tolerated';
   pcsk9i?: Pcsk9iValue;
+  // Weight & diabetes cascade
+  glp1?: Glp1Input;
+  sglt2i?: Sglt2iInput;
+  metformin?: MetforminValue;
 }
 
 /**
