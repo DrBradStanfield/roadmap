@@ -29,12 +29,16 @@ import {
   formatHeightDisplay,
   GLP1_NAMES,
   GLP1_DRUGS,
+  canIncreaseGlp1Dose,
+  shouldSuggestGlp1Switch,
+  isOnMaxGlp1Potency,
   SGLT2I_NAMES,
   SGLT2I_DRUGS,
   METFORMIN_OPTIONS,
   HBA1C_THRESHOLDS,
   TRIGLYCERIDES_THRESHOLDS,
   BP_THRESHOLDS,
+  SCREENING_FOLLOWUP_INFO,
 } from '@roadmap/health-core';
 import { formatShortDate } from '../lib/constants';
 import { DatePicker, InlineDatePicker, dateValueToISO, getCurrentDateValue, type DateValue } from './DatePicker';
@@ -713,7 +717,7 @@ export function InputPanel({
           );
         })()}
 
-      {/* Weight & Diabetes Medications Section — shown when BMI > 25 AND secondary criteria */}
+      {/* Weight & Diabetes Medications Section — shown when BMI > 28 (unconditional) or BMI 25-28 with secondary criteria */}
       {(() => {
         // Compute effective values from form inputs + previous measurements fallback
         const effectiveWeight = inputs.weightKg ?? previousMeasurements.find(m => m.metricType === 'weight')?.value;
@@ -729,7 +733,7 @@ export function InputPanel({
         const effectiveWhr = (effectiveWaist !== undefined && effectiveHeight !== undefined)
           ? effectiveWaist / effectiveHeight : undefined;
 
-        // Check trigger: BMI > 25 AND at least one secondary criterion
+        // Check trigger: BMI > 28 (unconditional) or BMI 25-28 with secondary criteria
         if (effectiveBmi === undefined || effectiveBmi <= 25) return null;
 
         const hba1cElevated = effectiveHba1c !== undefined && effectiveHba1c >= HBA1C_THRESHOLDS.prediabetes;
@@ -737,7 +741,7 @@ export function InputPanel({
         const bpElevated = effectiveSbp !== undefined && effectiveSbp >= BP_THRESHOLDS.stage1Sys;
         const waistElevated = effectiveWhr !== undefined && effectiveWhr >= 0.5;
 
-        if (!hba1cElevated && !trigsElevated && !bpElevated && !waistElevated) return null;
+        if (effectiveBmi <= 28 && !hba1cElevated && !trigsElevated && !bpElevated && !waistElevated) return null;
 
         const medInputs = medicationsToInputs(medications);
 
@@ -750,8 +754,18 @@ export function InputPanel({
         const glp1Handled = onGlp1 || glp1OnOther || glp1Drug === 'not_tolerated';
         const availableGlp1Doses = GLP1_DRUGS[glp1Drug]?.doses ?? [];
 
+        // GLP-1 escalation state
+        const glp1Tolerated = glp1Drug !== 'not_tolerated';
+        const canIncreaseGlp1 = onGlp1 && canIncreaseGlp1Dose(glp1Drug, glp1Dose);
+        const shouldSwitchGlp1 = (onGlp1 && shouldSuggestGlp1Switch(glp1Drug, glp1Dose)) || glp1OnOther;
+        const atMaxGlp1 = onGlp1 && isOnMaxGlp1Potency(glp1Drug, glp1Dose);
+        const showGlp1Escalation = glp1Handled && glp1Tolerated && (canIncreaseGlp1 || shouldSwitchGlp1);
+        const glp1EscalationHandled = medInputs.glp1Escalation === 'not_tolerated';
+
         // SGLT2i state
-        const showSglt2i = glp1Handled;
+        const showSglt2i = glp1Handled && (
+          !glp1Tolerated || atMaxGlp1 || (showGlp1Escalation && glp1EscalationHandled)
+        );
         const sglt2i = medInputs.sglt2i;
         const sglt2iDrug = sglt2i?.drug ?? 'none';
         const sglt2iDose = sglt2i?.dose ?? null;
@@ -763,8 +777,12 @@ export function InputPanel({
         const showMetformin = showSglt2i && sglt2iHandled;
 
         // Downstream reset helper
-        const resetWeightDownstream = (from: 'glp1' | 'sglt2i') => {
+        const resetWeightDownstream = (from: 'glp1' | 'glp1_escalation' | 'sglt2i') => {
           if (from === 'glp1') {
+            if (medInputs.glp1Escalation) onMedicationChange('glp1_escalation', 'not_yet', null, null);
+            if (medInputs.sglt2i) onMedicationChange('sglt2i', 'none', null, null);
+            if (medInputs.metformin) onMedicationChange('metformin', 'none', null, null);
+          } else if (from === 'glp1_escalation') {
             if (medInputs.sglt2i) onMedicationChange('sglt2i', 'none', null, null);
             if (medInputs.metformin) onMedicationChange('metformin', 'none', null, null);
           } else if (from === 'sglt2i') {
@@ -828,7 +846,29 @@ export function InputPanel({
               </div>
             </div>
 
-            {/* Step 2: SGLT2i selection */}
+            {/* Step 2: GLP-1 Escalation (dose increase or switch to tirzepatide) */}
+            {showGlp1Escalation && (
+              <div className="health-field">
+                <label htmlFor="glp1-escalation">
+                  {canIncreaseGlp1 ? 'Tried increasing GLP-1 dose?' : 'Tried switching to Tirzepatide?'}
+                </label>
+                <select
+                  id="glp1-escalation"
+                  value={medInputs.glp1Escalation || 'not_yet'}
+                  onChange={e => {
+                    resetWeightDownstream('glp1_escalation');
+                    onMedicationChange('glp1_escalation', e.target.value, null, null);
+                  }}
+                >
+                  <option value="not_yet">Not yet</option>
+                  <option value="not_tolerated">
+                    {canIncreaseGlp1 ? "Didn't tolerate a higher dose" : "Didn't tolerate switching"}
+                  </option>
+                </select>
+              </div>
+            )}
+
+            {/* Step 3: SGLT2i selection */}
             {showSglt2i && (
               <div className="health-field">
                 <label htmlFor="sglt2i-name">SGLT2 Inhibitor</label>
@@ -871,7 +911,7 @@ export function InputPanel({
               </div>
             )}
 
-            {/* Step 3: Metformin */}
+            {/* Step 4: Metformin */}
             {showMetformin && (
               <div className="health-field">
                 <label htmlFor="metformin">Metformin</label>
@@ -1000,6 +1040,80 @@ export function InputPanel({
         const getStr = (dbKey: string): string | undefined => getVal(dbKey) as string | undefined;
         const getNum = (dbKey: string): number | undefined => getVal(dbKey) as number | undefined;
 
+        /** Clear result and follow-up fields for a screening type. */
+        const clearResultChain = (type: string) => {
+          if (getStr(`${type}_result`)) onScreeningChange(`${type}_result`, '');
+          if (getStr(`${type}_followup_status`)) onScreeningChange(`${type}_followup_status`, '');
+          if (getStr(`${type}_followup_date`)) onScreeningChange(`${type}_followup_date`, '');
+        };
+
+        /** Render result dropdown + follow-up status + follow-up date for a screening type. */
+        const renderResultFollowup = (type: string, method: string | undefined) => {
+          if (!getStr(`${type}_last_date`)) return null;
+
+          const result = getStr(`${type}_result`);
+          const followupStatus = getStr(`${type}_followup_status`);
+          const methodKey = method ? `${type}_${method}` : `${type}_other`;
+          const info = SCREENING_FOLLOWUP_INFO[methodKey];
+          const followupLabel = info?.followupName
+            ? info.followupName.charAt(0).toUpperCase() + info.followupName.slice(1)
+            : 'Follow-up';
+
+          return (
+            <>
+              <div className="health-field">
+                <label htmlFor={`${type}-result`}>Result</label>
+                <select
+                  id={`${type}-result`}
+                  value={result || ''}
+                  onChange={(e) => {
+                    onScreeningChange(`${type}_result`, e.target.value);
+                    if (e.target.value !== 'abnormal') {
+                      if (getStr(`${type}_followup_status`)) onScreeningChange(`${type}_followup_status`, '');
+                      if (getStr(`${type}_followup_date`)) onScreeningChange(`${type}_followup_date`, '');
+                    }
+                  }}
+                >
+                  <option value="">Select...</option>
+                  <option value="normal">Normal</option>
+                  <option value="abnormal">Abnormal</option>
+                  <option value="awaiting">Awaiting results</option>
+                </select>
+              </div>
+
+              {result === 'abnormal' && (
+                <div className="health-field">
+                  <label htmlFor={`${type}-followup-status`}>{followupLabel} status</label>
+                  <select
+                    id={`${type}-followup-status`}
+                    value={followupStatus || ''}
+                    onChange={(e) => {
+                      onScreeningChange(`${type}_followup_status`, e.target.value);
+                      if (e.target.value === 'not_organized' || e.target.value === '') {
+                        if (getStr(`${type}_followup_date`)) onScreeningChange(`${type}_followup_date`, '');
+                      }
+                    }}
+                  >
+                    <option value="">Select...</option>
+                    <option value="not_organized">Not yet organized</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              )}
+
+              {result === 'abnormal' && (followupStatus === 'scheduled' || followupStatus === 'completed') && (
+                renderDateInput(
+                  `${type}_followup_date`,
+                  followupStatus === 'completed'
+                    ? `When was the ${info?.followupName ?? 'follow-up'} completed?`
+                    : `When is the ${info?.followupName ?? 'follow-up'} scheduled?`
+                )
+              )}
+            </>
+          );
+        };
+
         const hasAnyEligible =
           age >= 35 || // colorectal
           (sex === 'female' && age >= 25) || // cervical
@@ -1039,6 +1153,7 @@ export function InputPanel({
                           onScreeningChange('colorectal_method', e.target.value);
                           if (e.target.value === 'not_yet_started' || e.target.value === '') {
                             if (getStr('colorectal_last_date')) onScreeningChange('colorectal_last_date', '');
+                            clearResultChain('colorectal');
                           }
                         }}
                       >
@@ -1051,7 +1166,10 @@ export function InputPanel({
                     </div>
 
                     {getStr('colorectal_method') && getStr('colorectal_method') !== 'not_yet_started' && (
-                      renderDateInput('colorectal_last_date', 'Date of last screening')
+                      <>
+                        {renderDateInput('colorectal_last_date', 'Date of last screening')}
+                        {renderResultFollowup('colorectal', getStr('colorectal_method'))}
+                      </>
                     )}
                   </>
                 ) : (
@@ -1085,6 +1203,7 @@ export function InputPanel({
                       onScreeningChange('breast_frequency', e.target.value);
                       if (e.target.value === 'not_yet_started' || e.target.value === '') {
                         if (getStr('breast_last_date')) onScreeningChange('breast_last_date', '');
+                        clearResultChain('breast');
                       }
                     }}
                   >
@@ -1096,7 +1215,10 @@ export function InputPanel({
                 </div>
 
                 {getStr('breast_frequency') && getStr('breast_frequency') !== 'not_yet_started' && (
-                  renderDateInput('breast_last_date', 'Date of last mammogram')
+                  <>
+                    {renderDateInput('breast_last_date', 'Date of last mammogram')}
+                    {renderResultFollowup('breast', getStr('breast_frequency'))}
+                  </>
                 )}
               </div>
             )}
@@ -1116,6 +1238,7 @@ export function InputPanel({
                           onScreeningChange('cervical_method', e.target.value);
                           if (e.target.value === 'not_yet_started' || e.target.value === '') {
                             if (getStr('cervical_last_date')) onScreeningChange('cervical_last_date', '');
+                            clearResultChain('cervical');
                           }
                         }}
                       >
@@ -1128,7 +1251,10 @@ export function InputPanel({
                     </div>
 
                     {getStr('cervical_method') && getStr('cervical_method') !== 'not_yet_started' && (
-                      renderDateInput('cervical_last_date', 'Date of last screening')
+                      <>
+                        {renderDateInput('cervical_last_date', 'Date of last screening')}
+                        {renderResultFollowup('cervical', getStr('cervical_method'))}
+                      </>
                     )}
                   </>
                 ) : (
@@ -1155,6 +1281,7 @@ export function InputPanel({
                         if (getStr('lung_pack_years') !== undefined) onScreeningChange('lung_pack_years', '');
                         if (getStr('lung_screening')) onScreeningChange('lung_screening', '');
                         if (getStr('lung_last_date')) onScreeningChange('lung_last_date', '');
+                        clearResultChain('lung');
                       }
                     }}
                   >
@@ -1193,6 +1320,7 @@ export function InputPanel({
                               onScreeningChange('lung_screening', e.target.value);
                               if (e.target.value === 'not_yet_started' || e.target.value === '') {
                                 if (getStr('lung_last_date')) onScreeningChange('lung_last_date', '');
+                                clearResultChain('lung');
                               }
                             }}
                           >
@@ -1203,7 +1331,10 @@ export function InputPanel({
                         </div>
 
                         {getStr('lung_screening') === 'annual_ldct' && (
-                          renderDateInput('lung_last_date', 'Date of last low-dose CT')
+                          <>
+                            {renderDateInput('lung_last_date', 'Date of last low-dose CT')}
+                            {renderResultFollowup('lung', getStr('lung_screening'))}
+                          </>
                         )}
                       </>
                     )}

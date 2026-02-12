@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { generateSuggestions } from './suggestions';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
+import { canIncreaseGlp1Dose, shouldSuggestGlp1Switch, isOnMaxGlp1Potency, getGlp1EscalationType } from './types';
 import { toCanonicalValue } from './units';
 
 // Shorthand: convert conventional (US) blood test values to SI for test inputs
@@ -486,8 +487,8 @@ describe('generateSuggestions', () => {
   });
 
   describe('GLP-1 weight management suggestion', () => {
-    it('suggests GLP-1 when BMI > 27', () => {
-      const { inputs, results } = createTestData({}, { bmi: 28 });
+    it('suggests GLP-1 when BMI > 28', () => {
+      const { inputs, results } = createTestData({}, { bmi: 29 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
       expect(suggestions.find(s => s.id === 'weight-glp1')?.category).toBe('medication');
@@ -499,25 +500,25 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
     });
 
-    it('suggests GLP-1 when BMI 25-27 and waist-to-height >= 0.5', () => {
+    it('suggests GLP-1 when BMI 25-28 and waist-to-height >= 0.5', () => {
       const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.52 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
     });
 
-    it('does not suggest GLP-1 when BMI 25-27 and waist-to-height < 0.5', () => {
+    it('does not suggest GLP-1 when BMI 25-28 and waist-to-height < 0.5', () => {
       const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.45 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
     });
 
-    it('suggests GLP-1 when BMI 25-27 and no waist data', () => {
+    it('suggests GLP-1 when BMI 25-28 and no waist data', () => {
       const { inputs, results } = createTestData({}, { bmi: 26 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
     });
 
-    it('suggests GLP-1 when BMI 25-27 and elevated triglycerides, even with normal waist', () => {
+    it('suggests GLP-1 when BMI 25-28 and elevated triglycerides, even with normal waist', () => {
       const { inputs, results } = createTestData(
         { triglycerides: trig(160) },  // borderline elevated
         { bmi: 26, waistToHeightRatio: 0.45 }  // normal waist
@@ -528,7 +529,7 @@ describe('generateSuggestions', () => {
       expect(glp1?.description).toContain('triglycerides');
     });
 
-    it('does not suggest GLP-1 when BMI 25-27 with normal trigs and normal waist', () => {
+    it('does not suggest GLP-1 when BMI 25-28 with normal trigs and normal waist', () => {
       const { inputs, results } = createTestData(
         { triglycerides: trig(120) },  // normal
         { bmi: 26, waistToHeightRatio: 0.45 }  // normal waist
@@ -919,8 +920,256 @@ describe('generateSuggestions', () => {
     });
   });
 
+  describe('Screening follow-up pathways', () => {
+    // --- Colorectal ---
+    it('shows urgent follow-up when colorectal result is abnormal and no follow-up organized', () => {
+      const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = {
+        colorectalMethod: 'fit_annual',
+        colorectalLastDate: '2025-06',
+        colorectalResult: 'abnormal',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-colorectal-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.priority).toBe('urgent');
+      expect(followup?.description).toContain('colonoscopy');
+    });
+
+    it('shows urgent follow-up when colorectal abnormal with followupStatus not_organized', () => {
+      const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = {
+        colorectalMethod: 'fit_annual',
+        colorectalLastDate: '2025-06',
+        colorectalResult: 'abnormal',
+        colorectalFollowupStatus: 'not_organized',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-colorectal-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.priority).toBe('urgent');
+    });
+
+    it('shows info when colorectal follow-up is scheduled', () => {
+      const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = {
+        colorectalMethod: 'fit_annual',
+        colorectalLastDate: '2025-06',
+        colorectalResult: 'abnormal',
+        colorectalFollowupStatus: 'scheduled',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-colorectal-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.priority).toBe('info');
+    });
+
+    it('uses 3-year interval after completed colorectal follow-up (FIT positive)', () => {
+      const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = {
+        colorectalMethod: 'fit_annual',
+        colorectalLastDate: '2025-06',
+        colorectalResult: 'abnormal',
+        colorectalFollowupStatus: 'completed',
+        colorectalFollowupDate: '2025-08',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-colorectal-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.priority).toBe('info');
+      expect(followup?.description).toContain('Aug 2028');
+    });
+
+    it('shows overdue after completed colorectal follow-up when past interval', () => {
+      const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = {
+        colorectalMethod: 'fit_annual',
+        colorectalLastDate: '2021-01',
+        colorectalResult: 'abnormal',
+        colorectalFollowupStatus: 'completed',
+        colorectalFollowupDate: '2021-03', // 3 years ago → overdue
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-colorectal-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.priority).toBe('attention');
+    });
+
+    it('falls back to normal overdue logic when colorectal result is normal', () => {
+      const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = {
+        colorectalMethod: 'fit_annual',
+        colorectalLastDate: '2024-01',
+        colorectalResult: 'normal',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-colorectal-overdue')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'screening-colorectal-followup')).toBeUndefined();
+    });
+
+    it('falls back to normal logic when colorectal result is awaiting', () => {
+      const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = {
+        colorectalMethod: 'fit_annual',
+        colorectalLastDate: '2024-01',
+        colorectalResult: 'awaiting',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-colorectal-overdue')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'screening-colorectal-followup')).toBeUndefined();
+    });
+
+    it('gracefully handles abnormal + completed but no followup date', () => {
+      const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = {
+        colorectalMethod: 'fit_annual',
+        colorectalLastDate: '2025-06',
+        colorectalResult: 'abnormal',
+        colorectalFollowupStatus: 'completed',
+        // no followupDate
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      // Should fall back to default logic
+      expect(suggestions.find(s => s.id === 'screening-colorectal-followup')).toBeUndefined();
+    });
+
+    // --- Breast ---
+    it('shows urgent follow-up for abnormal breast screening', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = {
+        breastFrequency: 'annual',
+        breastLastDate: '2025-06',
+        breastResult: 'abnormal',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-breast-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.priority).toBe('urgent');
+      expect(followup?.description).toContain('diagnostic imaging');
+    });
+
+    it('resumes normal annual schedule after completed breast follow-up', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const now = new Date();
+      const recentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const scr: ScreeningInputs = {
+        breastFrequency: 'annual',
+        breastLastDate: '2025-01',
+        breastResult: 'abnormal',
+        breastFollowupStatus: 'completed',
+        breastFollowupDate: recentMonth, // recent → next due in 12 months
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-breast-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.priority).toBe('info');
+    });
+
+    // --- Cervical ---
+    it('shows urgent follow-up for abnormal cervical screening (HPV+)', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1990, birthMonth: 1 }, { age: 36 });
+      const scr: ScreeningInputs = {
+        cervicalMethod: 'hpv_every_5yr',
+        cervicalLastDate: '2025-06',
+        cervicalResult: 'abnormal',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-cervical-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.priority).toBe('urgent');
+      expect(followup?.description).toContain('colposcopy');
+    });
+
+    it('uses 1-year interval after completed cervical follow-up', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1990, birthMonth: 1 }, { age: 36 });
+      const scr: ScreeningInputs = {
+        cervicalMethod: 'hpv_every_5yr',
+        cervicalLastDate: '2025-01',
+        cervicalResult: 'abnormal',
+        cervicalFollowupStatus: 'completed',
+        cervicalFollowupDate: '2025-06',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-cervical-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.priority).toBe('info');
+      expect(followup?.description).toContain('Jun 2026');
+    });
+
+    it('falls back to normal logic when cervical result is normal', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1990, birthMonth: 1 }, { age: 36 });
+      const now = new Date();
+      const recentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const scr: ScreeningInputs = {
+        cervicalMethod: 'hpv_every_5yr',
+        cervicalLastDate: recentMonth,
+        cervicalResult: 'normal',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-cervical-upcoming')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'screening-cervical-followup')).toBeUndefined();
+    });
+
+    // --- Lung ---
+    it('shows urgent follow-up for abnormal lung screening', () => {
+      const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = {
+        lungSmokingHistory: 'current_smoker',
+        lungPackYears: 25,
+        lungScreening: 'annual_ldct',
+        lungLastDate: '2025-06',
+        lungResult: 'abnormal',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-lung-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.priority).toBe('urgent');
+      expect(followup?.description).toContain('follow-up imaging');
+    });
+
+    it('resumes annual LDCT after completed lung follow-up', () => {
+      const { inputs, results } = createTestData({ birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const now = new Date();
+      const recentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const scr: ScreeningInputs = {
+        lungSmokingHistory: 'current_smoker',
+        lungPackYears: 25,
+        lungScreening: 'annual_ldct',
+        lungLastDate: '2025-01',
+        lungResult: 'abnormal',
+        lungFollowupStatus: 'completed',
+        lungFollowupDate: recentMonth,
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-lung-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.priority).toBe('info');
+    });
+
+    it('colonoscopy abnormal shows repeat colonoscopy follow-up', () => {
+      const { inputs, results } = createTestData({ birthYear: 1980, birthMonth: 1 }, { age: 46 });
+      const scr: ScreeningInputs = {
+        colorectalMethod: 'colonoscopy_10yr',
+        colorectalLastDate: '2025-06',
+        colorectalResult: 'abnormal',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-colorectal-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.description).toContain('repeat colonoscopy');
+    });
+
+    // --- No follow-up for screening types without result tracking ---
+    it('does not interfere with prostate suggestions', () => {
+      const { inputs, results } = createTestData({ sex: 'male', birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = { prostateDiscussion: 'will_screen', prostatePsaValue: 5.2 };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-prostate-elevated')).toBeDefined();
+    });
+  });
+
   describe('Weight & diabetes medication cascade', () => {
-    // Trigger: BMI > 25 AND (HbA1c prediabetic OR trigs >= 150 OR SBP >= 130 OR WHR >= 0.5)
+    // Trigger: BMI > 28 (unconditional) OR BMI 25-28 with (HbA1c prediabetic OR trigs >= 150 OR SBP >= 130 OR WHR >= 0.5)
     it('shows GLP-1 suggestion when BMI > 25 AND HbA1c prediabetic', () => {
       const { inputs, results } = createTestData(
         { hba1c: hba1c(5.8) },
@@ -961,14 +1210,24 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeDefined();
     });
 
-    it('does NOT show cascade when BMI > 25 but no secondary criteria', () => {
+    it('does NOT show cascade when BMI 25-28 but no secondary criteria', () => {
       const { inputs, results } = createTestData(
         {},
-        { bmi: 28 },
+        { bmi: 27 },
       );
       const meds: MedicationInputs = {};
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
       expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
+    });
+
+    it('shows cascade when BMI > 28 with NO secondary criteria', () => {
+      const { inputs, results } = createTestData(
+        {},
+        { bmi: 29 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeDefined();
     });
 
     it('does NOT show cascade when BMI <= 25 even with secondary criteria', () => {
@@ -990,15 +1249,16 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
     });
 
-    // Cascade progression
-    it('shows SGLT2i when on GLP-1', () => {
+    // Cascade progression (GLP-1 at max potency → SGLT2i → Metformin)
+    it('shows SGLT2i when on GLP-1 at max potency', () => {
       const { inputs, results } = createTestData(
         { hba1c: hba1c(5.8) },
         { bmi: 28 },
       );
-      const meds: MedicationInputs = { glp1: { drug: 'tirzepatide', dose: 5 } };
+      const meds: MedicationInputs = { glp1: { drug: 'tirzepatide', dose: 15 } };
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
       expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-increase')).toBeUndefined();
       expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeDefined();
     });
 
@@ -1012,23 +1272,24 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeDefined();
     });
 
-    it('shows SGLT2i when GLP-1 is "other"', () => {
+    it('shows GLP-1 switch suggestion when on "other" GLP-1', () => {
       const { inputs, results } = createTestData(
         { hba1c: hba1c(5.8) },
         { bmi: 28 },
       );
       const meds: MedicationInputs = { glp1: { drug: 'other', dose: null } };
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
-      expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-switch')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeUndefined();
     });
 
-    it('shows metformin when on GLP-1 and SGLT2i', () => {
+    it('shows metformin when on GLP-1 at max potency and SGLT2i', () => {
       const { inputs, results } = createTestData(
         { hba1c: hba1c(5.8) },
         { bmi: 28 },
       );
       const meds: MedicationInputs = {
-        glp1: { drug: 'semaglutide_injection', dose: 1 },
+        glp1: { drug: 'tirzepatide', dose: 15 },
         sglt2i: { drug: 'empagliflozin', dose: 10 },
       };
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
@@ -1041,7 +1302,7 @@ describe('generateSuggestions', () => {
         { bmi: 28 },
       );
       const meds: MedicationInputs = {
-        glp1: { drug: 'tirzepatide', dose: 5 },
+        glp1: { drug: 'tirzepatide', dose: 15 },
         sglt2i: { drug: 'not_tolerated', dose: null },
       };
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
@@ -1054,7 +1315,7 @@ describe('generateSuggestions', () => {
         { bmi: 28 },
       );
       const meds: MedicationInputs = {
-        glp1: { drug: 'tirzepatide', dose: 10 },
+        glp1: { drug: 'tirzepatide', dose: 15 },
         sglt2i: { drug: 'dapagliflozin', dose: 10 },
         metformin: 'xr_1000',
       };
@@ -1075,14 +1336,14 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
     });
 
-    it('shows standalone weight-glp1 when BMI > 27 and no secondary criteria (no cascade)', () => {
+    it('shows standalone weight-glp1 when BMI 25-28 and no secondary criteria (no cascade)', () => {
       const { inputs, results } = createTestData(
         {},
-        { bmi: 28 },
+        { bmi: 27 },
       );
       const meds: MedicationInputs = {};
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
-      // No cascade (no secondary criteria), but standalone should appear
+      // No cascade (BMI 25-28 without secondary criteria), but standalone should appear
       expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
       expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
     });
@@ -1119,6 +1380,168 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
       const glp1 = suggestions.find(s => s.id === 'weight-med-glp1');
       expect(glp1?.description).toContain('blood pressure');
+    });
+  });
+
+  describe('GLP-1 escalation in weight & diabetes cascade', () => {
+    // All tests use BMI > 28 with HbA1c to trigger cascade
+    const cascadeOverrides = { hba1c: hba1c(5.8) };
+    const cascadeBmi = { bmi: 29 };
+
+    it('suggests GLP-1 dose increase when not on max dose', () => {
+      const { inputs, results } = createTestData(cascadeOverrides, cascadeBmi);
+      const meds: MedicationInputs = { glp1: { drug: 'semaglutide_injection', dose: 1 } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-increase')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-switch')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeUndefined();
+    });
+
+    it('suggests GLP-1 dose increase for sub-max tirzepatide', () => {
+      const { inputs, results } = createTestData(cascadeOverrides, cascadeBmi);
+      const meds: MedicationInputs = { glp1: { drug: 'tirzepatide', dose: 5 } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-increase')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-switch')).toBeUndefined();
+    });
+
+    it('suggests switching to tirzepatide when on max dose of semaglutide injection', () => {
+      const { inputs, results } = createTestData(cascadeOverrides, cascadeBmi);
+      const meds: MedicationInputs = { glp1: { drug: 'semaglutide_injection', dose: 2.4 } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-switch')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-increase')).toBeUndefined();
+    });
+
+    it('suggests switching to tirzepatide when on max dose of dulaglutide', () => {
+      const { inputs, results } = createTestData(cascadeOverrides, cascadeBmi);
+      const meds: MedicationInputs = { glp1: { drug: 'dulaglutide', dose: 4.5 } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-switch')).toBeDefined();
+    });
+
+    it('suggests switching to tirzepatide when on max dose of oral semaglutide', () => {
+      const { inputs, results } = createTestData(cascadeOverrides, cascadeBmi);
+      const meds: MedicationInputs = { glp1: { drug: 'semaglutide_oral', dose: 14 } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-switch')).toBeDefined();
+    });
+
+    it('suggests switching to tirzepatide when on "other" GLP-1', () => {
+      const { inputs, results } = createTestData(cascadeOverrides, cascadeBmi);
+      const meds: MedicationInputs = { glp1: { drug: 'other', dose: null } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-switch')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeUndefined();
+    });
+
+    it('skips escalation when on tirzepatide max dose (15mg) → shows SGLT2i', () => {
+      const { inputs, results } = createTestData(cascadeOverrides, cascadeBmi);
+      const meds: MedicationInputs = { glp1: { drug: 'tirzepatide', dose: 15 } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-increase')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-switch')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeDefined();
+    });
+
+    it('skips escalation when GLP-1 not tolerated → shows SGLT2i', () => {
+      const { inputs, results } = createTestData(cascadeOverrides, cascadeBmi);
+      const meds: MedicationInputs = { glp1: { drug: 'not_tolerated', dose: null } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-increase')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-switch')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeDefined();
+    });
+
+    it('shows SGLT2i when GLP-1 escalation not tolerated', () => {
+      const { inputs, results } = createTestData(cascadeOverrides, cascadeBmi);
+      const meds: MedicationInputs = {
+        glp1: { drug: 'semaglutide_injection', dose: 1 },
+        glp1Escalation: 'not_tolerated',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-increase')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeDefined();
+    });
+
+    it('shows SGLT2i when "other" GLP-1 escalation not tolerated', () => {
+      const { inputs, results } = createTestData(cascadeOverrides, cascadeBmi);
+      const meds: MedicationInputs = {
+        glp1: { drug: 'other', dose: null },
+        glp1Escalation: 'not_tolerated',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1-switch')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'weight-med-sglt2i')).toBeDefined();
+    });
+
+    it('full 4-step cascade: no suggestions when all completed', () => {
+      const { inputs, results } = createTestData(cascadeOverrides, cascadeBmi);
+      const meds: MedicationInputs = {
+        glp1: { drug: 'tirzepatide', dose: 15 },
+        sglt2i: { drug: 'empagliflozin', dose: 10 },
+        metformin: 'xr_1000',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.filter(s => s.id?.startsWith('weight-med-')).length).toBe(0);
+    });
+  });
+
+  describe('GLP-1 escalation helper functions', () => {
+    it('canIncreaseGlp1Dose returns true for sub-max dose', () => {
+      expect(canIncreaseGlp1Dose('semaglutide_injection', 1)).toBe(true);
+      expect(canIncreaseGlp1Dose('tirzepatide', 5)).toBe(true);
+      expect(canIncreaseGlp1Dose('dulaglutide', 0.75)).toBe(true);
+      expect(canIncreaseGlp1Dose('semaglutide_oral', 3)).toBe(true);
+    });
+
+    it('canIncreaseGlp1Dose returns false for max dose', () => {
+      expect(canIncreaseGlp1Dose('semaglutide_injection', 2.4)).toBe(false);
+      expect(canIncreaseGlp1Dose('tirzepatide', 15)).toBe(false);
+      expect(canIncreaseGlp1Dose('dulaglutide', 4.5)).toBe(false);
+      expect(canIncreaseGlp1Dose('semaglutide_oral', 14)).toBe(false);
+    });
+
+    it('canIncreaseGlp1Dose returns false for special values', () => {
+      expect(canIncreaseGlp1Dose('none', null)).toBe(false);
+      expect(canIncreaseGlp1Dose('not_tolerated', null)).toBe(false);
+      expect(canIncreaseGlp1Dose('other', null)).toBe(false);
+      expect(canIncreaseGlp1Dose(undefined, null)).toBe(false);
+    });
+
+    it('shouldSuggestGlp1Switch returns true for max dose of non-tirzepatide', () => {
+      expect(shouldSuggestGlp1Switch('semaglutide_injection', 2.4)).toBe(true);
+      expect(shouldSuggestGlp1Switch('dulaglutide', 4.5)).toBe(true);
+      expect(shouldSuggestGlp1Switch('semaglutide_oral', 14)).toBe(true);
+    });
+
+    it('shouldSuggestGlp1Switch returns false for tirzepatide', () => {
+      expect(shouldSuggestGlp1Switch('tirzepatide', 15)).toBe(false);
+      expect(shouldSuggestGlp1Switch('tirzepatide', 5)).toBe(false);
+    });
+
+    it('shouldSuggestGlp1Switch returns true for "other"', () => {
+      expect(shouldSuggestGlp1Switch('other', null)).toBe(true);
+    });
+
+    it('shouldSuggestGlp1Switch returns false for sub-max dose', () => {
+      expect(shouldSuggestGlp1Switch('semaglutide_injection', 1)).toBe(false);
+    });
+
+    it('isOnMaxGlp1Potency returns true only for tirzepatide max dose', () => {
+      expect(isOnMaxGlp1Potency('tirzepatide', 15)).toBe(true);
+      expect(isOnMaxGlp1Potency('tirzepatide', 5)).toBe(false);
+      expect(isOnMaxGlp1Potency('semaglutide_injection', 2.4)).toBe(false);
+    });
+
+    it('getGlp1EscalationType returns correct type', () => {
+      expect(getGlp1EscalationType('semaglutide_injection', 1)).toBe('increase_dose');
+      expect(getGlp1EscalationType('semaglutide_injection', 2.4)).toBe('switch_glp1');
+      expect(getGlp1EscalationType('tirzepatide', 5)).toBe('increase_dose');
+      expect(getGlp1EscalationType('tirzepatide', 15)).toBe('none');
+      expect(getGlp1EscalationType('other', null)).toBe('switch_glp1');
+      expect(getGlp1EscalationType('none', null)).toBe('none');
+      expect(getGlp1EscalationType('not_tolerated', null)).toBe('none');
     });
   });
 

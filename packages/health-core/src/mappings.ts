@@ -156,6 +156,9 @@ export function medicationsToInputs(
       case 'glp1':
         inputs.glp1 = { drug: m.drugName, dose: m.doseValue };
         break;
+      case 'glp1_escalation':
+        inputs.glp1Escalation = m.drugName as 'not_yet' | 'not_tolerated';
+        break;
       case 'sglt2i':
         inputs.sglt2i = { drug: m.drugName, dose: m.doseValue };
         break;
@@ -190,17 +193,44 @@ export function screeningsToInputs(
       case 'colorectal_last_date':
         inputs.colorectalLastDate = s.value;
         break;
+      case 'colorectal_result':
+        inputs.colorectalResult = s.value as any;
+        break;
+      case 'colorectal_followup_status':
+        inputs.colorectalFollowupStatus = s.value as any;
+        break;
+      case 'colorectal_followup_date':
+        inputs.colorectalFollowupDate = s.value;
+        break;
       case 'breast_frequency':
         inputs.breastFrequency = s.value as any;
         break;
       case 'breast_last_date':
         inputs.breastLastDate = s.value;
         break;
+      case 'breast_result':
+        inputs.breastResult = s.value as any;
+        break;
+      case 'breast_followup_status':
+        inputs.breastFollowupStatus = s.value as any;
+        break;
+      case 'breast_followup_date':
+        inputs.breastFollowupDate = s.value;
+        break;
       case 'cervical_method':
         inputs.cervicalMethod = s.value as any;
         break;
       case 'cervical_last_date':
         inputs.cervicalLastDate = s.value;
+        break;
+      case 'cervical_result':
+        inputs.cervicalResult = s.value as any;
+        break;
+      case 'cervical_followup_status':
+        inputs.cervicalFollowupStatus = s.value as any;
+        break;
+      case 'cervical_followup_date':
+        inputs.cervicalFollowupDate = s.value;
         break;
       case 'lung_smoking_history':
         inputs.lungSmokingHistory = s.value as any;
@@ -213,6 +243,15 @@ export function screeningsToInputs(
         break;
       case 'lung_last_date':
         inputs.lungLastDate = s.value;
+        break;
+      case 'lung_result':
+        inputs.lungResult = s.value as any;
+        break;
+      case 'lung_followup_status':
+        inputs.lungFollowupStatus = s.value as any;
+        break;
+      case 'lung_followup_date':
+        inputs.lungFollowupDate = s.value;
         break;
       case 'prostate_discussion':
         inputs.prostateDiscussion = s.value as any;

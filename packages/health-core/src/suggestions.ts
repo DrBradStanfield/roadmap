@@ -1,7 +1,8 @@
 import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from './types';
-import { SCREENING_INTERVALS, STATIN_DRUGS, canIncreaseDose, shouldSuggestSwitch, isOnMaxPotency } from './types';
+import { SCREENING_INTERVALS, POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, STATIN_DRUGS, canIncreaseDose, shouldSuggestSwitch, isOnMaxPotency, canIncreaseGlp1Dose, shouldSuggestGlp1Switch, isOnMaxGlp1Potency } from './types';
 import {
   type UnitSystem,
+  type MetricType,
   formatDisplayValue,
   getDisplayLabel,
   HBA1C_THRESHOLDS,
@@ -23,7 +24,7 @@ export const LIPID_TREATMENT_TARGETS = {
 } as const;
 
 /** Format a metric value with its display unit, e.g. "5.7%" or "39 mmol/mol" */
-function fmtMetric(metricType: string, value: number, us: UnitSystem): string {
+function fmtMetric(metricType: MetricType, value: number, us: UnitSystem): string {
   return `${formatDisplayValue(metricType, value, us)} ${getDisplayLabel(metricType, us)}`;
 }
 
@@ -125,7 +126,7 @@ export function generateSuggestions(
 
   // Weight & diabetes medication cascade
   // When medications are tracked, use the cascade instead of standalone GLP-1 suggestion.
-  // Trigger: BMI > 25 AND (HbA1c prediabetic OR trigs >= 150 OR SBP >= 130 OR WHR >= 0.5)
+  // Trigger: BMI > 28 (unconditional) OR BMI 25-28 with secondary criteria
   if (results.bmi !== undefined && results.bmi > 25 && medications) {
     const whr = results.waistToHeightRatio;
     const hba1cElevated = inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes;
@@ -135,7 +136,7 @@ export function generateSuggestions(
 
     const hasSecondaryCriteria = hba1cElevated || trigsElevated || bpElevated || waistElevated;
 
-    if (hasSecondaryCriteria) {
+    if (results.bmi > 28 || hasSecondaryCriteria) {
       const glp1 = medications.glp1;
       const glp1Drug = glp1?.drug;
       const onGlp1 = glp1 && glp1Drug && glp1Drug !== 'none' && glp1Drug !== 'not_tolerated' && glp1Drug !== 'other';
@@ -167,25 +168,51 @@ export function generateSuggestions(
           description: `With ${reasonStr}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor. These medications support weight management and metabolic health.`,
         });
       } else if (glp1Handled) {
-        // Step 2: SGLT2i
-        if (!sglt2i || !sglt2iDrug || sglt2iDrug === 'none') {
-          suggestions.push({
-            id: 'weight-med-sglt2i',
-            category: 'medication',
-            priority: 'attention',
-            title: 'Consider adding an SGLT2 inhibitor',
-            description: 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.',
-          });
-        } else if (sglt2iHandled) {
-          // Step 3: Metformin
-          if (!medications.metformin || medications.metformin === 'none') {
+        // Step 2: GLP-1 Escalation (dose increase or switch to tirzepatide)
+        const glp1Tolerated = glp1Drug !== 'not_tolerated';
+        const canIncreaseGlp1 = onGlp1 && canIncreaseGlp1Dose(glp1Drug!, glp1!.dose);
+        const shouldSwitchGlp1 = (onGlp1 && shouldSuggestGlp1Switch(glp1Drug!, glp1!.dose)) || glp1OnOther;
+        const escalationPossible = glp1Tolerated && (canIncreaseGlp1 || shouldSwitchGlp1);
+
+        if (escalationPossible && (!medications.glp1Escalation || medications.glp1Escalation === 'not_yet')) {
+          if (canIncreaseGlp1) {
             suggestions.push({
-              id: 'weight-med-metformin',
+              id: 'weight-med-glp1-increase',
               category: 'medication',
-              priority: 'info',
-              title: 'Consider adding Metformin',
-              description: 'Metformin provides additional glycemic control and has longevity benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.',
+              priority: 'attention',
+              title: 'Consider increasing GLP-1 dose',
+              description: 'You may benefit from a higher dose of your current GLP-1 medication. Discuss increasing your dose with your doctor.',
             });
+          } else if (shouldSwitchGlp1) {
+            suggestions.push({
+              id: 'weight-med-glp1-switch',
+              category: 'medication',
+              priority: 'attention',
+              title: 'Consider switching to Tirzepatide',
+              description: 'Tirzepatide (Mounjaro/Zepbound) may be more effective for weight management. Discuss switching with your doctor.',
+            });
+          }
+        } else {
+          // Escalation handled/skipped → Step 3: SGLT2i
+          if (!sglt2i || !sglt2iDrug || sglt2iDrug === 'none') {
+            suggestions.push({
+              id: 'weight-med-sglt2i',
+              category: 'medication',
+              priority: 'attention',
+              title: 'Consider adding an SGLT2 inhibitor',
+              description: 'SGLT2 inhibitors like Empagliflozin or Dapagliflozin provide additional metabolic benefits and cardiovascular protection. Discuss with your doctor.',
+            });
+          } else if (sglt2iHandled) {
+            // Step 4: Metformin
+            if (!medications.metformin || medications.metformin === 'none') {
+              suggestions.push({
+                id: 'weight-med-metformin',
+                category: 'medication',
+                priority: 'info',
+                title: 'Consider adding Metformin',
+                description: 'Metformin provides additional glycemic control and has longevity benefits. Extended-release formulations may have fewer GI side effects. Discuss with your doctor.',
+              });
+            }
           }
         }
       }
@@ -193,10 +220,11 @@ export function generateSuggestions(
   }
 
   // GLP-1 medication suggestion for weight management (standalone — only when cascade is NOT active)
-  // The cascade is active when: medications provided AND BMI > 25 AND secondary criteria met
+  // The cascade is active when: medications provided AND (BMI > 28 OR BMI 25-28 with secondary criteria)
   if (results.bmi !== undefined) {
     const whr = results.waistToHeightRatio;
     const cascadeActive = medications && results.bmi > 25 && (
+      results.bmi > 28 ||
       (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) ||
       (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) ||
       (inputs.systolicBp !== undefined && inputs.systolicBp >= BP_THRESHOLDS.stage1Sys) ||
@@ -204,16 +232,16 @@ export function generateSuggestions(
     );
 
     if (!cascadeActive) {
-      if (results.bmi > 27) {
+      if (results.bmi > 28) {
         suggestions.push({
           id: 'weight-glp1',
           category: 'medication',
           priority: 'attention',
           title: 'Weight management medication',
-          description: 'With a BMI over 27, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
+          description: 'With a BMI over 28, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
         });
       } else if (results.bmi > 25) {
-        // BMI 25-27: suggest if waist-to-height ≥ 0.5, waist data unavailable, or triglycerides elevated
+        // BMI 25-28: suggest if waist-to-height ≥ 0.5, waist data unavailable, or triglycerides elevated
         const trigsElevated = inputs.triglycerides !== undefined &&
           inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline;
         if (whr === undefined || whr >= 0.5 || trigsElevated) {
@@ -559,6 +587,72 @@ export function generateSuggestions(
       return `${months[d.getMonth()]} ${d.getFullYear()}`;
     }
 
+    /**
+     * Check if a screening has an abnormal result requiring follow-up.
+     * Returns a suggestion if follow-up logic applies, or null to fall through to normal overdue/upcoming logic.
+     */
+    function screeningFollowup(
+      type: string,
+      method: string | undefined,
+      result: string | undefined,
+      followupStatus: string | undefined,
+      followupDate: string | undefined,
+    ): Suggestion | null {
+      if (!result || result === 'normal' || result === 'awaiting') return null;
+
+      // result === 'abnormal'
+      const methodKey = method ? `${type}_${method}` : `${type}_other`;
+      const info = SCREENING_FOLLOWUP_INFO[methodKey] ?? { followupName: 'follow-up', abnormalMeans: 'abnormal result' };
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+      if (!followupStatus || followupStatus === 'not_organized') {
+        return {
+          id: `screening-${type}-followup`,
+          category: 'screening',
+          priority: 'urgent',
+          title: `Organize ${info.followupName}`,
+          description: `Your screening showed a ${info.abnormalMeans}. Please organize a ${info.followupName} with your doctor.`,
+        };
+      }
+
+      if (followupStatus === 'scheduled') {
+        return {
+          id: `screening-${type}-followup`,
+          category: 'screening',
+          priority: 'info',
+          title: `${type.charAt(0).toUpperCase() + type.slice(1)} follow-up scheduled`,
+          description: `Your ${info.followupName} is scheduled. Keep your appointment.`,
+        };
+      }
+
+      if (followupStatus === 'completed' && followupDate) {
+        const postInterval = POST_FOLLOWUP_INTERVALS[methodKey] ?? POST_FOLLOWUP_INTERVALS[`${type}_other`] ?? 12;
+        const [year, month] = followupDate.split('-').map(Number);
+        if (year && month) {
+          const nextDue = new Date(year, month - 1 + postInterval);
+          const nextDueLabel = `${months[nextDue.getMonth()]} ${nextDue.getFullYear()}`;
+          if (new Date() > nextDue) {
+            return {
+              id: `screening-${type}-followup`,
+              category: 'screening',
+              priority: 'attention',
+              title: `${type.charAt(0).toUpperCase() + type.slice(1)} screening overdue`,
+              description: `Following your ${info.abnormalMeans}, your next screening was due ${nextDueLabel}. Please schedule your screening.`,
+            };
+          }
+          return {
+            id: `screening-${type}-followup`,
+            category: 'screening',
+            priority: 'info',
+            title: `${type.charAt(0).toUpperCase() + type.slice(1)} screening up to date`,
+            description: `Following your ${info.abnormalMeans}, next screening due ${nextDueLabel}.`,
+          };
+        }
+      }
+
+      return null; // Fall through to default logic
+    }
+
     // Colorectal (age 35-75)
     if (age >= 35 && age <= 75) {
       if (!screenings.colorectalMethod || screenings.colorectalMethod === 'not_yet_started') {
@@ -570,23 +664,28 @@ export function generateSuggestions(
           description: 'Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.',
         });
       } else if (screenings.colorectalLastDate) {
-        const status = screeningStatus(screenings.colorectalLastDate, screenings.colorectalMethod);
-        if (status === 'overdue') {
-          suggestions.push({
-            id: 'screening-colorectal-overdue',
-            category: 'screening',
-            priority: 'attention',
-            title: 'Colorectal screening overdue',
-            description: `Your next colorectal screening was due ${nextDueStr(screenings.colorectalLastDate, screenings.colorectalMethod)}. Please schedule your screening.`,
-          });
-        } else if (status === 'upcoming') {
-          suggestions.push({
-            id: 'screening-colorectal-upcoming',
-            category: 'screening',
-            priority: 'info',
-            title: 'Colorectal screening up to date',
-            description: `Next screening due ${nextDueStr(screenings.colorectalLastDate, screenings.colorectalMethod)}.`,
-          });
+        const followup = screeningFollowup('colorectal', screenings.colorectalMethod, screenings.colorectalResult, screenings.colorectalFollowupStatus, screenings.colorectalFollowupDate);
+        if (followup) {
+          suggestions.push(followup);
+        } else {
+          const status = screeningStatus(screenings.colorectalLastDate, screenings.colorectalMethod);
+          if (status === 'overdue') {
+            suggestions.push({
+              id: 'screening-colorectal-overdue',
+              category: 'screening',
+              priority: 'attention',
+              title: 'Colorectal screening overdue',
+              description: `Your next colorectal screening was due ${nextDueStr(screenings.colorectalLastDate, screenings.colorectalMethod)}. Please schedule your screening.`,
+            });
+          } else if (status === 'upcoming') {
+            suggestions.push({
+              id: 'screening-colorectal-upcoming',
+              category: 'screening',
+              priority: 'info',
+              title: 'Colorectal screening up to date',
+              description: `Next screening due ${nextDueStr(screenings.colorectalLastDate, screenings.colorectalMethod)}.`,
+            });
+          }
         }
       }
     }
@@ -604,23 +703,28 @@ export function generateSuggestions(
             : 'Mammography is optional at your age (40\u201344). Discuss with your doctor.',
         });
       } else if (screenings.breastLastDate) {
-        const status = screeningStatus(screenings.breastLastDate, screenings.breastFrequency);
-        if (status === 'overdue') {
-          suggestions.push({
-            id: 'screening-breast-overdue',
-            category: 'screening',
-            priority: 'attention',
-            title: 'Mammogram overdue',
-            description: `Your next mammogram was due ${nextDueStr(screenings.breastLastDate, screenings.breastFrequency)}. Please schedule your screening.`,
-          });
-        } else if (status === 'upcoming') {
-          suggestions.push({
-            id: 'screening-breast-upcoming',
-            category: 'screening',
-            priority: 'info',
-            title: 'Mammogram up to date',
-            description: `Next mammogram due ${nextDueStr(screenings.breastLastDate, screenings.breastFrequency)}.`,
-          });
+        const followup = screeningFollowup('breast', screenings.breastFrequency, screenings.breastResult, screenings.breastFollowupStatus, screenings.breastFollowupDate);
+        if (followup) {
+          suggestions.push(followup);
+        } else {
+          const status = screeningStatus(screenings.breastLastDate, screenings.breastFrequency);
+          if (status === 'overdue') {
+            suggestions.push({
+              id: 'screening-breast-overdue',
+              category: 'screening',
+              priority: 'attention',
+              title: 'Mammogram overdue',
+              description: `Your next mammogram was due ${nextDueStr(screenings.breastLastDate, screenings.breastFrequency)}. Please schedule your screening.`,
+            });
+          } else if (status === 'upcoming') {
+            suggestions.push({
+              id: 'screening-breast-upcoming',
+              category: 'screening',
+              priority: 'info',
+              title: 'Mammogram up to date',
+              description: `Next mammogram due ${nextDueStr(screenings.breastLastDate, screenings.breastFrequency)}.`,
+            });
+          }
         }
       }
     }
@@ -636,23 +740,28 @@ export function generateSuggestions(
           description: 'HPV testing every 5 years (preferred) or Pap test every 3 years is recommended. Discuss with your doctor.',
         });
       } else if (screenings.cervicalLastDate) {
-        const status = screeningStatus(screenings.cervicalLastDate, screenings.cervicalMethod);
-        if (status === 'overdue') {
-          suggestions.push({
-            id: 'screening-cervical-overdue',
-            category: 'screening',
-            priority: 'attention',
-            title: 'Cervical screening overdue',
-            description: `Your next cervical screening was due ${nextDueStr(screenings.cervicalLastDate, screenings.cervicalMethod)}. Please schedule your screening.`,
-          });
-        } else if (status === 'upcoming') {
-          suggestions.push({
-            id: 'screening-cervical-upcoming',
-            category: 'screening',
-            priority: 'info',
-            title: 'Cervical screening up to date',
-            description: `Next screening due ${nextDueStr(screenings.cervicalLastDate, screenings.cervicalMethod)}.`,
-          });
+        const followup = screeningFollowup('cervical', screenings.cervicalMethod, screenings.cervicalResult, screenings.cervicalFollowupStatus, screenings.cervicalFollowupDate);
+        if (followup) {
+          suggestions.push(followup);
+        } else {
+          const status = screeningStatus(screenings.cervicalLastDate, screenings.cervicalMethod);
+          if (status === 'overdue') {
+            suggestions.push({
+              id: 'screening-cervical-overdue',
+              category: 'screening',
+              priority: 'attention',
+              title: 'Cervical screening overdue',
+              description: `Your next cervical screening was due ${nextDueStr(screenings.cervicalLastDate, screenings.cervicalMethod)}. Please schedule your screening.`,
+            });
+          } else if (status === 'upcoming') {
+            suggestions.push({
+              id: 'screening-cervical-upcoming',
+              category: 'screening',
+              priority: 'info',
+              title: 'Cervical screening up to date',
+              description: `Next screening due ${nextDueStr(screenings.cervicalLastDate, screenings.cervicalMethod)}.`,
+            });
+          }
         }
       }
     }
@@ -670,23 +779,28 @@ export function generateSuggestions(
           description: `With ${screenings.lungPackYears} pack-years of smoking history, annual low-dose CT screening is recommended. Discuss with your doctor.`,
         });
       } else if (screenings.lungLastDate) {
-        const status = screeningStatus(screenings.lungLastDate, screenings.lungScreening);
-        if (status === 'overdue') {
-          suggestions.push({
-            id: 'screening-lung-overdue',
-            category: 'screening',
-            priority: 'attention',
-            title: 'Lung screening overdue',
-            description: `Your next low-dose CT was due ${nextDueStr(screenings.lungLastDate, screenings.lungScreening)}. Please schedule your screening.`,
-          });
-        } else if (status === 'upcoming') {
-          suggestions.push({
-            id: 'screening-lung-upcoming',
-            category: 'screening',
-            priority: 'info',
-            title: 'Lung screening up to date',
-            description: `Next low-dose CT due ${nextDueStr(screenings.lungLastDate, screenings.lungScreening)}.`,
-          });
+        const followup = screeningFollowup('lung', screenings.lungScreening, screenings.lungResult, screenings.lungFollowupStatus, screenings.lungFollowupDate);
+        if (followup) {
+          suggestions.push(followup);
+        } else {
+          const status = screeningStatus(screenings.lungLastDate, screenings.lungScreening);
+          if (status === 'overdue') {
+            suggestions.push({
+              id: 'screening-lung-overdue',
+              category: 'screening',
+              priority: 'attention',
+              title: 'Lung screening overdue',
+              description: `Your next low-dose CT was due ${nextDueStr(screenings.lungLastDate, screenings.lungScreening)}. Please schedule your screening.`,
+            });
+          } else if (status === 'upcoming') {
+            suggestions.push({
+              id: 'screening-lung-upcoming',
+              category: 'screening',
+              priority: 'info',
+              title: 'Lung screening up to date',
+              description: `Next low-dose CT due ${nextDueStr(screenings.lungLastDate, screenings.lungScreening)}.`,
+            });
+          }
         }
       }
     }

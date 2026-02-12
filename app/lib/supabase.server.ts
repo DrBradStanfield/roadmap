@@ -250,6 +250,7 @@ export interface DbProfile {
   first_name: string | null;
   last_name: string | null;
   height: number | null;
+  welcome_email_sent: boolean;
   created_at: string;
 }
 

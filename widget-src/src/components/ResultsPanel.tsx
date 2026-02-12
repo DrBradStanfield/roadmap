@@ -211,7 +211,7 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
         <span className="guest-text">Data saved to this device only</span>
       </div>
       <p className="login-prompt">
-        <a href={authState.loginUrl || "/account/login"} className="login-link">Log in</a> to save your data across devices
+        <a href={authState.loginUrl || "/account/login"} className="login-link">Create a free account</a> to save your data and receive your results by email
       </p>
     </div>
   );

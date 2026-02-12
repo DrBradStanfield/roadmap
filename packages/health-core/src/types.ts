@@ -211,6 +211,44 @@ export const GLP1_NAMES = [
 
 export type Glp1NameValue = typeof GLP1_NAMES[number]['value'];
 
+// ===== GLP-1 Escalation Configuration =====
+
+/** The most potent GLP-1 drug — used as the switch target in escalation. */
+export const MAX_GLP1_DRUG = 'tirzepatide';
+
+/** Check if user can increase their current GLP-1 dose (higher dose available). */
+export function canIncreaseGlp1Dose(drug: string | undefined, dose: number | null): boolean {
+  if (!drug || drug === 'none' || drug === 'not_tolerated' || drug === 'other' || dose === null) return false;
+  const doses = GLP1_DRUGS[drug]?.doses;
+  if (!doses) return false;
+  const currentIndex = doses.indexOf(dose);
+  return currentIndex >= 0 && currentIndex < doses.length - 1;
+}
+
+/** Check if user should switch to tirzepatide (on max dose of a less potent GLP-1). */
+export function shouldSuggestGlp1Switch(drug: string | undefined, dose: number | null): boolean {
+  if (!drug || drug === 'none' || drug === 'not_tolerated') return false;
+  if (drug === 'other') return true;
+  if (dose === null) return false;
+  if (drug === MAX_GLP1_DRUG) return false;
+  return !canIncreaseGlp1Dose(drug, dose);
+}
+
+/** Check if user is on maximum GLP-1 potency (tirzepatide at max dose). */
+export function isOnMaxGlp1Potency(drug: string | undefined, dose: number | null): boolean {
+  return drug === MAX_GLP1_DRUG && !canIncreaseGlp1Dose(drug, dose);
+}
+
+/** Get the appropriate GLP-1 escalation action. */
+export function getGlp1EscalationType(drug: string | undefined, dose: number | null): 'increase_dose' | 'switch_glp1' | 'none' {
+  if (!drug || drug === 'none' || drug === 'not_tolerated') return 'none';
+  if (drug === 'other') return 'switch_glp1';
+  if (dose === null) return 'none';
+  if (canIncreaseGlp1Dose(drug, dose)) return 'increase_dose';
+  if (shouldSuggestGlp1Switch(drug, dose)) return 'switch_glp1';
+  return 'none';
+}
+
 // ===== SGLT2i Configuration =====
 
 /**
@@ -255,6 +293,12 @@ export const METFORMIN_OPTIONS = [
 
 export type MetforminValue = typeof METFORMIN_OPTIONS[number]['value'];
 
+/** Result of a screening test. */
+export type ScreeningResult = 'normal' | 'abnormal' | 'awaiting';
+
+/** Follow-up status after an abnormal screening result. */
+export type ScreeningFollowupStatus = 'not_organized' | 'scheduled' | 'completed';
+
 /**
  * Cancer screening inputs for the screening cascade.
  * Date fields use "YYYY-MM" format (month precision).
@@ -263,20 +307,32 @@ export interface ScreeningInputs {
   // Colorectal
   colorectalMethod?: 'fit_annual' | 'colonoscopy_10yr' | 'other' | 'not_yet_started';
   colorectalLastDate?: string; // YYYY-MM
+  colorectalResult?: ScreeningResult;
+  colorectalFollowupStatus?: ScreeningFollowupStatus;
+  colorectalFollowupDate?: string; // YYYY-MM
 
   // Breast
   breastFrequency?: 'annual' | 'biennial' | 'not_yet_started';
   breastLastDate?: string;
+  breastResult?: ScreeningResult;
+  breastFollowupStatus?: ScreeningFollowupStatus;
+  breastFollowupDate?: string;
 
   // Cervical
   cervicalMethod?: 'hpv_every_5yr' | 'pap_every_3yr' | 'other' | 'not_yet_started';
   cervicalLastDate?: string;
+  cervicalResult?: ScreeningResult;
+  cervicalFollowupStatus?: ScreeningFollowupStatus;
+  cervicalFollowupDate?: string;
 
   // Lung
   lungSmokingHistory?: 'never_smoked' | 'former_smoker' | 'current_smoker';
   lungPackYears?: number;
   lungScreening?: 'annual_ldct' | 'not_yet_started';
   lungLastDate?: string;
+  lungResult?: ScreeningResult;
+  lungFollowupStatus?: ScreeningFollowupStatus;
+  lungFollowupDate?: string;
 
   // Prostate
   prostateDiscussion?: 'not_yet' | 'elected_not_to' | 'will_screen';
@@ -301,6 +357,39 @@ export const SCREENING_INTERVALS: Record<string, number> = {
   annual_ldct: 12,
   will_screen: 12,  // prostate PSA default
   other: 12,        // fallback for "other" methods
+};
+
+/**
+ * Post-follow-up repeat intervals in months.
+ * After an abnormal result + completed follow-up, use these instead of SCREENING_INTERVALS.
+ * Keyed by "{screeningType}_{method}".
+ */
+export const POST_FOLLOWUP_INTERVALS: Record<string, number> = {
+  colorectal_fit_annual: 36,       // Positive FIT → colonoscopy → repeat in 3 years
+  colorectal_colonoscopy_10yr: 36, // Polyps found → repeat colonoscopy in 3 years
+  colorectal_other: 36,            // Default 3 years post-follow-up
+  breast_annual: 12,               // Resume normal annual schedule
+  breast_biennial: 24,             // Resume normal biennial schedule
+  cervical_hpv_every_5yr: 12,     // HPV+ → colposcopy → rescreen in 1 year
+  cervical_pap_every_3yr: 12,     // Abnormal Pap → colposcopy → rescreen in 1 year
+  cervical_other: 12,              // Default 1 year
+  lung_annual_ldct: 12,           // Resume annual LDCT
+};
+
+/**
+ * Human-readable follow-up information for abnormal screening results.
+ * Keyed by "{screeningType}_{method}".
+ */
+export const SCREENING_FOLLOWUP_INFO: Record<string, { followupName: string; abnormalMeans: string }> = {
+  colorectal_fit_annual: { followupName: 'colonoscopy', abnormalMeans: 'positive FIT test' },
+  colorectal_colonoscopy_10yr: { followupName: 'repeat colonoscopy', abnormalMeans: 'polyps found on colonoscopy' },
+  colorectal_other: { followupName: 'follow-up investigation', abnormalMeans: 'abnormal result' },
+  breast_annual: { followupName: 'diagnostic imaging/biopsy', abnormalMeans: 'abnormal mammogram' },
+  breast_biennial: { followupName: 'diagnostic imaging/biopsy', abnormalMeans: 'abnormal mammogram' },
+  cervical_hpv_every_5yr: { followupName: 'colposcopy', abnormalMeans: 'HPV positive result' },
+  cervical_pap_every_3yr: { followupName: 'colposcopy', abnormalMeans: 'abnormal Pap test' },
+  cervical_other: { followupName: 'colposcopy', abnormalMeans: 'abnormal result' },
+  lung_annual_ldct: { followupName: 'follow-up imaging', abnormalMeans: 'abnormal LDCT result' },
 };
 
 /**
@@ -338,6 +427,7 @@ export interface MedicationInputs {
   pcsk9i?: Pcsk9iValue;
   // Weight & diabetes cascade
   glp1?: Glp1Input;
+  glp1Escalation?: 'not_yet' | 'not_tolerated';
   sglt2i?: Sglt2iInput;
   metformin?: MetforminValue;
 }

@@ -6,6 +6,8 @@ export type {
   Measurement,
   MedicationInputs,
   ScreeningInputs,
+  ScreeningResult,
+  ScreeningFollowupStatus,
   StatinInput,
   StatinNameValue,
   EzetimibeValue,
@@ -35,6 +37,12 @@ export {
   // GLP-1 configuration
   GLP1_DRUGS,
   GLP1_NAMES,
+  // GLP-1 escalation
+  MAX_GLP1_DRUG,
+  canIncreaseGlp1Dose,
+  shouldSuggestGlp1Switch,
+  isOnMaxGlp1Potency,
+  getGlp1EscalationType,
   // SGLT2i configuration
   SGLT2I_DRUGS,
   SGLT2I_NAMES,
@@ -42,6 +50,8 @@ export {
   METFORMIN_OPTIONS,
   // Screening
   SCREENING_INTERVALS,
+  POST_FOLLOWUP_INTERVALS,
+  SCREENING_FOLLOWUP_INFO,
   // Database encoding helpers
   SEX_DB,
   UNIT_SYSTEM_DB,

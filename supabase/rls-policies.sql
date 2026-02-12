@@ -24,6 +24,7 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS unit_system INTEGER CHECK (unit_sy
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS first_name TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_name TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS height NUMERIC CHECK (height BETWEEN 50 AND 250);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS welcome_email_sent BOOLEAN DEFAULT FALSE;
 
 -- ===== Create health_measurements table =====
 -- Only health metrics — demographics are on the profiles table.
@@ -271,7 +272,7 @@ ALTER TABLE medications ADD CONSTRAINT medications_medication_key_check
     -- Cholesterol medication cascade
     'statin', 'ezetimibe', 'statin_escalation', 'statin_increase', 'pcsk9i',
     -- Weight & diabetes medication cascade
-    'glp1', 'sglt2i', 'metformin'
+    'glp1', 'glp1_escalation', 'sglt2i', 'metformin'
   ));
 
 CREATE INDEX IF NOT EXISTS idx_medications_user ON medications(user_id);
@@ -309,9 +310,13 @@ CREATE TABLE IF NOT EXISTS screenings (
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   screening_key TEXT NOT NULL CHECK (screening_key IN (
     'colorectal_method', 'colorectal_last_date',
+    'colorectal_result', 'colorectal_followup_status', 'colorectal_followup_date',
     'breast_frequency', 'breast_last_date',
+    'breast_result', 'breast_followup_status', 'breast_followup_date',
     'cervical_method', 'cervical_last_date',
+    'cervical_result', 'cervical_followup_status', 'cervical_followup_date',
     'lung_smoking_history', 'lung_pack_years', 'lung_screening', 'lung_last_date',
+    'lung_result', 'lung_followup_status', 'lung_followup_date',
     'prostate_discussion', 'prostate_psa_value', 'prostate_last_date',
     'endometrial_discussion', 'endometrial_abnormal_bleeding'
   )),

@@ -1,0 +1,11 @@
+api_version = "2025-07"
+
+[[extensions]]
+name = "health-roadmap-link"
+handle = "health-roadmap-link"
+uid = "335ffdaa-b0a8-23b7-6e72-57e2821eada2ad16d50a"
+type = "ui_extension"
+
+[[extensions.targeting]]
+module = "./src/ProfileLinkBlock.ts"
+target = "customer-account.profile.block.render"

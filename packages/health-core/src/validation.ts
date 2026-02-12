@@ -188,7 +188,7 @@ export type ValidatedProfileUpdate = z.infer<typeof profileUpdateSchema>;
  */
 export const MEDICATION_KEYS = [
   'statin', 'ezetimibe', 'statin_escalation', 'pcsk9i',
-  'glp1', 'sglt2i', 'metformin',
+  'glp1', 'glp1_escalation', 'sglt2i', 'metformin',
 ] as const;
 
 /**
@@ -213,9 +213,13 @@ export type ValidatedMedication = z.infer<typeof medicationSchema>;
  */
 export const SCREENING_KEYS = [
   'colorectal_method', 'colorectal_last_date',
+  'colorectal_result', 'colorectal_followup_status', 'colorectal_followup_date',
   'breast_frequency', 'breast_last_date',
+  'breast_result', 'breast_followup_status', 'breast_followup_date',
   'cervical_method', 'cervical_last_date',
+  'cervical_result', 'cervical_followup_status', 'cervical_followup_date',
   'lung_smoking_history', 'lung_pack_years', 'lung_screening', 'lung_last_date',
+  'lung_result', 'lung_followup_status', 'lung_followup_date',
   'prostate_discussion', 'prostate_psa_value', 'prostate_last_date',
   'endometrial_discussion', 'endometrial_abnormal_bleeding',
 ] as const;

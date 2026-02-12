@@ -72,10 +72,21 @@
       // Build screening entries from cached screenings array
       var screenings = (stored && stored.screenings) || [];
 
-      function postScreenings(i) {
-        if (i >= screenings.length) {
+      function syncComplete() {
+        // Trigger welcome email after all data is synced (fire-and-forget)
+        fetch(PROXY, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sendWelcomeEmail: true })
+        }).finally(function() {
           localStorage.removeItem(STORAGE_KEY);
           sessionStorage.setItem(SYNC_FLAG, '1');
+        });
+      }
+
+      function postScreenings(i) {
+        if (i >= screenings.length) {
+          syncComplete();
           return;
         }
         var scr = screenings[i];

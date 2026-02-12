@@ -45,6 +45,7 @@ import {
   upsertScreening,
   toApiScreening,
 } from '../lib/supabase.server';
+import { checkAndSendWelcomeEmail } from '../lib/email.server';
 import { measurementSchema, profileUpdateSchema, medicationSchema, screeningSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
 
 function getCustomerId(request: Request): string | null {
@@ -161,6 +162,16 @@ export async function action({ request }: ActionFunctionArgs) {
     const body = await request.json();
 
     if (request.method === 'POST') {
+      // Welcome email trigger — POST { sendWelcomeEmail: true }
+      // Called by sync-embed after full data sync completes
+      if (body.sendWelcomeEmail) {
+        checkAndSendWelcomeEmail(userId, client).catch(err => {
+          console.error('Welcome email failed:', err);
+          Sentry.captureException(err);
+        });
+        return json({ success: true });
+      }
+
       // Profile update — POST { profile: { sex?, birthYear?, birthMonth?, unitSystem? } }
       if (body.profile) {
         const validation = profileUpdateSchema.safeParse(body.profile);
@@ -241,6 +252,11 @@ export async function action({ request }: ActionFunctionArgs) {
       if (!measurement) {
         return json({ success: false, error: 'Failed to save' }, { status: 500 });
       }
+
+      // Fire-and-forget: check if welcome email should be sent (widget path)
+      checkAndSendWelcomeEmail(userId, client).catch(err => {
+        Sentry.captureException(err);
+      });
 
       return json({ success: true, data: toApiMeasurement(measurement) });
     }

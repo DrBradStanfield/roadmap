@@ -1,0 +1,11 @@
+{
+  "name": "health-roadmap-link",
+  "private": true,
+  "scripts": {},
+  "dependencies": {
+    "@shopify/ui-extensions": "2025.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
