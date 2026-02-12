@@ -236,6 +236,7 @@ export function shouldSuggestGlp1Switch(drug: string | undefined, dose: number |
 
 /** Check if user is on maximum GLP-1 potency (tirzepatide at max dose). */
 export function isOnMaxGlp1Potency(drug: string | undefined, dose: number | null): boolean {
+  if (dose === null) return false;
   return drug === MAX_GLP1_DRUG && !canIncreaseGlp1Dose(drug, dose);
 }
 

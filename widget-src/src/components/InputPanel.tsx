@@ -802,7 +802,9 @@ export function InputPanel({
           <section className="health-section medication-cascade">
             <h3 className="health-section-title">Weight & Diabetes Medications</h3>
             <p className="health-section-desc">
-              Your BMI and {reasons.join(', ')} suggest you may benefit from medications that support weight management and metabolic health.
+              {reasons.length > 0
+                ? `Your BMI and ${reasons.join(', ')} suggest you may benefit from medications that support weight management and metabolic health.`
+                : 'Your BMI suggests you may benefit from medications that support weight management and metabolic health.'}
             </p>
 
             {/* Step 1: GLP-1 selection */}
