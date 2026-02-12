@@ -3,20 +3,17 @@ import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
 import { getOrCreateSupabaseUser, deleteAllUserData } from '../lib/supabase.server';
 
-// Rate limit: 1 deletion request per hour per customer
+// Rate limit: 1 successful deletion per hour per customer
 const DELETE_RATE_LIMIT_WINDOW_MS = 60 * 60_000;
-const DELETE_RATE_LIMIT_MAX = 1;
-const deleteRateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const deleteRateLimitMap = new Map<string, number>(); // customerId -> resetAt timestamp
 
-function checkDeleteRateLimit(customerId: string): boolean {
-  const now = Date.now();
-  const entry = deleteRateLimitMap.get(customerId);
-  if (!entry || now > entry.resetAt) {
-    deleteRateLimitMap.set(customerId, { count: 1, resetAt: now + DELETE_RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  entry.count++;
-  return entry.count <= DELETE_RATE_LIMIT_MAX;
+function isDeleteRateLimited(customerId: string): boolean {
+  const resetAt = deleteRateLimitMap.get(customerId);
+  return !!resetAt && Date.now() <= resetAt;
+}
+
+function recordDeleteRateLimit(customerId: string): void {
+  deleteRateLimitMap.set(customerId, Date.now() + DELETE_RATE_LIMIT_WINDOW_MS);
 }
 
 function getCustomerId(request: Request): string | null {
@@ -57,7 +54,7 @@ export async function action({ request }: ActionFunctionArgs) {
   if (!customerId) {
     return json({ success: false, error: 'Not logged in' }, { status: 401 });
   }
-  if (!checkDeleteRateLimit(customerId)) {
+  if (isDeleteRateLimited(customerId)) {
     return json({ success: false, error: 'Too many requests' }, { status: 429 });
   }
 
@@ -75,6 +72,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const userId = await getOrCreateSupabaseUser(customerId, customerInfo.email, customerInfo.firstName, customerInfo.lastName);
     const result = await deleteAllUserData(userId);
 
+    recordDeleteRateLimit(customerId);
     return json({ success: true, measurementsDeleted: result.measurementsDeleted });
   } catch (error) {
     console.error('Error deleting user data:', error);

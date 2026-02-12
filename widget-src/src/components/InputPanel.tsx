@@ -964,7 +964,8 @@ export function InputPanel({
           { value: '12', label: 'December' },
         ];
 
-        const renderDateInput = (key: string, label: string) => {
+        const renderDateInput = (key: string, label: string, options?: { futureOnly?: boolean }) => {
+          const futureOnly = options?.futureOnly ?? false;
           // Get saved value from screenings
           const savedValue = getStr(key) || '';
           const [savedYear, savedMonth] = savedValue.split('-');
@@ -974,16 +975,32 @@ export function InputPanel({
           const displayYear = localState?.year ?? savedYear ?? '';
           const displayMonth = localState?.month ?? savedMonth ?? '';
 
-          // Filter months: if current year is selected, only show months up to current month
-          const availableMonths = displayYear === String(currentYear)
-            ? allMonths.filter(m => parseInt(m.value, 10) <= currentMonth)
-            : allMonths;
+          // Year range depends on whether we're picking future or past dates
+          const availableYears = futureOnly
+            ? Array.from({ length: 6 }, (_, i) => currentYear + i)   // current year + 5 years ahead
+            : years;                                                    // current year - 10 years back
+
+          // Filter months based on selected year
+          const availableMonths = futureOnly
+            ? (displayYear === String(currentYear)
+              ? allMonths.filter(m => parseInt(m.value, 10) >= currentMonth)
+              : allMonths)
+            : (displayYear === String(currentYear)
+              ? allMonths.filter(m => parseInt(m.value, 10) <= currentMonth)
+              : allMonths);
 
           const handleDateChange = (newYear: string, newMonth: string) => {
-            // If switching to current year and month is in the future, reset month
             let adjustedMonth = newMonth;
-            if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) > currentMonth) {
-              adjustedMonth = '';
+            if (futureOnly) {
+              // If switching to current year and month is in the past, reset month
+              if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) < currentMonth) {
+                adjustedMonth = '';
+              }
+            } else {
+              // If switching to current year and month is in the future, reset month
+              if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) > currentMonth) {
+                adjustedMonth = '';
+              }
             }
 
             // Always update local state so UI reflects the selection
@@ -1024,7 +1041,7 @@ export function InputPanel({
                   aria-label="Year"
                 >
                   <option value="">Year</option>
-                  {years.map((y) => (
+                  {availableYears.map((y) => (
                     <option key={y} value={y}>{y}</option>
                   ))}
                 </select>
@@ -1109,7 +1126,8 @@ export function InputPanel({
                   `${type}_followup_date`,
                   followupStatus === 'completed'
                     ? `When was the ${info?.followupName ?? 'follow-up'} completed?`
-                    : `When is the ${info?.followupName ?? 'follow-up'} scheduled?`
+                    : `When is the ${info?.followupName ?? 'follow-up'} scheduled?`,
+                  { futureOnly: followupStatus === 'scheduled' }
                 )
               )}
             </>

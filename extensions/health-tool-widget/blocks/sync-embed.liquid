@@ -45,6 +45,7 @@
 
       // Build medication entries from cached medications array
       var medications = (stored && stored.medications) || [];
+      var screenings = (stored && stored.screenings) || [];
 
       // Build profile object (demographics)
       var profile = {};
@@ -69,9 +70,6 @@
 
       // POST profile first (if present), then measurements sequentially.
       // Sequential pattern avoids race conditions in getOrCreateSupabaseUser().
-      // Build screening entries from cached screenings array
-      var screenings = (stored && stored.screenings) || [];
-
       function syncComplete() {
         // Trigger welcome email after all data is synced (fire-and-forget)
         fetch(PROXY, {

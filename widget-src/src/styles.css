@@ -608,9 +608,6 @@
   text-decoration: underline;
 }
 
-.account-icon {
-  font-size: 16px;
-}
 
 .save-indicator-inline {
   font-weight: 400;
@@ -643,22 +640,12 @@
   color: #fff;
 }
 
-.guest-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.guest-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: #e65100;
-}
 
 .login-prompt {
   font-size: 13px;
   color: #666;
-  margin: 8px 0 0;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .login-link {

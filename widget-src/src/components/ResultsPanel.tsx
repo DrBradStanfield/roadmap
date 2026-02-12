@@ -206,10 +206,6 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
 
   return (
     <div className="account-status guest">
-      <div className="guest-info">
-        <span className="account-icon">💾</span>
-        <span className="guest-text">Data saved to this device only</span>
-      </div>
       <p className="login-prompt">
         <a href={authState.loginUrl || "/account/login"} className="login-link">Create a free account</a> to save your data and receive your results by email
       </p>
@@ -377,6 +373,14 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
         Suggestions are based on general guidelines and may not apply to your
         individual situation.
       </div>
+
+      {!authState?.isLoggedIn && (
+        <div className="account-status guest">
+          <p className="login-prompt">
+            <a href={authState?.loginUrl || "/account/login"} className="login-link">Create a free account</a> to save your data and receive your results by email
+          </p>
+        </div>
+      )}
 
       <div className="feedback-section">
         <a

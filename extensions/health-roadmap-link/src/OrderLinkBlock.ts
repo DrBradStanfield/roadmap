@@ -1,9 +1,18 @@
 import { extension } from "@shopify/ui-extensions/customer-account";
 
+const DEFAULT_URL = "https://drstanfield.com/pages/roadmap";
+
 export default extension(
   "customer-account.order-index.block.render",
-  (root) => {
-    const heading = root.createComponent("Heading", { level: 2 }, "Health Roadmap");
+  (root, api) => {
+    const getUrl = () =>
+      (api.settings.current?.roadmap_url as string) || DEFAULT_URL;
+
+    const heading = root.createComponent(
+      "Heading",
+      { level: 2 },
+      "Health Roadmap",
+    );
     const text = root.createComponent(
       "Text",
       {},
@@ -11,7 +20,7 @@ export default extension(
     );
     const button = root.createComponent(
       "Button",
-      { to: "https://drstanfield.com/pages/roadmap", kind: "primary" },
+      { to: getUrl(), kind: "primary" },
       "View your Health Roadmap",
     );
 
@@ -24,5 +33,11 @@ export default extension(
     const card = root.createComponent("Card", { padding: true }, [stack]);
 
     root.appendChild(card);
+
+    api.settings.subscribe((settings) => {
+      button.updateProps({
+        to: (settings.roadmap_url as string) || DEFAULT_URL,
+      });
+    });
   },
 );
