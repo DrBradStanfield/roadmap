@@ -9,3 +9,7 @@ type = "ui_extension"
 [[extensions.targeting]]
 module = "./src/ProfileLinkBlock.ts"
 target = "customer-account.profile.block.render"
+
+[[extensions.targeting]]
+module = "./src/OrderLinkBlock.ts"
+target = "customer-account.order-index.block.render"
