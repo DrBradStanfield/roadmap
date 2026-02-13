@@ -2,10 +2,6 @@
 
 This file provides context for Claude Code when working on this project.
 
-## Model
-
-Always use the **Opus 4.5** model (`claude-opus-4-5-20251101`) for all tasks in this project.
-
 ## Project Overview
 
 This is a **Health Roadmap Tool** - a Shopify app that helps users track health metrics over time and receive personalized suggestions. It's available as a storefront theme extension for both guests and logged-in users. An app embed block handles background sync of guest localStorage data to Supabase when the user logs in and visits any storefront page.
@@ -64,6 +60,7 @@ Store medications with separate fields for drug identity and dosage:
 - `app/lib/supabase.server.ts` — Supabase dual-client, auth helpers, measurement/profile/medication CRUD, audit logging, `deleteAllUserData()`
 - `app/routes/api.measurements.ts` — Measurement CRUD + profile + medication API (HMAC auth)
 - `app/routes/api.user-data.ts` — Account deletion endpoint (DELETE, HMAC auth, rate-limited)
+- `app/lib/email.server.ts` — Welcome email: `checkAndSendWelcomeEmail()`, Resend integration, HTML builder (requires heightCm + sex minimum)
 
 **Health Core Library (`packages/health-core/src/`):**
 - `calculations.ts` — Health formulas (IBW, BMI, protein, eGFR)
@@ -292,6 +289,7 @@ This ensures the bug is properly understood and prevents regressions.
 - `packages/health-core/src/units.test.ts` — Conversions, thresholds, formatting, locale (55 tests)
 - `packages/health-core/src/mappings.test.ts` — Field mappings, measurement conversion (24 tests)
 - `app/lib/supabase.server.test.ts` — toApiMeasurement helper (3 tests)
+- `app/lib/email.server.test.ts` — Welcome email HTML generation, unit formatting, suggestion grouping (9 tests)
 
 ## Code Patterns
 
@@ -344,7 +342,9 @@ Data sync is still handled exclusively by `sync-embed.liquid` on the storefront 
 1. **sync-embed path**: After sync chain completes, sends `POST { sendWelcomeEmail: true }`
 2. **Widget path**: After measurement POST (user clicks "Save New Values")
 
-**Flow**: Check flag → fetch profile + measurements + medications → `measurementsToInputs()` → `calculateHealthResults()` → `generateSuggestions()` → build HTML email → send via Resend → set `welcome_email_sent = true`
+**Flow**: Check flag → fetch profile + measurements + medications + screenings → `measurementsToInputs()` → `calculateHealthResults()` → `generateSuggestions()` → build HTML email → send via Resend → set `welcome_email_sent = true`
+
+**Minimum data**: Requires `heightCm` + `sex` on the profile; silently skips if either is missing.
 
 **Env vars**: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SHOPIFY_STORE_URL`
 
@@ -359,6 +359,28 @@ All writes logged to `audit_logs` via `logAudit()` (fire-and-forget, service-rol
 ## Data Sync Architecture
 
 localStorage→cloud sync handled **exclusively by sync-embed**, not the widget. Widget only reads from cloud and caches to localStorage. Prevents duplicate writes.
+
+## Storefront Session Auto-Redirect
+
+**Problem**: Shopify's new customer accounts live on `shopify.com`, not the storefront domain. When users navigate directly to `/pages/roadmap` (bookmark, typed URL), no storefront session is established — `{% if customer %}` returns false in Liquid, and the widget loads in guest mode even though the user IS logged into Shopify.
+
+**Solution**: Auto-redirect + fallback banner. Defense in depth with 6 layers:
+
+1. **Auth flag** (`localStorage: health_roadmap_authenticated`): Set by `HealthTool.tsx` only when the API confirms the user has cloud data (Phase 2 response). **NOT set by Liquid templates** — this prevents the flag from being re-set after data deletion (e.g., user deletes data, navigates to another page still logged in, sync-embed would have re-set the flag). Cleared by `clearLocalStorage()` on account deletion.
+
+2. **Auto-redirect** (in `{% unless customer %}` blocks in `app-block.liquid` and `history-block.liquid`): When a user has the auth flag but no storefront session, redirects to `{{ routes.account_url }}?return_url=<current_path>`. Shopify's login flow establishes the storefront session and redirects back. If the user is already logged into Shopify, this is near-instant (~1-2s).
+
+3. **Loop prevention** (`sessionStorage: health_roadmap_auth_redirect`): Only attempts redirect once per browser session. Prevents infinite loops if the redirect doesn't establish a session.
+
+4. **Fallback banner** (in `HealthTool.tsx`): When redirect was attempted but user is still not logged in (`authState.redirectFailed`), shows a dismissible "Sign in to access your data" banner with a Sign In link.
+
+5. **Flag cleanup**: `clearLocalStorage()` in `storage.ts` removes the auth flag on account deletion, preventing future redirects. No Liquid template can re-set it because flag-setting lives exclusively in widget JS.
+
+6. **First-time visitors**: No auth flag exists → no redirect → normal guest mode. Completely unaffected.
+
+**Key invariants**:
+- When `{% if customer %}` is true, the redirect script **does not exist in the HTML** (stripped server-side by Liquid). Zero risk of unnecessary redirects for authenticated users.
+- Auth flag is only set when the API confirms cloud data exists — never just because a Shopify session exists. This prevents ghost redirects after data deletion.
 
 ## Future Plans
 

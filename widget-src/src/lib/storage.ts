@@ -64,9 +64,19 @@ export function loadFromLocalStorage(): LoadedData | null {
 export function clearLocalStorage(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('health_roadmap_authenticated');
   } catch (error) {
     console.warn('Failed to clear localStorage:', error);
   }
+}
+
+/**
+ * Set the authenticated flag so the auto-redirect knows to re-establish
+ * the storefront session on direct navigation. Only called when the API
+ * confirms the user has cloud data — never from Liquid templates.
+ */
+export function setAuthenticatedFlag(): void {
+  try { localStorage.setItem('health_roadmap_authenticated', '1'); } catch {}
 }
 
 /**

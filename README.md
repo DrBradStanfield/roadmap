@@ -100,11 +100,16 @@ fly secrets set SUPABASE_ANON_KEY=your-anon-key
 fly secrets set SUPABASE_JWT_SECRET=your-jwt-secret
 ```
 
-### 8. Install on your store
+### 8. Install on your Shopify store
 
-1. Install the app on your Shopify development store
-2. Accept the required scopes (`write_app_proxy`, `read_customers`)
-3. Add the Health Tool widget block to a page in your theme editor
+1. **Install the app** on your Shopify store and accept the required permissions (`write_app_proxy`, `read_customers`)
+2. **Enable the "Health Data Sync" app embed** — In the Theme Editor, go to **App Embeds** and toggle on **"Health Data Sync"**. This runs silently on every storefront page and syncs guest localStorage data to Supabase when the user logs in.
+3. **Create a Roadmap page** — Online Store > Pages > Add page (e.g. title "Health Roadmap", URL handle `roadmap` → `/pages/roadmap`)
+4. **Add the "Health Roadmap Tool" block** to the Roadmap page — In the Theme Editor, navigate to the Roadmap page, click **Add block**, and select **"Health Roadmap Tool"**
+5. **Create a Health History page** — Online Store > Pages > Add page (e.g. title "Health History", URL handle `health-history` → `/pages/health-history`)
+6. **Add the "Health History" block** to the History page — In the Theme Editor, navigate to the History page, click **Add block**, and select **"Health History"**
+7. **Configure customer account extensions** — The "Health Roadmap Link" extension auto-deploys to the customer account profile page and order history page after app install. Go to **Settings > Customer accounts**, customize the customer account pages, and set the `roadmap_url` setting to your store's roadmap page URL (e.g. `https://yourdomain.com/pages/roadmap`)
+8. **Verify** — Test guest mode (no login), logged-in mode, guest→logged-in data sync (enter data as guest, log in, confirm it appears), history page, and customer account links
 
 ## Architecture
 

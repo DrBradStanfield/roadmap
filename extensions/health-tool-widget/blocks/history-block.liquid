@@ -2,6 +2,21 @@
 {% unless customer %}
   {% assign login_url = routes.account_url %}
 {% endunless %}
+
+{% unless customer %}
+<script>
+(function() {
+  try {
+    if (!localStorage.getItem('health_roadmap_authenticated')) return;
+    if (sessionStorage.getItem('health_roadmap_auth_redirect')) return;
+    sessionStorage.setItem('health_roadmap_auth_redirect', '1');
+    window.location.href = '{{ routes.account_url | default: "/account" }}' +
+      '?return_url=' + encodeURIComponent(window.location.pathname + window.location.search);
+  } catch(e) {}
+})();
+</script>
+{% endunless %}
+
 <div id="health-history-root"
   {% if customer %}
     data-logged-in="true"

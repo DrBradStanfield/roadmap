@@ -26,6 +26,7 @@ import {
   clearLocalStorage,
   saveUnitPreference,
   loadUnitPreference,
+  setAuthenticatedFlag,
 } from '../lib/storage';
 import {
   loadLatestMeasurements,
@@ -41,19 +42,23 @@ interface AuthState {
   isLoggedIn: boolean;
   loginUrl?: string;
   accountUrl?: string;
+  redirectFailed: boolean;
 }
 
 // Get auth state from DOM data attributes
 function getAuthState(): AuthState {
   const root = document.getElementById('health-tool-root');
   if (!root) {
-    return { isLoggedIn: false };
+    return { isLoggedIn: false, redirectFailed: false };
   }
 
   const isLoggedIn = root.dataset.loggedIn === 'true';
   const loginUrl = root.dataset.loginUrl || undefined;
   const accountUrl = root.dataset.accountUrl || undefined;
-  return { isLoggedIn, loginUrl, accountUrl };
+  // Redirect was attempted but user is still not logged in
+  const redirectFailed = !isLoggedIn &&
+    !!window.sessionStorage?.getItem('health_roadmap_auth_redirect');
+  return { isLoggedIn, loginUrl, accountUrl, redirectFailed };
 }
 
 export function HealthTool() {
@@ -66,6 +71,9 @@ export function HealthTool() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(() => {
+    try { return !!sessionStorage.getItem('health_roadmap_banner_dismissed'); } catch { return false; }
+  });
 
   // Unit system: load saved preference or auto-detect
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
@@ -108,6 +116,8 @@ export function HealthTool() {
         setHasApiResponse(true);
 
         if (result && (Object.keys(result.inputs).length > 0 || result.previousMeasurements.length > 0)) {
+          // User has cloud data — set flag so auto-redirect works on direct navigation
+          setAuthenticatedFlag();
           // Apply saved unit preference from cloud
           const unitPref = result.inputs.unitSystem;
           if (unitPref === 'si' || unitPref === 'conventional') {
@@ -372,8 +382,22 @@ export function HealthTool() {
     }
   }, [authState.isLoggedIn, inputs, previousMeasurements, medications]);
 
+  const handleDismissBanner = useCallback(() => {
+    setBannerDismissed(true);
+    try { sessionStorage.setItem('health_roadmap_banner_dismissed', '1'); } catch {}
+  }, []);
+
   return (
     <div className="health-tool">
+      {authState.redirectFailed && !bannerDismissed && (
+        <div className="auth-banner">
+          <span>You have saved health data. Sign in to access it.</span>
+          <div className="auth-banner-actions">
+            <a href={authState.loginUrl || '/account'} className="btn-primary auth-banner-signin">Sign In</a>
+            <button type="button" className="auth-banner-dismiss" onClick={handleDismissBanner}>Dismiss</button>
+          </div>
+        </div>
+      )}
       <div className="health-tool-header">
         <h2>Health Roadmap Tool</h2>
         <p>
