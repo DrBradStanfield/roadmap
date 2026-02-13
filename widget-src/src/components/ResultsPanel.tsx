@@ -28,6 +28,7 @@ interface ResultsPanelProps {
   isSavingLongitudinal?: boolean;
   onDeleteData?: () => void;
   isDeleting?: boolean;
+  redirectFailed?: boolean;
 }
 
 function getBmiStatus(bmi: number): { label: string; className: string } {
@@ -155,12 +156,13 @@ function renderGroupedSuggestions(suggestions: Suggestion[]) {
   return elements;
 }
 
-function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal }: {
+function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, redirectFailed }: {
   authState?: AuthState;
   saveStatus?: string;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => void;
   isSavingLongitudinal?: boolean;
+  redirectFailed?: boolean;
 }) {
   if (!authState) return null;
 
@@ -207,17 +209,21 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
   return (
     <div className="account-status guest">
       <p className="login-prompt">
-        <a href={authState.loginUrl || "/account/login"} className="login-link">Create a free account</a> to save your data and receive your results by email
+        {redirectFailed ? (
+          <><a href={authState.loginUrl || "/account/login"} className="login-link">Sign in</a> to access your saved data</>
+        ) : (
+          <><a href={authState.loginUrl || "/account/login"} className="login-link">Create a free account</a> to save your data and receive your results by email</>
+        )}
       </p>
     </div>
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, unitSystem, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, authState, saveStatus, unitSystem, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed }: ResultsPanelProps) {
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
-        <AccountStatus authState={authState} saveStatus={saveStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} />
+        <AccountStatus authState={authState} saveStatus={saveStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />
         <div className="results-placeholder">
           <div className="placeholder-icon">📊</div>
           <h3>Enter your information</h3>
@@ -377,7 +383,11 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
       {!authState?.isLoggedIn && (
         <div className="account-status guest">
           <p className="login-prompt">
-            <a href={authState?.loginUrl || "/account/login"} className="login-link">Create a free account</a> to save your data and receive your results by email
+            {redirectFailed ? (
+              <><a href={authState?.loginUrl || "/account/login"} className="login-link">Sign in</a> to access your saved data</>
+            ) : (
+              <><a href={authState?.loginUrl || "/account/login"} className="login-link">Create a free account</a> to save your data and receive your results by email</>
+            )}
           </p>
         </div>
       )}

@@ -71,9 +71,6 @@ export function HealthTool() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [bannerDismissed, setBannerDismissed] = useState(() => {
-    try { return !!sessionStorage.getItem('health_roadmap_banner_dismissed'); } catch { return false; }
-  });
 
   // Unit system: load saved preference or auto-detect
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
@@ -382,22 +379,8 @@ export function HealthTool() {
     }
   }, [authState.isLoggedIn, inputs, previousMeasurements, medications]);
 
-  const handleDismissBanner = useCallback(() => {
-    setBannerDismissed(true);
-    try { sessionStorage.setItem('health_roadmap_banner_dismissed', '1'); } catch {}
-  }, []);
-
   return (
     <div className="health-tool">
-      {authState.redirectFailed && !bannerDismissed && (
-        <div className="auth-banner">
-          <span>You have saved health data. Sign in to access it.</span>
-          <div className="auth-banner-actions">
-            <a href={authState.loginUrl || '/account'} className="btn-primary auth-banner-signin">Sign In</a>
-            <button type="button" className="auth-banner-dismiss" onClick={handleDismissBanner}>Dismiss</button>
-          </div>
-        </div>
-      )}
       <div className="health-tool-header">
         <h2>Health Roadmap Tool</h2>
         <p>
@@ -437,6 +420,7 @@ export function HealthTool() {
             isSavingLongitudinal={isSavingLongitudinal}
             onDeleteData={handleDeleteData}
             isDeleting={isDeleting}
+            redirectFailed={authState.redirectFailed}
           />
         </div>
       </div>
