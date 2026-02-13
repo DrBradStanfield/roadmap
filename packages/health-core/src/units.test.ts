@@ -162,8 +162,8 @@ describe('getDisplayRange', () => {
 });
 
 describe('detectUnitSystem', () => {
-  it('returns conventional for en-US', () => {
-    expect(detectUnitSystem('en-US')).toBe('conventional');
+  it('returns conventional for en-US in US timezone', () => {
+    expect(detectUnitSystem('en-US', 'America/New_York')).toBe('conventional');
   });
 
   it('returns si for en-NZ', () => {
@@ -189,6 +189,27 @@ describe('detectUnitSystem', () => {
 
   it('returns si for language-only locale (no country)', () => {
     expect(detectUnitSystem('en')).toBe('si');
+  });
+
+  // Timezone cross-check: en-US locale but non-US timezone
+  it('returns si for en-US with NZ timezone', () => {
+    expect(detectUnitSystem('en-US', 'Pacific/Auckland')).toBe('si');
+  });
+
+  it('returns si for en-US with UK timezone', () => {
+    expect(detectUnitSystem('en-US', 'Europe/London')).toBe('si');
+  });
+
+  it('returns conventional for en-US with Indiana sub-timezone', () => {
+    expect(detectUnitSystem('en-US', 'America/Indiana/Indianapolis')).toBe('conventional');
+  });
+
+  it('returns conventional for en-US with Hawaii timezone', () => {
+    expect(detectUnitSystem('en-US', 'Pacific/Honolulu')).toBe('conventional');
+  });
+
+  it('returns conventional for en-US with Chicago timezone', () => {
+    expect(detectUnitSystem('en-US', 'America/Chicago')).toBe('conventional');
   });
 });
 

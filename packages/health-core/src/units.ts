@@ -359,13 +359,33 @@ export function getDisplayRange(
 /** Countries that use conventional (US) units: US, Liberia, Myanmar. */
 const CONVENTIONAL_COUNTRIES = new Set(['US', 'LR', 'MM']);
 
+/** IANA timezone identifiers for the United States. */
+const US_TIMEZONES = new Set([
+  'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+  'America/Anchorage', 'America/Phoenix', 'America/Adak', 'America/Detroit',
+  'America/Boise', 'America/Juneau', 'America/Sitka', 'America/Yakutat',
+  'America/Nome', 'America/Menominee', 'America/Metlakatla',
+  'Pacific/Honolulu',
+]);
+
+function isUSTimezone(tz: string): boolean {
+  return US_TIMEZONES.has(tz)
+    || tz.startsWith('America/Indiana/')
+    || tz.startsWith('America/Kentucky/')
+    || tz.startsWith('America/North_Dakota/');
+}
+
 /**
  * Detect the preferred unit system from the browser locale.
  * Falls back to 'si' if detection fails.
  *
+ * For en-US locales, cross-checks the browser timezone: many non-US users
+ * configure their browser to US English. If the timezone is clearly outside
+ * the US (e.g. Pacific/Auckland), defaults to SI.
+ *
  * Works in both browser (navigator.language) and server (defaults to 'si').
  */
-export function detectUnitSystem(locale?: string): UnitSystem {
+export function detectUnitSystem(locale?: string, timezone?: string): UnitSystem {
   const lang = locale ?? (typeof navigator !== 'undefined' ? navigator.language : undefined);
   if (!lang) return 'si';
 
@@ -374,6 +394,15 @@ export function detectUnitSystem(locale?: string): UnitSystem {
   const country = parts.length > 1 ? parts[parts.length - 1].toUpperCase() : null;
 
   if (country && CONVENTIONAL_COUNTRIES.has(country)) {
+    // Cross-check timezone for en-US: many non-US users use US English
+    if (country === 'US') {
+      const tz = timezone ?? (typeof Intl !== 'undefined'
+        ? Intl.DateTimeFormat().resolvedOptions().timeZone
+        : undefined);
+      if (tz && !isUSTimezone(tz)) {
+        return 'si';
+      }
+    }
     return 'conventional';
   }
 

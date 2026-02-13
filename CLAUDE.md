@@ -172,7 +172,7 @@ Results use `effectiveInputs` (current form + fallback to previous measurements)
 
 ### Unit System Detection
 
-Auto-detected from browser locale (US/Liberia/Myanmar → conventional, else SI). Override saved to localStorage + `profiles.unit_system`.
+Auto-detected from browser locale (US/Liberia/Myanmar → conventional, else SI), with timezone cross-check: if locale is `en-US` but timezone is clearly non-US (e.g. `Pacific/Auckland`), defaults to SI. Override saved to localStorage (`health_roadmap_unit_system`) + `profiles.unit_system`.
 
 ### Health History Page
 
