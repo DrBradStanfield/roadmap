@@ -55,9 +55,11 @@ function getAuthState(): AuthState {
   const isLoggedIn = root.dataset.loggedIn === 'true';
   const loginUrl = root.dataset.loginUrl || undefined;
   const accountUrl = root.dataset.accountUrl || undefined;
-  // Redirect was attempted but user is still not logged in
+  // Redirect was attempted but user is still not logged in.
+  // Also require the auth flag — if it's gone (e.g. user cleared localStorage), this is a new guest.
   const redirectFailed = !isLoggedIn &&
-    !!window.sessionStorage?.getItem('health_roadmap_auth_redirect');
+    !!window.sessionStorage?.getItem('health_roadmap_auth_redirect') &&
+    !!window.localStorage?.getItem('health_roadmap_authenticated');
   return { isLoggedIn, loginUrl, accountUrl, redirectFailed };
 }
 
@@ -189,7 +191,10 @@ export function HealthTool() {
         setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
         // Guests: save everything to localStorage (including longitudinal)
-        saveToLocalStorage({ ...effectiveInputs, ...inputs });
+        const merged = { ...effectiveInputs, ...inputs };
+        if (Object.keys(merged).length > 0) {
+          saveToLocalStorage(merged);
+        }
       }
     }, 500);
 
