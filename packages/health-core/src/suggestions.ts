@@ -85,7 +85,7 @@ export function generateSuggestions(
   });
 
   // High-potassium diet — only when eGFR ≥ 45 (safe kidney function)
-  if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildToModerate) {
+  if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased) {
     suggestions.push({
       id: 'high-potassium',
       category: 'nutrition',

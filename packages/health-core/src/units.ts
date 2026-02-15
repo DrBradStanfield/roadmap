@@ -465,10 +465,10 @@ export const BP_THRESHOLDS = {
 
 /** eGFR thresholds in mL/min/1.73m² */
 export const EGFR_THRESHOLDS = {
-  mildlyDecreased: 60,   // G2: mildly decreased
-  mildToModerate: 45,    // G3a: mild-to-moderate decrease
-  moderateToSevere: 30,  // G3b: moderate-to-severe decrease
-  severelyDecreased: 15, // G4: severely decreased
+  lowNormal: 60,           // eGFR 60-69: low normal (no CKD without markers)
+  mildlyDecreased: 45,     // G3a: mildly decreased
+  moderatelyDecreased: 30, // G3b: moderately decreased
+  severelyDecreased: 15,   // G4: severely decreased
 } as const;
 
 /** ApoB thresholds in g/L */

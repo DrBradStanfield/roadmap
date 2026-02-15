@@ -391,10 +391,10 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
           })() : null}
 
           {results.eGFR !== undefined && (() => {
-            const status = results.eGFR >= 90 ? { label: 'Normal', className: 'status-normal' }
-              : results.eGFR >= 60 ? { label: 'Mildly Decreased', className: 'status-info' }
-              : results.eGFR >= 45 ? { label: 'Mild-Moderate Decrease', className: 'status-attention' }
-              : results.eGFR >= 30 ? { label: 'Moderate-Severe Decrease', className: 'status-attention' }
+            const status = results.eGFR >= 70 ? { label: 'Normal', className: 'status-normal' }
+              : results.eGFR >= 60 ? { label: 'Low Normal', className: 'status-info' }
+              : results.eGFR >= 45 ? { label: 'Mildly Decreased', className: 'status-attention' }
+              : results.eGFR >= 30 ? { label: 'Moderately Decreased', className: 'status-attention' }
               : results.eGFR >= 15 ? { label: 'Severely Decreased', className: 'status-urgent' }
               : { label: 'Kidney Failure', className: 'status-urgent' };
             return (
