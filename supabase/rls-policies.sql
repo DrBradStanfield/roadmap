@@ -62,6 +62,15 @@ CREATE TABLE IF NOT EXISTS health_measurements (
 CREATE INDEX IF NOT EXISTS idx_measurements_user_type_date
   ON health_measurements(user_id, metric_type, recorded_at DESC);
 
+-- ===== Add FHIR/HealthKit future-proofing columns to health_measurements =====
+-- source: tracks where the measurement came from (manual entry, Apple HealthKit, etc.)
+-- external_id: unique ID from external system (e.g. HealthKit sample UUID) for deduplication
+
+ALTER TABLE health_measurements ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'manual';
+ALTER TABLE health_measurements ADD COLUMN IF NOT EXISTS external_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_measurements_external_id
+  ON health_measurements(external_id) WHERE external_id IS NOT NULL;
+
 -- ===== Migrate constraints for existing tables =====
 -- CREATE TABLE IF NOT EXISTS is a no-op on existing tables, so constraints
 -- must be updated via ALTER TABLE to add new metric types (e.g. apob).
@@ -129,7 +138,9 @@ END $$;
 -- ===== RPC for efficient "latest per metric" query =====
 -- Uses auth.uid() so it works with RLS on the anon key.
 -- Returns only health metrics (not demographics, which live on profiles).
+-- DROP first because changing RETURNS TABLE columns requires it (Postgres can't ALTER return type).
 
+DROP FUNCTION IF EXISTS get_latest_measurements();
 CREATE OR REPLACE FUNCTION get_latest_measurements()
 RETURNS TABLE (
   id UUID,
@@ -137,7 +148,9 @@ RETURNS TABLE (
   metric_type TEXT,
   value NUMERIC,
   recorded_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ
+  created_at TIMESTAMPTZ,
+  source TEXT,
+  external_id TEXT
 ) AS $$
 BEGIN
   RETURN QUERY
@@ -147,7 +160,9 @@ BEGIN
     m.metric_type,
     m.value,
     m.recorded_at,
-    m.created_at
+    m.created_at,
+    m.source,
+    m.external_id
   FROM health_measurements m
   WHERE m.user_id = auth.uid()
   ORDER BY m.metric_type, m.recorded_at DESC;
@@ -264,6 +279,14 @@ BEGIN
     UPDATE medications SET drug_name = value WHERE drug_name IS NULL AND value IS NOT NULL;
   END IF;
 END $$;
+
+-- ===== Add FHIR MedicationStatement future-proofing columns =====
+-- status: FHIR-required field (currently medication state is encoded in drug_name)
+-- started_at: when patient started the medication (for clinical context)
+
+ALTER TABLE medications ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'
+  CHECK (status IN ('active', 'stopped', 'intended', 'not-taken', 'on-hold'));
+ALTER TABLE medications ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ;
 
 -- Update medication_key constraint to include all medication cascades
 ALTER TABLE medications DROP CONSTRAINT IF EXISTS medications_medication_key_check;

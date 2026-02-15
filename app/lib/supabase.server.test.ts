@@ -10,6 +10,8 @@ describe('toApiMeasurement', () => {
       value: 84,
       recorded_at: '2025-01-15T10:00:00Z',
       created_at: '2025-01-15T10:00:01Z',
+      source: 'manual',
+      external_id: null,
     };
 
     const result = toApiMeasurement(dbRow);
@@ -20,6 +22,8 @@ describe('toApiMeasurement', () => {
       value: 84,
       recordedAt: '2025-01-15T10:00:00Z',
       createdAt: '2025-01-15T10:00:01Z',
+      source: 'manual',
+      externalId: null,
     });
   });
 
@@ -31,6 +35,8 @@ describe('toApiMeasurement', () => {
       value: 184,
       recorded_at: '2025-01-15T10:00:00Z',
       created_at: '2025-01-15T10:00:01Z',
+      source: 'manual',
+      external_id: null,
     };
 
     const result = toApiMeasurement(dbRow);
@@ -46,9 +52,28 @@ describe('toApiMeasurement', () => {
       value: 3.36,
       recorded_at: '2025-01-15T10:00:00Z',
       created_at: '2025-01-15T10:00:01Z',
+      source: 'manual',
+      external_id: null,
     };
 
     expect(toApiMeasurement(dbRow).value).toBe(3.36);
+  });
+
+  it('includes source and externalId for HealthKit measurements', () => {
+    const dbRow: DbMeasurement = {
+      id: 'hk-001',
+      user_id: 'user-456',
+      metric_type: 'weight',
+      value: 75.5,
+      recorded_at: '2025-03-01T08:00:00Z',
+      created_at: '2025-03-01T08:00:01Z',
+      source: 'apple_health',
+      external_id: 'HK-SAMPLE-UUID-123',
+    };
+
+    const result = toApiMeasurement(dbRow);
+    expect(result.source).toBe('apple_health');
+    expect(result.externalId).toBe('HK-SAMPLE-UUID-123');
   });
 });
 
@@ -64,6 +89,10 @@ describe('toApiProfile', () => {
       unit_system: 2,
       first_name: 'John',
       last_name: 'Doe',
+      height: 180,
+      welcome_email_sent: false,
+      reminders_global_optout: false,
+      unsubscribe_token: null,
       created_at: '2025-01-01T00:00:00Z',
     };
 
@@ -74,6 +103,7 @@ describe('toApiProfile', () => {
       unitSystem: 2,
       firstName: 'John',
       lastName: 'Doe',
+      height: 180,
     });
   });
 
@@ -88,6 +118,10 @@ describe('toApiProfile', () => {
       unit_system: null,
       first_name: null,
       last_name: null,
+      height: null,
+      welcome_email_sent: false,
+      reminders_global_optout: false,
+      unsubscribe_token: null,
       created_at: '2025-01-01T00:00:00Z',
     };
 
@@ -98,6 +132,7 @@ describe('toApiProfile', () => {
       unitSystem: null,
       firstName: null,
       lastName: null,
+      height: null,
     });
   });
 });

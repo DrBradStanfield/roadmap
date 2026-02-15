@@ -237,6 +237,8 @@ export interface DbMeasurement {
   value: number;
   recorded_at: string;
   created_at: string;
+  source: string;
+  external_id: string | null;
 }
 
 export interface DbProfile {
@@ -251,6 +253,8 @@ export interface DbProfile {
   last_name: string | null;
   height: number | null;
   welcome_email_sent: boolean;
+  reminders_global_optout: boolean;
+  unsubscribe_token: string | null;
   created_at: string;
 }
 
@@ -262,6 +266,8 @@ export function toApiMeasurement(m: DbMeasurement) {
     value: m.value,
     recordedAt: m.recorded_at,
     createdAt: m.created_at,
+    source: m.source,
+    externalId: m.external_id,
   };
 }
 
@@ -347,15 +353,21 @@ export async function addMeasurement(
   metricType: string,
   value: number,
   recordedAt?: string,
+  source?: string,
+  externalId?: string,
 ): Promise<DbMeasurement | null> {
+  const row: Record<string, unknown> = {
+    user_id: userId,
+    metric_type: metricType,
+    value,
+    recorded_at: recordedAt || new Date().toISOString(),
+  };
+  if (source) row.source = source;
+  if (externalId) row.external_id = externalId;
+
   const { data, error } = await client
     .from('health_measurements')
-    .insert({
-      user_id: userId,
-      metric_type: metricType,
-      value,
-      recorded_at: recordedAt || new Date().toISOString(),
-    })
+    .insert(row)
     .select()
     .single();
 
@@ -454,6 +466,8 @@ export interface DbMedication {
   drug_name: string;
   dose_value: number | null;
   dose_unit: string | null;
+  status: string;
+  started_at: string | null;
   updated_at: string;
   created_at: string;
 }
@@ -466,6 +480,8 @@ export function toApiMedication(m: DbMedication) {
     drugName: m.drug_name,
     doseValue: m.dose_value,
     doseUnit: m.dose_unit,
+    status: m.status,
+    startedAt: m.started_at,
     updatedAt: m.updated_at,
   };
 }
@@ -486,6 +502,16 @@ export async function getMedications(
   return (data ?? []) as DbMedication[];
 }
 
+/** Derive FHIR medication status from drug_name value. */
+function deriveMedicationStatus(drugName: string): string {
+  switch (drugName) {
+    case 'none': return 'not-taken';
+    case 'not_tolerated': return 'stopped';
+    case 'not_yet': return 'intended';
+    default: return 'active';
+  }
+}
+
 /** Upsert a medication status (FHIR-compatible). RLS verifies the user owns it. */
 export async function upsertMedication(
   client: SupabaseClient,
@@ -504,6 +530,7 @@ export async function upsertMedication(
         drug_name: drugName,
         dose_value: doseValue,
         dose_unit: doseUnit,
+        status: deriveMedicationStatus(drugName),
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'user_id,medication_key' },

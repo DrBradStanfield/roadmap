@@ -40,6 +40,11 @@ Store medications with separate fields for drug identity and dosage:
 - When user is taking a medication, store the actual drug name and dose (not 'yes')
 - Use 'none', 'not_yet', 'not_tolerated' only for status (no dose data)
 - Never store 'yes'/'no' as drug_name — use actual drug names or status values
+- The `status` column is auto-derived from `drug_name` by `deriveMedicationStatus()` in `supabase.server.ts`:
+  - `drug_name = 'none'` → `status = 'not-taken'`
+  - `drug_name = 'not_tolerated'` → `status = 'stopped'`
+  - `drug_name = 'not_yet'` → `status = 'intended'`
+  - Any actual drug name → `status = 'active'`
 
 ## Key Directories
 
@@ -131,8 +136,8 @@ This creates branch `feature-name`, worktree at `../roadmap-feature-name`, and c
 ### Tables
 
 - `profiles` — User accounts (shopify_customer_id nullable for future mobile users) + demographics (sex, birth_year, birth_month, unit_system, first_name, last_name) + reminder fields (`reminders_global_optout`, `unsubscribe_token`)
-- `health_measurements` — Immutable time-series records (metric_type, value in SI, recorded_at). No UPDATE policy. `get_latest_measurements()` RPC returns latest per metric via `DISTINCT ON`. `CASE`-based CHECK constraint enforces per-metric value ranges.
-- `medications` — FHIR-compatible medication records (medication_key, drug_name, dose_value, dose_unit), UNIQUE per (user_id, medication_key). See **FHIR Compliance** section for storage rules. Keys: `statin`, `ezetimibe`, `statin_escalation`, `pcsk9i`, `glp1`, `glp1_escalation`, `sglt2i`, `metformin`
+- `health_measurements` — Immutable time-series records (metric_type, value in SI, recorded_at, source, external_id). No UPDATE policy. `get_latest_measurements()` RPC returns latest per metric via `DISTINCT ON`. `CASE`-based CHECK constraint enforces per-metric value ranges. `source` defaults to `'manual'` (future: `'apple_health'`, `'fitbit'`, `'lab_import'`). `external_id` is nullable with a unique partial index for deduplication of synced data (e.g. Apple HealthKit sample UUIDs).
+- `medications` — FHIR-compatible medication records (medication_key, drug_name, dose_value, dose_unit, status, started_at), UNIQUE per (user_id, medication_key). `status` is auto-derived from `drug_name` during upsert: `'none'`→`'not-taken'`, `'not_tolerated'`→`'stopped'`, `'not_yet'`→`'intended'`, otherwise `'active'`. `started_at` is nullable (for future "how long on this medication?" features). See **FHIR Compliance** section for storage rules. Keys: `statin`, `ezetimibe`, `statin_escalation`, `pcsk9i`, `glp1`, `glp1_escalation`, `sglt2i`, `metformin`
 - `reminder_preferences` — Per-category opt-out for reminder emails. UNIQUE(user_id, reminder_category), default enabled. Categories: `screening_colorectal`, `screening_breast`, `screening_cervical`, `screening_lung`, `screening_prostate`, `blood_test_lipids`, `blood_test_hba1c`, `blood_test_creatinine`, `medication_review`
 - `reminder_log` — Tracks sent reminders per group with `next_eligible_at` for cooldown enforcement. Groups: `screening` (90d), `blood_test` (180d), `medication_review` (365d)
 - `audit_logs` — HIPAA audit trail (user_id nullable for anonymization after deletion)
@@ -206,9 +211,9 @@ Separate bundle (`health-history.js`) with Chart.js line charts per metric. Fetc
 **GET** (no params) — Latest per metric + profile + medications + reminderPreferences (`{ data, profile, medications, screenings, reminderPreferences }`)
 **GET** `?metric_type=weight&limit=50` — History for one metric (DESC)
 **GET** `?all_history=true&limit=100&offset=0` — All history with pagination
-**POST** `{ metricType, value, recordedAt? }` — Add measurement (SI units)
+**POST** `{ metricType, value, recordedAt?, source?, externalId? }` — Add measurement (SI units). `source` defaults to `'manual'`; `externalId` for deduplication of external synced data.
 **POST** `{ profile: { sex?, birthYear?, birthMonth?, unitSystem? } }` — Update profile
-**POST** `{ medication: { medicationKey, value } }` — Upsert medication
+**POST** `{ medication: { medicationKey, value } }` — Upsert medication (auto-derives FHIR `status` from `drugName`)
 **DELETE** `{ measurementId }` — Delete measurement (verifies ownership)
 
 ### Reminder Preferences (via app proxy at `/apps/health-tool-1/api/reminders`)

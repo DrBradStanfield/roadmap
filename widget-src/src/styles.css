@@ -954,6 +954,86 @@
   color: #666;
 }
 
+/* Reminder Settings */
+.reminder-settings {
+  margin-top: 16px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.reminder-settings-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-gray-dark);
+  user-select: none;
+}
+
+.reminder-settings-toggle:hover {
+  background: #fafafa;
+}
+
+.reminder-settings-content {
+  padding: 0 16px 16px;
+  background: #fff;
+}
+
+.reminder-settings-desc {
+  font-size: 13px;
+  color: var(--color-gray-medium);
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
+.reminder-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reminder-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--color-gray-dark);
+  cursor: pointer;
+}
+
+.reminder-checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.reminder-unsubscribe-btn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  background: none;
+  border: 1px solid var(--color-error);
+  border-radius: 6px;
+  color: var(--color-error);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.reminder-unsubscribe-btn:hover {
+  background: var(--color-error);
+  color: #fff;
+}
+
 /* Feedback Button */
 .feedback-section {
   text-align: center;

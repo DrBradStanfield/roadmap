@@ -250,8 +250,8 @@ export async function action({ request }: ActionFunctionArgs) {
         );
       }
 
-      const { metricType, value, recordedAt } = validation.data;
-      const measurement = await addMeasurement(client, userId, metricType, value, recordedAt);
+      const { metricType, value, recordedAt, source, externalId } = validation.data;
+      const measurement = await addMeasurement(client, userId, metricType, value, recordedAt, source, externalId);
 
       if (!measurement) {
         return json({ success: false, error: 'Failed to save' }, { status: 500 });

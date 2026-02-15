@@ -146,6 +146,12 @@ export function getValidationErrors(errors: z.ZodError): Record<string, string> 
 }
 
 /**
+ * Valid measurement sources for the health_measurements table.
+ * Tracks where the measurement came from (for Apple HealthKit deduplication, etc.)
+ */
+export const MEASUREMENT_SOURCES = ['manual', 'apple_health', 'fitbit', 'lab_import'] as const;
+
+/**
  * Schema for a single measurement record (used by API endpoints).
  * Value is always in SI canonical units.
  */
@@ -153,6 +159,8 @@ export const measurementSchema = z.object({
   metricType: z.enum(METRIC_TYPES),
   value: z.number(),
   recordedAt: z.string().datetime().optional(), // defaults to now on server
+  source: z.enum(MEASUREMENT_SOURCES).optional(), // defaults to 'manual' in DB
+  externalId: z.string().optional(), // external system ID (e.g. HealthKit sample UUID)
 });
 
 export type ValidatedMeasurement = z.infer<typeof measurementSchema>;
