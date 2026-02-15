@@ -11,12 +11,18 @@ import {
 } from '@roadmap/health-core';
 import { Sentry } from './sentry';
 
+export interface ApiReminderPreference {
+  reminderCategory: string;
+  enabled: boolean;
+}
+
 interface MeasurementsResponse {
   success: boolean;
   data?: ApiMeasurement[];
   profile?: ApiProfile | null;
   medications?: ApiMedication[];
   screenings?: ApiScreening[];
+  reminderPreferences?: ApiReminderPreference[];
   error?: string;
 }
 
@@ -58,6 +64,8 @@ export interface LatestMeasurementsResult {
   medications: ApiMedication[];
   /** Cancer screening statuses from the screenings table. */
   screenings: ApiScreening[];
+  /** Reminder notification preferences. */
+  reminderPreferences: ApiReminderPreference[];
 }
 
 /**
@@ -87,7 +95,7 @@ export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult
       inputs.unitSystem = allInputs.unitSystem;
     }
 
-    return { inputs, previousMeasurements: result.data, medications: result.medications ?? [], screenings: result.screenings ?? [] };
+    return { inputs, previousMeasurements: result.data, medications: result.medications ?? [], screenings: result.screenings ?? [], reminderPreferences: result.reminderPreferences ?? [] };
   } catch (error) {
     console.warn('Error loading measurements:', error);
     Sentry.captureException(error);
@@ -277,6 +285,51 @@ export async function saveScreening(
     return result.success;
   } catch (error) {
     console.warn('Error saving screening:', error);
+    Sentry.captureException(error);
+    return false;
+  }
+}
+
+/**
+ * Save a reminder preference (enable/disable a category).
+ */
+export async function saveReminderPreference(
+  category: string,
+  enabled: boolean,
+): Promise<boolean> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/reminders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reminderPreference: { category, enabled } }),
+    });
+    if (!response.ok) return false;
+
+    const result: { success: boolean } = await response.json();
+    return result.success;
+  } catch (error) {
+    console.warn('Error saving reminder preference:', error);
+    Sentry.captureException(error);
+    return false;
+  }
+}
+
+/**
+ * Set global reminder opt-out.
+ */
+export async function setGlobalReminderOptout(optout: boolean): Promise<boolean> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/reminders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ globalOptout: optout }),
+    });
+    if (!response.ok) return false;
+
+    const result: { success: boolean } = await response.json();
+    return result.success;
+  } catch (error) {
+    console.warn('Error setting global reminder optout:', error);
     Sentry.captureException(error);
     return false;
   }

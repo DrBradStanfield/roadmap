@@ -352,6 +352,82 @@ CREATE POLICY "Users can delete own screenings"
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON screenings TO authenticated;
 
+-- ===== Add reminder columns to profiles =====
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS reminders_global_optout BOOLEAN DEFAULT FALSE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS unsubscribe_token TEXT;
+
+-- ===== Create reminder_preferences table =====
+-- Per-category opt-out for health reminder emails.
+-- Default opt-in: if no row exists for a category, the user receives reminders.
+
+CREATE TABLE IF NOT EXISTS reminder_preferences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  reminder_category TEXT NOT NULL CHECK (reminder_category IN (
+    'screening_colorectal', 'screening_breast', 'screening_cervical',
+    'screening_lung', 'screening_prostate',
+    'blood_test_lipids', 'blood_test_hba1c', 'blood_test_creatinine',
+    'medication_review'
+  )),
+  enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, reminder_category)
+);
+
+CREATE INDEX IF NOT EXISTS idx_reminder_prefs_user ON reminder_preferences(user_id);
+
+ALTER TABLE reminder_preferences ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own reminder preferences" ON reminder_preferences;
+CREATE POLICY "Users can read own reminder preferences"
+  ON reminder_preferences FOR SELECT
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can insert own reminder preferences" ON reminder_preferences;
+CREATE POLICY "Users can insert own reminder preferences"
+  ON reminder_preferences FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can update own reminder preferences" ON reminder_preferences;
+CREATE POLICY "Users can update own reminder preferences"
+  ON reminder_preferences FOR UPDATE
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can delete own reminder preferences" ON reminder_preferences;
+CREATE POLICY "Users can delete own reminder preferences"
+  ON reminder_preferences FOR DELETE
+  USING (user_id = auth.uid());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON reminder_preferences TO authenticated;
+
+-- ===== Create reminder_log table =====
+-- Tracks sent reminder emails per group to enforce cooldowns.
+-- Only written by service role (cron job). Users can read their own logs.
+
+CREATE TABLE IF NOT EXISTS reminder_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  reminder_group TEXT NOT NULL CHECK (reminder_group IN ('screening', 'blood_test', 'medication_review')),
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  next_eligible_at TIMESTAMPTZ NOT NULL,
+  details JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_reminder_log_user_group
+  ON reminder_log(user_id, reminder_group, next_eligible_at DESC);
+
+ALTER TABLE reminder_log ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own reminder logs" ON reminder_log;
+CREATE POLICY "Users can read own reminder logs"
+  ON reminder_log FOR SELECT
+  USING (user_id = auth.uid());
+
+GRANT SELECT ON reminder_log TO authenticated;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

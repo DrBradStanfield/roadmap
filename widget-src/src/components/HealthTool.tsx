@@ -35,6 +35,9 @@ import {
   saveMedication,
   saveScreening,
   deleteUserData,
+  saveReminderPreference,
+  setGlobalReminderOptout,
+  type ApiReminderPreference,
 } from '../lib/api';
 
 // Auth state from Liquid template
@@ -73,6 +76,7 @@ export function HealthTool() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [reminderPreferences, setReminderPreferences] = useState<ApiReminderPreference[]>([]);
 
   // Unit system: load saved preference or auto-detect
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
@@ -109,6 +113,9 @@ export function HealthTool() {
           if (cached.screenings.length > 0) {
             setScreenings(cached.screenings);
           }
+          if (cached.reminderPreferences.length > 0) {
+            setReminderPreferences(cached.reminderPreferences);
+          }
         }
         // Phase 2: API response is authoritative
         const result = await loadLatestMeasurements();
@@ -128,8 +135,9 @@ export function HealthTool() {
           setPreviousMeasurements(result.previousMeasurements);
           setMedications(result.medications);
           setScreenings(result.screenings);
+          setReminderPreferences(result.reminderPreferences);
           // Cache to localStorage for instant display on next page load
-          saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
+          saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, result.reminderPreferences);
         } else {
           // No cloud data — sync-embed.liquid handles localStorage→cloud migration.
           // Just track current inputs so auto-save doesn't re-send them.
@@ -303,6 +311,35 @@ export function HealthTool() {
     setErrors(validationErrors ?? {});
   }, [validationErrors]);
 
+  const handleReminderPreferenceChange = useCallback(async (category: string, enabled: boolean) => {
+    // Optimistic update
+    setReminderPreferences(prev => {
+      const idx = prev.findIndex(p => p.reminderCategory === category);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], enabled };
+        return next;
+      }
+      return [...prev, { reminderCategory: category, enabled }];
+    });
+
+    if (authState.isLoggedIn) {
+      await saveReminderPreference(category, enabled);
+    }
+  }, [authState.isLoggedIn]);
+
+  const handleGlobalReminderOptout = useCallback(async () => {
+    if (!authState.isLoggedIn) return;
+    const confirmed = window.confirm(
+      'This will disable all health reminder emails. You can re-enable them anytime. Continue?',
+    );
+    if (!confirmed) return;
+
+    // Optimistic: mark all as disabled
+    setReminderPreferences(prev => prev.map(p => ({ ...p, enabled: false })));
+    await setGlobalReminderOptout(true);
+  }, [authState.isLoggedIn]);
+
   const handleDeleteData = useCallback(async () => {
     if (!authState.isLoggedIn) return;
     const confirmed = window.confirm(
@@ -320,6 +357,7 @@ export function HealthTool() {
       setPreviousMeasurements([]);
       setMedications([]);
       setScreenings([]);
+      setReminderPreferences([]);
       previousInputsRef.current = {};
       setSaveStatus('idle');
       window.alert('All your health data has been deleted.');
@@ -352,7 +390,7 @@ export function HealthTool() {
       const next = idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
 
       // Cache to localStorage
-      saveToLocalStorage(inputs, previousMeasurements, next, screenings);
+      saveToLocalStorage(inputs, previousMeasurements, next, screenings, reminderPreferences);
 
       return next;
     });
@@ -361,7 +399,7 @@ export function HealthTool() {
     if (authState.isLoggedIn) {
       await saveMedication(medicationKey, drugName, doseValue, doseUnit);
     }
-  }, [authState.isLoggedIn, inputs, previousMeasurements, screenings]);
+  }, [authState.isLoggedIn, inputs, previousMeasurements, screenings, reminderPreferences]);
 
   const handleScreeningChange = useCallback(async (screeningKey: string, value: string) => {
     setScreenings(prev => {
@@ -374,7 +412,7 @@ export function HealthTool() {
       };
       const next = idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
 
-      saveToLocalStorage(inputs, previousMeasurements, medications, next);
+      saveToLocalStorage(inputs, previousMeasurements, medications, next, reminderPreferences);
 
       return next;
     });
@@ -382,7 +420,7 @@ export function HealthTool() {
     if (authState.isLoggedIn) {
       await saveScreening(screeningKey, value);
     }
-  }, [authState.isLoggedIn, inputs, previousMeasurements, medications]);
+  }, [authState.isLoggedIn, inputs, previousMeasurements, medications, reminderPreferences]);
 
   return (
     <div className="health-tool">
@@ -426,6 +464,10 @@ export function HealthTool() {
             onDeleteData={handleDeleteData}
             isDeleting={isDeleting}
             redirectFailed={authState.redirectFailed}
+            reminderPreferences={reminderPreferences}
+            onReminderPreferenceChange={handleReminderPreferenceChange}
+            onGlobalReminderOptout={handleGlobalReminderOptout}
+            sex={inputs.sex}
           />
         </div>
       </div>

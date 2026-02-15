@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
   type UnitSystem,
@@ -8,7 +8,11 @@ import {
   APOB_THRESHOLDS,
   NON_HDL_THRESHOLDS,
   LDL_THRESHOLDS,
+  REMINDER_CATEGORIES,
+  REMINDER_CATEGORY_LABELS,
+  type ReminderCategory,
 } from '@roadmap/health-core';
+import type { ApiReminderPreference } from '../lib/api';
 
 // Auth state type (matches HealthTool)
 interface AuthState {
@@ -29,6 +33,10 @@ interface ResultsPanelProps {
   onDeleteData?: () => void;
   isDeleting?: boolean;
   redirectFailed?: boolean;
+  reminderPreferences?: ApiReminderPreference[];
+  onReminderPreferenceChange?: (category: string, enabled: boolean) => void;
+  onGlobalReminderOptout?: () => void;
+  sex?: 'male' | 'female';
 }
 
 function getBmiStatus(bmi: number): { label: string; className: string } {
@@ -219,7 +227,84 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, unitSystem, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed }: ResultsPanelProps) {
+/** Filter reminder categories based on user's sex. */
+function getVisibleCategories(sex?: 'male' | 'female'): ReminderCategory[] {
+  return REMINDER_CATEGORIES.filter(cat => {
+    // Breast/cervical: female only
+    if (cat === 'screening_breast' || cat === 'screening_cervical') return sex === 'female';
+    // Prostate: male only
+    if (cat === 'screening_prostate') return sex === 'male';
+    return true;
+  });
+}
+
+function ReminderSettings({
+  preferences,
+  onPreferenceChange,
+  onGlobalOptout,
+  sex,
+}: {
+  preferences: ApiReminderPreference[];
+  onPreferenceChange: (category: string, enabled: boolean) => void;
+  onGlobalOptout?: () => void;
+  sex?: 'male' | 'female';
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const visibleCategories = getVisibleCategories(sex);
+  const disabledSet = new Set(
+    preferences.filter(p => !p.enabled).map(p => p.reminderCategory)
+  );
+
+  return (
+    <div className="reminder-settings">
+      <button
+        className="reminder-settings-toggle"
+        onClick={() => setExpanded(!expanded)}
+        type="button"
+      >
+        Email Reminders
+        <span className="collapse-chevron">{expanded ? '\u25BE' : '\u25B8'}</span>
+      </button>
+
+      {expanded && (
+        <div className="reminder-settings-content">
+          <p className="reminder-settings-desc">
+            Choose which health reminder emails you'd like to receive.
+          </p>
+
+          <div className="reminder-checkboxes">
+            {visibleCategories.map(cat => {
+              const isEnabled = !disabledSet.has(cat);
+              return (
+                <label key={cat} className="reminder-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={isEnabled}
+                    onChange={(e) => onPreferenceChange(cat, e.target.checked)}
+                  />
+                  <span>{REMINDER_CATEGORY_LABELS[cat]}</span>
+                </label>
+              );
+            })}
+          </div>
+
+          {onGlobalOptout && (
+            <button
+              className="reminder-unsubscribe-btn"
+              onClick={onGlobalOptout}
+              type="button"
+            >
+              Unsubscribe from all health notifications
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ResultsPanel({ results, isValid, authState, saveStatus, unitSystem, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex }: ResultsPanelProps) {
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
@@ -379,6 +464,16 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
         Suggestions are based on general guidelines and may not apply to your
         individual situation.
       </div>
+
+      {/* Reminder Settings — logged-in users only */}
+      {authState?.isLoggedIn && onReminderPreferenceChange && (
+        <ReminderSettings
+          preferences={reminderPreferences ?? []}
+          onPreferenceChange={onReminderPreferenceChange}
+          onGlobalOptout={onGlobalReminderOptout}
+          sex={sex}
+        />
+      )}
 
       {!authState?.isLoggedIn && (
         <div className="account-status guest">

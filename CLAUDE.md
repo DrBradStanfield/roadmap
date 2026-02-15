@@ -60,7 +60,9 @@ Store medications with separate fields for drug identity and dosage:
 - `app/lib/supabase.server.ts` — Supabase dual-client, auth helpers, measurement/profile/medication CRUD, audit logging, `deleteAllUserData()`
 - `app/routes/api.measurements.ts` — Measurement CRUD + profile + medication API (HMAC auth)
 - `app/routes/api.user-data.ts` — Account deletion endpoint (DELETE, HMAC auth, rate-limited)
-- `app/lib/email.server.ts` — Welcome email: `checkAndSendWelcomeEmail()`, Resend integration, HTML builder (requires heightCm + sex minimum)
+- `app/lib/email.server.ts` — Welcome email: `checkAndSendWelcomeEmail()`, reminder email: `buildReminderEmailHtml()`, `sendReminderEmail()`, Resend integration
+- `app/lib/reminder-cron.server.ts` — Daily reminder cron job via `setInterval`, processes users in batches of 50, sends consolidated reminder emails
+- `app/routes/api.reminders.ts` — Reminder preferences API + token-based unsubscribe preferences page (standalone HTML)
 
 **Health Core Library (`packages/health-core/src/`):**
 - `calculations.ts` — Health formulas (IBW, BMI, protein, eGFR)
@@ -69,6 +71,7 @@ Store medications with separate fields for drug identity and dosage:
 - `units.ts` — Unit definitions, SI↔conventional conversions, locale detection, clinical thresholds
 - `mappings.ts` — Field↔metric mappings, `measurementsToInputs()`, `diffInputsToMeasurements()`, field categories (`PREFILL_FIELDS`, `LONGITUDINAL_FIELDS`)
 - `types.ts` — TypeScript interfaces, statin configuration (`STATIN_DRUGS`, `STATIN_POTENCY`, `STATIN_NAMES`), potency helpers (`canIncreaseDose()`, `shouldSuggestSwitch()`, `isOnMaxPotency()`)
+- `reminders.ts` — Pure reminder logic: `computeDueReminders()`, `filterByPreferences()`, `getCategoryGroup()`, group cooldowns (`REMINDER_CATEGORIES`, `GROUP_COOLDOWNS`)
 - `index.ts` — Barrel exports
 
 **Widget Source (`widget-src/src/`):**
@@ -127,9 +130,11 @@ This creates branch `feature-name`, worktree at `../roadmap-feature-name`, and c
 
 ### Tables
 
-- `profiles` — User accounts (shopify_customer_id nullable for future mobile users) + demographics (sex, birth_year, birth_month, unit_system, first_name, last_name)
+- `profiles` — User accounts (shopify_customer_id nullable for future mobile users) + demographics (sex, birth_year, birth_month, unit_system, first_name, last_name) + reminder fields (`reminders_global_optout`, `unsubscribe_token`)
 - `health_measurements` — Immutable time-series records (metric_type, value in SI, recorded_at). No UPDATE policy. `get_latest_measurements()` RPC returns latest per metric via `DISTINCT ON`. `CASE`-based CHECK constraint enforces per-metric value ranges.
 - `medications` — FHIR-compatible medication records (medication_key, drug_name, dose_value, dose_unit), UNIQUE per (user_id, medication_key). See **FHIR Compliance** section for storage rules. Keys: `statin`, `ezetimibe`, `statin_escalation`, `pcsk9i`, `glp1`, `glp1_escalation`, `sglt2i`, `metformin`
+- `reminder_preferences` — Per-category opt-out for reminder emails. UNIQUE(user_id, reminder_category), default enabled. Categories: `screening_colorectal`, `screening_breast`, `screening_cervical`, `screening_lung`, `screening_prostate`, `blood_test_lipids`, `blood_test_hba1c`, `blood_test_creatinine`, `medication_review`
+- `reminder_log` — Tracks sent reminders per group with `next_eligible_at` for cooldown enforcement. Groups: `screening` (90d), `blood_test` (180d), `medication_review` (365d)
 - `audit_logs` — HIPAA audit trail (user_id nullable for anonymization after deletion)
 
 Run `supabase/rls-policies.sql` in the SQL Editor to set up schema + RLS. Includes `GRANT EXECUTE ON FUNCTION get_latest_measurements() TO authenticated` — without this, queries silently return empty data.
@@ -198,13 +203,21 @@ Separate bundle (`health-history.js`) with Chart.js line charts per metric. Fetc
 
 ### Storefront (via app proxy at `/apps/health-tool-1/api/measurements`)
 
-**GET** (no params) — Latest per metric + profile + medications (`{ data, profile, medications }`)
+**GET** (no params) — Latest per metric + profile + medications + reminderPreferences (`{ data, profile, medications, screenings, reminderPreferences }`)
 **GET** `?metric_type=weight&limit=50` — History for one metric (DESC)
 **GET** `?all_history=true&limit=100&offset=0` — All history with pagination
 **POST** `{ metricType, value, recordedAt? }` — Add measurement (SI units)
 **POST** `{ profile: { sex?, birthYear?, birthMonth?, unitSystem? } }` — Update profile
 **POST** `{ medication: { medicationKey, value } }` — Upsert medication
 **DELETE** `{ measurementId }` — Delete measurement (verifies ownership)
+
+### Reminder Preferences (via app proxy at `/apps/health-tool-1/api/reminders`)
+
+**GET** (authenticated) — Returns user's reminder preferences as JSON
+**GET** `?token=xxx` (unauthenticated) — Renders standalone HTML preferences page (token-based, from email link)
+**POST** (authenticated) `{ reminderPreference: { category, enabled } }` — Toggle a category
+**POST** (authenticated) `{ globalOptout: true/false }` — Master opt-out toggle
+**POST** `?token=xxx` (unauthenticated) — Save preferences from HTML form
 
 ## Environment Variables
 
@@ -288,8 +301,9 @@ This ensures the bug is properly understood and prevents regressions.
 - `packages/health-core/src/suggestions.test.ts` — Suggestions, medication cascade, unit display (77 tests)
 - `packages/health-core/src/units.test.ts` — Conversions, thresholds, formatting, locale (55 tests)
 - `packages/health-core/src/mappings.test.ts` — Field mappings, measurement conversion (24 tests)
+- `packages/health-core/src/reminders.test.ts` — Reminder logic: screening/blood test/medication triggers, age/sex filtering, preferences, cooldowns (41 tests)
 - `app/lib/supabase.server.test.ts` — toApiMeasurement helper (3 tests)
-- `app/lib/email.server.test.ts` — Welcome email HTML generation, unit formatting, suggestion grouping (9 tests)
+- `app/lib/email.server.test.ts` — Welcome + reminder email HTML generation, unit formatting, suggestion grouping (18 tests)
 
 ## Code Patterns
 
@@ -347,6 +361,29 @@ Data sync is still handled exclusively by `sync-embed.liquid` on the storefront 
 **Minimum data**: Requires `heightCm` + `sex` on the profile; silently skips if either is missing.
 
 **Env vars**: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SHOPIFY_STORE_URL`
+
+## Health Reminder Emails
+
+**Purpose**: Proactive email notifications when screenings, blood tests, or medication reviews are due. Sent via Resend (same as welcome email), separate from Klaviyo marketing emails.
+
+**Architecture**: Daily cron job via in-process `setInterval` on Fly.io (`app/lib/reminder-cron.server.ts`), imported by `app/entry.server.tsx`. Runs at 8:00 UTC, processes users in batches of 50. Disabled in development. Uses `supabaseAdmin` (service role) since it queries across all users.
+
+**Reminder types** (9 categories in 3 groups):
+- **Screenings** (90-day group cooldown): colorectal, breast (female 40+), cervical (female 25-65), lung (smoker 50-80), prostate (male 45+)
+- **Blood tests** (180-day group cooldown): lipids, HbA1c, creatinine — only for users who previously entered that metric
+- **Medication review** (365-day group cooldown): triggers when any active medication `updated_at` > 12 months
+
+**Group-level cooldowns**: When a screening email goes out, ALL due screenings are included. No other screening email for 90 days. Same for blood tests (180d) and medication review (365d). Tracked via `reminder_log.next_eligible_at`.
+
+**Consolidated emails**: One reminder email per user per cron run covering all eligible groups. Blood test section includes context for non-overdue tests (e.g., "Your HbA1c was last tested Oct 2025").
+
+**HIPAA-aware**: Emails contain generic messages only ("your screening is due"), never specific health values.
+
+**Per-category opt-out**: Users toggle individual categories in ResultsPanel (after disclaimer section) or via token-based preferences page linked in email footer. "Unsubscribe from all" button sets `profiles.reminders_global_optout`.
+
+**Pure logic**: `computeDueReminders()` in `packages/health-core/src/reminders.ts` — reuses `SCREENING_INTERVALS` from `types.ts`, testable without DB.
+
+**Key files**: `reminder-cron.server.ts` (cron), `reminders.ts` (pure logic), `email.server.ts` (`buildReminderEmailHtml`), `api.reminders.ts` (preferences API + unsubscribe page), `supabase.server.ts` (CRUD for preferences/log/unsubscribe)
 
 ## Audit Logging
 

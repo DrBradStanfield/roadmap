@@ -15,6 +15,7 @@ A personalized health management tool embedded in a Shopify storefront. Users in
 - **Personalized suggestions**: Based on clinical guidelines for BMI, HbA1c, LDL, blood pressure, etc.
 - **HIPAA audit logging**: All write operations logged for compliance (no PHI in metadata)
 - **Account data deletion**: Users can delete all their data with a single click (measurements, profile, auth user)
+- **Email reminder notifications**: Daily cron sends HIPAA-aware reminders when screenings, blood tests, or medication reviews are due. Per-category opt-out with group-level cooldowns (90d screening, 180d blood test, 365d medication). Token-based unsubscribe preferences page.
 
 ## Prerequisites
 
@@ -137,6 +138,7 @@ fly secrets set SUPABASE_JWT_SECRET=your-jwt-secret
 │  Supabase Database (RLS enabled)                                  │
 │  ├── profiles (shopify_customer_id → user mapping)              │
 │  ├── health_measurements (immutable time-series records)         │
+│  ├── reminder_preferences + reminder_log (email reminders)       │
 │  └── audit_logs (HIPAA audit trail, anonymized on deletion)      │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -179,6 +181,7 @@ Logged-in customer (storefront widget):
 │   │   └── supabase.server.ts    # Dual Supabase clients, JWT signing, CRUD
 │   └── /routes
 │       ├── api.measurements.ts   # Measurement CRUD API (HMAC auth)
+│       ├── api.reminders.ts     # Reminder preferences + unsubscribe page
 │       └── api.user-data.ts     # Account data deletion (HMAC auth)
 ├── /packages
 │   └── /health-core              # Shared library
@@ -187,6 +190,7 @@ Logged-in customer (storefront widget):
 │           ├── suggestions.ts    # Recommendation generation (unit-aware)
 │           ├── units.ts          # Unit definitions, conversions, thresholds
 │           ├── mappings.ts       # Field↔metric mappings, data conversion
+│           ├── reminders.ts      # Pure reminder logic (computeDueReminders)
 │           ├── validation.ts     # Zod schemas
 │           └── types.ts          # TypeScript interfaces
 ├── /widget-src                   # React widget source code

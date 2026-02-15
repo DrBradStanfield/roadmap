@@ -591,6 +591,336 @@ export async function upsertScreening(
 }
 
 // ---------------------------------------------------------------------------
+// Reminder preferences CRUD — per-category opt-out for health reminder emails.
+// ---------------------------------------------------------------------------
+
+export interface DbReminderPreference {
+  id: string;
+  user_id: string;
+  reminder_category: string;
+  enabled: boolean;
+  updated_at: string;
+  created_at: string;
+}
+
+/** Convert DB reminder preference row to camelCase API format. */
+export function toApiReminderPreference(p: DbReminderPreference) {
+  return {
+    reminderCategory: p.reminder_category,
+    enabled: p.enabled,
+  };
+}
+
+/** Get all reminder preferences for the authenticated user. */
+export async function getReminderPreferences(
+  client: SupabaseClient,
+): Promise<DbReminderPreference[]> {
+  const { data, error } = await client
+    .from('reminder_preferences')
+    .select('*');
+
+  if (error) {
+    console.error('Error fetching reminder preferences:', error);
+    return [];
+  }
+
+  return (data ?? []) as DbReminderPreference[];
+}
+
+/** Upsert a reminder preference. RLS verifies the user owns it. */
+export async function upsertReminderPreference(
+  client: SupabaseClient,
+  userId: string,
+  reminderCategory: string,
+  enabled: boolean,
+): Promise<DbReminderPreference | null> {
+  const { data, error } = await client
+    .from('reminder_preferences')
+    .upsert(
+      {
+        user_id: userId,
+        reminder_category: reminderCategory,
+        enabled,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,reminder_category' },
+    )
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error upserting reminder preference:', { error: error.message, reminderCategory });
+    return null;
+  }
+
+  return data as DbReminderPreference;
+}
+
+/** Set the global opt-out flag on the user's profile. */
+export async function setGlobalReminderOptout(
+  client: SupabaseClient,
+  userId: string,
+  optout: boolean,
+): Promise<boolean> {
+  const { error } = await client
+    .from('profiles')
+    .update({ reminders_global_optout: optout })
+    .eq('id', userId);
+
+  if (error) {
+    console.error('Error setting global reminder optout:', error);
+    return false;
+  }
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Reminder log & unsubscribe — service role operations for the cron job.
+// ---------------------------------------------------------------------------
+
+export interface DbReminderLog {
+  id: string;
+  user_id: string;
+  reminder_group: string;
+  sent_at: string;
+  next_eligible_at: string;
+  details: Record<string, unknown> | null;
+  created_at: string;
+}
+
+/** Check if a reminder group is within its cooldown period. Uses admin client. */
+export async function isGroupOnCooldown(
+  userId: string,
+  reminderGroup: string,
+  now: Date = new Date(),
+): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+
+  const { data, error } = await supabaseAdmin
+    .from('reminder_log')
+    .select('next_eligible_at')
+    .eq('user_id', userId)
+    .eq('reminder_group', reminderGroup)
+    .gt('next_eligible_at', now.toISOString())
+    .limit(1);
+
+  if (error) {
+    console.error('Error checking reminder cooldown:', error);
+    return true; // fail safe: don't send if we can't check
+  }
+
+  return (data?.length ?? 0) > 0;
+}
+
+/** Log a sent reminder. Uses admin client. */
+export async function logReminderSent(
+  userId: string,
+  reminderGroup: string,
+  nextEligibleAt: Date,
+  details: Record<string, unknown>,
+): Promise<void> {
+  if (!supabaseAdmin) return;
+
+  const { error } = await supabaseAdmin
+    .from('reminder_log')
+    .insert({
+      user_id: userId,
+      reminder_group: reminderGroup,
+      next_eligible_at: nextEligibleAt.toISOString(),
+      details,
+    });
+
+  if (error) {
+    console.error('Error logging reminder:', error);
+  }
+}
+
+/** Generate or retrieve unsubscribe token for a user. Uses admin client. */
+export async function getOrCreateUnsubscribeToken(userId: string): Promise<string | null> {
+  if (!supabaseAdmin) return null;
+
+  // Check existing
+  const { data: profile } = await supabaseAdmin
+    .from('profiles')
+    .select('unsubscribe_token')
+    .eq('id', userId)
+    .single();
+
+  if (profile?.unsubscribe_token) return profile.unsubscribe_token;
+
+  // Generate new token
+  const token = crypto.randomUUID();
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({ unsubscribe_token: token })
+    .eq('id', userId);
+
+  if (error) {
+    console.error('Error creating unsubscribe token:', error);
+    return null;
+  }
+
+  return token;
+}
+
+/** Global unsubscribe via token (no auth required). Uses admin client. */
+export async function globalUnsubscribeByToken(token: string): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .update({ reminders_global_optout: true })
+    .eq('unsubscribe_token', token);
+
+  if (error) {
+    console.error('Error processing unsubscribe:', error);
+    return false;
+  }
+
+  return true;
+}
+
+/** Get profile by unsubscribe token. Uses admin client. */
+export async function getProfileByUnsubscribeToken(token: string): Promise<DbProfile | null> {
+  if (!supabaseAdmin) return null;
+
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select('*')
+    .eq('unsubscribe_token', token)
+    .single();
+
+  if (error || !data) return null;
+  return data as DbProfile;
+}
+
+/** Get reminder preferences by user ID using admin client (for unsubscribe page). */
+export async function getReminderPreferencesAdmin(userId: string): Promise<DbReminderPreference[]> {
+  if (!supabaseAdmin) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from('reminder_preferences')
+    .select('*')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error fetching reminder preferences (admin):', error);
+    return [];
+  }
+
+  return (data ?? []) as DbReminderPreference[];
+}
+
+/** Upsert a reminder preference using admin client (for unsubscribe page). */
+export async function upsertReminderPreferenceAdmin(
+  userId: string,
+  reminderCategory: string,
+  enabled: boolean,
+): Promise<void> {
+  if (!supabaseAdmin) return;
+
+  const { error } = await supabaseAdmin
+    .from('reminder_preferences')
+    .upsert(
+      {
+        user_id: userId,
+        reminder_category: reminderCategory,
+        enabled,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,reminder_category' },
+    );
+
+  if (error) {
+    console.error('Error upserting reminder preference (admin):', error);
+  }
+}
+
+/** Get all eligible profiles for reminder processing. Uses admin client. */
+export async function getEligibleReminderProfiles(
+  limit: number,
+  offset: number,
+): Promise<DbProfile[]> {
+  if (!supabaseAdmin) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select('*')
+    .eq('reminders_global_optout', false)
+    .eq('welcome_email_sent', true)
+    .not('email', 'is', null)
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    console.error('Error fetching eligible reminder profiles:', error);
+    return [];
+  }
+
+  return (data ?? []) as DbProfile[];
+}
+
+/** Get all screenings for a user by ID. Uses admin client. */
+export async function getScreeningsAdmin(userId: string): Promise<DbScreening[]> {
+  if (!supabaseAdmin) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from('screenings')
+    .select('*')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error fetching screenings (admin):', error);
+    return [];
+  }
+
+  return (data ?? []) as DbScreening[];
+}
+
+/** Get all medications for a user by ID. Uses admin client. */
+export async function getMedicationsAdmin(userId: string): Promise<DbMedication[]> {
+  if (!supabaseAdmin) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from('medications')
+    .select('*')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error fetching medications (admin):', error);
+    return [];
+  }
+
+  return (data ?? []) as DbMedication[];
+}
+
+/** Get latest measurement date per metric for a user. Uses admin client. */
+export async function getLatestMeasurementDatesAdmin(
+  userId: string,
+): Promise<Record<string, string>> {
+  if (!supabaseAdmin) return {};
+
+  const { data, error } = await supabaseAdmin
+    .from('health_measurements')
+    .select('metric_type, recorded_at')
+    .eq('user_id', userId)
+    .order('recorded_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching measurement dates (admin):', error);
+    return {};
+  }
+
+  // Take only the latest per metric
+  const dates: Record<string, string> = {};
+  for (const row of data ?? []) {
+    if (!dates[row.metric_type]) {
+      dates[row.metric_type] = row.recorded_at;
+    }
+  }
+  return dates;
+}
+
+// ---------------------------------------------------------------------------
 // Account data deletion — deletes all user data and anonymizes audit logs.
 // Uses supabaseAdmin (service role) to ensure complete cleanup.
 // ---------------------------------------------------------------------------
@@ -629,6 +959,18 @@ export async function deleteAllUserData(userId: string): Promise<{ measurementsD
   // 3b. Delete all screenings
   await supabaseAdmin
     .from('screenings')
+    .delete()
+    .eq('user_id', userId);
+
+  // 3c. Delete all reminder preferences
+  await supabaseAdmin
+    .from('reminder_preferences')
+    .delete()
+    .eq('user_id', userId);
+
+  // 3d. Delete all reminder logs
+  await supabaseAdmin
+    .from('reminder_log')
     .delete()
     .eq('user_id', userId);
 

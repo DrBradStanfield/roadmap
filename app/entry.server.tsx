@@ -8,6 +8,7 @@ import {
 import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
 import * as Sentry from "@sentry/remix";
+import './lib/reminder-cron.server';
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
