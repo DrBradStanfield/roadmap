@@ -616,6 +616,14 @@ export function HealthTool() {
               <InputPanel {...inputPanelProps} mobileActiveTab={activeTab} />
             )}
             <MobileTabNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+            {activeTab !== 'results' && (
+              <button
+                className="btn-primary mobile-view-results-btn"
+                onClick={() => setActiveTab('results')}
+              >
+                View Results
+              </button>
+            )}
           </div>
         </>
       ) : (

@@ -78,6 +78,9 @@
 .mobile-tab-nav {
   display: none;
 }
+.mobile-view-results-btn {
+  display: none;
+}
 
 @media (max-width: 768px) {
   .health-tool {
@@ -150,6 +153,14 @@
     background: transparent;
     padding: 0;
     box-shadow: none;
+  }
+
+  /* "View Results" button below nav on input tabs */
+  .mobile-view-results-btn {
+    display: block;
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 16px;
   }
 
   /* Next/Back navigation */
@@ -450,7 +461,6 @@
 
 /* Quick Stats */
 .quick-stats {
-  margin-bottom: 8px;
 }
 
 .results-section-title {
@@ -513,7 +523,6 @@
 
 /* Suggestions */
 .suggestions-section {
-  margin-top: 8px;
 }
 
 .suggestions-group {
@@ -678,7 +687,6 @@
 .account-status {
   padding: 12px 16px;
   border-radius: 8px;
-  margin-bottom: 8px;
 }
 
 .account-status.logged-in {
@@ -1064,7 +1072,6 @@
 
 /* Reminder Settings */
 .reminder-settings {
-  margin-top: 16px;
   border: 1px solid #eee;
   border-radius: 8px;
   overflow: hidden;
@@ -1145,7 +1152,6 @@
 /* Feedback Button */
 .feedback-section {
   text-align: center;
-  margin-top: 16px;
 }
 
 .feedback-btn {
@@ -1168,7 +1174,6 @@
 /* Delete Data Section */
 .delete-data-section {
   text-align: center;
-  margin-top: 24px;
 }
 
 .delete-data-link {
