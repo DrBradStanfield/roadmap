@@ -27,7 +27,7 @@ import {
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
 import { useIsMobile } from '../lib/useIsMobile';
-import { MobileTabBar, type TabId, type Tab } from './MobileTabBar';
+import { MobileTabBar, MobileTabNav, type TabId, type Tab } from './MobileTabBar';
 import {
   saveToLocalStorage,
   loadFromLocalStorage,
@@ -615,6 +615,7 @@ export function HealthTool() {
             ) : (
               <InputPanel {...inputPanelProps} mobileActiveTab={activeTab} />
             )}
+            <MobileTabNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
         </>
       ) : (
