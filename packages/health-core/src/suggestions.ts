@@ -294,9 +294,56 @@ export function generateSuggestions(
     }
   }
 
-  // LDL cholesterol (thresholds in mmol/L)
-  if (inputs.ldlC !== undefined) {
+  // === Atherogenic marker hierarchy: ApoB > non-HDL > LDL-c ===
+  // Only show the best available marker. ApoB is the gold standard for
+  // atherogenic particle burden; non-HDL is next best; LDL-c is fallback.
+  const hasApoBData = inputs.apoB !== undefined;
+  const hasNonHdlData = results.nonHdlCholesterol !== undefined;
+
+  // Track whether an elevated atherogenic marker or medication cascade will
+  // produce attention/urgent suggestions, so we can suppress total cholesterol
+  const lipidMedCascadeActive = medications !== undefined && (
+    (inputs.apoB !== undefined && inputs.apoB > LIPID_TREATMENT_TARGETS.apobGl) ||
+    (inputs.ldlC !== undefined && inputs.ldlC > LIPID_TREATMENT_TARGETS.ldlMmol) ||
+    (results.nonHdlCholesterol !== undefined && results.nonHdlCholesterol > LIPID_TREATMENT_TARGETS.nonHdlMmol)
+  );
+  let hasElevatedAtherogenicSuggestion = false;
+
+  // ApoB (top of hierarchy — always shown when available)
+  if (hasApoBData) {
+    if (inputs.apoB! >= APOB_THRESHOLDS.veryHigh) {
+      hasElevatedAtherogenicSuggestion = true;
+      suggestions.push({
+        id: 'apob-very-high',
+        category: 'bloodwork',
+        priority: 'urgent',
+        title: 'Very high ApoB',
+        description: `Your ApoB of ${fmtApoB(inputs.apoB!, us)} is very high, indicating significantly elevated cardiovascular risk. Statin therapy and lifestyle intervention are typically recommended.`,
+      });
+    } else if (inputs.apoB! >= APOB_THRESHOLDS.high) {
+      hasElevatedAtherogenicSuggestion = true;
+      suggestions.push({
+        id: 'apob-high',
+        category: 'bloodwork',
+        priority: 'attention',
+        title: 'High ApoB',
+        description: `Your ApoB of ${fmtApoB(inputs.apoB!, us)} is elevated. Consider lifestyle modifications and discuss treatment options to reduce cardiovascular risk.`,
+      });
+    } else if (inputs.apoB! >= APOB_THRESHOLDS.borderline) {
+      suggestions.push({
+        id: 'apob-borderline',
+        category: 'bloodwork',
+        priority: 'info',
+        title: 'Borderline high ApoB',
+        description: `Your ApoB of ${fmtApoB(inputs.apoB!, us)} is borderline. Optimal is <${formatDisplayValue('apob', APOB_THRESHOLDS.borderline, us)} ${getDisplayLabel('apob', us)}.`,
+      });
+    }
+  }
+
+  // LDL cholesterol — only when ApoB and non-HDL are both unavailable
+  if (!hasApoBData && !hasNonHdlData && inputs.ldlC !== undefined) {
     if (inputs.ldlC >= LDL_THRESHOLDS.veryHigh) {
+      hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
         id: 'ldl-very-high',
         category: 'bloodwork',
@@ -305,6 +352,7 @@ export function generateSuggestions(
         description: `Your LDL of ${fmtLdl(inputs.ldlC, us)} is significantly elevated. This may indicate familial hypercholesterolemia. Statin therapy is typically recommended.`,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.high) {
+      hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
         id: 'ldl-high',
         category: 'bloodwork',
@@ -323,8 +371,40 @@ export function generateSuggestions(
     }
   }
 
-  // Total cholesterol (thresholds in mmol/L)
-  if (inputs.totalCholesterol !== undefined) {
+  // Non-HDL cholesterol — only when ApoB is unavailable
+  if (!hasApoBData && hasNonHdlData) {
+    if (results.nonHdlCholesterol! >= NON_HDL_THRESHOLDS.veryHigh) {
+      hasElevatedAtherogenicSuggestion = true;
+      suggestions.push({
+        id: 'non-hdl-very-high',
+        category: 'bloodwork',
+        priority: 'urgent',
+        title: 'Very high non-HDL cholesterol',
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us)} ${getDisplayLabel('ldl', us)} is very high. This reflects total atherogenic particle burden and indicates significantly elevated cardiovascular risk.`,
+      });
+    } else if (results.nonHdlCholesterol! >= NON_HDL_THRESHOLDS.high) {
+      hasElevatedAtherogenicSuggestion = true;
+      suggestions.push({
+        id: 'non-hdl-high',
+        category: 'bloodwork',
+        priority: 'attention',
+        title: 'High non-HDL cholesterol',
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us)} ${getDisplayLabel('ldl', us)} is high. Consider lifestyle modifications to reduce cardiovascular risk.`,
+      });
+    } else if (results.nonHdlCholesterol! >= NON_HDL_THRESHOLDS.borderline) {
+      suggestions.push({
+        id: 'non-hdl-borderline',
+        category: 'bloodwork',
+        priority: 'info',
+        title: 'Borderline high non-HDL cholesterol',
+        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us)} ${getDisplayLabel('ldl', us)} is borderline. Optimal is <${formatDisplayValue('ldl', NON_HDL_THRESHOLDS.borderline, us)} ${getDisplayLabel('ldl', us)}.`,
+      });
+    }
+  }
+
+  // Total cholesterol — suppress when elevated atherogenic marker or medication cascade
+  // provides actionable cholesterol suggestions (avoids redundant info in Foundation)
+  if (inputs.totalCholesterol !== undefined && !hasElevatedAtherogenicSuggestion && !lipidMedCascadeActive) {
     if (inputs.totalCholesterol >= TOTAL_CHOLESTEROL_THRESHOLDS.high) {
       suggestions.push({
         id: 'total-chol-high',
@@ -340,35 +420,6 @@ export function generateSuggestions(
         priority: 'info',
         title: 'Borderline high total cholesterol',
         description: `Your total cholesterol of ${fmtTotalChol(inputs.totalCholesterol, us)} is borderline high. Desirable is <${formatDisplayValue('total_cholesterol', TOTAL_CHOLESTEROL_THRESHOLDS.borderline, us)} ${getDisplayLabel('total_cholesterol', us)}.`,
-      });
-    }
-  }
-
-  // Non-HDL cholesterol (calculated: total - HDL)
-  if (results.nonHdlCholesterol !== undefined) {
-    if (results.nonHdlCholesterol >= NON_HDL_THRESHOLDS.veryHigh) {
-      suggestions.push({
-        id: 'non-hdl-very-high',
-        category: 'bloodwork',
-        priority: 'urgent',
-        title: 'Very high non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol, us)} ${getDisplayLabel('ldl', us)} is very high. This reflects total atherogenic particle burden and indicates significantly elevated cardiovascular risk.`,
-      });
-    } else if (results.nonHdlCholesterol >= NON_HDL_THRESHOLDS.high) {
-      suggestions.push({
-        id: 'non-hdl-high',
-        category: 'bloodwork',
-        priority: 'attention',
-        title: 'High non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol, us)} ${getDisplayLabel('ldl', us)} is high. Consider lifestyle modifications to reduce cardiovascular risk.`,
-      });
-    } else if (results.nonHdlCholesterol >= NON_HDL_THRESHOLDS.borderline) {
-      suggestions.push({
-        id: 'non-hdl-borderline',
-        category: 'bloodwork',
-        priority: 'info',
-        title: 'Borderline high non-HDL cholesterol',
-        description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol, us)} ${getDisplayLabel('ldl', us)} is borderline. Optimal is <${formatDisplayValue('ldl', NON_HDL_THRESHOLDS.borderline, us)} ${getDisplayLabel('ldl', us)}.`,
       });
     }
   }
@@ -397,35 +448,6 @@ export function generateSuggestions(
       title: 'Very high triglycerides',
       description: `Your triglycerides of ${fmtTrig(inputs.triglycerides, us)} are very high, increasing risk of pancreatitis. Immediate intervention is recommended.`,
     });
-  }
-
-  // ApoB (thresholds in g/L)
-  if (inputs.apoB !== undefined) {
-    if (inputs.apoB >= APOB_THRESHOLDS.veryHigh) {
-      suggestions.push({
-        id: 'apob-very-high',
-        category: 'bloodwork',
-        priority: 'urgent',
-        title: 'Very high ApoB',
-        description: `Your ApoB of ${fmtApoB(inputs.apoB, us)} is very high, indicating significantly elevated cardiovascular risk. Statin therapy and lifestyle intervention are typically recommended.`,
-      });
-    } else if (inputs.apoB >= APOB_THRESHOLDS.high) {
-      suggestions.push({
-        id: 'apob-high',
-        category: 'bloodwork',
-        priority: 'attention',
-        title: 'High ApoB',
-        description: `Your ApoB of ${fmtApoB(inputs.apoB, us)} is elevated. Consider lifestyle modifications and discuss treatment options to reduce cardiovascular risk.`,
-      });
-    } else if (inputs.apoB >= APOB_THRESHOLDS.borderline) {
-      suggestions.push({
-        id: 'apob-borderline',
-        category: 'bloodwork',
-        priority: 'info',
-        title: 'Borderline high ApoB',
-        description: `Your ApoB of ${fmtApoB(inputs.apoB, us)} is borderline. Optimal is <${formatDisplayValue('apob', APOB_THRESHOLDS.borderline, us)} ${getDisplayLabel('apob', us)}.`,
-      });
-    }
   }
 
   // Blood pressure (mmHg — same in both systems)

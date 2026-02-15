@@ -424,6 +424,92 @@ describe('generateSuggestions', () => {
     });
   });
 
+  describe('Atherogenic marker hierarchy (ApoB > non-HDL > LDL)', () => {
+    it('suppresses non-HDL and LDL when ApoB is available', () => {
+      const { inputs, results } = createTestData(
+        { apoB: apoB(80), ldlC: ldl(180), totalCholesterol: totalChol(280), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(280) - hdl(50) }
+      );
+      const suggestions = generateSuggestions(inputs, results);
+
+      expect(suggestions.find(s => s.id === 'apob-high')).toBeDefined();
+      expect(suggestions.filter(s => s.id.startsWith('non-hdl-')).length).toBe(0);
+      expect(suggestions.filter(s => s.id.startsWith('ldl-')).length).toBe(0);
+    });
+
+    it('suppresses LDL when non-HDL is available (no ApoB)', () => {
+      const { inputs, results } = createTestData(
+        { ldlC: ldl(180), totalCholesterol: totalChol(280), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(280) - hdl(50) }
+      );
+      const suggestions = generateSuggestions(inputs, results);
+
+      expect(suggestions.find(s => s.id === 'non-hdl-very-high')).toBeDefined();
+      expect(suggestions.filter(s => s.id.startsWith('ldl-')).length).toBe(0);
+    });
+
+    it('shows LDL when neither ApoB nor non-HDL available', () => {
+      const { inputs, results } = createTestData({ ldlC: ldl(180) });
+      const suggestions = generateSuggestions(inputs, results);
+
+      expect(suggestions.find(s => s.id === 'ldl-high')).toBeDefined();
+    });
+
+    it('suppresses total cholesterol when ApoB is elevated', () => {
+      const { inputs, results } = createTestData(
+        { apoB: apoB(80), totalCholesterol: totalChol(250) }
+      );
+      const suggestions = generateSuggestions(inputs, results);
+
+      expect(suggestions.find(s => s.id === 'apob-high')).toBeDefined();
+      expect(suggestions.filter(s => s.id.startsWith('total-chol-')).length).toBe(0);
+    });
+
+    it('suppresses total cholesterol when non-HDL is elevated (no ApoB)', () => {
+      const { inputs, results } = createTestData(
+        { totalCholesterol: totalChol(280), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(280) - hdl(50) }
+      );
+      const suggestions = generateSuggestions(inputs, results);
+
+      expect(suggestions.find(s => s.id === 'non-hdl-very-high')).toBeDefined();
+      expect(suggestions.filter(s => s.id.startsWith('total-chol-')).length).toBe(0);
+    });
+
+    it('suppresses total cholesterol when medication cascade active for lipids', () => {
+      const { inputs, results } = createTestData(
+        { apoB: apoB(60), totalCholesterol: totalChol(250) }
+      );
+      // ApoB 60 mg/dL = 0.6 g/L > 0.5 target, so medication cascade triggers
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+
+      expect(suggestions.filter(s => s.id.startsWith('total-chol-')).length).toBe(0);
+    });
+
+    it('shows total cholesterol when no better atherogenic marker elevated', () => {
+      const { inputs, results } = createTestData(
+        { totalCholesterol: totalChol(250) }
+      );
+      const suggestions = generateSuggestions(inputs, results);
+
+      expect(suggestions.find(s => s.id === 'total-chol-high')).toBeDefined();
+    });
+
+    it('shows total cholesterol when ApoB is optimal (below all thresholds)', () => {
+      const { inputs, results } = createTestData(
+        { apoB: apoB(40), totalCholesterol: totalChol(250) }
+      );
+      // ApoB 40 = optimal, no suggestion generated, but hasApoBData is true
+      // However, no elevated atherogenic suggestion and no med cascade (no medications param)
+      const suggestions = generateSuggestions(inputs, results);
+
+      // ApoB is optimal so no atherogenic suggestion → total cholesterol shows
+      expect(suggestions.filter(s => s.id.startsWith('apob-')).length).toBe(0);
+      expect(suggestions.find(s => s.id === 'total-chol-high')).toBeDefined();
+    });
+  });
+
   describe('Multiple suggestions', () => {
     it('generates multiple suggestions for complex case', () => {
       const { inputs, results } = createTestData(
