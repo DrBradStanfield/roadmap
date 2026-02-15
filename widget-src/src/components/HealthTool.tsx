@@ -12,6 +12,12 @@ import {
   FIELD_TO_METRIC,
   medicationsToInputs,
   screeningsToInputs,
+  calculateAge,
+  calculateBMI,
+  LIPID_TREATMENT_TARGETS,
+  HBA1C_THRESHOLDS,
+  TRIGLYCERIDES_THRESHOLDS,
+  BP_THRESHOLDS,
   type HealthInputs,
   type UnitSystem,
   type ApiMeasurement,
@@ -20,6 +26,8 @@ import {
 } from '@roadmap/health-core';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
+import { useIsMobile } from '../lib/useIsMobile';
+import { MobileTabBar, type TabId, type Tab } from './MobileTabBar';
 import {
   saveToLocalStorage,
   loadFromLocalStorage,
@@ -37,6 +45,7 @@ import {
   deleteUserData,
   saveReminderPreference,
   setGlobalReminderOptout,
+  PROXY_PATH,
   type ApiReminderPreference,
 } from '../lib/api';
 
@@ -139,10 +148,73 @@ export function HealthTool() {
           // Cache to localStorage for instant display on next page load
           saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, result.reminderPreferences);
         } else {
-          // No cloud data — sync-embed.liquid handles localStorage→cloud migration.
-          // Just track current inputs so auto-save doesn't re-send them.
+          // No cloud data — sync localStorage→cloud directly.
+          // (sync-embed.liquid skips when the widget is on the page, so the widget must handle this.)
           if (cached && Object.keys(cached.inputs).length > 0) {
-            previousInputsRef.current = { ...cached.inputs };
+            // Sync profile (demographics + height + unitSystem)
+            const profileFields: Partial<HealthInputs> = {};
+            for (const field of PREFILL_FIELDS) {
+              if (cached.inputs[field] !== undefined) {
+                (profileFields as any)[field] = cached.inputs[field];
+              }
+            }
+            // unitSystem may be in inputs (if user changed it) or in the separate preference key
+            const cachedUnit = cached.inputs.unitSystem ?? loadUnitPreference();
+            if (cachedUnit) {
+              profileFields.unitSystem = cachedUnit;
+            }
+            if (Object.keys(profileFields).length > 0) {
+              await saveChangedMeasurements(profileFields, {});
+            }
+
+            // Sync longitudinal measurements (weight, waist, bp, blood tests)
+            for (const field of LONGITUDINAL_FIELDS) {
+              const value = cached.inputs[field];
+              if (value !== undefined) {
+                const metricType = FIELD_TO_METRIC[field];
+                if (metricType) {
+                  await addMeasurement(metricType, value as number);
+                }
+              }
+            }
+
+            // Sync medications
+            const cachedMeds = cached.medications ?? [];
+            for (const med of cachedMeds) {
+              if (med.medicationKey && med.drugName) {
+                await saveMedication(med.medicationKey, med.drugName, med.doseValue, med.doseUnit);
+              }
+            }
+
+            // Sync screenings
+            const cachedScreenings = cached.screenings ?? [];
+            for (const scr of cachedScreenings) {
+              if (scr.screeningKey && scr.value) {
+                await saveScreening(scr.screeningKey, scr.value);
+              }
+            }
+
+            // Trigger welcome email (fire-and-forget)
+            fetch(`${PROXY_PATH}/api/measurements`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sendWelcomeEmail: true }),
+            }).catch(() => {});
+
+            // Reload from API to get authoritative data
+            const syncResult = await loadLatestMeasurements();
+            if (syncResult) {
+              setAuthenticatedFlag();
+              setInputs(syncResult.inputs);
+              previousInputsRef.current = { ...syncResult.inputs };
+              setPreviousMeasurements(syncResult.previousMeasurements);
+              setMedications(syncResult.medications);
+              setScreenings(syncResult.screenings);
+              setReminderPreferences(syncResult.reminderPreferences);
+              saveToLocalStorage(syncResult.inputs, syncResult.previousMeasurements, syncResult.medications, syncResult.screenings, syncResult.reminderPreferences);
+            } else {
+              previousInputsRef.current = { ...cached.inputs };
+            }
           }
         }
       } else {
@@ -177,22 +249,23 @@ export function HealthTool() {
 
     const timeout = setTimeout(async () => {
       if (authState.isLoggedIn) {
-        // Only auto-save pre-fill fields (demographics + height)
+        // Only auto-save pre-fill fields (demographics + height) + unitSystem
+        const autoSaveFields = [...PREFILL_FIELDS, 'unitSystem' as keyof HealthInputs];
         const currentPrefill: Partial<HealthInputs> = {};
         const previousPrefill: Partial<HealthInputs> = {};
-        for (const field of PREFILL_FIELDS) {
+        for (const field of autoSaveFields) {
           if (inputs[field] !== undefined) (currentPrefill as any)[field] = inputs[field];
           if (previousInputsRef.current[field] !== undefined) (previousPrefill as any)[field] = previousInputsRef.current[field];
         }
 
-        const hasChanges = PREFILL_FIELDS.some(f => inputs[f] !== previousInputsRef.current[f]);
+        const hasChanges = autoSaveFields.some(f => inputs[f] !== previousInputsRef.current[f]);
         if (!hasChanges) return;
 
         setSaveStatus('saving');
         const success = await saveChangedMeasurements(currentPrefill, previousPrefill);
         setSaveStatus(success ? 'saved' : 'error');
         if (success) {
-          for (const field of PREFILL_FIELDS) {
+          for (const field of autoSaveFields) {
             (previousInputsRef.current as any)[field] = inputs[field];
           }
         }
@@ -311,6 +384,71 @@ export function HealthTool() {
     setErrors(validationErrors ?? {});
   }, [validationErrors]);
 
+  // Mobile tab state
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<TabId>('profile');
+
+  // Compute which tabs are visible (medications + screening are conditional)
+  const tabs: Tab[] = useMemo(() => {
+    // Medications visible: lipids elevated OR weight cascade trigger
+    const ei = effectiveInputs;
+    const nonHdl = (ei.totalCholesterol !== undefined && ei.hdlC !== undefined)
+      ? ei.totalCholesterol - ei.hdlC : undefined;
+    const lipidsElevated =
+      (ei.apoB !== undefined && ei.apoB > LIPID_TREATMENT_TARGETS.apobGl) ||
+      (ei.ldlC !== undefined && ei.ldlC > LIPID_TREATMENT_TARGETS.ldlMmol) ||
+      (nonHdl !== undefined && nonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol);
+
+    const bmi = (ei.weightKg !== undefined && ei.heightCm !== undefined)
+      ? calculateBMI(ei.weightKg, ei.heightCm) : undefined;
+    const whr = (ei.waistCm !== undefined && ei.heightCm !== undefined)
+      ? ei.waistCm / ei.heightCm : undefined;
+    let weightCascadeVisible = false;
+    if (bmi !== undefined && bmi > 25) {
+      if (bmi > 28) {
+        weightCascadeVisible = true;
+      } else {
+        weightCascadeVisible =
+          (ei.hba1c !== undefined && ei.hba1c >= HBA1C_THRESHOLDS.prediabetes) ||
+          (ei.triglycerides !== undefined && ei.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) ||
+          (ei.systolicBp !== undefined && ei.systolicBp >= BP_THRESHOLDS.stage1Sys) ||
+          (whr !== undefined && whr >= 0.5);
+      }
+    }
+    const medsVisible = lipidsElevated || weightCascadeVisible;
+
+    // Screening visible: birthYear set + age-based eligibility
+    let screeningVisible = false;
+    if (inputs.birthYear) {
+      const age = calculateAge(inputs.birthYear, inputs.birthMonth ?? 1);
+      screeningVisible =
+        age >= 35 ||
+        (inputs.sex === 'female' && age >= 25) ||
+        (inputs.sex === 'female' && age >= 40) ||
+        (age >= 50 && age <= 80) ||
+        (inputs.sex === 'male' && age >= 45) ||
+        (inputs.sex === 'female' && age >= 45);
+    }
+
+    return [
+      { id: 'profile', label: 'Profile', visible: true },
+      { id: 'vitals', label: 'Vitals', visible: true },
+      { id: 'blood-tests', label: 'Blood Tests', visible: true },
+      { id: 'medications', label: 'Medications', visible: medsVisible },
+      { id: 'screening', label: 'Screening', visible: screeningVisible },
+      { id: 'results', label: 'Results', visible: true },
+    ];
+  }, [effectiveInputs, inputs.birthYear, inputs.birthMonth, inputs.sex]);
+
+  // Auto-fallback: if active tab becomes invisible, switch to first visible tab
+  useEffect(() => {
+    const current = tabs.find(t => t.id === activeTab);
+    if (current && !current.visible) {
+      const firstVisible = tabs.find(t => t.visible);
+      if (firstVisible) setActiveTab(firstVisible.id);
+    }
+  }, [tabs, activeTab]);
+
   const handleReminderPreferenceChange = useCallback(async (category: string, enabled: boolean) => {
     // Optimistic update
     setReminderPreferences(prev => {
@@ -422,6 +560,40 @@ export function HealthTool() {
     }
   }, [authState.isLoggedIn, inputs, previousMeasurements, medications, reminderPreferences]);
 
+  const inputPanelProps = {
+    inputs,
+    onChange: handleInputChange,
+    errors,
+    unitSystem,
+    onUnitSystemChange: handleUnitSystemChange,
+    isLoggedIn: authState.isLoggedIn,
+    previousMeasurements,
+    medications,
+    onMedicationChange: handleMedicationChange,
+    screenings,
+    onScreeningChange: handleScreeningChange,
+    onSaveLongitudinal: handleSaveLongitudinal,
+    isSavingLongitudinal,
+  };
+
+  const resultsPanelProps = {
+    results,
+    isValid,
+    authState,
+    saveStatus,
+    unitSystem,
+    hasUnsavedLongitudinal: authState.isLoggedIn && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined),
+    onSaveLongitudinal: handleSaveLongitudinal,
+    isSavingLongitudinal,
+    onDeleteData: handleDeleteData,
+    isDeleting,
+    redirectFailed: authState.redirectFailed,
+    reminderPreferences,
+    onReminderPreferenceChange: handleReminderPreferenceChange,
+    onGlobalReminderOptout: handleGlobalReminderOptout,
+    sex: inputs.sex,
+  };
+
   return (
     <div className="health-tool">
       <div className="health-tool-header">
@@ -432,45 +604,29 @@ export function HealthTool() {
         </p>
       </div>
 
-      <div className="health-tool-content">
-        <div className="health-tool-left">
-          <InputPanel
-            inputs={inputs}
-            onChange={handleInputChange}
-            errors={errors}
-            unitSystem={unitSystem}
-            onUnitSystemChange={handleUnitSystemChange}
-            isLoggedIn={authState.isLoggedIn}
-            previousMeasurements={previousMeasurements}
-            medications={medications}
-            onMedicationChange={handleMedicationChange}
-            screenings={screenings}
-            onScreeningChange={handleScreeningChange}
-            onSaveLongitudinal={handleSaveLongitudinal}
-            isSavingLongitudinal={isSavingLongitudinal}
-          />
+      {isMobile ? (
+        <>
+          <MobileTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
+          <div className="mobile-tab-content">
+            {activeTab === 'results' ? (
+              <div className="health-tool-right">
+                <ResultsPanel {...resultsPanelProps} />
+              </div>
+            ) : (
+              <InputPanel {...inputPanelProps} mobileActiveTab={activeTab} />
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="health-tool-content">
+          <div className="health-tool-left">
+            <InputPanel {...inputPanelProps} />
+          </div>
+          <div className="health-tool-right">
+            <ResultsPanel {...resultsPanelProps} />
+          </div>
         </div>
-
-        <div className="health-tool-right">
-          <ResultsPanel
-            results={results}
-            isValid={isValid}
-            authState={authState}
-            saveStatus={saveStatus}
-            unitSystem={unitSystem}
-            hasUnsavedLongitudinal={authState.isLoggedIn && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined)}
-            onSaveLongitudinal={handleSaveLongitudinal}
-            isSavingLongitudinal={isSavingLongitudinal}
-            onDeleteData={handleDeleteData}
-            isDeleting={isDeleting}
-            redirectFailed={authState.redirectFailed}
-            reminderPreferences={reminderPreferences}
-            onReminderPreferenceChange={handleReminderPreferenceChange}
-            onGlobalReminderOptout={handleGlobalReminderOptout}
-            sex={inputs.sex}
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 }

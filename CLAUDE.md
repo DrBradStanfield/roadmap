@@ -80,11 +80,13 @@ Store medications with separate fields for drug identity and dosage:
 - `index.ts` — Barrel exports
 
 **Widget Source (`widget-src/src/`):**
-- `components/HealthTool.tsx` — Main widget (auth, unit system, measurement sync)
-- `components/InputPanel.tsx` — Form inputs with unit conversion. Longitudinal fields are config-driven (`BASIC_LONGITUDINAL_FIELDS`, `BLOOD_TEST_FIELDS` + `LongitudinalField` component). Includes cholesterol medication cascade UI.
+- `components/HealthTool.tsx` — Main widget (auth, unit system, measurement sync, mobile tab state + visibility)
+- `components/InputPanel.tsx` — Form inputs with unit conversion. Uses render functions (`renderProfile`, `renderVitals`, `renderBloodTests`, `renderMedications`, `renderScreening`) sharing closure state. Accepts `mobileActiveTab` prop to render a single section on mobile. Longitudinal fields are config-driven (`BASIC_LONGITUDINAL_FIELDS`, `BLOOD_TEST_FIELDS`). Includes cholesterol + weight medication cascade UI.
 - `components/ResultsPanel.tsx` — Results display with unit formatting
+- `components/MobileTabBar.tsx` — Mobile tab bar component. Exports `TabId`, `Tab` types used by HealthTool and InputPanel.
 - `components/HistoryPanel.tsx` — Health history page (charts, filter, pagination)
 - `components/DatePicker.tsx` — Reusable month/year date picker with future-month filtering
+- `lib/useIsMobile.ts` — `useIsMobile(breakpoint)` hook using `matchMedia` for responsive detection
 - `lib/constants.ts` — Shared UI constants (months, date formatting, clinical thresholds)
 - `lib/storage.ts` — localStorage helpers (guest data + logged-in user cache)
 - `lib/api.ts` — Measurement API client (app proxy, with `apiCall()` error wrapper)
@@ -168,7 +170,7 @@ Profile demographics: `height` (50–250 cm), `sex` (1=male, 2=female), `birth_y
 
 Defined in `mappings.ts`:
 
-- **`PREFILL_FIELDS`** (`heightCm`, `sex`, `birthYear`, `birthMonth`): Pre-filled from saved data, auto-saved with 500ms debounce.
+- **`PREFILL_FIELDS`** (`heightCm`, `sex`, `birthYear`, `birthMonth`): Pre-filled from saved data, auto-saved with 500ms debounce. `unitSystem` is also auto-saved alongside these fields (not in the array, but included in the auto-save effect).
 - **`LONGITUDINAL_FIELDS`** (`weightKg`, `waistCm`, `hba1c`, `creatinine`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `systolicBp`, `diastolicBp`): Start **empty** with clickable previous-value label ("value unit · date") linking to history. Users enter new values and click "Save New Values" to append immutable records. **All future longitudinal fields must follow this pattern.**
 
 Results use `effectiveInputs` (current form + fallback to previous measurements).
@@ -343,6 +345,21 @@ formatShortDate('2024-01-15') // "Jan 15, 2024"
 - `FIELD_TO_METRIC`: For saving measurements (excludes height, which is on profiles table)
 - `FIELD_METRIC_MAP`: For unit conversions (includes height)
 
+## Mobile Tabbed View
+
+On mobile (≤768px), the form is split into focused tabs instead of a long scroll. Desktop layout is unchanged (two-column grid).
+
+**Tabs**: Profile, Vitals, Blood Tests, Medications (conditional), Screening (conditional), Results.
+
+**Architecture**:
+- `useIsMobile(768)` hook in HealthTool drives a React conditional: mobile renders `MobileTabBar` + single tab content; desktop renders the original grid.
+- `InputPanel` accepts an optional `mobileActiveTab` prop. When set, only the matching render function's section is rendered. When absent (desktop), all sections render together.
+- Render functions (not separate components) are used to avoid prop-drilling the 15+ shared state variables (`updateField`, `parseAndConvert`, `toDisplay`, `rawInputs`, `dateInputs`, etc.).
+- Tab visibility for Medications and Screening is computed in HealthTool via `useMemo`, mirroring the same threshold conditions used by InputPanel's IIFEs (lipid targets, BMI + secondary criteria, age/sex eligibility). A `useEffect` auto-switches to the first visible tab if the active tab becomes hidden.
+- On mobile, Profile and Vitals get separate `section-card` wrappers (they share one card on desktop).
+
+**CSS**: Tab bar is `position: sticky; top: 0` with hidden scrollbar. Save button is `position: sticky; bottom: 0` on mobile. Results panel loses its sticky positioning and background when inside the mobile tab content.
+
 ## Architecture Decision: Customer Account Extension (Link-Only)
 
 Previous full-featured customer account extension was removed (commit af51572) because: (1) cross-origin localStorage barrier (customer accounts on `shopify.com` can't access storefront localStorage), (2) duplicate JWT auth endpoint was unnecessary.
@@ -400,7 +417,12 @@ All writes logged to `audit_logs` via `logAudit()` (fire-and-forget, service-rol
 
 ## Data Sync Architecture
 
-localStorage→cloud sync handled **exclusively by sync-embed**, not the widget. Widget only reads from cloud and caches to localStorage. Prevents duplicate writes.
+localStorage→cloud sync uses a **dual-sync** design to cover all pages:
+
+- **sync-embed** (`sync-embed.liquid`): Handles non-widget pages (home, catalog, etc.). Skips when `health-tool-root` is present to avoid race conditions with `getOrCreateSupabaseUser()`. After successful sync, sets `health_roadmap_authenticated` flag for auto-redirect.
+- **Widget** (`HealthTool.tsx`): Handles its own page (`/pages/roadmap`). When it detects a logged-in user with no cloud data but localStorage data exists, it syncs profile, measurements, medications, and screenings directly. After sync, calls `setAuthenticatedFlag()`.
+
+Both paths check for meaningful cloud data before syncing (not just the existence of a profile row — the DB trigger auto-creates profiles with NULL fields). Both set the auth flag after a successful sync so the auto-redirect works on future direct navigations.
 
 ## Storefront Session Auto-Redirect
 
@@ -408,7 +430,7 @@ localStorage→cloud sync handled **exclusively by sync-embed**, not the widget.
 
 **Solution**: Auto-redirect + fallback banner. Defense in depth with 6 layers:
 
-1. **Auth flag** (`localStorage: health_roadmap_authenticated`): Set by `HealthTool.tsx` only when the API confirms the user has cloud data (Phase 2 response). **NOT set by Liquid templates** — this prevents the flag from being re-set after data deletion (e.g., user deletes data, navigates to another page still logged in, sync-embed would have re-set the flag). Cleared by `clearLocalStorage()` on account deletion.
+1. **Auth flag** (`localStorage: health_roadmap_authenticated`): Set by `HealthTool.tsx` when the API confirms cloud data exists (Phase 2 response), and by `sync-embed.liquid` after a successful localStorage→cloud sync. The sync-embed path is safe because it only reaches `syncComplete()` when localStorage had data to upload — after data deletion, `clearLocalStorage()` removes `health_roadmap_data`, so sync-embed exits early and never re-sets the flag. Cleared by `clearLocalStorage()` on account deletion.
 
 2. **Auto-redirect** (in `{% unless customer %}` blocks in `app-block.liquid` and `history-block.liquid`): When a user has the auth flag but no storefront session, redirects to `{{ routes.account_url }}?return_url=<current_path>`. Shopify's login flow establishes the storefront session and redirects back. If the user is already logged into Shopify, this is near-instant (~1-2s).
 
@@ -416,13 +438,13 @@ localStorage→cloud sync handled **exclusively by sync-embed**, not the widget.
 
 4. **Fallback banner** (in `HealthTool.tsx`): When redirect was attempted but user is still not logged in (`authState.redirectFailed`), shows a dismissible "Sign in to access your data" banner with a Sign In link.
 
-5. **Flag cleanup**: `clearLocalStorage()` in `storage.ts` removes the auth flag on account deletion, preventing future redirects. No Liquid template can re-set it because flag-setting lives exclusively in widget JS.
+5. **Flag cleanup**: `clearLocalStorage()` in `storage.ts` removes the auth flag on account deletion, preventing future redirects. The flag is only set by widget JS (`HealthTool.tsx`) and sync-embed JS (`sync-embed.liquid`) after confirming cloud data exists — never by Liquid templates.
 
 6. **First-time visitors**: No auth flag exists → no redirect → normal guest mode. Completely unaffected.
 
 **Key invariants**:
 - When `{% if customer %}` is true, the redirect script **does not exist in the HTML** (stripped server-side by Liquid). Zero risk of unnecessary redirects for authenticated users.
-- Auth flag is only set when the API confirms cloud data exists — never just because a Shopify session exists. This prevents ghost redirects after data deletion.
+- Auth flag is only set when cloud data is confirmed (API response in widget, or after successful sync in sync-embed) — never just because a Shopify session exists. This prevents ghost redirects after data deletion.
 
 ## Future Plans
 

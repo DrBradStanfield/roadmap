@@ -34,7 +34,7 @@ interface SingleMeasurementResponse {
 
 // App proxy path — requests go through Shopify to the backend
 // Shopify adds logged_in_customer_id + HMAC signature automatically
-const PROXY_PATH = '/apps/health-tool-1';
+export const PROXY_PATH = '/apps/health-tool-1';
 
 /**
  * Helper to wrap API calls with consistent error handling.

@@ -42,6 +42,7 @@ import {
 } from '@roadmap/health-core';
 import { formatShortDate } from '../lib/constants';
 import { DatePicker, InlineDatePicker, dateValueToISO, getCurrentDateValue, type DateValue } from './DatePicker';
+import type { TabId } from './MobileTabBar';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -121,6 +122,7 @@ interface InputPanelProps {
   onScreeningChange: (screeningKey: string, value: string) => void;
   onSaveLongitudinal: (bloodTestDate?: string) => void;
   isSavingLongitudinal: boolean;
+  mobileActiveTab?: TabId;
 }
 
 export function InputPanel({
@@ -128,6 +130,7 @@ export function InputPanel({
   isLoggedIn, previousMeasurements, medications, onMedicationChange,
   screenings, onScreeningChange,
   onSaveLongitudinal, isSavingLongitudinal,
+  mobileActiveTab,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
@@ -308,10 +311,10 @@ export function InputPanel({
 
   const hasBpValue = inputs.systolicBp !== undefined || inputs.diastolicBp !== undefined;
 
-  return (
-    <div className="health-input-panel">
-      {/* Card 1: Units + Basic Info */}
-      <div className="section-card">
+  // ── Section render functions (shared closure state, not separate components) ──
+
+  const renderProfile = () => (
+    <>
       <div className="unit-toggle">
         <label>Units:</label>
         <select
@@ -323,7 +326,6 @@ export function InputPanel({
         </select>
       </div>
 
-      {/* Basic Info Section */}
       <section className="health-section">
         <h3
           className={`health-section-title${prefillComplete ? ' health-section-title--collapsible' : ''}`}
@@ -464,88 +466,94 @@ export function InputPanel({
             </div>
           </>
         )}
+      </section>
+    </>
+  );
 
-        {BASIC_LONGITUDINAL_FIELDS.map(cfg => renderLongitudinalField(cfg))}
+  const renderVitals = () => (
+    <section className="health-section">
+      {BASIC_LONGITUDINAL_FIELDS.map(cfg => renderLongitudinalField(cfg))}
 
-        {/* Blood Pressure — two-field clinical pattern */}
-        <div className="health-field">
-          <label>Blood Pressure (mmHg)</label>
-          <div className="longitudinal-input-row">
-            <div className="bp-fieldset">
-              <input
-                type="number"
-                inputMode="numeric"
-                id="systolicBp"
-                value={inputs.systolicBp ?? ''}
-                onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
-                placeholder={getPreviousPlaceholder('systolicBp') ?? "120"}
-                min={60}
-                max={250}
-                className={errors.systolicBp ? 'error' : ''}
-              />
-              <span className="bp-separator">/</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                id="diastolicBp"
-                value={inputs.diastolicBp ?? ''}
-                onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
-                placeholder={getPreviousPlaceholder('diastolicBp') ?? "80"}
-                min={40}
-                max={150}
-                className={errors.diastolicBp ? 'error' : ''}
-              />
-            </div>
-            {isLoggedIn && hasBpValue && (
-              <button
-                className="btn-primary save-inline-btn"
-                onClick={() => onSaveLongitudinal()}
-                disabled={isSavingLongitudinal}
-                title="Save new values"
-              >
-                {isSavingLongitudinal ? '...' : 'Save'}
-              </button>
-            )}
+      {/* Blood Pressure — two-field clinical pattern */}
+      <div className="health-field">
+        <label>Blood Pressure (mmHg)</label>
+        <div className="longitudinal-input-row">
+          <div className="bp-fieldset">
+            <input
+              type="number"
+              inputMode="numeric"
+              id="systolicBp"
+              value={inputs.systolicBp ?? ''}
+              onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
+              placeholder={getPreviousPlaceholder('systolicBp') ?? "120"}
+              min={60}
+              max={250}
+              className={errors.systolicBp ? 'error' : ''}
+            />
+            <span className="bp-separator">/</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              id="diastolicBp"
+              value={inputs.diastolicBp ?? ''}
+              onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
+              placeholder={getPreviousPlaceholder('diastolicBp') ?? "80"}
+              min={40}
+              max={150}
+              className={errors.diastolicBp ? 'error' : ''}
+            />
           </div>
-          {errors.systolicBp && (
-            <span className="error-message">{errors.systolicBp}</span>
+          {isLoggedIn && hasBpValue && (
+            <button
+              className="btn-primary save-inline-btn"
+              onClick={() => onSaveLongitudinal()}
+              disabled={isSavingLongitudinal}
+              title="Save new values"
+            >
+              {isSavingLongitudinal ? '...' : 'Save'}
+            </button>
           )}
-          {errors.diastolicBp && (
-            <span className="error-message">{errors.diastolicBp}</span>
-          )}
-          <div className="field-meta">
-            <span className="field-hint">Target: &lt;{(inputs.birthYear && inputs.birthMonth && calculateAge(inputs.birthYear, inputs.birthMonth) >= 65) ? '130/80' : '120/80'} mmHg</span>
-            {getBpPreviousLabel() && (
-              <a
-                className="previous-value"
-                href={`/pages/health-history?metric=systolic_bp`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >{getBpPreviousLabel()}</a>
-            )}
-          </div>
         </div>
-      </section>
+        {errors.systolicBp && (
+          <span className="error-message">{errors.systolicBp}</span>
+        )}
+        {errors.diastolicBp && (
+          <span className="error-message">{errors.diastolicBp}</span>
+        )}
+        <div className="field-meta">
+          <span className="field-hint">Target: &lt;{(inputs.birthYear && inputs.birthMonth && calculateAge(inputs.birthYear, inputs.birthMonth) >= 65) ? '130/80' : '120/80'} mmHg</span>
+          {getBpPreviousLabel() && (
+            <a
+              className="previous-value"
+              href={`/pages/health-history?metric=systolic_bp`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >{getBpPreviousLabel()}</a>
+          )}
+        </div>
       </div>
+    </section>
+  );
 
-      {/* Card 2: Blood Tests */}
-      <div className="section-card">
-      <section className="health-section">
-        <h3 className="health-section-title">Blood Test Results</h3>
+  const renderBloodTests = () => (
+    <section className="health-section">
+      <h3 className="health-section-title">Blood Test Results</h3>
 
-        {/* Blood test date picker */}
-        <DatePicker
-          value={bloodTestDate}
-          onChange={setBloodTestDate}
-          label="When were these tests done?"
-          className="blood-test-date"
-        />
-        <p className="health-section-desc">To enter results from different dates, save each batch separately.</p>
+      {/* Blood test date picker */}
+      <DatePicker
+        value={bloodTestDate}
+        onChange={setBloodTestDate}
+        label="When were these tests done?"
+        className="blood-test-date"
+      />
+      <p className="health-section-desc">To enter results from different dates, save each batch separately.</p>
 
-        {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg, true))}
-      </section>
-      </div>
+      {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg, true))}
+    </section>
+  );
 
+  const renderMedications = () => (
+    <>
       {/* Cholesterol Medications Section — shown when lipids are above treatment targets */}
       {(() => {
           // Compute effective inputs for cascade visibility (form values + previous measurements fallback)
@@ -932,7 +940,11 @@ export function InputPanel({
           </div>
         );
       })()}
+    </>
+  );
 
+  const renderScreening = () => (
+    <>
       {/* Cancer Screening Section — shown when birth year is available */}
       {(() => {
         // Default to January if birthMonth not set (gives conservative age estimate)
@@ -1489,17 +1501,53 @@ export function InputPanel({
           </div>
         );
       })()}
+    </>
+  );
 
-      {/* Save button for longitudinal fields (logged-in users only) */}
-      {isLoggedIn && hasLongitudinalValues && (
-        <button
-          className="btn-primary save-longitudinal-btn"
-          onClick={() => onSaveLongitudinal(dateValueToISO(bloodTestDate))}
-          disabled={isSavingLongitudinal}
-        >
-          {isSavingLongitudinal ? 'Saving...' : 'Save New Values'}
-        </button>
-      )}
+  const renderSaveButton = () => {
+    if (!isLoggedIn || !hasLongitudinalValues) return null;
+    return (
+      <button
+        className="btn-primary save-longitudinal-btn"
+        onClick={() => onSaveLongitudinal(dateValueToISO(bloodTestDate))}
+        disabled={isSavingLongitudinal}
+      >
+        {isSavingLongitudinal ? 'Saving...' : 'Save New Values'}
+      </button>
+    );
+  };
+
+  // ── Mobile: render only the active tab's section ──
+  if (mobileActiveTab && mobileActiveTab !== 'results') {
+    return (
+      <div className="health-input-panel">
+        {mobileActiveTab === 'profile' && <div className="section-card">{renderProfile()}</div>}
+        {mobileActiveTab === 'vitals' && <div className="section-card">{renderVitals()}</div>}
+        {mobileActiveTab === 'blood-tests' && <div className="section-card">{renderBloodTests()}</div>}
+        {mobileActiveTab === 'medications' && renderMedications()}
+        {mobileActiveTab === 'screening' && renderScreening()}
+        {renderSaveButton()}
+      </div>
+    );
+  }
+
+  // ── Desktop: render all sections ──
+  return (
+    <div className="health-input-panel">
+      {/* Card 1: Units + Basic Info + Vitals */}
+      <div className="section-card">
+        {renderProfile()}
+        {renderVitals()}
+      </div>
+
+      {/* Card 2: Blood Tests */}
+      <div className="section-card">
+        {renderBloodTests()}
+      </div>
+
+      {renderMedications()}
+      {renderScreening()}
+      {renderSaveButton()}
     </div>
   );
 }

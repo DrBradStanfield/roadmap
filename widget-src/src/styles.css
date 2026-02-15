@@ -71,6 +71,78 @@
   }
 }
 
+/* Mobile Tab Bar — hidden on desktop, shown on mobile */
+.mobile-tab-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .health-tool {
+    padding: 16px 12px;
+  }
+
+  .health-tool-header {
+    margin-bottom: 16px;
+  }
+
+  .mobile-tab-bar {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+    padding: 8px 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #fff;
+    border-bottom: 1px solid var(--color-gray-border);
+    scrollbar-width: none;
+  }
+
+  .mobile-tab-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-tab {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-gray-medium);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .mobile-tab--active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+  }
+
+  .mobile-tab-content {
+    padding-top: 16px;
+  }
+
+  /* Results panel inside mobile tab: remove sticky + background */
+  .mobile-tab-content .health-tool-right {
+    position: static;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  /* Sticky save button on mobile */
+  .save-longitudinal-btn {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
 .health-tool-left {
   display: flex;
   flex-direction: column;

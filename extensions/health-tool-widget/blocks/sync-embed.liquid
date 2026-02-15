@@ -23,10 +23,18 @@
     var inputs = stored && stored.inputs;
     if (!inputs || Object.keys(inputs).length === 0) return;
 
-    // Check if cloud already has data
+    // Check if cloud already has meaningful health data
+    function hasProfileData(p) {
+      return p && (p.sex != null || p.birthYear != null || p.height != null || p.unitSystem != null);
+    }
     fetch(PROXY).then(function(r) { return r.json(); }).then(function(result) {
-      if (result.success && ((result.data && result.data.length > 0) || result.profile)) {
-        // Cloud has data — clear localStorage and mark done
+      if (result.success && (
+        (result.data && result.data.length > 0) ||
+        hasProfileData(result.profile) ||
+        (result.medications && result.medications.length > 0) ||
+        (result.screenings && result.screenings.length > 0)
+      )) {
+        // Cloud has meaningful data — clear localStorage and mark done
         localStorage.removeItem(STORAGE_KEY);
         sessionStorage.setItem(SYNC_FLAG, '1');
         return;
@@ -58,8 +66,9 @@
       if (inputs.birthMonth !== undefined && inputs.birthMonth !== null && inputs.birthMonth !== '') {
         profile.birthMonth = Number(inputs.birthMonth);
       }
-      if (inputs.unitSystem !== undefined && inputs.unitSystem !== null && inputs.unitSystem !== '') {
-        profile.unitSystem = inputs.unitSystem === 'si' ? 1 : 2;
+      var unitPref = inputs.unitSystem || localStorage.getItem('health_roadmap_unit_system');
+      if (unitPref) {
+        profile.unitSystem = unitPref === 'si' ? 1 : 2;
       }
       if (inputs.heightCm !== undefined && inputs.heightCm !== null && inputs.heightCm !== '') {
         profile.height = Number(inputs.heightCm);
@@ -78,6 +87,10 @@
           body: JSON.stringify({ sendWelcomeEmail: true })
         }).finally(function() {
           localStorage.removeItem(STORAGE_KEY);
+          // Set auth flag so auto-redirect works on direct navigation to widget pages.
+          // Safe: only reached after successful sync (localStorage had data), never after data deletion
+          // (clearLocalStorage removes STORAGE_KEY, so sync-embed exits early at line 21).
+          localStorage.setItem('health_roadmap_authenticated', '1');
           sessionStorage.setItem(SYNC_FLAG, '1');
         });
       }
@@ -102,11 +115,16 @@
           return;
         }
         var med = medications[i];
-        if (!med.medicationKey || !med.value) { postMedications(i + 1); return; }
+        if (!med.medicationKey || !med.drugName) { postMedications(i + 1); return; }
         fetch(PROXY, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ medication: { medicationKey: med.medicationKey, value: med.value } })
+          body: JSON.stringify({ medication: {
+            medicationKey: med.medicationKey,
+            drugName: med.drugName,
+            doseValue: med.doseValue || null,
+            doseUnit: med.doseUnit || null
+          } })
         }).then(function() { postMedications(i + 1); });
       }
 
