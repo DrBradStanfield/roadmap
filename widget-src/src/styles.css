@@ -144,7 +144,14 @@
   }
 
   .mobile-tab-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     padding-top: 16px;
+  }
+
+  .mobile-tab-content .section-card {
+    margin-bottom: 0;
   }
 
   /* Results panel inside mobile tab: remove sticky + background */
@@ -168,7 +175,6 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 0;
     gap: 12px;
   }
 
@@ -477,6 +483,10 @@
 }
 
 .stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   background: #fff;
   padding: 16px;
   border-radius: 8px;
@@ -489,6 +499,7 @@
   font-size: 12px;
   color: #666;
   margin-bottom: 4px;
+  white-space: nowrap;
 }
 
 .stat-value {
