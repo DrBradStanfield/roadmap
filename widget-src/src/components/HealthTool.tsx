@@ -87,6 +87,8 @@ export function HealthTool() {
   const isSavingLongitudinalRef = useRef(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [reminderPreferences, setReminderPreferences] = useState<ApiReminderPreference[]>([]);
+  const medSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Unit system: load saved preference or auto-detect
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
@@ -516,7 +518,7 @@ export function HealthTool() {
     setInputs(newInputs);
   };
 
-  const handleMedicationChange = useCallback(async (
+  const handleMedicationChange = useCallback((
     medicationKey: string,
     drugName: string,
     doseValue: number | null,
@@ -541,13 +543,19 @@ export function HealthTool() {
       return next;
     });
 
-    // Save to cloud if logged in
+    // Debounce cloud save per medication_key to prevent race conditions
+    // when rapid dropdown changes fire multiple concurrent API calls
     if (authState.isLoggedIn) {
-      await saveMedication(medicationKey, drugName, doseValue, doseUnit);
+      const existing = medSaveTimers.current.get(medicationKey);
+      if (existing) clearTimeout(existing);
+      medSaveTimers.current.set(medicationKey, setTimeout(() => {
+        medSaveTimers.current.delete(medicationKey);
+        saveMedication(medicationKey, drugName, doseValue, doseUnit);
+      }, 300));
     }
   }, [authState.isLoggedIn, inputs, previousMeasurements, screenings, reminderPreferences]);
 
-  const handleScreeningChange = useCallback(async (screeningKey: string, value: string) => {
+  const handleScreeningChange = useCallback((screeningKey: string, value: string) => {
     setScreenings(prev => {
       const idx = prev.findIndex(s => s.screeningKey === screeningKey);
       const updated: ApiScreening = {
@@ -564,7 +572,12 @@ export function HealthTool() {
     });
 
     if (authState.isLoggedIn) {
-      await saveScreening(screeningKey, value);
+      const existing = screeningSaveTimers.current.get(screeningKey);
+      if (existing) clearTimeout(existing);
+      screeningSaveTimers.current.set(screeningKey, setTimeout(() => {
+        screeningSaveTimers.current.delete(screeningKey);
+        saveScreening(screeningKey, value);
+      }, 300));
     }
   }, [authState.isLoggedIn, inputs, previousMeasurements, medications, reminderPreferences]);
 
