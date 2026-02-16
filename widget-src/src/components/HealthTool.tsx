@@ -85,6 +85,7 @@ export function HealthTool() {
   const [hasApiResponse, setHasApiResponse] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
+  const isSavingLongitudinalRef = useRef(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [reminderPreferences, setReminderPreferences] = useState<ApiReminderPreference[]>([]);
 
@@ -287,62 +288,68 @@ export function HealthTool() {
   // bloodTestDate is an ISO string (e.g., "2026-01-01T00:00:00.000Z") for blood test metrics
   const handleSaveLongitudinal = useCallback(async (bloodTestDate?: string) => {
     if (!authState.isLoggedIn) return;
+    if (isSavingLongitudinalRef.current) return;
+    isSavingLongitudinalRef.current = true;
 
-    const bloodTestMetrics = new Set(BLOOD_TEST_METRICS);
-    const fieldsToSave: Array<{ metricType: string; value: number; recordedAt?: string }> = [];
-    for (const field of LONGITUDINAL_FIELDS) {
-      const value = inputs[field];
-      if (value !== undefined) {
-        const metricType = FIELD_TO_METRIC[field];
-        if (metricType) {
-          // Use bloodTestDate for blood test metrics, undefined (server uses NOW) for body measurements
-          const recordedAt = bloodTestMetrics.has(metricType) ? bloodTestDate : undefined;
-          fieldsToSave.push({ metricType, value: value as number, recordedAt });
-        }
-      }
-    }
-
-    if (fieldsToSave.length === 0) return;
-
-    setIsSavingLongitudinal(true);
-    setSaveStatus('saving');
-
-    const results = await Promise.all(
-      fieldsToSave.map(f => addMeasurement(f.metricType, f.value, f.recordedAt)),
-    );
-    const allSaved = results.every(r => r !== null);
-
-    if (allSaved) {
-      // Update previousMeasurements with the new values
-      const newMeasurements = [...previousMeasurements];
-      for (const saved of results) {
-        if (saved) {
-          const idx = newMeasurements.findIndex(m => m.metricType === saved.metricType);
-          if (idx >= 0) {
-            newMeasurements[idx] = saved;
-          } else {
-            newMeasurements.push(saved);
+    try {
+      const bloodTestMetrics = new Set(BLOOD_TEST_METRICS);
+      const fieldsToSave: Array<{ metricType: string; value: number; recordedAt?: string }> = [];
+      for (const field of LONGITUDINAL_FIELDS) {
+        const value = inputs[field];
+        if (value !== undefined) {
+          const metricType = FIELD_TO_METRIC[field];
+          if (metricType) {
+            // Use bloodTestDate for blood test metrics, undefined (server uses NOW) for body measurements
+            const recordedAt = bloodTestMetrics.has(metricType) ? bloodTestDate : undefined;
+            fieldsToSave.push({ metricType, value: value as number, recordedAt });
           }
         }
       }
-      setPreviousMeasurements(newMeasurements);
 
-      // Clear longitudinal input fields
-      setInputs(prev => {
-        const next = { ...prev };
-        for (const field of LONGITUDINAL_FIELDS) {
-          delete (next as any)[field];
+      if (fieldsToSave.length === 0) return;
+
+      setIsSavingLongitudinal(true);
+      setSaveStatus('saving');
+
+      const results = await Promise.all(
+        fieldsToSave.map(f => addMeasurement(f.metricType, f.value, f.recordedAt)),
+      );
+      const allSaved = results.every(r => r !== null);
+
+      if (allSaved) {
+        // Update previousMeasurements with the new values
+        const newMeasurements = [...previousMeasurements];
+        for (const saved of results) {
+          if (saved) {
+            const idx = newMeasurements.findIndex(m => m.metricType === saved.metricType);
+            if (idx >= 0) {
+              newMeasurements[idx] = saved;
+            } else {
+              newMeasurements.push(saved);
+            }
+          }
         }
-        return next;
-      });
+        setPreviousMeasurements(newMeasurements);
 
-      setSaveStatus('saved');
-    } else {
-      setSaveStatus('error');
+        // Clear longitudinal input fields
+        setInputs(prev => {
+          const next = { ...prev };
+          for (const field of LONGITUDINAL_FIELDS) {
+            delete (next as any)[field];
+          }
+          return next;
+        });
+
+        setSaveStatus('saved');
+      } else {
+        setSaveStatus('error');
+      }
+
+      setIsSavingLongitudinal(false);
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } finally {
+      isSavingLongitudinalRef.current = false;
     }
-
-    setIsSavingLongitudinal(false);
-    setTimeout(() => setSaveStatus('idle'), 2000);
   }, [authState.isLoggedIn, inputs, previousMeasurements]);
 
   // Calculate results using effective inputs (form + fallback to previous)
