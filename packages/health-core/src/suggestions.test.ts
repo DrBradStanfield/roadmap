@@ -381,6 +381,91 @@ describe('generateSuggestions', () => {
       const bpSuggestion = suggestions.find(s => s.id === 'bp-stage2');
       expect(bpSuggestion).toBeDefined();
     });
+
+    it('stage 1 mentions sodium reduction', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
+      expect(bpSuggestion?.description).toContain('reduce sodium intake (<2,300mg/day)');
+    });
+
+    it('stage 2 mentions sodium reduction', () => {
+      const { inputs, results } = createTestData({ systolicBp: 145, diastolicBp: 95 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage2');
+      expect(bpSuggestion?.description).toContain('reduce sodium intake (<2,300mg/day)');
+    });
+
+    it('stage 1 mentions weight loss and GLP-1 when BMI >= 25', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 27 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
+      expect(bpSuggestion?.description).toContain('Weight loss is one of the most effective ways to lower blood pressure');
+      expect(bpSuggestion?.description).toContain('GLP-1 medications');
+    });
+
+    it('stage 1 does not mention weight loss when BMI < 25', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 23 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
+      expect(bpSuggestion?.description).not.toContain('Weight loss');
+    });
+
+    it('stage 1 does not mention weight loss when BMI is undefined', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
+      expect(bpSuggestion?.description).not.toContain('Weight loss');
+    });
+
+    it('stage 1 mentions potassium when eGFR >= 45', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { eGFR: 60 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
+      expect(bpSuggestion?.description).toContain('potassium-rich foods');
+    });
+
+    it('stage 1 does not mention potassium when eGFR is undefined', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
+      expect(bpSuggestion?.description).not.toContain('potassium');
+    });
+
+    it('stage 1 does not mention potassium when eGFR < 45', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { eGFR: 30 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
+      expect(bpSuggestion?.description).not.toContain('potassium');
+    });
+
+    it('stage 2 mentions weight loss and potassium when both apply', () => {
+      const { inputs, results } = createTestData({ systolicBp: 145, diastolicBp: 95 }, { bmi: 30, eGFR: 80 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage2');
+      expect(bpSuggestion?.description).toContain('Weight loss');
+      expect(bpSuggestion?.description).toContain('potassium-rich foods');
+      expect(bpSuggestion?.description).toContain('Medication is typically recommended');
+    });
+
+    it('crisis does not include lifestyle advice', () => {
+      const { inputs, results } = createTestData({ systolicBp: 185, diastolicBp: 125 }, { bmi: 30, eGFR: 80 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-crisis');
+      expect(bpSuggestion?.description).not.toContain('sodium');
+      expect(bpSuggestion?.description).not.toContain('Weight loss');
+      expect(bpSuggestion?.description).not.toContain('potassium');
+    });
   });
 
   describe('ApoB suggestions', () => {
