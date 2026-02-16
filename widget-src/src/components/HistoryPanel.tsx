@@ -142,7 +142,7 @@ function MetricChart({
                   year: 'numeric',
                 });
               },
-              label: (item) => `${item.parsed.y} ${unit}`,
+              label: (item) => `${+Number(item.parsed.y).toPrecision(10)} ${unit}`,
             },
           },
         },
@@ -172,7 +172,7 @@ function MetricChart({
             grid: { color: '#f0f0f0' },
             ticks: {
               font: { size: 11 },
-              callback: (value) => `${value}`,
+              callback: (value) => `${+Number(value).toPrecision(10)}`,
             },
             title: {
               display: true,
