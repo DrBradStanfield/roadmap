@@ -26,8 +26,9 @@ export function useHeaderScrollLock(
         const visible = entry.isIntersecting;
         setHeaderVisible(visible);
         if (container) {
-          const height = visible ? header.offsetHeight + parseFloat(getComputedStyle(header).marginBottom) : 0;
-          container.style.setProperty('--header-height', `${height}px`);
+          const grid = container.querySelector('.health-tool-content');
+          const gridTop = visible && grid ? Math.max(0, grid.getBoundingClientRect().top) : 0;
+          container.style.setProperty('--header-height', `${gridTop}px`);
         }
       },
       { threshold: 0 },
