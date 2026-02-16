@@ -480,6 +480,14 @@ INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
 VALUES ('reminder_cron', NULL, NULL, NULL)
 ON CONFLICT DO NOTHING;
 
+-- ===== Enable RLS on infrastructure tables =====
+-- These tables have no user data and no policies (= zero rows via API).
+-- cron_lock: accessed via service role (bypasses RLS)
+-- shopify_sessions*: accessed via direct PostgreSQL connection (bypasses RLS)
+ALTER TABLE cron_lock ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS shopify_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS shopify_sessions_migrations ENABLE ROW LEVEL SECURITY;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

@@ -14,7 +14,6 @@
     "start": "remix-serve ./build/server/index.js",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "shopify": "shopify",
-    "graphql-codegen": "graphql-codegen",
     "vite": "vite",
     "test": "npm run test --workspace=@roadmap/health-core",
     "test:watch": "npm run test --workspace=@roadmap/health-core -- --watch"
@@ -48,7 +47,6 @@
   "devDependencies": {
     "@remix-run/eslint-config": "^2.16.1",
     "@remix-run/route-config": "^2.16.1",
-    "@shopify/api-codegen-preset": "^1.1.1",
     "@types/eslint": "^9.6.1",
     "@types/node": "^22.2.0",
     "@types/react": "^18.2.31",
@@ -68,16 +66,10 @@
     "@shopify/plugin-cloudflare"
   ],
   "resolutions": {
-    "@graphql-tools/url-loader": "8.0.16",
-    "@graphql-codegen/client-preset": "4.7.0",
-    "@graphql-codegen/typescript-operations": "4.5.0",
     "minimatch": "9.0.5",
     "vite": "^6.2.2"
   },
   "overrides": {
-    "@graphql-tools/url-loader": "8.0.16",
-    "@graphql-codegen/client-preset": "4.7.0",
-    "@graphql-codegen/typescript-operations": "4.5.0",
     "minimatch": "9.0.5",
     "vite": "^6.2.2"
   },
