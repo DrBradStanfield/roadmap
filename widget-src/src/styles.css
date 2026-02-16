@@ -647,7 +647,7 @@
 
 /* Suggestion highlight for new/changed recommendations */
 .suggestion-highlight {
-  animation: highlight-fade-in 0.5s ease;
+  animation: highlight-fade-in 0.5s ease backwards;
 }
 .suggestion-fade-out {
   animation: highlight-fade-out 0.5s ease forwards !important;
