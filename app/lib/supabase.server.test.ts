@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { toApiMeasurement, toApiProfile, type DbMeasurement, type DbProfile } from './supabase.server';
+import {
+  toApiMeasurement, toApiProfile, toApiMedication, toApiScreening, deriveMedicationStatus,
+  type DbMeasurement, type DbProfile, type DbMedication, type DbScreening,
+} from './supabase.server';
 
 describe('toApiMeasurement', () => {
   it('converts DB row to camelCase API format', () => {
@@ -134,5 +137,153 @@ describe('toApiProfile', () => {
       lastName: null,
       height: null,
     });
+  });
+});
+
+describe('toApiMedication', () => {
+  it('converts DB medication to camelCase API format', () => {
+    const dbMed: DbMedication = {
+      id: 'med-1',
+      user_id: 'user-123',
+      medication_key: 'statin',
+      drug_name: 'atorvastatin',
+      dose_value: 20,
+      dose_unit: 'mg',
+      status: 'active',
+      started_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-06-01T00:00:00Z',
+      created_at: '2025-01-01T00:00:00Z',
+    };
+
+    expect(toApiMedication(dbMed)).toEqual({
+      id: 'med-1',
+      medicationKey: 'statin',
+      drugName: 'atorvastatin',
+      doseValue: 20,
+      doseUnit: 'mg',
+      status: 'active',
+      startedAt: '2025-01-01T00:00:00Z',
+      updatedAt: '2025-06-01T00:00:00Z',
+    });
+  });
+
+  it('excludes user_id from output', () => {
+    const dbMed: DbMedication = {
+      id: 'med-2',
+      user_id: 'user-123',
+      medication_key: 'ezetimibe',
+      drug_name: 'not_yet',
+      dose_value: null,
+      dose_unit: null,
+      status: 'intended',
+      started_at: null,
+      updated_at: '2025-06-01T00:00:00Z',
+      created_at: '2025-06-01T00:00:00Z',
+    };
+
+    const result = toApiMedication(dbMed);
+    expect(result).not.toHaveProperty('user_id');
+    expect(result).not.toHaveProperty('userId');
+  });
+
+  it('handles null dose fields for status-only medications', () => {
+    const dbMed: DbMedication = {
+      id: 'med-3',
+      user_id: 'user-123',
+      medication_key: 'statin',
+      drug_name: 'not_tolerated',
+      dose_value: null,
+      dose_unit: null,
+      status: 'stopped',
+      started_at: null,
+      updated_at: '2025-06-01T00:00:00Z',
+      created_at: '2025-06-01T00:00:00Z',
+    };
+
+    const result = toApiMedication(dbMed);
+    expect(result.doseValue).toBeNull();
+    expect(result.doseUnit).toBeNull();
+    expect(result.startedAt).toBeNull();
+  });
+
+  it('preserves decimal dose values (GLP-1 doses like 2.5mg)', () => {
+    const dbMed: DbMedication = {
+      id: 'med-4',
+      user_id: 'user-123',
+      medication_key: 'glp1',
+      drug_name: 'semaglutide_injection',
+      dose_value: 0.25,
+      dose_unit: 'mg',
+      status: 'active',
+      started_at: null,
+      updated_at: '2025-06-01T00:00:00Z',
+      created_at: '2025-06-01T00:00:00Z',
+    };
+
+    expect(toApiMedication(dbMed).doseValue).toBe(0.25);
+  });
+});
+
+describe('toApiScreening', () => {
+  it('converts DB screening to camelCase API format', () => {
+    const dbScr: DbScreening = {
+      id: 'scr-1',
+      user_id: 'user-123',
+      screening_key: 'colorectal_method',
+      value: 'colonoscopy_10yr',
+      updated_at: '2025-06-01T00:00:00Z',
+      created_at: '2025-01-01T00:00:00Z',
+    };
+
+    expect(toApiScreening(dbScr)).toEqual({
+      id: 'scr-1',
+      screeningKey: 'colorectal_method',
+      value: 'colonoscopy_10yr',
+      updatedAt: '2025-06-01T00:00:00Z',
+    });
+  });
+
+  it('excludes user_id and created_at from output', () => {
+    const dbScr: DbScreening = {
+      id: 'scr-2',
+      user_id: 'user-123',
+      screening_key: 'breast_frequency',
+      value: 'annual',
+      updated_at: '2025-06-01T00:00:00Z',
+      created_at: '2025-01-01T00:00:00Z',
+    };
+
+    const result = toApiScreening(dbScr);
+    expect(result).not.toHaveProperty('user_id');
+    expect(result).not.toHaveProperty('userId');
+    expect(result).not.toHaveProperty('created_at');
+    expect(result).not.toHaveProperty('createdAt');
+  });
+});
+
+describe('deriveMedicationStatus', () => {
+  it('derives not-taken from none', () => {
+    expect(deriveMedicationStatus('none')).toBe('not-taken');
+  });
+
+  it('derives stopped from not_tolerated', () => {
+    expect(deriveMedicationStatus('not_tolerated')).toBe('stopped');
+  });
+
+  it('derives intended from not_yet', () => {
+    expect(deriveMedicationStatus('not_yet')).toBe('intended');
+  });
+
+  it('derives active from actual drug names', () => {
+    expect(deriveMedicationStatus('atorvastatin')).toBe('active');
+    expect(deriveMedicationStatus('rosuvastatin')).toBe('active');
+    expect(deriveMedicationStatus('ezetimibe')).toBe('active');
+    expect(deriveMedicationStatus('tirzepatide')).toBe('active');
+    expect(deriveMedicationStatus('empagliflozin')).toBe('active');
+    expect(deriveMedicationStatus('ir_500')).toBe('active');
+  });
+
+  it('derives active from yes (legacy compat)', () => {
+    expect(deriveMedicationStatus('yes')).toBe('active');
   });
 });

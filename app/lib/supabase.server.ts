@@ -503,7 +503,7 @@ export async function getMedications(
 }
 
 /** Derive FHIR medication status from drug_name value. */
-function deriveMedicationStatus(drugName: string): string {
+export function deriveMedicationStatus(drugName: string): string {
   switch (drugName) {
     case 'none': return 'not-taken';
     case 'not_tolerated': return 'stopped';
