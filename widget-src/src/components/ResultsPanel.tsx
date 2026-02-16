@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
   type UnitSystem,
@@ -70,11 +70,11 @@ const priorityColors = {
   urgent: 'suggestion-urgent',
 };
 
-function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
+function SuggestionCard({ suggestion, highlighted }: { suggestion: Suggestion; highlighted?: boolean }) {
   const isSupplementCard = suggestion.category === 'supplements';
 
   return (
-    <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}`}>
+    <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}${highlighted ? ' suggestion-highlight' : ''}`}>
       {!isSupplementCard && (
         <div className="suggestion-header">
           <span className={`suggestion-badge ${priorityColors[suggestion.priority]}`}>
@@ -97,7 +97,7 @@ function SuggestionCard({ suggestion }: { suggestion: Suggestion }) {
   );
 }
 
-function GroupedSuggestionCard({ suggestions, category }: { suggestions: Suggestion[]; category: string }) {
+function GroupedSuggestionCard({ suggestions, category, highlightedIds }: { suggestions: Suggestion[]; category: string; highlightedIds?: Set<string> }) {
   // Get highest priority for the card badge
   const highestPriority = suggestions.some(s => s.priority === 'urgent') ? 'urgent'
     : suggestions.some(s => s.priority === 'attention') ? 'attention' : 'info';
@@ -112,7 +112,7 @@ function GroupedSuggestionCard({ suggestions, category }: { suggestions: Suggest
       </div>
       <div className="grouped-subsections">
         {suggestions.map((s) => (
-          <div key={s.id} className="suggestion-subsection">
+          <div key={s.id} className={`suggestion-subsection${highlightedIds?.has(s.id) ? ' suggestion-highlight' : ''}`}>
             <h4 className="suggestion-title">{s.title}</h4>
             <p className="suggestion-desc">{s.description}</p>
           </div>
@@ -134,7 +134,7 @@ function groupSuggestionsByCategory(suggestions: Suggestion[]): Map<string, Sugg
 }
 
 // Render suggestions with grouping for specified categories
-function renderGroupedSuggestions(suggestions: Suggestion[]) {
+function renderGroupedSuggestions(suggestions: Suggestion[], highlightedIds?: Set<string>) {
   const grouped = groupSuggestionsByCategory(suggestions);
   const elements: React.ReactNode[] = [];
 
@@ -145,10 +145,10 @@ function renderGroupedSuggestions(suggestions: Suggestion[]) {
 
     // Use grouped card for multi-item grouped categories, individual cards otherwise
     if (GROUPED_CATEGORIES.includes(cat) && items.length > 1) {
-      elements.push(<GroupedSuggestionCard key={cat} suggestions={items} category={cat} />);
+      elements.push(<GroupedSuggestionCard key={cat} suggestions={items} category={cat} highlightedIds={highlightedIds} />);
     } else {
       for (const s of items) {
-        elements.push(<SuggestionCard key={s.id} suggestion={s} />);
+        elements.push(<SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} />);
       }
     }
   }
@@ -157,7 +157,7 @@ function renderGroupedSuggestions(suggestions: Suggestion[]) {
   for (const [cat, items] of grouped.entries()) {
     if (CATEGORY_ORDER.includes(cat)) continue;
     for (const s of items) {
-      elements.push(<SuggestionCard key={s.id} suggestion={s} />);
+      elements.push(<SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds?.has(s.id)} />);
     }
   }
 
@@ -305,6 +305,49 @@ function ReminderSettings({
 }
 
 export function ResultsPanel({ results, isValid, authState, saveStatus, unitSystem, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex }: ResultsPanelProps) {
+  // Track highlighted (new/changed) suggestion IDs
+  const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
+  const baselineRef = useRef<Map<string, { title: string; description: string }>>(new Map());
+  const settledRef = useRef(false);
+  const clearTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Settle after 3s — skip highlighting during initial load + Phase 2 API overwrite
+  useEffect(() => {
+    const timer = setTimeout(() => { settledRef.current = true; }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Detect new/changed suggestions
+  useEffect(() => {
+    const suggestions = results?.suggestions ?? [];
+    const currentMap = new Map(suggestions.map(s => [s.id, { title: s.title, description: s.description }]));
+
+    if (!settledRef.current) {
+      baselineRef.current = currentMap;
+      return;
+    }
+
+    const newHighlights = new Set<string>();
+    for (const s of suggestions) {
+      const prev = baselineRef.current.get(s.id);
+      if (!prev) {
+        newHighlights.add(s.id);
+      } else if (prev.title !== s.title || prev.description !== s.description) {
+        newHighlights.add(s.id);
+      }
+    }
+
+    setHighlightedIds(newHighlights);
+
+    if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
+    clearTimeoutRef.current = setTimeout(() => {
+      baselineRef.current = currentMap;
+      setHighlightedIds(new Set());
+    }, 3000);
+
+    return () => { if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current); };
+  }, [results?.suggestions]);
+
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
@@ -428,21 +471,21 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
         {urgentSuggestions.length > 0 && (
           <div className="suggestions-group">
             <h4 className="suggestions-group-title urgent">Requires Attention</h4>
-            {renderGroupedSuggestions(urgentSuggestions)}
+            {renderGroupedSuggestions(urgentSuggestions, highlightedIds)}
           </div>
         )}
 
         {attentionSuggestions.length > 0 && (
           <div className="suggestions-group">
             <h4 className="suggestions-group-title attention">Next Steps</h4>
-            {renderGroupedSuggestions(attentionSuggestions)}
+            {renderGroupedSuggestions(attentionSuggestions, highlightedIds)}
           </div>
         )}
 
         {infoSuggestions.length > 0 && (
           <div className="suggestions-group">
             <h4 className="suggestions-group-title info">Foundation</h4>
-            {renderGroupedSuggestions(infoSuggestions)}
+            {renderGroupedSuggestions(infoSuggestions, highlightedIds)}
           </div>
         )}
 
@@ -450,7 +493,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
           <div className="suggestions-group supplements-group">
             <h4 className="suggestions-group-title supplements">Supplements</h4>
             {supplementSuggestions.map((s) => (
-              <SuggestionCard key={s.id} suggestion={s} />
+              <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} />
             ))}
           </div>
         )}
