@@ -157,6 +157,8 @@
   /* Results panel inside mobile tab: remove sticky + background */
   .mobile-tab-content .health-tool-right {
     position: static;
+    max-height: none;
+    overflow-y: visible;
     background: transparent;
     padding: 0;
     box-shadow: none;
@@ -203,6 +205,10 @@
 }
 
 .health-tool-right {
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   background: #f8f9fa;
   border-radius: 12px;
   padding: 24px;

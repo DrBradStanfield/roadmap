@@ -345,6 +345,35 @@ export function diffInputsToMeasurements(
 }
 
 /**
+ * Check if an API response contains meaningful user-entered health data.
+ * An auto-created profile row with all NULL fields does NOT count as "has data."
+ *
+ * Used by both sync-embed.liquid (duplicated in plain JS) and HealthTool.tsx
+ * to decide whether localStorage→cloud sync should be skipped.
+ *
+ * Bug history: Before this check, the code used `!!profile` which is always
+ * truthy for auto-created profile rows ({sex: null, birthYear: null, ...}),
+ * causing sync to never run for new users.
+ */
+export function hasCloudData(
+  profile: ApiProfile | null | undefined,
+  measurements: ApiMeasurement[],
+  medications?: ApiMedication[],
+  screenings?: ApiScreening[],
+): boolean {
+  if (measurements.length > 0) return true;
+  if (medications && medications.length > 0) return true;
+  if (screenings && screenings.length > 0) return true;
+  if (profile && (
+    profile.sex != null ||
+    profile.birthYear != null ||
+    profile.height != null ||
+    profile.unitSystem != null
+  )) return true;
+  return false;
+}
+
+/**
  * Determine which profile fields changed and return them as API-ready numeric values.
  * Encodes sex (1=male, 2=female) and unitSystem (1=si, 2=conventional).
  * Height is stored directly in cm.

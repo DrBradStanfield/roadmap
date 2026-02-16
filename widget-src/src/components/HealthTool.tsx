@@ -133,7 +133,7 @@ export function HealthTool() {
         const result = await loadLatestMeasurements();
         setHasApiResponse(true);
 
-        if (result && (Object.keys(result.inputs).length > 0 || result.previousMeasurements.length > 0)) {
+        if (result && (Object.keys(result.inputs).length > 0 || result.previousMeasurements.length > 0 || result.medications.length > 0 || result.screenings.length > 0)) {
           // User has cloud data — set flag so auto-redirect works on direct navigation
           setAuthenticatedFlag();
           // Apply saved unit preference from cloud

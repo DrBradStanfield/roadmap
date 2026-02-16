@@ -6,9 +6,12 @@ import {
   measurementsToInputs,
   diffInputsToMeasurements,
   diffProfileFields,
+  hasCloudData,
   medicationsToInputs,
   type ApiMeasurement,
   type ApiMedication,
+  type ApiProfile,
+  type ApiScreening,
 } from './mappings';
 
 describe('FIELD_TO_METRIC / METRIC_TO_FIELD', () => {
@@ -313,5 +316,85 @@ describe('medicationsToInputs', () => {
     expect(inputs.glp1).toEqual({ drug: 'tirzepatide', dose: 2.5 });
     expect(inputs.sglt2i).toEqual({ drug: 'dapagliflozin', dose: 10 });
     expect(inputs.metformin).toBe('ir_500');
+  });
+});
+
+describe('hasCloudData', () => {
+  const nullProfile: ApiProfile = {
+    sex: null, birthYear: null, birthMonth: null,
+    unitSystem: null, firstName: null, lastName: null, height: null,
+  };
+
+  // --- Bug 1 regression test ---
+  // Before fix: code checked `!!profile` which is always truthy for auto-created
+  // profile rows with all NULL fields, so sync never ran for new users.
+  it('returns false for auto-created profile with all null fields (Bug 1)', () => {
+    expect(hasCloudData(nullProfile, [], [], [])).toBe(false);
+  });
+
+  it('returns false when profile is null', () => {
+    expect(hasCloudData(null, [], [], [])).toBe(false);
+  });
+
+  it('returns false when profile is undefined', () => {
+    expect(hasCloudData(undefined, [], [], [])).toBe(false);
+  });
+
+  it('returns false with empty arrays and no profile', () => {
+    expect(hasCloudData(null, [])).toBe(false);
+  });
+
+  // Profile with actual data
+  it('returns true when profile has sex', () => {
+    expect(hasCloudData({ ...nullProfile, sex: 1 }, [], [], [])).toBe(true);
+  });
+
+  it('returns true when profile has birthYear', () => {
+    expect(hasCloudData({ ...nullProfile, birthYear: 1990 }, [], [], [])).toBe(true);
+  });
+
+  it('returns true when profile has height', () => {
+    expect(hasCloudData({ ...nullProfile, height: 175 }, [], [], [])).toBe(true);
+  });
+
+  it('returns true when profile has unitSystem', () => {
+    expect(hasCloudData({ ...nullProfile, unitSystem: 1 }, [], [], [])).toBe(true);
+  });
+
+  // firstName/lastName alone should NOT count (auto-synced from Shopify, not user health data)
+  it('returns false when profile only has firstName/lastName', () => {
+    expect(hasCloudData({ ...nullProfile, firstName: 'John', lastName: 'Doe' }, [], [], [])).toBe(false);
+  });
+
+  // Measurements
+  it('returns true when measurements exist', () => {
+    const measurements: ApiMeasurement[] = [
+      { id: '1', metricType: 'weight', value: 70, recordedAt: '', createdAt: '' },
+    ];
+    expect(hasCloudData(nullProfile, measurements, [], [])).toBe(true);
+  });
+
+  // Medications
+  it('returns true when medications exist', () => {
+    const medications: ApiMedication[] = [
+      { id: '1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', updatedAt: '' },
+    ];
+    expect(hasCloudData(nullProfile, [], medications, [])).toBe(true);
+  });
+
+  // Screenings
+  it('returns true when screenings exist', () => {
+    const screenings: ApiScreening[] = [
+      { id: '1', screeningKey: 'colorectal_method', value: 'colonoscopy_10yr', updatedAt: '' },
+    ];
+    expect(hasCloudData(nullProfile, [], [], screenings)).toBe(true);
+  });
+
+  // Combined — any single source of data is sufficient
+  it('returns true when only medications exist (profile empty, no measurements)', () => {
+    const medications: ApiMedication[] = [
+      { id: '1', medicationKey: 'ezetimibe', drugName: 'not_yet', doseValue: null, doseUnit: null, updatedAt: '' },
+    ];
+    expect(hasCloudData(nullProfile, [], medications, [])).toBe(true);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { convertValidationErrorsToUnits } from './validation';
+import { convertValidationErrorsToUnits, medicationSchema, screeningSchema } from './validation';
 
 describe('convertValidationErrorsToUnits', () => {
   describe('SI unit system (no conversion)', () => {
@@ -114,5 +114,108 @@ describe('convertValidationErrorsToUnits', () => {
       const result = convertValidationErrorsToUnits(errors, 'conventional');
       expect(result.sex).toBe('Please select male or female');
     });
+  });
+});
+
+describe('medicationSchema', () => {
+  // --- Bug 3 regression test ---
+  // Before fix: sync-embed.liquid sent { medicationKey, value } instead of
+  // { medicationKey, drugName }. The schema should reject the old format.
+  it('rejects old sync-embed format with value instead of drugName (Bug 3)', () => {
+    const result = medicationSchema.safeParse({
+      medicationKey: 'statin',
+      value: 'atorvastatin', // Bug 3: old format used 'value' not 'drugName'
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts correct FHIR format with drugName', () => {
+    const result = medicationSchema.safeParse({
+      medicationKey: 'statin',
+      drugName: 'atorvastatin',
+      doseValue: 20,
+      doseUnit: 'mg',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts medication status values (none, not_tolerated, not_yet)', () => {
+    for (const status of ['none', 'not_tolerated', 'not_yet']) {
+      const result = medicationSchema.safeParse({
+        medicationKey: 'statin',
+        drugName: status,
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  it('rejects empty drugName', () => {
+    const result = medicationSchema.safeParse({
+      medicationKey: 'statin',
+      drugName: '',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing drugName entirely', () => {
+    const result = medicationSchema.safeParse({
+      medicationKey: 'statin',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects unknown medication keys', () => {
+    const result = medicationSchema.safeParse({
+      medicationKey: 'aspirin',
+      drugName: 'aspirin',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts all valid medication keys', () => {
+    const validKeys = ['statin', 'ezetimibe', 'statin_escalation', 'pcsk9i', 'glp1', 'glp1_escalation', 'sglt2i', 'metformin'];
+    for (const key of validKeys) {
+      const result = medicationSchema.safeParse({
+        medicationKey: key,
+        drugName: 'test_drug',
+      });
+      expect(result.success).toBe(true);
+    }
+  });
+
+  it('accepts nullable doseValue and doseUnit', () => {
+    const result = medicationSchema.safeParse({
+      medicationKey: 'ezetimibe',
+      drugName: 'not_yet',
+      doseValue: null,
+      doseUnit: null,
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('screeningSchema', () => {
+  it('accepts valid screening data', () => {
+    const result = screeningSchema.safeParse({
+      screeningKey: 'colorectal_method',
+      value: 'colonoscopy_10yr',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects empty value', () => {
+    const result = screeningSchema.safeParse({
+      screeningKey: 'colorectal_method',
+      value: '',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects unknown screening keys', () => {
+    const result = screeningSchema.safeParse({
+      screeningKey: 'unknown_screening',
+      value: 'some_value',
+    });
+    expect(result.success).toBe(false);
   });
 });

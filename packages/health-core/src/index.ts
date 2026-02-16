@@ -108,6 +108,7 @@ export {
   measurementsToInputs,
   diffInputsToMeasurements,
   diffProfileFields,
+  hasCloudData,
   type ApiMeasurement,
   type ApiProfile,
   type ApiMedication,
