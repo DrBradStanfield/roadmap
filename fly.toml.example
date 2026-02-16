@@ -13,14 +13,7 @@ primary_region = 'iad'
   PORT = '3000'
 
 [processes]
-  app = 'node ./dbsetup.js npm run docker-start'
-
-[[mounts]]
-  source = 'data'
-  destination = '/data'
-  auto_extend_size_threshold = 80
-  auto_extend_size_increment = '1GB'
-  auto_extend_size_limit = '10GB'
+  app = 'npm run start'
 
 [http_service]
   internal_port = 3000
@@ -29,6 +22,13 @@ primary_region = 'iad'
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    path = "/healthz"
+    timeout = "5s"
 
 [[vm]]
   memory = '1gb'

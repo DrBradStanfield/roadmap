@@ -284,7 +284,7 @@ Backend on **Fly.io** (USA region, `fly.toml`, Dockerfile Node 20 Alpine). Exten
 - **NEVER DROP TABLE on Supabase** — PostgREST caches OIDs; use `ALTER TABLE ADD COLUMN IF NOT EXISTS`. Fix: restart Supabase project.
 - **In-memory user cache**: After deleting profiles/auth users, restart Fly.io machine to clear cache.
 - `automatically_update_urls_on_dev` is `false` to protect production URLs.
-- **Fly.io startup**: `npm run docker-start` → `npm run start` → `remix-serve ./build/server/index.js`. No persistent volume, no SQLite, no litestream.
+- **Fly.io startup**: `npm run start` → `remix-serve ./build/server/index.js`. Stateless — no persistent volume required.
 
 ## Testing
 

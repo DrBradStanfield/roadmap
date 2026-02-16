@@ -12,7 +12,6 @@
     "config:use": "shopify app config use",
     "env": "shopify app env",
     "start": "remix-serve ./build/server/index.js",
-    "docker-start": "npm run start",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "shopify": "shopify",
     "graphql-codegen": "graphql-codegen",

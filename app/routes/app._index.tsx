@@ -250,11 +250,11 @@ export default function Index() {
                         Database
                       </Text>
                       <Link
-                        url="https://www.prisma.io/"
+                        url="https://supabase.com/"
                         target="_blank"
                         removeUnderline
                       >
-                        Prisma
+                        Supabase
                       </Link>
                     </InlineStack>
                     <InlineStack align="space-between">

@@ -237,17 +237,15 @@ fly deploy               # Deploy backend to Fly.io
 
 If measurements return 500 errors after deployment, check the Fly.io logs (`fly logs --no-tail`) for these common issues:
 
-**`admin=false` / email is null**: The Shopify offline access token is missing. This happens when the SQLite session database is on ephemeral storage instead of the persistent volume. The `dbsetup.js` script creates a symlink from `prisma/dev.sqlite` → `/data/dev.sqlite` so Prisma writes to the persistent volume. If the session is lost, uninstall and reinstall the app on the Shopify store to get a new access token.
+**`admin=false` / email is null**: The Shopify offline access token is missing from the PostgreSQL session table. Re-authenticate by visiting the app in Shopify admin, or uninstall and reinstall the app.
 
 **"A user with this email address has already been registered"**: The Supabase Auth user exists but the `profiles` row is missing or doesn't match the `shopify_customer_id`. The `getOrCreateSupabaseUser()` function handles this by looking up the existing auth user by email and re-creating the profile row.
 
 **"violates foreign key constraint health_measurements_user_id_fkey"**: The `user_id` doesn't exist in the `profiles` table. This is a symptom of the above issue — the profile wasn't created properly.
 
-**"SQLite database error" on startup (crash loop)**: The `docker-start` script must NOT run `prisma migrate deploy` because litestream already has a lock on the SQLite file. The `dbsetup.js` script handles migration before litestream starts. `docker-start` should only run `prisma generate && npm run start`.
-
 ### After redeploying to Fly.io
 
-Every `fly deploy` rebuilds the Docker image with a fresh filesystem. The Shopify session (offline access token) is preserved on the persistent volume at `/data/dev.sqlite` via the symlink created by `dbsetup.js`. If the symlink path or volume mount changes, the session will be lost and you'll need to reinstall the app.
+Shopify sessions are stored in Supabase PostgreSQL, so deploys don't affect session persistence. The app runs stateless on Fly.io with no persistent volume.
 
 ## Disclaimer
 

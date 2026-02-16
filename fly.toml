@@ -13,7 +13,7 @@ primary_region = 'iad'
   PORT = '3000'
 
 [processes]
-  app = 'npm run docker-start'
+  app = 'npm run start'
 
 [http_service]
   internal_port = 3000
