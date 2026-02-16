@@ -214,6 +214,11 @@
   top: 24px;
   max-height: calc(100vh - 48px);
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.health-tool-left::-webkit-scrollbar {
+  display: none;
 }
 
 .health-tool-right {
@@ -221,10 +226,15 @@
   top: 24px;
   max-height: calc(100vh - 48px);
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   background: #f8f9fa;
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.health-tool-right::-webkit-scrollbar {
+  display: none;
 }
 
 /* Input Panel */
