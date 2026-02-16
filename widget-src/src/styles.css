@@ -211,8 +211,8 @@
   flex-direction: column;
   gap: 16px;
   position: sticky;
-  top: 24px;
-  max-height: calc(100vh - 48px);
+  top: 0;
+  max-height: 100vh;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -223,8 +223,8 @@
 
 .health-tool-right {
   position: sticky;
-  top: 24px;
-  max-height: calc(100vh - 48px);
+  top: 0;
+  max-height: 100vh;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;

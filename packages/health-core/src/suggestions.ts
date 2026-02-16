@@ -901,7 +901,7 @@ export function generateSuggestions(
       priority: 'info',
       title: 'MicroVitamin+',
       description: 'Daily all-in-one to support mental function, skin elasticity, exercise performance, and gut health.',
-      link: 'https://drstanfield.com/pages/my-supplements',
+      link: 'https://drstanfield.com/products/microvitamin-plus',
     },
     {
       id: 'supplement-omega3',
