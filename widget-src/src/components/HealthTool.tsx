@@ -27,7 +27,6 @@ import {
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
 import { useIsMobile } from '../lib/useIsMobile';
-import { useHeaderScrollLock } from '../lib/useHeaderScrollLock';
 import { MobileTabBar, MobileTabNav, type TabId, type Tab } from './MobileTabBar';
 import {
   saveToLocalStorage,
@@ -396,9 +395,6 @@ export function HealthTool() {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<TabId>('profile');
 
-  // Desktop: lock panel overflow until header scrolls out of view
-  const headerRef = useRef<HTMLDivElement>(null);
-  const headerVisible = useHeaderScrollLock(headerRef, isMobile);
 
   // Compute which tabs are visible (medications + screening are conditional)
   const tabs: Tab[] = useMemo(() => {
@@ -608,7 +604,7 @@ export function HealthTool() {
 
   return (
     <div className="health-tool">
-      <div className="health-tool-header" ref={headerRef}>
+      <div className="health-tool-header">
         <h2>Health Roadmap</h2>
         <p>
           Enter your health information below to receive personalized
@@ -639,7 +635,7 @@ export function HealthTool() {
           </div>
         </>
       ) : (
-        <div className={`health-tool-content${headerVisible ? ' header-visible' : ''}`}>
+        <div className="health-tool-content">
           <div className="health-tool-left">
             <InputPanel {...inputPanelProps} />
           </div>

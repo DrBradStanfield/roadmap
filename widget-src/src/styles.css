@@ -65,26 +65,9 @@
   align-items: start;
 }
 
-/* Lock panel overflow while header is visible so page scrolls first */
-.header-visible .health-tool-left,
-.header-visible .health-tool-right {
-  overflow-y: hidden;
-  max-height: calc(100vh - var(--header-height, 0px));
-}
-
 @media (max-width: 768px) {
   .health-tool-content {
     grid-template-columns: 1fr;
-  }
-  .health-tool-left {
-    position: static;
-    max-height: none;
-    overflow-y: visible;
-  }
-  .health-tool-right {
-    position: static;
-    max-height: none;
-    overflow-y: visible;
   }
 }
 
@@ -217,31 +200,13 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  position: sticky;
-  top: 0;
-  max-height: 100vh;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.health-tool-left::-webkit-scrollbar {
-  display: none;
 }
 
 .health-tool-right {
-  position: sticky;
-  top: 0;
-  max-height: 100vh;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
   background: #f8f9fa;
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-.health-tool-right::-webkit-scrollbar {
-  display: none;
 }
 
 /* Input Panel */
