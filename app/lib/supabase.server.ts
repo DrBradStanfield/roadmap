@@ -920,31 +920,54 @@ export async function getMedicationsAdmin(userId: string): Promise<DbMedication[
   return (data ?? []) as DbMedication[];
 }
 
-/** Get latest measurement date per metric for a user. Uses admin client. */
+/** Get latest measurement date per metric for a user. Uses admin client.
+ *  Uses the get_latest_measurement_dates RPC (DISTINCT ON) for efficiency. */
 export async function getLatestMeasurementDatesAdmin(
   userId: string,
 ): Promise<Record<string, string>> {
   if (!supabaseAdmin) return {};
 
   const { data, error } = await supabaseAdmin
-    .from('health_measurements')
-    .select('metric_type, recorded_at')
-    .eq('user_id', userId)
-    .order('recorded_at', { ascending: false });
+    .rpc('get_latest_measurement_dates', { target_user_id: userId });
 
   if (error) {
     console.error('Error fetching measurement dates (admin):', error);
     return {};
   }
 
-  // Take only the latest per metric
   const dates: Record<string, string> = {};
   for (const row of data ?? []) {
-    if (!dates[row.metric_type]) {
-      dates[row.metric_type] = row.recorded_at;
-    }
+    dates[row.metric_type] = row.recorded_at;
   }
   return dates;
+}
+
+/** Attempt to acquire the cron lock for today. Returns true if this machine
+ *  should run the cron. Uses an atomic UPDATE with WHERE clause to prevent
+ *  race conditions between machines. */
+export async function tryAcquireCronLock(
+  machineId: string,
+  today: string,
+): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+
+  const { data, error } = await supabaseAdmin
+    .from('cron_lock')
+    .update({
+      locked_by: machineId,
+      locked_at: new Date().toISOString(),
+      lock_date: today,
+    })
+    .eq('lock_name', 'reminder_cron')
+    .neq('lock_date', today)
+    .select();
+
+  if (error) {
+    console.error('Error acquiring cron lock:', error);
+    return false;
+  }
+
+  return (data?.length ?? 0) > 0;
 }
 
 // ---------------------------------------------------------------------------

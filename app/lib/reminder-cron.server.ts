@@ -29,6 +29,7 @@ import {
   isGroupOnCooldown,
   logReminderSent,
   getOrCreateUnsubscribeToken,
+  tryAcquireCronLock,
   type DbProfile,
 } from './supabase.server';
 
@@ -40,9 +41,11 @@ const CRON_INTERVAL_MS = 60 * 60 * 1000; // Check every hour
 const TARGET_HOUR_UTC = 8; // Run at 8:00 UTC
 const BATCH_SIZE = 50;
 const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL || 'https://drstanfield.com';
+const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 
-// Track last run to avoid double-processing
+// Track last run to avoid double-processing (fast local check before distributed lock)
 let lastRunDate: string | null = null;
+let cronIntervalId: ReturnType<typeof setInterval> | null = null;
 
 // ---------------------------------------------------------------------------
 // Cron job startup
@@ -59,21 +62,29 @@ export function startReminderCron(): void {
     return;
   }
 
-  console.log(`Reminder cron started (will run at ${TARGET_HOUR_UTC}:00 UTC daily)`);
+  console.log(`Reminder cron started (will run at ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_ID})`);
 
-  setInterval(async () => {
+  cronIntervalId = setInterval(async () => {
     const now = new Date();
 
     // Only run at the target hour
     if (now.getUTCHours() !== TARGET_HOUR_UTC) return;
 
-    // Only run once per day
+    // Fast local check — skip if already ran today on this machine
     const todayStr = now.toISOString().slice(0, 10);
     if (lastRunDate === todayStr) return;
+
+    // Distributed lock — only one machine runs per day across all Fly.io instances
+    const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr);
+    if (!acquired) {
+      lastRunDate = todayStr; // Don't keep trying locally either
+      return;
+    }
+
     lastRunDate = todayStr;
 
     try {
-      console.log('Reminder cron: starting daily processing');
+      console.log(`Reminder cron: starting daily processing (machine: ${MACHINE_ID})`);
       const count = await processReminders(now);
       console.log(`Reminder cron: completed, sent ${count} reminder emails`);
     } catch (error) {
@@ -81,6 +92,15 @@ export function startReminderCron(): void {
       Sentry.captureException(error, { tags: { feature: 'reminder_cron' } });
     }
   }, CRON_INTERVAL_MS);
+}
+
+/** Stop the cron job interval. Called during graceful shutdown. */
+export function stopReminderCron(): void {
+  if (cronIntervalId) {
+    clearInterval(cronIntervalId);
+    cronIntervalId = null;
+    console.log('Reminder cron stopped');
+  }
 }
 
 // ---------------------------------------------------------------------------

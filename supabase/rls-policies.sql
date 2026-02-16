@@ -451,6 +451,35 @@ CREATE POLICY "Users can read own reminder logs"
 
 GRANT SELECT ON reminder_log TO authenticated;
 
+-- ===== Admin RPC: latest measurement date per metric =====
+-- Used by the reminder cron job (service role). Does NOT use auth.uid().
+-- Uses the existing idx_measurements_user_type_date index.
+DROP FUNCTION IF EXISTS get_latest_measurement_dates(UUID);
+CREATE OR REPLACE FUNCTION get_latest_measurement_dates(target_user_id UUID)
+RETURNS TABLE (metric_type TEXT, recorded_at TIMESTAMPTZ) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT DISTINCT ON (m.metric_type) m.metric_type, m.recorded_at
+  FROM health_measurements m
+  WHERE m.user_id = target_user_id
+  ORDER BY m.metric_type, m.recorded_at DESC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ===== Cron lock table =====
+-- Coordinates the reminder cron job across multiple Fly.io machines.
+-- Atomic UPDATE ... WHERE lock_date != today ensures only one machine runs per day.
+CREATE TABLE IF NOT EXISTS cron_lock (
+  lock_name TEXT PRIMARY KEY,
+  locked_by TEXT,
+  locked_at TIMESTAMPTZ,
+  lock_date TEXT
+);
+
+INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
+VALUES ('reminder_cron', NULL, NULL, NULL)
+ON CONFLICT DO NOTHING;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

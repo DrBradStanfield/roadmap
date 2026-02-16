@@ -8,12 +8,22 @@ import {
 import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
 import * as Sentry from "@sentry/remix";
-import './lib/reminder-cron.server';
+import { stopReminderCron } from './lib/reminder-cron.server';
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 0.2,
   enabled: !!process.env.SENTRY_DSN,
+});
+
+// Graceful shutdown: stop the cron job and allow in-flight requests to drain
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  stopReminderCron();
+  setTimeout(() => {
+    console.log('Graceful shutdown complete');
+    process.exit(0);
+  }, 5_000);
 });
 
 export const streamTimeout = 5000;

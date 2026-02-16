@@ -7,6 +7,14 @@ import { getOrCreateSupabaseUser, deleteAllUserData } from '../lib/supabase.serv
 const DELETE_RATE_LIMIT_WINDOW_MS = 5 * 60_000;
 const deleteRateLimitMap = new Map<string, number>(); // customerId -> resetAt timestamp
 
+// Clean up stale entries every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, resetAt] of deleteRateLimitMap) {
+    if (now > resetAt) deleteRateLimitMap.delete(key);
+  }
+}, 10 * 60_000);
+
 function isDeleteRateLimited(customerId: string): boolean {
   const resetAt = deleteRateLimitMap.get(customerId);
   return !!resetAt && Date.now() <= resetAt;

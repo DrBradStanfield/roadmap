@@ -18,3 +18,5 @@ jobs:
       - run: npm ci
       - run: npm audit --production --audit-level=high
       - run: npm test
+      - run: npm run build
+      - run: npm run build:widget
