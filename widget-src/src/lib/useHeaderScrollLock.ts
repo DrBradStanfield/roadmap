@@ -19,8 +19,17 @@ export function useHeaderScrollLock(
     const header = headerRef.current;
     if (!header) return;
 
+    const container = header.parentElement;
+
     const observer = new IntersectionObserver(
-      ([entry]) => setHeaderVisible(entry.isIntersecting),
+      ([entry]) => {
+        const visible = entry.isIntersecting;
+        setHeaderVisible(visible);
+        if (container) {
+          const height = visible ? header.offsetHeight + parseFloat(getComputedStyle(header).marginBottom) : 0;
+          container.style.setProperty('--header-height', `${height}px`);
+        }
+      },
       { threshold: 0 },
     );
 

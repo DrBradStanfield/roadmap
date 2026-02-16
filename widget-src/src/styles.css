@@ -69,6 +69,7 @@
 .header-visible .health-tool-left,
 .header-visible .health-tool-right {
   overflow-y: hidden;
+  max-height: calc(100vh - var(--header-height, 0px));
 }
 
 @media (max-width: 768px) {
@@ -614,7 +615,6 @@
   margin-bottom: 12px;
   border-left: 4px solid;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: background-color 0.5s ease;
 }
 
 .suggestion-card:last-child {
@@ -646,8 +646,17 @@
 }
 
 /* Suggestion highlight for new/changed recommendations */
-.suggestion-subsection {
-  transition: background-color 0.5s ease;
+.suggestion-highlight {
+  animation: highlight-fade-in 0.5s ease;
+}
+.suggestion-fade-out {
+  animation: highlight-fade-out 0.5s ease forwards !important;
+}
+@keyframes highlight-fade-in {
+  from { background-color: #fff; }
+}
+@keyframes highlight-fade-out {
+  to { background-color: #fff; }
 }
 .suggestion-urgent.suggestion-highlight,
 .suggestion-urgent .suggestion-highlight { background-color: rgba(220, 53, 69, 0.06); }
