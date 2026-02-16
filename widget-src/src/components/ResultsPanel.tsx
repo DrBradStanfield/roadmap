@@ -310,6 +310,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
   const baselineRef = useRef<Map<string, { title: string; description: string }>>(new Map());
   const settledRef = useRef(false);
   const clearTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const rafRef = useRef<number>();
 
   // Settle after 3s — skip highlighting during initial load + Phase 2 API overwrite
   useEffect(() => {
@@ -337,7 +338,12 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
       }
     }
 
-    setHighlightedIds(newHighlights);
+    // Defer highlight application by one frame so the browser paints the
+    // un-highlighted state first, allowing the CSS transition to animate in
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      setHighlightedIds(newHighlights);
+    });
 
     if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
     clearTimeoutRef.current = setTimeout(() => {
@@ -345,7 +351,10 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
       setHighlightedIds(new Set());
     }, 3000);
 
-    return () => { if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current); };
+    return () => {
+      if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, [results?.suggestions]);
 
   if (!isValid || !results) {

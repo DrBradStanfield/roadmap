@@ -65,6 +65,12 @@
   align-items: start;
 }
 
+/* Lock panel overflow while header is visible so page scrolls first */
+.header-visible .health-tool-left,
+.header-visible .health-tool-right {
+  overflow-y: hidden;
+}
+
 @media (max-width: 768px) {
   .health-tool-content {
     grid-template-columns: 1fr;
