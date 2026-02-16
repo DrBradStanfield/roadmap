@@ -231,6 +231,7 @@ Separate bundle (`health-history.js`) with Chart.js line charts per metric. Fetc
 See `.env` for required variables. Key variables:
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` — Supabase (Settings > API)
 - `SUPABASE_JWT_SECRET` — Legacy JWT secret (Settings > JWT Keys) for signing custom JWTs
+- `SESSION_DATABASE_URL` — Direct PostgreSQL connection string for Shopify session storage (Supabase > Settings > Database > Connection string > URI). The `PostgreSQLSessionStorage` adapter auto-creates a `shopify_sessions` table.
 - `SENTRY_DSN` — Backend error reporting (set via `fly secrets set`). Widget DSN hardcoded in `widget-src/src/lib/sentry.ts`.
 
 ## Error Monitoring (Sentry)
@@ -276,14 +277,14 @@ Backend on **Fly.io** (USA region, `fly.toml`, Dockerfile Node 20 Alpine). Exten
 - **Every new feature/behavior change must include unit tests.** Run `npm test` before deploying.
 - **Shopify Dashboard is read-only** — all config via `shopify.app.toml` + `npx shopify app deploy --force`.
 - **NEVER use `shopify app dev`** — creates dev preview that overrides production app. Fix: `npx shopify app dev clean`.
-- **Fly.io startup**: `node ./dbsetup.js npm run docker-start`. `dbsetup.js` symlinks `prisma/dev.sqlite` → `/data/dev.sqlite`, runs migrate, launches litestream. `docker-start` runs `prisma generate && npm run start` (must NOT run migrate again — litestream has the lock).
-- **SQLite session persistence**: Symlink to persistent volume is critical. Without it, Shopify offline access token lost on every deploy (`admin=false`). Fix: uninstall/reinstall app.
+- **Shopify session storage**: Uses `@shopify/shopify-app-session-storage-postgresql` pointing at Supabase via `SESSION_DATABASE_URL`. The adapter auto-creates the `shopify_sessions` table. If session is lost (e.g. DB issue), re-authenticate by visiting the app in Shopify admin.
 - **getOrCreateSupabaseUser resilience**: Handles "already registered" and race condition errors by falling back to email lookup + profile re-creation.
 - **Shopify scopes**: `write_app_proxy` required (else proxy returns 404), `read_customers` for email lookup. After adding scopes: deploy + accept permissions.
 - **Fly.io suspension**: `fly deploy` won't unsuspend. Use `fly machine start <id>`.
 - **NEVER DROP TABLE on Supabase** — PostgREST caches OIDs; use `ALTER TABLE ADD COLUMN IF NOT EXISTS`. Fix: restart Supabase project.
 - **In-memory user cache**: After deleting profiles/auth users, restart Fly.io machine to clear cache.
 - `automatically_update_urls_on_dev` is `false` to protect production URLs.
+- **Fly.io startup**: `npm run docker-start` → `npm run start` → `remix-serve ./build/server/index.js`. No persistent volume, no SQLite, no litestream.
 
 ## Testing
 

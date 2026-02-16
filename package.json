@@ -12,11 +12,9 @@
     "config:use": "shopify app config use",
     "env": "shopify app env",
     "start": "remix-serve ./build/server/index.js",
-    "docker-start": "prisma generate && npm run start",
-    "setup": "prisma generate && prisma migrate deploy",
+    "docker-start": "npm run start",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "shopify": "shopify",
-    "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
     "vite": "vite",
     "test": "npm run test --workspace=@roadmap/health-core",
@@ -27,8 +25,6 @@
     "node": "^20.10 || >=21.0.0"
   },
   "dependencies": {
-    "@flydotio/litestream": "^1.0.1",
-    "@prisma/client": "^6.2.1",
     "@remix-run/dev": "^2.16.1",
     "@remix-run/fs-routes": "^2.16.1",
     "@remix-run/node": "^2.16.1",
@@ -38,13 +34,12 @@
     "@shopify/app-bridge-react": "^4.1.6",
     "@shopify/polaris": "^12.0.0",
     "@shopify/shopify-app-remix": "^3.7.0",
-    "@shopify/shopify-app-session-storage-prisma": "^6.0.0",
+    "@shopify/shopify-app-session-storage-postgresql": "^4.0.20",
     "@supabase/supabase-js": "^2.93.2",
     "@types/jsonwebtoken": "^9.0.10",
     "esbuild": "^0.25.9",
     "isbot": "^5.1.0",
     "jsonwebtoken": "^9.0.3",
-    "prisma": "^6.2.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "resend": "^6.9.2",
@@ -52,7 +47,6 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "@flydotio/dockerfile": "^0.7.10",
     "@remix-run/eslint-config": "^2.16.1",
     "@remix-run/route-config": "^2.16.1",
     "@shopify/api-codegen-preset": "^1.1.1",
@@ -88,8 +82,5 @@
     "minimatch": "9.0.5",
     "vite": "^6.2.2"
   },
-  "author": "bradstanfield",
-  "dockerfile": {
-    "litestream": true
-  }
+  "author": "bradstanfield"
 }

@@ -13,14 +13,7 @@ primary_region = 'iad'
   PORT = '3000'
 
 [processes]
-  app = 'node ./dbsetup.js npm run docker-start'
-
-[[mounts]]
-  source = 'data'
-  destination = '/data'
-  auto_extend_size_threshold = 80
-  auto_extend_size_increment = '1GB'
-  auto_extend_size_limit = '10GB'
+  app = 'npm run docker-start'
 
 [http_service]
   internal_port = 3000

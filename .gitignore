@@ -11,4 +11,3 @@ build/
 .claude/
 shopify.app.toml
 fly.toml
-prisma/*.sqlite

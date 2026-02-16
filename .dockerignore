@@ -13,7 +13,3 @@ build/
 **/*.test.tsx
 **/*.spec.ts
 **/*.spec.tsx
-
-# sqlite3 database
-/dev.sqlite
-prisma/dev.sqlite
