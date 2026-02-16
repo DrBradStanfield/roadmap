@@ -455,15 +455,15 @@ export function generateSuggestions(
     const sys = inputs.systolicBp;
     const dia = inputs.diastolicBp;
 
-    // Build conditional lifestyle advice for stage 1 & 2
-    const bpLifestyleParts: string[] = [];
+    // Build conditional lifestyle paragraphs for stage 1 & 2
+    const bpExtraParagraphs: string[] = [];
     if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased) {
-      bpLifestyleParts.push('Increase potassium-rich foods (3,500–5,000mg/day).');
+      bpExtraParagraphs.push('Increase potassium-rich foods (3,500–5,000mg/day).');
     }
     if (results.bmi !== undefined && results.bmi >= 25) {
-      bpLifestyleParts.push('Weight loss is one of the most effective ways to lower blood pressure — even a 5% reduction can make a meaningful difference. GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.');
+      bpExtraParagraphs.push('Weight loss is one of the most effective ways to lower blood pressure — even a 5% reduction can make a meaningful difference. GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.');
     }
-    const bpLifestyle = bpLifestyleParts.length > 0 ? ' ' + bpLifestyleParts.join(' ') : '';
+    const bpExtra = bpExtraParagraphs.length > 0 ? '\n\n' + bpExtraParagraphs.join('\n\n') : '';
 
     if (sys >= BP_THRESHOLDS.crisisSys || dia >= BP_THRESHOLDS.crisisDia) {
       suggestions.push({
@@ -479,7 +479,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'urgent',
         title: 'Stage 2 hypertension',
-        description: `Your BP of ${sys}/${dia} mmHg indicates stage 2 hypertension. Medication is typically recommended at this level. Lifestyle measures that also help: reduce sodium intake (<2,300mg/day), exercise regularly, and prioritize quality sleep.${bpLifestyle}`,
+        description: `Your BP of ${sys}/${dia} mmHg indicates stage 2 hypertension. Medication is typically recommended at this level.\n\nLifestyle measures that also help: reduce sodium intake (<2,300mg/day), exercise regularly, and prioritize quality sleep.${bpExtra}`,
       });
     } else if (sys >= BP_THRESHOLDS.stage1Sys || dia > BP_THRESHOLDS.stage1Dia) {
       const bpTarget = results.age !== undefined && results.age >= 65 ? '<130/80' : '<120/80';
@@ -488,7 +488,7 @@ export function generateSuggestions(
         category: 'blood_pressure',
         priority: 'attention',
         title: 'Stage 1 hypertension',
-        description: `Your BP of ${sys}/${dia} mmHg indicates stage 1 hypertension. Target is ${bpTarget}. Key lifestyle measures: reduce sodium intake (<2,300mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpLifestyle}`,
+        description: `Your BP of ${sys}/${dia} mmHg indicates stage 1 hypertension. Target is ${bpTarget}.\n\nKey lifestyle measures: reduce sodium intake (<2,300mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).${bpExtra}`,
       });
     }
   }
