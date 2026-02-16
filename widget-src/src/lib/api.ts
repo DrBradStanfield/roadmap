@@ -224,11 +224,15 @@ export async function loadAllHistory(
  */
 export async function deleteUserData(): Promise<boolean> {
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
     const response = await fetch(`${PROXY_PATH}/api/user-data`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ confirmDelete: true }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     if (!response.ok) return false;
 
     const result: { success: boolean } = await response.json();

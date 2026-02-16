@@ -69,6 +69,16 @@
   .health-tool-content {
     grid-template-columns: 1fr;
   }
+  .health-tool-left {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+  .health-tool-right {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 
 /* Mobile Tab Bar + Nav — hidden on desktop, shown on mobile */
@@ -200,11 +210,17 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 
 .health-tool-right {
   position: sticky;
   top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   background: #f8f9fa;
   border-radius: 12px;
   padding: 24px;

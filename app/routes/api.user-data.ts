@@ -3,8 +3,8 @@ import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
 import { getOrCreateSupabaseUser, deleteAllUserData } from '../lib/supabase.server';
 
-// Rate limit: 1 successful deletion per hour per customer
-const DELETE_RATE_LIMIT_WINDOW_MS = 60 * 60_000;
+// Rate limit: 1 successful deletion per 5 minutes per customer
+const DELETE_RATE_LIMIT_WINDOW_MS = 5 * 60_000;
 const deleteRateLimitMap = new Map<string, number>(); // customerId -> resetAt timestamp
 
 function isDeleteRateLimited(customerId: string): boolean {
