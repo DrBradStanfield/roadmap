@@ -158,41 +158,41 @@ describe('generateSuggestions', () => {
     });
   });
 
-  describe('Non-HDL cholesterol suggestions', () => {
-    it('generates very high suggestion for non-HDL >= 190 mg/dL', () => {
+  describe('Non-HDL cholesterol suggestions (thresholds: 160/190/220 mg/dL = LDL + 30)', () => {
+    it('generates very high suggestion for non-HDL >= 220 mg/dL', () => {
       const { inputs, results } = createTestData(
-        { totalCholesterol: totalChol(280), hdlC: hdl(50) },
-        { nonHdlCholesterol: totalChol(280) - hdl(50) }
+        { totalCholesterol: totalChol(310), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(310) - hdl(50) } // 260 mg/dL
       );
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'non-hdl-very-high')).toBeDefined();
       expect(suggestions.find(s => s.id === 'non-hdl-very-high')?.priority).toBe('urgent');
     });
 
-    it('generates high suggestion for non-HDL 160-189 mg/dL', () => {
+    it('generates high suggestion for non-HDL 190-219 mg/dL', () => {
       const { inputs, results } = createTestData(
-        { totalCholesterol: totalChol(220), hdlC: hdl(50) },
-        { nonHdlCholesterol: totalChol(220) - hdl(50) }
+        { totalCholesterol: totalChol(250), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(250) - hdl(50) } // 200 mg/dL
       );
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'non-hdl-high')).toBeDefined();
       expect(suggestions.find(s => s.id === 'non-hdl-high')?.priority).toBe('attention');
     });
 
-    it('generates borderline suggestion for non-HDL 130-159 mg/dL', () => {
+    it('generates borderline suggestion for non-HDL 160-189 mg/dL', () => {
       const { inputs, results } = createTestData(
-        { totalCholesterol: totalChol(190), hdlC: hdl(50) },
-        { nonHdlCholesterol: totalChol(190) - hdl(50) }
+        { totalCholesterol: totalChol(220), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(220) - hdl(50) } // 170 mg/dL
       );
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'non-hdl-borderline')).toBeDefined();
       expect(suggestions.find(s => s.id === 'non-hdl-borderline')?.priority).toBe('info');
     });
 
-    it('does not generate suggestion for optimal non-HDL < 130 mg/dL', () => {
+    it('does not generate suggestion for optimal non-HDL < 160 mg/dL', () => {
       const { inputs, results } = createTestData(
-        { totalCholesterol: totalChol(170), hdlC: hdl(60) },
-        { nonHdlCholesterol: totalChol(170) - hdl(60) }
+        { totalCholesterol: totalChol(200), hdlC: hdl(60) },
+        { nonHdlCholesterol: totalChol(200) - hdl(60) } // 140 mg/dL
       );
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.filter(s => s.id.startsWith('non-hdl-')).length).toBe(0);
@@ -638,14 +638,26 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'sleep')?.category).toBe('sleep');
     });
 
-    it('shows low salt when SBP >= 116', () => {
-      const { inputs, results } = createTestData({ systolicBp: 120, diastolicBp: 75 });
+    it('shows low salt for age <65 when SBP > 120', () => {
+      const { inputs, results } = createTestData({ systolicBp: 125, diastolicBp: 75 }, { age: 50 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'low-salt')).toBeDefined();
     });
 
-    it('hides low salt when SBP < 116', () => {
-      const { inputs, results } = createTestData({ systolicBp: 110, diastolicBp: 70 });
+    it('hides low salt for age <65 when SBP = 120', () => {
+      const { inputs, results } = createTestData({ systolicBp: 120, diastolicBp: 75 }, { age: 50 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'low-salt')).toBeUndefined();
+    });
+
+    it('shows low salt for age ≥65 when SBP > 130', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 75 }, { age: 70 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'low-salt')).toBeDefined();
+    });
+
+    it('hides low salt for age ≥65 when SBP = 125', () => {
+      const { inputs, results } = createTestData({ systolicBp: 125, diastolicBp: 75 }, { age: 70 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'low-salt')).toBeUndefined();
     });
@@ -1746,5 +1758,127 @@ describe('generateSuggestions', () => {
       expect(supplements.every(s => s.priority === 'info')).toBe(true);
     });
 
+  });
+
+  describe('Protein target CKD adjustment', () => {
+    it('shows standard 1.2g/kg protein when eGFR is normal', () => {
+      const { inputs, results } = createTestData({}, { eGFR: 90, proteinTarget: 85 });
+      const suggestions = generateSuggestions(inputs, results);
+      const protein = suggestions.find(s => s.id === 'protein-target');
+      expect(protein?.description).not.toContain('kidney function');
+    });
+
+    it('shows CKD-adjusted text when eGFR < 45', () => {
+      // CKD Stage 3b: eGFR < 45 → 1.0g/kg
+      const { inputs, results } = createTestData({}, { eGFR: 40, proteinTarget: 71 });
+      const suggestions = generateSuggestions(inputs, results);
+      const protein = suggestions.find(s => s.id === 'protein-target');
+      expect(protein?.description).toContain('kidney function');
+      expect(protein?.description).toContain('1.0g per kg');
+    });
+
+    it('shows standard text when eGFR is exactly 45', () => {
+      const { inputs, results } = createTestData({}, { eGFR: 45, proteinTarget: 85 });
+      const suggestions = generateSuggestions(inputs, results);
+      const protein = suggestions.find(s => s.id === 'protein-target');
+      expect(protein?.description).not.toContain('kidney function');
+    });
+  });
+
+  describe('Alcohol reduction suggestion', () => {
+    it('shows alcohol reduction when BMI > 25', () => {
+      const { inputs, results } = createTestData({}, { bmi: 27 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'reduce-alcohol')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'reduce-alcohol')?.priority).toBe('attention');
+    });
+
+    it('shows alcohol reduction when triglycerides elevated', () => {
+      const { inputs, results } = createTestData({ triglycerides: trig(160) }, { bmi: 22 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'reduce-alcohol')).toBeDefined();
+    });
+
+    it('hides alcohol reduction when BMI ≤ 25 and no elevated trigs', () => {
+      const { inputs, results } = createTestData({}, { bmi: 23 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'reduce-alcohol')).toBeUndefined();
+    });
+
+    it('hides alcohol reduction when no BMI and no trigs', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'reduce-alcohol')).toBeUndefined();
+    });
+  });
+
+  describe('DEXA bone density screening suggestions', () => {
+    it('suggests DEXA for female age 50+', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1975, birthMonth: 1 }, { age: 51 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-dexa')).toBeDefined();
+    });
+
+    it('suggests DEXA for male age 70+', () => {
+      const { inputs, results } = createTestData({ sex: 'male', birthYear: 1955, birthMonth: 1 }, { age: 71 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-dexa')).toBeDefined();
+    });
+
+    it('does not suggest DEXA for female age 49', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1977, birthMonth: 1 }, { age: 49 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-dexa')).toBeUndefined();
+    });
+
+    it('does not suggest DEXA for male age 69', () => {
+      const { inputs, results } = createTestData({ sex: 'male', birthYear: 1957, birthMonth: 1 }, { age: 69 });
+      const scr: ScreeningInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-dexa')).toBeUndefined();
+    });
+
+    it('shows overdue when DEXA normal result is past 5-year interval', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = { dexaScreening: 'dexa_scan', dexaLastDate: '2019-06', dexaResult: 'normal' };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-dexa-overdue')).toBeDefined();
+    });
+
+    it('shows overdue when DEXA osteopenia result is past 2-year interval', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = { dexaScreening: 'dexa_scan', dexaLastDate: '2023-01', dexaResult: 'osteopenia' };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-dexa-overdue')).toBeDefined();
+    });
+
+    it('shows up-to-date for recent normal DEXA', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const now = new Date();
+      const lastMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const scr: ScreeningInputs = { dexaScreening: 'dexa_scan', dexaLastDate: lastMonth, dexaResult: 'normal' };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-dexa-upcoming')).toBeDefined();
+    });
+
+    it('shows follow-up for osteoporosis without organized follow-up', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = { dexaScreening: 'dexa_scan', dexaLastDate: '2024-06', dexaResult: 'osteoporosis' };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      const followup = suggestions.find(s => s.id === 'screening-dexa-followup');
+      expect(followup).toBeDefined();
+      expect(followup?.priority).toBe('urgent');
+    });
+
+    it('does not suggest when not_yet_started is selected', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const scr: ScreeningInputs = { dexaScreening: 'not_yet_started' };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-dexa')).toBeDefined(); // should suggest starting
+      expect(suggestions.find(s => s.id === 'screening-dexa-overdue')).toBeUndefined();
+    });
   });
 });

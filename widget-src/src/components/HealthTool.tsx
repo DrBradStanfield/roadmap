@@ -446,7 +446,9 @@ export function HealthTool() {
         (inputs.sex === 'female' && age >= 40) ||
         (age >= 50 && age <= 80) ||
         (inputs.sex === 'male' && age >= 45) ||
-        (inputs.sex === 'female' && age >= 45);
+        (inputs.sex === 'female' && age >= 45) ||
+        (inputs.sex === 'female' && age >= 50) || // DEXA
+        (inputs.sex === 'male' && age >= 70);     // DEXA
     }
 
     return [

@@ -1,6 +1,7 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
+import { getCustomerId, getCustomerInfo } from '../lib/route-helpers.server';
 
 // In-memory rate limiter: 60 requests per minute per customer
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -49,32 +50,6 @@ import {
 } from '../lib/supabase.server';
 import { checkAndSendWelcomeEmail } from '../lib/email.server';
 import { measurementSchema, profileUpdateSchema, medicationSchema, screeningSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
-
-function getCustomerId(request: Request): string | null {
-  const url = new URL(request.url);
-  return url.searchParams.get('logged_in_customer_id') || null;
-}
-
-async function getCustomerInfo(admin: any, customerId: string): Promise<{ email: string; firstName: string | null; lastName: string | null } | null> {
-  try {
-    const response = await admin.graphql(`
-      query getCustomer($id: ID!) {
-        customer(id: $id) {
-          email
-          firstName
-          lastName
-        }
-      }
-    `, { variables: { id: `gid://shopify/Customer/${customerId}` } });
-    const result = await response.json();
-    const customer = result?.data?.customer;
-    if (!customer?.email) return null;
-    return { email: customer.email, firstName: customer.firstName || null, lastName: customer.lastName || null };
-  } catch (error) {
-    console.error('Error looking up customer info:', error);
-    return null;
-  }
-}
 
 // GET — Load measurements (authenticated via app proxy HMAC)
 // ?metric_type=weight&limit=50  → list measurements for one metric
@@ -192,8 +167,8 @@ export async function action({ request }: ActionFunctionArgs) {
         if (birthYear !== undefined) updates.birth_year = birthYear;
         if (birthMonth !== undefined) updates.birth_month = birthMonth;
         if (unitSystem !== undefined) updates.unit_system = unitSystem;
-        if (firstName !== undefined) updates.first_name = firstName;
-        if (lastName !== undefined) updates.last_name = lastName;
+        if (firstName !== undefined) updates.first_name = firstName.trim();
+        if (lastName !== undefined) updates.last_name = lastName.trim();
         if (height !== undefined) updates.height = height;
 
         const updated = await updateProfile(client, userId, updates);

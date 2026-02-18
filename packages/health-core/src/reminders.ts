@@ -14,13 +14,13 @@ export type ReminderGroup = 'screening' | 'blood_test' | 'medication_review';
 
 export type ReminderCategory =
   | 'screening_colorectal' | 'screening_breast' | 'screening_cervical'
-  | 'screening_lung' | 'screening_prostate'
+  | 'screening_lung' | 'screening_prostate' | 'screening_dexa'
   | 'blood_test_lipids' | 'blood_test_hba1c' | 'blood_test_creatinine'
   | 'medication_review';
 
 export const REMINDER_CATEGORIES: ReminderCategory[] = [
   'screening_colorectal', 'screening_breast', 'screening_cervical',
-  'screening_lung', 'screening_prostate',
+  'screening_lung', 'screening_prostate', 'screening_dexa',
   'blood_test_lipids', 'blood_test_hba1c', 'blood_test_creatinine',
   'medication_review',
 ];
@@ -215,6 +215,35 @@ function computeScreeningReminders(
     }
   }
 
+  // DEXA bone density (female ≥50, male ≥70)
+  if ((sex === 'female' && age >= 50) || (sex === 'male' && age >= 70)) {
+    if (screenings.dexaScreening && screenings.dexaScreening !== 'not_yet_started' && screenings.dexaLastDate) {
+      // Result-based interval: osteopenia → 2yr, normal → 5yr, osteoporosis → post-followup pattern
+      if (screenings.dexaResult === 'osteoporosis') {
+        const overdue = isPostFollowupOverdue('dexa', 'dexa_scan', 'abnormal', screenings.dexaFollowupStatus, screenings.dexaFollowupDate, now)
+          || isScreeningOverdue(screenings.dexaLastDate, 'dexa_scan', now);
+        if (overdue) {
+          reminders.push({
+            category: 'screening_dexa',
+            group: 'screening',
+            title: 'DEXA bone density scan overdue',
+            description: 'Your DEXA bone density scan is overdue. Please schedule with your doctor.',
+          });
+        }
+      } else if (screenings.dexaResult !== 'awaiting') {
+        const intervalKey = screenings.dexaResult === 'osteopenia' ? 'dexa_osteopenia' : 'dexa_normal';
+        if (isScreeningOverdue(screenings.dexaLastDate, intervalKey, now)) {
+          reminders.push({
+            category: 'screening_dexa',
+            group: 'screening',
+            title: 'DEXA bone density scan overdue',
+            description: 'Your DEXA bone density scan is overdue. Please schedule with your doctor.',
+          });
+        }
+      }
+    }
+  }
+
   return reminders;
 }
 
@@ -385,6 +414,7 @@ export const REMINDER_CATEGORY_LABELS: Record<ReminderCategory, string> = {
   screening_cervical: 'Cervical screening reminders',
   screening_lung: 'Lung screening reminders',
   screening_prostate: 'PSA test reminders',
+  screening_dexa: 'Bone density (DEXA) reminders',
   blood_test_lipids: 'Lipid panel reminders',
   blood_test_hba1c: 'HbA1c test reminders',
   blood_test_creatinine: 'Creatinine test reminders',

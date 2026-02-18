@@ -238,13 +238,18 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
   );
 }
 
-/** Filter reminder categories based on user's sex. */
-function getVisibleCategories(sex?: 'male' | 'female'): ReminderCategory[] {
+/** Filter reminder categories based on user's sex and age. */
+function getVisibleCategories(sex?: 'male' | 'female', age?: number): ReminderCategory[] {
   return REMINDER_CATEGORIES.filter(cat => {
     // Breast/cervical: female only
     if (cat === 'screening_breast' || cat === 'screening_cervical') return sex === 'female';
     // Prostate: male only
     if (cat === 'screening_prostate') return sex === 'male';
+    // DEXA: female ≥50, male ≥70
+    if (cat === 'screening_dexa') {
+      if (age === undefined) return false;
+      return (sex === 'female' && age >= 50) || (sex === 'male' && age >= 70);
+    }
     return true;
   });
 }
@@ -254,15 +259,17 @@ function ReminderSettings({
   onPreferenceChange,
   onGlobalOptout,
   sex,
+  age,
 }: {
   preferences: ApiReminderPreference[];
   onPreferenceChange: (category: string, enabled: boolean) => void;
   onGlobalOptout?: () => void;
   sex?: 'male' | 'female';
+  age?: number;
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  const visibleCategories = getVisibleCategories(sex);
+  const visibleCategories = getVisibleCategories(sex, age);
   const disabledSet = new Set(
     preferences.filter(p => !p.enabled).map(p => p.reminderCategory)
   );
@@ -541,6 +548,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
           onPreferenceChange={onReminderPreferenceChange}
           onGlobalOptout={onGlobalReminderOptout}
           sex={sex}
+          age={results?.age}
         />
       )}
 

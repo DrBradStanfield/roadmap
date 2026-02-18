@@ -2,6 +2,7 @@ import { json, type ActionFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
 import { getOrCreateSupabaseUser, deleteAllUserData } from '../lib/supabase.server';
+import { getCustomerId, getCustomerInfo } from '../lib/route-helpers.server';
 
 // Rate limit: 1 successful deletion per 5 minutes per customer
 const DELETE_RATE_LIMIT_WINDOW_MS = 5 * 60_000;
@@ -22,32 +23,6 @@ function isDeleteRateLimited(customerId: string): boolean {
 
 function recordDeleteRateLimit(customerId: string): void {
   deleteRateLimitMap.set(customerId, Date.now() + DELETE_RATE_LIMIT_WINDOW_MS);
-}
-
-function getCustomerId(request: Request): string | null {
-  const url = new URL(request.url);
-  return url.searchParams.get('logged_in_customer_id') || null;
-}
-
-async function getCustomerInfo(admin: any, customerId: string): Promise<{ email: string; firstName: string | null; lastName: string | null } | null> {
-  try {
-    const response = await admin.graphql(`
-      query getCustomer($id: ID!) {
-        customer(id: $id) {
-          email
-          firstName
-          lastName
-        }
-      }
-    `, { variables: { id: `gid://shopify/Customer/${customerId}` } });
-    const result = await response.json();
-    const customer = result?.data?.customer;
-    if (!customer?.email) return null;
-    return { email: customer.email, firstName: customer.firstName || null, lastName: customer.lastName || null };
-  } catch (error) {
-    console.error('Error looking up customer info:', error);
-    return null;
-  }
 }
 
 // DELETE — Remove all user data (measurements, profile, auth user)

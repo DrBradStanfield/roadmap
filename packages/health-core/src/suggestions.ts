@@ -20,7 +20,7 @@ import {
 export const LIPID_TREATMENT_TARGETS = {
   apobGl: 0.5,       // g/L (50 mg/dL)
   ldlMmol: 1.4,      // mmol/L (~54 mg/dL)
-  nonHdlMmol: 1.4,   // mmol/L (~54 mg/dL)
+  nonHdlMmol: 1.6,   // mmol/L (~62 mg/dL)
 } as const;
 
 /** Format a metric value with its display unit, e.g. "5.7%" or "39 mmol/mol" */
@@ -55,17 +55,21 @@ export function generateSuggestions(
 
   // === Always-show lifestyle suggestions ===
 
-  // Protein target (core recommendation)
+  // Protein target (core recommendation, adjusted for CKD)
+  const isCkd = results.eGFR !== undefined && results.eGFR < EGFR_THRESHOLDS.mildlyDecreased;
   suggestions.push({
     id: 'protein-target',
     category: 'nutrition',
     priority: 'info',
     title: `Daily protein target: ${results.proteinTarget}g`,
-    description: `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us)}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
+    description: isCkd
+      ? `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us)}, aim for ${results.proteinTarget}g of protein daily (1.0g per kg, adjusted for kidney function). Discuss with your doctor.`
+      : `Based on your ideal body weight of ${fmtWeight(results.idealBodyWeight, us)}, aim for ${results.proteinTarget}g of protein daily. This supports muscle maintenance and metabolic health.`,
   });
 
-  // Low salt — only show if SBP ≥ 116
-  if (inputs.systolicBp !== undefined && inputs.systolicBp >= 116) {
+  // Low salt — age-dependent threshold (matches BP target age cutoff)
+  const saltThreshold = results.age !== undefined && results.age >= 65 ? 130 : 120;
+  if (inputs.systolicBp !== undefined && inputs.systolicBp > saltThreshold) {
     suggestions.push({
       id: 'low-salt',
       category: 'nutrition',
@@ -103,6 +107,20 @@ export function generateSuggestions(
       priority: 'attention',
       title: 'Reduce triglycerides with diet',
       description: 'Blood triglycerides are very diet-sensitive—improvements can be seen within 2-3 weeks. Key measures: limit alcohol, reduce sugar intake, and reduce total fat and calorie intake.',
+    });
+  }
+
+  // Reduce alcohol — when overweight (BMI > 25) or triglycerides elevated
+  if (
+    (results.bmi !== undefined && results.bmi > 25) ||
+    (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline)
+  ) {
+    suggestions.push({
+      id: 'reduce-alcohol',
+      category: 'nutrition',
+      priority: 'attention',
+      title: 'Reduce alcohol intake',
+      description: 'Reduce and ideally completely stop alcohol intake. Alcohol contributes to weight gain, elevated triglycerides, and increased blood pressure.',
     });
   }
 
@@ -900,6 +918,62 @@ export function generateSuggestions(
         title: 'Discuss endometrial cancer awareness',
         description: 'Women at menopause should be informed about the risks and symptoms of endometrial cancer. Discuss with your doctor.',
       });
+    }
+
+    // === Bone density (DEXA) screening ===
+    // Separate section from cancer screening — women ≥50, men ≥70
+    const dexaEligible = (sex === 'female' && age >= 50) || (sex === 'male' && age >= 70);
+
+    if (dexaEligible) {
+      if (!screenings.dexaScreening || screenings.dexaScreening === 'not_yet_started') {
+        suggestions.push({
+          id: 'screening-dexa',
+          category: 'screening',
+          priority: 'attention',
+          title: 'Consider a DEXA bone density scan',
+          description: 'A DEXA scan measures bone mineral density and can detect osteoporosis before a fracture occurs. Discuss with your doctor.',
+        });
+      } else if (screenings.dexaResult === 'osteoporosis') {
+        // Osteoporosis — use follow-up pattern
+        const followup = screeningFollowup('dexa', 'dexa_scan', 'abnormal', screenings.dexaFollowupStatus, screenings.dexaFollowupDate);
+        if (followup) {
+          suggestions.push(followup);
+        } else if (screenings.dexaLastDate) {
+          const status = screeningStatus(screenings.dexaLastDate, 'dexa_scan');
+          if (status === 'overdue') {
+            suggestions.push({
+              id: 'screening-dexa-overdue',
+              category: 'screening',
+              priority: 'attention',
+              title: 'Bone density scan overdue',
+              description: `Your next DEXA scan was due ${nextDueStr(screenings.dexaLastDate, 'dexa_scan')}. Please schedule your scan.`,
+            });
+          }
+        }
+      } else if (screenings.dexaResult === 'awaiting') {
+        // Awaiting results — no action needed
+      } else if (screenings.dexaLastDate) {
+        // Normal or osteopenia — result-based interval
+        const intervalKey = screenings.dexaResult === 'osteopenia' ? 'dexa_osteopenia' : 'dexa_normal';
+        const status = screeningStatus(screenings.dexaLastDate, intervalKey);
+        if (status === 'overdue') {
+          suggestions.push({
+            id: 'screening-dexa-overdue',
+            category: 'screening',
+            priority: 'attention',
+            title: 'Bone density scan overdue',
+            description: `Your next DEXA scan was due ${nextDueStr(screenings.dexaLastDate, intervalKey)}. Please schedule your scan.`,
+          });
+        } else if (status === 'upcoming') {
+          suggestions.push({
+            id: 'screening-dexa-upcoming',
+            category: 'screening',
+            priority: 'info',
+            title: 'Bone density scan up to date',
+            description: `Next DEXA scan due around ${nextDueStr(screenings.dexaLastDate, intervalKey)}.`,
+          });
+        }
+      }
     }
   }
 

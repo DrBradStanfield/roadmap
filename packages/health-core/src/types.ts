@@ -343,6 +343,13 @@ export interface ScreeningInputs {
   // Endometrial
   endometrialDiscussion?: 'not_yet' | 'discussed';
   endometrialAbnormalBleeding?: 'no' | 'yes_reported' | 'yes_need_to_report';
+
+  // Bone Density (DEXA)
+  dexaScreening?: 'dexa_scan' | 'not_yet_started';
+  dexaLastDate?: string; // YYYY-MM
+  dexaResult?: 'normal' | 'osteopenia' | 'osteoporosis' | 'awaiting';
+  dexaFollowupStatus?: ScreeningFollowupStatus;
+  dexaFollowupDate?: string; // YYYY-MM
 }
 
 /**
@@ -358,6 +365,9 @@ export const SCREENING_INTERVALS: Record<string, number> = {
   annual_ldct: 12,
   will_screen: 12,  // prostate PSA default
   other: 12,        // fallback for "other" methods
+  dexa_normal: 60,      // DEXA: 5 years for normal result
+  dexa_osteopenia: 24,  // DEXA: 2 years for osteopenia
+  dexa_scan: 24,        // DEXA: default 2 years if no result yet
 };
 
 /**
@@ -375,6 +385,7 @@ export const POST_FOLLOWUP_INTERVALS: Record<string, number> = {
   cervical_pap_every_3yr: 12,     // Abnormal Pap → colposcopy → rescreen in 1 year
   cervical_other: 12,              // Default 1 year
   lung_annual_ldct: 12,           // Resume annual LDCT
+  dexa_dexa_scan: 12,             // Osteoporosis follow-up → recheck in 1 year
 };
 
 /**
@@ -391,6 +402,7 @@ export const SCREENING_FOLLOWUP_INFO: Record<string, { followupName: string; abn
   cervical_pap_every_3yr: { followupName: 'colposcopy', abnormalMeans: 'abnormal Pap test' },
   cervical_other: { followupName: 'colposcopy', abnormalMeans: 'abnormal result' },
   lung_annual_ldct: { followupName: 'follow-up imaging', abnormalMeans: 'abnormal LDCT result' },
+  dexa_dexa_scan: { followupName: 'treatment review', abnormalMeans: 'osteoporosis diagnosed — treatment and monitoring required' },
 };
 
 /**

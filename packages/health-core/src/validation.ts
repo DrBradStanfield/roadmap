@@ -160,7 +160,7 @@ export const measurementSchema = z.object({
   value: z.number(),
   recordedAt: z.string().datetime().optional(), // defaults to now on server
   source: z.enum(MEASUREMENT_SOURCES).optional(), // defaults to 'manual' in DB
-  externalId: z.string().optional(), // external system ID (e.g. HealthKit sample UUID)
+  externalId: z.string().max(200).optional(), // external system ID (e.g. HealthKit sample UUID)
 });
 
 export type ValidatedMeasurement = z.infer<typeof measurementSchema>;
@@ -184,8 +184,8 @@ export const profileUpdateSchema = z.object({
     .max(12, 'Month must be between 1 and 12')
     .optional(),
   unitSystem: z.number().int().min(1).max(2).optional(),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
+  firstName: z.string().max(100).optional(),
+  lastName: z.string().max(100).optional(),
   height: z.number().min(50).max(250).optional(),
 });
 
@@ -209,9 +209,9 @@ export const STATIN_DRUG_NAMES = ['atorvastatin', 'pitavastatin', 'pravastatin',
  */
 export const medicationSchema = z.object({
   medicationKey: z.enum(MEDICATION_KEYS),
-  drugName: z.string().min(1, 'Drug name is required'),
+  drugName: z.string().min(1, 'Drug name is required').max(100),
   doseValue: z.number().positive().nullable().optional(),
-  doseUnit: z.string().nullable().optional(),
+  doseUnit: z.string().max(20).nullable().optional(),
 });
 
 export type ValidatedMedication = z.infer<typeof medicationSchema>;
@@ -230,6 +230,8 @@ export const SCREENING_KEYS = [
   'lung_result', 'lung_followup_status', 'lung_followup_date',
   'prostate_discussion', 'prostate_psa_value', 'prostate_last_date',
   'endometrial_discussion', 'endometrial_abnormal_bleeding',
+  'dexa_screening', 'dexa_last_date', 'dexa_result',
+  'dexa_followup_status', 'dexa_followup_date',
 ] as const;
 
 /**
@@ -237,7 +239,7 @@ export const SCREENING_KEYS = [
  */
 export const screeningSchema = z.object({
   screeningKey: z.enum(SCREENING_KEYS),
-  value: z.string().min(1, 'Screening value is required'),
+  value: z.string().min(1, 'Screening value is required').max(500),
 });
 
 export type ValidatedScreening = z.infer<typeof screeningSchema>;

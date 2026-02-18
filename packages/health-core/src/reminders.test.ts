@@ -406,6 +406,93 @@ describe('formatReminderDate', () => {
   });
 });
 
+describe('DEXA screening reminders', () => {
+  it('returns DEXA reminder for female age 55 when overdue (normal, 5-year interval)', () => {
+    const screenings: ScreeningInputs = {
+      dexaScreening: 'dexa_scan',
+      dexaLastDate: monthsAgoYYYYMM(65), // 65 months ago > 60 month interval
+      dexaResult: 'normal',
+    };
+    const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+    const dexa = result.reminders.find(r => r.category === 'screening_dexa');
+    expect(dexa).toBeDefined();
+    expect(dexa?.group).toBe('screening');
+  });
+
+  it('returns DEXA reminder for osteopenia result with 2-year interval', () => {
+    const screenings: ScreeningInputs = {
+      dexaScreening: 'dexa_scan',
+      dexaLastDate: monthsAgoYYYYMM(28), // 28 months ago > 24 month interval
+      dexaResult: 'osteopenia',
+    };
+    const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+    expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeDefined();
+  });
+
+  it('does not return DEXA reminder for recent normal scan', () => {
+    const screenings: ScreeningInputs = {
+      dexaScreening: 'dexa_scan',
+      dexaLastDate: monthsAgoYYYYMM(12), // 12 months ago < 60 month interval
+      dexaResult: 'normal',
+    };
+    const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+    expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeUndefined();
+  });
+
+  it('does not return DEXA reminder for female age 49', () => {
+    const youngFemale: ReminderProfile = { sex: 'female', age: 49 };
+    const screenings: ScreeningInputs = {
+      dexaScreening: 'dexa_scan',
+      dexaLastDate: monthsAgoYYYYMM(65),
+      dexaResult: 'normal',
+    };
+    const result = computeDueReminders(youngFemale, screenings, {}, [], NOW);
+    expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeUndefined();
+  });
+
+  it('returns DEXA reminder for male age 70+', () => {
+    const olderMale: ReminderProfile = { sex: 'male', age: 72 };
+    const screenings: ScreeningInputs = {
+      dexaScreening: 'dexa_scan',
+      dexaLastDate: monthsAgoYYYYMM(65),
+      dexaResult: 'normal',
+    };
+    const result = computeDueReminders(olderMale, screenings, {}, [], NOW);
+    expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeDefined();
+  });
+
+  it('does not return DEXA reminder for male age 69', () => {
+    const youngMale: ReminderProfile = { sex: 'male', age: 69 };
+    const screenings: ScreeningInputs = {
+      dexaScreening: 'dexa_scan',
+      dexaLastDate: monthsAgoYYYYMM(65),
+      dexaResult: 'normal',
+    };
+    const result = computeDueReminders(youngMale, screenings, {}, [], NOW);
+    expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeUndefined();
+  });
+
+  it('does not return DEXA reminder when not_yet_started', () => {
+    const screenings: ScreeningInputs = {
+      dexaScreening: 'not_yet_started',
+    };
+    const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+    expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeUndefined();
+  });
+
+  it('returns DEXA reminder for osteoporosis with post-followup overdue', () => {
+    const screenings: ScreeningInputs = {
+      dexaScreening: 'dexa_scan',
+      dexaLastDate: monthsAgoYYYYMM(28),
+      dexaResult: 'osteoporosis',
+      dexaFollowupStatus: 'completed',
+      dexaFollowupDate: monthsAgoYYYYMM(15), // 15 months > 12 month post-followup
+    };
+    const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+    expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeDefined();
+  });
+});
+
 describe('Constants', () => {
   it('has labels for all reminder categories', () => {
     for (const cat of REMINDER_CATEGORIES) {

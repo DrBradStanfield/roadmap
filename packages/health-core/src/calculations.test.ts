@@ -313,4 +313,35 @@ describe('calculateHealthResults', () => {
     const decimalPlaces = (results.waistToHeightRatio!.toString().split('.')[1] || '').length;
     expect(decimalPlaces).toBeLessThanOrEqual(2);
   });
+
+  it('adjusts protein target to 1.0g/kg when eGFR < 45 (CKD Stage 3b+)', () => {
+    const currentYear = new Date().getFullYear();
+    const results = calculateHealthResults({
+      heightCm: 175,
+      sex: 'male',
+      birthYear: currentYear - 70,
+      birthMonth: 1,
+      creatinine: 200, // µmol/L — high creatinine → low eGFR
+    });
+
+    expect(results.eGFR).toBeDefined();
+    expect(results.eGFR!).toBeLessThan(45);
+    // IBW for 175cm male ≈ 70.6kg → 1.0g/kg = 71g (vs 85g at 1.2g/kg)
+    expect(results.proteinTarget).toBe(71);
+  });
+
+  it('keeps standard 1.2g/kg protein when eGFR >= 45', () => {
+    const currentYear = new Date().getFullYear();
+    const results = calculateHealthResults({
+      heightCm: 175,
+      sex: 'male',
+      birthYear: currentYear - 50,
+      birthMonth: 1,
+      creatinine: 80, // µmol/L — normal creatinine → normal eGFR
+    });
+
+    expect(results.eGFR).toBeDefined();
+    expect(results.eGFR!).toBeGreaterThanOrEqual(45);
+    expect(results.proteinTarget).toBe(85);
+  });
 });

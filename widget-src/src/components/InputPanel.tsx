@@ -1229,9 +1229,7 @@ export function InputPanel({
                   </>
                 ) : (
                   <p className="screening-age-message">
-                    {age <= 85
-                      ? 'Screening is individualized at your age. Discuss with your doctor whether continued screening is appropriate.'
-                      : 'Routine screening typically stops at age 85. Discuss with your doctor.'}
+                    Screening is individualized at your age. Discuss with your doctor whether continued screening is appropriate.
                   </p>
                 )}
               </div>
@@ -1527,6 +1525,191 @@ export function InputPanel({
     </>
   );
 
+  const renderBoneDensity = () => (
+    <>
+      {(() => {
+        const age = inputs.birthYear
+          ? calculateAge(inputs.birthYear, inputs.birthMonth ?? 1)
+          : undefined;
+        if (age === undefined) return null;
+
+        const sex = inputs.sex;
+        const dexaEligible = (sex === 'female' && age >= 50) || (sex === 'male' && age >= 70);
+        if (!dexaEligible) return null;
+
+        const scr = screeningsToInputs(screenings);
+        const getVal = (dbKey: string): string | number | undefined => {
+          const camelKey = dbKey.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+          return scr[camelKey as keyof typeof scr];
+        };
+        const getStr = (dbKey: string): string | undefined => getVal(dbKey) as string | undefined;
+
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const years = Array.from({ length: 11 }, (_, i) => currentYear - i);
+        const allMonths = [
+          { value: '01', label: 'January' }, { value: '02', label: 'February' },
+          { value: '03', label: 'March' }, { value: '04', label: 'April' },
+          { value: '05', label: 'May' }, { value: '06', label: 'June' },
+          { value: '07', label: 'July' }, { value: '08', label: 'August' },
+          { value: '09', label: 'September' }, { value: '10', label: 'October' },
+          { value: '11', label: 'November' }, { value: '12', label: 'December' },
+        ];
+
+        const renderDexaDateInput = (key: string, label: string) => {
+          const savedValue = getStr(key) || '';
+          const [savedYear, savedMonth] = savedValue.split('-');
+          const localState = dateInputs[key];
+          const displayYear = localState?.year ?? savedYear ?? '';
+          const displayMonth = localState?.month ?? savedMonth ?? '';
+          const availableMonths = displayYear === String(currentYear)
+            ? allMonths.filter(m => parseInt(m.value, 10) <= currentMonth)
+            : allMonths;
+
+          const handleDateChange = (newYear: string, newMonth: string) => {
+            let adjustedMonth = newMonth;
+            if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) > currentMonth) {
+              adjustedMonth = '';
+            }
+            setDateInputs(prev => ({ ...prev, [key]: { year: newYear, month: adjustedMonth } }));
+            if (newYear && adjustedMonth) {
+              onScreeningChange(key, `${newYear}-${adjustedMonth}`);
+            } else if (!newYear && !adjustedMonth) {
+              onScreeningChange(key, '');
+            }
+          };
+
+          const isSaved = displayYear && displayMonth && savedValue === `${displayYear}-${displayMonth}`;
+
+          return (
+            <div className="health-field">
+              <label>{label}</label>
+              <div className="date-picker-row">
+                <select
+                  value={displayMonth}
+                  onChange={(e) => handleDateChange(displayYear, e.target.value)}
+                  aria-label={`${label} month`}
+                >
+                  <option value="">Month</option>
+                  {availableMonths.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={displayYear}
+                  onChange={(e) => handleDateChange(e.target.value, displayMonth)}
+                  aria-label={`${label} year`}
+                >
+                  <option value="">Year</option>
+                  {years.map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+              {isSaved && <span className="field-hint">Saved</span>}
+            </div>
+          );
+        };
+
+        const dexaScreening = getStr('dexa_screening');
+        const dexaResult = getStr('dexa_result');
+        const followupStatus = getStr('dexa_followup_status');
+
+        return (
+          <div className="section-card">
+          <section className="health-section screening-cascade">
+            <h3 className="health-section-title">Bone Density</h3>
+            <p className="health-section-desc">
+              DEXA scans measure bone mineral density to detect osteoporosis. Discuss screening with your doctor.
+            </p>
+
+            <div className="screening-group">
+              <div className="health-field">
+                <label htmlFor="dexa-screening">DEXA scan status</label>
+                <select
+                  id="dexa-screening"
+                  value={dexaScreening || ''}
+                  onChange={(e) => {
+                    onScreeningChange('dexa_screening', e.target.value);
+                    if (e.target.value !== 'dexa_scan') {
+                      if (getStr('dexa_last_date')) onScreeningChange('dexa_last_date', '');
+                      if (getStr('dexa_result')) onScreeningChange('dexa_result', '');
+                      if (getStr('dexa_followup_status')) onScreeningChange('dexa_followup_status', '');
+                      if (getStr('dexa_followup_date')) onScreeningChange('dexa_followup_date', '');
+                    }
+                  }}
+                >
+                  <option value="">Select...</option>
+                  <option value="dexa_scan">Had a DEXA scan</option>
+                  <option value="not_yet_started">Not yet started</option>
+                </select>
+              </div>
+
+              {dexaScreening === 'dexa_scan' && (
+                <>
+                  {renderDexaDateInput('dexa_last_date', 'Date of last DEXA scan')}
+
+                  {getStr('dexa_last_date') && (
+                    <div className="health-field">
+                      <label htmlFor="dexa-result">Result</label>
+                      <select
+                        id="dexa-result"
+                        value={dexaResult || ''}
+                        onChange={(e) => {
+                          onScreeningChange('dexa_result', e.target.value);
+                          if (e.target.value !== 'osteoporosis') {
+                            if (getStr('dexa_followup_status')) onScreeningChange('dexa_followup_status', '');
+                            if (getStr('dexa_followup_date')) onScreeningChange('dexa_followup_date', '');
+                          }
+                        }}
+                      >
+                        <option value="">Select...</option>
+                        <option value="normal">Normal</option>
+                        <option value="osteopenia">Osteopenia</option>
+                        <option value="osteoporosis">Osteoporosis</option>
+                        <option value="awaiting">Awaiting results</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {dexaResult === 'osteoporosis' && (
+                    <div className="health-field">
+                      <label htmlFor="dexa-followup-status">Treatment review status</label>
+                      <select
+                        id="dexa-followup-status"
+                        value={followupStatus || ''}
+                        onChange={(e) => {
+                          onScreeningChange('dexa_followup_status', e.target.value);
+                          if (e.target.value === 'not_organized' || e.target.value === '') {
+                            if (getStr('dexa_followup_date')) onScreeningChange('dexa_followup_date', '');
+                          }
+                        }}
+                      >
+                        <option value="">Select...</option>
+                        <option value="not_organized">Not yet organized</option>
+                        <option value="scheduled">Scheduled</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {dexaResult === 'osteoporosis' && (followupStatus === 'scheduled' || followupStatus === 'completed') && (
+                    renderDexaDateInput(
+                      'dexa_followup_date',
+                      followupStatus === 'completed' ? 'When was the treatment review completed?' : 'When is the treatment review scheduled?',
+                    )
+                  )}
+                </>
+              )}
+            </div>
+          </section>
+          </div>
+        );
+      })()}
+    </>
+  );
+
   const renderSaveButton = () => {
     if (!isLoggedIn || !hasLongitudinalValues) return null;
     return (
@@ -1548,7 +1731,7 @@ export function InputPanel({
         {mobileActiveTab === 'vitals' && <div className="section-card">{renderVitals()}</div>}
         {mobileActiveTab === 'blood-tests' && <div className="section-card">{renderBloodTests()}</div>}
         {mobileActiveTab === 'medications' && renderMedications()}
-        {mobileActiveTab === 'screening' && renderScreening()}
+        {mobileActiveTab === 'screening' && <>{renderScreening()}{renderBoneDensity()}</>}
         {renderSaveButton()}
       </div>
     );
@@ -1572,6 +1755,7 @@ export function InputPanel({
 
       {formStage >= 4 && renderMedications()}
       {formStage >= 4 && renderScreening()}
+      {formStage >= 4 && renderBoneDensity()}
       {renderSaveButton()}
     </div>
   );

@@ -1,5 +1,6 @@
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import type { UnitSystem } from './units';
+import { EGFR_THRESHOLDS } from './units';
 import { generateSuggestions } from './suggestions';
 
 /**
@@ -137,6 +138,11 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   // Calculate eGFR if creatinine + age + sex are available
   if (inputs.creatinine !== undefined && results.age !== undefined) {
     results.eGFR = Math.round(calculateEGFR(inputs.creatinine, results.age, inputs.sex));
+  }
+
+  // Adjust protein target for CKD Stage 3b+ (eGFR < 45): 1.0g/kg instead of 1.2g/kg
+  if (results.eGFR !== undefined && results.eGFR < EGFR_THRESHOLDS.mildlyDecreased) {
+    results.proteinTarget = Math.round(ibw * 1.0);
   }
 
   // Generate personalized suggestions based on all inputs and results

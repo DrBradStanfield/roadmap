@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { convertValidationErrorsToUnits, medicationSchema, screeningSchema } from './validation';
+import { convertValidationErrorsToUnits, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema } from './validation';
 
 describe('convertValidationErrorsToUnits', () => {
   describe('SI unit system (no conversion)', () => {
@@ -217,5 +217,113 @@ describe('screeningSchema', () => {
       value: 'some_value',
     });
     expect(result.success).toBe(false);
+  });
+
+  it('rejects value exceeding max length (500 chars)', () => {
+    const result = screeningSchema.safeParse({
+      screeningKey: 'colorectal_method',
+      value: 'a'.repeat(501),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts value at max length (500 chars)', () => {
+    const result = screeningSchema.safeParse({
+      screeningKey: 'colorectal_method',
+      value: 'a'.repeat(500),
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// String length limits (security hardening)
+// ---------------------------------------------------------------------------
+
+describe('profileUpdateSchema — string length limits', () => {
+  it('rejects firstName exceeding 100 chars', () => {
+    const result = profileUpdateSchema.safeParse({
+      firstName: 'a'.repeat(101),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects lastName exceeding 100 chars', () => {
+    const result = profileUpdateSchema.safeParse({
+      lastName: 'a'.repeat(101),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts firstName at 100 chars', () => {
+    const result = profileUpdateSchema.safeParse({
+      firstName: 'a'.repeat(100),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts lastName at 100 chars', () => {
+    const result = profileUpdateSchema.safeParse({
+      lastName: 'a'.repeat(100),
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('medicationSchema — string length limits', () => {
+  it('rejects drugName exceeding 100 chars', () => {
+    const result = medicationSchema.safeParse({
+      medicationKey: 'statin',
+      drugName: 'a'.repeat(101),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts drugName at 100 chars', () => {
+    const result = medicationSchema.safeParse({
+      medicationKey: 'statin',
+      drugName: 'a'.repeat(100),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects doseUnit exceeding 20 chars', () => {
+    const result = medicationSchema.safeParse({
+      medicationKey: 'statin',
+      drugName: 'atorvastatin',
+      doseValue: 10,
+      doseUnit: 'a'.repeat(21),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts doseUnit at 20 chars', () => {
+    const result = medicationSchema.safeParse({
+      medicationKey: 'statin',
+      drugName: 'atorvastatin',
+      doseValue: 10,
+      doseUnit: 'a'.repeat(20),
+    });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('measurementSchema — string length limits', () => {
+  it('rejects externalId exceeding 200 chars', () => {
+    const result = measurementSchema.safeParse({
+      metricType: 'weight',
+      value: 75,
+      externalId: 'a'.repeat(201),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts externalId at 200 chars', () => {
+    const result = measurementSchema.safeParse({
+      metricType: 'weight',
+      value: 75,
+      externalId: 'a'.repeat(200),
+    });
+    expect(result.success).toBe(true);
   });
 });

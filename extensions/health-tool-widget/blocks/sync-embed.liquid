@@ -106,7 +106,9 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ screening: { screeningKey: scr.screeningKey, value: scr.value } })
-        }).then(function() { postScreenings(i + 1); });
+        }).then(function(r) { if (!r.ok) console.warn('sync-embed: screening sync failed', r.status); })
+          .catch(function() {})
+          .then(function() { postScreenings(i + 1); });
       }
 
       function postMedications(i) {
@@ -125,7 +127,9 @@
             doseValue: med.doseValue || null,
             doseUnit: med.doseUnit || null
           } })
-        }).then(function() { postMedications(i + 1); });
+        }).then(function(r) { if (!r.ok) console.warn('sync-embed: medication sync failed', r.status); })
+          .catch(function() {})
+          .then(function() { postMedications(i + 1); });
       }
 
       function postMeasurements(i) {
@@ -137,7 +141,9 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(entries[i])
-        }).then(function() { postMeasurements(i + 1); });
+        }).then(function(r) { if (!r.ok) console.warn('sync-embed: measurement sync failed', r.status); })
+          .catch(function() {})
+          .then(function() { postMeasurements(i + 1); });
       }
 
       if (hasProfile) {
@@ -145,7 +151,9 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ profile: profile })
-        }).then(function() { postMeasurements(0); });
+        }).then(function(r) { if (!r.ok) console.warn('sync-embed: profile sync failed', r.status); })
+          .catch(function() {})
+          .then(function() { postMeasurements(0); });
       } else {
         postMeasurements(0);
       }

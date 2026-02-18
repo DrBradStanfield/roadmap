@@ -432,11 +432,11 @@ export const TOTAL_CHOLESTEROL_THRESHOLDS = {
   high: 240 / CHOLESTEROL_FACTOR,       // ~6.21
 } as const;
 
-/** Non-HDL cholesterol thresholds in mmol/L */
+/** Non-HDL cholesterol thresholds in mmol/L (LDL thresholds + 30 mg/dL for VLDL) */
 export const NON_HDL_THRESHOLDS = {
-  borderline: 130 / CHOLESTEROL_FACTOR, // ~3.36
-  high: 160 / CHOLESTEROL_FACTOR,       // ~4.14
-  veryHigh: 190 / CHOLESTEROL_FACTOR,   // ~4.91
+  borderline: 160 / CHOLESTEROL_FACTOR, // ~4.14
+  high: 190 / CHOLESTEROL_FACTOR,       // ~4.91
+  veryHigh: 220 / CHOLESTEROL_FACTOR,   // ~5.69
 } as const;
 
 /** HDL thresholds in mmol/L */
