@@ -202,6 +202,25 @@ Results use `effectiveInputs` (current form + fallback to previous measurements)
 
 Auto-detected from browser locale (US/Liberia/Myanmar → conventional, else SI), with timezone cross-check: if locale is `en-US` but timezone is clearly non-US (e.g. `Pacific/Auckland`), defaults to SI. Override saved to localStorage (`health_roadmap_unit_system`) + `profiles.unit_system`.
 
+### Progressive Disclosure (New User Onboarding)
+
+First-time users see fields revealed in 4 stages instead of an overwhelming wall of empty inputs. Returning users with existing data see the full form immediately.
+
+**Stages** (each unlocked when the previous gate fields are filled):
+
+| Stage | Gate | Fields shown |
+|-------|------|-------------|
+| 1 | Always | Units, Sex, Height |
+| 2 | Sex + Height filled | Birth Month, Birth Year |
+| 3 | Birth Month + Birth Year filled | Weight, Waist Circumference |
+| 4 | Weight filled | Blood Pressure, Blood Tests, Medications, Screening |
+
+**Pulsing glow attention cue**: A teal pulsing `box-shadow` (`.field-attention` CSS class) highlights the next field to fill. Follows the user: Sex → Height → Birth fields → Weight → then disappears at stage 4.
+
+**Implementation**: `computeFormStage(inputs)` in `mappings.ts` returns 1–4. Checks from stage 4 downward (short-circuit), so returning users with `weightKg` in `effectiveInputs` skip straight to stage 4. HealthTool computes `formStage` from `effectiveInputs` (includes `previousMeasurements` fallback) and passes it to InputPanel. On mobile, tab visibility is gated by `formStage` (Vitals at 3+, Blood Tests at 4+).
+
+**Testing flow**: Load form as new user (clear localStorage) → only Sex/Height visible with Sex glowing → select sex → Height glows → enter height → Birth fields appear with glow → fill birth → Weight/Waist appear with Weight glowing → enter weight → full form visible, no glow.
+
 ### Health History Page
 
 Separate bundle (`health-history.js`) with Chart.js line charts per metric. Fetched via `GET ?all_history=true&limit=100&offset=0`. Never loaded by the main widget.
