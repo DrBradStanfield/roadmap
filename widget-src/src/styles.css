@@ -33,7 +33,7 @@
     Ubuntu, Cantarell, sans-serif;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 24px 0;
   color: #1a1a1a;
 }
 
@@ -60,7 +60,7 @@
 /* Two-Panel Layout */
 .health-tool-content {
   display: grid;
-  grid-template-columns: 5fr 6fr;
+  grid-template-columns: 6fr 5fr;
   gap: 32px;
   align-items: start;
 }
@@ -835,9 +835,10 @@
 }
 
 .login-prompt {
-  font-size: 12.5px;
+  font-size: 13px;
   color: #666;
   margin: 0;
+  white-space: nowrap;
 }
 
 .login-link {

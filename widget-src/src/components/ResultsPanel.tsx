@@ -10,6 +10,7 @@ import {
   LDL_THRESHOLDS,
   REMINDER_CATEGORIES,
   REMINDER_CATEGORY_LABELS,
+  EGFR_THRESHOLDS,
   type ReminderCategory,
 } from '@roadmap/health-core';
 import type { ApiReminderPreference } from '../lib/api';
@@ -423,7 +424,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
           <div className="stat-card">
             <span className="stat-label">Protein Target</span>
             <span className="stat-value">{results.proteinTarget}g/day</span>
-            <span className="stat-status status-normal">1.2g per kg IBW</span>
+            <span className="stat-status status-normal">{results.eGFR !== undefined && results.eGFR < EGFR_THRESHOLDS.mildlyDecreased ? '1.0g per kg IBW' : '1.2g per kg IBW'}</span>
           </div>
           {results.bmi !== undefined && (() => {
             const status = getBmiStatus(results.bmi);
