@@ -437,8 +437,8 @@ export function InputPanel({
             </div>
 
             {formStage >= 2 && (
-              <div className={`health-field-group stage-reveal${formStage === 2 && (!inputs.birthMonth || !inputs.birthYear) ? ' field-attention' : ''}`}>
-                <div className="health-field">
+              <div className="health-field-group stage-reveal">
+                <div className={`health-field${formStage === 2 && !inputs.birthMonth ? ' field-attention' : ''}`}>
                   <label htmlFor="birthMonth">Birth Month</label>
                   <select
                     id="birthMonth"
@@ -455,7 +455,7 @@ export function InputPanel({
                   </select>
                 </div>
 
-                <div className="health-field">
+                <div className={`health-field${formStage === 2 && inputs.birthMonth && !inputs.birthYear ? ' field-attention' : ''}`}>
                   <label htmlFor="birthYear">Birth Year</label>
                   <input
                     type="number"
