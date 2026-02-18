@@ -11,7 +11,11 @@
 (function() {
   try {
     if (!localStorage.getItem('health_roadmap_authenticated')) return;
-    if (sessionStorage.getItem('health_roadmap_auth_redirect')) return;
+    if (sessionStorage.getItem('health_roadmap_auth_redirect')) {
+      localStorage.removeItem('health_roadmap_data');
+      localStorage.removeItem('health_roadmap_authenticated');
+      return;
+    }
     sessionStorage.setItem('health_roadmap_auth_redirect', '1');
     window.location.href = '{{ routes.account_url | default: "/account" }}' +
       '?return_url=' + encodeURIComponent(window.location.pathname + window.location.search);

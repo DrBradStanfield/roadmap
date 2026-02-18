@@ -155,6 +155,17 @@
   }
 })();
 </script>
+{% else %}
+<script>
+(function() {
+  try {
+    if (localStorage.getItem('health_roadmap_authenticated')) {
+      localStorage.removeItem('health_roadmap_data');
+      localStorage.removeItem('health_roadmap_authenticated');
+    }
+  } catch(e) {}
+})();
+</script>
 {% endif %}
 
 {% schema %}

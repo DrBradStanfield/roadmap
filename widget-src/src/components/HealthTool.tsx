@@ -222,9 +222,14 @@ export function HealthTool() {
           }
         }
       } else {
-        const saved = loadFromLocalStorage();
-        if (saved) {
-          setInputs(saved.inputs);
+        // Detect stale data from a previous logged-in session (user logged out)
+        if (localStorage.getItem('health_roadmap_authenticated')) {
+          clearLocalStorage();
+        } else {
+          const saved = loadFromLocalStorage();
+          if (saved) {
+            setInputs(saved.inputs);
+          }
         }
         setHasApiResponse(true);
       }
