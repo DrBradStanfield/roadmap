@@ -1055,3 +1055,111 @@ export async function deleteAllUserData(userId: string): Promise<{ measurementsD
 
   return { measurementsDeleted };
 }
+
+// ---------------------------------------------------------------------------
+// Dashboard analytics — aggregate stats for the Shopify admin dashboard.
+// Uses supabaseAdmin (service role) because these are cross-user aggregates.
+// ---------------------------------------------------------------------------
+
+export interface DashboardStats {
+  totalUsers: number;
+  activeUsers30d: number;
+  totalMeasurements: number;
+  remindersSent: number;
+  metricBreakdown: { metricType: string; entries: number; users: number }[];
+  profileCompleteness: {
+    total: number;
+    withHeight: number;
+    withSex: number;
+    withBirthYear: number;
+  };
+  medicationUsers: number;
+  recentSignups: { firstName: string | null; lastName: string | null; createdAt: string }[];
+}
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+  if (!supabaseAdmin) {
+    throw new Error('Supabase admin client not configured');
+  }
+
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [
+    profilesRes,
+    activeUsersRes,
+    measurementsCountRes,
+    remindersRes,
+    metricBreakdownRes,
+    profileStatsRes,
+    medicationUsersRes,
+    recentSignupsRes,
+  ] = await Promise.all([
+    // Total users
+    supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
+    // Active users (last 30 days) — use RPC or distinct query
+    supabaseAdmin.from('health_measurements')
+      .select('user_id')
+      .gte('created_at', thirtyDaysAgo),
+    // Total measurements
+    supabaseAdmin.from('health_measurements').select('*', { count: 'exact', head: true }),
+    // Reminder emails sent
+    supabaseAdmin.from('reminder_log').select('*', { count: 'exact', head: true }),
+    // Metric breakdown: group by metric_type
+    supabaseAdmin.from('health_measurements').select('metric_type, user_id'),
+    // Profile completeness
+    supabaseAdmin.from('profiles').select('height, sex, birth_year'),
+    // Medication users
+    supabaseAdmin.from('medications').select('user_id').eq('status', 'active'),
+    // Recent signups
+    supabaseAdmin.from('profiles')
+      .select('first_name, last_name, created_at')
+      .order('created_at', { ascending: false })
+      .limit(10),
+  ]);
+
+  // Compute active users (distinct user_ids)
+  const activeUserIds = new Set(
+    (activeUsersRes.data ?? []).map((r: { user_id: string }) => r.user_id),
+  );
+
+  // Compute metric breakdown
+  const metricMap = new Map<string, { entries: number; users: Set<string> }>();
+  for (const row of metricBreakdownRes.data ?? []) {
+    const entry = metricMap.get(row.metric_type) ?? { entries: 0, users: new Set<string>() };
+    entry.entries++;
+    entry.users.add(row.user_id);
+    metricMap.set(row.metric_type, entry);
+  }
+  const metricBreakdown = Array.from(metricMap.entries())
+    .map(([metricType, { entries, users }]) => ({ metricType, entries, users: users.size }))
+    .sort((a, b) => b.entries - a.entries);
+
+  // Profile completeness
+  const profiles = profileStatsRes.data ?? [];
+  const total = profiles.length;
+  const withHeight = profiles.filter((p: { height: number | null }) => p.height != null).length;
+  const withSex = profiles.filter((p: { sex: number | null }) => p.sex != null).length;
+  const withBirthYear = profiles.filter((p: { birth_year: number | null }) => p.birth_year != null).length;
+
+  // Medication users (distinct)
+  const medUserIds = new Set(
+    (medicationUsersRes.data ?? []).map((r: { user_id: string }) => r.user_id),
+  );
+
+  return {
+    totalUsers: profilesRes.count ?? 0,
+    activeUsers30d: activeUserIds.size,
+    totalMeasurements: measurementsCountRes.count ?? 0,
+    remindersSent: remindersRes.count ?? 0,
+    metricBreakdown,
+    profileCompleteness: { total, withHeight, withSex, withBirthYear },
+    medicationUsers: medUserIds.size,
+    recentSignups: (recentSignupsRes.data ?? []).map(
+      (r: { first_name: string | null; last_name: string | null; created_at: string }) => ({
+        firstName: r.first_name,
+        lastName: r.last_name,
+        createdAt: r.created_at,
+      }),
+    ),
+  };
+}
