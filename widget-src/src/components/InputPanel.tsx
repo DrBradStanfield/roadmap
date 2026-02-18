@@ -138,7 +138,23 @@ export function InputPanel({
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
   const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthYear >= 1900 && inputs.birthMonth);
-  const showPrefill = !prefillComplete || prefillExpanded;
+
+  // Animated collapse: delay before collapsing so user sees their input registered
+  const [collapseAnimating, setCollapseAnimating] = useState(false);
+  const [collapsed, setCollapsed] = useState(prefillComplete);
+
+  useEffect(() => {
+    if (prefillComplete && !prefillExpanded) {
+      setCollapseAnimating(true);
+      const timer = setTimeout(() => {
+        setCollapsed(true);
+      }, 400);
+      return () => clearTimeout(timer);
+    } else {
+      setCollapsed(false);
+      setCollapseAnimating(false);
+    }
+  }, [prefillComplete, prefillExpanded]);
 
   // Feet/inches state for US height input
   const [heightFeet, setHeightFeet] = useState<string>('');
@@ -336,18 +352,18 @@ export function InputPanel({
         >
           Basic Information
           {prefillComplete && (
-            <span className="collapse-chevron">{prefillExpanded ? '\u25BE' : '\u25B8'}</span>
+            <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
           )}
         </h3>
 
-        {prefillComplete && !prefillExpanded && (
+        <div className={`prefill-summary-wrapper${collapsed && !prefillExpanded ? ' visible' : ''}`}>
           <p className="prefill-summary" onClick={() => setPrefillExpanded(true)}>
             {inputs.sex === 'male' ? 'Male' : 'Female'} · {formatHeightDisplay(inputs.heightCm!, unitSystem)} · Born {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(inputs.birthMonth || 1) - 1]} {inputs.birthYear}{inputs.birthYear && inputs.birthMonth ? ` (Age ${calculateAge(inputs.birthYear, inputs.birthMonth)})` : ''}
           </p>
-        )}
+        </div>
 
-        {showPrefill && (
-          <>
+        <div className={`prefill-fields-wrapper${collapseAnimating ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
+          <div>
             <div className={`health-field${!inputs.sex ? ' field-attention' : ''}`}>
               <label htmlFor="sex">Sex</label>
               <select
@@ -469,8 +485,8 @@ export function InputPanel({
                 </div>
               </div>
             )}
-          </>
-        )}
+          </div>
+        </div>
       </section>
     </>
   );

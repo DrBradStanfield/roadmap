@@ -281,6 +281,26 @@
 .collapse-chevron {
   font-size: 14px;
   color: #999;
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+.collapse-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+/* Animated collapse: summary fade-in */
+.prefill-summary-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.3s ease, opacity 0.3s ease;
+}
+.prefill-summary-wrapper > * {
+  overflow: hidden;
+}
+.prefill-summary-wrapper.visible {
+  grid-template-rows: 1fr;
+  opacity: 1;
 }
 
 .prefill-summary {
@@ -288,6 +308,25 @@
   color: #666;
   margin: -8px 0 16px;
   cursor: pointer;
+}
+
+/* Animated collapse: fields height transition */
+.prefill-fields-wrapper {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.35s ease, opacity 0.25s ease;
+  opacity: 1;
+}
+.prefill-fields-wrapper.collapsing > *,
+.prefill-fields-wrapper.collapsed > * {
+  overflow: hidden;
+}
+.prefill-fields-wrapper.collapsing {
+  opacity: 0;
+}
+.prefill-fields-wrapper.collapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
 }
 
 .health-section-desc {
