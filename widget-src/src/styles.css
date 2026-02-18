@@ -1355,3 +1355,13 @@
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Attention cue: pulsing glow guides user to the next field */
+.field-attention select,
+.field-attention input {
+  animation: attention-pulse 2s ease-in-out infinite;
+}
+@keyframes attention-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15); }
+  50% { box-shadow: 0 0 0 5px rgba(76, 175, 80, 0.35); }
+}

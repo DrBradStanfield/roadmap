@@ -235,8 +235,9 @@ export function InputPanel({
       : hint;
     const r = range(field);
     const previousLabel = getPreviousLabel(field);
+    const needsAttention = field === 'weightKg' && formStage === 3 && inputs.weightKg === undefined;
     return (
-      <div className="health-field" key={field}>
+      <div className={`health-field${needsAttention ? ' field-attention' : ''}`} key={field}>
         <label htmlFor={field}>{fieldLabel(field, name)}</label>
         <div className="longitudinal-input-row">
           <input
@@ -347,7 +348,7 @@ export function InputPanel({
 
         {showPrefill && (
           <>
-            <div className="health-field">
+            <div className={`health-field${!inputs.sex ? ' field-attention' : ''}`}>
               <label htmlFor="sex">Sex</label>
               <select
                 id="sex"
@@ -364,7 +365,7 @@ export function InputPanel({
               {errors.sex && <span className="error-message">{errors.sex}</span>}
             </div>
 
-            <div className="health-field">
+            <div className={`health-field${inputs.sex && !inputs.heightCm ? ' field-attention' : ''}`}>
               <label htmlFor="heightCm">{unitSystem === 'si' ? 'Height (cm)' : 'Height'}</label>
               {unitSystem === 'si' ? (
                 <input
@@ -436,7 +437,7 @@ export function InputPanel({
             </div>
 
             {formStage >= 2 && (
-              <div className="health-field-group stage-reveal">
+              <div className={`health-field-group stage-reveal${formStage === 2 && (!inputs.birthMonth || !inputs.birthYear) ? ' field-attention' : ''}`}>
                 <div className="health-field">
                   <label htmlFor="birthMonth">Birth Month</label>
                   <select
