@@ -568,4 +568,11 @@ describe('computeFormStage', () => {
   it('returns 3 even if sex/height missing (short-circuit)', () => {
     expect(computeFormStage({ birthMonth: 5, birthYear: 1990 })).toBe(3);
   });
+
+  it('returns 2 when birthYear is partial (< 1900) — prevents premature collapse', () => {
+    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 1 })).toBe(2);
+    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 19 })).toBe(2);
+    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 198 })).toBe(2);
+    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 1980 })).toBe(3);
+  });
 });

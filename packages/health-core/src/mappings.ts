@@ -416,7 +416,7 @@ export function diffProfileFields(
  */
 export function computeFormStage(inputs: Partial<HealthInputs>): 1 | 2 | 3 | 4 {
   if (inputs.weightKg !== undefined) return 4;
-  if (inputs.birthMonth !== undefined && inputs.birthYear !== undefined) return 3;
+  if (inputs.birthMonth !== undefined && inputs.birthYear !== undefined && inputs.birthYear >= 1900) return 3;
   if (inputs.sex !== undefined && inputs.heightCm !== undefined) return 2;
   return 1;
 }

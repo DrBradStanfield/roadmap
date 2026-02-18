@@ -137,7 +137,7 @@ export function InputPanel({
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
-  const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthMonth);
+  const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthYear >= 1900 && inputs.birthMonth);
   const showPrefill = !prefillComplete || prefillExpanded;
 
   // Feet/inches state for US height input
