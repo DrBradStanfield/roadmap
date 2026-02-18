@@ -9,5 +9,6 @@ build/
 .DS_Store
 .shopify/
 .claude/
+.mcp.json
 shopify.app.toml
 fly.toml

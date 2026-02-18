@@ -9,8 +9,6 @@ interface State {
   hasError: boolean;
 }
 
-const FEEDBACK_URL = 'https://github.com/DrBradStanfield/roadmap/issues/new/choose';
-
 export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -33,7 +31,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
           <h3>Something went wrong</h3>
           <p>The health tool encountered an error. Please refresh the page to try again.</p>
           <p style={{ marginTop: '8px', fontSize: '14px' }}>
-            <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer">Report this issue</a>
+            <a href="mailto:brad@drstanfield.com?subject=Health%20Roadmap%20Bug%20Report">Report this issue</a>
           </p>
         </div>
       );

@@ -446,6 +446,45 @@ export async function sendReminderEmail(
 }
 
 // ---------------------------------------------------------------------------
+// Feedback email
+// ---------------------------------------------------------------------------
+
+const FEEDBACK_EMAIL = process.env.FEEDBACK_EMAIL || 'brad@drstanfield.com';
+
+/**
+ * Send a user feedback email via Resend. Fire-and-forget — never throws.
+ * Sets Reply-To to the user's email so the recipient can hit reply.
+ */
+export async function sendFeedbackEmail(
+  userEmail: string,
+  message: string,
+  customerId: string | null,
+): Promise<boolean> {
+  if (!resend) {
+    console.log('Resend not configured, skipping feedback email');
+    return false;
+  }
+
+  try {
+    const customerLine = customerId ? `Customer ID: ${customerId}` : 'Guest user';
+    const timestamp = new Date().toISOString();
+
+    await resend.emails.send({
+      from: `Health Roadmap Feedback <${RESEND_FROM_EMAIL}>`,
+      to: FEEDBACK_EMAIL,
+      subject: 'Health Roadmap Feedback',
+      replyTo: userEmail,
+      text: `${customerLine}\nTime: ${timestamp}\nFrom: ${userEmail}\n\n${message}`,
+    });
+    return true;
+  } catch (error) {
+    console.error('Error sending feedback email:', error);
+    Sentry.captureException(error, { tags: { feature: 'feedback_email' } });
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // HTML helpers
 // ---------------------------------------------------------------------------
 

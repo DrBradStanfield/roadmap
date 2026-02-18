@@ -13,6 +13,7 @@ import {
   type ReminderCategory,
 } from '@roadmap/health-core';
 import type { ApiReminderPreference } from '../lib/api';
+import { FeedbackForm } from './FeedbackForm';
 
 // Auth state type (matches HealthTool)
 interface AuthState {
@@ -178,6 +179,8 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
   isSavingLongitudinal?: boolean;
   redirectFailed?: boolean;
 }) {
+  const [showFeedback, setShowFeedback] = useState(false);
+
   if (!authState) return null;
 
   if (authState.isLoggedIn) {
@@ -198,15 +201,17 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
               className="logged-in-link"
             >Logged in</a> · <span className={`save-indicator-inline ${statusClass}`}>{statusText}</span>
           </span>
-          <a
-            href="https://github.com/DrBradStanfield/roadmap/issues/new/choose"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            type="button"
             className="feedback-btn-small"
+            onClick={() => setShowFeedback(!showFeedback)}
           >
             Send feedback
-          </a>
+          </button>
         </div>
+        {showFeedback && (
+          <FeedbackForm initialExpanded showSourceLink={false} onClose={() => setShowFeedback(false)} />
+        )}
         {hasUnsavedLongitudinal && onSaveLongitudinal && (
           <button
             className="btn-primary save-top-btn"
@@ -551,16 +556,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
         </div>
       )}
 
-      <div className="feedback-section">
-        <a
-          href="https://github.com/DrBradStanfield/roadmap/issues/new/choose"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="feedback-btn"
-        >
-          Send feedback
-        </a>
-      </div>
+      <FeedbackForm />
 
       {authState?.isLoggedIn && onDeleteData && (
         <div className="delete-data-section">

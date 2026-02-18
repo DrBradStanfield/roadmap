@@ -340,6 +340,29 @@ export async function setGlobalReminderOptout(optout: boolean): Promise<boolean>
 }
 
 /**
+ * Send feedback via the feedback API endpoint.
+ */
+export async function sendFeedback(
+  email: string,
+  message: string,
+): Promise<boolean> {
+  return apiCall(
+    async () => {
+      const response = await fetch(`${PROXY_PATH}/api/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, message, website: '' }),
+      });
+      if (!response.ok) return false;
+      const result: { success: boolean } = await response.json();
+      return result.success;
+    },
+    'Error sending feedback',
+    false,
+  );
+}
+
+/**
  * Save changed fields — profile fields go to profiles table, measurements stay immutable.
  */
 export async function saveChangedMeasurements(

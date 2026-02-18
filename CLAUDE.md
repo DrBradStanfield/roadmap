@@ -16,6 +16,22 @@ This is a **Health Roadmap Tool** - a Shopify app that helps users track health 
 - **Build**: Vite (widget), Remix (admin)
 - **Testing**: Vitest
 - **Error Monitoring**: Sentry (`@sentry/react` for widget, `@sentry/remix` for backend)
+- **User Analytics**: Microsoft Clarity (heatmaps + session recordings)
+
+## User Analytics (Microsoft Clarity)
+
+Free heatmaps and session recordings to understand how users interact with the health tool. Clarity tracks all storefront visitors (guests and logged-in).
+
+**Setup**: `clarity-embed.liquid` app embed block loads the Clarity tracking script on every storefront page. Project ID `vj1f8ywkt0` is hardcoded in the block.
+
+**Claude Code access**: The `.mcp.json` file (gitignored) configures the `@microsoft/clarity-mcp-server` MCP server, giving Claude direct access to analytics data. Available MCP tools:
+- `query-analytics-dashboard` — traffic metrics, user behavior, scroll depth, rage clicks
+- `list-session-recordings` — filter recordings by device, browser, location
+- `query-documentation-resources` — Clarity documentation lookup
+
+**Limits**: 10 API requests/day, last 1–3 days of data, up to 3 dimensions per query.
+
+**Dashboard**: [clarity.microsoft.com](https://clarity.microsoft.com) — for heatmaps, full session replays, and longer date ranges.
 
 ## FHIR Compliance
 

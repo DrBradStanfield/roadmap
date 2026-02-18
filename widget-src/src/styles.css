@@ -783,16 +783,17 @@
   padding: 4px 12px;
   background: #2563eb;
   color: #fff;
+  border: none;
   border-radius: 6px;
   text-decoration: none;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .feedback-btn-small:hover {
   background: #1d4ed8;
   color: #fff;
 }
-
 
 .login-prompt {
   font-size: 13px;
@@ -1186,9 +1187,17 @@
   color: #fff;
 }
 
-/* Feedback Button */
+/* Feedback Section */
 .feedback-section {
   text-align: center;
+  position: relative;
+}
+
+.feedback-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
 }
 
 .feedback-btn {
@@ -1198,14 +1207,103 @@
   font-weight: 500;
   color: #fff;
   background: #2563eb;
+  border: none;
   border-radius: 8px;
-  text-decoration: none;
+  cursor: pointer;
   transition: background 0.2s;
 }
 
 .feedback-btn:hover {
   background: #1d4ed8;
   color: #fff;
+}
+
+.source-code-link {
+  font-size: 13px;
+  color: var(--color-gray-500, #666);
+  text-decoration: none;
+}
+
+.source-code-link:hover {
+  color: var(--color-primary, #2563eb);
+  text-decoration: underline;
+}
+
+.feedback-form {
+  text-align: left;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.feedback-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.feedback-input,
+.feedback-textarea {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.feedback-input:focus,
+.feedback-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary, #2563eb);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.feedback-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.feedback-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.feedback-submit {
+  padding: 8px 20px;
+  font-size: 14px;
+}
+
+.feedback-cancel {
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--color-gray-500, #666);
+  cursor: pointer;
+  padding: 8px 4px;
+}
+
+.feedback-cancel:hover {
+  color: #333;
+}
+
+.feedback-success {
+  color: #388e3c;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.feedback-error {
+  color: var(--color-error, #dc3545);
+  font-size: 13px;
+  margin: 0 0 8px;
 }
 
 /* Delete Data Section */
