@@ -1346,3 +1346,12 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+/* Progressive disclosure: smooth reveal of new form stages */
+.stage-reveal {
+  animation: stage-reveal 0.3s ease-out;
+}
+@keyframes stage-reveal {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

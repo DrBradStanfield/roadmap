@@ -18,6 +18,7 @@ import {
   HBA1C_THRESHOLDS,
   TRIGLYCERIDES_THRESHOLDS,
   BP_THRESHOLDS,
+  computeFormStage,
   type HealthInputs,
   type UnitSystem,
   type ApiMeasurement,
@@ -246,6 +247,9 @@ export function HealthTool() {
     return base;
   }, [inputs, previousMeasurements, authState.isLoggedIn]);
 
+  // Progressive disclosure: compute which stage of the form to show
+  const formStage = useMemo(() => computeFormStage(effectiveInputs), [effectiveInputs]);
+
   // Auto-save demographics + height only (debounced)
   useEffect(() => {
     if (!hasApiResponse) return;
@@ -442,13 +446,13 @@ export function HealthTool() {
 
     return [
       { id: 'profile', label: 'Profile', visible: true },
-      { id: 'vitals', label: 'Vitals', visible: true },
-      { id: 'blood-tests', label: 'Blood Tests', visible: true },
-      { id: 'medications', label: 'Medications', visible: medsVisible },
-      { id: 'screening', label: 'Screening', visible: screeningVisible },
+      { id: 'vitals', label: 'Vitals', visible: formStage >= 3 },
+      { id: 'blood-tests', label: 'Blood Tests', visible: formStage >= 4 },
+      { id: 'medications', label: 'Medications', visible: formStage >= 4 && medsVisible },
+      { id: 'screening', label: 'Screening', visible: formStage >= 4 && screeningVisible },
       { id: 'results', label: 'Results', visible: true },
     ];
-  }, [effectiveInputs, inputs.birthYear, inputs.birthMonth, inputs.sex]);
+  }, [effectiveInputs, inputs.birthYear, inputs.birthMonth, inputs.sex, formStage]);
 
   // Auto-fallback: if active tab becomes invisible, switch to first visible tab
   useEffect(() => {
@@ -595,6 +599,7 @@ export function HealthTool() {
     onScreeningChange: handleScreeningChange,
     onSaveLongitudinal: handleSaveLongitudinal,
     isSavingLongitudinal,
+    formStage,
   };
 
   const resultsPanelProps = {

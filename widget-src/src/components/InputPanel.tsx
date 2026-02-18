@@ -122,6 +122,7 @@ interface InputPanelProps {
   onScreeningChange: (screeningKey: string, value: string) => void;
   onSaveLongitudinal: (bloodTestDate?: string) => void;
   isSavingLongitudinal: boolean;
+  formStage: 1 | 2 | 3 | 4;
   mobileActiveTab?: TabId;
 }
 
@@ -130,6 +131,7 @@ export function InputPanel({
   isLoggedIn, previousMeasurements, medications, onMedicationChange,
   screenings, onScreeningChange,
   onSaveLongitudinal, isSavingLongitudinal,
+  formStage,
   mobileActiveTab,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
@@ -433,37 +435,39 @@ export function InputPanel({
               )}
             </div>
 
-            <div className="health-field-group">
-              <div className="health-field">
-                <label htmlFor="birthMonth">Birth Month</label>
-                <select
-                  id="birthMonth"
-                  value={inputs.birthMonth || ''}
-                  onChange={(e) => updateField('birthMonth', parseNumber(e.target.value))}
-                >
-                  <option value="">Month...</option>
-                  {[
-                    'January', 'February', 'March', 'April', 'May', 'June',
-                    'July', 'August', 'September', 'October', 'November', 'December'
-                  ].map((month, i) => (
-                    <option key={i + 1} value={i + 1}>{month}</option>
-                  ))}
-                </select>
-              </div>
+            {formStage >= 2 && (
+              <div className="health-field-group stage-reveal">
+                <div className="health-field">
+                  <label htmlFor="birthMonth">Birth Month</label>
+                  <select
+                    id="birthMonth"
+                    value={inputs.birthMonth || ''}
+                    onChange={(e) => updateField('birthMonth', parseNumber(e.target.value))}
+                  >
+                    <option value="">Month...</option>
+                    {[
+                      'January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'
+                    ].map((month, i) => (
+                      <option key={i + 1} value={i + 1}>{month}</option>
+                    ))}
+                  </select>
+                </div>
 
-              <div className="health-field">
-                <label htmlFor="birthYear">Birth Year</label>
-                <input
-                  type="number"
-                  id="birthYear"
-                  value={inputs.birthYear || ''}
-                  onChange={(e) => updateField('birthYear', parseNumber(e.target.value))}
-                  placeholder="1980"
-                  min="1900"
-                  max={new Date().getFullYear()}
-                />
+                <div className="health-field">
+                  <label htmlFor="birthYear">Birth Year</label>
+                  <input
+                    type="number"
+                    id="birthYear"
+                    value={inputs.birthYear || ''}
+                    onChange={(e) => updateField('birthYear', parseNumber(e.target.value))}
+                    placeholder="1980"
+                    min="1900"
+                    max={new Date().getFullYear()}
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </section>
@@ -474,64 +478,66 @@ export function InputPanel({
     <section className="health-section">
       {BASIC_LONGITUDINAL_FIELDS.map(cfg => renderLongitudinalField(cfg))}
 
-      {/* Blood Pressure — two-field clinical pattern */}
-      <div className="health-field">
-        <label>Blood Pressure (mmHg)</label>
-        <div className="longitudinal-input-row">
-          <div className="bp-fieldset">
-            <input
-              type="number"
-              inputMode="numeric"
-              id="systolicBp"
-              value={inputs.systolicBp ?? ''}
-              onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
-              placeholder={getPreviousPlaceholder('systolicBp') ?? "120"}
-              min={60}
-              max={250}
-              className={errors.systolicBp ? 'error' : ''}
-            />
-            <span className="bp-separator">/</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              id="diastolicBp"
-              value={inputs.diastolicBp ?? ''}
-              onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
-              placeholder={getPreviousPlaceholder('diastolicBp') ?? "80"}
-              min={40}
-              max={150}
-              className={errors.diastolicBp ? 'error' : ''}
-            />
+      {/* Blood Pressure — two-field clinical pattern (stage 4+) */}
+      {formStage >= 4 && (
+        <div className="health-field stage-reveal">
+          <label>Blood Pressure (mmHg)</label>
+          <div className="longitudinal-input-row">
+            <div className="bp-fieldset">
+              <input
+                type="number"
+                inputMode="numeric"
+                id="systolicBp"
+                value={inputs.systolicBp ?? ''}
+                onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
+                placeholder={getPreviousPlaceholder('systolicBp') ?? "120"}
+                min={60}
+                max={250}
+                className={errors.systolicBp ? 'error' : ''}
+              />
+              <span className="bp-separator">/</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                id="diastolicBp"
+                value={inputs.diastolicBp ?? ''}
+                onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
+                placeholder={getPreviousPlaceholder('diastolicBp') ?? "80"}
+                min={40}
+                max={150}
+                className={errors.diastolicBp ? 'error' : ''}
+              />
+            </div>
+            {isLoggedIn && hasBpValue && (
+              <button
+                className="btn-primary save-inline-btn"
+                onClick={() => onSaveLongitudinal()}
+                disabled={isSavingLongitudinal}
+                title="Save new values"
+              >
+                {isSavingLongitudinal ? '...' : 'Save'}
+              </button>
+            )}
           </div>
-          {isLoggedIn && hasBpValue && (
-            <button
-              className="btn-primary save-inline-btn"
-              onClick={() => onSaveLongitudinal()}
-              disabled={isSavingLongitudinal}
-              title="Save new values"
-            >
-              {isSavingLongitudinal ? '...' : 'Save'}
-            </button>
+          {errors.systolicBp && (
+            <span className="error-message">{errors.systolicBp}</span>
           )}
-        </div>
-        {errors.systolicBp && (
-          <span className="error-message">{errors.systolicBp}</span>
-        )}
-        {errors.diastolicBp && (
-          <span className="error-message">{errors.diastolicBp}</span>
-        )}
-        <div className="field-meta">
-          <span className="field-hint">Target: &lt;{(inputs.birthYear && inputs.birthMonth && calculateAge(inputs.birthYear, inputs.birthMonth) >= 65) ? '130/80' : '120/80'} mmHg</span>
-          {getBpPreviousLabel() && (
-            <a
-              className="previous-value"
-              href={`/pages/health-history?metric=systolic_bp`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >{getBpPreviousLabel()}</a>
+          {errors.diastolicBp && (
+            <span className="error-message">{errors.diastolicBp}</span>
           )}
+          <div className="field-meta">
+            <span className="field-hint">Target: &lt;{(inputs.birthYear && inputs.birthMonth && calculateAge(inputs.birthYear, inputs.birthMonth) >= 65) ? '130/80' : '120/80'} mmHg</span>
+            {getBpPreviousLabel() && (
+              <a
+                className="previous-value"
+                href={`/pages/health-history?metric=systolic_bp`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >{getBpPreviousLabel()}</a>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 
@@ -1531,22 +1537,24 @@ export function InputPanel({
     );
   }
 
-  // ── Desktop: render all sections ──
+  // ── Desktop: render all sections (progressive disclosure) ──
   return (
     <div className="health-input-panel">
-      {/* Card 1: Units + Basic Info + Vitals */}
+      {/* Card 1: Units + Basic Info + Vitals (stage 3+) */}
       <div className="section-card">
         {renderProfile()}
-        {renderVitals()}
+        {formStage >= 3 && <div className="stage-reveal">{renderVitals()}</div>}
       </div>
 
-      {/* Card 2: Blood Tests */}
-      <div className="section-card">
-        {renderBloodTests()}
-      </div>
+      {/* Card 2: Blood Tests (stage 4+) */}
+      {formStage >= 4 && (
+        <div className="section-card stage-reveal">
+          {renderBloodTests()}
+        </div>
+      )}
 
-      {renderMedications()}
-      {renderScreening()}
+      {formStage >= 4 && renderMedications()}
+      {formStage >= 4 && renderScreening()}
       {renderSaveButton()}
     </div>
   );

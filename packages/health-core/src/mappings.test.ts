@@ -9,6 +9,7 @@ import {
   hasCloudData,
   medicationsToInputs,
   screeningsToInputs,
+  computeFormStage,
   type ApiMeasurement,
   type ApiMedication,
   type ApiProfile,
@@ -519,5 +520,52 @@ describe('hasCloudData', () => {
       { id: '1', medicationKey: 'ezetimibe', drugName: 'not_yet', doseValue: null, doseUnit: null, updatedAt: '' },
     ];
     expect(hasCloudData(nullProfile, [], medications, [])).toBe(true);
+  });
+});
+
+describe('computeFormStage', () => {
+  it('returns 1 when no inputs', () => {
+    expect(computeFormStage({})).toBe(1);
+  });
+
+  it('returns 1 when only sex is set', () => {
+    expect(computeFormStage({ sex: 'male' })).toBe(1);
+  });
+
+  it('returns 1 when only height is set', () => {
+    expect(computeFormStage({ heightCm: 170 })).toBe(1);
+  });
+
+  it('returns 2 when sex AND height are set', () => {
+    expect(computeFormStage({ sex: 'female', heightCm: 165 })).toBe(2);
+  });
+
+  it('returns 2 when sex + height set but only birthMonth (no birthYear)', () => {
+    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6 })).toBe(2);
+  });
+
+  it('returns 3 when birthMonth AND birthYear are set', () => {
+    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 1985 })).toBe(3);
+  });
+
+  it('returns 4 when weightKg is set', () => {
+    expect(computeFormStage({
+      sex: 'female', heightCm: 160, birthMonth: 3, birthYear: 1990, weightKg: 65,
+    })).toBe(4);
+  });
+
+  it('returns 4 for returning user with all data', () => {
+    expect(computeFormStage({
+      sex: 'male', heightCm: 180, birthMonth: 1, birthYear: 1980,
+      weightKg: 85, waistCm: 90, hba1c: 39, ldlC: 2.5,
+    })).toBe(4);
+  });
+
+  it('returns 4 even if intermediate fields missing (short-circuit)', () => {
+    expect(computeFormStage({ weightKg: 70 })).toBe(4);
+  });
+
+  it('returns 3 even if sex/height missing (short-circuit)', () => {
+    expect(computeFormStage({ birthMonth: 5, birthYear: 1990 })).toBe(3);
   });
 });

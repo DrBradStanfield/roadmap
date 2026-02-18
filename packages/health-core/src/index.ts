@@ -115,6 +115,7 @@ export {
   medicationsToInputs,
   type ApiScreening,
   screeningsToInputs,
+  computeFormStage,
 } from './mappings';
 
 // Reminders
