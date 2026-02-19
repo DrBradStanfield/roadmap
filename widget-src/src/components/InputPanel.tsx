@@ -128,6 +128,7 @@ interface InputPanelProps {
   onScreeningChange: (screeningKey: string, value: string) => void;
   onSaveLongitudinal: (bloodTestDate?: string) => void;
   isSavingLongitudinal: boolean;
+  hasApiResponse: boolean;
   formStage: 1 | 2 | 3 | 4;
   mobileActiveTab?: TabId;
 }
@@ -136,7 +137,7 @@ export function InputPanel({
   inputs, onChange, errors, unitSystem, onUnitSystemChange,
   isLoggedIn, previousMeasurements, medications, onMedicationChange,
   screenings, onScreeningChange,
-  onSaveLongitudinal, isSavingLongitudinal,
+  onSaveLongitudinal, isSavingLongitudinal, hasApiResponse,
   formStage,
   mobileActiveTab,
 }: InputPanelProps) {
@@ -282,7 +283,7 @@ export function InputPanel({
             max={r.max}
             className={errors[field] ? 'error' : ''}
           />
-          {isLoggedIn && inputs[field] !== undefined && (
+          {isLoggedIn && hasApiResponse && inputs[field] !== undefined && (
             <button
               className="btn-primary save-inline-btn"
               onClick={() => onSaveLongitudinal(isBloodTest ? dateValueToISO(bloodTestDate) : undefined)}
@@ -531,7 +532,7 @@ export function InputPanel({
                 className={errors.diastolicBp ? 'error' : ''}
               />
             </div>
-            {isLoggedIn && hasBpValue && (
+            {isLoggedIn && hasApiResponse && hasBpValue && (
               <button
                 className="btn-primary save-inline-btn"
                 onClick={() => onSaveLongitudinal()}
@@ -1457,7 +1458,7 @@ export function InputPanel({
                               className={errors.psa ? 'error' : ''}
                             />
                             <InlineDatePicker value={psaDate} onChange={setPsaDate} />
-                            {isLoggedIn && inputs.psa !== undefined && (
+                            {isLoggedIn && hasApiResponse && inputs.psa !== undefined && (
                               <button
                                 className="btn-primary save-inline-btn"
                                 onClick={() => onSaveLongitudinal(dateValueToISO(psaDate))}

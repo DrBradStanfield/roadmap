@@ -606,6 +606,7 @@ export function HealthTool() {
     onScreeningChange: handleScreeningChange,
     onSaveLongitudinal: handleSaveLongitudinal,
     isSavingLongitudinal,
+    hasApiResponse,
     formStage,
   };
 
@@ -615,7 +616,7 @@ export function HealthTool() {
     authState,
     saveStatus,
     unitSystem,
-    hasUnsavedLongitudinal: authState.isLoggedIn && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined),
+    hasUnsavedLongitudinal: authState.isLoggedIn && hasApiResponse && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined),
     onSaveLongitudinal: handleSaveLongitudinal,
     isSavingLongitudinal,
     onDeleteData: handleDeleteData,
