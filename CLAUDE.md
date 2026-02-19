@@ -308,6 +308,22 @@ Escalation logic uses potency tables in `types.ts` — suggests dose increase fi
 
 Backend on **Fly.io** (USA region, `fly.toml`, Dockerfile Node 20 Alpine). Extensions on Shopify CDN (`npm run deploy`). Widget calls backend via Shopify app proxy (`/apps/health-tool-1/*`, configured in `shopify.app.toml`).
 
+## Adding New Screening Types (Checklist)
+
+Adding a new screening type (e.g. DEXA) requires updates in **all** of these places — missing any one causes silent data loss:
+
+1. **`types.ts`** — Add fields to `ScreeningInputs` interface
+2. **`mappings.ts`** — Add cases to `screeningsToInputs()` switch statement (converts API data back to form state)
+3. **`rls-policies.sql`** — Add keys to BOTH the `CREATE TABLE` CHECK constraint AND the `ALTER TABLE` migration block, then run the migration in Supabase SQL Editor
+4. **`suggestions.ts`** — Add suggestion logic for the new screening
+5. **`InputPanel.tsx`** — Add UI controls for the new screening
+6. **`HealthTool.tsx`** — Ensure `handleScreeningChange` handles any new screening keys
+7. **`mappings.test.ts`** — Add round-trip tests for the new screening keys
+
+**Why this matters:** `CREATE TABLE IF NOT EXISTS` is a no-op on existing tables. If you only add keys to the CREATE TABLE block, the production DB constraint won't update. You MUST also add an `ALTER TABLE DROP CONSTRAINT / ADD CONSTRAINT` migration and run it manually in Supabase.
+
+The same pattern applies to **new measurement metric types** — update `health_measurements` CHECK constraints in both CREATE TABLE and ALTER TABLE blocks.
+
 ## Notes for Development
 
 - Rebuild widget after changes: `npm run build:widget`

@@ -390,6 +390,7 @@ export function generateSuggestions(
   }
 
   // Non-HDL cholesterol — only when ApoB is unavailable
+  // Uses 'ldl' for formatDisplayValue/getDisplayLabel since non-HDL shares the same units (mmol/L / mg/dL)
   if (!hasApoBData && hasNonHdlData) {
     if (results.nonHdlCholesterol! >= NON_HDL_THRESHOLDS.veryHigh) {
       hasElevatedAtherogenicSuggestion = true;
@@ -947,6 +948,14 @@ export function generateSuggestions(
               priority: 'attention',
               title: 'Bone density scan overdue',
               description: `Your next DEXA scan was due ${nextDueStr(screenings.dexaLastDate, 'dexa_scan')}. Please schedule your scan.`,
+            });
+          } else if (status === 'upcoming') {
+            suggestions.push({
+              id: 'screening-dexa-upcoming',
+              category: 'screening',
+              priority: 'info',
+              title: 'Bone density scan up to date',
+              description: `Next DEXA scan due around ${nextDueStr(screenings.dexaLastDate, 'dexa_scan')}.`,
             });
           }
         }

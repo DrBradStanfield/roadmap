@@ -353,6 +353,26 @@ CREATE TABLE IF NOT EXISTS screenings (
 
 CREATE INDEX IF NOT EXISTS idx_screenings_user ON screenings(user_id);
 
+-- ===== Migrate screening_key constraint for existing tables =====
+-- CREATE TABLE IF NOT EXISTS is a no-op on existing tables, so the CHECK
+-- constraint must be updated via ALTER TABLE when new screening types are added.
+ALTER TABLE screenings DROP CONSTRAINT IF EXISTS screenings_screening_key_check;
+ALTER TABLE screenings ADD CONSTRAINT screenings_screening_key_check
+  CHECK (screening_key IN (
+    'colorectal_method', 'colorectal_last_date',
+    'colorectal_result', 'colorectal_followup_status', 'colorectal_followup_date',
+    'breast_frequency', 'breast_last_date',
+    'breast_result', 'breast_followup_status', 'breast_followup_date',
+    'cervical_method', 'cervical_last_date',
+    'cervical_result', 'cervical_followup_status', 'cervical_followup_date',
+    'lung_smoking_history', 'lung_pack_years', 'lung_screening', 'lung_last_date',
+    'lung_result', 'lung_followup_status', 'lung_followup_date',
+    'prostate_discussion', 'prostate_psa_value', 'prostate_last_date',
+    'endometrial_discussion', 'endometrial_abnormal_bleeding',
+    'dexa_screening', 'dexa_last_date', 'dexa_result',
+    'dexa_followup_status', 'dexa_followup_date'
+  ));
+
 ALTER TABLE screenings ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can read own screenings" ON screenings;

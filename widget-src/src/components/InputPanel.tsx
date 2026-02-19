@@ -1052,8 +1052,6 @@ export function InputPanel({
             }
           };
 
-          const isSaved = displayYear && displayMonth && savedValue === `${displayYear}-${displayMonth}`;
-
           return (
             <div className="health-field">
               <label>{label}</label>
@@ -1081,7 +1079,6 @@ export function InputPanel({
                   ))}
                 </select>
               </div>
-              {isSaved && <span className="field-hint">Saved</span>}
             </div>
           );
         };
@@ -1580,8 +1577,6 @@ export function InputPanel({
             }
           };
 
-          const isSaved = displayYear && displayMonth && savedValue === `${displayYear}-${displayMonth}`;
-
           return (
             <div className="health-field">
               <label>{label}</label>
@@ -1607,7 +1602,6 @@ export function InputPanel({
                   ))}
                 </select>
               </div>
-              {isSaved && <span className="field-hint">Saved</span>}
             </div>
           );
         };

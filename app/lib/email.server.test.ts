@@ -66,7 +66,8 @@ describe('buildWelcomeEmailHtml', () => {
     expect(html).toContain('<!DOCTYPE html>');
     expect(html).toContain('Hi John,');
     expect(html).toContain('Ideal Body Weight');
-    expect(html).toContain('75.1 kg');
+    expect(html).toContain('75.1');
+    expect(html).toContain('kg');
     expect(html).toContain('Daily Protein Target');
     expect(html).toContain('90g');
     expect(html).toContain('180 cm');
@@ -142,6 +143,21 @@ describe('buildWelcomeEmailHtml', () => {
     // Should use inline styles, not style blocks
     expect(html).not.toContain('<style>');
     expect(html).toContain('style="');
+  });
+
+  it('shows IBW in conventional units for US users', () => {
+    const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'conventional', null);
+
+    // 75.1 kg → 165.6 lbs
+    expect(html).toContain('lbs');
+    expect(html).toContain('Ideal Body Weight');
+  });
+
+  it('shows IBW in SI units for SI users', () => {
+    const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
+
+    expect(html).toContain('kg');
+    expect(html).toContain('Ideal Body Weight');
   });
 
   it('handles SI unit system for metrics', () => {

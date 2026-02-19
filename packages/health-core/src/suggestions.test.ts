@@ -1880,6 +1880,21 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'screening-dexa')).toBeDefined(); // should suggest starting
       expect(suggestions.find(s => s.id === 'screening-dexa-overdue')).toBeUndefined();
     });
+
+    it('shows up-to-date for recent osteoporosis DEXA when follow-up completed without date', () => {
+      const { inputs, results } = createTestData({ sex: 'female', birthYear: 1970, birthMonth: 1 }, { age: 56 });
+      const now = new Date();
+      const lastMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const scr: ScreeningInputs = {
+        dexaScreening: 'dexa_scan',
+        dexaLastDate: lastMonth,
+        dexaResult: 'osteoporosis',
+        dexaFollowupStatus: 'completed',
+        // no dexaFollowupDate — screeningFollowup returns null, should fall through to upcoming
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
+      expect(suggestions.find(s => s.id === 'screening-dexa-upcoming')).toBeDefined();
+    });
   });
 
   describe('Skin health suggestions', () => {

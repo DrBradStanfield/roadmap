@@ -229,6 +229,8 @@ async function processUserReminders(profile: DbProfile, now: Date): Promise<bool
   if (!sent) return false;
 
   // Log sent reminders per group (for cooldown tracking)
+  // If this fails, the cooldown won't be recorded and the next cron run could
+  // send a duplicate reminder — so report failures to Sentry at error level.
   const sentGroups = new Set<ReminderGroup>(reminders.map(r => r.group));
   const logPromises = Array.from(sentGroups).map(group => {
     const cooldownDays = GROUP_COOLDOWNS[group];
@@ -240,7 +242,15 @@ async function processUserReminders(profile: DbProfile, now: Date): Promise<bool
       categories: groupReminders.map(r => r.category),
     });
   });
-  await Promise.all(logPromises);
+  try {
+    await Promise.all(logPromises);
+  } catch (logError) {
+    Sentry.captureException(logError, {
+      level: 'error',
+      tags: { feature: 'reminder_cron' },
+      extra: { userId: profile.id, groups: Array.from(sentGroups) },
+    });
+  }
 
   console.log(`Reminder email sent to ${profile.email} (${reminders.length} reminders)`);
   return true;

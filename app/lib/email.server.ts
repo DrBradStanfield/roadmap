@@ -57,57 +57,67 @@ export async function checkAndSendWelcomeEmail(
       return; // Already sent — silent return (most common case)
     }
 
-    // 2. Fetch all user data
-    const [latestMeasurements, medications, screenings] = await Promise.all([
-      getLatestMeasurements(client),
-      getMedications(client),
-      getScreenings(client),
-    ]);
-
-    // 3. Convert to health-core input format
-    const apiProfile = toApiProfile(profile);
-    const apiMeasurements = latestMeasurements.map(toApiMeasurement);
-    const apiMedications = medications.map(toApiMedication);
-    const apiScreenings = screenings.map(toApiScreening);
-
-    const inputs = measurementsToInputs(apiMeasurements, apiProfile) as HealthInputs;
-    const medInputs = medicationsToInputs(apiMedications);
-    const screenInputs = screeningsToInputs(apiScreenings);
-
-    // 4. Require minimum data (height + sex)
-    if (!inputs.heightCm || !inputs.sex) {
-      console.log('Insufficient data for welcome email (need height + sex)');
-      return;
-    }
-
-    // 5. Calculate results and generate suggestions
-    const unitSystem: UnitSystem = inputs.unitSystem || 'si';
-    const results = calculateHealthResults(inputs, unitSystem, medInputs, screenInputs);
-    const suggestions = generateSuggestions(inputs, results, unitSystem, medInputs, screenInputs);
-
-    // 6. Build and send email
-    const firstName = profile.first_name || null;
-    const html = buildWelcomeEmailHtml(inputs, results, suggestions, unitSystem, firstName);
-
-    await resend.emails.send({
-      from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
-      to: profile.email,
-      subject: 'Your Personalized Health Roadmap',
-      html,
-    });
-
-    // 7. Set flag to prevent duplicate sends
-    const { error: updateError } = await client
+    // 2. Set flag EARLY to close the race window between concurrent callers
+    //    (sync-embed and widget save can both fire within milliseconds)
+    const { error: flagError } = await client
       .from('profiles')
       .update({ welcome_email_sent: true })
       .eq('id', userId);
 
-    if (updateError) {
-      console.warn('Failed to set welcome_email_sent flag:', updateError.message);
-      // Don't throw — worst case is a duplicate email on next trigger
+    if (flagError) {
+      console.warn('Failed to set welcome_email_sent flag:', flagError.message);
+      return; // Another concurrent call may have set it — safe to bail
     }
 
-    console.log(`Welcome email sent to ${profile.email}`);
+    try {
+      // 3. Fetch all user data
+      const [latestMeasurements, medications, screenings] = await Promise.all([
+        getLatestMeasurements(client),
+        getMedications(client),
+        getScreenings(client),
+      ]);
+
+      // 4. Convert to health-core input format
+      const apiProfile = toApiProfile(profile);
+      const apiMeasurements = latestMeasurements.map(toApiMeasurement);
+      const apiMedications = medications.map(toApiMedication);
+      const apiScreenings = screenings.map(toApiScreening);
+
+      const inputs = measurementsToInputs(apiMeasurements, apiProfile) as HealthInputs;
+      const medInputs = medicationsToInputs(apiMedications);
+      const screenInputs = screeningsToInputs(apiScreenings);
+
+      // 5. Require minimum data (height + sex)
+      if (!inputs.heightCm || !inputs.sex) {
+        console.log('Insufficient data for welcome email (need height + sex)');
+        // Revert flag — user may add data later
+        await client.from('profiles').update({ welcome_email_sent: false }).eq('id', userId);
+        return;
+      }
+
+      // 6. Calculate results and generate suggestions
+      const unitSystem: UnitSystem = inputs.unitSystem || 'si';
+      const results = calculateHealthResults(inputs, unitSystem, medInputs, screenInputs);
+      const suggestions = generateSuggestions(inputs, results, unitSystem, medInputs, screenInputs);
+
+      // 7. Build and send email
+      const firstName = profile.first_name || null;
+      const html = buildWelcomeEmailHtml(inputs, results, suggestions, unitSystem, firstName);
+
+      await resend.emails.send({
+        from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
+        to: profile.email,
+        subject: 'Your Personalized Health Roadmap',
+        html,
+      });
+
+      console.log(`Welcome email sent to ${profile.email}`);
+    } catch (sendError) {
+      // Revert flag so a future attempt can retry
+      await client.from('profiles').update({ welcome_email_sent: false }).eq('id', userId)
+        .then(() => {}, () => {}); // Ignore revert errors
+      throw sendError; // Re-throw to outer catch for Sentry
+    }
   } catch (error) {
     console.error('Welcome email error:', error);
     Sentry.captureException(error, { tags: { feature: 'welcome_email' } });
@@ -153,7 +163,7 @@ export function buildWelcomeEmailHtml(
   const calculatedRows: string[] = [];
 
   calculatedRows.push(metricRow('Height', formatHeightDisplay(results.heightCm, unitSystem)));
-  calculatedRows.push(metricRow('Ideal Body Weight', `${results.idealBodyWeight} kg`));
+  calculatedRows.push(metricRow('Ideal Body Weight', `${formatDisplayValue('weight', results.idealBodyWeight, unitSystem)} ${getDisplayLabel('weight', unitSystem)}`));
   calculatedRows.push(metricRow('Daily Protein Target', `${results.proteinTarget}g`));
 
   if (results.bmi != null) {
