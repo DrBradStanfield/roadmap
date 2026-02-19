@@ -719,7 +719,7 @@ export function InputPanel({
 
               {/* Step 2: Ezetimibe */}
               {showEzetimibe && (
-                <div className="health-field">
+                <div className="health-field med-step-enter">
                   <label htmlFor="ezetimibe">On Ezetimibe 10mg?</label>
                   <p className="med-step-hint">{`Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more ${lipidName} reduction.`}</p>
                   <select
@@ -744,7 +744,7 @@ export function InputPanel({
 
               {/* Step 3: Statin escalation (dose increase or switch) */}
               {showStatinEscalation && (
-                <div className="health-field">
+                <div className="health-field med-step-enter">
                   <label htmlFor="statin-escalation">
                     {canIncrease ? 'Tried increasing statin dose?' : 'Tried switching to a more potent statin?'}
                   </label>
@@ -766,7 +766,7 @@ export function InputPanel({
 
               {/* Step 4: PCSK9i */}
               {showPcsk9i && (
-                <div className="health-field">
+                <div className="health-field med-step-enter">
                   <label htmlFor="pcsk9i">On a PCSK9 inhibitor?</label>
                   <p className="med-step-hint">{`PCSK9 inhibitors are injectable medications that help your body clear ${lipidName} from the blood. They can reduce ${lipidName} by ~50%.`}</p>
                   <select
@@ -927,7 +927,7 @@ export function InputPanel({
 
             {/* Step 2: GLP-1 Escalation (dose increase or switch to tirzepatide) */}
             {showGlp1Escalation && (
-              <div className="health-field">
+              <div className="health-field med-step-enter">
                 <label htmlFor="glp1-escalation">
                   {canIncreaseGlp1 ? 'Tried increasing GLP-1 dose?' : 'Tried switching to Tirzepatide?'}
                 </label>
@@ -952,7 +952,7 @@ export function InputPanel({
 
             {/* Step 3: SGLT2i selection */}
             {showSglt2i && (
-              <div className="health-field">
+              <div className="health-field med-step-enter">
                 <label htmlFor="sglt2i-name">SGLT2 Inhibitor</label>
                 <p className="med-step-hint">SGLT2 inhibitors help your kidneys remove excess glucose and offer additional heart and kidney protection.</p>
                 <div className="statin-selection-row">
@@ -996,7 +996,7 @@ export function InputPanel({
 
             {/* Step 4: Metformin */}
             {showMetformin && (
-              <div className="health-field">
+              <div className="health-field med-step-enter">
                 <label htmlFor="metformin">Metformin</label>
                 <p className="med-step-hint">Metformin improves insulin sensitivity. It is well-studied and inexpensive.</p>
                 <select
