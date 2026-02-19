@@ -16,6 +16,15 @@ export function initSentry() {
     tracesSampleRate: 0.2,
     // Don't send in development
     enabled: !window.location.hostname.includes('localhost'),
+    // Limit serialization depth to avoid circular refs from React fiber on DOM elements
+    normalizeDepth: 5,
+    beforeBreadcrumb(breadcrumb) {
+      // Strip DOM element data from UI breadcrumbs to prevent circular refs
+      if (breadcrumb.category === 'ui.click' && breadcrumb.data) {
+        delete breadcrumb.data.target;
+      }
+      return breadcrumb;
+    },
   });
 }
 

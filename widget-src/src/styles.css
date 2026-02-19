@@ -60,7 +60,7 @@
 /* Two-Panel Layout */
 .health-tool-content {
   display: grid;
-  grid-template-columns: 6fr 5fr;
+  grid-template-columns: 5fr 6fr;
   gap: 32px;
   align-items: start;
 }
