@@ -20,6 +20,10 @@ Sentry.init({
     // UpPromote affiliate app: URIError from their getCookie on malformed cookie values
     /getCookie.*uppromote/,
   ],
+  denyUrls: [
+    // Shopify's privacy/cookie consent banner: URIError from decodeURIComponent on malformed cookies
+    /cdn\/shopifycloud\/privacy-banner/,
+  ],
 });
 
 // Graceful shutdown: stop the cron job and allow in-flight requests to drain

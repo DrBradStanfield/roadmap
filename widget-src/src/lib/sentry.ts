@@ -24,6 +24,10 @@ export function initSentry() {
       // UpPromote affiliate app: URIError from their getCookie on malformed cookie values
       /getCookie.*uppromote/,
     ],
+    denyUrls: [
+      // Shopify's privacy/cookie consent banner: URIError from decodeURIComponent on malformed cookies
+      /cdn\/shopifycloud\/privacy-banner/,
+    ],
     beforeBreadcrumb(breadcrumb) {
       // Strip DOM element data from UI breadcrumbs to prevent circular refs
       if (breadcrumb.category === 'ui.click' && breadcrumb.data) {
