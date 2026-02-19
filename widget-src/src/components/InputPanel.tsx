@@ -632,17 +632,41 @@ export function InputPanel({
             if (medInputs.pcsk9i) onMedicationChange('pcsk9i', 'not_yet', null, null);
           };
 
+          // Dynamic intro: show actual value vs target (priority: ApoB > non-HDL > LDL)
+          const introText = (() => {
+            if (effectiveApoB !== undefined && effectiveApoB > LIPID_TREATMENT_TARGETS.apobGl) {
+              const val = toDisplay('apoB', effectiveApoB);
+              const target = toDisplay('apoB', LIPID_TREATMENT_TARGETS.apobGl);
+              const unit = getDisplayLabel('apob', unitSystem);
+              return `Your ApoB is ${val} ${unit}, which is above the treatment target of ${target} ${unit}.`;
+            }
+            if (effectiveNonHdl !== undefined && effectiveNonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol) {
+              const val = toDisplay('ldlC', effectiveNonHdl);
+              const target = toDisplay('ldlC', LIPID_TREATMENT_TARGETS.nonHdlMmol);
+              const unit = getDisplayLabel('ldl', unitSystem);
+              return `Your non-HDL cholesterol is ${val} ${unit}, which is above the treatment target of ${target} ${unit}.`;
+            }
+            if (effectiveLdl !== undefined && effectiveLdl > LIPID_TREATMENT_TARGETS.ldlMmol) {
+              const val = toDisplay('ldlC', effectiveLdl);
+              const target = toDisplay('ldlC', LIPID_TREATMENT_TARGETS.ldlMmol);
+              const unit = getDisplayLabel('ldl', unitSystem);
+              return `Your LDL is ${val} ${unit}, which is above the treatment target of ${target} ${unit}.`;
+            }
+            return 'Your lipid levels are above treatment targets.';
+          })();
+
           return (
             <div className="section-card">
             <section className="health-section medication-cascade">
               <h3 className="health-section-title">Cholesterol Medications</h3>
               <p className="health-section-desc">
-                Your lipid levels are above target. Are you on any cholesterol-lowering medications?
+                {introText} In addition to a great diet, medications can be added in steps.
               </p>
 
               {/* Step 1: Statin selection - two dropdowns */}
               <div className="health-field">
                 <label htmlFor="statin-name">Statin</label>
+                <p className="med-step-hint">Statins are the most effective first step. They reduce cholesterol production in the liver.</p>
                 <div className="statin-selection-row">
                   {/* Statin name dropdown */}
                   <select
@@ -688,6 +712,7 @@ export function InputPanel({
               {showEzetimibe && (
                 <div className="health-field">
                   <label htmlFor="ezetimibe">On Ezetimibe 10mg?</label>
+                  <p className="med-step-hint">Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more LDL reduction.</p>
                   <select
                     id="ezetimibe"
                     value={medInputs.ezetimibe || 'not_yet'}
@@ -714,6 +739,9 @@ export function InputPanel({
                   <label htmlFor="statin-escalation">
                     {canIncrease ? 'Tried increasing statin dose?' : 'Tried switching to a more potent statin?'}
                   </label>
+                  <p className="med-step-hint">
+                    {canIncrease ? 'A higher dose may lower your LDL further.' : 'A more potent statin can provide greater LDL reduction at the same or lower dose.'}
+                  </p>
                   <select
                     id="statin-escalation"
                     value={medInputs.statinEscalation || 'not_yet'}
@@ -731,6 +759,7 @@ export function InputPanel({
               {showPcsk9i && (
                 <div className="health-field">
                   <label htmlFor="pcsk9i">On a PCSK9 inhibitor?</label>
+                  <p className="med-step-hint">PCSK9 inhibitors are injectable medications that help your body clear LDL from the blood. They can reduce LDL by ~50%.</p>
                   <select
                     id="pcsk9i"
                     value={medInputs.pcsk9i || 'not_yet'}
@@ -848,6 +877,7 @@ export function InputPanel({
             {/* Step 1: GLP-1 selection */}
             <div className="health-field">
               <label htmlFor="glp1-name">GLP-1 Medication</label>
+              <p className="med-step-hint">GLP-1 medications reduce appetite and improve blood sugar control, often leading to significant weight loss.</p>
               <div className="statin-selection-row">
                 <select
                   id="glp1-name"
@@ -892,6 +922,9 @@ export function InputPanel({
                 <label htmlFor="glp1-escalation">
                   {canIncreaseGlp1 ? 'Tried increasing GLP-1 dose?' : 'Tried switching to Tirzepatide?'}
                 </label>
+                <p className="med-step-hint">
+                  {canIncreaseGlp1 ? 'A higher dose may improve results.' : 'Tirzepatide targets two hormones (GIP + GLP-1) and may be more effective for weight loss.'}
+                </p>
                 <select
                   id="glp1-escalation"
                   value={medInputs.glp1Escalation || 'not_yet'}
@@ -912,6 +945,7 @@ export function InputPanel({
             {showSglt2i && (
               <div className="health-field">
                 <label htmlFor="sglt2i-name">SGLT2 Inhibitor</label>
+                <p className="med-step-hint">SGLT2 inhibitors help your kidneys remove excess glucose and offer additional heart and kidney protection.</p>
                 <div className="statin-selection-row">
                   <select
                     id="sglt2i-name"
@@ -955,6 +989,7 @@ export function InputPanel({
             {showMetformin && (
               <div className="health-field">
                 <label htmlFor="metformin">Metformin</label>
+                <p className="med-step-hint">Metformin improves insulin sensitivity. It is well-studied and inexpensive.</p>
                 <select
                   id="metformin"
                   value={medInputs.metformin || 'none'}

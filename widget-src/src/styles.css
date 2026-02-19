@@ -397,6 +397,13 @@
   color: #888;
 }
 
+.med-step-hint {
+  font-size: 13px;
+  color: #666;
+  margin: -2px 0 6px;
+  line-height: 1.4;
+}
+
 .health-field-group {
   display: grid;
   grid-template-columns: 1fr 1fr;
