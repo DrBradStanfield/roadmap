@@ -17,6 +17,8 @@ Sentry.init({
   ignoreErrors: [
     // Shopify's privacy banner failing to reach their own analytics endpoint
     /monorail-edge\.shopifysvc\.com/,
+    // UpPromote affiliate app: URIError from their getCookie on malformed cookie values
+    /getCookie.*uppromote/,
   ],
 });
 
