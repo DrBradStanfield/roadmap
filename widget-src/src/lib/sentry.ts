@@ -19,14 +19,14 @@ export function initSentry() {
     // Limit serialization depth to avoid circular refs from React fiber on DOM elements
     normalizeDepth: 5,
     ignoreErrors: [
-      // Shopify's privacy banner failing to reach their own analytics endpoint
-      /monorail-edge\.shopifysvc\.com/,
-      // UpPromote affiliate app: URIError from their getCookie on malformed cookie values
-      /getCookie.*uppromote/,
+      // Third-party fetch interceptors (Appstle Bundles) create unhandled rejections
+      // from our fetch calls. Our api.ts already catches and handles these.
+      /Failed to fetch/,
     ],
-    denyUrls: [
-      // Shopify's privacy/cookie consent banner: URIError from decodeURIComponent on malformed cookies
-      /cdn\/shopifycloud\/privacy-banner/,
+    allowUrls: [
+      // Only capture errors originating from our own widget bundles
+      /health-tool\.js/,
+      /health-history\.js/,
     ],
     beforeBreadcrumb(breadcrumb) {
       // Strip DOM element data from UI breadcrumbs to prevent circular refs
