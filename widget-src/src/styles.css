@@ -1453,13 +1453,14 @@
   animation: step-enter 0.2s ease-out;
 }
 
-/* Progressive disclosure: smooth reveal of new form stages */
+/* Progressive disclosure: smooth reveal of new form stages.
+   Opacity-only to avoid CLS from translateY shifting layout. */
 .stage-reveal {
   animation: stage-reveal 0.3s ease-out;
 }
 @keyframes stage-reveal {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Attention cue: pulsing glow guides user to the next field */

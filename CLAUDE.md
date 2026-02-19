@@ -129,7 +129,7 @@ npm test                 # Run unit tests
 npm run test:watch       # Run tests in watch mode
 ```
 
-**Deploy workflow:** `npm run build:widget` → `npm run deploy` → `fly deploy`
+**Deploy workflow:** `npm run build:widget` → `cd widget-src && npm run sentry:sourcemaps` → `npm run deploy` → `fly deploy`
 
 ## Parallel Development (Git Worktrees)
 
@@ -271,7 +271,7 @@ See `.env` for required variables. Key variables:
 
 ## Error Monitoring (Sentry)
 
-Widget: `initSentry()` in both entry points, `ErrorBoundary` reports crashes, API client reports errors. Disabled on localhost.
+Widget: `initSentry()` in both entry points, `ErrorBoundary` reports crashes, API client reports errors. Disabled on localhost. Release tracking via `__SENTRY_RELEASE__` (git hash, injected at build time by Vite). Hidden sourcemaps uploaded to Sentry after each build (`cd widget-src && npm run sentry:sourcemaps`). Requires `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` env vars.
 Backend: Initialized in `app/entry.server.tsx`, errors reported in API catch blocks.
 User feedback: Links to GitHub Issues in `ResultsPanel.tsx` and `ErrorBoundary`.
 

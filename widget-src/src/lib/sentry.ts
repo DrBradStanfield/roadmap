@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/react';
 
-// Replace with your actual Sentry DSN after creating a project at https://sentry.io
+declare const __SENTRY_RELEASE__: string;
+
 const SENTRY_DSN = 'https://d7664c1590ec997ebf0126ed5917fea4@o4510813459709952.ingest.us.sentry.io/4510813465280512';
 
 let initialized = false;
@@ -11,6 +12,7 @@ export function initSentry() {
 
   Sentry.init({
     dsn: SENTRY_DSN,
+    release: typeof __SENTRY_RELEASE__ !== 'undefined' ? __SENTRY_RELEASE__ : undefined,
     environment: window.location.hostname.includes('myshopify.com') ? 'production' : 'development',
     // Only send 20% of transactions for performance monitoring
     tracesSampleRate: 0.2,

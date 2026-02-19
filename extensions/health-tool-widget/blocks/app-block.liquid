@@ -42,19 +42,18 @@
     </div>
     <div class="health-tool-content">
       <div class="health-tool-left">
-        <div class="skeleton-block" style="height:160px"></div>
-        <div class="skeleton-block" style="height:120px"></div>
-        <div class="skeleton-block" style="height:120px"></div>
+        <!-- Single block matching approx stage-1 profile form height (Units + Sex + Height) -->
+        <div class="skeleton-block" style="height:220px"></div>
       </div>
       <div class="health-tool-right">
-        <div class="skeleton-block" style="height:200px"></div>
+        <div class="skeleton-block" style="height:220px"></div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- Load React app with defer so skeleton renders while JS downloads -->
-<script src="{{ 'health-tool.js' | asset_url }}" defer></script>
+<script src="{{ 'health-tool.js' | asset_url }}" defer crossorigin="anonymous"></script>
 
 {% schema %}
 {

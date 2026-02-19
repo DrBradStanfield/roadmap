@@ -12,3 +12,4 @@ build/
 .mcp.json
 shopify.app.toml
 fly.toml
+*.js.map
