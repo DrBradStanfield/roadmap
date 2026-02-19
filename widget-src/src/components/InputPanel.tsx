@@ -632,34 +632,37 @@ export function InputPanel({
             if (medInputs.pcsk9i) onMedicationChange('pcsk9i', 'not_yet', null, null);
           };
 
-          // Dynamic intro: show actual value vs target (priority: ApoB > non-HDL > LDL)
-          const introText = (() => {
+          // Dynamic intro + lipid name (priority: ApoB > non-HDL > LDL)
+          const { introText, lipidName } = (() => {
             if (effectiveApoB !== undefined && effectiveApoB > LIPID_TREATMENT_TARGETS.apobGl) {
               const val = toDisplay('apoB', effectiveApoB);
               const target = toDisplay('apoB', LIPID_TREATMENT_TARGETS.apobGl);
               const unit = getDisplayLabel('apob', unitSystem);
-              return `Your ApoB is ${val} ${unit}, which is above the treatment target of ${target} ${unit}.`;
+              return {
+                introText: `Your ApoB is ${val} ${unit}, which is above the treatment target of ${target} ${unit}.`,
+                lipidName: 'ApoB' as const,
+              };
             }
             if (effectiveNonHdl !== undefined && effectiveNonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol) {
               const val = toDisplay('ldlC', effectiveNonHdl);
               const target = toDisplay('ldlC', LIPID_TREATMENT_TARGETS.nonHdlMmol);
               const unit = getDisplayLabel('ldl', unitSystem);
-              return `Your non-HDL cholesterol is ${val} ${unit}, which is above the treatment target of ${target} ${unit}.`;
+              return {
+                introText: `Your non-HDL cholesterol is ${val} ${unit}, which is above the treatment target of ${target} ${unit}.`,
+                lipidName: 'non-HDL cholesterol' as const,
+              };
             }
             if (effectiveLdl !== undefined && effectiveLdl > LIPID_TREATMENT_TARGETS.ldlMmol) {
               const val = toDisplay('ldlC', effectiveLdl);
               const target = toDisplay('ldlC', LIPID_TREATMENT_TARGETS.ldlMmol);
               const unit = getDisplayLabel('ldl', unitSystem);
-              return `Your LDL is ${val} ${unit}, which is above the treatment target of ${target} ${unit}.`;
+              return {
+                introText: `Your LDL is ${val} ${unit}, which is above the treatment target of ${target} ${unit}.`,
+                lipidName: 'LDL' as const,
+              };
             }
-            return 'Your lipid levels are above treatment targets.';
+            return { introText: 'Your lipid levels are above treatment targets.', lipidName: 'LDL' as const };
           })();
-
-          // Lipid name for use in per-step hints (same priority as introText)
-          const lipidName =
-            (effectiveApoB !== undefined && effectiveApoB > LIPID_TREATMENT_TARGETS.apobGl) ? 'ApoB'
-            : (effectiveNonHdl !== undefined && effectiveNonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol) ? 'non-HDL cholesterol'
-            : 'LDL';
 
           return (
             <div className="section-card">

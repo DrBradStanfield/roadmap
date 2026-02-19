@@ -330,9 +330,10 @@
 }
 
 .health-section-desc {
-  font-size: 12px;
-  color: #888;
+  font-size: 13px;
+  color: #666;
   margin: 0 0 16px;
+  line-height: 1.4;
 }
 
 /* Form Fields */
