@@ -268,6 +268,21 @@ export function screeningsToInputs(
       case 'endometrial_abnormal_bleeding':
         inputs.endometrialAbnormalBleeding = s.value as any;
         break;
+      case 'dexa_screening':
+        inputs.dexaScreening = s.value as any;
+        break;
+      case 'dexa_last_date':
+        inputs.dexaLastDate = s.value;
+        break;
+      case 'dexa_result':
+        inputs.dexaResult = s.value as any;
+        break;
+      case 'dexa_followup_status':
+        inputs.dexaFollowupStatus = s.value as any;
+        break;
+      case 'dexa_followup_date':
+        inputs.dexaFollowupDate = s.value;
+        break;
     }
   }
   return inputs;

@@ -1881,4 +1881,71 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'screening-dexa-overdue')).toBeUndefined();
     });
   });
+
+  describe('Skin health suggestions', () => {
+    it('includes all four skin suggestions for users age 18+', () => {
+      const { inputs, results } = createTestData({}, { age: 26 });
+      const suggestions = generateSuggestions(inputs, results);
+      const skin = suggestions.filter(s => s.category === 'skin');
+      expect(skin).toHaveLength(4);
+      expect(skin.map(s => s.id)).toEqual([
+        'skin-moisturizer', 'skin-sunscreen', 'skin-retinoid', 'skin-advanced',
+      ]);
+    });
+
+    it('all skin suggestions have info priority', () => {
+      const { inputs, results } = createTestData({}, { age: 26 });
+      const suggestions = generateSuggestions(inputs, results);
+      const skin = suggestions.filter(s => s.category === 'skin');
+      expect(skin.every(s => s.priority === 'info')).toBe(true);
+    });
+
+    it('does not include skin suggestions when age < 18', () => {
+      const { inputs, results } = createTestData({}, { age: 16 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.filter(s => s.category === 'skin')).toHaveLength(0);
+    });
+
+    it('includes skin suggestions at exactly age 18', () => {
+      const { inputs, results } = createTestData({}, { age: 18 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.filter(s => s.category === 'skin')).toHaveLength(4);
+    });
+
+    it('excludes skin suggestions at exactly age 17', () => {
+      const { inputs, results } = createTestData({}, { age: 17 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.filter(s => s.category === 'skin')).toHaveLength(0);
+    });
+
+    it('does not include skin suggestions when age is undefined', () => {
+      const { inputs, results } = createTestData({}, {});
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.filter(s => s.category === 'skin')).toHaveLength(0);
+    });
+
+    it('recommends CeraVe mineral sunscreen for conventional (US) unit system', () => {
+      const { inputs, results } = createTestData({}, { age: 30 });
+      const suggestions = generateSuggestions(inputs, results, 'conventional');
+      const sunscreen = suggestions.find(s => s.id === 'skin-sunscreen')!;
+      expect(sunscreen.description).toContain('CeraVe');
+      expect(sunscreen.description).toContain('Mineral');
+      expect(sunscreen.description).not.toContain('Beauty of Joseon');
+    });
+
+    it('recommends Beauty of Joseon sunscreen for SI (non-US) unit system', () => {
+      const { inputs, results } = createTestData({}, { age: 30 });
+      const suggestions = generateSuggestions(inputs, results, 'si');
+      const sunscreen = suggestions.find(s => s.id === 'skin-sunscreen')!;
+      expect(sunscreen.description).toContain('Beauty of Joseon');
+      expect(sunscreen.description).not.toContain('CeraVe');
+    });
+
+    it('retinoid suggestion includes pregnancy caution', () => {
+      const { inputs, results } = createTestData({}, { age: 30 });
+      const suggestions = generateSuggestions(inputs, results);
+      const retinoid = suggestions.find(s => s.id === 'skin-retinoid')!;
+      expect(retinoid.description).toContain('pregnancy');
+    });
+  });
 });

@@ -74,12 +74,14 @@ const priorityColors = {
 
 function SuggestionCard({ suggestion, highlighted, fadingOut }: { suggestion: Suggestion; highlighted?: boolean; fadingOut?: boolean }) {
   const isSupplementCard = suggestion.category === 'supplements';
+  const isSkinCard = suggestion.category === 'skin';
+  const isSpecialCard = isSupplementCard || isSkinCard;
   const highlightClass = fadingOut ? ' suggestion-highlight suggestion-fade-out'
     : highlighted ? ' suggestion-highlight' : '';
 
   return (
-    <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}${highlightClass}`}>
-      {!isSupplementCard && (
+    <div className={`suggestion-card ${priorityColors[suggestion.priority]}${isSupplementCard ? ' supplement-card' : ''}${isSkinCard ? ' skin-card' : ''}${highlightClass}`}>
+      {!isSpecialCard && (
         <div className="suggestion-header">
           <span className={`suggestion-badge ${priorityColors[suggestion.priority]}`}>
             {suggestion.priority === 'urgent' && '⚠️ '}
@@ -404,8 +406,9 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
 
   const urgentSuggestions = results.suggestions.filter(s => s.priority === 'urgent');
   const attentionSuggestions = results.suggestions.filter(s => s.priority === 'attention');
-  const infoSuggestions = results.suggestions.filter(s => s.priority === 'info' && s.category !== 'supplements');
+  const infoSuggestions = results.suggestions.filter(s => s.priority === 'info' && s.category !== 'supplements' && s.category !== 'skin');
   const supplementSuggestions = results.suggestions.filter(s => s.category === 'supplements');
+  const skinSuggestions = results.suggestions.filter(s => s.category === 'skin');
 
   return (
     <div className="health-results-panel">
@@ -520,6 +523,15 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
           <div className="suggestions-group">
             <h4 className="suggestions-group-title info">Foundation</h4>
             {renderGroupedSuggestions(infoSuggestions, highlightedIds, fadingOutIds)}
+          </div>
+        )}
+
+        {skinSuggestions.length > 0 && (
+          <div className="suggestions-group skin-group">
+            <h4 className="suggestions-group-title skin">Skin Health</h4>
+            {skinSuggestions.map((s) => (
+              <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} />
+            ))}
           </div>
         )}
 

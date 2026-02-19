@@ -185,7 +185,8 @@ export function buildWelcomeEmailHtml(
   // Build suggestions section grouped by priority
   const urgent = suggestions.filter(s => s.priority === 'urgent');
   const attention = suggestions.filter(s => s.priority === 'attention');
-  const info = suggestions.filter(s => s.priority === 'info' && s.category !== 'supplements');
+  const info = suggestions.filter(s => s.priority === 'info' && s.category !== 'supplements' && s.category !== 'skin');
+  const skinSuggestions = suggestions.filter(s => s.category === 'skin');
   const supplements = suggestions.filter(s => s.category === 'supplements');
 
   let suggestionsHtml = '';
@@ -197,6 +198,9 @@ export function buildWelcomeEmailHtml(
   }
   if (info.length > 0) {
     suggestionsHtml += suggestionGroup('Foundation', '#0275d8', info);
+  }
+  if (skinSuggestions.length > 0) {
+    suggestionsHtml += suggestionGroup('Skin Health', '#D63384', skinSuggestions);
   }
   if (supplements.length > 0) {
     suggestionsHtml += suggestionGroup('Supplements', '#00A38B', supplements);

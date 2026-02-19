@@ -51,7 +51,7 @@ export interface HealthResults {
  */
 export interface Suggestion {
   id: string;
-  category: 'nutrition' | 'exercise' | 'bloodwork' | 'blood_pressure' | 'general' | 'sleep' | 'medication' | 'screening' | 'supplements';
+  category: 'nutrition' | 'exercise' | 'bloodwork' | 'blood_pressure' | 'general' | 'sleep' | 'medication' | 'screening' | 'supplements' | 'skin';
   priority: 'info' | 'attention' | 'urgent';
   title: string;
   description: string;

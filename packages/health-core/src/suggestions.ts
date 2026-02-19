@@ -1005,5 +1005,41 @@ export function generateSuggestions(
     },
   );
 
+  // === Skin health suggestions (age 18+) ===
+  if (results.age !== undefined && results.age >= 18) {
+    suggestions.push(
+      {
+        id: 'skin-moisturizer',
+        category: 'skin',
+        priority: 'info',
+        title: 'Daily moisturizer with ceramides',
+        description: 'Use a moisturizer containing ceramides and nicotinamide (vitamin B3) daily. Ceramides restore the skin barrier and reduce wrinkles, while nicotinamide improves hydration and reduces pigmentation.',
+      },
+      {
+        id: 'skin-sunscreen',
+        category: 'skin',
+        priority: 'info',
+        title: 'Daily broad-spectrum sunscreen',
+        description: unitSystem === 'conventional'
+          ? 'Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. In the US, CeraVe 100% Mineral Sunscreen SPF 50 is a good option — mineral filters (zinc oxide, titanium dioxide) are FDA-recognized as safe and effective with no systemic absorption.'
+          : 'Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. Beauty of Joseon Relief Sun SPF50+ PA++++ uses newer-generation chemical filters (Tinosorb S, Uvinul A Plus) that are photostable and do not absorb into the bloodstream.',
+      },
+      {
+        id: 'skin-retinoid',
+        category: 'skin',
+        priority: 'info',
+        title: 'Topical retinoid',
+        description: 'A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.',
+      },
+      {
+        id: 'skin-advanced',
+        category: 'skin',
+        priority: 'info',
+        title: 'Advanced skin treatments',
+        description: 'For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.',
+      },
+    );
+  }
+
   return suggestions;
 }

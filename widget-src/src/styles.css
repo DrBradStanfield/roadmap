@@ -617,6 +617,11 @@
   border-color: #00A38B;
 }
 
+.suggestions-group-title.skin {
+  color: #D63384;
+  border-color: #D63384;
+}
+
 /* Suggestion Cards */
 .suggestion-card {
   background-color: #fff;
@@ -655,6 +660,18 @@
   color: #008571;
 }
 
+.suggestion-card.skin-card {
+  border-left-color: #D63384;
+}
+
+.skin-card .suggestion-title a {
+  color: #D63384;
+}
+
+.skin-card .suggestion-title a:hover {
+  color: #b02a6e;
+}
+
 /* Suggestion highlight for new/changed recommendations */
 .suggestion-highlight {
   animation: highlight-fade-in 0.5s ease backwards;
@@ -675,6 +692,7 @@
 .suggestion-info.suggestion-highlight,
 .suggestion-info .suggestion-highlight { background-color: rgba(0, 102, 204, 0.06); }
 .supplement-card.suggestion-highlight { background-color: rgba(0, 163, 139, 0.06); }
+.skin-card.suggestion-highlight { background-color: rgba(214, 51, 132, 0.06); }
 
 /* Grouped suggestion card subsections */
 .grouped-card .grouped-subsections {

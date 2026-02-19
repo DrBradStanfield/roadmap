@@ -428,6 +428,31 @@ describe('screeningsToInputs', () => {
     expect(inputs.lungFollowupDate).toBe('2024-04');
   });
 
+  it('converts DEXA bone density screening fields', () => {
+    const screenings: ApiScreening[] = [
+      { id: '1', screeningKey: 'dexa_screening', value: 'dexa_scan', updatedAt: '' },
+      { id: '2', screeningKey: 'dexa_last_date', value: '2024-06', updatedAt: '' },
+      { id: '3', screeningKey: 'dexa_result', value: 'normal', updatedAt: '' },
+    ];
+    const inputs = screeningsToInputs(screenings);
+    expect(inputs.dexaScreening).toBe('dexa_scan');
+    expect(inputs.dexaLastDate).toBe('2024-06');
+    expect(inputs.dexaResult).toBe('normal');
+  });
+
+  it('converts DEXA osteoporosis follow-up fields', () => {
+    const screenings: ApiScreening[] = [
+      { id: '1', screeningKey: 'dexa_screening', value: 'dexa_scan', updatedAt: '' },
+      { id: '2', screeningKey: 'dexa_result', value: 'osteoporosis', updatedAt: '' },
+      { id: '3', screeningKey: 'dexa_followup_status', value: 'scheduled', updatedAt: '' },
+      { id: '4', screeningKey: 'dexa_followup_date', value: '2025-03', updatedAt: '' },
+    ];
+    const inputs = screeningsToInputs(screenings);
+    expect(inputs.dexaResult).toBe('osteoporosis');
+    expect(inputs.dexaFollowupStatus).toBe('scheduled');
+    expect(inputs.dexaFollowupDate).toBe('2025-03');
+  });
+
   it('converts breast/cervical follow-up fields', () => {
     const screenings: ApiScreening[] = [
       { id: '1', screeningKey: 'breast_followup_status', value: 'completed', updatedAt: '' },
