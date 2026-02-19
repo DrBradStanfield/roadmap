@@ -269,11 +269,11 @@ export function InputPanel({
             value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, inputs[field] as number | undefined)}
             onChange={(e) => {
               const raw = e.target.value;
+              setRawInputs(prev => ({ ...prev, [field]: raw }));
               // Ignore browser auto-fill of 0 for empty fields (spinner click on empty input)
               if (raw === '0' && inputs[field] === undefined && rawInputs[field] === undefined) {
                 return;
               }
-              setRawInputs(prev => ({ ...prev, [field]: raw }));
               updateField(field, parseAndConvert(field, raw));
             }}
             onBlur={() => setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; })}
@@ -655,6 +655,12 @@ export function InputPanel({
             return 'Your lipid levels are above treatment targets.';
           })();
 
+          // Lipid name for use in per-step hints (same priority as introText)
+          const lipidName =
+            (effectiveApoB !== undefined && effectiveApoB > LIPID_TREATMENT_TARGETS.apobGl) ? 'ApoB'
+            : (effectiveNonHdl !== undefined && effectiveNonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol) ? 'non-HDL cholesterol'
+            : 'LDL';
+
           return (
             <div className="section-card">
             <section className="health-section medication-cascade">
@@ -712,7 +718,7 @@ export function InputPanel({
               {showEzetimibe && (
                 <div className="health-field">
                   <label htmlFor="ezetimibe">On Ezetimibe 10mg?</label>
-                  <p className="med-step-hint">Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more LDL reduction.</p>
+                  <p className="med-step-hint">{`Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more ${lipidName} reduction.`}</p>
                   <select
                     id="ezetimibe"
                     value={medInputs.ezetimibe || 'not_yet'}
@@ -740,7 +746,7 @@ export function InputPanel({
                     {canIncrease ? 'Tried increasing statin dose?' : 'Tried switching to a more potent statin?'}
                   </label>
                   <p className="med-step-hint">
-                    {canIncrease ? 'A higher dose may lower your LDL further.' : 'A more potent statin can provide greater LDL reduction at the same or lower dose.'}
+                    {canIncrease ? `A higher dose may lower your ${lipidName} further.` : `A more potent statin can provide greater ${lipidName} reduction at the same or lower dose.`}
                   </p>
                   <select
                     id="statin-escalation"
@@ -759,7 +765,7 @@ export function InputPanel({
               {showPcsk9i && (
                 <div className="health-field">
                   <label htmlFor="pcsk9i">On a PCSK9 inhibitor?</label>
-                  <p className="med-step-hint">PCSK9 inhibitors are injectable medications that help your body clear LDL from the blood. They can reduce LDL by ~50%.</p>
+                  <p className="med-step-hint">{`PCSK9 inhibitors are injectable medications that help your body clear ${lipidName} from the blood. They can reduce ${lipidName} by ~50%.`}</p>
                   <select
                     id="pcsk9i"
                     value={medInputs.pcsk9i || 'not_yet'}
