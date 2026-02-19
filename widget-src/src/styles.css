@@ -280,7 +280,7 @@
 
 .collapse-chevron {
   font-size: 14px;
-  color: #999;
+  color: var(--color-gray-light);
   display: inline-block;
   transition: transform 0.3s ease;
 }
@@ -452,7 +452,7 @@
 .screening-group {
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-gray-border);
 }
 
 .screening-group:last-child {
@@ -785,7 +785,7 @@
 
 .suggestion-desc {
   font-size: 14px;
-  color: #555;
+  color: var(--color-gray-medium);
   margin: 0;
   line-height: 1.5;
   white-space: pre-line;
@@ -799,7 +799,7 @@
   padding: 16px;
   border-radius: 8px;
   line-height: 1.5;
-  border: 1px solid #eee;
+  border: 1px solid var(--color-gray-border);
 }
 
 .health-disclaimer strong {
@@ -835,7 +835,7 @@
   gap: 6px;
   font-size: 14px;
   font-weight: 500;
-  color: #2e7d32;
+  color: var(--color-success);
 }
 
 .logged-in-link {
@@ -1009,7 +1009,7 @@
 }
 
 .btn-primary:disabled {
-  background: #999;
+  background: var(--color-gray-light);
   cursor: not-allowed;
 }
 
@@ -1176,7 +1176,7 @@
 }
 
 .history-load-more:disabled {
-  color: #999;
+  color: var(--color-gray-light);
   cursor: not-allowed;
 }
 
@@ -1196,7 +1196,7 @@
 
 /* Reminder Settings */
 .reminder-settings {
-  border: 1px solid #eee;
+  border: 1px solid var(--color-gray-border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -1412,7 +1412,7 @@
 }
 
 .delete-data-link:disabled {
-  color: #999;
+  color: var(--color-gray-light);
   cursor: not-allowed;
 }
 
