@@ -26,9 +26,8 @@
   {% if login_url %}data-login-url="{{ login_url }}"{% endif %}
 ></div>
 
-<!-- Load the bundled React app -->
-{{ 'health-history.js' | asset_url | script_tag }}
 {{ 'health-tool.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'health-history.js' | asset_url }}" defer crossorigin="anonymous"></script>
 
 {% schema %}
 {
