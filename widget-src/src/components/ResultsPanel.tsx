@@ -551,7 +551,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
           </div>
         )}
 
-        {infoSuggestions.length > 0 && supplementSuggestions.length > 0 && (
+        {supplementSuggestions.length > 0 && (
           <div className="suggestions-group supplements-group">
             <h4 className="suggestions-group-title supplements">Supplements</h4>
             {supplementSuggestions.map((s) => (

@@ -184,10 +184,10 @@ describe('computeDueReminders', () => {
       expect(result.reminders.find(r => r.category === 'screening_lung')).toBeUndefined();
     });
 
-    it('does not return lung reminder for smoker with < 20 pack-years', () => {
+    it('does not return lung reminder for smoker with < 15 pack-years', () => {
       const screenings: ScreeningInputs = {
         lungSmokingHistory: 'former_smoker',
-        lungPackYears: 15,
+        lungPackYears: 14,
         lungScreening: 'annual_ldct',
         lungLastDate: monthsAgoYYYYMM(14),
       };
@@ -490,6 +490,18 @@ describe('DEXA screening reminders', () => {
     };
     const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
     expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeDefined();
+  });
+
+  it('does not return DEXA reminder when followup completed recently despite old original scan', () => {
+    const screenings: ScreeningInputs = {
+      dexaScreening: 'dexa_scan',
+      dexaLastDate: monthsAgoYYYYMM(30), // original scan 30 months ago (would be overdue)
+      dexaResult: 'osteoporosis',
+      dexaFollowupStatus: 'completed',
+      dexaFollowupDate: monthsAgoYYYYMM(2), // followup only 2 months ago (not overdue)
+    };
+    const result = computeDueReminders(femaleProfile, screenings, {}, [], NOW);
+    expect(result.reminders.find(r => r.category === 'screening_dexa')).toBeUndefined();
   });
 });
 

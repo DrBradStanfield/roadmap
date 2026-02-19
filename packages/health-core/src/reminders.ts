@@ -182,10 +182,10 @@ function computeScreeningReminders(
     }
   }
 
-  // Lung (age 50-80, smoker with 20+ pack-years)
+  // Lung (age 50-80, smoker with 15+ pack-years — USPSTF 2021)
   if (age >= 50 && age <= 80 &&
       (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker') &&
-      screenings.lungPackYears !== undefined && screenings.lungPackYears >= 20) {
+      screenings.lungPackYears !== undefined && screenings.lungPackYears >= 15) {
     const method = screenings.lungScreening;
     if (method && method !== 'not_yet_started') {
       const overdue = isScreeningOverdue(screenings.lungLastDate, method, now)
@@ -220,8 +220,11 @@ function computeScreeningReminders(
     if (screenings.dexaScreening && screenings.dexaScreening !== 'not_yet_started' && screenings.dexaLastDate) {
       // Result-based interval: osteopenia → 2yr, normal → 5yr, osteoporosis → post-followup pattern
       if (screenings.dexaResult === 'osteoporosis') {
-        const overdue = isPostFollowupOverdue('dexa', 'dexa_scan', 'abnormal', screenings.dexaFollowupStatus, screenings.dexaFollowupDate, now)
-          || isScreeningOverdue(screenings.dexaLastDate, 'dexa_scan', now);
+        // If followup completed, check only followup date; otherwise check original scan date
+        const hasCompletedFollowup = screenings.dexaFollowupStatus === 'completed' && screenings.dexaFollowupDate;
+        const overdue = hasCompletedFollowup
+          ? isPostFollowupOverdue('dexa', 'dexa_scan', 'abnormal', screenings.dexaFollowupStatus, screenings.dexaFollowupDate, now)
+          : isScreeningOverdue(screenings.dexaLastDate, 'dexa_scan', now);
         if (overdue) {
           reminders.push({
             category: 'screening_dexa',

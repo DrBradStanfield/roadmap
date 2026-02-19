@@ -917,10 +917,10 @@ export function generateSuggestions(
       }
     }
 
-    // Lung (age 50-80, smokers with 20+ pack-years)
+    // Lung (age 50-80, smokers with 15+ pack-years — USPSTF 2021)
     if (age >= 50 && age <= 80 &&
         (screenings.lungSmokingHistory === 'former_smoker' || screenings.lungSmokingHistory === 'current_smoker') &&
-        screenings.lungPackYears !== undefined && screenings.lungPackYears >= 20) {
+        screenings.lungPackYears !== undefined && screenings.lungPackYears >= 15) {
       if (!screenings.lungScreening || screenings.lungScreening === 'not_yet_started') {
         suggestions.push({
           id: 'screening-lung',
