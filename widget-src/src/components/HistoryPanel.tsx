@@ -38,6 +38,9 @@ const METRIC_LABELS: Record<string, string> = {
   apob: 'ApoB',
   systolic_bp: 'Systolic BP',
   diastolic_bp: 'Diastolic BP',
+  creatinine: 'Creatinine',
+  psa: 'PSA',
+  lpa: 'Lp(a)',
 };
 
 // Chart colors per metric
@@ -52,6 +55,9 @@ const METRIC_COLORS: Record<string, string> = {
   apob: '#84cc16',
   systolic_bp: '#14b8a6',
   diastolic_bp: '#64748b',
+  creatinine: '#6366f1',
+  psa: '#d946ef',
+  lpa: '#e11d48',
 };
 
 function toDisplayValue(metricType: string, value: number, unitSystem: UnitSystem): number {

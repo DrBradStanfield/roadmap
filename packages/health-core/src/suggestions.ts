@@ -14,6 +14,7 @@ import {
   BP_THRESHOLDS,
   APOB_THRESHOLDS,
   EGFR_THRESHOLDS,
+  LPA_THRESHOLDS,
 } from './units';
 
 /** On-treatment lipid targets (SI canonical units) */
@@ -417,6 +418,105 @@ export function generateSuggestions(
         priority: 'info',
         title: 'Borderline high non-HDL cholesterol',
         description: `Your non-HDL cholesterol of ${formatDisplayValue('ldl', results.nonHdlCholesterol!, us)} ${getDisplayLabel('ldl', us)} is borderline. Optimal is <${formatDisplayValue('ldl', NON_HDL_THRESHOLDS.borderline, us)} ${getDisplayLabel('ldl', us)}.`,
+      });
+    }
+  }
+
+  // === Lp(a) — personalized risk context card ===
+  // Lp(a) is genetic and unmodifiable. When elevated, show a personalized
+  // checklist of modifiable risk factors showing which are on/off target.
+  if (inputs.lpa !== undefined) {
+    if (inputs.lpa >= LPA_THRESHOLDS.elevated) {
+      const checklist: string[] = [];
+
+      // Lipids (ApoB > non-HDL > LDL hierarchy, using on-treatment targets)
+      if (inputs.apoB !== undefined) {
+        const onTarget = inputs.apoB <= LIPID_TREATMENT_TARGETS.apobGl;
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} ApoB: ${fmtApoB(inputs.apoB, us)} \u2014 target \u2264${fmtApoB(LIPID_TREATMENT_TARGETS.apobGl, us)}`);
+      } else if (results.nonHdlCholesterol !== undefined) {
+        const onTarget = results.nonHdlCholesterol <= LIPID_TREATMENT_TARGETS.nonHdlMmol;
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} Non-HDL: ${formatDisplayValue('ldl', results.nonHdlCholesterol, us)} ${getDisplayLabel('ldl', us)} \u2014 target \u2264${formatDisplayValue('ldl', LIPID_TREATMENT_TARGETS.nonHdlMmol, us)} ${getDisplayLabel('ldl', us)}`);
+      } else if (inputs.ldlC !== undefined) {
+        const onTarget = inputs.ldlC <= LIPID_TREATMENT_TARGETS.ldlMmol;
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} LDL: ${fmtLdl(inputs.ldlC, us)} \u2014 target \u2264${fmtLdl(LIPID_TREATMENT_TARGETS.ldlMmol, us)}`);
+      } else {
+        checklist.push('\u2753 Lipids \u2014 not tested (consider getting ApoB or a lipid panel)');
+      }
+
+      // Blood pressure
+      if (inputs.systolicBp !== undefined && inputs.diastolicBp !== undefined) {
+        const onTarget = inputs.systolicBp < 120 && inputs.diastolicBp < 80;
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} Blood pressure: ${inputs.systolicBp}/${inputs.diastolicBp} mmHg \u2014 target <120/80`);
+      } else {
+        checklist.push('\u2753 Blood pressure \u2014 not entered');
+      }
+
+      // BMI
+      if (results.bmi !== undefined) {
+        const onTarget = results.bmi < 25;
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} BMI: ${results.bmi} \u2014 target <25`);
+      }
+
+      // HbA1c
+      if (inputs.hba1c !== undefined) {
+        const onTarget = inputs.hba1c < HBA1C_THRESHOLDS.prediabetes;
+        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} HbA1c: ${fmtHba1c(inputs.hba1c, us)} \u2014 target <${fmtHba1c(HBA1C_THRESHOLDS.prediabetes, us)}`);
+      } else {
+        checklist.push('\u2753 HbA1c \u2014 not tested');
+      }
+
+      // Medication status (only when medications are tracked)
+      if (medications) {
+        const statinDrug = medications.statin?.drug;
+        if (statinDrug && statinDrug !== 'none' && statinDrug !== 'not_tolerated') {
+          const name = statinDrug.charAt(0).toUpperCase() + statinDrug.slice(1);
+          const doseStr = medications.statin?.dose ? ` ${medications.statin.dose}mg` : '';
+          checklist.push(`\u2705 Statin: ${name}${doseStr}`);
+        } else if (statinDrug === 'not_tolerated') {
+          checklist.push('\u26A0\uFE0F Statin: not tolerated');
+        } else {
+          checklist.push('\u26A0\uFE0F Statin: not started \u2014 discuss with your doctor');
+        }
+
+        if (medications.ezetimibe === 'yes') {
+          checklist.push('\u2705 Ezetimibe: taking');
+        } else if (medications.ezetimibe === 'not_tolerated') {
+          checklist.push('\u26A0\uFE0F Ezetimibe: not tolerated');
+        } else {
+          checklist.push('\u26A0\uFE0F Ezetimibe: not started \u2014 discuss with your doctor');
+        }
+
+        if (medications.pcsk9i === 'yes') {
+          checklist.push('\u2705 PCSK9 inhibitor: taking (also lowers Lp(a) ~25\u201330%)');
+        } else if (medications.pcsk9i === 'not_tolerated') {
+          checklist.push('\u26A0\uFE0F PCSK9 inhibitor: not tolerated');
+        } else {
+          checklist.push('\u26A0\uFE0F PCSK9 inhibitor: not started \u2014 can lower Lp(a) ~25\u201330%');
+        }
+      }
+
+      suggestions.push({
+        id: 'lpa-elevated',
+        category: 'bloodwork',
+        priority: 'attention',
+        title: `Elevated Lp(a): ${Math.round(inputs.lpa)} nmol/L`,
+        description: `Lp(a) is genetically determined and cannot be changed by diet or lifestyle. With an elevated Lp(a), reducing all other modifiable cardiovascular risk factors is especially important.\n\nYour modifiable risk factors:\n${checklist.join('\n')}`,
+      });
+    } else if (inputs.lpa >= LPA_THRESHOLDS.normal) {
+      suggestions.push({
+        id: 'lpa-borderline',
+        category: 'bloodwork',
+        priority: 'info',
+        title: `Borderline Lp(a): ${Math.round(inputs.lpa)} nmol/L`,
+        description: 'Your Lp(a) is in the borderline range (75\u2013125 nmol/L). Lp(a) is genetically determined and does not change with lifestyle. Continue to optimize other cardiovascular risk factors.',
+      });
+    } else {
+      suggestions.push({
+        id: 'lpa-normal',
+        category: 'bloodwork',
+        priority: 'info',
+        title: `Lp(a): ${Math.round(inputs.lpa)} nmol/L`,
+        description: 'Your Lp(a) is in the normal range (<75 nmol/L). This is a one-time test \u2014 Lp(a) is genetically determined and does not change significantly over time.',
       });
     }
   }

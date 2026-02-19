@@ -26,7 +26,8 @@ export type MetricType =
   | 'diastolic_bp'
   | 'apob'
   | 'creatinine'
-  | 'psa';
+  | 'psa'
+  | 'lpa';
 
 /** SI = metric + mmol/L (NZ, UK, AU, EU). Conventional = imperial + mg/dL (US). */
 export type UnitSystem = 'si' | 'conventional';
@@ -304,6 +305,23 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     },
     decimalPlaces: { si: 1, conventional: 1 },
   },
+  lpa: {
+    canonical: 'nmol/L',
+    label: { si: 'nmol/L', conventional: 'nmol/L' }, // Same in both systems
+    toCanonical: {
+      si: identity,
+      conventional: identity,
+    },
+    fromCanonical: {
+      si: identity,
+      conventional: identity,
+    },
+    validationRange: {
+      si: { min: 0, max: 750 },
+      conventional: { min: 0, max: 750 },
+    },
+    decimalPlaces: { si: 0, conventional: 0 },
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -481,6 +499,12 @@ export const APOB_THRESHOLDS = {
 /** PSA thresholds in ng/mL (same in both unit systems) */
 export const PSA_THRESHOLDS = {
   normal: 4.0,  // General upper limit of normal (varies by age)
+} as const;
+
+/** Lp(a) thresholds in nmol/L (same in both unit systems) */
+export const LPA_THRESHOLDS = {
+  normal: 75,     // <75 nmol/L is normal
+  elevated: 125,  // ≥125 nmol/L is elevated
 } as const;
 
 // ---------------------------------------------------------------------------

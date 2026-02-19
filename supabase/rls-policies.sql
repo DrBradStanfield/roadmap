@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS health_measurements (
   metric_type TEXT NOT NULL CHECK (metric_type IN (
     'weight', 'waist',
     'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
-    'systolic_bp', 'diastolic_bp', 'apob', 'creatinine', 'psa'
+    'systolic_bp', 'diastolic_bp', 'apob', 'creatinine', 'psa', 'lpa'
   )),
   value NUMERIC NOT NULL,
   recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS health_measurements (
       WHEN 'apob'            THEN value BETWEEN 0 AND 3
       WHEN 'creatinine'      THEN value BETWEEN 10 AND 2650
       WHEN 'psa'             THEN value BETWEEN 0 AND 100
+      WHEN 'lpa'             THEN value BETWEEN 0 AND 750
       ELSE false
     END
   )
@@ -80,7 +81,7 @@ ALTER TABLE health_measurements ADD CONSTRAINT health_measurements_metric_type_c
   CHECK (metric_type IN (
     'weight', 'waist',
     'hba1c', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
-    'systolic_bp', 'diastolic_bp', 'apob', 'creatinine', 'psa'
+    'systolic_bp', 'diastolic_bp', 'apob', 'creatinine', 'psa', 'lpa'
   ));
 
 ALTER TABLE health_measurements DROP CONSTRAINT IF EXISTS value_range;
@@ -98,6 +99,7 @@ ALTER TABLE health_measurements ADD CONSTRAINT value_range CHECK (
     WHEN 'apob'            THEN value BETWEEN 0 AND 3
     WHEN 'creatinine'      THEN value BETWEEN 10 AND 2650
     WHEN 'psa'             THEN value BETWEEN 0 AND 100
+    WHEN 'lpa'             THEN value BETWEEN 0 AND 750
     ELSE false
   END
 );

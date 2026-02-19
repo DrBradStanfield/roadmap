@@ -106,6 +106,12 @@ const BLOOD_TEST_FIELDS: FieldConfig[] = [
     step: { si: '0.1', conv: '1' },
     hint: { si: 'Normal: <1.7 mmol/L', conv: 'Normal: <150 mg/dL' },
   },
+  {
+    field: 'lpa', name: 'Lp(a)',
+    placeholder: { si: '30', conv: '30' },
+    step: { si: '1', conv: '1' },
+    hint: { si: 'Normal: <75 nmol/L', conv: 'Normal: <75 nmol/L' },
+  },
 ];
 
 interface InputPanelProps {

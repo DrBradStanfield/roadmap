@@ -1963,4 +1963,152 @@ describe('generateSuggestions', () => {
       expect(retinoid.description).toContain('pregnancy');
     });
   });
+
+  describe('Lp(a) suggestions', () => {
+    it('generates normal suggestion for Lp(a) < 75 nmol/L', () => {
+      const { inputs, results } = createTestData({ lpa: 30 });
+      const suggestions = generateSuggestions(inputs, results);
+      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-normal');
+      expect(lpaSuggestion).toBeDefined();
+      expect(lpaSuggestion?.priority).toBe('info');
+      expect(lpaSuggestion?.description).toContain('normal range');
+      expect(lpaSuggestion?.description).toContain('one-time test');
+    });
+
+    it('generates borderline suggestion for Lp(a) 75-124 nmol/L', () => {
+      const { inputs, results } = createTestData({ lpa: 100 });
+      const suggestions = generateSuggestions(inputs, results);
+      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-borderline');
+      expect(lpaSuggestion).toBeDefined();
+      expect(lpaSuggestion?.priority).toBe('info');
+      expect(lpaSuggestion?.description).toContain('borderline');
+    });
+
+    it('generates elevated suggestion with risk checklist for Lp(a) >= 125 nmol/L', () => {
+      const { inputs, results } = createTestData(
+        { lpa: 200, apoB: apoB(45), systolicBp: 118, diastolicBp: 75, hba1c: hba1c(5.2) },
+        { bmi: 23 }
+      );
+      const suggestions = generateSuggestions(inputs, results, 'conventional');
+      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
+      expect(lpaSuggestion).toBeDefined();
+      expect(lpaSuggestion?.priority).toBe('attention');
+      expect(lpaSuggestion?.title).toContain('200 nmol/L');
+      expect(lpaSuggestion?.description).toContain('genetically determined');
+      // On-target items should show checkmark
+      expect(lpaSuggestion?.description).toContain('\u2705');
+    });
+
+    it('shows warning markers for off-target risk factors', () => {
+      const { inputs, results } = createTestData(
+        { lpa: 150, apoB: apoB(120), systolicBp: 145, diastolicBp: 95, hba1c: hba1c(6.8) },
+        { bmi: 31 }
+      );
+      const suggestions = generateSuggestions(inputs, results, 'conventional');
+      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
+      expect(lpaSuggestion).toBeDefined();
+      // Off-target items should show warning
+      expect(lpaSuggestion?.description).toContain('\u26A0\uFE0F');
+      expect(lpaSuggestion?.description).toContain('ApoB');
+      expect(lpaSuggestion?.description).toContain('Blood pressure');
+      expect(lpaSuggestion?.description).toContain('BMI');
+      expect(lpaSuggestion?.description).toContain('HbA1c');
+    });
+
+    it('shows "not tested" prompts for missing data', () => {
+      const { inputs, results } = createTestData({ lpa: 200 });
+      const suggestions = generateSuggestions(inputs, results);
+      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
+      expect(lpaSuggestion).toBeDefined();
+      expect(lpaSuggestion?.description).toContain('not tested');
+      expect(lpaSuggestion?.description).toContain('not entered');
+    });
+
+    it('includes medication status in checklist when medications provided', () => {
+      const { inputs, results } = createTestData({ lpa: 200 });
+      const meds: MedicationInputs = {
+        statin: { drug: 'atorvastatin', dose: 40 },
+        ezetimibe: 'yes',
+        pcsk9i: 'not_yet',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
+      expect(lpaSuggestion).toBeDefined();
+      expect(lpaSuggestion?.description).toContain('Atorvastatin');
+      expect(lpaSuggestion?.description).toContain('40mg');
+      expect(lpaSuggestion?.description).toContain('Ezetimibe: taking');
+      expect(lpaSuggestion?.description).toContain('PCSK9 inhibitor: not started');
+      expect(lpaSuggestion?.description).toContain('25\u201330%');
+    });
+
+    it('shows PCSK9i as taking with Lp(a) reduction note', () => {
+      const { inputs, results } = createTestData({ lpa: 200 });
+      const meds: MedicationInputs = {
+        statin: { drug: 'rosuvastatin', dose: 20 },
+        ezetimibe: 'yes',
+        pcsk9i: 'yes',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
+      expect(lpaSuggestion?.description).toContain('PCSK9 inhibitor: taking');
+      expect(lpaSuggestion?.description).toContain('25\u201330%');
+    });
+
+    it('does not generate suggestion when Lp(a) is undefined', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id.startsWith('lpa-'))).toBeUndefined();
+    });
+
+    it('shows same unit (nmol/L) in both SI and conventional', () => {
+      const { inputs, results } = createTestData({ lpa: 50 });
+      const siSuggestions = generateSuggestions(inputs, results, 'si');
+      const convSuggestions = generateSuggestions(inputs, results, 'conventional');
+      expect(siSuggestions.find(s => s.id === 'lpa-normal')?.title).toContain('nmol/L');
+      expect(convSuggestions.find(s => s.id === 'lpa-normal')?.title).toContain('nmol/L');
+    });
+
+    it('uses LDL when ApoB is unavailable in checklist', () => {
+      const { inputs, results } = createTestData({ lpa: 200, ldlC: ldl(80) });
+      const suggestions = generateSuggestions(inputs, results, 'conventional');
+      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
+      expect(lpaSuggestion?.description).toContain('LDL');
+      expect(lpaSuggestion?.description).not.toContain('ApoB');
+    });
+
+    it('uses non-HDL when ApoB unavailable but total + HDL provided', () => {
+      const { inputs, results } = createTestData(
+        { lpa: 200, totalCholesterol: totalChol(250), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(250) - hdl(50) }
+      );
+      const suggestions = generateSuggestions(inputs, results, 'conventional');
+      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
+      expect(lpaSuggestion?.description).toContain('Non-HDL');
+      expect(lpaSuggestion?.description).not.toContain('ApoB');
+      expect(lpaSuggestion?.description).not.toContain('LDL');
+    });
+
+    it('does not include medication checklist when medications not provided', () => {
+      const { inputs, results } = createTestData({ lpa: 200 });
+      const suggestions = generateSuggestions(inputs, results);
+      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
+      expect(lpaSuggestion?.description).not.toContain('Statin');
+      expect(lpaSuggestion?.description).not.toContain('Ezetimibe');
+      expect(lpaSuggestion?.description).not.toContain('PCSK9');
+    });
+
+    it('handles exact boundary at 75 nmol/L (borderline)', () => {
+      const { inputs, results } = createTestData({ lpa: 75 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'lpa-borderline')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'lpa-normal')).toBeUndefined();
+    });
+
+    it('handles exact boundary at 125 nmol/L (elevated)', () => {
+      const { inputs, results } = createTestData({ lpa: 125 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'lpa-elevated')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'lpa-borderline')).toBeUndefined();
+    });
+  });
 });

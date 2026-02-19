@@ -129,6 +129,9 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   if (inputs.ldlC !== undefined) {
     results.ldlC = inputs.ldlC;
   }
+  if (inputs.lpa !== undefined) {
+    results.lpa = inputs.lpa;
+  }
 
   // Calculate age if birth year is provided (default to January if month not set)
   if (inputs.birthYear) {

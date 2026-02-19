@@ -145,6 +145,7 @@ const METRIC_DISPLAY_ORDER: Array<{
   { key: 'trig', label: 'Triglycerides', metricType: 'triglycerides', inputField: 'triglycerides' },
   { key: 'apob', label: 'ApoB', metricType: 'apob', inputField: 'apoB' },
   { key: 'creatinine', label: 'Creatinine', metricType: 'creatinine', inputField: 'creatinine' },
+  { key: 'lpa', label: 'Lp(a)', metricType: 'lpa', inputField: 'lpa' },
   { key: 'sbp', label: 'Systolic BP', metricType: 'systolic_bp', inputField: 'systolicBp' },
   { key: 'dbp', label: 'Diastolic BP', metricType: 'diastolic_bp', inputField: 'diastolicBp' },
 ];

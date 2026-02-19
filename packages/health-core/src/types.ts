@@ -23,6 +23,7 @@ export interface HealthInputs {
   apoB?: number;          // g/L
   creatinine?: number;  // µmol/L
   psa?: number;         // ng/mL (no unit conversion)
+  lpa?: number;         // nmol/L (no unit conversion — same in both systems)
   systolicBp?: number;  // mmHg
   diastolicBp?: number; // mmHg
   // User preference (stored as 1=si, 2=conventional in DB)
@@ -42,6 +43,7 @@ export interface HealthResults {
   apoB?: number;              // g/L (passthrough from inputs)
   ldlC?: number;              // mmol/L (passthrough from inputs)
   eGFR?: number;              // mL/min/1.73m² (CKD-EPI 2021)
+  lpa?: number;               // nmol/L (passthrough from inputs)
   age?: number;
   suggestions: Suggestion[];
 }

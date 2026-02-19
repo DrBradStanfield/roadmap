@@ -156,6 +156,7 @@ export {
   APOB_THRESHOLDS,
   EGFR_THRESHOLDS,
   PSA_THRESHOLDS,
+  LPA_THRESHOLDS,
   // Feet/inches height conversion helpers
   inchesToFeetInches,
   feetInchesToInches,

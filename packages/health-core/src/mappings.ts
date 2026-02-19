@@ -32,6 +32,7 @@ export const FIELD_TO_METRIC: Record<string, string> = {
   apoB: 'apob',
   creatinine: 'creatinine',
   psa: 'psa',
+  lpa: 'lpa',
 };
 
 /** Reverse mapping: metric_type → HealthInputs field name. */
@@ -48,6 +49,7 @@ export const METRIC_TO_FIELD: Record<string, keyof HealthInputs> = {
   apob: 'apoB',
   creatinine: 'creatinine',
   psa: 'psa',
+  lpa: 'lpa',
 };
 
 /**
@@ -71,6 +73,7 @@ export const FIELD_METRIC_MAP: Record<string, MetricType> = {
   apoB: 'apob',
   creatinine: 'creatinine',
   psa: 'psa',
+  lpa: 'lpa',
 };
 
 /**
@@ -87,7 +90,7 @@ export const PREFILL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
  */
 export const LONGITUDINAL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
   'weightKg', 'waistCm', 'hba1c', 'creatinine', 'psa', 'apoB', 'ldlC', 'totalCholesterol', 'hdlC',
-  'triglycerides', 'systolicBp', 'diastolicBp',
+  'triglycerides', 'systolicBp', 'diastolicBp', 'lpa',
 ];
 
 /**
@@ -95,7 +98,7 @@ export const LONGITUDINAL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
  * Used to determine which measurements should use the user-selected blood test date.
  */
 export const BLOOD_TEST_METRICS: ReadonlyArray<string> = [
-  'hba1c', 'creatinine', 'psa', 'apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides',
+  'hba1c', 'creatinine', 'psa', 'apob', 'ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'lpa',
 ];
 
 /** API measurement record shape (camelCase, as returned by API endpoints). */

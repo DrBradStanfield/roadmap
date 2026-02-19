@@ -11,6 +11,7 @@ import {
   REMINDER_CATEGORIES,
   REMINDER_CATEGORY_LABELS,
   EGFR_THRESHOLDS,
+  LPA_THRESHOLDS,
   type ReminderCategory,
 } from '@roadmap/health-core';
 import type { ApiReminderPreference } from '../lib/api';
@@ -481,6 +482,21 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
               <div className="stat-card">
                 <span className="stat-label">eGFR</span>
                 <span className="stat-value">{results.eGFR} mL/min</span>
+                <span className={`stat-status ${status.className}`}>{status.label}</span>
+              </div>
+            );
+          })()}
+
+          {results.lpa !== undefined && (() => {
+            const status = results.lpa >= LPA_THRESHOLDS.elevated
+              ? { label: 'Elevated', className: 'status-attention' }
+              : results.lpa >= LPA_THRESHOLDS.normal
+              ? { label: 'Borderline', className: 'status-info' }
+              : { label: 'Normal', className: 'status-normal' };
+            return (
+              <div className="stat-card">
+                <span className="stat-label">Lp(a)</span>
+                <span className="stat-value">{Math.round(results.lpa)} nmol/L</span>
                 <span className={`stat-status ${status.className}`}>{status.label}</span>
               </div>
             );
