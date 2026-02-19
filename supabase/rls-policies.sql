@@ -341,7 +341,9 @@ CREATE TABLE IF NOT EXISTS screenings (
     'lung_smoking_history', 'lung_pack_years', 'lung_screening', 'lung_last_date',
     'lung_result', 'lung_followup_status', 'lung_followup_date',
     'prostate_discussion', 'prostate_psa_value', 'prostate_last_date',
-    'endometrial_discussion', 'endometrial_abnormal_bleeding'
+    'endometrial_discussion', 'endometrial_abnormal_bleeding',
+    'dexa_screening', 'dexa_last_date', 'dexa_result',
+    'dexa_followup_status', 'dexa_followup_date'
   )),
   value TEXT NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -389,7 +391,7 @@ CREATE TABLE IF NOT EXISTS reminder_preferences (
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   reminder_category TEXT NOT NULL CHECK (reminder_category IN (
     'screening_colorectal', 'screening_breast', 'screening_cervical',
-    'screening_lung', 'screening_prostate',
+    'screening_lung', 'screening_prostate', 'screening_dexa',
     'blood_test_lipids', 'blood_test_hba1c', 'blood_test_creatinine',
     'medication_review'
   )),

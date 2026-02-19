@@ -1014,6 +1014,7 @@ export function generateSuggestions(
         priority: 'info',
         title: 'Daily moisturizer with ceramides',
         description: 'Use a moisturizer containing ceramides and nicotinamide (vitamin B3) daily. Ceramides restore the skin barrier and reduce wrinkles, while nicotinamide improves hydration and reduces pigmentation.',
+        link: 'https://amzn.to/47pGGmj',
       },
       {
         id: 'skin-sunscreen',
@@ -1023,6 +1024,9 @@ export function generateSuggestions(
         description: unitSystem === 'conventional'
           ? 'Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. In the US, CeraVe 100% Mineral Sunscreen SPF 50 is a good option — mineral filters (zinc oxide, titanium dioxide) are FDA-recognized as safe and effective with no systemic absorption.'
           : 'Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. Beauty of Joseon Relief Sun SPF50+ PA++++ uses newer-generation chemical filters (Tinosorb S, Uvinul A Plus) that are photostable and do not absorb into the bloodstream.',
+        link: unitSystem === 'conventional'
+          ? 'https://www.amazon.com/Mineral-Sunscreen-Titanium-Dioxide-Sensitive/dp/B07KLY4RYG'
+          : 'https://beautyofjoseon.com/products/relief-sun-rice-probiotics',
       },
       {
         id: 'skin-retinoid',
