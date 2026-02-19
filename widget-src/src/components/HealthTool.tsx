@@ -116,10 +116,42 @@ export function HealthTool() {
         // Phase 1: show cached data instantly
         const cached = loadFromLocalStorage();
         if (cached && Object.keys(cached.inputs).length > 0) {
-          setInputs(cached.inputs);
-          if (cached.previousMeasurements.length > 0) {
-            setPreviousMeasurements(cached.previousMeasurements);
+          // Only load prefill fields into inputs — longitudinal values go to previousMeasurements
+          // so they render as blue "previous value" labels instead of editable input values.
+          const cachedPrefill: Partial<HealthInputs> = {};
+          for (const field of PREFILL_FIELDS) {
+            if (cached.inputs[field] !== undefined) {
+              (cachedPrefill as any)[field] = cached.inputs[field];
+            }
           }
+          if (cached.inputs.unitSystem !== undefined) {
+            cachedPrefill.unitSystem = cached.inputs.unitSystem;
+          }
+          setInputs(cachedPrefill);
+
+          if (cached.previousMeasurements.length > 0) {
+            // Returning user — real previousMeasurements from last API response
+            setPreviousMeasurements(cached.previousMeasurements);
+          } else {
+            // Guest→logged-in transition — create synthetic entries from cached longitudinal values
+            // so blue "previous value" labels show immediately instead of values in input fields.
+            // These are replaced by real API data in Phase 2.
+            const synthetic: ApiMeasurement[] = [];
+            const now = new Date().toISOString();
+            for (const field of LONGITUDINAL_FIELDS) {
+              const value = cached.inputs[field];
+              if (value !== undefined) {
+                const metricType = FIELD_TO_METRIC[field];
+                if (metricType) {
+                  synthetic.push({ id: `cache-${metricType}`, metricType, value: value as number, recordedAt: now, createdAt: now });
+                }
+              }
+            }
+            if (synthetic.length > 0) {
+              setPreviousMeasurements(synthetic);
+            }
+          }
+
           if (cached.medications.length > 0) {
             setMedications(cached.medications);
           }
@@ -132,7 +164,6 @@ export function HealthTool() {
         }
         // Phase 2: API response is authoritative
         const result = await loadLatestMeasurements();
-        setHasApiResponse(true);
 
         if (result && (Object.keys(result.inputs).length > 0 || result.previousMeasurements.length > 0 || result.medications.length > 0 || result.screenings.length > 0)) {
           // User has cloud data — set flag so auto-redirect works on direct navigation
@@ -221,6 +252,8 @@ export function HealthTool() {
             }
           }
         }
+        // Set after all branches complete so Save buttons don't flash during sync
+        setHasApiResponse(true);
       } else {
         // Detect stale data from a previous logged-in session (user logged out)
         if (localStorage.getItem('health_roadmap_authenticated')) {

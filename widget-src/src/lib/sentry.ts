@@ -18,6 +18,10 @@ export function initSentry() {
     enabled: !window.location.hostname.includes('localhost'),
     // Limit serialization depth to avoid circular refs from React fiber on DOM elements
     normalizeDepth: 5,
+    ignoreErrors: [
+      // Shopify's privacy banner failing to reach their own analytics endpoint
+      /monorail-edge\.shopifysvc\.com/,
+    ],
     beforeBreadcrumb(breadcrumb) {
       // Strip DOM element data from UI breadcrumbs to prevent circular refs
       if (breadcrumb.category === 'ui.click' && breadcrumb.data) {

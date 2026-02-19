@@ -14,6 +14,10 @@ Sentry.init({
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 0.2,
   enabled: !!process.env.SENTRY_DSN,
+  ignoreErrors: [
+    // Shopify's privacy banner failing to reach their own analytics endpoint
+    /monorail-edge\.shopifysvc\.com/,
+  ],
 });
 
 // Graceful shutdown: stop the cron job and allow in-flight requests to drain
