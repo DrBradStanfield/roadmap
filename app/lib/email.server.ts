@@ -1,12 +1,24 @@
 import { Resend } from 'resend';
 import * as Sentry from '@sentry/remix';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { HealthInputs, HealthResults, Suggestion } from '../../packages/health-core/src/types';
+import type { HealthInputs, HealthResults, Suggestion, MedicationInputs } from '../../packages/health-core/src/types';
 import type { UnitSystem, MetricType } from '../../packages/health-core/src/units';
 import { measurementsToInputs, medicationsToInputs, screeningsToInputs } from '../../packages/health-core/src/mappings';
 import { calculateHealthResults } from '../../packages/health-core/src/calculations';
 import { generateSuggestions } from '../../packages/health-core/src/suggestions';
-import { formatDisplayValue, getDisplayLabel, formatHeightDisplay } from '../../packages/health-core/src/units';
+import {
+  formatDisplayValue,
+  getDisplayLabel,
+  formatHeightDisplay,
+  HBA1C_THRESHOLDS,
+  LDL_THRESHOLDS,
+  TOTAL_CHOLESTEROL_THRESHOLDS,
+  HDL_THRESHOLDS,
+  TRIGLYCERIDES_THRESHOLDS,
+  BP_THRESHOLDS,
+  APOB_THRESHOLDS,
+  LPA_THRESHOLDS,
+} from '../../packages/health-core/src/units';
 import {
   getProfile,
   getLatestMeasurements,
@@ -102,7 +114,7 @@ export async function checkAndSendWelcomeEmail(
 
       // 7. Build and send email
       const firstName = profile.first_name || null;
-      const html = buildWelcomeEmailHtml(inputs, results, suggestions, unitSystem, firstName);
+      const html = buildWelcomeEmailHtml(inputs, results, suggestions, unitSystem, firstName, medInputs, results.age);
 
       await resend.emails.send({
         from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
@@ -156,9 +168,12 @@ export function buildWelcomeEmailHtml(
   suggestions: Suggestion[],
   unitSystem: UnitSystem,
   firstName: string | null,
+  medications?: MedicationInputs,
+  age?: number,
 ): string {
   const greeting = firstName ? `Hi ${firstName},` : 'Hello,';
   const roadmapUrl = `${SHOPIFY_STORE_URL}/pages/roadmap`;
+  const sex = inputs.sex;
 
   // Build calculated results section
   const calculatedRows: string[] = [];
@@ -172,26 +187,40 @@ export function buildWelcomeEmailHtml(
       : results.bmi < 25 ? 'Normal'
       : results.bmi < 30 ? 'Overweight'
       : 'Obese';
-    calculatedRows.push(metricRow('BMI', `${results.bmi.toFixed(1)} (${bmiStatus})`));
+    const bmiRangeStatus: RangeStatus = results.bmi < 18.5 ? 'borderline'
+      : results.bmi < 25 ? 'normal'
+      : results.bmi < 30 ? 'borderline' : 'high';
+    calculatedRows.push(metricRowWithRange('BMI', `${results.bmi.toFixed(1)} (${bmiStatus})`, '18.5 – 24.9', bmiRangeStatus));
   }
   if (results.waistToHeightRatio != null) {
     const whrStatus = results.waistToHeightRatio >= 0.5 ? 'Elevated' : 'Healthy';
-    calculatedRows.push(metricRow('Waist-to-Height Ratio', `${results.waistToHeightRatio.toFixed(2)} (${whrStatus})`));
+    const whrRangeStatus: RangeStatus = results.waistToHeightRatio >= 0.5 ? 'high' : 'normal';
+    calculatedRows.push(metricRowWithRange('Waist-to-Height Ratio', `${results.waistToHeightRatio.toFixed(2)} (${whrStatus})`, '< 0.50', whrRangeStatus));
   }
   if (results.eGFR != null) {
-    calculatedRows.push(metricRow('eGFR', `${Math.round(results.eGFR)} mL/min/1.73m²`));
+    const egfrRangeStatus: RangeStatus = results.eGFR >= 60 ? 'normal'
+      : results.eGFR >= 30 ? 'borderline' : 'high';
+    calculatedRows.push(metricRowWithRange('eGFR', `${Math.round(results.eGFR)} mL/min/1.73m²`, '> 60 mL/min', egfrRangeStatus));
   }
 
-  // Build entered metrics section (only metrics the user actually entered)
+  // Build entered metrics section with reference ranges
   const enteredRows: string[] = [];
   for (const m of METRIC_DISPLAY_ORDER) {
     const value = inputs[m.inputField];
     if (value != null) {
       const displayVal = formatDisplayValue(m.metricType, value as number, unitSystem);
       const displayUnit = getDisplayLabel(m.metricType, unitSystem);
-      enteredRows.push(metricRow(m.label, `${displayVal} ${displayUnit}`));
+      const range = getOptimalRange(m.metricType, value as number, unitSystem, sex, age);
+      if (range) {
+        enteredRows.push(metricRowWithRange(m.label, `${displayVal} ${displayUnit}`, range.text, range.status));
+      } else {
+        enteredRows.push(metricRow(m.label, `${displayVal} ${displayUnit}`));
+      }
     }
   }
+
+  // Build medication section
+  const medicationHtml = medications ? buildMedicationSection(medications) : '';
 
   // Build suggestions section grouped by priority
   const urgent = suggestions.filter(s => s.priority === 'urgent');
@@ -243,6 +272,11 @@ export function buildWelcomeEmailHtml(
         Your Health Data
       </h2>
       <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+        <tr>
+          <td style="padding:4px 0;color:#999;font-size:11px;text-transform:uppercase;border-bottom:1px solid #e0e0e0;">Metric</td>
+          <td style="padding:4px 0;color:#999;font-size:11px;text-align:right;text-transform:uppercase;border-bottom:1px solid #e0e0e0;">Your Value</td>
+          <td style="padding:4px 0;color:#999;font-size:11px;text-align:right;text-transform:uppercase;border-bottom:1px solid #e0e0e0;padding-left:12px;">Optimal Range</td>
+        </tr>
         ${enteredRows.join('\n        ')}
       </table>
       ` : ''}
@@ -254,6 +288,8 @@ export function buildWelcomeEmailHtml(
       <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
         ${calculatedRows.join('\n        ')}
       </table>
+
+      ${medicationHtml}
 
       <!-- Suggestions -->
       <h2 style="color:#1a1a1a;font-size:18px;margin:0 0 16px;padding-bottom:8px;border-bottom:2px solid #2563eb;">
@@ -503,11 +539,171 @@ export async function sendFeedbackEmail(
 // HTML helpers
 // ---------------------------------------------------------------------------
 
+type RangeStatus = 'normal' | 'borderline' | 'high';
+
+/**
+ * Get the optimal range text and status for a metric, using existing threshold
+ * constants as the single source of truth. Returns null for metrics without
+ * a meaningful universal range (weight, waist, creatinine).
+ */
+function getOptimalRange(
+  metricType: MetricType,
+  canonicalValue: number,
+  unitSystem: UnitSystem,
+  sex?: 'male' | 'female',
+  age?: number,
+): { text: string; status: RangeStatus } | null {
+  switch (metricType) {
+    case 'hba1c': {
+      const threshold = HBA1C_THRESHOLDS.prediabetes;
+      const display = `< ${formatDisplayValue('hba1c', threshold, unitSystem)} ${getDisplayLabel('hba1c', unitSystem)}`;
+      const status: RangeStatus = canonicalValue >= HBA1C_THRESHOLDS.diabetes ? 'high'
+        : canonicalValue >= threshold ? 'borderline' : 'normal';
+      return { text: display, status };
+    }
+    case 'ldl': {
+      const threshold = LDL_THRESHOLDS.borderline;
+      const display = `< ${formatDisplayValue('ldl', threshold, unitSystem)} ${getDisplayLabel('ldl', unitSystem)}`;
+      const status: RangeStatus = canonicalValue >= LDL_THRESHOLDS.veryHigh ? 'high'
+        : canonicalValue >= LDL_THRESHOLDS.high ? 'high'
+        : canonicalValue >= threshold ? 'borderline' : 'normal';
+      return { text: display, status };
+    }
+    case 'total_cholesterol': {
+      const threshold = TOTAL_CHOLESTEROL_THRESHOLDS.borderline;
+      const display = `< ${formatDisplayValue('total_cholesterol', threshold, unitSystem)} ${getDisplayLabel('total_cholesterol', unitSystem)}`;
+      const status: RangeStatus = canonicalValue >= TOTAL_CHOLESTEROL_THRESHOLDS.high ? 'high'
+        : canonicalValue >= threshold ? 'borderline' : 'normal';
+      return { text: display, status };
+    }
+    case 'hdl': {
+      const threshold = sex === 'female' ? HDL_THRESHOLDS.lowFemale : HDL_THRESHOLDS.lowMale;
+      const display = `> ${formatDisplayValue('hdl', threshold, unitSystem)} ${getDisplayLabel('hdl', unitSystem)}`;
+      // HDL is inverted — higher is better
+      const status: RangeStatus = canonicalValue < threshold ? 'high' : 'normal';
+      return { text: display, status };
+    }
+    case 'triglycerides': {
+      const threshold = TRIGLYCERIDES_THRESHOLDS.borderline;
+      const display = `< ${formatDisplayValue('triglycerides', threshold, unitSystem)} ${getDisplayLabel('triglycerides', unitSystem)}`;
+      const status: RangeStatus = canonicalValue >= TRIGLYCERIDES_THRESHOLDS.high ? 'high'
+        : canonicalValue >= threshold ? 'borderline' : 'normal';
+      return { text: display, status };
+    }
+    case 'apob': {
+      const threshold = APOB_THRESHOLDS.borderline; // 0.5 g/L = 50 mg/dL
+      const display = `< ${formatDisplayValue('apob', threshold, unitSystem)} ${getDisplayLabel('apob', unitSystem)}`;
+      const status: RangeStatus = canonicalValue >= APOB_THRESHOLDS.high ? 'high'
+        : canonicalValue >= threshold ? 'borderline' : 'normal';
+      return { text: display, status };
+    }
+    case 'systolic_bp': {
+      // Age-dependent target: <120 for <65, <130 for ≥65
+      const target = age !== undefined && age >= 65 ? BP_THRESHOLDS.stage1Sys : BP_THRESHOLDS.elevatedSys;
+      const display = `< ${target} mmHg`;
+      const status: RangeStatus = canonicalValue >= BP_THRESHOLDS.stage2Sys ? 'high'
+        : canonicalValue >= target ? 'borderline' : 'normal';
+      return { text: display, status };
+    }
+    case 'diastolic_bp': {
+      const threshold = BP_THRESHOLDS.stage1Dia;
+      const display = `< ${threshold} mmHg`;
+      const status: RangeStatus = canonicalValue >= BP_THRESHOLDS.stage2Dia ? 'high'
+        : canonicalValue >= threshold ? 'borderline' : 'normal';
+      return { text: display, status };
+    }
+    case 'lpa': {
+      const display = `< ${LPA_THRESHOLDS.normal} nmol/L`;
+      const status: RangeStatus = canonicalValue >= LPA_THRESHOLDS.elevated ? 'high'
+        : canonicalValue >= LPA_THRESHOLDS.normal ? 'borderline' : 'normal';
+      return { text: display, status };
+    }
+    default:
+      // weight, waist, creatinine — no universal range
+      return null;
+  }
+}
+
+const STATUS_COLORS: Record<RangeStatus, string> = {
+  normal: '#16a34a',
+  borderline: '#d97706',
+  high: '#dc2626',
+};
+
 function metricRow(label: string, value: string): string {
   return `<tr>
           <td style="padding:8px 0;color:#555;font-size:14px;border-bottom:1px solid #f0f0f0;">${label}</td>
           <td style="padding:8px 0;color:#1a1a1a;font-size:14px;font-weight:600;text-align:right;border-bottom:1px solid #f0f0f0;">${value}</td>
+          <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;"></td>
         </tr>`;
+}
+
+function metricRowWithRange(label: string, value: string, rangeText: string, status: RangeStatus): string {
+  return `<tr>
+          <td style="padding:8px 0;color:#555;font-size:14px;border-bottom:1px solid #f0f0f0;">${label}</td>
+          <td style="padding:8px 0;color:#1a1a1a;font-size:14px;font-weight:600;text-align:right;border-bottom:1px solid #f0f0f0;">${value}</td>
+          <td style="padding:8px 0;color:${STATUS_COLORS[status]};font-size:12px;text-align:right;border-bottom:1px solid #f0f0f0;padding-left:12px;">${rangeText}</td>
+        </tr>`;
+}
+
+/**
+ * Build a "Current Medications" section for the email.
+ * Returns empty string if no active medications.
+ */
+function buildMedicationSection(medications: MedicationInputs): string {
+  const rows: string[] = [];
+  const inactive = new Set(['none', 'not_yet', 'not_tolerated']);
+
+  // Statin
+  if (medications.statin?.drug && !inactive.has(medications.statin.drug)) {
+    const name = medications.statin.drug.charAt(0).toUpperCase() + medications.statin.drug.slice(1);
+    const dose = medications.statin.dose ? ` ${medications.statin.dose}mg` : '';
+    rows.push(metricRow('Statin', `${name}${dose}`));
+  }
+
+  // Ezetimibe
+  if (medications.ezetimibe === 'yes') {
+    rows.push(metricRow('Ezetimibe', '10mg'));
+  }
+
+  // PCSK9i
+  if (medications.pcsk9i === 'yes') {
+    rows.push(metricRow('PCSK9 inhibitor', 'Taking'));
+  }
+
+  // GLP-1
+  if (medications.glp1?.drug && !inactive.has(medications.glp1.drug)) {
+    const rawName = medications.glp1.drug.replace(/_/g, ' ');
+    const name = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+    const dose = medications.glp1.dose ? ` ${medications.glp1.dose}mg` : '';
+    rows.push(metricRow('GLP-1', `${name}${dose}`));
+  }
+
+  // SGLT2i
+  if (medications.sglt2i?.drug && !inactive.has(medications.sglt2i.drug)) {
+    const name = medications.sglt2i.drug.charAt(0).toUpperCase() + medications.sglt2i.drug.slice(1);
+    const dose = medications.sglt2i.dose ? ` ${medications.sglt2i.dose}mg` : '';
+    rows.push(metricRow('SGLT2 inhibitor', `${name}${dose}`));
+  }
+
+  // Metformin
+  if (medications.metformin && !inactive.has(medications.metformin)) {
+    const parts = medications.metformin.split('_'); // e.g. 'xr_1000'
+    const formulation = parts[0]?.toUpperCase() ?? '';
+    const dose = parts[1] ? `${parts[1]}mg/day` : '';
+    rows.push(metricRow('Metformin', `${formulation} ${dose}`.trim()));
+  }
+
+  if (rows.length === 0) return '';
+
+  return `
+      <h2 style="color:#1a1a1a;font-size:18px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid #2563eb;">
+        Current Medications
+      </h2>
+      <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+        ${rows.join('\n        ')}
+      </table>
+  `;
 }
 
 function reminderItem(title: string, description: string, color: string): string {

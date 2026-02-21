@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildWelcomeEmailHtml, buildReminderEmailHtml, sendFeedbackEmail } from './email.server';
-import type { HealthInputs, HealthResults, Suggestion } from '../../packages/health-core/src/types';
+import type { HealthInputs, HealthResults, Suggestion, MedicationInputs } from '../../packages/health-core/src/types';
 import type { DueReminder, BloodTestDate } from '../../packages/health-core/src/reminders';
 
 // Minimal inputs: height + sex only
@@ -181,6 +181,152 @@ describe('buildWelcomeEmailHtml', () => {
     const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
 
     expect(html).toContain('Suggestions to discuss with your healthcare provider');
+  });
+
+  // --- Reference range tests ---
+
+  it('shows optimal range for ApoB in conventional units', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', 'Jane', undefined, 40);
+
+    // ApoB 0.9 g/L = 90 mg/dL, threshold is 50 mg/dL
+    expect(html).toContain('< 50');
+    expect(html).toContain('mg/dL');
+    // Should be colored red (high) — 0.9 g/L exceeds APOB_THRESHOLDS.high (0.7)
+    expect(html).toContain('#dc2626');
+  });
+
+  it('shows optimal range for ApoB in SI units', () => {
+    const siInputs: HealthInputs = { ...fullInputs, unitSystem: 'si' };
+    const html = buildWelcomeEmailHtml(siInputs, fullResults, [], 'si', null, undefined, 40);
+
+    // ApoB threshold in SI: 0.5 g/L
+    expect(html).toContain('< 0.50');
+    expect(html).toContain('g/L');
+  });
+
+  it('shows optimal range for LDL in conventional units', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null, undefined, 40);
+
+    // LDL threshold: 130 mg/dL
+    expect(html).toContain('< 130');
+  });
+
+  it('shows age-dependent BP range for age < 65', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null, undefined, 40);
+
+    // Age 40 → target < 120 mmHg systolic
+    expect(html).toContain('< 120 mmHg');
+  });
+
+  it('shows age-dependent BP range for age >= 65', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null, undefined, 70);
+
+    // Age 70 → target < 130 mmHg systolic
+    expect(html).toContain('< 130 mmHg');
+  });
+
+  it('does not show optimal range for weight or waist', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null, undefined, 40);
+
+    // Weight and waist rows should exist but without a range value
+    expect(html).toContain('Weight');
+    expect(html).toContain('Waist');
+    // The "Optimal Range" column header exists, but weight/waist rows have empty range cells
+  });
+
+  it('shows column headers when health data is present', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null);
+
+    expect(html).toContain('Optimal Range');
+    expect(html).toContain('Your Value');
+  });
+
+  it('shows BMI range in calculated results', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null);
+
+    // BMI range: 18.5 – 24.9
+    expect(html).toContain('18.5');
+    expect(html).toContain('24.9');
+  });
+
+  it('shows waist-to-height range in calculated results', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null);
+
+    expect(html).toContain('< 0.50');
+  });
+
+  it('shows eGFR range in calculated results', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null);
+
+    expect(html).toContain('> 60 mL/min');
+  });
+
+  // --- Medication section tests ---
+
+  it('shows medication section when active medications exist', () => {
+    const meds: MedicationInputs = {
+      statin: { drug: 'atorvastatin', dose: 20 },
+      ezetimibe: 'yes',
+    };
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', 'Jane', meds);
+
+    expect(html).toContain('Current Medications');
+    expect(html).toContain('Atorvastatin');
+    expect(html).toContain('20mg');
+    expect(html).toContain('Ezetimibe');
+    expect(html).toContain('10mg');
+  });
+
+  it('shows GLP-1 and SGLT2i medications', () => {
+    const meds: MedicationInputs = {
+      glp1: { drug: 'semaglutide_injection', dose: 1 },
+      sglt2i: { drug: 'empagliflozin', dose: 10 },
+    };
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null, meds);
+
+    expect(html).toContain('Current Medications');
+    expect(html).toContain('Semaglutide injection');
+    expect(html).toContain('1mg');
+    expect(html).toContain('Empagliflozin');
+    expect(html).toContain('10mg');
+  });
+
+  it('shows metformin with formulation and dose', () => {
+    const meds: MedicationInputs = {
+      metformin: 'xr_1000',
+    };
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null, meds);
+
+    expect(html).toContain('Current Medications');
+    expect(html).toContain('Metformin');
+    expect(html).toContain('XR');
+    expect(html).toContain('1000mg');
+  });
+
+  it('does not show medication section when no active medications', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null);
+
+    expect(html).not.toContain('Current Medications');
+  });
+
+  it('does not show medication section when all medications are inactive', () => {
+    const meds: MedicationInputs = {
+      statin: { drug: 'none', dose: null },
+      ezetimibe: 'not_yet',
+      metformin: 'none',
+    };
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null, meds);
+
+    expect(html).not.toContain('Current Medications');
+  });
+
+  it('backward compat — works without optional params', () => {
+    // Original 5-param signature still works
+    const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', 'Test');
+
+    expect(html).toContain('<!DOCTYPE html>');
+    expect(html).toContain('Hi Test,');
+    expect(html).not.toContain('Current Medications');
   });
 });
 
