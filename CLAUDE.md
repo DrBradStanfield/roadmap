@@ -133,21 +133,16 @@ npm run test:watch       # Run tests in watch mode
 
 ## Parallel Development (Git Worktrees)
 
-Use git worktrees to run multiple Claude Code sessions on separate features simultaneously.
+Use Claude Code's built-in worktree support to run multiple sessions on separate features simultaneously.
 
-**Create a new feature worktree:**
+**Start a session in a new worktree:**
 ```bash
-scripts/new-worktree.sh feature-name
+claude --worktree feature-name
 ```
-This creates branch `feature-name`, worktree at `../roadmap-feature-name`, and copies `.env` files.
 
-**Rules:**
-- Each Claude Code session must work in its own worktree/branch
-- Never push to a branch actively used by another worktree
-- Merge via PR, then clean up
+Creates branch `worktree-feature-name` and worktree at `.claude/worktrees/feature-name/`. On exit, Claude prompts to keep or remove the worktree if changes exist (auto-removes if clean).
 
-**Clean up after merge:** `git worktree remove ../roadmap-feature-name && git branch -d feature-name`
-**List active worktrees:** `git worktree list`
+**Note:** You may need to run `npm install` in new worktrees. 
 
 ## Data Model
 
