@@ -248,14 +248,14 @@ export function buildWelcomeEmailHtml(
 
   return `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>@media print { .no-print { display: none !important; } }</style></head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="display:none;max-height:0;overflow:hidden;">Suggestions to discuss with your healthcare provider</div>
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
 
     <!-- Header -->
-    <div style="background:#2563eb;padding:32px 24px;text-align:center;">
-      <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:600;">Your Personalized Health Roadmap</h1>
+    <div style="padding:32px 24px 16px;text-align:center;border-bottom:3px solid #2563eb;">
+      <h1 style="color:#1a1a1a;margin:0;font-size:24px;font-weight:600;">Your Personalized Health Roadmap</h1>
     </div>
 
     <!-- Content -->
@@ -298,7 +298,7 @@ export function buildWelcomeEmailHtml(
       ${suggestionsHtml}
 
       <!-- CTA Button -->
-      <div style="text-align:center;margin:32px 0;">
+      <div class="no-print" style="text-align:center;margin:32px 0;">
         <a href="${roadmapUrl}"
            style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:16px;font-weight:600;">
           View Your Full Roadmap

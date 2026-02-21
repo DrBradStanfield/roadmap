@@ -137,12 +137,12 @@ describe('buildWelcomeEmailHtml', () => {
     expect(html).toContain('not medical advice');
   });
 
-  it('uses inline CSS (no style tags)', () => {
+  it('uses inline CSS with print media query only', () => {
     const html = buildWelcomeEmailHtml(fullInputs, fullResults, sampleSuggestions, 'conventional', 'Test');
 
-    // Should use inline styles, not style blocks
-    expect(html).not.toContain('<style>');
+    // Should use inline styles plus a print media query
     expect(html).toContain('style="');
+    expect(html).toContain('@media print');
   });
 
   it('shows IBW in conventional units for US users', () => {
@@ -327,6 +327,28 @@ describe('buildWelcomeEmailHtml', () => {
     expect(html).toContain('<!DOCTYPE html>');
     expect(html).toContain('Hi Test,');
     expect(html).not.toContain('Current Medications');
+  });
+
+  it('header uses dark text for print compatibility', () => {
+    const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
+
+    // Header h1 should use dark text (not white) so it prints on white paper
+    expect(html).toContain('<h1 style="color:#1a1a1a');
+    // Header div should not have a background color (borders print, backgrounds don't)
+    expect(html).toContain('border-bottom:3px solid #2563eb');
+  });
+
+  it('CTA button has no-print class for print hiding', () => {
+    const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
+
+    expect(html).toContain('class="no-print"');
+    expect(html).toContain('.no-print');
+  });
+
+  it('includes @media print style block', () => {
+    const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
+
+    expect(html).toContain('@media print { .no-print { display: none !important; } }');
   });
 });
 
