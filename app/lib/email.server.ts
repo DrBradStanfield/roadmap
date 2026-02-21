@@ -18,6 +18,8 @@ import {
   BP_THRESHOLDS,
   APOB_THRESHOLDS,
   LPA_THRESHOLDS,
+  NON_HDL_THRESHOLDS,
+  EGFR_THRESHOLDS,
 } from '../../packages/health-core/src/units';
 import {
   getProfile,
@@ -148,18 +150,16 @@ const METRIC_DISPLAY_ORDER: Array<{
   metricType: MetricType;
   inputField: keyof HealthInputs;
 }> = [
-  { key: 'weight', label: 'Weight', metricType: 'weight', inputField: 'weightKg' },
   { key: 'waist', label: 'Waist', metricType: 'waist', inputField: 'waistCm' },
+  { key: 'sbp', label: 'Systolic BP', metricType: 'systolic_bp', inputField: 'systolicBp' },
+  { key: 'dbp', label: 'Diastolic BP', metricType: 'diastolic_bp', inputField: 'diastolicBp' },
   { key: 'hba1c', label: 'HbA1c', metricType: 'hba1c', inputField: 'hba1c' },
   { key: 'ldl', label: 'LDL Cholesterol', metricType: 'ldl', inputField: 'ldlC' },
   { key: 'totalChol', label: 'Total Cholesterol', metricType: 'total_cholesterol', inputField: 'totalCholesterol' },
   { key: 'hdl', label: 'HDL Cholesterol', metricType: 'hdl', inputField: 'hdlC' },
   { key: 'trig', label: 'Triglycerides', metricType: 'triglycerides', inputField: 'triglycerides' },
   { key: 'apob', label: 'ApoB', metricType: 'apob', inputField: 'apoB' },
-  { key: 'creatinine', label: 'Creatinine', metricType: 'creatinine', inputField: 'creatinine' },
   { key: 'lpa', label: 'Lp(a)', metricType: 'lpa', inputField: 'lpa' },
-  { key: 'sbp', label: 'Systolic BP', metricType: 'systolic_bp', inputField: 'systolicBp' },
-  { key: 'dbp', label: 'Diastolic BP', metricType: 'diastolic_bp', inputField: 'diastolicBp' },
 ];
 
 export function buildWelcomeEmailHtml(
@@ -175,35 +175,66 @@ export function buildWelcomeEmailHtml(
   const roadmapUrl = `${SHOPIFY_STORE_URL}/pages/roadmap`;
   const sex = inputs.sex;
 
-  // Build calculated results section
-  const calculatedRows: string[] = [];
+  // Demographics line
+  const sexDisplay = sex ? sex.charAt(0).toUpperCase() + sex.slice(1) : '';
+  const ageDisplay = age != null ? `${age} years old` : '';
+  const heightDisplay = formatHeightDisplay(results.heightCm, unitSystem);
+  const demoParts = [sexDisplay, ageDisplay, heightDisplay].filter(Boolean);
+  const demographicsLine = demoParts.join(' · ');
 
-  calculatedRows.push(metricRow('Height', formatHeightDisplay(results.heightCm, unitSystem)));
-  calculatedRows.push(metricRow('Ideal Body Weight', `${formatDisplayValue('weight', results.idealBodyWeight, unitSystem)} ${getDisplayLabel('weight', unitSystem)}`));
-  calculatedRows.push(metricRow('Daily Protein Target', `${results.proteinTarget}g`));
+  // Build health snapshot rows
+  const snapshotRows: string[] = [];
 
+  // Weight
+  if (inputs.weightKg != null) {
+    snapshotRows.push(snapshotRow('Weight', `${formatDisplayValue('weight', inputs.weightKg, unitSystem)} ${getDisplayLabel('weight', unitSystem)}`, ''));
+  }
+
+  // IBW
+  snapshotRows.push(snapshotRow('Ideal Body Weight', `${formatDisplayValue('weight', results.idealBodyWeight, unitSystem)} ${getDisplayLabel('weight', unitSystem)}`, `for ${heightDisplay} height`));
+
+  // Protein Target
+  const proteinRate = results.eGFR != null && results.eGFR < 45 ? '1.0' : '1.2';
+  snapshotRows.push(snapshotRow('Protein Target', `${results.proteinTarget}g/day`, `${proteinRate}g per kg IBW`));
+
+  // BMI
   if (results.bmi != null) {
     const bmiStatus = results.bmi < 18.5 ? 'Underweight'
       : results.bmi < 25 ? 'Normal'
       : results.bmi < 30 ? 'Overweight'
       : 'Obese';
-    const bmiRangeStatus: RangeStatus = results.bmi < 18.5 ? 'borderline'
-      : results.bmi < 25 ? 'normal'
-      : results.bmi < 30 ? 'borderline' : 'high';
-    calculatedRows.push(metricRowWithRange('BMI', `${results.bmi.toFixed(1)} (${bmiStatus})`, '18.5 – 24.9', bmiRangeStatus));
-  }
-  if (results.waistToHeightRatio != null) {
-    const whrStatus = results.waistToHeightRatio >= 0.5 ? 'Elevated' : 'Healthy';
-    const whrRangeStatus: RangeStatus = results.waistToHeightRatio >= 0.5 ? 'high' : 'normal';
-    calculatedRows.push(metricRowWithRange('Waist-to-Height Ratio', `${results.waistToHeightRatio.toFixed(2)} (${whrStatus})`, '< 0.50', whrRangeStatus));
-  }
-  if (results.eGFR != null) {
-    const egfrRangeStatus: RangeStatus = results.eGFR >= 60 ? 'normal'
-      : results.eGFR >= 30 ? 'borderline' : 'high';
-    calculatedRows.push(metricRowWithRange('eGFR', `${Math.round(results.eGFR)} mL/min/1.73m²`, '> 60 mL/min', egfrRangeStatus));
+    const bmiColor = results.bmi < 18.5 ? STATUS_COLORS.borderline
+      : results.bmi < 25 ? STATUS_COLORS.normal
+      : results.bmi < 30 ? STATUS_COLORS.borderline : STATUS_COLORS.high;
+    snapshotRows.push(snapshotRow('BMI', results.bmi.toFixed(1), bmiStatus, bmiColor));
   }
 
-  // Build entered metrics section with reference ranges
+  // Waist-to-Height (right after BMI)
+  if (results.waistToHeightRatio != null) {
+    const whrStatus = results.waistToHeightRatio >= 0.5 ? 'Elevated' : 'Healthy';
+    const whrColor = results.waistToHeightRatio >= 0.5 ? STATUS_COLORS.high : STATUS_COLORS.normal;
+    snapshotRows.push(snapshotRow('Waist-to-Height', results.waistToHeightRatio.toFixed(2), whrStatus, whrColor));
+  }
+
+  // Lipid cascade
+  const lipid = getLipidCascade(inputs, unitSystem);
+  if (lipid) {
+    snapshotRows.push(snapshotRow(lipid.label, lipid.value, lipid.status, lipid.color));
+  }
+
+  // eGFR
+  if (results.eGFR != null) {
+    const egfr = getEgfrStatus(results.eGFR);
+    snapshotRows.push(snapshotRow('eGFR', `${Math.round(results.eGFR)} mL/min/1.73m²`, egfr.label, egfr.color));
+  }
+
+  // Lp(a)
+  if (inputs.lpa != null) {
+    const lpa = getLpaStatus(inputs.lpa);
+    snapshotRows.push(snapshotRow('Lp(a)', `${inputs.lpa} nmol/L`, lpa.label, lpa.color));
+  }
+
+  // Build entered metrics section with reference ranges (BP + blood tests only)
   const enteredRows: string[] = [];
   for (const m of METRIC_DISPLAY_ORDER) {
     const value = inputs[m.inputField];
@@ -246,11 +277,14 @@ export function buildWelcomeEmailHtml(
     suggestionsHtml += suggestionGroup('Supplements', '#00A38B', supplements);
   }
 
+  // Preview text padding — invisible entities prevent email clients pulling body text into preview
+  const previewPad = '&#847;&zwnj;&nbsp;'.repeat(85);
+
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>@media print { .no-print { display: none !important; } }</style></head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="display:none;max-height:0;overflow:hidden;">Suggestions to discuss with your healthcare provider</div>
+  <div style="display:none;max-height:0;overflow:hidden;">Suggestions to discuss with your healthcare provider${previewPad}</div>
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
 
     <!-- Header -->
@@ -266,8 +300,21 @@ export function buildWelcomeEmailHtml(
         Here's a summary of your health data and personalized suggestions to discuss with your healthcare provider.
       </p>
 
+      <!-- Demographics -->
+      <p style="color:#555;font-size:15px;text-align:center;margin:0 0 24px;padding:12px 16px;background:#f8f9fa;border-radius:6px;">
+        ${demographicsLine}
+      </p>
+
+      <!-- Health Snapshot -->
+      <h2 style="color:#1a1a1a;font-size:18px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid #2563eb;">
+        Health Snapshot
+      </h2>
+      <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+        ${snapshotRows.join('\n        ')}
+      </table>
+
       ${enteredRows.length > 0 ? `
-      <!-- Entered Metrics -->
+      <!-- Health Data -->
       <h2 style="color:#1a1a1a;font-size:18px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid #2563eb;">
         Your Health Data
       </h2>
@@ -280,14 +327,6 @@ export function buildWelcomeEmailHtml(
         ${enteredRows.join('\n        ')}
       </table>
       ` : ''}
-
-      <!-- Calculated Results -->
-      <h2 style="color:#1a1a1a;font-size:18px;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid #2563eb;">
-        Your Results
-      </h2>
-      <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
-        ${calculatedRows.join('\n        ')}
-      </table>
 
       ${medicationHtml}
 
@@ -644,6 +683,66 @@ function metricRowWithRange(label: string, value: string, rangeText: string, sta
           <td style="padding:8px 0;color:#1a1a1a;font-size:14px;font-weight:600;text-align:right;border-bottom:1px solid #f0f0f0;">${value}</td>
           <td style="padding:8px 0;color:${STATUS_COLORS[status]};font-size:12px;text-align:right;border-bottom:1px solid #f0f0f0;padding-left:12px;">${rangeText}</td>
         </tr>`;
+}
+
+function snapshotRow(label: string, value: string, note: string, noteColor?: string): string {
+  const noteStyle = noteColor
+    ? `color:${noteColor};font-weight:600;`
+    : 'color:#666;';
+  return `<tr>
+          <td style="padding:8px 0;color:#555;font-size:14px;border-bottom:1px solid #f0f0f0;">${label}</td>
+          <td style="padding:8px 0;color:#1a1a1a;font-size:14px;font-weight:600;text-align:right;border-bottom:1px solid #f0f0f0;">${value}</td>
+          <td style="padding:8px 0;${noteStyle}font-size:12px;text-align:right;border-bottom:1px solid #f0f0f0;padding-left:12px;">${note}</td>
+        </tr>`;
+}
+
+function getLipidCascade(inputs: HealthInputs, unitSystem: UnitSystem): { label: string; value: string; status: string; color: string } | null {
+  if (inputs.apoB != null) {
+    const val = formatDisplayValue('apob', inputs.apoB, unitSystem);
+    const unit = getDisplayLabel('apob', unitSystem);
+    const status = inputs.apoB >= APOB_THRESHOLDS.high ? 'High'
+      : inputs.apoB >= APOB_THRESHOLDS.borderline ? 'Borderline' : 'Optimal';
+    const color = inputs.apoB >= APOB_THRESHOLDS.high ? STATUS_COLORS.high
+      : inputs.apoB >= APOB_THRESHOLDS.borderline ? STATUS_COLORS.borderline : STATUS_COLORS.normal;
+    return { label: 'ApoB', value: `${val} ${unit}`, status, color };
+  }
+  if (inputs.totalCholesterol != null && inputs.hdlC != null) {
+    const nonHdl = inputs.totalCholesterol - inputs.hdlC;
+    const val = formatDisplayValue('total_cholesterol', nonHdl, unitSystem);
+    const unit = getDisplayLabel('total_cholesterol', unitSystem);
+    const status = nonHdl >= NON_HDL_THRESHOLDS.veryHigh ? 'Very High'
+      : nonHdl >= NON_HDL_THRESHOLDS.high ? 'High'
+      : nonHdl >= NON_HDL_THRESHOLDS.borderline ? 'Borderline' : 'Optimal';
+    const color = nonHdl >= NON_HDL_THRESHOLDS.high ? STATUS_COLORS.high
+      : nonHdl >= NON_HDL_THRESHOLDS.borderline ? STATUS_COLORS.borderline : STATUS_COLORS.normal;
+    return { label: 'Non-HDL Cholesterol', value: `${val} ${unit}`, status, color };
+  }
+  if (inputs.ldlC != null) {
+    const val = formatDisplayValue('ldl', inputs.ldlC, unitSystem);
+    const unit = getDisplayLabel('ldl', unitSystem);
+    const status = inputs.ldlC >= LDL_THRESHOLDS.veryHigh ? 'Very High'
+      : inputs.ldlC >= LDL_THRESHOLDS.high ? 'High'
+      : inputs.ldlC >= LDL_THRESHOLDS.borderline ? 'Borderline' : 'Optimal';
+    const color = inputs.ldlC >= LDL_THRESHOLDS.high ? STATUS_COLORS.high
+      : inputs.ldlC >= LDL_THRESHOLDS.borderline ? STATUS_COLORS.borderline : STATUS_COLORS.normal;
+    return { label: 'LDL Cholesterol', value: `${val} ${unit}`, status, color };
+  }
+  return null;
+}
+
+function getEgfrStatus(egfr: number): { label: string; color: string } {
+  if (egfr >= 70) return { label: 'Normal', color: STATUS_COLORS.normal };
+  if (egfr >= 60) return { label: 'Low Normal', color: STATUS_COLORS.borderline };
+  if (egfr >= 45) return { label: 'Mildly Decreased', color: STATUS_COLORS.borderline };
+  if (egfr >= 30) return { label: 'Moderately Decreased', color: STATUS_COLORS.high };
+  if (egfr >= 15) return { label: 'Severely Decreased', color: STATUS_COLORS.high };
+  return { label: 'Kidney Failure', color: STATUS_COLORS.high };
+}
+
+function getLpaStatus(lpa: number): { label: string; color: string } {
+  if (lpa >= LPA_THRESHOLDS.elevated) return { label: 'Elevated', color: STATUS_COLORS.high };
+  if (lpa >= LPA_THRESHOLDS.normal) return { label: 'Borderline', color: STATUS_COLORS.borderline };
+  return { label: 'Normal', color: STATUS_COLORS.normal };
 }
 
 /**

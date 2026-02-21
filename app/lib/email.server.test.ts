@@ -68,9 +68,10 @@ describe('buildWelcomeEmailHtml', () => {
     expect(html).toContain('Ideal Body Weight');
     expect(html).toContain('75.1');
     expect(html).toContain('kg');
-    expect(html).toContain('Daily Protein Target');
-    expect(html).toContain('90g');
+    expect(html).toContain('Protein Target');
+    expect(html).toContain('90g/day');
     expect(html).toContain('180 cm');
+    expect(html).toContain('Health Snapshot');
     // Should NOT contain entered metrics section (no longitudinal data entered)
     expect(html).not.toContain('Your Health Data');
   });
@@ -85,19 +86,20 @@ describe('buildWelcomeEmailHtml', () => {
   it('includes all entered metrics for full inputs (conventional units)', () => {
     const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', 'Jane');
 
-    // Calculated results
+    // Health Snapshot section
+    expect(html).toContain('Health Snapshot');
     expect(html).toContain('BMI');
     expect(html).toContain('26.8');
     expect(html).toContain('Overweight');
-    expect(html).toContain('Waist-to-Height Ratio');
+    expect(html).toContain('Waist-to-Height');
     expect(html).toContain('0.51');
     expect(html).toContain('Elevated');
     expect(html).toContain('eGFR');
     expect(html).toContain('95 mL/min');
-
-    // Entered metrics section should exist
-    expect(html).toContain('Your Health Data');
     expect(html).toContain('Weight');
+
+    // Health Data section (BP + blood tests)
+    expect(html).toContain('Your Health Data');
     expect(html).toContain('LDL Cholesterol');
     expect(html).toContain('ApoB');
     expect(html).toContain('Systolic BP');
@@ -225,13 +227,13 @@ describe('buildWelcomeEmailHtml', () => {
     expect(html).toContain('< 130 mmHg');
   });
 
-  it('does not show optimal range for weight or waist', () => {
+  it('weight is in snapshot, not in health data section', () => {
     const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null, undefined, 40);
 
-    // Weight and waist rows should exist but without a range value
+    // Weight appears in Health Snapshot
     expect(html).toContain('Weight');
+    // Waist appears in Health Data (raw measurement)
     expect(html).toContain('Waist');
-    // The "Optimal Range" column header exists, but weight/waist rows have empty range cells
   });
 
   it('shows column headers when health data is present', () => {
@@ -241,24 +243,32 @@ describe('buildWelcomeEmailHtml', () => {
     expect(html).toContain('Your Value');
   });
 
-  it('shows BMI range in calculated results', () => {
+  it('shows BMI status in snapshot without optimal range', () => {
     const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null);
 
-    // BMI range: 18.5 – 24.9
-    expect(html).toContain('18.5');
-    expect(html).toContain('24.9');
+    expect(html).toContain('BMI');
+    expect(html).toContain('26.8');
+    expect(html).toContain('Overweight');
+    // Should NOT have the old range text
+    expect(html).not.toContain('18.5 –');
   });
 
-  it('shows waist-to-height range in calculated results', () => {
+  it('shows WHR status in snapshot without optimal range', () => {
     const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null);
 
-    expect(html).toContain('< 0.50');
+    expect(html).toContain('Waist-to-Height');
+    expect(html).toContain('0.51');
+    expect(html).toContain('Elevated');
   });
 
-  it('shows eGFR range in calculated results', () => {
+  it('shows eGFR status in snapshot without optimal range', () => {
     const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null);
 
-    expect(html).toContain('> 60 mL/min');
+    expect(html).toContain('eGFR');
+    expect(html).toContain('95 mL/min');
+    expect(html).toContain('Normal');
+    // Should NOT have the old range text
+    expect(html).not.toContain('> 60 mL/min');
   });
 
   // --- Medication section tests ---
@@ -349,6 +359,100 @@ describe('buildWelcomeEmailHtml', () => {
     const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
 
     expect(html).toContain('@media print { .no-print { display: none !important; } }');
+  });
+
+  // --- Demographics tests ---
+
+  it('shows demographics line with sex, age, and height', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', 'Jane', undefined, 40);
+
+    expect(html).toContain('Female');
+    expect(html).toContain('40 years old');
+    // Conventional units → feet/inches
+    expect(html).toContain('5\'9"');
+  });
+
+  it('shows demographics with minimal data (no age)', () => {
+    const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
+
+    expect(html).toContain('Male');
+    expect(html).toContain('180 cm');
+  });
+
+  // --- Health Snapshot tests ---
+
+  it('snapshot shows IBW with height explanation', () => {
+    const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
+
+    expect(html).toContain('Ideal Body Weight');
+    expect(html).toContain('for 180 cm height');
+  });
+
+  it('snapshot shows protein target with IBW explanation', () => {
+    const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
+
+    expect(html).toContain('Protein Target');
+    expect(html).toContain('90g/day');
+    expect(html).toContain('1.2g per kg IBW');
+  });
+
+  it('snapshot shows reduced protein rate when eGFR < 45', () => {
+    const lowEgfrResults: HealthResults = {
+      ...fullResults,
+      eGFR: 40,
+    };
+    const html = buildWelcomeEmailHtml(fullInputs, lowEgfrResults, [], 'si', null);
+
+    expect(html).toContain('1.0g per kg IBW');
+  });
+
+  // --- Lipid cascade tests ---
+
+  it('lipid cascade shows ApoB when available', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null);
+
+    // fullInputs has apoB: 0.9 g/L → should show ApoB in snapshot
+    expect(html).toContain('ApoB');
+  });
+
+  it('lipid cascade falls back to Non-HDL when no ApoB', () => {
+    const noApobInputs: HealthInputs = { ...fullInputs, apoB: undefined };
+    const html = buildWelcomeEmailHtml(noApobInputs, fullResults, [], 'conventional', null);
+
+    // Has totalCholesterol and hdlC → Non-HDL
+    expect(html).toContain('Non-HDL Cholesterol');
+  });
+
+  it('lipid cascade falls back to LDL when no ApoB or Total Chol', () => {
+    const ldlOnlyInputs: HealthInputs = {
+      ...fullInputs,
+      apoB: undefined,
+      totalCholesterol: undefined,
+      hdlC: undefined,
+    };
+    const html = buildWelcomeEmailHtml(ldlOnlyInputs, fullResults, [], 'conventional', null);
+
+    // Only LDL available in snapshot cascade
+    expect(html).toContain('LDL Cholesterol');
+  });
+
+  // --- Preview text padding ---
+
+  it('preview text is padded to prevent bleeding', () => {
+    const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
+
+    expect(html).toContain('Suggestions to discuss with your healthcare provider');
+    expect(html).toContain('&#847;');
+    expect(html).toContain('&zwnj;');
+  });
+
+  // --- Deduplication tests ---
+
+  it('creatinine is not in health data section', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null, undefined, 40);
+
+    // Creatinine should NOT appear as a row label (eGFR covers it in snapshot)
+    expect(html).not.toContain('>Creatinine<');
   });
 });
 
