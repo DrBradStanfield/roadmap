@@ -240,7 +240,7 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
         ) : (
           <>
             <strong>Get Your Personalized Health Report</strong>
-            <span>Receive an email summary to discuss with your doctor — and save your data to track changes over time.</span>
+            <span>Save your data and get an email summary to discuss with doctor.</span>
           </>
         )}
       </div>
