@@ -154,6 +154,25 @@
     margin-bottom: 0;
   }
 
+  /* Guest CTA: fixed at bottom on mobile */
+  .guest-cta {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    margin: 0;
+    border-radius: 0;
+    z-index: 100;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+    padding: 12px 16px;
+  }
+
+  /* Bottom padding so content isn't hidden behind fixed CTA */
+  .mobile-tab-content .health-results-panel {
+    padding-bottom: 80px;
+  }
+
   /* Results panel inside mobile tab: remove sticky + background */
   .mobile-tab-content .health-tool-right {
     position: static;
@@ -817,9 +836,71 @@
   border: 1px solid #c8e6c9;
 }
 
-.account-status.guest {
-  background: #fff3e0;
-  border: 1px solid #ffe0b2;
+/* --- Guest CTA (top sticky banner) --- */
+
+.guest-cta {
+  position: sticky;
+  top: -24px;
+  margin: -24px -24px 16px;
+  padding: 16px 20px;
+  z-index: 5;
+  background: #00A38B;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.guest-cta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.guest-cta-text strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.guest-cta-text span {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.guest-cta-btn {
+  white-space: nowrap;
+  padding: 10px 20px;
+  font-size: 14px;
+  text-decoration: none;
+  flex-shrink: 0;
+  background: #fff;
+  color: #00A38B;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.guest-cta-btn:hover {
+  background: #e6f7f4;
+}
+
+/* --- Guest CTA inline (bottom nudge) --- */
+
+.guest-cta-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  margin: 16px 0;
+  background: #e6f7f4;
+  border-radius: 8px;
+  border: 1px solid #b2dfdb;
+}
+
+.guest-cta-inline span {
+  color: #00695c;
+  font-size: 14px;
 }
 
 .account-status-row {
@@ -881,22 +962,6 @@
   color: #fff;
 }
 
-.login-prompt {
-  font-size: 13px;
-  color: var(--color-gray-medium);
-  margin: 0;
-  white-space: nowrap;
-}
-
-.login-link {
-  color: var(--color-primary);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.login-link:hover {
-  text-decoration: underline;
-}
 
 /* Migration Prompt */
 .health-tool-migration-prompt {

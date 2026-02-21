@@ -230,14 +230,23 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
   }
 
   return (
-    <div className="account-status guest">
-      <p className="login-prompt">
+    <div className="guest-cta no-print">
+      <div className="guest-cta-text">
         {redirectFailed ? (
-          <><a href={authState.loginUrl || "/account/login"} className="login-link">Sign in</a> to access your saved data</>
+          <>
+            <strong>Welcome back</strong>
+            <span>Sign in to access your saved data and health history.</span>
+          </>
         ) : (
-          <><a href={authState.loginUrl || "/account/login"} className="login-link">Create a free account</a> to save your data and receive your results by email</>
+          <>
+            <strong>Get Your Personalized Health Report</strong>
+            <span>Receive a doctor-ready email summary with suggestions, and track your health over time.</span>
+          </>
         )}
-      </p>
+      </div>
+      <a href={authState.loginUrl || "/account/login"} className="guest-cta-btn">
+        {redirectFailed ? 'Sign In' : 'Create Free Account'}
+      </a>
     </div>
   );
 }
@@ -582,14 +591,11 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
       )}
 
       {!authState?.isLoggedIn && (
-        <div className="account-status guest">
-          <p className="login-prompt">
-            {redirectFailed ? (
-              <><a href={authState?.loginUrl || "/account/login"} className="login-link">Sign in</a> to access your saved data</>
-            ) : (
-              <><a href={authState?.loginUrl || "/account/login"} className="login-link">Create a free account</a> to save your data and receive your results by email</>
-            )}
-          </p>
+        <div className="guest-cta-inline no-print">
+          <span>{redirectFailed ? 'Sign in to access your saved data.' : 'Save your results and get a doctor-ready email summary.'}</span>
+          <a href={authState?.loginUrl || "/account/login"} className="guest-cta-btn">
+            {redirectFailed ? 'Sign In' : 'Create Free Account'}
+          </a>
         </div>
       )}
 

@@ -284,7 +284,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl }: HistoryPanelProps) {
       <div className="history-panel">
         <div className="history-guest">
           <p>
-            <a href={loginUrl || '/account/login'} className="login-link">
+            <a href={loginUrl || '/account/login'} style={{ color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 500 }}>
               Log in
             </a>{' '}
             to view your health history.
