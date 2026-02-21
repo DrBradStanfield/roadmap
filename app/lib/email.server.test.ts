@@ -98,10 +98,9 @@ describe('buildWelcomeEmailHtml', () => {
     expect(html).toContain('95 mL/min');
     expect(html).toContain('Weight');
 
-    // Health Data section (BP + blood tests)
+    // Health Data section (BP + blood tests, no duplicates from snapshot)
     expect(html).toContain('Your Health Data');
     expect(html).toContain('LDL Cholesterol');
-    expect(html).toContain('ApoB');
     expect(html).toContain('Systolic BP');
     expect(html).toContain('Diastolic BP');
   });
@@ -187,22 +186,24 @@ describe('buildWelcomeEmailHtml', () => {
 
   // --- Reference range tests ---
 
-  it('shows optimal range for ApoB in conventional units', () => {
+  it('shows ApoB status in snapshot (conventional units)', () => {
     const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', 'Jane', undefined, 40);
 
-    // ApoB 0.9 g/L = 90 mg/dL, threshold is 50 mg/dL
-    expect(html).toContain('< 50');
+    // ApoB 0.9 g/L = 90 mg/dL → "High" status in snapshot
+    expect(html).toContain('ApoB');
+    expect(html).toContain('90');
     expect(html).toContain('mg/dL');
     // Should be colored red (high) — 0.9 g/L exceeds APOB_THRESHOLDS.high (0.7)
     expect(html).toContain('#dc2626');
   });
 
-  it('shows optimal range for ApoB in SI units', () => {
+  it('shows ApoB status in snapshot (SI units)', () => {
     const siInputs: HealthInputs = { ...fullInputs, unitSystem: 'si' };
     const html = buildWelcomeEmailHtml(siInputs, fullResults, [], 'si', null, undefined, 40);
 
-    // ApoB threshold in SI: 0.5 g/L
-    expect(html).toContain('< 0.50');
+    // ApoB 0.9 g/L → "High" in snapshot
+    expect(html).toContain('ApoB');
+    expect(html).toContain('0.90');
     expect(html).toContain('g/L');
   });
 
@@ -368,15 +369,15 @@ describe('buildWelcomeEmailHtml', () => {
 
     expect(html).toContain('Female');
     expect(html).toContain('40 years old');
-    // Conventional units → feet/inches
-    expect(html).toContain('5\'9"');
+    // Conventional units → feet/inches with "tall" suffix
+    expect(html).toContain('5\'9" tall');
   });
 
   it('shows demographics with minimal data (no age)', () => {
     const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
 
     expect(html).toContain('Male');
-    expect(html).toContain('180 cm');
+    expect(html).toContain('180 cm tall');
   });
 
   // --- Health Snapshot tests ---
@@ -453,6 +454,31 @@ describe('buildWelcomeEmailHtml', () => {
 
     // Creatinine should NOT appear as a row label (eGFR covers it in snapshot)
     expect(html).not.toContain('>Creatinine<');
+  });
+
+  it('ApoB and Lp(a) not duplicated in health data when shown in snapshot', () => {
+    const html = buildWelcomeEmailHtml(fullInputs, fullResults, [], 'conventional', null, undefined, 40);
+
+    // ApoB appears in snapshot (lipid cascade winner), not in health data
+    // Lp(a) appears in snapshot, not in health data
+    // Split HTML at "Your Health Data" and check the second half
+    const healthDataSection = html.split('Your Health Data')[1] || '';
+    expect(healthDataSection).not.toContain('>ApoB<');
+    expect(healthDataSection).not.toContain('>Lp(a)<');
+  });
+
+  it('LDL not duplicated when it is the lipid cascade winner', () => {
+    const ldlOnlyInputs: HealthInputs = {
+      ...fullInputs,
+      apoB: undefined,
+      totalCholesterol: undefined,
+      hdlC: undefined,
+    };
+    const html = buildWelcomeEmailHtml(ldlOnlyInputs, fullResults, [], 'conventional', null, undefined, 40);
+
+    // LDL is in the snapshot cascade — should not repeat in health data
+    const healthDataSection = html.split('Your Health Data')[1] || '';
+    expect(healthDataSection).not.toContain('>LDL Cholesterol<');
   });
 });
 

@@ -179,7 +179,8 @@ export function buildWelcomeEmailHtml(
   const sexDisplay = sex ? sex.charAt(0).toUpperCase() + sex.slice(1) : '';
   const ageDisplay = age != null ? `${age} years old` : '';
   const heightDisplay = formatHeightDisplay(results.heightCm, unitSystem);
-  const demoParts = [sexDisplay, ageDisplay, heightDisplay].filter(Boolean);
+  const heightWithLabel = heightDisplay ? `${heightDisplay} tall` : '';
+  const demoParts = [sexDisplay, ageDisplay, heightWithLabel].filter(Boolean);
   const demographicsLine = demoParts.join(' · ');
 
   // Build health snapshot rows
@@ -234,9 +235,18 @@ export function buildWelcomeEmailHtml(
     snapshotRows.push(snapshotRow('Lp(a)', `${inputs.lpa} nmol/L`, lpa.label, lpa.color));
   }
 
+  // Track which metrics are already in the snapshot to avoid duplication
+  const snapshotMetrics = new Set<string>();
+  if (lipid) {
+    if (inputs.apoB != null) snapshotMetrics.add('apob');
+    else if (inputs.ldlC != null && !(inputs.totalCholesterol != null && inputs.hdlC != null)) snapshotMetrics.add('ldl');
+  }
+  if (inputs.lpa != null) snapshotMetrics.add('lpa');
+
   // Build entered metrics section with reference ranges (BP + blood tests only)
   const enteredRows: string[] = [];
   for (const m of METRIC_DISPLAY_ORDER) {
+    if (snapshotMetrics.has(m.key)) continue;
     const value = inputs[m.inputField];
     if (value != null) {
       const displayVal = formatDisplayValue(m.metricType, value as number, unitSystem);
@@ -732,10 +742,10 @@ function getLipidCascade(inputs: HealthInputs, unitSystem: UnitSystem): { label:
 
 function getEgfrStatus(egfr: number): { label: string; color: string } {
   if (egfr >= 70) return { label: 'Normal', color: STATUS_COLORS.normal };
-  if (egfr >= 60) return { label: 'Low Normal', color: STATUS_COLORS.borderline };
-  if (egfr >= 45) return { label: 'Mildly Decreased', color: STATUS_COLORS.borderline };
-  if (egfr >= 30) return { label: 'Moderately Decreased', color: STATUS_COLORS.high };
-  if (egfr >= 15) return { label: 'Severely Decreased', color: STATUS_COLORS.high };
+  if (egfr >= EGFR_THRESHOLDS.lowNormal) return { label: 'Low Normal', color: STATUS_COLORS.borderline };
+  if (egfr >= EGFR_THRESHOLDS.mildlyDecreased) return { label: 'Mildly Decreased', color: STATUS_COLORS.borderline };
+  if (egfr >= EGFR_THRESHOLDS.moderatelyDecreased) return { label: 'Moderately Decreased', color: STATUS_COLORS.high };
+  if (egfr >= EGFR_THRESHOLDS.severelyDecreased) return { label: 'Severely Decreased', color: STATUS_COLORS.high };
   return { label: 'Kidney Failure', color: STATUS_COLORS.high };
 }
 
