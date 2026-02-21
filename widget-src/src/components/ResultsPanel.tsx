@@ -240,7 +240,7 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
         ) : (
           <>
             <strong>Get Your Personalized Health Report</strong>
-            <span>Receive a doctor-ready email summary with suggestions, and track your health over time.</span>
+            <span>Receive an email summary to discuss with your doctor — and save your data to track changes over time.</span>
           </>
         )}
       </div>
@@ -592,7 +592,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
 
       {!authState?.isLoggedIn && (
         <div className="guest-cta-inline no-print">
-          <span>{redirectFailed ? 'Sign in to access your saved data.' : 'Save your results and get a doctor-ready email summary.'}</span>
+          <span>{redirectFailed ? 'Sign in to access your saved data.' : 'Save your data and get an email summary to discuss with doctor.'}</span>
           <a href={authState?.loginUrl || "/account/login"} className="guest-cta-btn">
             {redirectFailed ? 'Sign In' : 'Create Free Account'}
           </a>
