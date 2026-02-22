@@ -219,7 +219,7 @@ Missing any step causes **silent data loss**:
 
 **Account deletion**: Requires `{ confirmDelete: true }`, rate-limited 1/hour. Deletes measurements → medications → anonymizes audit logs → deletes profile → deletes auth user → clears cache.
 
-**Data sync**: Dual-sync design — `sync-embed.liquid` handles non-widget pages, `HealthTool.tsx` handles widget page. Both check for meaningful cloud data before syncing, both set `health_roadmap_authenticated` localStorage flag for auto-redirect.
+**Data sync**: Dual-sync design — `sync-embed.liquid` handles non-widget pages, `HealthTool.tsx` handles widget page. Both check for meaningful cloud data before syncing, both set `health_roadmap_authenticated` localStorage flag for auto-redirect. **See Dangerous Gotchas for invariants that must not be broken.**
 
 **Auto-redirect**: Shopify customer accounts live on `shopify.com`, not the storefront. If `health_roadmap_authenticated` flag exists but no storefront session, redirects once per browser session to acquire session. Flag only set after confirming cloud data exists.
 
@@ -261,6 +261,9 @@ Backend: Initialized in `app/entry.server.tsx`.
 - **Customer account extension** is link-only (`extensions/health-roadmap-link/`). Full extension was removed due to cross-origin localStorage barrier.
 - `automatically_update_urls_on_dev` is `false` to protect production URLs.
 - **Shopify Dashboard is read-only** — all config via `shopify.app.toml` + `npx shopify app deploy --force`.
+- **NEVER make sync-embed cleanup async or conditional.** In `sync-embed.liquid`, the `syncComplete()` function MUST run `localStorage.removeItem(STORAGE_KEY)`, `localStorage.setItem('health_roadmap_authenticated', '1')`, and `sessionStorage.setItem(SYNC_FLAG, '1')` **synchronously and unconditionally** before any `fetch()` calls. If these are moved into `.then()`, `.finally()`, or callbacks, users who navigate away before the async call completes will have broken auto-login and duplicate syncs. The pattern is: do all critical synchronous work first, then fire best-effort async work (like email sends).
+- **NEVER modify `health_roadmap_authenticated` flag logic** without understanding the full auto-redirect flow. This flag is set by sync-embed and the widget after confirming cloud data exists. It's read by `sync-embed.liquid` (logged-out branch) to clear stale data, and by the storefront to trigger session-acquisition redirects. Removing or delaying this flag breaks auto-login.
+- **Sync-embed and widget sync are mutually exclusive.** `sync-embed.liquid` exits early if `document.getElementById('health-tool-root')` exists (line 18). On widget pages, the widget handles sync directly. On all other pages, sync-embed handles it. Never add sync logic that runs in both places simultaneously.
 
 ## Environment Variables
 

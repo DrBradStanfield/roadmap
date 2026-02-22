@@ -373,6 +373,19 @@ export const SCREENING_INTERVALS: Record<string, number> = {
 };
 
 /**
+ * Calculate the next-due date for a screening based on last date and method interval.
+ * Shared by suggestions.ts (screeningStatus) and reminders.ts (isScreeningOverdue).
+ * Returns null if inputs are invalid or missing.
+ */
+export function getScreeningNextDueDate(lastDate: string | undefined, method: string | undefined): Date | null {
+  if (!lastDate || !method) return null;
+  const intervalMonths = SCREENING_INTERVALS[method] ?? 12;
+  const [year, month] = lastDate.split('-').map(Number);
+  if (!year || !month) return null;
+  return new Date(year, month - 1 + intervalMonths);
+}
+
+/**
  * Post-follow-up repeat intervals in months.
  * After an abnormal result + completed follow-up, use these instead of SCREENING_INTERVALS.
  * Keyed by "{screeningType}_{method}".

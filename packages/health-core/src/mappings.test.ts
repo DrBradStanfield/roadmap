@@ -363,38 +363,38 @@ describe('screeningsToInputs', () => {
 
   it('converts cervical screening fields', () => {
     const screenings: ApiScreening[] = [
-      { id: '1', screeningKey: 'cervical_method', value: 'hpv_5yr', updatedAt: '' },
+      { id: '1', screeningKey: 'cervical_method', value: 'hpv_every_5yr', updatedAt: '' },
       { id: '2', screeningKey: 'cervical_last_date', value: '2022-09', updatedAt: '' },
       { id: '3', screeningKey: 'cervical_result', value: 'normal', updatedAt: '' },
     ];
     const inputs = screeningsToInputs(screenings);
-    expect(inputs.cervicalMethod).toBe('hpv_5yr');
+    expect(inputs.cervicalMethod).toBe('hpv_every_5yr');
     expect(inputs.cervicalLastDate).toBe('2022-09');
     expect(inputs.cervicalResult).toBe('normal');
   });
 
   it('converts lung screening fields including pack years as number', () => {
     const screenings: ApiScreening[] = [
-      { id: '1', screeningKey: 'lung_smoking_history', value: 'former', updatedAt: '' },
+      { id: '1', screeningKey: 'lung_smoking_history', value: 'former_smoker', updatedAt: '' },
       { id: '2', screeningKey: 'lung_pack_years', value: '25', updatedAt: '' },
-      { id: '3', screeningKey: 'lung_screening', value: 'ldct_annual', updatedAt: '' },
+      { id: '3', screeningKey: 'lung_screening', value: 'annual_ldct', updatedAt: '' },
       { id: '4', screeningKey: 'lung_last_date', value: '2024-01', updatedAt: '' },
     ];
     const inputs = screeningsToInputs(screenings);
-    expect(inputs.lungSmokingHistory).toBe('former');
+    expect(inputs.lungSmokingHistory).toBe('former_smoker');
     expect(inputs.lungPackYears).toBe(25);
-    expect(inputs.lungScreening).toBe('ldct_annual');
+    expect(inputs.lungScreening).toBe('annual_ldct');
     expect(inputs.lungLastDate).toBe('2024-01');
   });
 
   it('converts prostate screening fields', () => {
     const screenings: ApiScreening[] = [
-      { id: '1', screeningKey: 'prostate_discussion', value: 'yes_screening', updatedAt: '' },
+      { id: '1', screeningKey: 'prostate_discussion', value: 'will_screen', updatedAt: '' },
       { id: '2', screeningKey: 'prostate_psa_value', value: '1.2', updatedAt: '' },
       { id: '3', screeningKey: 'prostate_last_date', value: '2024-06', updatedAt: '' },
     ];
     const inputs = screeningsToInputs(screenings);
-    expect(inputs.prostateDiscussion).toBe('yes_screening');
+    expect(inputs.prostateDiscussion).toBe('will_screen');
     expect(inputs.prostatePsaValue).toBe(1.2);
     expect(inputs.prostateLastDate).toBe('2024-06');
   });
@@ -417,15 +417,39 @@ describe('screeningsToInputs', () => {
     expect(Object.keys(inputs)).toHaveLength(0);
   });
 
+  it('ignores invalid enum values for screening fields', () => {
+    const screenings: ApiScreening[] = [
+      { id: '1', screeningKey: 'colorectal_method', value: 'invalid_method', updatedAt: '' },
+      { id: '2', screeningKey: 'breast_frequency', value: 'weekly', updatedAt: '' },
+      { id: '3', screeningKey: 'colorectal_result', value: 'bad_value', updatedAt: '' },
+      { id: '4', screeningKey: 'dexa_result', value: 'broken', updatedAt: '' },
+    ];
+    const inputs = screeningsToInputs(screenings);
+    expect(inputs.colorectalMethod).toBeUndefined();
+    expect(inputs.breastFrequency).toBeUndefined();
+    expect(inputs.colorectalResult).toBeUndefined();
+    expect(inputs.dexaResult).toBeUndefined();
+  });
+
+  it('accepts valid enum values alongside invalid ones', () => {
+    const screenings: ApiScreening[] = [
+      { id: '1', screeningKey: 'colorectal_method', value: 'fit_annual', updatedAt: '' },
+      { id: '2', screeningKey: 'breast_frequency', value: 'invalid', updatedAt: '' },
+    ];
+    const inputs = screeningsToInputs(screenings);
+    expect(inputs.colorectalMethod).toBe('fit_annual');
+    expect(inputs.breastFrequency).toBeUndefined();
+  });
+
   it('handles lung follow-up fields', () => {
     const screenings: ApiScreening[] = [
       { id: '1', screeningKey: 'lung_result', value: 'abnormal', updatedAt: '' },
-      { id: '2', screeningKey: 'lung_followup_status', value: 'awaiting', updatedAt: '' },
+      { id: '2', screeningKey: 'lung_followup_status', value: 'scheduled', updatedAt: '' },
       { id: '3', screeningKey: 'lung_followup_date', value: '2024-04', updatedAt: '' },
     ];
     const inputs = screeningsToInputs(screenings);
     expect(inputs.lungResult).toBe('abnormal');
-    expect(inputs.lungFollowupStatus).toBe('awaiting');
+    expect(inputs.lungFollowupStatus).toBe('scheduled');
     expect(inputs.lungFollowupDate).toBe('2024-04');
   });
 
@@ -458,13 +482,13 @@ describe('screeningsToInputs', () => {
     const screenings: ApiScreening[] = [
       { id: '1', screeningKey: 'breast_followup_status', value: 'completed', updatedAt: '' },
       { id: '2', screeningKey: 'breast_followup_date', value: '2024-02', updatedAt: '' },
-      { id: '3', screeningKey: 'cervical_followup_status', value: 'awaiting', updatedAt: '' },
+      { id: '3', screeningKey: 'cervical_followup_status', value: 'not_organized', updatedAt: '' },
       { id: '4', screeningKey: 'cervical_followup_date', value: '2024-05', updatedAt: '' },
     ];
     const inputs = screeningsToInputs(screenings);
     expect(inputs.breastFollowupStatus).toBe('completed');
     expect(inputs.breastFollowupDate).toBe('2024-02');
-    expect(inputs.cervicalFollowupStatus).toBe('awaiting');
+    expect(inputs.cervicalFollowupStatus).toBe('not_organized');
     expect(inputs.cervicalFollowupDate).toBe('2024-05');
   });
 });

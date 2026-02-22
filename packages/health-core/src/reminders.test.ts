@@ -15,6 +15,7 @@ import type {
   ReminderCategory,
 } from './reminders';
 import type { ScreeningInputs } from './types';
+import { getScreeningNextDueDate } from './types';
 
 // Helper to create a date string N months ago from a reference date
 function monthsAgo(months: number, from: Date = new Date('2026-02-01')): string {
@@ -517,5 +518,33 @@ describe('Constants', () => {
     expect(GROUP_COOLDOWNS.screening).toBe(90);
     expect(GROUP_COOLDOWNS.blood_test).toBe(180);
     expect(GROUP_COOLDOWNS.medication_review).toBe(365);
+  });
+});
+
+describe('getScreeningNextDueDate', () => {
+  it('returns null for undefined inputs', () => {
+    expect(getScreeningNextDueDate(undefined, 'fit_annual')).toBeNull();
+    expect(getScreeningNextDueDate('2024-06', undefined)).toBeNull();
+    expect(getScreeningNextDueDate(undefined, undefined)).toBeNull();
+  });
+
+  it('returns null for malformed date string', () => {
+    expect(getScreeningNextDueDate('invalid', 'fit_annual')).toBeNull();
+    expect(getScreeningNextDueDate('', 'fit_annual')).toBeNull();
+  });
+
+  it('calculates correct next-due date for annual FIT', () => {
+    const result = getScreeningNextDueDate('2024-01', 'fit_annual');
+    expect(result).toEqual(new Date(2025, 0)); // Jan 2025 (12 months later)
+  });
+
+  it('calculates correct next-due date for 10yr colonoscopy', () => {
+    const result = getScreeningNextDueDate('2020-06', 'colonoscopy_10yr');
+    expect(result).toEqual(new Date(2030, 5)); // Jun 2030 (120 months later)
+  });
+
+  it('falls back to 12 months for unknown method', () => {
+    const result = getScreeningNextDueDate('2024-03', 'unknown_method');
+    expect(result).toEqual(new Date(2025, 2)); // Mar 2025 (12 months later)
   });
 });

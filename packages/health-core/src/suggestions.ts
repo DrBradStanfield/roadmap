@@ -1,5 +1,5 @@
 import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from './types';
-import { SCREENING_INTERVALS, POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, STATIN_DRUGS, canIncreaseDose, shouldSuggestSwitch, isOnMaxPotency, canIncreaseGlp1Dose, shouldSuggestGlp1Switch, isOnMaxGlp1Potency } from './types';
+import { SCREENING_INTERVALS, POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, STATIN_DRUGS, canIncreaseDose, shouldSuggestSwitch, isOnMaxPotency, canIncreaseGlp1Dose, shouldSuggestGlp1Switch, isOnMaxGlp1Potency, getScreeningNextDueDate } from './types';
 import {
   type UnitSystem,
   type MetricType,
@@ -189,8 +189,12 @@ export function generateSuggestions(
       } else if (glp1Handled) {
         // Step 2: GLP-1 Escalation (dose increase or switch to tirzepatide)
         const glp1Tolerated = glp1Drug !== 'not_tolerated';
-        const canIncreaseGlp1 = onGlp1 && canIncreaseGlp1Dose(glp1Drug!, glp1!.dose);
-        const shouldSwitchGlp1 = (onGlp1 && shouldSuggestGlp1Switch(glp1Drug!, glp1!.dose)) || glp1OnOther;
+        let canIncreaseGlp1 = false;
+        let shouldSwitchGlp1 = glp1OnOther;
+        if (onGlp1 && glp1 && glp1Drug) {
+          canIncreaseGlp1 = canIncreaseGlp1Dose(glp1Drug, glp1.dose);
+          shouldSwitchGlp1 = shouldSuggestGlp1Switch(glp1Drug, glp1.dose) || glp1OnOther;
+        }
         const escalationPossible = glp1Tolerated && (canIncreaseGlp1 || shouldSwitchGlp1);
 
         if (escalationPossible && (!medications.glp1Escalation || medications.glp1Escalation === 'not_yet')) {
@@ -625,7 +629,7 @@ export function generateSuggestions(
       const statin = medications.statin;
       const statinDrug = statin?.drug;
       // Check if drug is a known valid statin (handles old tier-based values like 'tier_1')
-      const isValidStatinDrug = statinDrug && statinDrug in STATIN_DRUGS;
+      const isValidStatinDrug = statinDrug && Object.hasOwn(STATIN_DRUGS, statinDrug);
       const isNotTolerated = statinDrug === 'not_tolerated';
       const statinTolerated = !isNotTolerated;
       const onStatin = statin && isValidStatinDrug;
@@ -714,11 +718,8 @@ export function generateSuggestions(
 
     /** Check if a screening is overdue given its last date and method's interval. */
     function screeningStatus(lastDate: string | undefined, method: string | undefined): 'overdue' | 'upcoming' | 'unknown' {
-      if (!lastDate || !method) return 'unknown';
-      const intervalMonths = SCREENING_INTERVALS[method] ?? 12;
-      const [year, month] = lastDate.split('-').map(Number);
-      if (!year || !month) return 'unknown';
-      const nextDue = new Date(year, month - 1 + intervalMonths);
+      const nextDue = getScreeningNextDueDate(lastDate, method);
+      if (!nextDue) return 'unknown';
       return new Date() > nextDue ? 'overdue' : 'upcoming';
     }
 
@@ -730,10 +731,8 @@ export function generateSuggestions(
     }
 
     function nextDueStr(lastDate: string, method: string): string {
-      const intervalMonths = SCREENING_INTERVALS[method] ?? 12;
-      const [year, month] = lastDate.split('-').map(Number);
-      if (!year || !month) return '';
-      const d = new Date(year, month - 1 + intervalMonths);
+      const d = getScreeningNextDueDate(lastDate, method);
+      if (!d) return '';
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       return `${months[d.getMonth()]} ${d.getFullYear()}`;
     }

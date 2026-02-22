@@ -6,7 +6,7 @@
  * No database dependencies — designed for unit testing.
  */
 import type { ScreeningInputs, MedicationInputs } from './types';
-import { SCREENING_INTERVALS, POST_FOLLOWUP_INTERVALS } from './types';
+import { SCREENING_INTERVALS, POST_FOLLOWUP_INTERVALS, getScreeningNextDueDate } from './types';
 
 // ===== Types =====
 
@@ -87,14 +87,11 @@ function isOlderThanMonths(dateStr: string, months: number, now: Date = new Date
 
 /**
  * Check if a screening is overdue given its last date and method's interval.
- * Reuses the same logic as screeningStatus() in suggestions.ts.
+ * Uses shared getScreeningNextDueDate() from types.ts.
  */
 function isScreeningOverdue(lastDate: string | undefined, method: string | undefined, now: Date = new Date()): boolean {
-  if (!lastDate || !method) return false;
-  const intervalMonths = SCREENING_INTERVALS[method] ?? 12;
-  const [year, month] = lastDate.split('-').map(Number);
-  if (!year || !month) return false;
-  const nextDue = new Date(year, month - 1 + intervalMonths);
+  const nextDue = getScreeningNextDueDate(lastDate, method);
+  if (!nextDue) return false;
   return now > nextDue;
 }
 

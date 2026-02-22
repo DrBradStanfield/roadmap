@@ -4,7 +4,7 @@ import { authenticate } from '../shopify.server';
 import { getOrCreateSupabaseUser, deleteAllUserData } from '../lib/supabase.server';
 import { getCustomerId, getCustomerInfo } from '../lib/route-helpers.server';
 
-// Rate limit: 1 successful deletion per 5 minutes per customer
+// Rate limit: 1 deletion attempt per 5 minutes per customer
 const DELETE_RATE_LIMIT_WINDOW_MS = 5 * 60_000;
 const deleteRateLimitMap = new Map<string, number>(); // customerId -> resetAt timestamp
 
@@ -42,6 +42,9 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ success: false, error: 'Too many requests' }, { status: 429 });
   }
 
+  // Record rate limit immediately to prevent concurrent/spam attempts
+  recordDeleteRateLimit(customerId);
+
   try {
     const body = await request.json();
     if (!body.confirmDelete) {
@@ -56,7 +59,6 @@ export async function action({ request }: ActionFunctionArgs) {
     const userId = await getOrCreateSupabaseUser(customerId, customerInfo.email, customerInfo.firstName, customerInfo.lastName);
     const result = await deleteAllUserData(userId);
 
-    recordDeleteRateLimit(customerId);
     return json({ success: true, measurementsDeleted: result.measurementsDeleted });
   } catch (error) {
     console.error('Error deleting user data:', error);

@@ -795,6 +795,16 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'med-pcsk9i')).toBeUndefined();
     });
 
+    it('does not treat prototype properties as valid statin drugs', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      const meds: MedicationInputs = {
+        statin: { drug: 'toString', dose: 10 },
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      // 'toString' is not a valid statin — should suggest starting one
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
+    });
+
     it('does not suggest medications when lipids below targets', () => {
       const { inputs, results } = createTestData({ apoB: apoB(30) }); // below 50
       const meds: MedicationInputs = {};
@@ -1674,6 +1684,14 @@ describe('generateSuggestions', () => {
       };
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
       expect(suggestions.filter(s => s.id?.startsWith('weight-med-')).length).toBe(0);
+    });
+
+    it('handles GLP-1 with null dose without crashing', () => {
+      const { inputs, results } = createTestData(cascadeOverrides, cascadeBmi);
+      const meds: MedicationInputs = { glp1: { drug: 'semaglutide_injection', dose: null } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      // Should not crash — dose: null means we can't confirm dose so no escalation
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined(); // already on a GLP-1
     });
   });
 

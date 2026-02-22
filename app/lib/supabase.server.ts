@@ -1078,10 +1078,15 @@ export interface DashboardStats {
   recentSignups: { firstName: string | null; lastName: string | null; createdAt: string }[];
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function applyExclusion(query: any, column: string, ids: string[]): any {
   if (ids.length === 0) return query;
-  return query.not(column, 'in', `(${ids.join(',')})`);
+  // Validate all IDs are UUIDs to prevent injection via string interpolation
+  const safeIds = ids.filter(id => UUID_RE.test(id));
+  if (safeIds.length === 0) return query;
+  return query.not(column, 'in', `(${safeIds.join(',')})`);
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {

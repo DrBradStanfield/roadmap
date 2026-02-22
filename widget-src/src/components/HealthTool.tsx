@@ -93,7 +93,23 @@ export function HealthTool() {
   const medSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const isFirstSaveRef = useRef(true);
-  const [emailConfirmStatus, setEmailConfirmStatus] = useState<'idle' | 'sent' | 'error'>('idle');
+
+  // Clean up debounce timers on unmount to prevent stale API calls
+  useEffect(() => {
+    return () => {
+      for (const timer of medSaveTimers.current.values()) clearTimeout(timer);
+      for (const timer of screeningSaveTimers.current.values()) clearTimeout(timer);
+    };
+  }, []);
+  const [emailConfirmStatus, setEmailConfirmStatus] = useState<'idle' | 'sent' | 'error'>(() => {
+    const flag = sessionStorage.getItem('health_roadmap_email_confirm');
+    if (flag) {
+      sessionStorage.removeItem('health_roadmap_email_confirm');
+      isFirstSaveRef.current = false;
+      return resolveEmailConfirmStatus(flag);
+    }
+    return 'idle';
+  });
 
   // Unit system: load saved preference or auto-detect
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
@@ -165,14 +181,6 @@ export function HealthTool() {
           if (cached.reminderPreferences.length > 0) {
             setReminderPreferences(cached.reminderPreferences);
           }
-        }
-
-        // Check if sync-embed sent the welcome email on a previous page — show INSTANTLY
-        const emailConfirmFlag = sessionStorage.getItem('health_roadmap_email_confirm');
-        if (emailConfirmFlag) {
-          sessionStorage.removeItem('health_roadmap_email_confirm');
-          setEmailConfirmStatus(resolveEmailConfirmStatus(emailConfirmFlag));
-          isFirstSaveRef.current = false;
         }
 
         // Phase 2: API response is authoritative

@@ -181,6 +181,25 @@ export interface ApiScreening {
   updatedAt: string;
 }
 
+/** Cast a DB string to a union type, returning undefined if invalid. */
+function castEnum<T extends string>(value: string, valid: readonly T[]): T | undefined {
+  return valid.includes(value as T) ? (value as T) : undefined;
+}
+
+// Valid values for each screening enum field (derived from ScreeningInputs in types.ts)
+const COLORECTAL_METHODS = ['fit_annual', 'colonoscopy_10yr', 'other', 'not_yet_started'] as const;
+const BREAST_FREQUENCIES = ['annual', 'biennial', 'not_yet_started'] as const;
+const CERVICAL_METHODS = ['hpv_every_5yr', 'pap_every_3yr', 'other', 'not_yet_started'] as const;
+const SCREENING_RESULTS = ['normal', 'abnormal', 'awaiting'] as const;
+const FOLLOWUP_STATUSES = ['not_organized', 'scheduled', 'completed'] as const;
+const SMOKING_HISTORIES = ['never_smoked', 'former_smoker', 'current_smoker'] as const;
+const LUNG_SCREENINGS = ['annual_ldct', 'not_yet_started'] as const;
+const PROSTATE_DISCUSSIONS = ['not_yet', 'elected_not_to', 'will_screen'] as const;
+const ENDOMETRIAL_DISCUSSIONS = ['not_yet', 'discussed'] as const;
+const ENDOMETRIAL_BLEEDING = ['no', 'yes_reported', 'yes_need_to_report'] as const;
+const DEXA_SCREENINGS = ['dexa_scan', 'not_yet_started'] as const;
+const DEXA_RESULTS = ['normal', 'osteopenia', 'osteoporosis', 'awaiting'] as const;
+
 /**
  * Convert API screening records into a ScreeningInputs object.
  */
@@ -191,73 +210,73 @@ export function screeningsToInputs(
   for (const s of screenings) {
     switch (s.screeningKey) {
       case 'colorectal_method':
-        inputs.colorectalMethod = s.value as any;
+        inputs.colorectalMethod = castEnum(s.value, COLORECTAL_METHODS);
         break;
       case 'colorectal_last_date':
         inputs.colorectalLastDate = s.value;
         break;
       case 'colorectal_result':
-        inputs.colorectalResult = s.value as any;
+        inputs.colorectalResult = castEnum(s.value, SCREENING_RESULTS);
         break;
       case 'colorectal_followup_status':
-        inputs.colorectalFollowupStatus = s.value as any;
+        inputs.colorectalFollowupStatus = castEnum(s.value, FOLLOWUP_STATUSES);
         break;
       case 'colorectal_followup_date':
         inputs.colorectalFollowupDate = s.value;
         break;
       case 'breast_frequency':
-        inputs.breastFrequency = s.value as any;
+        inputs.breastFrequency = castEnum(s.value, BREAST_FREQUENCIES);
         break;
       case 'breast_last_date':
         inputs.breastLastDate = s.value;
         break;
       case 'breast_result':
-        inputs.breastResult = s.value as any;
+        inputs.breastResult = castEnum(s.value, SCREENING_RESULTS);
         break;
       case 'breast_followup_status':
-        inputs.breastFollowupStatus = s.value as any;
+        inputs.breastFollowupStatus = castEnum(s.value, FOLLOWUP_STATUSES);
         break;
       case 'breast_followup_date':
         inputs.breastFollowupDate = s.value;
         break;
       case 'cervical_method':
-        inputs.cervicalMethod = s.value as any;
+        inputs.cervicalMethod = castEnum(s.value, CERVICAL_METHODS);
         break;
       case 'cervical_last_date':
         inputs.cervicalLastDate = s.value;
         break;
       case 'cervical_result':
-        inputs.cervicalResult = s.value as any;
+        inputs.cervicalResult = castEnum(s.value, SCREENING_RESULTS);
         break;
       case 'cervical_followup_status':
-        inputs.cervicalFollowupStatus = s.value as any;
+        inputs.cervicalFollowupStatus = castEnum(s.value, FOLLOWUP_STATUSES);
         break;
       case 'cervical_followup_date':
         inputs.cervicalFollowupDate = s.value;
         break;
       case 'lung_smoking_history':
-        inputs.lungSmokingHistory = s.value as any;
+        inputs.lungSmokingHistory = castEnum(s.value, SMOKING_HISTORIES);
         break;
       case 'lung_pack_years':
         inputs.lungPackYears = parseFloat(s.value);
         break;
       case 'lung_screening':
-        inputs.lungScreening = s.value as any;
+        inputs.lungScreening = castEnum(s.value, LUNG_SCREENINGS);
         break;
       case 'lung_last_date':
         inputs.lungLastDate = s.value;
         break;
       case 'lung_result':
-        inputs.lungResult = s.value as any;
+        inputs.lungResult = castEnum(s.value, SCREENING_RESULTS);
         break;
       case 'lung_followup_status':
-        inputs.lungFollowupStatus = s.value as any;
+        inputs.lungFollowupStatus = castEnum(s.value, FOLLOWUP_STATUSES);
         break;
       case 'lung_followup_date':
         inputs.lungFollowupDate = s.value;
         break;
       case 'prostate_discussion':
-        inputs.prostateDiscussion = s.value as any;
+        inputs.prostateDiscussion = castEnum(s.value, PROSTATE_DISCUSSIONS);
         break;
       case 'prostate_psa_value':
         inputs.prostatePsaValue = parseFloat(s.value);
@@ -266,22 +285,22 @@ export function screeningsToInputs(
         inputs.prostateLastDate = s.value;
         break;
       case 'endometrial_discussion':
-        inputs.endometrialDiscussion = s.value as any;
+        inputs.endometrialDiscussion = castEnum(s.value, ENDOMETRIAL_DISCUSSIONS);
         break;
       case 'endometrial_abnormal_bleeding':
-        inputs.endometrialAbnormalBleeding = s.value as any;
+        inputs.endometrialAbnormalBleeding = castEnum(s.value, ENDOMETRIAL_BLEEDING);
         break;
       case 'dexa_screening':
-        inputs.dexaScreening = s.value as any;
+        inputs.dexaScreening = castEnum(s.value, DEXA_SCREENINGS);
         break;
       case 'dexa_last_date':
         inputs.dexaLastDate = s.value;
         break;
       case 'dexa_result':
-        inputs.dexaResult = s.value as any;
+        inputs.dexaResult = castEnum(s.value, DEXA_RESULTS);
         break;
       case 'dexa_followup_status':
-        inputs.dexaFollowupStatus = s.value as any;
+        inputs.dexaFollowupStatus = castEnum(s.value, FOLLOWUP_STATUSES);
         break;
       case 'dexa_followup_date':
         inputs.dexaFollowupDate = s.value;

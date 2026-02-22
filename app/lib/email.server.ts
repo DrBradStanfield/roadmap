@@ -61,37 +61,41 @@ export async function checkAndSendWelcomeEmail(
       return false;
     }
 
-    // 1. Check if email already sent
-    const profile = await getProfile(client);
-    if (!profile) {
-      console.log('No profile found, skipping welcome email');
-      return false;
-    }
-    if (profile.welcome_email_sent) {
-      return true; // Already sent — success (most common case)
-    }
-
-    // 2. Set flag EARLY to close the race window between concurrent callers
-    //    (sync-embed and widget save can both fire within milliseconds)
-    const { error: flagError } = await client
+    // 1. Atomic claim: only one concurrent caller wins the race.
+    //    .neq('welcome_email_sent', true) matches both false and null values,
+    //    so only one UPDATE succeeds if sync-embed and widget fire simultaneously.
+    const { data: claimed, error: flagError } = await client
       .from('profiles')
       .update({ welcome_email_sent: true })
-      .eq('id', userId);
+      .eq('id', userId)
+      .neq('welcome_email_sent', true)
+      .select('id')
+      .maybeSingle();
 
     if (flagError) {
       console.warn('Failed to set welcome_email_sent flag:', flagError.message);
       return false;
     }
 
+    if (!claimed) {
+      return true; // Already sent or no profile — another caller won the race
+    }
+
     try {
-      // 3. Fetch all user data
-      const [latestMeasurements, medications, screenings] = await Promise.all([
+      // 2. We won the race. Fetch all user data needed for the email.
+      const [profile, latestMeasurements, medications, screenings] = await Promise.all([
+        getProfile(client),
         getLatestMeasurements(client),
         getMedications(client),
         getScreenings(client),
       ]);
 
-      // 4. Convert to health-core input format
+      if (!profile) {
+        console.log('No profile found after flag claim, skipping welcome email');
+        return false;
+      }
+
+      // 3. Convert to health-core input format
       const apiProfile = toApiProfile(profile);
       const apiMeasurements = latestMeasurements.map(toApiMeasurement);
       const apiMedications = medications.map(toApiMedication);
@@ -101,7 +105,7 @@ export async function checkAndSendWelcomeEmail(
       const medInputs = medicationsToInputs(apiMedications);
       const screenInputs = screeningsToInputs(apiScreenings);
 
-      // 5. Require minimum data (height + sex)
+      // 4. Require minimum data (height + sex)
       if (!inputs.heightCm || !inputs.sex) {
         console.log('Insufficient data for welcome email (need height + sex)');
         // Revert flag — user may add data later
@@ -109,12 +113,12 @@ export async function checkAndSendWelcomeEmail(
         return true; // Not an error — just insufficient data
       }
 
-      // 6. Calculate results and generate suggestions
+      // 5. Calculate results and generate suggestions
       const unitSystem: UnitSystem = inputs.unitSystem || 'si';
       const results = calculateHealthResults(inputs, unitSystem, medInputs, screenInputs);
       const suggestions = generateSuggestions(inputs, results, unitSystem, medInputs, screenInputs);
 
-      // 7. Build and send email
+      // 6. Build and send email
       const firstName = profile.first_name || null;
       const html = buildWelcomeEmailHtml(inputs, results, suggestions, unitSystem, firstName, medInputs, results.age);
 

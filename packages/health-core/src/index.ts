@@ -50,6 +50,7 @@ export {
   METFORMIN_OPTIONS,
   // Screening
   SCREENING_INTERVALS,
+  getScreeningNextDueDate,
   POST_FOLLOWUP_INTERVALS,
   SCREENING_FOLLOWUP_INFO,
   // Database encoding helpers
