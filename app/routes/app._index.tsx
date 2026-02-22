@@ -87,10 +87,11 @@ export default function Index() {
     <Page title="Health Roadmap">
       <BlockStack gap="500">
         {/* KPI Cards */}
-        <InlineGrid columns={4} gap="400">
+        <InlineGrid columns={5} gap="400">
           <KpiCard title="Total Users" value={stats.totalUsers} />
           <KpiCard title="Active Users (30d)" value={stats.activeUsers30d} />
           <KpiCard title="Measurements Saved" value={stats.totalMeasurements} />
+          <KpiCard title="Welcome Emails Sent" value={stats.welcomeEmailsSent} />
           <KpiCard title="Reminder Emails Sent" value={stats.remindersSent} />
         </InlineGrid>
 

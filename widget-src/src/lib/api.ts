@@ -221,8 +221,9 @@ export async function loadAllHistory(
 
 /**
  * Delete all user data (measurements, profile, auth user).
+ * Returns { success, error? } so callers can show specific failure reasons.
  */
-export async function deleteUserData(): Promise<boolean> {
+export async function deleteUserData(): Promise<{ success: boolean; error?: string }> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
@@ -233,14 +234,25 @@ export async function deleteUserData(): Promise<boolean> {
       signal: controller.signal,
     });
     clearTimeout(timeout);
-    if (!response.ok) return false;
+    if (!response.ok) {
+      if (response.status === 429) {
+        return { success: false, error: 'You can only delete data once every 5 minutes. Please wait and try again.' };
+      }
+      if (response.status === 401) {
+        return { success: false, error: 'Not logged in. Please sign in and try again.' };
+      }
+      return { success: false, error: `Something went wrong (${response.status}). Please try again later.` };
+    }
 
     const result: { success: boolean } = await response.json();
-    return result.success;
+    return { success: result.success, error: result.success ? undefined : 'Server error. Please try again later.' };
   } catch (error) {
     console.warn('Error deleting user data:', error);
     Sentry.captureException(error);
-    return false;
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return { success: false, error: 'Request timed out. Please check your connection and try again.' };
+    }
+    return { success: false, error: 'Network error. Please check your connection and try again.' };
   }
 }
 

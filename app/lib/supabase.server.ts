@@ -1066,6 +1066,7 @@ export interface DashboardStats {
   activeUsers30d: number;
   totalMeasurements: number;
   remindersSent: number;
+  welcomeEmailsSent: number;
   metricBreakdown: { metricType: string; entries: number; users: number }[];
   profileCompleteness: {
     total: number;
@@ -1077,12 +1078,32 @@ export interface DashboardStats {
   recentSignups: { firstName: string | null; lastName: string | null; createdAt: string }[];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyExclusion(query: any, column: string, ids: string[]): any {
+  if (ids.length === 0) return query;
+  return query.not(column, 'in', `(${ids.join(',')})`);
+}
+
 export async function getDashboardStats(): Promise<DashboardStats> {
   if (!supabaseAdmin) {
     throw new Error('Supabase admin client not configured');
   }
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Look up user_ids for excluded dashboard emails (test accounts)
+  const excludedEmails = (process.env.EXCLUDED_DASHBOARD_EMAILS || '')
+    .split(',')
+    .map(e => e.trim())
+    .filter(Boolean);
+  let excludedUserIds: string[] = [];
+  if (excludedEmails.length > 0) {
+    const { data } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .in('email', excludedEmails);
+    excludedUserIds = (data ?? []).map((r: { id: string }) => r.id);
+  }
 
   const [
     profilesRes,
@@ -1093,28 +1114,60 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     profileStatsRes,
     medicationUsersRes,
     recentSignupsRes,
+    welcomeEmailsRes,
   ] = await Promise.all([
     // Total users
-    supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
-    // Active users (last 30 days) — use RPC or distinct query
-    supabaseAdmin.from('health_measurements')
-      .select('user_id')
-      .gte('created_at', thirtyDaysAgo),
+    applyExclusion(
+      supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
+      'id', excludedUserIds,
+    ),
+    // Active users (last 30 days)
+    applyExclusion(
+      supabaseAdmin.from('health_measurements')
+        .select('user_id')
+        .gte('created_at', thirtyDaysAgo),
+      'user_id', excludedUserIds,
+    ),
     // Total measurements
-    supabaseAdmin.from('health_measurements').select('*', { count: 'exact', head: true }),
+    applyExclusion(
+      supabaseAdmin.from('health_measurements').select('*', { count: 'exact', head: true }),
+      'user_id', excludedUserIds,
+    ),
     // Reminder emails sent
-    supabaseAdmin.from('reminder_log').select('*', { count: 'exact', head: true }),
+    applyExclusion(
+      supabaseAdmin.from('reminder_log').select('*', { count: 'exact', head: true }),
+      'user_id', excludedUserIds,
+    ),
     // Metric breakdown: group by metric_type
-    supabaseAdmin.from('health_measurements').select('metric_type, user_id'),
+    applyExclusion(
+      supabaseAdmin.from('health_measurements').select('metric_type, user_id'),
+      'user_id', excludedUserIds,
+    ),
     // Profile completeness
-    supabaseAdmin.from('profiles').select('height, sex, birth_year'),
+    applyExclusion(
+      supabaseAdmin.from('profiles').select('height, sex, birth_year'),
+      'id', excludedUserIds,
+    ),
     // Medication users
-    supabaseAdmin.from('medications').select('user_id').eq('status', 'active'),
+    applyExclusion(
+      supabaseAdmin.from('medications').select('user_id').eq('status', 'active'),
+      'user_id', excludedUserIds,
+    ),
     // Recent signups
-    supabaseAdmin.from('profiles')
-      .select('first_name, last_name, created_at')
-      .order('created_at', { ascending: false })
-      .limit(10),
+    applyExclusion(
+      supabaseAdmin.from('profiles')
+        .select('first_name, last_name, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10),
+      'id', excludedUserIds,
+    ),
+    // Welcome emails sent
+    applyExclusion(
+      supabaseAdmin.from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('welcome_email_sent', true),
+      'id', excludedUserIds,
+    ),
   ]);
 
   // Compute active users (distinct user_ids)
@@ -1151,6 +1204,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     activeUsers30d: activeUserIds.size,
     totalMeasurements: measurementsCountRes.count ?? 0,
     remindersSent: remindersRes.count ?? 0,
+    welcomeEmailsSent: welcomeEmailsRes.count ?? 0,
     metricBreakdown,
     profileCompleteness: { total, withHeight, withSex, withBirthYear },
     medicationUsers: medUserIds.size,

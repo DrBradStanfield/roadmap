@@ -552,10 +552,10 @@ export function HealthTool() {
     if (!confirmed) return;
 
     setIsDeleting(true);
-    const success = await deleteUserData();
+    const result = await deleteUserData();
     setIsDeleting(false);
 
-    if (success) {
+    if (result.success) {
       clearLocalStorage();
       setInputs({});
       setPreviousMeasurements([]);
@@ -566,7 +566,7 @@ export function HealthTool() {
       setSaveStatus('idle');
       window.alert('All your health data has been deleted.');
     } else {
-      window.alert('Failed to delete data. Please try again.');
+      window.alert(result.error || 'Failed to delete data. Please try again.');
     }
   }, [authState.isLoggedIn]);
 

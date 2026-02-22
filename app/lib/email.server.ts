@@ -435,7 +435,7 @@ export function buildWelcomeEmailHtml(
     </div>
 
     <!-- Footer -->
-    <div style="padding:16px 24px;text-align:center;border-top:1px solid #eee;">
+    <div class="no-print" style="padding:16px 24px;text-align:center;border-top:1px solid #eee;">
       <p style="color:#999;font-size:12px;margin:0;">
         You received this email because you created an account and saved your health data to Dr Brad's Health Roadmap
       </p>

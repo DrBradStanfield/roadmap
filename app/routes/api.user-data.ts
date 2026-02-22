@@ -38,6 +38,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ success: false, error: 'Not logged in' }, { status: 401 });
   }
   if (isDeleteRateLimited(customerId)) {
+    console.warn(`Delete rate-limited for customer ${customerId}`);
     return json({ success: false, error: 'Too many requests' }, { status: 429 });
   }
 
