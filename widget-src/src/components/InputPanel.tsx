@@ -157,6 +157,7 @@ export function InputPanel({
       setCollapseAnimating(true);
       const timer = setTimeout(() => {
         setCollapsed(true);
+        setCollapseAnimating(false);
       }, 400);
       return () => clearTimeout(timer);
     } else {
@@ -380,7 +381,7 @@ export function InputPanel({
           </p>
         </div>
 
-        <div className={`prefill-fields-wrapper${collapseAnimating ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
+        <div className={`prefill-fields-wrapper${collapseAnimating && !prefillExpanded ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
           <div>
             <div className={`health-field${!inputs.sex ? ' field-attention' : ''}`}>
               <label htmlFor="sex">Sex</label>
