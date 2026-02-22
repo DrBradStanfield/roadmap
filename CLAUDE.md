@@ -6,6 +6,12 @@ This file provides context for Claude Code when working on this project.
 
 This is a **Health Roadmap Tool** - a Shopify app that helps users track health metrics over time and receive personalized suggestions. It's available as a storefront theme extension for both guests and logged-in users. An app embed block handles background sync of guest localStorage data to Supabase when the user logs in and visits any storefront page.
 
+## Health Algorithm Reference
+
+See [health_roadmap_algorithm.md](health_roadmap_algorithm.md) for the complete, authoritative documentation of all health calculations, clinical thresholds, medication cascades, screening logic, and suggestion rules.
+
+This is the **single source of truth** for the health algorithm. The user-facing `roadmap_text.html` (displayed on the website) covers overlapping topics and must stay consistent with this document.
+
 ## Tech Stack
 
 - **Frontend**: React + TypeScript (Shopify theme extension)
@@ -321,6 +327,7 @@ The same pattern applies to **new measurement metric types** — update `health_
 
 ## Notes for Development
 
+- **Algorithm documentation**: When changing any health calculation, threshold, suggestion logic, medication cascade, screening rule, or reminder logic in `packages/health-core/src/`, update `health_roadmap_algorithm.md` to match. Then check if `roadmap_text.html` covers the same topic and update it too. This keeps the code, developer docs, and user-facing content in sync.
 - Rebuild widget after changes: `npm run build:widget`
 - Vite 6 (`^6.2.2`) in both root and widget-src, enforced via `overrides`/`resolutions`. Keep aligned when upgrading.
 - Two IIFE bundles: `health-tool.js` (`vite.config.ts`) and `health-history.js` (`vite.config.history.ts`). Vite IIFE doesn't support multiple inputs per config.
