@@ -28,7 +28,7 @@ interface ResultsPanelProps {
   results: HealthResults | null;
   isValid: boolean;
   authState?: AuthState;
-  saveStatus?: 'idle' | 'saving' | 'saved' | 'error';
+  saveStatus?: 'idle' | 'saving' | 'saved' | 'first-saved' | 'error';
   unitSystem: UnitSystem;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => void;
@@ -189,6 +189,7 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
 
   if (authState.isLoggedIn) {
     const statusText = saveStatus === 'saving' ? 'Saving...'
+      : saveStatus === 'first-saved' ? '✓ Saved — check your email for your health report!'
       : saveStatus === 'saved' ? '✓ Saved'
       : saveStatus === 'error' ? 'Failed to save'
       : 'Data synced';

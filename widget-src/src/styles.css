@@ -3,6 +3,7 @@
   /* Primary */
   --color-primary: #0066cc;
   --color-primary-hover: #0052a3;
+  --color-brand: #00a38b;
 
   /* Grays */
   --color-gray-light: #888;
@@ -1114,6 +1115,70 @@
   font-size: 18px;
   color: var(--color-gray-medium);
   font-weight: 500;
+}
+
+/* BP info tooltip */
+.bp-info-tooltip-wrap {
+  position: relative;
+  display: inline-block;
+  margin-left: 4px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.bp-info-icon {
+  font-size: 14px;
+  color: var(--color-gray-medium);
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.bp-info-tooltip-wrap:hover .bp-info-icon,
+.bp-info-tooltip-wrap:focus-within .bp-info-icon {
+  opacity: 1;
+  color: var(--color-brand);
+}
+
+.bp-info-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: -10px;
+  right: -10px;
+  height: 12px;
+}
+
+.bp-info-tooltip {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 10;
+  width: 260px;
+  padding: 16px 12px 10px 12px;
+  background: var(--color-white, #fff);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-gray-dark, #374151);
+}
+
+.bp-info-tooltip a {
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.bp-info-tooltip a:hover {
+  text-decoration: underline;
+}
+
+.bp-info-tooltip-wrap:hover .bp-info-tooltip,
+.bp-info-tooltip-wrap:focus-within .bp-info-tooltip {
+  display: block;
 }
 
 /* Height feet/inches compound input */

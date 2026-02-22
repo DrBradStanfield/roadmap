@@ -250,6 +250,55 @@ export const screeningSchema = z.object({
 export type ValidatedScreening = z.infer<typeof screeningSchema>;
 
 // ---------------------------------------------------------------------------
+// Client-side input validation (identity fields only — no unit conversion)
+// ---------------------------------------------------------------------------
+
+/**
+ * Ranges for fields WITHOUT unit conversion (same units in both SI and conventional).
+ * These are safe to validate directly against the stored value.
+ *
+ * Unit-conversion fields (weight, height, blood tests, etc.) are NOT included
+ * because float precision from toCanonical/fromCanonical round-trips can push
+ * boundary values slightly outside SI ranges, causing false rejections.
+ */
+const IDENTITY_FIELD_RANGES: Record<string, { min: number; max: number }> = {
+  birthYear: { min: 1900, max: new Date().getFullYear() },
+  birthMonth: { min: 1, max: 12 },
+  systolicBp: { min: 60, max: 250 },
+  diastolicBp: { min: 40, max: 150 },
+  psa: { min: 0, max: 100 },
+};
+
+/**
+ * Validate a numeric input value for a given field.
+ * Returns the value if valid (or if the field has no known range),
+ * or undefined if out of range.
+ *
+ * Only validates fields without unit conversion (birthYear, BP, PSA).
+ * Unit-conversion fields should rely on HTML min/max + server-side Zod.
+ */
+export function validateInputValue(
+  field: string,
+  value: number | undefined,
+): number | undefined {
+  if (value === undefined) return undefined;
+  const range = IDENTITY_FIELD_RANGES[field];
+  if (!range) return value; // Unknown field — pass through
+  if (value < range.min || value > range.max) return undefined;
+  return value;
+}
+
+/**
+ * Guard for birth year onChange: reject values that are clearly invalid
+ * even mid-typing. A 4+ digit number exceeding the current year is never valid.
+ * Shorter numbers (1-3 digits) are allowed because the user may still be typing.
+ */
+export function isBirthYearClearlyInvalid(value: number): boolean {
+  const currentYear = new Date().getFullYear();
+  return value > currentYear && String(Math.abs(Math.round(value))).length >= 4;
+}
+
+// ---------------------------------------------------------------------------
 // Unit-aware error message conversion
 // ---------------------------------------------------------------------------
 

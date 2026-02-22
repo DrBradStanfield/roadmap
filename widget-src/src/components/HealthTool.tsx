@@ -83,13 +83,14 @@ export function HealthTool() {
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasApiResponse, setHasApiResponse] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'first-saved' | 'error'>('idle');
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
   const isSavingLongitudinalRef = useRef(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [reminderPreferences, setReminderPreferences] = useState<ApiReminderPreference[]>([]);
   const medSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const isFirstSaveRef = useRef(true);
 
   // Unit system: load saved preference or auto-detect
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
@@ -177,6 +178,9 @@ export function HealthTool() {
           setInputs(result.inputs);
           previousInputsRef.current = { ...result.inputs };
           setPreviousMeasurements(result.previousMeasurements);
+          if (result.previousMeasurements.length > 0) {
+            isFirstSaveRef.current = false;
+          }
           setMedications(result.medications);
           setScreenings(result.screenings);
           setReminderPreferences(result.reminderPreferences);
@@ -383,13 +387,17 @@ export function HealthTool() {
           return next;
         });
 
-        setSaveStatus('saved');
+        const wasFirstSave = isFirstSaveRef.current;
+        setSaveStatus(wasFirstSave ? 'first-saved' : 'saved');
+        isFirstSaveRef.current = false;
+
+        setIsSavingLongitudinal(false);
+        setTimeout(() => setSaveStatus('idle'), wasFirstSave ? 4000 : 2000);
       } else {
         setSaveStatus('error');
+        setIsSavingLongitudinal(false);
+        setTimeout(() => setSaveStatus('idle'), 2000);
       }
-
-      setIsSavingLongitudinal(false);
-      setTimeout(() => setSaveStatus('idle'), 2000);
     } finally {
       isSavingLongitudinalRef.current = false;
     }

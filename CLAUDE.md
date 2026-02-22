@@ -376,6 +376,7 @@ Colors, spacing, and typography use CSS variables defined at the top of `styles.
 - `--color-primary`, `--color-primary-hover` for buttons/links
 - `--color-gray-*` for text hierarchy
 - `--spacing-*` for consistent margins/padding
+- `--color-brand: #00a38b` (teal) — brand accent color
 
 ### Button Classes
 Use `.btn-primary` as the base class for action buttons. Variant classes (`.save-inline-btn`, `.save-top-btn`) add size-specific styles.

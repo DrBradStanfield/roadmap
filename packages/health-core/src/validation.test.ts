@@ -1,5 +1,109 @@
 import { describe, it, expect } from 'vitest';
-import { convertValidationErrorsToUnits, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema } from './validation';
+import { convertValidationErrorsToUnits, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid } from './validation';
+
+// ---------------------------------------------------------------------------
+// Client-side input validation (identity fields only — no unit conversion)
+// ---------------------------------------------------------------------------
+
+describe('validateInputValue', () => {
+  // Birth year bug reproduction: user entered 2980
+  it('rejects birth year 2980 (reported bug)', () => {
+    expect(validateInputValue('birthYear', 2980)).toBeUndefined();
+  });
+
+  it('rejects birth year in the future', () => {
+    expect(validateInputValue('birthYear', new Date().getFullYear() + 1)).toBeUndefined();
+  });
+
+  it('accepts valid birth year', () => {
+    expect(validateInputValue('birthYear', 1985)).toBe(1985);
+  });
+
+  it('rejects birth year below 1900', () => {
+    expect(validateInputValue('birthYear', 1800)).toBeUndefined();
+  });
+
+  it('accepts current year as birth year (boundary)', () => {
+    expect(validateInputValue('birthYear', new Date().getFullYear())).toBe(new Date().getFullYear());
+  });
+
+  it('accepts 1900 as birth year (boundary)', () => {
+    expect(validateInputValue('birthYear', 1900)).toBe(1900);
+  });
+
+  // Blood pressure
+  it('rejects systolic BP above max (250)', () => {
+    expect(validateInputValue('systolicBp', 300)).toBeUndefined();
+  });
+
+  it('accepts systolic BP within range', () => {
+    expect(validateInputValue('systolicBp', 120)).toBe(120);
+  });
+
+  it('accepts systolic BP at boundaries', () => {
+    expect(validateInputValue('systolicBp', 60)).toBe(60);
+    expect(validateInputValue('systolicBp', 250)).toBe(250);
+  });
+
+  it('rejects diastolic BP below min (40)', () => {
+    expect(validateInputValue('diastolicBp', 20)).toBeUndefined();
+  });
+
+  it('accepts diastolic BP within range', () => {
+    expect(validateInputValue('diastolicBp', 80)).toBe(80);
+  });
+
+  it('accepts diastolic BP at boundaries', () => {
+    expect(validateInputValue('diastolicBp', 40)).toBe(40);
+    expect(validateInputValue('diastolicBp', 150)).toBe(150);
+  });
+
+  // PSA
+  it('rejects PSA above max (100)', () => {
+    expect(validateInputValue('psa', 150)).toBeUndefined();
+  });
+
+  it('accepts PSA within range', () => {
+    expect(validateInputValue('psa', 2.5)).toBe(2.5);
+  });
+
+  it('accepts PSA at boundaries', () => {
+    expect(validateInputValue('psa', 0)).toBe(0);
+    expect(validateInputValue('psa', 100)).toBe(100);
+  });
+
+  // Edge cases
+  it('returns undefined for undefined value', () => {
+    expect(validateInputValue('birthYear', undefined)).toBeUndefined();
+  });
+
+  it('returns value as-is for unknown fields (no range defined)', () => {
+    expect(validateInputValue('unknownField', 99999)).toBe(99999);
+  });
+});
+
+describe('isBirthYearClearlyInvalid', () => {
+  it('returns true for 4-digit year exceeding current year (2980)', () => {
+    expect(isBirthYearClearlyInvalid(2980)).toBe(true);
+  });
+
+  it('returns false for partial years (2-3 digits)', () => {
+    expect(isBirthYearClearlyInvalid(29)).toBe(false);
+    expect(isBirthYearClearlyInvalid(298)).toBe(false);
+  });
+
+  it('returns false for valid 4-digit year', () => {
+    expect(isBirthYearClearlyInvalid(1985)).toBe(false);
+  });
+
+  it('returns false for current year', () => {
+    expect(isBirthYearClearlyInvalid(new Date().getFullYear())).toBe(false);
+  });
+
+  it('returns true for 5-digit number', () => {
+    expect(isBirthYearClearlyInvalid(29800)).toBe(true);
+  });
+});
 
 describe('convertValidationErrorsToUnits', () => {
   describe('SI unit system (no conversion)', () => {

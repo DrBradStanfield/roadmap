@@ -39,6 +39,8 @@ import {
   TRIGLYCERIDES_THRESHOLDS,
   BP_THRESHOLDS,
   SCREENING_FOLLOWUP_INFO,
+  validateInputValue,
+  isBirthYearClearlyInvalid,
 } from '@roadmap/health-core';
 import { formatShortDate } from '../lib/constants';
 import { DatePicker, InlineDatePicker, dateValueToISO, getCurrentDateValue, type DateValue } from './DatePicker';
@@ -226,6 +228,15 @@ export function InputPanel({
   const parseNumber = (value: string): number | undefined => {
     const num = parseFloat(value);
     return isNaN(num) ? undefined : num;
+  };
+
+  /** Validate on blur for identity fields (no unit conversion). Clears if out of range. */
+  const validateOnBlur = (field: keyof HealthInputs) => {
+    const currentValue = inputs[field] as number | undefined;
+    const validated = validateInputValue(field, currentValue);
+    if (validated !== currentValue) {
+      updateField(field, validated);
+    }
   };
 
   const getPreviousPlaceholder = (field: string): string | null => {
@@ -484,7 +495,12 @@ export function InputPanel({
                     type="number"
                     id="birthYear"
                     value={inputs.birthYear || ''}
-                    onChange={(e) => updateField('birthYear', parseNumber(e.target.value))}
+                    onChange={(e) => {
+                      const num = parseNumber(e.target.value);
+                      if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
+                      updateField('birthYear', num);
+                    }}
+                    onBlur={() => validateOnBlur('birthYear')}
                     placeholder="1980"
                     min="1900"
                     max={new Date().getFullYear()}
@@ -505,7 +521,15 @@ export function InputPanel({
       {/* Blood Pressure — two-field clinical pattern (stage 4+) */}
       {formStage >= 4 && (
         <div className="health-field stage-reveal">
-          <label>Blood Pressure (mmHg)</label>
+          <label>Blood Pressure (mmHg)
+            <span className="bp-info-tooltip-wrap" tabIndex={0}>
+              <span className="bp-info-icon" aria-label="How to measure blood pressure">&#9432;</span>
+              <span className="bp-info-tooltip">
+                Use a home blood pressure monitor or ask your doctor at your next visit.{' '}
+                <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/monitoring-your-blood-pressure-at-home" target="_blank" rel="noopener noreferrer">Learn more &rarr;</a>
+              </span>
+            </span>
+          </label>
           <div className="longitudinal-input-row">
             <div className="bp-fieldset">
               <input
@@ -514,6 +538,7 @@ export function InputPanel({
                 id="systolicBp"
                 value={inputs.systolicBp ?? ''}
                 onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
+                onBlur={() => validateOnBlur('systolicBp')}
                 placeholder={getPreviousPlaceholder('systolicBp') ?? "120"}
                 min={60}
                 max={250}
@@ -526,6 +551,7 @@ export function InputPanel({
                 id="diastolicBp"
                 value={inputs.diastolicBp ?? ''}
                 onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
+                onBlur={() => validateOnBlur('diastolicBp')}
                 placeholder={getPreviousPlaceholder('diastolicBp') ?? "80"}
                 min={40}
                 max={150}
@@ -1494,6 +1520,10 @@ export function InputPanel({
                                   const num = parseFloat(val);
                                   if (!isNaN(num)) updateField('psa', num);
                                 }
+                              }}
+                              onBlur={() => {
+                                setRawInputs(prev => { const next = { ...prev }; delete next.psa; return next; });
+                                validateOnBlur('psa');
                               }}
                               placeholder="1.5"
                               step="0.1"

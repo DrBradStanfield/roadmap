@@ -1,5 +1,6 @@
 import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core';
 import type { UnitSystem } from '@roadmap/health-core';
+import { validateInputValue } from '@roadmap/health-core';
 import type { ApiReminderPreference } from './api';
 
 const STORAGE_KEY = 'health_roadmap_data';
@@ -50,6 +51,19 @@ export function loadFromLocalStorage(): LoadedData | null {
     if (!stored) return null;
 
     const data: StoredData = JSON.parse(stored);
+
+    // Sanitize identity fields (no unit conversion) to catch values
+    // saved before client-side validation was added (e.g. birthYear: 2980)
+    const SANITIZE_FIELDS = ['birthYear', 'birthMonth', 'systolicBp', 'diastolicBp', 'psa'] as const;
+    for (const field of SANITIZE_FIELDS) {
+      if (data.inputs[field] !== undefined) {
+        const validated = validateInputValue(field, data.inputs[field] as number);
+        if (validated === undefined) {
+          delete (data.inputs as Record<string, unknown>)[field];
+        }
+      }
+    }
+
     return {
       inputs: data.inputs,
       previousMeasurements: data.previousMeasurements ?? [],

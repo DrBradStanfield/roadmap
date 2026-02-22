@@ -85,6 +85,8 @@ export {
   validateHealthInputs,
   getValidationErrors,
   convertValidationErrorsToUnits,
+  validateInputValue,
+  isBirthYearClearlyInvalid,
   type MetricTypeValue,
   type ValidatedHealthInputs,
   type ValidatedMeasurement,
