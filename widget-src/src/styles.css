@@ -946,6 +946,16 @@
   color: var(--color-success);
 }
 
+.email-confirm-message {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--color-success);
+}
+
+.email-confirm-error {
+  color: var(--color-error);
+}
+
 .account-actions {
   display: flex;
   align-items: center;

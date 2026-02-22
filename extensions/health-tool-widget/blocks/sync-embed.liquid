@@ -80,18 +80,24 @@
       // POST profile first (if present), then measurements sequentially.
       // Sequential pattern avoids race conditions in getOrCreateSupabaseUser().
       function syncComplete() {
-        // Trigger welcome email after all data is synced (fire-and-forget)
+        // Clean up IMMEDIATELY — never block on email send.
+        // If user navigates before email API completes, sync/auth flags are already set.
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.setItem('health_roadmap_authenticated', '1');
+        sessionStorage.setItem(SYNC_FLAG, '1');
+        sessionStorage.setItem('health_roadmap_email_confirm', 'sent');
+
+        // Welcome email is best-effort — only update flag on error
         fetch(PROXY, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sendWelcomeEmail: true })
-        }).finally(function() {
-          localStorage.removeItem(STORAGE_KEY);
-          // Set auth flag so auto-redirect works on direct navigation to widget pages.
-          // Safe: only reached after successful sync (localStorage had data), never after data deletion
-          // (clearLocalStorage removes STORAGE_KEY, so sync-embed exits early at line 21).
-          localStorage.setItem('health_roadmap_authenticated', '1');
-          sessionStorage.setItem(SYNC_FLAG, '1');
+        }).then(function(r) { return r.json(); }).then(function(result) {
+          if (!result || !result.success) {
+            sessionStorage.setItem('health_roadmap_email_confirm', 'error');
+          }
+        }).catch(function() {
+          sessionStorage.setItem('health_roadmap_email_confirm', 'error');
         });
       }
 

@@ -29,6 +29,7 @@ interface ResultsPanelProps {
   isValid: boolean;
   authState?: AuthState;
   saveStatus?: 'idle' | 'saving' | 'saved' | 'first-saved' | 'error';
+  emailConfirmStatus?: 'idle' | 'sent' | 'error';
   unitSystem: UnitSystem;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => void;
@@ -175,9 +176,10 @@ function renderGroupedSuggestions(suggestions: Suggestion[], highlightedIds?: Se
   return elements;
 }
 
-function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, redirectFailed, onPrint, onEmail, emailStatus, printStatus }: {
+function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, redirectFailed, onPrint, onEmail, emailStatus, printStatus }: {
   authState?: AuthState;
   saveStatus?: string;
+  emailConfirmStatus?: 'idle' | 'sent' | 'error';
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => void;
   isSavingLongitudinal?: boolean;
@@ -193,7 +195,7 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
 
   if (authState.isLoggedIn) {
     const statusText = saveStatus === 'saving' ? 'Saving...'
-      : saveStatus === 'first-saved' ? '✓ Saved — check your email for your health report!'
+      : saveStatus === 'first-saved' ? '✓ Saved'
       : saveStatus === 'saved' ? '✓ Saved'
       : saveStatus === 'error' ? 'Failed to save'
       : 'Data synced';
@@ -239,6 +241,12 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
             </button>
           </div>
         </div>
+        {emailConfirmStatus === 'sent' && (
+          <div className="email-confirm-message">✓ Check your email for your health report!</div>
+        )}
+        {emailConfirmStatus === 'error' && (
+          <div className="email-confirm-message email-confirm-error">Sending your summary email failed. Please contact brad@drstanfield.com for help.</div>
+        )}
         {showFeedback && (
           <FeedbackForm initialExpanded showSourceLink={false} onClose={() => setShowFeedback(false)} />
         )}
@@ -361,7 +369,7 @@ function ReminderSettings({
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, unitSystem, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -453,7 +461,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
-        <AccountStatus authState={authState} saveStatus={saveStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />
+        <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />
         <div className="results-placeholder">
           <div className="placeholder-icon">📊</div>
           <h3>Enter your information</h3>
@@ -479,7 +487,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
   return (
     <div className="health-results-panel">
       {/* Account Status */}
-      <AccountStatus authState={authState} saveStatus={saveStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} onPrint={authState?.isLoggedIn ? handlePrint : undefined} onEmail={authState?.isLoggedIn ? handleEmailReport : undefined} emailStatus={emailStatus} printStatus={printStatus} />
+      <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} onPrint={authState?.isLoggedIn ? handlePrint : undefined} onEmail={authState?.isLoggedIn ? handleEmailReport : undefined} emailStatus={emailStatus} printStatus={printStatus} />
 
       {/* Quick Stats */}
       <section className="quick-stats">

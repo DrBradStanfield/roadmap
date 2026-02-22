@@ -19,6 +19,7 @@ import {
   TRIGLYCERIDES_THRESHOLDS,
   BP_THRESHOLDS,
   computeFormStage,
+  resolveEmailConfirmStatus,
   type HealthInputs,
   type UnitSystem,
   type ApiMeasurement,
@@ -46,6 +47,7 @@ import {
   deleteUserData,
   saveReminderPreference,
   setGlobalReminderOptout,
+  sendWelcomeEmail,
   PROXY_PATH,
   type ApiReminderPreference,
 } from '../lib/api';
@@ -91,6 +93,7 @@ export function HealthTool() {
   const medSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const isFirstSaveRef = useRef(true);
+  const [emailConfirmStatus, setEmailConfirmStatus] = useState<'idle' | 'sent' | 'error'>('idle');
 
   // Unit system: load saved preference or auto-detect
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => {
@@ -163,6 +166,15 @@ export function HealthTool() {
             setReminderPreferences(cached.reminderPreferences);
           }
         }
+
+        // Check if sync-embed sent the welcome email on a previous page — show INSTANTLY
+        const emailConfirmFlag = sessionStorage.getItem('health_roadmap_email_confirm');
+        if (emailConfirmFlag) {
+          sessionStorage.removeItem('health_roadmap_email_confirm');
+          setEmailConfirmStatus(resolveEmailConfirmStatus(emailConfirmFlag));
+          isFirstSaveRef.current = false;
+        }
+
         // Phase 2: API response is authoritative
         const result = await loadLatestMeasurements();
 
@@ -190,6 +202,11 @@ export function HealthTool() {
           // No cloud data — sync localStorage→cloud directly.
           // (sync-embed.liquid skips when the widget is on the page, so the widget must handle this.)
           if (cached && Object.keys(cached.inputs).length > 0) {
+            // Show email confirmation immediately (optimistic)
+            setSaveStatus('first-saved');
+            setEmailConfirmStatus('sent');
+            isFirstSaveRef.current = false;
+
             // Sync profile (demographics + height + unitSystem)
             const profileFields: Partial<HealthInputs> = {};
             for (const field of PREFILL_FIELDS) {
@@ -233,12 +250,12 @@ export function HealthTool() {
               }
             }
 
-            // Trigger welcome email (fire-and-forget)
-            fetch(`${PROXY_PATH}/api/measurements`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ sendWelcomeEmail: true }),
-            }).catch(() => {});
+            // Trigger welcome email — track result for error display
+            sendWelcomeEmail().then(result => {
+              if (!result.success) {
+                setEmailConfirmStatus('error');
+              }
+            });
 
             // Reload from API to get authoritative data
             const syncResult = await loadLatestMeasurements();
@@ -251,10 +268,6 @@ export function HealthTool() {
               setScreenings(syncResult.screenings);
               setReminderPreferences(syncResult.reminderPreferences);
               saveToLocalStorage(syncResult.inputs, syncResult.previousMeasurements, syncResult.medications, syncResult.screenings, syncResult.reminderPreferences);
-              // Show email confirmation after sync (welcome email just fired)
-              setSaveStatus('first-saved');
-              isFirstSaveRef.current = false;
-              setTimeout(() => setSaveStatus('idle'), 4000);
             } else {
               previousInputsRef.current = { ...cached.inputs };
             }
@@ -391,12 +404,10 @@ export function HealthTool() {
           return next;
         });
 
-        const wasFirstSave = isFirstSaveRef.current;
-        setSaveStatus(wasFirstSave ? 'first-saved' : 'saved');
         isFirstSaveRef.current = false;
-
+        setSaveStatus('saved');
         setIsSavingLongitudinal(false);
-        setTimeout(() => setSaveStatus('idle'), wasFirstSave ? 4000 : 2000);
+        setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
         setSaveStatus('error');
         setIsSavingLongitudinal(false);
@@ -660,6 +671,7 @@ export function HealthTool() {
     isValid,
     authState,
     saveStatus,
+    emailConfirmStatus,
     unitSystem,
     hasUnsavedLongitudinal: authState.isLoggedIn && hasApiResponse && LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined),
     onSaveLongitudinal: handleSaveLongitudinal,

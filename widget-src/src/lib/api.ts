@@ -352,6 +352,25 @@ export async function setGlobalReminderOptout(optout: boolean): Promise<boolean>
 }
 
 /**
+ * Trigger the welcome email and return success/failure.
+ */
+export async function sendWelcomeEmail(): Promise<{ success: boolean }> {
+  return apiCall(
+    async () => {
+      const response = await fetch(`${PROXY_PATH}/api/measurements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sendWelcomeEmail: true }),
+      });
+      const result: { success: boolean } = await response.json();
+      return result;
+    },
+    'Error sending welcome email',
+    { success: false },
+  );
+}
+
+/**
  * Email the user their current health report.
  */
 export async function sendReportEmail(): Promise<{ success: boolean; error?: string }> {

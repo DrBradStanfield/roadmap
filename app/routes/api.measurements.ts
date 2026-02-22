@@ -167,11 +167,8 @@ export async function action({ request }: ActionFunctionArgs) {
       // Welcome email trigger — POST { sendWelcomeEmail: true }
       // Called by sync-embed after full data sync completes
       if (body.sendWelcomeEmail) {
-        checkAndSendWelcomeEmail(userId, client).catch(err => {
-          console.error('Welcome email failed:', err);
-          Sentry.captureException(err);
-        });
-        return json({ success: true });
+        const sent = await checkAndSendWelcomeEmail(userId, client);
+        return json({ success: sent });
       }
 
       // Report email — POST { sendReportEmail: true }

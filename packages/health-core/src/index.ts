@@ -118,6 +118,7 @@ export {
   type ApiScreening,
   screeningsToInputs,
   computeFormStage,
+  resolveEmailConfirmStatus,
 } from './mappings';
 
 // Reminders

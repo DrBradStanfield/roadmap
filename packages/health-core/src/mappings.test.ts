@@ -7,6 +7,7 @@ import {
   diffInputsToMeasurements,
   diffProfileFields,
   hasCloudData,
+  resolveEmailConfirmStatus,
   medicationsToInputs,
   screeningsToInputs,
   computeFormStage,
@@ -599,5 +600,23 @@ describe('computeFormStage', () => {
     expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 19 })).toBe(2);
     expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 198 })).toBe(2);
     expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 1980 })).toBe(3);
+  });
+});
+
+describe('resolveEmailConfirmStatus', () => {
+  it('returns idle when no session flag', () => {
+    expect(resolveEmailConfirmStatus(null)).toBe('idle');
+  });
+
+  it('returns sent when flag is sent', () => {
+    expect(resolveEmailConfirmStatus('sent')).toBe('sent');
+  });
+
+  it('returns error when flag is error', () => {
+    expect(resolveEmailConfirmStatus('error')).toBe('error');
+  });
+
+  it('returns error for unexpected flag values', () => {
+    expect(resolveEmailConfirmStatus('garbage')).toBe('error');
   });
 });

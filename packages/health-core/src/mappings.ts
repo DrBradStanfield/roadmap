@@ -438,3 +438,15 @@ export function computeFormStage(inputs: Partial<HealthInputs>): 1 | 2 | 3 | 4 {
   if (inputs.sex !== undefined && inputs.heightCm !== undefined) return 2;
   return 1;
 }
+
+/**
+ * Resolve the email confirmation status from a sessionStorage flag value.
+ * Used by the widget to show instant email confirmation when sync-embed
+ * already sent the welcome email on a previous page.
+ */
+export function resolveEmailConfirmStatus(
+  sessionFlag: string | null,
+): 'idle' | 'sent' | 'error' {
+  if (!sessionFlag) return 'idle';
+  return sessionFlag === 'sent' ? 'sent' : 'error';
+}

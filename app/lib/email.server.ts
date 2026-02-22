@@ -54,21 +54,21 @@ const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 export async function checkAndSendWelcomeEmail(
   userId: string,
   client: SupabaseClient,
-): Promise<void> {
+): Promise<boolean> {
   try {
     if (!resend) {
       console.log('Resend not configured, skipping welcome email');
-      return;
+      return false;
     }
 
     // 1. Check if email already sent
     const profile = await getProfile(client);
     if (!profile) {
       console.log('No profile found, skipping welcome email');
-      return;
+      return false;
     }
     if (profile.welcome_email_sent) {
-      return; // Already sent — silent return (most common case)
+      return true; // Already sent — success (most common case)
     }
 
     // 2. Set flag EARLY to close the race window between concurrent callers
@@ -80,7 +80,7 @@ export async function checkAndSendWelcomeEmail(
 
     if (flagError) {
       console.warn('Failed to set welcome_email_sent flag:', flagError.message);
-      return; // Another concurrent call may have set it — safe to bail
+      return false;
     }
 
     try {
@@ -106,7 +106,7 @@ export async function checkAndSendWelcomeEmail(
         console.log('Insufficient data for welcome email (need height + sex)');
         // Revert flag — user may add data later
         await client.from('profiles').update({ welcome_email_sent: false }).eq('id', userId);
-        return;
+        return true; // Not an error — just insufficient data
       }
 
       // 6. Calculate results and generate suggestions
@@ -126,6 +126,7 @@ export async function checkAndSendWelcomeEmail(
       });
 
       console.log(`Welcome email sent to ${profile.email}`);
+      return true;
     } catch (sendError) {
       // Revert flag so a future attempt can retry
       await client.from('profiles').update({ welcome_email_sent: false }).eq('id', userId)
@@ -135,7 +136,7 @@ export async function checkAndSendWelcomeEmail(
   } catch (error) {
     console.error('Welcome email error:', error);
     Sentry.captureException(error, { tags: { feature: 'welcome_email' } });
-    // Never throw — this is fire-and-forget
+    return false;
   }
 }
 
