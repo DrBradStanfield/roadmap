@@ -140,6 +140,78 @@ export async function checkAndSendWelcomeEmail(
 }
 
 // ---------------------------------------------------------------------------
+// On-demand report: generate HTML + optionally send
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate the health report HTML for a user. Used by both Print and Email.
+ * Returns the HTML string and user email, or an error if data is insufficient.
+ */
+export async function generateReportHtml(
+  _userId: string,
+  client: SupabaseClient,
+): Promise<{ html: string; email: string } | { error: string }> {
+  const [profile, latestMeasurements, medications, screenings] = await Promise.all([
+    getProfile(client),
+    getLatestMeasurements(client),
+    getMedications(client),
+    getScreenings(client),
+  ]);
+
+  if (!profile) {
+    return { error: 'Profile not found' };
+  }
+
+  const apiProfile = toApiProfile(profile);
+  const apiMeasurements = latestMeasurements.map(toApiMeasurement);
+  const apiMedications = medications.map(toApiMedication);
+  const apiScreenings = screenings.map(toApiScreening);
+
+  const inputs = measurementsToInputs(apiMeasurements, apiProfile) as HealthInputs;
+  const medInputs = medicationsToInputs(apiMedications);
+  const screenInputs = screeningsToInputs(apiScreenings);
+
+  if (!inputs.heightCm || !inputs.sex) {
+    return { error: 'Insufficient data (need height + sex)' };
+  }
+
+  const unitSystem: UnitSystem = inputs.unitSystem || 'si';
+  const results = calculateHealthResults(inputs, unitSystem, medInputs, screenInputs);
+  const suggestions = generateSuggestions(inputs, results, unitSystem, medInputs, screenInputs);
+  const firstName = profile.first_name || null;
+  const html = buildWelcomeEmailHtml(inputs, results, suggestions, unitSystem, firstName, medInputs, results.age);
+
+  return { html, email: profile.email };
+}
+
+/**
+ * Send the user their current health report via email.
+ * Not idempotent — can be called multiple times (rate-limited by caller).
+ */
+export async function sendReportEmail(
+  userId: string,
+  client: SupabaseClient,
+): Promise<{ success: boolean; error?: string }> {
+  if (!resend) {
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  const result = await generateReportHtml(userId, client);
+  if ('error' in result) {
+    return { success: false, error: result.error };
+  }
+
+  await resend.emails.send({
+    from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
+    to: result.email,
+    subject: 'Your Health Roadmap Report',
+    html: result.html,
+  });
+
+  return { success: true };
+}
+
+// ---------------------------------------------------------------------------
 // Email HTML builder
 // ---------------------------------------------------------------------------
 

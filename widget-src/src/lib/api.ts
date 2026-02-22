@@ -340,6 +340,44 @@ export async function setGlobalReminderOptout(optout: boolean): Promise<boolean>
 }
 
 /**
+ * Email the user their current health report.
+ */
+export async function sendReportEmail(): Promise<{ success: boolean; error?: string }> {
+  return apiCall(
+    async () => {
+      const response = await fetch(`${PROXY_PATH}/api/measurements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sendReportEmail: true }),
+      });
+      const result: { success: boolean; error?: string } = await response.json();
+      return result;
+    },
+    'Error sending report email',
+    { success: false, error: 'Network error' },
+  );
+}
+
+/**
+ * Get the health report as HTML (for printing).
+ */
+export async function getReportHtml(): Promise<{ success: boolean; html?: string; error?: string }> {
+  return apiCall(
+    async () => {
+      const response = await fetch(`${PROXY_PATH}/api/measurements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ getReportHtml: true }),
+      });
+      const result: { success: boolean; html?: string; error?: string } = await response.json();
+      return result;
+    },
+    'Error fetching report HTML',
+    { success: false, error: 'Network error' },
+  );
+}
+
+/**
  * Send feedback via the feedback API endpoint.
  */
 export async function sendFeedback(

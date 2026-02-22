@@ -14,7 +14,7 @@ import {
   LPA_THRESHOLDS,
   type ReminderCategory,
 } from '@roadmap/health-core';
-import type { ApiReminderPreference } from '../lib/api';
+import { type ApiReminderPreference, sendReportEmail, getReportHtml } from '../lib/api';
 import { FeedbackForm } from './FeedbackForm';
 
 // Auth state type (matches HealthTool)
@@ -175,13 +175,17 @@ function renderGroupedSuggestions(suggestions: Suggestion[], highlightedIds?: Se
   return elements;
 }
 
-function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, redirectFailed }: {
+function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, redirectFailed, onPrint, onEmail, emailStatus, printStatus }: {
   authState?: AuthState;
   saveStatus?: string;
   hasUnsavedLongitudinal?: boolean;
   onSaveLongitudinal?: () => void;
   isSavingLongitudinal?: boolean;
   redirectFailed?: boolean;
+  onPrint?: () => void;
+  onEmail?: () => void;
+  emailStatus?: 'idle' | 'sending' | 'sent' | 'error';
+  printStatus?: 'idle' | 'loading' | 'error';
 }) {
   const [showFeedback, setShowFeedback] = useState(false);
 
@@ -194,6 +198,15 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
       : saveStatus === 'error' ? 'Failed to save'
       : 'Data synced';
     const statusClass = saveStatus === 'error' ? 'error' : saveStatus === 'saving' ? 'saving' : 'idle';
+
+    const emailLabel = emailStatus === 'sending' ? 'Sending...'
+      : emailStatus === 'sent' ? 'Sent!'
+      : emailStatus === 'error' ? 'Failed'
+      : 'Email';
+    const printLabel = printStatus === 'loading' ? 'Loading...'
+      : printStatus === 'error' ? 'Failed'
+      : 'Print';
+
     return (
       <div className="account-status logged-in">
         <div className="account-status-row">
@@ -206,13 +219,25 @@ function AccountStatus({ authState, saveStatus, hasUnsavedLongitudinal, onSaveLo
               className="logged-in-link"
             >Logged in</a> · <span className={`save-indicator-inline ${statusClass}`}>{statusText}</span>
           </span>
-          <button
-            type="button"
-            className="feedback-btn-small"
-            onClick={() => setShowFeedback(!showFeedback)}
-          >
-            Send feedback
-          </button>
+          <div className="account-actions no-print">
+            {onPrint && (
+              <button type="button" className="action-btn-small" onClick={onPrint} disabled={printStatus === 'loading'} title="Print report">
+                {printLabel}
+              </button>
+            )}
+            {onEmail && (
+              <button type="button" className="action-btn-small" onClick={onEmail} disabled={emailStatus === 'sending'} title="Email report to yourself">
+                {emailLabel}
+              </button>
+            )}
+            <button
+              type="button"
+              className="feedback-btn-small"
+              onClick={() => setShowFeedback(!showFeedback)}
+            >
+              Send feedback
+            </button>
+          </div>
         </div>
         {showFeedback && (
           <FeedbackForm initialExpanded showSourceLink={false} onClose={() => setShowFeedback(false)} />
@@ -345,6 +370,36 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
   const clearTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const fadeOutTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
+  // Report actions state (shared between top and bottom buttons)
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [printStatus, setPrintStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+
+  const handleEmailReport = async () => {
+    if (emailStatus === 'sending') return;
+    setEmailStatus('sending');
+    const result = await sendReportEmail();
+    setEmailStatus(result.success ? 'sent' : 'error');
+    setTimeout(() => setEmailStatus('idle'), 3000);
+  };
+
+  const handlePrint = async () => {
+    if (printStatus === 'loading') return;
+    setPrintStatus('loading');
+    const result = await getReportHtml();
+    if (result.success && result.html) {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(result.html);
+        printWindow.document.close();
+        printWindow.print();
+      }
+      setPrintStatus('idle');
+    } else {
+      setPrintStatus('error');
+      setTimeout(() => setPrintStatus('idle'), 3000);
+    }
+  };
+
   // Settle after 3s — skip highlighting during initial load + Phase 2 API overwrite
   useEffect(() => {
     const timer = setTimeout(() => { settledRef.current = true; }, 3000);
@@ -424,7 +479,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
   return (
     <div className="health-results-panel">
       {/* Account Status */}
-      <AccountStatus authState={authState} saveStatus={saveStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} />
+      <AccountStatus authState={authState} saveStatus={saveStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} onPrint={authState?.isLoggedIn ? handlePrint : undefined} onEmail={authState?.isLoggedIn ? handleEmailReport : undefined} emailStatus={emailStatus} printStatus={printStatus} />
 
       {/* Quick Stats */}
       <section className="quick-stats">
@@ -570,6 +625,18 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, unitSyst
           </div>
         )}
       </section>
+
+      {/* Report Actions (bottom) — logged-in users only */}
+      {authState?.isLoggedIn && (
+        <div className="report-actions no-print">
+          <button type="button" className="action-btn" onClick={handlePrint} disabled={printStatus === 'loading'}>
+            {printStatus === 'loading' ? 'Loading...' : printStatus === 'error' ? 'Failed' : 'Print Report'}
+          </button>
+          <button type="button" className="action-btn" onClick={handleEmailReport} disabled={emailStatus === 'sending'}>
+            {emailStatus === 'sending' ? 'Sending...' : emailStatus === 'sent' ? 'Sent!' : emailStatus === 'error' ? 'Failed' : 'Email Report'}
+          </button>
+        </div>
+      )}
 
       {/* Disclaimer */}
       <div className="health-disclaimer">

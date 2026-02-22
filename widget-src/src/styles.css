@@ -946,6 +946,35 @@
   color: var(--color-success);
 }
 
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.action-btn-small {
+  font-size: 12px;
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.action-btn-small:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.action-btn-small:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .feedback-btn-small {
   font-size: 12px;
   padding: 4px 12px;
@@ -963,6 +992,35 @@
   color: #fff;
 }
 
+/* Report action buttons (bottom, after suggestions) */
+.report-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+
+.action-btn {
+  font-size: 14px;
+  padding: 8px 20px;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.action-btn:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 /* Migration Prompt */
 .health-tool-migration-prompt {

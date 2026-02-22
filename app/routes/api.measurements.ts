@@ -27,6 +27,29 @@ function checkRateLimit(customerId: string): boolean {
   return entry.count <= RATE_LIMIT_MAX;
 }
 
+// Rate limiter for report emails: 5 per 24 hours per customer
+const REPORT_LIMIT = 5;
+const REPORT_WINDOW_MS = 24 * 60 * 60_000;
+const reportLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of reportLimitMap) {
+    if (now > entry.resetAt) reportLimitMap.delete(key);
+  }
+}, 30 * 60_000);
+
+function checkReportLimit(customerId: string): boolean {
+  const now = Date.now();
+  const entry = reportLimitMap.get(customerId);
+  if (!entry || now > entry.resetAt) {
+    reportLimitMap.set(customerId, { count: 1, resetAt: now + REPORT_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= REPORT_LIMIT;
+}
+
 import {
   getOrCreateSupabaseUser,
   createUserClient,
@@ -48,7 +71,7 @@ import {
   getReminderPreferences,
   toApiReminderPreference,
 } from '../lib/supabase.server';
-import { checkAndSendWelcomeEmail } from '../lib/email.server';
+import { checkAndSendWelcomeEmail, sendReportEmail, generateReportHtml } from '../lib/email.server';
 import { measurementSchema, profileUpdateSchema, medicationSchema, screeningSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
 
 // GET — Load measurements (authenticated via app proxy HMAC)
@@ -149,6 +172,42 @@ export async function action({ request }: ActionFunctionArgs) {
           Sentry.captureException(err);
         });
         return json({ success: true });
+      }
+
+      // Report email — POST { sendReportEmail: true }
+      if (body.sendReportEmail) {
+        if (!checkReportLimit(customerId)) {
+          return json({ success: false, error: 'Email limit reached. Try again tomorrow.' }, { status: 429 });
+        }
+        try {
+          const result = await sendReportEmail(userId, client);
+          if (!result.success) {
+            return json({ success: false, error: result.error || 'Failed to send email' }, { status: 500 });
+          }
+          return json({ success: true });
+        } catch (error) {
+          console.error('Report email error:', error);
+          Sentry.captureException(error, { tags: { feature: 'report_email' } });
+          return json({ success: false, error: 'Failed to send email' }, { status: 500 });
+        }
+      }
+
+      // Report HTML (for print) — POST { getReportHtml: true }
+      if (body.getReportHtml) {
+        if (!checkReportLimit(customerId)) {
+          return json({ success: false, error: 'Report limit reached. Try again tomorrow.' }, { status: 429 });
+        }
+        try {
+          const result = await generateReportHtml(userId, client);
+          if ('error' in result) {
+            return json({ success: false, error: result.error }, { status: 500 });
+          }
+          return json({ success: true, html: result.html });
+        } catch (error) {
+          console.error('Report HTML error:', error);
+          Sentry.captureException(error, { tags: { feature: 'report_html' } });
+          return json({ success: false, error: 'Failed to generate report' }, { status: 500 });
+        }
       }
 
       // Profile update — POST { profile: { sex?, birthYear?, birthMonth?, unitSystem? } }

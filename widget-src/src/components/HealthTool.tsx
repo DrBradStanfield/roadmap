@@ -251,6 +251,10 @@ export function HealthTool() {
               setScreenings(syncResult.screenings);
               setReminderPreferences(syncResult.reminderPreferences);
               saveToLocalStorage(syncResult.inputs, syncResult.previousMeasurements, syncResult.medications, syncResult.screenings, syncResult.reminderPreferences);
+              // Show email confirmation after sync (welcome email just fired)
+              setSaveStatus('first-saved');
+              isFirstSaveRef.current = false;
+              setTimeout(() => setSaveStatus('idle'), 4000);
             } else {
               previousInputsRef.current = { ...cached.inputs };
             }
