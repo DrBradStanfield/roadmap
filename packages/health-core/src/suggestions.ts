@@ -1114,7 +1114,7 @@ export function generateSuggestions(
   );
 
   // === Skin health suggestions (age 18+) ===
-  if (results.age !== undefined && results.age >= 18) {
+  if (results.age === undefined || results.age >= 18) {
     suggestions.push(
       {
         id: 'skin-moisturizer',

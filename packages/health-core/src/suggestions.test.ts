@@ -1958,10 +1958,10 @@ describe('generateSuggestions', () => {
       expect(suggestions.filter(s => s.category === 'skin')).toHaveLength(0);
     });
 
-    it('does not include skin suggestions when age is undefined', () => {
+    it('includes skin suggestions when age is undefined', () => {
       const { inputs, results } = createTestData({}, {});
       const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.filter(s => s.category === 'skin')).toHaveLength(0);
+      expect(suggestions.filter(s => s.category === 'skin')).toHaveLength(4);
     });
 
     it('recommends CeraVe mineral sunscreen for conventional (US) unit system', () => {

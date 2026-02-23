@@ -424,6 +424,12 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
       return;
     }
 
+    // First batch of suggestions — accept as baseline without highlighting
+    if (baselineRef.current.size === 0 && currentMap.size > 0) {
+      baselineRef.current = currentMap;
+      return;
+    }
+
     const newHighlights = new Set<string>();
     for (const s of suggestions) {
       const prev = baselineRef.current.get(s.id);
