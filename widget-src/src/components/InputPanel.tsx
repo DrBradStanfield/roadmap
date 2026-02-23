@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { HealthInputs } from '@roadmap/health-core';
+import type { HealthInputs, ScreeningInputs } from '@roadmap/health-core';
 import {
   type UnitSystem,
   fromCanonicalValue,
@@ -60,6 +60,33 @@ const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
   { field: 'weightKg', name: 'Weight', placeholder: { si: '70', conv: '154' } },
   { field: 'waistCm', name: 'Waist Circumference', placeholder: { si: '80', conv: '31' } },
 ];
+
+const ALL_MONTHS = [
+  { value: '01', label: 'January' },
+  { value: '02', label: 'February' },
+  { value: '03', label: 'March' },
+  { value: '04', label: 'April' },
+  { value: '05', label: 'May' },
+  { value: '06', label: 'June' },
+  { value: '07', label: 'July' },
+  { value: '08', label: 'August' },
+  { value: '09', label: 'September' },
+  { value: '10', label: 'October' },
+  { value: '11', label: 'November' },
+  { value: '12', label: 'December' },
+];
+
+/** Look up a screening value by its snake_case DB key. */
+function scrVal(scr: ScreeningInputs, dbKey: string): string | number | undefined {
+  const camelKey = dbKey.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+  return scr[camelKey as keyof ScreeningInputs];
+}
+function scrStr(scr: ScreeningInputs, dbKey: string): string | undefined {
+  return scrVal(scr, dbKey) as string | undefined;
+}
+function scrNum(scr: ScreeningInputs, dbKey: string): number | undefined {
+  return scrVal(scr, dbKey) as number | undefined;
+}
 
 const BLOOD_TEST_FIELDS: FieldConfig[] = [
   {
@@ -262,6 +289,93 @@ export function InputPanel({
   };
 
   const hasLongitudinalValues = LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined);
+
+  /** Get effective value: current input or fallback to last saved measurement. */
+  const getEffective = (field: keyof HealthInputs, metricType: string): number | undefined =>
+    (inputs[field] as number | undefined) ?? previousMeasurements.find(m => m.metricType === metricType)?.value;
+
+  // Shared date constants for screening date pickers
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1-12
+  const pastYears = Array.from({ length: 11 }, (_, i) => currentYear - i);
+
+  /** Render a month/year date picker for screening dates. Used by both cancer screening and bone density. */
+  const renderScreeningDateInput = (scr: ScreeningInputs, key: string, label: string, options?: { futureOnly?: boolean }) => {
+    const futureOnly = options?.futureOnly ?? false;
+    const savedValue = scrStr(scr, key) || '';
+    const [savedYear, savedMonth] = savedValue.split('-');
+
+    const localState = dateInputs[key];
+    const displayYear = localState?.year ?? savedYear ?? '';
+    const displayMonth = localState?.month ?? savedMonth ?? '';
+
+    const availableYears = futureOnly
+      ? Array.from({ length: 6 }, (_, i) => currentYear + i)
+      : pastYears;
+
+    const availableMonths = futureOnly
+      ? (displayYear === String(currentYear)
+        ? ALL_MONTHS.filter(m => parseInt(m.value, 10) >= currentMonth)
+        : ALL_MONTHS)
+      : (displayYear === String(currentYear)
+        ? ALL_MONTHS.filter(m => parseInt(m.value, 10) <= currentMonth)
+        : ALL_MONTHS);
+
+    const handleDateChange = (newYear: string, newMonth: string) => {
+      let adjustedMonth = newMonth;
+      if (futureOnly) {
+        if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) < currentMonth) {
+          adjustedMonth = '';
+        }
+      } else {
+        if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) > currentMonth) {
+          adjustedMonth = '';
+        }
+      }
+
+      setDateInputs(prev => ({
+        ...prev,
+        [key]: { year: newYear, month: adjustedMonth }
+      }));
+
+      if (newYear && adjustedMonth) {
+        onScreeningChange(key, `${newYear}-${adjustedMonth}`);
+      } else if (!newYear && !adjustedMonth) {
+        onScreeningChange(key, '');
+      }
+    };
+
+    return (
+      <div className="health-field">
+        <label>{label}</label>
+        <div className="date-picker-row">
+          <select
+            id={`${key}-month`}
+            value={displayMonth}
+            onChange={(e) => handleDateChange(displayYear, e.target.value)}
+            aria-label={`${label} month`}
+          >
+            <option value="">Month</option>
+            {availableMonths.map((m) => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </select>
+          <select
+            id={`${key}-year`}
+            value={displayYear}
+            onChange={(e) => handleDateChange(e.target.value, displayMonth)}
+            aria-label={`${label} year`}
+          >
+            <option value="">Year</option>
+            {availableYears.map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    );
+  };
 
   const renderLongitudinalField = (config: FieldConfig, isBloodTest = false) => {
     const { field, name, placeholder, step, hint, hintMale, hintFemale } = config;
@@ -614,10 +728,10 @@ export function InputPanel({
       {/* Cholesterol Medications Section — shown when lipids are above treatment targets */}
       {(() => {
           // Compute effective inputs for cascade visibility (form values + previous measurements fallback)
-          const effectiveApoB = inputs.apoB ?? previousMeasurements.find(m => m.metricType === 'apob')?.value;
-          const effectiveLdl = inputs.ldlC ?? previousMeasurements.find(m => m.metricType === 'ldl')?.value;
-          const effectiveTotalChol = inputs.totalCholesterol ?? previousMeasurements.find(m => m.metricType === 'total_cholesterol')?.value;
-          const effectiveHdl = inputs.hdlC ?? previousMeasurements.find(m => m.metricType === 'hdl')?.value;
+          const effectiveApoB = getEffective('apoB', 'apob');
+          const effectiveLdl = getEffective('ldlC', 'ldl');
+          const effectiveTotalChol = getEffective('totalCholesterol', 'total_cholesterol');
+          const effectiveHdl = getEffective('hdlC', 'hdl');
           const effectiveNonHdl = (effectiveTotalChol !== undefined && effectiveHdl !== undefined)
             ? effectiveTotalChol - effectiveHdl : undefined;
 
@@ -823,12 +937,12 @@ export function InputPanel({
       {/* Weight & Diabetes Medications Section — shown when BMI > 28 (unconditional) or BMI 25-28 with secondary criteria */}
       {(() => {
         // Compute effective values from form inputs + previous measurements fallback
-        const effectiveWeight = inputs.weightKg ?? previousMeasurements.find(m => m.metricType === 'weight')?.value;
-        const effectiveHeight = inputs.heightCm ?? previousMeasurements.find(m => m.metricType === 'height')?.value;
-        const effectiveWaist = inputs.waistCm ?? previousMeasurements.find(m => m.metricType === 'waist')?.value;
-        const effectiveHba1c = inputs.hba1c ?? previousMeasurements.find(m => m.metricType === 'hba1c')?.value;
-        const effectiveTrigs = inputs.triglycerides ?? previousMeasurements.find(m => m.metricType === 'triglycerides')?.value;
-        const effectiveSbp = inputs.systolicBp ?? previousMeasurements.find(m => m.metricType === 'systolic_bp')?.value;
+        const effectiveWeight = getEffective('weightKg', 'weight');
+        const effectiveHeight = getEffective('heightCm', 'height');
+        const effectiveWaist = getEffective('waistCm', 'waist');
+        const effectiveHba1c = getEffective('hba1c', 'hba1c');
+        const effectiveTrigs = getEffective('triglycerides', 'triglycerides');
+        const effectiveSbp = getEffective('systolicBp', 'systolic_bp');
 
         // Compute BMI and waist-to-height ratio
         const effectiveBmi = (effectiveWeight !== undefined && effectiveHeight !== undefined)
@@ -1057,131 +1171,19 @@ export function InputPanel({
         const sex = inputs.sex;
         const scr = screeningsToInputs(screenings);
 
-        // Helper: render a month/year date input for last screening date
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1; // 1-12
-        const years = Array.from({ length: 11 }, (_, i) => currentYear - i);
-        const allMonths = [
-          { value: '01', label: 'January' },
-          { value: '02', label: 'February' },
-          { value: '03', label: 'March' },
-          { value: '04', label: 'April' },
-          { value: '05', label: 'May' },
-          { value: '06', label: 'June' },
-          { value: '07', label: 'July' },
-          { value: '08', label: 'August' },
-          { value: '09', label: 'September' },
-          { value: '10', label: 'October' },
-          { value: '11', label: 'November' },
-          { value: '12', label: 'December' },
-        ];
-
-        const renderDateInput = (key: string, label: string, options?: { futureOnly?: boolean }) => {
-          const futureOnly = options?.futureOnly ?? false;
-          // Get saved value from screenings
-          const savedValue = getStr(key) || '';
-          const [savedYear, savedMonth] = savedValue.split('-');
-
-          // Use local state if user is mid-edit, otherwise use saved value
-          const localState = dateInputs[key];
-          const displayYear = localState?.year ?? savedYear ?? '';
-          const displayMonth = localState?.month ?? savedMonth ?? '';
-
-          // Year range depends on whether we're picking future or past dates
-          const availableYears = futureOnly
-            ? Array.from({ length: 6 }, (_, i) => currentYear + i)   // current year + 5 years ahead
-            : years;                                                    // current year - 10 years back
-
-          // Filter months based on selected year
-          const availableMonths = futureOnly
-            ? (displayYear === String(currentYear)
-              ? allMonths.filter(m => parseInt(m.value, 10) >= currentMonth)
-              : allMonths)
-            : (displayYear === String(currentYear)
-              ? allMonths.filter(m => parseInt(m.value, 10) <= currentMonth)
-              : allMonths);
-
-          const handleDateChange = (newYear: string, newMonth: string) => {
-            let adjustedMonth = newMonth;
-            if (futureOnly) {
-              // If switching to current year and month is in the past, reset month
-              if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) < currentMonth) {
-                adjustedMonth = '';
-              }
-            } else {
-              // If switching to current year and month is in the future, reset month
-              if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) > currentMonth) {
-                adjustedMonth = '';
-              }
-            }
-
-            // Always update local state so UI reflects the selection
-            setDateInputs(prev => ({
-              ...prev,
-              [key]: { year: newYear, month: adjustedMonth }
-            }));
-
-            // Only save to backend when both are filled
-            if (newYear && adjustedMonth) {
-              onScreeningChange(key, `${newYear}-${adjustedMonth}`);
-            } else if (!newYear && !adjustedMonth) {
-              onScreeningChange(key, '');
-            }
-          };
-
-          return (
-            <div className="health-field">
-              <label>{label}</label>
-              <div className="date-picker-row">
-                <select
-                  id={`${key}-month`}
-                  value={displayMonth}
-                  onChange={(e) => handleDateChange(displayYear, e.target.value)}
-                  aria-label="Month"
-                >
-                  <option value="">Month</option>
-                  {availableMonths.map((m) => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </select>
-                <select
-                  id={`${key}-year`}
-                  value={displayYear}
-                  onChange={(e) => handleDateChange(e.target.value, displayMonth)}
-                  aria-label="Year"
-                >
-                  <option value="">Year</option>
-                  {availableYears.map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          );
-        };
-
-        // Helper to get screening value from scr object by DB key
-        const getVal = (dbKey: string): string | number | undefined => {
-          const camelKey = dbKey.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
-          return scr[camelKey as keyof typeof scr];
-        };
-        const getStr = (dbKey: string): string | undefined => getVal(dbKey) as string | undefined;
-        const getNum = (dbKey: string): number | undefined => getVal(dbKey) as number | undefined;
-
         /** Clear result and follow-up fields for a screening type. */
         const clearResultChain = (type: string) => {
-          if (getStr(`${type}_result`)) onScreeningChange(`${type}_result`, '');
-          if (getStr(`${type}_followup_status`)) onScreeningChange(`${type}_followup_status`, '');
-          if (getStr(`${type}_followup_date`)) onScreeningChange(`${type}_followup_date`, '');
+          if (scrStr(scr, `${type}_result`)) onScreeningChange(`${type}_result`, '');
+          if (scrStr(scr, `${type}_followup_status`)) onScreeningChange(`${type}_followup_status`, '');
+          if (scrStr(scr, `${type}_followup_date`)) onScreeningChange(`${type}_followup_date`, '');
         };
 
         /** Render result dropdown + follow-up status + follow-up date for a screening type. */
         const renderResultFollowup = (type: string, method: string | undefined) => {
-          if (!getStr(`${type}_last_date`)) return null;
+          if (!scrStr(scr,`${type}_last_date`)) return null;
 
-          const result = getStr(`${type}_result`);
-          const followupStatus = getStr(`${type}_followup_status`);
+          const result = scrStr(scr,`${type}_result`);
+          const followupStatus = scrStr(scr,`${type}_followup_status`);
           const methodKey = method ? `${type}_${method}` : `${type}_other`;
           const info = SCREENING_FOLLOWUP_INFO[methodKey];
           const followupLabel = info?.followupName
@@ -1198,8 +1200,8 @@ export function InputPanel({
                   onChange={(e) => {
                     onScreeningChange(`${type}_result`, e.target.value);
                     if (e.target.value !== 'abnormal') {
-                      if (getStr(`${type}_followup_status`)) onScreeningChange(`${type}_followup_status`, '');
-                      if (getStr(`${type}_followup_date`)) onScreeningChange(`${type}_followup_date`, '');
+                      if (scrStr(scr,`${type}_followup_status`)) onScreeningChange(`${type}_followup_status`, '');
+                      if (scrStr(scr,`${type}_followup_date`)) onScreeningChange(`${type}_followup_date`, '');
                     }
                   }}
                 >
@@ -1219,7 +1221,7 @@ export function InputPanel({
                     onChange={(e) => {
                       onScreeningChange(`${type}_followup_status`, e.target.value);
                       if (e.target.value === 'not_organized' || e.target.value === '') {
-                        if (getStr(`${type}_followup_date`)) onScreeningChange(`${type}_followup_date`, '');
+                        if (scrStr(scr,`${type}_followup_date`)) onScreeningChange(`${type}_followup_date`, '');
                       }
                     }}
                   >
@@ -1232,7 +1234,7 @@ export function InputPanel({
               )}
 
               {result === 'abnormal' && (followupStatus === 'scheduled' || followupStatus === 'completed') && (
-                renderDateInput(
+                renderScreeningDateInput(scr,
                   `${type}_followup_date`,
                   followupStatus === 'completed'
                     ? `When was the ${info?.followupName ?? 'follow-up'} completed?`
@@ -1278,11 +1280,11 @@ export function InputPanel({
                       <label htmlFor="colorectal-method">Screening method</label>
                       <select
                         id="colorectal-method"
-                        value={getStr('colorectal_method') || ''}
+                        value={scrStr(scr, 'colorectal_method') || ''}
                         onChange={(e) => {
                           onScreeningChange('colorectal_method', e.target.value);
                           if (e.target.value === 'not_yet_started' || e.target.value === '') {
-                            if (getStr('colorectal_last_date')) onScreeningChange('colorectal_last_date', '');
+                            if (scrStr(scr, 'colorectal_last_date')) onScreeningChange('colorectal_last_date', '');
                             clearResultChain('colorectal');
                           }
                         }}
@@ -1295,10 +1297,10 @@ export function InputPanel({
                       </select>
                     </div>
 
-                    {getStr('colorectal_method') && getStr('colorectal_method') !== 'not_yet_started' && (
+                    {scrStr(scr, 'colorectal_method') && scrStr(scr, 'colorectal_method') !== 'not_yet_started' && (
                       <>
-                        {renderDateInput('colorectal_last_date', 'Date of last screening')}
-                        {renderResultFollowup('colorectal', getStr('colorectal_method'))}
+                        {renderScreeningDateInput(scr,'colorectal_last_date', 'Date of last screening')}
+                        {renderResultFollowup('colorectal', scrStr(scr, 'colorectal_method'))}
                       </>
                     )}
                   </>
@@ -1326,11 +1328,11 @@ export function InputPanel({
                   <label htmlFor="breast-frequency">Screening frequency</label>
                   <select
                     id="breast-frequency"
-                    value={getStr('breast_frequency') || ''}
+                    value={scrStr(scr, 'breast_frequency') || ''}
                     onChange={(e) => {
                       onScreeningChange('breast_frequency', e.target.value);
                       if (e.target.value === 'not_yet_started' || e.target.value === '') {
-                        if (getStr('breast_last_date')) onScreeningChange('breast_last_date', '');
+                        if (scrStr(scr, 'breast_last_date')) onScreeningChange('breast_last_date', '');
                         clearResultChain('breast');
                       }
                     }}
@@ -1342,10 +1344,10 @@ export function InputPanel({
                   </select>
                 </div>
 
-                {getStr('breast_frequency') && getStr('breast_frequency') !== 'not_yet_started' && (
+                {scrStr(scr, 'breast_frequency') && scrStr(scr, 'breast_frequency') !== 'not_yet_started' && (
                   <>
-                    {renderDateInput('breast_last_date', 'Date of last mammogram')}
-                    {renderResultFollowup('breast', getStr('breast_frequency'))}
+                    {renderScreeningDateInput(scr,'breast_last_date', 'Date of last mammogram')}
+                    {renderResultFollowup('breast', scrStr(scr, 'breast_frequency'))}
                   </>
                 )}
               </div>
@@ -1361,11 +1363,11 @@ export function InputPanel({
                       <label htmlFor="cervical-method">Screening method</label>
                       <select
                         id="cervical-method"
-                        value={getStr('cervical_method') || ''}
+                        value={scrStr(scr, 'cervical_method') || ''}
                         onChange={(e) => {
                           onScreeningChange('cervical_method', e.target.value);
                           if (e.target.value === 'not_yet_started' || e.target.value === '') {
-                            if (getStr('cervical_last_date')) onScreeningChange('cervical_last_date', '');
+                            if (scrStr(scr, 'cervical_last_date')) onScreeningChange('cervical_last_date', '');
                             clearResultChain('cervical');
                           }
                         }}
@@ -1378,10 +1380,10 @@ export function InputPanel({
                       </select>
                     </div>
 
-                    {getStr('cervical_method') && getStr('cervical_method') !== 'not_yet_started' && (
+                    {scrStr(scr, 'cervical_method') && scrStr(scr, 'cervical_method') !== 'not_yet_started' && (
                       <>
-                        {renderDateInput('cervical_last_date', 'Date of last screening')}
-                        {renderResultFollowup('cervical', getStr('cervical_method'))}
+                        {renderScreeningDateInput(scr,'cervical_last_date', 'Date of last screening')}
+                        {renderResultFollowup('cervical', scrStr(scr, 'cervical_method'))}
                       </>
                     )}
                   </>
@@ -1402,13 +1404,13 @@ export function InputPanel({
                   <label htmlFor="lung-smoking-history">Smoking history</label>
                   <select
                     id="lung-smoking-history"
-                    value={getStr('lung_smoking_history') || ''}
+                    value={scrStr(scr, 'lung_smoking_history') || ''}
                     onChange={(e) => {
                       onScreeningChange('lung_smoking_history', e.target.value);
                       if (e.target.value === 'never_smoked' || e.target.value === '') {
-                        if (getStr('lung_pack_years') !== undefined) onScreeningChange('lung_pack_years', '');
-                        if (getStr('lung_screening')) onScreeningChange('lung_screening', '');
-                        if (getStr('lung_last_date')) onScreeningChange('lung_last_date', '');
+                        if (scrStr(scr, 'lung_pack_years') !== undefined) onScreeningChange('lung_pack_years', '');
+                        if (scrStr(scr, 'lung_screening')) onScreeningChange('lung_screening', '');
+                        if (scrStr(scr, 'lung_last_date')) onScreeningChange('lung_last_date', '');
                         clearResultChain('lung');
                       }
                     }}
@@ -1420,14 +1422,14 @@ export function InputPanel({
                   </select>
                 </div>
 
-                {(getStr('lung_smoking_history') === 'former_smoker' || getStr('lung_smoking_history') === 'current_smoker') && (
+                {(scrStr(scr, 'lung_smoking_history') === 'former_smoker' || scrStr(scr, 'lung_smoking_history') === 'current_smoker') && (
                   <>
                     <div className="health-field">
                       <label htmlFor="lung-pack-years">Pack-years (packs/day &times; years smoked)</label>
                       <input
                         type="number"
                         id="lung-pack-years"
-                        value={getNum('lung_pack_years') ?? ''}
+                        value={scrNum(scr, 'lung_pack_years') ?? ''}
                         onChange={(e) => onScreeningChange('lung_pack_years', e.target.value)}
                         placeholder="20"
                         min="0"
@@ -1437,17 +1439,17 @@ export function InputPanel({
                       <span className="field-hint">Screening recommended if &ge;20 pack-years</span>
                     </div>
 
-                    {getNum('lung_pack_years') !== undefined && getNum('lung_pack_years')! >= 20 && (
+                    {scrNum(scr, 'lung_pack_years') !== undefined && scrNum(scr, 'lung_pack_years')! >= 20 && (
                       <>
                         <div className="health-field">
                           <label htmlFor="lung-screening">Screening status</label>
                           <select
                             id="lung-screening"
-                            value={getStr('lung_screening') || ''}
+                            value={scrStr(scr, 'lung_screening') || ''}
                             onChange={(e) => {
                               onScreeningChange('lung_screening', e.target.value);
                               if (e.target.value === 'not_yet_started' || e.target.value === '') {
-                                if (getStr('lung_last_date')) onScreeningChange('lung_last_date', '');
+                                if (scrStr(scr, 'lung_last_date')) onScreeningChange('lung_last_date', '');
                                 clearResultChain('lung');
                               }
                             }}
@@ -1458,10 +1460,10 @@ export function InputPanel({
                           </select>
                         </div>
 
-                        {getStr('lung_screening') === 'annual_ldct' && (
+                        {scrStr(scr, 'lung_screening') === 'annual_ldct' && (
                           <>
-                            {renderDateInput('lung_last_date', 'Date of last low-dose CT')}
-                            {renderResultFollowup('lung', getStr('lung_screening'))}
+                            {renderScreeningDateInput(scr,'lung_last_date', 'Date of last low-dose CT')}
+                            {renderResultFollowup('lung', scrStr(scr, 'lung_screening'))}
                           </>
                         )}
                       </>
@@ -1485,7 +1487,7 @@ export function InputPanel({
                   <label htmlFor="prostate-discussion">Discussed prostate screening with your doctor?</label>
                   <select
                     id="prostate-discussion"
-                    value={getStr('prostate_discussion') || ''}
+                    value={scrStr(scr, 'prostate_discussion') || ''}
                     onChange={(e) => onScreeningChange('prostate_discussion', e.target.value)}
                   >
                     <option value="">Select...</option>
@@ -1495,7 +1497,7 @@ export function InputPanel({
                   </select>
                 </div>
 
-                {getStr('prostate_discussion') === 'will_screen' && (
+                {scrStr(scr, 'prostate_discussion') === 'will_screen' && (
                   <>
                     {/* PSA input with inline date picker */}
                     {(() => {
@@ -1573,7 +1575,7 @@ export function InputPanel({
                   <label htmlFor="endometrial-discussion">Discussed endometrial cancer risk at menopause?</label>
                   <select
                     id="endometrial-discussion"
-                    value={getStr('endometrial_discussion') || ''}
+                    value={scrStr(scr, 'endometrial_discussion') || ''}
                     onChange={(e) => onScreeningChange('endometrial_discussion', e.target.value)}
                   >
                     <option value="">Select...</option>
@@ -1586,7 +1588,7 @@ export function InputPanel({
                   <label htmlFor="endometrial-bleeding">Any abnormal uterine bleeding?</label>
                   <select
                     id="endometrial-bleeding"
-                    value={getStr('endometrial_abnormal_bleeding') || ''}
+                    value={scrStr(scr, 'endometrial_abnormal_bleeding') || ''}
                     onChange={(e) => onScreeningChange('endometrial_abnormal_bleeding', e.target.value)}
                   >
                     <option value="">Select...</option>
@@ -1617,80 +1619,10 @@ export function InputPanel({
         if (!dexaEligible) return null;
 
         const scr = screeningsToInputs(screenings);
-        const getVal = (dbKey: string): string | number | undefined => {
-          const camelKey = dbKey.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
-          return scr[camelKey as keyof typeof scr];
-        };
-        const getStr = (dbKey: string): string | undefined => getVal(dbKey) as string | undefined;
 
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
-        const years = Array.from({ length: 11 }, (_, i) => currentYear - i);
-        const allMonths = [
-          { value: '01', label: 'January' }, { value: '02', label: 'February' },
-          { value: '03', label: 'March' }, { value: '04', label: 'April' },
-          { value: '05', label: 'May' }, { value: '06', label: 'June' },
-          { value: '07', label: 'July' }, { value: '08', label: 'August' },
-          { value: '09', label: 'September' }, { value: '10', label: 'October' },
-          { value: '11', label: 'November' }, { value: '12', label: 'December' },
-        ];
-
-        const renderDexaDateInput = (key: string, label: string) => {
-          const savedValue = getStr(key) || '';
-          const [savedYear, savedMonth] = savedValue.split('-');
-          const localState = dateInputs[key];
-          const displayYear = localState?.year ?? savedYear ?? '';
-          const displayMonth = localState?.month ?? savedMonth ?? '';
-          const availableMonths = displayYear === String(currentYear)
-            ? allMonths.filter(m => parseInt(m.value, 10) <= currentMonth)
-            : allMonths;
-
-          const handleDateChange = (newYear: string, newMonth: string) => {
-            let adjustedMonth = newMonth;
-            if (newYear === String(currentYear) && newMonth && parseInt(newMonth, 10) > currentMonth) {
-              adjustedMonth = '';
-            }
-            setDateInputs(prev => ({ ...prev, [key]: { year: newYear, month: adjustedMonth } }));
-            if (newYear && adjustedMonth) {
-              onScreeningChange(key, `${newYear}-${adjustedMonth}`);
-            } else if (!newYear && !adjustedMonth) {
-              onScreeningChange(key, '');
-            }
-          };
-
-          return (
-            <div className="health-field">
-              <label>{label}</label>
-              <div className="date-picker-row">
-                <select
-                  value={displayMonth}
-                  onChange={(e) => handleDateChange(displayYear, e.target.value)}
-                  aria-label={`${label} month`}
-                >
-                  <option value="">Month</option>
-                  {availableMonths.map(m => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </select>
-                <select
-                  value={displayYear}
-                  onChange={(e) => handleDateChange(e.target.value, displayMonth)}
-                  aria-label={`${label} year`}
-                >
-                  <option value="">Year</option>
-                  {years.map(y => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          );
-        };
-
-        const dexaScreening = getStr('dexa_screening');
-        const dexaResult = getStr('dexa_result');
-        const followupStatus = getStr('dexa_followup_status');
+        const dexaScreening = scrStr(scr, 'dexa_screening');
+        const dexaResult = scrStr(scr, 'dexa_result');
+        const followupStatus = scrStr(scr, 'dexa_followup_status');
 
         return (
           <div className="section-card">
@@ -1709,10 +1641,10 @@ export function InputPanel({
                   onChange={(e) => {
                     onScreeningChange('dexa_screening', e.target.value);
                     if (e.target.value !== 'dexa_scan') {
-                      if (getStr('dexa_last_date')) onScreeningChange('dexa_last_date', '');
-                      if (getStr('dexa_result')) onScreeningChange('dexa_result', '');
-                      if (getStr('dexa_followup_status')) onScreeningChange('dexa_followup_status', '');
-                      if (getStr('dexa_followup_date')) onScreeningChange('dexa_followup_date', '');
+                      if (scrStr(scr, 'dexa_last_date')) onScreeningChange('dexa_last_date', '');
+                      if (scrStr(scr, 'dexa_result')) onScreeningChange('dexa_result', '');
+                      if (scrStr(scr, 'dexa_followup_status')) onScreeningChange('dexa_followup_status', '');
+                      if (scrStr(scr, 'dexa_followup_date')) onScreeningChange('dexa_followup_date', '');
                     }
                   }}
                 >
@@ -1724,9 +1656,9 @@ export function InputPanel({
 
               {dexaScreening === 'dexa_scan' && (
                 <>
-                  {renderDexaDateInput('dexa_last_date', 'Date of last DEXA scan')}
+                  {renderScreeningDateInput(scr,'dexa_last_date', 'Date of last DEXA scan')}
 
-                  {getStr('dexa_last_date') && (
+                  {scrStr(scr, 'dexa_last_date') && (
                     <div className="health-field">
                       <label htmlFor="dexa-result">Result</label>
                       <select
@@ -1735,8 +1667,8 @@ export function InputPanel({
                         onChange={(e) => {
                           onScreeningChange('dexa_result', e.target.value);
                           if (e.target.value !== 'osteoporosis') {
-                            if (getStr('dexa_followup_status')) onScreeningChange('dexa_followup_status', '');
-                            if (getStr('dexa_followup_date')) onScreeningChange('dexa_followup_date', '');
+                            if (scrStr(scr, 'dexa_followup_status')) onScreeningChange('dexa_followup_status', '');
+                            if (scrStr(scr, 'dexa_followup_date')) onScreeningChange('dexa_followup_date', '');
                           }
                         }}
                       >
@@ -1758,7 +1690,7 @@ export function InputPanel({
                         onChange={(e) => {
                           onScreeningChange('dexa_followup_status', e.target.value);
                           if (e.target.value === 'not_organized' || e.target.value === '') {
-                            if (getStr('dexa_followup_date')) onScreeningChange('dexa_followup_date', '');
+                            if (scrStr(scr, 'dexa_followup_date')) onScreeningChange('dexa_followup_date', '');
                           }
                         }}
                       >
@@ -1771,7 +1703,7 @@ export function InputPanel({
                   )}
 
                   {dexaResult === 'osteoporosis' && (followupStatus === 'scheduled' || followupStatus === 'completed') && (
-                    renderDexaDateInput(
+                    renderScreeningDateInput(scr,
                       'dexa_followup_date',
                       followupStatus === 'completed' ? 'When was the treatment review completed?' : 'When is the treatment review scheduled?',
                     )
