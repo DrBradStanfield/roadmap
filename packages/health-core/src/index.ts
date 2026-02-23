@@ -171,3 +171,10 @@ export {
   type UnitSystem,
   type UnitDef,
 } from './units';
+
+// Sentry PII/PHI scrubbing
+export {
+  scrubSensitiveData,
+  scrubUrl,
+  scrubBreadcrumbData,
+} from './sentry-scrub';

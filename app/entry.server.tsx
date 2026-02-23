@@ -9,6 +9,7 @@ import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
 import * as Sentry from "@sentry/remix";
 import { stopReminderCron } from './lib/reminder-cron.server';
+import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl } from '../packages/health-core/src/sentry-scrub';
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
@@ -24,6 +25,57 @@ Sentry.init({
     // Shopify's privacy/cookie consent banner: URIError from decodeURIComponent on malformed cookies
     /cdn\/shopifycloud\/privacy-banner/,
   ],
+  beforeSend(event) {
+    // Scrub PII/PHI from event data before it leaves the server
+    if (event.extra) {
+      event.extra = scrubSensitiveData(event.extra) as Record<string, unknown>;
+    }
+    if (event.contexts) {
+      event.contexts = scrubSensitiveData(event.contexts) as Record<string, Record<string, unknown>>;
+    }
+    if (event.request) {
+      // Request body contains health data — remove entirely
+      delete event.request.data;
+      if (event.request.url) {
+        event.request.url = scrubUrl(event.request.url);
+      }
+      if (event.request.query_string) {
+        event.request.query_string = scrubUrl('?' + event.request.query_string).slice(1);
+      }
+      delete event.request.cookies;
+      if (event.request.headers) {
+        delete (event.request.headers as Record<string, string>).cookie;
+      }
+    }
+    if (event.breadcrumbs) {
+      event.breadcrumbs = event.breadcrumbs.map(b => {
+        if ((b.category === 'fetch' || b.category === 'xhr' || b.category === 'http') && b.data) {
+          return { ...b, data: scrubBreadcrumbData(b.data as Record<string, unknown>) };
+        }
+        if (b.category === 'console') {
+          return {
+            ...b,
+            message: b.message ? '[Filtered]' : b.message,
+            data: b.data ? scrubSensitiveData(b.data) as Record<string, unknown> : b.data,
+          };
+        }
+        return b;
+      });
+    }
+    return event;
+  },
+  beforeBreadcrumb(breadcrumb) {
+    if ((breadcrumb.category === 'fetch' || breadcrumb.category === 'xhr' || breadcrumb.category === 'http') && breadcrumb.data) {
+      breadcrumb.data = scrubBreadcrumbData(breadcrumb.data as Record<string, unknown>);
+    }
+    if (breadcrumb.category === 'console') {
+      if (breadcrumb.message) breadcrumb.message = '[Filtered]';
+      if (breadcrumb.data) {
+        breadcrumb.data = scrubSensitiveData(breadcrumb.data) as Record<string, unknown>;
+      }
+    }
+    return breadcrumb;
+  },
 });
 
 // Graceful shutdown: stop the cron job and allow in-flight requests to drain

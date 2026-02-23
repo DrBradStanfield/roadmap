@@ -1,10 +1,62 @@
 import * as Sentry from '@sentry/react';
+import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl } from '@roadmap/health-core';
 
 declare const __SENTRY_RELEASE__: string;
 
 const SENTRY_DSN = 'https://d7664c1590ec997ebf0126ed5917fea4@o4510813459709952.ingest.us.sentry.io/4510813465280512';
 
 let initialized = false;
+
+/** Scrub fetch/xhr and console breadcrumbs of PII/PHI. */
+function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | null {
+  // Strip DOM element data from UI breadcrumbs to prevent circular refs
+  if (breadcrumb.category === 'ui.click' && breadcrumb.data) {
+    delete breadcrumb.data.target;
+  }
+  // Scrub fetch/xhr breadcrumbs (request bodies contain health data)
+  if ((breadcrumb.category === 'fetch' || breadcrumb.category === 'xhr') && breadcrumb.data) {
+    breadcrumb.data = scrubBreadcrumbData(breadcrumb.data as Record<string, unknown>);
+  }
+  // Scrub console breadcrumbs (may contain emails, health data in log output)
+  if (breadcrumb.category === 'console') {
+    if (breadcrumb.message) breadcrumb.message = '[Filtered]';
+    if (breadcrumb.data) {
+      breadcrumb.data = scrubSensitiveData(breadcrumb.data) as Record<string, unknown>;
+    }
+  }
+  return breadcrumb;
+}
+
+/** Scrub PII/PHI from Sentry events before they leave the browser. */
+function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
+  if (event.extra) {
+    event.extra = scrubSensitiveData(event.extra) as Record<string, unknown>;
+  }
+  if (event.contexts) {
+    event.contexts = scrubSensitiveData(event.contexts) as Record<string, Record<string, unknown>>;
+  }
+  if (event.request) {
+    // Request body always contains health data in this app — remove entirely
+    delete event.request.data;
+    if (event.request.url) {
+      event.request.url = scrubUrl(event.request.url);
+    }
+    if (event.request.query_string) {
+      event.request.query_string = scrubUrl('?' + event.request.query_string).slice(1);
+    }
+    delete event.request.cookies;
+    if (event.request.headers) {
+      delete event.request.headers.cookie;
+    }
+  }
+  // Scrub breadcrumbs embedded in the event
+  if (event.breadcrumbs) {
+    event.breadcrumbs = event.breadcrumbs
+      .map(b => scrubBreadcrumb({ ...b }))
+      .filter((b): b is Sentry.Breadcrumb => b !== null);
+  }
+  return event;
+}
 
 export function initSentry() {
   if (initialized || SENTRY_DSN === 'YOUR_SENTRY_DSN') return;
@@ -30,13 +82,8 @@ export function initSentry() {
       /health-tool\.js/,
       /health-history\.js/,
     ],
-    beforeBreadcrumb(breadcrumb) {
-      // Strip DOM element data from UI breadcrumbs to prevent circular refs
-      if (breadcrumb.category === 'ui.click' && breadcrumb.data) {
-        delete breadcrumb.data.target;
-      }
-      return breadcrumb;
-    },
+    beforeSend: scrubEvent,
+    beforeBreadcrumb: scrubBreadcrumb,
   });
 }
 
