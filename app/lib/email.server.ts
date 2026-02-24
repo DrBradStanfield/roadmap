@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HealthInputs, HealthResults, Suggestion, MedicationInputs } from '../../packages/health-core/src/types';
 import type { UnitSystem, MetricType } from '../../packages/health-core/src/units';
 import { measurementsToInputs, medicationsToInputs, screeningsToInputs } from '../../packages/health-core/src/mappings';
-import { calculateHealthResults } from '../../packages/health-core/src/calculations';
+import { calculateHealthResults, getBMICategory } from '../../packages/health-core/src/calculations';
 import { generateSuggestions } from '../../packages/health-core/src/suggestions';
 import {
   formatDisplayValue,
@@ -275,16 +275,20 @@ export function buildWelcomeEmailHtml(
   const proteinRate = results.eGFR != null && results.eGFR < 45 ? '1.0' : '1.2';
   snapshotRows.push(snapshotRow('Protein Target', `${results.proteinTarget}g/day`, `${proteinRate}g per kg IBW`));
 
-  // BMI
+  // BMI — uses canonical getBMICategory() for composite WHtR assessment
   if (results.bmi != null) {
-    const bmiStatus = results.bmi < 18.5 ? 'Underweight'
-      : results.bmi < 25 ? 'Normal'
-      : results.bmi < 30 ? 'Overweight'
-      : 'Obese';
-    const bmiColor = results.bmi < 18.5 ? STATUS_COLORS.borderline
-      : results.bmi < 25 ? STATUS_COLORS.normal
-      : results.bmi < 30 ? STATUS_COLORS.borderline : STATUS_COLORS.high;
-    snapshotRows.push(snapshotRow('BMI', results.bmi.toFixed(1), bmiStatus, bmiColor));
+    const category = getBMICategory(results.bmi, results.waistToHeightRatio);
+    const suppressLabel = category === 'Overweight' && results.waistToHeightRatio == null;
+    if (suppressLabel) {
+      snapshotRows.push(snapshotRow('BMI', results.bmi.toFixed(1), ''));
+    } else {
+      const displayLabel = category.startsWith('Obese') ? 'Obese' : category;
+      const bmiColor = category === 'Underweight' ? STATUS_COLORS.borderline
+        : category === 'Normal' ? STATUS_COLORS.normal
+        : category === 'Overweight' ? STATUS_COLORS.borderline
+        : STATUS_COLORS.high;
+      snapshotRows.push(snapshotRow('BMI', results.bmi.toFixed(1), displayLabel, bmiColor));
+    }
   }
 
   // Waist-to-Height (right after BMI)

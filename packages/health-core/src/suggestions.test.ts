@@ -764,7 +764,7 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
       const waistSuggestion = suggestions.find(s => s.id === 'measure-waist');
       expect(waistSuggestion).toBeDefined();
-      expect(waistSuggestion?.priority).toBe('info');
+      expect(waistSuggestion?.priority).toBe('attention');
       expect(waistSuggestion?.description).toContain('waist');
     });
 

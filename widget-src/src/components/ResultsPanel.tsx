@@ -13,6 +13,7 @@ import {
   EGFR_THRESHOLDS,
   LPA_THRESHOLDS,
   type ReminderCategory,
+  getBMICategory,
 } from '@roadmap/health-core';
 import { type ApiReminderPreference, sendReportEmail, getReportHtml } from '../lib/api';
 import { FeedbackForm } from './FeedbackForm';
@@ -44,14 +45,18 @@ interface ResultsPanelProps {
 }
 
 function getBmiStatus(bmi: number, waistToHeightRatio?: number): { label: string; className: string } {
-  if (bmi < 18.5) return { label: 'Underweight', className: 'status-attention' };
-  if (bmi < 25) return { label: 'Normal', className: 'status-normal' };
-  if (bmi < 30) {
-    if (waistToHeightRatio !== undefined && waistToHeightRatio < 0.5) return { label: 'Normal', className: 'status-normal' };
-    if (waistToHeightRatio !== undefined) return { label: 'Overweight', className: 'status-info' };
-    return { label: '', className: '' }; // No label when waist data missing — prompt user to measure
+  const category = getBMICategory(bmi, waistToHeightRatio);
+  // When WHtR unknown for BMI 25-29.9, suppress label (prompt user to measure)
+  if (category === 'Overweight' && waistToHeightRatio === undefined) {
+    return { label: '', className: '' };
   }
-  return { label: 'Obese', className: 'status-attention' };
+  if (category.startsWith('Obese')) return { label: 'Obese', className: 'status-attention' };
+  const classMap: Record<string, string> = {
+    'Underweight': 'status-attention',
+    'Normal': 'status-normal',
+    'Overweight': 'status-info',
+  };
+  return { label: category, className: classMap[category] || '' };
 }
 
 function getWaistToHeightStatus(ratio: number): { label: string; className: string } | null {

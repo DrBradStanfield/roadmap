@@ -292,7 +292,7 @@ export function generateSuggestions(
     suggestions.push({
       id: 'measure-waist',
       category: 'general',
-      priority: 'info',
+      priority: 'attention',
       title: 'Measure your waist circumference',
       description: 'With a BMI in the 25\u201330 range, waist circumference helps determine whether your body composition poses health risks. Keep your waist below half your height. Enter your waist measurement above for a more accurate assessment.',
     });
