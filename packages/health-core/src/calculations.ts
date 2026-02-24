@@ -78,12 +78,17 @@ export function calculateEGFR(creatinineUmolL: number, age: number, sex: 'male' 
 }
 
 /**
- * Get BMI category
+ * Get BMI category, optionally adjusted by waist-to-height ratio.
+ * Per AACE 2025 / NICE guidelines, BMI 25-29.9 with healthy WHtR (< 0.5)
+ * is reclassified as "Normal" since central adiposity is absent.
  */
-export function getBMICategory(bmi: number): string {
+export function getBMICategory(bmi: number, waistToHeightRatio?: number): string {
   if (bmi < 18.5) return 'Underweight';
   if (bmi < 25) return 'Normal';
-  if (bmi < 30) return 'Overweight';
+  if (bmi < 30) {
+    if (waistToHeightRatio !== undefined && waistToHeightRatio < 0.5) return 'Normal';
+    return 'Overweight';
+  }
   if (bmi < 35) return 'Obese (Class I)';
   if (bmi < 40) return 'Obese (Class II)';
   return 'Obese (Class III)';

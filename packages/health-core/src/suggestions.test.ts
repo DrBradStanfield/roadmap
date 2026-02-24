@@ -398,13 +398,37 @@ describe('generateSuggestions', () => {
       expect(bpSuggestion?.description).toContain('reduce sodium intake (<2,300mg/day)');
     });
 
-    it('stage 1 mentions weight loss and GLP-1 when BMI >= 25', () => {
-      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 27 });
+    it('stage 1 mentions weight loss when BMI >= 30', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 31 });
       const suggestions = generateSuggestions(inputs, results);
 
       const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
       expect(bpSuggestion?.description).toContain('Weight loss is one of the most effective ways to lower blood pressure');
       expect(bpSuggestion?.description).toContain('GLP-1 medications');
+    });
+
+    it('stage 1 mentions weight loss when BMI 25-29.9 and WHtR >= 0.5', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 27, waistToHeightRatio: 0.55 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
+      expect(bpSuggestion?.description).toContain('Weight loss');
+    });
+
+    it('stage 1 does not mention weight loss when BMI 25-29.9 and WHtR < 0.5', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 27, waistToHeightRatio: 0.45 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
+      expect(bpSuggestion?.description).not.toContain('Weight loss');
+    });
+
+    it('stage 1 does not mention weight loss when BMI 25-29.9 and WHtR unavailable', () => {
+      const { inputs, results } = createTestData({ systolicBp: 135, diastolicBp: 85 }, { bmi: 27 });
+      const suggestions = generateSuggestions(inputs, results);
+
+      const bpSuggestion = suggestions.find(s => s.id === 'bp-stage1');
+      expect(bpSuggestion?.description).not.toContain('Weight loss');
     });
 
     it('stage 1 does not mention weight loss when BMI < 25', () => {
@@ -695,10 +719,11 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
     });
 
-    it('suggests GLP-1 when BMI 25-28 and no waist data', () => {
+    it('does NOT suggest GLP-1 when BMI 25-28 and no waist data (prompts waist measurement instead)', () => {
       const { inputs, results } = createTestData({}, { bmi: 26 });
       const suggestions = generateSuggestions(inputs, results);
-      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'measure-waist')).toBeDefined();
     });
 
     it('suggests GLP-1 when BMI 25-28 and elevated triglycerides, even with normal waist', () => {
@@ -730,6 +755,41 @@ describe('generateSuggestions', () => {
       const glp1 = suggestions.find(s => s.id === 'weight-glp1');
       expect(glp1).toBeDefined();
       expect(glp1?.description).toContain('waist');
+    });
+  });
+
+  describe('Measure waist circumference suggestion', () => {
+    it('shows when BMI 25-29.9 and no waist data', () => {
+      const { inputs, results } = createTestData({}, { bmi: 26 });
+      const suggestions = generateSuggestions(inputs, results);
+      const waistSuggestion = suggestions.find(s => s.id === 'measure-waist');
+      expect(waistSuggestion).toBeDefined();
+      expect(waistSuggestion?.priority).toBe('info');
+      expect(waistSuggestion?.description).toContain('waist');
+    });
+
+    it('does not show when BMI 25-29.9 and waist data is present (healthy)', () => {
+      const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.45 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    });
+
+    it('does not show when BMI 25-29.9 and waist data is present (elevated)', () => {
+      const { inputs, results } = createTestData({}, { bmi: 26, waistToHeightRatio: 0.55 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    });
+
+    it('does not show when BMI < 25', () => {
+      const { inputs, results } = createTestData({}, { bmi: 23 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
+    });
+
+    it('does not show when BMI >= 30', () => {
+      const { inputs, results } = createTestData({}, { bmi: 31 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'measure-waist')).toBeUndefined();
     });
   });
 
@@ -1536,16 +1596,27 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
     });
 
-    it('shows standalone weight-glp1 when BMI 25-28 and no secondary criteria (no cascade)', () => {
+    it('shows standalone weight-glp1 when BMI 25-28 with elevated WHtR and no secondary criteria (no cascade)', () => {
+      const { inputs, results } = createTestData(
+        {},
+        { bmi: 27, waistToHeightRatio: 0.52 },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      // Cascade IS active because WHtR >= 0.5 is a secondary criterion, so cascade suggestion appears
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeDefined();
+    });
+
+    it('does not show standalone weight-glp1 when BMI 25-28 and no waist data (prompts waist measurement)', () => {
       const { inputs, results } = createTestData(
         {},
         { bmi: 27 },
       );
       const meds: MedicationInputs = {};
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
-      // No cascade (BMI 25-28 without secondary criteria), but standalone should appear
       expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
-      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'measure-waist')).toBeDefined();
     });
 
     // Description context
@@ -1811,11 +1882,29 @@ describe('generateSuggestions', () => {
   });
 
   describe('Alcohol reduction suggestion', () => {
-    it('shows alcohol reduction when BMI > 25', () => {
-      const { inputs, results } = createTestData({}, { bmi: 27 });
+    it('shows alcohol reduction when BMI >= 30', () => {
+      const { inputs, results } = createTestData({}, { bmi: 31 });
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'reduce-alcohol')).toBeDefined();
       expect(suggestions.find(s => s.id === 'reduce-alcohol')?.priority).toBe('attention');
+    });
+
+    it('shows alcohol reduction when BMI 25-29.9 and WHtR >= 0.5', () => {
+      const { inputs, results } = createTestData({}, { bmi: 27, waistToHeightRatio: 0.55 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'reduce-alcohol')).toBeDefined();
+    });
+
+    it('hides alcohol reduction when BMI 25-29.9 and WHtR < 0.5', () => {
+      const { inputs, results } = createTestData({}, { bmi: 27, waistToHeightRatio: 0.45 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'reduce-alcohol')).toBeUndefined();
+    });
+
+    it('hides alcohol reduction when BMI 25-29.9 and no waist data', () => {
+      const { inputs, results } = createTestData({}, { bmi: 27 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'reduce-alcohol')).toBeUndefined();
     });
 
     it('shows alcohol reduction when triglycerides elevated', () => {
@@ -2134,6 +2223,26 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'lpa-elevated')).toBeDefined();
       expect(suggestions.find(s => s.id === 'lpa-borderline')).toBeUndefined();
+    });
+
+    it('shows BMI checkmark when BMI 25-29.9 with healthy WHtR (composite assessment)', () => {
+      const { inputs, results } = createTestData(
+        { lpa: 200, apoB: apoB(45), systolicBp: 118, diastolicBp: 75, hba1c: hba1c(5.2) },
+        { bmi: 27, waistToHeightRatio: 0.44 }
+      );
+      const suggestions = generateSuggestions(inputs, results, 'conventional');
+      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
+      expect(lpaSuggestion?.description).toContain('\u2705 BMI: 27');
+    });
+
+    it('shows BMI warning when BMI 25-29.9 with elevated WHtR', () => {
+      const { inputs, results } = createTestData(
+        { lpa: 200, apoB: apoB(45), systolicBp: 118, diastolicBp: 75, hba1c: hba1c(5.2) },
+        { bmi: 27, waistToHeightRatio: 0.55 }
+      );
+      const suggestions = generateSuggestions(inputs, results, 'conventional');
+      const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
+      expect(lpaSuggestion?.description).toContain('\u26A0\uFE0F BMI: 27');
     });
   });
 });

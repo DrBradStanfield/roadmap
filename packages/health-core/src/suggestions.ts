@@ -111,9 +111,11 @@ export function generateSuggestions(
     });
   }
 
-  // Reduce alcohol — when overweight (BMI > 25) or triglycerides elevated
+  // Reduce alcohol — when obesity (BMI >= 30), or overweight with central adiposity, or triglycerides elevated
+  const whrForAlcohol = results.waistToHeightRatio;
   if (
-    (results.bmi !== undefined && results.bmi > 25) ||
+    (results.bmi !== undefined && results.bmi >= 30) ||
+    (results.bmi !== undefined && results.bmi > 25 && whrForAlcohol !== undefined && whrForAlcohol >= 0.5) ||
     (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline)
   ) {
     suggestions.push({
@@ -264,18 +266,15 @@ export function generateSuggestions(
           description: 'With a BMI over 28, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
         });
       } else if (results.bmi > 25) {
-        // BMI 25-28: suggest if waist-to-height ≥ 0.5, waist data unavailable, or triglycerides elevated
+        // BMI 25-28: suggest if waist-to-height ≥ 0.5 or triglycerides elevated
+        // Don't assume risk when waist data is missing — prompt for waist measurement instead
         const trigsElevated = inputs.triglycerides !== undefined &&
           inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline;
-        if (whr === undefined || whr >= 0.5 || trigsElevated) {
-          let reason: string;
-          if (whr !== undefined && whr >= 0.5) {
-            reason = 'elevated BMI and waist measurements';
-          } else if (trigsElevated) {
-            reason = 'elevated BMI and triglycerides';
-          } else {
-            reason = 'an elevated BMI';
-          }
+        const waistElevatedStandalone = whr !== undefined && whr >= 0.5;
+        if (waistElevatedStandalone || trigsElevated) {
+          const reason = waistElevatedStandalone
+            ? 'elevated BMI and waist measurements'
+            : 'elevated BMI and triglycerides';
           suggestions.push({
             id: 'weight-glp1',
             category: 'medication',
@@ -286,6 +285,17 @@ export function generateSuggestions(
         }
       }
     }
+  }
+
+  // Prompt to measure waist circumference when BMI 25-29.9 and waist data missing
+  if (results.bmi !== undefined && results.bmi > 25 && results.bmi < 30 && results.waistToHeightRatio === undefined) {
+    suggestions.push({
+      id: 'measure-waist',
+      category: 'general',
+      priority: 'info',
+      title: 'Measure your waist circumference',
+      description: 'With a BMI in the 25\u201330 range, waist circumference helps determine whether your body composition poses health risks. Keep your waist below half your height. Enter your waist measurement above for a more accurate assessment.',
+    });
   }
 
   // HbA1c suggestions (thresholds in mmol/mol IFCC)
@@ -455,9 +465,10 @@ export function generateSuggestions(
         checklist.push('\u2753 Blood pressure \u2014 not entered');
       }
 
-      // BMI
+      // BMI — consider healthy if <25 or if 25-29.9 with healthy waist-to-height ratio
       if (results.bmi !== undefined) {
-        const onTarget = results.bmi < 25;
+        const lpaWhr = results.waistToHeightRatio;
+        const onTarget = results.bmi < 25 || (results.bmi < 30 && lpaWhr !== undefined && lpaWhr < 0.5);
         checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} BMI: ${results.bmi} \u2014 target <25`);
       }
 
@@ -583,7 +594,8 @@ export function generateSuggestions(
     if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased) {
       bpExtraParagraphs.push('Increase potassium-rich foods (3,500–5,000mg/day).');
     }
-    if (results.bmi !== undefined && results.bmi >= 25) {
+    const bpWhr = results.waistToHeightRatio;
+    if (results.bmi !== undefined && (results.bmi >= 30 || (results.bmi >= 25 && bpWhr !== undefined && bpWhr >= 0.5))) {
       bpExtraParagraphs.push('Weight loss is one of the most effective ways to lower blood pressure — even a 5% reduction can make a meaningful difference. GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.');
     }
     const bpExtra = bpExtraParagraphs.length > 0 ? '\n\n' + bpExtraParagraphs.join('\n\n') : '';

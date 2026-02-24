@@ -101,10 +101,41 @@ npm run build:widget     # Build the health widget
 npm run dev:widget       # Watch widget for changes
 npm run deploy           # Deploy extensions to Shopify CDN
 fly deploy               # Deploy backend to Fly.io
-npm test                 # Run unit tests
+npm test                 # Run unit tests (health-core only — see below)
 ```
 
-**Deploy workflow:** `npm run build:widget` → `cd widget-src && npm run sentry:sourcemaps` → `npm run deploy` → `fly deploy`
+### Running Tests
+
+`npm test` only runs the `@roadmap/health-core` workspace. To run tests in other workspaces:
+
+```bash
+npx vitest run app/lib/supabase.server.test.ts   # Backend tests
+npx vitest run widget-src/src/lib/storage.test.ts # Widget tests
+```
+
+### Deploy Workflow
+
+Full deploy (widget + Shopify extensions + backend):
+
+```bash
+# 1. Build widget (from project root)
+npm run build:widget
+
+# 2. Upload sourcemaps to Sentry (requires SENTRY_AUTH_TOKEN in .env — local only, not on Fly.io)
+cd widget-src && npm run sentry:sourcemaps && cd ..
+
+# 3. Deploy Shopify extensions to CDN (must use --force for non-interactive environments)
+npx shopify app deploy --force
+
+# 4. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives)
+fly deploy
+```
+
+**Important deploy notes:**
+- `fly deploy` must be run from the **project root** (`/roadmap/`), not a subdirectory. The Dockerfile is at root level. Do NOT use `--app` flag — Fly reads `fly.toml` from the current directory.
+- `npx shopify app deploy --force` — the `--force` flag is required in non-interactive environments (CI, Claude Code). Without it, the CLI prompts for confirmation and hangs.
+- `SENTRY_AUTH_TOKEN` is only used locally for sourcemap uploads. Fly.io only needs `SENTRY_DSN` (already set as a secret).
+- If Fly.io is suspended, `fly deploy` won't unsuspend it. Use `fly machine start <id>` first.
 
 ## Data Model
 

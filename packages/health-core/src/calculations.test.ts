@@ -138,10 +138,33 @@ describe('getBMICategory', () => {
     expect(getBMICategory(24.9)).toBe('Normal');
   });
 
-  it('classifies overweight correctly', () => {
+  it('classifies overweight correctly when no WHtR provided', () => {
     expect(getBMICategory(25)).toBe('Overweight');
     expect(getBMICategory(27)).toBe('Overweight');
     expect(getBMICategory(29.9)).toBe('Overweight');
+  });
+
+  it('classifies BMI 25-29.9 as Normal when WHtR < 0.5 (healthy body composition)', () => {
+    expect(getBMICategory(26.5, 0.45)).toBe('Normal');
+    expect(getBMICategory(25, 0.49)).toBe('Normal');
+    expect(getBMICategory(29.9, 0.42)).toBe('Normal');
+  });
+
+  it('classifies BMI 25-29.9 as Overweight when WHtR >= 0.5 (central adiposity)', () => {
+    expect(getBMICategory(26.5, 0.55)).toBe('Overweight');
+    expect(getBMICategory(25, 0.5)).toBe('Overweight');
+    expect(getBMICategory(29.9, 0.6)).toBe('Overweight');
+  });
+
+  it('does not reclassify BMI >= 30 regardless of WHtR', () => {
+    expect(getBMICategory(31, 0.45)).toBe('Obese (Class I)');
+    expect(getBMICategory(36, 0.42)).toBe('Obese (Class II)');
+    expect(getBMICategory(41, 0.48)).toBe('Obese (Class III)');
+  });
+
+  it('does not reclassify BMI < 25 regardless of WHtR', () => {
+    expect(getBMICategory(22, 0.55)).toBe('Normal');
+    expect(getBMICategory(18.4, 0.6)).toBe('Underweight');
   });
 
   it('classifies obese classes correctly', () => {

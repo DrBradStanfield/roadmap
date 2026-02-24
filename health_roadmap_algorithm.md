@@ -46,18 +46,26 @@ The CKD adjustment uses strict less-than: at exactly eGFR 45, the normal 1.2 mul
 
 `weightKg / (heightCm / 100)^2` — rounded to 1 decimal place.
 
-| Range | Category |
-|-------|----------|
-| < 18.5 | Underweight |
-| 18.5–24.9 | Normal |
-| 25.0–29.9 | Overweight |
-| 30.0–34.9 | Obese (Class I) |
-| 35.0–39.9 | Obese (Class II) |
-| >= 40.0 | Obese (Class III) |
+#### Composite Assessment (BMI + Waist-to-Height Ratio)
+
+Per AACE 2025 and NICE guidelines, BMI classification in the 25–29.9 range is adjusted by waist-to-height ratio (WHtR) when available. WHtR is a superior universal screening tool that naturally accounts for body composition differences across populations.
+
+| BMI Range | WHtR | Category | Rationale |
+|-----------|------|----------|-----------|
+| < 18.5 | any | Underweight | — |
+| 18.5–24.9 | any | Normal | — |
+| 25.0–29.9 | < 0.5 | Normal | No central adiposity — body composition is healthy |
+| 25.0–29.9 | >= 0.5 | Overweight | Central adiposity confirmed |
+| 25.0–29.9 | unknown | *(no label)* | Prompt to measure waist circumference |
+| 30.0–34.9 | any | Obese (Class I) | — |
+| 35.0–39.9 | any | Obese (Class II) | — |
+| >= 40.0 | any | Obese (Class III) | — |
+
+**Key principle:** BMI 25–29.9 with normal WHtR (< 0.5) and no metabolic risk factors should NOT trigger weight management suggestions.
 
 ### Waist-to-Height Ratio
 
-`waistCm / heightCm` — rounded to 2 decimal places. Values >= 0.5 indicate increased metabolic risk.
+`waistCm / heightCm` — rounded to 2 decimal places. Values >= 0.5 indicate increased metabolic risk. When BMI is 25–29.9 and waist data is missing, a "Measure your waist circumference" suggestion is shown.
 
 ### Age
 
@@ -279,7 +287,7 @@ Source: `suggestions.ts` -> `generateSuggestions()`
 | `low-salt` | systolicBp > 120 (age < 65) or > 130 (age >= 65) | info |
 | `high-potassium` | eGFR >= 45 (safe kidney function) | info |
 | `trig-nutrition` | triglycerides >= 1.69 mmol/L | attention |
-| `reduce-alcohol` | BMI > 25 OR triglycerides >= 1.69 mmol/L | attention |
+| `reduce-alcohol` | BMI >= 30, OR (BMI > 25 AND WHtR >= 0.5), OR triglycerides >= 1.69 mmol/L | attention |
 
 ### HbA1c Tiers
 
@@ -310,7 +318,7 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 **Elevated Lp(a) checklist** (modifiable risk factors):
 - Lipids (ApoB > non-HDL > LDL, on-treatment targets)
 - Blood pressure (target < 120/80)
-- BMI (target < 25)
+- BMI (target < 25; shows ✅ when BMI 25–29.9 with WHtR < 0.5)
 - HbA1c (target < 38.8 mmol/mol)
 - Medication status (statin, ezetimibe, PCSK9i — when tracked)
 - PCSK9i note: also lowers Lp(a) ~25-30%
@@ -334,7 +342,7 @@ Stage 1 shows age-dependent target: < 120/80 for age < 65, < 130/80 for age >= 6
 
 Stage 1 and 2 include conditional extra paragraphs:
 - If eGFR >= 45: potassium recommendation
-- If BMI >= 25: weight loss + GLP-1 mention
+- If BMI >= 30, or BMI >= 25 with WHtR >= 0.5: weight loss + GLP-1 mention
 
 ---
 
@@ -424,7 +432,7 @@ All conditions:
 
 When the cascade is NOT active (medications not provided or conditions not met):
 - BMI > 28: Always suggest
-- BMI 25-28: Suggest if waist-to-height >= 0.5, OR waist unavailable, OR triglycerides >= 1.69 mmol/L
+- BMI 25-28: Suggest if waist-to-height >= 0.5 OR triglycerides >= 1.69 mmol/L (do NOT assume risk when waist data missing)
 
 ---
 

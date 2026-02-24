@@ -43,10 +43,14 @@ interface ResultsPanelProps {
   sex?: 'male' | 'female';
 }
 
-function getBmiStatus(bmi: number): { label: string; className: string } {
+function getBmiStatus(bmi: number, waistToHeightRatio?: number): { label: string; className: string } {
   if (bmi < 18.5) return { label: 'Underweight', className: 'status-attention' };
   if (bmi < 25) return { label: 'Normal', className: 'status-normal' };
-  if (bmi < 30) return { label: 'Overweight', className: 'status-info' };
+  if (bmi < 30) {
+    if (waistToHeightRatio !== undefined && waistToHeightRatio < 0.5) return { label: 'Normal', className: 'status-normal' };
+    if (waistToHeightRatio !== undefined) return { label: 'Overweight', className: 'status-info' };
+    return { label: '', className: '' }; // No label when waist data missing — prompt user to measure
+  }
   return { label: 'Obese', className: 'status-attention' };
 }
 
@@ -510,12 +514,12 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
             <span className="stat-status status-normal">{results.eGFR !== undefined && results.eGFR < EGFR_THRESHOLDS.mildlyDecreased ? '1.0g per kg IBW' : '1.2g per kg IBW'}</span>
           </div>
           {results.bmi !== undefined && (() => {
-            const status = getBmiStatus(results.bmi);
+            const status = getBmiStatus(results.bmi, results.waistToHeightRatio);
             return (
               <div className="stat-card">
                 <span className="stat-label">BMI</span>
                 <span className="stat-value">{results.bmi}</span>
-                <span className={`stat-status ${status.className}`}>{status.label}</span>
+                {status.label && <span className={`stat-status ${status.className}`}>{status.label}</span>}
               </div>
             );
           })()}
