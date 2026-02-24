@@ -263,7 +263,7 @@ export function toApiMeasurement(m: DbMeasurement) {
   return {
     id: m.id,
     metricType: m.metric_type,
-    value: m.value,
+    value: Number(m.value),
     recordedAt: m.recorded_at,
     createdAt: m.created_at,
     source: m.source,

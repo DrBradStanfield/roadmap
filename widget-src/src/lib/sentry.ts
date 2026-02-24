@@ -9,9 +9,16 @@ let initialized = false;
 
 /** Scrub fetch/xhr and console breadcrumbs of PII/PHI. */
 function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | null {
-  // Strip DOM element data from UI breadcrumbs to prevent circular refs
-  if (breadcrumb.category === 'ui.click' && breadcrumb.data) {
-    delete breadcrumb.data.target;
+  // Strip ALL non-primitive values from UI breadcrumbs — DOM element refs
+  // contain React fiber circular references (__reactFiber$ → stateNode → element)
+  if ((breadcrumb.category === 'ui.click' || breadcrumb.category === 'ui.input') && breadcrumb.data) {
+    const safe: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(breadcrumb.data)) {
+      if (v === null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+        safe[k] = v;
+      }
+    }
+    breadcrumb.data = safe;
   }
   // Scrub fetch/xhr breadcrumbs (request bodies contain health data)
   if ((breadcrumb.category === 'fetch' || breadcrumb.category === 'xhr') && breadcrumb.data) {
@@ -70,7 +77,7 @@ export function initSentry() {
     tracesSampleRate: 0.2,
     // Don't send in development
     enabled: !window.location.hostname.includes('localhost'),
-    // Limit serialization depth to avoid circular refs from React fiber on DOM elements
+    // Limit serialization depth for Sentry event payloads
     normalizeDepth: 5,
     ignoreErrors: [
       // Third-party fetch interceptors (Appstle Bundles) create unhandled rejections

@@ -122,3 +122,22 @@ export function loadUnitPreference(): UnitSystem | null {
     return null;
   }
 }
+
+/** Check if auth redirect was attempted (sessionStorage). */
+export function getAuthRedirectFlag(): boolean {
+  try { return !!sessionStorage.getItem('health_roadmap_auth_redirect'); } catch { return false; }
+}
+
+/** Read and clear the email confirmation flag (sessionStorage). Returns flag value or null. */
+export function consumeEmailConfirmFlag(): string | null {
+  try {
+    const flag = sessionStorage.getItem('health_roadmap_email_confirm');
+    if (flag) sessionStorage.removeItem('health_roadmap_email_confirm');
+    return flag;
+  } catch { return null; }
+}
+
+/** Check if the authenticated flag exists (localStorage). */
+export function hasAuthenticatedFlag(): boolean {
+  try { return !!localStorage.getItem('health_roadmap_authenticated'); } catch { return false; }
+}

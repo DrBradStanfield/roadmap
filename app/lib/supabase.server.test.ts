@@ -78,6 +78,23 @@ describe('toApiMeasurement', () => {
     expect(result.source).toBe('apple_health');
     expect(result.externalId).toBe('HK-SAMPLE-UUID-123');
   });
+
+  it('coerces string value from PostgREST to number', () => {
+    const dbRow = {
+      id: 'str-001',
+      user_id: 'user-456',
+      metric_type: 'weight',
+      value: '80.5' as unknown as number, // PostgREST can return NUMERIC as string
+      recorded_at: '2025-01-15T10:00:00Z',
+      created_at: '2025-01-15T10:00:01Z',
+      source: 'manual',
+      external_id: null,
+    } as DbMeasurement;
+
+    const result = toApiMeasurement(dbRow);
+    expect(result.value).toBe(80.5);
+    expect(typeof result.value).toBe('number');
+  });
 });
 
 describe('toApiProfile', () => {

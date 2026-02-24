@@ -37,6 +37,9 @@ import {
   saveUnitPreference,
   loadUnitPreference,
   setAuthenticatedFlag,
+  getAuthRedirectFlag,
+  consumeEmailConfirmFlag,
+  hasAuthenticatedFlag,
 } from '../lib/storage';
 import {
   loadLatestMeasurements,
@@ -73,8 +76,8 @@ function getAuthState(): AuthState {
   // Redirect was attempted but user is still not logged in.
   // Also require the auth flag — if it's gone (e.g. user cleared localStorage), this is a new guest.
   const redirectFailed = !isLoggedIn &&
-    !!window.sessionStorage?.getItem('health_roadmap_auth_redirect') &&
-    !!window.localStorage?.getItem('health_roadmap_authenticated');
+    getAuthRedirectFlag() &&
+    hasAuthenticatedFlag();
   return { isLoggedIn, loginUrl, accountUrl, redirectFailed };
 }
 
@@ -102,9 +105,8 @@ export function HealthTool() {
     };
   }, []);
   const [emailConfirmStatus, setEmailConfirmStatus] = useState<'idle' | 'sent' | 'error'>(() => {
-    const flag = sessionStorage.getItem('health_roadmap_email_confirm');
+    const flag = consumeEmailConfirmFlag();
     if (flag) {
-      sessionStorage.removeItem('health_roadmap_email_confirm');
       isFirstSaveRef.current = false;
       return resolveEmailConfirmStatus(flag);
     }
@@ -285,7 +287,7 @@ export function HealthTool() {
         setHasApiResponse(true);
       } else {
         // Detect stale data from a previous logged-in session (user logged out)
-        if (localStorage.getItem('health_roadmap_authenticated')) {
+        if (hasAuthenticatedFlag()) {
           clearLocalStorage();
         } else {
           const saved = loadFromLocalStorage();
