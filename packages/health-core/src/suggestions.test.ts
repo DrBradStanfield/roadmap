@@ -1029,7 +1029,7 @@ describe('generateSuggestions', () => {
       const suggestions = generateSuggestions(inputs, results, 'si', meds);
       const statin = suggestions.find(s => s.id === 'med-statin');
       expect(statin).toBeDefined();
-      expect(statin!.description).toContain('LDL');
+      expect(statin!.description).toContain('LDL-c');
       expect(statin!.description).toContain('above target');
     });
 
@@ -2282,7 +2282,7 @@ describe('generateSuggestions', () => {
       const { inputs, results } = createTestData({ lpa: 200, ldlC: ldl(80) });
       const suggestions = generateSuggestions(inputs, results, 'conventional');
       const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
-      expect(lpaSuggestion?.description).toContain('LDL');
+      expect(lpaSuggestion?.description).toContain('LDL-c');
       expect(lpaSuggestion?.description).not.toContain('ApoB');
     });
 
@@ -2295,7 +2295,7 @@ describe('generateSuggestions', () => {
       const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
       expect(lpaSuggestion?.description).toContain('non-HDL cholesterol');
       expect(lpaSuggestion?.description).not.toContain('ApoB');
-      expect(lpaSuggestion?.description).not.toContain('LDL');
+      expect(lpaSuggestion?.description).not.toContain('LDL-c');
     });
 
     it('does not include medication checklist when medications not provided', () => {
@@ -2364,7 +2364,7 @@ describe('resolveBestLipidMarker', () => {
     const result = resolveBestLipidMarker(undefined, undefined, 1.5);
     expect(result).not.toBeNull();
     expect(result!.kind).toBe('ldl');
-    expect(result!.label).toBe('LDL');
+    expect(result!.label).toBe('LDL-c');
     expect(result!.elevated).toBe(true); // 1.5 > 1.4
   });
 

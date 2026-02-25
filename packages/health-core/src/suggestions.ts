@@ -57,7 +57,7 @@ export function resolveBestLipidMarker(
 ): LipidMarker | null {
   if (apoB !== undefined) return { kind: 'apoB', label: 'ApoB', value: apoB, target: LIPID_TREATMENT_TARGETS.apobGl, elevated: apoB > LIPID_TREATMENT_TARGETS.apobGl };
   if (nonHdl !== undefined) return { kind: 'nonHdl', label: 'non-HDL cholesterol', value: nonHdl, target: LIPID_TREATMENT_TARGETS.nonHdlMmol, elevated: nonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol };
-  if (ldl !== undefined) return { kind: 'ldl', label: 'LDL', value: ldl, target: LIPID_TREATMENT_TARGETS.ldlMmol, elevated: ldl > LIPID_TREATMENT_TARGETS.ldlMmol };
+  if (ldl !== undefined) return { kind: 'ldl', label: 'LDL-c', value: ldl, target: LIPID_TREATMENT_TARGETS.ldlMmol, elevated: ldl > LIPID_TREATMENT_TARGETS.ldlMmol };
   return null;
 }
 
@@ -410,7 +410,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'urgent',
         title: 'Very high LDL cholesterol',
-        description: `Your LDL of ${fmtLdl(inputs.ldlC, us)} is significantly elevated. This may indicate familial hypercholesterolemia. Statin therapy is typically recommended.`,
+        description: `Your LDL-c of ${fmtLdl(inputs.ldlC, us)} is significantly elevated. This may indicate familial hypercholesterolemia. Statin therapy is typically recommended.`,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.high) {
       hasElevatedAtherogenicSuggestion = true;
@@ -419,7 +419,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'attention',
         title: 'High LDL cholesterol',
-        description: `Your LDL of ${fmtLdl(inputs.ldlC, us)} is high. Consider lifestyle modifications and discuss medication options.`,
+        description: `Your LDL-c of ${fmtLdl(inputs.ldlC, us)} is high. Consider lifestyle modifications and discuss medication options.`,
       });
     } else if (inputs.ldlC >= LDL_THRESHOLDS.borderline) {
       suggestions.push({
@@ -427,7 +427,7 @@ export function generateSuggestions(
         category: 'bloodwork',
         priority: 'info',
         title: 'Borderline high LDL cholesterol',
-        description: `Your LDL of ${fmtLdl(inputs.ldlC, us)} is borderline high. Optimal is <${formatDisplayValue('ldl', 2.59, us)} ${getDisplayLabel('ldl', us)} for most adults.`,
+        description: `Your LDL-c of ${fmtLdl(inputs.ldlC, us)} is borderline high. Optimal is <${formatDisplayValue('ldl', 2.59, us)} ${getDisplayLabel('ldl', us)} for most adults.`,
       });
     }
   }

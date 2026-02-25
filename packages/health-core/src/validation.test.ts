@@ -157,10 +157,10 @@ describe('convertValidationErrorsToUnits', () => {
     });
 
     it('converts LDL from mmol/L to mg/dL', () => {
-      const errors = { ldlC: 'LDL must be at most 12.9 mmol/L' };
+      const errors = { ldlC: 'LDL-c must be at most 12.9 mmol/L' };
       const result = convertValidationErrorsToUnits(errors, 'conventional');
       // 12.9 × 38.67 ≈ 499
-      expect(result.ldlC).toBe('LDL must be at most 499 mg/dL');
+      expect(result.ldlC).toBe('LDL-c must be at most 499 mg/dL');
     });
 
     it('converts ApoB from g/L to mg/dL', () => {
@@ -197,13 +197,13 @@ describe('convertValidationErrorsToUnits', () => {
       const errors = {
         weightKg: 'Weight must be at least 20 kg',
         heightCm: 'Height must be at least 50 cm',
-        ldlC: 'LDL must be at most 12.9 mmol/L',
+        ldlC: 'LDL-c must be at most 12.9 mmol/L',
       };
       const result = convertValidationErrorsToUnits(errors, 'conventional');
 
       expect(result.weightKg).toBe('Weight must be at least 44 lbs');
       expect(result.heightCm).toBe('Height must be at least 19.7 in');
-      expect(result.ldlC).toBe('LDL must be at most 499 mg/dL');
+      expect(result.ldlC).toBe('LDL-c must be at most 499 mg/dL');
     });
   });
 

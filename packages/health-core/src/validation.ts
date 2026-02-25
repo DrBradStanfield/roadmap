@@ -62,8 +62,8 @@ export const healthInputSchema = z.object({
     .optional(),
   ldlC: z
     .number()
-    .min(0, 'LDL must be positive')
-    .max(12.9, 'LDL must be at most 12.9 mmol/L')
+    .min(0, 'LDL-c must be positive')
+    .max(12.9, 'LDL-c must be at most 12.9 mmol/L')
     .optional(),
   totalCholesterol: z
     .number()
