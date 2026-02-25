@@ -1,6 +1,6 @@
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import type { UnitSystem } from './units';
-import { EGFR_THRESHOLDS } from './units';
+import { EGFR_THRESHOLDS, LPA_THRESHOLDS } from './units';
 import { generateSuggestions } from './suggestions';
 
 /**
@@ -92,6 +92,49 @@ export function getBMICategory(bmi: number, waistToHeightRatio?: number): string
   if (bmi < 35) return 'Obese (Class I)';
   if (bmi < 40) return 'Obese (Class II)';
   return 'Obese (Class III)';
+}
+
+/**
+ * Get eGFR status label.
+ * Uses CKD staging: Normal (≥70), Low Normal (60-69), Mildly Decreased (45-59),
+ * Moderately Decreased (30-44), Severely Decreased (15-29), Kidney Failure (<15).
+ */
+export function getEgfrStatus(egfr: number): string {
+  if (egfr >= 70) return 'Normal';
+  if (egfr >= EGFR_THRESHOLDS.lowNormal) return 'Low Normal';
+  if (egfr >= EGFR_THRESHOLDS.mildlyDecreased) return 'Mildly Decreased';
+  if (egfr >= EGFR_THRESHOLDS.moderatelyDecreased) return 'Moderately Decreased';
+  if (egfr >= EGFR_THRESHOLDS.severelyDecreased) return 'Severely Decreased';
+  return 'Kidney Failure';
+}
+
+/**
+ * Get Lp(a) status label.
+ * Normal (<75 nmol/L), Borderline (75-124), Elevated (≥125).
+ */
+export function getLpaStatus(lpa: number): string {
+  if (lpa >= LPA_THRESHOLDS.elevated) return 'Elevated';
+  if (lpa >= LPA_THRESHOLDS.normal) return 'Borderline';
+  return 'Normal';
+}
+
+/**
+ * Get lipid status label from a value and its thresholds.
+ * Works for ApoB (2-tier), Non-HDL, LDL, triglycerides (3-tier with veryHigh).
+ */
+export function getLipidStatus(value: number, thresholds: { borderline: number; high: number; veryHigh?: number }): string {
+  if (thresholds.veryHigh !== undefined && value >= thresholds.veryHigh) return 'Very High';
+  if (value >= thresholds.high) return 'High';
+  if (value >= thresholds.borderline) return 'Borderline';
+  return 'Optimal';
+}
+
+/**
+ * Get protein intake rate per kg IBW based on kidney function.
+ * CKD Stage 3b+ (eGFR < 45): 1.0g/kg; otherwise 1.2g/kg.
+ */
+export function getProteinRate(eGFR?: number): number {
+  return eGFR !== undefined && eGFR < EGFR_THRESHOLDS.mildlyDecreased ? 1.0 : 1.2;
 }
 
 /**

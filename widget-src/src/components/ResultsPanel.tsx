@@ -10,10 +10,12 @@ import {
   LDL_THRESHOLDS,
   REMINDER_CATEGORIES,
   REMINDER_CATEGORY_LABELS,
-  EGFR_THRESHOLDS,
-  LPA_THRESHOLDS,
   type ReminderCategory,
   getBMICategory,
+  getEgfrStatus,
+  getLpaStatus,
+  getLipidStatus,
+  getProteinRate,
 } from '@roadmap/health-core';
 import { type ApiReminderPreference, sendReportEmail, getReportHtml } from '../lib/api';
 import { FeedbackForm } from './FeedbackForm';
@@ -64,12 +66,13 @@ function getWaistToHeightStatus(ratio: number): { label: string; className: stri
   return { label: 'Healthy', className: 'status-normal' };
 }
 
-function getLipidStatus(value: number, thresholds: { borderline: number; high: number; veryHigh: number }): { label: string; className: string } {
-  if (value >= thresholds.veryHigh) return { label: 'Very High', className: 'status-urgent' };
-  if (value >= thresholds.high) return { label: 'High', className: 'status-attention' };
-  if (value >= thresholds.borderline) return { label: 'Borderline', className: 'status-info' };
-  return { label: 'Optimal', className: 'status-normal' };
-}
+const statusClassMap: Record<string, string> = {
+  'Normal': 'status-normal', 'Optimal': 'status-normal', 'Healthy': 'status-normal',
+  'Low Normal': 'status-info', 'Borderline': 'status-info', 'Overweight': 'status-info',
+  'Mildly Decreased': 'status-attention', 'High': 'status-attention', 'Elevated': 'status-attention',
+  'Moderately Decreased': 'status-attention', 'Underweight': 'status-attention',
+  'Very High': 'status-urgent', 'Severely Decreased': 'status-urgent', 'Kidney Failure': 'status-urgent',
+};
 
 // Categories that should be consolidated into grouped cards
 const GROUPED_CATEGORIES = ['nutrition', 'screening', 'bloodwork', 'medication'];
@@ -516,7 +519,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
           <div className="stat-card">
             <span className="stat-label">Protein Target</span>
             <span className="stat-value">{results.proteinTarget}g/day</span>
-            <span className="stat-status status-normal">{results.eGFR !== undefined && results.eGFR < EGFR_THRESHOLDS.mildlyDecreased ? '1.0g per kg IBW' : '1.2g per kg IBW'}</span>
+            <span className="stat-status status-normal">{getProteinRate(results.eGFR).toFixed(1)}g per kg IBW</span>
           </div>
           {results.bmi !== undefined && (() => {
             const status = getBmiStatus(results.bmi, results.waistToHeightRatio);
@@ -531,61 +534,52 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
 
           {/* Lipid tile: ApoB → Non-HDL → LDL cascade */}
           {results.apoB !== undefined ? (() => {
-            const status = getLipidStatus(results.apoB, APOB_THRESHOLDS);
+            const label = getLipidStatus(results.apoB, APOB_THRESHOLDS);
             return (
               <div className="stat-card">
                 <span className="stat-label">ApoB</span>
                 <span className="stat-value">{formatDisplayValue('apob', results.apoB, unitSystem)} {getDisplayLabel('apob', unitSystem)}</span>
-                <span className={`stat-status ${status.className}`}>{status.label}</span>
+                <span className={`stat-status ${statusClassMap[label] || ''}`}>{label}</span>
               </div>
             );
           })() : results.nonHdlCholesterol !== undefined ? (() => {
-            const status = getLipidStatus(results.nonHdlCholesterol, NON_HDL_THRESHOLDS);
+            const label = getLipidStatus(results.nonHdlCholesterol, NON_HDL_THRESHOLDS);
             return (
               <div className="stat-card">
                 <span className="stat-label">Non-HDL Cholesterol</span>
                 <span className="stat-value">{formatDisplayValue('ldl', results.nonHdlCholesterol, unitSystem)} {getDisplayLabel('ldl', unitSystem)}</span>
-                <span className={`stat-status ${status.className}`}>{status.label}</span>
+                <span className={`stat-status ${statusClassMap[label] || ''}`}>{label}</span>
               </div>
             );
           })() : results.ldlC !== undefined ? (() => {
-            const status = getLipidStatus(results.ldlC, LDL_THRESHOLDS);
+            const label = getLipidStatus(results.ldlC, LDL_THRESHOLDS);
             return (
               <div className="stat-card">
                 <span className="stat-label">LDL Cholesterol</span>
                 <span className="stat-value">{formatDisplayValue('ldl', results.ldlC, unitSystem)} {getDisplayLabel('ldl', unitSystem)}</span>
-                <span className={`stat-status ${status.className}`}>{status.label}</span>
+                <span className={`stat-status ${statusClassMap[label] || ''}`}>{label}</span>
               </div>
             );
           })() : null}
 
           {results.eGFR !== undefined && (() => {
-            const status = results.eGFR >= 70 ? { label: 'Normal', className: 'status-normal' }
-              : results.eGFR >= 60 ? { label: 'Low Normal', className: 'status-info' }
-              : results.eGFR >= 45 ? { label: 'Mildly Decreased', className: 'status-attention' }
-              : results.eGFR >= 30 ? { label: 'Moderately Decreased', className: 'status-attention' }
-              : results.eGFR >= 15 ? { label: 'Severely Decreased', className: 'status-urgent' }
-              : { label: 'Kidney Failure', className: 'status-urgent' };
+            const label = getEgfrStatus(results.eGFR);
             return (
               <div className="stat-card">
                 <span className="stat-label">eGFR</span>
                 <span className="stat-value">{results.eGFR} mL/min</span>
-                <span className={`stat-status ${status.className}`}>{status.label}</span>
+                <span className={`stat-status ${statusClassMap[label] || ''}`}>{label}</span>
               </div>
             );
           })()}
 
           {results.lpa !== undefined && (() => {
-            const status = results.lpa >= LPA_THRESHOLDS.elevated
-              ? { label: 'Elevated', className: 'status-attention' }
-              : results.lpa >= LPA_THRESHOLDS.normal
-              ? { label: 'Borderline', className: 'status-info' }
-              : { label: 'Normal', className: 'status-normal' };
+            const label = getLpaStatus(results.lpa);
             return (
               <div className="stat-card">
                 <span className="stat-label">Lp(a)</span>
                 <span className="stat-value">{Math.round(results.lpa)} nmol/L</span>
-                <span className={`stat-status ${status.className}`}>{status.label}</span>
+                <span className={`stat-status ${statusClassMap[label] || ''}`}>{label}</span>
               </div>
             );
           })()}

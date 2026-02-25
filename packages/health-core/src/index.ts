@@ -70,6 +70,10 @@ export {
   calculateWaistToHeight,
   calculateAge,
   getBMICategory,
+  getEgfrStatus,
+  getLpaStatus,
+  getLipidStatus,
+  getProteinRate,
   calculateHealthResults,
   calculateEGFR,
 } from './calculations';

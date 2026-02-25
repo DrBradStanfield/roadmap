@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HealthInputs, HealthResults, Suggestion, MedicationInputs } from '../../packages/health-core/src/types';
 import type { UnitSystem, MetricType } from '../../packages/health-core/src/units';
 import { measurementsToInputs, medicationsToInputs, screeningsToInputs } from '../../packages/health-core/src/mappings';
-import { calculateHealthResults, getBMICategory } from '../../packages/health-core/src/calculations';
+import { calculateHealthResults, getBMICategory, getEgfrStatus, getLpaStatus, getLipidStatus, getProteinRate } from '../../packages/health-core/src/calculations';
 import { generateSuggestions } from '../../packages/health-core/src/suggestions';
 import {
   formatDisplayValue,
@@ -19,7 +19,6 @@ import {
   APOB_THRESHOLDS,
   LPA_THRESHOLDS,
   NON_HDL_THRESHOLDS,
-  EGFR_THRESHOLDS,
 } from '../../packages/health-core/src/units';
 import {
   getProfile,
@@ -272,8 +271,8 @@ export function buildWelcomeEmailHtml(
   snapshotRows.push(snapshotRow('Ideal Body Weight', `${formatDisplayValue('weight', results.idealBodyWeight, unitSystem)} ${getDisplayLabel('weight', unitSystem)}`, `for ${heightDisplay} height`));
 
   // Protein Target
-  const proteinRate = results.eGFR != null && results.eGFR < 45 ? '1.0' : '1.2';
-  snapshotRows.push(snapshotRow('Protein Target', `${results.proteinTarget}g/day`, `${proteinRate}g per kg IBW`));
+  const proteinRate = getProteinRate(results.eGFR ?? undefined);
+  snapshotRows.push(snapshotRow('Protein Target', `${results.proteinTarget}g/day`, `${proteinRate.toFixed(1)}g per kg IBW`));
 
   // BMI — uses canonical getBMICategory() for composite WHtR assessment
   if (results.bmi != null) {
@@ -306,14 +305,14 @@ export function buildWelcomeEmailHtml(
 
   // eGFR
   if (results.eGFR != null) {
-    const egfr = getEgfrStatus(results.eGFR);
-    snapshotRows.push(snapshotRow('eGFR', `${Math.round(results.eGFR)} mL/min/1.73m²`, egfr.label, egfr.color));
+    const label = getEgfrStatus(results.eGFR);
+    snapshotRows.push(snapshotRow('eGFR', `${Math.round(results.eGFR)} mL/min/1.73m²`, label, statusColorMap[label]));
   }
 
   // Lp(a)
   if (inputs.lpa != null) {
-    const lpa = getLpaStatus(inputs.lpa);
-    snapshotRows.push(snapshotRow('Lp(a)', `${inputs.lpa} nmol/L`, lpa.label, lpa.color));
+    const label = getLpaStatus(inputs.lpa);
+    snapshotRows.push(snapshotRow('Lp(a)', `${inputs.lpa} nmol/L`, label, statusColorMap[label]));
   }
 
   // Track which metrics are already in the snapshot to avoid duplication
@@ -791,50 +790,34 @@ function getLipidCascade(inputs: HealthInputs, unitSystem: UnitSystem): { label:
   if (inputs.apoB != null) {
     const val = formatDisplayValue('apob', inputs.apoB, unitSystem);
     const unit = getDisplayLabel('apob', unitSystem);
-    const status = inputs.apoB >= APOB_THRESHOLDS.high ? 'High'
-      : inputs.apoB >= APOB_THRESHOLDS.borderline ? 'Borderline' : 'Optimal';
-    const color = inputs.apoB >= APOB_THRESHOLDS.high ? STATUS_COLORS.high
-      : inputs.apoB >= APOB_THRESHOLDS.borderline ? STATUS_COLORS.borderline : STATUS_COLORS.normal;
-    return { label: 'ApoB', value: `${val} ${unit}`, status, color };
+    const status = getLipidStatus(inputs.apoB, APOB_THRESHOLDS);
+    return { label: 'ApoB', value: `${val} ${unit}`, status, color: statusColorMap[status] || STATUS_COLORS.normal };
   }
   if (inputs.totalCholesterol != null && inputs.hdlC != null) {
     const nonHdl = inputs.totalCholesterol - inputs.hdlC;
     const val = formatDisplayValue('total_cholesterol', nonHdl, unitSystem);
     const unit = getDisplayLabel('total_cholesterol', unitSystem);
-    const status = nonHdl >= NON_HDL_THRESHOLDS.veryHigh ? 'Very High'
-      : nonHdl >= NON_HDL_THRESHOLDS.high ? 'High'
-      : nonHdl >= NON_HDL_THRESHOLDS.borderline ? 'Borderline' : 'Optimal';
-    const color = nonHdl >= NON_HDL_THRESHOLDS.high ? STATUS_COLORS.high
-      : nonHdl >= NON_HDL_THRESHOLDS.borderline ? STATUS_COLORS.borderline : STATUS_COLORS.normal;
-    return { label: 'Non-HDL Cholesterol', value: `${val} ${unit}`, status, color };
+    const status = getLipidStatus(nonHdl, NON_HDL_THRESHOLDS);
+    return { label: 'Non-HDL Cholesterol', value: `${val} ${unit}`, status, color: statusColorMap[status] || STATUS_COLORS.normal };
   }
   if (inputs.ldlC != null) {
     const val = formatDisplayValue('ldl', inputs.ldlC, unitSystem);
     const unit = getDisplayLabel('ldl', unitSystem);
-    const status = inputs.ldlC >= LDL_THRESHOLDS.veryHigh ? 'Very High'
-      : inputs.ldlC >= LDL_THRESHOLDS.high ? 'High'
-      : inputs.ldlC >= LDL_THRESHOLDS.borderline ? 'Borderline' : 'Optimal';
-    const color = inputs.ldlC >= LDL_THRESHOLDS.high ? STATUS_COLORS.high
-      : inputs.ldlC >= LDL_THRESHOLDS.borderline ? STATUS_COLORS.borderline : STATUS_COLORS.normal;
-    return { label: 'LDL Cholesterol', value: `${val} ${unit}`, status, color };
+    const status = getLipidStatus(inputs.ldlC, LDL_THRESHOLDS);
+    return { label: 'LDL Cholesterol', value: `${val} ${unit}`, status, color: statusColorMap[status] || STATUS_COLORS.normal };
   }
   return null;
 }
 
-function getEgfrStatus(egfr: number): { label: string; color: string } {
-  if (egfr >= 70) return { label: 'Normal', color: STATUS_COLORS.normal };
-  if (egfr >= EGFR_THRESHOLDS.lowNormal) return { label: 'Low Normal', color: STATUS_COLORS.borderline };
-  if (egfr >= EGFR_THRESHOLDS.mildlyDecreased) return { label: 'Mildly Decreased', color: STATUS_COLORS.borderline };
-  if (egfr >= EGFR_THRESHOLDS.moderatelyDecreased) return { label: 'Moderately Decreased', color: STATUS_COLORS.high };
-  if (egfr >= EGFR_THRESHOLDS.severelyDecreased) return { label: 'Severely Decreased', color: STATUS_COLORS.high };
-  return { label: 'Kidney Failure', color: STATUS_COLORS.high };
-}
-
-function getLpaStatus(lpa: number): { label: string; color: string } {
-  if (lpa >= LPA_THRESHOLDS.elevated) return { label: 'Elevated', color: STATUS_COLORS.high };
-  if (lpa >= LPA_THRESHOLDS.normal) return { label: 'Borderline', color: STATUS_COLORS.borderline };
-  return { label: 'Normal', color: STATUS_COLORS.normal };
-}
+// Status label → email color mapping (canonical status functions live in health-core/calculations.ts)
+const statusColorMap: Record<string, string> = {
+  'Normal': STATUS_COLORS.normal, 'Optimal': STATUS_COLORS.normal, 'Healthy': STATUS_COLORS.normal,
+  'Low Normal': STATUS_COLORS.borderline, 'Borderline': STATUS_COLORS.borderline,
+  'Mildly Decreased': STATUS_COLORS.borderline, 'Overweight': STATUS_COLORS.borderline,
+  'High': STATUS_COLORS.high, 'Elevated': STATUS_COLORS.high,
+  'Moderately Decreased': STATUS_COLORS.high, 'Severely Decreased': STATUS_COLORS.high,
+  'Very High': STATUS_COLORS.high, 'Kidney Failure': STATUS_COLORS.high,
+};
 
 /**
  * Build a "Current Medications" section for the email.

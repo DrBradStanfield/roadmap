@@ -8,6 +8,10 @@ import {
   getBMICategory,
   calculateHealthResults,
   calculateEGFR,
+  getEgfrStatus,
+  getLpaStatus,
+  getLipidStatus,
+  getProteinRate,
 } from './calculations';
 
 describe('calculateIBW (Ideal Body Weight)', () => {
@@ -366,5 +370,99 @@ describe('calculateHealthResults', () => {
     expect(results.eGFR).toBeDefined();
     expect(results.eGFR!).toBeGreaterThanOrEqual(45);
     expect(results.proteinTarget).toBe(85);
+  });
+});
+
+describe('getEgfrStatus', () => {
+  it('classifies Normal (≥70)', () => {
+    expect(getEgfrStatus(70)).toBe('Normal');
+    expect(getEgfrStatus(100)).toBe('Normal');
+  });
+
+  it('classifies Low Normal (60-69)', () => {
+    expect(getEgfrStatus(60)).toBe('Low Normal');
+    expect(getEgfrStatus(69)).toBe('Low Normal');
+  });
+
+  it('classifies Mildly Decreased (45-59)', () => {
+    expect(getEgfrStatus(45)).toBe('Mildly Decreased');
+    expect(getEgfrStatus(59)).toBe('Mildly Decreased');
+  });
+
+  it('classifies Moderately Decreased (30-44)', () => {
+    expect(getEgfrStatus(30)).toBe('Moderately Decreased');
+    expect(getEgfrStatus(44)).toBe('Moderately Decreased');
+  });
+
+  it('classifies Severely Decreased (15-29)', () => {
+    expect(getEgfrStatus(15)).toBe('Severely Decreased');
+    expect(getEgfrStatus(29)).toBe('Severely Decreased');
+  });
+
+  it('classifies Kidney Failure (<15)', () => {
+    expect(getEgfrStatus(14)).toBe('Kidney Failure');
+    expect(getEgfrStatus(0)).toBe('Kidney Failure');
+  });
+});
+
+describe('getLpaStatus', () => {
+  it('classifies Normal (<75)', () => {
+    expect(getLpaStatus(50)).toBe('Normal');
+    expect(getLpaStatus(74)).toBe('Normal');
+  });
+
+  it('classifies Borderline (75-124)', () => {
+    expect(getLpaStatus(75)).toBe('Borderline');
+    expect(getLpaStatus(124)).toBe('Borderline');
+  });
+
+  it('classifies Elevated (≥125)', () => {
+    expect(getLpaStatus(125)).toBe('Elevated');
+    expect(getLpaStatus(200)).toBe('Elevated');
+  });
+});
+
+describe('getLipidStatus', () => {
+  const thresholds3 = { borderline: 2.6, high: 3.4, veryHigh: 4.9 };
+  const thresholds2 = { borderline: 0.9, high: 1.2 };
+
+  it('classifies Optimal (below borderline)', () => {
+    expect(getLipidStatus(2.0, thresholds3)).toBe('Optimal');
+    expect(getLipidStatus(0.8, thresholds2)).toBe('Optimal');
+  });
+
+  it('classifies Borderline', () => {
+    expect(getLipidStatus(2.6, thresholds3)).toBe('Borderline');
+    expect(getLipidStatus(0.9, thresholds2)).toBe('Borderline');
+  });
+
+  it('classifies High', () => {
+    expect(getLipidStatus(3.4, thresholds3)).toBe('High');
+    expect(getLipidStatus(1.2, thresholds2)).toBe('High');
+  });
+
+  it('classifies Very High when veryHigh threshold exists', () => {
+    expect(getLipidStatus(4.9, thresholds3)).toBe('Very High');
+  });
+
+  it('returns High (not Very High) when veryHigh threshold is absent', () => {
+    expect(getLipidStatus(5.0, thresholds2)).toBe('High');
+  });
+});
+
+describe('getProteinRate', () => {
+  it('returns 1.0 when eGFR < 45 (CKD 3b+)', () => {
+    expect(getProteinRate(44)).toBe(1.0);
+    expect(getProteinRate(10)).toBe(1.0);
+  });
+
+  it('returns 1.2 when eGFR >= 45', () => {
+    expect(getProteinRate(45)).toBe(1.2);
+    expect(getProteinRate(100)).toBe(1.2);
+  });
+
+  it('returns 1.2 when eGFR is undefined', () => {
+    expect(getProteinRate(undefined)).toBe(1.2);
+    expect(getProteinRate()).toBe(1.2);
   });
 });
