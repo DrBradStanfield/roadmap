@@ -842,7 +842,7 @@
 .guest-cta {
   position: sticky;
   top: -24px;
-  margin: -24px -24px 16px;
+  margin: -24px -24px 0;
   padding: 16px 20px;
   z-index: 5;
   background: #00A38B;
