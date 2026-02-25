@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { sendFeedback } from '../lib/api';
 
 type FormStatus = 'idle' | 'sending' | 'sent' | 'error';
@@ -18,7 +18,16 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<FormStatus>('idle');
 
+  const formRef = useRef<HTMLFormElement>(null);
   const canSubmit = email.trim() !== '' && message.trim() !== '' && status !== 'sending';
+
+  useEffect(() => {
+    if (expanded) {
+      requestAnimationFrame(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      });
+    }
+  }, [expanded]);
 
   function handleClose() {
     setExpanded(false);
@@ -72,7 +81,7 @@ export function FeedbackForm({ initialExpanded = false, onClose, showSourceLink 
           )}
         </div>
       ) : (
-        <form className="feedback-form" onSubmit={handleSubmit}>
+        <form ref={formRef} className="feedback-form" onSubmit={handleSubmit}>
           <label className="feedback-label">
             Email
             <input
