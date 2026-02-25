@@ -904,6 +904,11 @@
   font-size: 14px;
 }
 
+.guest-cta-inline .guest-cta-btn:hover {
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
 .account-status-row {
   display: flex;
   align-items: center;
