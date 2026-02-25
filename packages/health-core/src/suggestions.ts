@@ -690,50 +690,40 @@ export function generateSuggestions(
         const shouldSwitch = onStatin && shouldSuggestSwitch(statin.drug, statin.dose);
         const atMaxPotency = onStatin && isOnMaxPotency(statin.drug, statin.dose);
 
-        if (statinTolerated && (canIncrease || shouldSwitch)) {
-          if (!medications.statinEscalation || medications.statinEscalation === 'not_yet') {
-            if (canIncrease) {
-              suggestions.push({
-                id: 'med-statin-increase',
-                category: 'medication',
-                priority: 'attention',
-                title: 'Consider increasing statin dose',
-                description: `${lipidReason} Discuss increasing your statin dose with your doctor.`,
-              });
-            } else if (shouldSwitch) {
-              // Capitalize first letter of drug name
-              const drugName = statin.drug.charAt(0).toUpperCase() + statin.drug.slice(1);
-              suggestions.push({
-                id: 'med-statin-switch',
-                category: 'medication',
-                priority: 'attention',
-                title: 'Consider switching to a more potent statin',
-                description: `${lipidReason} You're on the maximum dose of ${drugName}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.`,
-              });
-            }
-          } else {
-            // Statin escalation not tolerated — Step 4: PCSK9i
-            if (!medications.pcsk9i || medications.pcsk9i === 'no' || medications.pcsk9i === 'not_yet') {
-              suggestions.push({
-                id: 'med-pcsk9i',
-                category: 'medication',
-                priority: 'attention',
-                title: 'Consider a PCSK9 inhibitor',
-                description: `${lipidReason} Discuss a PCSK9 inhibitor with your doctor.`,
-              });
-            }
-          }
-        } else {
-          // Already on max potency, statin not tolerated, or no escalation possible — go to PCSK9i
-          if (!medications.pcsk9i || medications.pcsk9i === 'no' || medications.pcsk9i === 'not_yet') {
+        // Step 3: Escalate statin (only if tolerated, can escalate, and not yet tried)
+        let escalationHandled = false;
+        if (statinTolerated && (canIncrease || shouldSwitch) &&
+            (!medications.statinEscalation || medications.statinEscalation === 'not_yet')) {
+          escalationHandled = true;
+          if (canIncrease) {
             suggestions.push({
-              id: 'med-pcsk9i',
+              id: 'med-statin-increase',
               category: 'medication',
               priority: 'attention',
-              title: 'Consider a PCSK9 inhibitor',
-              description: `${lipidReason} Discuss a PCSK9 inhibitor with your doctor.`,
+              title: 'Consider increasing statin dose',
+              description: `${lipidReason} Discuss increasing your statin dose with your doctor.`,
+            });
+          } else if (shouldSwitch) {
+            const drugName = statin.drug.charAt(0).toUpperCase() + statin.drug.slice(1);
+            suggestions.push({
+              id: 'med-statin-switch',
+              category: 'medication',
+              priority: 'attention',
+              title: 'Consider switching to a more potent statin',
+              description: `${lipidReason} You're on the maximum dose of ${drugName}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.`,
             });
           }
+        }
+
+        // Step 4: PCSK9i — when escalation isn't an option or was already tried
+        if (!escalationHandled && (!medications.pcsk9i || medications.pcsk9i === 'no' || medications.pcsk9i === 'not_yet')) {
+          suggestions.push({
+            id: 'med-pcsk9i',
+            category: 'medication',
+            priority: 'attention',
+            title: 'Consider a PCSK9 inhibitor',
+            description: `${lipidReason} Discuss a PCSK9 inhibitor with your doctor.`,
+          });
         }
       }
     }
@@ -763,6 +753,19 @@ export function generateSuggestions(
       if (!d) return '';
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       return `${months[d.getMonth()]} ${d.getFullYear()}`;
+    }
+
+    /** Push overdue/upcoming screening suggestion based on status. */
+    function pushScreeningStatus(
+      idPrefix: string, status: 'overdue' | 'upcoming' | 'unknown',
+      overdueTitle: string, overdueDesc: string,
+      upToDateTitle: string, upToDateDesc: string,
+    ): void {
+      if (status === 'overdue') {
+        suggestions.push({ id: `screening-${idPrefix}-overdue`, category: 'screening', priority: 'attention', title: overdueTitle, description: overdueDesc });
+      } else if (status === 'upcoming') {
+        suggestions.push({ id: `screening-${idPrefix}-upcoming`, category: 'screening', priority: 'info', title: upToDateTitle, description: upToDateDesc });
+      }
     }
 
     /**
@@ -847,23 +850,10 @@ export function generateSuggestions(
           suggestions.push(followup);
         } else {
           const status = screeningStatus(screenings.colorectalLastDate, screenings.colorectalMethod);
-          if (status === 'overdue') {
-            suggestions.push({
-              id: 'screening-colorectal-overdue',
-              category: 'screening',
-              priority: 'attention',
-              title: 'Colorectal screening overdue',
-              description: `Your next colorectal screening was due ${nextDueStr(screenings.colorectalLastDate, screenings.colorectalMethod)}. Please schedule your screening.`,
-            });
-          } else if (status === 'upcoming') {
-            suggestions.push({
-              id: 'screening-colorectal-upcoming',
-              category: 'screening',
-              priority: 'info',
-              title: 'Colorectal screening up to date',
-              description: `Next screening due ${nextDueStr(screenings.colorectalLastDate, screenings.colorectalMethod)}.`,
-            });
-          }
+          const due = nextDueStr(screenings.colorectalLastDate, screenings.colorectalMethod);
+          pushScreeningStatus('colorectal', status,
+            'Colorectal screening overdue', `Your next colorectal screening was due ${due}. Please schedule your screening.`,
+            'Colorectal screening up to date', `Next screening due ${due}.`);
         }
       }
     }
@@ -886,23 +876,10 @@ export function generateSuggestions(
           suggestions.push(followup);
         } else {
           const status = screeningStatus(screenings.breastLastDate, screenings.breastFrequency);
-          if (status === 'overdue') {
-            suggestions.push({
-              id: 'screening-breast-overdue',
-              category: 'screening',
-              priority: 'attention',
-              title: 'Mammogram overdue',
-              description: `Your next mammogram was due ${nextDueStr(screenings.breastLastDate, screenings.breastFrequency)}. Please schedule your screening.`,
-            });
-          } else if (status === 'upcoming') {
-            suggestions.push({
-              id: 'screening-breast-upcoming',
-              category: 'screening',
-              priority: 'info',
-              title: 'Mammogram up to date',
-              description: `Next mammogram due ${nextDueStr(screenings.breastLastDate, screenings.breastFrequency)}.`,
-            });
-          }
+          const due = nextDueStr(screenings.breastLastDate, screenings.breastFrequency);
+          pushScreeningStatus('breast', status,
+            'Mammogram overdue', `Your next mammogram was due ${due}. Please schedule your screening.`,
+            'Mammogram up to date', `Next mammogram due ${due}.`);
         }
       }
     }
@@ -923,23 +900,10 @@ export function generateSuggestions(
           suggestions.push(followup);
         } else {
           const status = screeningStatus(screenings.cervicalLastDate, screenings.cervicalMethod);
-          if (status === 'overdue') {
-            suggestions.push({
-              id: 'screening-cervical-overdue',
-              category: 'screening',
-              priority: 'attention',
-              title: 'Cervical screening overdue',
-              description: `Your next cervical screening was due ${nextDueStr(screenings.cervicalLastDate, screenings.cervicalMethod)}. Please schedule your screening.`,
-            });
-          } else if (status === 'upcoming') {
-            suggestions.push({
-              id: 'screening-cervical-upcoming',
-              category: 'screening',
-              priority: 'info',
-              title: 'Cervical screening up to date',
-              description: `Next screening due ${nextDueStr(screenings.cervicalLastDate, screenings.cervicalMethod)}.`,
-            });
-          }
+          const due = nextDueStr(screenings.cervicalLastDate, screenings.cervicalMethod);
+          pushScreeningStatus('cervical', status,
+            'Cervical screening overdue', `Your next cervical screening was due ${due}. Please schedule your screening.`,
+            'Cervical screening up to date', `Next screening due ${due}.`);
         }
       }
     }
@@ -962,23 +926,10 @@ export function generateSuggestions(
           suggestions.push(followup);
         } else {
           const status = screeningStatus(screenings.lungLastDate, screenings.lungScreening);
-          if (status === 'overdue') {
-            suggestions.push({
-              id: 'screening-lung-overdue',
-              category: 'screening',
-              priority: 'attention',
-              title: 'Lung screening overdue',
-              description: `Your next low-dose CT was due ${nextDueStr(screenings.lungLastDate, screenings.lungScreening)}. Please schedule your screening.`,
-            });
-          } else if (status === 'upcoming') {
-            suggestions.push({
-              id: 'screening-lung-upcoming',
-              category: 'screening',
-              priority: 'info',
-              title: 'Lung screening up to date',
-              description: `Next low-dose CT due ${nextDueStr(screenings.lungLastDate, screenings.lungScreening)}.`,
-            });
-          }
+          const due = nextDueStr(screenings.lungLastDate, screenings.lungScreening);
+          pushScreeningStatus('lung', status,
+            'Lung screening overdue', `Your next low-dose CT was due ${due}. Please schedule your screening.`,
+            'Lung screening up to date', `Next low-dose CT due ${due}.`);
         }
       }
     }
@@ -995,23 +946,10 @@ export function generateSuggestions(
         });
       } else if (screenings.prostateDiscussion === 'will_screen' && screenings.prostateLastDate) {
         const status = screeningStatus(screenings.prostateLastDate, 'will_screen');
-        if (status === 'overdue') {
-          suggestions.push({
-            id: 'screening-prostate-overdue',
-            category: 'screening',
-            priority: 'attention',
-            title: 'PSA test overdue',
-            description: `Your next PSA test was due ${nextDueStr(screenings.prostateLastDate, 'will_screen')}. Please schedule your test.`,
-          });
-        } else if (status === 'upcoming') {
-          suggestions.push({
-            id: 'screening-prostate-upcoming',
-            category: 'screening',
-            priority: 'info',
-            title: 'PSA test up to date',
-            description: `Next PSA test due ${nextDueStr(screenings.prostateLastDate, 'will_screen')}.`,
-          });
-        }
+        const due = nextDueStr(screenings.prostateLastDate, 'will_screen');
+        pushScreeningStatus('prostate', status,
+          'PSA test overdue', `Your next PSA test was due ${due}. Please schedule your test.`,
+          'PSA test up to date', `Next PSA test due ${due}.`);
       }
 
       // Elevated PSA warning
@@ -1068,23 +1006,10 @@ export function generateSuggestions(
           suggestions.push(followup);
         } else if (screenings.dexaLastDate) {
           const status = screeningStatus(screenings.dexaLastDate, 'dexa_scan');
-          if (status === 'overdue') {
-            suggestions.push({
-              id: 'screening-dexa-overdue',
-              category: 'screening',
-              priority: 'attention',
-              title: 'Bone density scan overdue',
-              description: `Your next DEXA scan was due ${nextDueStr(screenings.dexaLastDate, 'dexa_scan')}. Please schedule your scan.`,
-            });
-          } else if (status === 'upcoming') {
-            suggestions.push({
-              id: 'screening-dexa-upcoming',
-              category: 'screening',
-              priority: 'info',
-              title: 'Bone density scan up to date',
-              description: `Next DEXA scan due around ${nextDueStr(screenings.dexaLastDate, 'dexa_scan')}.`,
-            });
-          }
+          const due = nextDueStr(screenings.dexaLastDate, 'dexa_scan');
+          pushScreeningStatus('dexa', status,
+            'Bone density scan overdue', `Your next DEXA scan was due ${due}. Please schedule your scan.`,
+            'Bone density scan up to date', `Next DEXA scan due around ${due}.`);
         }
       } else if (screenings.dexaResult === 'awaiting') {
         // Awaiting results — no action needed
@@ -1092,23 +1017,10 @@ export function generateSuggestions(
         // Normal or osteopenia — result-based interval
         const intervalKey = screenings.dexaResult === 'osteopenia' ? 'dexa_osteopenia' : 'dexa_normal';
         const status = screeningStatus(screenings.dexaLastDate, intervalKey);
-        if (status === 'overdue') {
-          suggestions.push({
-            id: 'screening-dexa-overdue',
-            category: 'screening',
-            priority: 'attention',
-            title: 'Bone density scan overdue',
-            description: `Your next DEXA scan was due ${nextDueStr(screenings.dexaLastDate, intervalKey)}. Please schedule your scan.`,
-          });
-        } else if (status === 'upcoming') {
-          suggestions.push({
-            id: 'screening-dexa-upcoming',
-            category: 'screening',
-            priority: 'info',
-            title: 'Bone density scan up to date',
-            description: `Next DEXA scan due around ${nextDueStr(screenings.dexaLastDate, intervalKey)}.`,
-          });
-        }
+        const due = nextDueStr(screenings.dexaLastDate, intervalKey);
+        pushScreeningStatus('dexa', status,
+          'Bone density scan overdue', `Your next DEXA scan was due ${due}. Please schedule your scan.`,
+          'Bone density scan up to date', `Next DEXA scan due around ${due}.`);
       }
     }
   }

@@ -42,6 +42,28 @@ const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL || 'https://drstanfield.
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 // ---------------------------------------------------------------------------
+// Shared data loading helper
+// ---------------------------------------------------------------------------
+
+/** Fetch and convert all user health data into health-core input format. */
+async function loadHealthData(client: SupabaseClient) {
+  const [profile, latestMeasurements, medications, screenings] = await Promise.all([
+    getProfile(client),
+    getLatestMeasurements(client),
+    getMedications(client),
+    getScreenings(client),
+  ]);
+  if (!profile) return null;
+  const apiProfile = toApiProfile(profile);
+  const inputs = measurementsToInputs(
+    latestMeasurements.map(toApiMeasurement), apiProfile,
+  ) as HealthInputs;
+  const medInputs = medicationsToInputs(medications.map(toApiMedication));
+  const screenInputs = screeningsToInputs(screenings.map(toApiScreening));
+  return { profile, inputs, medInputs, screenInputs };
+}
+
+// ---------------------------------------------------------------------------
 // Main entry point — fire-and-forget, never throws
 // ---------------------------------------------------------------------------
 
@@ -82,29 +104,14 @@ export async function checkAndSendWelcomeEmail(
 
     try {
       // 2. We won the race. Fetch all user data needed for the email.
-      const [profile, latestMeasurements, medications, screenings] = await Promise.all([
-        getProfile(client),
-        getLatestMeasurements(client),
-        getMedications(client),
-        getScreenings(client),
-      ]);
-
-      if (!profile) {
+      const data = await loadHealthData(client);
+      if (!data) {
         console.log('No profile found after flag claim, skipping welcome email');
         return false;
       }
+      const { profile, inputs, medInputs, screenInputs } = data;
 
-      // 3. Convert to health-core input format
-      const apiProfile = toApiProfile(profile);
-      const apiMeasurements = latestMeasurements.map(toApiMeasurement);
-      const apiMedications = medications.map(toApiMedication);
-      const apiScreenings = screenings.map(toApiScreening);
-
-      const inputs = measurementsToInputs(apiMeasurements, apiProfile) as HealthInputs;
-      const medInputs = medicationsToInputs(apiMedications);
-      const screenInputs = screeningsToInputs(apiScreenings);
-
-      // 4. Require minimum data (height + sex)
+      // 3. Require minimum data (height + sex)
       if (!inputs.heightCm || !inputs.sex) {
         console.log('Insufficient data for welcome email (need height + sex)');
         // Revert flag — user may add data later
@@ -155,25 +162,11 @@ export async function generateReportHtml(
   _userId: string,
   client: SupabaseClient,
 ): Promise<{ html: string; email: string } | { error: string }> {
-  const [profile, latestMeasurements, medications, screenings] = await Promise.all([
-    getProfile(client),
-    getLatestMeasurements(client),
-    getMedications(client),
-    getScreenings(client),
-  ]);
-
-  if (!profile) {
+  const data = await loadHealthData(client);
+  if (!data) {
     return { error: 'Profile not found' };
   }
-
-  const apiProfile = toApiProfile(profile);
-  const apiMeasurements = latestMeasurements.map(toApiMeasurement);
-  const apiMedications = medications.map(toApiMedication);
-  const apiScreenings = screenings.map(toApiScreening);
-
-  const inputs = measurementsToInputs(apiMeasurements, apiProfile) as HealthInputs;
-  const medInputs = medicationsToInputs(apiMedications);
-  const screenInputs = screeningsToInputs(apiScreenings);
+  const { profile, inputs, medInputs, screenInputs } = data;
 
   if (!inputs.heightCm || !inputs.sex) {
     return { error: 'Insufficient data (need height + sex)' };

@@ -81,6 +81,36 @@ function hba1cIfccToNgsp(ifcc: number): number {
 const identity = (v: number) => v;
 
 // ---------------------------------------------------------------------------
+// Unit definition factories (reduce boilerplate for common patterns)
+// ---------------------------------------------------------------------------
+
+type Range = { min: number; max: number };
+
+/** mmol/L ↔ mg/dL conversion using a multiplication factor. */
+function makeMmolMgdlUnit(factor: number, siRange: Range, convRange: Range, siDp = 1, convDp = 0): UnitDef {
+  return {
+    canonical: 'mmol/L',
+    label: { si: 'mmol/L', conventional: 'mg/dL' },
+    toCanonical: { si: identity, conventional: (v) => v / factor },
+    fromCanonical: { si: identity, conventional: (v) => v * factor },
+    validationRange: { si: siRange, conventional: convRange },
+    decimalPlaces: { si: siDp, conventional: convDp },
+  };
+}
+
+/** Same unit in both systems (no conversion needed). */
+function makeIdentityUnit(canonical: string, range: Range, dp: number): UnitDef {
+  return {
+    canonical,
+    label: { si: canonical, conventional: canonical },
+    toCanonical: { si: identity, conventional: identity },
+    fromCanonical: { si: identity, conventional: identity },
+    validationRange: { si: range, conventional: range },
+    decimalPlaces: { si: dp, conventional: dp },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Unit definitions
 // ---------------------------------------------------------------------------
 
@@ -157,101 +187,13 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     decimalPlaces: { si: 0, conventional: 1 },
   },
 
-  ldl: {
-    canonical: 'mmol/L',
-    label: { si: 'mmol/L', conventional: 'mg/dL' },
-    toCanonical: {
-      si: identity,
-      conventional: (v) => v / CHOLESTEROL_FACTOR,
-    },
-    fromCanonical: {
-      si: identity,
-      conventional: (v) => v * CHOLESTEROL_FACTOR,
-    },
-    validationRange: {
-      si: { min: 0, max: 12.9 }, // ~0-500 mg/dL
-      conventional: { min: 0, max: 500 },
-    },
-    decimalPlaces: { si: 1, conventional: 0 },
-  },
+  ldl: makeMmolMgdlUnit(CHOLESTEROL_FACTOR, { min: 0, max: 12.9 }, { min: 0, max: 500 }),
+  hdl: makeMmolMgdlUnit(CHOLESTEROL_FACTOR, { min: 0, max: 5.2 }, { min: 0, max: 200 }),
+  total_cholesterol: makeMmolMgdlUnit(CHOLESTEROL_FACTOR, { min: 0, max: 15 }, { min: 0, max: 580 }),
+  triglycerides: makeMmolMgdlUnit(TRIGLYCERIDES_FACTOR, { min: 0, max: 22.6 }, { min: 0, max: 2000 }),
 
-  hdl: {
-    canonical: 'mmol/L',
-    label: { si: 'mmol/L', conventional: 'mg/dL' },
-    toCanonical: {
-      si: identity,
-      conventional: (v) => v / CHOLESTEROL_FACTOR,
-    },
-    fromCanonical: {
-      si: identity,
-      conventional: (v) => v * CHOLESTEROL_FACTOR,
-    },
-    validationRange: {
-      si: { min: 0, max: 5.2 }, // ~0-200 mg/dL
-      conventional: { min: 0, max: 200 },
-    },
-    decimalPlaces: { si: 1, conventional: 0 },
-  },
-
-  total_cholesterol: {
-    canonical: 'mmol/L',
-    label: { si: 'mmol/L', conventional: 'mg/dL' },
-    toCanonical: {
-      si: identity,
-      conventional: (v) => v / CHOLESTEROL_FACTOR,
-    },
-    fromCanonical: {
-      si: identity,
-      conventional: (v) => v * CHOLESTEROL_FACTOR,
-    },
-    validationRange: {
-      si: { min: 0, max: 15 }, // ~0-580 mg/dL
-      conventional: { min: 0, max: 580 },
-    },
-    decimalPlaces: { si: 1, conventional: 0 },
-  },
-
-  triglycerides: {
-    canonical: 'mmol/L',
-    label: { si: 'mmol/L', conventional: 'mg/dL' },
-    toCanonical: {
-      si: identity,
-      conventional: (v) => v / TRIGLYCERIDES_FACTOR,
-    },
-    fromCanonical: {
-      si: identity,
-      conventional: (v) => v * TRIGLYCERIDES_FACTOR,
-    },
-    validationRange: {
-      si: { min: 0, max: 22.6 }, // ~0-2000 mg/dL
-      conventional: { min: 0, max: 2000 },
-    },
-    decimalPlaces: { si: 1, conventional: 0 },
-  },
-
-  systolic_bp: {
-    canonical: 'mmHg',
-    label: { si: 'mmHg', conventional: 'mmHg' },
-    toCanonical: { si: identity, conventional: identity },
-    fromCanonical: { si: identity, conventional: identity },
-    validationRange: {
-      si: { min: 60, max: 250 },
-      conventional: { min: 60, max: 250 },
-    },
-    decimalPlaces: { si: 0, conventional: 0 },
-  },
-
-  diastolic_bp: {
-    canonical: 'mmHg',
-    label: { si: 'mmHg', conventional: 'mmHg' },
-    toCanonical: { si: identity, conventional: identity },
-    fromCanonical: { si: identity, conventional: identity },
-    validationRange: {
-      si: { min: 40, max: 150 },
-      conventional: { min: 40, max: 150 },
-    },
-    decimalPlaces: { si: 0, conventional: 0 },
-  },
+  systolic_bp: makeIdentityUnit('mmHg', { min: 60, max: 250 }, 0),
+  diastolic_bp: makeIdentityUnit('mmHg', { min: 40, max: 150 }, 0),
 
   apob: {
     canonical: 'g/L',
@@ -288,40 +230,8 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     },
     decimalPlaces: { si: 0, conventional: 2 },
   },
-  psa: {
-    canonical: 'ng/mL',
-    label: { si: 'ng/mL', conventional: 'ng/mL' }, // Same in both systems
-    toCanonical: {
-      si: identity,
-      conventional: identity,
-    },
-    fromCanonical: {
-      si: identity,
-      conventional: identity,
-    },
-    validationRange: {
-      si: { min: 0, max: 100 },
-      conventional: { min: 0, max: 100 },
-    },
-    decimalPlaces: { si: 1, conventional: 1 },
-  },
-  lpa: {
-    canonical: 'nmol/L',
-    label: { si: 'nmol/L', conventional: 'nmol/L' }, // Same in both systems
-    toCanonical: {
-      si: identity,
-      conventional: identity,
-    },
-    fromCanonical: {
-      si: identity,
-      conventional: identity,
-    },
-    validationRange: {
-      si: { min: 0, max: 750 },
-      conventional: { min: 0, max: 750 },
-    },
-    decimalPlaces: { si: 0, conventional: 0 },
-  },
+  psa: makeIdentityUnit('ng/mL', { min: 0, max: 100 }, 1),
+  lpa: makeIdentityUnit('nmol/L', { min: 0, max: 750 }, 0),
 };
 
 // ---------------------------------------------------------------------------
