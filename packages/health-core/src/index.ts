@@ -79,7 +79,8 @@ export {
 } from './calculations';
 
 // Suggestions
-export { generateSuggestions, LIPID_TREATMENT_TARGETS } from './suggestions';
+export { generateSuggestions, LIPID_TREATMENT_TARGETS, resolveBestLipidMarker } from './suggestions';
+export type { LipidMarker } from './suggestions';
 
 // Validation
 export {

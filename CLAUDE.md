@@ -297,6 +297,26 @@ Backend: Initialized in `app/entry.server.tsx`.
 - **NEVER modify `health_roadmap_authenticated` flag logic** without understanding the full auto-redirect flow. This flag is set by sync-embed and the widget after confirming cloud data exists. It's read by `sync-embed.liquid` (logged-out branch) to clear stale data, and by the storefront to trigger session-acquisition redirects. Removing or delaying this flag breaks auto-login.
 - **Sync-embed and widget sync are mutually exclusive.** `sync-embed.liquid` exits early if `document.getElementById('health-tool-root')` exists (line 18). On widget pages, the widget handles sync directly. On all other pages, sync-embed handles it. Never add sync logic that runs in both places simultaneously.
 
+## Scalability & DDoS
+
+**DDoS protection layers**:
+- Shopify CDN handles all storefront traffic (static assets, Liquid templates) — enterprise-grade DDoS mitigation
+- App proxy routes through Shopify → HMAC verification rejects unauthenticated API calls
+- Fly.io provides basic network-level DDoS protection
+- API rate limiting: 60 req/min per customer (in-memory, per-process — not distributed across machines)
+- Guest users use localStorage only — zero backend load
+
+**Current Fly.io config** (`fly.toml`): shared-cpu-1x, 1GB RAM, 1 machine minimum. Auto-scaling enabled (`auto_start_machines = true`, `auto_stop_machines = 'stop'`). Cold-start for new machines: ~5-15 seconds.
+
+**Scaling options if needed**:
+- Bump machine size: shared-cpu-2x/2GB (~$12/mo) or performance-2x/4GB (~$62/mo). API work is I/O-bound (Supabase), so shared CPU is usually sufficient.
+- Increase `min_machines_running` for zero-downtime redundancy (doubles cost).
+- Rate limiting is in-memory — for distributed rate limiting across multiple machines, would need Redis or similar.
+
+**Database connections**: Supabase JS client uses HTTP/REST via PostgREST (already pooled internally). Only `SESSION_DATABASE_URL` (Shopify session storage) uses direct Postgres connections. Connection limits depend on Supabase plan (Free: ~50, Pro: ~200).
+
+**Reminder cron**: Processes users in batches of 50 with concurrency limit of 5 (`CONCURRENCY_LIMIT` in `reminder-cron.server.ts`). Distributed lock prevents multiple Fly.io machines from processing simultaneously.
+
 ## Environment Variables
 
 See `.env` for all required variables. Key: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `SUPABASE_JWT_SECRET`, `SESSION_DATABASE_URL`, `SENTRY_DSN`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SHOPIFY_STORE_URL`.

@@ -15,6 +15,7 @@ import {
   calculateAge,
   calculateBMI,
   LIPID_TREATMENT_TARGETS,
+  resolveBestLipidMarker,
   HBA1C_THRESHOLDS,
   TRIGLYCERIDES_THRESHOLDS,
   BP_THRESHOLDS,
@@ -479,10 +480,7 @@ export function HealthTool() {
     const ei = effectiveInputs;
     const nonHdl = (ei.totalCholesterol !== undefined && ei.hdlC !== undefined)
       ? ei.totalCholesterol - ei.hdlC : undefined;
-    const lipidsElevated =
-      (ei.apoB !== undefined && ei.apoB > LIPID_TREATMENT_TARGETS.apobGl) ||
-      (ei.ldlC !== undefined && ei.ldlC > LIPID_TREATMENT_TARGETS.ldlMmol) ||
-      (nonHdl !== undefined && nonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol);
+    const lipidsElevated = resolveBestLipidMarker(ei.apoB, nonHdl, ei.ldlC)?.elevated ?? false;
 
     const bmi = (ei.weightKg !== undefined && ei.heightCm !== undefined)
       ? calculateBMI(ei.weightKg, ei.heightCm) : undefined;

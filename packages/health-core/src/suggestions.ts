@@ -38,6 +38,36 @@ const fmtTotalChol = (v: number, us: UnitSystem) => fmtMetric('total_cholesterol
 const fmtApoB = (v: number, us: UnitSystem) => fmtMetric('apob', v, us);
 const fmtWeight = (v: number, us: UnitSystem) => fmtMetric('weight', v, us);
 
+/** Resolved lipid marker from the ApoB > non-HDL > LDL-c hierarchy */
+export interface LipidMarker {
+  kind: 'apoB' | 'nonHdl' | 'ldl';
+  label: string;
+  value: number;
+  target: number;
+  elevated: boolean;
+}
+
+/** Resolve best available lipid marker using ApoB > non-HDL > LDL-c hierarchy.
+ *  Uses on-treatment targets from LIPID_TREATMENT_TARGETS.
+ *  Returns null if no lipid data is available. */
+export function resolveBestLipidMarker(
+  apoB: number | undefined,
+  nonHdl: number | undefined,
+  ldl: number | undefined,
+): LipidMarker | null {
+  if (apoB !== undefined) return { kind: 'apoB', label: 'ApoB', value: apoB, target: LIPID_TREATMENT_TARGETS.apobGl, elevated: apoB > LIPID_TREATMENT_TARGETS.apobGl };
+  if (nonHdl !== undefined) return { kind: 'nonHdl', label: 'non-HDL cholesterol', value: nonHdl, target: LIPID_TREATMENT_TARGETS.nonHdlMmol, elevated: nonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol };
+  if (ldl !== undefined) return { kind: 'ldl', label: 'LDL', value: ldl, target: LIPID_TREATMENT_TARGETS.ldlMmol, elevated: ldl > LIPID_TREATMENT_TARGETS.ldlMmol };
+  return null;
+}
+
+/** Format a resolved lipid marker's value or target for display */
+function fmtLipidMarkerValue(marker: LipidMarker, v: number, us: UnitSystem): string {
+  if (marker.kind === 'apoB') return fmtApoB(v, us);
+  if (marker.kind === 'nonHdl') return `${formatDisplayValue('ldl', v, us)} ${getDisplayLabel('ldl', us)}`;
+  return fmtLdl(v, us);
+}
+
 /**
  * Generate personalized health suggestions based on inputs and calculated results.
  *
@@ -332,18 +362,16 @@ export function generateSuggestions(
   // atherogenic particle burden; non-HDL is next best; LDL-c is fallback.
   const hasApoBData = inputs.apoB !== undefined;
   const hasNonHdlData = results.nonHdlCholesterol !== undefined;
+  const lipidMarker = resolveBestLipidMarker(inputs.apoB, results.nonHdlCholesterol, inputs.ldlC);
 
-  // Track whether an elevated atherogenic marker or medication cascade will
-  // produce attention/urgent suggestions, so we can suppress total cholesterol
-  const lipidMedCascadeActive = medications !== undefined && (
-    (inputs.apoB !== undefined && inputs.apoB > LIPID_TREATMENT_TARGETS.apobGl) ||
-    (inputs.ldlC !== undefined && inputs.ldlC > LIPID_TREATMENT_TARGETS.ldlMmol) ||
-    (results.nonHdlCholesterol !== undefined && results.nonHdlCholesterol > LIPID_TREATMENT_TARGETS.nonHdlMmol)
-  );
+  // Track whether medication cascade will absorb lipid context,
+  // so we can suppress standalone atherogenic marker cards and total cholesterol
+  const lipidMedCascadeActive = medications !== undefined && (lipidMarker?.elevated ?? false);
   let hasElevatedAtherogenicSuggestion = false;
 
   // ApoB (top of hierarchy — always shown when available)
-  if (hasApoBData) {
+  // Suppressed when medication cascade is active (cascade descriptions include specific values)
+  if (hasApoBData && !lipidMedCascadeActive) {
     if (inputs.apoB! >= APOB_THRESHOLDS.veryHigh) {
       hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
@@ -374,7 +402,7 @@ export function generateSuggestions(
   }
 
   // LDL cholesterol — only when ApoB and non-HDL are both unavailable
-  if (!hasApoBData && !hasNonHdlData && inputs.ldlC !== undefined) {
+  if (!hasApoBData && !hasNonHdlData && inputs.ldlC !== undefined && !lipidMedCascadeActive) {
     if (inputs.ldlC >= LDL_THRESHOLDS.veryHigh) {
       hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
@@ -406,7 +434,7 @@ export function generateSuggestions(
 
   // Non-HDL cholesterol — only when ApoB is unavailable
   // Uses 'ldl' for formatDisplayValue/getDisplayLabel since non-HDL shares the same units (mmol/L / mg/dL)
-  if (!hasApoBData && hasNonHdlData) {
+  if (!hasApoBData && hasNonHdlData && !lipidMedCascadeActive) {
     if (results.nonHdlCholesterol! >= NON_HDL_THRESHOLDS.veryHigh) {
       hasElevatedAtherogenicSuggestion = true;
       suggestions.push({
@@ -444,15 +472,9 @@ export function generateSuggestions(
       const checklist: string[] = [];
 
       // Lipids (ApoB > non-HDL > LDL hierarchy, using on-treatment targets)
-      if (inputs.apoB !== undefined) {
-        const onTarget = inputs.apoB <= LIPID_TREATMENT_TARGETS.apobGl;
-        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} ApoB: ${fmtApoB(inputs.apoB, us)} \u2014 target \u2264${fmtApoB(LIPID_TREATMENT_TARGETS.apobGl, us)}`);
-      } else if (results.nonHdlCholesterol !== undefined) {
-        const onTarget = results.nonHdlCholesterol <= LIPID_TREATMENT_TARGETS.nonHdlMmol;
-        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} Non-HDL: ${formatDisplayValue('ldl', results.nonHdlCholesterol, us)} ${getDisplayLabel('ldl', us)} \u2014 target \u2264${formatDisplayValue('ldl', LIPID_TREATMENT_TARGETS.nonHdlMmol, us)} ${getDisplayLabel('ldl', us)}`);
-      } else if (inputs.ldlC !== undefined) {
-        const onTarget = inputs.ldlC <= LIPID_TREATMENT_TARGETS.ldlMmol;
-        checklist.push(`${onTarget ? '\u2705' : '\u26A0\uFE0F'} LDL: ${fmtLdl(inputs.ldlC, us)} \u2014 target \u2264${fmtLdl(LIPID_TREATMENT_TARGETS.ldlMmol, us)}`);
+      if (lipidMarker) {
+        const icon = lipidMarker.elevated ? '\u26A0\uFE0F' : '\u2705';
+        checklist.push(`${icon} ${lipidMarker.label}: ${fmtLipidMarkerValue(lipidMarker, lipidMarker.value, us)} \u2014 target \u2264${fmtLipidMarkerValue(lipidMarker, lipidMarker.target, us)}`);
       } else {
         checklist.push('\u2753 Lipids \u2014 not tested (consider getting ApoB or a lipid panel)');
       }
@@ -629,94 +651,88 @@ export function generateSuggestions(
   }
 
   // === Medication cascade suggestions ===
-  // Only when lipids are above on-treatment targets
-  if (medications) {
-    const nonHdl = results.nonHdlCholesterol;
-    const lipidsElevated =
-      (inputs.apoB !== undefined && inputs.apoB > LIPID_TREATMENT_TARGETS.apobGl) ||
-      (inputs.ldlC !== undefined && inputs.ldlC > LIPID_TREATMENT_TARGETS.ldlMmol) ||
-      (nonHdl !== undefined && nonHdl > LIPID_TREATMENT_TARGETS.nonHdlMmol);
+  // Only when lipids are above on-treatment targets (using resolved hierarchy marker)
+  if (medications && lipidMarker?.elevated) {
+    const lipidReason = `Your ${lipidMarker.label} of ${fmtLipidMarkerValue(lipidMarker, lipidMarker.value, us)} is above target (\u2264${fmtLipidMarkerValue(lipidMarker, lipidMarker.target, us)}).`;
 
-    if (lipidsElevated) {
-      const statin = medications.statin;
-      const statinDrug = statin?.drug;
-      // Check if drug is a known valid statin (handles old tier-based values like 'tier_1')
-      const isValidStatinDrug = statinDrug && Object.hasOwn(STATIN_DRUGS, statinDrug);
-      const isNotTolerated = statinDrug === 'not_tolerated';
-      const statinTolerated = !isNotTolerated;
-      const onStatin = statin && isValidStatinDrug;
+    const statin = medications.statin;
+    const statinDrug = statin?.drug;
+    // Check if drug is a known valid statin (handles old tier-based values like 'tier_1')
+    const isValidStatinDrug = statinDrug && Object.hasOwn(STATIN_DRUGS, statinDrug);
+    const isNotTolerated = statinDrug === 'not_tolerated';
+    const statinTolerated = !isNotTolerated;
+    const onStatin = statin && isValidStatinDrug;
 
-      // Step 1: Statin (handle null/undefined/invalid drug from migration or missing data)
-      // 'not_tolerated' is valid - user tried statins but can't take them
-      if (!statin || !statinDrug || statinDrug === 'none' || (!isValidStatinDrug && !isNotTolerated)) {
+    // Step 1: Statin (handle null/undefined/invalid drug from migration or missing data)
+    // 'not_tolerated' is valid - user tried statins but can't take them
+    if (!statin || !statinDrug || statinDrug === 'none' || (!isValidStatinDrug && !isNotTolerated)) {
+      suggestions.push({
+        id: 'med-statin',
+        category: 'medication',
+        priority: 'attention',
+        title: 'Consider starting a statin',
+        description: `${lipidReason} Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.`,
+      });
+    } else {
+      // On a statin or not tolerated — Step 2: Ezetimibe
+      const ezetimibeNotHandled = !medications.ezetimibe || medications.ezetimibe === 'no' || medications.ezetimibe === 'not_yet';
+      if (ezetimibeNotHandled) {
         suggestions.push({
-          id: 'med-statin',
+          id: 'med-ezetimibe',
           category: 'medication',
           priority: 'attention',
-          title: 'Consider starting a statin',
-          description: 'Your lipid levels are above target. Discuss starting a statin (e.g. Rosuvastatin 5mg) with your doctor.',
+          title: 'Consider adding Ezetimibe',
+          description: `${lipidReason} Discuss adding Ezetimibe 10mg with your doctor.`,
         });
       } else {
-        // On a statin or not tolerated — Step 2: Ezetimibe
-        const ezetimibeNotHandled = !medications.ezetimibe || medications.ezetimibe === 'no' || medications.ezetimibe === 'not_yet';
-        if (ezetimibeNotHandled) {
-          suggestions.push({
-            id: 'med-ezetimibe',
-            category: 'medication',
-            priority: 'attention',
-            title: 'Consider adding Ezetimibe',
-            description: 'Your lipid levels remain above target. Discuss adding Ezetimibe 10mg with your doctor.',
-          });
-        } else {
-          // Ezetimibe handled (yes or not tolerated) — Step 3: Escalate statin
-          const canIncrease = onStatin && canIncreaseDose(statin.drug, statin.dose);
-          const shouldSwitch = onStatin && shouldSuggestSwitch(statin.drug, statin.dose);
-          const atMaxPotency = onStatin && isOnMaxPotency(statin.drug, statin.dose);
+        // Ezetimibe handled (yes or not tolerated) — Step 3: Escalate statin
+        const canIncrease = onStatin && canIncreaseDose(statin.drug, statin.dose);
+        const shouldSwitch = onStatin && shouldSuggestSwitch(statin.drug, statin.dose);
+        const atMaxPotency = onStatin && isOnMaxPotency(statin.drug, statin.dose);
 
-          if (statinTolerated && (canIncrease || shouldSwitch)) {
-            if (!medications.statinEscalation || medications.statinEscalation === 'not_yet') {
-              if (canIncrease) {
-                suggestions.push({
-                  id: 'med-statin-increase',
-                  category: 'medication',
-                  priority: 'attention',
-                  title: 'Consider increasing statin dose',
-                  description: 'Your lipid levels remain above target. Discuss increasing your statin dose with your doctor.',
-                });
-              } else if (shouldSwitch) {
-                // Capitalize first letter of drug name
-                const drugName = statin.drug.charAt(0).toUpperCase() + statin.drug.slice(1);
-                suggestions.push({
-                  id: 'med-statin-switch',
-                  category: 'medication',
-                  priority: 'attention',
-                  title: 'Consider switching to a more potent statin',
-                  description: `You're on the maximum dose of ${drugName}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.`,
-                });
-              }
-            } else {
-              // Statin escalation not tolerated — Step 4: PCSK9i
-              if (!medications.pcsk9i || medications.pcsk9i === 'no' || medications.pcsk9i === 'not_yet') {
-                suggestions.push({
-                  id: 'med-pcsk9i',
-                  category: 'medication',
-                  priority: 'attention',
-                  title: 'Consider a PCSK9 inhibitor',
-                  description: 'Your lipid levels remain above target despite current medications. Discuss a PCSK9 inhibitor with your doctor.',
-                });
-              }
+        if (statinTolerated && (canIncrease || shouldSwitch)) {
+          if (!medications.statinEscalation || medications.statinEscalation === 'not_yet') {
+            if (canIncrease) {
+              suggestions.push({
+                id: 'med-statin-increase',
+                category: 'medication',
+                priority: 'attention',
+                title: 'Consider increasing statin dose',
+                description: `${lipidReason} Discuss increasing your statin dose with your doctor.`,
+              });
+            } else if (shouldSwitch) {
+              // Capitalize first letter of drug name
+              const drugName = statin.drug.charAt(0).toUpperCase() + statin.drug.slice(1);
+              suggestions.push({
+                id: 'med-statin-switch',
+                category: 'medication',
+                priority: 'attention',
+                title: 'Consider switching to a more potent statin',
+                description: `${lipidReason} You're on the maximum dose of ${drugName}. Discuss switching to a more potent statin (e.g. Rosuvastatin) with your doctor.`,
+              });
             }
           } else {
-            // Already on max potency, statin not tolerated, or no escalation possible — go to PCSK9i
+            // Statin escalation not tolerated — Step 4: PCSK9i
             if (!medications.pcsk9i || medications.pcsk9i === 'no' || medications.pcsk9i === 'not_yet') {
               suggestions.push({
                 id: 'med-pcsk9i',
                 category: 'medication',
                 priority: 'attention',
                 title: 'Consider a PCSK9 inhibitor',
-                description: 'Your lipid levels remain above target despite current medications. Discuss a PCSK9 inhibitor with your doctor.',
+                description: `${lipidReason} Discuss a PCSK9 inhibitor with your doctor.`,
               });
             }
+          }
+        } else {
+          // Already on max potency, statin not tolerated, or no escalation possible — go to PCSK9i
+          if (!medications.pcsk9i || medications.pcsk9i === 'no' || medications.pcsk9i === 'not_yet') {
+            suggestions.push({
+              id: 'med-pcsk9i',
+              category: 'medication',
+              priority: 'attention',
+              title: 'Consider a PCSK9 inhibitor',
+              description: `${lipidReason} Discuss a PCSK9 inhibitor with your doctor.`,
+            });
           }
         }
       }

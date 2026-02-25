@@ -40,6 +40,7 @@ import {
 const CRON_INTERVAL_MS = 60 * 60 * 1000; // Check every hour
 const TARGET_HOUR_UTC = 8; // Run at 8:00 UTC
 const BATCH_SIZE = 50;
+const CONCURRENCY_LIMIT = 5;
 const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL || 'https://drstanfield.com';
 const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 
@@ -104,6 +105,25 @@ export function stopReminderCron(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Concurrency helper
+// ---------------------------------------------------------------------------
+
+/** Process items in chunks of `limit`, using Promise.allSettled per chunk. */
+async function processWithConcurrency<T, R>(
+  items: T[],
+  fn: (item: T) => Promise<R>,
+  limit: number,
+): Promise<PromiseSettledResult<R>[]> {
+  const results: PromiseSettledResult<R>[] = [];
+  for (let i = 0; i < items.length; i += limit) {
+    const chunk = items.slice(i, i + limit);
+    const chunkResults = await Promise.allSettled(chunk.map(fn));
+    results.push(...chunkResults);
+  }
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Main processing loop
 // ---------------------------------------------------------------------------
 
@@ -118,14 +138,21 @@ async function processReminders(now: Date = new Date()): Promise<number> {
     const profiles = await getEligibleReminderProfiles(BATCH_SIZE, offset);
     if (profiles.length === 0) break;
 
-    for (const profile of profiles) {
-      try {
-        const sent = await processUserReminders(profile, now);
-        if (sent) emailsSent++;
-      } catch (error) {
-        // Log but don't fail the entire batch for one user
-        console.error(`Reminder error for user ${profile.id}:`, error);
-        Sentry.captureException(error, {
+    // Process users with controlled concurrency (CONCURRENCY_LIMIT at a time)
+    const results = await processWithConcurrency(
+      profiles,
+      (profile) => processUserReminders(profile, now),
+      CONCURRENCY_LIMIT,
+    );
+
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      if (result.status === 'fulfilled' && result.value) {
+        emailsSent++;
+      } else if (result.status === 'rejected') {
+        const profile = profiles[i];
+        console.error(`Reminder error for user ${profile.id}:`, result.reason);
+        Sentry.captureException(result.reason, {
           tags: { feature: 'reminder_cron' },
           extra: { userId: profile.id },
         });

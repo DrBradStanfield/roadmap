@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateSuggestions } from './suggestions';
+import { generateSuggestions, resolveBestLipidMarker, LIPID_TREATMENT_TARGETS } from './suggestions';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import { canIncreaseGlp1Dose, shouldSuggestGlp1Switch, isOnMaxGlp1Potency, getGlp1EscalationType } from './types';
 import { toCanonicalValue } from './units';
@@ -617,6 +617,46 @@ describe('generateSuggestions', () => {
       expect(suggestions.filter(s => s.id.startsWith('apob-')).length).toBe(0);
       expect(suggestions.find(s => s.id === 'total-chol-high')).toBeDefined();
     });
+
+    it('suppresses standalone ApoB card when medication cascade is active', () => {
+      // ApoB 51 mg/dL = 0.51 g/L > 0.50 target → borderline + cascade active
+      const { inputs, results } = createTestData({ apoB: apoB(51) });
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+
+      // Medication cascade fires, standalone ApoB card suppressed
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'apob-borderline')).toBeUndefined();
+    });
+
+    it('suppresses standalone LDL card when medication cascade is active', () => {
+      const { inputs, results } = createTestData({ ldlC: ldl(60) }); // ~1.55 mmol/L > 1.4
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
+      expect(suggestions.filter(s => s.id.startsWith('ldl-')).length).toBe(0);
+    });
+
+    it('suppresses standalone non-HDL card when medication cascade is active', () => {
+      const { inputs, results } = createTestData(
+        { totalCholesterol: totalChol(200), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(200) - hdl(50) },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeDefined();
+      expect(suggestions.filter(s => s.id.startsWith('non-hdl-')).length).toBe(0);
+    });
+
+    it('still shows standalone ApoB card when no medications provided', () => {
+      const { inputs, results } = createTestData({ apoB: apoB(51) });
+      const suggestions = generateSuggestions(inputs, results);
+
+      expect(suggestions.find(s => s.id === 'apob-borderline')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'med-statin')).toBeUndefined();
+    });
   });
 
   describe('Multiple suggestions', () => {
@@ -958,6 +998,62 @@ describe('generateSuggestions', () => {
       const { inputs, results } = createTestData(elevatedLipids);
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id?.startsWith('med-'))).toBeUndefined();
+    });
+
+    it('med-statin description includes ApoB value and target when ApoB triggers cascade', () => {
+      const { inputs, results } = createTestData({ apoB: apoB(60) }); // 0.6 g/L
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      const statin = suggestions.find(s => s.id === 'med-statin');
+      expect(statin).toBeDefined();
+      expect(statin!.description).toContain('ApoB');
+      expect(statin!.description).toContain('above target');
+    });
+
+    it('med-statin description uses non-HDL when ApoB unavailable', () => {
+      const { inputs, results } = createTestData(
+        { totalCholesterol: totalChol(200), hdlC: hdl(50) },
+        { nonHdlCholesterol: totalChol(200) - hdl(50) },
+      );
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      const statin = suggestions.find(s => s.id === 'med-statin');
+      expect(statin).toBeDefined();
+      expect(statin!.description).toContain('non-HDL');
+      expect(statin!.description).toContain('above target');
+    });
+
+    it('med-statin description uses LDL as fallback', () => {
+      const { inputs, results } = createTestData({ ldlC: ldl(60) }); // ~1.55 mmol/L > 1.4
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      const statin = suggestions.find(s => s.id === 'med-statin');
+      expect(statin).toBeDefined();
+      expect(statin!.description).toContain('LDL');
+      expect(statin!.description).toContain('above target');
+    });
+
+    it('med-ezetimibe description includes specific lipid reason', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      const meds: MedicationInputs = { statin: { drug: 'atorvastatin', dose: 10 } };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      const eze = suggestions.find(s => s.id === 'med-ezetimibe');
+      expect(eze).toBeDefined();
+      expect(eze!.description).toContain('ApoB');
+      expect(eze!.description).toContain('above target');
+    });
+
+    it('med-pcsk9i description includes specific lipid reason', () => {
+      const { inputs, results } = createTestData(elevatedLipids);
+      const meds: MedicationInputs = {
+        statin: { drug: 'rosuvastatin', dose: 40 },
+        ezetimibe: 'yes',
+      };
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      const pcsk9i = suggestions.find(s => s.id === 'med-pcsk9i');
+      expect(pcsk9i).toBeDefined();
+      expect(pcsk9i!.description).toContain('ApoB');
+      expect(pcsk9i!.description).toContain('above target');
     });
   });
 
@@ -2197,7 +2293,7 @@ describe('generateSuggestions', () => {
       );
       const suggestions = generateSuggestions(inputs, results, 'conventional');
       const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
-      expect(lpaSuggestion?.description).toContain('Non-HDL');
+      expect(lpaSuggestion?.description).toContain('non-HDL cholesterol');
       expect(lpaSuggestion?.description).not.toContain('ApoB');
       expect(lpaSuggestion?.description).not.toContain('LDL');
     });
@@ -2244,5 +2340,58 @@ describe('generateSuggestions', () => {
       const lpaSuggestion = suggestions.find(s => s.id === 'lpa-elevated');
       expect(lpaSuggestion?.description).toContain('\u26A0\uFE0F BMI: 27');
     });
+  });
+});
+
+describe('resolveBestLipidMarker', () => {
+  it('returns ApoB when all markers available', () => {
+    const result = resolveBestLipidMarker(0.6, 2.0, 1.5);
+    expect(result).not.toBeNull();
+    expect(result!.kind).toBe('apoB');
+    expect(result!.label).toBe('ApoB');
+    expect(result!.elevated).toBe(true); // 0.6 > 0.5
+  });
+
+  it('returns non-HDL when ApoB unavailable', () => {
+    const result = resolveBestLipidMarker(undefined, 2.0, 1.5);
+    expect(result).not.toBeNull();
+    expect(result!.kind).toBe('nonHdl');
+    expect(result!.label).toBe('non-HDL cholesterol');
+    expect(result!.elevated).toBe(true); // 2.0 > 1.6
+  });
+
+  it('returns LDL when ApoB and non-HDL unavailable', () => {
+    const result = resolveBestLipidMarker(undefined, undefined, 1.5);
+    expect(result).not.toBeNull();
+    expect(result!.kind).toBe('ldl');
+    expect(result!.label).toBe('LDL');
+    expect(result!.elevated).toBe(true); // 1.5 > 1.4
+  });
+
+  it('returns null when no lipid data', () => {
+    expect(resolveBestLipidMarker(undefined, undefined, undefined)).toBeNull();
+  });
+
+  it('reports not elevated when below target', () => {
+    const result = resolveBestLipidMarker(0.4, undefined, undefined);
+    expect(result!.kind).toBe('apoB');
+    expect(result!.elevated).toBe(false);
+  });
+
+  it('reports not elevated at exact target boundary', () => {
+    // ApoB at exactly 0.5 g/L — NOT elevated (> not >=)
+    const result = resolveBestLipidMarker(LIPID_TREATMENT_TARGETS.apobGl, undefined, undefined);
+    expect(result!.elevated).toBe(false);
+  });
+
+  it('includes correct target values', () => {
+    const apob = resolveBestLipidMarker(0.6, undefined, undefined);
+    expect(apob!.target).toBe(LIPID_TREATMENT_TARGETS.apobGl);
+
+    const nonHdl = resolveBestLipidMarker(undefined, 2.0, undefined);
+    expect(nonHdl!.target).toBe(LIPID_TREATMENT_TARGETS.nonHdlMmol);
+
+    const ldlResult = resolveBestLipidMarker(undefined, undefined, 1.5);
+    expect(ldlResult!.target).toBe(LIPID_TREATMENT_TARGETS.ldlMmol);
   });
 });
