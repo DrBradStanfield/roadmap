@@ -273,6 +273,7 @@ Backend: Initialized in `app/entry.server.tsx`.
 
 ## Development Rules
 
+- **Push back on decisions.** Consider 2nd and 3rd order effects rather than just agreeing. Challenge ideas that may have unintended consequences.
 - **Algorithm docs**: When changing health calculations in `packages/health-core/src/`, update `health_roadmap_algorithm.md`. Then check if `roadmap_text.html` covers the same topic.
 - **Every feature/behavior change must include unit tests.** Run `npm test` before deploying.
 - **Bug fix workflow**: Write failing test → confirm it fails → fix → confirm it passes.

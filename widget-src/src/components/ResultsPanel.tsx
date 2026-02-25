@@ -291,7 +291,7 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
         )}
       </div>
       <a href={authState.loginUrl || "/account/login"} className="guest-cta-btn">
-        {redirectFailed ? 'Sign In' : 'Create Free Account'}
+        {redirectFailed ? 'Sign In' : 'Email Me My Results'}
       </a>
     </div>
   );
@@ -679,7 +679,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
         <div className="guest-cta-inline no-print">
           <span>{redirectFailed ? 'Sign in to access your saved data.' : 'Save your data and get an email summary to discuss with doctor.'}</span>
           <a href={authState?.loginUrl || "/account/login"} className="guest-cta-btn">
-            {redirectFailed ? 'Sign In' : 'Create Free Account'}
+            {redirectFailed ? 'Sign In' : 'Email Me My Results'}
           </a>
         </div>
       )}
