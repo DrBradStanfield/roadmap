@@ -28,10 +28,13 @@ All values are stored and compared in **SI canonical units**. Conversion to disp
 
 Source: `calculations.ts`
 
-### Ideal Body Weight (Devine Formula)
+### Ideal Body Weight (Peterson Formula, 2016)
 
-- **Male:** `50 + 0.91 * (heightCm - 152.4)` kg
-- **Female:** `45.5 + 0.91 * (heightCm - 152.4)` kg
+`IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5)` kg
+
+Sex-specific target BMIs (based on mortality meta-analyses):
+- **Male:** BMI target = 24 (optimal mortality range 23–26)
+- **Female:** BMI target = 22 (optimal mortality range 20–23)
 - **Minimum:** `max(result, 30)` kg
 - Rounded to 1 decimal place
 

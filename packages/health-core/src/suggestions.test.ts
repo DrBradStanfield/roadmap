@@ -25,8 +25,8 @@ function createTestData(
 
   const results: HealthResults = {
     heightCm: 175,
-    idealBodyWeight: 70.6,
-    proteinTarget: 85,
+    idealBodyWeight: 73.8,
+    proteinTarget: 89,
     suggestions: [],
     ...resultOverrides,
   };
@@ -44,7 +44,7 @@ describe('generateSuggestions', () => {
       expect(proteinSuggestion).toBeDefined();
       expect(proteinSuggestion?.priority).toBe('info');
       expect(proteinSuggestion?.category).toBe('nutrition');
-      expect(proteinSuggestion?.title).toContain('85g');
+      expect(proteinSuggestion?.title).toContain('89g');
     });
   });
 
@@ -1858,7 +1858,7 @@ describe('generateSuggestions', () => {
 
   describe('Protein target CKD adjustment', () => {
     it('shows standard 1.2g/kg protein when eGFR is normal', () => {
-      const { inputs, results } = createTestData({}, { eGFR: 90, proteinTarget: 85 });
+      const { inputs, results } = createTestData({}, { eGFR: 90, proteinTarget: 89 });
       const suggestions = generateSuggestions(inputs, results);
       const protein = suggestions.find(s => s.id === 'protein-target');
       expect(protein?.description).not.toContain('kidney function');
@@ -1866,7 +1866,7 @@ describe('generateSuggestions', () => {
 
     it('shows CKD-adjusted text when eGFR < 45', () => {
       // CKD Stage 3b: eGFR < 45 → 1.0g/kg
-      const { inputs, results } = createTestData({}, { eGFR: 40, proteinTarget: 71 });
+      const { inputs, results } = createTestData({}, { eGFR: 40, proteinTarget: 74 });
       const suggestions = generateSuggestions(inputs, results);
       const protein = suggestions.find(s => s.id === 'protein-target');
       expect(protein?.description).toContain('kidney function');
@@ -1874,7 +1874,7 @@ describe('generateSuggestions', () => {
     });
 
     it('shows standard text when eGFR is exactly 45', () => {
-      const { inputs, results } = createTestData({}, { eGFR: 45, proteinTarget: 85 });
+      const { inputs, results } = createTestData({}, { eGFR: 45, proteinTarget: 89 });
       const suggestions = generateSuggestions(inputs, results);
       const protein = suggestions.find(s => s.id === 'protein-target');
       expect(protein?.description).not.toContain('kidney function');

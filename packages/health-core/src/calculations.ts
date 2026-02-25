@@ -4,13 +4,16 @@ import { EGFR_THRESHOLDS, LPA_THRESHOLDS } from './units';
 import { generateSuggestions } from './suggestions';
 
 /**
- * Calculate Ideal Body Weight using the Devine Formula
- * - Males: 50 kg + 0.91 × (height - 152.4 cm)
- * - Females: 45.5 kg + 0.91 × (height - 152.4 cm)
+ * Calculate Ideal Body Weight using the Peterson Formula (2016)
+ * IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5)
+ * Sex-specific target BMIs (mortality meta-analyses):
+ * - Males: BMI 24 (optimal range 23-26)
+ * - Females: BMI 22 (optimal range 20-23)
  */
 export function calculateIBW(heightCm: number, sex: 'male' | 'female'): number {
-  const baseWeight = sex === 'male' ? 50 : 45.5;
-  const ibw = baseWeight + 0.91 * (heightCm - 152.4);
+  const bmiTarget = sex === 'male' ? 24 : 22;
+  const heightM = heightCm / 100;
+  const ibw = 2.2 * bmiTarget + 3.5 * bmiTarget * (heightM - 1.5);
   // Ensure IBW is at least a reasonable minimum
   return Math.max(ibw, 30);
 }

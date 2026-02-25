@@ -11,8 +11,8 @@ const minimalInputs: HealthInputs = {
 
 const minimalResults: HealthResults = {
   heightCm: 180,
-  idealBodyWeight: 75.1,
-  proteinTarget: 90,
+  idealBodyWeight: 78.0,
+  proteinTarget: 94,
   suggestions: [],
 };
 
@@ -38,8 +38,8 @@ const fullInputs: HealthInputs = {
 
 const fullResults: HealthResults = {
   heightCm: 175,
-  idealBodyWeight: 66.1,
-  proteinTarget: 79,
+  idealBodyWeight: 67.7,
+  proteinTarget: 81,
   bmi: 26.8,
   waistToHeightRatio: 0.51,
   nonHdlCholesterol: 4.6,
@@ -53,7 +53,7 @@ const fullResults: HealthResults = {
 const sampleSuggestions: Suggestion[] = [
   { id: 'urgent-1', category: 'medication', priority: 'urgent', title: 'Consider statin therapy', description: 'Your ApoB is above target.' },
   { id: 'attention-1', category: 'nutrition', priority: 'attention', title: 'Reduce sodium intake', description: 'Your blood pressure is elevated.' },
-  { id: 'info-1', category: 'nutrition', priority: 'info', title: 'Protein target', description: 'Aim for 79g of protein per day.' },
+  { id: 'info-1', category: 'nutrition', priority: 'info', title: 'Protein target', description: 'Aim for 81g of protein per day.' },
   { id: 'info-2', category: 'exercise', priority: 'info', title: 'Exercise', description: '150+ minutes cardio per week.' },
   { id: 'info-3', category: 'sleep', priority: 'info', title: 'Sleep', description: '7-9 hours per night.' },
   { id: 'supplement-1', category: 'supplements', priority: 'info', title: 'MicroVitamin+', description: 'Daily all-in-one supplement.', link: 'https://example.com' },
@@ -66,10 +66,10 @@ describe('buildWelcomeEmailHtml', () => {
     expect(html).toContain('<!DOCTYPE html>');
     expect(html).toContain('Hi John,');
     expect(html).toContain('Ideal Body Weight');
-    expect(html).toContain('75.1');
+    expect(html).toContain('78');
     expect(html).toContain('kg');
     expect(html).toContain('Protein Target');
-    expect(html).toContain('90g/day');
+    expect(html).toContain('94g/day');
     expect(html).toContain('180 cm');
     expect(html).toContain('Health Snapshot');
     // Should NOT contain entered metrics section (no longitudinal data entered)
@@ -149,7 +149,7 @@ describe('buildWelcomeEmailHtml', () => {
   it('shows IBW in conventional units for US users', () => {
     const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'conventional', null);
 
-    // 75.1 kg → 165.6 lbs
+    // 78.0 kg → 171.9 lbs
     expect(html).toContain('lbs');
     expect(html).toContain('Ideal Body Weight');
   });
@@ -393,7 +393,7 @@ describe('buildWelcomeEmailHtml', () => {
     const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
 
     expect(html).toContain('Protein Target');
-    expect(html).toContain('90g/day');
+    expect(html).toContain('94g/day');
     expect(html).toContain('1.2g per kg IBW');
   });
 

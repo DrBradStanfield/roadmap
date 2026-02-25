@@ -14,17 +14,17 @@ import {
   getProteinRate,
 } from './calculations';
 
-describe('calculateIBW (Ideal Body Weight)', () => {
+describe('calculateIBW (Ideal Body Weight — Peterson 2016)', () => {
   it('calculates correctly for average height male', () => {
-    // 175cm male: 50 + 0.91 * (175 - 152.4) = 50 + 20.566 = 70.566
+    // 175cm male (BMI target 24): 2.2*24 + 3.5*24*(1.75-1.5) = 52.8 + 21.0 = 73.8
     const ibw = calculateIBW(175, 'male');
-    expect(ibw).toBeCloseTo(70.57, 1);
+    expect(ibw).toBeCloseTo(73.8, 1);
   });
 
   it('calculates correctly for average height female', () => {
-    // 165cm female: 45.5 + 0.91 * (165 - 152.4) = 45.5 + 11.466 = 56.966
+    // 165cm female (BMI target 22): 2.2*22 + 3.5*22*(1.65-1.5) = 48.4 + 11.55 = 59.95
     const ibw = calculateIBW(165, 'female');
-    expect(ibw).toBeCloseTo(56.97, 1);
+    expect(ibw).toBeCloseTo(59.95, 1);
   });
 
   it('returns minimum of 30kg for very short heights', () => {
@@ -33,15 +33,19 @@ describe('calculateIBW (Ideal Body Weight)', () => {
   });
 
   it('handles tall male correctly', () => {
-    // 190cm male: 50 + 0.91 * (190 - 152.4) = 50 + 34.216 = 84.216
+    // 190cm male: 2.2*24 + 3.5*24*(1.9-1.5) = 52.8 + 33.6 = 86.4
     const ibw = calculateIBW(190, 'male');
-    expect(ibw).toBeCloseTo(84.22, 1);
+    expect(ibw).toBeCloseTo(86.4, 1);
   });
 
-  it('handles exact baseline height', () => {
-    // At 152.4cm, should return base weight
-    expect(calculateIBW(152.4, 'male')).toBe(50);
-    expect(calculateIBW(152.4, 'female')).toBe(45.5);
+  it('uses sex-specific BMI targets', () => {
+    // At same height, male (BMI 24) should be higher than female (BMI 22)
+    const male = calculateIBW(175, 'male');
+    const female = calculateIBW(175, 'female');
+    expect(male).toBeGreaterThan(female);
+    // Male: 73.8, Female: 67.65
+    expect(male).toBeCloseTo(73.8, 1);
+    expect(female).toBeCloseTo(67.65, 1);
   });
 });
 
@@ -221,8 +225,8 @@ describe('calculateHealthResults', () => {
     });
 
     expect(results.heightCm).toBe(175);
-    expect(results.idealBodyWeight).toBeCloseTo(70.6, 0);
-    expect(results.proteinTarget).toBe(85);
+    expect(results.idealBodyWeight).toBeCloseTo(73.8, 0);
+    expect(results.proteinTarget).toBe(89);
     expect(results.bmi).toBeUndefined();
     expect(results.waistToHeightRatio).toBeUndefined();
     expect(results.age).toBeUndefined();
@@ -353,8 +357,8 @@ describe('calculateHealthResults', () => {
 
     expect(results.eGFR).toBeDefined();
     expect(results.eGFR!).toBeLessThan(45);
-    // IBW for 175cm male ≈ 70.6kg → 1.0g/kg = 71g (vs 85g at 1.2g/kg)
-    expect(results.proteinTarget).toBe(71);
+    // IBW for 175cm male ≈ 73.8kg → 1.0g/kg = 74g (vs 89g at 1.2g/kg)
+    expect(results.proteinTarget).toBe(74);
   });
 
   it('keeps standard 1.2g/kg protein when eGFR >= 45', () => {
@@ -369,7 +373,7 @@ describe('calculateHealthResults', () => {
 
     expect(results.eGFR).toBeDefined();
     expect(results.eGFR!).toBeGreaterThanOrEqual(45);
-    expect(results.proteinTarget).toBe(85);
+    expect(results.proteinTarget).toBe(89);
   });
 });
 
