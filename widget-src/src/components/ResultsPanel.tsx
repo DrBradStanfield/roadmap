@@ -11,7 +11,6 @@ import {
   REMINDER_CATEGORIES,
   REMINDER_CATEGORY_LABELS,
   type ReminderCategory,
-  getBMICategory,
   getEgfrStatus,
   getLpaStatus,
   getLipidStatus,
@@ -46,19 +45,18 @@ interface ResultsPanelProps {
   sex?: 'male' | 'female';
 }
 
-function getBmiStatus(bmi: number, waistToHeightRatio?: number): { label: string; className: string } {
-  const category = getBMICategory(bmi, waistToHeightRatio);
+function getBmiStatus(bmiCategory: string, waistToHeightRatio?: number): { label: string; className: string } {
   // When WHtR unknown for BMI 25-29.9, suppress label (prompt user to measure)
-  if (category === 'Overweight' && waistToHeightRatio === undefined) {
+  if (bmiCategory === 'Overweight' && waistToHeightRatio === undefined) {
     return { label: '', className: '' };
   }
-  if (category.startsWith('Obese')) return { label: 'Obese', className: 'status-attention' };
+  if (bmiCategory.startsWith('Obese')) return { label: 'Obese', className: 'status-attention' };
   const classMap: Record<string, string> = {
     'Underweight': 'status-attention',
     'Normal': 'status-normal',
     'Overweight': 'status-info',
   };
-  return { label: category, className: classMap[category] || '' };
+  return { label: bmiCategory, className: classMap[bmiCategory] || '' };
 }
 
 function getWaistToHeightStatus(ratio: number): { label: string; className: string } | null {
@@ -522,7 +520,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
             <span className="stat-status status-normal">{getProteinRate(results.eGFR).toFixed(1)}g per kg IBW</span>
           </div>
           {results.bmi !== undefined && (() => {
-            const status = getBmiStatus(results.bmi, results.waistToHeightRatio);
+            const status = getBmiStatus(results.bmiCategory!, results.waistToHeightRatio);
             return (
               <div className="stat-card">
                 <span className="stat-label">BMI</span>

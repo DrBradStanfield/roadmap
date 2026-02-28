@@ -3,6 +3,7 @@ import { generateSuggestions, resolveBestLipidMarker, LIPID_TREATMENT_TARGETS } 
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import { canIncreaseGlp1Dose, shouldSuggestGlp1Switch, isOnMaxGlp1Potency, getGlp1EscalationType } from './types';
 import { toCanonicalValue } from './units';
+import { getBMICategory } from './calculations';
 
 // Shorthand: convert conventional (US) blood test values to SI for test inputs
 const hba1c = (pct: number) => toCanonicalValue('hba1c', pct, 'conventional');
@@ -30,6 +31,11 @@ function createTestData(
     suggestions: [],
     ...resultOverrides,
   };
+
+  // Auto-compute bmiCategory to match calculateHealthResults() behavior
+  if (results.bmi !== undefined && results.bmiCategory === undefined) {
+    results.bmiCategory = getBMICategory(results.bmi, results.waistToHeightRatio);
+  }
 
   return { inputs, results };
 }
@@ -766,15 +772,13 @@ describe('generateSuggestions', () => {
       expect(suggestions.find(s => s.id === 'measure-waist')).toBeDefined();
     });
 
-    it('suggests GLP-1 when BMI 25-28 and elevated triglycerides, even with normal waist', () => {
+    it('does NOT suggest GLP-1 when BMI 25-28 with elevated trigs but healthy waist (reclassified Normal)', () => {
       const { inputs, results } = createTestData(
         { triglycerides: trig(160) },  // borderline elevated
-        { bmi: 26, waistToHeightRatio: 0.45 }  // normal waist
+        { bmi: 26, waistToHeightRatio: 0.45 }  // normal waist → bmiCategory = 'Normal'
       );
       const suggestions = generateSuggestions(inputs, results);
-      const glp1 = suggestions.find(s => s.id === 'weight-glp1');
-      expect(glp1).toBeDefined();
-      expect(glp1?.description).toContain('triglycerides');
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
     });
 
     it('does not suggest GLP-1 when BMI 25-28 with normal trigs and normal waist', () => {
@@ -795,6 +799,28 @@ describe('generateSuggestions', () => {
       const glp1 = suggestions.find(s => s.id === 'weight-glp1');
       expect(glp1).toBeDefined();
       expect(glp1?.description).toContain('waist');
+    });
+
+    // WHtR reclassification: BMI 25-29.9 with healthy WHtR (<0.5) = Normal → no GLP-1
+    it('does NOT suggest GLP-1 when BMI > 28 but healthy WHtR (reclassified Normal)', () => {
+      const { inputs, results } = createTestData({}, { bmi: 29, waistToHeightRatio: 0.4 });
+      expect(results.bmiCategory).toBe('Normal');
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeUndefined();
+    });
+
+    it('still suggests GLP-1 when BMI > 28 and no WHtR data (no reclassification)', () => {
+      const { inputs, results } = createTestData({}, { bmi: 29 });
+      expect(results.bmiCategory).toBe('Overweight');
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
+    });
+
+    it('still suggests GLP-1 when BMI > 28 and elevated WHtR', () => {
+      const { inputs, results } = createTestData({}, { bmi: 29, waistToHeightRatio: 0.55 });
+      expect(results.bmiCategory).toBe('Overweight');
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'weight-glp1')).toBeDefined();
     });
   });
 
@@ -1603,6 +1629,51 @@ describe('generateSuggestions', () => {
       );
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
+    });
+
+    // WHtR reclassification: BMI 25-29.9 with healthy WHtR (<0.5) = Normal → no cascade
+    it('does NOT show cascade when BMI > 28 but healthy WHtR (reclassified Normal)', () => {
+      const { inputs, results } = createTestData(
+        {},
+        { bmi: 29, waistToHeightRatio: 0.4 },
+      );
+      expect(results.bmiCategory).toBe('Normal');
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
+    });
+
+    it('does NOT show cascade when BMI 25-28 with healthy WHtR even with elevated BP', () => {
+      const { inputs, results } = createTestData(
+        { systolicBp: 140 },
+        { bmi: 26, waistToHeightRatio: 0.4 },
+      );
+      expect(results.bmiCategory).toBe('Normal');
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeUndefined();
+    });
+
+    it('shows cascade when BMI 25-28 with elevated WHtR and elevated BP', () => {
+      const { inputs, results } = createTestData(
+        { systolicBp: 140 },
+        { bmi: 26, waistToHeightRatio: 0.55 },
+      );
+      expect(results.bmiCategory).toBe('Overweight');
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeDefined();
+    });
+
+    it('shows cascade when BMI > 28 with no WHtR data (no reclassification)', () => {
+      const { inputs, results } = createTestData(
+        {},
+        { bmi: 29 },
+      );
+      expect(results.bmiCategory).toBe('Overweight');
+      const meds: MedicationInputs = {};
+      const suggestions = generateSuggestions(inputs, results, 'si', meds);
+      expect(suggestions.find(s => s.id === 'weight-med-glp1')).toBeDefined();
     });
 
     // Cascade progression (GLP-1 at max potency → SGLT2i → Metformin)

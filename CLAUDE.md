@@ -279,6 +279,8 @@ Backend: Initialized in `app/entry.server.tsx`.
 - **Bug fix workflow**: Write failing test → confirm it fails → fix → confirm it passes.
 - **Run tests in a Bash subagent** to keep verbose output out of main context.
 - **If an approach is failing, stop and re-plan** rather than pushing through.
+- **Self-improving docs**: When you discover a new gotcha, repeated mistake, or useful pattern during work, proactively suggest adding it to CLAUDE.md (if project-wide) or memory (if preference/workflow). This makes our docs compound over time.
+- **Verify beyond tests**: For non-test-covered changes (UI layout, CSS, deploy, Liquid templates), verify via @browser
 - Rebuild widget after changes: `npm run build:widget`
 - Two IIFE bundles: `health-tool.js` and `health-history.js` (Vite IIFE doesn't support multiple inputs per config).
 

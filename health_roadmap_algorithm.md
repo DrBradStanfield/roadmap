@@ -404,12 +404,14 @@ Source: `suggestions.ts` (weight section) + `types.ts` (GLP-1 helpers)
 
 All conditions:
 1. `medications` object is provided
-2. BMI > 25
+2. BMI classified as elevated (`bmiCategory` is Overweight or Obese — **not** Normal after WHtR reclassification)
 3. BMI > 28 (unconditional) OR at least one secondary criterion:
    - HbA1c >= 38.8 mmol/mol (prediabetic)
    - Triglycerides >= 1.69 mmol/L
    - Systolic BP >= 130 mmHg
    - Waist-to-height >= 0.5
+
+**Note:** BMI 25-29.9 with healthy waist-to-height ratio (< 0.5) is reclassified as Normal by `getBMICategory()` and does NOT trigger the cascade.
 
 ### Step 1: Start GLP-1 (`weight-med-glp1`)
 
@@ -433,9 +435,11 @@ All conditions:
 
 ### Standalone GLP-1 Suggestion (`weight-glp1`)
 
-When the cascade is NOT active (medications not provided or conditions not met):
+When the cascade is NOT active (medications not provided or conditions not met) AND BMI is classified as elevated:
 - BMI > 28: Always suggest
 - BMI 25-28: Suggest if waist-to-height >= 0.5 OR triglycerides >= 1.69 mmol/L (do NOT assume risk when waist data missing)
+
+Same WHtR reclassification applies: BMI 25-29.9 with healthy WHtR (< 0.5) = Normal → no standalone GLP-1 suggestion.
 
 ---
 

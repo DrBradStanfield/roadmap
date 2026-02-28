@@ -38,6 +38,7 @@ export interface HealthResults {
   idealBodyWeight: number;
   proteinTarget: number;
   bmi?: number;
+  bmiCategory?: string;         // e.g. 'Normal', 'Overweight', 'Obese (Class I)' — computed by getBMICategory
   waistToHeightRatio?: number;
   nonHdlCholesterol?: number; // mmol/L (total cholesterol - HDL)
   apoB?: number;              // g/L (passthrough from inputs)

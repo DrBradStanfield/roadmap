@@ -84,6 +84,11 @@ export function generateSuggestions(
   const suggestions: Suggestion[] = [];
   const us = unitSystem;
 
+  // Whether BMI is classified as elevated (Overweight or Obese).
+  // Accounts for WHtR reclassification: BMI 25-29.9 with healthy WHtR (<0.5) → Normal.
+  const bmiIsElevated = results.bmiCategory !== undefined
+    && results.bmiCategory !== 'Normal' && results.bmiCategory !== 'Underweight';
+
   // === Always-show lifestyle suggestions ===
 
   // Protein target (core recommendation, adjusted for CKD)
@@ -175,19 +180,19 @@ export function generateSuggestions(
     description: 'Aim for 7-9 hours of sleep per night. Maintain a consistent sleep schedule, limit screens before bed, and keep your bedroom cool and dark.',
   });
 
-  // Weight & diabetes medication cascade
-  // When medications are tracked, use the cascade instead of standalone GLP-1 suggestion.
-  // Trigger: BMI > 28 (unconditional) OR BMI 25-28 with secondary criteria
-  if (results.bmi !== undefined && results.bmi > 25 && medications) {
+  // GLP-1 weight management suggestions
+  // Cascade (when medications tracked) or standalone (when not).
+  // Only when BMI is classified as elevated (Overweight/Obese — accounts for WHtR reclassification).
+  if (results.bmi !== undefined && bmiIsElevated) {
     const whr = results.waistToHeightRatio;
     const hba1cElevated = inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes;
     const trigsElevated = inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline;
     const bpElevated = inputs.systolicBp !== undefined && inputs.systolicBp >= BP_THRESHOLDS.stage1Sys;
     const waistElevated = whr !== undefined && whr >= 0.5;
-
     const hasSecondaryCriteria = hba1cElevated || trigsElevated || bpElevated || waistElevated;
 
-    if (results.bmi > 28 || hasSecondaryCriteria) {
+    if (medications && (results.bmi > 28 || hasSecondaryCriteria)) {
+      // Weight & diabetes medication cascade (GLP-1 → escalate → SGLT2i → Metformin)
       const glp1 = medications.glp1;
       const glp1Drug = glp1?.drug;
       const onGlp1 = glp1 && glp1Drug && glp1Drug !== 'none' && glp1Drug !== 'not_tolerated' && glp1Drug !== 'other';
@@ -271,22 +276,8 @@ export function generateSuggestions(
           }
         }
       }
-    }
-  }
-
-  // GLP-1 medication suggestion for weight management (standalone — only when cascade is NOT active)
-  // The cascade is active when: medications provided AND (BMI > 28 OR BMI 25-28 with secondary criteria)
-  if (results.bmi !== undefined) {
-    const whr = results.waistToHeightRatio;
-    const cascadeActive = medications && results.bmi > 25 && (
-      results.bmi > 28 ||
-      (inputs.hba1c !== undefined && inputs.hba1c >= HBA1C_THRESHOLDS.prediabetes) ||
-      (inputs.triglycerides !== undefined && inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) ||
-      (inputs.systolicBp !== undefined && inputs.systolicBp >= BP_THRESHOLDS.stage1Sys) ||
-      (whr !== undefined && whr >= 0.5)
-    );
-
-    if (!cascadeActive) {
+    } else if (!medications) {
+      // Standalone GLP-1 suggestion (when medications not tracked)
       if (results.bmi > 28) {
         suggestions.push({
           id: 'weight-glp1',
@@ -295,24 +286,18 @@ export function generateSuggestions(
           title: 'Weight management medication',
           description: 'With a BMI over 28, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.',
         });
-      } else if (results.bmi > 25) {
-        // BMI 25-28: suggest if waist-to-height ≥ 0.5 or triglycerides elevated
-        // Don't assume risk when waist data is missing — prompt for waist measurement instead
-        const trigsElevated = inputs.triglycerides !== undefined &&
-          inputs.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline;
-        const waistElevatedStandalone = whr !== undefined && whr >= 0.5;
-        if (waistElevatedStandalone || trigsElevated) {
-          const reason = waistElevatedStandalone
-            ? 'elevated BMI and waist measurements'
-            : 'elevated BMI and triglycerides';
-          suggestions.push({
-            id: 'weight-glp1',
-            category: 'medication',
-            priority: 'attention',
-            title: 'Weight management medication',
-            description: `With ${reason}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.`,
-          });
-        }
+      } else if (whr !== undefined || trigsElevated) {
+        // BMI 25-28: waist must be elevated (guaranteed by bmiIsElevated when whr defined) or trigs elevated
+        const reason = whr !== undefined
+          ? 'elevated BMI and waist measurements'
+          : 'elevated BMI and triglycerides';
+        suggestions.push({
+          id: 'weight-glp1',
+          category: 'medication',
+          priority: 'attention',
+          title: 'Weight management medication',
+          description: `With ${reason}, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor, in addition to diet, exercise, and sleep optimization.`,
+        });
       }
     }
   }

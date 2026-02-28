@@ -167,6 +167,11 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
     results.waistToHeightRatio = Math.round(ratio * 100) / 100;
   }
 
+  // Classify BMI (accounts for WHtR reclassification of BMI 25-29.9)
+  if (results.bmi !== undefined) {
+    results.bmiCategory = getBMICategory(results.bmi, results.waistToHeightRatio);
+  }
+
   // Calculate non-HDL cholesterol if both total and HDL are provided
   if (inputs.totalCholesterol !== undefined && inputs.hdlC !== undefined) {
     const nonHdl = inputs.totalCholesterol - inputs.hdlC;
