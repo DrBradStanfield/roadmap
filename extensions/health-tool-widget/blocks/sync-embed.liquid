@@ -163,6 +163,8 @@
       } else {
         postMeasurements(0);
       }
+    }).catch(function() {
+      // Silent fail — network errors, JSON parse failures, app proxy unavailable
     });
   } catch (e) {
     // Silent fail — don't break the page
