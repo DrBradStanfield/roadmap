@@ -1,7 +1,7 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
-import { getCustomerId, getCustomerInfo } from '../lib/route-helpers.server';
+import { getCustomerId, getCustomerInfo, tagShopifyCustomer } from '../lib/route-helpers.server';
 
 // In-memory rate limiter: 60 requests per minute per customer
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -168,6 +168,8 @@ export async function action({ request }: ActionFunctionArgs) {
       // Called by sync-embed after full data sync completes
       if (body.sendWelcomeEmail) {
         const sent = await checkAndSendWelcomeEmail(userId, client);
+        // Fire-and-forget: tag Shopify customer for Klaviyo audiences
+        tagShopifyCustomer(admin, customerId).catch(() => {});
         return json({ success: sent });
       }
 
@@ -292,6 +294,8 @@ export async function action({ request }: ActionFunctionArgs) {
       checkAndSendWelcomeEmail(userId, client).catch(err => {
         Sentry.captureException(err);
       });
+      // Fire-and-forget: tag Shopify customer for Klaviyo audiences
+      tagShopifyCustomer(admin, customerId).catch(() => {});
 
       return json({ success: true, data: toApiMeasurement(measurement) });
     }

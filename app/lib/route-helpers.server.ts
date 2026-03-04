@@ -3,6 +3,8 @@
  * Extracted from api.measurements, api.reminders, api.user-data to eliminate duplication.
  */
 
+import * as Sentry from '@sentry/remix';
+
 /**
  * Extract and validate the Shopify customer ID from the app proxy request.
  * Returns null if missing or non-numeric (defense-in-depth against malformed IDs).
@@ -52,4 +54,34 @@ const UUID_REGEX = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12
  */
 export function isValidUuid(value: string): boolean {
   return UUID_REGEX.test(value);
+}
+
+/**
+ * Tag a Shopify customer with "roadmap-user" for Klaviyo audience sync.
+ * Fire-and-forget — never throws. tagsAdd is idempotent (no-op if tag exists).
+ */
+export async function tagShopifyCustomer(admin: any, customerId: string): Promise<void> {
+  try {
+    const response = await admin.graphql(`
+      mutation addTags($id: ID!, $tags: [String!]!) {
+        tagsAdd(id: $id, tags: $tags) {
+          node { id }
+          userErrors { message }
+        }
+      }
+    `, {
+      variables: {
+        id: `gid://shopify/Customer/${customerId}`,
+        tags: ['roadmap-user'],
+      },
+    });
+    const result = await response.json();
+    const userErrors = result?.data?.tagsAdd?.userErrors;
+    if (userErrors?.length) {
+      console.warn('Shopify tagsAdd userErrors:', userErrors);
+    }
+  } catch (error) {
+    console.error('Shopify customer tagging error:', error);
+    Sentry.captureException(error, { tags: { feature: 'shopify_customer_tag' } });
+  }
 }

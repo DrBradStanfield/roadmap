@@ -851,6 +851,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .guest-cta-text {
@@ -897,6 +899,8 @@
   background: #e6f7f4;
   border-radius: 8px;
   border: 1px solid #b2dfdb;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .guest-cta-inline span {

@@ -274,7 +274,7 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
   }
 
   return (
-    <div className="guest-cta no-print">
+    <a href={authState.loginUrl || "/account/login"} className="guest-cta no-print">
       <div className="guest-cta-text">
         {redirectFailed ? (
           <>
@@ -288,10 +288,10 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
           </>
         )}
       </div>
-      <a href={authState.loginUrl || "/account/login"} className="guest-cta-btn">
+      <span className="guest-cta-btn">
         {redirectFailed ? 'Sign In' : 'Email Me My Results'}
-      </a>
-    </div>
+      </span>
+    </a>
   );
 }
 
@@ -674,12 +674,12 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
       )}
 
       {!authState?.isLoggedIn && (
-        <div className="guest-cta-inline no-print">
+        <a href={authState?.loginUrl || "/account/login"} className="guest-cta-inline no-print">
           <span>{redirectFailed ? 'Sign in to access your saved data.' : 'Save your data and get an email summary to discuss with doctor.'}</span>
-          <a href={authState?.loginUrl || "/account/login"} className="guest-cta-btn">
+          <span className="guest-cta-btn">
             {redirectFailed ? 'Sign In' : 'Email Me My Results'}
-          </a>
-        </div>
+          </span>
+        </a>
       )}
 
       <FeedbackForm />

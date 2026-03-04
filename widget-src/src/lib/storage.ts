@@ -66,7 +66,12 @@ export function loadFromLocalStorage(): LoadedData | null {
 
     return {
       inputs: data.inputs,
-      previousMeasurements: data.previousMeasurements ?? [],
+      // Coerce measurement values to numbers — stale localStorage from older
+      // versions may contain PostgREST NUMERIC strings (e.g. "5.2" not 5.2).
+      previousMeasurements: (data.previousMeasurements ?? []).map(m => ({
+        ...m,
+        value: Number(m.value),
+      })),
       medications: data.medications ?? [],
       screenings: data.screenings ?? [],
       reminderPreferences: data.reminderPreferences ?? [],
