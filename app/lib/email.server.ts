@@ -5,7 +5,6 @@ import type { HealthInputs, HealthResults, Suggestion, MedicationInputs } from '
 import type { UnitSystem, MetricType } from '../../packages/health-core/src/units';
 import { measurementsToInputs, medicationsToInputs, screeningsToInputs } from '../../packages/health-core/src/mappings';
 import { calculateHealthResults, getBMICategory, getEgfrStatus, getLpaStatus, getLipidStatus, getProteinRate } from '../../packages/health-core/src/calculations';
-import { generateSuggestions } from '../../packages/health-core/src/suggestions';
 import {
   formatDisplayValue,
   getDisplayLabel,
@@ -119,10 +118,10 @@ export async function checkAndSendWelcomeEmail(
         return true; // Not an error — just insufficient data
       }
 
-      // 5. Calculate results and generate suggestions
+      // 5. Calculate results (suggestions are generated inside calculateHealthResults)
       const unitSystem: UnitSystem = inputs.unitSystem || 'si';
       const results = calculateHealthResults(inputs, unitSystem, medInputs, screenInputs);
-      const suggestions = generateSuggestions(inputs, results, unitSystem, medInputs, screenInputs);
+      const suggestions = results.suggestions;
 
       // 6. Build and send email
       const firstName = profile.first_name || null;
@@ -174,7 +173,7 @@ export async function generateReportHtml(
 
   const unitSystem: UnitSystem = inputs.unitSystem || 'si';
   const results = calculateHealthResults(inputs, unitSystem, medInputs, screenInputs);
-  const suggestions = generateSuggestions(inputs, results, unitSystem, medInputs, screenInputs);
+  const suggestions = results.suggestions;
   const firstName = profile.first_name || null;
   const html = buildWelcomeEmailHtml(inputs, results, suggestions, unitSystem, firstName, medInputs, results.age);
 

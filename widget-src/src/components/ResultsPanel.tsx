@@ -34,7 +34,7 @@ interface ResultsPanelProps {
   emailConfirmStatus?: 'idle' | 'sent' | 'error';
   unitSystem: UnitSystem;
   hasUnsavedLongitudinal?: boolean;
-  onSaveLongitudinal?: () => void;
+  onSaveLongitudinal?: () => Promise<void>;
   isSavingLongitudinal?: boolean;
   onDeleteData?: () => void;
   isDeleting?: boolean;
@@ -191,7 +191,7 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
   saveStatus?: string;
   emailConfirmStatus?: 'idle' | 'sent' | 'error';
   hasUnsavedLongitudinal?: boolean;
-  onSaveLongitudinal?: () => void;
+  onSaveLongitudinal?: () => Promise<void>;
   isSavingLongitudinal?: boolean;
   redirectFailed?: boolean;
   onPrint?: () => void;
@@ -395,6 +395,10 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
   const handleEmailReport = async () => {
     if (emailStatus === 'sending') return;
     setEmailStatus('sending');
+    // Save any unsaved longitudinal values first so the server has the same data
+    if (hasUnsavedLongitudinal && onSaveLongitudinal) {
+      try { await onSaveLongitudinal(); } catch { /* proceed with saved data */ }
+    }
     const result = await sendReportEmail();
     setEmailStatus(result.success ? 'sent' : 'error');
     setTimeout(() => setEmailStatus('idle'), 3000);
@@ -403,6 +407,10 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
   const handlePrint = async () => {
     if (printStatus === 'loading') return;
     setPrintStatus('loading');
+    // Save any unsaved longitudinal values first so the server has the same data
+    if (hasUnsavedLongitudinal && onSaveLongitudinal) {
+      try { await onSaveLongitudinal(); } catch { /* proceed with saved data */ }
+    }
     const result = await getReportHtml();
     if (result.success && result.html) {
       const printWindow = window.open('', '_blank');

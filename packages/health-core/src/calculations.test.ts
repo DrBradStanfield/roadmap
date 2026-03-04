@@ -13,6 +13,7 @@ import {
   getLipidStatus,
   getProteinRate,
 } from './calculations';
+import { generateSuggestions } from './suggestions';
 
 describe('calculateIBW (Ideal Body Weight — Peterson 2016)', () => {
   it('calculates correctly for average height male', () => {
@@ -374,6 +375,14 @@ describe('calculateHealthResults', () => {
     expect(results.eGFR).toBeDefined();
     expect(results.eGFR!).toBeGreaterThanOrEqual(45);
     expect(results.proteinTarget).toBe(89);
+  });
+
+  it('results.suggestions matches a direct generateSuggestions call', () => {
+    const inputs = { heightCm: 175, sex: 'male' as const, weightKg: 90, ldlC: 4.5 };
+    const medications = { statin: { drug: 'none', dose: null } };
+    const results = calculateHealthResults(inputs, 'si', medications);
+    const directSuggestions = generateSuggestions(inputs, results, 'si', medications);
+    expect(results.suggestions).toEqual(directSuggestions);
   });
 });
 
