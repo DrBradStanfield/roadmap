@@ -46,7 +46,7 @@ function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
   // allowUrls can't filter these because plain-object rejections have no stack trace.
   // Our code wraps all promises in apiCall() which catches errors properly.
   if (event.exception?.values?.some(v =>
-    v.mechanism?.type === 'onunhandledrejection' && !v.stacktrace?.frames?.length
+    v.mechanism?.type?.endsWith('onunhandledrejection') && !v.stacktrace?.frames?.length
   )) {
     return null;
   }
