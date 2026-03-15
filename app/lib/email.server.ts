@@ -5,6 +5,8 @@ import type { HealthInputs, HealthResults, Suggestion, MedicationInputs } from '
 import type { UnitSystem, MetricType } from '../../packages/health-core/src/units';
 import { measurementsToInputs, medicationsToInputs, screeningsToInputs } from '../../packages/health-core/src/mappings';
 import { calculateHealthResults, getBMICategory, getEgfrStatus, getLpaStatus, getLipidStatus, getProteinRate } from '../../packages/health-core/src/calculations';
+import { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence } from '../../packages/health-core/src/evidence';
+import type { SuggestionEvidence } from '../../packages/health-core/src/evidence';
 import {
   formatDisplayValue,
   getDisplayLabel,
@@ -261,10 +263,12 @@ export function buildWelcomeEmailHtml(
 
   // IBW
   snapshotRows.push(snapshotRow('Ideal Body Weight', `${formatDisplayValue('weight', results.idealBodyWeight, unitSystem)} ${getDisplayLabel('weight', unitSystem)}`, `for ${heightDisplay} height`));
+  if (sex) snapshotRows.push(snapshotEvidenceRow(getIbwEvidence(sex)));
 
   // Protein Target
   const proteinRate = getProteinRate(results.eGFR ?? undefined);
   snapshotRows.push(snapshotRow('Protein Target', `${results.proteinTarget}g/day`, `${proteinRate.toFixed(1)}g per kg IBW`));
+  snapshotRows.push(snapshotEvidenceRow(getProteinEvidence(results.idealBodyWeight, proteinRate, results.eGFR ?? undefined)));
 
   // BMI — uses canonical getBMICategory() for composite WHtR assessment
   if (results.bmi != null) {
@@ -280,6 +284,7 @@ export function buildWelcomeEmailHtml(
         : STATUS_COLORS.high;
       snapshotRows.push(snapshotRow('BMI', results.bmi.toFixed(1), displayLabel, bmiColor));
     }
+    if (sex) snapshotRows.push(snapshotEvidenceRow(getBmiEvidence(getBMICategory(results.bmi, results.waistToHeightRatio), sex, results.waistToHeightRatio)));
   }
 
   // Waist-to-Height (right after BMI)
@@ -287,24 +292,29 @@ export function buildWelcomeEmailHtml(
     const whrStatus = results.waistToHeightRatio >= 0.5 ? 'Elevated' : 'Healthy';
     const whrColor = results.waistToHeightRatio >= 0.5 ? STATUS_COLORS.high : STATUS_COLORS.normal;
     snapshotRows.push(snapshotRow('Waist-to-Height', results.waistToHeightRatio.toFixed(2), whrStatus, whrColor));
+    snapshotRows.push(snapshotEvidenceRow(STAT_CARD_EVIDENCE['whtr']));
   }
 
   // Lipid cascade
   const lipid = getLipidCascade(inputs, unitSystem);
   if (lipid) {
     snapshotRows.push(snapshotRow(lipid.label, lipid.value, lipid.status, lipid.color));
+    const lipidKey = inputs.apoB != null ? 'apob' : (inputs.totalCholesterol != null && inputs.hdlC != null) ? 'non-hdl' : 'ldl';
+    snapshotRows.push(snapshotEvidenceRow(STAT_CARD_EVIDENCE[lipidKey]));
   }
 
   // eGFR
   if (results.eGFR != null) {
     const label = getEgfrStatus(results.eGFR);
     snapshotRows.push(snapshotRow('eGFR', `${Math.round(results.eGFR)} mL/min/1.73m²`, label, statusColorMap[label]));
+    snapshotRows.push(snapshotEvidenceRow(STAT_CARD_EVIDENCE['egfr']));
   }
 
   // Lp(a)
   if (inputs.lpa != null) {
     const label = getLpaStatus(inputs.lpa);
     snapshotRows.push(snapshotRow('Lp(a)', `${inputs.lpa} nmol/L`, label, statusColorMap[label]));
+    snapshotRows.push(snapshotEvidenceRow(STAT_CARD_EVIDENCE['lpa']));
   }
 
   // Track which metrics are already in the snapshot to avoid duplication
@@ -764,6 +774,26 @@ function metricRowWithRange(label: string, value: string, rangeText: string, sta
           <td style="padding:8px 0;color:#555;font-size:14px;border-bottom:1px solid #f0f0f0;">${label}</td>
           <td style="padding:8px 0;color:#1a1a1a;font-size:14px;font-weight:600;text-align:right;border-bottom:1px solid #f0f0f0;">${value}</td>
           <td style="padding:8px 0;color:${STATUS_COLORS[status]};font-size:12px;text-align:right;border-bottom:1px solid #f0f0f0;padding-left:12px;">${rangeText}</td>
+        </tr>`;
+}
+
+function snapshotEvidenceRow(evidence: SuggestionEvidence): string {
+  const tags = evidence.guidelines.length > 0
+    ? evidence.guidelines.map(g =>
+        `<span style="display:inline-block;padding:2px 8px;background:#f0f0f0;color:#666;font-size:11px;border-radius:10px;margin:0 4px 4px 0;">${g}</span>`
+      ).join('')
+    : '';
+  const refs = evidence.references.length > 0
+    ? evidence.references.map(ref =>
+        `<a href="${ref.url}" style="color:#2563eb;font-size:11px;text-decoration:none;">${ref.label}</a>`
+      ).join('<br>')
+    : '';
+  return `<tr>
+          <td colspan="3" style="padding:0 0 8px;border-bottom:1px solid #f0f0f0;">
+            <div style="color:#666;font-size:12px;line-height:1.5;margin:0 0 4px;">${evidence.reason}</div>
+            ${tags ? `<div style="margin:0 0 4px;">${tags}</div>` : ''}
+            ${refs ? `<div>${refs}</div>` : ''}
+          </td>
         </tr>`;
 }
 
