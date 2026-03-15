@@ -24,6 +24,7 @@ See [health_roadmap_algorithm.md](health_roadmap_algorithm.md) — the **single 
 - **Testing**: Vitest
 - **Error Monitoring**: Sentry (`@sentry/react` for widget, `@sentry/remix` for backend)
 - **User Analytics**: Microsoft Clarity (configured via MCP in `.mcp.json`, 10 req/day limit, last 1-3 days)
+- **Browser Testing**: Chrome DevTools MCP (configured in `.mcp.json`, requires Chrome 146+ with DevTools MCP toggle enabled)
 
 ## FHIR Compliance
 
@@ -284,7 +285,7 @@ Backend: Initialized in `app/entry.server.tsx`.
 - **Run tests in a Bash subagent** to keep verbose output out of main context.
 - **If an approach is failing, stop and re-plan** rather than pushing through.
 - **Self-improving docs**: When you discover a new gotcha, repeated mistake, or useful pattern during work, proactively suggest adding it to CLAUDE.md (if project-wide) or memory (if preference/workflow). This makes our docs compound over time.
-- **Verify beyond tests**: For non-test-covered changes (UI layout, CSS, deploy, Liquid templates), verify via @browser
+- **Verify beyond tests**: For non-test-covered changes (UI layout, CSS, deploy, Liquid templates), verify via Chrome DevTools MCP (screenshot, click, evaluate JS in the open browser tab)
 - Rebuild widget after changes: `npm run build:widget`
 - Two IIFE bundles: `health-tool.js` and `health-history.js` (Vite IIFE doesn't support multiple inputs per config).
 

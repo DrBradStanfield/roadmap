@@ -302,6 +302,8 @@ Source: `suggestions.ts` -> `generateSuggestions()`
 
 ### Atherogenic Lipid Hierarchy
 
+**Guidelines:** 2026 ACC/AHA Dyslipidemia Guideline (JACC, DOI: 10.1016/j.jacc.2025.11.016), ESC/EAS 2019.
+
 **Only show the best available marker:** ApoB > non-HDL > LDL.
 
 ApoB is always shown when available. LDL is only shown when both ApoB AND non-HDL are unavailable. Non-HDL is only shown when ApoB is unavailable.
@@ -311,6 +313,8 @@ Each marker has three tiers (borderline/high/very high) using the thresholds in 
 **Total cholesterol** is suppressed when an elevated atherogenic marker already produced an attention/urgent suggestion, or when the lipid medication cascade is active.
 
 ### Lp(a)
+
+**Guidelines:** 2026 ACC/AHA Dyslipidemia Guideline (Class I: measure Lp(a) at least once in all adults), EAS 2022.
 
 | ID | Condition | Priority |
 |----|-----------|----------|

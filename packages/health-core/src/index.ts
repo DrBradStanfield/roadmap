@@ -178,6 +178,10 @@ export {
   type UnitDef,
 } from './units';
 
+// Evidence (stat card clinical detail)
+export type { SuggestionEvidence } from './evidence';
+export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence } from './evidence';
+
 // Sentry PII/PHI scrubbing
 export {
   scrubSensitiveData,

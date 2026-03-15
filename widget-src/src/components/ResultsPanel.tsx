@@ -3,6 +3,7 @@ import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
   type UnitSystem,
   type MetricType,
+  type SuggestionEvidence,
   formatDisplayValue,
   getDisplayLabel,
   formatHeightDisplay,
@@ -16,6 +17,10 @@ import {
   getLpaStatus,
   getLipidStatus,
   getProteinRate,
+  STAT_CARD_EVIDENCE,
+  getIbwEvidence,
+  getProteinEvidence,
+  getBmiEvidence,
 } from '@roadmap/health-core';
 import { type ApiReminderPreference, sendReportEmail, getReportHtml } from '../lib/api';
 import { FeedbackForm } from './FeedbackForm';
@@ -73,6 +78,41 @@ const statusClassMap: Record<string, string> = {
   'Moderately Decreased': 'status-attention', 'Underweight': 'status-attention',
   'Very High': 'status-urgent', 'Severely Decreased': 'status-urgent', 'Kidney Failure': 'status-urgent',
 };
+
+function StatCard({ label, value, status, evidence }: {
+  label: string;
+  value: React.ReactNode;
+  status?: { label: string; className: string };
+  evidence?: SuggestionEvidence;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasDetail = !!evidence;
+  return (
+    <div className={`stat-card${hasDetail ? ' stat-card-clickable' : ''}${open ? ' stat-card-open' : ''}`}
+         onClick={hasDetail ? () => setOpen(o => !o) : undefined}>
+      <span className="stat-label">{label}</span>
+      <span className="stat-value">{value}</span>
+      {status?.label && <span className={`stat-status ${status.className}`}>{status.label}</span>}
+      {hasDetail && open && (
+        <div className="stat-detail">
+          <p className="stat-detail-text">{evidence.reason}</p>
+          {evidence.guidelines.length > 0 && (
+            <div className="stat-detail-guidelines">
+              {evidence.guidelines.map(g => <span key={g} className="guideline-tag">{g}</span>)}
+            </div>
+          )}
+          {evidence.references.length > 0 && (
+            <div className="evidence-refs">
+              {evidence.references.map(ref => (
+                <a key={ref.url} href={ref.url} target="_blank" rel="noopener noreferrer">{ref.label}</a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Categories that should be consolidated into grouped cards
 const GROUPED_CATEGORIES = ['nutrition', 'screening', 'bloodwork', 'medication'];
@@ -587,88 +627,52 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
       <section className="quick-stats">
         <h3 className="results-section-title">Your Health Snapshot</h3>
         <div className="stats-grid">
-          <div className="stat-card">
-            <span className="stat-label">Ideal Body Weight</span>
-            <span className="stat-value">{ibwDisplay} {weightUnit}</span>
-            <span className="stat-status status-normal">for {formatHeightDisplay(results.heightCm, unitSystem)} height</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-label">Protein Target</span>
-            <span className="stat-value">{results.proteinTarget}g/day</span>
-            <span className="stat-status status-normal">{getProteinRate(results.eGFR).toFixed(1)}g per kg IBW</span>
-          </div>
-          {results.bmi !== undefined && (() => {
-            const status = getBmiStatus(results.bmiCategory!, results.waistToHeightRatio);
-            return (
-              <div className="stat-card">
-                <span className="stat-label">BMI</span>
-                <span className="stat-value">{results.bmi}</span>
-                {status.label && <span className={`stat-status ${status.className}`}>{status.label}</span>}
-              </div>
-            );
-          })()}
+          <StatCard
+            label="Ideal Body Weight"
+            value={<>{ibwDisplay} {weightUnit}</>}
+            status={{ label: `for ${formatHeightDisplay(results.heightCm, unitSystem)} height`, className: 'status-normal' }}
+            evidence={sex ? getIbwEvidence(sex) : undefined}
+          />
+          <StatCard
+            label="Protein Target"
+            value={<>{results.proteinTarget}g/day</>}
+            status={{ label: `${getProteinRate(results.eGFR).toFixed(1)}g per kg IBW`, className: 'status-normal' }}
+            evidence={getProteinEvidence(results.idealBodyWeight, getProteinRate(results.eGFR), results.eGFR)}
+          />
+          {results.bmi !== undefined && (
+            <StatCard
+              label="BMI"
+              value={results.bmi}
+              status={getBmiStatus(results.bmiCategory!, results.waistToHeightRatio)}
+              evidence={sex ? getBmiEvidence(results.bmiCategory!, sex, results.waistToHeightRatio) : undefined}
+            />
+          )}
 
           {/* Lipid tile: ApoB → Non-HDL → LDL cascade */}
           {results.apoB !== undefined ? (() => {
-            const label = getLipidStatus(results.apoB, APOB_THRESHOLDS);
-            return (
-              <div className="stat-card">
-                <span className="stat-label">ApoB</span>
-                <span className="stat-value">{formatDisplayValue('apob', results.apoB, usFor('apob'))} {getDisplayLabel('apob', usFor('apob'))}</span>
-                <span className={`stat-status ${statusClassMap[label] || ''}`}>{label}</span>
-              </div>
-            );
+            const s = getLipidStatus(results.apoB, APOB_THRESHOLDS);
+            return <StatCard label="ApoB" value={<>{formatDisplayValue('apob', results.apoB, usFor('apob'))} {getDisplayLabel('apob', usFor('apob'))}</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['apob']} />;
           })() : results.nonHdlCholesterol !== undefined ? (() => {
-            const label = getLipidStatus(results.nonHdlCholesterol, NON_HDL_THRESHOLDS);
-            return (
-              <div className="stat-card">
-                <span className="stat-label">Non-HDL Cholesterol</span>
-                <span className="stat-value">{formatDisplayValue('ldl', results.nonHdlCholesterol, usFor('ldl'))} {getDisplayLabel('ldl', usFor('ldl'))}</span>
-                <span className={`stat-status ${statusClassMap[label] || ''}`}>{label}</span>
-              </div>
-            );
+            const s = getLipidStatus(results.nonHdlCholesterol, NON_HDL_THRESHOLDS);
+            return <StatCard label="Non-HDL Cholesterol" value={<>{formatDisplayValue('ldl', results.nonHdlCholesterol, usFor('ldl'))} {getDisplayLabel('ldl', usFor('ldl'))}</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['non-hdl']} />;
           })() : results.ldlC !== undefined ? (() => {
-            const label = getLipidStatus(results.ldlC, LDL_THRESHOLDS);
-            return (
-              <div className="stat-card">
-                <span className="stat-label">LDL Cholesterol</span>
-                <span className="stat-value">{formatDisplayValue('ldl', results.ldlC, usFor('ldl'))} {getDisplayLabel('ldl', usFor('ldl'))}</span>
-                <span className={`stat-status ${statusClassMap[label] || ''}`}>{label}</span>
-              </div>
-            );
+            const s = getLipidStatus(results.ldlC, LDL_THRESHOLDS);
+            return <StatCard label="LDL Cholesterol" value={<>{formatDisplayValue('ldl', results.ldlC, usFor('ldl'))} {getDisplayLabel('ldl', usFor('ldl'))}</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['ldl']} />;
           })() : null}
 
           {results.eGFR !== undefined && (() => {
-            const label = getEgfrStatus(results.eGFR);
-            return (
-              <div className="stat-card">
-                <span className="stat-label">eGFR</span>
-                <span className="stat-value">{results.eGFR} mL/min</span>
-                <span className={`stat-status ${statusClassMap[label] || ''}`}>{label}</span>
-              </div>
-            );
+            const s = getEgfrStatus(results.eGFR);
+            return <StatCard label="eGFR" value={<>{results.eGFR} mL/min</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['egfr']} />;
           })()}
 
           {results.lpa !== undefined && (() => {
-            const label = getLpaStatus(results.lpa);
-            return (
-              <div className="stat-card">
-                <span className="stat-label">Lp(a)</span>
-                <span className="stat-value">{Math.round(results.lpa)} nmol/L</span>
-                <span className={`stat-status ${statusClassMap[label] || ''}`}>{label}</span>
-              </div>
-            );
+            const s = getLpaStatus(results.lpa);
+            return <StatCard label="Lp(a)" value={<>{Math.round(results.lpa)} nmol/L</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['lpa']} />;
           })()}
 
           {results.waistToHeightRatio !== undefined && (() => {
             const status = getWaistToHeightStatus(results.waistToHeightRatio);
-            return (
-              <div className="stat-card">
-                <span className="stat-label">Waist-to-Height</span>
-                <span className="stat-value">{results.waistToHeightRatio}</span>
-                {status && <span className={`stat-status ${status.className}`}>{status.label}</span>}
-              </div>
-            );
+            return status ? <StatCard label="Waist-to-Height" value={results.waistToHeightRatio} status={status} evidence={STAT_CARD_EVIDENCE['whtr']} /> : null;
           })()}
         </div>
       </section>

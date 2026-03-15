@@ -52,7 +52,7 @@ const REFS_EXERCISE: SuggestionReference[] = [
 ];
 
 const REFS_LIPID_GUIDELINES: SuggestionReference[] = [
-  { label: 'Grundy 2019 – AHA/ACC Cholesterol Guideline (JACC)', url: 'https://doi.org/10.1016/j.jacc.2018.11.002' },
+  { label: '2026 ACC/AHA Dyslipidemia Guideline (JACC)', url: 'https://doi.org/10.1016/j.jacc.2025.11.016' },
   { label: 'Mach 2020 – ESC/EAS Dyslipidaemia Guidelines (Eur Heart J)', url: 'https://doi.org/10.1093/eurheartj/ehz455' },
 ];
 
@@ -73,6 +73,7 @@ const REFS_LDL_SAFETY: SuggestionReference[] = [
 ];
 
 const REFS_LPA: SuggestionReference[] = [
+  { label: '2026 ACC/AHA Dyslipidemia Guideline (JACC)', url: 'https://doi.org/10.1016/j.jacc.2025.11.016' },
   { label: 'Kronenberg 2022 – Lp(a) in cardiovascular disease: EAS consensus (Eur Heart J)', url: 'https://doi.org/10.1093/eurheartj/ehac361' },
 ];
 
@@ -95,7 +96,7 @@ const REFS_SCREENING_ACS: SuggestionReference[] = [
   { label: 'American Cancer Society – Screening Guidelines', url: 'https://www.cancer.org/cancer/screening/american-cancer-society-guidelines-for-the-early-detection-of-cancer.html' },
 ];
 
-const GUIDELINES_LIPIDS = ['AHA/ACC 2018', 'ESC/EAS 2019'];
+const GUIDELINES_LIPIDS = ['ACC/AHA 2026', 'ESC/EAS 2019'];
 const GUIDELINES_BP = ['ISH/ESH 2023'];
 
 // ============================================================
@@ -303,20 +304,20 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Blood Work: Lp(a) ─────────────────────────────────────
 
   'lpa-elevated': {
-    reason: 'Lp(a) is genetically determined — you are born with a set level that cannot be changed through diet or lifestyle. The European Atherosclerosis Society identifies elevated Lp(a) as an independent cardiovascular risk factor. Since Lp(a) itself cannot be lowered (yet), the strategy is to aggressively reduce all other modifiable risk factors: lipids, blood pressure, blood sugar, weight, and medications where indicated.',
-    guidelines: ['EAS 2022'],
+    reason: 'Lp(a) is genetically determined — you are born with a set level that cannot be changed through diet or lifestyle. The 2026 ACC/AHA Dyslipidemia Guideline recommends measuring Lp(a) at least once in all adults (Class I). Elevated Lp(a) is an independent cardiovascular risk factor. Since Lp(a) itself cannot be lowered (yet), the strategy is to aggressively reduce all other modifiable risk factors: lipids, blood pressure, blood sugar, weight, and medications where indicated.',
+    guidelines: ['ACC/AHA 2026', 'EAS 2022'],
     references: REFS_LPA,
   },
 
   'lpa-borderline': {
-    reason: 'Your Lp(a) is in the borderline range. Lp(a) is genetically determined and does not change with lifestyle. The EAS consensus recommends that borderline levels still warrant attention to other cardiovascular risk factors.',
-    guidelines: ['EAS 2022'],
+    reason: 'Your Lp(a) is in the borderline range. Lp(a) is genetically determined and does not change with lifestyle. The 2026 ACC/AHA guideline recommends measuring Lp(a) at least once in all adults. Borderline levels still warrant attention to other cardiovascular risk factors.',
+    guidelines: ['ACC/AHA 2026', 'EAS 2022'],
     references: REFS_LPA,
   },
 
   'lpa-normal': {
-    reason: 'Your Lp(a) is in the normal range. Since Lp(a) is genetically determined and does not change significantly over time, this is typically a one-time test.',
-    guidelines: ['EAS 2022'],
+    reason: 'Your Lp(a) is in the normal range. Since Lp(a) is genetically determined and does not change significantly over time, this is typically a one-time test. The 2026 ACC/AHA guideline recommends measuring Lp(a) at least once in all adults.',
+    guidelines: ['ACC/AHA 2026', 'EAS 2022'],
     references: REFS_LPA,
   },
 
@@ -538,3 +539,107 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     ],
   },
 };
+
+// ============================================================
+// Stat card evidence (expandable detail for health snapshot cards)
+// ============================================================
+
+const REFS_BMI: SuggestionReference[] = [
+  { label: 'Global BMI Mortality Collaboration 2016 – BMI & all-cause mortality (Lancet)', url: 'https://doi.org/10.1016/S0140-6736(16)30175-1' },
+  { label: 'Ashwell 2012 – WHtR better than BMI for cardiometabolic risk (Obes Rev)', url: 'https://doi.org/10.1111/j.1467-789X.2011.00952.x' },
+];
+
+const REFS_EGFR: SuggestionReference[] = [
+  { label: 'Inker 2021 – CKD-EPI 2021 race-free eGFR equation (NEJM)', url: 'https://doi.org/10.1056/NEJMoa2102953' },
+];
+
+const REFS_IBW: SuggestionReference[] = [
+  { label: 'Peterson 2016 – Universal equation for ideal body weight (Am J Clin Nutr)', url: 'https://doi.org/10.3945/ajcn.115.121178' },
+];
+
+const REFS_WHTR: SuggestionReference[] = [
+  { label: 'Ashwell & Hsieh 2005 – WHtR as screening tool for metabolic risk (Obes Rev)', url: 'https://doi.org/10.1111/j.1467-789X.2005.00165.x' },
+];
+
+/** Static stat card evidence entries. */
+export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
+  'apob': {
+    reason: 'Apolipoprotein B (ApoB) counts the total number of atherogenic lipoprotein particles in your blood and is the most accurate single predictor of cardiovascular risk — more precise than LDL-cholesterol, which only measures cholesterol content. Each atherogenic particle carries exactly one ApoB molecule. The 2026 ACC/AHA Dyslipidemia Guideline recommends ApoB measurement to assess residual ASCVD risk, with targets of <55 mg/dL (very high risk), <70 mg/dL (high risk), and <90 mg/dL (borderline-intermediate risk). ApoB is preferred over LDL-C because it captures all atherogenic particles including VLDL remnants and Lp(a).',
+    guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
+    references: [
+      ...REFS_LIPID_GUIDELINES,
+      { label: 'Borén 2020 – LDL causes atherosclerosis: EAS consensus (Eur Heart J)', url: 'https://doi.org/10.1093/eurheartj/ehz962' },
+      { label: 'Sniderman 2019 – ApoB & cardiovascular disease (JAMA Cardiol)', url: 'https://doi.org/10.1001/jamacardio.2019.3780' },
+    ],
+  },
+
+  'non-hdl': {
+    reason: 'Non-HDL cholesterol (total cholesterol minus HDL) captures all atherogenic lipoproteins. It is the second-best predictor of cardiovascular risk after ApoB. The 2026 ACC/AHA guideline establishes non-HDL-C goals aligned with LDL-C targets (approximately 30 mg/dL higher). Note: ApoB is the most accurate single marker — if available, ask your doctor about testing ApoB.',
+    guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
+    references: REFS_LIPID_EVIDENCE,
+  },
+
+  'ldl': {
+    reason: 'LDL-cholesterol measures the cholesterol carried by low-density lipoproteins. The 2026 ACC/AHA Dyslipidemia Guideline reinstates explicit LDL-C treatment goals: <55 mg/dL for very high risk, <70 mg/dL for high risk, and <100 mg/dL for borderline-intermediate risk. Note: LDL-C can underestimate risk in people with high triglycerides or metabolic syndrome. ApoB or Non-HDL are preferred when available.',
+    guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
+    references: REFS_LIPID_EVIDENCE,
+  },
+
+  'egfr': {
+    reason: 'Estimated glomerular filtration rate (eGFR) measures kidney function using the CKD-EPI 2021 equation (race-free), based on creatinine, age, and sex. CKD staging: ≥70 Normal, 60-69 Low Normal, 45-59 Mildly Decreased (Stage 3a), 30-44 Moderately Decreased (Stage 3b), 15-29 Severely Decreased (Stage 4), <15 Kidney Failure (Stage 5). An eGFR below 60 sustained for 3+ months is consistent with chronic kidney disease.',
+    guidelines: ['KDIGO'],
+    references: REFS_EGFR,
+  },
+
+  'lpa': {
+    reason: 'Lipoprotein(a) is genetically determined — your level is largely set by your DNA and not significantly modifiable by diet or lifestyle. The 2026 ACC/AHA Dyslipidemia Guideline recommends measuring Lp(a) at least once in all adults (Class I recommendation). Levels ≥125 nmol/L are associated with elevated cardiovascular risk. Since Lp(a) itself cannot currently be lowered, the strategy is to aggressively reduce all other modifiable risk factors. A single lifetime measurement is usually sufficient.',
+    guidelines: ['ACC/AHA 2026', 'EAS 2022'],
+    references: REFS_LPA,
+  },
+
+  'whtr': {
+    reason: 'Waist-to-height ratio is a simple measure of central adiposity — a ratio ≥0.5 indicates elevated metabolic risk from visceral fat. It is more discriminative than BMI alone because it captures abdominal fat distribution, which is more strongly associated with cardiovascular disease, type 2 diabetes, and metabolic syndrome than overall body weight. The threshold of 0.5 applies regardless of sex, age, or ethnicity.',
+    guidelines: ['NICE'],
+    references: REFS_WHTR,
+  },
+};
+
+/** Build IBW stat card evidence with sex-specific detail. */
+export function getIbwEvidence(sex: 'male' | 'female'): SuggestionEvidence {
+  const bmiTarget = sex === 'male' ? 24 : 22;
+  const range = sex === 'male' ? '23-26' : '20-23';
+  return {
+    reason: `Ideal Body Weight is calculated using the Peterson formula (2016): IBW = 2.2 × BMI_target + 3.5 × BMI_target × (height_m − 1.5). The target BMI is ${bmiTarget} for ${sex}s, derived from large mortality meta-analyses showing this BMI is associated with the lowest all-cause mortality (optimal range: ${range}). Unlike the older Devine formula (1974), the Peterson formula accounts for both sex and height, producing more physiologically accurate estimates.`,
+    guidelines: [],
+    references: REFS_IBW,
+  };
+}
+
+/** Build protein stat card evidence with eGFR-aware detail. */
+export function getProteinEvidence(ibwKg: number, proteinRate: number, eGFR?: number): SuggestionEvidence {
+  const ckdNote = eGFR !== undefined && eGFR < 45
+    ? ' Your protein target is reduced to 1.0g/kg due to kidney function (eGFR < 45 mL/min). High protein intake may accelerate kidney decline in CKD Stage 3b+.'
+    : '';
+  return {
+    reason: `Daily protein target is calculated as ${proteinRate.toFixed(1)}g per kg of ideal body weight (${ibwKg} kg). Higher protein intake (≥1.2g/kg/day) supports muscle protein synthesis and helps preserve lean mass, particularly important for adults over 40. A meta-analysis of 49 studies found that higher protein intake was associated with reduced all-cause mortality.${ckdNote}`,
+    guidelines: ['ISSN 2017'],
+    references: REFS_PROTEIN,
+  };
+}
+
+/** Build BMI stat card evidence with WHtR-aware detail. */
+export function getBmiEvidence(bmiCategory: string, sex: 'male' | 'female', waistToHeightRatio?: number): SuggestionEvidence {
+  const range = sex === 'male' ? '23-26' : '20-23';
+  let whtrNote = '';
+  if (bmiCategory === 'Overweight' && waistToHeightRatio !== undefined && waistToHeightRatio < 0.5) {
+    whtrNote = '\n\nAlthough your BMI is 25-29.9, your waist-to-height ratio is below 0.5, which reclassifies you as Normal per AACE 2025 guidelines. This is because central adiposity (measured by WHtR) is a better predictor of metabolic risk than BMI alone.';
+  } else if (bmiCategory === 'Overweight' && waistToHeightRatio === undefined) {
+    whtrNote = '\n\nMeasuring your waist circumference would help refine this — a waist-to-height ratio <0.5 can reclassify Overweight BMI as Normal per AACE 2025.';
+  }
+  const guidelines = whtrNote ? ['AACE 2025'] : [];
+  return {
+    reason: `Body Mass Index = weight (kg) / height (m)². Sex-specific optimal BMI ranges based on mortality meta-analyses: males 23-26, females 20-23. Your optimal range is ${range}.${whtrNote}`,
+    guidelines,
+    references: REFS_BMI,
+  };
+}
