@@ -193,6 +193,7 @@ async function saveProfileChanges(profile: {
   birthYear?: number;
   birthMonth?: number;
   unitSystem?: number;
+  height?: number;
 }): Promise<boolean> {
   try {
     const response = await fetch(`${PROXY_PATH}/api/measurements`, {

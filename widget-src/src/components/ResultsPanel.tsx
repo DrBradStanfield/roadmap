@@ -391,7 +391,7 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
         ) : (
           <>
             <strong>Get Your Personalized Health Report</strong>
-            <span>Save your data and get an email summary to discuss with doctor.</span>
+            <span>Create a free account to save your data and get an email summary to discuss with doctor.</span>
           </>
         )}
       </div>

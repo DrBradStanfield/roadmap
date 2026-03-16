@@ -259,8 +259,16 @@ export function HealthTool() {
             if (cachedUnit) {
               profileFields.unitSystem = cachedUnit;
             }
+            let profileSaved = true;
             if (Object.keys(profileFields).length > 0) {
-              await saveChangedMeasurements(profileFields, {});
+              profileSaved = await saveChangedMeasurements(profileFields, {});
+              if (!profileSaved) {
+                // Retry once — profile creation may still be committing
+                profileSaved = await saveChangedMeasurements(profileFields, {});
+              }
+              if (!profileSaved) {
+                console.warn('[HealthTool] Profile sync failed after retry');
+              }
             }
 
             // Sync longitudinal measurements (weight, waist, bp, blood tests)
@@ -290,14 +298,18 @@ export function HealthTool() {
               }
             }
 
-            // Trigger welcome email — track result for error display
-            sendWelcomeEmail().then(result => {
-              if (!result.success) {
+            // Trigger welcome email only if profile saved (needs height + sex)
+            if (profileSaved) {
+              sendWelcomeEmail().then(result => {
+                if (!result.success) {
+                  setEmailConfirmStatus('error');
+                }
+              }).catch(() => {
                 setEmailConfirmStatus('error');
-              }
-            }).catch(() => {
+              });
+            } else {
               setEmailConfirmStatus('error');
-            });
+            }
 
             // Reload from API to get authoritative data
             const syncResult = await loadLatestMeasurements();
@@ -351,32 +363,43 @@ export function HealthTool() {
   // Progressive disclosure: compute which stage of the form to show
   const formStage = useMemo(() => computeFormStage(effectiveInputs), [effectiveInputs]);
 
+  // Save any unsaved profile/demographic fields (height, sex, birthYear, birthMonth, unitSystem).
+  // Returns true if saved or nothing to save; false on failure.
+  async function flushPendingProfileSave(): Promise<boolean> {
+    const autoSaveFields = [...PREFILL_FIELDS, 'unitSystem' as keyof HealthInputs];
+    const currentPrefill: Partial<HealthInputs> = {};
+    const previousPrefill: Partial<HealthInputs> = {};
+    for (const field of autoSaveFields) {
+      if (inputs[field] !== undefined) (currentPrefill as any)[field] = inputs[field];
+      if (previousInputsRef.current[field] !== undefined) (previousPrefill as any)[field] = previousInputsRef.current[field];
+    }
+
+    const hasChanges = autoSaveFields.some(f => inputs[f] !== previousInputsRef.current[f]);
+    if (!hasChanges) return true;
+
+    const success = await saveChangedMeasurements(currentPrefill, previousPrefill);
+    if (success) {
+      for (const field of autoSaveFields) {
+        (previousInputsRef.current as any)[field] = inputs[field];
+      }
+    }
+    return success;
+  }
+
   // Auto-save demographics + height only (debounced)
   useEffect(() => {
     if (!hasApiResponse) return;
 
     const timeout = setTimeout(async () => {
       if (authState.isLoggedIn) {
-        // Only auto-save pre-fill fields (demographics + height) + unitSystem
+        // Check if there are unsaved profile changes before showing status
         const autoSaveFields = [...PREFILL_FIELDS, 'unitSystem' as keyof HealthInputs];
-        const currentPrefill: Partial<HealthInputs> = {};
-        const previousPrefill: Partial<HealthInputs> = {};
-        for (const field of autoSaveFields) {
-          if (inputs[field] !== undefined) (currentPrefill as any)[field] = inputs[field];
-          if (previousInputsRef.current[field] !== undefined) (previousPrefill as any)[field] = previousInputsRef.current[field];
-        }
-
         const hasChanges = autoSaveFields.some(f => inputs[f] !== previousInputsRef.current[f]);
         if (!hasChanges) return;
 
         setSaveStatus('saving');
-        const success = await saveChangedMeasurements(currentPrefill, previousPrefill);
+        const success = await flushPendingProfileSave();
         setSaveStatus(success ? 'saved' : 'error');
-        if (success) {
-          for (const field of autoSaveFields) {
-            (previousInputsRef.current as any)[field] = inputs[field];
-          }
-        }
         setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
         // Guests: save everything to localStorage (including longitudinal)
@@ -398,6 +421,11 @@ export function HealthTool() {
     isSavingLongitudinalRef.current = true;
 
     try {
+      // Flush any pending profile auto-save before saving measurements.
+      // This ensures height/sex are in the DB when checkAndSendWelcomeEmail
+      // fires on each measurement POST (prevents race with 500ms debounce).
+      await flushPendingProfileSave();
+
       const bloodTestMetrics = new Set(BLOOD_TEST_METRICS);
       const fieldsToSave: Array<{ metricType: string; value: number; recordedAt?: string }> = [];
       for (const field of LONGITUDINAL_FIELDS) {
