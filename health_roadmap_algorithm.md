@@ -353,6 +353,48 @@ Stage 1 and 2 include conditional extra paragraphs:
 
 ---
 
+## 4b. Dietary Interventions for Elevated Lipids (`lipid-diet`)
+
+Source: `suggestions.ts` (nutrition section) + `evidence.ts`
+
+### Trigger
+
+Any atherogenic marker at borderline or above:
+- ApoB ≥ 0.5 g/L (50 mg/dL), OR
+- Non-HDL ≥ 4.14 mmol/L (160 mg/dL), OR
+- LDL-C ≥ 3.36 mmol/L (130 mg/dL)
+
+**NOT suppressed by medication cascade** — diet is always complementary to medications.
+
+When active, the generic `fiber` suggestion is suppressed (lipid-diet covers fibre advice more specifically).
+
+### Universal Foods (IBS/IBD-safe, low-FODMAP at recommended amounts)
+
+| Food | Mechanism | Expected LDL Reduction |
+|------|-----------|----------------------|
+| Oats | Beta-glucan binds bile acids | 5–10% (3g/day beta-glucan ≈ 75g dry oats) |
+| Walnuts | Unsaturated fats, ALA omega-3 | 3–7% (~40g/day) |
+| Almonds | Unsaturated fats, plant sterols | 3–5% (~45g/day) |
+| Ground flaxseed | Soluble fibre + ALA omega-3 | 5–10% (~30g/day) |
+| Edamame | Soy protein replacing animal protein | 3–5% |
+| Extra-virgin olive oil | Monounsaturated fat replacing butter/saturated fat | Modest direct LDL effect |
+
+### Additional Options (no IBS/IBD)
+
+Beans, lentils, chickpeas, and mixed vegetables — high in soluble fibre but also high-FODMAP, so not recommended for IBS/IBD patients.
+
+### Supplement
+
+**Psyllium husk** (7g/day): 5–10% LDL reduction. Soluble, gel-forming, minimally fermented. ACG-recommended for IBS (both IBS-C and IBS-D). Well-tolerated in IBD remission.
+
+### Key References
+
+- Jenkins 2011 — Portfolio Diet (JAMA): [10.1001/jama.2011.1202](https://doi.org/10.1001/jama.2011.1202)
+- Sabaté 2010 — Nut consumption and lipids (Arch Intern Med): [10.1001/archinternmed.2010.79](https://doi.org/10.1001/archinternmed.2010.79)
+- Wei 2009 — Psyllium and cholesterol (Eur J Clin Nutr): [10.1038/ejcn.2008.49](https://doi.org/10.1038/ejcn.2008.49)
+
+---
+
 ## 5. Cholesterol Medication Cascade
 
 Source: `suggestions.ts` (lipids section) + `types.ts` (statin helpers)

@@ -80,7 +80,7 @@ export {
 } from './calculations';
 
 // Suggestions
-export { generateSuggestions, LIPID_TREATMENT_TARGETS, resolveBestLipidMarker } from './suggestions';
+export { generateSuggestions, LIPID_TREATMENT_TARGETS, LIPID_DIET_ADVICE, resolveBestLipidMarker } from './suggestions';
 export type { LipidMarker } from './suggestions';
 
 // Validation

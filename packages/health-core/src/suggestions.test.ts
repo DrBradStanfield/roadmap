@@ -731,11 +731,18 @@ describe('generateSuggestions', () => {
   });
 
   describe('Always-show lifestyle suggestions', () => {
-    it('always includes fiber suggestion', () => {
+    it('includes fiber suggestion when no lipids are elevated', () => {
       const { inputs, results } = createTestData();
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'fiber')).toBeDefined();
       expect(suggestions.find(s => s.id === 'fiber')?.category).toBe('nutrition');
+    });
+
+    it('suppresses fiber suggestion when lipid-diet is active', () => {
+      const { inputs, results } = createTestData({ ldlC: 4.0 }); // above borderline (3.36)
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'fiber')).toBeUndefined();
+      expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
     });
 
     it('always includes exercise suggestion', () => {
@@ -780,6 +787,46 @@ describe('generateSuggestions', () => {
       const { inputs, results } = createTestData();
       const suggestions = generateSuggestions(inputs, results);
       expect(suggestions.find(s => s.id === 'low-salt')).toBeUndefined();
+    });
+  });
+
+  describe('Lipid-lowering diet suggestion', () => {
+    it('shows lipid-diet when ApoB is borderline or above', () => {
+      const { inputs, results } = createTestData({ apoB: 0.5 }); // borderline
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
+      expect(suggestions.find(s => s.id === 'lipid-diet')?.category).toBe('nutrition');
+    });
+
+    it('shows lipid-diet when LDL-C is borderline or above', () => {
+      const { inputs, results } = createTestData({ ldlC: 3.4 }); // above borderline (3.36)
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
+    });
+
+    it('shows lipid-diet when non-HDL is borderline or above', () => {
+      const { inputs, results } = createTestData({}, { nonHdlCholesterol: 4.2 }); // above borderline (4.14)
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
+    });
+
+    it('does not show lipid-diet when all lipid markers are below borderline', () => {
+      const { inputs, results } = createTestData({ apoB: 0.4, ldlC: 2.5 }, { nonHdlCholesterol: 3.5 });
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'lipid-diet')).toBeUndefined();
+    });
+
+    it('does not show lipid-diet when no lipid data present', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+      expect(suggestions.find(s => s.id === 'lipid-diet')).toBeUndefined();
+    });
+
+    it('shows lipid-diet even when medication cascade is active', () => {
+      const { inputs, results } = createTestData({ apoB: 0.8 }); // elevated
+      const medications: MedicationInputs = { statin: { drug: 'atorvastatin', dose: 10 } };
+      const suggestions = generateSuggestions(inputs, results, 'si', medications);
+      expect(suggestions.find(s => s.id === 'lipid-diet')).toBeDefined();
     });
   });
 

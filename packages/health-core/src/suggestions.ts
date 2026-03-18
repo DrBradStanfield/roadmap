@@ -25,6 +25,9 @@ export const LIPID_TREATMENT_TARGETS = {
   nonHdlMmol: 1.6,   // mmol/L (~62 mg/dL)
 } as const;
 
+/** Dietary advice for elevated lipids — shared between suggestion card and InputPanel medication cascade */
+export const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk (7g/day) is a supplement that can lower LDL-C by 5\u201310% and is well-tolerated even with IBS or IBD.';
+
 /** Format a metric value with its display unit, e.g. "5.7%" or "39 mmol/mol" */
 function fmtMetric(metricType: MetricType, value: number, us: UnitSystem): string {
   return `${formatDisplayValue(metricType, value, us)} ${getDisplayLabel(metricType, us)}`;
@@ -123,14 +126,21 @@ export function generateSuggestions(
     });
   }
 
-  // Fiber — always show
-  suggestions.push({
-    id: 'fiber',
-    category: 'nutrition',
-    priority: 'info',
-    title: 'Maximize fiber intake',
-    description: 'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.',
-  });
+  // Whether any atherogenic marker is borderline or above (used for lipid-diet and fiber suppression)
+  const hasElevatedLipids = (inputs.apoB !== undefined && inputs.apoB >= APOB_THRESHOLDS.borderline)
+    || (results.nonHdlCholesterol !== undefined && results.nonHdlCholesterol >= NON_HDL_THRESHOLDS.borderline)
+    || (inputs.ldlC !== undefined && inputs.ldlC >= LDL_THRESHOLDS.borderline);
+
+  // Fiber — show when lipid-diet is not active (lipid-diet covers fiber advice more specifically)
+  if (!hasElevatedLipids) {
+    suggestions.push({
+      id: 'fiber',
+      category: 'nutrition',
+      priority: 'info',
+      title: 'Maximize fiber intake',
+      description: 'Aim for 25-35g of fiber daily from whole grains, fruits, and vegetables. Increase gradually to avoid discomfort. If you have IBS or IBD, discuss appropriate fiber levels with your doctor.',
+    });
+  }
 
   // High-potassium diet — only when eGFR ≥ 45 (safe kidney function)
   if (results.eGFR !== undefined && results.eGFR >= EGFR_THRESHOLDS.mildlyDecreased) {
@@ -140,6 +150,17 @@ export function generateSuggestions(
       priority: 'info',
       title: 'Increase potassium-rich foods',
       description: 'Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.',
+    });
+  }
+
+  // Lipid-lowering diet — specific foods when any atherogenic marker is borderline or above
+  if (hasElevatedLipids) {
+    suggestions.push({
+      id: 'lipid-diet',
+      category: 'nutrition',
+      priority: 'info',
+      title: 'Foods that lower cholesterol',
+      description: LIPID_DIET_ADVICE,
     });
   }
 

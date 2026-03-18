@@ -137,6 +137,16 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     references: REFS_BP_LIFESTYLE,
   },
 
+  'lipid-diet': {
+    reason: 'These foods lower LDL cholesterol through complementary mechanisms: beta-glucan (oats) and soluble fibre (psyllium, flaxseed) bind bile acids, reducing cholesterol reabsorption. Nuts (walnuts, almonds) provide unsaturated fats that improve the LDL-to-HDL ratio. Replacing saturated fat (butter) with monounsaturated fat (extra-virgin olive oil) directly lowers LDL. Soy protein (edamame) modestly reduces LDL when replacing animal protein. Combined, these dietary changes can reduce LDL cholesterol by 15–25%.',
+    guidelines: ['ACC/AHA 2026 Dyslipidemia'],
+    references: [
+      { label: 'Jenkins 2011 – Portfolio Diet effect on LDL cholesterol (JAMA)', url: 'https://doi.org/10.1001/jama.2011.1202' },
+      { label: 'Sabaté 2010 – Nut consumption and blood lipid levels (Arch Intern Med)', url: 'https://doi.org/10.1001/archinternmed.2010.79' },
+      { label: 'Wei 2009 – Psyllium fibre lowers cholesterol: meta-analysis (Eur J Clin Nutr)', url: 'https://doi.org/10.1038/ejcn.2008.49' },
+    ],
+  },
+
   'trig-nutrition': {
     reason: 'Blood triglycerides are highly responsive to dietary changes — improvements can be seen within 2–3 weeks. The most effective dietary measures are reducing alcohol, sugar, and total calorie intake. Mendelian randomisation studies confirm that triglyceride-lowering reduces coronary heart disease risk.',
     guidelines: [],

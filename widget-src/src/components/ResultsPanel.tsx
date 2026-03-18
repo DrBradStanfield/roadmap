@@ -627,6 +627,18 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
       <section className="quick-stats">
         <h3 className="results-section-title">Your Health Snapshot</h3>
         <div className="stats-grid">
+          {results.waistToHeightRatio !== undefined && (() => {
+            const status = getWaistToHeightStatus(results.waistToHeightRatio);
+            return status ? <StatCard label="Waist-to-Height" value={results.waistToHeightRatio} status={status} evidence={STAT_CARD_EVIDENCE['whtr']} /> : null;
+          })()}
+          {results.bmi !== undefined && (
+            <StatCard
+              label="BMI"
+              value={results.bmi}
+              status={getBmiStatus(results.bmiCategory!, results.waistToHeightRatio)}
+              evidence={sex ? getBmiEvidence(results.bmiCategory!, sex, results.waistToHeightRatio) : undefined}
+            />
+          )}
           <StatCard
             label="Ideal Body Weight"
             value={<>{ibwDisplay} {weightUnit}</>}
@@ -639,14 +651,6 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
             status={{ label: `${getProteinRate(results.eGFR).toFixed(1)}g per kg IBW`, className: 'status-normal' }}
             evidence={getProteinEvidence(results.idealBodyWeight, getProteinRate(results.eGFR), results.eGFR)}
           />
-          {results.bmi !== undefined && (
-            <StatCard
-              label="BMI"
-              value={results.bmi}
-              status={getBmiStatus(results.bmiCategory!, results.waistToHeightRatio)}
-              evidence={sex ? getBmiEvidence(results.bmiCategory!, sex, results.waistToHeightRatio) : undefined}
-            />
-          )}
 
           {/* Lipid tile: ApoB → Non-HDL → LDL cascade */}
           {results.apoB !== undefined ? (() => {
@@ -668,11 +672,6 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
           {results.lpa !== undefined && (() => {
             const s = getLpaStatus(results.lpa);
             return <StatCard label="Lp(a)" value={<>{Math.round(results.lpa)} nmol/L</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['lpa']} />;
-          })()}
-
-          {results.waistToHeightRatio !== undefined && (() => {
-            const status = getWaistToHeightStatus(results.waistToHeightRatio);
-            return status ? <StatCard label="Waist-to-Height" value={results.waistToHeightRatio} status={status} evidence={STAT_CARD_EVIDENCE['whtr']} /> : null;
           })()}
         </div>
       </section>

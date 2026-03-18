@@ -22,6 +22,7 @@ import {
   shouldSuggestSwitch,
   isOnMaxPotency,
   LIPID_TREATMENT_TARGETS,
+  LIPID_DIET_ADVICE,
   resolveBestLipidMarker,
   calculateAge,
   calculateBMI,
@@ -168,6 +169,9 @@ export function InputPanel({
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
+
+  /** Prevent scroll wheel from changing number input values. */
+  const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur();
 
   /** Get effective unit system for a field (override or global default). */
   const fieldUnit = (field: string): UnitSystem => unitOverrides[field] ?? unitSystem;
@@ -420,6 +424,7 @@ export function InputPanel({
           <input
             type="number"
             id={field}
+            onWheel={blurOnWheel}
             value={rawInputs[field] !== undefined ? rawInputs[field] : toDisplay(field, inputs[field] as number | undefined)}
             onChange={(e) => {
               const raw = e.target.value;
@@ -548,6 +553,7 @@ export function InputPanel({
                 <input
                   type="number"
                   id="heightCm"
+                  onWheel={blurOnWheel}
                   value={rawInputs['heightCm'] !== undefined ? rawInputs['heightCm'] : toDisplay('heightCm', inputs.heightCm)}
                   onChange={(e) => {
                     const raw = e.target.value;
@@ -637,6 +643,7 @@ export function InputPanel({
                   <input
                     type="number"
                     id="birthYear"
+                    onWheel={blurOnWheel}
                     value={inputs.birthYear || ''}
                     onChange={(e) => {
                       const num = parseNumber(e.target.value);
@@ -679,6 +686,7 @@ export function InputPanel({
                 type="number"
                 inputMode="numeric"
                 id="systolicBp"
+                onWheel={blurOnWheel}
                 value={inputs.systolicBp ?? ''}
                 onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
                 onBlur={() => validateOnBlur('systolicBp')}
@@ -692,6 +700,7 @@ export function InputPanel({
                 type="number"
                 inputMode="numeric"
                 id="diastolicBp"
+                onWheel={blurOnWheel}
                 value={inputs.diastolicBp ?? ''}
                 onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
                 onBlur={() => validateOnBlur('diastolicBp')}
@@ -811,7 +820,7 @@ export function InputPanel({
             <section className="health-section medication-cascade">
               <h3 className="health-section-title">Cholesterol Medications</h3>
               <p className="health-section-desc">
-                {introText} In addition to a great diet, medications can be added in steps.
+                {introText} {LIPID_DIET_ADVICE} Medications can also be added in steps.
               </p>
 
               {/* Step 1: Statin selection - two dropdowns */}
@@ -1430,6 +1439,7 @@ export function InputPanel({
                       <input
                         type="number"
                         id="lung-pack-years"
+                        onWheel={blurOnWheel}
                         value={scrNum(scr, 'lung_pack_years') ?? ''}
                         onChange={(e) => onScreeningChange('lung_pack_years', e.target.value)}
                         placeholder=""
@@ -1514,6 +1524,7 @@ export function InputPanel({
                             <input
                               type="number"
                               id="psa-input"
+                              onWheel={blurOnWheel}
                               value={rawInputs.psa ?? (inputs.psa !== undefined ? String(inputs.psa) : '')}
                               onChange={(e) => {
                                 const val = e.target.value;
