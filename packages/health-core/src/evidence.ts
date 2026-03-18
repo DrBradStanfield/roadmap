@@ -574,7 +574,7 @@ const REFS_WHTR: SuggestionReference[] = [
 /** Static stat card evidence entries. */
 export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   'apob': {
-    reason: 'Apolipoprotein B (ApoB) counts the total number of atherogenic lipoprotein particles in your blood and is the most accurate single predictor of cardiovascular risk — more precise than LDL-cholesterol, which only measures cholesterol content. Each atherogenic particle carries exactly one ApoB molecule. The 2026 ACC/AHA Dyslipidemia Guideline recommends ApoB measurement to assess residual ASCVD risk, with targets of <55 mg/dL (very high risk), <70 mg/dL (high risk), and <90 mg/dL (borderline-intermediate risk). ApoB is preferred over LDL-C because it captures all atherogenic particles including VLDL remnants and Lp(a).',
+    reason: 'Apolipoprotein B (ApoB) counts the total number of atherogenic lipoprotein particles in your blood and is the most accurate single predictor of cardiovascular risk — more precise than LDL-cholesterol, which only measures cholesterol content. Each atherogenic particle carries exactly one ApoB molecule. The 2026 ACC/AHA Dyslipidemia Guideline recommends ApoB measurement to assess residual ASCVD risk, with treatment targets based on cardiovascular risk category: below 90 mg/dL for borderline-intermediate risk, below 70 mg/dL for high risk, and below 55 mg/dL for very high risk. ApoB is preferred over LDL-C because it captures all atherogenic particles including VLDL remnants and Lp(a).',
     guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
     references: [
       ...REFS_LIPID_GUIDELINES,
@@ -590,7 +590,7 @@ export const STAT_CARD_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'ldl': {
-    reason: 'LDL-cholesterol measures the cholesterol carried by low-density lipoproteins. The 2026 ACC/AHA Dyslipidemia Guideline reinstates explicit LDL-C treatment goals: <55 mg/dL for very high risk, <70 mg/dL for high risk, and <100 mg/dL for borderline-intermediate risk. Note: LDL-C can underestimate risk in people with high triglycerides or metabolic syndrome. ApoB or Non-HDL are preferred when available.',
+    reason: 'LDL-cholesterol measures the cholesterol carried by low-density lipoproteins. The 2026 ACC/AHA Dyslipidemia Guideline reinstates explicit LDL-C treatment targets based on cardiovascular risk category: below 100 mg/dL for borderline-intermediate risk, below 70 mg/dL for high risk, and below 55 mg/dL for very high risk. Note: LDL-C can underestimate risk in people with high triglycerides or metabolic syndrome. ApoB or Non-HDL are preferred when available.',
     guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
     references: REFS_LIPID_EVIDENCE,
   },
