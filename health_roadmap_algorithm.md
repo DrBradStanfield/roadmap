@@ -176,6 +176,12 @@ All thresholds stored and compared in SI canonical units.
 | **Prediabetes** | >= 38.8 | >= 5.7% |
 | **Diabetes** | >= 47.5 | >= 6.5% |
 
+### Why Fasting Glucose and Fasting Insulin Are Not Included
+
+**Fasting glucose** — ADA recognizes fasting glucose ≥126 mg/dL as a diagnostic criterion for diabetes, but HbA1c captures 2–3 months of glycemic data rather than a single-point fasting snapshot. For a screening tool, HbA1c is more reliable and less sensitive to day-to-day variability. Note: HbA1c can be unreliable in patients with hemoglobin variants or conditions affecting red blood cell turnover — their clinician would order fasting glucose independently.
+
+**Fasting insulin** — Can detect insulin resistance (via HOMA-IR) before glucose or HbA1c become abnormal. However, the assay is not standardized across labs and there are no universally agreed clinical thresholds, so it is not part of ADA/AHA/ACC screening guidelines. This makes it unsuitable for generalizable automated recommendations.
+
 ### LDL Cholesterol (mmol/L)
 
 | Level | mmol/L | mg/dL |
