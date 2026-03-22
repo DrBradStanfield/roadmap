@@ -1816,7 +1816,12 @@ input[type="number"] {
 /* Progressive disclosure: smooth reveal of new form stages.
    Opacity-only to avoid CLS from translateY shifting layout. */
 .stage-reveal {
+  -webkit-animation: stage-reveal 0.3s ease-out;
   animation: stage-reveal 0.3s ease-out;
+}
+@-webkit-keyframes stage-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes stage-reveal {
   from { opacity: 0; }
@@ -1826,9 +1831,14 @@ input[type="number"] {
 /* Attention cue: pulsing glow guides user to the next field */
 .field-attention select,
 .field-attention input {
+  -webkit-animation: attention-pulse 2s ease-in-out infinite;
   animation: attention-pulse 2s ease-in-out infinite;
 }
+@-webkit-keyframes attention-pulse {
+  0%, 100% { -webkit-box-shadow: 0 0 4px 2px rgba(0, 163, 139, 0.18); box-shadow: 0 0 4px 2px rgba(0, 163, 139, 0.18); }
+  50% { -webkit-box-shadow: 0 0 6px 3px rgba(0, 163, 139, 0.38); box-shadow: 0 0 6px 3px rgba(0, 163, 139, 0.38); }
+}
 @keyframes attention-pulse {
-  0%, 100% { box-shadow: 0 0 4px 2px rgba(0, 163, 139, 0.18); }
-  50% { box-shadow: 0 0 6px 3px rgba(0, 163, 139, 0.38); }
+  0%, 100% { -webkit-box-shadow: 0 0 4px 2px rgba(0, 163, 139, 0.18); box-shadow: 0 0 4px 2px rgba(0, 163, 139, 0.18); }
+  50% { -webkit-box-shadow: 0 0 6px 3px rgba(0, 163, 139, 0.38); box-shadow: 0 0 6px 3px rgba(0, 163, 139, 0.38); }
 }

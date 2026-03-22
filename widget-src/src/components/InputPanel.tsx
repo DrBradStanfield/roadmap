@@ -638,24 +638,26 @@ export function InputPanel({
                   </select>
                 </div>
 
-                <div className={`health-field${formStage === 2 && inputs.birthMonth && !inputs.birthYear ? ' field-attention' : ''}`}>
-                  <label htmlFor="birthYear">Birth Year</label>
-                  <input
-                    type="number"
-                    id="birthYear"
-                    onWheel={blurOnWheel}
-                    value={inputs.birthYear || ''}
-                    onChange={(e) => {
-                      const num = parseNumber(e.target.value);
-                      if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
-                      updateField('birthYear', num);
-                    }}
-                    onBlur={() => validateOnBlur('birthYear')}
-                    placeholder=""
-                    min="1900"
-                    max={new Date().getFullYear()}
-                  />
-                </div>
+                {inputs.birthMonth && (
+                  <div className={`health-field stage-reveal${formStage === 2 && !inputs.birthYear ? ' field-attention' : ''}`}>
+                    <label htmlFor="birthYear">Birth Year</label>
+                    <input
+                      type="number"
+                      id="birthYear"
+                      onWheel={blurOnWheel}
+                      value={inputs.birthYear || ''}
+                      onChange={(e) => {
+                        const num = parseNumber(e.target.value);
+                        if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
+                        updateField('birthYear', num);
+                      }}
+                      onBlur={() => validateOnBlur('birthYear')}
+                      placeholder=""
+                      min="1900"
+                      max={new Date().getFullYear()}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
