@@ -28,23 +28,26 @@ function parseReportDate(dateStr: string | null): DateValue {
   return { year: year || getCurrentDateValue().year, month: month || getCurrentDateValue().month };
 }
 
+/** Does the DatePicker month/year still match the LLM-extracted original date? */
+function pickerMatchesOriginal(originalDate: string, pickerDate: DateValue): boolean {
+  const [origYear, origMonth] = originalDate.split('-');
+  return origYear === pickerDate.year && origMonth === pickerDate.month.padStart(2, '0');
+}
+
+/** YYYY-MM prefix from a DatePicker value (zero-padded). */
+function pickerToYYYYMM(pickerDate: DateValue): string {
+  return `${pickerDate.year}-${pickerDate.month.padStart(2, '0')}`;
+}
+
 /**
  * Build the ISO date string for saving. If the LLM extracted a full date (YYYY-MM-DD)
  * and the user hasn't changed the month/year, use the original date with day precision.
  * Otherwise fall back to first-of-month from the DatePicker.
  */
-function buildRecordedAt(
-  originalDate: string | null,
-  pickerDate: DateValue,
-): string {
-  if (originalDate) {
-    const [origYear, origMonth] = originalDate.split('-');
-    // User hasn't changed the date — use the full original (preserves day)
-    if (origYear === pickerDate.year && origMonth === pickerDate.month.padStart(2, '0')) {
-      return `${originalDate}T00:00:00.000Z`;
-    }
+function buildRecordedAt(originalDate: string | null, pickerDate: DateValue): string {
+  if (originalDate && pickerMatchesOriginal(originalDate, pickerDate)) {
+    return `${originalDate}T00:00:00.000Z`;
   }
-  // User changed the date or no original — use first-of-month
   return dateValueToISO(pickerDate);
 }
 
@@ -58,21 +61,9 @@ function isDuplicate(
   pickerDate: DateValue,
   previousMeasurements: ApiMeasurement[],
 ): boolean {
-  // Build the prefix to match against — use most precise date available
-  let isoPrefix: string;
-  if (originalDate) {
-    const [origYear, origMonth] = originalDate.split('-');
-    if (origYear === pickerDate.year && origMonth === pickerDate.month.padStart(2, '0')) {
-      // Full date available and user hasn't changed it — match exact day
-      isoPrefix = originalDate; // e.g. "2024-11-21"
-    } else {
-      // User changed date — match month
-      isoPrefix = `${pickerDate.year}-${pickerDate.month.padStart(2, '0')}`;
-    }
-  } else {
-    // No original date — match month
-    isoPrefix = `${pickerDate.year}-${pickerDate.month.padStart(2, '0')}`;
-  }
+  const isoPrefix = originalDate && pickerMatchesOriginal(originalDate, pickerDate)
+    ? originalDate                // exact day match, e.g. "2024-11-21"
+    : pickerToYYYYMM(pickerDate); // month match, e.g. "2024-11"
 
   return previousMeasurements.some(
     m => m.metricType === metric && m.recordedAt.startsWith(isoPrefix),

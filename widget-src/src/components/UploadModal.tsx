@@ -277,7 +277,9 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
                 />
               </div>
               <p className="upload-progress-text">
-                Processing file {progress.current} of {progress.total}...
+                {progress.total > 0
+                  ? `Processing file ${progress.current} of ${progress.total}...`
+                  : 'Extracting files...'}
               </p>
               <p className="upload-progress-file">{progress.fileName}</p>
               <button className="btn-primary upload-cancel-btn" onClick={handleCancel}>
