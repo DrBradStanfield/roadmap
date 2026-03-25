@@ -104,6 +104,10 @@ export {
   SCREENING_KEYS,
   screeningSchema,
   type ValidatedScreening,
+  labImportRequestSchema,
+  type LabImportRequest,
+  bulkMeasurementSchema,
+  type BulkMeasurementRequest,
 } from './validation';
 
 // Mappings (shared field↔metric conversions)
@@ -111,6 +115,7 @@ export {
   FIELD_TO_METRIC,
   METRIC_TO_FIELD,
   FIELD_METRIC_MAP,
+  METRIC_LABELS,
   PREFILL_FIELDS,
   LONGITUDINAL_FIELDS,
   BLOOD_TEST_METRICS,

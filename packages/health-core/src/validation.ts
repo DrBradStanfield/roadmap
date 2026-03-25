@@ -250,6 +250,32 @@ export const screeningSchema = z.object({
 export type ValidatedScreening = z.infer<typeof screeningSchema>;
 
 // ---------------------------------------------------------------------------
+// Lab Import schemas
+// ---------------------------------------------------------------------------
+
+/** A single page of content extracted client-side from a PDF or image. */
+export const labImportPageSchema = z.object({
+  type: z.enum(['text', 'image']),
+  content: z.string().min(1),
+  mimeType: z.string().optional(),
+});
+
+/** Request body for POST /api/lab-import */
+export const labImportRequestSchema = z.object({
+  pages: z.array(labImportPageSchema).min(1).max(100),
+  unitSystem: z.enum(['si', 'conventional']).optional(),
+});
+
+export type LabImportRequest = z.infer<typeof labImportRequestSchema>;
+
+/** Bulk measurement save — array variant of measurementSchema */
+export const bulkMeasurementSchema = z.object({
+  bulkMeasurements: z.array(measurementSchema).min(1).max(50),
+});
+
+export type BulkMeasurementRequest = z.infer<typeof bulkMeasurementSchema>;
+
+// ---------------------------------------------------------------------------
 // Client-side input validation (identity fields only — no unit conversion)
 // ---------------------------------------------------------------------------
 

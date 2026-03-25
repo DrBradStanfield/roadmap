@@ -155,6 +155,8 @@ interface InputPanelProps {
   hasApiResponse: boolean;
   formStage: 1 | 2 | 3 | 4;
   mobileActiveTab?: TabId;
+  setShowUploadModal?: (show: boolean) => void;
+  loginUrl?: string;
 }
 
 export function InputPanel({
@@ -165,6 +167,7 @@ export function InputPanel({
   onSaveLongitudinal, isSavingLongitudinal, hasApiResponse,
   formStage,
   mobileActiveTab,
+  setShowUploadModal, loginUrl,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
@@ -747,7 +750,28 @@ export function InputPanel({
 
   const renderBloodTests = () => (
     <section className="health-section">
-      <h3 className="health-section-title">Blood Test Results</h3>
+      <div className="health-section-header">
+        <h3 className="health-section-title">Blood Test Results</h3>
+        {/* Upload lab results button — inline with heading */}
+        {isLoggedIn ? (
+          <button
+            className="btn-primary upload-lab-btn"
+            onClick={() => setShowUploadModal?.(true)}
+          >
+            Upload Lab Results
+          </button>
+        ) : (
+          <div className="upload-lab-wrapper">
+            <button className="btn-primary upload-lab-btn upload-lab-btn--disabled" disabled>
+              Upload Lab Results
+            </button>
+            <div className="upload-lab-tooltip">
+              <p>Upload lab results to automatically fill in your blood test values.</p>
+              {loginUrl && <a href={loginUrl} className="upload-lab-tooltip-link">Log in to use this feature &rarr;</a>}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Blood test date picker */}
       <DatePicker

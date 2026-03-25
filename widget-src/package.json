@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite build --watch",
-    "build": "vite build && vite build --config vite.config.history.ts",
+    "build": "vite build && vite build --config vite.config.history.ts && vite build --config vite.config.upload.ts",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject ../extensions/health-tool-widget/assets/ && sentry-cli sourcemaps upload --release=health-tool-widget@$(git rev-parse --short HEAD) ../extensions/health-tool-widget/assets/"
   },
   "dependencies": {
@@ -16,7 +16,9 @@
     "date-fns": "^4.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "zod": "^3.23.0"
+    "zod": "^3.23.0",
+    "pdfjs-dist": "^4.9.155",
+    "jszip": "^3.10.1"
   },
   "devDependencies": {
     "@sentry/cli": "^3.2.0",

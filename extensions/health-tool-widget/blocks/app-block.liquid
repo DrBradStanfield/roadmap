@@ -32,6 +32,7 @@
     data-logged-in="false"
   {% endif %}
   {% if login_url %}data-login-url="{{ login_url }}"{% endif %}
+  data-upload-url="{{ 'health-upload.js' | asset_url }}"
 >
   <!-- Static skeleton: replaced when React mounts -->
   <div class="health-tool">

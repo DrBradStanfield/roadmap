@@ -76,6 +76,23 @@ export const FIELD_METRIC_MAP: Record<string, MetricType> = {
   lpa: 'lpa',
 };
 
+/** Human-readable display names for metric types. */
+export const METRIC_LABELS: Record<string, string> = {
+  weight: 'Weight',
+  waist: 'Waist',
+  hba1c: 'HbA1c',
+  ldl: 'LDL Cholesterol',
+  hdl: 'HDL Cholesterol',
+  triglycerides: 'Triglycerides',
+  total_cholesterol: 'Total Cholesterol',
+  apob: 'ApoB',
+  systolic_bp: 'Systolic BP',
+  diastolic_bp: 'Diastolic BP',
+  creatinine: 'Creatinine',
+  psa: 'PSA',
+  lpa: 'Lp(a)',
+};
+
 /**
  * Fields that are always pre-filled from saved data (demographics + height).
  * These are mutable profile-level data or rarely-changing measurements.

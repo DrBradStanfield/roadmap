@@ -339,15 +339,6 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
             >Logged in</a> · <span className={`save-indicator-inline ${statusClass}`}>{statusText}</span>
           </span>
           <div className="account-actions no-print">
-            <a
-              href="/pages/health-history"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="action-btn-small"
-              title="View health history"
-            >
-              View history
-            </a>
             {onPrint && (
               <button type="button" className="action-btn-small" onClick={onPrint} disabled={printStatus === 'loading'} title="Print report">
                 {printLabel}

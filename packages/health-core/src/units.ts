@@ -231,7 +231,23 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     decimalPlaces: { si: 0, conventional: 2 },
   },
   psa: makeIdentityUnit('ng/mL', { min: 0, max: 100 }, 1),
-  lpa: makeIdentityUnit('nmol/L', { min: 0, max: 750 }, 0),
+  lpa: {
+    canonical: 'nmol/L',
+    label: { si: 'nmol/L', conventional: 'mg/L' },
+    toCanonical: {
+      si: identity,
+      conventional: (v) => v * 2.4, // mg/L → nmol/L (population average; Marcovina et al., Clin Chem 1995. Varies ~1.6-3.2 by apo(a) isoform — nmol/L is preferred)
+    },
+    fromCanonical: {
+      si: identity,
+      conventional: (v) => v / 2.4, // nmol/L → mg/L
+    },
+    validationRange: {
+      si: { min: 0, max: 750 },       // nmol/L
+      conventional: { min: 0, max: 300 }, // mg/L
+    },
+    decimalPlaces: { si: 0, conventional: 0 },
+  },
 };
 
 // ---------------------------------------------------------------------------

@@ -470,3 +470,100 @@ export async function saveChangedMeasurements(
   );
   return results.every((r) => r !== null);
 }
+
+// ---------------------------------------------------------------------------
+// Lab Import
+// ---------------------------------------------------------------------------
+
+export interface PageContent {
+  type: 'text' | 'image';
+  content: string;
+  mimeType?: string;
+}
+
+export interface ExtractedValue {
+  metric: string;
+  valueSI: number;
+  displayValue: number;
+  displayUnit: string;
+  confidence: 'high' | 'medium' | 'low';
+  question?: string;
+}
+
+export interface LabImportResult {
+  reportDate: string | null;
+  values: ExtractedValue[];
+  unrecognized: string[];
+}
+
+interface LabImportResponse {
+  success: boolean;
+  data?: LabImportResult;
+  remaining?: number;
+  error?: string;
+}
+
+/**
+ * Send extracted page content to the LLM proxy for lab result extraction.
+ * One call per file — do not batch across files.
+ */
+export async function labImport(
+  pages: PageContent[],
+  unitSystem: 'si' | 'conventional',
+): Promise<{ result: LabImportResult | null; remaining?: number; error?: string }> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/lab-import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pages, unitSystem }),
+    });
+
+    if (response.status === 429) {
+      return { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.' };
+    }
+    if (!response.ok) {
+      return { result: null, error: 'Extraction failed' };
+    }
+
+    const data = await parseJsonResponse<LabImportResponse>(response);
+    if (!data?.success || !data.data) {
+      return { result: null, error: data?.error || 'Extraction failed' };
+    }
+
+    return { result: data.data, remaining: data.remaining };
+  } catch (error) {
+    console.warn('Lab import error:', error);
+    Sentry.captureException(error);
+    return { result: null, error: 'Network error' };
+  }
+}
+
+interface BulkSaveResponse {
+  success: boolean;
+  data?: ApiMeasurement[];
+  savedCount?: number;
+  error?: string;
+}
+
+/**
+ * Save multiple measurements in a single request (from lab import review).
+ */
+export async function bulkSaveMeasurements(
+  measurements: Array<{ metricType: string; value: number; recordedAt: string; source: string }>,
+): Promise<ApiMeasurement[]> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/measurements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bulkMeasurements: measurements }),
+    });
+    if (!response.ok) return [];
+
+    const data = await parseJsonResponse<BulkSaveResponse>(response);
+    return data?.success ? data.data || [] : [];
+  } catch (error) {
+    console.warn('Bulk save error:', error);
+    Sentry.captureException(error);
+    return [];
+  }
+}

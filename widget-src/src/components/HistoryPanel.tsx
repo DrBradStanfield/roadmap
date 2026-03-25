@@ -8,6 +8,7 @@ import {
   getDisplayLabel,
   UNIT_DEFS,
   detectUnitSystem,
+  METRIC_LABELS,
 } from '@roadmap/health-core';
 import {
   Chart,
@@ -25,23 +26,6 @@ import { loadUnitPreference } from '../lib/storage';
 
 // Register only what we need
 Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Filler);
-
-// Human-readable metric names (no height — stored on profile, not as time-series)
-const METRIC_LABELS: Record<string, string> = {
-  weight: 'Weight',
-  waist: 'Waist',
-  hba1c: 'HbA1c',
-  ldl: 'LDL Cholesterol',
-  hdl: 'HDL Cholesterol',
-  triglycerides: 'Triglycerides',
-  total_cholesterol: 'Total Cholesterol',
-  apob: 'ApoB',
-  systolic_bp: 'Systolic BP',
-  diastolic_bp: 'Diastolic BP',
-  creatinine: 'Creatinine',
-  psa: 'PSA',
-  lpa: 'Lp(a)',
-};
 
 // Chart colors per metric
 const METRIC_COLORS: Record<string, string> = {

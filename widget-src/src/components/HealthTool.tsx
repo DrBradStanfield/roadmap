@@ -31,6 +31,7 @@ import {
 } from '@roadmap/health-core';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
+import { UploadModal } from './UploadModal';
 import { useIsMobile } from '../lib/useIsMobile';
 import { MobileTabBar, MobileTabNav, type TabId, type Tab } from './MobileTabBar';
 import {
@@ -99,6 +100,7 @@ export function HealthTool() {
   const medSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const isFirstSaveRef = useRef(true);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   // Clean up debounce timers on unmount to prevent stale API calls
   useEffect(() => {
@@ -360,8 +362,15 @@ export function HealthTool() {
     return base;
   }, [inputs, previousMeasurements, authState.isLoggedIn]);
 
-  // Progressive disclosure: compute which stage of the form to show
-  const formStage = useMemo(() => computeFormStage(effectiveInputs), [effectiveInputs]);
+  // Progressive disclosure: compute which stage of the form to show.
+  // Override to stage 4 if user has saved blood test data (e.g. from lab import).
+  const formStage = useMemo(() => {
+    const stage = computeFormStage(effectiveInputs);
+    if (stage < 4 && previousMeasurements.some(m => BLOOD_TEST_METRICS.includes(m.metricType))) {
+      return 4 as const;
+    }
+    return stage;
+  }, [effectiveInputs, previousMeasurements]);
 
   // Save any unsaved profile/demographic fields (height, sex, birthYear, birthMonth, unitSystem).
   // Returns true if saved or nothing to save; false on failure.
@@ -487,6 +496,27 @@ export function HealthTool() {
       isSavingLongitudinalRef.current = false;
     }
   }, [authState.isLoggedIn, inputs, previousMeasurements]);
+
+  // Save any unsaved longitudinal values (weight, BP, etc.) then refresh from API.
+  // Called when the upload modal opens — ensures typed-but-unsaved values persist.
+  const handleUploadStart = useCallback(async () => {
+    if (!authState.isLoggedIn) return;
+    await handleSaveLongitudinal();
+  }, [authState.isLoggedIn, handleSaveLongitudinal]);
+
+  // Refresh state after lab import bulk save
+  const handleUploadComplete = useCallback(async () => {
+    const result = await loadLatestMeasurements();
+    if (result) {
+      setInputs(result.inputs);
+      previousInputsRef.current = { ...result.inputs };
+      setPreviousMeasurements(result.previousMeasurements);
+      setMedications(result.medications);
+      setScreenings(result.screenings);
+      setReminderPreferences(result.reminderPreferences);
+      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, result.reminderPreferences);
+    }
+  }, []);
 
   // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel
   const metricUnitOverrides = useMemo(() => {
@@ -758,6 +788,8 @@ export function HealthTool() {
     isSavingLongitudinal,
     hasApiResponse,
     formStage,
+    setShowUploadModal,
+    loginUrl: authState.loginUrl,
   };
 
   const resultsPanelProps = {
@@ -821,6 +853,16 @@ export function HealthTool() {
             <ResultsPanel {...resultsPanelProps} />
           </div>
         </div>
+      )}
+
+      {showUploadModal && authState.isLoggedIn && (
+        <UploadModal
+          unitSystem={unitSystem}
+          previousMeasurements={previousMeasurements}
+          onComplete={handleUploadComplete}
+          onStart={handleUploadStart}
+          onClose={() => setShowUploadModal(false)}
+        />
       )}
     </div>
   );

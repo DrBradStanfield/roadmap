@@ -15,20 +15,7 @@ import {
 
 import { authenticate } from "../shopify.server";
 import { getDashboardStats } from "../lib/supabase.server";
-
-const METRIC_LABELS: Record<string, string> = {
-  weight: "Weight",
-  waist: "Waist",
-  hba1c: "HbA1c",
-  ldl: "LDL Cholesterol",
-  total_cholesterol: "Total Cholesterol",
-  hdl: "HDL Cholesterol",
-  triglycerides: "Triglycerides",
-  apob: "ApoB",
-  creatinine: "Creatinine",
-  systolic_bp: "Systolic BP",
-  diastolic_bp: "Diastolic BP",
-};
+import { METRIC_LABELS } from "../../packages/health-core/src/mappings";
 
 function formatRelativeDate(dateStr: string): string {
   const now = Date.now();

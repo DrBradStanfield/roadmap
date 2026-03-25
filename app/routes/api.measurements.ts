@@ -72,7 +72,7 @@ import {
   toApiReminderPreference,
 } from '../lib/supabase.server';
 import { checkAndSendWelcomeEmail, sendReportEmail, generateReportHtml } from '../lib/email.server';
-import { measurementSchema, profileUpdateSchema, medicationSchema, screeningSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
+import { measurementSchema, profileUpdateSchema, medicationSchema, screeningSchema, bulkMeasurementSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
 
 // GET — Load measurements (authenticated via app proxy HMAC)
 // ?metric_type=weight&limit=50  → list measurements for one metric
@@ -272,6 +272,39 @@ export async function action({ request }: ActionFunctionArgs) {
         }
 
         return json({ success: true, data: toApiScreening(scr) });
+      }
+
+      // Bulk measurement save (from lab import)
+      if (body.bulkMeasurements) {
+        const bulkValidation = bulkMeasurementSchema.safeParse(body);
+        if (!bulkValidation.success) {
+          return json(
+            { success: false, error: 'Invalid bulk data', details: bulkValidation.error.issues },
+            { status: 400 },
+          );
+        }
+
+        const results = await Promise.all(
+          bulkValidation.data.bulkMeasurements.map(m =>
+            addMeasurement(client, userId, m.metricType, m.value, m.recordedAt, m.source, m.externalId),
+          ),
+        );
+
+        const saved = results.filter(Boolean);
+        if (saved.length === 0) {
+          return json({ success: false, error: 'Failed to save measurements' }, { status: 500 });
+        }
+
+        // Fire-and-forget: welcome email + tagging
+        checkAndSendWelcomeEmail(userId, client).catch(err => Sentry.captureException(err));
+        tagShopifyCustomer(admin, customerId).catch(() => {});
+
+        return json({
+          success: true,
+          data: saved.map(m => toApiMeasurement(m!)),
+          savedCount: saved.length,
+          totalCount: bulkValidation.data.bulkMeasurements.length,
+        });
       }
 
       // Measurement insert — POST { metricType, value, recordedAt? }
