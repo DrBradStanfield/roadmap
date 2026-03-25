@@ -3,6 +3,7 @@
  * System prompt is hardcoded server-side — client sends only content.
  */
 import { z } from 'zod';
+import * as Sentry from '@sentry/remix';
 import { toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
 
 // ---------------------------------------------------------------------------
@@ -248,11 +249,15 @@ async function callAnthropic(apiKey: string, body: Record<string, unknown>): Pro
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30_000),
   });
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
-    throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
+    const err = new Error(`Anthropic API error (status ${response.status})`);
+    console.error(err.message, errorText);
+    Sentry.captureException(err, { extra: { status: response.status } });
+    throw err;
   }
 
   const data = await response.json();

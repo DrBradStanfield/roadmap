@@ -49,7 +49,8 @@ export async function extractFromPdf(file: File): Promise<PageContent[]> {
       const canvas = document.createElement('canvas');
       canvas.width = viewport.width;
       canvas.height = viewport.height;
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Failed to get canvas 2D context');
       await page.render({ canvasContext: ctx, viewport }).promise;
       const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
       const base64 = dataUrl.split(',')[1];

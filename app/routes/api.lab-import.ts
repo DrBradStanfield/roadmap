@@ -6,7 +6,7 @@ import { labImportRequestSchema } from '../../packages/health-core/src/validatio
 import { extractLabResults } from '../lib/anthropic.server';
 
 // ---------------------------------------------------------------------------
-// Rate limiter: 20 extraction requests per day per customer
+// Rate limiter: 200 extraction requests per day per customer
 // ---------------------------------------------------------------------------
 
 const EXTRACT_LIMIT = 200;

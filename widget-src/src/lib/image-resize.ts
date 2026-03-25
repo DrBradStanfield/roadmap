@@ -25,7 +25,8 @@ export async function resizeImage(file: File, maxDim: number): Promise<string> {
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-      const ctx = canvas.getContext('2d')!;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Failed to get canvas 2D context');
       ctx.drawImage(img, 0, 0, width, height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
       resolve(dataUrl.split(',')[1]);

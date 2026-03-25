@@ -3,6 +3,7 @@ import type { UnitSystem } from '@roadmap/health-core';
 import { labImport, checkLabImportQuota, bulkSaveMeasurements, type PageContent, type ExtractedValue, type ApiMeasurement } from '../lib/api';
 import { ReviewTable, type FileResult } from './ReviewTable';
 import { useIsMobile } from '../lib/useIsMobile';
+import { Sentry } from '../lib/sentry';
 
 type ModalState = 'select' | 'processing' | 'review' | 'done';
 
@@ -150,34 +151,35 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
       for (const item of allFilesToProcess) {
         if (abort.signal.aborted) break;
 
-        let pages: PageContent[];
-        let fileName: string;
-
-        if ('pages' in item) {
-          // Already extracted from ZIP
-          pages = item.pages;
-          fileName = item.fileName;
-        } else {
-          // Individual file — extract now
-          const file = item.file;
-          fileName = file.name;
-          if (upload.isPdf(file)) {
-            pages = await upload.extractFromPdf(file);
-          } else if (upload.isImage(file)) {
-            const base64 = await upload.resizeImage(file, 1500);
-            pages = [{ type: 'image', content: base64, mimeType: 'image/jpeg' }];
-          } else {
-            continue;
-          }
-        }
-
+        const fileName = 'pages' in item ? item.fileName : item.file.name;
         setProgress({ current: ++processedCount, total: totalFiles, fileName });
 
-        const { result, error: importError } = await labImport(pages, unitSystem);
-        if (result) {
-          allResults.push({ fileName, ...result });
-        } else {
-          allResults.push({ fileName, reportDate: null, values: [], unrecognized: [], error: importError || 'Extraction failed' });
+        try {
+          let pages: PageContent[];
+
+          if ('pages' in item) {
+            pages = item.pages;
+          } else {
+            const file = item.file;
+            if (upload.isPdf(file)) {
+              pages = await upload.extractFromPdf(file);
+            } else if (upload.isImage(file)) {
+              const base64 = await upload.resizeImage(file, 1500);
+              pages = [{ type: 'image', content: base64, mimeType: 'image/jpeg' }];
+            } else {
+              continue;
+            }
+          }
+
+          const { result, error: importError } = await labImport(pages, unitSystem);
+          if (result) {
+            allResults.push({ fileName, ...result });
+          } else {
+            allResults.push({ fileName, reportDate: null, values: [], unrecognized: [], error: importError || 'Extraction failed' });
+          }
+        } catch (fileErr) {
+          console.warn(`Failed to process ${fileName}:`, fileErr);
+          allResults.push({ fileName, reportDate: null, values: [], unrecognized: [], error: 'Failed to read this file' });
         }
       }
 
@@ -186,6 +188,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
     } catch (err) {
       if (!abort.signal.aborted) {
         console.error('Upload processing error:', err);
+        Sentry.captureException(err);
         setError('An error occurred while processing files. Please try again.');
         setState('select');
       }
@@ -194,6 +197,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
 
   const handleCancel = () => {
     abortRef.current?.abort();
+    setError(null);
     if (results.length > 0) {
       setState('review');
     } else {

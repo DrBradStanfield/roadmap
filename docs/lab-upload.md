@@ -280,7 +280,7 @@ Lp(a) has a variable molecular weight (300-800 kDa) due to the variable number o
 | Control | Value | Rationale |
 |---------|-------|-----------|
 | Login required | Guests can't upload | Prevents anonymous abuse |
-| Rate limit | 20 LLM calls/day per customer | In-memory Map with 24h window, same pattern as measurements endpoint |
+| Rate limit | 200 LLM calls/day per customer | In-memory Map with 24h window, same pattern as measurements endpoint |
 | Max files | 20 per upload session | Covers 99% of use cases |
 | Max pages | 20 per PDF | Lab reports are 1-5 pages |
 | Max file size | 10MB per file | Client + server enforced |
@@ -307,7 +307,7 @@ Thin wrapper around Anthropic API using direct `fetch` (no SDK — keeps deps mi
 
 LLM proxy endpoint. Same auth pattern as `api.measurements.ts`:
 - HMAC auth via `authenticate.public.appProxy()`
-- Rate limit: 20/day per customer
+- Rate limit: 200/day per customer (exempt customers via `RATE_LIMIT_EXEMPT_CUSTOMERS` env var)
 - Zod validation of request body
 - 10MB body size check
 - Sentry error reporting tagged `{ feature: 'lab_import' }`

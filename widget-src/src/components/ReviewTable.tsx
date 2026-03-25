@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { UnitSystem, MetricType } from '@roadmap/health-core';
 import { fromCanonicalValue, UNIT_DEFS, METRIC_LABELS } from '@roadmap/health-core';
-import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
+import { InlineDatePicker, getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, ApiMeasurement } from '../lib/api';
 
 export interface FileResult {
