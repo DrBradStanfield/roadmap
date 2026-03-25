@@ -48,6 +48,7 @@ See [health_roadmap_algorithm.md](health_roadmap_algorithm.md) — the **single 
 ## Key Directories
 
 ```
+/docs/                         # Feature design documents (architecture, rationale, decisions)
 /packages/health-core/src/     # Shared health calculations, units, mappings (with tests)
 /widget-src/src/               # React widget source
 /widget-src/src/lib/           # Widget utilities (api.ts, storage.ts, constants.ts)

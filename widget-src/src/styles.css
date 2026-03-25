@@ -2131,9 +2131,18 @@ input[type="number"] {
 .review-file-date {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 12px;
   font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.review-file-date select {
+  padding: 6px 8px;
+  font-size: 13px;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 6px;
+  background: #fff;
 }
 
 .review-date-warning {

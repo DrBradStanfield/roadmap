@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import type { UnitSystem, MetricType } from '@roadmap/health-core';
 import { fromCanonicalValue, UNIT_DEFS, METRIC_LABELS } from '@roadmap/health-core';
-import { DatePicker, dateValueToISO, getCurrentDateValue, type DateValue } from './DatePicker';
+import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import type { ExtractedValue, ApiMeasurement } from '../lib/api';
 
 export interface FileResult {
@@ -22,51 +22,55 @@ interface ReviewTableProps {
   error: string | null;
 }
 
-function parseReportDate(dateStr: string | null): DateValue {
-  if (!dateStr) return getCurrentDateValue();
-  const [year, month] = dateStr.split('-');
-  return { year: year || getCurrentDateValue().year, month: month || getCurrentDateValue().month };
+/** Full date state: day/month/year. Day is null when the LLM didn't extract one. */
+interface FullDate {
+  day: string | null; // "01"-"31" or null
+  month: string;      // "1"-"12"
+  year: string;       // "2024"
 }
 
-/** Does the DatePicker month/year still match the LLM-extracted original date? */
-function pickerMatchesOriginal(originalDate: string, pickerDate: DateValue): boolean {
-  const [origYear, origMonth] = originalDate.split('-');
-  return origYear === pickerDate.year && origMonth === pickerDate.month.padStart(2, '0');
-}
-
-/** YYYY-MM prefix from a DatePicker value (zero-padded). */
-function pickerToYYYYMM(pickerDate: DateValue): string {
-  return `${pickerDate.year}-${pickerDate.month.padStart(2, '0')}`;
-}
-
-/**
- * Build the ISO date string for saving. If the LLM extracted a full date (YYYY-MM-DD)
- * and the user hasn't changed the month/year, use the original date with day precision.
- * Otherwise fall back to first-of-month from the DatePicker.
- */
-function buildRecordedAt(originalDate: string | null, pickerDate: DateValue): string {
-  if (originalDate && pickerMatchesOriginal(originalDate, pickerDate)) {
-    return `${originalDate}T00:00:00.000Z`;
+function parseReportDate(dateStr: string | null): FullDate {
+  if (!dateStr) {
+    const now = getCurrentDateValue();
+    return { day: null, month: now.month, year: now.year };
   }
-  return dateValueToISO(pickerDate);
+  const parts = dateStr.split('-');
+  const now = getCurrentDateValue();
+  return {
+    day: parts.length >= 3 ? parts[2] : null,
+    month: parts[1] || now.month,
+    year: parts[0] || now.year,
+  };
 }
 
-/**
- * Check if a measurement with this metric + date already exists.
- * Uses full YYYY-MM-DD prefix if available, otherwise YYYY-MM.
- */
+function getDaysInMonth(month: string, year: string): number {
+  return new Date(parseInt(year), parseInt(month), 0).getDate();
+}
+
+/** Build YYYY-MM-DD or YYYY-MM-01 ISO string from FullDate state. */
+function buildRecordedAt(date: FullDate): string {
+  const month = date.month.padStart(2, '0');
+  const day = date.day ? date.day.padStart(2, '0') : '01';
+  return `${date.year}-${month}-${day}T00:00:00.000Z`;
+}
+
+/** Build the most precise date prefix for duplicate matching. */
+function buildDatePrefix(date: FullDate): string {
+  const month = date.month.padStart(2, '0');
+  if (date.day) {
+    return `${date.year}-${month}-${date.day.padStart(2, '0')}`;
+  }
+  return `${date.year}-${month}`;
+}
+
 function isDuplicate(
   metric: string,
-  originalDate: string | null,
-  pickerDate: DateValue,
+  date: FullDate,
   previousMeasurements: ApiMeasurement[],
 ): boolean {
-  const isoPrefix = originalDate && pickerMatchesOriginal(originalDate, pickerDate)
-    ? originalDate                // exact day match, e.g. "2024-11-21"
-    : pickerToYYYYMM(pickerDate); // month match, e.g. "2024-11"
-
+  const prefix = buildDatePrefix(date);
   return previousMeasurements.some(
-    m => m.metricType === metric && m.recordedAt.startsWith(isoPrefix),
+    m => m.metricType === metric && m.recordedAt.startsWith(prefix),
   );
 }
 
@@ -79,15 +83,12 @@ export function ReviewTable({
   isSaving,
   error,
 }: ReviewTableProps) {
-  // Per-file date state (for DatePicker display)
-  const [fileDates, setFileDates] = useState<Record<number, DateValue>>(() => {
-    const dates: Record<number, DateValue> = {};
+  // Per-file full date state (day/month/year)
+  const [fileDates, setFileDates] = useState<Record<number, FullDate>>(() => {
+    const dates: Record<number, FullDate> = {};
     results.forEach((r, i) => { dates[i] = parseReportDate(r.reportDate); });
     return dates;
   });
-
-  // Track whether the user has manually changed the date (overrides LLM date)
-  const [dateOverridden, setDateOverridden] = useState<Record<number, boolean>>({});
 
   // Per-value checked state
   const [checked, setChecked] = useState<Record<string, boolean>>(() => {
@@ -95,7 +96,7 @@ export function ReviewTable({
     results.forEach((r, fi) => {
       r.values.forEach((v, vi) => {
         const key = `${fi}-${vi}`;
-        const dup = isDuplicate(v.metric, r.reportDate, parseReportDate(r.reportDate), previousMeasurements);
+        const dup = isDuplicate(v.metric, parseReportDate(r.reportDate), previousMeasurements);
         map[key] = !dup && v.confidence !== 'low';
       });
     });
@@ -106,9 +107,19 @@ export function ReviewTable({
   const selectedCount = useMemo(() => Object.values(checked).filter(Boolean).length, [checked]);
   const allDatesSet = results.every((r, i) => !r.error && (fileDates[i]?.year && fileDates[i]?.month));
 
-  const handleDateChange = (fi: number, val: DateValue) => {
-    setFileDates(prev => ({ ...prev, [fi]: val }));
-    setDateOverridden(prev => ({ ...prev, [fi]: true }));
+  const handleDateChange = (fi: number, update: Partial<FullDate>) => {
+    setFileDates(prev => {
+      const current = prev[fi];
+      const next = { ...current, ...update };
+      // Clamp day if it exceeds new month's max
+      if (next.day) {
+        const maxDay = getDaysInMonth(next.month, next.year);
+        if (parseInt(next.day) > maxDay) {
+          next.day = String(maxDay);
+        }
+      }
+      return { ...prev, [fi]: next };
+    });
   };
 
   const handleSave = () => {
@@ -117,12 +128,10 @@ export function ReviewTable({
       r.values.forEach((v, vi) => {
         const key = `${fi}-${vi}`;
         if (!checked[key]) return;
-        const date = fileDates[fi];
-        const originalDate = dateOverridden[fi] ? null : r.reportDate;
         selected.push({
           metric: v.metric,
           valueSI: v.valueSI,
-          recordedAt: buildRecordedAt(originalDate, date),
+          recordedAt: buildRecordedAt(fileDates[fi]),
         });
       });
     });
@@ -146,75 +155,93 @@ export function ReviewTable({
         {selectedCount} of {totalValues} values selected from {results.length} file{results.length !== 1 ? 's' : ''}
       </div>
 
-      {results.map((r, fi) => (
-        <div key={fi} className="review-file-section">
-          <div className="review-file-header">
-            <span className="review-file-name">{r.fileName}</span>
-          </div>
+      {results.map((r, fi) => {
+        const date = fileDates[fi];
+        const maxDay = getDaysInMonth(date.month, date.year);
+        const dayOptions = Array.from({ length: maxDay }, (_, i) => i + 1);
 
-          {r.error ? (
-            <p className="review-file-error">Could not read this file: {r.error}</p>
-          ) : (
-            <>
-              <div className="review-file-date">
-                <span>Date: </span>
-                <DatePicker
-                  value={fileDates[fi]}
-                  onChange={(val) => handleDateChange(fi, val)}
-                  shortMonths
-                  yearCount={11}
-                />
-                {!r.reportDate && (
-                  <span className="review-date-warning">Date not found — please select</span>
+        return (
+          <div key={fi} className="review-file-section">
+            <div className="review-file-header">
+              <span className="review-file-name">{r.fileName}</span>
+            </div>
+
+            {r.error ? (
+              <p className="review-file-error">Could not read this file: {r.error}</p>
+            ) : (
+              <>
+                <div className="review-file-date">
+                  <span>Date:</span>
+                  <select
+                    value={date.day || ''}
+                    onChange={(e) => handleDateChange(fi, { day: e.target.value || null })}
+                    aria-label="Day"
+                    className="review-date-select"
+                  >
+                    <option value="">--</option>
+                    {dayOptions.map(d => (
+                      <option key={d} value={String(d).padStart(2, '0')}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                  <InlineDatePicker
+                    value={{ year: date.year, month: date.month }}
+                    onChange={(val) => handleDateChange(fi, { month: val.month, year: val.year })}
+                    shortMonths
+                    yearCount={11}
+                  />
+                  {!r.reportDate && (
+                    <span className="review-date-warning">Date not found — please select</span>
+                  )}
+                </div>
+
+                {r.values.length === 0 ? (
+                  <p className="review-no-values">No blood test values found in this file</p>
+                ) : (
+                  <div className="review-rows">
+                    {r.values.map((v, vi) => {
+                      const key = `${fi}-${vi}`;
+                      const dup = isDuplicate(v.metric, fileDates[fi], previousMeasurements);
+                      return (
+                        <div key={key} className={`review-row review-row--${v.confidence}`}>
+                          <label className="review-row-check">
+                            <input
+                              type="checkbox"
+                              checked={checked[key] ?? false}
+                              onChange={(e) => setChecked(prev => ({ ...prev, [key]: e.target.checked }))}
+                            />
+                          </label>
+                          <span className="review-row-metric">
+                            {METRIC_LABELS[v.metric] || v.metric}
+                          </span>
+                          <span className="review-row-value">{formatValue(v)}</span>
+                          <span className={`review-row-confidence review-confidence--${v.confidence}`}>
+                            ●
+                          </span>
+                          {dup && <span className="review-row-dup">Already saved</span>}
+                          {v.question && (
+                            <p className="review-row-question">{v.question}</p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
-              </div>
 
-              {r.values.length === 0 ? (
-                <p className="review-no-values">No blood test values found in this file</p>
-              ) : (
-                <div className="review-rows">
-                  {r.values.map((v, vi) => {
-                    const key = `${fi}-${vi}`;
-                    const originalDate = dateOverridden[fi] ? null : r.reportDate;
-                    const dup = isDuplicate(v.metric, originalDate, fileDates[fi], previousMeasurements);
-                    return (
-                      <div key={key} className={`review-row review-row--${v.confidence}`}>
-                        <label className="review-row-check">
-                          <input
-                            type="checkbox"
-                            checked={checked[key] ?? false}
-                            onChange={(e) => setChecked(prev => ({ ...prev, [key]: e.target.checked }))}
-                          />
-                        </label>
-                        <span className="review-row-metric">
-                          {METRIC_LABELS[v.metric] || v.metric}
-                        </span>
-                        <span className="review-row-value">{formatValue(v)}</span>
-                        <span className={`review-row-confidence review-confidence--${v.confidence}`}>
-                          ●
-                        </span>
-                        {dup && <span className="review-row-dup">Already saved</span>}
-                        {v.question && (
-                          <p className="review-row-question">{v.question}</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {r.unrecognized.length > 0 && (
-                <div className="review-unrecognized">
-                  <p className="review-unrecognized-label">Not tracked:</p>
-                  {r.unrecognized.map((u, i) => (
-                    <span key={i} className="review-unrecognized-item">{u}</span>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      ))}
+                {r.unrecognized.length > 0 && (
+                  <div className="review-unrecognized">
+                    <p className="review-unrecognized-label">Not tracked:</p>
+                    {r.unrecognized.map((u, i) => (
+                      <span key={i} className="review-unrecognized-item">{u}</span>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })}
 
       {error && <p className="upload-error">{error}</p>}
 
