@@ -105,7 +105,13 @@ export function ReviewTable({
 
   const totalValues = useMemo(() => results.reduce((sum, r) => sum + r.values.length, 0), [results]);
   const selectedCount = useMemo(() => Object.values(checked).filter(Boolean).length, [checked]);
-  const allDatesSet = results.every((r, i) => !r.error && (fileDates[i]?.year && fileDates[i]?.month));
+  // Only require dates for files that have selected values
+  const allDatesSet = useMemo(() => results.every((r, fi) => {
+    if (r.error || r.values.length === 0) return true;
+    const hasSelected = r.values.some((_, vi) => checked[`${fi}-${vi}`]);
+    if (!hasSelected) return true;
+    return fileDates[fi]?.year && fileDates[fi]?.month;
+  }), [results, checked, fileDates]);
 
   const handleDateChange = (fi: number, update: Partial<FullDate>) => {
     setFileDates(prev => {
@@ -168,6 +174,8 @@ export function ReviewTable({
 
             {r.error ? (
               <p className="review-file-error">Could not read this file: {r.error}</p>
+            ) : r.values.length === 0 ? (
+              <p className="review-no-values">No blood test values found in this file</p>
             ) : (
               <>
                 <div className="review-file-date">
@@ -196,10 +204,7 @@ export function ReviewTable({
                   )}
                 </div>
 
-                {r.values.length === 0 ? (
-                  <p className="review-no-values">No blood test values found in this file</p>
-                ) : (
-                  <div className="review-rows">
+                <div className="review-rows">
                     {r.values.map((v, vi) => {
                       const key = `${fi}-${vi}`;
                       const dup = isDuplicate(v.metric, fileDates[fi], previousMeasurements);
@@ -227,7 +232,6 @@ export function ReviewTable({
                       );
                     })}
                   </div>
-                )}
 
                 {r.unrecognized.length > 0 && (
                   <div className="review-unrecognized">

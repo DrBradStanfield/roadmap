@@ -504,6 +504,23 @@ interface LabImportResponse {
 }
 
 /**
+ * Preflight check: returns remaining quota without consuming a request.
+ * Call before starting file processing to avoid wasted client-side work.
+ */
+export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaining: number }> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/lab-import`);
+    if (!response.ok) return { allowed: false, remaining: 0 };
+    const data = await parseJsonResponse<{ allowed: boolean; remaining: number }>(response);
+    return data ?? { allowed: true, remaining: 0 };
+  } catch (error) {
+    // Optimistic: don't block uploads on network errors — the POST will enforce the limit
+    console.warn('Quota check failed:', error);
+    return { allowed: true, remaining: 0 };
+  }
+}
+
+/**
  * Send extracted page content to the LLM proxy for lab result extraction.
  * One call per file — do not batch across files.
  */

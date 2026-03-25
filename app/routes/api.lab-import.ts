@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs } from '@remix-run/node';
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
 import { getCustomerId } from '../lib/route-helpers.server';
@@ -9,9 +9,15 @@ import { extractLabResults } from '../lib/anthropic.server';
 // Rate limiter: 20 extraction requests per day per customer
 // ---------------------------------------------------------------------------
 
-const EXTRACT_LIMIT = 20;
+const EXTRACT_LIMIT = 200;
 const EXTRACT_WINDOW_MS = 24 * 60 * 60_000;
 const extractLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+// Exempt customer IDs bypass rate limiting (e.g. for testing).
+// Set via env var as comma-separated Shopify customer IDs.
+const EXEMPT_CUSTOMERS = new Set(
+  (process.env.RATE_LIMIT_EXEMPT_CUSTOMERS || '').split(',').map(s => s.trim()).filter(Boolean),
+);
 
 setInterval(() => {
   const now = Date.now();
@@ -20,22 +26,46 @@ setInterval(() => {
   }
 }, 30 * 60_000);
 
-function checkExtractLimit(customerId: string): { allowed: boolean; remaining: number } {
+/** Get current quota state, optionally consuming one request. */
+function checkExtractLimit(customerId: string, consume: boolean): { allowed: boolean; remaining: number } {
   const now = Date.now();
   const entry = extractLimitMap.get(customerId);
   if (!entry || now > entry.resetAt) {
-    extractLimitMap.set(customerId, { count: 1, resetAt: now + EXTRACT_WINDOW_MS });
-    return { allowed: true, remaining: EXTRACT_LIMIT - 1 };
+    if (consume) {
+      extractLimitMap.set(customerId, { count: 1, resetAt: now + EXTRACT_WINDOW_MS });
+      return { allowed: true, remaining: EXTRACT_LIMIT - 1 };
+    }
+    return { allowed: true, remaining: EXTRACT_LIMIT };
   }
   if (entry.count >= EXTRACT_LIMIT) {
     return { allowed: false, remaining: 0 };
   }
-  entry.count++;
+  if (consume) entry.count++;
   return { allowed: true, remaining: EXTRACT_LIMIT - entry.count };
 }
 
 // ---------------------------------------------------------------------------
-// Route handler
+// GET: Preflight quota check (no side effects)
+// ---------------------------------------------------------------------------
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  await authenticate.public.appProxy(request);
+
+  const customerId = getCustomerId(request);
+  if (!customerId) {
+    return json({ allowed: false, remaining: 0, error: 'Not logged in' }, { status: 401 });
+  }
+
+  if (EXEMPT_CUSTOMERS.has(customerId)) {
+    return json({ allowed: true, remaining: EXTRACT_LIMIT });
+  }
+
+  const { allowed, remaining } = checkExtractLimit(customerId, false);
+  return json({ allowed, remaining });
+}
+
+// ---------------------------------------------------------------------------
+// POST: Extract lab results
 // ---------------------------------------------------------------------------
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -50,12 +80,18 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ success: false, error: 'Not logged in' }, { status: 401 });
   }
 
-  const { allowed, remaining } = checkExtractLimit(customerId);
-  if (!allowed) {
-    return json(
-      { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
-      { status: 429 },
-    );
+  const isExempt = EXEMPT_CUSTOMERS.has(customerId);
+  let remaining = EXTRACT_LIMIT;
+
+  if (!isExempt) {
+    const limit = checkExtractLimit(customerId, true);
+    if (!limit.allowed) {
+      return json(
+        { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
+        { status: 429 },
+      );
+    }
+    remaining = limit.remaining;
   }
 
   try {

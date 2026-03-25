@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { UnitSystem } from '@roadmap/health-core';
-import { labImport, bulkSaveMeasurements, type PageContent, type ExtractedValue, type ApiMeasurement } from '../lib/api';
+import { labImport, checkLabImportQuota, bulkSaveMeasurements, type PageContent, type ExtractedValue, type ApiMeasurement } from '../lib/api';
 import { ReviewTable, type FileResult } from './ReviewTable';
 import { useIsMobile } from '../lib/useIsMobile';
 
@@ -101,6 +101,13 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
 
   const handleProcess = async () => {
     if (files.length === 0) return;
+
+    // Preflight: check quota before any processing to avoid wasted work
+    const quota = await checkLabImportQuota();
+    if (!quota.allowed) {
+      setError('Daily upload limit reached. You can upload more tomorrow.');
+      return;
+    }
 
     // Save any unsaved form values (weight, BP, etc.) before processing
     if (onStart) await onStart();
