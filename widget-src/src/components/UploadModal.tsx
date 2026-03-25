@@ -117,49 +117,60 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
       const zipFiles = files.filter(f => upload.isZip(f));
       const otherFiles = files.filter(f => !upload.isZip(f));
 
-      let processedCount = 0;
-      const totalEstimate = otherFiles.length + zipFiles.length;
+      // Phase 1: Extract ZIPs to get actual file list
+      const allFilesToProcess: Array<{ fileName: string; pages: PageContent[] } | { file: File }> = [];
 
-      // Process zips first
       for (const zip of zipFiles) {
         if (abort.signal.aborted) break;
-        setProgress({ current: ++processedCount, total: totalEstimate, fileName: zip.name });
+        setProgress({ current: 0, total: 0, fileName: `Extracting ${zip.name}...` });
 
         const extracted = await upload.processZip(zip, (p) => {
-          setProgress({ current: processedCount, total: totalEstimate, fileName: `${zip.name}: ${p.fileName}` });
+          setProgress({ current: p.current, total: p.total, fileName: `Extracting ${zip.name}: ${p.fileName}` });
         }, abort.signal);
 
         for (const ef of extracted) {
-          if (abort.signal.aborted) break;
-          const { result, error: importError } = await labImport(ef.pages, unitSystem);
-          if (result) {
-            allResults.push({ fileName: ef.fileName, ...result });
-          } else {
-            allResults.push({ fileName: ef.fileName, reportDate: null, values: [], unrecognized: [], error: importError || 'Extraction failed' });
-          }
+          allFilesToProcess.push(ef);
         }
       }
-
-      // Process individual files
       for (const file of otherFiles) {
+        allFilesToProcess.push({ file });
+      }
+
+      // Phase 2: Process each file through LLM with accurate progress
+      let processedCount = 0;
+      const totalFiles = allFilesToProcess.length;
+
+      for (const item of allFilesToProcess) {
         if (abort.signal.aborted) break;
-        setProgress({ current: ++processedCount, total: totalEstimate, fileName: file.name });
 
         let pages: PageContent[];
-        if (upload.isPdf(file)) {
-          pages = await upload.extractFromPdf(file);
-        } else if (upload.isImage(file)) {
-          const base64 = await upload.resizeImage(file, 1500);
-          pages = [{ type: 'image', content: base64, mimeType: 'image/jpeg' }];
+        let fileName: string;
+
+        if ('pages' in item) {
+          // Already extracted from ZIP
+          pages = item.pages;
+          fileName = item.fileName;
         } else {
-          continue;
+          // Individual file — extract now
+          const file = item.file;
+          fileName = file.name;
+          if (upload.isPdf(file)) {
+            pages = await upload.extractFromPdf(file);
+          } else if (upload.isImage(file)) {
+            const base64 = await upload.resizeImage(file, 1500);
+            pages = [{ type: 'image', content: base64, mimeType: 'image/jpeg' }];
+          } else {
+            continue;
+          }
         }
+
+        setProgress({ current: ++processedCount, total: totalFiles, fileName });
 
         const { result, error: importError } = await labImport(pages, unitSystem);
         if (result) {
-          allResults.push({ fileName: file.name, ...result });
+          allResults.push({ fileName, ...result });
         } else {
-          allResults.push({ fileName: file.name, reportDate: null, values: [], unrecognized: [], error: importError || 'Extraction failed' });
+          allResults.push({ fileName, reportDate: null, values: [], unrecognized: [], error: importError || 'Extraction failed' });
         }
       }
 

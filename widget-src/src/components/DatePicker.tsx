@@ -148,5 +148,6 @@ export function getCurrentDateValue(): DateValue {
  * Convert DateValue to ISO date string (first of month)
  */
 export function dateValueToISO(date: DateValue): string {
-  return `${date.year}-${date.month}-01T00:00:00.000Z`;
+  const month = date.month.padStart(2, '0');
+  return `${date.year}-${month}-01T00:00:00.000Z`;
 }

@@ -28,12 +28,52 @@ function parseReportDate(dateStr: string | null): DateValue {
   return { year: year || getCurrentDateValue().year, month: month || getCurrentDateValue().month };
 }
 
+/**
+ * Build the ISO date string for saving. If the LLM extracted a full date (YYYY-MM-DD)
+ * and the user hasn't changed the month/year, use the original date with day precision.
+ * Otherwise fall back to first-of-month from the DatePicker.
+ */
+function buildRecordedAt(
+  originalDate: string | null,
+  pickerDate: DateValue,
+): string {
+  if (originalDate) {
+    const [origYear, origMonth] = originalDate.split('-');
+    // User hasn't changed the date — use the full original (preserves day)
+    if (origYear === pickerDate.year && origMonth === pickerDate.month.padStart(2, '0')) {
+      return `${originalDate}T00:00:00.000Z`;
+    }
+  }
+  // User changed the date or no original — use first-of-month
+  return dateValueToISO(pickerDate);
+}
+
+/**
+ * Check if a measurement with this metric + date already exists.
+ * Uses full YYYY-MM-DD prefix if available, otherwise YYYY-MM.
+ */
 function isDuplicate(
   metric: string,
-  date: DateValue,
+  originalDate: string | null,
+  pickerDate: DateValue,
   previousMeasurements: ApiMeasurement[],
 ): boolean {
-  const isoPrefix = `${date.year}-${date.month}`;
+  // Build the prefix to match against — use most precise date available
+  let isoPrefix: string;
+  if (originalDate) {
+    const [origYear, origMonth] = originalDate.split('-');
+    if (origYear === pickerDate.year && origMonth === pickerDate.month.padStart(2, '0')) {
+      // Full date available and user hasn't changed it — match exact day
+      isoPrefix = originalDate; // e.g. "2024-11-21"
+    } else {
+      // User changed date — match month
+      isoPrefix = `${pickerDate.year}-${pickerDate.month.padStart(2, '0')}`;
+    }
+  } else {
+    // No original date — match month
+    isoPrefix = `${pickerDate.year}-${pickerDate.month.padStart(2, '0')}`;
+  }
+
   return previousMeasurements.some(
     m => m.metricType === metric && m.recordedAt.startsWith(isoPrefix),
   );
@@ -48,12 +88,15 @@ export function ReviewTable({
   isSaving,
   error,
 }: ReviewTableProps) {
-  // Per-file date state
+  // Per-file date state (for DatePicker display)
   const [fileDates, setFileDates] = useState<Record<number, DateValue>>(() => {
     const dates: Record<number, DateValue> = {};
     results.forEach((r, i) => { dates[i] = parseReportDate(r.reportDate); });
     return dates;
   });
+
+  // Track whether the user has manually changed the date (overrides LLM date)
+  const [dateOverridden, setDateOverridden] = useState<Record<number, boolean>>({});
 
   // Per-value checked state
   const [checked, setChecked] = useState<Record<string, boolean>>(() => {
@@ -61,7 +104,7 @@ export function ReviewTable({
     results.forEach((r, fi) => {
       r.values.forEach((v, vi) => {
         const key = `${fi}-${vi}`;
-        const dup = isDuplicate(v.metric, parseReportDate(r.reportDate), previousMeasurements);
+        const dup = isDuplicate(v.metric, r.reportDate, parseReportDate(r.reportDate), previousMeasurements);
         map[key] = !dup && v.confidence !== 'low';
       });
     });
@@ -72,6 +115,11 @@ export function ReviewTable({
   const selectedCount = useMemo(() => Object.values(checked).filter(Boolean).length, [checked]);
   const allDatesSet = results.every((r, i) => !r.error && (fileDates[i]?.year && fileDates[i]?.month));
 
+  const handleDateChange = (fi: number, val: DateValue) => {
+    setFileDates(prev => ({ ...prev, [fi]: val }));
+    setDateOverridden(prev => ({ ...prev, [fi]: true }));
+  };
+
   const handleSave = () => {
     const selected: Array<{ metric: string; valueSI: number; recordedAt: string }> = [];
     results.forEach((r, fi) => {
@@ -79,10 +127,11 @@ export function ReviewTable({
         const key = `${fi}-${vi}`;
         if (!checked[key]) return;
         const date = fileDates[fi];
+        const originalDate = dateOverridden[fi] ? null : r.reportDate;
         selected.push({
           metric: v.metric,
           valueSI: v.valueSI,
-          recordedAt: dateValueToISO(date),
+          recordedAt: buildRecordedAt(originalDate, date),
         });
       });
     });
@@ -120,7 +169,7 @@ export function ReviewTable({
                 <span>Date: </span>
                 <DatePicker
                   value={fileDates[fi]}
-                  onChange={(val) => setFileDates(prev => ({ ...prev, [fi]: val }))}
+                  onChange={(val) => handleDateChange(fi, val)}
                   shortMonths
                   yearCount={11}
                 />
@@ -135,7 +184,8 @@ export function ReviewTable({
                 <div className="review-rows">
                   {r.values.map((v, vi) => {
                     const key = `${fi}-${vi}`;
-                    const dup = isDuplicate(v.metric, fileDates[fi], previousMeasurements);
+                    const originalDate = dateOverridden[fi] ? null : r.reportDate;
+                    const dup = isDuplicate(v.metric, originalDate, fileDates[fi], previousMeasurements);
                     return (
                       <div key={key} className={`review-row review-row--${v.confidence}`}>
                         <label className="review-row-check">
