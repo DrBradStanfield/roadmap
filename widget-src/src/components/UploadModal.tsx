@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { UnitSystem } from '@roadmap/health-core';
-import { labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, type PageContent, type ExtractedValue, type ApiMeasurement } from '../lib/api';
+import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, type PageContent, type ExtractedValue, type ApiMeasurement } from '../lib/api';
 import { ReviewTable, type FileResult, type DocumentToSave } from './ReviewTable';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -43,8 +43,10 @@ export function FloatingUploadIndicator({ progress, onClick }: {
   );
 }
 
+const BATCH_THRESHOLD = 20; // Use batch API for 20+ files; pipeline for fewer
 const POLL_INTERVAL = 5000;
 const FAKE_TICK_INTERVAL = 500;
+const EXTRACT_TIMEOUT = 30_000;
 
 /** Rotating status messages shown during batch processing */
 const PROGRESS_MESSAGES = [
@@ -156,14 +158,12 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
   const handleProcess = async () => {
     if (files.length === 0) return;
 
-    // Preflight: check quota before any processing to avoid wasted work
     const quota = await checkLabImportQuota();
     if (!quota.allowed) {
       setError('Daily upload limit reached. You can upload more tomorrow.');
       return;
     }
 
-    // Save any unsaved form values (weight, BP, etc.) before processing
     if (onStart) await onStart();
 
     setState('processing');
@@ -180,86 +180,27 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
     try {
       const upload = await loadUploadBundle();
 
-      // --- Phase 1: Extract pages from all files (client-side) ---
-      // Count total extractable files first for progress
+      // Build queue of files to process (ZIP entries + standalone files)
+      const queue: Array<{ fileName: string; file: File }> = [];
       const zipFiles = files.filter(f => upload.isZip(f));
       const otherFiles = files.filter(f => !upload.isZip(f));
-      const allFiles: Array<{ fileName: string; pages: PageContent[] }> = [];
-      let extractedCount = 0;
-
-      // Gather all file entries to know the total
-      const fileEntries: Array<{ name: string; extract: () => Promise<PageContent[]> }> = [];
 
       for (const zip of zipFiles) {
         if (abort.signal.aborted) break;
         updateProgress({ current: 0, total: 100, fileName: `Opening ${zip.name}...` });
         const entries = await upload.getZipEntries(zip);
         for (const { name, entry } of entries) {
-          fileEntries.push({
-            name,
-            extract: async () => {
-              const blob = await entry.async('blob');
-              const fileObj = new File([blob], name.split('/').pop() || name);
-              if (upload.isPdf(fileObj)) {
-                return Promise.race([
-                  upload.extractFromPdf(fileObj),
-                  new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 30_000)),
-                ]);
-              } else if (upload.isImage(fileObj)) {
-                const base64 = await Promise.race([
-                  upload.resizeImage(fileObj, 1200),
-                  new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 30_000)),
-                ]);
-                return [{ type: 'image' as const, content: base64, mimeType: 'image/jpeg' }];
-              }
-              return [];
-            },
-          });
+          if (abort.signal.aborted) break;
+          const blob = await entry.async('blob');
+          const fileObj = new File([blob], name.split('/').pop() || name);
+          queue.push({ fileName: name, file: fileObj });
         }
       }
-
       for (const file of otherFiles) {
-        fileEntries.push({
-          name: file.name,
-          extract: async () => {
-            if (upload.isPdf(file)) {
-              return Promise.race([
-                upload.extractFromPdf(file),
-                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 30_000)),
-              ]);
-            } else if (upload.isImage(file)) {
-              const base64 = await Promise.race([
-                upload.resizeImage(file, 1200),
-                new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 30_000)),
-              ]);
-              return [{ type: 'image' as const, content: base64, mimeType: 'image/jpeg' }];
-            }
-            return [];
-          },
-        });
+        queue.push({ fileName: file.name, file });
       }
 
-      const totalToExtract = fileEntries.length;
-
-      for (const entry of fileEntries) {
-        if (abort.signal.aborted) break;
-        const shortName = entry.name.split('/').pop() || entry.name;
-        // Show extraction progress as 0-30% of total (Phase 1 gets first 30%)
-        const extractPct = Math.round((extractedCount / totalToExtract) * 30);
-        updateProgress({ current: extractPct, total: 100, fileName: `Reading ${shortName}...` });
-        try {
-          const pages = await entry.extract();
-          if (pages.length > 0) allFiles.push({ fileName: entry.name, pages });
-        } catch (err) {
-          console.warn(`Failed to extract ${entry.name}:`, err);
-        }
-        extractedCount++;
-      }
-
-      // Show extraction complete
-      updateProgress({ current: 30, total: 100, fileName: `Extracted ${allFiles.length} files` });
-
-      if (allFiles.length === 0 || abort.signal.aborted) {
+      if (queue.length === 0 || abort.signal.aborted) {
         if (!abort.signal.aborted) {
           setError('No readable files found.');
           setState('select');
@@ -268,81 +209,13 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
         return;
       }
 
-      // --- Phase 2: Send all files to Batch API ---
-      updateProgress({ current: 33, total: 100, fileName: `Analyzing ${allFiles.length} files...` });
+      // Choose processing strategy based on file count
+      const allResults: FileResult[] = queue.length >= BATCH_THRESHOLD
+        ? await processBatch(upload, queue, abort, updateProgress)
+        : await processPipeline(upload, queue, abort, updateProgress);
 
-      const { batchId, error: batchError } = await labImportBatch(allFiles);
-      if (!batchId) {
-        setError(batchError || 'Failed to start processing');
-        setState('select');
-        onProcessingEnd?.(false);
-        return;
-      }
-
-      // --- Phase 3: Poll with fake progress ---
-      const fileNames = allFiles.map(f => (f.fileName.split('/').pop() || f.fileName));
-      let fakeProgress = 35; // Start at 35% — extraction (0-30%) + sending (33%) done
-      let realCompleted = 0;
-      let tickCount = 0;
-
-      // Fake progress timer — asymptotic curve, never exceeds 90%
-      // Cycles through status messages + filenames for a lively feel
-      const fakeTimer = setInterval(() => {
-        if (abort.signal.aborted) return;
-        tickCount++;
-        fakeProgress += (90 - fakeProgress) * 0.015;
-        const realPct = allFiles.length > 0 ? (realCompleted / allFiles.length) * 100 : 0;
-        const displayPct = Math.max(fakeProgress, realPct);
-        // Alternate: status message (every ~8 ticks / 4s) then filename
-        const statusMsg = PROGRESS_MESSAGES[Math.floor(tickCount / 8) % PROGRESS_MESSAGES.length];
-        const fileName = fileNames[Math.floor(tickCount / 3) % fileNames.length];
-        const msg = realCompleted > 0
-          ? `Processed ${realCompleted} of ${allFiles.length} — ${fileName}`
-          : `${statusMsg} ${fileName}`;
-        updateProgress({ current: Math.round(displayPct), total: 100, fileName: msg });
-      }, FAKE_TICK_INTERVAL);
-
-      try {
-        // Poll until batch completes (max 10 minutes to avoid infinite poll after server restart)
-        const maxPollTime = Date.now() + 10 * 60_000;
-        while (!abort.signal.aborted) {
-          await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
-          if (abort.signal.aborted) break;
-
-          if (Date.now() > maxPollTime) {
-            throw new Error('Processing timed out. Please try again.');
-          }
-
-          const poll = await pollBatchStatus(batchId);
-          realCompleted = poll.completed;
-
-          // Terminal error (e.g., batch not found after server restart)
-          if (poll.error) {
-            throw new Error(poll.error);
-          }
-
-          if (poll.status === 'ended' && poll.results) {
-            clearInterval(fakeTimer);
-
-
-            // Map results to FileResult format
-            const allResults: FileResult[] = poll.results.map(r => ({
-              fileName: r.fileName || 'Unknown file',
-              reportDate: r.reportDate,
-              values: r.values || [],
-              unrecognized: r.unrecognized || [],
-              document: r.document ?? undefined,
-            }));
-
-            updateProgress({ current: 100, total: 100, fileName: 'All files processed!' });
-            setResults(allResults);
-            setState('review');
-            return;
-          }
-        }
-      } finally {
-        clearInterval(fakeTimer);
-      }
+      setResults(allResults);
+      setState('review');
     } catch (err) {
       if (!abort.signal.aborted) {
         console.error('Upload processing error:', err);
@@ -353,6 +226,192 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
       }
     }
   };
+
+  /** Pipeline: client extraction feeds queue, LLM calls drain it one at a time. */
+  async function processPipeline(
+    upload: HealthUploadAPI,
+    queue: Array<{ fileName: string; file: File }>,
+    abort: AbortController,
+    updateProgress: (p: { current: number; total: number; fileName: string }) => void,
+  ): Promise<FileResult[]> {
+    const allResults: FileResult[] = [];
+    const totalFiles = queue.length;
+    let completedCount = 0;
+
+    // Worker pool with LLM_CONCURRENCY=1 — sequential LLM calls, no 429 rate limits.
+    // Client extraction runs ahead: by the time one LLM call finishes, the next file is already extracted.
+    let activeWorkers = 0;
+    let feedingDone = false;
+    let resolveAll: (() => void) | null = null;
+    const allDone = new Promise<void>(resolve => { resolveAll = resolve; });
+
+    async function processOneFile(item: { fileName: string; file: File }): Promise<FileResult> {
+      const { fileName, file } = item;
+      try {
+        let pages: PageContent[];
+        if (upload.isPdf(file)) {
+          pages = await Promise.race([
+            upload.extractFromPdf(file),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT)),
+          ]);
+        } else if (upload.isImage(file)) {
+          const base64 = await Promise.race([
+            upload.resizeImage(file, 1200),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT)),
+          ]);
+          pages = [{ type: 'image', content: base64, mimeType: 'image/jpeg' }];
+        } else {
+          return { fileName, reportDate: null, values: [], unrecognized: [], error: 'Unsupported file type' };
+        }
+
+        const { result, error: importError } = await labImport(pages, unitSystem);
+        if (result) {
+          return {
+            fileName,
+            reportDate: result.reportDate,
+            values: result.values,
+            unrecognized: result.unrecognized,
+            document: result.document ?? undefined,
+          };
+        }
+        return { fileName, reportDate: null, values: [], unrecognized: [], error: importError || 'Extraction failed' };
+      } catch (fileErr) {
+        console.warn(`Failed to process ${fileName}:`, fileErr);
+        return { fileName, reportDate: null, values: [], unrecognized: [], error: 'Failed to read this file' };
+      }
+    }
+
+    function tryStartWorker() {
+      // LLM_CONCURRENCY = 1: one LLM call at a time to avoid rate limits
+      while (activeWorkers < 1 && queue.length > 0) {
+        if (abort.signal.aborted) break;
+        activeWorkers++;
+        const item = queue.shift()!;
+        const shortName = item.fileName.split('/').pop() || item.fileName;
+        updateProgress({ current: Math.round((completedCount / totalFiles) * 100), total: 100, fileName: shortName });
+
+        processOneFile(item).then(result => {
+          allResults.push(result);
+        }).catch(err => {
+          console.warn('Unexpected worker error:', err);
+          allResults.push({ fileName: item.fileName, reportDate: null, values: [], unrecognized: [], error: 'Processing failed' });
+        }).finally(() => {
+          completedCount++;
+          activeWorkers--;
+          updateProgress({
+            current: Math.round((completedCount / totalFiles) * 100),
+            total: 100,
+            fileName: `Processed ${completedCount} of ${totalFiles}`,
+          });
+          tryStartWorker();
+          if (feedingDone && activeWorkers === 0 && queue.length === 0) {
+            resolveAll?.();
+          }
+        });
+      }
+    }
+
+    // Start the worker immediately — queue already has all files from ZIP extraction
+    feedingDone = true;
+    tryStartWorker();
+
+    if (queue.length === 0 && activeWorkers === 0) {
+      resolveAll?.();
+    }
+
+    await allDone;
+    return allResults;
+  }
+
+  /** Batch: send all files in one request, poll for results. For 20+ files. */
+  async function processBatch(
+    upload: HealthUploadAPI,
+    queue: Array<{ fileName: string; file: File }>,
+    abort: AbortController,
+    updateProgress: (p: { current: number; total: number; fileName: string }) => void,
+  ): Promise<FileResult[]> {
+    // Extract pages from all files first
+    const allFiles: Array<{ fileName: string; pages: PageContent[] }> = [];
+    for (let i = 0; i < queue.length; i++) {
+      if (abort.signal.aborted) break;
+      const { fileName, file } = queue[i];
+      const shortName = fileName.split('/').pop() || fileName;
+      updateProgress({ current: Math.round((i / queue.length) * 30), total: 100, fileName: `Reading ${shortName}...` });
+      try {
+        let pages: PageContent[];
+        if (upload.isPdf(file)) {
+          pages = await Promise.race([
+            upload.extractFromPdf(file),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT)),
+          ]);
+        } else if (upload.isImage(file)) {
+          const base64 = await Promise.race([
+            upload.resizeImage(file, 1200),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT)),
+          ]);
+          pages = [{ type: 'image', content: base64, mimeType: 'image/jpeg' }];
+        } else continue;
+        allFiles.push({ fileName, pages });
+      } catch (err) {
+        console.warn(`Failed to extract ${fileName}:`, err);
+      }
+    }
+
+    if (allFiles.length === 0) throw new Error('No readable files found.');
+
+    updateProgress({ current: 33, total: 100, fileName: `Analyzing ${allFiles.length} files...` });
+
+    const { batchId, error: batchError } = await labImportBatch(allFiles);
+    if (!batchId) throw new Error(batchError || 'Failed to start processing');
+
+    // Poll with fake progress
+    const fileNames = allFiles.map(f => (f.fileName.split('/').pop() || f.fileName));
+    let fakeProgress = 35;
+    let realCompleted = 0;
+    let tickCount = 0;
+
+    const fakeTimer = setInterval(() => {
+      if (abort.signal.aborted) return;
+      tickCount++;
+      fakeProgress += (90 - fakeProgress) * 0.015;
+      const realPct = allFiles.length > 0 ? (realCompleted / allFiles.length) * 100 : 0;
+      const displayPct = Math.max(fakeProgress, realPct);
+      const statusMsg = PROGRESS_MESSAGES[Math.floor(tickCount / 8) % PROGRESS_MESSAGES.length];
+      const fileName = fileNames[Math.floor(tickCount / 3) % fileNames.length];
+      const msg = realCompleted > 0
+        ? `Processed ${realCompleted} of ${allFiles.length} — ${fileName}`
+        : `${statusMsg} ${fileName}`;
+      updateProgress({ current: Math.round(displayPct), total: 100, fileName: msg });
+    }, FAKE_TICK_INTERVAL);
+
+    try {
+      const maxPollTime = Date.now() + 10 * 60_000;
+      while (!abort.signal.aborted) {
+        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
+        if (abort.signal.aborted) break;
+        if (Date.now() > maxPollTime) throw new Error('Processing timed out. Please try again.');
+
+        const poll = await pollBatchStatus(batchId);
+        realCompleted = poll.completed;
+        if (poll.error) throw new Error(poll.error);
+
+        if (poll.status === 'ended' && poll.results) {
+          clearInterval(fakeTimer);
+          updateProgress({ current: 100, total: 100, fileName: 'All files processed!' });
+          return poll.results.map(r => ({
+            fileName: r.fileName || 'Unknown file',
+            reportDate: r.reportDate,
+            values: r.values || [],
+            unrecognized: r.unrecognized || [],
+            document: r.document ?? undefined,
+          }));
+        }
+      }
+      return []; // aborted
+    } finally {
+      clearInterval(fakeTimer);
+    }
+  }
 
   const handleCancel = () => {
     abortRef.current?.abort();
