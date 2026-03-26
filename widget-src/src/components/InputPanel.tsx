@@ -173,6 +173,11 @@ export function InputPanel({
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
 
+  // Expand/collapse state for display-first longitudinal fields
+  const [bloodTestsExpanded, setBloodTestsExpanded] = useState(false);
+  const [expandedVitals, setExpandedVitals] = useState<Set<string>>(new Set());
+  const [bpExpanded, setBpExpanded] = useState(false);
+
   /** Prevent scroll wheel from changing number input values. */
   const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur();
 
@@ -311,6 +316,40 @@ export function InputPanel({
 
   const hasLongitudinalValues = LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined);
 
+  /** Check if a field has a previous saved measurement. */
+  const hasPreviousValue = (field: string): boolean => {
+    const metric = FIELD_METRIC_MAP[field];
+    return !!metric && previousMeasurements.some(m => m.metricType === metric);
+  };
+
+  /** Whether any blood test has saved data (triggers collapsed view). */
+  const hasAnyBloodTestData = isLoggedIn && BLOOD_TEST_FIELDS.some(cfg => hasPreviousValue(cfg.field));
+
+  /** Whether any basic vital has saved data (for per-metric collapse). */
+  const hasBpPreviousData = isLoggedIn && (hasPreviousValue('systolicBp') || hasPreviousValue('diastolicBp'));
+
+  // Auto-collapse blood tests after save completes
+  const wasSaving = useRef(false);
+  useEffect(() => {
+    if (wasSaving.current && !isSavingLongitudinal) {
+      // Save just finished — collapse if no unsaved values remain
+      if (bloodTestsExpanded && !BLOOD_TEST_FIELDS.some(cfg => inputs[cfg.field] !== undefined)) {
+        setBloodTestsExpanded(false);
+      }
+      if (bpExpanded && inputs.systolicBp === undefined && inputs.diastolicBp === undefined) {
+        setBpExpanded(false);
+      }
+      setExpandedVitals(prev => {
+        const next = new Set(prev);
+        for (const field of prev) {
+          if (inputs[field as keyof typeof inputs] === undefined) next.delete(field);
+        }
+        return next.size === prev.size ? prev : next;
+      });
+    }
+    wasSaving.current = isSavingLongitudinal;
+  }, [isSavingLongitudinal]);
+
   /** Get effective value: current input or fallback to last saved measurement. */
   const getEffective = (field: keyof HealthInputs, metricType: string): number | undefined =>
     (inputs[field] as number | undefined) ?? previousMeasurements.find(m => m.metricType === metricType)?.value;
@@ -398,14 +437,23 @@ export function InputPanel({
     );
   };
 
+  /** Resolve sex-specific hint for a field config. */
+  const resolveHint = (config: FieldConfig) => {
+    const { hint, hintMale, hintFemale } = config;
+    return (inputs.sex === 'male' && hintMale) ? hintMale
+      : (inputs.sex === 'female' && hintFemale) ? hintFemale : hint;
+  };
+
   const renderLongitudinalField = (config: FieldConfig, isBloodTest = false) => {
-    const { field, name, step, hint, hintMale, hintFemale } = config;
-    const effectiveHint = (inputs.sex === 'male' && hintMale) ? hintMale
-      : (inputs.sex === 'female' && hintFemale) ? hintFemale
-      : hint;
+    const { field, name, step } = config;
+    const effectiveHint = resolveHint(config);
     const r = range(field);
     const previousLabel = getPreviousLabel(field);
     const needsAttention = field === 'weightKg' && formStage === 3 && inputs.weightKg === undefined;
+    // In expanded mode with previous data, show "Previous:" reference instead of placeholder
+    const isExpandedWithData = isLoggedIn && hasPreviousValue(field) && (
+      isBloodTest ? bloodTestsExpanded : expandedVitals.has(field)
+    );
     return (
       <div className={`health-field${needsAttention ? ' field-attention' : ''}`} key={field}>
         <label htmlFor={field}>
@@ -423,6 +471,9 @@ export function InputPanel({
             FIELD_METRIC_MAP[field] ? <span>({getDisplayLabel(FIELD_METRIC_MAP[field]!, fieldUnit(field))})</span> : null
           )}
         </label>
+        {isExpandedWithData && previousLabel && (
+          <span className="previous-reference">Previous: {previousLabel}</span>
+        )}
         <div className="longitudinal-input-row">
           <input
             type="number"
@@ -439,16 +490,17 @@ export function InputPanel({
               updateField(field, parseAndConvert(field, raw));
             }}
             onBlur={() => setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; })}
-            placeholder={getPreviousPlaceholder(field)}
+            placeholder={isExpandedWithData ? '' : getPreviousPlaceholder(field)}
             step={step ? (fieldUnit(field) === 'si' ? step.si : step.conv) : undefined}
             min={r.min}
             max={r.max}
             className={errors[field] ? 'error' : ''}
           />
-          {isLoggedIn && hasApiResponse && inputs[field] !== undefined && (
+          {/* Inline save for vitals only (blood tests use section-level save) */}
+          {!isBloodTest && isLoggedIn && hasApiResponse && inputs[field] !== undefined && (
             <button
               className="btn-primary save-inline-btn"
-              onClick={() => onSaveLongitudinal(isBloodTest ? dateValueToISO(bloodTestDate) : undefined)}
+              onClick={() => onSaveLongitudinal()}
               disabled={isSavingLongitudinal}
               title="Save new values"
             >
@@ -459,14 +511,14 @@ export function InputPanel({
         {errors[field] && (
           <span className="error-message">{errors[field]}</span>
         )}
-        {(effectiveHint || previousLabel) && (
+        {(effectiveHint || (!isExpandedWithData && previousLabel)) && (
           <div className="field-meta">
             {effectiveHint && (
               <span className="field-hint">
                 {fieldUnit(field) === 'si' ? effectiveHint.si : effectiveHint.conv}
               </span>
             )}
-            {previousLabel && (
+            {!isExpandedWithData && previousLabel && (
               <a
                 className="previous-value"
                 href={`/pages/health-history?metric=${FIELD_METRIC_MAP[field]}`}
@@ -480,8 +532,78 @@ export function InputPanel({
     );
   };
 
-  // Combined previous BP label
-  const getBpPreviousLabel = (): string | null => {
+  /** Render a collapsed read-only display for a longitudinal field. */
+  const renderCollapsedField = (config: FieldConfig, onExpand: () => void) => {
+    const { field, name } = config;
+    const metric = FIELD_METRIC_MAP[field]!;
+    const measurement = previousMeasurements.find(m => m.metricType === metric);
+    const effectiveHint = resolveHint(config);
+
+    // No data — show label + [+] button only
+    if (!measurement) {
+      return (
+        <div className="health-field" key={field}>
+          <div className="collapsed-field-row collapsed-field-row--empty">
+            <span className="collapsed-field-label collapsed-field-label--empty">{name}</span>
+            <button type="button" className="collapsed-field-add" onClick={onExpand} title="Add new value">+</button>
+          </div>
+          {effectiveHint && (
+            <div className="field-meta">
+              <span className="field-hint">
+                {fieldUnit(field) === 'si' ? effectiveHint.si : effectiveHint.conv}
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    const displayValue = toDisplay(field, measurement.value);
+    const unitLabel = getDisplayLabel(metric, fieldUnit(field));
+    const date = formatShortDate(measurement.recordedAt);
+
+    return (
+      <div className="health-field" key={field}>
+        <div className="collapsed-field-row">
+          <a
+            className="collapsed-field-label"
+            href={`/pages/health-history?metric=${metric}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {name}
+          </a>
+          <span className="collapsed-field-value">
+            {displayValue}{' '}
+            {hasUnitToggle(field) ? (
+              <button
+                type="button"
+                className="unit-toggle-pill"
+                onClick={(e) => { e.preventDefault(); onToggleFieldUnit(field); }}
+                title={`Switch to ${fieldUnit(field) === 'si' ? 'conventional' : 'metric'} units`}
+              >
+                {unitLabel}
+              </button>
+            ) : (
+              <span className="collapsed-field-unit">{unitLabel}</span>
+            )}
+          </span>
+          <span className="collapsed-field-date">{date}</span>
+          <button type="button" className="collapsed-field-add" onClick={onExpand} title="Add new value">+</button>
+        </div>
+        {effectiveHint && (
+          <div className="field-meta">
+            <span className="field-hint">
+              {fieldUnit(field) === 'si' ? effectiveHint.si : effectiveHint.conv}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  /** Shared BP data for collapsed and label rendering. */
+  const getBpPreviousData = (): { sysVal: string | number; diaVal: string | number; latestDate: string } | null => {
     if (!isLoggedIn) return null;
     const sysMetric = FIELD_METRIC_MAP['systolicBp'];
     const diaMetric = FIELD_METRIC_MAP['diastolicBp'];
@@ -491,10 +613,38 @@ export function InputPanel({
 
     const sysVal = sysMeasurement ? Math.round(sysMeasurement.value) : '?';
     const diaVal = diaMeasurement ? Math.round(diaMeasurement.value) : '?';
-    // Use the more recent date
     const dates = [sysMeasurement?.recordedAt, diaMeasurement?.recordedAt].filter(Boolean) as string[];
     const latestDate = dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
-    return `${sysVal}/${diaVal} mmHg · ${formatShortDate(latestDate)}`;
+    return { sysVal, diaVal, latestDate };
+  };
+
+  /** BP target text based on age. */
+  const getBpTargetText = () =>
+    `Target: <${(inputs.birthYear && inputs.birthMonth && calculateAge(inputs.birthYear, inputs.birthMonth) >= 65) ? '130/80' : '120/80'} mmHg`;
+
+  /** Render collapsed BP display. */
+  const renderCollapsedBp = (data: { sysVal: string | number; diaVal: string | number; latestDate: string }) => {
+
+    return (
+      <div className="health-field">
+        <div className="collapsed-field-row">
+          <a
+            className="collapsed-field-label"
+            href="/pages/health-history?metric=systolic_bp"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Blood Pressure
+          </a>
+          <span className="collapsed-field-value">{data.sysVal}/{data.diaVal} <span className="collapsed-field-unit">mmHg</span></span>
+          <span className="collapsed-field-date">{formatShortDate(data.latestDate)}</span>
+          <button type="button" className="collapsed-field-add" onClick={() => setBpExpanded(true)} title="Add new value">+</button>
+        </div>
+        <div className="field-meta">
+          <span className="field-hint">{getBpTargetText()}</span>
+        </div>
+      </div>
+    );
   };
 
   const hasBpValue = inputs.systolicBp !== undefined || inputs.diastolicBp !== undefined;
@@ -669,122 +819,173 @@ export function InputPanel({
     </>
   );
 
-  const renderVitals = () => (
-    <section className="health-section">
-      {BASIC_LONGITUDINAL_FIELDS.map(cfg => renderLongitudinalField(cfg))}
+  const renderVitals = () => {
+    const bpData = getBpPreviousData();
+    const bpLabel = bpData ? `${bpData.sysVal}/${bpData.diaVal} mmHg · ${formatShortDate(bpData.latestDate)}` : null;
+    return (
+      <section className="health-section">
+        {BASIC_LONGITUDINAL_FIELDS.map(cfg => {
+          if (isLoggedIn && hasPreviousValue(cfg.field) && !expandedVitals.has(cfg.field)) {
+            return renderCollapsedField(cfg, () => setExpandedVitals(prev => new Set(prev).add(cfg.field)));
+          }
+          return renderLongitudinalField(cfg);
+        })}
 
-      {/* Blood Pressure — two-field clinical pattern (stage 4+) */}
-      {formStage >= 4 && (
-        <div className="health-field stage-reveal">
-          <label>Blood Pressure (mmHg)
-            <span className="bp-info-tooltip-wrap" tabIndex={0}>
-              <span className="bp-info-icon" aria-label="How to measure blood pressure">&#9432;</span>
-              <span className="bp-info-tooltip">
-                Use a home blood pressure monitor or ask your doctor at your next visit.{' '}
-                <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/monitoring-your-blood-pressure-at-home" target="_blank" rel="noopener noreferrer">Learn more &rarr;</a>
-              </span>
-            </span>
-          </label>
-          <div className="longitudinal-input-row">
-            <div className="bp-fieldset">
-              <input
-                type="number"
-                inputMode="numeric"
-                id="systolicBp"
-                onWheel={blurOnWheel}
-                value={inputs.systolicBp ?? ''}
-                onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
-                onBlur={() => validateOnBlur('systolicBp')}
-                placeholder={getPreviousPlaceholder('systolicBp')}
-                min={60}
-                max={250}
-                className={errors.systolicBp ? 'error' : ''}
-              />
-              <span className="bp-separator">/</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                id="diastolicBp"
-                onWheel={blurOnWheel}
-                value={inputs.diastolicBp ?? ''}
-                onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
-                onBlur={() => validateOnBlur('diastolicBp')}
-                placeholder={getPreviousPlaceholder('diastolicBp')}
-                min={40}
-                max={150}
-                className={errors.diastolicBp ? 'error' : ''}
-              />
+        {formStage >= 4 && (
+          hasBpPreviousData && !bpExpanded && bpData ? (
+            <div className="stage-reveal">
+              {renderCollapsedBp(bpData)}
             </div>
-            {isLoggedIn && hasApiResponse && hasBpValue && (
-              <button
-                className="btn-primary save-inline-btn"
-                onClick={() => onSaveLongitudinal()}
-                disabled={isSavingLongitudinal}
-                title="Save new values"
-              >
-                {isSavingLongitudinal ? '...' : 'Save'}
-              </button>
-            )}
-          </div>
-          {errors.systolicBp && (
-            <span className="error-message">{errors.systolicBp}</span>
-          )}
-          {errors.diastolicBp && (
-            <span className="error-message">{errors.diastolicBp}</span>
-          )}
-          <div className="field-meta">
-            <span className="field-hint">Target: &lt;{(inputs.birthYear && inputs.birthMonth && calculateAge(inputs.birthYear, inputs.birthMonth) >= 65) ? '130/80' : '120/80'} mmHg</span>
-            {getBpPreviousLabel() && (
-              <a
-                className="previous-value"
-                href={`/pages/health-history?metric=systolic_bp`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >{getBpPreviousLabel()}</a>
-            )}
-          </div>
-        </div>
-      )}
-    </section>
-  );
+          ) : (
+            <div className="health-field stage-reveal">
+              <label>Blood Pressure (mmHg)
+                <span className="bp-info-tooltip-wrap" tabIndex={0}>
+                  <span className="bp-info-icon" aria-label="How to measure blood pressure">&#9432;</span>
+                  <span className="bp-info-tooltip">
+                    Use a home blood pressure monitor or ask your doctor at your next visit.{' '}
+                    <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/monitoring-your-blood-pressure-at-home" target="_blank" rel="noopener noreferrer">Learn more &rarr;</a>
+                  </span>
+                </span>
+              </label>
+              {bpExpanded && bpLabel && (
+                <span className="previous-reference">Previous: {bpLabel}</span>
+              )}
+              <div className="longitudinal-input-row">
+                <div className="bp-fieldset">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    id="systolicBp"
+                    onWheel={blurOnWheel}
+                    value={inputs.systolicBp ?? ''}
+                    onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
+                    onBlur={() => validateOnBlur('systolicBp')}
+                    placeholder={bpExpanded ? '' : getPreviousPlaceholder('systolicBp')}
+                    min={60}
+                    max={250}
+                    className={errors.systolicBp ? 'error' : ''}
+                  />
+                  <span className="bp-separator">/</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    id="diastolicBp"
+                    onWheel={blurOnWheel}
+                    value={inputs.diastolicBp ?? ''}
+                    onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
+                    onBlur={() => validateOnBlur('diastolicBp')}
+                    placeholder={bpExpanded ? '' : getPreviousPlaceholder('diastolicBp')}
+                    min={40}
+                    max={150}
+                    className={errors.diastolicBp ? 'error' : ''}
+                  />
+                </div>
+                {isLoggedIn && hasApiResponse && hasBpValue && (
+                  <button
+                    className="btn-primary save-inline-btn"
+                    onClick={() => onSaveLongitudinal()}
+                    disabled={isSavingLongitudinal}
+                    title="Save new values"
+                  >
+                    {isSavingLongitudinal ? '...' : 'Save'}
+                  </button>
+                )}
+              </div>
+              {errors.systolicBp && (
+                <span className="error-message">{errors.systolicBp}</span>
+              )}
+              {errors.diastolicBp && (
+                <span className="error-message">{errors.diastolicBp}</span>
+              )}
+              <div className="field-meta">
+                <span className="field-hint">{getBpTargetText()}</span>
+                {!bpExpanded && bpLabel && (
+                  <a
+                    className="previous-value"
+                    href={`/pages/health-history?metric=systolic_bp`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >{bpLabel}</a>
+                )}
+              </div>
+            </div>
+          )
+        )}
+      </section>
+    );
+  };
 
-  const renderBloodTests = () => (
-    <section className="health-section">
-      <div className="health-section-header">
-        <h3 className="health-section-title">Blood Test Results</h3>
-        {/* Upload lab results button — inline with heading */}
-        {isLoggedIn ? (
-          <button
-            className="btn-primary upload-lab-btn"
-            onClick={() => setShowUploadModal?.(true)}
-          >
-            Upload Lab Results
-          </button>
-        ) : (
-          <div className="upload-lab-wrapper">
-            <button className="btn-primary upload-lab-btn upload-lab-btn--disabled" disabled>
+  const renderBloodTests = () => {
+    const isCollapsed = hasAnyBloodTestData && !bloodTestsExpanded;
+
+    return (
+      <section className="health-section">
+        <div className="health-section-header">
+          <h3 className="health-section-title">Blood Test Results</h3>
+          {/* Upload lab results button */}
+          {isLoggedIn ? (
+            <button
+              className="btn-primary upload-lab-btn"
+              onClick={() => setShowUploadModal?.(true)}
+            >
               Upload Lab Results
             </button>
-            <div className="upload-lab-tooltip">
-              <p>Upload lab results to automatically fill in your blood test values.</p>
-              {loginUrl && <a href={loginUrl} className="upload-lab-tooltip-link">Log in to use this feature &rarr;</a>}
+          ) : (
+            <div className="upload-lab-wrapper">
+              <button className="btn-primary upload-lab-btn upload-lab-btn--disabled" disabled>
+                Upload Lab Results
+              </button>
+              <div className="upload-lab-tooltip">
+                <p>Upload lab results to automatically fill in your blood test values.</p>
+                {loginUrl && <a href={loginUrl} className="upload-lab-tooltip-link">Log in to use this feature &rarr;</a>}
+              </div>
             </div>
-          </div>
+          )}
+          {bloodTestsExpanded && hasAnyBloodTestData && (
+            <button
+              className="add-results-btn--cancel"
+              onClick={() => setBloodTestsExpanded(false)}
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+
+        {isCollapsed ? (
+          /* Collapsed view: show saved values as read-only rows */
+          <>
+            {BLOOD_TEST_FIELDS.map(cfg =>
+              renderCollapsedField(cfg, () => setBloodTestsExpanded(true))
+            )}
+          </>
+        ) : (
+          /* Expanded / no-data view: show input fields */
+          <>
+            <DatePicker
+              value={bloodTestDate}
+              onChange={setBloodTestDate}
+              label="When were these tests done?"
+              className="blood-test-date"
+            />
+            <p className="health-section-desc">To enter results from different dates, save each batch separately.</p>
+
+            {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg, true))}
+
+            {/* Section-level save button for blood tests (only when expanded from collapsed view) */}
+            {bloodTestsExpanded && hasAnyBloodTestData && isLoggedIn && hasApiResponse && BLOOD_TEST_FIELDS.some(cfg => inputs[cfg.field] !== undefined) && (
+              <button
+                className="btn-primary save-longitudinal-btn"
+                onClick={() => onSaveLongitudinal(dateValueToISO(bloodTestDate))}
+                disabled={isSavingLongitudinal}
+              >
+                {isSavingLongitudinal ? 'Saving...' : 'Save New Values'}
+              </button>
+            )}
+          </>
         )}
-      </div>
-
-      {/* Blood test date picker */}
-      <DatePicker
-        value={bloodTestDate}
-        onChange={setBloodTestDate}
-        label="When were these tests done?"
-        className="blood-test-date"
-      />
-      <p className="health-section-desc">To enter results from different dates, save each batch separately.</p>
-
-      {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg, true))}
-    </section>
-  );
+      </section>
+    );
+  };
 
   const renderMedications = () => (
     <>
@@ -1758,6 +1959,12 @@ export function InputPanel({
 
   const renderSaveButton = () => {
     if (!isLoggedIn || !hasLongitudinalValues) return null;
+    // When blood tests are expanded, they have their own section-level save button.
+    // Only hide the global button if ALL dirty fields are blood tests.
+    const hasNonBloodTestValues = LONGITUDINAL_FIELDS.some(f =>
+      inputs[f] !== undefined && !BLOOD_TEST_FIELDS.some(cfg => cfg.field === f)
+    );
+    if (bloodTestsExpanded && !hasNonBloodTestValues) return null;
     return (
       <button
         className="btn-primary save-longitudinal-btn"

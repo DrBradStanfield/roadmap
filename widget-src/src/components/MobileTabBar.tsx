@@ -46,7 +46,9 @@ export function MobileTabBar({ tabs, activeTab, onTabChange }: MobileTabBarProps
     if (!el) return;
     const activeButton = el.querySelector('[aria-selected="true"]');
     if (activeButton) {
-      activeButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      const button = activeButton as HTMLElement;
+      const scrollLeft = button.offsetLeft - (el.clientWidth / 2) + (button.offsetWidth / 2);
+      el.scrollTo({ left: scrollLeft, behavior: 'smooth' });
     }
   }, [activeTab]);
 

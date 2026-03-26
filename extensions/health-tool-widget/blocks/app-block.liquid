@@ -5,6 +5,10 @@
 
 <!-- CSS first so skeleton is styled immediately -->
 {{ 'health-tool.css' | asset_url | stylesheet_tag }}
+<style>
+  #upCartStickyButton, #PBarNextFrameWrapper { display: none !important; }
+  html, body { overflow-x: hidden; }
+</style>
 
 {% unless customer %}
 <script>
