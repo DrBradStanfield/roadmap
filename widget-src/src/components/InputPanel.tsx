@@ -177,6 +177,21 @@ export function InputPanel({
   const [bloodTestsExpanded, setBloodTestsExpanded] = useState(false);
   const [expandedVitals, setExpandedVitals] = useState<Set<string>>(new Set());
   const [bpExpanded, setBpExpanded] = useState(false);
+  const focusFieldRef = useRef<string | null>(null);
+
+  // Auto-focus and scroll to the field that triggered an expand
+  useEffect(() => {
+    if (!focusFieldRef.current) return;
+    const field = focusFieldRef.current;
+    focusFieldRef.current = null;
+    requestAnimationFrame(() => {
+      const input = document.getElementById(field);
+      if (input) {
+        input.focus();
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  }, [bloodTestsExpanded, expandedVitals, bpExpanded]);
 
   /** Prevent scroll wheel from changing number input values. */
   const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur();
@@ -637,7 +652,7 @@ export function InputPanel({
           </a>
           <span className="collapsed-field-value">{data.sysVal}/{data.diaVal} <span className="collapsed-field-unit">mmHg</span></span>
           <span className="collapsed-field-date">{formatShortDate(data.latestDate)}</span>
-          <button type="button" className="collapsed-field-add" onClick={() => setBpExpanded(true)} title="Add new value">+</button>
+          <button type="button" className="collapsed-field-add" onClick={() => { focusFieldRef.current = 'systolicBp'; setBpExpanded(true); }} title="Add new value">+</button>
         </div>
         <div className="field-meta">
           <span className="field-hint">{getBpTargetText()}</span>
@@ -825,7 +840,10 @@ export function InputPanel({
       <section className="health-section">
         {BASIC_LONGITUDINAL_FIELDS.map(cfg => {
           if (isLoggedIn && hasPreviousValue(cfg.field) && !expandedVitals.has(cfg.field)) {
-            return renderCollapsedField(cfg, () => setExpandedVitals(prev => new Set(prev).add(cfg.field)));
+            return renderCollapsedField(cfg, () => {
+              focusFieldRef.current = cfg.field;
+              setExpandedVitals(prev => new Set(prev).add(cfg.field));
+            });
           }
           return renderLongitudinalField(cfg);
         })}
@@ -954,7 +972,10 @@ export function InputPanel({
           /* Collapsed view: show saved values as read-only rows */
           <>
             {BLOOD_TEST_FIELDS.map(cfg =>
-              renderCollapsedField(cfg, () => setBloodTestsExpanded(true))
+              renderCollapsedField(cfg, () => {
+                focusFieldRef.current = cfg.field;
+                setBloodTestsExpanded(true);
+              })
             )}
           </>
         ) : (
