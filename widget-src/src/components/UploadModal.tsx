@@ -179,28 +179,21 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
 
     try {
       const upload = await loadUploadBundle();
-
-      // Build queue of files to process (ZIP entries + standalone files)
-      const queue: Array<{ fileName: string; file: File }> = [];
       const zipFiles = files.filter(f => upload.isZip(f));
       const otherFiles = files.filter(f => !upload.isZip(f));
 
+      // Count total files for progress (need to peek inside ZIPs)
+      let totalFiles = otherFiles.length;
+      const zipEntryLists: Array<{ name: string; entry: { async: (type: 'blob') => Promise<Blob> } }[]> = [];
       for (const zip of zipFiles) {
         if (abort.signal.aborted) break;
         updateProgress({ current: 0, total: 100, fileName: `Opening ${zip.name}...` });
         const entries = await upload.getZipEntries(zip);
-        for (const { name, entry } of entries) {
-          if (abort.signal.aborted) break;
-          const blob = await entry.async('blob');
-          const fileObj = new File([blob], name.split('/').pop() || name);
-          queue.push({ fileName: name, file: fileObj });
-        }
-      }
-      for (const file of otherFiles) {
-        queue.push({ fileName: file.name, file });
+        zipEntryLists.push(entries);
+        totalFiles += entries.length;
       }
 
-      if (queue.length === 0 || abort.signal.aborted) {
+      if (totalFiles === 0 || abort.signal.aborted) {
         if (!abort.signal.aborted) {
           setError('No readable files found.');
           setState('select');
@@ -209,11 +202,26 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
         return;
       }
 
-      // Choose processing strategy based on file count
-      const allResults: FileResult[] = queue.length >= BATCH_THRESHOLD
-        ? await processBatch(upload, queue, abort, updateProgress)
-        : await processPipeline(upload, queue, abort, updateProgress);
+      // For batch path (>=20 files): extract all, then batch
+      if (totalFiles >= BATCH_THRESHOLD) {
+        const allFileObjects: Array<{ fileName: string; file: File }> = [];
+        for (const entries of zipEntryLists) {
+          for (const { name, entry } of entries) {
+            const blob = await entry.async('blob');
+            allFileObjects.push({ fileName: name, file: new File([blob], name.split('/').pop() || name) });
+          }
+        }
+        for (const file of otherFiles) {
+          allFileObjects.push({ fileName: file.name, file });
+        }
+        const allResults = await processBatch(upload, allFileObjects, abort, updateProgress);
+        setResults(allResults);
+        setState('review');
+        return;
+      }
 
+      // Pipeline path (<20 files): producer extracts, consumer sends to LLM
+      const allResults = await processPipeline(upload, zipEntryLists, otherFiles, totalFiles, abort, updateProgress);
       setResults(allResults);
       setState('review');
     } catch (err) {
@@ -227,62 +235,51 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
     }
   };
 
-  /** Pipeline: client extraction feeds queue, LLM calls drain it one at a time. */
+  /** Extract pages from a File (pdf.js or image resize) with timeout. */
+  async function extractPages(upload: HealthUploadAPI, file: File): Promise<PageContent[]> {
+    if (upload.isPdf(file)) {
+      return Promise.race([
+        upload.extractFromPdf(file),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT)),
+      ]);
+    } else if (upload.isImage(file)) {
+      const base64 = await Promise.race([
+        upload.resizeImage(file, 1200),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT)),
+      ]);
+      return [{ type: 'image', content: base64, mimeType: 'image/jpeg' }];
+    }
+    return [];
+  }
+
+  /**
+   * Pipeline: producer extracts files (ZIP blob → pdf.js → pages), consumer
+   * sends pages to LLM one at a time. Extraction runs ahead of LLM calls —
+   * while file 1 is in the LLM (~5s), files 2-4 are being extracted client-side.
+   */
   async function processPipeline(
     upload: HealthUploadAPI,
-    queue: Array<{ fileName: string; file: File }>,
+    zipEntryLists: Array<Array<{ name: string; entry: { async: (type: 'blob') => Promise<Blob> } }>>,
+    otherFiles: File[],
+    totalFiles: number,
     abort: AbortController,
     updateProgress: (p: { current: number; total: number; fileName: string }) => void,
   ): Promise<FileResult[]> {
+    const queue: Array<{ fileName: string; pages: PageContent[] }> = [];
     const allResults: FileResult[] = [];
-    const totalFiles = queue.length;
     let completedCount = 0;
-
-    // Worker pool with LLM_CONCURRENCY=1 — sequential LLM calls, no 429 rate limits.
-    // Client extraction runs ahead: by the time one LLM call finishes, the next file is already extracted.
     let activeWorkers = 0;
     let feedingDone = false;
     let resolveAll: (() => void) | null = null;
     const allDone = new Promise<void>(resolve => { resolveAll = resolve; });
 
-    async function processOneFile(item: { fileName: string; file: File }): Promise<FileResult> {
-      const { fileName, file } = item;
-      try {
-        let pages: PageContent[];
-        if (upload.isPdf(file)) {
-          pages = await Promise.race([
-            upload.extractFromPdf(file),
-            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT)),
-          ]);
-        } else if (upload.isImage(file)) {
-          const base64 = await Promise.race([
-            upload.resizeImage(file, 1200),
-            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT)),
-          ]);
-          pages = [{ type: 'image', content: base64, mimeType: 'image/jpeg' }];
-        } else {
-          return { fileName, reportDate: null, values: [], unrecognized: [], error: 'Unsupported file type' };
-        }
-
-        const { result, error: importError } = await labImport(pages, unitSystem);
-        if (result) {
-          return {
-            fileName,
-            reportDate: result.reportDate,
-            values: result.values,
-            unrecognized: result.unrecognized,
-            document: result.document ?? undefined,
-          };
-        }
-        return { fileName, reportDate: null, values: [], unrecognized: [], error: importError || 'Extraction failed' };
-      } catch (fileErr) {
-        console.warn(`Failed to process ${fileName}:`, fileErr);
-        return { fileName, reportDate: null, values: [], unrecognized: [], error: 'Failed to read this file' };
+    function checkDone() {
+      if (feedingDone && activeWorkers === 0 && queue.length === 0) {
+        resolveAll?.();
       }
     }
 
     function tryStartWorker() {
-      // LLM_CONCURRENCY = 1: one LLM call at a time to avoid rate limits
       while (activeWorkers < 1 && queue.length > 0) {
         if (abort.signal.aborted) break;
         activeWorkers++;
@@ -290,10 +287,20 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
         const shortName = item.fileName.split('/').pop() || item.fileName;
         updateProgress({ current: Math.round((completedCount / totalFiles) * 100), total: 100, fileName: shortName });
 
-        processOneFile(item).then(result => {
-          allResults.push(result);
-        }).catch(err => {
-          console.warn('Unexpected worker error:', err);
+        // Send to LLM
+        labImport(item.pages, unitSystem).then(({ result, error: importError }) => {
+          if (result) {
+            allResults.push({
+              fileName: item.fileName,
+              reportDate: result.reportDate,
+              values: result.values,
+              unrecognized: result.unrecognized,
+              document: result.document ?? undefined,
+            });
+          } else {
+            allResults.push({ fileName: item.fileName, reportDate: null, values: [], unrecognized: [], error: importError || 'Extraction failed' });
+          }
+        }).catch(() => {
           allResults.push({ fileName: item.fileName, reportDate: null, values: [], unrecognized: [], error: 'Processing failed' });
         }).finally(() => {
           completedCount++;
@@ -304,20 +311,44 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
             fileName: `Processed ${completedCount} of ${totalFiles}`,
           });
           tryStartWorker();
-          if (feedingDone && activeWorkers === 0 && queue.length === 0) {
-            resolveAll?.();
-          }
+          checkDone();
         });
       }
     }
 
-    // Start the worker immediately — queue already has all files from ZIP extraction
-    feedingDone = true;
-    tryStartWorker();
-
-    if (queue.length === 0 && activeWorkers === 0) {
-      resolveAll?.();
+    // Producer: extract files and feed the queue. Worker starts as soon as first file is ready.
+    for (const entries of zipEntryLists) {
+      for (const { name, entry } of entries) {
+        if (abort.signal.aborted) break;
+        try {
+          const blob = await entry.async('blob');
+          const file = new File([blob], name.split('/').pop() || name);
+          const pages = await extractPages(upload, file);
+          if (pages.length > 0) {
+            queue.push({ fileName: name, pages });
+            tryStartWorker(); // Start worker as soon as first item is ready
+          }
+        } catch (err) {
+          console.warn(`Failed to extract ${name}:`, err);
+        }
+      }
     }
+
+    for (const file of otherFiles) {
+      if (abort.signal.aborted) break;
+      try {
+        const pages = await extractPages(upload, file);
+        if (pages.length > 0) {
+          queue.push({ fileName: file.name, pages });
+          tryStartWorker();
+        }
+      } catch (err) {
+        console.warn(`Failed to extract ${file.name}:`, err);
+      }
+    }
+
+    feedingDone = true;
+    checkDone();
 
     await allDone;
     return allResults;
@@ -330,7 +361,6 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
     abort: AbortController,
     updateProgress: (p: { current: number; total: number; fileName: string }) => void,
   ): Promise<FileResult[]> {
-    // Extract pages from all files first
     const allFiles: Array<{ fileName: string; pages: PageContent[] }> = [];
     for (let i = 0; i < queue.length; i++) {
       if (abort.signal.aborted) break;
@@ -338,20 +368,8 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
       const shortName = fileName.split('/').pop() || fileName;
       updateProgress({ current: Math.round((i / queue.length) * 30), total: 100, fileName: `Reading ${shortName}...` });
       try {
-        let pages: PageContent[];
-        if (upload.isPdf(file)) {
-          pages = await Promise.race([
-            upload.extractFromPdf(file),
-            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT)),
-          ]);
-        } else if (upload.isImage(file)) {
-          const base64 = await Promise.race([
-            upload.resizeImage(file, 1200),
-            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), EXTRACT_TIMEOUT)),
-          ]);
-          pages = [{ type: 'image', content: base64, mimeType: 'image/jpeg' }];
-        } else continue;
-        allFiles.push({ fileName, pages });
+        const pages = await extractPages(upload, file);
+        if (pages.length > 0) allFiles.push({ fileName, pages });
       } catch (err) {
         console.warn(`Failed to extract ${fileName}:`, err);
       }
@@ -364,7 +382,6 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
     const { batchId, error: batchError } = await labImportBatch(allFiles);
     if (!batchId) throw new Error(batchError || 'Failed to start processing');
 
-    // Poll with fake progress
     const fileNames = allFiles.map(f => (f.fileName.split('/').pop() || f.fileName));
     let fakeProgress = 35;
     let realCompleted = 0;
@@ -407,7 +424,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
           }));
         }
       }
-      return []; // aborted
+      return [];
     } finally {
       clearInterval(fakeTimer);
     }
