@@ -36,7 +36,8 @@ export interface DocumentToSave {
   screeningUpdate?: { key: string; date: string };
 }
 
-function isScreeningEligible(screeningType: string, userAge?: number, userSex?: 'male' | 'female'): boolean {
+/** Exported for testing */
+export function isScreeningEligible(screeningType: string, userAge?: number, userSex?: 'male' | 'female'): boolean {
   const rule = SCREENING_MIN_AGE[screeningType];
   if (!rule) return true;
   if (rule.sex && userSex && rule.sex !== userSex) return false;

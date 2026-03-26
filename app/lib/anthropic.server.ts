@@ -132,7 +132,8 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
 }
 
 /** Resolve units for an array of LLM-extracted lab values. Shared by all extraction paths. */
-function resolveLabValues(rawValues: Array<{ metric: string; value: number; unit: string; confidence: 'high' | 'medium' | 'low'; question?: string }>): ExtractedValue[] {
+/** Exported for testing */
+export function resolveLabValues(rawValues: Array<{ metric: string; value: number; unit: string; confidence: 'high' | 'medium' | 'low'; question?: string }>): ExtractedValue[] {
   const values: ExtractedValue[] = [];
   for (const v of rawValues) {
     if (!VALID_METRICS.includes(v.metric as MetricType)) continue;
@@ -483,7 +484,8 @@ async function callAnthropic(apiKey: string, body: Record<string, unknown>, retr
 }
 
 /** Strip markdown code fences (```json ... ```) from LLM response text */
-function stripCodeFences(text: string): string {
+/** Exported for testing */
+export function stripCodeFences(text: string): string {
   const trimmed = text.trim();
   if (trimmed.startsWith('```')) {
     return trimmed.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
