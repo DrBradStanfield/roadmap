@@ -496,11 +496,10 @@ export function InputPanel({
             max={r.max}
             className={errors[field] ? 'error' : ''}
           />
-          {/* Inline save for vitals only (blood tests use section-level save) */}
-          {!isBloodTest && isLoggedIn && hasApiResponse && inputs[field] !== undefined && (
+          {isLoggedIn && hasApiResponse && inputs[field] !== undefined && (
             <button
               className="btn-primary save-inline-btn"
-              onClick={() => onSaveLongitudinal()}
+              onClick={() => onSaveLongitudinal(isBloodTest ? dateValueToISO(bloodTestDate) : undefined)}
               disabled={isSavingLongitudinal}
               title="Save new values"
             >
