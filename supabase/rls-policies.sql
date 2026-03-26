@@ -512,6 +512,47 @@ ALTER TABLE cron_lock ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS shopify_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS shopify_sessions_migrations ENABLE ROW LEVEL SECURITY;
 
+-- ===== Create health_documents table =====
+-- Stores uploaded health documents (scan results, clinic letters, etc.) as searchable markdown.
+-- Immutable: no UPDATE policy. Delete + re-upload if incorrect.
+
+CREATE TABLE IF NOT EXISTS health_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  document_type TEXT NOT NULL CHECK (document_type IN (
+    'scan_result', 'clinic_letter', 'discharge_summary',
+    'pathology_report', 'vaccination_record', 'other'
+  )),
+  title TEXT NOT NULL,
+  document_date DATE,
+  content_md TEXT NOT NULL,
+  metadata JSONB DEFAULT '{}',
+  source_file_name TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_health_documents_user_date
+  ON health_documents(user_id, document_date DESC);
+
+ALTER TABLE health_documents ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own health documents" ON health_documents;
+CREATE POLICY "Users can read own health documents"
+  ON health_documents FOR SELECT
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can insert own health documents" ON health_documents;
+CREATE POLICY "Users can insert own health documents"
+  ON health_documents FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can delete own health documents" ON health_documents;
+CREATE POLICY "Users can delete own health documents"
+  ON health_documents FOR DELETE
+  USING (user_id = auth.uid());
+
+GRANT SELECT, INSERT, DELETE ON health_documents TO authenticated;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

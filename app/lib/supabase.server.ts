@@ -762,6 +762,119 @@ export async function logReminderSent(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Health Documents
+// ---------------------------------------------------------------------------
+
+interface DbHealthDocument {
+  id: string;
+  user_id: string;
+  document_type: string;
+  title: string;
+  document_date: string | null;
+  content_md: string;
+  metadata: Record<string, unknown>;
+  source_file_name: string | null;
+  created_at: string;
+}
+
+/** Convert DB document row to camelCase API format. */
+export function toApiDocument(d: DbHealthDocument) {
+  return {
+    id: d.id,
+    documentType: d.document_type,
+    title: d.title,
+    documentDate: d.document_date,
+    contentMd: d.content_md,
+    metadata: d.metadata,
+    sourceFileName: d.source_file_name,
+    createdAt: d.created_at,
+  };
+}
+
+export type ApiDocument = ReturnType<typeof toApiDocument>;
+
+/** Get all health documents for the authenticated user, newest first. */
+export async function getHealthDocuments(
+  client: SupabaseClient,
+): Promise<DbHealthDocument[]> {
+  const { data, error } = await client
+    .from('health_documents')
+    .select('*')
+    .order('document_date', { ascending: false, nullsFirst: false });
+
+  if (error) {
+    console.error('Error fetching health documents:', error);
+    return [];
+  }
+
+  return (data ?? []) as DbHealthDocument[];
+}
+
+/** Add a health document. Returns the created document or null on error. */
+export async function addHealthDocument(
+  client: SupabaseClient,
+  userId: string,
+  doc: {
+    documentType: string;
+    title: string;
+    documentDate: string | null;
+    contentMd: string;
+    metadata: Record<string, unknown>;
+    sourceFileName: string | null;
+  },
+): Promise<DbHealthDocument | null> {
+  const { data, error } = await client
+    .from('health_documents')
+    .insert({
+      user_id: userId,
+      document_type: doc.documentType,
+      title: doc.title,
+      document_date: doc.documentDate,
+      content_md: doc.contentMd,
+      metadata: doc.metadata,
+      source_file_name: doc.sourceFileName,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error adding health document:', error);
+    return null;
+  }
+
+  logAudit(userId, 'DOCUMENT_CREATED', 'health_document', data.id, {
+    documentType: doc.documentType,
+    title: doc.title,
+  });
+
+  return data as DbHealthDocument;
+}
+
+/** Delete a health document. RLS verifies ownership. */
+export async function deleteHealthDocument(
+  client: SupabaseClient,
+  userId: string,
+  documentId: string,
+): Promise<boolean> {
+  const { data, error } = await client
+    .from('health_documents')
+    .delete()
+    .eq('id', documentId)
+    .select('id');
+
+  if (error) {
+    console.error('Error deleting health document:', error);
+    return false;
+  }
+
+  if (data && data.length > 0) {
+    logAudit(userId, 'DOCUMENT_DELETED', 'health_document', documentId);
+  }
+
+  return (data?.length ?? 0) > 0;
+}
+
 /** Generate or retrieve unsubscribe token for a user. Uses admin client. */
 export async function getOrCreateUnsubscribeToken(userId: string): Promise<string | null> {
   if (!supabaseAdmin) return null;
@@ -1018,7 +1131,13 @@ export async function deleteAllUserData(userId: string): Promise<{ measurementsD
     .delete()
     .eq('user_id', userId);
 
-  // 3d. Delete all reminder logs
+  // 3d. Delete all health documents
+  await supabaseAdmin
+    .from('health_documents')
+    .delete()
+    .eq('user_id', userId);
+
+  // 3e. Delete all reminder logs
   await supabaseAdmin
     .from('reminder_log')
     .delete()

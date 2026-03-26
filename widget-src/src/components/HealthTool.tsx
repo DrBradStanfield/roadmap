@@ -31,7 +31,7 @@ import {
 } from '@roadmap/health-core';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
-import { UploadModal } from './UploadModal';
+import { UploadModal, FloatingUploadIndicator } from './UploadModal';
 import { useIsMobile } from '../lib/useIsMobile';
 import { MobileTabBar, MobileTabNav, type TabId, type Tab } from './MobileTabBar';
 import {
@@ -57,6 +57,8 @@ import {
   sendWelcomeEmail,
   PROXY_PATH,
   type ApiReminderPreference,
+  type ApiDocument,
+  getHealthDocuments,
 } from '../lib/api';
 
 // Auth state from Liquid template
@@ -101,6 +103,9 @@ export function HealthTool() {
   const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const isFirstSaveRef = useRef(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadActive, setUploadActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0, fileName: '' });
+  const [healthDocuments, setHealthDocuments] = useState<ApiDocument[]>([]);
 
   // Clean up debounce timers on unmount to prevent stale API calls
   useEffect(() => {
@@ -238,6 +243,8 @@ export function HealthTool() {
           setMedications(result.medications);
           setScreenings(result.screenings);
           setReminderPreferences(result.reminderPreferences);
+          // Load health documents (fire-and-forget — non-blocking)
+          getHealthDocuments().then(docs => setHealthDocuments(docs));
           // Cache to localStorage for instant display on next page load
           saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, result.reminderPreferences);
         } else {
@@ -504,7 +511,7 @@ export function HealthTool() {
     await handleSaveLongitudinal();
   }, [authState.isLoggedIn, handleSaveLongitudinal]);
 
-  // Refresh state after lab import bulk save
+  // Refresh state after upload bulk save (lab values + documents)
   const handleUploadComplete = useCallback(async () => {
     const result = await loadLatestMeasurements();
     if (result) {
@@ -516,6 +523,8 @@ export function HealthTool() {
       setReminderPreferences(result.reminderPreferences);
       saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, result.reminderPreferences);
     }
+    // Reload documents
+    getHealthDocuments().then(docs => setHealthDocuments(docs));
   }, []);
 
   // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel
@@ -810,6 +819,10 @@ export function HealthTool() {
     onReminderPreferenceChange: handleReminderPreferenceChange,
     onGlobalReminderOptout: handleGlobalReminderOptout,
     sex: inputs.sex,
+    healthDocuments,
+    onDocumentDeleted: (docId: string) => {
+      setHealthDocuments(prev => prev.filter(d => d.id !== docId));
+    },
   };
 
   return (
@@ -855,13 +868,30 @@ export function HealthTool() {
         </div>
       )}
 
-      {showUploadModal && authState.isLoggedIn && (
+      {(showUploadModal || uploadActive) && authState.isLoggedIn && (
         <UploadModal
           unitSystem={unitSystem}
           previousMeasurements={previousMeasurements}
           onComplete={handleUploadComplete}
           onStart={handleUploadStart}
           onClose={() => setShowUploadModal(false)}
+          onScreeningUpdate={handleScreeningChange}
+          birthYear={inputs.birthYear ? Number(inputs.birthYear) : undefined}
+          sex={inputs.sex === 'male' || inputs.sex === 'female' ? inputs.sex : undefined}
+          hidden={!showUploadModal && uploadActive}
+          onProcessingStart={() => setUploadActive(true)}
+          onProcessingEnd={(autoReopen) => {
+            setUploadActive(false);
+            if (autoReopen) setShowUploadModal(true);
+          }}
+          onProgressUpdate={setUploadProgress}
+        />
+      )}
+
+      {!showUploadModal && uploadActive && (
+        <FloatingUploadIndicator
+          progress={uploadProgress}
+          onClick={() => setShowUploadModal(true)}
         />
       )}
     </div>

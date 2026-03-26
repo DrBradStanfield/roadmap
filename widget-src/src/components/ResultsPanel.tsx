@@ -24,6 +24,8 @@ import {
 } from '@roadmap/health-core';
 import { type ApiReminderPreference, sendReportEmail, getReportHtml } from '../lib/api';
 import { FeedbackForm } from './FeedbackForm';
+import { DocumentLightbox } from './DocumentLightbox';
+import { DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument } from '../lib/api';
 
 // Auth state type (matches HealthTool)
 interface AuthState {
@@ -50,6 +52,8 @@ interface ResultsPanelProps {
   onReminderPreferenceChange?: (category: string, enabled: boolean) => void;
   onGlobalReminderOptout?: () => void;
   sex?: 'male' | 'female';
+  healthDocuments?: ApiDocument[];
+  onDocumentDeleted?: (docId: string) => void;
 }
 
 function getBmiStatus(bmiCategory: string, waistToHeightRatio?: number): { label: string; className: string } {
@@ -486,7 +490,67 @@ function ReminderSettings({
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex }: ResultsPanelProps) {
+function HealthRecordsSection({ documents, onDeleted }: { documents: ApiDocument[]; onDeleted?: (docId: string) => void }) {
+  const [selectedDoc, setSelectedDoc] = useState<ApiDocument | null>(null);
+
+  const scanResults = documents.filter(d => d.documentType === 'scan_result');
+  const otherDocs = documents.filter(d => d.documentType !== 'scan_result');
+
+  return (
+    <>
+      {scanResults.length > 0 && (
+        <section className="health-records-section">
+          <h3 className="results-section-title">Scan Results</h3>
+          <div className="health-records-list">
+            {scanResults.map(doc => (
+              <button
+                key={doc.id}
+                className="health-record-item"
+                onClick={() => setSelectedDoc(doc)}
+              >
+                <span className="health-record-date">{formatDocumentDate(doc.documentDate)}</span>
+                <span className="health-record-title">{doc.title}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {otherDocs.length > 0 && (
+        <section className="health-records-section">
+          <h3 className="results-section-title">Documents</h3>
+          <div className="health-records-list">
+            {otherDocs.map(doc => (
+              <button
+                key={doc.id}
+                className="health-record-item"
+                onClick={() => setSelectedDoc(doc)}
+              >
+                <span className="health-record-date">{formatDocumentDate(doc.documentDate)}</span>
+                <span className="health-record-info">
+                  <span className={`health-record-type-badge health-record-type--${doc.documentType}`}>
+                    {DOCUMENT_TYPE_LABELS[doc.documentType] || doc.documentType}
+                  </span>
+                  <span className="health-record-title">{doc.title}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {selectedDoc && (
+        <DocumentLightbox
+          doc={selectedDoc}
+          onClose={() => setSelectedDoc(null)}
+          onDeleted={onDeleted}
+        />
+      )}
+    </>
+  );
+}
+
+export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, healthDocuments, onDocumentDeleted }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -721,6 +785,11 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
           </div>
         )}
       </section>
+
+      {/* Health Records — documents from uploads */}
+      {healthDocuments && healthDocuments.length > 0 && (
+        <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
+      )}
 
       {/* Report Actions (bottom) — logged-in users only */}
       {authState?.isLoggedIn && (

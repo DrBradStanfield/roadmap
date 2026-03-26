@@ -945,15 +945,15 @@ export function InputPanel({
               className="btn-primary upload-lab-btn"
               onClick={() => setShowUploadModal?.(true)}
             >
-              Upload Lab Results
+              Upload Health Records
             </button>
           ) : (
             <div className="upload-lab-wrapper">
               <button className="btn-primary upload-lab-btn upload-lab-btn--disabled" disabled>
-                Upload Lab Results
+                Upload Health Records
               </button>
               <div className="upload-lab-tooltip">
-                <p>Upload lab results to automatically fill in your blood test values.</p>
+                <p>Upload health records to automatically extract blood tests, scan results, and more.</p>
                 {loginUrl && <a href={loginUrl} className="upload-lab-tooltip-link">Log in to use this feature &rarr;</a>}
               </div>
             </div>

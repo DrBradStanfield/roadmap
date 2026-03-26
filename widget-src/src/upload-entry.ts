@@ -4,16 +4,16 @@
  * No React, no UI — pure processing logic only.
  */
 import { extractFromPdf, isPdf } from './lib/pdf-extract';
-import { processZip, isZip } from './lib/zip-extract';
+import { getZipEntries, isZip } from './lib/zip-extract';
 import { resizeImage, isImage } from './lib/image-resize';
 
-export { extractFromPdf, isPdf, processZip, isZip, resizeImage, isImage };
+export { extractFromPdf, isPdf, getZipEntries, isZip, resizeImage, isImage };
 
 // Expose on window for the main widget bundle to access
 (window as any).HealthUpload = {
   extractFromPdf,
   isPdf,
-  processZip,
+  getZipEntries,
   isZip,
   resizeImage,
   isImage,

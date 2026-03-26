@@ -2,8 +2,8 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-r
 import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
 import { getCustomerId } from '../lib/route-helpers.server';
-import { labImportRequestSchema } from '../../packages/health-core/src/validation';
-import { extractLabResults } from '../lib/anthropic.server';
+import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
+import { extractOrClassify, createBatch, pollBatch } from '../lib/anthropic.server';
 
 // ---------------------------------------------------------------------------
 // Rate limiter: 200 extraction requests per day per customer
@@ -13,8 +13,6 @@ const EXTRACT_LIMIT = 200;
 const EXTRACT_WINDOW_MS = 24 * 60 * 60_000;
 const extractLimitMap = new Map<string, { count: number; resetAt: number }>();
 
-// Exempt customer IDs bypass rate limiting (e.g. for testing).
-// Set via env var as comma-separated Shopify customer IDs.
 const EXEMPT_CUSTOMERS = new Set(
   (process.env.RATE_LIMIT_EXEMPT_CUSTOMERS || '').split(',').map(s => s.trim()).filter(Boolean),
 );
@@ -26,26 +24,44 @@ setInterval(() => {
   }
 }, 30 * 60_000);
 
-/** Get current quota state, optionally consuming one request. */
-function checkExtractLimit(customerId: string, consume: boolean): { allowed: boolean; remaining: number } {
+function checkExtractLimit(customerId: string, consume: boolean, count = 1): { allowed: boolean; remaining: number } {
   const now = Date.now();
   const entry = extractLimitMap.get(customerId);
   if (!entry || now > entry.resetAt) {
     if (consume) {
-      extractLimitMap.set(customerId, { count: 1, resetAt: now + EXTRACT_WINDOW_MS });
-      return { allowed: true, remaining: EXTRACT_LIMIT - 1 };
+      extractLimitMap.set(customerId, { count, resetAt: now + EXTRACT_WINDOW_MS });
+      return { allowed: true, remaining: EXTRACT_LIMIT - count };
     }
     return { allowed: true, remaining: EXTRACT_LIMIT };
   }
-  if (entry.count >= EXTRACT_LIMIT) {
-    return { allowed: false, remaining: 0 };
+  if (entry.count + count > EXTRACT_LIMIT) {
+    return { allowed: false, remaining: Math.max(0, EXTRACT_LIMIT - entry.count) };
   }
-  if (consume) entry.count++;
+  if (consume) entry.count += count;
   return { allowed: true, remaining: EXTRACT_LIMIT - entry.count };
 }
 
 // ---------------------------------------------------------------------------
-// GET: Preflight quota check (no side effects)
+// In-memory batch tracking (per-process, not distributed)
+// ---------------------------------------------------------------------------
+
+const activeBatches = new Map<string, {
+  customerId: string;
+  fileNames: string[];
+  totalFiles: number;
+  createdAt: number;
+}>();
+
+// Clean up stale batches after 1 hour
+setInterval(() => {
+  const cutoff = Date.now() - 60 * 60_000;
+  for (const [id, batch] of activeBatches) {
+    if (batch.createdAt < cutoff) activeBatches.delete(id);
+  }
+}, 10 * 60_000);
+
+// ---------------------------------------------------------------------------
+// GET: Preflight quota check OR batch poll
 // ---------------------------------------------------------------------------
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -56,6 +72,44 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return json({ allowed: false, remaining: 0, error: 'Not logged in' }, { status: 401 });
   }
 
+  const url = new URL(request.url);
+  const batchId = url.searchParams.get('batchId');
+
+  // Batch poll
+  if (batchId) {
+    const batch = activeBatches.get(batchId);
+    if (!batch || batch.customerId !== customerId) {
+      return json({ error: 'Batch not found' }, { status: 404 });
+    }
+
+    try {
+      const result = await pollBatch(batchId);
+
+      if (result.status === 'ended' && result.results) {
+        activeBatches.delete(batchId);
+        return json({
+          status: 'ended',
+          completed: result.completed,
+          total: result.total,
+          results: result.results.map((r, i) => ({
+            fileName: batch.fileNames[i] || `file-${i}`,
+            ...r,
+          })),
+        });
+      }
+
+      return json({
+        status: 'processing',
+        completed: result.completed,
+        total: result.total,
+      });
+    } catch (error) {
+      console.error('Batch poll error:', error);
+      return json({ status: 'processing', completed: 0, total: batch.totalFiles });
+    }
+  }
+
+  // Preflight quota check
   if (EXEMPT_CUSTOMERS.has(customerId)) {
     return json({ allowed: true, remaining: EXTRACT_LIMIT });
   }
@@ -65,7 +119,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 // ---------------------------------------------------------------------------
-// POST: Extract lab results
+// POST: Single file extraction OR batch creation
 // ---------------------------------------------------------------------------
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -81,27 +135,48 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const isExempt = EXEMPT_CUSTOMERS.has(customerId);
-  let remaining = EXTRACT_LIMIT;
-
-  if (!isExempt) {
-    const limit = checkExtractLimit(customerId, true);
-    if (!limit.allowed) {
-      return json(
-        { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
-        { status: 429 },
-      );
-    }
-    remaining = limit.remaining;
-  }
 
   try {
-    // Check body size (10MB limit)
     const contentLength = Number(request.headers.get('content-length') || 0);
-    if (contentLength > 10 * 1024 * 1024) {
-      return json({ success: false, error: 'File too large (10MB max)' }, { status: 413 });
+    if (contentLength > 50 * 1024 * 1024) { // 50MB for batch (multiple files)
+      return json({ success: false, error: 'Request too large' }, { status: 413 });
     }
 
     const body = await request.json();
+
+    // --- Batch mode ---
+    const batchValidation = batchImportRequestSchema.safeParse(body);
+    if (batchValidation.success) {
+      const { files } = batchValidation.data;
+
+      // Rate limit: consume one per file
+      if (!isExempt) {
+        const limit = checkExtractLimit(customerId, true, files.length);
+        if (!limit.allowed) {
+          return json(
+            { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
+            { status: 429 },
+          );
+        }
+      }
+
+      const { batchId } = await createBatch(files);
+
+      activeBatches.set(batchId, {
+        customerId,
+        fileNames: files.map(f => f.fileName),
+        totalFiles: files.length,
+        createdAt: Date.now(),
+      });
+
+      return json({
+        success: true,
+        batchId,
+        totalFiles: files.length,
+      });
+    }
+
+    // --- Single file mode (legacy fallback) ---
     const validation = labImportRequestSchema.safeParse(body);
     if (!validation.success) {
       return json(
@@ -110,18 +185,25 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
+    let remaining = EXTRACT_LIMIT;
+    if (!isExempt) {
+      const limit = checkExtractLimit(customerId, true);
+      if (!limit.allowed) {
+        return json(
+          { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
+          { status: 429 },
+        );
+      }
+      remaining = limit.remaining;
+    }
+
     const { pages } = validation.data;
+    const result = await extractOrClassify(pages);
 
-    const result = await extractLabResults(pages);
-
-    return json({
-      success: true,
-      data: result,
-      remaining,
-    });
+    return json({ success: true, data: result, remaining });
   } catch (error) {
     console.error('Lab import error:', error);
     Sentry.captureException(error, { tags: { feature: 'lab_import' } });
-    return json({ success: false, error: 'Failed to extract lab results' }, { status: 500 });
+    return json({ success: false, error: 'Failed to process request' }, { status: 500 });
   }
 }

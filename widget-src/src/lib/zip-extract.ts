@@ -3,8 +3,7 @@
  * Bundled in health-upload.js (separate IIFE).
  */
 import JSZip from 'jszip';
-import { extractFromPdf, isPdf, type PageContent } from './pdf-extract';
-import { resizeImage } from './image-resize';
+import type { PageContent } from './pdf-extract';
 
 const MAX_FILES = 20;
 const JUNK_PATTERNS = ['__macosx/', '.ds_store', 'thumbs.db'];
@@ -21,19 +20,11 @@ export interface ZipProgress {
   fileName: string;
 }
 
-/**
- * Process a ZIP file: extract supported files, convert each to PageContent[].
- * Files are processed sequentially to manage memory.
- */
-export async function processZip(
-  file: File,
-  onProgress?: (progress: ZipProgress) => void,
-  abortSignal?: AbortSignal,
-): Promise<ExtractedFile[]> {
+/** ZIP entry enumeration — filters junk, dotfiles, unsupported extensions. */
+export async function getZipEntries(file: File): Promise<Array<{ name: string; entry: JSZip.JSZipObject }>> {
   const arrayBuffer = await file.arrayBuffer();
   const zip = await JSZip.loadAsync(arrayBuffer);
 
-  // Filter to supported files, skip junk
   const entries: Array<{ name: string; entry: JSZip.JSZipObject }> = [];
   zip.forEach((relativePath, entry) => {
     if (entry.dir) return;
@@ -45,35 +36,7 @@ export async function processZip(
     entries.push({ name: relativePath, entry });
   });
 
-  const filesToProcess = entries.slice(0, MAX_FILES);
-  const results: ExtractedFile[] = [];
-
-  for (let i = 0; i < filesToProcess.length; i++) {
-    if (abortSignal?.aborted) break;
-
-    const { name, entry } = filesToProcess[i];
-    onProgress?.({ current: i + 1, total: filesToProcess.length, fileName: name });
-
-    try {
-      const blob = await entry.async('blob');
-      const fileObj = new File([blob], name.split('/').pop() || name);
-
-      let pages: PageContent[];
-      if (isPdf(fileObj)) {
-        pages = await extractFromPdf(fileObj);
-      } else {
-        // Image file
-        const base64 = await resizeImage(fileObj, 1500);
-        pages = [{ type: 'image', content: base64, mimeType: 'image/jpeg' }];
-      }
-
-      results.push({ fileName: name, pages });
-    } catch (error) {
-      console.warn(`Failed to process ${name}:`, error);
-    }
-  }
-
-  return results;
+  return entries.slice(0, MAX_FILES);
 }
 
 /** Returns true if file is a ZIP */

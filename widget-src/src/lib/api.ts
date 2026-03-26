@@ -490,10 +490,50 @@ export interface ExtractedValue {
   question?: string;
 }
 
+/** Document data returned by the LLM for non-lab documents */
+export interface DocumentResult {
+  classification: string;
+  title: string;
+  documentDate: string | null;
+  contentMarkdown: string;
+  metadata: Record<string, unknown>;
+}
+
 export interface LabImportResult {
+  classification: string;
   reportDate: string | null;
   values: ExtractedValue[];
   unrecognized: string[];
+  document: DocumentResult | null;
+}
+
+/** Saved document from the API */
+export interface ApiDocument {
+  id: string;
+  documentType: string;
+  title: string;
+  documentDate: string | null;
+  contentMd: string;
+  metadata: Record<string, unknown>;
+  sourceFileName: string | null;
+  createdAt: string;
+}
+
+/** Human-readable labels for document types. Shared across components. */
+export const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+  scan_result: 'Scan Result',
+  clinic_letter: 'Clinic Letter',
+  discharge_summary: 'Discharge Summary',
+  pathology_report: 'Pathology Report',
+  vaccination_record: 'Vaccination Record',
+  other: 'Document',
+};
+
+/** Format a YYYY-MM-DD date string for display. */
+export function formatDocumentDate(dateStr: string | null): string {
+  if (!dateStr) return 'Date unknown';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 interface LabImportResponse {
@@ -555,6 +595,80 @@ export async function labImport(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Batch Import (Anthropic Batch API)
+// ---------------------------------------------------------------------------
+
+interface BatchCreateResponse {
+  success: boolean;
+  batchId?: string;
+  totalFiles?: number;
+  error?: string;
+}
+
+interface BatchPollResponse {
+  status: 'processing' | 'ended';
+  completed: number;
+  total: number;
+  results?: Array<LabImportResult & { fileName: string }>;
+  error?: string;
+}
+
+/**
+ * Create a batch of files for LLM processing.
+ * Returns a batchId for polling.
+ */
+export async function labImportBatch(
+  files: Array<{ fileName: string; pages: PageContent[] }>,
+): Promise<{ batchId: string | null; error?: string }> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/lab-import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ batch: true, files }),
+    });
+
+    if (response.status === 429) {
+      return { batchId: null, error: 'Daily upload limit reached. You can upload more tomorrow.' };
+    }
+    if (!response.ok) {
+      return { batchId: null, error: 'Failed to start batch processing' };
+    }
+
+    const data = await parseJsonResponse<BatchCreateResponse>(response);
+    if (!data?.success || !data.batchId) {
+      return { batchId: null, error: data?.error || 'Batch creation failed' };
+    }
+    return { batchId: data.batchId };
+  } catch (error) {
+    console.warn('Batch import error:', error);
+    Sentry.captureException(error);
+    return { batchId: null, error: 'Network error' };
+  }
+}
+
+/**
+ * Poll batch status. Returns results when batch is complete.
+ */
+export async function pollBatchStatus(
+  batchId: string,
+): Promise<BatchPollResponse> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/lab-import?batchId=${encodeURIComponent(batchId)}`);
+    // 404 = batch not found (server restarted) — terminal failure
+    if (response.status === 404) {
+      return { status: 'ended', completed: 0, total: 0, error: 'Batch not found — server may have restarted. Please try again.' };
+    }
+    if (!response.ok) {
+      return { status: 'processing', completed: 0, total: 0 };
+    }
+    const data = await parseJsonResponse<BatchPollResponse>(response);
+    return data ?? { status: 'processing', completed: 0, total: 0 };
+  } catch {
+    return { status: 'processing', completed: 0, total: 0 };
+  }
+}
+
 interface BulkSaveResponse {
   success: boolean;
   data?: ApiMeasurement[];
@@ -582,5 +696,70 @@ export async function bulkSaveMeasurements(
     console.warn('Bulk save error:', error);
     Sentry.captureException(error);
     return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Health Documents
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch all health documents for the current user.
+ */
+export async function getHealthDocuments(): Promise<ApiDocument[]> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/health-documents`);
+    if (!response.ok) return [];
+    const data = await parseJsonResponse<{ documents: ApiDocument[] }>(response);
+    return data?.documents || [];
+  } catch (error) {
+    console.warn('Failed to fetch health documents:', error);
+    return [];
+  }
+}
+
+/**
+ * Save documents extracted from uploaded files.
+ */
+export async function bulkSaveDocuments(
+  documents: Array<{
+    documentType: string;
+    title: string;
+    documentDate: string | null;
+    contentMd: string;
+    metadata: Record<string, unknown>;
+    sourceFileName: string | null;
+  }>,
+): Promise<ApiDocument[]> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/health-documents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bulkDocuments: documents }),
+    });
+    if (!response.ok) return [];
+    const data = await parseJsonResponse<{ success: boolean; documents: ApiDocument[] }>(response);
+    return data?.success ? data.documents || [] : [];
+  } catch (error) {
+    console.warn('Bulk save documents error:', error);
+    Sentry.captureException(error);
+    return [];
+  }
+}
+
+/**
+ * Delete a health document by ID.
+ */
+export async function deleteDocument(documentId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/health-documents`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ documentId }),
+    });
+    return response.ok;
+  } catch (error) {
+    console.warn('Delete document error:', error);
+    return false;
   }
 }

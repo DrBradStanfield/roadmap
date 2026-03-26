@@ -268,12 +268,53 @@ export const labImportRequestSchema = z.object({
 
 export type LabImportRequest = z.infer<typeof labImportRequestSchema>;
 
+/** Batch import — multiple files in a single request */
+export const batchImportRequestSchema = z.object({
+  batch: z.literal(true),
+  files: z.array(z.object({
+    fileName: z.string(),
+    pages: z.array(labImportPageSchema).min(1).max(100),
+  })).min(1).max(20),
+});
+
+export type BatchImportRequest = z.infer<typeof batchImportRequestSchema>;
+
 /** Bulk measurement save — array variant of measurementSchema */
 export const bulkMeasurementSchema = z.object({
   bulkMeasurements: z.array(measurementSchema).min(1).max(50),
 });
 
 export type BulkMeasurementRequest = z.infer<typeof bulkMeasurementSchema>;
+
+// ---------------------------------------------------------------------------
+// Health document schemas
+// ---------------------------------------------------------------------------
+
+export const DOCUMENT_TYPES = [
+  'scan_result', 'clinic_letter', 'discharge_summary',
+  'pathology_report', 'vaccination_record', 'other',
+] as const;
+
+export type DocumentType = typeof DOCUMENT_TYPES[number];
+
+/** Schema for saving a health document */
+export const healthDocumentSchema = z.object({
+  documentType: z.enum(DOCUMENT_TYPES),
+  title: z.string().min(1).max(500),
+  documentDate: z.string().nullable(), // YYYY-MM-DD or null
+  contentMd: z.string().min(1).max(200_000), // ~200KB text max
+  metadata: z.record(z.unknown()).default({}),
+  sourceFileName: z.string().max(500).nullable().default(null),
+});
+
+export type HealthDocumentInput = z.infer<typeof healthDocumentSchema>;
+
+/** Bulk document save */
+export const bulkHealthDocumentSchema = z.object({
+  bulkDocuments: z.array(healthDocumentSchema).min(1).max(20),
+});
+
+export type BulkHealthDocumentRequest = z.infer<typeof bulkHealthDocumentSchema>;
 
 // ---------------------------------------------------------------------------
 // Client-side input validation (identity fields only — no unit conversion)
