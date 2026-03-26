@@ -68,7 +68,7 @@ interface HealthUploadAPI {
   isImage: (file: File) => boolean;
 }
 
-const MAX_FILES = 20;
+const MAX_FILES = 200;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export function UploadModal({ unitSystem, previousMeasurements, onComplete, onStart, onClose, onScreeningUpdate, birthYear, sex, hidden, onProcessingStart, onProcessingEnd, onProgressUpdate }: UploadModalProps) {
@@ -215,13 +215,15 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
           allFileObjects.push({ fileName: file.name, file });
         }
         const allResults = await processBatch(upload, allFileObjects, abort, updateProgress);
+        if (abort.signal.aborted) return;
         setResults(allResults);
         setState('review');
         return;
       }
 
       // Pipeline path (<20 files): producer extracts, consumer sends to LLM
-      const allResults = await processPipeline(upload, zipEntryLists, otherFiles, totalFiles, abort, updateProgress);
+      const allResults = await processPipeline(upload, zipEntryLists, otherFiles, totalFiles, abort, updateProgress, unitSystem);
+      if (abort.signal.aborted) return;
       setResults(allResults);
       setState('review');
     } catch (err) {
@@ -264,6 +266,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
     totalFiles: number,
     abort: AbortController,
     updateProgress: (p: { current: number; total: number; fileName: string }) => void,
+    us: UnitSystem,
   ): Promise<FileResult[]> {
     const queue: Array<{ fileName: string; pages: PageContent[] }> = [];
     const allResults: FileResult[] = [];
@@ -288,7 +291,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
         updateProgress({ current: Math.round((completedCount / totalFiles) * 100), total: 100, fileName: shortName });
 
         // Send to LLM
-        labImport(item.pages, unitSystem).then(({ result, error: importError }) => {
+        labImport(item.pages, us).then(({ result, error: importError }) => {
           if (result) {
             allResults.push({
               fileName: item.fileName,

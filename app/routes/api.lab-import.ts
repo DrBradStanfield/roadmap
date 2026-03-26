@@ -138,7 +138,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   try {
     const contentLength = Number(request.headers.get('content-length') || 0);
-    if (contentLength > 50 * 1024 * 1024) { // 50MB for batch (multiple files)
+    if (contentLength > 200 * 1024 * 1024) { // 200MB for batch (up to 200 files)
       return json({ success: false, error: 'Request too large' }, { status: 413 });
     }
 

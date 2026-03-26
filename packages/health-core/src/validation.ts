@@ -274,7 +274,7 @@ export const batchImportRequestSchema = z.object({
   files: z.array(z.object({
     fileName: z.string(),
     pages: z.array(labImportPageSchema).min(1).max(100),
-  })).min(1).max(20),
+  })).min(1).max(200),
 });
 
 export type BatchImportRequest = z.infer<typeof batchImportRequestSchema>;

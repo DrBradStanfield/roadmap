@@ -5,7 +5,7 @@
 import JSZip from 'jszip';
 import type { PageContent } from './pdf-extract';
 
-const MAX_FILES = 20;
+const MAX_FILES = 200;
 const JUNK_PATTERNS = ['__macosx/', '.ds_store', 'thumbs.db'];
 const SUPPORTED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png'];
 
