@@ -1,6 +1,6 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
-import { getAuthenticatedUser } from '../lib/route-helpers.server';
+import { getAuthenticatedUser, isValidUuid } from '../lib/route-helpers.server';
 import {
   getLabValues,
   addLabValues,
@@ -49,8 +49,8 @@ export async function action({ request }: ActionFunctionArgs) {
     if (request.method === 'DELETE') {
       const body = await request.json();
       const labValueId = body?.labValueId;
-      if (!labValueId || typeof labValueId !== 'string') {
-        return json({ error: 'Missing labValueId' }, { status: 400 });
+      if (!labValueId || typeof labValueId !== 'string' || !isValidUuid(labValueId)) {
+        return json({ error: 'Invalid labValueId' }, { status: 400 });
       }
 
       const deleted = await deleteLabValue(auth.client, auth.userId, labValueId);

@@ -95,6 +95,46 @@ describe('labValueSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('rejects Infinity value', () => {
+    const result = labValueSchema.safeParse({
+      metricName: 'sodium',
+      value: Infinity,
+      unit: 'mmol/L',
+      recordedAt: '2024-03-15T00:00:00.000Z',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects -Infinity value', () => {
+    const result = labValueSchema.safeParse({
+      metricName: 'sodium',
+      value: -Infinity,
+      unit: 'mmol/L',
+      recordedAt: '2024-03-15T00:00:00.000Z',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects NaN value', () => {
+    const result = labValueSchema.safeParse({
+      metricName: 'sodium',
+      value: NaN,
+      unit: 'mmol/L',
+      recordedAt: '2024-03-15T00:00:00.000Z',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts negative values (some lab values can be negative)', () => {
+    const result = labValueSchema.safeParse({
+      metricName: 'anion_gap',
+      value: -2,
+      unit: 'mEq/L',
+      recordedAt: '2024-03-15T00:00:00.000Z',
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe('bulkLabValueSchema', () => {

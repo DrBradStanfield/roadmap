@@ -266,6 +266,7 @@ input[type="number"] {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
 }
 
 .health-tool-right {
@@ -2534,6 +2535,7 @@ input[type="number"] {
 
 .health-records-section {
   margin-bottom: 16px;
+  min-width: 0;
 }
 
 .health-records-list {
@@ -2554,6 +2556,7 @@ input[type="number"] {
   transition: background 0.15s, border-color 0.15s;
   text-align: left;
   width: 100%;
+  min-width: 0;
   font-family: inherit;
   font-size: inherit;
 }
@@ -2585,6 +2588,8 @@ input[type="number"] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .health-record-type-badge {

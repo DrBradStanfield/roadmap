@@ -2,7 +2,7 @@
 
 **Feature**: Extend the upload pipeline to classify, convert, and store non-lab health documents (scan results, clinic letters, discharge summaries, pathology reports, vaccination records) as searchable markdown with structured metadata.
 
-**Status**: Implemented (March 2026)
+**Status**: Implemented (March 2026, updated March 27 2026)
 
 **Depends on**: Lab Upload (v341, `docs/lab-upload.md`)
 
@@ -29,46 +29,37 @@ Documents are stored in a new `health_documents` table. Two "Health Records" tim
 
 ## Architecture
 
-### Batch API Architecture
+### Hybrid Pipeline + Batch Architecture
 
-Uses the Anthropic Message Batches API — all files sent in a single batch, processed in parallel on Anthropic's side. **50% cheaper** than real-time API. **No rate limit issues** (batch API has separate, higher limits).
+Two processing paths based on file count:
+
+**Pipeline path (<20 files):** True producer-consumer pipeline. Client-side pdf.js extraction runs ahead of LLM calls — as soon as one file is extracted, it's sent to the LLM while the next file extracts concurrently. Concurrency=1 for LLM calls (avoids 10K output tokens/min rate limit).
 
 ```
-Phase 1: Client-side extraction          Phase 2: Batch API           Phase 3: Poll + Review
-(pdf.js, sequential)                     (server-side)
-
-ZIP → getZipEntries() → extractFromPdf → ┐
-  for each entry                          │
-                                          ├→ POST all files as batch → batchId
-Non-ZIP files → extractFromPdf ──────────→┘         │
-                                                    ↓
-                                            Poll every 5s for status
-                                            Fake progress bar (asymptotic curve)
-                                            Status messages + filename cycling
-                                                    ↓
-                                            Batch complete → parse results → review
+Time 0s:     Extract file1 → enqueue → LLM(file1) starts  ← tryStartWorker is synchronous
+Time 0.1s:   Extract file2 → enqueue (LLM busy)           ← producer continues extracting
+Time 0.2s:   Extract file3 → enqueue (LLM busy)
+Time ~5s:    LLM(file1) done → .finally() → LLM(file2) starts from queue
+Time ~10s:   LLM(file2) done → LLM(file3) starts
 ```
 
-**Why batch instead of real-time concurrent**: The real-time API has a 10K output tokens/min rate limit on our current Anthropic tier. Document processing generates ~4K tokens per file, so even 2 concurrent calls cause constant 429 errors. The batch API eliminates this entirely — separate rate pool, 50% cheaper, all files processed in parallel by Anthropic.
+**Batch path (≥20 files):** Anthropic Message Batches API — all files sent in one request, processed in parallel server-side. 50% cheaper, separate rate limits.
 
-**Per-file flow**:
-1. Client: pdf.js extracts text (fast) or renders scanned pages to canvas → `PageContent[]`
-2. Client → Server: POST all files' `PageContent[]` to `/api/lab-import` with `{ batch: true }`
-3. Server: `createBatch()` sends all files to Anthropic Batch API → returns `batchId`
-4. Client polls `/api/lab-import?batchId=xxx` every 5 seconds
-5. Server: `pollBatch()` checks batch status, returns results when done
-6. Client: maps results to `FileResult[]`, transitions to review
+```
+Phase 1: Client extraction     Phase 2: Batch API    Phase 3: Poll + Review
+(pdf.js, sequential)           (server-side)
 
-**Fake progress UX**: Since the batch is opaque (no per-file streaming), the UI shows simulated progress:
-- Asymptotic progress bar (fast at first, slows to ~90%, never stalls)
-- Rotating status messages ("Analyzing health records...", "Reading clinical data...")
-- Cycling filenames from uploaded files
-- Real progress from poll blends in when available (completed count)
-- Max poll timeout: 10 minutes (prevents infinite poll after server restart)
+All files → extractPages() → POST batch → batchId → Poll 5s → results → review
+                                                     Fake progress (asymptotic curve)
+```
 
-**Background processing**: If the user clicks away during processing or review, the modal hides (CSS `display: none`) instead of unmounting. A floating progress indicator appears in the bottom-right corner. Clicking it re-opens the modal. The batch continues processing regardless.
+**BATCH_THRESHOLD = 20, MAX_FILES = 200.** Pipeline for responsive UX on small uploads; batch for efficiency on large ones.
 
-**Server-side batch tracking**: `activeBatches` in-memory Map stores batch metadata (customer ID, file names). Cleaned up after 1 hour. If the Fly.io machine restarts, batches are lost — the client detects the 404 and shows an error to retry.
+**Fake progress UX** (batch path): Asymptotic progress bar + rotating status messages + filename cycling. Real progress from poll blends in when available.
+
+**Background processing**: Modal hides with CSS `display: none` (not unmount). `FloatingUploadIndicator` shows progress in bottom-right corner. Click to re-open.
+
+**Server-side batch tracking**: `activeBatches` in-memory Map (max 1000 entries, cleaned up after 1 hour). Per-process, not distributed.
 
 ### Data Flow Per File
 
@@ -81,7 +72,8 @@ Non-ZIP files → extractFromPdf ──────────→┘         �
 │                                                          │
 │ IF lab_report:                                           │
 │   values: [{ metric, valueSI, displayValue, ... }]       │
-│   unrecognized: ["vitamin D: 45 ng/mL"]                 │
+│   additionalValues: [{ name, value, unit, refLow, ... }] │
+│   unrecognized: []  (mostly empty now)                   │
 │   document: null                                         │
 │                                                          │
 │ IF any other type:                                       │
@@ -105,9 +97,15 @@ Non-ZIP files → extractFromPdf ──────────→┘         �
 
 Classification + conversion in a single call. Adding a separate classification step would double API costs for non-lab documents. The unified prompt is larger but the cost per file stays ~$0.003–0.01 (Haiku).
 
+### Flexible Lab Values (`lab_values` table)
+
+Lab reports contain many metrics beyond the 11 core ones (FBC, LFTs, U&Es, hormones, thyroid, etc.). These are now extracted into `additionalValues[]` by the LLM and stored in a separate `lab_values` table with original value + unit (no SI conversion). The LLM prompt includes ~50 standardized snake_case metric names for consistency. Reference ranges are extracted when visible on the report.
+
+Core 11 metrics → `health_measurements` (drives the algorithm). Everything else → `lab_values` (for storage, charting, future chatbot).
+
 ### Why Not Store Lab Reports as Documents Too
 
-Lab reports are already fully represented as structured measurements in `health_measurements`. Storing them again as markdown would be redundant data. If we need searchable lab report text for the future chat feature, we can add it then without breaking the current schema.
+Lab reports are already fully represented as structured measurements in `health_measurements` + `lab_values`. Storing them again as markdown would be redundant data. If we need searchable lab report text for the future chat feature, we can add it then without breaking the current schema.
 
 ### Why Not Use Marker/MarkItDown for PDF→Markdown
 
@@ -150,6 +148,31 @@ CREATE INDEX IF NOT EXISTS idx_health_documents_user_date
 - `source_file_name` for user reference only (shown in the lightbox).
 
 **RLS**: Standard pattern — `user_id = auth.uid()` for SELECT, INSERT, DELETE. No UPDATE policy (immutable).
+
+### New Table: `lab_values`
+
+```sql
+CREATE TABLE IF NOT EXISTS lab_values (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  metric_name TEXT NOT NULL,          -- standardized snake_case (sodium, ferritin, tsh, etc.)
+  value NUMERIC NOT NULL,
+  unit TEXT NOT NULL,                  -- stored as-is from lab report (no conversion)
+  reference_low NUMERIC,              -- from the lab report, nullable
+  reference_high NUMERIC,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  source TEXT NOT NULL DEFAULT 'lab_import',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+**Design decisions:**
+- `metric_name` is free text (not enum) — future-proof for any lab metric
+- `value` + `unit` stored as reported by the lab — no SI conversion (unlike `health_measurements`)
+- Reference ranges stored when available — enables in-range/out-of-range UI indicators
+- Immutable: no UPDATE policy, same as `health_measurements`
+- Validated with `.finite()` — rejects NaN/Infinity
+- `bulkLabValueSchema` max 200 per request
 
 ### Metadata Schema by Type
 
@@ -277,9 +300,9 @@ The review modal shows results grouped by file. Each file shows one of:
 
 **Files with errors or no recognized content** show the same "Could not read this file" or "No blood test values found" messages as before.
 
-### Health Records Sections (ResultsPanel)
+### Health Records Sections (InputPanel — left panel)
 
-Two new sections added to the results panel, positioned between the suggestions section and report actions:
+Two new sections added to the input panel (left side = raw data), after Cancer Screening/Bone Density:
 
 **"Scan Results" section** — only shown when scan_result documents exist:
 - Timeline list: date (left) | title (right)
@@ -291,7 +314,7 @@ Two new sections added to the results panel, positioned between the suggestions 
 - Type badges are color-coded (same palette as review cards)
 - Click → opens DocumentLightbox
 
-Both sections are rendered by the internal `HealthRecordsSection` component in `ResultsPanel.tsx`. Documents are loaded from the API via `getHealthDocuments()` on initial load and refreshed after each upload.
+Both sections are rendered by `HealthRecordsSection` in `InputPanel.tsx` (moved from ResultsPanel — documents are raw data, not suggestions). Documents loaded from API via `getHealthDocuments()` on initial load and refreshed after each upload.
 
 ### Document Lightbox (`DocumentLightbox.tsx`)
 
@@ -409,8 +432,10 @@ Key changes:
 - **FloatingUploadIndicator**: Exported component — fixed-position pill showing progress when modal is hidden. Clickable to re-open modal.
 - Modal title: "Upload Health Records" (was "Upload Lab Results")
 - Button: "Process Files" (was "Extract Values")
-- `handleSave` now accepts `(values, documents)` — saves both in parallel via `Promise.all`
-- Done state shows: "Saved N blood test values and M documents"
+- `handleSave` accepts `{ values, documents, labValues }` object — saves all three in parallel via `Promise.all`
+- Done state shows: "Saved N blood test values, M additional lab values, and P documents"
+- Abort guard after `await processPipeline/processBatch` prevents state corruption
+- Empty results throw error (not silent blank review)
 - 30s timeout on both PDF extraction and image resize (prevents hanging on corrupt files)
 
 ### `widget-src/src/lib/zip-extract.ts`
@@ -429,7 +454,8 @@ Key additions:
 - `selectedDocCount` memo — drives button text alongside `selectedCount`
 - `allDatesSet` memo updated to also check document dates
 - `handleSave` collects both lab values and `DocumentToSave[]`
-- `onSave` prop signature changed from `(values)` to `(values, documents)`
+- `onSave` prop uses object parameter: `({ values, documents, labValues })`
+- `additionalValues` displayed with checkboxes, reference ranges shown as "(ref: 135–145)"
 
 ### `widget-src/src/components/HealthTool.tsx`
 
@@ -440,14 +466,25 @@ Key additions:
 - `FloatingUploadIndicator` rendered when `!showUploadModal && uploadActive`
 - `onScreeningUpdate={handleScreeningChange}` passed to `UploadModal`
 
-### `widget-src/src/components/ResultsPanel.tsx`
+### `widget-src/src/components/InputPanel.tsx`
 
-New internal component `HealthRecordsSection`:
+`HealthRecordsSection` internal component (moved from ResultsPanel — raw data belongs in input panel):
 - Splits documents into `scanResults` and `otherDocs`
 - Renders two sections: "Scan Results" and "Documents"
 - Each item is a clickable `<button>` that opens `DocumentLightbox`
-- Manages `selectedDoc` state for the lightbox
 - `onDeleted` callback removes the document from parent state
+
+### `widget-src/src/components/HistoryPanel.tsx`
+
+"Additional Lab Results" section below core metric charts:
+- Fetches `lab_values` via `loadLabValues()` on mount
+- Groups by `metricName`, renders `TimeSeriesChart` per metric
+- Unified `TimeSeriesChart` component (replaced duplicate MetricChart/LabValueChart)
+- Lab value grouping and color assignment memoized with `useMemo`
+
+### `app/lib/route-helpers.server.ts`
+
+`getAuthenticatedUser()` shared helper — extracted from duplicate definitions in `api.health-documents.ts` and `api.lab-values.ts`. Full auth flow: Shopify HMAC → customer lookup → Supabase user creation.
 
 ---
 
@@ -457,8 +494,10 @@ New internal component `HealthRecordsSection`:
 
 ```
 app/routes/api.health-documents.ts              — Document CRUD endpoint (HMAC auth)
+app/routes/api.lab-values.ts                    — Lab values CRUD endpoint (GET/POST/DELETE)
 widget-src/src/components/DocumentLightbox.tsx   — Markdown viewer modal with delete
 widget-src/src/lib/markdown.ts                   — Simple markdown → HTML renderer (~80 lines)
+widget-src/src/lib/lab-value-labels.ts           — Display labels for ~50 lab metrics
 docs/health-documents.md                         — This design document
 ```
 

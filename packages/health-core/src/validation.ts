@@ -292,7 +292,7 @@ export type BulkMeasurementRequest = z.infer<typeof bulkMeasurementSchema>;
  */
 export const labValueSchema = z.object({
   metricName: z.string().min(1).max(100),
-  value: z.number(),
+  value: z.number().finite(),
   unit: z.string().min(1).max(50),
   referenceLow: z.number().nullable().optional(),
   referenceHigh: z.number().nullable().optional(),

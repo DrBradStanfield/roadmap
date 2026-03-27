@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { deleteDocument, DOCUMENT_DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument } from '../lib/api';
+import { deleteDocument, DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument } from '../lib/api';
 import { renderMarkdown } from '../lib/markdown';
 import { useIsMobile } from '../lib/useIsMobile';
 
@@ -21,10 +21,13 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const renderedHtml = useMemo(
-    () => renderMarkdown(doc.contentMd),
-    [doc.contentMd],
-  );
+  const renderedHtml = useMemo(() => {
+    try {
+      return renderMarkdown(doc.contentMd);
+    } catch {
+      return `<pre style="white-space:pre-wrap">${doc.contentMd.replace(/</g, '&lt;')}</pre>`;
+    }
+  }, [doc.contentMd]);
 
   const handleDelete = async () => {
     if (!confirmDelete) {

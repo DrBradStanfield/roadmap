@@ -45,6 +45,7 @@ function checkExtractLimit(customerId: string, consume: boolean, count = 1): { a
 // In-memory batch tracking (per-process, not distributed)
 // ---------------------------------------------------------------------------
 
+const MAX_ACTIVE_BATCHES = 1000;
 const activeBatches = new Map<string, {
   customerId: string;
   fileNames: string[];
@@ -158,6 +159,10 @@ export async function action({ request }: ActionFunctionArgs) {
             { status: 429 },
           );
         }
+      }
+
+      if (activeBatches.size >= MAX_ACTIVE_BATCHES) {
+        return json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429 });
       }
 
       const { batchId } = await createBatch(files);

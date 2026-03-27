@@ -44,4 +44,28 @@ describe('renderMarkdown', () => {
   it('handles empty input', () => {
     expect(renderMarkdown('')).toBe('');
   });
+
+  it('handles deeply nested lists without crashing', () => {
+    const input = '- level 1\n  - level 2\n    - level 3\n      - level 4';
+    const result = renderMarkdown(input);
+    expect(result).toContain('<ul>');
+    expect(result).toContain('level 1');
+  });
+
+  it('handles unclosed bold markers', () => {
+    const result = renderMarkdown('**unclosed bold');
+    expect(typeof result).toBe('string');
+  });
+
+  it('handles very long input without crashing', () => {
+    const input = 'Line\n'.repeat(5000);
+    const result = renderMarkdown(input);
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('escapes script tags in input', () => {
+    const result = renderMarkdown('<script>alert("xss")</script>');
+    expect(result).not.toContain('<script>');
+    expect(result).toContain('&lt;script&gt;');
+  });
 });

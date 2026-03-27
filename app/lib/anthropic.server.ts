@@ -660,7 +660,8 @@ export async function pollBatch(
   for (const line of lines) {
     try {
       const entry = JSON.parse(line);
-      const index = parseInt(entry.custom_id.replace('file-', ''), 10);
+      const index = parseInt(entry.custom_id?.replace('file-', ''), 10);
+      if (isNaN(index)) continue;
 
       if (entry.result?.type === 'succeeded') {
         const textBlock = entry.result.message?.content?.find((b: any) => b.type === 'text');

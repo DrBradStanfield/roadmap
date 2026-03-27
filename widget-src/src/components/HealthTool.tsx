@@ -799,6 +799,10 @@ export function HealthTool() {
     formStage,
     setShowUploadModal,
     loginUrl: authState.loginUrl,
+    healthDocuments,
+    onDocumentDeleted: (docId: string) => {
+      setHealthDocuments(prev => prev.filter(d => d.id !== docId));
+    },
   };
 
   const resultsPanelProps = {
@@ -819,10 +823,6 @@ export function HealthTool() {
     onReminderPreferenceChange: handleReminderPreferenceChange,
     onGlobalReminderOptout: handleGlobalReminderOptout,
     sex: inputs.sex,
-    healthDocuments,
-    onDocumentDeleted: (docId: string) => {
-      setHealthDocuments(prev => prev.filter(d => d.id !== docId));
-    },
   };
 
   return (

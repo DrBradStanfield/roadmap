@@ -86,7 +86,7 @@ function TimeSeriesChart({
   const chartRef = useRef<Chart | null>(null);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current || data.length === 0) return;
 
     const sorted = [...data].sort((a, b) => a.x - b.x);
 

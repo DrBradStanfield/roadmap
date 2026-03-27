@@ -1241,41 +1241,11 @@ export async function deleteAllUserData(userId: string): Promise<{ measurementsD
     }
   }
 
-  // 3. Delete all medications
-  await supabaseAdmin
-    .from('medications')
-    .delete()
-    .eq('user_id', userId);
-
-  // 3b. Delete all screenings
-  await supabaseAdmin
-    .from('screenings')
-    .delete()
-    .eq('user_id', userId);
-
-  // 3c. Delete all reminder preferences
-  await supabaseAdmin
-    .from('reminder_preferences')
-    .delete()
-    .eq('user_id', userId);
-
-  // 3d. Delete all health documents
-  await supabaseAdmin
-    .from('health_documents')
-    .delete()
-    .eq('user_id', userId);
-
-  // 3e. Delete all lab values
-  await supabaseAdmin
-    .from('lab_values')
-    .delete()
-    .eq('user_id', userId);
-
-  // 3f. Delete all reminder logs
-  await supabaseAdmin
-    .from('reminder_log')
-    .delete()
-    .eq('user_id', userId);
+  // Delete dependent tables — log errors but continue (partial deletion > no deletion)
+  for (const table of ['medications', 'screenings', 'reminder_preferences', 'health_documents', 'lab_values', 'reminder_log'] as const) {
+    const { error } = await supabaseAdmin.from(table).delete().eq('user_id', userId);
+    if (error) console.error(`Failed to delete ${table} for ${userId}:`, error.message);
+  }
 
   // 4. Anonymize audit logs
   await supabaseAdmin

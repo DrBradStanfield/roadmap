@@ -356,6 +356,9 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
     checkDone();
 
     await allDone;
+    if (allResults.length === 0 && !abort.signal.aborted) {
+      throw new Error('No readable files found. Please check your files and try again.');
+    }
     return allResults;
   }
 

@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { DocumentLightbox } from './DocumentLightbox';
+import { DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument } from '../lib/api';
 import type { HealthInputs, ScreeningInputs } from '@roadmap/health-core';
 import {
   type UnitSystem,
@@ -157,6 +159,8 @@ interface InputPanelProps {
   mobileActiveTab?: TabId;
   setShowUploadModal?: (show: boolean) => void;
   loginUrl?: string;
+  healthDocuments?: ApiDocument[];
+  onDocumentDeleted?: (docId: string) => void;
 }
 
 export function InputPanel({
@@ -168,6 +172,7 @@ export function InputPanel({
   formStage,
   mobileActiveTab,
   setShowUploadModal, loginUrl,
+  healthDocuments, onDocumentDeleted,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
@@ -2029,7 +2034,74 @@ export function InputPanel({
       {formStage >= 4 && renderMedications()}
       {formStage >= 4 && renderScreening()}
       {formStage >= 4 && renderBoneDensity()}
+      {healthDocuments && healthDocuments.length > 0 && (
+        <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
+      )}
       {renderSaveButton()}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Health Records (scan results, clinic letters, etc.) — raw data display
+// ---------------------------------------------------------------------------
+
+function HealthRecordsSection({ documents, onDeleted }: { documents: ApiDocument[]; onDeleted?: (docId: string) => void }) {
+  const [selectedDoc, setSelectedDoc] = useState<ApiDocument | null>(null);
+
+  const scanResults = documents.filter(d => d.documentType === 'scan_result');
+  const otherDocs = documents.filter(d => d.documentType !== 'scan_result');
+
+  return (
+    <>
+      {scanResults.length > 0 && (
+        <section className="health-records-section">
+          <h3 className="results-section-title">Scan Results</h3>
+          <div className="health-records-list">
+            {scanResults.map(doc => (
+              <button
+                key={doc.id}
+                className="health-record-item"
+                onClick={() => setSelectedDoc(doc)}
+              >
+                <span className="health-record-date">{formatDocumentDate(doc.documentDate)}</span>
+                <span className="health-record-title">{doc.title}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {otherDocs.length > 0 && (
+        <section className="health-records-section">
+          <h3 className="results-section-title">Documents</h3>
+          <div className="health-records-list">
+            {otherDocs.map(doc => (
+              <button
+                key={doc.id}
+                className="health-record-item"
+                onClick={() => setSelectedDoc(doc)}
+              >
+                <span className="health-record-date">{formatDocumentDate(doc.documentDate)}</span>
+                <span className="health-record-info">
+                  <span className={`health-record-type-badge health-record-type--${doc.documentType}`}>
+                    {DOCUMENT_TYPE_LABELS[doc.documentType] || doc.documentType}
+                  </span>
+                  <span className="health-record-title">{doc.title}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {selectedDoc && (
+        <DocumentLightbox
+          doc={selectedDoc}
+          onClose={() => setSelectedDoc(null)}
+          onDeleted={onDeleted}
+        />
+      )}
+    </>
   );
 }
