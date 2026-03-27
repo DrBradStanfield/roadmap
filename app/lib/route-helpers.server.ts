@@ -4,6 +4,8 @@
  */
 
 import * as Sentry from '@sentry/remix';
+import { authenticate } from '../shopify.server';
+import { getOrCreateSupabaseUser, createUserClient } from './supabase.server';
 
 /**
  * Extract and validate the Shopify customer ID from the app proxy request.
@@ -44,6 +46,25 @@ export async function getCustomerInfo(
     console.error('Error looking up customer info:', error);
     return null;
   }
+}
+
+/**
+ * Full auth flow for app proxy routes that need a Supabase user client.
+ * Authenticates via Shopify HMAC, looks up customer info, creates/retrieves Supabase user.
+ */
+export async function getAuthenticatedUser(request: Request) {
+  const { admin } = await authenticate.public.appProxy(request);
+
+  const customerId = getCustomerId(request);
+  if (!customerId) return null;
+
+  const customerInfo = admin ? await getCustomerInfo(admin, customerId) : null;
+  if (!customerInfo) return null;
+
+  const userId = await getOrCreateSupabaseUser(
+    customerId, customerInfo.email, customerInfo.firstName, customerInfo.lastName,
+  );
+  return { userId, client: createUserClient(userId) };
 }
 
 /** UUID format: 8-4-4-4-12 hex chars */

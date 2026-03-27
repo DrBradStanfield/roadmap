@@ -553,6 +553,46 @@ CREATE POLICY "Users can delete own health documents"
 
 GRANT SELECT, INSERT, DELETE ON health_documents TO authenticated;
 
+-- ===== Create lab_values table =====
+-- Flexible storage for ALL lab test values beyond the 13 core metrics.
+-- Stores value + unit as reported by the lab (no unit conversion).
+-- Immutable: no UPDATE policy. Delete + re-upload if incorrect.
+
+CREATE TABLE IF NOT EXISTS lab_values (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  metric_name TEXT NOT NULL,
+  value NUMERIC NOT NULL,
+  unit TEXT NOT NULL,
+  reference_low NUMERIC,
+  reference_high NUMERIC,
+  recorded_at TIMESTAMPTZ NOT NULL,
+  source TEXT NOT NULL DEFAULT 'lab_import',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_lab_values_user_date
+  ON lab_values(user_id, recorded_at DESC);
+
+ALTER TABLE lab_values ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own lab values" ON lab_values;
+CREATE POLICY "Users can read own lab values"
+  ON lab_values FOR SELECT
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can insert own lab values" ON lab_values;
+CREATE POLICY "Users can insert own lab values"
+  ON lab_values FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can delete own lab values" ON lab_values;
+CREATE POLICY "Users can delete own lab values"
+  ON lab_values FOR DELETE
+  USING (user_id = auth.uid());
+
+GRANT SELECT, INSERT, DELETE ON lab_values TO authenticated;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

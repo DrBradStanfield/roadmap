@@ -875,6 +875,134 @@ export async function deleteHealthDocument(
   return (data?.length ?? 0) > 0;
 }
 
+// ---------------------------------------------------------------------------
+// Lab Values (flexible storage for all non-core metrics)
+// ---------------------------------------------------------------------------
+
+interface DbLabValue {
+  id: string;
+  user_id: string;
+  metric_name: string;
+  value: number;
+  unit: string;
+  reference_low: number | null;
+  reference_high: number | null;
+  recorded_at: string;
+  source: string;
+  created_at: string;
+}
+
+/** Convert DB lab value row to camelCase API format. */
+export function toApiLabValue(row: DbLabValue) {
+  return {
+    id: row.id,
+    metricName: row.metric_name,
+    value: row.value,
+    unit: row.unit,
+    referenceLow: row.reference_low,
+    referenceHigh: row.reference_high,
+    recordedAt: row.recorded_at,
+    source: row.source,
+    createdAt: row.created_at,
+  };
+}
+
+export type ApiLabValue = ReturnType<typeof toApiLabValue>;
+
+/** Get all lab values for the authenticated user, newest first. */
+export async function getLabValues(
+  client: SupabaseClient,
+  metricName?: string,
+  limit = 500,
+  offset = 0,
+): Promise<DbLabValue[]> {
+  let query = client
+    .from('lab_values')
+    .select('*')
+    .order('recorded_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (metricName) {
+    query = query.eq('metric_name', metricName);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching lab values:', error);
+    return [];
+  }
+
+  return (data ?? []) as DbLabValue[];
+}
+
+/** Bulk insert lab values. Returns created rows. */
+export async function addLabValues(
+  client: SupabaseClient,
+  userId: string,
+  values: Array<{
+    metricName: string;
+    value: number;
+    unit: string;
+    referenceLow?: number | null;
+    referenceHigh?: number | null;
+    recordedAt: string;
+    source?: string;
+  }>,
+): Promise<DbLabValue[]> {
+  const rows = values.map(v => ({
+    user_id: userId,
+    metric_name: v.metricName,
+    value: v.value,
+    unit: v.unit,
+    reference_low: v.referenceLow ?? null,
+    reference_high: v.referenceHigh ?? null,
+    recorded_at: v.recordedAt,
+    source: v.source || 'lab_import',
+  }));
+
+  const { data, error } = await client
+    .from('lab_values')
+    .insert(rows)
+    .select();
+
+  if (error) {
+    console.error('Error inserting lab values:', error);
+    return [];
+  }
+
+  logAudit(userId, 'LAB_VALUES_CREATED', 'lab_values', undefined, {
+    count: values.length,
+    metrics: values.map(v => v.metricName),
+  });
+
+  return (data ?? []) as DbLabValue[];
+}
+
+/** Delete a single lab value. RLS verifies ownership. */
+export async function deleteLabValue(
+  client: SupabaseClient,
+  userId: string,
+  labValueId: string,
+): Promise<boolean> {
+  const { data, error } = await client
+    .from('lab_values')
+    .delete()
+    .eq('id', labValueId)
+    .select('id');
+
+  if (error) {
+    console.error('Error deleting lab value:', error);
+    return false;
+  }
+
+  if (data && data.length > 0) {
+    logAudit(userId, 'LAB_VALUE_DELETED', 'lab_values', labValueId);
+  }
+
+  return (data?.length ?? 0) > 0;
+}
+
 /** Generate or retrieve unsubscribe token for a user. Uses admin client. */
 export async function getOrCreateUnsubscribeToken(userId: string): Promise<string | null> {
   if (!supabaseAdmin) return null;
@@ -1137,7 +1265,13 @@ export async function deleteAllUserData(userId: string): Promise<{ measurementsD
     .delete()
     .eq('user_id', userId);
 
-  // 3e. Delete all reminder logs
+  // 3e. Delete all lab values
+  await supabaseAdmin
+    .from('lab_values')
+    .delete()
+    .eq('user_id', userId);
+
+  // 3f. Delete all reminder logs
   await supabaseAdmin
     .from('reminder_log')
     .delete()

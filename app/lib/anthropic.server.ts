@@ -155,11 +155,13 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
 
 /** Build a UnifiedExtractionResult from a parsed unified response. */
 function toUnifiedResult(parsed: z.infer<typeof unifiedResultSchema>): UnifiedExtractionResult {
-  const values = parsed.classification === 'lab_report' ? resolveLabValues(parsed.values) : [];
+  const isLab = parsed.classification === 'lab_report';
+  const values = isLab ? resolveLabValues(parsed.values) : [];
   return {
     classification: parsed.classification,
     reportDate: parsed.reportDate,
     values,
+    additionalValues: isLab ? (parsed.additionalValues || []) : [],
     unrecognized: parsed.unrecognized || [],
     document: parsed.document ? {
       classification: parsed.classification,
@@ -311,7 +313,21 @@ IF "lab_report":
   4. For ambiguous dates (03/04/2026): prefer DD/MM/YYYY for non-US labs, MM/DD/YYYY for US.
   5. Multi-page documents: date on page 1, results on later pages — correlate them.
   6. If uncertain about a value, set confidence to "low" with a "question" explaining why.
-  7. Skip tests not in TARGET METRICS — include in "unrecognized" array as "test name: value unit".
+  7. Extract ALL other numeric test results NOT in TARGET METRICS into "additionalValues" array.
+
+  ADDITIONAL VALUES — use these standardized snake_case names when applicable:
+  FBC: haemoglobin, rbc, wbc, platelets, mcv, mch, haematocrit, neutrophils, lymphocytes, monocytes, eosinophils, basophils
+  LFTs: alt, ast, ggt, alp, bilirubin, albumin, total_protein, globulin
+  U&Es: sodium, potassium, urea, chloride, bicarbonate
+  Kidney: cystatin_c, egfr
+  Thyroid: tsh, free_t4, free_t3
+  Iron: ferritin, iron, tibc, transferrin_saturation
+  Vitamins: vitamin_b12, folate, vitamin_d
+  Inflammation: crp, hs_crp, esr
+  Hormones: testosterone, free_testosterone, shbg, estradiol, prolactin, progesterone, dhea_s, igf1
+  Metabolic: fasting_glucose, fasting_insulin, uric_acid
+  Other: homocysteine, or any other metric — use best descriptive snake_case name.
+  Include reference ranges (referenceLow, referenceHigh) when visible on the report.
 
 IF any other classification:
   Convert the ENTIRE document to well-formatted markdown and extract metadata. Set "values" to [].
@@ -342,7 +358,9 @@ RESPONSE FORMAT (strict JSON, no markdown wrapping):
   "values": [
     { "metric": "ldl", "value": 2.8, "unit": "mmol/L", "confidence": "high" }
   ],
-  "unrecognized": ["vitamin D: 45 ng/mL"],
+  "additionalValues": [
+    { "name": "sodium", "value": 139, "unit": "mmol/L", "referenceLow": 135, "referenceHigh": 145 }
+  ],
   "document": {
     "title": "Colonoscopy Report — Dr. Smith",
     "documentDate": "2025-11-15",
@@ -362,6 +380,13 @@ const unifiedResultSchema = z.object({
     confidence: z.enum(['high', 'medium', 'low']),
     question: z.string().optional(),
   })).default([]),
+  additionalValues: z.array(z.object({
+    name: z.string(),
+    value: z.number(),
+    unit: z.string(),
+    referenceLow: z.number().nullable().optional(),
+    referenceHigh: z.number().nullable().optional(),
+  })).default([]),
   unrecognized: z.array(z.string()).optional(),
   document: z.object({
     title: z.string(),
@@ -379,11 +404,21 @@ export interface DocumentResult {
   metadata: Record<string, unknown>;
 }
 
+/** A lab value outside the 11 core metrics — stored as-is (no unit conversion). */
+export interface AdditionalLabValue {
+  name: string;
+  value: number;
+  unit: string;
+  referenceLow?: number | null;
+  referenceHigh?: number | null;
+}
+
 export interface UnifiedExtractionResult {
   classification: string;
   /** Lab values (populated when classification is lab_report) */
   reportDate: string | null;
   values: ExtractedValue[];
+  additionalValues: AdditionalLabValue[];
   unrecognized: string[];
   /** Document data (populated when classification is NOT lab_report) */
   document: DocumentResult | null;
@@ -645,6 +680,7 @@ export async function pollBatch(
         classification: 'other',
         reportDate: null,
         values: [],
+        additionalValues: [],
         unrecognized: [],
         document: null,
       });

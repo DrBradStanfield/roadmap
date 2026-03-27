@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { UnitSystem } from '@roadmap/health-core';
-import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, type PageContent, type ExtractedValue, type ApiMeasurement } from '../lib/api';
+import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, type PageContent, type ExtractedValue, type ApiMeasurement } from '../lib/api';
 import { ReviewTable, type FileResult, type DocumentToSave } from './ReviewTable';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -79,6 +79,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
   const [error, setError] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
   const [savedDocCount, setSavedDocCount] = useState(0);
+  const [savedLabCount, setSavedLabCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -297,14 +298,15 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
               fileName: item.fileName,
               reportDate: result.reportDate,
               values: result.values,
+              additionalValues: result.additionalValues || [],
               unrecognized: result.unrecognized,
               document: result.document ?? undefined,
             });
           } else {
-            allResults.push({ fileName: item.fileName, reportDate: null, values: [], unrecognized: [], error: importError || 'Extraction failed' });
+            allResults.push({ fileName: item.fileName, reportDate: null, values: [], additionalValues: [], unrecognized: [], error: importError || 'Extraction failed' });
           }
         }).catch(() => {
-          allResults.push({ fileName: item.fileName, reportDate: null, values: [], unrecognized: [], error: 'Processing failed' });
+          allResults.push({ fileName: item.fileName, reportDate: null, values: [], additionalValues: [], unrecognized: [], error: 'Processing failed' });
         }).finally(() => {
           completedCount++;
           activeWorkers--;
@@ -422,6 +424,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
             fileName: r.fileName || 'Unknown file',
             reportDate: r.reportDate,
             values: r.values || [],
+            additionalValues: r.additionalValues || [],
             unrecognized: r.unrecognized || [],
             document: r.document ?? undefined,
           }));
@@ -444,13 +447,14 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
     }
   };
 
-  const handleSave = useCallback(async (
-    selectedValues: Array<{ metric: string; valueSI: number; recordedAt: string }>,
-    documents: DocumentToSave[],
-  ) => {
+  const handleSave = useCallback(async ({ values: selectedValues, documents, labValues }: {
+    values: Array<{ metric: string; valueSI: number; recordedAt: string }>;
+    documents: DocumentToSave[];
+    labValues: Array<{ name: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string }>;
+  }) => {
     setIsSaving(true);
     try {
-      // Save lab values and documents in parallel
+      // Save core measurements, additional lab values, and documents in parallel
       const measurements = selectedValues.map(v => ({
         metricType: v.metric,
         value: v.valueSI,
@@ -465,15 +469,26 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
         metadata: d.metadata,
         sourceFileName: d.sourceFileName,
       }));
+      const labValuePayloads = labValues.map(lv => ({
+        metricName: lv.name,
+        value: lv.value,
+        unit: lv.unit,
+        referenceLow: lv.referenceLow,
+        referenceHigh: lv.referenceHigh,
+        recordedAt: lv.recordedAt,
+        source: 'lab_import' as const,
+      }));
 
-      const [savedValues, savedDocs] = await Promise.all([
+      const [savedValues, savedDocs, savedLabValues] = await Promise.all([
         measurements.length > 0 ? bulkSaveMeasurements(measurements) : Promise.resolve([]),
         docPayloads.length > 0 ? bulkSaveDocuments(docPayloads) : Promise.resolve([]),
+        labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads) : Promise.resolve([]),
       ]);
 
       setSavedCount(savedValues.length);
       setSavedDocCount(savedDocs.length);
-      const totalSaved = savedValues.length + savedDocs.length;
+      setSavedLabCount(savedLabValues.length);
+      const totalSaved = savedValues.length + savedDocs.length + savedLabValues.length;
 
       // Update screening dates for documents with screening mappings
       for (const doc of documents) {
@@ -575,8 +590,11 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
               <div className="upload-done-icon">&#10003;</div>
               <p className="upload-done-text">
                 {savedCount > 0 && `Saved ${savedCount} blood test value${savedCount !== 1 ? 's' : ''}`}
-                {savedCount > 0 && savedDocCount > 0 && ' and '}
+                {savedCount > 0 && (savedLabCount > 0 || savedDocCount > 0) && ', '}
+                {savedLabCount > 0 && `${savedLabCount} additional lab value${savedLabCount !== 1 ? 's' : ''}`}
+                {savedLabCount > 0 && savedDocCount > 0 && ', '}
                 {savedDocCount > 0 && `${savedDocCount} document${savedDocCount !== 1 ? 's' : ''}`}
+                {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0 && 'No items saved'}
               </p>
               <button className="btn-primary upload-done-btn" onClick={handleClose}>
                 Done

@@ -286,6 +286,29 @@ export const bulkMeasurementSchema = z.object({
 
 export type BulkMeasurementRequest = z.infer<typeof bulkMeasurementSchema>;
 
+/**
+ * Schema for a flexible lab value (beyond the 13 core metrics).
+ * Stored with original value + unit from the lab report (no SI conversion).
+ */
+export const labValueSchema = z.object({
+  metricName: z.string().min(1).max(100),
+  value: z.number(),
+  unit: z.string().min(1).max(50),
+  referenceLow: z.number().nullable().optional(),
+  referenceHigh: z.number().nullable().optional(),
+  recordedAt: z.string().datetime(),
+  source: z.enum(MEASUREMENT_SOURCES).optional(),
+});
+
+export type ValidatedLabValue = z.infer<typeof labValueSchema>;
+
+/** Bulk lab value save */
+export const bulkLabValueSchema = z.object({
+  bulkLabValues: z.array(labValueSchema).min(1).max(200),
+});
+
+export type BulkLabValueRequest = z.infer<typeof bulkLabValueSchema>;
+
 // ---------------------------------------------------------------------------
 // Health document schemas
 // ---------------------------------------------------------------------------

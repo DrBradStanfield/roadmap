@@ -499,12 +499,35 @@ export interface DocumentResult {
   metadata: Record<string, unknown>;
 }
 
+/** A lab value outside the 11 core metrics — stored as-is (no unit conversion). */
+export interface AdditionalLabValue {
+  name: string;
+  value: number;
+  unit: string;
+  referenceLow?: number | null;
+  referenceHigh?: number | null;
+}
+
 export interface LabImportResult {
   classification: string;
   reportDate: string | null;
   values: ExtractedValue[];
+  additionalValues: AdditionalLabValue[];
   unrecognized: string[];
   document: DocumentResult | null;
+}
+
+/** Saved lab value from the API */
+export interface ApiLabValue {
+  id: string;
+  metricName: string;
+  value: number;
+  unit: string;
+  referenceLow: number | null;
+  referenceHigh: number | null;
+  recordedAt: string;
+  source: string;
+  createdAt: string;
 }
 
 /** Saved document from the API */
@@ -760,6 +783,84 @@ export async function deleteDocument(documentId: string): Promise<boolean> {
     return response.ok;
   } catch (error) {
     console.warn('Delete document error:', error);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Lab Values (flexible storage for all non-core metrics)
+// ---------------------------------------------------------------------------
+
+/**
+ * Load lab values for the authenticated user.
+ */
+export async function loadLabValues(
+  metricName?: string,
+  limit = 500,
+  offset = 0,
+): Promise<ApiLabValue[]> {
+  try {
+    const params = new URLSearchParams();
+    if (metricName) params.set('metric_name', metricName);
+    if (limit !== 500) params.set('limit', String(limit));
+    if (offset) params.set('offset', String(offset));
+    const qs = params.toString();
+
+    const response = await fetch(
+      `${PROXY_PATH}/api/lab-values${qs ? `?${qs}` : ''}`,
+    );
+    if (!response.ok) return [];
+    const data = await parseJsonResponse<{ labValues: ApiLabValue[] }>(response);
+    return data?.labValues || [];
+  } catch (error) {
+    console.warn('Load lab values error:', error);
+    return [];
+  }
+}
+
+/**
+ * Bulk save lab values extracted from uploaded files.
+ */
+export async function bulkSaveLabValues(
+  values: Array<{
+    metricName: string;
+    value: number;
+    unit: string;
+    referenceLow?: number | null;
+    referenceHigh?: number | null;
+    recordedAt: string;
+    source?: string;
+  }>,
+): Promise<ApiLabValue[]> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/lab-values`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bulkLabValues: values }),
+    });
+    if (!response.ok) return [];
+    const data = await parseJsonResponse<{ success: boolean; labValues: ApiLabValue[] }>(response);
+    return data?.success ? data.labValues || [] : [];
+  } catch (error) {
+    console.warn('Bulk save lab values error:', error);
+    Sentry.captureException(error);
+    return [];
+  }
+}
+
+/**
+ * Delete a lab value by ID.
+ */
+export async function deleteLabValue(labValueId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/lab-values`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ labValueId }),
+    });
+    return response.ok;
+  } catch (error) {
+    console.warn('Delete lab value error:', error);
     return false;
   }
 }

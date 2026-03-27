@@ -1572,6 +1572,15 @@ input[type="number"] {
   color: var(--color-text-heading);
 }
 
+.history-section-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 32px 0 16px;
+  padding-top: 24px;
+  border-top: 1px solid var(--color-gray-border);
+  color: var(--color-text-heading);
+}
+
 .metric-selector {
   display: flex;
   flex-wrap: wrap;
@@ -2322,6 +2331,26 @@ input[type="number"] {
   color: var(--color-warning);
   margin: 2px 0 0 28px;
   padding-left: 0;
+}
+
+.review-additional {
+  margin-top: 12px;
+  border-top: 1px dashed var(--color-gray-border);
+  padding-top: 8px;
+}
+
+.review-additional-label {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-gray-light);
+}
+
+.review-row--additional .review-row-ref {
+  font-size: 11px;
+  color: var(--color-gray-light);
+  margin-left: 4px;
+  white-space: nowrap;
 }
 
 .review-unrecognized {

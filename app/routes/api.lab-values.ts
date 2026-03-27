@@ -2,15 +2,15 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-r
 import * as Sentry from '@sentry/remix';
 import { getAuthenticatedUser } from '../lib/route-helpers.server';
 import {
-  getHealthDocuments,
-  addHealthDocument,
-  deleteHealthDocument,
-  toApiDocument,
+  getLabValues,
+  addLabValues,
+  deleteLabValue,
+  toApiLabValue,
 } from '../lib/supabase.server';
-import { bulkHealthDocumentSchema } from '../../packages/health-core/src/validation';
+import { bulkLabValueSchema } from '../../packages/health-core/src/validation';
 
 // ---------------------------------------------------------------------------
-// GET: List all health documents for the authenticated user
+// GET: List lab values for the authenticated user
 // ---------------------------------------------------------------------------
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -20,17 +20,22 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json({ error: 'Not logged in' }, { status: 401 });
     }
 
-    const docs = await getHealthDocuments(auth.client);
-    return json({ documents: docs.map(toApiDocument) });
+    const url = new URL(request.url);
+    const metricName = url.searchParams.get('metric_name') || undefined;
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '500', 10), 500);
+    const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+
+    const rows = await getLabValues(auth.client, metricName, limit, offset);
+    return json({ labValues: rows.map(toApiLabValue) });
   } catch (error) {
-    console.error('Error loading health documents:', error);
-    Sentry.captureException(error, { tags: { feature: 'health_documents' } });
-    return json({ error: 'Failed to load documents' }, { status: 500 });
+    console.error('Error loading lab values:', error);
+    Sentry.captureException(error, { tags: { feature: 'lab_values' } });
+    return json({ error: 'Failed to load lab values' }, { status: 500 });
   }
 }
 
 // ---------------------------------------------------------------------------
-// POST: Save documents / DELETE: Remove a document
+// POST: Bulk save / DELETE: Remove a lab value
 // ---------------------------------------------------------------------------
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -43,25 +48,25 @@ export async function action({ request }: ActionFunctionArgs) {
     // DELETE
     if (request.method === 'DELETE') {
       const body = await request.json();
-      const documentId = body?.documentId;
-      if (!documentId || typeof documentId !== 'string') {
-        return json({ error: 'Missing documentId' }, { status: 400 });
+      const labValueId = body?.labValueId;
+      if (!labValueId || typeof labValueId !== 'string') {
+        return json({ error: 'Missing labValueId' }, { status: 400 });
       }
 
-      const deleted = await deleteHealthDocument(auth.client, auth.userId, documentId);
+      const deleted = await deleteLabValue(auth.client, auth.userId, labValueId);
       if (!deleted) {
-        return json({ error: 'Document not found' }, { status: 404 });
+        return json({ error: 'Lab value not found' }, { status: 404 });
       }
       return json({ success: true });
     }
 
-    // POST: Bulk save documents
+    // POST: Bulk save
     if (request.method !== 'POST') {
       return json({ error: 'Method not allowed' }, { status: 405 });
     }
 
     const body = await request.json();
-    const validation = bulkHealthDocumentSchema.safeParse(body);
+    const validation = bulkLabValueSchema.safeParse(body);
     if (!validation.success) {
       return json(
         { error: 'Invalid request', details: validation.error.issues },
@@ -69,15 +74,11 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    const results = await Promise.all(
-      validation.data.bulkDocuments.map(doc => addHealthDocument(auth.client, auth.userId, doc)),
-    );
-    const saved = results.filter(Boolean).map(r => toApiDocument(r!));
-
-    return json({ success: true, documents: saved });
+    const saved = await addLabValues(auth.client, auth.userId, validation.data.bulkLabValues);
+    return json({ success: true, labValues: saved.map(toApiLabValue) });
   } catch (error) {
-    console.error('Health documents error:', error);
-    Sentry.captureException(error, { tags: { feature: 'health_documents' } });
+    console.error('Lab values error:', error);
+    Sentry.captureException(error, { tags: { feature: 'lab_values' } });
     return json({ error: 'Failed to process request' }, { status: 500 });
   }
 }

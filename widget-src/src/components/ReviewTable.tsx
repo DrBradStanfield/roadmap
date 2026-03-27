@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import type { UnitSystem, MetricType } from '@roadmap/health-core';
 import { fromCanonicalValue, UNIT_DEFS, METRIC_LABELS } from '@roadmap/health-core';
 import { InlineDatePicker, getCurrentDateValue } from './DatePicker';
-import type { ExtractedValue, ApiMeasurement, DocumentResult } from '../lib/api';
+import type { ExtractedValue, AdditionalLabValue, ApiMeasurement, DocumentResult } from '../lib/api';
+import { labValueLabel } from '../lib/lab-value-labels';
 
 /** Minimum age for each screening type — matches thresholds in suggestions.ts */
 const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'female' }> = {
@@ -18,6 +19,7 @@ export interface FileResult {
   fileName: string;
   reportDate: string | null;
   values: ExtractedValue[];
+  additionalValues: AdditionalLabValue[];
   unrecognized: string[];
   error?: string;
   /** Present for non-lab documents (scan results, clinic letters, etc.) */
@@ -51,10 +53,11 @@ interface ReviewTableProps {
   unitSystem: UnitSystem;
   birthYear?: number;
   sex?: 'male' | 'female';
-  onSave: (
-    values: Array<{ metric: string; valueSI: number; recordedAt: string }>,
-    documents: DocumentToSave[],
-  ) => void;
+  onSave: (payload: {
+    values: Array<{ metric: string; valueSI: number; recordedAt: string }>;
+    documents: DocumentToSave[];
+    labValues: Array<{ name: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string }>;
+  }) => void;
   onCancel: () => void;
   isSaving: boolean;
   error: string | null;
@@ -144,6 +147,15 @@ export function ReviewTable({
     return map;
   });
 
+  // Per-additional-value checked state (default: checked)
+  const [additionalChecked, setAdditionalChecked] = useState<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {};
+    results.forEach((r, fi) => {
+      r.additionalValues.forEach((_, ai) => { map[`${fi}-a${ai}`] = true; });
+    });
+    return map;
+  });
+
   // Per-document: whether to save this document (default: checked for documents with content)
   const [docChecked, setDocChecked] = useState<Record<number, boolean>>(() => {
     const map: Record<number, boolean> = {};
@@ -171,7 +183,9 @@ export function ReviewTable({
   });
 
   const totalValues = useMemo(() => results.reduce((sum, r) => sum + r.values.length, 0), [results]);
+  const totalAdditional = useMemo(() => results.reduce((sum, r) => sum + r.additionalValues.length, 0), [results]);
   const selectedCount = useMemo(() => Object.values(checked).filter(Boolean).length, [checked]);
+  const selectedAdditionalCount = useMemo(() => Object.values(additionalChecked).filter(Boolean).length, [additionalChecked]);
   const selectedDocCount = useMemo(() => Object.values(docChecked).filter(Boolean).length, [docChecked]);
   // Only require dates for files that have selected values
   const allDatesSet = useMemo(() => results.every((r, fi) => {
@@ -204,7 +218,7 @@ export function ReviewTable({
   };
 
   const handleSave = () => {
-    // Collect lab values
+    // Collect core lab values
     const selected: Array<{ metric: string; valueSI: number; recordedAt: string }> = [];
     results.forEach((r, fi) => {
       r.values.forEach((v, vi) => {
@@ -213,6 +227,22 @@ export function ReviewTable({
         selected.push({
           metric: v.metric,
           valueSI: v.valueSI,
+          recordedAt: buildRecordedAt(fileDates[fi]),
+        });
+      });
+    });
+
+    // Collect additional lab values
+    const selectedLabValues: Array<{ name: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string }> = [];
+    results.forEach((r, fi) => {
+      r.additionalValues.forEach((av, ai) => {
+        if (!additionalChecked[`${fi}-a${ai}`]) return;
+        selectedLabValues.push({
+          name: av.name,
+          value: av.value,
+          unit: av.unit,
+          referenceLow: av.referenceLow,
+          referenceHigh: av.referenceHigh,
           recordedAt: buildRecordedAt(fileDates[fi]),
         });
       });
@@ -243,7 +273,7 @@ export function ReviewTable({
       });
     });
 
-    onSave(selected, documents);
+    onSave({ values: selected, documents, labValues: selectedLabValues });
   };
 
   const formatValue = (v: ExtractedValue) => {
@@ -261,9 +291,11 @@ export function ReviewTable({
     <div className="review-table">
       <div className="review-summary">
         {selectedCount > 0 && `${selectedCount} of ${totalValues} value${totalValues !== 1 ? 's' : ''}`}
-        {selectedCount > 0 && selectedDocCount > 0 && ' + '}
+        {selectedCount > 0 && selectedAdditionalCount > 0 && ' + '}
+        {selectedAdditionalCount > 0 && `${selectedAdditionalCount} of ${totalAdditional} additional`}
+        {(selectedCount > 0 || selectedAdditionalCount > 0) && selectedDocCount > 0 && ' + '}
         {selectedDocCount > 0 && `${selectedDocCount} document${selectedDocCount !== 1 ? 's' : ''}`}
-        {selectedCount === 0 && selectedDocCount === 0 && 'No items selected'}
+        {selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0 && 'No items selected'}
         {' '}from {results.length} file{results.length !== 1 ? 's' : ''}
       </div>
 
@@ -406,6 +438,39 @@ export function ReviewTable({
                     })}
                   </div>
 
+                {r.additionalValues.length > 0 && (
+                  <div className="review-additional">
+                    <p className="review-additional-label">Additional lab values:</p>
+                    <div className="review-rows">
+                      {r.additionalValues.map((av, ai) => {
+                        const key = `${fi}-a${ai}`;
+                        return (
+                          <div key={key} className="review-row review-row--additional">
+                            <label className="review-row-check">
+                              <input
+                                type="checkbox"
+                                checked={additionalChecked[key] ?? false}
+                                onChange={(e) => setAdditionalChecked(prev => ({ ...prev, [key]: e.target.checked }))}
+                              />
+                            </label>
+                            <span className="review-row-metric">
+                              {labValueLabel(av.name)}
+                            </span>
+                            <span className="review-row-value">
+                              {av.value} {av.unit}
+                            </span>
+                            {(av.referenceLow != null || av.referenceHigh != null) && (
+                              <span className="review-row-ref">
+                                (ref: {av.referenceLow ?? '–'}–{av.referenceHigh ?? '–'})
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {r.unrecognized.length > 0 && (
                   <div className="review-unrecognized">
                     <p className="review-unrecognized-label">Not tracked:</p>
@@ -426,10 +491,11 @@ export function ReviewTable({
         <button
           className="btn-primary review-save-btn"
           onClick={handleSave}
-          disabled={(selectedCount === 0 && selectedDocCount === 0) || !allDatesSet || isSaving}
+          disabled={(selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0) || !allDatesSet || isSaving}
         >
           {isSaving ? 'Saving...' : `Save ${[
             selectedCount > 0 && `${selectedCount} Value${selectedCount !== 1 ? 's' : ''}`,
+            selectedAdditionalCount > 0 && `${selectedAdditionalCount} Additional`,
             selectedDocCount > 0 && `${selectedDocCount} Document${selectedDocCount !== 1 ? 's' : ''}`,
           ].filter(Boolean).join(' + ')}`}
         </button>
