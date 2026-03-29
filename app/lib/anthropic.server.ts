@@ -161,7 +161,7 @@ function toUnifiedResult(parsed: z.infer<typeof unifiedResultSchema>): UnifiedEx
     classification: parsed.classification,
     reportDate: parsed.reportDate,
     values,
-    additionalValues: isLab ? (parsed.additionalValues || []) : [],
+    additionalValues: isLab ? (parsed.additionalValues || []).filter(v => v.name.length > 0) : [],
     unrecognized: parsed.unrecognized || [],
     document: parsed.document ? {
       classification: parsed.classification,
@@ -381,9 +381,9 @@ const unifiedResultSchema = z.object({
     question: z.string().optional(),
   })).default([]),
   additionalValues: z.array(z.object({
-    name: z.string(),
+    name: z.string().default(''),
     value: z.number(),
-    unit: z.string(),
+    unit: z.string().default(''),
     referenceLow: z.number().nullable().optional(),
     referenceHigh: z.number().nullable().optional(),
   })).default([]),

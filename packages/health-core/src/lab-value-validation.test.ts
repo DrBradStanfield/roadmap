@@ -46,14 +46,14 @@ describe('labValueSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects empty unit', () => {
+  it('accepts empty unit (unitless values like ratios)', () => {
     const result = labValueSchema.safeParse({
-      metricName: 'sodium',
-      value: 139,
+      metricName: 'cholesterol_hdl_ratio',
+      value: 2.1,
       unit: '',
       recordedAt: '2024-03-15T00:00:00.000Z',
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it('rejects missing recordedAt', () => {
