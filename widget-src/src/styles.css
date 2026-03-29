@@ -2765,7 +2765,6 @@ input[type="number"] {
 /* --- Guest (greyed out) --- */
 
 .chat-guest .chat-collapsed {
-  opacity: 0.5;
   cursor: default;
   position: relative;
 }
@@ -2777,19 +2776,33 @@ input[type="number"] {
 }
 
 .chat-guest-tooltip {
-  display: none;
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 2px);
   left: 50%;
   transform: translateX(-50%);
-  padding: 8px 14px;
-  background: var(--color-gray-dark);
-  color: #fff;
+  padding: 10px 16px;
+  background: #fff;
+  color: var(--color-text);
   font-size: 13px;
   border-radius: 8px;
   white-space: nowrap;
   z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--color-gray-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.15s, visibility 0.15s;
+  transition-delay: 0.3s;
+}
+
+/* Invisible bridge so hovering between card and tooltip keeps it visible */
+.chat-guest-tooltip::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 12px;
 }
 
 .chat-guest-tooltip::after {
@@ -2799,16 +2812,19 @@ input[type="number"] {
   left: 50%;
   transform: translateX(-50%);
   border: 6px solid transparent;
-  border-top-color: var(--color-gray-dark);
+  border-top-color: var(--color-gray-border);
 }
 
 .chat-guest-tooltip a {
-  color: #8ec8ff;
+  color: var(--color-brand);
+  font-weight: 600;
   text-decoration: underline;
 }
 
 .chat-guest .chat-collapsed:hover .chat-guest-tooltip {
-  display: block;
+  visibility: visible;
+  opacity: 1;
+  transition-delay: 0s;
 }
 
 /* --- Expanded panel --- */
