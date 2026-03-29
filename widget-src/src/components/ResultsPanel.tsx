@@ -677,6 +677,12 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
         </div>
       </section>
 
+      {/* Chat CTA — inline card between stats and suggestions */}
+      <ChatSection
+        isLoggedIn={authState?.isLoggedIn ?? false}
+        loginUrl={authState?.loginUrl}
+      />
+
       {/* Suggestions */}
       <section className="suggestions-section">
         <h3 className="results-section-title">
@@ -724,12 +730,6 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
       </section>
 
       {/* Health Records — documents from uploads */}
-
-      {/* Chat — desktop only (mobile uses its own tab) */}
-      <ChatSection
-        isLoggedIn={authState?.isLoggedIn ?? false}
-        loginUrl={authState?.loginUrl}
-      />
 
       {/* Report Actions (bottom) — logged-in users only */}
       {authState?.isLoggedIn && (

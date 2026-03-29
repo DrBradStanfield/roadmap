@@ -990,8 +990,8 @@ input[type="number"] {
 }
 
 .account-status.logged-in {
-  background: #e8f5e9;
-  border: 1px solid #c8e6c9;
+  background: rgba(0, 163, 139, 0.04);
+  border: 1px solid rgba(0, 163, 139, 0.25);
 }
 
 /* --- Guest CTA (top sticky banner) --- */
@@ -2712,32 +2712,29 @@ input[type="number"] {
    Chat Section
    ============================================================ */
 
-/* --- Floating bubble (always visible at bottom-right) --- */
+/* --- Inline CTA card (between stats and suggestions) --- */
 
-.chat-bubble {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 99;
+.chat-section {
+  margin: 4px 0 8px;
 }
 
 .chat-collapsed {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 12px 16px;
-  background: #fff;
-  border: 1px solid var(--color-gray-border);
-  border-radius: 12px;
+  background: rgba(0, 163, 139, 0.04);
+  border: 1px solid rgba(0, 163, 139, 0.25);
+  border-left: 3px solid var(--color-brand);
+  border-radius: 8px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
 .chat-collapsed:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-  transform: translateY(-1px);
+  background: rgba(0, 163, 139, 0.08);
+  border-color: var(--color-brand);
+  box-shadow: 0 1px 3px rgba(0, 163, 139, 0.12);
 }
 
 .chat-collapsed:focus-visible {
@@ -2747,14 +2744,16 @@ input[type="number"] {
 }
 
 .chat-icon {
-  font-size: 18px;
+  font-size: 16px;
+  line-height: 1;
   flex-shrink: 0;
 }
 
 .chat-placeholder {
   flex: 1;
   font-size: 14px;
-  color: var(--color-gray-light);
+  color: var(--color-gray-medium);
+  font-weight: 500;
 }
 
 .chat-counter {
@@ -2772,9 +2771,9 @@ input[type="number"] {
 }
 
 .chat-guest .chat-collapsed:hover {
-  border-color: var(--color-gray-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transform: none;
+  background: rgba(0, 163, 139, 0.04);
+  border-color: rgba(0, 163, 139, 0.25);
+  box-shadow: none;
 }
 
 .chat-guest-tooltip {
@@ -3222,10 +3221,6 @@ input[type="number"] {
 /* --- Mobile (≤768px) --- */
 
 @media (max-width: 768px) {
-  .chat-bubble {
-    bottom: 12px;
-    right: 12px;
-  }
 
   .chat-expanded {
     bottom: 0;

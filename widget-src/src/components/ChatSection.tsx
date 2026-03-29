@@ -189,7 +189,7 @@ export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
   // ----- GUEST STATE -----
   if (!isLoggedIn) {
     return (
-      <div className="chat-bubble chat-guest no-print">
+      <div className="chat-section chat-guest no-print">
         <div className="chat-collapsed chat-disabled">
           <span className="chat-icon">💬</span>
           <span className="chat-placeholder">Ask about your health suggestions...</span>
@@ -204,7 +204,7 @@ export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
   // ----- COLLAPSED STATE -----
   if (!isExpanded) {
     return (
-      <div className="chat-bubble no-print">
+      <div className="chat-section no-print">
         <div className="chat-collapsed" onClick={handleExpand} role="button" tabIndex={0}>
           <span className="chat-icon">💬</span>
           <span className="chat-placeholder">Ask about your health suggestions...</span>
@@ -259,7 +259,7 @@ export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
           <div className="chat-messages">
             {messages.length === 0 && !isLoading && (
               <div className="chat-empty">
-                <p>Ask a question about your health suggestions, blood tests, or screening recommendations.</p>
+                <p>Ask a question about your health suggestions, blood tests, or screenings to discuss with your doctor.</p>
               </div>
             )}
             {messages.map(msg => (
