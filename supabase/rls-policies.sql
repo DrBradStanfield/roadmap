@@ -593,6 +593,71 @@ CREATE POLICY "Users can delete own lab values"
 
 GRANT SELECT, INSERT, DELETE ON lab_values TO authenticated;
 
+-- ============================================================
+-- Chat tables (March 2026)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS chat_conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+  content TEXT NOT NULL,
+  input_tokens INTEGER,
+  output_tokens INTEGER,
+  model TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_conversations_user_updated
+  ON chat_conversations (user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation
+  ON chat_messages (conversation_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_user_daily
+  ON chat_messages (user_id, created_at DESC) WHERE role = 'user';
+
+ALTER TABLE chat_conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own conversations" ON chat_conversations;
+CREATE POLICY "Users can view own conversations"
+  ON chat_conversations FOR SELECT USING (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can create own conversations" ON chat_conversations;
+CREATE POLICY "Users can create own conversations"
+  ON chat_conversations FOR INSERT WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can update own conversations" ON chat_conversations;
+CREATE POLICY "Users can update own conversations"
+  ON chat_conversations FOR UPDATE USING (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can delete own conversations" ON chat_conversations;
+CREATE POLICY "Users can delete own conversations"
+  ON chat_conversations FOR DELETE USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can view own messages" ON chat_messages;
+CREATE POLICY "Users can view own messages"
+  ON chat_messages FOR SELECT USING (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can create own messages" ON chat_messages;
+CREATE POLICY "Users can create own messages"
+  ON chat_messages FOR INSERT WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can delete own messages" ON chat_messages;
+CREATE POLICY "Users can delete own messages"
+  ON chat_messages FOR DELETE USING (user_id = auth.uid());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON chat_conversations TO authenticated;
+GRANT SELECT, INSERT, DELETE ON chat_messages TO authenticated;
+
+-- Profile billing columns (Phase 2 — chat subscription)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_plan TEXT DEFAULT 'free';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_id TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMPTZ;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

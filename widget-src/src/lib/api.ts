@@ -60,7 +60,7 @@ async function apiCall<T>(
  * Calling response.json() on HTML throws a SyntaxError — this guard prevents that.
  * Genuine malformed JSON (with correct content-type) still throws for Sentry reporting.
  */
-async function parseJsonResponse<T>(response: Response): Promise<T | null> {
+export async function parseJsonResponse<T>(response: Response): Promise<T | null> {
   const contentType = response.headers.get('content-type') ?? '';
   if (!contentType.includes('application/json')) {
     return null;

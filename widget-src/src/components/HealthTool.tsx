@@ -31,6 +31,7 @@ import {
 } from '@roadmap/health-core';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
+import { ChatSection } from './ChatSection';
 import { UploadModal, FloatingUploadIndicator } from './UploadModal';
 import { useIsMobile } from '../lib/useIsMobile';
 import { MobileTabBar, MobileTabNav, type TabId, type Tab } from './MobileTabBar';
@@ -631,8 +632,9 @@ export function HealthTool() {
       { id: 'medications', label: 'Medications', visible: formStage >= 4 && medsVisible },
       { id: 'screening', label: 'Screening', visible: formStage >= 4 && screeningVisible },
       { id: 'results', label: 'Results', visible: true },
+      { id: 'chat', label: 'Chat', visible: authState.isLoggedIn && formStage >= 4 },
     ];
-  }, [effectiveInputs, inputs.birthYear, inputs.birthMonth, inputs.sex, formStage]);
+  }, [effectiveInputs, inputs.birthYear, inputs.birthMonth, inputs.sex, formStage, authState.isLoggedIn]);
 
   // Auto-fallback: if active tab becomes invisible, switch to first visible tab
   useEffect(() => {
@@ -839,7 +841,9 @@ export function HealthTool() {
         <>
           <MobileTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="mobile-tab-content">
-            {activeTab === 'results' ? (
+            {activeTab === 'chat' ? (
+              <ChatSection isLoggedIn={authState.isLoggedIn} loginUrl={authState.loginUrl} />
+            ) : activeTab === 'results' ? (
               <div className="health-tool-right">
                 <ResultsPanel {...resultsPanelProps} />
               </div>

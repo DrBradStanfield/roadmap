@@ -68,4 +68,45 @@ describe('renderMarkdown', () => {
     expect(result).not.toContain('<script>');
     expect(result).toContain('&lt;script&gt;');
   });
+
+  it('renders inline code', () => {
+    const result = renderMarkdown('Use `calculateHealth()` function');
+    expect(result).toContain('<code>calculateHealth()</code>');
+  });
+
+  it('renders links with target blank', () => {
+    const result = renderMarkdown('[AHA 2018](https://doi.org/10.1016/example)');
+    expect(result).toContain('<a href="https://doi.org/10.1016/example" target="_blank" rel="noopener">AHA 2018</a>');
+  });
+
+  it('blocks javascript: URLs in links', () => {
+    const result = renderMarkdown('[click](javascript:alert(1))');
+    expect(result).not.toContain('javascript:');
+    expect(result).toContain('click');
+  });
+
+  it('blocks data: URLs in links', () => {
+    const result = renderMarkdown('[click](data:text/html,<script>alert(1)</script>)');
+    expect(result).not.toContain('<a href="data:');
+    expect(result).toContain('click');
+  });
+
+  it('allows https links', () => {
+    const result = renderMarkdown('[AHA](https://doi.org/10.1016/example)');
+    expect(result).toContain('href="https://doi.org/10.1016/example"');
+  });
+
+  it('blocks http links (only https allowed)', () => {
+    const result = renderMarkdown('[site](http://example.com)');
+    expect(result).not.toContain('href=');
+    expect(result).toContain('site');
+  });
+
+  it('renders mixed inline formatting', () => {
+    const result = renderMarkdown('**Bold** and *italic* and `code` and [link](https://example.com)');
+    expect(result).toContain('<strong>Bold</strong>');
+    expect(result).toContain('<em>italic</em>');
+    expect(result).toContain('<code>code</code>');
+    expect(result).toContain('<a href="https://example.com"');
+  });
 });

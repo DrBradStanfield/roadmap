@@ -1,5 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
+import type { HealthInputs, MedicationInputs, ScreeningInputs } from '../../packages/health-core/src/types';
+import { measurementsToInputs, medicationsToInputs, screeningsToInputs } from '../../packages/health-core/src/mappings';
 
 // ---------------------------------------------------------------------------
 // Environment
@@ -78,7 +80,7 @@ function cacheUserId(shopifyCustomerId: string, userId: string): void {
 // after the user is already authenticated via HMAC.
 // ---------------------------------------------------------------------------
 
-function logAudit(
+export function logAudit(
   userId: string,
   action: string,
   resourceType: string,
@@ -1212,6 +1214,29 @@ export async function tryAcquireCronLock(
 }
 
 // ---------------------------------------------------------------------------
+// Shared health data loading — parallel fetch + conversion to health-core format.
+// Used by email.server.ts (welcome/reminder emails) and chat.server.ts (LLM context).
+// ---------------------------------------------------------------------------
+
+export async function loadHealthData(client: SupabaseClient) {
+  const [profile, latestMeasurements, medications, screenings, healthDocuments] = await Promise.all([
+    getProfile(client),
+    getLatestMeasurements(client),
+    getMedications(client),
+    getScreenings(client),
+    getHealthDocuments(client),
+  ]);
+  if (!profile) return null;
+  const apiProfile = toApiProfile(profile);
+  const inputs = measurementsToInputs(
+    latestMeasurements.map(toApiMeasurement), apiProfile,
+  ) as HealthInputs;
+  const medInputs = medicationsToInputs(medications.map(toApiMedication));
+  const screenInputs = screeningsToInputs(screenings.map(toApiScreening));
+  return { profile, inputs, medInputs, screenInputs, healthDocuments };
+}
+
+// ---------------------------------------------------------------------------
 // Account data deletion — deletes all user data and anonymizes audit logs.
 // Uses supabaseAdmin (service role) to ensure complete cleanup.
 // ---------------------------------------------------------------------------
@@ -1242,7 +1267,7 @@ export async function deleteAllUserData(userId: string): Promise<{ measurementsD
   }
 
   // Delete dependent tables — log errors but continue (partial deletion > no deletion)
-  for (const table of ['medications', 'screenings', 'reminder_preferences', 'health_documents', 'lab_values', 'reminder_log'] as const) {
+  for (const table of ['chat_messages', 'chat_conversations', 'medications', 'screenings', 'reminder_preferences', 'health_documents', 'lab_values', 'reminder_log'] as const) {
     const { error } = await supabaseAdmin.from(table).delete().eq('user_id', userId);
     if (error) console.error(`Failed to delete ${table} for ${userId}:`, error.message);
   }

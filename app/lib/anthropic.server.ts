@@ -482,7 +482,17 @@ export async function extractOrClassify(
 // Low-level API call
 // ---------------------------------------------------------------------------
 
-async function callAnthropic(apiKey: string, body: Record<string, unknown>, retries = 2): Promise<string> {
+export interface AnthropicUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheCreationTokens: number;
+  cacheReadTokens: number;
+}
+
+/** Shared fetch + retry + error handling. Returns text content + usage metrics. */
+async function fetchAnthropicRaw(
+  apiKey: string, body: Record<string, unknown>, retries = 2,
+): Promise<{ content: string; usage: AnthropicUsage }> {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -500,7 +510,7 @@ async function callAnthropic(apiKey: string, body: Record<string, unknown>, retr
     const delay = Math.max(retryAfter * 1000, (3 - retries) * 5_000);
     console.warn(`Anthropic 429 rate limited, retrying in ${delay}ms (${retries} retries left)`);
     await new Promise(resolve => setTimeout(resolve, delay));
-    return callAnthropic(apiKey, body, retries - 1);
+    return fetchAnthropicRaw(apiKey, body, retries - 1);
   }
 
   if (!response.ok) {
@@ -515,7 +525,30 @@ async function callAnthropic(apiKey: string, body: Record<string, unknown>, retr
   const textBlock = (data.content as Array<{ type: string; text?: string }>)?.find(b => b.type === 'text');
   if (!textBlock?.text) throw new Error('No text in Anthropic response');
 
-  return textBlock.text;
+  return {
+    content: textBlock.text,
+    usage: {
+      inputTokens: data.usage?.input_tokens ?? 0,
+      outputTokens: data.usage?.output_tokens ?? 0,
+      cacheCreationTokens: data.usage?.cache_creation_input_tokens ?? 0,
+      cacheReadTokens: data.usage?.cache_read_input_tokens ?? 0,
+    },
+  };
+}
+
+/** Text-only wrapper — existing callers unchanged. */
+async function callAnthropic(apiKey: string, body: Record<string, unknown>, retries = 2): Promise<string> {
+  const result = await fetchAnthropicRaw(apiKey, body, retries);
+  return result.content;
+}
+
+/** Text + usage wrapper — for chat (prompt caching metrics). */
+export async function callAnthropicWithUsage(
+  body: Record<string, unknown>, retries = 2,
+): Promise<{ content: string; usage: AnthropicUsage }> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
+  return fetchAnthropicRaw(apiKey, body, retries);
 }
 
 /** Strip markdown code fences (```json ... ```) from LLM response text */

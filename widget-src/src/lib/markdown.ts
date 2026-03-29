@@ -75,9 +75,14 @@ export function renderMarkdown(md: string): string {
   return html.join('\n');
 }
 
-/** Apply inline formatting: **bold**, *italic* */
+/** Apply inline formatting: **bold**, *italic*, `code`, [links](url) */
 function inlineFormat(text: string): string {
   return text
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>');
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, text, url) => {
+      if (!/^https:\/\//i.test(url)) return text;
+      return `<a href="${url}" target="_blank" rel="noopener">${text}</a>`;
+    });
 }

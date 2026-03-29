@@ -24,6 +24,7 @@ import {
 } from '@roadmap/health-core';
 import { type ApiReminderPreference, sendReportEmail, getReportHtml } from '../lib/api';
 import { FeedbackForm } from './FeedbackForm';
+import { ChatSection } from './ChatSection';
 
 // Auth state type (matches HealthTool)
 interface AuthState {
@@ -723,6 +724,12 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
       </section>
 
       {/* Health Records — documents from uploads */}
+
+      {/* Chat — desktop only (mobile uses its own tab) */}
+      <ChatSection
+        isLoggedIn={authState?.isLoggedIn ?? false}
+        loginUrl={authState?.loginUrl}
+      />
 
       {/* Report Actions (bottom) — logged-in users only */}
       {authState?.isLoggedIn && (

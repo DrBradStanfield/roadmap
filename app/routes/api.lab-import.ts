@@ -1,7 +1,7 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
-import { getCustomerId } from '../lib/route-helpers.server';
+import { getCustomerId, EXEMPT_CUSTOMERS } from '../lib/route-helpers.server';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
 import { extractOrClassify, createBatch, pollBatch } from '../lib/anthropic.server';
 
@@ -12,10 +12,6 @@ import { extractOrClassify, createBatch, pollBatch } from '../lib/anthropic.serv
 const EXTRACT_LIMIT = 200;
 const EXTRACT_WINDOW_MS = 24 * 60 * 60_000;
 const extractLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-const EXEMPT_CUSTOMERS = new Set(
-  (process.env.RATE_LIMIT_EXEMPT_CUSTOMERS || '').split(',').map(s => s.trim()).filter(Boolean),
-);
 
 setInterval(() => {
   const now = Date.now();

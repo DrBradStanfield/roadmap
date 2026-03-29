@@ -3,7 +3,6 @@ import * as Sentry from '@sentry/remix';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { HealthInputs, HealthResults, Suggestion, MedicationInputs } from '../../packages/health-core/src/types';
 import type { UnitSystem, MetricType } from '../../packages/health-core/src/units';
-import { measurementsToInputs, medicationsToInputs, screeningsToInputs } from '../../packages/health-core/src/mappings';
 import { calculateHealthResults, getBMICategory, getEgfrStatus, getLpaStatus, getLipidStatus, getProteinRate } from '../../packages/health-core/src/calculations';
 import { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence } from '../../packages/health-core/src/evidence';
 import type { SuggestionEvidence } from '../../packages/health-core/src/evidence';
@@ -21,16 +20,7 @@ import {
   LPA_THRESHOLDS,
   NON_HDL_THRESHOLDS,
 } from '../../packages/health-core/src/units';
-import {
-  getProfile,
-  getLatestMeasurements,
-  getMedications,
-  getScreenings,
-  toApiMeasurement,
-  toApiProfile,
-  toApiMedication,
-  toApiScreening,
-} from './supabase.server';
+import { loadHealthData } from './supabase.server';
 
 // ---------------------------------------------------------------------------
 // Resend client
@@ -42,27 +32,7 @@ const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL || 'https://drstanfield.
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
-// ---------------------------------------------------------------------------
-// Shared data loading helper
-// ---------------------------------------------------------------------------
-
-/** Fetch and convert all user health data into health-core input format. */
-async function loadHealthData(client: SupabaseClient) {
-  const [profile, latestMeasurements, medications, screenings] = await Promise.all([
-    getProfile(client),
-    getLatestMeasurements(client),
-    getMedications(client),
-    getScreenings(client),
-  ]);
-  if (!profile) return null;
-  const apiProfile = toApiProfile(profile);
-  const inputs = measurementsToInputs(
-    latestMeasurements.map(toApiMeasurement), apiProfile,
-  ) as HealthInputs;
-  const medInputs = medicationsToInputs(medications.map(toApiMedication));
-  const screenInputs = screeningsToInputs(screenings.map(toApiScreening));
-  return { profile, inputs, medInputs, screenInputs };
-}
+// loadHealthData() imported from supabase.server.ts (shared with chat.server.ts)
 
 // ---------------------------------------------------------------------------
 // Main entry point — fire-and-forget, never throws
