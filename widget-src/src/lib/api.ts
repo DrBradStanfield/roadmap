@@ -637,6 +637,7 @@ interface BatchPollResponse {
   total: number;
   results?: Array<LabImportResult & { fileName: string }>;
   error?: string;
+  errorCode?: UploadErrorCode;
 }
 
 /**
@@ -682,7 +683,7 @@ export async function pollBatchStatus(
     const response = await fetch(`${PROXY_PATH}/api/lab-import?batchId=${encodeURIComponent(batchId)}`);
     // 404 = batch not found (server restarted) — terminal failure
     if (response.status === 404) {
-      return { status: 'ended', completed: 0, total: 0, error: 'Batch not found — server may have restarted. Please try again.' };
+      return { status: 'ended', completed: 0, total: 0, error: 'Batch not found — server may have restarted.', errorCode: 'server_restart' };
     }
     if (!response.ok) {
       return { status: 'processing', completed: 0, total: 0 };

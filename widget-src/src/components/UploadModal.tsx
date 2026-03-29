@@ -436,7 +436,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
 
         const poll = await pollBatchStatus(batchId);
         realCompleted = poll.completed;
-        if (poll.error) throw new UploadError(poll.error, poll.error.includes('Batch not found') ? 'server_restart' : 'server_error');
+        if (poll.error) throw new UploadError(poll.error, poll.errorCode || 'server_error');
 
         if (poll.status === 'ended' && poll.results) {
           clearInterval(fakeTimer);
