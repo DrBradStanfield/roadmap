@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   type UnitSystem,
   type ApiMeasurement,
@@ -270,13 +270,15 @@ export function HistoryPanel({ isLoggedIn, loginUrl }: HistoryPanelProps) {
     );
   }
 
-  // Group measurements by metricType
-  const grouped: Record<string, ApiMeasurement[]> = {};
-  for (const m of measurements) {
-    if (!grouped[m.metricType]) grouped[m.metricType] = [];
-    grouped[m.metricType].push(m);
-  }
-  const metricTypes = Object.keys(grouped).sort();
+  // Group measurements by metricType (memoized)
+  const { grouped, metricTypes } = useMemo(() => {
+    const g: Record<string, ApiMeasurement[]> = {};
+    for (const m of measurements) {
+      if (!g[m.metricType]) g[m.metricType] = [];
+      g[m.metricType].push(m);
+    }
+    return { grouped: g, metricTypes: Object.keys(g).sort() };
+  }, [measurements]);
 
   // Group lab values by metricName (memoized)
   const { labGrouped, labMetricNames, labColorMap } = useMemo(() => {
