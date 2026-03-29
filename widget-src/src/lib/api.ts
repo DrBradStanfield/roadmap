@@ -587,10 +587,12 @@ export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaini
  * Send extracted page content to the LLM proxy for lab result extraction.
  * One call per file — do not batch across files.
  */
+export type UploadErrorCode = 'rate_limit' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network';
+
 export async function labImport(
   pages: PageContent[],
   unitSystem: 'si' | 'conventional',
-): Promise<{ result: LabImportResult | null; remaining?: number; error?: string }> {
+): Promise<{ result: LabImportResult | null; remaining?: number; error?: string; errorCode?: UploadErrorCode }> {
   try {
     const response = await fetch(`${PROXY_PATH}/api/lab-import`, {
       method: 'POST',
@@ -599,22 +601,22 @@ export async function labImport(
     });
 
     if (response.status === 429) {
-      return { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.' };
+      return { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
     }
     if (!response.ok) {
-      return { result: null, error: 'Extraction failed' };
+      return { result: null, error: 'Extraction failed', errorCode: 'server_error' };
     }
 
     const data = await parseJsonResponse<LabImportResponse>(response);
     if (!data?.success || !data.data) {
-      return { result: null, error: data?.error || 'Extraction failed' };
+      return { result: null, error: data?.error || 'Extraction failed', errorCode: 'server_error' };
     }
 
     return { result: data.data, remaining: data.remaining };
   } catch (error) {
     console.warn('Lab import error:', error);
     Sentry.captureException(error);
-    return { result: null, error: 'Network error' };
+    return { result: null, error: 'Network error', errorCode: 'network' };
   }
 }
 
@@ -643,7 +645,7 @@ interface BatchPollResponse {
  */
 export async function labImportBatch(
   files: Array<{ fileName: string; pages: PageContent[] }>,
-): Promise<{ batchId: string | null; error?: string }> {
+): Promise<{ batchId: string | null; error?: string; errorCode?: UploadErrorCode }> {
   try {
     const response = await fetch(`${PROXY_PATH}/api/lab-import`, {
       method: 'POST',
@@ -652,21 +654,21 @@ export async function labImportBatch(
     });
 
     if (response.status === 429) {
-      return { batchId: null, error: 'Daily upload limit reached. You can upload more tomorrow.' };
+      return { batchId: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
     }
     if (!response.ok) {
-      return { batchId: null, error: 'Failed to start batch processing' };
+      return { batchId: null, error: 'Failed to start batch processing', errorCode: 'server_error' };
     }
 
     const data = await parseJsonResponse<BatchCreateResponse>(response);
     if (!data?.success || !data.batchId) {
-      return { batchId: null, error: data?.error || 'Batch creation failed' };
+      return { batchId: null, error: data?.error || 'Batch creation failed', errorCode: 'server_error' };
     }
     return { batchId: data.batchId };
   } catch (error) {
     console.warn('Batch import error:', error);
     Sentry.captureException(error);
-    return { batchId: null, error: 'Network error' };
+    return { batchId: null, error: 'Network error', errorCode: 'network' };
   }
 }
 

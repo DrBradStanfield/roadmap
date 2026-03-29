@@ -1,9 +1,24 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { UnitSystem } from '@roadmap/health-core';
-import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, type PageContent, type ExtractedValue, type ApiMeasurement } from '../lib/api';
+import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, type PageContent, type ExtractedValue, type ApiMeasurement, type UploadErrorCode } from '../lib/api';
 import { ReviewTable, type FileResult, type DocumentToSave } from './ReviewTable';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
+
+class UploadError extends Error {
+  constructor(message: string, public code: UploadErrorCode) {
+    super(message);
+  }
+}
+
+const UPLOAD_ERROR_MESSAGES: Record<UploadErrorCode, string> = {
+  rate_limit: 'Daily upload limit reached. You can upload more tomorrow.',
+  timeout: 'Processing took too long. Try uploading fewer files at once.',
+  server_restart: 'The server restarted during processing. Please try again.',
+  no_files: 'No readable files found. Please check your files and try again.',
+  server_error: 'Something went wrong on the server. Please try again.',
+  network: 'Network error. Please check your connection and try again.',
+};
 
 type ModalState = 'select' | 'processing' | 'review' | 'done';
 
@@ -229,9 +244,12 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
       setState('review');
     } catch (err) {
       if (!abort.signal.aborted) {
-        console.error('Upload processing error:', err);
-        Sentry.captureException(err);
-        setError('An error occurred while processing files. Please try again.');
+        const code = err instanceof UploadError ? err.code : 'unknown';
+        console.error('Upload processing error:', code, err);
+        Sentry.captureException(err, { tags: { uploadErrorCode: code } });
+        setError(err instanceof UploadError
+          ? UPLOAD_ERROR_MESSAGES[err.code]
+          : 'An error occurred while processing files. Please try again.');
         setState('select');
         onProcessingEnd?.(false);
       }
@@ -357,7 +375,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
 
     await allDone;
     if (allResults.length === 0 && !abort.signal.aborted) {
-      throw new Error('No readable files found. Please check your files and try again.');
+      throw new UploadError('No readable files found.', 'no_files');
     }
     return allResults;
   }
@@ -383,12 +401,12 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
       }
     }
 
-    if (allFiles.length === 0) throw new Error('No readable files found.');
+    if (allFiles.length === 0) throw new UploadError('No readable files found.', 'no_files');
 
     updateProgress({ current: 33, total: 100, fileName: `Analyzing ${allFiles.length} files...` });
 
-    const { batchId, error: batchError } = await labImportBatch(allFiles);
-    if (!batchId) throw new Error(batchError || 'Failed to start processing');
+    const { batchId, error: batchError, errorCode: batchErrorCode } = await labImportBatch(allFiles);
+    if (!batchId) throw new UploadError(batchError || 'Failed to start processing', batchErrorCode || 'server_error');
 
     const fileNames = allFiles.map(f => (f.fileName.split('/').pop() || f.fileName));
     let fakeProgress = 35;
@@ -414,11 +432,11 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
       while (!abort.signal.aborted) {
         await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
         if (abort.signal.aborted) break;
-        if (Date.now() > maxPollTime) throw new Error('Processing timed out. Please try again.');
+        if (Date.now() > maxPollTime) throw new UploadError('Processing timed out.', 'timeout');
 
         const poll = await pollBatchStatus(batchId);
         realCompleted = poll.completed;
-        if (poll.error) throw new Error(poll.error);
+        if (poll.error) throw new UploadError(poll.error, poll.error.includes('Batch not found') ? 'server_restart' : 'server_error');
 
         if (poll.status === 'ended' && poll.results) {
           clearInterval(fakeTimer);
