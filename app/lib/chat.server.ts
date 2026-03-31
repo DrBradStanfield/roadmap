@@ -24,7 +24,7 @@ const CHAT_MODEL = 'claude-haiku-4-5-20251001';
 const CHAT_MAX_TOKENS = 1024;
 const MAX_MESSAGE_LENGTH = 500;
 const FREE_DAILY_LIMIT = 3;
-const PAID_DAILY_LIMIT = 100;
+const SUBSCRIBER_DAILY_LIMIT = 10;
 const HISTORY_TOKEN_BUDGET = 8000;
 
 // ---------------------------------------------------------------------------
@@ -118,18 +118,26 @@ function utcDateString(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+export interface DailyLimitResult {
+  allowed: boolean;
+  remaining: number;
+  useCredit: boolean;
+  messageCredits: number;
+}
+
 export async function checkDailyLimit(
   client: SupabaseClient,
   userId: string,
   subscriptionPlan: string = 'free',
-): Promise<{ allowed: boolean; remaining: number }> {
-  const limit = subscriptionPlan === 'paid' ? PAID_DAILY_LIMIT : FREE_DAILY_LIMIT;
+  messageCredits: number = 0,
+): Promise<DailyLimitResult> {
+  const limit = subscriptionPlan === 'subscriber' ? SUBSCRIBER_DAILY_LIMIT : FREE_DAILY_LIMIT;
   const today = utcDateString();
 
   // Check cache first
   const cached = dailyLimitCache.get(userId);
   if (cached && cached.dateString === today && cached.count < limit) {
-    return { allowed: true, remaining: limit - cached.count };
+    return { allowed: true, remaining: limit - cached.count, useCredit: false, messageCredits };
   }
 
   // Query DB for authoritative count (explicit user_id for defense-in-depth beyond RLS)
@@ -143,17 +151,24 @@ export async function checkDailyLimit(
 
   if (error) {
     console.error('Error checking daily limit:', error);
-    // Fail open — allow the message but don't cache
-    return { allowed: true, remaining: 1 };
+    return { allowed: true, remaining: 1, useCredit: false, messageCredits };
   }
 
   const messageCount = count ?? 0;
   dailyLimitCache.set(userId, { count: messageCount, dateString: today });
 
-  return {
-    allowed: messageCount < limit,
-    remaining: Math.max(0, limit - messageCount),
-  };
+  const remaining = Math.max(0, limit - messageCount);
+
+  if (messageCount < limit) {
+    return { allowed: true, remaining, useCredit: false, messageCredits };
+  }
+
+  // Daily limit exhausted — check credits
+  if (messageCredits > 0) {
+    return { allowed: true, remaining: 0, useCredit: true, messageCredits };
+  }
+
+  return { allowed: false, remaining: 0, useCredit: false, messageCredits: 0 };
 }
 
 /** Increment the cached count after a successful message send. */
@@ -184,6 +199,7 @@ setInterval(() => {
 export interface ChatContext {
   userContextJson: string;
   subscriptionPlan: string;
+  messageCredits: number;
   /** Full documents for content matching (avoids second DB call) */
   healthDocuments: Array<{ title: string; document_date: string | null; document_type: string; content_md: string }>;
 }
@@ -232,6 +248,7 @@ export async function assembleChatContext(
   const context: ChatContext = {
     userContextJson: JSON.stringify(userContext, null, 2),
     subscriptionPlan: profile.subscription_plan ?? 'free',
+    messageCredits: profile.message_credits ?? 0,
     healthDocuments: healthDocuments ?? [],
   };
 
@@ -417,4 +434,4 @@ export async function getChatCompletion(
 // Exports for testing
 // ---------------------------------------------------------------------------
 
-export { CHAT_MODEL, MAX_MESSAGE_LENGTH, FREE_DAILY_LIMIT, PAID_DAILY_LIMIT };
+export { CHAT_MODEL, MAX_MESSAGE_LENGTH, FREE_DAILY_LIMIT, SUBSCRIBER_DAILY_LIMIT };

@@ -258,6 +258,9 @@ export interface DbProfile {
   reminders_global_optout: boolean;
   unsubscribe_token: string | null;
   created_at: string;
+  subscription_plan: string;
+  subscription_checked_at: string | null;
+  message_credits: number;
 }
 
 /** Convert a DB measurement row to the camelCase API response format. */
@@ -1267,7 +1270,7 @@ export async function deleteAllUserData(userId: string): Promise<{ measurementsD
   }
 
   // Delete dependent tables — log errors but continue (partial deletion > no deletion)
-  for (const table of ['chat_messages', 'chat_conversations', 'medications', 'screenings', 'reminder_preferences', 'health_documents', 'lab_values', 'reminder_log'] as const) {
+  for (const table of ['chat_messages', 'chat_conversations', 'message_credit_transactions', 'medications', 'screenings', 'reminder_preferences', 'health_documents', 'lab_values', 'reminder_log'] as const) {
     const { error } = await supabaseAdmin.from(table).delete().eq('user_id', userId);
     if (error) console.error(`Failed to delete ${table} for ${userId}:`, error.message);
   }
@@ -1302,6 +1305,91 @@ export async function deleteAllUserData(userId: string): Promise<{ measurementsD
   }
 
   return { measurementsDeleted };
+}
+
+// ---------------------------------------------------------------------------
+// Message credits — one-time pack purchases, atomic deduction
+// ---------------------------------------------------------------------------
+
+/**
+ * Add message credits after a Shopify order. Atomic via RPC — prevents race conditions
+ * on concurrent orders. Idempotent via order_id unique constraint (returns null for duplicates).
+ */
+export async function addMessageCredits(
+  userId: string,
+  amount: number,
+  orderId: string,
+): Promise<number | null> {
+  if (!supabaseAdmin) throw new Error('Supabase admin client not configured');
+
+  const { data, error } = await supabaseAdmin.rpc('add_message_credits', {
+    target_user_id: userId,
+    credit_amount: amount,
+    shopify_order_id: orderId,
+  });
+
+  if (error) {
+    throw new Error(`Failed to add credits: ${error.message}`);
+  }
+
+  return data as number | null;
+}
+
+/**
+ * Deduct one message credit atomically. Returns new balance, or -1 if no credits.
+ */
+export async function deductMessageCredit(userId: string): Promise<number> {
+  if (!supabaseAdmin) throw new Error('Supabase admin client not configured');
+
+  const { data, error } = await supabaseAdmin.rpc('deduct_message_credit', {
+    target_user_id: userId,
+  });
+
+  if (error) {
+    console.error('Failed to deduct credit:', error.message);
+    return -1;
+  }
+
+  return data as number;
+}
+
+/**
+ * Update subscription plan and check timestamp on a profile.
+ */
+export async function updateSubscriptionPlan(
+  userId: string,
+  plan: string,
+): Promise<void> {
+  if (!supabaseAdmin) return;
+
+  await supabaseAdmin
+    .from('profiles')
+    .update({
+      subscription_plan: plan,
+      subscription_checked_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+}
+
+/**
+ * Look up a Supabase user ID by Shopify customer ID. Uses admin client.
+ */
+export async function getUserIdByCustomerId(shopifyCustomerId: string): Promise<string | null> {
+  // Check in-memory cache first
+  const cached = getCachedUserId(shopifyCustomerId);
+  if (cached) return cached;
+
+  if (!supabaseAdmin) return null;
+
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select('id')
+    .eq('shopify_customer_id', shopifyCustomerId)
+    .single();
+
+  if (error || !data) return null;
+  cacheUserId(shopifyCustomerId, data.id);
+  return data.id;
 }
 
 // ---------------------------------------------------------------------------

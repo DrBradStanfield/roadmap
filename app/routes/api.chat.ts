@@ -8,8 +8,8 @@
  */
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
-import { getAuthenticatedUser, EXEMPT_CUSTOMERS } from '../lib/route-helpers.server';
-import { logAudit, getProfile } from '../lib/supabase.server';
+import { getAuthenticatedUser, EXEMPT_CUSTOMERS, checkSubscriptionFromTags } from '../lib/route-helpers.server';
+import { logAudit, getProfile, deductMessageCredit, updateSubscriptionPlan, type DbProfile } from '../lib/supabase.server';
 import {
   checkDailyLimit,
   incrementDailyLimitCache,
@@ -21,6 +21,33 @@ import {
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
+
+import { buildPackUrls } from '../lib/message-packs';
+
+// Lazy subscription check — at most once per 24 hours
+async function refreshSubscriptionIfStale(
+  auth: { admin: any; customerId: string; userId: string },
+  profile: Pick<DbProfile, 'subscription_plan' | 'subscription_checked_at'>,
+): Promise<string> {
+  const checkedAt = profile.subscription_checked_at
+    ? new Date(profile.subscription_checked_at).getTime()
+    : 0;
+  const staleThreshold = Date.now() - 24 * 60 * 60_000;
+
+  if (checkedAt > staleThreshold) {
+    return profile.subscription_plan ?? 'free';
+  }
+
+  // Refresh from Shopify tags
+  if (!auth.admin) return profile.subscription_plan ?? 'free';
+
+  const plan = await checkSubscriptionFromTags(auth.admin, auth.customerId);
+  // Fire-and-forget update
+  updateSubscriptionPlan(auth.userId, plan).catch(err =>
+    console.error('Failed to update subscription plan:', err),
+  );
+  return plan;
+}
 
 // ---------------------------------------------------------------------------
 // GET — list conversations or load conversation messages
@@ -74,8 +101,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json({ success: false, error: 'Failed to load conversations' }, { status: 500 });
     }
 
-    const plan = profile?.subscription_plan ?? 'free';
-    const { remaining } = await checkDailyLimit(auth.client, auth.userId, plan);
+    const messageCredits = profile?.message_credits ?? 0;
+
+    // Lazy subscription check (at most once per 24 hours)
+    const plan = profile
+      ? await refreshSubscriptionIfStale(auth, profile)
+      : 'free';
+
+    const limitResult = await checkDailyLimit(auth.client, auth.userId, plan, messageCredits);
 
     return json({
       success: true,
@@ -85,7 +118,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
         updatedAt: c.updated_at,
         createdAt: c.created_at,
       })),
-      dailyRemaining: remaining,
+      dailyRemaining: limitResult.remaining,
+      messageCredits,
+      packs: (limitResult.remaining <= 0 && messageCredits <= 0) ? buildPackUrls() : [],
     });
   } catch (error) {
     console.error('Chat loader error:', error);
@@ -150,17 +185,37 @@ export async function action({ request }: ActionFunctionArgs) {
 
     const isExempt = EXEMPT_CUSTOMERS.has(auth.customerId);
     const limitCheck = isExempt
-      ? { allowed: true, remaining: 999 }
-      : await checkDailyLimit(auth.client, auth.userId, context.subscriptionPlan);
+      ? { allowed: true, remaining: 999, useCredit: false, messageCredits: context.messageCredits }
+      : await checkDailyLimit(auth.client, auth.userId, context.subscriptionPlan, context.messageCredits);
+    let responseCredits = limitCheck.messageCredits;
+
     if (!limitCheck.allowed) {
       return json({
         success: false,
         error: 'limit_reached',
         dailyRemaining: 0,
+        messageCredits: 0,
+        packs: buildPackUrls(),
       }, { status: 429 });
     }
 
-    if (!isExempt) {
+    // Deduct a credit if daily limit was exceeded
+    if (limitCheck.useCredit) {
+      const newBalance = await deductMessageCredit(auth.userId);
+      if (newBalance === -1) {
+        // Race condition: credits exhausted between check and deduct
+        return json({
+          success: false,
+          error: 'limit_reached',
+          dailyRemaining: 0,
+          messageCredits: 0,
+          packs: buildPackUrls(),
+        }, { status: 429 });
+      }
+      responseCredits = newBalance;
+    }
+
+    if (!isExempt && !limitCheck.useCredit) {
       incrementDailyLimitCache(auth.userId);
     }
 
@@ -255,12 +310,15 @@ export async function action({ request }: ActionFunctionArgs) {
       cacheCreation: completion.usage.cacheCreationTokens,
     });
 
+    const finalRemaining = limitCheck.useCredit ? 0 : Math.max(0, limitCheck.remaining - 1);
     return json({
       success: true,
       conversationId: activeConversationId,
       messageId: null,
       content: completion.content,
-      dailyRemaining: Math.max(0, limitCheck.remaining - 1),
+      dailyRemaining: finalRemaining,
+      messageCredits: responseCredits,
+      packs: (finalRemaining <= 0 && responseCredits <= 0) ? buildPackUrls() : [],
     });
   } catch (error) {
     console.error('Chat action error:', error);

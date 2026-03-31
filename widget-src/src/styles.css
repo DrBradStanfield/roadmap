@@ -3151,6 +3151,60 @@ input[type="number"] {
   text-align: center;
 }
 
+/* Upgrade CTA (shown when daily limit reached) */
+
+.chat-upgrade {
+  padding: 16px;
+  text-align: center;
+}
+
+.chat-upgrade p {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.chat-upgrade-subtitle {
+  color: var(--color-gray-medium) !important;
+  font-size: 13px !important;
+  margin-bottom: 12px !important;
+}
+
+.chat-pack-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-pack-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--color-text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.chat-pack-btn:hover {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 1px var(--color-brand);
+}
+
+.chat-pack-amount {
+  font-weight: 500;
+}
+
+.chat-pack-price {
+  font-weight: 600;
+  color: var(--color-brand);
+}
+
 /* Input bar */
 
 .chat-input-bar {

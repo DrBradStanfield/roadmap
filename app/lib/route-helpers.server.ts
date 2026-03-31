@@ -69,7 +69,7 @@ export async function getAuthenticatedUser(request: Request) {
   const userId = await getOrCreateSupabaseUser(
     customerId, customerInfo.email, customerInfo.firstName, customerInfo.lastName,
   );
-  return { userId, customerId, client: createUserClient(userId) };
+  return { userId, customerId, client: createUserClient(userId), admin };
 }
 
 /** UUID format: 8-4-4-4-12 hex chars */
@@ -80,6 +80,33 @@ const UUID_REGEX = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12
  */
 export function isValidUuid(value: string): boolean {
   return UUID_REGEX.test(value);
+}
+
+const APPSTLE_SUBSCRIBER_TAG = 'appstle_subscription_active_customer';
+
+/**
+ * Check if a Shopify customer has an active Appstle subscription.
+ * Returns 'subscriber' if the customer has the tag, 'free' otherwise.
+ */
+export async function checkSubscriptionFromTags(
+  admin: any,
+  customerId: string,
+): Promise<'subscriber' | 'free'> {
+  try {
+    const response = await admin.graphql(`
+      query getCustomerTags($id: ID!) {
+        customer(id: $id) {
+          tags
+        }
+      }
+    `, { variables: { id: `gid://shopify/Customer/${customerId}` } });
+    const result = await response.json();
+    const tags: string[] = result?.data?.customer?.tags ?? [];
+    return tags.includes(APPSTLE_SUBSCRIBER_TAG) ? 'subscriber' : 'free';
+  } catch (error) {
+    console.error('Error checking subscription tags:', error);
+    return 'free'; // Fail safe — default to free tier
+  }
 }
 
 /**

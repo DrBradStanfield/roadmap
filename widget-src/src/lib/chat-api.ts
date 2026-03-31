@@ -23,21 +23,34 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+export interface ChatPack {
+  name: string;
+  price: string;
+  amount: number;
+  url: string;
+}
+
 export interface SendMessageResult {
   conversationId: string;
   messageId: string | null;
   content: string;
   dailyRemaining: number;
+  messageCredits: number;
+  packs?: ChatPack[];
 }
 
 export interface ChatListResult {
   conversations: ChatConversation[];
   dailyRemaining: number;
+  messageCredits: number;
+  packs?: ChatPack[];
 }
 
 export interface ChatError {
   error: string;
   dailyRemaining?: number;
+  messageCredits?: number;
+  packs?: ChatPack[];
 }
 
 // ---------------------------------------------------------------------------
@@ -52,11 +65,14 @@ export async function listConversations(): Promise<ChatListResult | null> {
       success: boolean;
       conversations: ChatConversation[];
       dailyRemaining: number;
+      messageCredits: number;
     }>(response);
     if (!result?.success) return null;
     return {
       conversations: result.conversations,
       dailyRemaining: result.dailyRemaining,
+      messageCredits: result.messageCredits ?? 0,
+      packs: result.packs,
     };
   } catch (error) {
     console.warn('Error listing conversations:', error);
@@ -106,6 +122,8 @@ export async function sendMessage(
         error: {
           error: data?.error ?? 'limit_reached',
           dailyRemaining: data?.dailyRemaining ?? 0,
+          messageCredits: data?.messageCredits ?? 0,
+          packs: data?.packs,
         },
       };
     }
@@ -123,6 +141,8 @@ export async function sendMessage(
         messageId: data.messageId,
         content: data.content,
         dailyRemaining: data.dailyRemaining,
+        messageCredits: data.messageCredits ?? 0,
+        packs: data.packs,
       },
       error: null,
     };

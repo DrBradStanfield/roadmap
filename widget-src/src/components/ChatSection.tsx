@@ -15,6 +15,7 @@ import {
   deleteConversation,
   type ChatConversation,
   type ChatMessage,
+  type ChatPack,
 } from '../lib/chat-api';
 import { renderMarkdown } from '../lib/markdown';
 
@@ -51,6 +52,8 @@ export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
+  const [messageCredits, setMessageCredits] = useState<number>(0);
+  const [creditPacks, setCreditPacks] = useState<ChatPack[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showThreads, setShowThreads] = useState(false);
   const [hasLoadedConversations, setHasLoadedConversations] = useState(false);
@@ -71,6 +74,8 @@ export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
     if (result) {
       setConversations(result.conversations);
       setDailyRemaining(result.dailyRemaining);
+      setMessageCredits(result.messageCredits);
+      if (result.packs?.length) setCreditPacks(result.packs);
     }
   }, [hasLoadedConversations, isLoggedIn]);
 
@@ -115,8 +120,13 @@ export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
     if (sendError) {
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
       if (sendError.error === 'limit_reached') {
-        setError('You\'ve reached your daily message limit. More coming soon!');
         setDailyRemaining(0);
+        setMessageCredits(0);
+        if (sendError.packs?.length) {
+          setCreditPacks(sendError.packs);
+        } else {
+          setError("You've reached your daily message limit. Check back tomorrow.");
+        }
       } else {
         setError(sendError.error);
       }
@@ -133,6 +143,8 @@ export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
       };
       setMessages(prev => [...prev, assistantMsg]);
       setDailyRemaining(result.dailyRemaining);
+      setMessageCredits(result.messageCredits);
+      if (result.packs?.length) setCreditPacks(result.packs);
 
       if (!activeConversationId) {
         setActiveConversationId(result.conversationId);
@@ -184,7 +196,35 @@ export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
     setShowDisclosure(false);
   }, []);
 
-  const limitReached = dailyRemaining !== null && dailyRemaining <= 0;
+  const limitReached = dailyRemaining !== null && dailyRemaining <= 0 && messageCredits <= 0;
+  const [awaitingPurchase, setAwaitingPurchase] = useState(false);
+  const lastCreditCheck = useRef(0);
+
+  // Refresh credits when user returns to tab after purchasing
+  useEffect(() => {
+    if (!awaitingPurchase) return;
+    const handleFocus = async () => {
+      if (Date.now() - lastCreditCheck.current < 5000) return;
+      lastCreditCheck.current = Date.now();
+      const result = await listConversations();
+      if (result) {
+        setMessageCredits(result.messageCredits);
+        setDailyRemaining(result.dailyRemaining);
+        if (result.messageCredits > 0) {
+          setCreditPacks([]);
+        }
+      }
+      // Always reset — either purchase succeeded (credits > 0) or user abandoned
+      setAwaitingPurchase(false);
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [awaitingPurchase]);
+
+  const openPackCheckout = useCallback((url: string) => {
+    setAwaitingPurchase(true);
+    window.open(url, '_blank', 'width=500,height=700,scrollbars=yes');
+  }, []);
 
   // ----- GUEST STATE -----
   if (!isLoggedIn) {
@@ -274,6 +314,30 @@ export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
                 </div>
               </div>
             )}
+            {limitReached && creditPacks.length > 0 && (
+              <div className="chat-upgrade">
+                {awaitingPurchase ? (
+                  <p>Complete your purchase in the checkout window. Credits will appear automatically.</p>
+                ) : (
+                  <>
+                    <p>You've used all your free messages for today.</p>
+                    <p className="chat-upgrade-subtitle">Get more messages instantly:</p>
+                    <div className="chat-pack-options">
+                      {creditPacks.map(pack => (
+                        <button
+                          key={pack.name}
+                          className="chat-pack-btn"
+                          onClick={() => openPackCheckout(pack.url)}
+                        >
+                          <span className="chat-pack-amount">{pack.amount} messages</span>
+                          <span className="chat-pack-price">{pack.price}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             {error && <div className="chat-error">{error}</div>}
             <div ref={messagesEndRef} />
           </div>
@@ -301,8 +365,11 @@ export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
           </button>
           <div className="chat-input-meta">
             <span className="chat-char-count">{inputText.length}/{MAX_CHARS}</span>
-            {dailyRemaining !== null && (
-              <span className="chat-counter">{dailyRemaining} message{dailyRemaining !== 1 ? 's' : ''} remaining</span>
+            {dailyRemaining !== null && dailyRemaining > 0 && (
+              <span className="chat-counter">{dailyRemaining} free today</span>
+            )}
+            {dailyRemaining !== null && dailyRemaining <= 0 && messageCredits > 0 && (
+              <span className="chat-counter">Using credits ({messageCredits} left)</span>
             )}
           </div>
         </div>

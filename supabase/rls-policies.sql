@@ -658,6 +658,73 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_plan TEXT DEFAULT 'fr
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_id TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_expires_at TIMESTAMPTZ;
 
+-- ===== Message credits (chat message packs) =====
+
+-- Credits column on profiles (atomic deduction via CHECK constraint)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS message_credits INTEGER DEFAULT 0
+  CHECK (message_credits >= 0);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_checked_at TIMESTAMPTZ;
+
+-- Transaction audit trail (idempotent via order_id unique index)
+CREATE TABLE IF NOT EXISTS message_credit_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL,
+  balance_after INTEGER NOT NULL,
+  reason TEXT NOT NULL CHECK (reason IN ('purchase', 'chat_message', 'refund', 'admin_grant')),
+  order_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_credit_tx_order
+  ON message_credit_transactions(order_id) WHERE order_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_credit_tx_user
+  ON message_credit_transactions(user_id, created_at DESC);
+
+ALTER TABLE message_credit_transactions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users read own credit transactions" ON message_credit_transactions;
+CREATE POLICY "Users read own credit transactions"
+  ON message_credit_transactions FOR SELECT USING (user_id = auth.uid());
+
+GRANT SELECT ON message_credit_transactions TO authenticated;
+
+-- Atomic credit deduction RPC (prevents race conditions via UPDATE WHERE > 0)
+CREATE OR REPLACE FUNCTION deduct_message_credit(target_user_id UUID)
+RETURNS INTEGER AS $$
+DECLARE new_balance INTEGER;
+BEGIN
+  UPDATE profiles SET message_credits = message_credits - 1
+  WHERE id = target_user_id AND message_credits > 0
+  RETURNING message_credits INTO new_balance;
+  IF NOT FOUND THEN RETURN -1; END IF;
+  INSERT INTO message_credit_transactions (user_id, amount, balance_after, reason)
+  VALUES (target_user_id, -1, new_balance, 'chat_message');
+  RETURN new_balance;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION deduct_message_credit(UUID) TO authenticated;
+
+-- Atomic credit addition RPC (prevents race conditions on concurrent orders)
+CREATE OR REPLACE FUNCTION add_message_credits(
+  target_user_id UUID, credit_amount INT, shopify_order_id TEXT
+) RETURNS INTEGER AS $$
+DECLARE new_balance INTEGER;
+BEGIN
+  UPDATE profiles SET message_credits = message_credits + credit_amount
+  WHERE id = target_user_id
+  RETURNING message_credits INTO new_balance;
+  IF NOT FOUND THEN RETURN -1; END IF;
+  INSERT INTO message_credit_transactions (user_id, amount, balance_after, reason, order_id)
+  VALUES (target_user_id, credit_amount, new_balance, 'purchase', shopify_order_id);
+  RETURN new_balance;
+EXCEPTION WHEN unique_violation THEN RETURN NULL;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+GRANT EXECUTE ON FUNCTION add_message_credits(UUID, INT, TEXT) TO authenticated;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,
