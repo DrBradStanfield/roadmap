@@ -891,6 +891,8 @@ export function HealthTool() {
     onReminderPreferenceChange: handleReminderPreferenceChange,
     onGlobalReminderOptout: handleGlobalReminderOptout,
     sex: inputs.sex,
+    hideInlineChat: floatingChatOpen && !isMobile,
+    onInlineChatExpand: () => setFloatingChatOpen(true),
   };
 
   return (
@@ -966,28 +968,27 @@ export function HealthTool() {
       )}
 
       {/* Floating chat FAB — desktop only (mobile uses tab) */}
-      {!isMobile && formStage >= 4 && (
-        floatingChatOpen ? (
-          <ChatSection
-            isLoggedIn={authState.isLoggedIn}
-            loginUrl={authState.loginUrl}
-            startExpanded
-            onClose={() => setFloatingChatOpen(false)}
-          />
-        ) : (
-          <button
-            className={`chat-fab no-print${!authState.isLoggedIn ? ' chat-fab-guest' : ''}`}
-            onClick={() => authState.isLoggedIn && setFloatingChatOpen(true)}
-            aria-label="Open chat"
-          >
-            <span className="chat-fab-icon">💬</span>
-            {!authState.isLoggedIn && (
-              <div className="chat-fab-tooltip">
-                <a href={authState.loginUrl || '/account/login'}>Sign in</a> to chat about your results
-              </div>
-            )}
-          </button>
-        )
+      {!isMobile && formStage >= 4 && !floatingChatOpen && (
+        <button
+          className={`chat-fab no-print${!authState.isLoggedIn ? ' chat-fab-guest' : ''}`}
+          onClick={() => { if (authState.isLoggedIn) setFloatingChatOpen(true); }}
+          aria-label="Open chat"
+        >
+          <span className="chat-fab-icon">💬</span>
+          {!authState.isLoggedIn && (
+            <div className="chat-fab-tooltip">
+              <a href={authState.loginUrl || '/account/login'}>Sign in</a> to chat about your results
+            </div>
+          )}
+        </button>
+      )}
+      {!isMobile && floatingChatOpen && (
+        <ChatSection
+          isLoggedIn={authState.isLoggedIn}
+          loginUrl={authState.loginUrl}
+          startExpanded
+          onClose={() => setFloatingChatOpen(false)}
+        />
       )}
     </div>
   );

@@ -51,6 +51,8 @@ interface ResultsPanelProps {
   onReminderPreferenceChange?: (category: string, enabled: boolean) => void;
   onGlobalReminderOptout?: () => void;
   sex?: 'male' | 'female';
+  hideInlineChat?: boolean;
+  onInlineChatExpand?: () => void;
 }
 
 function getBmiStatus(bmiCategory: string, waistToHeightRatio?: number): { label: string; className: string } {
@@ -487,7 +489,7 @@ function ReminderSettings({
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, hideInlineChat, onInlineChatExpand }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -677,11 +679,14 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
         </div>
       </section>
 
-      {/* Chat CTA — inline card between stats and suggestions */}
-      <ChatSection
-        isLoggedIn={authState?.isLoggedIn ?? false}
-        loginUrl={authState?.loginUrl}
-      />
+      {/* Chat CTA — inline card between stats and suggestions (hidden when floating FAB chat is open) */}
+      {!hideInlineChat && (
+        <ChatSection
+          isLoggedIn={authState?.isLoggedIn ?? false}
+          loginUrl={authState?.loginUrl}
+          onExpand={onInlineChatExpand}
+        />
+      )}
 
       {/* Suggestions */}
       <section className="suggestions-section">

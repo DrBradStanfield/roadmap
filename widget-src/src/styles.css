@@ -2775,24 +2775,51 @@ input[type="number"] {
   box-shadow: none;
 }
 
-.chat-guest-tooltip {
+/* Shared tooltip base for chat login prompts */
+.chat-guest-tooltip,
+.chat-fab-tooltip {
   position: absolute;
-  bottom: calc(100% + 2px);
-  left: 50%;
-  transform: translateX(-50%);
   padding: 10px 16px;
   background: #fff;
   color: var(--color-text);
   font-size: 13px;
   border-radius: 8px;
   white-space: nowrap;
-  z-index: 10;
   border: 1px solid var(--color-gray-border);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   visibility: hidden;
   opacity: 0;
   transition: opacity 0.15s, visibility 0.15s;
+}
+
+.chat-guest-tooltip a,
+.chat-fab-tooltip a {
+  color: var(--color-brand);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.chat-guest-tooltip::after,
+.chat-fab-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  border: 6px solid transparent;
+  border-top-color: var(--color-gray-border);
+}
+
+/* Inline chat tooltip — centered above the collapsed bar */
+.chat-guest-tooltip {
+  bottom: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
   transition-delay: 0.3s;
+}
+
+.chat-guest-tooltip::after {
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 /* Invisible bridge so hovering between card and tooltip keeps it visible */
@@ -2803,22 +2830,6 @@ input[type="number"] {
   left: 0;
   right: 0;
   height: 12px;
-}
-
-.chat-guest-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: var(--color-gray-border);
-}
-
-.chat-guest-tooltip a {
-  color: var(--color-brand);
-  font-weight: 600;
-  text-decoration: underline;
 }
 
 .chat-guest .chat-collapsed:hover .chat-guest-tooltip {
@@ -3332,6 +3343,70 @@ input[type="number"] {
   .chat-input {
     font-size: 16px; /* prevents iOS zoom */
   }
+}
+
+/* --- Floating chat FAB --- */
+
+.chat-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-brand);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  z-index: 99;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: chat-fab-entrance 0.3s ease-out;
+}
+
+.chat-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.chat-fab-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+@keyframes chat-fab-entrance {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Guest FAB — greyed out with tooltip */
+
+.chat-fab-guest {
+  background: var(--color-gray-light);
+  cursor: default;
+}
+
+.chat-fab-guest:hover {
+  transform: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* FAB tooltip — anchored above the round button, right-aligned */
+.chat-fab-tooltip {
+  bottom: calc(100% + 10px);
+  right: 0;
+}
+
+.chat-fab-tooltip::after {
+  right: 20px;
+}
+
+.chat-fab-guest:hover .chat-fab-tooltip {
+  visibility: visible;
+  opacity: 1;
 }
 
 /* ── Supplements ── */

@@ -26,6 +26,8 @@ interface ChatSectionProps {
   startExpanded?: boolean;
   /** External close handler — used by floating FAB to control open/close */
   onClose?: () => void;
+  /** When provided, clicking the collapsed bubble calls this instead of expanding internally */
+  onExpand?: () => void;
 }
 
 const MAX_CHARS = 500;
@@ -48,7 +50,7 @@ const ChatMessageBubble = React.memo(function ChatMessageBubble({ msg }: { msg: 
   );
 });
 
-export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose }: ChatSectionProps) {
+export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onExpand }: ChatSectionProps) {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -83,9 +85,14 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose }: Ch
     }
   }, [hasLoadedConversations, isLoggedIn]);
 
-  // Load conversations on mount when startExpanded
+  // Load conversations and show disclosure on mount when startExpanded
   useEffect(() => {
-    if (startExpanded) loadConversationsIfNeeded();
+    if (startExpanded) {
+      if (!localStorage.getItem('health_roadmap_chat_disclosed')) {
+        setShowDisclosure(true);
+      }
+      loadConversationsIfNeeded();
+    }
   }, [startExpanded, loadConversationsIfNeeded]);
 
   // Load conversation messages when selecting a thread
@@ -192,13 +199,15 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose }: Ch
   const [showDisclosure, setShowDisclosure] = useState(false);
   const handleExpand = useCallback(() => {
     if (!isLoggedIn) return;
+    // Delegate to parent (e.g. open floating FAB chat) if provided
+    if (onExpand) { onExpand(); return; }
     const disclosed = localStorage.getItem('health_roadmap_chat_disclosed');
     if (!disclosed) {
       setShowDisclosure(true);
     }
     setIsExpanded(true);
     loadConversationsIfNeeded();
-  }, [isLoggedIn, loadConversationsIfNeeded]);
+  }, [isLoggedIn, onExpand, loadConversationsIfNeeded]);
 
   const dismissDisclosure = useCallback(() => {
     localStorage.setItem('health_roadmap_chat_disclosed', '1');
