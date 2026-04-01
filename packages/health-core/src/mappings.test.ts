@@ -307,6 +307,30 @@ describe('medicationsToInputs', () => {
     expect(inputs.metformin).toBe('xr_1000');
   });
 
+  it('converts bempedoic_acid Nexletol', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'bempedoic_acid', drugName: 'bempedoic_acid', doseValue: 180, doseUnit: 'mg', updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.bempedoicAcid).toBe('bempedoic_acid');
+  });
+
+  it('converts bempedoic_acid Nexlizet combo', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'bempedoic_acid', drugName: 'bempedoic_acid_ezetimibe', doseValue: 180, doseUnit: 'mg', updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.bempedoicAcid).toBe('bempedoic_acid_ezetimibe');
+  });
+
+  it('converts bempedoic_acid not_tolerated', () => {
+    const meds: ApiMedication[] = [
+      { id: '1', medicationKey: 'bempedoic_acid', drugName: 'not_tolerated', doseValue: null, doseUnit: null, updatedAt: '' },
+    ];
+    const inputs = medicationsToInputs(meds);
+    expect(inputs.bempedoicAcid).toBe('not_tolerated');
+  });
+
   it('converts all medication keys including weight/diabetes cascade', () => {
     const meds: ApiMedication[] = [
       { id: '1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', updatedAt: '' },

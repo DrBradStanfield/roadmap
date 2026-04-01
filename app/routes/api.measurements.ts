@@ -65,6 +65,14 @@ import {
   getMedications,
   upsertMedication,
   toApiMedication,
+  getMedicationHistory,
+  toApiMedicationHistory,
+  getSupplements,
+  upsertSupplement,
+  deleteSupplement,
+  toApiSupplement,
+  getSupplementHistory,
+  toApiSupplementHistory,
   getScreenings,
   upsertScreening,
   toApiScreening,
@@ -72,7 +80,7 @@ import {
   toApiReminderPreference,
 } from '../lib/supabase.server';
 import { checkAndSendWelcomeEmail, sendReportEmail, generateReportHtml } from '../lib/email.server';
-import { measurementSchema, profileUpdateSchema, medicationSchema, screeningSchema, bulkMeasurementSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
+import { measurementSchema, profileUpdateSchema, medicationSchema, screeningSchema, supplementSchema, bulkMeasurementSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
 
 // GET — Load measurements (authenticated via app proxy HMAC)
 // ?metric_type=weight&limit=50  → list measurements for one metric
@@ -100,6 +108,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const url = new URL(request.url);
     const metricType = url.searchParams.get('metric_type');
     const allHistory = url.searchParams.get('all_history');
+    const medicationHistoryParam = url.searchParams.get('medication_history');
+
+    if (medicationHistoryParam) {
+      const history = await getMedicationHistory(client);
+      return json({ success: true, data: history.map(toApiMedicationHistory) });
+    }
+
+    const supplementHistoryParam = url.searchParams.get('supplement_history');
+    if (supplementHistoryParam) {
+      const history = await getSupplementHistory(client);
+      return json({ success: true, data: history.map(toApiSupplementHistory) });
+    }
 
     if (allHistory) {
       const limit = Math.min(parseInt(url.searchParams.get('limit') || '100') || 100, 200);
@@ -117,12 +137,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json({ success: true, data: measurements.map(toApiMeasurement) });
     }
 
-    const [latest, profile, medications, screenings, reminderPrefs] = await Promise.all([
+    const [latest, profile, medications, screenings, reminderPrefs, supplements] = await Promise.all([
       getLatestMeasurements(client),
       getProfile(client),
       getMedications(client),
       getScreenings(client),
       getReminderPreferences(client),
+      getSupplements(client),
     ]);
     return json({
       success: true,
@@ -131,6 +152,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       medications: medications.map(toApiMedication),
       screenings: screenings.map(toApiScreening),
       reminderPreferences: reminderPrefs.map(toApiReminderPreference),
+      supplements: supplements.map(toApiSupplement),
     });
   } catch (error) {
     console.error('Error loading measurements:', error);
@@ -272,6 +294,39 @@ export async function action({ request }: ActionFunctionArgs) {
         }
 
         return json({ success: true, data: toApiScreening(scr) });
+      }
+
+      // Supplement upsert — POST { supplement: { supplementKey, supplementName, ... } }
+      if (body.supplement) {
+        const supValidation = supplementSchema.safeParse(body.supplement);
+        if (!supValidation.success) {
+          return json(
+            { success: false, error: 'Invalid supplement data', details: supValidation.error.issues },
+            { status: 400 },
+          );
+        }
+        const { supplementKey, supplementName, doseValue, doseUnit, status, startedAt } = supValidation.data;
+        const sup = await upsertSupplement(client, userId, supplementKey, supplementName, doseValue ?? null, doseUnit ?? null, status ?? 'active', startedAt);
+        if (!sup) {
+          return json({ success: false, error: 'Failed to save supplement' }, { status: 500 });
+        }
+        return json({ success: true, data: toApiSupplement(sup) });
+      }
+
+      // Supplement delete — POST { deleteSupplement: { supplementKey } }
+      if (body.deleteSupplement) {
+        const delValidation = supplementSchema.pick({ supplementKey: true }).safeParse(body.deleteSupplement);
+        if (!delValidation.success) {
+          return json(
+            { success: false, error: 'Invalid supplement key', details: delValidation.error.issues },
+            { status: 400 },
+          );
+        }
+        const deleted = await deleteSupplement(client, userId, delValidation.data.supplementKey);
+        if (!deleted) {
+          return json({ success: false, error: 'Failed to delete supplement' }, { status: 500 });
+        }
+        return json({ success: true });
       }
 
       // Bulk measurement save (from lab import)

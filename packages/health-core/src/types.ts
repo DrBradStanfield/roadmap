@@ -184,6 +184,19 @@ export const EZETIMIBE_OPTIONS = [
 export type EzetimibeValue = typeof EZETIMIBE_OPTIONS[number]['value'];
 
 /**
+ * Bempedoic acid options for dropdown.
+ */
+export const BEMPEDOIC_ACID_OPTIONS = [
+  { value: 'not_yet', label: "Haven't tried yet" },
+  { value: 'bempedoic_acid', label: 'Nexletol (bempedoic acid 180mg)' },
+  { value: 'bempedoic_acid_ezetimibe', label: 'Nexlizet (bempedoic acid + ezetimibe)' },
+  { value: 'none', label: 'Not taking' },
+  { value: 'not_tolerated', label: 'Not tolerated' },
+] as const;
+
+export type BempedoicAcidValue = typeof BEMPEDOIC_ACID_OPTIONS[number]['value'];
+
+/**
  * PCSK9i options for dropdown.
  */
 export const PCSK9I_OPTIONS = [
@@ -460,6 +473,7 @@ export interface MedicationInputs {
   // Cholesterol cascade
   statin?: StatinInput;
   ezetimibe?: EzetimibeValue;
+  bempedoicAcid?: BempedoicAcidValue;
   statinEscalation?: 'not_yet' | 'not_tolerated';
   pcsk9i?: Pcsk9iValue;
   // Weight & diabetes cascade
@@ -468,6 +482,50 @@ export interface MedicationInputs {
   sglt2i?: Sglt2iInput;
   metformin?: MetforminValue;
 }
+
+/**
+ * Supplement option for the curated supplement list.
+ */
+export interface SupplementOption {
+  key: string;
+  name: string;
+  category: 'featured' | 'cardiovascular' | 'metabolic' | 'bone_health' | 'general';
+  defaultDose?: number;
+  defaultUnit?: string;
+}
+
+export const SUPPLEMENT_OPTIONS: SupplementOption[] = [
+  // Featured
+  { key: 'microvitamin', name: 'MicroVitamin', category: 'featured', defaultDose: 5, defaultUnit: 'capsules' },
+  { key: 'microvitamin_plus', name: 'MicroVitamin+', category: 'featured', defaultDose: 1, defaultUnit: 'scoop' },
+  { key: 'sleep', name: 'Sleep', category: 'featured', defaultDose: 4, defaultUnit: 'capsules' },
+  { key: 'omega3', name: 'Omega-3 (EPA/DHA)', category: 'featured', defaultUnit: 'mg' },
+  // Cardiovascular
+  { key: 'coq10', name: 'CoQ10', category: 'cardiovascular', defaultUnit: 'mg' },
+  { key: 'plant_sterols', name: 'Plant sterols', category: 'cardiovascular', defaultUnit: 'mg' },
+  { key: 'red_yeast_rice', name: 'Red yeast rice', category: 'cardiovascular', defaultUnit: 'mg' },
+  { key: 'berberine', name: 'Berberine', category: 'cardiovascular', defaultUnit: 'mg' },
+  { key: 'niacin', name: 'Niacin', category: 'cardiovascular', defaultUnit: 'mg' },
+  { key: 'citrus_bergamot', name: 'Citrus bergamot', category: 'cardiovascular', defaultUnit: 'mg' },
+  // Metabolic
+  { key: 'vitamin_d', name: 'Vitamin D', category: 'metabolic', defaultUnit: 'IU' },
+  { key: 'magnesium', name: 'Magnesium', category: 'metabolic', defaultUnit: 'mg' },
+  { key: 'chromium', name: 'Chromium', category: 'metabolic', defaultUnit: 'mcg' },
+  { key: 'alpha_lipoic_acid', name: 'Alpha-lipoic acid', category: 'metabolic', defaultUnit: 'mg' },
+  // Bone Health
+  { key: 'calcium', name: 'Calcium', category: 'bone_health', defaultUnit: 'mg' },
+  { key: 'vitamin_k2', name: 'Vitamin K2', category: 'bone_health', defaultUnit: 'mcg' },
+  // General
+  { key: 'multivitamin', name: 'Multivitamin', category: 'general' },
+  { key: 'iron', name: 'Iron', category: 'general', defaultUnit: 'mg' },
+  { key: 'zinc', name: 'Zinc', category: 'general', defaultUnit: 'mg' },
+  { key: 'b_complex', name: 'B-complex', category: 'general' },
+  { key: 'probiotics', name: 'Probiotics', category: 'general' },
+  { key: 'creatine', name: 'Creatine', category: 'general', defaultUnit: 'g' },
+  { key: 'collagen', name: 'Collagen', category: 'general', defaultUnit: 'g' },
+];
+
+export const FEATURED_SUPPLEMENTS = SUPPLEMENT_OPTIONS.filter(s => s.category === 'featured');
 
 /**
  * A single immutable measurement record (maps to health_measurements table).

@@ -295,7 +295,7 @@ ALTER TABLE medications DROP CONSTRAINT IF EXISTS medications_medication_key_che
 ALTER TABLE medications ADD CONSTRAINT medications_medication_key_check
   CHECK (medication_key IN (
     -- Cholesterol medication cascade
-    'statin', 'ezetimibe', 'statin_escalation', 'statin_increase', 'pcsk9i',
+    'statin', 'ezetimibe', 'statin_escalation', 'statin_increase', 'pcsk9i', 'bempedoic_acid',
     -- Weight & diabetes medication cascade
     'glp1', 'glp1_escalation', 'sglt2i', 'metformin'
   ));
@@ -724,6 +724,136 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION add_message_credits(UUID, INT, TEXT) TO authenticated;
+
+-- ===== Create medication_history table =====
+-- Immutable, append-only log of medication changes (FHIR MedicationStatement pattern).
+-- UPDATE allowed only to close effective_end on previous records.
+
+CREATE TABLE IF NOT EXISTS medication_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  medication_key TEXT NOT NULL,
+  drug_name TEXT NOT NULL,
+  dose_value NUMERIC,
+  dose_unit TEXT,
+  status TEXT NOT NULL CHECK (status IN ('active', 'stopped', 'intended', 'not-taken', 'on-hold')),
+  effective_start TIMESTAMPTZ NOT NULL,
+  effective_end TIMESTAMPTZ,
+  change_type TEXT NOT NULL CHECK (change_type IN ('started', 'stopped', 'dose_changed', 'switched', 'initial')),
+  source TEXT NOT NULL DEFAULT 'manual',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_medication_history_user_key
+  ON medication_history(user_id, medication_key, effective_start DESC);
+
+ALTER TABLE medication_history ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own medication_history" ON medication_history;
+CREATE POLICY "Users can read own medication_history"
+  ON medication_history FOR SELECT
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can insert own medication_history" ON medication_history;
+CREATE POLICY "Users can insert own medication_history"
+  ON medication_history FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can update own medication_history" ON medication_history;
+CREATE POLICY "Users can update own medication_history"
+  ON medication_history FOR UPDATE
+  USING (user_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can delete own medication_history" ON medication_history;
+CREATE POLICY "Users can delete own medication_history"
+  ON medication_history FOR DELETE
+  USING (user_id = auth.uid());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON medication_history TO authenticated;
+
+-- Backfill existing medications as initial history records
+INSERT INTO medication_history (user_id, medication_key, drug_name, dose_value, dose_unit, status, effective_start, change_type, source)
+SELECT user_id, medication_key, drug_name, dose_value, dose_unit, status,
+  COALESCE(started_at, created_at), 'initial', 'manual'
+FROM medications
+WHERE NOT EXISTS (
+  SELECT 1 FROM medication_history mh
+  WHERE mh.user_id = medications.user_id AND mh.medication_key = medications.medication_key
+);
+
+-- ===== Create supplements table =====
+-- Mutable, UPSERT pattern (unique on user_id + supplement_key).
+
+CREATE TABLE IF NOT EXISTS supplements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  supplement_key TEXT NOT NULL,
+  supplement_name TEXT NOT NULL,
+  dose_value NUMERIC,
+  dose_unit TEXT,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'stopped')),
+  started_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, supplement_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_supplements_user ON supplements(user_id);
+
+ALTER TABLE supplements ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own supplements" ON supplements;
+CREATE POLICY "Users can read own supplements"
+  ON supplements FOR SELECT USING (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can insert own supplements" ON supplements;
+CREATE POLICY "Users can insert own supplements"
+  ON supplements FOR INSERT WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can update own supplements" ON supplements;
+CREATE POLICY "Users can update own supplements"
+  ON supplements FOR UPDATE USING (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can delete own supplements" ON supplements;
+CREATE POLICY "Users can delete own supplements"
+  ON supplements FOR DELETE USING (user_id = auth.uid());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON supplements TO authenticated;
+
+-- ===== Create supplement_history table =====
+-- Immutable, append-only log of supplement changes.
+
+CREATE TABLE IF NOT EXISTS supplement_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  supplement_key TEXT NOT NULL,
+  supplement_name TEXT NOT NULL,
+  dose_value NUMERIC,
+  dose_unit TEXT,
+  status TEXT NOT NULL CHECK (status IN ('active', 'stopped')),
+  effective_start TIMESTAMPTZ NOT NULL,
+  effective_end TIMESTAMPTZ,
+  change_type TEXT NOT NULL CHECK (change_type IN ('started', 'stopped', 'dose_changed')),
+  source TEXT NOT NULL DEFAULT 'manual',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_supplement_history_user
+  ON supplement_history(user_id, supplement_key, effective_start DESC);
+
+ALTER TABLE supplement_history ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can read own supplement_history" ON supplement_history;
+CREATE POLICY "Users can read own supplement_history"
+  ON supplement_history FOR SELECT USING (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can insert own supplement_history" ON supplement_history;
+CREATE POLICY "Users can insert own supplement_history"
+  ON supplement_history FOR INSERT WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can update own supplement_history" ON supplement_history;
+CREATE POLICY "Users can update own supplement_history"
+  ON supplement_history FOR UPDATE USING (user_id = auth.uid());
+DROP POLICY IF EXISTS "Users can delete own supplement_history" ON supplement_history;
+CREATE POLICY "Users can delete own supplement_history"
+  ON supplement_history FOR DELETE USING (user_id = auth.uid());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON supplement_history TO authenticated;
 
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.

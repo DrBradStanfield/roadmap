@@ -38,6 +38,8 @@ See [health_roadmap_algorithm.md](health_roadmap_algorithm.md) — the **single 
 | statin | none | NULL | NULL | Not taking any statin |
 | statin | not_tolerated | NULL | NULL | Tried but can't tolerate |
 | ezetimibe | not_yet | NULL | NULL | Haven't tried yet |
+| bempedoic_acid | bempedoic_acid | 180 | mg | Nexletol |
+| bempedoic_acid | bempedoic_acid_ezetimibe | 180 | mg | Nexlizet (combo pill) |
 | pcsk9i | evolocumab | 140 | mg | Or alirocumab |
 
 **Rules:**
@@ -149,7 +151,10 @@ fly deploy
 
 - `profiles` — User accounts (shopify_customer_id nullable) + demographics (sex, birth_year, birth_month, unit_system, first_name, last_name) + reminder fields
 - `health_measurements` — Immutable time-series records (metric_type, value in SI, recorded_at, source, external_id). No UPDATE policy. `source` defaults to `'manual'`. `external_id` for deduplication of synced data.
-- `medications` — FHIR-compatible records (medication_key, drug_name, dose_value, dose_unit, status, started_at), UNIQUE per (user_id, medication_key). Keys: `statin`, `ezetimibe`, `statin_escalation`, `pcsk9i`, `glp1`, `glp1_escalation`, `sglt2i`, `metformin`
+- `medications` — FHIR-compatible records (medication_key, drug_name, dose_value, dose_unit, status, started_at), UNIQUE per (user_id, medication_key). Keys: `statin`, `ezetimibe`, `statin_escalation`, `pcsk9i`, `bempedoic_acid`, `glp1`, `glp1_escalation`, `sglt2i`, `metformin`
+- `medication_history` — Immutable, append-only log of medication changes (FHIR MedicationStatement pattern). Tracks effective_start/effective_end periods, change_type (started/stopped/dose_changed/switched/initial). Auto-recorded on every medication save.
+- `supplements` — Mutable supplement records (supplement_key, supplement_name, dose_value, dose_unit, status, started_at), UNIQUE per (user_id, supplement_key). Logged-in users only.
+- `supplement_history` — Immutable, append-only log of supplement changes. Same pattern as medication_history.
 - `reminder_preferences` — Per-category opt-out. Categories: `screening_colorectal`, `screening_breast`, `screening_cervical`, `screening_lung`, `screening_prostate`, `screening_dexa`, `blood_test_lipids`, `blood_test_hba1c`, `blood_test_creatinine`, `medication_review`
 - `reminder_log` — Cooldown enforcement. Groups: `screening` (90d), `blood_test` (180d), `medication_review` (365d)
 - `audit_logs` — HIPAA audit trail (user_id nullable for anonymization after deletion)
@@ -223,7 +228,11 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. On mobil
 **GET** `?all_history=true&limit=100&offset=0` — All history with pagination
 **POST** `{ metricType, value, recordedAt?, source?, externalId? }` — Add measurement (SI units)
 **POST** `{ profile: { sex?, birthYear?, birthMonth?, unitSystem? } }` — Update profile
-**POST** `{ medication: { medicationKey, value } }` — Upsert medication
+**POST** `{ medication: { medicationKey, drugName, doseValue?, doseUnit? } }` — Upsert medication (auto-records history)
+**POST** `{ supplement: { supplementKey, supplementName, doseValue?, doseUnit?, status?, startedAt? } }` — Upsert supplement
+**POST** `{ deleteSupplement: { supplementKey } }` — Soft-delete supplement (sets status to 'stopped')
+**GET** `?medication_history=true` — All medication history (for chart annotations)
+**GET** `?supplement_history=true` — All supplement history (for chart annotations)
 **DELETE** `{ measurementId }` — Delete measurement (verifies ownership)
 
 ### Reminder Preferences (`/apps/health-tool-1/api/reminders`)
@@ -254,7 +263,7 @@ Missing any step causes **silent data loss**:
 
 **Audit logging**: All writes logged to `audit_logs` via `logAudit()`. On account deletion, logs anonymized.
 
-**Account deletion**: Requires `{ confirmDelete: true }`, rate-limited 1/hour. Deletes measurements → medications → anonymizes audit logs → deletes profile → deletes auth user → clears cache.
+**Account deletion**: Requires `{ confirmDelete: true }`, rate-limited 1/hour. Deletes measurements → medication_history → medications → supplement_history → supplements → anonymizes audit logs → deletes profile → deletes auth user → clears cache.
 
 **Data sync**: Dual-sync design — `sync-embed.liquid` handles non-widget pages, `HealthTool.tsx` handles widget page. Both check for meaningful cloud data before syncing, both set `health_roadmap_authenticated` localStorage flag for auto-redirect. **See Dangerous Gotchas for invariants that must not be broken.**
 

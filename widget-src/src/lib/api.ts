@@ -22,6 +22,7 @@ interface MeasurementsResponse {
   profile?: ApiProfile | null;
   medications?: ApiMedication[];
   screenings?: ApiScreening[];
+  supplements?: ApiSupplement[];
   reminderPreferences?: ApiReminderPreference[];
   error?: string;
 }
@@ -78,6 +79,8 @@ export interface LatestMeasurementsResult {
   medications: ApiMedication[];
   /** Cancer screening statuses from the screenings table. */
   screenings: ApiScreening[];
+  /** Supplement records (logged-in users only). */
+  supplements: ApiSupplement[];
   /** Reminder notification preferences. */
   reminderPreferences: ApiReminderPreference[];
 }
@@ -109,7 +112,7 @@ export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult
       inputs.unitSystem = allInputs.unitSystem;
     }
 
-    return { inputs, previousMeasurements: result.data, medications: result.medications ?? [], screenings: result.screenings ?? [], reminderPreferences: result.reminderPreferences ?? [] };
+    return { inputs, previousMeasurements: result.data, medications: result.medications ?? [], screenings: result.screenings ?? [], supplements: result.supplements ?? [], reminderPreferences: result.reminderPreferences ?? [] };
   } catch (error) {
     console.warn('Error loading measurements:', error);
     Sentry.captureException(error);
@@ -234,6 +237,33 @@ export async function loadAllHistory(
   }
 }
 
+/** Medication history record (from medication_history table). */
+export interface ApiMedicationHistory {
+  id: string;
+  medicationKey: string;
+  drugName: string;
+  doseValue: number | null;
+  doseUnit: string | null;
+  status: string;
+  effectiveStart: string;
+  effectiveEnd: string | null;
+  changeType: string;
+  source: string;
+}
+
+/** Load all medication history for chart annotations. */
+export async function loadMedicationHistory(): Promise<ApiMedicationHistory[]> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/measurements?medication_history=true`);
+    if (!response.ok) return [];
+    const result = await response.json();
+    return result?.success ? result.data || [] : [];
+  } catch (error) {
+    console.warn('Error loading medication history:', error);
+    return [];
+  }
+}
+
 /**
  * Delete all user data (measurements, profile, auth user).
  * Returns { success, error? } so callers can show specific failure reasons.
@@ -293,6 +323,61 @@ export async function saveMedication(
     return result?.success ?? false;
   } catch (error) {
     console.warn('Error saving medication:', error);
+    Sentry.captureException(error);
+    return false;
+  }
+}
+
+/** API supplement record. */
+export interface ApiSupplement {
+  id: string;
+  supplementKey: string;
+  supplementName: string;
+  doseValue: number | null;
+  doseUnit: string | null;
+  status: string;
+  startedAt: string | null;
+  updatedAt: string;
+}
+
+/** Save a supplement (upsert). */
+export async function saveSupplement(
+  supplementKey: string,
+  supplementName: string,
+  doseValue: number | null = null,
+  doseUnit: string | null = null,
+  status: string = 'active',
+  startedAt?: string,
+): Promise<boolean> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/measurements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ supplement: { supplementKey, supplementName, doseValue, doseUnit, status, startedAt } }),
+    });
+    if (!response.ok) return false;
+    const result = await parseJsonResponse<{ success: boolean }>(response);
+    return result?.success ?? false;
+  } catch (error) {
+    console.warn('Error saving supplement:', error);
+    Sentry.captureException(error);
+    return false;
+  }
+}
+
+/** Delete (stop) a supplement. */
+export async function deleteSupplementApi(supplementKey: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/measurements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deleteSupplement: { supplementKey } }),
+    });
+    if (!response.ok) return false;
+    const result = await parseJsonResponse<{ success: boolean }>(response);
+    return result?.success ?? false;
+  } catch (error) {
+    console.warn('Error deleting supplement:', error);
     Sentry.captureException(error);
     return false;
   }

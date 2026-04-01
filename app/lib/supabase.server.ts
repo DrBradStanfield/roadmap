@@ -549,7 +549,364 @@ export async function upsertMedication(
   }
 
   logAudit(userId, 'MEDICATION_UPDATED', 'medication', data.id, { medicationKey, drugName, doseValue });
+
+  // Fire-and-forget: history recording shouldn't block the response
+  recordMedicationChange(client, userId, medicationKey, drugName, doseValue, doseUnit).catch(e =>
+    console.error('Failed to record medication history:', e),
+  );
+
   return data as DbMedication;
+}
+
+// ---------------------------------------------------------------------------
+// Medication History — immutable, append-only log of medication changes.
+// FHIR MedicationStatement pattern with effective_start/effective_end.
+// ---------------------------------------------------------------------------
+
+export interface DbMedicationHistory {
+  id: string;
+  user_id: string;
+  medication_key: string;
+  drug_name: string;
+  dose_value: number | null;
+  dose_unit: string | null;
+  status: string;
+  effective_start: string;
+  effective_end: string | null;
+  change_type: string;
+  source: string;
+  created_at: string;
+}
+
+export function toApiMedicationHistory(m: DbMedicationHistory) {
+  return {
+    id: m.id,
+    medicationKey: m.medication_key,
+    drugName: m.drug_name,
+    doseValue: m.dose_value,
+    doseUnit: m.dose_unit,
+    status: m.status,
+    effectiveStart: m.effective_start,
+    effectiveEnd: m.effective_end,
+    changeType: m.change_type,
+    source: m.source,
+  };
+}
+
+/** Fetch all medication history for the current user. */
+export async function getMedicationHistory(
+  client: SupabaseClient,
+): Promise<DbMedicationHistory[]> {
+  const { data, error } = await client
+    .from('medication_history')
+    .select('*')
+    .order('effective_start', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching medication history:', error);
+    return [];
+  }
+  return (data ?? []) as DbMedicationHistory[];
+}
+
+/**
+ * Record a medication change in the history table.
+ * Closes the previous open record (if state changed) and inserts a new one.
+ */
+export async function recordMedicationChange(
+  client: SupabaseClient,
+  userId: string,
+  medicationKey: string,
+  newDrugName: string,
+  newDoseValue: number | null,
+  newDoseUnit: string | null,
+  effectiveStart?: string,
+): Promise<void> {
+  const now = effectiveStart ?? new Date().toISOString();
+  const newStatus = deriveMedicationStatus(newDrugName);
+
+  // Find current open history record
+  const { data: openRows } = await client
+    .from('medication_history')
+    .select('*')
+    .eq('medication_key', medicationKey)
+    .is('effective_end', null)
+    .limit(1);
+
+  const prev = (openRows as DbMedicationHistory[] | null)?.[0];
+
+  // Skip if state hasn't changed
+  if (prev && prev.drug_name === newDrugName && prev.dose_value === newDoseValue) {
+    return;
+  }
+
+  // Determine change type
+  let changeType: string;
+  if (!prev) {
+    changeType = 'initial';
+  } else if (newDrugName === 'none' || newDrugName === 'not_tolerated') {
+    changeType = 'stopped';
+  } else if (prev.drug_name !== newDrugName) {
+    changeType = 'switched';
+  } else {
+    changeType = 'dose_changed';
+  }
+
+  // Close previous record
+  if (prev) {
+    await client
+      .from('medication_history')
+      .update({ effective_end: now })
+      .eq('id', prev.id);
+  }
+
+  // Insert new record
+  const { error } = await client
+    .from('medication_history')
+    .insert({
+      user_id: userId,
+      medication_key: medicationKey,
+      drug_name: newDrugName,
+      dose_value: newDoseValue,
+      dose_unit: newDoseUnit,
+      status: newStatus,
+      effective_start: now,
+      effective_end: null,
+      change_type: changeType,
+      source: 'manual',
+    });
+
+  if (error) {
+    console.error('Error recording medication history:', { error: error.message, medicationKey });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Supplement CRUD — mutable supplement status.
+// Uses UPSERT pattern (unique on user_id + supplement_key).
+// ---------------------------------------------------------------------------
+
+export interface DbSupplement {
+  id: string;
+  user_id: string;
+  supplement_key: string;
+  supplement_name: string;
+  dose_value: number | null;
+  dose_unit: string | null;
+  status: string;
+  started_at: string | null;
+  updated_at: string;
+  created_at: string;
+}
+
+export function toApiSupplement(s: DbSupplement) {
+  return {
+    id: s.id,
+    supplementKey: s.supplement_key,
+    supplementName: s.supplement_name,
+    doseValue: s.dose_value,
+    doseUnit: s.dose_unit,
+    status: s.status,
+    startedAt: s.started_at,
+    updatedAt: s.updated_at,
+  };
+}
+
+export async function getSupplements(
+  client: SupabaseClient,
+): Promise<DbSupplement[]> {
+  const { data, error } = await client
+    .from('supplements')
+    .select('*');
+
+  if (error) {
+    console.error('Error fetching supplements:', error);
+    return [];
+  }
+  return (data ?? []) as DbSupplement[];
+}
+
+export async function upsertSupplement(
+  client: SupabaseClient,
+  userId: string,
+  supplementKey: string,
+  supplementName: string,
+  doseValue: number | null = null,
+  doseUnit: string | null = null,
+  status: string = 'active',
+  startedAt?: string,
+): Promise<DbSupplement | null> {
+  const { data, error } = await client
+    .from('supplements')
+    .upsert(
+      {
+        user_id: userId,
+        supplement_key: supplementKey,
+        supplement_name: supplementName,
+        dose_value: doseValue,
+        dose_unit: doseUnit,
+        status,
+        started_at: startedAt ?? new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,supplement_key' },
+    )
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error upserting supplement:', { error: error.message, supplementKey });
+    return null;
+  }
+
+  logAudit(userId, 'SUPPLEMENT_UPDATED', 'supplement', data.id, { supplementKey, supplementName, doseValue, status });
+
+  // Fire-and-forget: history recording shouldn't block the response
+  recordSupplementChange(client, userId, supplementKey, supplementName, doseValue, doseUnit, status, startedAt).catch(e =>
+    console.error('Failed to record supplement history:', e),
+  );
+
+  return data as DbSupplement;
+}
+
+export async function deleteSupplement(
+  client: SupabaseClient,
+  userId: string,
+  supplementKey: string,
+): Promise<boolean> {
+  // Soft-delete: set status to 'stopped'
+  const { data: existing } = await client
+    .from('supplements')
+    .select('supplement_name')
+    .eq('supplement_key', supplementKey)
+    .single();
+
+  if (!existing) return false;
+
+  const { error } = await client
+    .from('supplements')
+    .update({ status: 'stopped', updated_at: new Date().toISOString() })
+    .eq('supplement_key', supplementKey);
+
+  if (error) {
+    console.error('Error deleting supplement:', error.message);
+    return false;
+  }
+
+  logAudit(userId, 'SUPPLEMENT_STOPPED', 'supplement', supplementKey, { supplementKey });
+  await recordSupplementChange(client, userId, supplementKey, existing.supplement_name, null, null, 'stopped');
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Supplement History — immutable, append-only log of supplement changes.
+// ---------------------------------------------------------------------------
+
+export interface DbSupplementHistory {
+  id: string;
+  user_id: string;
+  supplement_key: string;
+  supplement_name: string;
+  dose_value: number | null;
+  dose_unit: string | null;
+  status: string;
+  effective_start: string;
+  effective_end: string | null;
+  change_type: string;
+  source: string;
+  created_at: string;
+}
+
+export function toApiSupplementHistory(s: DbSupplementHistory) {
+  return {
+    id: s.id,
+    supplementKey: s.supplement_key,
+    supplementName: s.supplement_name,
+    doseValue: s.dose_value,
+    doseUnit: s.dose_unit,
+    status: s.status,
+    effectiveStart: s.effective_start,
+    effectiveEnd: s.effective_end,
+    changeType: s.change_type,
+    source: s.source,
+  };
+}
+
+export async function getSupplementHistory(
+  client: SupabaseClient,
+): Promise<DbSupplementHistory[]> {
+  const { data, error } = await client
+    .from('supplement_history')
+    .select('*')
+    .order('effective_start', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching supplement history:', error);
+    return [];
+  }
+  return (data ?? []) as DbSupplementHistory[];
+}
+
+async function recordSupplementChange(
+  client: SupabaseClient,
+  userId: string,
+  supplementKey: string,
+  supplementName: string,
+  newDoseValue: number | null,
+  newDoseUnit: string | null,
+  newStatus: string,
+  effectiveStart?: string,
+): Promise<void> {
+  const now = effectiveStart ?? new Date().toISOString();
+
+  const { data: openRows } = await client
+    .from('supplement_history')
+    .select('*')
+    .eq('supplement_key', supplementKey)
+    .is('effective_end', null)
+    .limit(1);
+
+  const prev = (openRows as DbSupplementHistory[] | null)?.[0];
+
+  // Skip if state hasn't changed
+  if (prev && prev.dose_value === newDoseValue && prev.status === newStatus) {
+    return;
+  }
+
+  let changeType: string;
+  if (!prev) {
+    changeType = 'started';
+  } else if (newStatus === 'stopped') {
+    changeType = 'stopped';
+  } else {
+    changeType = 'dose_changed';
+  }
+
+  if (prev) {
+    await client
+      .from('supplement_history')
+      .update({ effective_end: now })
+      .eq('id', prev.id);
+  }
+
+  const { error } = await client
+    .from('supplement_history')
+    .insert({
+      user_id: userId,
+      supplement_key: supplementKey,
+      supplement_name: supplementName,
+      dose_value: newDoseValue,
+      dose_unit: newDoseUnit,
+      status: newStatus,
+      effective_start: now,
+      effective_end: null,
+      change_type: changeType,
+      source: 'manual',
+    });
+
+  if (error) {
+    console.error('Error recording supplement history:', { error: error.message, supplementKey });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1270,7 +1627,7 @@ export async function deleteAllUserData(userId: string): Promise<{ measurementsD
   }
 
   // Delete dependent tables — log errors but continue (partial deletion > no deletion)
-  for (const table of ['chat_messages', 'chat_conversations', 'message_credit_transactions', 'medications', 'screenings', 'reminder_preferences', 'health_documents', 'lab_values', 'reminder_log'] as const) {
+  for (const table of ['chat_messages', 'chat_conversations', 'message_credit_transactions', 'medication_history', 'medications', 'supplement_history', 'supplements', 'screenings', 'reminder_preferences', 'health_documents', 'lab_values', 'reminder_log'] as const) {
     const { error } = await supabaseAdmin.from(table).delete().eq('user_id', userId);
     if (error) console.error(`Failed to delete ${table} for ${userId}:`, error.message);
   }

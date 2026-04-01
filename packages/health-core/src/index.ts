@@ -12,12 +12,14 @@ export type {
   StatinInput,
   StatinNameValue,
   EzetimibeValue,
+  BempedoicAcidValue,
   Pcsk9iValue,
   Glp1Input,
   Glp1NameValue,
   Sglt2iInput,
   Sglt2iNameValue,
   MetforminValue,
+  SupplementOption,
 } from './types';
 
 export {
@@ -32,8 +34,9 @@ export {
   shouldSuggestSwitch,
   isOnMaxPotency,
   getStatinEscalationType,
-  // Ezetimibe & PCSK9i options
+  // Ezetimibe, bempedoic acid & PCSK9i options
   EZETIMIBE_OPTIONS,
+  BEMPEDOIC_ACID_OPTIONS,
   PCSK9I_OPTIONS,
   // GLP-1 configuration
   GLP1_DRUGS,
@@ -54,6 +57,9 @@ export {
   getScreeningNextDueDate,
   POST_FOLLOWUP_INTERVALS,
   SCREENING_FOLLOWUP_INFO,
+  // Supplement options
+  SUPPLEMENT_OPTIONS,
+  FEATURED_SUPPLEMENTS,
   // Database encoding helpers
   SEX_DB,
   UNIT_SYSTEM_DB,
@@ -100,6 +106,7 @@ export {
   type ValidatedProfileUpdate,
   MEDICATION_KEYS,
   medicationSchema,
+  supplementSchema,
   type ValidatedMedication,
   SCREENING_KEYS,
   screeningSchema,

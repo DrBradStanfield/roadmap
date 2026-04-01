@@ -22,6 +22,10 @@ import { renderMarkdown } from '../lib/markdown';
 interface ChatSectionProps {
   isLoggedIn: boolean;
   loginUrl?: string;
+  /** When true, renders expanded immediately (skips collapsed bubble) */
+  startExpanded?: boolean;
+  /** External close handler — used by floating FAB to control open/close */
+  onClose?: () => void;
 }
 
 const MAX_CHARS = 500;
@@ -44,13 +48,13 @@ const ChatMessageBubble = React.memo(function ChatMessageBubble({ msg }: { msg: 
   );
 });
 
-export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
+export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose }: ChatSectionProps) {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
   const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
   const [messageCredits, setMessageCredits] = useState<number>(0);
   const [creditPacks, setCreditPacks] = useState<ChatPack[]>([]);
@@ -78,6 +82,11 @@ export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
       if (result.packs?.length) setCreditPacks(result.packs);
     }
   }, [hasLoadedConversations, isLoggedIn]);
+
+  // Load conversations on mount when startExpanded
+  useEffect(() => {
+    if (startExpanded) loadConversationsIfNeeded();
+  }, [startExpanded, loadConversationsIfNeeded]);
 
   // Load conversation messages when selecting a thread
   const selectConversation = useCallback(async (id: string) => {
@@ -268,7 +277,7 @@ export function ChatSection({ isLoggedIn, loginUrl }: ChatSectionProps) {
           {showThreads ? 'Back' : 'History'}
         </button>
         <span className="chat-title">Health Roadmap Chat</span>
-        <button className="chat-close-btn" onClick={() => setIsExpanded(false)}>✕</button>
+        <button className="chat-close-btn" onClick={() => { setIsExpanded(false); onClose?.(); }}>✕</button>
       </div>
 
       <div className="chat-body">

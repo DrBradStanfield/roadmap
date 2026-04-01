@@ -20,13 +20,14 @@ import {
   Tooltip,
   Filler,
 } from 'chart.js';
+import annotationPlugin from 'chartjs-plugin-annotation';
 import 'chartjs-adapter-date-fns';
-import { loadAllHistory, loadLabValues, type ApiLabValue } from '../lib/api';
+import { loadAllHistory, loadLabValues, loadMedicationHistory, type ApiLabValue, type ApiMedicationHistory } from '../lib/api';
 import { loadUnitPreference } from '../lib/storage';
 import { labValueLabel } from '../lib/lab-value-labels';
 
 // Register only what we need
-Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Filler);
+Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Filler, annotationPlugin);
 
 // Chart colors per metric
 const METRIC_COLORS: Record<string, string> = {
@@ -44,6 +45,27 @@ const METRIC_COLORS: Record<string, string> = {
   psa: '#d946ef',
   lpa: '#e11d48',
 };
+
+// Map medication keys to the chart metrics they affect
+const MED_CHART_MAP: Record<string, string[]> = {
+  statin: ['ldl', 'apob', 'total_cholesterol'],
+  ezetimibe: ['ldl', 'apob', 'total_cholesterol'],
+  bempedoic_acid: ['ldl', 'apob', 'total_cholesterol'],
+  pcsk9i: ['ldl', 'apob', 'total_cholesterol'],
+  statin_escalation: ['ldl', 'apob', 'total_cholesterol'],
+  glp1: ['hba1c', 'weight', 'triglycerides'],
+  glp1_escalation: ['hba1c', 'weight', 'triglycerides'],
+  sglt2i: ['hba1c', 'weight'],
+  metformin: ['hba1c'],
+};
+
+interface ChartAnnotation {
+  date: number;
+  label: string;
+  color: string;
+}
+
+const MED_ANNOTATION_COLOR = '#6366f1';
 
 function toDisplayValue(metricType: string, value: number, unitSystem: UnitSystem): number {
   const field = METRIC_TO_FIELD[metricType];
@@ -76,11 +98,13 @@ function TimeSeriesChart({
   data,
   unit,
   color,
+  annotations,
 }: {
   title: string;
   data: Array<{ x: number; y: number }>;
   unit: string;
   color: string;
+  annotations?: ChartAnnotation[];
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef = useRef<Chart | null>(null);
@@ -127,6 +151,25 @@ function TimeSeriesChart({
               label: (item) => `${+Number(item.parsed.y).toPrecision(10)} ${unit}`,
             },
           },
+          annotation: annotations && annotations.length > 0 ? {
+            annotations: Object.fromEntries(annotations.map((a, i) => [`med_${i}`, {
+              type: 'line' as const,
+              xMin: a.date,
+              xMax: a.date,
+              borderColor: a.color,
+              borderDash: [4, 4],
+              borderWidth: 1,
+              label: {
+                content: a.label,
+                display: true,
+                position: 'start' as const,
+                font: { size: 10 },
+                backgroundColor: a.color + 'dd',
+                color: '#fff',
+                padding: 3,
+              },
+            }])),
+          } : undefined,
         },
         scales: {
           x: {
@@ -160,7 +203,7 @@ function TimeSeriesChart({
         chartRef.current = null;
       }
     };
-  }, [data, title, unit, color]);
+  }, [data, title, unit, color, annotations]);
 
   return (
     <div className="metric-chart-container">
@@ -189,6 +232,8 @@ export function HistoryPanel({ isLoggedIn, loginUrl }: HistoryPanelProps) {
   const [selectedMetrics, setSelectedMetrics] = useState<Set<string>>(new Set());
   const [selectedLabMetrics, setSelectedLabMetrics] = useState<Set<string>>(new Set());
   const [initialized, setInitialized] = useState(false);
+  const [medHistory, setMedHistory] = useState<ApiMedicationHistory[]>([]);
+  const [showMedAnnotations, setShowMedAnnotations] = useState(true);
 
   const PAGE_SIZE = 50;
 
@@ -208,6 +253,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl }: HistoryPanelProps) {
     if (isLoggedIn) {
       fetchHistory(0, false);
       loadLabValues().then(setLabVals);
+      loadMedicationHistory().then(setMedHistory);
     } else {
       setLoading(false);
     }
@@ -254,6 +300,35 @@ export function HistoryPanel({ isLoggedIn, loginUrl }: HistoryPanelProps) {
       return next;
     });
   };
+
+  // Build annotations per metric type from medication history
+  const annotationsByMetric = useMemo(() => {
+    if (!showMedAnnotations || medHistory.length === 0) return {};
+    const map: Record<string, ChartAnnotation[]> = {};
+    for (const h of medHistory) {
+      const metrics = MED_CHART_MAP[h.medicationKey];
+      if (!metrics) continue;
+      // Skip status-only entries that aren't meaningful chart events
+      if (h.drugName === 'none' || h.drugName === 'not_yet') continue;
+      const displayName = h.drugName === 'not_tolerated'
+        ? h.medicationKey.replace(/_/g, ' ')
+        : h.drugName.charAt(0).toUpperCase() + h.drugName.slice(1).replace(/_/g, ' ');
+      const dose = h.doseValue ? ` ${h.doseValue}${h.doseUnit || ''}` : '';
+      const label = h.changeType === 'stopped'
+        ? `Stopped ${displayName}`
+        : `${displayName}${dose}`;
+      const ann: ChartAnnotation = {
+        date: new Date(h.effectiveStart).getTime(),
+        label,
+        color: MED_ANNOTATION_COLOR,
+      };
+      for (const mt of metrics) {
+        if (!map[mt]) map[mt] = [];
+        map[mt].push(ann);
+      }
+    }
+    return map;
+  }, [medHistory, showMedAnnotations]);
 
   if (!isLoggedIn) {
     return (
@@ -322,6 +397,18 @@ export function HistoryPanel({ isLoggedIn, loginUrl }: HistoryPanelProps) {
             ))}
           </div>
 
+          {medHistory.length > 0 && (
+            <label className="metric-checkbox" style={{ marginBottom: 8 }}>
+              <input
+                type="checkbox"
+                checked={showMedAnnotations}
+                onChange={() => setShowMedAnnotations(p => !p)}
+              />
+              <span className="metric-color-dot" style={{ background: MED_ANNOTATION_COLOR }} />
+              Show medication changes
+            </label>
+          )}
+
           {metricTypes
             .filter((mt) => selectedMetrics.has(mt))
             .map((mt) => (
@@ -334,6 +421,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl }: HistoryPanelProps) {
                 }))}
                 unit={getUnitLabel(mt, unitSystem)}
                 color={METRIC_COLORS[mt] || '#0066cc'}
+                annotations={annotationsByMetric[mt]}
               />
             ))}
 

@@ -200,7 +200,7 @@ export type ValidatedProfileUpdate = z.infer<typeof profileUpdateSchema>;
  * Valid medication keys for the medications table.
  */
 export const MEDICATION_KEYS = [
-  'statin', 'ezetimibe', 'statin_escalation', 'pcsk9i',
+  'statin', 'ezetimibe', 'statin_escalation', 'pcsk9i', 'bempedoic_acid',
   'glp1', 'glp1_escalation', 'sglt2i', 'metformin',
 ] as const;
 
@@ -220,6 +220,20 @@ export const medicationSchema = z.object({
 });
 
 export type ValidatedMedication = z.infer<typeof medicationSchema>;
+
+/**
+ * Schema for validating a supplement upsert request.
+ */
+export const supplementSchema = z.object({
+  supplementKey: z.string().min(1).max(100).regex(/^[a-z0-9_]+$/, 'Supplement key must be lowercase alphanumeric with underscores'),
+  supplementName: z.string().min(1).max(200).regex(/^[a-zA-Z0-9\s\-+().,'\/]+$/, 'Supplement name contains invalid characters'),
+  doseValue: z.number().positive().nullable().optional(),
+  doseUnit: z.string().max(20).nullable().optional(),
+  status: z.enum(['active', 'stopped']).optional(),
+  startedAt: z.string().optional(),
+});
+
+export type ValidatedSupplement = z.infer<typeof supplementSchema>;
 
 /**
  * Valid screening keys for the screenings table.

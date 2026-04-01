@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { DocumentLightbox } from './DocumentLightbox';
-import { DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument } from '../lib/api';
+import { DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument, type ApiSupplement } from '../lib/api';
 import type { HealthInputs, ScreeningInputs } from '@roadmap/health-core';
 import {
   type UnitSystem,
@@ -20,6 +20,9 @@ import {
   STATIN_DRUGS,
   EZETIMIBE_OPTIONS,
   PCSK9I_OPTIONS,
+  BEMPEDOIC_ACID_OPTIONS,
+  SUPPLEMENT_OPTIONS,
+  FEATURED_SUPPLEMENTS,
   canIncreaseDose,
   shouldSuggestSwitch,
   isOnMaxPotency,
@@ -152,6 +155,9 @@ interface InputPanelProps {
   onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];
   onScreeningChange: (screeningKey: string, value: string) => void;
+  supplements: ApiSupplement[];
+  onSupplementChange: (key: string, name: string, doseValue: number | null, doseUnit: string | null, status?: string, startedAt?: string) => void;
+  onSupplementDelete: (key: string) => void;
   onSaveLongitudinal: (bloodTestDate?: string) => void;
   isSavingLongitudinal: boolean;
   hasApiResponse: boolean;
@@ -159,6 +165,7 @@ interface InputPanelProps {
   mobileActiveTab?: TabId;
   setShowUploadModal?: (show: boolean) => void;
   loginUrl?: string;
+  activeSuggestionIds?: Set<string>;
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
 }
@@ -168,10 +175,11 @@ export function InputPanel({
   unitOverrides, onToggleFieldUnit,
   isLoggedIn, previousMeasurements, medications, onMedicationChange,
   screenings, onScreeningChange,
+  supplements, onSupplementChange, onSupplementDelete,
   onSaveLongitudinal, isSavingLongitudinal, hasApiResponse,
   formStage,
   mobileActiveTab,
-  setShowUploadModal, loginUrl,
+  setShowUploadModal, loginUrl, activeSuggestionIds,
   healthDocuments, onDocumentDeleted,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
@@ -1014,7 +1022,7 @@ export function InputPanel({
 
   const renderMedications = () => (
     <>
-      {/* Cholesterol Medications Section — shown when lipids are above treatment targets */}
+      {/* Cholesterol Medications Section — cascade when elevated/suggested, flat when any lipid entered */}
       {(() => {
           // Compute effective inputs for cascade visibility (form values + previous measurements fallback)
           const effectiveApoB = getEffective('apoB', 'apob');
@@ -1025,7 +1033,21 @@ export function InputPanel({
             ? effectiveTotalChol - effectiveHdl : undefined;
 
           const lipidMarker = resolveBestLipidMarker(effectiveApoB, effectiveNonHdl, effectiveLdl);
-          if (!lipidMarker?.elevated) return null;
+
+          // Check if any suggestion recommends a cholesterol medication
+          const hasCholesterolSuggestion = activeSuggestionIds &&
+            ['med-statin', 'med-ezetimibe', 'med-statin-increase', 'med-statin-switch', 'med-pcsk9i']
+              .some(id => activeSuggestionIds.has(id));
+
+          // Three modes:
+          // 1. Cascade: lipids elevated OR suggestion recommends medication
+          // 2. Flat: any lipid value entered (allows recording meds when values are controlled)
+          // 3. Hidden: no lipid values entered
+          const cascadeMode = lipidMarker?.elevated || hasCholesterolSuggestion;
+          const hasAnyLipidInput = effectiveApoB !== undefined || effectiveLdl !== undefined
+            || effectiveTotalChol !== undefined || effectiveHdl !== undefined;
+
+          if (!cascadeMode && !hasAnyLipidInput) return null;
 
           const medInputs = medicationsToInputs(medications);
           const statin = medInputs.statin;
@@ -1037,11 +1059,149 @@ export function InputPanel({
           // Get available doses for current statin
           const availableDoses = STATIN_DRUGS[statinDrug]?.doses ?? [];
 
-          // Determine which cascade steps to show
+          // ── Shared medication dropdowns ──
+
+          const statinDropdown = (
+            <div className="health-field">
+              <label htmlFor="statin-name">Statin</label>
+              {cascadeMode && <p className="med-step-hint">Statins are the most effective first step. They reduce cholesterol production in the liver.</p>}
+              <div className="statin-selection-row">
+                <select
+                  id="statin-name"
+                  value={statinDrug}
+                  onChange={(e) => {
+                    const newDrug = e.target.value;
+                    if (cascadeMode) {
+                      // Reset downstream cascade steps
+                      if (medInputs.ezetimibe) onMedicationChange('ezetimibe', 'not_yet', null, null);
+                      if (medInputs.statinEscalation) onMedicationChange('statin_escalation', 'not_yet', null, null);
+                      if (medInputs.pcsk9i) onMedicationChange('pcsk9i', 'not_yet', null, null);
+                    }
+                    if (newDrug === 'none' || newDrug === 'not_tolerated') {
+                      onMedicationChange('statin', newDrug, null, null);
+                    } else {
+                      const firstDose = STATIN_DRUGS[newDrug]?.doses[0] ?? null;
+                      onMedicationChange('statin', newDrug, firstDose, 'mg');
+                    }
+                  }}
+                >
+                  {STATIN_NAMES.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                {availableDoses.length > 0 && (
+                  <select
+                    id="statin-dose"
+                    value={statinDose ?? ''}
+                    onChange={(e) => {
+                      const newDose = parseInt(e.target.value, 10);
+                      if (cascadeMode) {
+                        if (medInputs.ezetimibe) onMedicationChange('ezetimibe', 'not_yet', null, null);
+                        if (medInputs.statinEscalation) onMedicationChange('statin_escalation', 'not_yet', null, null);
+                        if (medInputs.pcsk9i) onMedicationChange('pcsk9i', 'not_yet', null, null);
+                      }
+                      onMedicationChange('statin', statinDrug, newDose, 'mg');
+                    }}
+                  >
+                    {availableDoses.map(dose => (
+                      <option key={dose} value={dose}>{dose}mg</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+          );
+
+          const ezetimibeDropdown = (
+            <div className="health-field">
+              <label htmlFor="ezetimibe">On Ezetimibe 10mg?</label>
+              <select
+                id="ezetimibe"
+                value={medInputs.ezetimibe || 'not_yet'}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val === 'yes') {
+                    onMedicationChange('ezetimibe', 'ezetimibe', 10, 'mg');
+                  } else {
+                    onMedicationChange('ezetimibe', val, null, null);
+                  }
+                }}
+              >
+                {EZETIMIBE_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          );
+
+          const pcsk9iDropdown = (
+            <div className="health-field">
+              <label htmlFor="pcsk9i">On a PCSK9 inhibitor?</label>
+              <select
+                id="pcsk9i"
+                value={medInputs.pcsk9i || 'not_yet'}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val === 'yes') {
+                    onMedicationChange('pcsk9i', 'pcsk9i', 140, 'mg');
+                  } else {
+                    onMedicationChange('pcsk9i', val, null, null);
+                  }
+                }}
+              >
+                {PCSK9I_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          );
+
+          const bempedoicAcidDropdown = (
+            <div className="health-field">
+              <label htmlFor="bempedoic-acid">Bempedoic acid</label>
+              <select
+                id="bempedoic-acid"
+                value={medInputs.bempedoicAcid || 'not_yet'}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val === 'bempedoic_acid') {
+                    onMedicationChange('bempedoic_acid', val, 180, 'mg');
+                  } else if (val === 'bempedoic_acid_ezetimibe') {
+                    onMedicationChange('bempedoic_acid', val, 180, 'mg');
+                  } else {
+                    onMedicationChange('bempedoic_acid', val, null, null);
+                  }
+                }}
+              >
+                {BEMPEDOIC_ACID_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+          );
+
+          // ── Flat mode: all fields visible independently (no cascade gating) ──
+          if (!cascadeMode) {
+            return (
+              <div className="section-card">
+                <section className="health-section">
+                  <h3 className="health-section-title">Cholesterol Medications</h3>
+                  <p className="health-section-desc">
+                    Are you currently taking any cholesterol medications? Recording these helps track your health over time.
+                  </p>
+                  {statinDropdown}
+                  {ezetimibeDropdown}
+                  {bempedoicAcidDropdown}
+                  {pcsk9iDropdown}
+                </section>
+              </div>
+            );
+          }
+
+          // ── Cascade mode: progressive disclosure (existing logic) ──
           const showEzetimibe = onStatin || statinDrug === 'not_tolerated';
           const ezetimibeHandled = medInputs.ezetimibe === 'yes' || medInputs.ezetimibe === 'not_tolerated';
 
-          // Escalation logic based on potency
           const canIncrease = onStatin && canIncreaseDose(statinDrug, statinDose);
           const shouldSwitch = onStatin && shouldSuggestSwitch(statinDrug, statinDose);
           const atMaxPotency = onStatin && isOnMaxPotency(statinDrug, statinDose);
@@ -1051,101 +1211,43 @@ export function InputPanel({
           const showPcsk9i = (showEzetimibe && ezetimibeHandled) &&
             ((!statinTolerated || atMaxPotency) || (showStatinEscalation && escalationHandled));
 
-          // Helper to reset downstream cascade
-          const resetDownstream = () => {
-            if (medInputs.ezetimibe) onMedicationChange('ezetimibe', 'not_yet', null, null);
-            if (medInputs.statinEscalation) onMedicationChange('statin_escalation', 'not_yet', null, null);
-            if (medInputs.pcsk9i) onMedicationChange('pcsk9i', 'not_yet', null, null);
-          };
+          const lipidName = lipidMarker?.label ?? 'LDL-c';
 
-          // Dynamic intro + lipid name (using resolved hierarchy marker)
-          const metricKey = lipidMarker.kind === 'apoB' ? 'apoB' : 'ldlC';
-          const unitKey = lipidMarker.kind === 'apoB' ? 'apob' : 'ldl';
-          const val = toDisplay(metricKey, lipidMarker.value);
-          const target = toDisplay(metricKey, lipidMarker.target);
-          const unit = getDisplayLabel(unitKey, fieldUnit(metricKey));
-          const introText = `Your ${lipidMarker.label} is ${val} ${unit}, which is above the treatment target of ${target} ${unit}.`;
-          const lipidName = lipidMarker.label;
+          // Intro text for cascade mode
+          let introText = '';
+          if (lipidMarker?.elevated) {
+            const metricKey = lipidMarker.kind === 'apoB' ? 'apoB' : 'ldlC';
+            const unitKey = lipidMarker.kind === 'apoB' ? 'apob' : 'ldl';
+            const val = toDisplay(metricKey, lipidMarker.value);
+            const target = toDisplay(metricKey, lipidMarker.target);
+            const unit = getDisplayLabel(unitKey, fieldUnit(metricKey));
+            introText = `Your ${lipidMarker.label} is ${val} ${unit}, which is above the treatment target of ${target} ${unit}. `;
+          }
 
           return (
             <div className="section-card">
             <section className="health-section medication-cascade">
               <h3 className="health-section-title">Cholesterol Medications</h3>
               <p className="health-section-desc">
-                {introText} {LIPID_DIET_ADVICE} Medications can also be added in steps.
+                {introText}{LIPID_DIET_ADVICE} Medications can also be added in steps.
               </p>
 
-              {/* Step 1: Statin selection - two dropdowns */}
-              <div className="health-field">
-                <label htmlFor="statin-name">Statin</label>
-                <p className="med-step-hint">Statins are the most effective first step. They reduce cholesterol production in the liver.</p>
-                <div className="statin-selection-row">
-                  {/* Statin name dropdown */}
-                  <select
-                    id="statin-name"
-                    value={statinDrug}
-                    onChange={(e) => {
-                      const newDrug = e.target.value;
-                      resetDownstream();
-                      if (newDrug === 'none' || newDrug === 'not_tolerated') {
-                        onMedicationChange('statin', newDrug, null, null);
-                      } else {
-                        // Default to first dose when selecting a new statin
-                        const firstDose = STATIN_DRUGS[newDrug]?.doses[0] ?? null;
-                        onMedicationChange('statin', newDrug, firstDose, 'mg');
-                      }
-                    }}
-                  >
-                    {STATIN_NAMES.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+              {statinDropdown}
 
-                  {/* Dose dropdown - only shown when a specific statin is selected */}
-                  {availableDoses.length > 0 && (
-                    <select
-                      id="statin-dose"
-                      value={statinDose ?? ''}
-                      onChange={(e) => {
-                        const newDose = parseInt(e.target.value, 10);
-                        resetDownstream();
-                        onMedicationChange('statin', statinDrug, newDose, 'mg');
-                      }}
-                    >
-                      {availableDoses.map(dose => (
-                        <option key={dose} value={dose}>{dose}mg</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </div>
-
-              {/* Step 2: Ezetimibe */}
               {showEzetimibe && (
-                <div className="health-field med-step-enter">
-                  <label htmlFor="ezetimibe">On Ezetimibe 10mg?</label>
+                <div className="med-step-enter">
                   <p className="med-step-hint">{`Ezetimibe works differently — it blocks cholesterol absorption in the intestine, adding ~20% more ${lipidName} reduction.`}</p>
-                  <select
-                    id="ezetimibe"
-                    value={medInputs.ezetimibe || 'not_yet'}
-                    onChange={e => {
-                      const val = e.target.value;
-                      // FHIR-compliant: store actual drug data when taking medication
-                      if (val === 'yes') {
-                        onMedicationChange('ezetimibe', 'ezetimibe', 10, 'mg');
-                      } else {
-                        onMedicationChange('ezetimibe', val, null, null);
-                      }
-                    }}
-                  >
-                    {EZETIMIBE_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                  {ezetimibeDropdown}
                 </div>
               )}
 
-              {/* Step 3: Statin escalation (dose increase or switch) */}
+              {showEzetimibe && ezetimibeHandled && (
+                <div className="med-step-enter">
+                  <p className="med-step-hint">Bempedoic acid lowers cholesterol production via a different pathway than statins, and can be used alongside them.</p>
+                  {bempedoicAcidDropdown}
+                </div>
+              )}
+
               {showStatinEscalation && (
                 <div className="health-field med-step-enter">
                   <label htmlFor="statin-escalation">
@@ -1167,28 +1269,10 @@ export function InputPanel({
                 </div>
               )}
 
-              {/* Step 4: PCSK9i */}
               {showPcsk9i && (
-                <div className="health-field med-step-enter">
-                  <label htmlFor="pcsk9i">On a PCSK9 inhibitor?</label>
+                <div className="med-step-enter">
                   <p className="med-step-hint">{`PCSK9 inhibitors are injectable medications that help your body clear ${lipidName} from the blood. They can reduce ${lipidName} by ~50%.`}</p>
-                  <select
-                    id="pcsk9i"
-                    value={medInputs.pcsk9i || 'not_yet'}
-                    onChange={e => {
-                      const val = e.target.value;
-                      // FHIR-compliant: store actual drug data when taking medication
-                      if (val === 'yes') {
-                        onMedicationChange('pcsk9i', 'pcsk9i', 140, 'mg');
-                      } else {
-                        onMedicationChange('pcsk9i', val, null, null);
-                      }
-                    }}
-                  >
-                    {PCSK9I_OPTIONS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                  {pcsk9iDropdown}
                 </div>
               )}
             </section>
@@ -1212,15 +1296,28 @@ export function InputPanel({
         const effectiveWhr = (effectiveWaist !== undefined && effectiveHeight !== undefined)
           ? effectiveWaist / effectiveHeight : undefined;
 
-        // Check trigger: BMI > 28 (unconditional) or BMI 25-28 with secondary criteria
-        if (effectiveBmi === undefined || effectiveBmi <= 25) return null;
-
+        // Elevated flags (computed once, used for both cascade check and reasons)
         const hba1cElevated = effectiveHba1c !== undefined && effectiveHba1c >= HBA1C_THRESHOLDS.prediabetes;
         const trigsElevated = effectiveTrigs !== undefined && effectiveTrigs >= TRIGLYCERIDES_THRESHOLDS.borderline;
         const bpElevated = effectiveSbp !== undefined && effectiveSbp >= BP_THRESHOLDS.stage1Sys;
         const waistElevated = effectiveWhr !== undefined && effectiveWhr >= 0.5;
 
-        if (effectiveBmi <= 28 && !hba1cElevated && !trigsElevated && !bpElevated && !waistElevated) return null;
+        // Check if any suggestion recommends a weight/diabetes medication
+        const hasWeightSuggestion = activeSuggestionIds &&
+          ['weight-med-glp1', 'weight-med-glp1-increase', 'weight-med-glp1-switch', 'weight-med-sglt2i', 'weight-med-metformin']
+            .some(id => activeSuggestionIds.has(id));
+
+        // Three modes: cascade, flat, hidden
+        let weightCascadeMode = !!hasWeightSuggestion;
+        if (!weightCascadeMode && effectiveBmi !== undefined && effectiveBmi > 25) {
+          weightCascadeMode = effectiveBmi > 28 || hba1cElevated || trigsElevated || bpElevated || waistElevated;
+        }
+
+        // Flat mode: any relevant input entered but no cascade trigger
+        const hasAnyWeightInput = effectiveHba1c !== undefined || effectiveTrigs !== undefined
+          || (effectiveWeight !== undefined && effectiveHeight !== undefined);
+
+        if (!weightCascadeMode && !hasAnyWeightInput) return null;
 
         const medInputs = medicationsToInputs(medications);
 
@@ -1269,7 +1366,126 @@ export function InputPanel({
           }
         };
 
-        // Build description based on which criteria triggered
+        // ── Shared medication dropdowns ──
+
+        const glp1Dropdown = (
+          <div className="health-field">
+            <label htmlFor="glp1-name">GLP-1 Medication</label>
+            {weightCascadeMode && <p className="med-step-hint">GLP-1 medications reduce appetite and improve blood sugar control, often leading to significant weight loss.</p>}
+            <div className="statin-selection-row">
+              <select
+                id="glp1-name"
+                value={glp1Drug}
+                onChange={(e) => {
+                  const newDrug = e.target.value;
+                  if (weightCascadeMode) resetWeightDownstream('glp1');
+                  if (newDrug === 'none' || newDrug === 'not_tolerated' || newDrug === 'other') {
+                    onMedicationChange('glp1', newDrug, null, null);
+                  } else {
+                    const firstDose = GLP1_DRUGS[newDrug]?.doses[0] ?? null;
+                    onMedicationChange('glp1', newDrug, firstDose, 'mg');
+                  }
+                }}
+              >
+                {GLP1_NAMES.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              {availableGlp1Doses.length > 0 && (
+                <select
+                  id="glp1-dose"
+                  value={glp1Dose ?? ''}
+                  onChange={(e) => {
+                    const newDose = parseFloat(e.target.value);
+                    if (weightCascadeMode) resetWeightDownstream('glp1');
+                    onMedicationChange('glp1', glp1Drug, newDose, 'mg');
+                  }}
+                >
+                  {availableGlp1Doses.map(dose => (
+                    <option key={dose} value={dose}>{dose}mg</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+        );
+
+        const sglt2iDropdown = (
+          <div className="health-field">
+            <label htmlFor="sglt2i-name">SGLT2 Inhibitor</label>
+            {weightCascadeMode && <p className="med-step-hint">SGLT2 inhibitors help your kidneys remove excess glucose and offer additional heart and kidney protection.</p>}
+            <div className="statin-selection-row">
+              <select
+                id="sglt2i-name"
+                value={sglt2iDrug}
+                onChange={(e) => {
+                  const newDrug = e.target.value;
+                  if (weightCascadeMode) resetWeightDownstream('sglt2i');
+                  if (newDrug === 'none' || newDrug === 'not_tolerated') {
+                    onMedicationChange('sglt2i', newDrug, null, null);
+                  } else {
+                    const firstDose = SGLT2I_DRUGS[newDrug]?.doses[0] ?? null;
+                    onMedicationChange('sglt2i', newDrug, firstDose, 'mg');
+                  }
+                }}
+              >
+                {SGLT2I_NAMES.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              {availableSglt2iDoses.length > 0 && (
+                <select
+                  id="sglt2i-dose"
+                  value={sglt2iDose ?? ''}
+                  onChange={(e) => {
+                    const newDose = parseFloat(e.target.value);
+                    if (weightCascadeMode) resetWeightDownstream('sglt2i');
+                    onMedicationChange('sglt2i', sglt2iDrug, newDose, 'mg');
+                  }}
+                >
+                  {availableSglt2iDoses.map(dose => (
+                    <option key={dose} value={dose}>{dose}mg</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+        );
+
+        const metforminDropdown = (
+          <div className="health-field">
+            <label htmlFor="metformin">Metformin</label>
+            {weightCascadeMode && <p className="med-step-hint">Metformin improves insulin sensitivity. It is well-studied and inexpensive.</p>}
+            <select
+              id="metformin"
+              value={medInputs.metformin || 'none'}
+              onChange={(e) => onMedicationChange('metformin', e.target.value, null, null)}
+            >
+              {METFORMIN_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        );
+
+        // ── Flat mode: all fields visible independently ──
+        if (!weightCascadeMode) {
+          return (
+            <div className="section-card">
+              <section className="health-section">
+                <h3 className="health-section-title">Weight & Diabetes Medications</h3>
+                <p className="health-section-desc">
+                  Are you currently taking any weight or diabetes medications? Recording these helps track your health over time.
+                </p>
+                {glp1Dropdown}
+                {sglt2iDropdown}
+                {metforminDropdown}
+              </section>
+            </div>
+          );
+        }
+
+        // ── Cascade mode: progressive disclosure ──
         const reasons: string[] = [];
         if (hba1cElevated) reasons.push('prediabetic HbA1c');
         if (trigsElevated) reasons.push('elevated triglycerides');
@@ -1286,49 +1502,8 @@ export function InputPanel({
                 : 'Your BMI suggests you may benefit from medications that support weight management and metabolic health.'}
             </p>
 
-            {/* Step 1: GLP-1 selection */}
-            <div className="health-field">
-              <label htmlFor="glp1-name">GLP-1 Medication</label>
-              <p className="med-step-hint">GLP-1 medications reduce appetite and improve blood sugar control, often leading to significant weight loss.</p>
-              <div className="statin-selection-row">
-                <select
-                  id="glp1-name"
-                  value={glp1Drug}
-                  onChange={(e) => {
-                    const newDrug = e.target.value;
-                    resetWeightDownstream('glp1');
-                    if (newDrug === 'none' || newDrug === 'not_tolerated' || newDrug === 'other') {
-                      onMedicationChange('glp1', newDrug, null, null);
-                    } else {
-                      const firstDose = GLP1_DRUGS[newDrug]?.doses[0] ?? null;
-                      onMedicationChange('glp1', newDrug, firstDose, 'mg');
-                    }
-                  }}
-                >
-                  {GLP1_NAMES.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+            {glp1Dropdown}
 
-                {availableGlp1Doses.length > 0 && (
-                  <select
-                    id="glp1-dose"
-                    value={glp1Dose ?? ''}
-                    onChange={(e) => {
-                      const newDose = parseFloat(e.target.value);
-                      resetWeightDownstream('glp1');
-                      onMedicationChange('glp1', glp1Drug, newDose, 'mg');
-                    }}
-                  >
-                    {availableGlp1Doses.map(dose => (
-                      <option key={dose} value={dose}>{dose}mg</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
-
-            {/* Step 2: GLP-1 Escalation (dose increase or switch to tirzepatide) */}
             {showGlp1Escalation && (
               <div className="health-field med-step-enter">
                 <label htmlFor="glp1-escalation">
@@ -1353,64 +1528,15 @@ export function InputPanel({
               </div>
             )}
 
-            {/* Step 3: SGLT2i selection */}
             {showSglt2i && (
-              <div className="health-field med-step-enter">
-                <label htmlFor="sglt2i-name">SGLT2 Inhibitor</label>
-                <p className="med-step-hint">SGLT2 inhibitors help your kidneys remove excess glucose and offer additional heart and kidney protection.</p>
-                <div className="statin-selection-row">
-                  <select
-                    id="sglt2i-name"
-                    value={sglt2iDrug}
-                    onChange={(e) => {
-                      const newDrug = e.target.value;
-                      resetWeightDownstream('sglt2i');
-                      if (newDrug === 'none' || newDrug === 'not_tolerated') {
-                        onMedicationChange('sglt2i', newDrug, null, null);
-                      } else {
-                        const firstDose = SGLT2I_DRUGS[newDrug]?.doses[0] ?? null;
-                        onMedicationChange('sglt2i', newDrug, firstDose, 'mg');
-                      }
-                    }}
-                  >
-                    {SGLT2I_NAMES.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-
-                  {availableSglt2iDoses.length > 0 && (
-                    <select
-                      id="sglt2i-dose"
-                      value={sglt2iDose ?? ''}
-                      onChange={(e) => {
-                        const newDose = parseFloat(e.target.value);
-                        resetWeightDownstream('sglt2i');
-                        onMedicationChange('sglt2i', sglt2iDrug, newDose, 'mg');
-                      }}
-                    >
-                      {availableSglt2iDoses.map(dose => (
-                        <option key={dose} value={dose}>{dose}mg</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+              <div className="med-step-enter">
+                {sglt2iDropdown}
               </div>
             )}
 
-            {/* Step 4: Metformin */}
             {showMetformin && (
-              <div className="health-field med-step-enter">
-                <label htmlFor="metformin">Metformin</label>
-                <p className="med-step-hint">Metformin improves insulin sensitivity. It is well-studied and inexpensive.</p>
-                <select
-                  id="metformin"
-                  value={medInputs.metformin || 'none'}
-                  onChange={(e) => onMedicationChange('metformin', e.target.value, null, null)}
-                >
-                  {METFORMIN_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+              <div className="med-step-enter">
+                {metforminDropdown}
               </div>
             )}
           </section>
@@ -1982,6 +2108,141 @@ export function InputPanel({
     </>
   );
 
+  // ── Supplements section (logged-in only) ��─
+  const [supplementSearch, setSupplementSearch] = useState('');
+  const [showSupplementDropdown, setShowSupplementDropdown] = useState(false);
+  const supplementDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showSupplementDropdown) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (supplementDropdownRef.current && !supplementDropdownRef.current.contains(e.target as Node)) {
+        setShowSupplementDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSupplementDropdown]);
+
+  const renderSupplements = () => {
+    if (!isLoggedIn) return null;
+
+    const activeSupplements = supplements.filter(s => s.status === 'active');
+    const allOptions = SUPPLEMENT_OPTIONS.filter(
+      opt => !activeSupplements.some(s => s.supplementKey === opt.key),
+    );
+    const filteredOptions = supplementSearch
+      ? allOptions.filter(opt => opt.name.toLowerCase().includes(supplementSearch.toLowerCase()))
+      : allOptions;
+
+    const addSupplement = (key: string, name: string, defaultDose?: number, defaultUnit?: string) => {
+      onSupplementChange(key, name, defaultDose ?? null, defaultUnit ?? null);
+      setSupplementSearch('');
+      setShowSupplementDropdown(false);
+    };
+
+    return (
+      <div className="section-card">
+        <section className="health-section">
+          <h3 className="health-section-title">Supplements</h3>
+          <p className="health-section-desc">Track supplements you take regularly.</p>
+
+          {/* Featured supplement chips */}
+          <div className="supplement-chips">
+            {FEATURED_SUPPLEMENTS.filter(
+              f => !activeSupplements.some(s => s.supplementKey === f.key),
+            ).map(f => (
+              <button
+                key={f.key}
+                type="button"
+                className="supplement-chip"
+                onClick={() => addSupplement(f.key, f.name, f.defaultDose, f.defaultUnit)}
+              >
+                + {f.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Active supplements list */}
+          {activeSupplements.map(s => (
+            <div key={s.supplementKey} className="supplement-row">
+              <span className="supplement-name">{s.supplementName}</span>
+              <input
+                type="number"
+                className="supplement-dose"
+                placeholder="Dose"
+                value={s.doseValue ?? ''}
+                onChange={e => {
+                  const val = e.target.value ? parseFloat(e.target.value) : null;
+                  onSupplementChange(s.supplementKey, s.supplementName, val, s.doseUnit);
+                }}
+              />
+              <select
+                className="supplement-unit"
+                value={s.doseUnit ?? ''}
+                onChange={e => onSupplementChange(s.supplementKey, s.supplementName, s.doseValue, e.target.value || null)}
+              >
+                <option value="">Unit</option>
+                <option value="mg">mg</option>
+                <option value="mcg">mcg</option>
+                <option value="g">g</option>
+                <option value="IU">IU</option>
+                <option value="capsules">capsules</option>
+                <option value="scoop">scoop</option>
+              </select>
+              <button
+                type="button"
+                className="supplement-remove"
+                onClick={() => onSupplementDelete(s.supplementKey)}
+                title="Remove"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+
+          {/* Add other supplement */}
+          <div className="supplement-add" ref={supplementDropdownRef}>
+            <input
+              type="text"
+              placeholder="Add another supplement..."
+              value={supplementSearch}
+              maxLength={100}
+              onFocus={() => setShowSupplementDropdown(true)}
+              onChange={e => {
+                setSupplementSearch(e.target.value);
+                setShowSupplementDropdown(true);
+              }}
+            />
+            {showSupplementDropdown && filteredOptions.length > 0 && (
+              <div className="supplement-dropdown">
+                {filteredOptions.slice(0, 8).map(opt => (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    className="supplement-dropdown-item"
+                    onClick={() => addSupplement(opt.key, opt.name, opt.defaultDose, opt.defaultUnit)}
+                  >
+                    {opt.name}
+                  </button>
+                ))}
+                {supplementSearch && !allOptions.some(o => o.name.toLowerCase() === supplementSearch.toLowerCase()) && (
+                  <button
+                    type="button"
+                    className="supplement-dropdown-item supplement-custom"
+                    onClick={() => addSupplement(`custom_${supplementSearch.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')}`, supplementSearch.slice(0, 100))}
+                  >
+                    + Add "{supplementSearch}"
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    );
+  };
+
   const renderSaveButton = () => {
     if (!isLoggedIn || !hasLongitudinalValues) return null;
     // When blood tests are expanded, they have their own section-level save button.
@@ -2010,6 +2271,7 @@ export function InputPanel({
         {mobileActiveTab === 'blood-tests' && <div className="section-card">{renderBloodTests()}</div>}
         {mobileActiveTab === 'medications' && renderMedications()}
         {mobileActiveTab === 'screening' && <>{renderScreening()}{renderBoneDensity()}</>}
+        {mobileActiveTab === 'supplements' && renderSupplements()}
         {renderSaveButton()}
       </div>
     );
@@ -2034,6 +2296,7 @@ export function InputPanel({
       {formStage >= 4 && renderMedications()}
       {formStage >= 4 && renderScreening()}
       {formStage >= 4 && renderBoneDensity()}
+      {formStage >= 4 && isLoggedIn && renderSupplements()}
       {healthDocuments && healthDocuments.length > 0 && (
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}

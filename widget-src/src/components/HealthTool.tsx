@@ -29,6 +29,7 @@ import {
   type ApiMedication,
   type ApiScreening,
 } from '@roadmap/health-core';
+import type { ApiSupplement } from '../lib/api';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection } from './ChatSection';
@@ -52,6 +53,8 @@ import {
   addMeasurement,
   saveMedication,
   saveScreening,
+  saveSupplement,
+  deleteSupplementApi,
   deleteUserData,
   saveReminderPreference,
   setGlobalReminderOptout,
@@ -93,6 +96,7 @@ export function HealthTool() {
   const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>([]);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
+  const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasApiResponse, setHasApiResponse] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'first-saved' | 'error'>('idle');
@@ -104,6 +108,7 @@ export function HealthTool() {
   const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const isFirstSaveRef = useRef(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [floatingChatOpen, setFloatingChatOpen] = useState(false);
   const [uploadActive, setUploadActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0, fileName: '' });
   const [healthDocuments, setHealthDocuments] = useState<ApiDocument[]>([]);
@@ -243,6 +248,7 @@ export function HealthTool() {
           }
           setMedications(result.medications);
           setScreenings(result.screenings);
+          if (result.supplements) setSupplements(result.supplements);
           setReminderPreferences(result.reminderPreferences);
           // Load health documents (fire-and-forget — non-blocking)
           getHealthDocuments().then(docs => setHealthDocuments(docs));
@@ -579,6 +585,12 @@ export function HealthTool() {
     setErrors(validationErrors ?? {});
   }, [validationErrors]);
 
+  // Active suggestion IDs for cascade trigger logic
+  const activeSuggestionIds = useMemo(() =>
+    new Set(results?.suggestions?.map(s => s.id) ?? []),
+    [results?.suggestions],
+  );
+
   // Mobile tab state
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<TabId>('profile');
@@ -608,7 +620,13 @@ export function HealthTool() {
           (whr !== undefined && whr >= 0.5);
       }
     }
-    const medsVisible = lipidsElevated || weightCascadeVisible;
+    // Also show medications when user has entered any relevant blood test values
+    // (even if not elevated — allows recording meds when values are well-controlled)
+    const hasLipidInput = ei.apoB !== undefined || ei.ldlC !== undefined
+      || ei.totalCholesterol !== undefined || ei.hdlC !== undefined;
+    const hasWeightInput = ei.hba1c !== undefined || ei.triglycerides !== undefined
+      || (ei.weightKg !== undefined && ei.heightCm !== undefined);
+    const medsVisible = lipidsElevated || weightCascadeVisible || hasLipidInput || hasWeightInput;
 
     // Screening visible: birthYear set + age-based eligibility
     let screeningVisible = false;
@@ -631,6 +649,7 @@ export function HealthTool() {
       { id: 'blood-tests', label: 'Blood Tests', visible: formStage >= 4 },
       { id: 'medications', label: 'Medications', visible: formStage >= 4 && medsVisible },
       { id: 'screening', label: 'Screening', visible: formStage >= 4 && screeningVisible },
+      { id: 'supplements', label: 'Supplements', visible: authState.isLoggedIn && formStage >= 4 },
       { id: 'results', label: 'Results', visible: true },
       { id: 'chat', label: 'Chat', visible: authState.isLoggedIn && formStage >= 4 },
     ];
@@ -781,6 +800,49 @@ export function HealthTool() {
     }
   }, [authState.isLoggedIn, inputs, previousMeasurements, medications, reminderPreferences]);
 
+  const supSaveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  useEffect(() => () => { for (const t of supSaveTimers.current.values()) clearTimeout(t); }, []);
+
+  const handleSupplementChange = useCallback((
+    supplementKey: string,
+    supplementName: string,
+    doseValue: number | null,
+    doseUnit: string | null,
+    status: string = 'active',
+    startedAt?: string,
+  ) => {
+    setSupplements(prev => {
+      const idx = prev.findIndex(s => s.supplementKey === supplementKey);
+      const updated: ApiSupplement = {
+        id: idx >= 0 ? prev[idx].id : '',
+        supplementKey,
+        supplementName,
+        doseValue,
+        doseUnit,
+        status,
+        startedAt: startedAt ?? (idx >= 0 ? prev[idx].startedAt : null) ?? new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      return idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
+    });
+
+    if (authState.isLoggedIn) {
+      const existing = supSaveTimers.current.get(supplementKey);
+      if (existing) clearTimeout(existing);
+      supSaveTimers.current.set(supplementKey, setTimeout(() => {
+        supSaveTimers.current.delete(supplementKey);
+        saveSupplement(supplementKey, supplementName, doseValue, doseUnit, status, startedAt);
+      }, 300));
+    }
+  }, [authState.isLoggedIn]);
+
+  const handleSupplementDelete = useCallback((supplementKey: string) => {
+    setSupplements(prev => prev.filter(s => s.supplementKey !== supplementKey));
+    if (authState.isLoggedIn) {
+      deleteSupplementApi(supplementKey);
+    }
+  }, [authState.isLoggedIn]);
+
   const inputPanelProps = {
     inputs,
     onChange: handleInputChange,
@@ -795,12 +857,16 @@ export function HealthTool() {
     onMedicationChange: handleMedicationChange,
     screenings,
     onScreeningChange: handleScreeningChange,
+    supplements,
+    onSupplementChange: handleSupplementChange,
+    onSupplementDelete: handleSupplementDelete,
     onSaveLongitudinal: handleSaveLongitudinal,
     isSavingLongitudinal,
     hasApiResponse,
     formStage,
     setShowUploadModal,
     loginUrl: authState.loginUrl,
+    activeSuggestionIds,
     healthDocuments,
     onDocumentDeleted: (docId: string) => {
       setHealthDocuments(prev => prev.filter(d => d.id !== docId));
@@ -897,6 +963,31 @@ export function HealthTool() {
           progress={uploadProgress}
           onClick={() => setShowUploadModal(true)}
         />
+      )}
+
+      {/* Floating chat FAB — desktop only (mobile uses tab) */}
+      {!isMobile && formStage >= 4 && (
+        floatingChatOpen ? (
+          <ChatSection
+            isLoggedIn={authState.isLoggedIn}
+            loginUrl={authState.loginUrl}
+            startExpanded
+            onClose={() => setFloatingChatOpen(false)}
+          />
+        ) : (
+          <button
+            className={`chat-fab no-print${!authState.isLoggedIn ? ' chat-fab-guest' : ''}`}
+            onClick={() => authState.isLoggedIn && setFloatingChatOpen(true)}
+            aria-label="Open chat"
+          >
+            <span className="chat-fab-icon">💬</span>
+            {!authState.isLoggedIn && (
+              <div className="chat-fab-tooltip">
+                <a href={authState.loginUrl || '/account/login'}>Sign in</a> to chat about your results
+              </div>
+            )}
+          </button>
+        )
       )}
     </div>
   );

@@ -164,6 +164,9 @@ export function medicationsToInputs(
       case 'statin_escalation':
         inputs.statinEscalation = m.drugName as 'not_yet' | 'not_tolerated';
         break;
+      case 'bempedoic_acid':
+        inputs.bempedoicAcid = m.drugName as import('./types').BempedoicAcidValue;
+        break;
       case 'pcsk9i':
         // FHIR-compliant: 'pcsk9i' with dose means taking it, convert to 'yes'
         if (m.drugName === 'pcsk9i' && m.doseValue !== null) {

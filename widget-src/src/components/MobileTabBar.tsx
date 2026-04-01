@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 
-export type TabId = 'profile' | 'vitals' | 'blood-tests' | 'medications' | 'screening' | 'results' | 'chat';
+export type TabId = 'profile' | 'vitals' | 'blood-tests' | 'medications' | 'screening' | 'supplements' | 'results' | 'chat';
 
 export interface Tab {
   id: TabId;
