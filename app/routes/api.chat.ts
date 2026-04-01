@@ -8,7 +8,7 @@
  */
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
-import { getAuthenticatedUser, EXEMPT_CUSTOMERS, checkSubscriptionFromTags } from '../lib/route-helpers.server';
+import { getAuthenticatedUser, EXEMPT_CUSTOMERS, checkSubscriptionFromTags, getCustomerOrders } from '../lib/route-helpers.server';
 import { logAudit, getProfile, deductMessageCredit, updateSubscriptionPlan, type DbProfile } from '../lib/supabase.server';
 import {
   checkDailyLimit,
@@ -23,6 +23,28 @@ import {
 } from '../lib/chat.server';
 
 import { buildPackUrls } from '../lib/message-packs';
+
+// Order cache — orders change infrequently, no need to re-fetch every message
+const ORDER_CACHE_TTL = 10 * 60_000; // 10 minutes
+const orderCache = new Map<string, { summary: string; expiresAt: number }>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of orderCache) {
+    if (now > entry.expiresAt) orderCache.delete(key);
+  }
+}, 5 * 60_000);
+
+async function getCachedOrders(admin: any, customerId: string): Promise<string> {
+  const cached = orderCache.get(customerId);
+  if (cached && Date.now() < cached.expiresAt) return cached.summary;
+
+  const summary = await getCustomerOrders(admin, customerId);
+  // Cache both successful and empty results (shorter TTL for empty to retry sooner)
+  const ttl = summary ? ORDER_CACHE_TTL : 2 * 60_000;
+  orderCache.set(customerId, { summary, expiresAt: Date.now() + ttl });
+  return summary;
+}
 
 // Lazy subscription check — at most once per 24 hours
 async function refreshSubscriptionIfStale(
@@ -102,13 +124,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
 
     const messageCredits = profile?.message_credits ?? 0;
+    const isExempt = EXEMPT_CUSTOMERS.has(auth.customerId);
 
     // Lazy subscription check (at most once per 24 hours)
     const plan = profile
       ? await refreshSubscriptionIfStale(auth, profile)
       : 'free';
 
-    const limitResult = await checkDailyLimit(auth.client, auth.userId, plan, messageCredits);
+    const limitResult = isExempt
+      ? { allowed: true, remaining: 999, useCredit: false, messageCredits }
+      : await checkDailyLimit(auth.client, auth.userId, plan, messageCredits);
 
     return json({
       success: true,
@@ -177,8 +202,11 @@ export async function action({ request }: ActionFunctionArgs) {
       return json({ success: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)` }, { status: 400 });
     }
 
-    // Assemble context + check daily limit in parallel (context includes profile/plan)
-    const context = await assembleChatContext(auth.client, auth.userId);
+    // Assemble context and fetch orders in parallel (both cached independently)
+    const [context, orderSummary] = await Promise.all([
+      assembleChatContext(auth.client, auth.userId),
+      auth.admin ? getCachedOrders(auth.admin, auth.customerId) : Promise.resolve(''),
+    ]);
     if (!context) {
       return json({ success: false, error: 'Could not load health data' }, { status: 500 });
     }
@@ -276,7 +304,7 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     // Build system blocks + messages, call LLM
-    const systemBlocks = buildSystemBlocks(context.userContextJson, documentContent);
+    const systemBlocks = buildSystemBlocks(context.userContextJson, { documentContent, orderSummary });
     const messages = buildConversationMessages(history, message);
     const completion = await getChatCompletion(systemBlocks, messages);
 

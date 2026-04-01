@@ -2,7 +2,7 @@
 
 ## Context
 
-Users see personalized health suggestions but can't ask follow-up questions. An LLM chatbot grounded in the algorithm and clinical evidence lets them understand *why* the roadmap recommends what it does — using their actual numbers, medications, and screening history. The chatbot explains your algorithm; it does not freelance medical opinions.
+Users see personalized health suggestions but can't ask follow-up questions. An LLM chatbot grounded in the algorithm, clinical evidence, and product knowledge lets them understand *why* the roadmap recommends what it does — using their actual numbers, medications, and screening history. It also answers questions about Dr. Stanfield's supplement products and looks up order/subscription information. The chatbot explains your algorithm and products; it does not freelance medical opinions.
 
 ---
 
@@ -10,8 +10,8 @@ Users see personalized health suggestions but can't ask follow-up questions. An 
 
 ### Who the chatbot is
 - **Identity**: "Health Roadmap Assistant"
-- **Role**: Explains the user's personalized suggestions, the clinical guidelines behind them, and how their specific numbers relate to thresholds
-- **Tone**: Clear, educational, non-alarmist. Similar to how a pharmacist explains a prescription — informative but always defers to "discuss with your doctor"
+- **Role**: Explains the user's personalized suggestions, the clinical guidelines behind them, and how their specific numbers relate to thresholds. Also answers questions about Dr. Stanfield's products (MicroVitamin, MicroVitamin+, Sleep, Omega-3) and looks up order status, tracking links, and subscription information.
+- **Tone**: Clear, educational, non-alarmist. Similar to how a pharmacist explains a prescription — informative but always defers to "discuss with your doctor". When discussing products, evidence-first and measured — "the evidence suggests" / "may support", never hype.
 
 ### What it knows (context assembled server-side per request)
 
@@ -19,28 +19,32 @@ Users see personalized health suggestions but can't ask follow-up questions. An 
 |-------|---------|------|---------|---------------|
 | System prompt | Role, scope boundaries, output rules, disclaimer | ~3K tokens | **Yes** (cache breakpoint 1) | Always |
 | Algorithm | Full `health_roadmap_algorithm.md` | ~10K tokens | **Yes** (same block) | Always |
-| Evidence | Full `evidence.ts` content (reasons, guidelines, DOIs) | ~5K tokens | **Yes** (cache breakpoint 2 — end of static content) | Always |
+| Evidence | Full `evidence.ts` content (reasons, guidelines, DOIs) | ~5K tokens | **Yes** (cache breakpoint 2) | Always |
+| Products | Full `docs/products.md` (ingredients, FAQs, comparisons, references) | ~8K tokens | **Yes** (cache breakpoint 3) | Always |
+| Blog index | Titles, URLs, and tags for all blog articles | ~1-2K tokens | **Yes** (cache breakpoint 4) | Always (Phase 3) |
 | User health data | Profile, latest measurements, medications, screenings, current suggestions (as structured JSON) | ~1-2K tokens | No (per-user) | Always |
+| Order/subscription summary | Recent orders with status, tracking links, fulfillment info | ~0.5K tokens | No (per-user, 10-min cache) | Always for logged-in users |
 | Health documents | Titles + dates of uploaded documents (labs, scans, clinic letters) | ~0.5K tokens | No (per-user) | Always (titles only) |
 | Document content | Full markdown of a specific uploaded document | ~2-8K tokens | No (on-demand) | Only when user's message references a specific document (keyword match against titles) |
+| Blog article content | Full markdown of a matched blog article | ~2-4K tokens | No (on-demand) | Only when user's message matches a blog article by tag/keyword (Phase 3) |
 | Conversation history | Previous messages in the current thread (sliding window) | ~2-8K tokens | No (per-request) | Always (last N messages that fit budget) |
 
-**Total per request: ~22-30K input tokens.** With prompt caching, the static portion (~18K tokens) costs 90% less on cache hits.
+**Total per request: ~25-40K input tokens.** With prompt caching, the static portion (~26K tokens) costs 90% less on cache hits.
 
-Note: evidence.ts is included in full (not filtered by active suggestions) because it's static content that benefits from caching. Filtering per-user would prevent cache hits across users.
+Note: evidence.ts and products.md are included in full (not filtered by active suggestions) because they are static content that benefits from caching. Filtering per-user would prevent cache hits across users.
 
 ### Cost estimate (with prompt caching)
 
 | Component | Tokens | Rate | Cost |
 |-----------|--------|------|------|
-| Cached static portion (hit) | ~18K | $0.10/MTok | $0.0018 |
+| Cached static portion (hit) | ~26K | $0.10/MTok | $0.0026 |
 | Uncached dynamic portion | ~7K | $1/MTok | $0.007 |
 | Output | ~500 | $5/MTok | $0.0025 |
-| **Total per message** | | | **~$0.011** |
+| **Total per message** | | | **~$0.012** |
 
-Cache misses (first request in a 5-min window): ~18K × $1.25/MTok = $0.0225 for the static portion. Amortized across users, most requests will be cache hits.
+Cache misses (first request in a 5-min window): ~26K × $1.25/MTok = $0.0325 for the static portion. Amortized across users, most requests will be cache hits.
 
-At 3 messages/day × 100 daily active users ≈ **$3.30/day ≈ $100/month** (vs ~$200/month without caching).
+At 3 messages/day × 100 daily active users ≈ **$3.60/day ≈ $110/month** (vs ~$250/month without caching).
 
 ### What it can answer
 - "Why is my LDL flagged as high?" → Threshold from algorithm + AHA/ESC citation
@@ -48,11 +52,18 @@ At 3 messages/day × 100 daily active users ≈ **$3.30/day ≈ $100/month** (vs
 - "When should I get my next colonoscopy?" → Screening intervals for their age/sex
 - "What does my eGFR mean?" → Calculation explanation + clinical significance
 - "What did my colonoscopy show?" → Pulls in the stored document content and explains findings in context of screening guidelines
+- "What's in MicroVitamin?" → Ingredient list, doses, clinical references
+- "How does MicroVitamin+ compare to AG1?" → Evidence-based comparison from product knowledge
+- "Is Sleep habit-forming?" → Micro-dose melatonin explanation with citations
+- "Where's my order?" → Order status, tracking links from Shopify
+- "When's my next subscription charge?" → Subscription details (active/inactive status)
 
 ### What it refuses (with redirect)
-- **Diet, exercise, sleep, recipes**: "That's outside what Health Roadmap covers. For evidence-based lifestyle advice, check out Dr. Stanfield's YouTube: youtube.com/@DrBradStanfield"
+- **Diet, exercise, recipes, general lifestyle**: "That's outside what I cover here. For evidence-based lifestyle advice, check out Dr. Stanfield's YouTube: youtube.com/@DrBradStanfield"
 - **Dosage changes or new medications**: "I can explain what your roadmap suggests and why, but medication changes should always be discussed with your doctor."
 - **Diagnosis**: "I can't diagnose conditions. If you're concerned about [topic], please speak with your healthcare provider."
+- **Order issues requiring action** (refunds, cancellations, address changes): "For that, please email support or visit your account page."
+- **Subscription changes** (pause, cancel, swap products): "You can manage your subscription from your account page."
 - **Other people's health / off-topic / general knowledge**: Polite refusal, redirect back to roadmap
 
 ### Every response must
@@ -246,11 +257,11 @@ subscription_expires_at TIMESTAMPTZ
 ### How it works
 Anthropic's prompt caching lets you mark content blocks with `cache_control`. On subsequent requests, if the content up to that marker is identical, those tokens are served from cache at **90% lower cost** and with reduced latency (cached prefill is faster).
 
-### Cache layout (2 breakpoints)
+### Cache layout (3-4 breakpoints)
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  SYSTEM PROMPT                                       │
+│  SYSTEM PROMPT + ALGORITHM                           │
 │  Role, scope boundaries, output rules, disclaimer    │
 │  + health_roadmap_algorithm.md (full text)            │
 │  ~13K tokens                                         │
@@ -261,10 +272,28 @@ Anthropic's prompt caching lets you mark content blocks with `cache_control`. On
 │  ~5K tokens                                          │
 │  cache_control: { type: "ephemeral" }  ← breakpoint 2│
 ├──────────────────────────────────────────────────────┤
+│  PRODUCTS                                            │
+│  Full docs/products.md (ingredients, FAQs, refs)     │
+│  ~8K tokens                                          │
+│  cache_control: { type: "ephemeral" }  ← breakpoint 3│
+├──────────────────────────────────────────────────────┤
+│  BLOG INDEX (Phase 3)                                │
+│  Article titles, URLs, tags for keyword matching     │
+│  ~1-2K tokens                                        │
+│  cache_control: { type: "ephemeral" }  ← breakpoint 4│
+├──────────────────────────────────────────────────────┤
 │  USER CONTEXT (not cached — changes per user)        │
 │  Profile, measurements, medications, screenings,     │
 │  suggestions, document titles                        │
 │  ~2K tokens                                          │
+├──────────────────────────────────────────────────────┤
+│  ORDERS (not cached in prompt — 10-min server cache) │
+│  Recent orders, tracking links, fulfillment status   │
+│  ~0.5K tokens                                        │
+├──────────────────────────────────────────────────────┤
+│  MATCHED CONTENT (not cached — on-demand)            │
+│  Health document or blog article, if keyword matched │
+│  ~2-8K tokens                                        │
 ├──────────────────────────────────────────────────────┤
 │  MESSAGES (not cached — changes per request)         │
 │  Conversation history + new user message             │
@@ -273,14 +302,15 @@ Anthropic's prompt caching lets you mark content blocks with `cache_control`. On
 ```
 
 ### Why this layout
-- **Breakpoint 1** (system + algorithm): These are identical across ALL users and ALL requests. One cache write serves every user for 5 minutes.
-- **Breakpoint 2** (evidence): Also identical across all users. Separate breakpoint so algorithm changes don't invalidate the evidence cache (and vice versa).
+- **Breakpoints 1-3** (system + algorithm, evidence, products): These are identical across ALL users and ALL requests. One cache write serves every user for 5 minutes.
+- **Breakpoint 4** (blog index, Phase 3): Also identical across all users. Separate so product changes don't invalidate the blog cache.
 - **User context is NOT cached**: It's different per user, so caching would miss. Placing it after the cached blocks is correct — uncached tokens after a cache hit are fine.
-- **Evidence is included in full** (not filtered per user): Filtering by active suggestion IDs would make the content differ per user, preventing cross-user cache hits. The full evidence is ~5K tokens — the caching savings far outweigh including a few extra KB.
+- **Order data is cached server-side** (10-min TTL in-memory map), but NOT in the prompt cache (per-user). Fetched from Shopify Admin API via GraphQL, parallelized with health context assembly.
+- **Evidence and products are included in full** (not filtered per user): Filtering would make the content differ per user, preventing cross-user cache hits. The caching savings far outweigh including extra tokens.
 
 ### Requirements met
-- Haiku 4.5 minimum for caching: **4,096 tokens**. Our static portion is ~18K — easily qualifies.
-- Max 4 breakpoints per request: We use **2** — room to spare.
+- Haiku 4.5 minimum for caching: **4,096 tokens**. Our static portion is ~26K — easily qualifies.
+- Max 4 breakpoints per request: We use **3** (4 when blog index added in Phase 3).
 - TTL: 5 minutes (default). With regular usage, cache stays warm.
 
 ### Cache invalidation
@@ -323,13 +353,15 @@ These change infrequently (weekly at most), so cache hit rate should be very hig
 
 ---
 
-## New files
+## Key files
 
 ### Backend
 | File | Purpose |
 |------|---------|
-| `app/routes/api.chat.ts` | Chat CRUD + non-streaming chat endpoint (through app proxy) |
-| `app/lib/chat.server.ts` | Context assembly, daily limit check, Anthropic call |
+| `app/routes/api.chat.ts` | Chat CRUD + non-streaming chat endpoint (through app proxy). Order caching (10-min TTL). |
+| `app/lib/chat.server.ts` | Context assembly, daily limit check, Anthropic call. Loads algorithm, evidence, products, and blog index at startup. |
+| `app/lib/route-helpers.server.ts` | `getCustomerOrders()` — Shopify GraphQL for order status, tracking, fulfillment |
+| `docs/products.md` | Product knowledge (MicroVitamin, MicroVitamin+, Sleep, Omega-3) — ingredients, FAQs, comparisons, references |
 
 ### Frontend
 | File | Purpose |
@@ -338,7 +370,7 @@ These change infrequently (weekly at most), so cache hit rate should be very hig
 | `widget-src/src/lib/chat-api.ts` | Chat API client (list conversations, load messages, send message) |
 | `widget-src/src/lib/markdown.ts` | Lightweight Markdown → HTML renderer (bold, italic, lists, headers, links, code) |
 
-### Modified files
+### Other modified files
 | File | Change |
 |------|--------|
 | `app/lib/supabase.server.ts` | Export shared `loadHealthData()`, add chat tables to `deleteAllUserData()` |
@@ -348,7 +380,6 @@ These change infrequently (weekly at most), so cache hit rate should be very hig
 | `widget-src/src/components/HealthTool.tsx` | Chat tab in mobile tab bar, chat rendering |
 | `widget-src/src/components/MobileTabBar.tsx` | Add 'chat' to TabId |
 | `supabase/rls-policies.sql` | Chat tables, indexes, RLS policies, profile billing columns |
-| `shopify.app.toml` | Billing webhook (Phase 2 only) |
 
 ### Build impact
 - Chat components added to existing `health-tool.js` IIFE bundle (not a separate bundle)
@@ -419,21 +450,34 @@ These change infrequently (weekly at most), so cache hit rate should be very hig
 
 ## Phasing
 
-### Phase 1: Core chat (this scope)
+### Phase 1: Core chat (done)
 - Chat UI (collapsed/expanded, thread list, message list)
 - Conversation storage + history display
 - Prompt caching (system prompt + algorithm + evidence)
-- 3 messages/day limit (everyone is free tier)
+- 3 messages/day limit (free tier), 10/day (subscriber), message credit packs
 - Non-streaming responses through Shopify app proxy
 - Guest greyed-out state
 - Mobile tab
-- QA via Supabase dashboard
+- Health document content matching
 
-### Phase 2: Billing
-- Shopify `appSubscriptionCreate` flow
-- Subscription webhook handler
-- Upgrade UI in chat
-- Paid tier = unlimited (100/day cap)
+### Phase 2: Product knowledge + order lookups (done)
+- Products doc (`docs/products.md`) loaded as cached system block
+- System prompt expanded to include product Q&A scope
+- `getCustomerOrders()` via Shopify Admin API GraphQL (order status, tracking, fulfillment)
+- Order data cached server-side (10-min TTL), included in chat context
+- Subscription status via Appstle customer tag (active/inactive)
+
+### Phase 3: Blog content (planned)
+- Build script to fetch blog articles from Shopify API → convert HTML to markdown → save as `docs/blog/{handle}.md`
+- Blog index (`docs/blog/index.json`) with titles, URLs, tags, keywords
+- Tag-based keyword matching to inject relevant article content on-demand
+- Blog index included as cached system block; matched article content injected per-request
+
+### Phase 4: Site-wide deployment (planned)
+- Floating chat bubble on all storefront pages (app embed block)
+- Anonymous users: 3 free messages with lightweight context (products + general health), then hard gate for account creation
+- Logged-in users: full chat with health data, orders, blog content
+- Conversion funnel from anonymous → Shopify account creation
 
 ---
 
@@ -446,6 +490,8 @@ These change infrequently (weekly at most), so cache hit rate should be very hig
 - Custom personas or prompt tuning
 - RAG / vector search over documents
 - Admin dashboard (use Supabase dashboard for QA)
+- Detailed Appstle subscription management (next billing date, frequency) — would require `read_own_subscription_contracts` scope (only available to the app that created the contracts, i.e. Appstle)
+- ConsumerLab content (copyrighted — can link to but not include)
 
 ---
 

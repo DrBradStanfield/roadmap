@@ -82,6 +82,80 @@ export function isValidUuid(value: string): boolean {
   return UUID_REGEX.test(value);
 }
 
+// ---------------------------------------------------------------------------
+// Order lookup for chat context
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch recent orders for a Shopify customer (for chat context).
+ * Returns a formatted string summary. Never throws — returns empty string on failure.
+ */
+export async function getCustomerOrders(
+  admin: any,
+  customerId: string,
+): Promise<string> {
+  try {
+    const response = await admin.graphql(`
+      query getCustomerOrders($id: ID!) {
+        customer(id: $id) {
+          orders(first: 5, sortKey: CREATED_AT, reverse: true) {
+            edges {
+              node {
+                name
+                createdAt
+                displayFulfillmentStatus
+                totalPriceSet { shopMoney { amount currencyCode } }
+                lineItems(first: 10) {
+                  edges {
+                    node { title quantity }
+                  }
+                }
+                fulfillments {
+                  status
+                  trackingInfo { url number company }
+                }
+              }
+            }
+          }
+        }
+      }
+    `, { variables: { id: `gid://shopify/Customer/${customerId}` } });
+    const result = await response.json();
+    const edges = result?.data?.customer?.orders?.edges;
+    if (result?.errors) console.error('Order GraphQL errors:', JSON.stringify(result.errors));
+    if (!edges?.length) return '';
+
+    const lines: string[] = [];
+    for (const { node: order } of edges) {
+      const date = new Date(order.createdAt).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric',
+      });
+      const money = order.totalPriceSet?.shopMoney;
+      const total = money ? `$${parseFloat(money.amount).toFixed(2)} ${money.currencyCode}` : '';
+      const items = order.lineItems?.edges
+        ?.map((e: any) => `${e.node.title} ×${e.node.quantity}`)
+        .join(', ') ?? '';
+      const tracking: string[] = [];
+      for (const f of order.fulfillments ?? []) {
+        for (const t of f.trackingInfo ?? []) {
+          if (t.url) tracking.push(`${t.company || 'Tracking'}: ${t.url}`);
+        }
+      }
+
+      lines.push(`Order ${order.name} (${date}) — ${total}`);
+      lines.push(`  Status: ${order.displayFulfillmentStatus || 'UNFULFILLED'}`);
+      lines.push(`  Items: ${items}`);
+      if (tracking.length) lines.push(`  Tracking: ${tracking.join(', ')}`);
+      lines.push('');
+    }
+    return lines.join('\n');
+  } catch (error) {
+    console.error('Error fetching customer orders:', error);
+    Sentry.captureException(error, { tags: { feature: 'customer_orders_chat' } });
+    return '';
+  }
+}
+
 const APPSTLE_SUBSCRIBER_TAG = 'appstle_subscription_active_customer';
 
 /**

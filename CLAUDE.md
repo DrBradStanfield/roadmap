@@ -305,7 +305,7 @@ Backend: Initialized in `app/entry.server.tsx`.
 - **NEVER DROP TABLE on Supabase** — PostgREST caches OIDs. Use `ALTER TABLE ADD COLUMN IF NOT EXISTS`. Fix: restart Supabase project.
 - **Fly.io suspension**: `fly deploy` won't unsuspend. Use `fly machine start <id>`.
 - **In-memory user cache**: After deleting profiles/auth users, restart Fly.io machine to clear cache.
-- **Shopify scopes**: `write_app_proxy` required (else proxy returns 404), `read_customers` for email lookup.
+- **Shopify scopes**: `write_app_proxy` required (else proxy returns 404), `read_customers` for email lookup, `read_orders` + `read_all_orders` for chat order lookups.
 - **`getOrCreateSupabaseUser` resilience**: Handles "already registered" and race conditions by falling back to email lookup.
 - **Customer account extension** is link-only (`extensions/health-roadmap-link/`). Full extension was removed due to cross-origin localStorage barrier.
 - `automatically_update_urls_on_dev` is `false` to protect production URLs.

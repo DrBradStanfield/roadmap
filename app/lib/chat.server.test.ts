@@ -64,12 +64,19 @@ describe('buildConversationMessages', () => {
 });
 
 describe('buildSystemBlocks', () => {
-  it('returns 3 blocks with cache_control on first two', () => {
+  // Products doc adds a cached block when present, so base count is 3 or 4
+  const baseBlocks = buildSystemBlocks('{}');
+  const hasProducts = baseBlocks.some(b => b.text.includes("Dr Stanfield's Products"));
+  const baseCount = hasProducts ? 4 : 3;
+
+  it('returns base blocks with cache_control on cached blocks', () => {
     const blocks = buildSystemBlocks('{"test": true}');
-    expect(blocks).toHaveLength(3);
+    expect(blocks).toHaveLength(baseCount);
+    // Algorithm + evidence (+ products if present) should be cached
     expect(blocks[0].cache_control).toEqual({ type: 'ephemeral' });
     expect(blocks[1].cache_control).toEqual({ type: 'ephemeral' });
-    expect(blocks[2].cache_control).toBeUndefined();
+    // User context block (last base block) should NOT be cached
+    expect(blocks[baseCount - 1].cache_control).toBeUndefined();
   });
 
   it('includes algorithm doc in first block', () => {
@@ -84,22 +91,36 @@ describe('buildSystemBlocks', () => {
     expect(blocks[1].text).toContain('Clinical Evidence Reference');
   });
 
-  it('includes user context in third block', () => {
+  it('includes user context in last base block', () => {
     const ctx = '{"profile":{"sex":"male"}}';
     const blocks = buildSystemBlocks(ctx);
-    expect(blocks[2].text).toContain(ctx);
+    expect(blocks[baseCount - 1].text).toContain(ctx);
   });
 
-  it('adds 4th block when document content provided', () => {
-    const blocks = buildSystemBlocks('{}', 'Colonoscopy report content...');
-    expect(blocks).toHaveLength(4);
-    expect(blocks[3].text).toContain('Colonoscopy report content');
-    expect(blocks[3].cache_control).toBeUndefined(); // NOT cached
+  it('adds document block when document content provided', () => {
+    const blocks = buildSystemBlocks('{}', { documentContent: 'Colonoscopy report content...' });
+    expect(blocks).toHaveLength(baseCount + 1);
+    expect(blocks[baseCount].text).toContain('Colonoscopy report content');
+    expect(blocks[baseCount].cache_control).toBeUndefined(); // NOT cached
   });
 
-  it('skips 4th block when document content is null', () => {
-    const blocks = buildSystemBlocks('{}', null);
-    expect(blocks).toHaveLength(3);
+  it('skips document block when document content is null', () => {
+    const blocks = buildSystemBlocks('{}', { documentContent: null });
+    expect(blocks).toHaveLength(baseCount);
+  });
+
+  it('adds order block when order summary provided', () => {
+    const blocks = buildSystemBlocks('{}', { orderSummary: 'Order #1001 — $55.00' });
+    expect(blocks).toHaveLength(baseCount + 1);
+    expect(blocks[baseCount].text).toContain('Order #1001');
+  });
+
+  it('adds both document and order blocks when both provided', () => {
+    const blocks = buildSystemBlocks('{}', {
+      documentContent: 'Lab report',
+      orderSummary: 'Order #1001',
+    });
+    expect(blocks).toHaveLength(baseCount + 2);
   });
 });
 
