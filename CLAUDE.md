@@ -13,6 +13,13 @@ See [health_roadmap_algorithm.md](health_roadmap_algorithm.md) — the **single 
 - `packages/health-core/src/evidence.ts` — clinical reasons, guideline tags, DOI references
 - `roadmap_text.html` — user-facing explanations and citations
 
+## Shared Data with claude_business
+
+Some data files are shared with the marketing workspace at `~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/`:
+
+- **`docs/products.md`** is a **symlink** → `claude_business/docs/products.md` (the master copy). Do not edit it directly in this repo — edit the master in claude_business instead.
+- **`docs/blog/*.md`** — blog content cache for the chatbot. New posts are written here by the `/blog-post` skill in claude_business (which also publishes to Shopify). To rebuild the full cache from Shopify: `npx tsx scripts/build-blog-content.ts`
+
 ## Tech Stack
 
 - **Frontend**: React + TypeScript (Shopify theme extension)
