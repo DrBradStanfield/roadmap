@@ -855,6 +855,57 @@ CREATE POLICY "Users can delete own supplement_history"
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON supplement_history TO authenticated;
 
+-- ===== Enforce immutability on history tables =====
+-- Only effective_end may be updated (to close a period). All other columns are immutable.
+
+CREATE OR REPLACE FUNCTION enforce_history_immutability()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.user_id != OLD.user_id
+    OR NEW.medication_key IS DISTINCT FROM OLD.medication_key
+    OR NEW.drug_name IS DISTINCT FROM OLD.drug_name
+    OR NEW.dose_value IS DISTINCT FROM OLD.dose_value
+    OR NEW.dose_unit IS DISTINCT FROM OLD.dose_unit
+    OR NEW.status IS DISTINCT FROM OLD.status
+    OR NEW.effective_start IS DISTINCT FROM OLD.effective_start
+    OR NEW.change_type IS DISTINCT FROM OLD.change_type
+    OR NEW.source IS DISTINCT FROM OLD.source
+  THEN
+    RAISE EXCEPTION 'Only effective_end may be updated on history records';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION enforce_supplement_history_immutability()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.user_id != OLD.user_id
+    OR NEW.supplement_key IS DISTINCT FROM OLD.supplement_key
+    OR NEW.supplement_name IS DISTINCT FROM OLD.supplement_name
+    OR NEW.dose_value IS DISTINCT FROM OLD.dose_value
+    OR NEW.dose_unit IS DISTINCT FROM OLD.dose_unit
+    OR NEW.status IS DISTINCT FROM OLD.status
+    OR NEW.effective_start IS DISTINCT FROM OLD.effective_start
+    OR NEW.change_type IS DISTINCT FROM OLD.change_type
+    OR NEW.source IS DISTINCT FROM OLD.source
+  THEN
+    RAISE EXCEPTION 'Only effective_end may be updated on history records';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_medication_history_immutable ON medication_history;
+CREATE TRIGGER trg_medication_history_immutable
+  BEFORE UPDATE ON medication_history
+  FOR EACH ROW EXECUTE FUNCTION enforce_history_immutability();
+
+DROP TRIGGER IF EXISTS trg_supplement_history_immutable ON supplement_history;
+CREATE TRIGGER trg_supplement_history_immutable
+  BEFORE UPDATE ON supplement_history
+  FOR EACH ROW EXECUTE FUNCTION enforce_supplement_history_immutability();
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

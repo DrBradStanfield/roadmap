@@ -1088,6 +1088,7 @@ describe('generateSuggestions', () => {
       const meds: MedicationInputs = {
         statin: { drug: 'rosuvastatin', dose: 40 },
         ezetimibe: 'yes',
+        bempedoicAcid: 'bempedoic_acid',
         pcsk9i: 'yes',
       };
       const suggestions = generateSuggestions(inputs, results, 'si', meds);

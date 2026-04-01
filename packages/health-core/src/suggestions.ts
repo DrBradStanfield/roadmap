@@ -702,7 +702,19 @@ export function generateSuggestions(
           description: `${lipidReason} Discuss adding Ezetimibe 10mg with your doctor.`,
         });
       } else {
-        // Ezetimibe handled (yes or not tolerated) — Step 3: Escalate statin
+        // Ezetimibe handled (yes or not tolerated) — Step 2b: Bempedoic acid
+        const bempedoicNotHandled = !medications.bempedoicAcid || medications.bempedoicAcid === 'not_yet' || medications.bempedoicAcid === 'none';
+        if (bempedoicNotHandled) {
+          suggestions.push({
+            id: 'med-bempedoic-acid',
+            category: 'medication',
+            priority: 'attention',
+            title: 'Consider adding bempedoic acid',
+            description: `${lipidReason} Bempedoic acid (Nexletol) lowers cholesterol via a different pathway than statins. Discuss with your doctor.`,
+          });
+        }
+
+        // Step 3: Escalate statin
         const canIncrease = onStatin && canIncreaseDose(statin.drug, statin.dose);
         const shouldSwitch = onStatin && shouldSuggestSwitch(statin.drug, statin.dose);
         const atMaxPotency = onStatin && isOnMaxPotency(statin.drug, statin.dose);

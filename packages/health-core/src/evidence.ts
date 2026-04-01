@@ -394,6 +394,14 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
     ],
   },
 
+  'med-bempedoic-acid': {
+    reason: 'Bempedoic acid (Nexletol) inhibits ATP citrate lyase, lowering cholesterol production via a different pathway than statins. The CLEAR Outcomes trial showed a 13% reduction in major adverse cardiovascular events in statin-intolerant patients. It can be used alongside statins for additional LDL reduction. The combination pill with ezetimibe (Nexlizet) offers convenience.',
+    guidelines: ['ACC/AHA 2026', 'ESC/EAS 2019'],
+    references: [
+      { label: 'Nissen 2023 – CLEAR Outcomes (bempedoic acid cardiovascular outcomes)', url: 'https://doi.org/10.1056/NEJMoa2215024' },
+    ],
+  },
+
   'med-statin-increase': {
     reason: 'Doubling the statin dose typically provides an additional 6–7% LDL reduction (the "rule of 6"). While each dose increase has diminishing returns, the cumulative benefit of reaching lower lipid targets is supported by guidelines and the PESA study evidence.',
     guidelines: ['ESC/EAS 2019', 'BPAC 2021'],

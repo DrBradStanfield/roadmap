@@ -1036,7 +1036,7 @@ export function InputPanel({
 
           // Check if any suggestion recommends a cholesterol medication
           const hasCholesterolSuggestion = activeSuggestionIds &&
-            ['med-statin', 'med-ezetimibe', 'med-statin-increase', 'med-statin-switch', 'med-pcsk9i']
+            ['med-statin', 'med-ezetimibe', 'med-bempedoic-acid', 'med-statin-increase', 'med-statin-switch', 'med-pcsk9i']
               .some(id => activeSuggestionIds.has(id));
 
           // Three modes:
