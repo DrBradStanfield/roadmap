@@ -17,6 +17,8 @@ import {
   buildSystemBlocks,
   buildConversationMessages,
   matchDocumentTitle,
+  matchBlogArticle,
+  loadBlogArticle,
   getChatCompletion,
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
@@ -303,8 +305,15 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
+    // Check for blog article match (keyword/tag-based)
+    let blogArticle: string | null = null;
+    const matchedHandle = matchBlogArticle(message);
+    if (matchedHandle) {
+      blogArticle = loadBlogArticle(matchedHandle);
+    }
+
     // Build system blocks + messages, call LLM
-    const systemBlocks = buildSystemBlocks(context.userContextJson, { documentContent, orderSummary });
+    const systemBlocks = buildSystemBlocks(context.userContextJson, { documentContent, orderSummary, blogArticle });
     const messages = buildConversationMessages(history, message);
     const completion = await getChatCompletion(systemBlocks, messages);
 

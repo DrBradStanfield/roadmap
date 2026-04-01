@@ -56,6 +56,32 @@ try {
 }
 
 // ---------------------------------------------------------------------------
+// Blog article index — read once at module load
+// ---------------------------------------------------------------------------
+
+interface BlogIndexEntry {
+  title: string;
+  handle: string;
+  url: string;
+  tags: string[];
+  keywords: string[];
+}
+
+let BLOG_INDEX: BlogIndexEntry[] = [];
+let BLOG_INDEX_TEXT = '';
+try {
+  const raw = fs.readFileSync(path.join(process.cwd(), 'docs/blog/index.json'), 'utf-8');
+  BLOG_INDEX = JSON.parse(raw);
+  // Compact text index for the system prompt — title + short URL only (~5K tokens)
+  // Keywords are used for server-side matching, not included in prompt
+  BLOG_INDEX_TEXT = BLOG_INDEX.map(a =>
+    `- ${a.title} [drstanfield.com/blogs/articles/${a.handle}]`
+  ).join('\n');
+} catch {
+  console.warn('docs/blog/index.json not found — chat will not have blog knowledge');
+}
+
+// ---------------------------------------------------------------------------
 // Evidence document — serialized from evidence.ts at module load
 // ---------------------------------------------------------------------------
 
@@ -86,13 +112,14 @@ const CHAT_SYSTEM_PROMPT = `You are the Health Roadmap Assistant — an educatio
 ## Your role
 - Explain the user's Health Roadmap suggestions, the clinical guidelines behind them, and how their specific numbers relate to thresholds
 - Answer questions about Dr. Stanfield's products (MicroVitamin, MicroVitamin+, Sleep, Omega-3) using the product knowledge provided below
+- Discuss topics covered in Dr. Stanfield's blog articles — use the blog index and referenced article content provided below
 - Look up the user's order status and tracking links when asked
 - Use the user's actual health data (provided below) and cite specific guideline tags and DOI references from the evidence section
 - Present values in the user's preferred unit system
 
 ## Scope boundaries — STRICTLY ENFORCED
-You discuss topics covered by the Health Roadmap algorithm, Dr. Stanfield's products, and the user's orders (all provided below). For questions outside this scope:
-- Diet, exercise, recipes, general lifestyle → "That's outside what I cover here. For evidence-based lifestyle advice, check out Dr. Stanfield's YouTube: youtube.com/@DrBradStanfield"
+You discuss topics covered by the Health Roadmap algorithm, Dr. Stanfield's products, blog articles, and the user's orders (all provided below). For questions outside this scope:
+- Diet, exercise, recipes, general lifestyle NOT covered by a blog article → "That's outside what I cover here. For evidence-based lifestyle advice, check out Dr. Stanfield's YouTube: youtube.com/@DrBradStanfield". However, if a blog article is provided below that covers the topic, discuss it in detail and link to the article.
 - Medication dosage changes → "I can explain what your roadmap suggests and why, but medication changes should always be discussed with your doctor."
 - Diagnosis → "I can't diagnose conditions. If you're concerned, please speak with your healthcare provider."
 - Order issues requiring action (refunds, cancellations, address changes) → "For that, please email brad@drstanfield.com or visit your account page at account.drstanfield.com"
@@ -338,6 +365,57 @@ export function matchDocumentTitle(
   return bestMatch?.title ?? null;
 }
 
+/**
+ * Match a user message against the blog index by tags and keywords.
+ * Returns the handle of the best-matching article, or null.
+ */
+export function matchBlogArticle(userMessage: string): string | null {
+  if (BLOG_INDEX.length === 0) return null;
+
+  const msgLower = userMessage.toLowerCase();
+  let bestMatch: { handle: string; score: number } | null = null;
+
+  for (const article of BLOG_INDEX) {
+    let score = 0;
+
+    // Check keywords (highest signal)
+    for (const kw of article.keywords) {
+      if (msgLower.includes(kw)) score += 2;
+    }
+
+    // Check tags
+    for (const tag of article.tags) {
+      if (msgLower.includes(tag.toLowerCase())) score += 1;
+    }
+
+    // Check title words (3+ chars)
+    const titleWords = article.title.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+    for (const word of titleWords) {
+      if (msgLower.includes(word)) score += 1;
+    }
+
+    if (score > 2 && (!bestMatch || score > bestMatch.score)) {
+      bestMatch = { handle: article.handle, score };
+    }
+  }
+
+  return bestMatch?.handle ?? null;
+}
+
+/**
+ * Load the full markdown content of a blog article by handle.
+ * Returns null if the file doesn't exist.
+ */
+export function loadBlogArticle(handle: string): string | null {
+  try {
+    return fs.readFileSync(
+      path.join(process.cwd(), 'docs/blog', `${handle}.md`), 'utf-8',
+    );
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Message building (system blocks + conversation messages)
 // ---------------------------------------------------------------------------
@@ -350,7 +428,7 @@ interface SystemBlock {
 
 export function buildSystemBlocks(
   userContextJson: string,
-  opts?: { documentContent?: string | null; orderSummary?: string },
+  opts?: { documentContent?: string | null; orderSummary?: string; blogArticle?: string | null },
 ): SystemBlock[] {
   // Cached blocks first (shared across all users), then per-user blocks
   const blocks: SystemBlock[] = [
@@ -367,6 +445,11 @@ export function buildSystemBlocks(
     ...(PRODUCTS_DOC ? [{
       type: 'text' as const,
       text: `## Dr Stanfield's Products\n\n${PRODUCTS_DOC}`,
+      cache_control: { type: 'ephemeral' as const },
+    }] : []),
+    ...(BLOG_INDEX_TEXT ? [{
+      type: 'text' as const,
+      text: `## Blog Articles Index\n\nDr Stanfield's blog articles — reference and link to these when relevant:\n\n${BLOG_INDEX_TEXT}`,
       cache_control: { type: 'ephemeral' as const },
     }] : []),
     {
@@ -386,6 +469,13 @@ export function buildSystemBlocks(
     blocks.push({
       type: 'text',
       text: `## Referenced Health Document\n\n${opts.documentContent}`,
+    });
+  }
+
+  if (opts?.blogArticle) {
+    blocks.push({
+      type: 'text',
+      text: `## Referenced Blog Article\n\n${opts.blogArticle}`,
     });
   }
 

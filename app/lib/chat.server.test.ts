@@ -64,10 +64,9 @@ describe('buildConversationMessages', () => {
 });
 
 describe('buildSystemBlocks', () => {
-  // Products doc adds a cached block when present, so base count is 3 or 4
+  // Products and blog index add cached blocks when present, so base count varies
   const baseBlocks = buildSystemBlocks('{}');
-  const hasProducts = baseBlocks.some(b => b.text.includes("Dr Stanfield's Products"));
-  const baseCount = hasProducts ? 4 : 3;
+  const baseCount = baseBlocks.length;
 
   it('returns base blocks with cache_control on cached blocks', () => {
     const blocks = buildSystemBlocks('{"test": true}');
@@ -121,6 +120,12 @@ describe('buildSystemBlocks', () => {
       orderSummary: 'Order #1001',
     });
     expect(blocks).toHaveLength(baseCount + 2);
+  });
+
+  it('adds blog article block when blog article provided', () => {
+    const blocks = buildSystemBlocks('{}', { blogArticle: 'Berberine article content...' });
+    expect(blocks).toHaveLength(baseCount + 1);
+    expect(blocks[baseCount].text).toContain('Berberine article content');
   });
 });
 
