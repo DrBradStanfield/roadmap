@@ -8,12 +8,13 @@
  */
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
-import { getAuthenticatedUser, EXEMPT_CUSTOMERS, checkSubscriptionFromTags, getCustomerOrders } from '../lib/route-helpers.server';
-import { logAudit, getProfile, deductMessageCredit, updateSubscriptionPlan, type DbProfile } from '../lib/supabase.server';
+import { getAuthenticatedUser, EXEMPT_CUSTOMERS, checkSubscriptionFromTags, getCustomerOrders, getClientIp } from '../lib/route-helpers.server';
+import { logAudit, getProfile, deductMessageCredit, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
   checkDailyLimit,
   incrementDailyLimitCache,
   assembleChatContext,
+  assembleGuestChatContext,
   buildSystemBlocks,
   buildConversationMessages,
   matchDocumentTitle,
@@ -22,9 +23,44 @@ import {
   getChatCompletion,
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
+  FREE_DAILY_LIMIT,
+  GUEST_DAILY_LIMIT,
 } from '../lib/chat.server';
 
 import { buildPackUrls } from '../lib/message-packs';
+
+// ---------------------------------------------------------------------------
+// Unified auth: handles both authenticated users and guests
+// ---------------------------------------------------------------------------
+
+interface AuthResult {
+  client: any;
+  userId: string;
+  customerId: string | null;
+  admin: any;
+  isGuest: boolean;
+  sessionToken?: string;
+}
+
+async function getAuthOrGuest(request: Request, sessionToken?: string | null): Promise<AuthResult> {
+  // Try authenticated user first (also verifies HMAC internally)
+  const auth = await getAuthenticatedUser(request);
+  if (auth) {
+    return { ...auth, isGuest: false };
+  }
+
+  // Guest path — HMAC was already verified inside getAuthenticatedUser
+  const ip = getClientIp(request);
+  const session = await getOrCreateGuestSession(ip, sessionToken);
+  return {
+    client: createUserClient(session.sessionId),
+    userId: session.sessionId,
+    customerId: null,
+    admin: null,
+    isGuest: true,
+    sessionToken: session.sessionToken,
+  };
+}
 
 // Order cache — orders change infrequently, no need to re-fetch every message
 const ORDER_CACHE_TTL = 10 * 60_000; // 10 minutes
@@ -79,12 +115,32 @@ async function refreshSubscriptionIfStale(
 
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
-    const auth = await getAuthenticatedUser(request);
-    if (!auth) {
-      return json({ success: false, error: 'Not logged in' }, { status: 401 });
+    const url = new URL(request.url);
+
+    // Guest without a session token — return empty default (don't create a session just to list conversations)
+    const sessionToken = url.searchParams.get('sessionToken');
+    const hasCustomerId = !!url.searchParams.get('logged_in_customer_id');
+    if (!hasCustomerId && !sessionToken) {
+      return json({
+        success: true,
+        conversations: [],
+        dailyRemaining: GUEST_DAILY_LIMIT,
+        messageCredits: 0,
+        packs: [],
+        isGuest: true,
+      });
     }
 
-    const url = new URL(request.url);
+    let auth: AuthResult;
+    try {
+      auth = await getAuthOrGuest(request, sessionToken);
+    } catch (err) {
+      if (err instanceof GuestRateLimitError) {
+        return json({ success: false, error: 'rate_limited' }, { status: 429 });
+      }
+      throw err;
+    }
+
     const conversationId = url.searchParams.get('conversationId');
 
     if (conversationId) {
@@ -107,6 +163,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
           content: m.content,
           createdAt: m.created_at,
         })),
+        ...(auth.isGuest ? { sessionToken: auth.sessionToken } : {}),
       });
     }
 
@@ -117,7 +174,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         .select('id, title, created_at, updated_at')
         .order('updated_at', { ascending: false })
         .limit(50),
-      getProfile(auth.client),
+      auth.isGuest ? Promise.resolve(null) : getProfile(auth.client),
     ]);
 
     if (convResult.error) {
@@ -126,16 +183,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
 
     const messageCredits = profile?.message_credits ?? 0;
-    const isExempt = EXEMPT_CUSTOMERS.has(auth.customerId);
+    const isExempt = !auth.isGuest && auth.customerId && EXEMPT_CUSTOMERS.has(auth.customerId);
 
     // Lazy subscription check (at most once per 24 hours)
-    const plan = profile
-      ? await refreshSubscriptionIfStale(auth, profile)
+    const plan = (!auth.isGuest && auth.customerId && profile)
+      ? await refreshSubscriptionIfStale(
+          { admin: auth.admin, customerId: auth.customerId, userId: auth.userId },
+          profile,
+        )
       : 'free';
 
     const limitResult = isExempt
       ? { allowed: true, remaining: 999, useCredit: false, messageCredits }
-      : await checkDailyLimit(auth.client, auth.userId, plan, messageCredits);
+      : await checkDailyLimit(auth.client, auth.userId, plan, messageCredits, auth.isGuest);
 
     return json({
       success: true,
@@ -147,9 +207,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
       })),
       dailyRemaining: limitResult.remaining,
       messageCredits,
-      packs: (limitResult.remaining <= 0 && messageCredits <= 0) ? buildPackUrls() : [],
+      packs: (!auth.isGuest && limitResult.remaining <= 0 && messageCredits <= 0) ? buildPackUrls() : [],
+      ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
     });
   } catch (error) {
+    if (error instanceof GuestRateLimitError) {
+      return json({ success: false, error: 'rate_limited' }, { status: 429 });
+    }
     console.error('Chat loader error:', error);
     Sentry.captureException(error, { tags: { feature: 'chat' } });
     return json({ success: false, error: 'Internal error' }, { status: 500 });
@@ -162,16 +226,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   try {
-    const auth = await getAuthenticatedUser(request);
-    if (!auth) {
-      return json({ success: false, error: 'Not logged in' }, { status: 401 });
-    }
-
     if (process.env.CHAT_ENABLED === 'false') {
       return json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
     }
 
     const body = await request.json();
+
+    let auth: AuthResult;
+    try {
+      auth = await getAuthOrGuest(request, body.sessionToken);
+    } catch (err) {
+      if (err instanceof GuestRateLimitError) {
+        return json({ success: false, error: 'rate_limited' }, { status: 429 });
+      }
+      throw err;
+    }
 
     // ----- DELETE -----
     if (request.method === 'DELETE') {
@@ -204,19 +273,29 @@ export async function action({ request }: ActionFunctionArgs) {
       return json({ success: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)` }, { status: 400 });
     }
 
-    // Assemble context and fetch orders in parallel (both cached independently)
-    const [context, orderSummary] = await Promise.all([
-      assembleChatContext(auth.client, auth.userId),
-      auth.admin ? getCachedOrders(auth.admin, auth.customerId) : Promise.resolve(''),
-    ]);
+    // Assemble context — guest uses client-supplied inputs, authenticated loads from Supabase
+    let context;
+    let orderSummary = '';
+
+    if (auth.isGuest) {
+      context = body.guestInputs
+        ? assembleGuestChatContext(body.guestInputs)
+        : { userContextJson: '{}', subscriptionPlan: 'free', messageCredits: 0, healthDocuments: [] };
+    } else {
+      [context, orderSummary] = await Promise.all([
+        assembleChatContext(auth.client, auth.userId),
+        auth.admin ? getCachedOrders(auth.admin, auth.customerId!) : Promise.resolve(''),
+      ]);
+    }
+
     if (!context) {
       return json({ success: false, error: 'Could not load health data' }, { status: 500 });
     }
 
-    const isExempt = EXEMPT_CUSTOMERS.has(auth.customerId);
+    const isExempt = !auth.isGuest && auth.customerId && EXEMPT_CUSTOMERS.has(auth.customerId);
     const limitCheck = isExempt
       ? { allowed: true, remaining: 999, useCredit: false, messageCredits: context.messageCredits }
-      : await checkDailyLimit(auth.client, auth.userId, context.subscriptionPlan, context.messageCredits);
+      : await checkDailyLimit(auth.client, auth.userId, context.subscriptionPlan, context.messageCredits, auth.isGuest);
     let responseCredits = limitCheck.messageCredits;
 
     if (!limitCheck.allowed) {
@@ -360,9 +439,13 @@ export async function action({ request }: ActionFunctionArgs) {
       content: completion.content,
       dailyRemaining: finalRemaining,
       messageCredits: responseCredits,
-      packs: (finalRemaining <= 0 && responseCredits <= 0) ? buildPackUrls() : [],
+      packs: (!auth.isGuest && finalRemaining <= 0 && responseCredits <= 0) ? buildPackUrls() : [],
+      ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
     });
   } catch (error) {
+    if (error instanceof GuestRateLimitError) {
+      return json({ success: false, error: 'rate_limited' }, { status: 429 });
+    }
     console.error('Chat action error:', error);
     Sentry.captureException(error, { tags: { feature: 'chat' } });
     return json({ success: false, error: 'Failed to process message' }, { status: 500 });

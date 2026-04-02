@@ -30,6 +30,7 @@ import {
   logReminderSent,
   getOrCreateUnsubscribeToken,
   tryAcquireCronLock,
+  cleanupGuestProfiles,
   type DbProfile,
 } from './supabase.server';
 
@@ -88,6 +89,9 @@ export function startReminderCron(): void {
       console.log(`Reminder cron: starting daily processing (machine: ${MACHINE_ID})`);
       const count = await processReminders(now);
       console.log(`Reminder cron: completed, sent ${count} reminder emails`);
+
+      // Clean up abandoned guest profiles older than 30 days
+      await cleanupGuestProfiles();
     } catch (error) {
       console.error('Reminder cron error:', error);
       Sentry.captureException(error, { tags: { feature: 'reminder_cron' } });

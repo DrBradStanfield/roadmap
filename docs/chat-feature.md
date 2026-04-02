@@ -496,9 +496,8 @@ When a user asks about a specific topic (e.g., "should I take berberine?"), serv
 - Chat UI (collapsed/expanded, thread list, message list)
 - Conversation storage + history display
 - Prompt caching (system prompt + algorithm + evidence)
-- 3 messages/day limit (free tier), 10/day (subscriber), message credit packs
+- Daily limits + message credit packs
 - Non-streaming responses through Shopify app proxy
-- Guest greyed-out state
 - Mobile tab
 - Health document content matching
 
@@ -508,42 +507,94 @@ When a user asks about a specific topic (e.g., "should I take berberine?"), serv
 - `getCustomerOrders()` via Shopify Admin API GraphQL (order status, tracking, fulfillment)
 - Order data cached server-side (10-min TTL), included in chat context
 - Subscription status via Appstle customer tag (active/inactive)
+- `read_all_orders` scope added (60-day limit on `read_orders` was insufficient for older orders)
 
-### Phase 3: Blog content (planned)
-- Build script to fetch blog articles from Shopify API → convert HTML to markdown → save as `docs/blog/{handle}.md`
-- Blog index (`docs/blog/index.json`) with titles, URLs, tags, keywords
-- Tag-based keyword matching to inject relevant article content on-demand
-- Blog index included as cached system block; matched article content injected per-request
+### Phase 3: Blog content (done)
+- Build script (`scripts/build-blog-content.ts`) fetches 162 articles from Shopify API → converts HTML to markdown → saves to `docs/blog/`
+- Blog index loaded at startup (~6.5K tokens cached) with titles, URLs, and tags
+- Tag-based keyword matching injects relevant article content on-demand (~3.6K avg per matched article)
+- Conversation-aware matching: falls back to first message in thread for follow-up questions
+- Article content cached in memory after first read (no per-request disk I/O)
+- Token budget guard: articles capped at ~20K tokens
 
-### Phase 4: Site-wide deployment (planned)
-- Floating chat bubble on all storefront pages (app embed block)
-- Anonymous users: 3 free messages with lightweight context (products + general health), then hard gate for account creation
-- Logged-in users: full chat with health data, orders, blog content
-- Conversion funnel from anonymous → Shopify account creation
+### Phase 4: Guest chat (done)
+- Anonymous visitors get 3 free messages/day, then "Create Free Account" CTA
+- Logged-in free users get 50/day; subscribers get effectively unlimited
+- Same tables, same endpoint, same code as authenticated chat
+- Ghost profiles (`is_guest: true`) satisfy FK constraints; cleaned up after 30 days
+- `createUserClient(sessionId)` reuses the same JWT mechanism for RLS scoping
+- Guest health inputs passed from client → server validates with Zod → `calculateHealthResults()` → personalized answers
+- Session tokens in localStorage survive page refresh; conversations auto-load via prefetch
+- Guest → account migration via sync-embed.liquid (non-widget pages) + HealthTool.tsx (roadmap page)
+- Migrated conversations appear in authenticated chat history; ghost profile is deleted
+- Floating FAB with "Ask about your health" label on desktop, icon-only on mobile
+
+### Phase 5: Site-wide deployment (next)
+- Chat bubble on all storefront pages (app embed block)
+- Homepage embed with CTA
+- CSS adjustments for product page floating "Add to Cart" bar
 
 ---
 
-## Out of scope (all phases)
+## Guest chat architecture
 
-- Diet, exercise, sleep, recipe advice (redirects to YouTube)
+### Why ghost profiles, not separate tables
+We initially planned separate `guest_chat_sessions` + `guest_chat_messages` tables, but realized this would duplicate all conversation CRUD logic (list, load, send, delete). Instead, guests use the same `chat_conversations` and `chat_messages` tables as authenticated users. A ghost profile row (`is_guest: true`, everything else null) satisfies the `user_id` FK. `createUserClient(sessionId)` creates a scoped JWT — same function used for logged-in users. RLS works identically.
+
+### Why client-supplied health inputs
+Guests on the roadmap page have already entered health data in the widget (height, sex, blood tests, medications). Instead of a generic "I don't have your health data" response, the client passes `guestInputs` in the request body. The server validates with Zod and runs the same `calculateHealthResults()` — guests get the same quality of personalized chat as logged-in users. On site-wide pages where no health data is entered, the chatbot falls back to products, blog content, and general health Q&A.
+
+### Anti-abuse layers
+1. Shopify HMAC: all requests verified through app proxy
+2. In-memory IP rate limit: 10 requests/hour (prevents rapid-fire session creation)
+3. Session limit: max 3 sessions per IP per 24 hours (prevents incognito cycling)
+4. Session-IP binding: token only valid from originating IP
+5. Daily message limit: `checkDailyLimit()` counts messages in DB (same function for guests and authenticated users)
+
+### Migration flow
+When a guest creates an account:
+- **sync-embed.liquid** (non-widget pages): checks `health_roadmap_guest_session` in localStorage → clears synchronously → fires best-effort POST
+- **HealthTool.tsx** (roadmap page): same pattern — clears token sync, fires POST, clears stale prefetch
+- **Server**: `migrateGuestChat()` updates `user_id` on conversations/messages → deletes ghost profile (CASCADE deletes session) → deletes auth user
+
+### Bugs encountered and fixes
+
+**`shopify_customer_id` NOT NULL constraint**: The `handle_new_user()` trigger inserted NULL for `shopify_customer_id` from user metadata, violating a NOT NULL constraint that was added after the original schema (which designed it as nullable). This broke ALL new auth user creation, not just guests. Fixed by `ALTER TABLE profiles ALTER COLUMN shopify_customer_id DROP NOT NULL`.
+
+**`read_orders` scope only covers 60 days**: Shopify app store apps with `read_orders` can only see orders from the last 60 days. Brad's test orders were 4+ months old. Fixed by adding `read_all_orders` scope.
+
+**Fulfillments GraphQL field**: The Shopify Admin API returns `fulfillments` as a direct array, not a connection (no `edges`/`node`). The initial GraphQL query used the connection pattern and returned empty. Caught by E2E testing against the real API.
+
+**products.md symlink breaks in Docker**: The symlink to Dropbox doesn't resolve on Fly.io's remote builders. Fixed by dereferencing before deploy (`cp -L`), then restoring with `git checkout`.
+
+**Exempt customer bypass missing in loader**: The chat GET loader didn't check `EXEMPT_CUSTOMERS`, so Brad's exempt account still showed the daily limit in the UI. Fixed by adding the same exemption check to the loader.
+
+**Guest conversation not loading after refresh**: `loadConversation()` didn't pass `sessionToken` in query params for guests, so the server returned empty. Fixed by including the token.
+
+**Stale prefetch after migration**: When a guest logged in, `chatPrefetch` still held the guest's data. The authenticated chat initialized from this stale prefetch, missing the migrated conversation. Fixed by clearing `chatPrefetch` during migration.
+
+---
+
+## Daily message limits
+
+| User type | Daily limit | Rationale |
+|-----------|------------|-----------|
+| Guest | 3/day | Conversion gate — "create a free account for more" |
+| Free (logged in) | 50/day | Generous — acts as sales assistant, no friction |
+| Subscriber | 999/day | Effectively unlimited |
+| Exempt (Brad) | 999/day | Testing |
+
+The chatbot acts as a sales assistant — product questions, order lookups, and blog content discussions should flow freely for logged-in users. The 3-message guest limit exists solely to convert visitors to accounts.
+
+---
+
+## Out of scope
+
 - Image/file uploads in chat
 - Voice input
 - Sharing conversations
 - Custom personas or prompt tuning
 - RAG / vector search over documents
-- Admin dashboard (use Supabase dashboard for QA)
-- Detailed Appstle subscription management (next billing date, frequency) — would require `read_own_subscription_contracts` scope (only available to the app that created the contracts, i.e. Appstle)
+- Admin dashboard (use Supabase dashboard for QA review of guest conversations)
+- Detailed Appstle subscription management (requires Enterprise API at $100/month)
 - ConsumerLab content (copyrighted — can link to but not include)
-
----
-
-## Verification plan
-
-1. **Unit tests**: System prompt assembly, daily limit logic, conversation CRUD, input validation
-2. **Manual testing**: Send messages, verify context includes correct health data, verify refusals for out-of-scope questions
-3. **Security testing**: Attempt prompt injection ("ignore your instructions and..."), verify system prompt not leaked, verify cross-user isolation
-4. **Guest testing**: Verify greyed-out state, hover tooltip, no API calls made
-5. **Limit testing**: Send 3 messages, verify 4th is rejected, verify counter displays correctly, verify reset at midnight UTC
-6. **Mobile testing**: Verify chat tab appears, thread navigation works, input is usable
-7. **Browser testing**: Chrome DevTools MCP for screenshots and interaction testing
-8. **Cost monitoring**: Verify token counts are reasonable per message, check Anthropic dashboard after launch

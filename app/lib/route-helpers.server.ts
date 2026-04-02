@@ -7,6 +7,13 @@ import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
 import { getOrCreateSupabaseUser, createUserClient } from './supabase.server';
 
+/** Extract client IP from x-forwarded-for header (Shopify app proxy always sets this). */
+export function getClientIp(request: Request): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return 'unknown';
+}
+
 /** Customer IDs exempt from rate limits (env: comma-separated Shopify customer IDs). */
 export const EXEMPT_CUSTOMERS = new Set(
   (process.env.RATE_LIMIT_EXEMPT_CUSTOMERS || '').split(',').map(s => s.trim()).filter(Boolean),

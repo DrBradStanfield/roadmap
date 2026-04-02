@@ -29,10 +29,11 @@ import {
   type ApiMedication,
   type ApiScreening,
 } from '@roadmap/health-core';
-import type { ApiSupplement } from '../lib/api';
+import { PROXY_PATH, type ApiSupplement } from '../lib/api';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
-import { ChatSection } from './ChatSection';
+import { ChatSection, type ChatPrefetchData } from './ChatSection';
+import { listConversations, loadConversation, getGuestSessionToken, clearGuestSessionToken, type ChatMessage } from '../lib/chat-api';
 import { UploadModal, FloatingUploadIndicator } from './UploadModal';
 import { useIsMobile } from '../lib/useIsMobile';
 import { MobileTabBar, MobileTabNav, type TabId, type Tab } from './MobileTabBar';
@@ -109,6 +110,7 @@ export function HealthTool() {
   const isFirstSaveRef = useRef(true);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [floatingChatOpen, setFloatingChatOpen] = useState(false);
+  const [chatPrefetch, setChatPrefetch] = useState<ChatPrefetchData | null>(null);
   const [uploadActive, setUploadActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0, fileName: '' });
   const [healthDocuments, setHealthDocuments] = useState<ApiDocument[]>([]);
@@ -178,6 +180,18 @@ export function HealthTool() {
   useEffect(() => {
     async function loadData() {
       if (authState.isLoggedIn) {
+        // Migrate guest chat if token exists (sync-embed handles this on non-widget pages)
+        const guestToken = getGuestSessionToken();
+        if (guestToken) {
+          clearGuestSessionToken();
+          setChatPrefetch(null); // clear stale guest prefetch so authenticated chat loads fresh
+          fetch(`${PROXY_PATH}/api/measurements`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ migrateGuestChat: guestToken }),
+          }).catch(() => {});
+        }
+
         // Phase 1: show cached data instantly
         const cached = loadFromLocalStorage();
         if (cached && Object.keys(cached.inputs).length > 0) {
@@ -194,7 +208,7 @@ export function HealthTool() {
           }
           setInputs(cachedPrefill);
 
-          if (cached.previousMeasurements.length > 0) {
+          if (cached.previousMeasurements?.length > 0) {
             // Returning user — real previousMeasurements from last API response
             setPreviousMeasurements(cached.previousMeasurements);
           } else {
@@ -217,13 +231,13 @@ export function HealthTool() {
             }
           }
 
-          if (cached.medications.length > 0) {
+          if (cached.medications?.length > 0) {
             setMedications(cached.medications);
           }
-          if (cached.screenings.length > 0) {
+          if (cached.screenings?.length > 0) {
             setScreenings(cached.screenings);
           }
-          if (cached.reminderPreferences.length > 0) {
+          if (cached.reminderPreferences?.length > 0) {
             setReminderPreferences(cached.reminderPreferences);
           }
         }
@@ -385,6 +399,30 @@ export function HealthTool() {
     }
     return stage;
   }, [effectiveInputs, previousMeasurements]);
+
+  // Pre-fetch chat conversations in background when chat becomes visible (stage 4)
+  // So messages are ready instantly when the user clicks the chat bubble
+  useEffect(() => {
+    if (formStage < 4 || chatPrefetch) return;
+    listConversations().then(async (result) => {
+      if (!result) return;
+      let msgs: ChatMessage[] = [];
+      let activeId: string | null = null;
+      // For guests, auto-load the most recent conversation
+      if (!authState.isLoggedIn && result.conversations.length > 0) {
+        const latest = result.conversations[0];
+        activeId = latest.id;
+        msgs = await loadConversation(latest.id);
+      }
+      setChatPrefetch({
+        conversations: result.conversations,
+        messages: msgs,
+        activeConversationId: activeId,
+        dailyRemaining: result.dailyRemaining,
+        messageCredits: result.messageCredits,
+      });
+    });
+  }, [formStage, chatPrefetch, authState.isLoggedIn]);
 
   // Save any unsaved profile/demographic fields (height, sex, birthYear, birthMonth, unitSystem).
   // Returns true if saved or nothing to save; false on failure.
@@ -651,7 +689,7 @@ export function HealthTool() {
       { id: 'screening', label: 'Screening', visible: formStage >= 4 && screeningVisible },
       { id: 'supplements', label: 'Supplements', visible: authState.isLoggedIn && formStage >= 4 },
       { id: 'results', label: 'Results', visible: true },
-      { id: 'chat', label: 'Chat', visible: authState.isLoggedIn && formStage >= 4 },
+      { id: 'chat', label: 'Chat', visible: formStage >= 4 },
     ];
   }, [effectiveInputs, inputs.birthYear, inputs.birthMonth, inputs.sex, formStage, authState.isLoggedIn]);
 
@@ -910,7 +948,12 @@ export function HealthTool() {
           <MobileTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="mobile-tab-content">
             {activeTab === 'chat' ? (
-              <ChatSection isLoggedIn={authState.isLoggedIn} loginUrl={authState.loginUrl} />
+              <ChatSection
+                isLoggedIn={authState.isLoggedIn}
+                loginUrl={authState.loginUrl}
+                guestInputs={!authState.isLoggedIn ? { ...effectiveInputs, unitSystem, medications, screenings } : null}
+                prefetchedData={chatPrefetch}
+              />
             ) : activeTab === 'results' ? (
               <div className="health-tool-right">
                 <ResultsPanel {...resultsPanelProps} />
@@ -970,16 +1013,12 @@ export function HealthTool() {
       {/* Floating chat FAB — desktop only (mobile uses tab) */}
       {!isMobile && formStage >= 4 && !floatingChatOpen && (
         <button
-          className={`chat-fab no-print${!authState.isLoggedIn ? ' chat-fab-guest' : ''}`}
-          onClick={() => { if (authState.isLoggedIn) setFloatingChatOpen(true); }}
+          className="chat-fab no-print"
+          onClick={() => setFloatingChatOpen(true)}
           aria-label="Open chat"
         >
           <span className="chat-fab-icon">💬</span>
-          {!authState.isLoggedIn && (
-            <div className="chat-fab-tooltip">
-              <a href={authState.loginUrl || '/account/login'}>Sign in</a> to chat about your results
-            </div>
-          )}
+          <span className="chat-fab-label">Ask about your health</span>
         </button>
       )}
       {!isMobile && floatingChatOpen && (
@@ -988,6 +1027,8 @@ export function HealthTool() {
           loginUrl={authState.loginUrl}
           startExpanded
           onClose={() => setFloatingChatOpen(false)}
+          guestInputs={!authState.isLoggedIn ? { ...effectiveInputs, unitSystem, medications, screenings } : null}
+          prefetchedData={chatPrefetch}
         />
       )}
     </div>

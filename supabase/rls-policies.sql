@@ -126,6 +126,10 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
 -- ===== Unique constraint on shopify_customer_id =====
+-- Ensure shopify_customer_id is nullable (required for guest profiles which have no Shopify account).
+-- The CREATE TABLE definition already specifies TEXT (nullable), but an earlier migration may have
+-- added NOT NULL. This fixes it. NULLs are allowed by PostgreSQL UNIQUE constraints.
+ALTER TABLE profiles ALTER COLUMN shopify_customer_id DROP NOT NULL;
 
 DO $$
 BEGIN
@@ -905,6 +909,28 @@ DROP TRIGGER IF EXISTS trg_supplement_history_immutable ON supplement_history;
 CREATE TRIGGER trg_supplement_history_immutable
   BEFORE UPDATE ON supplement_history
   FOR EACH ROW EXECUTE FUNCTION enforce_supplement_history_immutability();
+
+-- ===== Guest chat sessions =====
+-- Ghost profiles support anonymous chat. A minimal profiles row (is_guest=true,
+-- everything else null) satisfies the user_id FK on chat_conversations/chat_messages.
+-- createUserClient(sessionId) creates a scoped JWT — same RLS as authenticated users.
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_guest BOOLEAN NOT NULL DEFAULT false;
+
+CREATE TABLE IF NOT EXISTS guest_chat_sessions (
+  id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+  session_token UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+  ip_address TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_guest_sessions_token ON guest_chat_sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_guest_sessions_ip ON guest_chat_sessions(ip_address);
+
+ALTER TABLE guest_chat_sessions ENABLE ROW LEVEL SECURITY;
+-- No policies for anon/authenticated = deny all client access.
+-- Session management is server-side only via supabaseAdmin.
+-- Chat messages are in chat_conversations/chat_messages (already RLS-protected).
 
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.

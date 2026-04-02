@@ -142,11 +142,18 @@ cd widget-src && npm run sentry:sourcemaps && cd ..
 # 3. Deploy Shopify extensions to CDN (must use --force for non-interactive environments)
 npx shopify app deploy --force
 
-# 4. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives)
+# 4. Resolve symlinks for remote Docker builders (Dropbox not available on Fly build servers)
+cp -L docs/products.md docs/products.md
+
+# 5. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives)
 fly deploy
+
+# 6. Restore symlink after deploy
+git checkout docs/products.md
 ```
 
 **Important deploy notes:**
+- **Symlink resolution before deploy**: `docs/products.md` is a symlink to the claude_business Dropbox folder. Fly.io's remote builders can't follow local symlinks. `cp -L` dereferences it into a real file for the build. `git checkout` restores the symlink after deploy.
 - `fly deploy` must be run from the **project root** (`/roadmap/`), not a subdirectory. The Dockerfile is at root level. Do NOT use `--app` flag — Fly reads `fly.toml` from the current directory.
 - `npx shopify app deploy --force` — the `--force` flag is required in non-interactive environments (CI, Claude Code). Without it, the CLI prompts for confirmation and hangs.
 - `SENTRY_AUTH_TOKEN` is only used locally for sourcemap uploads. Fly.io only needs `SENTRY_DSN` (already set as a secret).

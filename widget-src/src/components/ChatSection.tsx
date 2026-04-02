@@ -19,6 +19,14 @@ import {
 } from '../lib/chat-api';
 import { renderMarkdown } from '../lib/markdown';
 
+export interface ChatPrefetchData {
+  conversations: ChatConversation[];
+  messages: ChatMessage[];
+  activeConversationId: string | null;
+  dailyRemaining: number;
+  messageCredits: number;
+}
+
 interface ChatSectionProps {
   isLoggedIn: boolean;
   loginUrl?: string;
@@ -28,6 +36,10 @@ interface ChatSectionProps {
   onClose?: () => void;
   /** When provided, clicking the collapsed bubble calls this instead of expanding internally */
   onExpand?: () => void;
+  /** Guest health inputs from the widget — passed to server for personalized context */
+  guestInputs?: Record<string, unknown> | null;
+  /** Pre-fetched data from HealthTool — avoids delay when chat opens */
+  prefetchedData?: ChatPrefetchData | null;
 }
 
 const MAX_CHARS = 500;
@@ -50,19 +62,19 @@ const ChatMessageBubble = React.memo(function ChatMessageBubble({ msg }: { msg: 
   );
 });
 
-export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onExpand }: ChatSectionProps) {
-  const [conversations, setConversations] = useState<ChatConversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onExpand, guestInputs, prefetchedData }: ChatSectionProps) {
+  const [conversations, setConversations] = useState<ChatConversation[]>(prefetchedData?.conversations ?? []);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(prefetchedData?.activeConversationId ?? null);
+  const [messages, setMessages] = useState<ChatMessage[]>(prefetchedData?.messages ?? []);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
-  const [dailyRemaining, setDailyRemaining] = useState<number | null>(null);
-  const [messageCredits, setMessageCredits] = useState<number>(0);
+  const [dailyRemaining, setDailyRemaining] = useState<number | null>(prefetchedData?.dailyRemaining ?? null);
+  const [messageCredits, setMessageCredits] = useState<number>(prefetchedData?.messageCredits ?? 0);
   const [creditPacks, setCreditPacks] = useState<ChatPack[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showThreads, setShowThreads] = useState(false);
-  const [hasLoadedConversations, setHasLoadedConversations] = useState(false);
+  const [hasLoadedConversations, setHasLoadedConversations] = useState(!!prefetchedData);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -74,7 +86,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
 
   // Lazy-load conversations (only when user first expands the chat)
   const loadConversationsIfNeeded = useCallback(async () => {
-    if (hasLoadedConversations || !isLoggedIn) return;
+    if (hasLoadedConversations) return;
     setHasLoadedConversations(true);
     const result = await listConversations();
     if (result) {
@@ -82,6 +94,14 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
       setDailyRemaining(result.dailyRemaining);
       setMessageCredits(result.messageCredits);
       if (result.packs?.length) setCreditPacks(result.packs);
+
+      // Auto-load the most recent conversation if guest has one (resume after refresh)
+      if (!isLoggedIn && result.conversations.length > 0) {
+        const latest = result.conversations[0];
+        setActiveConversationId(latest.id);
+        const msgs = await loadConversation(latest.id);
+        setMessages(msgs);
+      }
     }
   }, [hasLoadedConversations, isLoggedIn]);
 
@@ -131,7 +151,9 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
     setInputText('');
     setIsLoading(true);
 
-    const { result, error: sendError } = await sendMessage(trimmed, activeConversationId);
+    const { result, error: sendError } = await sendMessage(
+      trimmed, activeConversationId, !isLoggedIn ? guestInputs : null,
+    );
 
     if (sendError) {
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
@@ -198,7 +220,6 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
   // First-use disclosure
   const [showDisclosure, setShowDisclosure] = useState(false);
   const handleExpand = useCallback(() => {
-    if (!isLoggedIn) return;
     // Delegate to parent (e.g. open floating FAB chat) if provided
     if (onExpand) { onExpand(); return; }
     const disclosed = localStorage.getItem('health_roadmap_chat_disclosed');
@@ -244,22 +265,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
     window.open(url, '_blank', 'width=500,height=700,scrollbars=yes');
   }, []);
 
-  // ----- GUEST STATE -----
-  if (!isLoggedIn) {
-    return (
-      <div className="chat-section chat-guest no-print">
-        <div className="chat-collapsed chat-disabled">
-          <span className="chat-icon">💬</span>
-          <span className="chat-placeholder">Ask about your health suggestions...</span>
-          <div className="chat-guest-tooltip">
-            <a href={loginUrl || '/account/login'}>Sign in</a> to chat about your results
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ----- COLLAPSED STATE -----
+  // ----- COLLAPSED STATE (guests and logged-in) -----
   if (!isExpanded) {
     return (
       <div className="chat-section no-print">
@@ -332,7 +338,16 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
                 </div>
               </div>
             )}
-            {limitReached && creditPacks.length > 0 && (
+            {limitReached && !isLoggedIn && (
+              <div className="chat-upgrade">
+                <p>You've used your free messages for today.</p>
+                <p className="chat-upgrade-subtitle">Create a free account for 50 daily messages, saved chat history, and personalized health tracking.</p>
+                <a href={loginUrl || '/account/login'} className="chat-pack-btn chat-signup-btn">
+                  <span className="chat-pack-amount">Create Free Account</span>
+                </a>
+              </div>
+            )}
+            {limitReached && isLoggedIn && creditPacks.length > 0 && (
               <div className="chat-upgrade">
                 {awaitingPurchase ? (
                   <p>Complete your purchase in the checkout window. Credits will appear automatically.</p>
@@ -383,12 +398,6 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
           </button>
           <div className="chat-input-meta">
             <span className="chat-char-count">{inputText.length}/{MAX_CHARS}</span>
-            {dailyRemaining !== null && dailyRemaining > 0 && (
-              <span className="chat-counter">{dailyRemaining} free today</span>
-            )}
-            {dailyRemaining !== null && dailyRemaining <= 0 && messageCredits > 0 && (
-              <span className="chat-counter">Using credits ({messageCredits} left)</span>
-            )}
           </div>
         </div>
       )}

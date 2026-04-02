@@ -3,9 +3,12 @@ import {
   buildConversationMessages,
   buildSystemBlocks,
   matchDocumentTitle,
+  matchBlogArticle,
+  assembleGuestChatContext,
   checkDailyLimit,
   incrementDailyLimitCache,
   MAX_MESSAGE_LENGTH,
+  GUEST_DAILY_LIMIT,
   FREE_DAILY_LIMIT,
   SUBSCRIBER_DAILY_LIMIT,
 } from './chat.server';
@@ -129,6 +132,79 @@ describe('buildSystemBlocks', () => {
   });
 });
 
+describe('assembleGuestChatContext', () => {
+  it('returns personalized context for valid guest inputs', () => {
+    const result = assembleGuestChatContext({
+      heightCm: 180,
+      sex: 'male',
+      birthYear: 1990,
+      birthMonth: 6,
+      weightKg: 80,
+    });
+    expect(result).not.toBeNull();
+    expect(result!.subscriptionPlan).toBe('free');
+    expect(result!.messageCredits).toBe(0);
+    expect(result!.healthDocuments).toEqual([]);
+    expect(result!.userContextJson).toContain('"sex": "male"');
+    expect(result!.userContextJson).toContain('"heightCm": 180');
+  });
+
+  it('returns null for invalid inputs (missing required fields)', () => {
+    const result = assembleGuestChatContext({ weightKg: 80 });
+    expect(result).toBeNull();
+  });
+
+  it('returns null for completely invalid data', () => {
+    expect(assembleGuestChatContext(null)).toBeNull();
+    expect(assembleGuestChatContext('string')).toBeNull();
+    expect(assembleGuestChatContext(123)).toBeNull();
+  });
+
+  it('sanitizes medications — rejects nested objects', () => {
+    const result = assembleGuestChatContext({
+      heightCm: 180,
+      sex: 'male',
+      medications: {
+        statin: 'atorvastatin',
+        malicious: { nested: 'object' },  // should be stripped
+      },
+    });
+    expect(result).not.toBeNull();
+    const parsed = JSON.parse(result!.userContextJson);
+    expect(parsed.medications.statin).toBe('atorvastatin');
+    expect(parsed.medications.malicious).toBeUndefined();
+  });
+
+  it('sanitizes screenings — rejects nested objects', () => {
+    const result = assembleGuestChatContext({
+      heightCm: 180,
+      sex: 'male',
+      screenings: {
+        colorectal_method: 'colonoscopy',
+        evil: { injected: 'prompt' },
+      },
+    });
+    expect(result).not.toBeNull();
+    const parsed = JSON.parse(result!.userContextJson);
+    expect(parsed.screenings.colorectal_method).toBe('colonoscopy');
+    expect(parsed.screenings.evil).toBeUndefined();
+  });
+
+  it('defaults unitSystem to si when not specified', () => {
+    const result = assembleGuestChatContext({ heightCm: 180, sex: 'female' });
+    expect(result).not.toBeNull();
+    const parsed = JSON.parse(result!.userContextJson);
+    expect(parsed.profile.unitSystem).toBe('si');
+  });
+
+  it('accepts conventional unit system', () => {
+    const result = assembleGuestChatContext({ heightCm: 180, sex: 'male', unitSystem: 'conventional' });
+    expect(result).not.toBeNull();
+    const parsed = JSON.parse(result!.userContextJson);
+    expect(parsed.profile.unitSystem).toBe('conventional');
+  });
+});
+
 describe('matchDocumentTitle', () => {
   const documents = [
     { title: 'Colonoscopy Report — Dr. Smith, Nov 2025', documentDate: '2025-11-15', documentType: 'scan_result' },
@@ -172,63 +248,65 @@ describe('checkDailyLimit', () => {
   let testUserId = 0;
   function uniqueUserId() { return `test-user-limit-${++testUserId}`; }
 
-  describe('free user', () => {
+  describe('guest user', () => {
+    it('allows message when under guest limit', async () => {
+      const result = await checkDailyLimit(mockClient(1), uniqueUserId(), 'free', 0, true);
+      expect(result).toEqual({ allowed: true, remaining: GUEST_DAILY_LIMIT - 1, useCredit: false, messageCredits: 0 });
+    });
+
+    it('denies guest at limit with no credits', async () => {
+      const result = await checkDailyLimit(mockClient(GUEST_DAILY_LIMIT), uniqueUserId(), 'free', 0, true);
+      expect(result).toEqual({ allowed: false, remaining: 0, useCredit: false, messageCredits: 0 });
+    });
+  });
+
+  describe('free user (logged in)', () => {
     it('allows message when under daily limit', async () => {
       const result = await checkDailyLimit(mockClient(1), uniqueUserId(), 'free', 0);
-      expect(result).toEqual({ allowed: true, remaining: 2, useCredit: false, messageCredits: 0 });
+      expect(result).toEqual({ allowed: true, remaining: FREE_DAILY_LIMIT - 1, useCredit: false, messageCredits: 0 });
     });
 
     it('allows message when at 0 messages', async () => {
       const result = await checkDailyLimit(mockClient(0), uniqueUserId(), 'free', 0);
-      expect(result).toEqual({ allowed: true, remaining: 3, useCredit: false, messageCredits: 0 });
+      expect(result).toEqual({ allowed: true, remaining: FREE_DAILY_LIMIT, useCredit: false, messageCredits: 0 });
     });
 
     it('denies message at limit with no credits', async () => {
-      const result = await checkDailyLimit(mockClient(3), uniqueUserId(), 'free', 0);
+      const result = await checkDailyLimit(mockClient(FREE_DAILY_LIMIT), uniqueUserId(), 'free', 0);
       expect(result).toEqual({ allowed: false, remaining: 0, useCredit: false, messageCredits: 0 });
     });
 
     it('allows message at limit when credits available', async () => {
-      const result = await checkDailyLimit(mockClient(3), uniqueUserId(), 'free', 5);
+      const result = await checkDailyLimit(mockClient(FREE_DAILY_LIMIT), uniqueUserId(), 'free', 5);
       expect(result).toEqual({ allowed: true, remaining: 0, useCredit: true, messageCredits: 5 });
-    });
-
-    it('denies message over limit with no credits', async () => {
-      const result = await checkDailyLimit(mockClient(10), uniqueUserId(), 'free', 0);
-      expect(result).toEqual({ allowed: false, remaining: 0, useCredit: false, messageCredits: 0 });
     });
   });
 
   describe('subscriber', () => {
     it('allows message when under subscriber limit', async () => {
       const result = await checkDailyLimit(mockClient(5), uniqueUserId(), 'subscriber', 0);
-      expect(result).toEqual({ allowed: true, remaining: 5, useCredit: false, messageCredits: 0 });
-    });
-
-    it('allows up to 10 messages for subscriber', async () => {
-      const result = await checkDailyLimit(mockClient(9), uniqueUserId(), 'subscriber', 0);
-      expect(result).toEqual({ allowed: true, remaining: 1, useCredit: false, messageCredits: 0 });
+      expect(result).toEqual({ allowed: true, remaining: SUBSCRIBER_DAILY_LIMIT - 5, useCredit: false, messageCredits: 0 });
     });
 
     it('denies subscriber at limit with no credits', async () => {
-      const result = await checkDailyLimit(mockClient(10), uniqueUserId(), 'subscriber', 0);
+      const result = await checkDailyLimit(mockClient(SUBSCRIBER_DAILY_LIMIT), uniqueUserId(), 'subscriber', 0);
       expect(result).toEqual({ allowed: false, remaining: 0, useCredit: false, messageCredits: 0 });
     });
 
     it('allows subscriber at limit when credits available', async () => {
-      const result = await checkDailyLimit(mockClient(10), uniqueUserId(), 'subscriber', 25);
+      const result = await checkDailyLimit(mockClient(SUBSCRIBER_DAILY_LIMIT), uniqueUserId(), 'subscriber', 25);
       expect(result).toEqual({ allowed: true, remaining: 0, useCredit: true, messageCredits: 25 });
     });
   });
 
   describe('defaults and edge cases', () => {
     it('defaults to free plan when plan is undefined', async () => {
-      const result = await checkDailyLimit(mockClient(3), uniqueUserId());
+      const result = await checkDailyLimit(mockClient(FREE_DAILY_LIMIT), uniqueUserId());
       expect(result.allowed).toBe(false);
     });
 
     it('treats unknown plan as free', async () => {
-      const result = await checkDailyLimit(mockClient(3), uniqueUserId(), 'unknown', 0);
+      const result = await checkDailyLimit(mockClient(FREE_DAILY_LIMIT), uniqueUserId(), 'unknown', 0);
       expect(result.allowed).toBe(false);
     });
 
@@ -252,14 +330,14 @@ describe('checkDailyLimit', () => {
       await checkDailyLimit(mockClient(1), userId, 'free', 0);
       // Second call with different mock — should use cache, not DB
       const result = await checkDailyLimit(mockClient(999), userId, 'free', 0);
-      expect(result.remaining).toBe(2); // From cached count of 1, not mock's 999
+      expect(result.remaining).toBe(FREE_DAILY_LIMIT - 1); // From cached count of 1, not mock's 999
     });
 
     it('incrementDailyLimitCache updates cached count', async () => {
       const userId = uniqueUserId();
-      await checkDailyLimit(mockClient(2), userId, 'free', 0);
+      await checkDailyLimit(mockClient(FREE_DAILY_LIMIT - 1), userId, 'free', 0);
       incrementDailyLimitCache(userId);
-      // Now cache has count=3, at limit
+      // Now cache has count=FREE_DAILY_LIMIT, at limit
       const result = await checkDailyLimit(mockClient(999), userId, 'free', 0);
       expect(result.allowed).toBe(false);
       expect(result.remaining).toBe(0);
@@ -273,7 +351,8 @@ describe('constants', () => {
   });
 
   it('has correct daily limits', () => {
-    expect(FREE_DAILY_LIMIT).toBe(3);
-    expect(SUBSCRIBER_DAILY_LIMIT).toBe(10);
+    expect(GUEST_DAILY_LIMIT).toBe(3);
+    expect(FREE_DAILY_LIMIT).toBe(50);
+    expect(SUBSCRIBER_DAILY_LIMIT).toBe(999);
   });
 });

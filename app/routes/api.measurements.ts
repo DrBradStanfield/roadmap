@@ -2,6 +2,7 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-r
 import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
 import { getCustomerId, getCustomerInfo, tagShopifyCustomer } from '../lib/route-helpers.server';
+import { migrateGuestChat } from '../lib/supabase.server';
 
 // In-memory rate limiter: 60 requests per minute per customer
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -186,6 +187,13 @@ export async function action({ request }: ActionFunctionArgs) {
     const body = await request.json();
 
     if (request.method === 'POST') {
+      // Guest chat migration — POST { migrateGuestChat: sessionToken }
+      // Called by sync-embed when a guest creates an account
+      if (body.migrateGuestChat && typeof body.migrateGuestChat === 'string') {
+        const migrated = await migrateGuestChat(body.migrateGuestChat, userId);
+        return json({ success: migrated });
+      }
+
       // Welcome email trigger — POST { sendWelcomeEmail: true }
       // Called by sync-embed after full data sync completes
       if (body.sendWelcomeEmail) {

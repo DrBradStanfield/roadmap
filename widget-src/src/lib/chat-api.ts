@@ -37,6 +37,8 @@ export interface SendMessageResult {
   dailyRemaining: number;
   messageCredits: number;
   packs?: ChatPack[];
+  sessionToken?: string;
+  isGuest?: boolean;
 }
 
 export interface ChatListResult {
@@ -44,6 +46,8 @@ export interface ChatListResult {
   dailyRemaining: number;
   messageCredits: number;
   packs?: ChatPack[];
+  sessionToken?: string;
+  isGuest?: boolean;
 }
 
 export interface ChatError {
@@ -54,25 +58,46 @@ export interface ChatError {
 }
 
 // ---------------------------------------------------------------------------
+// Guest session token (localStorage)
+// ---------------------------------------------------------------------------
+
+const GUEST_SESSION_KEY = 'health_roadmap_guest_session';
+
+export function getGuestSessionToken(): string | null {
+  try { return localStorage.getItem(GUEST_SESSION_KEY); } catch { return null; }
+}
+
+export function setGuestSessionToken(token: string): void {
+  try { localStorage.setItem(GUEST_SESSION_KEY, token); } catch { /* noop */ }
+}
+
+export function clearGuestSessionToken(): void {
+  try { localStorage.removeItem(GUEST_SESSION_KEY); } catch { /* noop */ }
+}
+
+// ---------------------------------------------------------------------------
 // API functions
 // ---------------------------------------------------------------------------
 
 export async function listConversations(): Promise<ChatListResult | null> {
   try {
-    const response = await fetch(`${PROXY_PATH}/api/chat`);
+    const sessionToken = getGuestSessionToken();
+    const params = sessionToken ? `?sessionToken=${encodeURIComponent(sessionToken)}` : '';
+    const response = await fetch(`${PROXY_PATH}/api/chat${params}`);
     if (!response.ok) return null;
-    const result = await parseJsonResponse<{
-      success: boolean;
-      conversations: ChatConversation[];
-      dailyRemaining: number;
-      messageCredits: number;
-    }>(response);
+    const result = await parseJsonResponse<any>(response);
     if (!result?.success) return null;
+
+    // Persist guest session token if returned
+    if (result.sessionToken) setGuestSessionToken(result.sessionToken);
+
     return {
       conversations: result.conversations,
       dailyRemaining: result.dailyRemaining,
       messageCredits: result.messageCredits ?? 0,
       packs: result.packs,
+      sessionToken: result.sessionToken,
+      isGuest: result.isGuest,
     };
   } catch (error) {
     console.warn('Error listing conversations:', error);
@@ -83,8 +108,10 @@ export async function listConversations(): Promise<ChatListResult | null> {
 
 export async function loadConversation(conversationId: string): Promise<ChatMessage[]> {
   try {
+    const sessionToken = getGuestSessionToken();
+    const params = `conversationId=${encodeURIComponent(conversationId)}${sessionToken ? '&sessionToken=' + encodeURIComponent(sessionToken) : ''}`;
     const response = await fetch(
-      `${PROXY_PATH}/api/chat?conversationId=${encodeURIComponent(conversationId)}`,
+      `${PROXY_PATH}/api/chat?${params}`,
     );
     if (!response.ok) return [];
     const result = await parseJsonResponse<{
@@ -103,18 +130,25 @@ export async function loadConversation(conversationId: string): Promise<ChatMess
 export async function sendMessage(
   message: string,
   conversationId?: string | null,
+  guestInputs?: Record<string, unknown> | null,
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
   try {
+    const sessionToken = getGuestSessionToken();
     const response = await fetch(`${PROXY_PATH}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message,
         conversationId: conversationId || undefined,
+        ...(sessionToken ? { sessionToken } : {}),
+        ...(guestInputs ? { guestInputs } : {}),
       }),
     });
 
     const data = await parseJsonResponse<any>(response);
+
+    // Persist guest session token if returned
+    if (data?.sessionToken) setGuestSessionToken(data.sessionToken);
 
     if (response.status === 429) {
       return {
@@ -143,6 +177,8 @@ export async function sendMessage(
         dailyRemaining: data.dailyRemaining,
         messageCredits: data.messageCredits ?? 0,
         packs: data.packs,
+        sessionToken: data.sessionToken,
+        isGuest: data.isGuest,
       },
       error: null,
     };
@@ -158,10 +194,14 @@ export async function sendMessage(
 
 export async function deleteConversation(conversationId: string): Promise<boolean> {
   try {
+    const sessionToken = getGuestSessionToken();
     const response = await fetch(`${PROXY_PATH}/api/chat`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ conversationId }),
+      body: JSON.stringify({
+        conversationId,
+        ...(sessionToken ? { sessionToken } : {}),
+      }),
     });
     if (!response.ok) return false;
     const data = await parseJsonResponse<{ success: boolean }>(response);

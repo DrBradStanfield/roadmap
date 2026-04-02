@@ -229,6 +229,215 @@ export async function getOrCreateSupabaseUser(
 }
 
 // ---------------------------------------------------------------------------
+// Guest chat session management
+// ---------------------------------------------------------------------------
+
+// IP rate limit for guest sessions: 10 requests/hour
+const GUEST_IP_RATE_WINDOW_MS = 60 * 60_000;
+const GUEST_IP_RATE_MAX = 10;
+const GUEST_MAX_SESSIONS_PER_IP = 3; // per 24 hours
+const guestIpRateMap = new Map<string, { count: number; resetAt: number }>();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of guestIpRateMap) {
+    if (now > entry.resetAt) guestIpRateMap.delete(key);
+  }
+}, 10 * 60_000);
+
+export interface GuestSessionResult {
+  sessionId: string;
+  sessionToken: string;
+}
+
+/**
+ * Get or create a guest chat session. Creates a ghost profile if needed.
+ * Uses supabaseAdmin for session management (same pattern as getOrCreateSupabaseUser).
+ * Returns sessionId (=profileId for createUserClient) and sessionToken (for client localStorage).
+ */
+export async function getOrCreateGuestSession(
+  ip: string,
+  sessionToken?: string | null,
+): Promise<GuestSessionResult> {
+  if (!supabaseAdmin) throw new Error('Supabase admin client not configured');
+
+  const now = Date.now();
+
+  // Existing session — validate token + IP (checked BEFORE rate limit to avoid penalizing returning guests)
+  if (sessionToken) {
+    const { data: session } = await supabaseAdmin
+      .from('guest_chat_sessions')
+      .select('id, session_token, ip_address')
+      .eq('session_token', sessionToken)
+      .single();
+
+    if (session && session.ip_address === ip) {
+      return { sessionId: session.id, sessionToken: session.session_token };
+    }
+    // Invalid token or IP mismatch — fall through to create new session
+  }
+
+  // In-memory IP rate limit (only for new session creation, not returning sessions)
+  const ipEntry = guestIpRateMap.get(ip);
+  if (ipEntry && now < ipEntry.resetAt && ipEntry.count >= GUEST_IP_RATE_MAX) {
+    throw new GuestRateLimitError('Too many requests');
+  }
+  if (!ipEntry || now > ipEntry.resetAt) {
+    guestIpRateMap.set(ip, { count: 1, resetAt: now + GUEST_IP_RATE_WINDOW_MS });
+  } else {
+    ipEntry.count++;
+  }
+
+  // Check IP session limit (max 3 per 24h)
+  const twentyFourHoursAgo = new Date(now - 24 * 60 * 60_000).toISOString();
+  const { count } = await supabaseAdmin
+    .from('guest_chat_sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('ip_address', ip)
+    .gte('created_at', twentyFourHoursAgo);
+
+  if ((count ?? 0) >= GUEST_MAX_SESSIONS_PER_IP) {
+    throw new GuestRateLimitError('Session limit reached');
+  }
+
+  // Create ghost auth user + profile + session
+  const guestEmail = `guest-${crypto.randomUUID()}@guest.internal`;
+  const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    email: guestEmail,
+    email_confirm: true,
+    user_metadata: { is_guest: true },
+  });
+
+  if (authError || !authUser?.user) {
+    console.error('Failed to create guest auth user:', authError);
+    throw new Error('Failed to create guest session');
+  }
+
+  const sessionId = authUser.user.id;
+
+  const { error: profileError } = await supabaseAdmin
+    .from('profiles')
+    .upsert({ id: sessionId, email: guestEmail, is_guest: true }, { onConflict: 'id' });
+
+  if (profileError) {
+    console.error('Failed to create guest profile:', profileError);
+    throw new Error('Failed to create guest session');
+  }
+
+  const { data: newSession, error: sessionError } = await supabaseAdmin
+    .from('guest_chat_sessions')
+    .insert({ id: sessionId, ip_address: ip })
+    .select('session_token')
+    .single();
+
+  if (sessionError || !newSession) {
+    // Clean up both the ghost profile and auth user
+    await supabaseAdmin.from('profiles').delete().eq('id', sessionId);
+    await supabaseAdmin.auth.admin.deleteUser(sessionId).catch(() => {});
+    console.error('Failed to create guest session:', sessionError);
+    throw new Error('Failed to create guest session');
+  }
+
+  logAudit(null, 'GUEST_SESSION_CREATED', 'guest_chat', sessionId, { ip });
+  return { sessionId, sessionToken: newSession.session_token };
+}
+
+/** Custom error for guest rate limiting (caught in api.chat.ts to return 429). */
+export class GuestRateLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'GuestRateLimitError';
+  }
+}
+
+/**
+ * Migrate guest chat history to an authenticated user account.
+ * Updates user_id on chat_conversations and chat_messages, then deletes the ghost profile.
+ */
+export async function migrateGuestChat(
+  guestSessionToken: string,
+  newUserId: string,
+): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+
+  // Look up the guest session
+  const { data: session } = await supabaseAdmin
+    .from('guest_chat_sessions')
+    .select('id')
+    .eq('session_token', guestSessionToken)
+    .single();
+
+  if (!session) return false;
+
+  const guestId = session.id;
+
+  // Update chat_conversations and chat_messages to point to the real user
+  await supabaseAdmin
+    .from('chat_conversations')
+    .update({ user_id: newUserId })
+    .eq('user_id', guestId);
+
+  await supabaseAdmin
+    .from('chat_messages')
+    .update({ user_id: newUserId })
+    .eq('user_id', guestId);
+
+  // Delete the ghost profile (cascades to guest_chat_sessions)
+  // The auth.users row cascades via profiles FK
+  await supabaseAdmin
+    .from('profiles')
+    .delete()
+    .eq('id', guestId)
+    .eq('is_guest', true);
+
+  // Also delete the ghost auth user
+  await supabaseAdmin.auth.admin.deleteUser(guestId);
+
+  logAudit(newUserId, 'GUEST_CHAT_MIGRATED', 'guest_chat', guestId);
+  return true;
+}
+
+/**
+ * Delete ghost guest profiles older than 30 days.
+ * CASCADE deletes their chat_conversations, chat_messages, guest_chat_sessions, and auth user.
+ * Called by the daily reminder cron.
+ */
+export async function cleanupGuestProfiles(): Promise<number> {
+  if (!supabaseAdmin) return 0;
+
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60_000).toISOString();
+
+  // Find guest profiles to delete (need IDs for auth user cleanup)
+  const { data: guests } = await supabaseAdmin
+    .from('profiles')
+    .select('id')
+    .eq('is_guest', true)
+    .lt('created_at', thirtyDaysAgo);
+
+  if (!guests?.length) return 0;
+
+  // Delete profiles (cascades to chat data + guest_chat_sessions)
+  const { error } = await supabaseAdmin
+    .from('profiles')
+    .delete()
+    .eq('is_guest', true)
+    .lt('created_at', thirtyDaysAgo);
+
+  if (error) {
+    console.error('Error cleaning up guest profiles:', error);
+    return 0;
+  }
+
+  // Clean up auth users (fire-and-forget, profiles already deleted)
+  for (const guest of guests) {
+    supabaseAdmin.auth.admin.deleteUser(guest.id).catch(() => {});
+  }
+
+  console.log(`Guest cleanup: deleted ${guests.length} abandoned guest profiles`);
+  return guests.length;
+}
+
+// ---------------------------------------------------------------------------
 // Type definitions
 // ---------------------------------------------------------------------------
 
@@ -1814,9 +2023,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     recentSignupsRes,
     welcomeEmailsRes,
   ] = await Promise.all([
-    // Total users
+    // Total users (exclude ghost guest profiles)
     applyExclusion(
-      supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
+      supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }).eq('is_guest', false),
       'id', excludedUserIds,
     ),
     // Active users (last 30 days)

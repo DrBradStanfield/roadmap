@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/remix';
 import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { sendFeedbackEmail } from '../lib/email.server';
+import { getClientIp } from '../lib/route-helpers.server';
 
 // Rate limit: 3 submissions per hour per IP
 const RATE_LIMIT_WINDOW_MS = 60 * 60_000;
@@ -16,12 +17,6 @@ setInterval(() => {
     if (now > entry.resetAt) rateLimitMap.delete(key);
   }
 }, 10 * 60_000);
-
-function getClientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return 'unknown';
-}
 
 function isRateLimited(ip: string): boolean {
   const entry = rateLimitMap.get(ip);

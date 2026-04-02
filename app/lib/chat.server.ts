@@ -12,6 +12,7 @@ import type { HealthInputs } from '../../packages/health-core/src/types';
 import { calculateHealthResults } from '../../packages/health-core/src/calculations';
 import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
 import { LONGITUDINAL_FIELDS } from '../../packages/health-core/src/mappings';
+import { healthInputSchema } from '../../packages/health-core/src/validation';
 import { loadHealthData } from './supabase.server';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
 import { decodeSex, decodeUnitSystem } from '../../packages/health-core/src/types';
@@ -23,8 +24,9 @@ import { decodeSex, decodeUnitSystem } from '../../packages/health-core/src/type
 const CHAT_MODEL = 'claude-haiku-4-5-20251001';
 const CHAT_MAX_TOKENS = 1024;
 const MAX_MESSAGE_LENGTH = 500;
-const FREE_DAILY_LIMIT = 3;
-const SUBSCRIBER_DAILY_LIMIT = 10;
+const GUEST_DAILY_LIMIT = 3;
+const FREE_DAILY_LIMIT = 50;
+const SUBSCRIBER_DAILY_LIMIT = 999; // effectively unlimited
 const HISTORY_TOKEN_BUDGET = 8000;
 
 // ---------------------------------------------------------------------------
@@ -125,6 +127,7 @@ You discuss topics covered by the Health Roadmap algorithm, Dr. Stanfield's prod
 - Order issues requiring action (refunds, cancellations, address changes) → "For that, please email brad@drstanfield.com or visit your account page at account.drstanfield.com"
 - Subscription details (next billing date, frequency) or changes (pause, cancel, swap) → "You can manage your subscription from your account page at account.drstanfield.com, or email brad@drstanfield.com for help."
 - Account access, login, or password issues → "You can log in or manage your account at account.drstanfield.com"
+- If the user asks about orders, subscriptions, or account details but no order data is provided below → they are not logged in. Encourage them to log in or create a free account at account.drstanfield.com to access their order information, get 50 daily chat messages, and save their health data.
 - Other people's health, off-topic, general knowledge → "I'm here to help you understand your Health Roadmap results and Dr. Stanfield's products."
 
 ## Rules
@@ -178,8 +181,11 @@ export async function checkDailyLimit(
   userId: string,
   subscriptionPlan: string = 'free',
   messageCredits: number = 0,
+  isGuest: boolean = false,
 ): Promise<DailyLimitResult> {
-  const limit = subscriptionPlan === 'subscriber' ? SUBSCRIBER_DAILY_LIMIT : FREE_DAILY_LIMIT;
+  const limit = isGuest ? GUEST_DAILY_LIMIT
+    : subscriptionPlan === 'subscriber' ? SUBSCRIBER_DAILY_LIMIT
+    : FREE_DAILY_LIMIT;
   const today = utcDateString();
 
   // Check cache first
@@ -305,6 +311,65 @@ export async function assembleChatContext(
   }
 
   return context;
+}
+
+/**
+ * Build chat context from client-supplied guest health inputs.
+ * Same output shape as assembleChatContext but without DB calls.
+ * Returns null if inputs fail validation.
+ */
+export function assembleGuestChatContext(guestInputs: unknown): ChatContext | null {
+  const parsed = healthInputSchema.safeParse(guestInputs);
+  if (!parsed.success) return null;
+
+  const inputs = parsed.data as HealthInputs;
+  const raw = guestInputs as Record<string, unknown>;
+  const unitSystem = raw?.unitSystem === 'conventional' ? 'conventional' : 'si';
+
+  // Sanitize medications/screenings — only allow plain objects with string/number values
+  // to prevent prompt injection via crafted nested objects
+  const medications = sanitizeFlatObject(raw?.medications);
+  const screenings = sanitizeFlatObject(raw?.screenings);
+
+  const results = calculateHealthResults(inputs, unitSystem, medications, screenings);
+
+  const userContext = {
+    profile: {
+      sex: inputs.sex,
+      age: results.age,
+      heightCm: inputs.heightCm,
+      unitSystem,
+    },
+    latestValues: buildLatestValues(inputs),
+    medications,
+    screenings,
+    currentSuggestions: results.suggestions.map(s => ({
+      id: s.id,
+      category: s.category,
+      priority: s.priority,
+      title: s.title,
+    })),
+    uploadedDocuments: [],
+  };
+
+  return {
+    userContextJson: JSON.stringify(userContext, null, 2),
+    subscriptionPlan: 'free',
+    messageCredits: 0,
+    healthDocuments: [],
+  };
+}
+
+/** Sanitize an object to only contain string/number/boolean/null values (no nested objects). */
+function sanitizeFlatObject(obj: unknown): Record<string, unknown> {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return {};
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null) {
+      result[key] = value;
+    }
+  }
+  return result;
 }
 
 function buildLatestValues(inputs: HealthInputs): Record<string, string> {
@@ -571,4 +636,4 @@ export async function getChatCompletion(
 // Exports for testing
 // ---------------------------------------------------------------------------
 
-export { CHAT_MODEL, MAX_MESSAGE_LENGTH, FREE_DAILY_LIMIT, SUBSCRIBER_DAILY_LIMIT };
+export { CHAT_MODEL, MAX_MESSAGE_LENGTH, GUEST_DAILY_LIMIT, FREE_DAILY_LIMIT, SUBSCRIBER_DAILY_LIMIT };

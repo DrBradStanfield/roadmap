@@ -87,6 +87,17 @@
         sessionStorage.setItem(SYNC_FLAG, '1');
         sessionStorage.setItem('health_roadmap_email_confirm', 'sent');
 
+        // Migrate guest chat history to authenticated account (best-effort)
+        var guestToken = localStorage.getItem('health_roadmap_guest_session');
+        if (guestToken) {
+          localStorage.removeItem('health_roadmap_guest_session');
+          fetch(PROXY, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ migrateGuestChat: guestToken })
+          }).catch(function() {});
+        }
+
         // Welcome email is best-effort — only update flag on error
         fetch(PROXY, {
           method: 'POST',

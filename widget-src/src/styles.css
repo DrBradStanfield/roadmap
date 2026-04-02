@@ -3207,6 +3207,10 @@ input[type="number"] {
   box-shadow: 0 0 0 1px var(--color-brand);
 }
 
+.chat-signup-btn {
+  justify-content: center;
+}
+
 .chat-pack-amount {
   font-weight: 500;
 }
@@ -3351,9 +3355,9 @@ input[type="number"] {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+  height: 48px;
+  padding: 0 20px;
+  border-radius: 24px;
   background: var(--color-brand);
   color: #fff;
   border: none;
@@ -3362,19 +3366,37 @@ input[type="number"] {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: transform 0.2s, box-shadow 0.2s;
   animation: chat-fab-entrance 0.3s ease-out;
 }
 
 .chat-fab:hover {
-  transform: scale(1.08);
+  transform: scale(1.05);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
 .chat-fab-icon {
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1;
+}
+
+.chat-fab-label {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .chat-fab {
+    width: 48px;
+    padding: 0;
+    border-radius: 50%;
+  }
+  .chat-fab-label {
+    display: none;
+  }
 }
 
 @keyframes chat-fab-entrance {

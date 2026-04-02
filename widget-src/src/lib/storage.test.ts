@@ -120,6 +120,32 @@ describe('safe storage accessors', () => {
     });
   });
 
+  describe('loadFromLocalStorage handles missing optional fields', () => {
+    it('returns data with undefined medications/screenings without crashing', () => {
+      // Guest users may have cached data without medications/screenings arrays
+      const guestData = {
+        inputs: { heightCm: 180, sex: 'male' },
+        savedAt: new Date().toISOString(),
+        // Note: no medications, no screenings, no previousMeasurements, no reminderPreferences
+      };
+      const mockStorage = {
+        getItem: vi.fn().mockReturnValue(JSON.stringify(guestData)),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      } as unknown as Storage;
+      Object.defineProperty(globalThis, 'localStorage', { value: mockStorage, writable: true });
+
+      const loaded = loadFromLocalStorage();
+      expect(loaded).not.toBeNull();
+      expect(loaded!.inputs.heightCm).toBe(180);
+      // loadFromLocalStorage defaults missing arrays to [] (not undefined)
+      expect(loaded!.medications).toEqual([]);
+      expect(loaded!.screenings).toEqual([]);
+      expect(loaded!.reminderPreferences).toEqual([]);
+      expect(loaded!.previousMeasurements).toEqual([]);
+    });
+  });
+
   describe('hasAuthenticatedFlag', () => {
     it('returns true when flag is set', () => {
       const mockStorage = { getItem: vi.fn().mockReturnValue('1') } as unknown as Storage;
