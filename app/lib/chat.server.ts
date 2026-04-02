@@ -72,10 +72,10 @@ let BLOG_INDEX_TEXT = '';
 try {
   const raw = fs.readFileSync(path.join(process.cwd(), 'docs/blog/index.json'), 'utf-8');
   BLOG_INDEX = JSON.parse(raw);
-  // Compact text index for the system prompt — title + short URL only (~5K tokens)
-  // Keywords are used for server-side matching, not included in prompt
+  // Compact text index for the system prompt — title + URL + tags (~6.5K tokens)
+  // Keywords are used for server-side matching only, not included in prompt
   BLOG_INDEX_TEXT = BLOG_INDEX.map(a =>
-    `- ${a.title} [drstanfield.com/blogs/articles/${a.handle}]`
+    `- ${a.title} [${a.url}]${a.tags.length ? ' (' + a.tags.join(', ') + ')' : ''}`
   ).join('\n');
 } catch {
   console.warn('docs/blog/index.json not found — chat will not have blog knowledge');
@@ -404,14 +404,26 @@ export function matchBlogArticle(userMessage: string): string | null {
 
 /**
  * Load the full markdown content of a blog article by handle.
+ * Caches in memory after first read — articles don't change at runtime.
  * Returns null if the file doesn't exist.
  */
+const blogArticleCache = new Map<string, string | null>();
+
 export function loadBlogArticle(handle: string): string | null {
+  // Validate handle to prevent path traversal
+  if (!/^[a-z0-9-]+$/.test(handle)) return null;
+
+  const cached = blogArticleCache.get(handle);
+  if (cached !== undefined) return cached;
+
   try {
-    return fs.readFileSync(
+    const content = fs.readFileSync(
       path.join(process.cwd(), 'docs/blog', `${handle}.md`), 'utf-8',
     );
+    blogArticleCache.set(handle, content);
+    return content;
   } catch {
+    blogArticleCache.set(handle, null);
     return null;
   }
 }
@@ -473,9 +485,14 @@ export function buildSystemBlocks(
   }
 
   if (opts?.blogArticle) {
+    // Cap blog article at ~20K tokens to prevent oversized context
+    const MAX_BLOG_CHARS = 80_000;
+    const trimmed = opts.blogArticle.length > MAX_BLOG_CHARS
+      ? opts.blogArticle.slice(0, MAX_BLOG_CHARS) + '\n\n[Article truncated — read the full post at the link above]'
+      : opts.blogArticle;
     blocks.push({
       type: 'text',
-      text: `## Referenced Blog Article\n\n${opts.blogArticle}`,
+      text: `## Referenced Blog Article\n\n${trimmed}`,
     });
   }
 

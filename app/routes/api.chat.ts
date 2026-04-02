@@ -305,9 +305,14 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
-    // Check for blog article match (keyword/tag-based)
+    // Check for blog article match — try current message first, fall back to
+    // first message in conversation (so follow-ups like "tell me more" keep context)
     let blogArticle: string | null = null;
-    const matchedHandle = matchBlogArticle(message);
+    let matchedHandle = matchBlogArticle(message);
+    if (!matchedHandle && history.length > 0) {
+      const firstUserMsg = history.find(m => m.role === 'user');
+      if (firstUserMsg) matchedHandle = matchBlogArticle(firstUserMsg.content);
+    }
     if (matchedHandle) {
       blogArticle = loadBlogArticle(matchedHandle);
     }

@@ -341,6 +341,45 @@ These change infrequently (weekly at most), so cache hit rate should be very hig
 - Read from disk on server startup and on file change (or simply on each request — negligible I/O)
 - Updates take effect on next deploy (cache invalidated by content change)
 
+### Blog articles: two-layer design
+
+The chatbot knows about 162 blog articles. The challenge: including all article content in every message would cost ~580K tokens — obviously impossible. Instead, we use a two-layer design that keeps costs minimal while giving the chatbot deep article knowledge when it matters.
+
+**Layer 1: Blog index (always included, cached)**
+
+At server startup, `docs/blog/index.json` is loaded and formatted as a compact list:
+```
+- Article Title [url] (Diet, Research)
+- Article Title [url] (Supplements)
+...
+```
+
+This gives the LLM a complete map of all 162 articles — titles, URLs, and tags — so it can reference and link to any article even without seeing the full content. ~6.5K tokens, cached via Anthropic's prompt caching (90% discount after first request). Cost per message: **~$0.00007**.
+
+**Why include the index at all?** Without it, the LLM wouldn't know which articles exist. It could only discuss articles that happen to match the current message. With the index, it can proactively suggest relevant articles ("You might also want to read my article on...") and link to them.
+
+**Layer 2: Full article content (on-demand, not cached)**
+
+When a user asks about a specific topic (e.g., "should I take berberine?"), server-side keyword matching (`matchBlogArticle()`) scores the message against each article's extracted keywords, Shopify tags, and title words. If the best match scores above threshold (>2), the full article content is loaded and injected into the context.
+
+- Average article: ~3.6K tokens (range: 1.9K–9K)
+- Articles capped at ~20K tokens as a safety guard (no current articles exceed this)
+- Only triggered when user's question matches a specific article
+- Most messages (health data questions, order lookups, product Q&A) don't trigger a match
+- Cost: **~$0.004 extra** on the ~20% of messages where it triggers
+
+**Conversation awareness:** Matching runs against the current message first. If no match, falls back to the first user message in the conversation (topic context). This means follow-up questions like "tell me more about that" keep the article injected — the user doesn't lose context mid-conversation.
+
+**Article caching:** Articles are cached in memory after first read (`blogArticleCache` map). No per-request disk I/O after the first access. Handle values are validated against `/^[a-z0-9-]+$/` to prevent path traversal.
+
+**Why not include all article content?** 162 articles × ~3.6K tokens = ~580K tokens. Even at cache prices this would cost $0.06/message. The on-demand approach costs $0.004 only when relevant.
+
+**Why server-side matching instead of letting the LLM decide?** The LLM would need to see the article content to decide if it's relevant — a chicken-and-egg problem. Server-side keyword matching is fast (in-memory, <1ms), costs zero tokens, and uses health/supplement-specific keyword extraction (132 unique terms across all articles) for better relevance than title-only matching.
+
+**Why keywords, not just tags?** Shopify tags are broad categories ("Diet", "Research", "Supplements"). A user asking "should I take berberine?" wouldn't match the tag "Supplements" specifically enough. Keywords extracted from article content ("berberine", "blood sugar", "metformin", "hba1c") provide precise matching.
+
+**Build process:** `scripts/build-blog-content.ts` fetches all articles from Shopify Admin API, converts HTML to markdown via `turndown`, extracts health/supplement keywords, and saves to `docs/blog/`. Run `npx tsx scripts/build-blog-content.ts` when new articles are published (requires `SHOPIFY_SHOP` and `SHOPIFY_ACCESS_TOKEN` env vars). New posts written by the `/blog-post` skill in claude_business are also automatically placed here.
+
 ---
 
 ## Privacy & legal
@@ -358,10 +397,13 @@ These change infrequently (weekly at most), so cache hit rate should be very hig
 ### Backend
 | File | Purpose |
 |------|---------|
-| `app/routes/api.chat.ts` | Chat CRUD + non-streaming chat endpoint (through app proxy). Order caching (10-min TTL). |
-| `app/lib/chat.server.ts` | Context assembly, daily limit check, Anthropic call. Loads algorithm, evidence, products, and blog index at startup. |
+| `app/routes/api.chat.ts` | Chat CRUD + non-streaming chat endpoint (through app proxy). Order caching (10-min TTL). Blog article matching + injection. |
+| `app/lib/chat.server.ts` | Context assembly, daily limit check, Anthropic call. Loads algorithm, evidence, products, and blog index at startup. `matchBlogArticle()` + `loadBlogArticle()`. |
 | `app/lib/route-helpers.server.ts` | `getCustomerOrders()` — Shopify GraphQL for order status, tracking, fulfillment |
 | `docs/products.md` | Product knowledge (MicroVitamin, MicroVitamin+, Sleep, Omega-3) — ingredients, FAQs, comparisons, references |
+| `docs/blog/` | 162 blog articles as markdown with frontmatter (title, url, tags, keywords). Generated by `scripts/build-blog-content.ts`. |
+| `docs/blog/index.json` | Blog index — title, handle, url, tags, keywords per article. Loaded at startup for matching + system prompt. |
+| `scripts/build-blog-content.ts` | Fetches articles from Shopify Admin API, converts HTML→markdown via turndown, extracts keywords, writes to `docs/blog/`. |
 
 ### Frontend
 | File | Purpose |
