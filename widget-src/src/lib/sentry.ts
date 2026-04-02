@@ -110,6 +110,7 @@ export function initSentry() {
       // Only capture errors originating from our own widget bundles
       /health-tool\.js/,
       /health-history\.js/,
+      /health-site-chat\.js/,
     ],
     beforeSend: scrubEvent,
     beforeBreadcrumb: scrubBreadcrumb,

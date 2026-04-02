@@ -2862,6 +2862,11 @@ input[type="number"] {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes chat-fade-in {
+  from { opacity: 0; transform: translateY(-50%) scale(0.95); }
+  to { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+
 /* Header */
 
 .chat-header {
@@ -3308,13 +3313,16 @@ input[type="number"] {
 @media (max-width: 768px) {
 
   .chat-expanded {
-    bottom: 0;
-    right: 0;
-    left: 0;
-    width: 100%;
-    height: calc(100vh - 60px);
-    border-radius: 12px 12px 0 0;
-    border-bottom: none;
+    bottom: auto;
+    right: 8px;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: auto;
+    height: 70vh;
+    max-height: calc(100vh - 80px);
+    border-radius: 12px;
+    animation: chat-fade-in 0.2s ease-out;
   }
 
   .chat-body {
@@ -3396,6 +3404,10 @@ input[type="number"] {
   }
   .chat-fab-label {
     display: none;
+  }
+  /* Push chat bubble above sticky Add to Cart bar when it's visible */
+  body:has(#md-sticky-atc.show) .chat-fab {
+    bottom: 80px;
   }
 }
 

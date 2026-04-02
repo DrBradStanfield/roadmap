@@ -139,16 +139,19 @@ npm run build:widget
 # 2. Upload sourcemaps to Sentry (requires SENTRY_AUTH_TOKEN in .env — local only, not on Fly.io)
 cd widget-src && npm run sentry:sourcemaps && cd ..
 
-# 3. Deploy Shopify extensions to CDN (must use --force for non-interactive environments)
+# 3. Remove sourcemaps before Shopify deploy (they push the extension over the 10MB limit)
+rm -f extensions/health-tool-widget/assets/*.map
+
+# 4. Deploy Shopify extensions to CDN (must use --force for non-interactive environments)
 npx shopify app deploy --force
 
-# 4. Resolve symlinks for remote Docker builders (Dropbox not available on Fly build servers)
+# 5. Resolve symlinks for remote Docker builders (Dropbox not available on Fly build servers)
 cp -L docs/products.md docs/products.md
 
-# 5. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives)
+# 6. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives)
 fly deploy
 
-# 6. Restore symlink after deploy
+# 7. Restore symlink after deploy
 git checkout docs/products.md
 ```
 
