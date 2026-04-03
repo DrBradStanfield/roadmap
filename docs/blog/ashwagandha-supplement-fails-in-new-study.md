@@ -1,6 +1,7 @@
 ---
 title: "Ashwagandha Supplement Fails in New Study!"
 url: "https://drstanfield.com/blogs/articles/ashwagandha-supplement-fails-in-new-study"
+youtube: "https://www.youtube.com/watch?v=3Vp3i4bS8VU"
 publishedAt: "2025-10-15T20:07:54Z"
 tags: ["Supplements"]
 keywords: ["ashwagandha","cognitive","creatine","exercise","muscle"]

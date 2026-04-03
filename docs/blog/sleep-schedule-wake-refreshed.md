@@ -1,6 +1,7 @@
 ---
 title: "Example Sleep Schedule to Help You Wake Up Refreshed"
 url: "https://drstanfield.com/blogs/articles/sleep-schedule-wake-refreshed"
+youtube: "https://www.youtube.com/watch?v=UXBcWPlZ_qA"
 publishedAt: "2024-07-26T20:58:47Z"
 tags: ["General Health"]
 keywords: ["blood pressure","blood sugar","cardiovascular","circadian","diabetes","exercise","insomnia","insulin resistance","melatonin","obesity","skin","sleep","stroke"]

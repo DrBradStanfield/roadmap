@@ -1,6 +1,7 @@
 ---
 title: "This Mineral Deficiency Is Causing Strokes"
 url: "https://drstanfield.com/blogs/articles/this-mineral-deficiency-is-causing-strokes"
+youtube: "https://www.youtube.com/watch?v=lb5FleSDefo"
 publishedAt: "2025-08-28T23:51:02Z"
 tags: ["Diet","Preventative Care"]
 keywords: ["atherosclerosis","blood pressure","cardiovascular","diabetes","heart attack","hypertension","inflammation","potassium","stroke"]

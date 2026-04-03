@@ -1,8 +1,9 @@
 ---
 title: "I Was Wrong About Red Light Masks & Skin Aging"
 url: "https://drstanfield.com/blogs/articles/i-was-wrong-about-red-light-masks-skin-aging"
+youtube: "https://www.youtube.com/watch?v=_bdK_Z65R38"
 publishedAt: "2025-03-24T00:02:57Z"
-tags: []
+tags: ["Skin Health","Research"]
 keywords: ["aging","collagen","inflammation","photoaging","skin","spf","sunscreen","tretinoin","wrinkles"]
 ---
 

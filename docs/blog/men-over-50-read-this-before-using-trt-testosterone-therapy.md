@@ -1,8 +1,9 @@
 ---
 title: "Men Over 50, Read THIS Before Using TRT/Testosterone Therapy"
 url: "https://drstanfield.com/blogs/articles/men-over-50-read-this-before-using-trt-testosterone-therapy"
+youtube: "https://www.youtube.com/watch?v=8ZN1xCr4SPs"
 publishedAt: "2025-03-02T16:40:02Z"
-tags: []
+tags: ["Research","General Health"]
 keywords: ["aging","betaine","blood pressure","bmi","bone density","cardiovascular","diabetes","exercise","hormone","muscle","obesity","skin","testosterone","tmg"]
 ---
 

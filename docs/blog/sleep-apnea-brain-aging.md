@@ -1,6 +1,7 @@
 ---
 title: "This Commonly Missed Diagnosis Can Rapidly Age Your Brain"
 url: "https://drstanfield.com/blogs/articles/sleep-apnea-brain-aging"
+youtube: "https://www.youtube.com/watch?v=p8-IIbONXtw"
 publishedAt: "2025-09-21T13:50:15Z"
 tags: ["General Health","Preventative Care"]
 keywords: ["aging","alzheimer","atherosclerosis","blood pressure","cardiovascular","cognitive","dementia","diabetes","exercise","glp-1","inflammation","sleep","weight loss"]

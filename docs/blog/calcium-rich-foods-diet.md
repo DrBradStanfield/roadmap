@@ -1,6 +1,7 @@
 ---
 title: "How to Include More Calcium-Rich Foods in Your Diet"
 url: "https://drstanfield.com/blogs/articles/calcium-rich-foods-diet"
+youtube: "https://www.youtube.com/watch?v=eeYQk7iaXo0"
 publishedAt: "2024-10-14T21:25:53Z"
 tags: ["Diet"]
 keywords: ["blood pressure","calcium","cardiovascular","cholesterol","estrogen","kidney","muscle","omega-3","osteoporosis","skin","uv","vitamin d"]

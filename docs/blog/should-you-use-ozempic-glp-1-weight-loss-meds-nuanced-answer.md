@@ -1,8 +1,9 @@
 ---
 title: "Should You Use Ozempic (GLP-1) Weight Loss Meds? Nuanced Answer"
 url: "https://drstanfield.com/blogs/articles/should-you-use-ozempic-glp-1-weight-loss-meds-nuanced-answer"
+youtube: "https://www.youtube.com/watch?v=Cg6Ahe8t8zQ"
 publishedAt: "2025-02-22T07:41:55Z"
-tags: []
+tags: ["General Health"]
 keywords: ["blood sugar","bmi","diabetes","exercise","glp-1","hormone","inflammation","muscle","obesity","resistance training","weight loss"]
 ---
 

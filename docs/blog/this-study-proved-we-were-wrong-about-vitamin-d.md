@@ -1,8 +1,9 @@
 ---
 title: "This Study Proved We Were WRONG About Vitamin D"
 url: "https://drstanfield.com/blogs/articles/this-study-proved-we-were-wrong-about-vitamin-d"
+youtube: "https://www.youtube.com/watch?v=lseY2Vk5Rq8"
 publishedAt: "2025-04-18T22:00:59Z"
-tags: []
+tags: ["Supplements"]
 keywords: ["aging","blood sugar","bone density","calcium","cognitive","diabetes","lifespan","skin","sleep","vitamin d"]
 ---
 

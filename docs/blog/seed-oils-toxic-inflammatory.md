@@ -1,8 +1,9 @@
 ---
 title: "Are Seed Oils Toxic and Inflammatory?"
 url: "https://drstanfield.com/blogs/articles/seed-oils-toxic-inflammatory"
+youtube: "https://www.youtube.com/watch?v=XJ_uyV-ER_g"
 publishedAt: "2024-09-29T01:35:00Z"
-tags: []
+tags: ["General Health","Diet","Research"]
 keywords: ["cholesterol","dha","diabetes","epa","inflammation","ldl","olive oil","omega-3","seed oil"]
 ---
 

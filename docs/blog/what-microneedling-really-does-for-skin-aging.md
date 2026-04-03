@@ -1,6 +1,7 @@
 ---
 title: "What Microneedling REALLY Does for Skin Aging"
 url: "https://drstanfield.com/blogs/articles/what-microneedling-really-does-for-skin-aging"
+youtube: "https://www.youtube.com/watch?v=FOirk9-rLjA"
 publishedAt: "2026-03-01T23:39:13Z"
 tags: ["Research","Skin Health"]
 keywords: ["aging","collagen","skin","wrinkles"]

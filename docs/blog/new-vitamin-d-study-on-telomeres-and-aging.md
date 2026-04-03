@@ -1,6 +1,7 @@
 ---
 title: "New Vitamin D Study on Telomeres and Aging"
 url: "https://drstanfield.com/blogs/articles/new-vitamin-d-study-on-telomeres-and-aging"
+youtube: "https://www.youtube.com/watch?v=3qtUBN3b6sA"
 publishedAt: "2025-10-16T20:05:51Z"
 tags: ["Supplements"]
 keywords: ["aging","blood pressure","bmi","bone density","calcium","exercise","heart attack","inflammation","ldl","longevity","muscle","omega-3","vitamin d","vitamin d3"]

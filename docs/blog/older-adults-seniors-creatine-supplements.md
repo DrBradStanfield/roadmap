@@ -1,6 +1,7 @@
 ---
 title: "Can Older Adults and Seniors Still Take Creatine Supplements?"
 url: "https://drstanfield.com/blogs/articles/older-adults-seniors-creatine-supplements"
+youtube: "https://www.youtube.com/watch?v=FsHq03ecnhM"
 publishedAt: "2024-07-01T01:37:47Z"
 tags: ["Supplements"]
 keywords: ["aging","alzheimer","brain health","cognitive","creatine","creatinine","exercise","gout","hormone","kidney","magnesium","muscle","sleep","testosterone","uric acid"]

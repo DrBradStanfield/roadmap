@@ -1,6 +1,7 @@
 ---
 title: "Trace Minerals in Vitamins: What Are They and Is It a Fad?"
 url: "https://drstanfield.com/blogs/articles/trace-minerals-vitamins-fad"
+youtube: "https://www.youtube.com/watch?v=_hOxXq0wi-0"
 publishedAt: "2025-01-07T00:08:13Z"
 tags: ["Supplements"]
 keywords: ["bone density","boron","calcium","cholesterol","estrogen","fiber","hormone","iodine","iron","magnesium","osteoporosis","potassium","selenium","skin","testosterone","vitamin b12","vitamin d","zinc"]

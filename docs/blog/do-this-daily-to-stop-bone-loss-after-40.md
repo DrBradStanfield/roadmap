@@ -1,6 +1,7 @@
 ---
 title: "Do This Daily to STOP Bone Loss After 40"
 url: "https://drstanfield.com/blogs/articles/do-this-daily-to-stop-bone-loss-after-40"
+youtube: "https://www.youtube.com/watch?v=EbDxVr9-MYo"
 publishedAt: "2025-07-03T02:07:16Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["bone density","calcium","dexa","exercise","magnesium","muscle","osteoporosis","resistance training","vitamin d","vitamin d3","vitamin k2"]

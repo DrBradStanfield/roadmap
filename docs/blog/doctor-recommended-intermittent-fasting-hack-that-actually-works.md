@@ -1,8 +1,9 @@
 ---
 title: "Doctor Recommended Intermittent Fasting Hack That ACTUALLY Works"
 url: "https://drstanfield.com/blogs/articles/doctor-recommended-intermittent-fasting-hack-that-actually-works"
+youtube: "https://www.youtube.com/watch?v=uXV5GRrZH9Q"
 publishedAt: "2025-04-30T00:47:26Z"
-tags: []
+tags: ["Diet","General Health","Research"]
 keywords: ["blood pressure","blood sugar","bmi","cardiovascular","cholesterol","circadian","diabetes","inflammation","intermittent fasting","lifespan","obesity","sleep","triglycerides","weight loss"]
 ---
 

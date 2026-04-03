@@ -1,6 +1,7 @@
 ---
 title: "Mobile Vitamin IV Therapy: Does It Work and Should You Try It?"
 url: "https://drstanfield.com/blogs/articles/mobile-iv-vitamin-therapy"
+youtube: "https://www.youtube.com/watch?v=_hOxXq0wi-0"
 publishedAt: "2024-10-22T02:07:00Z"
 tags: ["Research"]
 keywords: ["blood pressure","calcium","heart attack","magnesium","omega-3","potassium","skin","vitamin b","vitamin b12","vitamin c","zinc"]

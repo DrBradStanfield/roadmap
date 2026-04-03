@@ -1,6 +1,7 @@
 ---
 title: "Coronary Heart Disease is Almost ELIMINATED"
 url: "https://drstanfield.com/blogs/articles/coronary-heart-disease-is-almost-eliminated"
+youtube: "https://www.youtube.com/watch?v=jrcGb8BbjYQ"
 publishedAt: "2026-02-08T19:17:34Z"
 tags: ["Diet","General Health","Preventative Care","Research"]
 keywords: ["atherosclerosis","blood pressure","bmi","cardiovascular","cholesterol","exercise","fiber","hdl","heart attack","kidney","ldl","olive oil","potassium","sleep","statin","stroke","weight loss"]

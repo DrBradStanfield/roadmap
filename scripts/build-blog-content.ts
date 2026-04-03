@@ -37,6 +37,7 @@ interface IndexEntry {
   tags: string[];
   keywords: string[];
   publishedAt: string;
+  type?: 'reference' | 'article';
 }
 
 // Health/supplement keywords to extract from content for better matching
@@ -165,6 +166,22 @@ async function main() {
   // Ensure output directory exists
   fs.mkdirSync(BLOG_DIR, { recursive: true });
 
+  // Preserve `type` field from existing index (Shopify doesn't store it)
+  const existingTypeMap = new Map<string, 'reference' | 'article'>();
+  try {
+    const oldIndex: IndexEntry[] = JSON.parse(
+      fs.readFileSync(path.join(BLOG_DIR, 'index.json'), 'utf-8'),
+    );
+    for (const entry of oldIndex) {
+      if (entry.type) existingTypeMap.set(entry.handle, entry.type);
+    }
+    if (existingTypeMap.size > 0) {
+      console.log(`Preserving 'type' field for ${existingTypeMap.size} entries from existing index.`);
+    }
+  } catch (err: any) {
+    if (err?.code !== 'ENOENT') throw err;
+  }
+
   // Clean old .md files (but not index.json)
   const existing = fs.readdirSync(BLOG_DIR).filter(f => f.endsWith('.md'));
   for (const f of existing) fs.unlinkSync(path.join(BLOG_DIR, f));
@@ -189,15 +206,18 @@ ${markdown}
 `;
     fs.writeFileSync(path.join(BLOG_DIR, `${article.handle}.md`), content);
 
-    // Add to index
-    index.push({
+    // Add to index (preserve type from previous index if set)
+    const entry: IndexEntry = {
       title: article.title,
       handle: article.handle,
       url,
       tags: article.tags,
       keywords,
       publishedAt: article.publishedAt,
-    });
+    };
+    const preservedType = existingTypeMap.get(article.handle);
+    if (preservedType) entry.type = preservedType;
+    index.push(entry);
   }
 
   // Write index.json

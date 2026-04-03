@@ -1,8 +1,9 @@
 ---
 title: "New Study Reveals the BEST Exercise to Lower Blood Pressure"
 url: "https://drstanfield.com/blogs/articles/study-exercise-blood-pressure"
+youtube: "https://www.youtube.com/watch?v=FayRla5_BrQ"
 publishedAt: "2025-01-07T00:05:20Z"
-tags: []
+tags: ["General Health","Exercise"]
 keywords: ["blood pressure","calcium","cardiovascular","diabetes","exercise","heart attack","hypertension","magnesium","potassium","sleep","stroke","weight loss"]
 ---
 

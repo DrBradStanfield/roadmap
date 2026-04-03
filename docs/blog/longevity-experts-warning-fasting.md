@@ -1,6 +1,7 @@
 ---
 title: "Why Longevity Experts Are Warning Against Fasting"
 url: "https://drstanfield.com/blogs/articles/longevity-experts-warning-fasting"
+youtube: "https://www.youtube.com/watch?v=nZfOGLklnBM"
 publishedAt: "2024-08-22T00:56:03Z"
 tags: ["Diet"]
 keywords: ["blood pressure","blood sugar","cardiovascular","diabetes","exercise","insulin resistance","intermittent fasting","lifespan","longevity","muscle","obesity","oxidative stress","resistance training","sarcopenia","sleep","weight loss"]

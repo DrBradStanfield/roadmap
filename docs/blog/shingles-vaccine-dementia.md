@@ -1,6 +1,7 @@
 ---
 title: "The EXACT Moment I Stopped Fearing Dementia"
 url: "https://drstanfield.com/blogs/articles/shingles-vaccine-dementia"
+youtube: "https://www.youtube.com/watch?v=naT5JJtthVk"
 publishedAt: "2025-12-23T18:44:46Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["aging","alzheimer","blood pressure","cognitive","creatine","dementia","exercise","glp-1","inflammation","muscle","omega-3","tmg"]

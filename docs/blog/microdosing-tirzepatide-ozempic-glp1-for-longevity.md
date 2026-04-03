@@ -1,6 +1,7 @@
 ---
 title: "Microdosing Tirzepatide & Ozempic (GLP-1) for Longevity"
 url: "https://drstanfield.com/blogs/articles/microdosing-tirzepatide-ozempic-glp1-for-longevity"
+youtube: "https://www.youtube.com/watch?v=4FJsXRYOMpc"
 publishedAt: "2025-10-22T04:35:09Z"
 tags: ["Preventative Care"]
 keywords: ["aging","alzheimer","anti-aging","blood pressure","caloric restriction","dementia","diabetes","glp-1","hormone","inflammation","kidney","lifespan","longevity","metformin","muscle","peptide","rapamycin","weight loss"]

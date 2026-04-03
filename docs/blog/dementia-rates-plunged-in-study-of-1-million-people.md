@@ -1,6 +1,7 @@
 ---
 title: "Dementia Rates PLUNGED in Study of 1 Million People"
 url: "https://drstanfield.com/blogs/articles/dementia-rates-plunged-in-study-of-1-million-people"
+youtube: "https://www.youtube.com/watch?v=dpnYzGyL7qY"
 publishedAt: "2025-11-11T23:54:44Z"
 tags: ["Preventative Care"]
 keywords: ["aging","alzheimer","antioxidant","blood pressure","brain health","cholesterol","cognitive","creatine","dementia","diabetes","exercise","ezetimibe","hdl","inflammation","ldl","obesity","pcsk9","statin","tmg"]

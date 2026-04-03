@@ -1,6 +1,7 @@
 ---
 title: "More Exercise, More Plaque?"
 url: "https://drstanfield.com/blogs/articles/more-exercise-more-plaque"
+youtube: "https://www.youtube.com/watch?v=Q2gL0ZjqaBY"
 publishedAt: "2026-03-10T23:24:23Z"
 tags: ["Exercise","Preventative Care","Research"]
 keywords: ["cardiovascular","exercise","heart attack","ldl"]

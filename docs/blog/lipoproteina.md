@@ -1,6 +1,7 @@
 ---
 title: "Lipoprotein(a) is a Cheap, One-Time Blood Test Could Save Your Life"
 url: "https://drstanfield.com/blogs/articles/lipoproteina"
+youtube: "https://www.youtube.com/watch?v=Zc0FURnxO5I"
 publishedAt: "2025-07-16T00:05:32Z"
 tags: ["Preventative Care"]
 keywords: ["blood pressure","blood sugar","bmi","cholesterol","exercise","ezetimibe","hdl","heart attack","ldl","pcsk9","statin","stroke","triglycerides"]

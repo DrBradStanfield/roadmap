@@ -1,6 +1,7 @@
 ---
 title: "The #1 Nutrient Deficiency in High Blood Pressure"
 url: "https://drstanfield.com/blogs/articles/nutrient-deficiency-blood-pressure"
+youtube: "https://www.youtube.com/watch?v=_Nn20bBtHwI"
 publishedAt: "2024-12-07T00:41:36Z"
 tags: ["Diet"]
 keywords: ["blood pressure","cholesterol","diabetes","exercise","fiber","heart attack","kidney","magnesium","potassium","stroke","weight loss"]

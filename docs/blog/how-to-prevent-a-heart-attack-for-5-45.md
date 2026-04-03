@@ -1,8 +1,9 @@
 ---
 title: "How to Prevent a Heart Attack for $5.45"
 url: "https://drstanfield.com/blogs/articles/how-to-prevent-a-heart-attack-for-5-45"
+youtube: "https://www.youtube.com/watch?v=SZy8hfMbU90"
 publishedAt: "2025-02-04T23:48:02Z"
-tags: []
+tags: ["General Health"]
 keywords: ["atherosclerosis","blood pressure","bmi","cardiovascular","cholesterol","dementia","diabetes","exercise","ezetimibe","hdl","heart attack","hormone","ldl","mediterranean diet","muscle","olive oil","statin","testosterone"]
 ---
 

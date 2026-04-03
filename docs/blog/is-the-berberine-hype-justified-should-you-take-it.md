@@ -1,8 +1,9 @@
 ---
 title: "Is the Berberine Hype Justified & Should You Take It?"
 url: "https://drstanfield.com/blogs/articles/is-the-berberine-hype-justified-should-you-take-it"
+youtube: "https://www.youtube.com/watch?v=WAo-f0_s9p0"
 publishedAt: "2025-04-28T17:51:00Z"
-tags: []
+tags: ["General Health","Supplements","Research"]
 keywords: ["aging","berberine","blood sugar","bmi","cardiovascular","cholesterol","diabetes","exercise","ezetimibe","glp-1","hba1c","hdl","ldl","lifespan","metformin","muscle","obesity","pcsk9","prostate","testosterone","triglycerides","weight loss"]
 ---
 

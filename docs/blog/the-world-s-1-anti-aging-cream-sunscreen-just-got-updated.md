@@ -1,8 +1,9 @@
 ---
 title: "The World’s #1 Anti-Aging Cream (Sunscreen) Just Got Updated"
 url: "https://drstanfield.com/blogs/articles/the-world-s-1-anti-aging-cream-sunscreen-just-got-updated"
+youtube: "https://www.youtube.com/watch?v=oaAwzHi0Lbw"
 publishedAt: "2025-04-07T02:37:28Z"
-tags: []
+tags: ["Skin Health"]
 keywords: ["aging","anti-aging","collagen","skin","spf","sunscreen","uv","wrinkles","zinc"]
 ---
 

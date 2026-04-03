@@ -1,8 +1,9 @@
 ---
 title: "A “Healthy” Blood Pressure is WRECKING Your Brain! (New Study)"
 url: "https://drstanfield.com/blogs/articles/a-healthy-blood-pressure-is-wrecking-your-brain-new-study"
+youtube: "https://www.youtube.com/watch?v=5yCsB1iRR1o"
 publishedAt: "2025-02-25T23:56:58Z"
-tags: []
+tags: ["General Health"]
 keywords: ["aging","blood pressure","cardiovascular","cognitive","dementia","diabetes","exercise","fiber","heart attack","hypertension","inflammation","oxidative stress","potassium","stroke","weight loss"]
 ---
 

@@ -1,6 +1,7 @@
 ---
 title: "Best Diet Confirmed by 5,248,916 Person-Year Study"
 url: "https://drstanfield.com/blogs/articles/best-diet-confirmed-by-5248916-person-year-study"
+youtube: "https://www.youtube.com/watch?v=6geV5d39eA0"
 publishedAt: "2026-03-25T16:57:15Z"
 tags: ["Diet","Research"]
 keywords: ["blood pressure","blood sugar","cholesterol","diabetes","inflammation","insulin resistance","ldl","mediterranean diet","triglycerides","weight loss"]

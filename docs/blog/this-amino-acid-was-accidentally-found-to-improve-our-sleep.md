@@ -1,6 +1,7 @@
 ---
 title: "Glycine was Accidentally Found To Improve Our Sleep"
 url: "https://drstanfield.com/blogs/articles/this-amino-acid-was-accidentally-found-to-improve-our-sleep"
+youtube: "https://www.youtube.com/watch?v=YHaqsps24tk"
 publishedAt: "2025-08-20T02:05:05Z"
 tags: ["Supplements"]
 keywords: ["aging","blood pressure","circadian","collagen","diabetes","exercise","glycine","inflammation","lifespan","longevity","magnesium","melatonin","obesity","oxidative stress","sleep"]

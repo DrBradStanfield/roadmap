@@ -1,6 +1,7 @@
 ---
 title: "The Only Three Supplements Doctor Brad Takes"
 url: "https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes"
+youtube: "https://www.youtube.com/watch?v=iuWUL0_t5B0"
 publishedAt: "2025-07-30T20:38:06Z"
 tags: ["Supplements"]
 keywords: ["alzheimer","antioxidant","blood pressure","blood sugar","bone density","boron","brain health","cardiovascular","cholesterol","cognitive","collagen","creatine","dementia","dha","epa","exercise","glycine","hba1c","hormone","hyaluronic acid","inflammation","ldl","lifespan","magnesium","melatonin","muscle","omega-3","prostate","psyllium","selenium","skin","sleep","taurine","tmg","triglycerides","vitamin a","vitamin b6","vitamin d","vitamin e","vitamin k2","wrinkles","zinc"]

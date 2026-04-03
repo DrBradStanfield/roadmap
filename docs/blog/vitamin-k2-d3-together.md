@@ -1,8 +1,9 @@
 ---
 title: "Should You Take Vitamin K2 and Vitamin D3 Together?"
 url: "https://drstanfield.com/blogs/articles/vitamin-k2-d3-together"
+youtube: "https://www.youtube.com/watch?v=s2bPHAo4z6Y"
 publishedAt: "2024-11-25T20:42:35Z"
-tags: []
+tags: ["Supplements"]
 keywords: ["atherosclerosis","calcium","cardiovascular","skin","vitamin a","vitamin d","vitamin d3","vitamin k","vitamin k1","vitamin k2"]
 ---
 

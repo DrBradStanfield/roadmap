@@ -1,8 +1,9 @@
 ---
 title: "Spend $40, Avoid Dying 12.2 Years Too Early"
 url: "https://drstanfield.com/blogs/articles/spend-40-dollars-avoid-dying-early"
+youtube: "https://www.youtube.com/watch?v=RvosFvR0h3w"
 publishedAt: "2024-10-29T00:20:09Z"
-tags: []
+tags: ["General Health"]
 keywords: ["blood pressure","exercise","hypertension","lifespan","potassium","sleep","stroke","weight loss"]
 ---
 

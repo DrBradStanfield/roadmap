@@ -1,6 +1,7 @@
 ---
 title: "Eat Real Food — I Was Wrong"
 url: "https://drstanfield.com/blogs/articles/eat-real-food-i-was-wrong"
+youtube: "https://www.youtube.com/watch?v=VY5xoJOdcM8"
 publishedAt: "2026-01-19T23:37:09Z"
 tags: ["Diet","General Health","Preventative Care","Research"]
 keywords: ["cholesterol","muscle","olive oil","weight loss"]

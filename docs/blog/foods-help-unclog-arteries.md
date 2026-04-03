@@ -1,6 +1,7 @@
 ---
 title: "Myth Busting: Can Foods Help You Unclog Your Arteries?"
 url: "https://drstanfield.com/blogs/articles/foods-help-unclog-arteries"
+youtube: "https://www.youtube.com/watch?v=Hm7lFs7SewM"
 publishedAt: "2024-09-10T20:19:42Z"
 tags: ["Diet","Preventative Care"]
 keywords: ["atherosclerosis","blood pressure","blood sugar","cardiovascular","cholesterol","diabetes","exercise","fiber","fish oil","hypertension","insulin resistance","ldl","longevity","mediterranean diet","niacin","obesity","olive oil","omega-3","psyllium","stroke","ultrasound","vitamin b3"]

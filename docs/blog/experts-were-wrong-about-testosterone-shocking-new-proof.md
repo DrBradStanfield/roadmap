@@ -1,6 +1,7 @@
 ---
 title: "Experts Were WRONG About Testosterone (Shocking New Proof)"
 url: "https://drstanfield.com/blogs/articles/experts-were-wrong-about-testosterone-shocking-new-proof"
+youtube: "https://www.youtube.com/watch?v=DgRIRPEf0VQ"
 publishedAt: "2025-11-15T23:06:00Z"
 tags: ["General Health","Research"]
 keywords: ["betaine","bmi","diabetes","exercise","hormone","insulin resistance","muscle","obesity","sleep","testosterone","tmg","weight loss"]

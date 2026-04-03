@@ -1,6 +1,7 @@
 ---
 title: "Alpha-Lipoic Acid: A Potent (But Potentially DAMAGING) Antioxidant"
 url: "https://drstanfield.com/blogs/articles/alpha-lipoic-acid-antioxidant"
+youtube: "https://www.youtube.com/watch?v=p4tX7XwZMDU"
 publishedAt: "2024-09-14T03:22:51Z"
 tags: ["Supplements"]
 keywords: ["aging","ala","alzheimer","antioxidant","blood pressure","blood sugar","bmi","brain health","cardiovascular","cholesterol","cognitive","dementia","diabetes","exercise","hba1c","inflammation","lifespan","oxidative stress","skin","triglycerides","vitamin e","weight loss"]

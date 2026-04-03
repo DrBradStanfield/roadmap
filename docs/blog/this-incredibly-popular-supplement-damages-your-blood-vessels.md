@@ -1,6 +1,7 @@
 ---
 title: "This Incredibly Popular Supplement DAMAGES Your Blood Vessels"
 url: "https://drstanfield.com/blogs/articles/this-incredibly-popular-supplement-damages-your-blood-vessels"
+youtube: "https://www.youtube.com/watch?v=INeQLAdDkEE"
 publishedAt: "2025-05-15T23:18:01Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","antioxidant","blood pressure","calcium","cholesterol","diabetes","exercise","heart attack","inflammation","iron","lifespan","longevity","muscle","osteoporosis","prostate","resveratrol","testosterone","vitamin a","vitamin d","vitamin e","zinc"]

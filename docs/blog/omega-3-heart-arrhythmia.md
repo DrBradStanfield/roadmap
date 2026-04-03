@@ -1,6 +1,7 @@
 ---
 title: "New Study Links Omega-3 to Increased Heart Arrhythmia Risk"
 url: "https://drstanfield.com/blogs/articles/omega-3-heart-arrhythmia"
+youtube: "https://www.youtube.com/watch?v=q71tHoHeXZo"
 publishedAt: "2024-07-11T21:04:17Z"
 tags: ["Research"]
 keywords: ["ala","alzheimer","breast cancer","cardiovascular","cholesterol","dementia","dha","epa","fish oil","heart attack","inflammation","omega-3","stroke"]

@@ -1,8 +1,9 @@
 ---
 title: "The #1 Top Remedy for Dental Plaque"
 url: "https://drstanfield.com/blogs/articles/the-1-top-remedy-for-dental-plaque"
+youtube: "https://www.youtube.com/watch?v=sa2S90cYzzA"
 publishedAt: "2025-02-09T04:39:49Z"
-tags: []
+tags: ["General Health","Diet","Research"]
 keywords: ["calcium","inflammation","stroke","vitamin d3","vitamin k2"]
 ---
 

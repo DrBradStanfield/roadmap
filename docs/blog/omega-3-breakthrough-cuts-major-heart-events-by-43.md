@@ -1,6 +1,7 @@
 ---
 title: "Omega-3 Breakthrough Cuts Major Heart Events by 43%"
 url: "https://drstanfield.com/blogs/articles/omega-3-breakthrough-cuts-major-heart-events-by-43"
+youtube: "https://www.youtube.com/watch?v=H8zUZOIZ7oY"
 publishedAt: "2025-12-10T00:17:45Z"
 tags: ["Preventative Care","Research"]
 keywords: ["cardiovascular","cholesterol","dha","diabetes","epa","fish oil","heart attack","hypertension","kidney","ldl","omega-3","stroke"]

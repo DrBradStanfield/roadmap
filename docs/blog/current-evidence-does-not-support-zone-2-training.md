@@ -1,6 +1,7 @@
 ---
 title: "\"Current Evidence Does NOT Support Zone 2 Training\""
 url: "https://drstanfield.com/blogs/articles/current-evidence-does-not-support-zone-2-training"
+youtube: "https://www.youtube.com/watch?v=zQO4YOSoZ_g"
 publishedAt: "2025-08-29T18:23:08Z"
 tags: ["Exercise"]
 keywords: ["aging","exercise","longevity"]

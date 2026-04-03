@@ -1,6 +1,7 @@
 ---
 title: "Scientists Just Found an EASY Way to Cut Dementia Risk By 15%"
 url: "https://drstanfield.com/blogs/articles/scientists-just-found-an-easy-way-to-cut-dementia-risk-by-15"
+youtube: "https://www.youtube.com/watch?v=vUUqRQzQls0"
 publishedAt: "2025-05-20T20:21:44Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","blood pressure","brain health","cardiovascular","cognitive","dementia","diabetes","exercise","fiber","heart attack","hypertension","inflammation","oxidative stress","potassium","stroke","weight loss"]

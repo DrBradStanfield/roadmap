@@ -1,6 +1,7 @@
 ---
 title: "\"No Evidence to Support the Use of Collagen Supplements\""
 url: "https://drstanfield.com/blogs/articles/no-evidence-to-support-the-use-of-collagen-supplements"
+youtube: "https://www.youtube.com/watch?v=U8uPzDdG77c"
 publishedAt: "2025-08-27T21:15:34Z"
 tags: ["Skin Health","Supplements"]
 keywords: ["aging","collagen","peptide","skin","wrinkles"]

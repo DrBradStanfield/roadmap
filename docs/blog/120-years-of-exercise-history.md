@@ -1,6 +1,7 @@
 ---
 title: "120 Years of Exercise Training History (learn from these mistakes)"
 url: "https://drstanfield.com/blogs/articles/120-years-of-exercise-history"
+youtube: "https://www.youtube.com/watch?v=d1rs0DqKSJQ"
 publishedAt: "2025-09-15T00:17:53Z"
 tags: ["Exercise"]
 keywords: ["blood pressure","blood sugar","cholesterol","creatine","exercise","iron","muscle","rapamycin","resistance training","strength training","tmg"]

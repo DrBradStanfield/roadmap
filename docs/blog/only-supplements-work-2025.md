@@ -1,8 +1,9 @@
 ---
 title: "The Only Supplements That ACTUALLY Work (2025)"
 url: "https://drstanfield.com/blogs/articles/only-supplements-work-2025"
+youtube: "https://www.youtube.com/watch?v=uwnXLsAL9wM"
 publishedAt: "2024-11-19T03:13:05Z"
-tags: []
+tags: ["Supplements"]
 keywords: ["aging","alzheimer","antioxidant","blood pressure","blood sugar","brain health","cardiovascular","cholesterol","cognitive","collagen","creatine","dementia","dha","epa","estrogen","exercise","fiber","glycine","heart attack","hyaluronic acid","magnesium","melatonin","muscle","omega-3","peptide","psyllium","skin","sleep","testosterone","tmg","uric acid","vitamin a","vitamin b3","vitamin k2","wrinkles","zinc"]
 ---
 

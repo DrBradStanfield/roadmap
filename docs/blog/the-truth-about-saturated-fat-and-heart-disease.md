@@ -1,6 +1,7 @@
 ---
 title: "The Truth About Saturated Fat and Heart Disease"
 url: "https://drstanfield.com/blogs/articles/the-truth-about-saturated-fat-and-heart-disease"
+youtube: "https://www.youtube.com/watch?v=hv_P4HEhjV4"
 publishedAt: "2026-02-22T18:52:40Z"
 tags: ["Diet","General Health","Preventative Care","Research"]
 keywords: ["atherosclerosis","blood pressure","cardiovascular","cholesterol","diabetes","exercise","fiber","heart attack","insulin resistance","ldl","stroke"]

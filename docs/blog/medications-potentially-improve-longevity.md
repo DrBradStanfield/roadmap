@@ -1,6 +1,7 @@
 ---
 title: "Which Medications Can Potentially Improve Your Longevity?"
 url: "https://drstanfield.com/blogs/articles/medications-potentially-improve-longevity"
+youtube: "https://www.youtube.com/watch?v=eDresUkYRKQ"
 publishedAt: "2024-07-18T23:19:00Z"
 tags: ["Preventative Care"]
 keywords: ["atherosclerosis","cardiovascular","cholesterol","cognitive","dementia","diabetes","exercise","ezetimibe","hormone","kidney","ldl","lifespan","lung cancer","muscle","prostate","sleep","statin","stroke","testosterone"]

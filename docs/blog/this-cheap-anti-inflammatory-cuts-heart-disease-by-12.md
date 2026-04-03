@@ -1,6 +1,7 @@
 ---
 title: "Cheap Anti-inflammatory (Colchicine) Cuts Heart Disease by 12%"
 url: "https://drstanfield.com/blogs/articles/this-cheap-anti-inflammatory-cuts-heart-disease-by-12"
+youtube: "https://www.youtube.com/watch?v=nPy5ydXsliI"
 publishedAt: "2025-07-13T22:35:37Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["atherosclerosis","blood pressure","cardiovascular","cholesterol","exercise","gout","heart attack","inflammation","ldl","olive oil","sleep","stroke"]

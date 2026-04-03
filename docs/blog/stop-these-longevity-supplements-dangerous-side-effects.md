@@ -1,8 +1,9 @@
 ---
 title: "Stop These Longevity Supplements (Dangerous Side Effects)"
 url: "https://drstanfield.com/blogs/articles/stop-these-longevity-supplements-dangerous-side-effects"
+youtube: "https://www.youtube.com/watch?v=eeXhF6b_P0o"
 publishedAt: "2025-02-24T21:22:36Z"
-tags: []
+tags: ["Supplements","General Health"]
 keywords: ["aging","anti-aging","antioxidant","blood pressure","cardiovascular","cholesterol","diabetes","exercise","inflammation","iron","lifespan","longevity","metformin","oxidative stress","prostate","resveratrol","strength training","testosterone","vitamin a","vitamin c","vitamin e"]
 ---
 

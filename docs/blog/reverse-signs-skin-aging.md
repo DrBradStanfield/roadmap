@@ -1,6 +1,7 @@
 ---
 title: "How To Reverse the Signs of Skin Aging (Latest Protocol)"
 url: "https://drstanfield.com/blogs/articles/reverse-signs-skin-aging"
+youtube: "https://www.youtube.com/watch?v=SxCwmm6BI8I"
 publishedAt: "2024-12-17T01:24:10Z"
 tags: ["Skin Health"]
 keywords: ["aging","collagen","exercise","fiber","hyaluronic acid","olive oil","peptide","photoaging","resistance training","retinoid","retinol","skin","sleep","spf","sunscreen","tretinoin","uv","vitamin b3","wrinkles","zinc"]

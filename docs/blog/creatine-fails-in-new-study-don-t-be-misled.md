@@ -1,8 +1,9 @@
 ---
 title: "Creatine “FAILS” in New Study - Don’t Be Misled!"
 url: "https://drstanfield.com/blogs/articles/creatine-fails-in-new-study-don-t-be-misled"
+youtube: "https://www.youtube.com/watch?v=leuiEKMAiuM"
 publishedAt: "2025-04-02T06:54:33Z"
-tags: []
+tags: ["Research","Exercise","Supplements"]
 keywords: ["creatine","exercise","muscle","resistance training","strength training"]
 ---
 

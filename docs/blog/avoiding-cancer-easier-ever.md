@@ -1,8 +1,9 @@
 ---
 title: "Why Avoiding Cancer is Now Easier Than Ever"
 url: "https://drstanfield.com/blogs/articles/avoiding-cancer-easier-ever"
+youtube: "https://www.youtube.com/watch?v=HWEAjoApMm8"
 publishedAt: "2024-11-04T03:29:43Z"
-tags: []
+tags: ["Research","Diet","General Health"]
 keywords: ["bmi","breast cancer","cervical","colon cancer","exercise","inflammation","kidney","lung cancer","mediterranean diet","mri","obesity","olive oil","prostate","skin","spf","sunscreen"]
 ---
 

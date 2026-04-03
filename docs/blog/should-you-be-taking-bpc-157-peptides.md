@@ -1,8 +1,9 @@
 ---
 title: "Should YOU Be Taking BPC-157 Peptides?"
 url: "https://drstanfield.com/blogs/articles/should-you-be-taking-bpc-157-peptides"
+youtube: "https://www.youtube.com/watch?v=Y6smr1o-f9o"
 publishedAt: "2025-02-16T20:15:44Z"
-tags: []
+tags: ["Research"]
 keywords: ["betaine","blood sugar","bpc-157","creatine","diabetes","exercise","hormone","inflammation","muscle","peptide","skin"]
 ---
 

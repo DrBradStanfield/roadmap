@@ -1,8 +1,9 @@
 ---
 title: "The Surprising Truth About Methylene Blue and Anti-Aging"
 url: "https://drstanfield.com/blogs/articles/the-surprising-truth-about-methylene-blue-and-anti-aging"
+youtube: "https://www.youtube.com/watch?v=0Yi_gd2otEg"
 publishedAt: "2025-03-05T21:40:11Z"
-tags: []
+tags: ["General Health","Research"]
 keywords: ["aging","alzheimer","anti-aging","cognitive","exercise","fish oil","heart attack","lifespan","longevity","methylene blue","omega-3","oxidative stress"]
 ---
 

@@ -1,6 +1,7 @@
 ---
 title: "These Diabetes Drugs May Also Slash Dementia Rates"
 url: "https://drstanfield.com/blogs/articles/hard-to-believe-dementia-effects-found"
+youtube: "https://www.youtube.com/watch?v=i9Nm84nqeWA"
 publishedAt: "2025-07-13T22:34:36Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","alzheimer","antioxidant","blood pressure","blood sugar","brain health","cognitive","dementia","diabetes","glp-1","hormone","inflammation","insulin resistance","lifespan","oxidative stress","potassium","sglt2","weight loss"]

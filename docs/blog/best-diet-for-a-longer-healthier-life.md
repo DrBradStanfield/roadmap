@@ -1,8 +1,9 @@
 ---
 title: "These 20 Studies Reveal The BEST Diet for a Longer, Healthier Life"
 url: "https://drstanfield.com/blogs/articles/best-diet-for-a-longer-healthier-life"
+youtube: "https://www.youtube.com/watch?v=6k5q80tGIPg"
 publishedAt: "2025-03-11T22:57:23Z"
-tags: []
+tags: ["Diet","General Health","Research"]
 keywords: ["ala","blood pressure","calcium","cardiovascular","dha","diabetes","epa","exercise","fiber","gut health","inflammation","iron","kidney","magnesium","muscle","obesity","olive oil","omega-3","potassium","skin","stroke","vitamin b12","vitamin d","weight loss","zinc"]
 ---
 

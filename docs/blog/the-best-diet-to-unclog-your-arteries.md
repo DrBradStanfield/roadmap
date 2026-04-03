@@ -1,8 +1,9 @@
 ---
 title: "The Best Diet to Unclog Your Arteries"
 url: "https://drstanfield.com/blogs/articles/the-best-diet-to-unclog-your-arteries"
+youtube: "https://www.youtube.com/watch?v=h3V3AnVf_w8"
 publishedAt: "2025-02-15T00:14:11Z"
-tags: []
+tags: ["Diet","Research"]
 keywords: ["atherosclerosis","blood pressure","cardiovascular","cholesterol","exercise","fiber","hypertension","ldl","mediterranean diet","muscle","olive oil","potassium","ultrasound"]
 ---
 

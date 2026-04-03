@@ -1,6 +1,7 @@
 ---
 title: "New Study Just Crushed the Coffee Health Controversy"
 url: "https://drstanfield.com/blogs/articles/new-study-just-crushed-the-coffee-health-controversy"
+youtube: "https://www.youtube.com/watch?v=X8uYpZrhaGY"
 publishedAt: "2025-05-22T01:05:30Z"
 tags: ["Diet"]
 keywords: ["blood pressure","cardiovascular","cholesterol","exercise","heart attack","hypertension","ldl","muscle","osteoporosis","prostate","sleep","stroke"]

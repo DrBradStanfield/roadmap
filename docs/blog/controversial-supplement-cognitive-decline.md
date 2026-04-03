@@ -1,6 +1,7 @@
 ---
 title: "Controversial New Supplement: Can It Stop Cognitive Decline?"
 url: "https://drstanfield.com/blogs/articles/controversial-supplement-cognitive-decline"
+youtube: "https://www.youtube.com/watch?v=2DONY-rYFQY"
 publishedAt: "2024-08-09T04:19:30Z"
 tags: ["Supplements"]
 keywords: ["aging","antioxidant","cardiovascular","cognitive","exercise","hyaluronic acid","magnesium","skin","sleep","tmg","vitamin a","vitamin e","vitamin k2"]

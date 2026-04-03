@@ -1,8 +1,9 @@
 ---
 title: "These Foods Lower Death Risk by 23%"
 url: "https://drstanfield.com/blogs/articles/these-foods-lower-death-risk-by-23"
+youtube: "https://www.youtube.com/watch?v=ShWcFg8jdPk"
 publishedAt: "2025-03-17T00:43:40Z"
-tags: []
+tags: ["General Health"]
 keywords: ["aging","alzheimer","blood pressure","blood sugar","bmi","cardiovascular","cholesterol","diabetes","gut health","inflammation","ldl","lifespan","microbiome","obesity","psyllium","stroke","weight loss"]
 ---
 

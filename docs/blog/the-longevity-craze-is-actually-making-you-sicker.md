@@ -1,6 +1,7 @@
 ---
 title: "The “Longevity” Craze is Actually Making You Sicker"
 url: "https://drstanfield.com/blogs/articles/the-longevity-craze-is-actually-making-you-sicker"
+youtube: "https://www.youtube.com/watch?v=4l35bPuNOEs"
 publishedAt: "2025-07-29T23:10:36Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["breast cancer","calcium","cervical","cholesterol","exercise","ldl","longevity","lung cancer","mri","prostate","ultrasound"]

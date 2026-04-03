@@ -1,6 +1,7 @@
 ---
 title: "How to Know If Your Multivitamin Contains Enough Riboflavin"
 url: "https://drstanfield.com/blogs/articles/multivitamin-contains-enough-riboflavin"
+youtube: "https://www.youtube.com/watch?v=5GaCPDsJFGE"
 publishedAt: "2024-09-18T03:06:10Z"
 tags: ["Supplements"]
 keywords: ["kidney","omega-3","skin","vitamin b","vitamin b2","vitamin b3","vitamin b6"]

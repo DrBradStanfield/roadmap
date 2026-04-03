@@ -1,6 +1,7 @@
 ---
 title: "Exercise is the Closest Thing We Have to the Fountain of Youth"
 url: "https://drstanfield.com/blogs/articles/exercise-is-the-closest-thing-we-have-to-the-fountain-of-youth"
+youtube: "https://www.youtube.com/watch?v=Sdjegey8Lhw"
 publishedAt: "2025-07-17T22:34:02Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","creatine","exercise","muscle","resistance training","strength training","tmg"]

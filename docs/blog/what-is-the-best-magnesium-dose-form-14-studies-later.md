@@ -1,6 +1,7 @@
 ---
 title: "What is the Best Magnesium Dose & Form? (14 Studies Later)"
 url: "https://drstanfield.com/blogs/articles/what-is-the-best-magnesium-dose-form-14-studies-later"
+youtube: "https://www.youtube.com/watch?v=oL6CtBcfcDo"
 publishedAt: "2025-07-01T18:11:29Z"
 tags: ["Supplements"]
 keywords: ["antioxidant","blood pressure","blood sugar","calcium","cholesterol","cognitive","dementia","diabetes","exercise","fiber","glycine","insomnia","magnesium","melatonin","muscle","potassium","sleep","taurine"]

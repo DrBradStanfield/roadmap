@@ -1,6 +1,7 @@
 ---
 title: "NMN & NAD Supplements for Anti-Aging Just Changed"
 url: "https://drstanfield.com/blogs/articles/nmn-nad-supplements-for-anti-aging-just-changed"
+youtube: "https://www.youtube.com/watch?v=lt8Z0fNukBw"
 publishedAt: "2026-01-11T22:03:17Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["aging","anti-aging","exercise","lifespan","longevity","muscle","nad","nmn","skin","sleep","testosterone","tmg"]

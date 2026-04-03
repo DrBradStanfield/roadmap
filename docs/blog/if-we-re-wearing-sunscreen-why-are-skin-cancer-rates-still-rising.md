@@ -1,6 +1,7 @@
 ---
 title: "If We’re Wearing Sunscreen… Why Are Skin Cancer Rates STILL Rising?"
 url: "https://drstanfield.com/blogs/articles/if-we-re-wearing-sunscreen-why-are-skin-cancer-rates-still-rising"
+youtube: "https://www.youtube.com/watch?v=vAPc_XE-QuU"
 publishedAt: "2025-08-14T00:22:32Z"
 tags: ["Skin Health"]
 keywords: ["aging","photoaging","skin","spf","sunscreen","uv","vitamin d"]

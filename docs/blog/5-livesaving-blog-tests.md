@@ -1,6 +1,7 @@
 ---
 title: "The 5 Lifesaving Blood Tests EVERYONE Must Get!"
 url: "https://drstanfield.com/blogs/articles/5-livesaving-blog-tests"
+youtube: "https://www.youtube.com/watch?v=snAnrbt_JQo"
 publishedAt: "2024-09-04T05:32:23Z"
 tags: ["Preventative Care"]
 keywords: ["atherosclerosis","blood pressure","blood sugar","cardiovascular","cholesterol","cognitive","creatinine","diabetes","exercise","ezetimibe","glp-1","hba1c","hdl","heart attack","hormone","insulin resistance","kidney","ldl","metformin","muscle","obesity","pcsk9","potassium","prostate","psa","psyllium","statin","stroke","testosterone","triglycerides","vitamin d"]

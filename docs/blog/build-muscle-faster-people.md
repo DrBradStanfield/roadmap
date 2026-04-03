@@ -1,6 +1,7 @@
 ---
 title: "Build Muscle Faster Than 99% of People By Doing This"
 url: "https://drstanfield.com/blogs/articles/build-muscle-faster-people"
+youtube: "https://www.youtube.com/watch?v=EltoTYKvVoM"
 publishedAt: "2024-08-29T19:37:29Z"
 tags: ["Exercise"]
 keywords: ["exercise","fiber","muscle","resistance training","sleep"]

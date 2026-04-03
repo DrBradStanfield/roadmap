@@ -1,6 +1,7 @@
 ---
 title: "5 Supplements That ACTUALLY Work"
 url: "https://drstanfield.com/blogs/articles/5-supplements-that-actually-work"
+youtube: "https://www.youtube.com/watch?v=HQeIhuROnpM"
 publishedAt: "2025-10-05T20:31:48Z"
 tags: ["Supplements"]
 keywords: ["aging","alzheimer","antioxidant","betaine","blood pressure","blood sugar","bmi","bone density","brain health","calcium","cardiovascular","cholesterol","cognitive","collagen","creatine","dementia","dha","diabetes","epa","fiber","folic acid","gut health","hyaluronic acid","inflammation","ldl","lifespan","longevity","magnesium","melatonin","muscle","obesity","omega-3","psyllium","resistance training","skin","sleep","stroke","taurine","testosterone","tmg","vitamin d","vitamin k2","weight loss"]

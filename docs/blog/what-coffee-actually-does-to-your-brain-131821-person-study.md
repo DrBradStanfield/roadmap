@@ -1,6 +1,7 @@
 ---
 title: "What Coffee Actually Does to Your Brain (131,821 Person Study)"
 url: "https://drstanfield.com/blogs/articles/what-coffee-actually-does-to-your-brain-131821-person-study"
+youtube: "https://www.youtube.com/watch?v=zphjOojmo1M"
 publishedAt: "2026-03-04T00:31:31Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["alzheimer","brain health","cholesterol","cognitive","dementia","diabetes","inflammation","ldl","oxidative stress","sleep"]

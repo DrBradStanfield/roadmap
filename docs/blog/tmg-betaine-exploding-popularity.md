@@ -1,8 +1,9 @@
 ---
 title: "Why TMG (Betaine) is Exploding in Popularity"
 url: "https://drstanfield.com/blogs/articles/tmg-betaine-exploding-popularity"
+youtube: "https://www.youtube.com/watch?v=GsR6KcK4lHA"
 publishedAt: "2024-10-09T13:30:02Z"
-tags: []
+tags: ["Supplements","Exercise","General Health"]
 keywords: ["alzheimer","betaine","brain health","cholesterol","cognitive","creatine","dementia","exercise","muscle","nmn","omega-3","resistance training","testosterone","tmg"]
 ---
 

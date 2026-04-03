@@ -1,8 +1,9 @@
 ---
 title: "The Fastest Way to Lower Your Blood Pressure (Naturally!)"
 url: "https://drstanfield.com/blogs/articles/the-fastest-way-to-lower-your-blood-pressure-naturally"
+youtube: "https://www.youtube.com/watch?v=szMdop7aBxw"
 publishedAt: "2025-02-23T23:47:06Z"
-tags: []
+tags: ["General Health","Diet","Exercise"]
 keywords: ["blood pressure","bmi","cardiovascular","exercise","hypertension","insomnia","microbiome","muscle","potassium","sleep","stroke","weight loss"]
 ---
 

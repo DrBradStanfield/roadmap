@@ -1,6 +1,7 @@
 ---
 title: "Shocking Study Links MELATONIN to 89% Heart Failure Spike"
 url: "https://drstanfield.com/blogs/articles/shocking-study-links-melatonin-to-89-heart-failure-spike"
+youtube: "https://www.youtube.com/watch?v=L_WgUlPNYHo"
 publishedAt: "2025-11-23T19:52:54Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["cardiovascular","circadian","hormone","inflammation","insomnia","melatonin","sleep"]

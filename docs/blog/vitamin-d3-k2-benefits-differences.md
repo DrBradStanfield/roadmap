@@ -1,6 +1,7 @@
 ---
 title: "Vitamin D3 and K2: The Benefits, Differences, and Usage"
 url: "https://drstanfield.com/blogs/articles/vitamin-d3-k2-benefits-differences"
+youtube: "https://www.youtube.com/watch?v=s2bPHAo4z6Y"
 publishedAt: "2024-06-20T20:21:11Z"
 tags: ["Supplements"]
 keywords: ["bone density","calcium","cardiovascular","kidney","muscle","osteoporosis","stroke","sunscreen","vitamin a","vitamin b12","vitamin c","vitamin d","vitamin d3","vitamin k","vitamin k2"]

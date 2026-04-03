@@ -1,6 +1,7 @@
 ---
 title: "When Dosed Correctly, Vitamin D Cuts Sick Days by 17%"
 url: "https://drstanfield.com/blogs/articles/when-dosed-correctly-vitamin-d-cuts-sick-days-by-17"
+youtube: "https://www.youtube.com/watch?v=WgA4Tow7cGo"
 publishedAt: "2025-06-14T00:01:42Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["calcium","cardiovascular","diabetes","magnesium","muscle"]

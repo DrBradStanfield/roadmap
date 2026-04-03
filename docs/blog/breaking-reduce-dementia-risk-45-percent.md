@@ -1,6 +1,7 @@
 ---
 title: "BREAKING! Reduce Dementia Risk By 45%"
 url: "https://drstanfield.com/blogs/articles/breaking-reduce-dementia-risk-45-percent"
+youtube: "https://www.youtube.com/watch?v=JpAeC5TKQmU"
 publishedAt: "2024-08-22T02:25:09Z"
 tags: ["Preventative Care"]
 keywords: ["aging","alzheimer","antioxidant","blood pressure","blood sugar","brain health","cardiovascular","cholesterol","cognitive","dementia","diabetes","exercise","fiber","gut health","hdl","hypertension","inflammation","insomnia","insulin resistance","ldl","microbiome","muscle","obesity","olive oil","omega-3","oxidative stress","resistance training","resveratrol","sleep","strength training","stroke","uv","weight loss"]

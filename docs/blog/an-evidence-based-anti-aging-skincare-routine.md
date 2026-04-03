@@ -1,6 +1,7 @@
 ---
 title: "An Evidence-Based Anti-Aging Skincare Routine"
 url: "https://drstanfield.com/blogs/articles/an-evidence-based-anti-aging-skincare-routine"
+youtube: "https://www.youtube.com/watch?v=PvzE-1f5dW4"
 publishedAt: "2025-09-07T21:16:10Z"
 tags: ["Skin Health"]
 keywords: ["aging","anti-aging","collagen","exercise","gut health","hyaluronic acid","inflammation","microbiome","muscle","oxidative stress","photoaging","resistance training","selenium","skin","sleep","spf","sunscreen","tretinoin","uv","vitamin a","vitamin b3","vitamin c","vitamin d","vitamin e","wrinkles","zinc"]

@@ -1,6 +1,7 @@
 ---
 title: "HRT Just Changed"
 url: "https://drstanfield.com/blogs/articles/hrt-just-changed"
+youtube: "https://www.youtube.com/watch?v=Ksb6VbiQNKY"
 publishedAt: "2026-01-16T00:00:34Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["breast cancer","dementia","estrogen","hormone","stroke"]

@@ -1,6 +1,7 @@
 ---
 title: "Exercise Snacks Are a Longevity Cheat Code"
 url: "https://drstanfield.com/blogs/articles/exercise-snacks-are-a-longevity-cheat-code"
+youtube: "https://www.youtube.com/watch?v=Wdf1OGQWru0"
 publishedAt: "2025-12-10T20:27:49Z"
 tags: ["Exercise"]
 keywords: ["blood pressure","cholesterol","exercise","heart attack","ldl"]

@@ -1,6 +1,7 @@
 ---
 title: "Guide: Which Supplements Are Best for Skin Tightening?"
 url: "https://drstanfield.com/blogs/articles/supplements-best-skin-tightening"
+youtube: "https://www.youtube.com/watch?v=IAXYVyiYZKQ"
 publishedAt: "2024-12-31T00:13:37Z"
 tags: ["Supplements"]
 keywords: ["aging","anti-aging","cardiovascular","collagen","exercise","hyaluronic acid","inflammation","longevity","peptide","photoaging","skin","sleep","sunscreen","uv","wrinkles","zinc"]

@@ -1,6 +1,7 @@
 ---
 title: "The Most Important Antioxidant Study I’ve Ever Read"
 url: "https://drstanfield.com/blogs/articles/the-most-important-antioxidant-study-i-ve-ever-read"
+youtube: "https://www.youtube.com/watch?v=kpn4NvWJaz4"
 publishedAt: "2026-02-03T00:32:28Z"
 tags: ["General Health","Preventative Care","Research","Supplements"]
 keywords: ["aging","antioxidant","cardiovascular","cholesterol","cognitive","exercise","glycine","inflammation","ldl","lifespan","muscle","nmn","oxidative stress","selenium","vitamin a","vitamin c","vitamin e"]

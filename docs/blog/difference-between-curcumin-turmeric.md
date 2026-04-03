@@ -1,8 +1,9 @@
 ---
 title: "FAQ: What's the Difference Between Curcumin and Turmeric?"
 url: "https://drstanfield.com/blogs/articles/difference-between-curcumin-turmeric"
+youtube: "https://www.youtube.com/watch?v=rntf8VM9nAM"
 publishedAt: "2024-09-13T20:30:03Z"
-tags: []
+tags: ["Supplements","Research","General Health"]
 keywords: ["alzheimer","antioxidant","blood sugar","cardiovascular","cognitive","curcumin","dementia","diabetes","exercise","hba1c","inflammation","insulin resistance","kidney","lifespan","obesity","resveratrol","sleep","turmeric","weight loss"]
 ---
 

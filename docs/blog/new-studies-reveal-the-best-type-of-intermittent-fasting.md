@@ -1,8 +1,9 @@
 ---
 title: "New Studies Reveal the BEST Type of Intermittent Fasting"
 url: "https://drstanfield.com/blogs/articles/new-studies-reveal-the-best-type-of-intermittent-fasting"
+youtube: "https://www.youtube.com/watch?v=nebqCIeMXL4"
 publishedAt: "2025-02-06T23:11:41Z"
-tags: []
+tags: ["Diet"]
 keywords: ["blood sugar","cardiovascular","circadian","exercise","intermittent fasting","lifespan","longevity","muscle","sleep","weight loss"]
 ---
 

@@ -1,6 +1,7 @@
 ---
 title: "Taurine.. Time to Throw it Away? Two New Studies"
 url: "https://drstanfield.com/blogs/articles/taurine-time-to-throw-it-away-two-new-studies"
+youtube: "https://www.youtube.com/watch?v=Onkl2RDBP8c"
 publishedAt: "2025-07-08T18:07:26Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","blood pressure","blood sugar","cholesterol","diabetes","hba1c","inflammation","ldl","lifespan","muscle","nad","taurine","triglycerides"]

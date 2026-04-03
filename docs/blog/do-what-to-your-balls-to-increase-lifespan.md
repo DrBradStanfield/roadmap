@@ -1,6 +1,7 @@
 ---
 title: "Do WHAT to Your Balls to Increase Lifespan??!"
 url: "https://drstanfield.com/blogs/articles/do-what-to-your-balls-to-increase-lifespan"
+youtube: "https://www.youtube.com/watch?v=YoSwyPtaU74"
 publishedAt: "2026-01-19T23:37:28Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["aging","bmi","diabetes","exercise","glp-1","hormone","lifespan","longevity","obesity","osteoporosis","rapamycin","sleep","testosterone","trt"]

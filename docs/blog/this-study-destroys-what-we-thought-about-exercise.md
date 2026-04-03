@@ -1,6 +1,7 @@
 ---
 title: "This Study DESTROYS What We Thought About Exercise"
 url: "https://drstanfield.com/blogs/articles/this-study-destroys-what-we-thought-about-exercise"
+youtube: "https://www.youtube.com/watch?v=53oDnQef_qo"
 publishedAt: "2025-11-10T23:48:11Z"
 tags: ["Exercise","General Health","Research"]
 keywords: ["diabetes","exercise","resistance training"]

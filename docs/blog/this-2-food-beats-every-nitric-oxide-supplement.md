@@ -1,6 +1,7 @@
 ---
 title: "This $2 Food Beats Every Nitric Oxide Supplement"
 url: "https://drstanfield.com/blogs/articles/this-2-food-beats-every-nitric-oxide-supplement"
+youtube: "https://www.youtube.com/watch?v=RAPNAdxtyuE"
 publishedAt: "2026-03-18T06:11:43Z"
 tags: ["General Health","Research","Supplements"]
 keywords: ["blood pressure","cardiovascular","dementia","exercise","hypertension","kidney","muscle","olive oil","stroke"]

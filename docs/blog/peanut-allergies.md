@@ -1,6 +1,7 @@
 ---
 title: "Doctors Needed to Do a Fast U-Turn on Peanut Allergies"
 url: "https://drstanfield.com/blogs/articles/peanut-allergies"
+youtube: "https://www.youtube.com/watch?v=j_T6B-KGPTc"
 publishedAt: "2026-01-27T22:29:09Z"
 tags: ["Diet","General Health","Preventative Care","Research"]
 keywords: ["microbiome","skin"]

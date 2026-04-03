@@ -1,6 +1,7 @@
 ---
 title: "Spirulina “Significantly Improves Weight” in New Study"
 url: "https://drstanfield.com/blogs/articles/spirulina-significantly-improves-weight-in-new-study"
+youtube: "https://www.youtube.com/watch?v=Xcha7yqRglo"
 publishedAt: "2025-10-15T01:14:52Z"
 tags: ["Supplements"]
 keywords: ["antioxidant","blood pressure","blood sugar","cardiovascular","cholesterol","exercise","fiber","hdl","hypertension","inflammation","insulin resistance","ldl","obesity","oxidative stress","triglycerides","weight loss"]

@@ -1,8 +1,9 @@
 ---
 title: "Why This Diet is Strongly Suspected To Be The Best"
 url: "https://drstanfield.com/blogs/articles/diet-strongly-suspected-best"
+youtube: "https://www.youtube.com/watch?v=lzW5URw1ktc"
 publishedAt: "2024-10-14T22:54:37Z"
-tags: []
+tags: ["Diet"]
 keywords: ["blood pressure","bone density","calcium","cardiovascular","dementia","diabetes","estrogen","exercise","fiber","hypertension","intermittent fasting","kidney","lifespan","longevity","mediterranean diet","muscle","olive oil","rapamycin","resistance training","stroke","testosterone","weight loss"]
 ---
 

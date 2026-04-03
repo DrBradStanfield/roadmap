@@ -1,6 +1,7 @@
 ---
 title: "Popular Longevity Treatment Makes You Sick"
 url: "https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick"
+youtube: "https://www.youtube.com/watch?v=tLG6qWWPEsI"
 publishedAt: "2025-11-20T19:11:54Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["aging","anti-aging","blood pressure","blood sugar","cardiovascular","cholesterol","diabetes","hba1c","inflammation","kidney","ldl","muscle","nad","sleep","taurine","triglycerides","vitamin c","zinc"]

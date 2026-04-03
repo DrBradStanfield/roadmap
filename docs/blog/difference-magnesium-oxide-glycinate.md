@@ -1,6 +1,7 @@
 ---
 title: "What Is the Difference Between Magnesium Oxide and Glycinate?"
 url: "https://drstanfield.com/blogs/articles/difference-magnesium-oxide-glycinate"
+youtube: "https://www.youtube.com/watch?v=3HtDE-7IOHQ"
 publishedAt: "2024-10-06T22:16:11Z"
 tags: ["Supplements"]
 keywords: ["atherosclerosis","blood pressure","blood sugar","cardiovascular","cholesterol","diabetes","glycine","inflammation","magnesium","muscle","sleep","stroke","taurine","vitamin c","vitamin d"]

@@ -1,6 +1,7 @@
 ---
 title: "Fatty Liver Treatment BREAKTHROUGH"
 url: "https://drstanfield.com/blogs/articles/fatty-liver-treatment-breakthrough"
+youtube: "https://www.youtube.com/watch?v=T5oaU73bJ_Y"
 publishedAt: "2025-10-30T21:45:08Z"
 tags: ["Diet","General Health","Preventative Care","Research"]
 keywords: ["blood sugar","diabetes","exercise","glp-1","inflammation","ldl","muscle","obesity","vitamin d","weight loss"]

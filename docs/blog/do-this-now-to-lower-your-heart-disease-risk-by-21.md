@@ -1,6 +1,7 @@
 ---
 title: "Do This Now to Lower Your Heart Disease Risk by 21%"
 url: "https://drstanfield.com/blogs/articles/do-this-now-to-lower-your-heart-disease-risk-by-21"
+youtube: "https://www.youtube.com/watch?v=MmKVtX98zlM"
 publishedAt: "2025-06-30T18:04:01Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["blood pressure","cardiovascular","diabetes","exercise","fiber","heart attack","hypertension","potassium","stroke","weight loss"]

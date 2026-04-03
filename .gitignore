@@ -13,3 +13,4 @@ build/
 shopify.app.toml
 fly.toml
 *.js.map
+docs/wiki/research/

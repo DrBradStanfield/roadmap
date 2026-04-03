@@ -1,6 +1,7 @@
 ---
 title: "Magnesium L-Threonate and Its Effects on Sleep Quality"
 url: "https://drstanfield.com/blogs/articles/magnesium-l-threonate-effects-sleep"
+youtube: "https://www.youtube.com/watch?v=9X6pweXDxjg"
 publishedAt: "2024-06-12T20:32:54Z"
 tags: ["Supplements"]
 keywords: ["blood sugar","cognitive","exercise","glycine","insomnia","magnesium","muscle","sleep","statin","vitamin c"]

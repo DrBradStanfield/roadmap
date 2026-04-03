@@ -1,6 +1,7 @@
 ---
 title: "Supplement (Not Melatonin) Improved Sleep in 155-Person Study"
 url: "https://drstanfield.com/blogs/articles/supplement-not-melatonin-improved-sleep-in-155-person-study"
+youtube: "https://www.youtube.com/watch?v=v6paAVTSevY"
 publishedAt: "2025-10-03T23:28:30Z"
 tags: ["Supplements"]
 keywords: ["cognitive","diabetes","exercise","glycine","insomnia","magnesium","melatonin","potassium","sleep"]

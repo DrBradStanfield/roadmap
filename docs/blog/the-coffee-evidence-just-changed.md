@@ -1,6 +1,7 @@
 ---
 title: "The Coffee Evidence Just Changed"
 url: "https://drstanfield.com/blogs/articles/the-coffee-evidence-just-changed"
+youtube: "https://www.youtube.com/watch?v=dYKf9RDZ0Qg"
 publishedAt: "2025-12-20T19:37:23Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["antioxidant","blood pressure","cardiovascular","cholesterol","diabetes","heart attack","ldl","sleep","stroke"]

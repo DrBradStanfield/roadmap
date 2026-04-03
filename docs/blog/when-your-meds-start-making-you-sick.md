@@ -1,6 +1,7 @@
 ---
 title: "When Your Meds Start Making You Sick"
 url: "https://drstanfield.com/blogs/articles/when-your-meds-start-making-you-sick"
+youtube: "https://www.youtube.com/watch?v=r2vdiBHkNNA"
 publishedAt: "2025-10-29T02:10:26Z"
 tags: ["General Health","Preventative Care"]
 keywords: ["blood pressure","blood sugar","calcium","cardiovascular","cholesterol","dementia","diabetes","ezetimibe","hba1c","heart attack","iron","ldl","melatonin","sglt2","sleep"]

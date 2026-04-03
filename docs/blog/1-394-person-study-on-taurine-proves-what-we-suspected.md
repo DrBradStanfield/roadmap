@@ -1,6 +1,7 @@
 ---
 title: "1,394 Person Study on Taurine Proves What We Suspected"
 url: "https://drstanfield.com/blogs/articles/1-394-person-study-on-taurine-proves-what-we-suspected"
+youtube: "https://www.youtube.com/watch?v=RGfmGu08MQ4"
 publishedAt: "2026-02-12T21:13:15Z"
 tags: ["General Health","Research","Supplements"]
 keywords: ["aging","alzheimer","anti-aging","blood pressure","blood sugar","bmi","brain health","cholesterol","dementia","diabetes","hba1c","inflammation","ldl","lifespan","longevity","magnesium","muscle","oxidative stress","taurine","triglycerides"]

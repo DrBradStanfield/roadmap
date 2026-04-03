@@ -1,6 +1,7 @@
 ---
 title: "5 Reasons You Aren't Losing Weight with Intermittent Fasting"
 url: "https://drstanfield.com/blogs/articles/losing-weight-intermittent-fasting"
+youtube: "https://www.youtube.com/watch?v=nZfOGLklnBM"
 publishedAt: "2025-01-03T15:30:01Z"
 tags: ["Diet"]
 keywords: ["blood pressure","blood sugar","bone density","caloric restriction","cardiovascular","cholesterol","diabetes","exercise","hormone","intermittent fasting","kidney","mediterranean diet","obesity","sleep","weight loss"]

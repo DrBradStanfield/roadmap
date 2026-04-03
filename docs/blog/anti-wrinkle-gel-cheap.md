@@ -1,8 +1,9 @@
 ---
 title: "Retinoids: The World's #1 NIGHTLY Anti-Wrinkle Gel Is Stupidly Cheap"
 url: "https://drstanfield.com/blogs/articles/anti-wrinkle-gel-cheap"
+youtube: "https://www.youtube.com/watch?v=jeE9B8ChudI"
 publishedAt: "2024-11-13T03:38:58Z"
-tags: []
+tags: ["Skin Health"]
 keywords: ["aging","collagen","hyaluronic acid","photoaging","retinoid","retinol","skin","sunscreen","tretinoin","uv","vitamin a","wrinkles"]
 ---
 

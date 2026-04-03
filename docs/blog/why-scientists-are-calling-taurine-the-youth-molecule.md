@@ -1,8 +1,9 @@
 ---
 title: "Why Scientists Are Calling Taurine “The Youth Molecule”"
 url: "https://drstanfield.com/blogs/articles/why-scientists-are-calling-taurine-the-youth-molecule"
+youtube: "https://www.youtube.com/watch?v=mdwZIFEHfu4"
 publishedAt: "2025-03-25T23:52:48Z"
-tags: []
+tags: ["Supplements","General Health","Research"]
 keywords: ["aging","alzheimer","anti-aging","blood pressure","blood sugar","bmi","brain health","cholesterol","dementia","diabetes","exercise","hba1c","inflammation","ldl","lifespan","magnesium","muscle","oxidative stress","taurine","triglycerides"]
 ---
 

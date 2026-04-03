@@ -1,8 +1,9 @@
 ---
 title: "Why Creatine Is The ONE Supplement All Longevity Researchers Are Taking"
 url: "https://drstanfield.com/blogs/articles/why-creatine-is-the-one-supplement-all-longevity-researchers-are-taking"
+youtube: "https://www.youtube.com/watch?v=7gyOZrfPWX8"
 publishedAt: "2025-03-26T19:59:34Z"
-tags: []
+tags: ["Supplements","Research"]
 keywords: ["aging","brain health","cognitive","creatine","creatinine","exercise","gout","hormone","kidney","longevity","muscle","resistance training","sleep","testosterone","triglycerides","uric acid"]
 ---
 

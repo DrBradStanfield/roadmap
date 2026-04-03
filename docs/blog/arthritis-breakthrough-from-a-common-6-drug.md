@@ -1,6 +1,7 @@
 ---
 title: "Arthritis BREAKTHROUGH From a Common $6 Drug"
 url: "https://drstanfield.com/blogs/articles/arthritis-breakthrough-from-a-common-6-drug"
+youtube: "https://www.youtube.com/watch?v=CStv_Q1v6Ws"
 publishedAt: "2025-06-03T01:26:25Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","anti-aging","blood sugar","bmi","cardiovascular","diabetes","exercise","glp-1","inflammation","lifespan","longevity","metformin","mri","obesity","oxidative stress","peptide","testosterone","tmg","weight loss"]

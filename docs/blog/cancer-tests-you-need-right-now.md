@@ -1,6 +1,7 @@
 ---
 title: "Cancer Tests You Need Right Now"
 url: "https://drstanfield.com/blogs/articles/cancer-tests-you-need-right-now"
+youtube: "https://www.youtube.com/watch?v=GhmcFAtLw10"
 publishedAt: "2026-01-16T22:43:52Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["breast cancer","cervical","colonoscopy","lung cancer","mri","prostate","ultrasound"]

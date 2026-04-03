@@ -1,6 +1,7 @@
 ---
 title: "Which Popular Supplements Should You Actually Try to Avoid?"
 url: "https://drstanfield.com/blogs/articles/popular-supplements-try-avoid"
+youtube: "https://www.youtube.com/watch?v=eeYQk7iaXo0"
 publishedAt: "2024-08-11T19:43:34Z"
 tags: ["Supplements"]
 keywords: ["aging","antioxidant","blood sugar","calcium","cardiovascular","cholesterol","cognitive","coq10","creatine","curcumin","diabetes","exercise","folate","folic acid","glycine","inflammation","iron","kidney","longevity","lung cancer","metformin","muscle","nad","niacin","nmn","osteoporosis","oxidative stress","pcsk9","resveratrol","sleep","statin","testosterone","vitamin a","vitamin b3","vitamin c","vitamin d","vitamin e","zinc"]

@@ -1,6 +1,7 @@
 ---
 title: "Which Mistakes Do Most People Make with Magnesium?"
 url: "https://drstanfield.com/blogs/articles/mistakes-people-make-magnesium"
+youtube: "https://www.youtube.com/watch?v=9X6pweXDxjg"
 publishedAt: "2024-07-09T18:36:45Z"
 tags: ["Supplements"]
 keywords: ["antioxidant","atherosclerosis","blood pressure","blood sugar","calcium","cardiovascular","dementia","diabetes","fiber","heart attack","magnesium","muscle","potassium","sleep","stroke"]

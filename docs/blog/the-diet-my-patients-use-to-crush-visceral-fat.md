@@ -1,6 +1,7 @@
 ---
 title: "The Diet My Patients Use to CRUSH Visceral Fat"
 url: "https://drstanfield.com/blogs/articles/the-diet-my-patients-use-to-crush-visceral-fat"
+youtube: "https://www.youtube.com/watch?v=FWcaFMQufFA"
 publishedAt: "2025-09-11T23:24:13Z"
 tags: ["Diet"]
 keywords: ["atherosclerosis","blood sugar","cardiovascular","diabetes","exercise","fiber","glp-1","glycine","hba1c","hormone","inflammation","insulin resistance","magnesium","melatonin","muscle","obesity","skin","sleep","stroke","weight loss"]

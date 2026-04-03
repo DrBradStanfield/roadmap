@@ -67,6 +67,7 @@ interface BlogIndexEntry {
   url: string;
   tags: string[];
   keywords: string[];
+  type?: 'reference' | 'article';
 }
 
 let BLOG_INDEX: BlogIndexEntry[] = [];
@@ -458,6 +459,10 @@ export function matchBlogArticle(userMessage: string): string | null {
     for (const word of titleWords) {
       if (msgLower.includes(word)) score += 1;
     }
+
+    // Reference articles (supplement wiki) get a boost to outrank blog posts
+    // that mention the topic in passing — only when there's already a textual match
+    if (article.type === 'reference' && score > 0) score += 5;
 
     if (score > 2 && (!bestMatch || score > bestMatch.score)) {
       bestMatch = { handle: article.handle, score };

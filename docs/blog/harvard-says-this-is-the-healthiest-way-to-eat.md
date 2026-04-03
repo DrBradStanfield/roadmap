@@ -1,6 +1,7 @@
 ---
 title: "Harvard Says THIS Is the Healthiest Way to Eat"
 url: "https://drstanfield.com/blogs/articles/harvard-says-this-is-the-healthiest-way-to-eat"
+youtube: "https://www.youtube.com/watch?v=JfMD6nU-hS4"
 publishedAt: "2025-08-14T19:50:15Z"
 tags: ["Diet"]
 keywords: ["blood pressure","bone density","calcium","cardiovascular","fiber","healthspan","heart attack","lifespan","magnesium","mediterranean diet","muscle","olive oil","potassium","psyllium","stroke","weight loss"]

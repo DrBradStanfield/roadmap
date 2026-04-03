@@ -1,6 +1,7 @@
 ---
 title: "What Are the Best and Worst Forms of Magnesium to Take?"
 url: "https://drstanfield.com/blogs/articles/best-worst-forms-magnesium"
+youtube: "https://www.youtube.com/watch?v=3HtDE-7IOHQ"
 publishedAt: "2024-12-02T04:33:38Z"
 tags: ["Supplements"]
 keywords: ["atherosclerosis","blood pressure","blood sugar","cardiovascular","cholesterol","cognitive","diabetes","glycine","inflammation","magnesium","muscle","sleep","stroke","taurine","vitamin c","vitamin d"]

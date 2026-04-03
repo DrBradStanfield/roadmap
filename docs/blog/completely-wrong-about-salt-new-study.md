@@ -1,6 +1,7 @@
 ---
 title: "Completely WRONG About Salt (New Study)"
 url: "https://drstanfield.com/blogs/articles/completely-wrong-about-salt-new-study"
+youtube: "https://www.youtube.com/watch?v=8gnJTNUQehs"
 publishedAt: "2026-04-01T19:38:46Z"
 tags: ["Diet","General Health","Research"]
 keywords: ["blood pressure","cardiovascular","exercise","heart attack","hypertension","kidney","potassium","stroke"]
