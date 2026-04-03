@@ -182,9 +182,10 @@ async function main() {
     if (err?.code !== 'ENOENT') throw err;
   }
 
-  // Clean old .md files (but not index.json)
-  const existing = fs.readdirSync(BLOG_DIR).filter(f => f.endsWith('.md'));
-  for (const f of existing) fs.unlinkSync(path.join(BLOG_DIR, f));
+  // Note: We no longer delete existing .md files before rebuilding.
+  // Reference articles (type: "reference") are created by /reference-post
+  // and would be lost if deleted here, since they don't come from Shopify.
+  // Instead, we overwrite only the files fetched from Shopify.
 
   const index: IndexEntry[] = [];
 
