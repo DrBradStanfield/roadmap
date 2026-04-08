@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Zc0FURnxO5I"
 publishedAt: "2025-07-16T00:05:32Z"
 tags: ["Preventative Care"]
 keywords: ["blood pressure","blood sugar","bmi","cholesterol","exercise","ezetimibe","hdl","heart attack","ldl","pcsk9","statin","stroke","triglycerides"]
+summary: "Unless you’ve seen a lipidologist, you’ve probably never heard of the potentially lifesaving blood test for lipoprotein(a). You only need to get this blood test once in your life, and I encourage all of my patients, if it’s a financial option, to pay the $51 for it because the results have huge ramifications for how we try to lower their heart disease risks."
 ---
 
 Unless you’ve seen a lipidologist, you’ve probably never heard of the potentially lifesaving blood test for lipoprotein(a).

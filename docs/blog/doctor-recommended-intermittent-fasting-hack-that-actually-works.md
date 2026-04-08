@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=uXV5GRrZH9Q"
 publishedAt: "2025-04-30T00:47:26Z"
 tags: ["Diet","General Health","Research"]
 keywords: ["blood pressure","blood sugar","bmi","cardiovascular","cholesterol","circadian","diabetes","inflammation","intermittent fasting","lifespan","obesity","sleep","triglycerides","weight loss"]
+summary: "It sounds like clickbait, doesn't it? But there’s a powerful psychological hack with a big potential payoff that I share with my patients. It has to do with when you brush your teeth. Get the timing right, and you could significantly boost your health in terms of improved energy levels, sleep quality, lower blood sugar levels, and weight control."
 ---
 
 It sounds like clickbait, doesn't it? But there’s a powerful psychological hack with a big potential payoff that I share with my patients. It has to do with when you brush your teeth.

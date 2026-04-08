@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=c-vk5joT3KM"
 publishedAt: "2025-11-25T17:07:51Z"
 tags: ["Diet","General Health","Preventative Care","Research"]
 keywords: ["blood pressure","bmi","cholesterol","diabetes","heart attack","inflammation","insulin resistance","obesity","skin","stroke","triglycerides"]
+summary: "You think you’ve done a wonderful job with your health. You stand on the scale, and your numbers look great. At a time when so many are obese, your BMI is exactly where it should be. You’ve succeeded where so many others have failed. You pat yourself on the back. And then you suffer a heart attack 2 months later. How on earth did this happen? A new study shows us why weight alone doesn’t give us the whole picture. We shouldn’t just rely on body mass index when assessing our health and fitness. If we don’t pair our BMI with an additional, crucial metric, we could still be at a heightened risk of a heart attack or stroke — and not even know it. Too often, unfortunately, doctors forget to check it in their clinic (myself included sometimes). But it’s a metric you can measure easily yourself at home...."
 ---
 
 You think you’ve done a wonderful job with your health.

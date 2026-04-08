@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=s2bPHAo4z6Y"
 publishedAt: "2024-06-20T20:21:11Z"
 tags: ["Supplements"]
 keywords: ["bone density","calcium","cardiovascular","kidney","muscle","osteoporosis","stroke","sunscreen","vitamin a","vitamin b12","vitamin c","vitamin d","vitamin d3","vitamin k","vitamin k2"]
+summary: "Many people, when they think of vitamins, first think of the letters. Vitamin A, vitamin C, vitamin D; and some have numbers attached like vitamin B12. All vitamins have more than one form, similar in chemical structure but different enough that they can have different biological reactions and uptake. When you're considering taking supplements, understanding not just the vitamin, but its specific form – and how that form interacts with other vitamins – can be an important part of making sure you're achieving your goals with the supplements you take. Two of the more popular vitamin supplements on the market today are Vitamin D3 and Vitamin K2. These specific forms of vitamins D and K are purported to have a handful of beneficial effects, but the question is, is there research to back it up? If so, should you consider taking them, and should they be taken together, separately, or..."
 ---
 
 Many people, when they think of vitamins, first think of the letters. Vitamin A, vitamin C, vitamin D; and some have numbers attached like vitamin B12. All vitamins have more than one form, similar in chemical structure but different enough that they can have different biological reactions and uptake.

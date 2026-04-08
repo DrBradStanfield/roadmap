@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=leuiEKMAiuM"
 publishedAt: "2025-04-02T06:54:33Z"
 tags: ["Research","Exercise","Supplements"]
 keywords: ["creatine","exercise","muscle","resistance training","strength training"]
+summary: "A recent study is challenging everything we thought we knew about creatine supplements. So have we been wasting our money all this time?"
 ---
 
 A recent study is challenging everything we thought we knew about creatine supplements.

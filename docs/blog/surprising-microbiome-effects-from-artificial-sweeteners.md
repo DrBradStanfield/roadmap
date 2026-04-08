@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=rCOpHZcbPIY"
 publishedAt: "2025-10-29T22:37:37Z"
 tags: ["Diet"]
 keywords: ["blood pressure","bmi","cardiovascular","cholesterol","diabetes","ldl","microbiome","obesity","potassium","weight loss"]
+summary: "One of the largest artificial sweetener studies has just been released. It helps answer important questions because previous studies have raised concerns about the potential risks of artificial sweeteners. The World Health Organization even issued a conditional recommendation against them for weight control or to reduce the risk of developing diabetes \\[1\\]. But I see patients at the clinic who are struggling to kick the habit of drinking sugary drinks. They often ask me if they should switch to a zero-sugar option with artificial sweeteners instead. And it’s been a tricky question to answer. Now, with this new study that directly compared sugary drinks to artificially sweetened drinks, I can give my patients a clear answer. Plus, the study uncovered some interesting effects on the gut microbiome from artificial sweeteners, which shed some light on the risk conversation."
 ---
 
 One of the largest artificial sweetener studies has just been released.

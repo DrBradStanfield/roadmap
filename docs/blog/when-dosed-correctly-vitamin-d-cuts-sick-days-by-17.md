@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=WgA4Tow7cGo"
 publishedAt: "2025-06-14T00:01:42Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["calcium","cardiovascular","diabetes","magnesium","muscle"]
+summary: "There’s been so much hype around vitamin D—and, unfortunately, most studies have been disappointing when it comes to real-world benefits. But a brand-new study points to a place where vitamin D seems genuinely helpful. Researchers found it cut sick days by nearly 20 %. They also discovered that we have to get the dose right. So in this article I’ll explain the study and the current guidelines for the proper dose."
 ---
 
 There’s been so much hype around vitamin D—and, unfortunately, most studies have been disappointing when it comes to real-world benefits.

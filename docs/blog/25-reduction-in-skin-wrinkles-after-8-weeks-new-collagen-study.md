@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Ueb3lUhaT2o"
 publishedAt: "2025-06-11T22:02:52Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","collagen","hyaluronic acid","peptide","photoaging","skin","spf","sunscreen","wrinkles"]
+summary: "Collagen is simple, safe, and cheap, and it can dramatically improve markers of skin health. A brand new study only increases our confidence in its effectiveness, while also shedding light on an important question that has not been clear until now. Which source of collagen will give us the best results, and how do we know we are taking the right kind?"
 ---
 
 Collagen is simple, safe, and cheap, and it can dramatically improve markers of skin health. A brand new study only increases our confidence in its effectiveness, while also shedding light on an important question that has not been clear until now. Which source of collagen will give us the best results, and how do we know we are taking the right kind?

@@ -38,6 +38,7 @@ interface IndexEntry {
   keywords: string[];
   publishedAt: string;
   type?: 'reference' | 'article';
+  summary?: string;
 }
 
 // Health/supplement keywords to extract from content for better matching
@@ -166,17 +167,22 @@ async function main() {
   // Ensure output directory exists
   fs.mkdirSync(BLOG_DIR, { recursive: true });
 
-  // Preserve `type` field from existing index (Shopify doesn't store it)
+  // Preserve `type` and `summary` fields from existing index (Shopify doesn't store them)
   const existingTypeMap = new Map<string, 'reference' | 'article'>();
+  const existingSummaryMap = new Map<string, string>();
   try {
     const oldIndex: IndexEntry[] = JSON.parse(
       fs.readFileSync(path.join(BLOG_DIR, 'index.json'), 'utf-8'),
     );
     for (const entry of oldIndex) {
       if (entry.type) existingTypeMap.set(entry.handle, entry.type);
+      if (entry.summary) existingSummaryMap.set(entry.handle, entry.summary);
     }
     if (existingTypeMap.size > 0) {
       console.log(`Preserving 'type' field for ${existingTypeMap.size} entries from existing index.`);
+    }
+    if (existingSummaryMap.size > 0) {
+      console.log(`Preserving 'summary' field for ${existingSummaryMap.size} entries from existing index.`);
     }
   } catch (err: any) {
     if (err?.code !== 'ENOENT') throw err;
@@ -218,6 +224,8 @@ ${markdown}
     };
     const preservedType = existingTypeMap.get(article.handle);
     if (preservedType) entry.type = preservedType;
+    const preservedSummary = existingSummaryMap.get(article.handle);
+    if (preservedSummary) entry.summary = preservedSummary;
     index.push(entry);
   }
 

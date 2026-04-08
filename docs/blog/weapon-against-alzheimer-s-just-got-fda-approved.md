@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=tkGobEWcMSc"
 publishedAt: "2026-01-26T16:41:21Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["alzheimer","cognitive","dementia","diabetes","glp-1"]
+summary: "The results hit like a ton of bricks, and have critical implications for the recently FDA-approved Alzheimer’s blood test. Researchers were packed wall-to-wall at a conference in San Diego last month. They were there to hear some of the most highly anticipated results in Alzheimer’s research for years. The results were from the EVOKE and EVOKE+ trials, which had been testing the impact of GLP-1 medications on patients with early-stage Alzheimer’s. GLP-1s have been a wonder drug. They were a game changer for treating diabetes. And then they revolutionized weight-loss medicine. And we had good reason to think they might prove a powerful defense against dementia. Then the numbers went up on the screen. It was a total failure. The daily dose of semaglutide did nothing to delay Alzheimer’s progression \\[1\\]. “All told, semaglutide failed to distinguish itself from placebo on the primary end point of change in CDR-Sum of..."
 ---
 
 The results hit like a ton of bricks, and have critical implications for the recently FDA-approved Alzheimer’s blood test.

@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=RGfmGu08MQ4"
 publishedAt: "2026-02-12T21:13:15Z"
 tags: ["General Health","Research","Supplements"]
 keywords: ["aging","alzheimer","anti-aging","blood pressure","blood sugar","bmi","brain health","cholesterol","dementia","diabetes","hba1c","inflammation","ldl","lifespan","longevity","magnesium","muscle","oxidative stress","taurine","triglycerides"]
+summary: "There was absolute despair in the longevity community a few months ago. A study on taurine appeared to smash the hopes that taurine supplements could extend lifespan. Now, I never quite understood why there was such a commotion when that study was published, as I’ll explain—and I continued to take taurine supplements, especially since a new human study of 1,394 people published on the 23rd of November 2025 reinforces my decision. Let’s dive into the controversy."
 ---
 
 There was absolute despair in the longevity community a few months ago.

@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=0Yi_gd2otEg"
 publishedAt: "2025-03-05T21:40:11Z"
 tags: ["General Health","Research"]
 keywords: ["aging","alzheimer","anti-aging","cognitive","exercise","fish oil","heart attack","lifespan","longevity","methylene blue","omega-3","oxidative stress"]
+summary: "A clip of RFK Jr. putting a mysterious blue liquid in his drink recently went viral \\[1\\]. The blue liquid is probably methylene blue, a chemical that’s suddenly in the spotlight. It’s touted as a game-changing therapy that can slow the process of aging and extend lifespan \\[2\\]. Let’s take a look at why it’s generating so much excitement and what the current research shows."
 ---
 
 A clip of RFK Jr. putting a mysterious blue liquid in his drink recently went viral \[1\]. The blue liquid is probably methylene blue, a chemical that’s suddenly in the spotlight. It’s touted as a game-changing therapy that can slow the process of aging and extend lifespan \[2\].

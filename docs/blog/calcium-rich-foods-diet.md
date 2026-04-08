@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=eeYQk7iaXo0"
 publishedAt: "2024-10-14T21:25:53Z"
 tags: ["Diet"]
 keywords: ["blood pressure","calcium","cardiovascular","cholesterol","estrogen","kidney","muscle","omega-3","osteoporosis","skin","uv","vitamin d"]
+summary: "Got milk? Millions of us remember this ad campaign, originally kicked off in 1993 and still ongoing through today, albeit with gaps. The goal of the ad campaign was to promote sales of dairy products, primarily milk, for their health benefits. The most widely promoted of those benefits was the high levels of calcium present in milk. Calcium is a critical nutrient used throughout our bodies, most notably in the bones. In fact, the bones act as the reservoir of calcium, and the body will add or remove calcium from your skeleton in order to maintain calcium homeostasis elsewhere in your body. There's no question that calcium is critical, but what is it used for, how much do you need, and how can you make sure you're getting enough?"
 ---
 
 Got milk? Millions of us remember this ad campaign, originally kicked off in 1993 and still ongoing through today, albeit with gaps. The goal of the ad campaign was to promote sales of dairy products, primarily milk, for their health benefits. The most widely promoted of those benefits was the high levels of calcium present in milk.

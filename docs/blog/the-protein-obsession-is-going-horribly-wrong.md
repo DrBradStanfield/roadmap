@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=_xTlBsdV9zg"
 publishedAt: "2025-10-02T23:36:02Z"
 tags: ["Diet"]
 keywords: ["breast cancer","diabetes","fiber","kidney","muscle","resistance training","weight loss"]
+summary: "These days, we’re hearing constantly about the need for more protein. It’s a trend driven by some of the biggest health influencers. And there’s something to their arguments, as we’ll see. But this trend is also driving a shift in eating habits that threatens to make us fatter and wreck our health. And the fault of all of this lies at the feet of the food industry — aka “Big Food.”"
 ---
 
 These days, we’re hearing constantly about the need for more protein. It’s a trend driven by some of the biggest health influencers. And there’s something to their arguments, as we’ll see. But this trend is also driving a shift in eating habits that threatens to make us fatter and wreck our health. And the fault of all of this lies at the feet of the food industry — aka “Big Food.”

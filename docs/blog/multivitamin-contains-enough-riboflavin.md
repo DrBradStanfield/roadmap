@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=5GaCPDsJFGE"
 publishedAt: "2024-09-18T03:06:10Z"
 tags: ["Supplements"]
 keywords: ["kidney","omega-3","skin","vitamin b","vitamin b2","vitamin b3","vitamin b6"]
+summary: "Riboflavin is a key vitamin in the bodily processes that help transform carbohydrates into energy for your body to use. Like most vitamins, your body can't make it on its own, classifying it as an essential nutrient you have to get from food or supplements. What is riboflavin, what does it do specifically, and how much do you need? How can you tell if a multivitamin you're taking is giving you enough? Let's start at the beginning."
 ---
 
 Riboflavin is a key vitamin in the bodily processes that help transform carbohydrates into energy for your body to use. Like most vitamins, your body can't make it on its own, classifying it as an essential nutrient you have to get from food or supplements.

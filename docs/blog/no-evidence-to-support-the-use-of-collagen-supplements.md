@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=U8uPzDdG77c"
 publishedAt: "2025-08-27T21:15:34Z"
 tags: ["Skin Health","Supplements"]
 keywords: ["aging","collagen","peptide","skin","wrinkles"]
+summary: "A brand-new analysis just made a shocking claim: “There is no clinical evidence to support the use of collagen supplements to prevent or treat skin aging” \\[1\\]."
 ---
 
 A brand-new analysis just made a shocking claim:

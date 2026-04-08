@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=SZy8hfMbU90"
 publishedAt: "2025-02-04T23:48:02Z"
 tags: ["General Health"]
 keywords: ["atherosclerosis","blood pressure","bmi","cardiovascular","cholesterol","dementia","diabetes","exercise","ezetimibe","hdl","heart attack","hormone","ldl","mediterranean diet","muscle","olive oil","statin","testosterone"]
+summary: "Deaths from heart disease are surging globally \\[1\\]. And it’s tragic because there are so many ways we can cut our risks. One of the most powerful—and surprisingly affordable—approaches costs just $5.45 a month. In this post, we’ll dissect the big controversy surrounding cholesterol. You’ll often see conflicting information online, some of which suggests that low cholesterol is dangerous and high cholesterol is perfectly safe. We’ll go through the science carefully, so you can make up your own mind about what is right for you. Finally, we’ll explore that $5.45-a-month strategy, which many doctors (including me) recommend to lower heart attack risk. ### Table of Contents 1\\. The Controversy about Cholesterol 2\\. Lowering Cholesterol – Diet 3\\. The $5.45 a Month Strategy 4\\. Conclusion 5\\. References"
 ---
 
 Deaths from heart disease are surging globally \[1\]. And it’s tragic because there are so many ways we can cut our risks. One of the most powerful—and surprisingly affordable—approaches costs just $5.45 a month.

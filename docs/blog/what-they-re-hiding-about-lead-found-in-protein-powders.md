@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=6zkAApqtrYQ"
 publishedAt: "2025-11-04T20:37:47Z"
 tags: ["Diet","Supplements"]
 keywords: ["hypertension","kidney"]
+summary: "A new analysis from Consumer Reports has made headlines with a disturbing claim: protein powders and shakes contain high levels of lead. Given how popular protein powders have become, this claim is attracting serious attention. If it’s true, it’s something we definitely need to pay attention to. But Consumer Reports’ analysis has also provoked strong pushback. So in this article, we’re going to look at the arguments and see whether it’s time to reconsider using protein powders."
 ---
 
 A new analysis from Consumer Reports has made headlines with a disturbing claim: **protein powders and shakes contain high levels of lead**.

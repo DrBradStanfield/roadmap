@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=XJ_uyV-ER_g"
 publishedAt: "2024-09-29T01:35:00Z"
 tags: ["General Health","Diet","Research"]
 keywords: ["cholesterol","dha","diabetes","epa","inflammation","ldl","olive oil","omega-3","seed oil"]
+summary: "This no doubt will be my most hated blog post, but I'm here to show you the evidence, and let the evidence speak for itself. The internet is awash with videos and articles warning about the dangers of seed oils. People claim they're toxic, inflammatory, and terrible for our health. But is that really true? In this post, we'll explore where these concerns about seed oils come from, including worries about heating seed oils and the omega-3 to omega-6 ratio. I'll show you why the evidence contradicts the popular opinion and then chart a path forward that can help us reduce heart disease risks."
 ---
 
 This no doubt will be my most hated blog post, but I'm here to show you the evidence, and let the evidence speak for itself.

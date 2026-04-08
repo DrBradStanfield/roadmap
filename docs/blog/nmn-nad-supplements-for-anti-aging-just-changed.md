@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=lt8Z0fNukBw"
 publishedAt: "2026-01-11T22:03:17Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["aging","anti-aging","exercise","lifespan","longevity","muscle","nad","nmn","skin","sleep","testosterone","tmg"]
+summary: "Over the last decade, NMN and NAD+ supplements were hyped as groundbreaking tools in the quest for longevity. Boost your NAD+ levels, the story went, and you might slow aging, boost energy, and even extend your life. But new evidence has called that entire narrative into question. In this article, we’ll trace the rise—and fall—of NAD+ precursors like NMN and NR, and explore what the latest science really says about their effectiveness in humans."
 ---
 
 Over the last decade, NMN and NAD+ supplements were hyped as groundbreaking tools in the quest for longevity. Boost your NAD+ levels, the story went, and you might slow aging, boost energy, and even extend your life. But new evidence has called that entire narrative into question.

@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=UXBcWPlZ_qA"
 publishedAt: "2024-07-26T20:58:47Z"
 tags: ["General Health"]
 keywords: ["blood pressure","blood sugar","cardiovascular","circadian","diabetes","exercise","insomnia","insulin resistance","melatonin","obesity","skin","sleep","stroke"]
+summary: "The three pillars of good health are a good diet, a good exercise routine, and good sleep. In my opinion, sleep is far too often sacrificed, but it's much too critical to ignore. That's why I've created this resource: to compile evidence-based recommendations and habits you can use to sleep better and wake up feeling refreshed. What does the science say? Let's dig in."
 ---
 
 The three pillars of good health are a good diet, a good exercise routine, and good sleep. In my opinion, sleep is far too often sacrificed, but it's much too critical to ignore. That's why I've created this resource: to compile evidence-based recommendations and habits you can use to sleep better and wake up feeling refreshed.

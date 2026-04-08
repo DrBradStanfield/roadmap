@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=_RqDZXI4iC4"
 publishedAt: "2025-09-16T22:23:51Z"
 tags: ["Exercise"]
 keywords: ["betaine","cardiovascular","exercise","fiber","muscle","rapamycin","resistance training","strength training","tmg"]
+summary: "Here’s why power training is the most underrated exercise for our long-term health — and how to incorporate it into your exercise plan."
 ---
 
 Here’s why power training is the most underrated exercise for our long-term health — and how to incorporate it into your exercise plan.

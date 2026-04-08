@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=h7pWaoW6idQ"
 publishedAt: "2025-04-02T06:44:05Z"
 tags: ["Diet","General Health","Research"]
 keywords: ["blood pressure","blood sugar","bmi","fiber","obesity","potassium","stroke","weight loss"]
+summary: "Heart disease and strokes kill millions worldwide each year. But what if reducing your risk required just one tiny change you’d barely notice? A groundbreaking new study suggests exactly that. But is it really so simple? We’ll take a look at the findings in this article and what they mean for your health in the real world."
 ---
 
 Heart disease and strokes kill millions worldwide each year. But what if reducing your risk required just one tiny change you’d barely notice? A groundbreaking new study suggests exactly that. But is it really so simple? We’ll take a look at the findings in this article and what they mean for your health in the real world.

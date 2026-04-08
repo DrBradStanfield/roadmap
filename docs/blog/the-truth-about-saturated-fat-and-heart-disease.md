@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=hv_P4HEhjV4"
 publishedAt: "2026-02-22T18:52:40Z"
 tags: ["Diet","General Health","Preventative Care","Research"]
 keywords: ["atherosclerosis","blood pressure","cardiovascular","cholesterol","diabetes","exercise","fiber","heart attack","insulin resistance","ldl","stroke"]
+summary: "Is saturated fat a problem for our hearts, or not? It’s a controversy people have been arguing over for decades. You can easily find voices on both sides of the question. The debate got a fresh jolt of energy recently when the HHS published new dietary guidelines. Though they keep the old guidance about limiting saturated fats to 10% of calories, there’s a shift in the overall approach to fats. The graphic and text make clear they are moving away from the previous guidelines’ recommendations to avoid full-fat dairy and saturated fats in food like red meat. Notice the prominent steak perched at the top left of this graphic from the new guidelines. What’s going on here? This article explains how we got here and what often lies behind the disagreement. And it gives a nuanced picture of what the data really says. Let’s dive in."
 ---
 
 Is saturated fat a problem for our hearts, or not? It’s a controversy people have been arguing over for decades. You can easily find voices on both sides of the question.

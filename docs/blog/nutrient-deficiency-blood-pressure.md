@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=_Nn20bBtHwI"
 publishedAt: "2024-12-07T00:41:36Z"
 tags: ["Diet"]
 keywords: ["blood pressure","cholesterol","diabetes","exercise","fiber","heart attack","kidney","magnesium","potassium","stroke","weight loss"]
+summary: "High blood pressure is a key risk factor for heart disease — the world's top killer, and strokes. Research shows there is one nutrient deficiency that has a massive impact on blood pressure. And it's a nutrient few of us are getting enough of. What's the nutrient? It's potassium. So before going onto blood pressure medications, it's critical to get this right because you might not need pills."
 ---
 
 High blood pressure is a key risk factor for heart disease — the world's top killer, and strokes. Research shows there is one nutrient deficiency that has a massive impact on blood pressure. And it's a nutrient few of us are getting enough of.

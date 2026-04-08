@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Q2gL0ZjqaBY"
 publishedAt: "2026-03-10T23:24:23Z"
 tags: ["Exercise","Preventative Care","Research"]
 keywords: ["cardiovascular","exercise","heart attack","ldl"]
+summary: "A study just published reveals a startling relationship that's the opposite of what most assume. It found that the most heavily trained athletes were almost six times more likely to have plaque in their arteries than those who trained the least \\[1\\]. This isn't the story we'd expect. But what does it actually mean? Is exercise now bad for heart health?"
 ---
 
 A study just published reveals a startling relationship that's the opposite of what most assume. It found that the most heavily trained athletes were almost six times more likely to have plaque in their arteries than those who trained the least \[1\].

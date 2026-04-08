@@ -4,6 +4,7 @@ url: "https://drstanfield.com/blogs/articles/food-proven-trigger-gout"
 publishedAt: "2024-11-18T20:48:50Z"
 tags: ["Diet"]
 keywords: ["antioxidant","blood pressure","diabetes","gout","inflammation","iodine","kidney","microbiome","obesity","uric acid"]
+summary: "To some, gout is an ailment commonly mentioned in historical texts and a lot less commonly in daily life. To others, it's a fact of life, something they contend with and have to handle on a routine basis. It's a surprisingly complex illness, with many factors and triggers to consider, so let's learn about it and how you can help control it."
 ---
 
 To some, gout is an ailment commonly mentioned in historical texts and a lot less commonly in daily life. To others, it's a fact of life, something they contend with and have to handle on a routine basis. It's a surprisingly complex illness, with many factors and triggers to consider, so let's learn about it and how you can help control it.

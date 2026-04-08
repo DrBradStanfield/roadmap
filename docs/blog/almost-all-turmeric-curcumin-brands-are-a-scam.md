@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=vU1fCn0W6Uc"
 publishedAt: "2026-02-09T23:57:17Z"
 tags: ["General Health","Preventative Care","Research","Supplements"]
 keywords: ["aging","alzheimer","bmi","cholesterol","cognitive","curcumin","diabetes","exercise","inflammation","ldl","muscle","turmeric","weight loss"]
+summary: "Lies and deception. That’s all the majority of Turmeric and Curcumin supplements are. To be clear, there are some specific use-cases for curcumin supplements, but they need to be used for the correct indication, in the correct form, from a good brand. Let’s get into the scam so that you don’t get ripped off."
 ---
 
 Lies and deception.

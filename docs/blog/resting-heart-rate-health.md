@@ -4,6 +4,7 @@ url: "https://drstanfield.com/blogs/articles/resting-heart-rate-health"
 publishedAt: "2024-10-28T23:50:50Z"
 tags: ["General Health"]
 keywords: ["blood pressure","cardiovascular","cholesterol","exercise","sleep"]
+summary: "Every organ in the body plays a role in your health, but none is quite as essential as your heart. The heart is constantly at work keeping blood circulating, nutrients flowing, and the immune system functioning, so keeping it in good condition is absolutely critical. How do you know what your heart health is? Check your resting heart rate. Your resting heart rate is like a snapshot of your health, and while it can't give you a complete picture of your body, it's a good indicator of whether or not you should try to make progress in diet, exercise, or other health factors."
 ---
 
 Every organ in the body plays a role in your health, but none is quite as essential as your heart. The heart is constantly at work keeping blood circulating, nutrients flowing, and the immune system functioning, so keeping it in good condition is absolutely critical.

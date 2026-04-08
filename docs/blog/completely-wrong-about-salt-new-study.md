@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=8gnJTNUQehs"
 publishedAt: "2026-04-01T19:38:46Z"
 tags: ["Diet","General Health","Research"]
 keywords: ["blood pressure","cardiovascular","exercise","heart attack","hypertension","kidney","potassium","stroke"]
+summary: "In 1942, a 33-year-old woman walked into a hospital with a blood pressure so high, it was destroying her eyes. Her kidneys were failing. At the time, there were no effective treatments. So in a last-ditch effort, her doctor — a German refugee named Walter Kempner — put her on a radical experiment: nothing but rice, fruit, and juice. Almost zero salt. He told her to come back in two weeks \\[1\\]. But Kempner had a thick German accent. She misunderstood — and came back in two months \\[1\\]. When she returned, instead of being dead or malnourished, her blood pressure had dropped from 190/120 to 124/84. Her eye damage had resolved. Her previously swollen heart had shrunk \\[1\\]. By accident, Kempner had stumbled onto something extraordinary. That was over 80 years ago. Yet we're still arguing about salt. And depending on which side you believe, you're either slowly destroying..."
 ---
 
 In 1942, a 33-year-old woman walked into a hospital with a blood pressure so high, it was destroying her eyes. Her kidneys were failing. At the time, there were no effective treatments. So in a last-ditch effort, her doctor — a German refugee named Walter Kempner — put her on a radical experiment: nothing but rice, fruit, and juice. Almost zero salt. He told her to come back in two weeks \[1\].

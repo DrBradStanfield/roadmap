@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=mrllxYn6eGw"
 publishedAt: "2026-02-18T19:21:30Z"
 tags: ["Diet","General Health","Preventative Care","Research"]
 keywords: ["aging","breast cancer","colon cancer","colonoscopy","exercise","fiber","inflammation","lung cancer","microbiome","obesity"]
+summary: "Cancer rates appear to be skyrocketing in people under 50 \\[1\\]\\[2\\]. Gen X, Millennials, and even Gen Z are being diagnosed at significantly higher rates than previous generations were at the same age. So what in the world is going on? A new study has provided us with some tantalizing answers \\[3\\]. The story turns out to be nuanced, and experts are divided about how to account for what we’re seeing. But there’s one thing they all agree upon that is absolutely vital to know in order to manage and lower your cancer risk."
 ---
 
 Cancer rates appear to be skyrocketing in people under 50 \[1\]\[2\].

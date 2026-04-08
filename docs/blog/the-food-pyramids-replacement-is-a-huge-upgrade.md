@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=RseqXn3s_zI"
 publishedAt: "2025-06-12T23:08:09Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["blood pressure","calcium","cardiovascular","cholesterol","diabetes","exercise","ldl","mediterranean diet","muscle","obesity","olive oil","potassium","psyllium","statin","weight loss"]
+summary: "The Food Pyramid is probably the most widely recognized guide to healthy nutrition, yet doctors raised worries from the start. In this article, we’ll look at why it was eventually abandoned. I’ll also reveal why its replacement can still be problematic and what you need to know to make sure you’re putting the best meal for your health on your plate."
 ---
 
 The Food Pyramid is probably the most widely recognized guide to healthy nutrition, yet doctors raised worries from the start. In this article, we’ll look at why it was eventually abandoned. I’ll also reveal why its replacement can still be problematic and what you need to know to make sure you’re putting the best meal for your health on your plate.

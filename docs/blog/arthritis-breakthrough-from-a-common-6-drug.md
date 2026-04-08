@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=CStv_Q1v6Ws"
 publishedAt: "2025-06-03T01:26:25Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","anti-aging","blood sugar","bmi","cardiovascular","diabetes","exercise","glp-1","inflammation","lifespan","longevity","metformin","mri","obesity","oxidative stress","peptide","testosterone","tmg","weight loss"]
+summary: "I see so many patients at the clinic who, as they get older, start experiencing pain in their joints from arthritis. It’s so difficult because there haven’t been many great options to help. But a new study just came out that looked at repurposing an extremely common and dirt-cheap medication to treat arthritis. The results are impressive, but there are some caveats. So we’ll look at that study and what you need to know if you or someone you love is dealing with arthritis."
 ---
 
 I see so many patients at the clinic who, as they get older, start experiencing pain in their joints from arthritis. It’s so difficult because there haven’t been many great options to help. But a new study just came out that looked at repurposing an extremely common and dirt-cheap medication to treat arthritis. The results are impressive, but there are some caveats. So we’ll look at that study and what you need to know if you or someone you love is dealing with arthritis.

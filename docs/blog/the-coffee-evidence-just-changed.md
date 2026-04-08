@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=dYKf9RDZ0Qg"
 publishedAt: "2025-12-20T19:37:23Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["antioxidant","blood pressure","cardiovascular","cholesterol","diabetes","heart attack","ldl","sleep","stroke"]
+summary: "There was absolute panic in 1981. Imagine sitting at the table, enjoying your morning cup of coffee, with the day’s paper spread out in front of you. Your eyes fall on a headline in bold, black letters: _“Coffee consumption linked to cancer risk.”_ With your cup in one hand, you skim the article. It’s about new research from the prestigious New England Journal of Medicine. The researchers examined 369 patients with pancreatic cancer — one of the most deadly forms, and notably, the same type of cancer that claimed the life of Apple co-founder Steve Jobs. When they compared these patients to individuals who were very similar but didn’t have pancreatic cancer, they found a shocking result \\[1\\]. They examined how various lifestyle factors might be associated with higher pancreatic cancer risk. Alcohol? No association. Cigarettes? There was an association, but it was weak \\[1\\]. But one association stood out:..."
 ---
 
 There was absolute panic in 1981. Imagine sitting at the table, enjoying your morning cup of coffee, with the day’s paper spread out in front of you. Your eyes fall on a headline in bold, black letters:  

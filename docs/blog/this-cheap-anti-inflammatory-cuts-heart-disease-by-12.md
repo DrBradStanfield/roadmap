@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=nPy5ydXsliI"
 publishedAt: "2025-07-13T22:35:37Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["atherosclerosis","blood pressure","cardiovascular","cholesterol","exercise","gout","heart attack","inflammation","ldl","olive oil","sleep","stroke"]
+summary: "A new study published in the European Heart Journal found a cheap anti-inflammatory drug cuts heart disease risk by 12%. And this highlights something many people don’t realize: inflammation is a huge driver of heart disease. It’s like a smoldering fire in our blood vessel walls, weakening them and accelerating plaque formation. But there are many simple things we can do to bring that fire under control, even without medication."
 ---
 
 A new study published in the European Heart Journal found a cheap anti-inflammatory drug cuts heart disease risk by 12%. And this highlights something many people don’t realize: inflammation is a huge driver of heart disease. It’s like a smoldering fire in our blood vessel walls, weakening them and accelerating plaque formation. But there are many simple things we can do to bring that fire under control, even without medication.

@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=ZZKdBM7D-3k"
 publishedAt: "2026-03-25T16:55:45Z"
 tags: ["Research","Skin Health","Supplements"]
 keywords: ["collagen","hyaluronic acid","microbiome","skin","wrinkles"]
+summary: "Here is the exact moment where the hyaluronic acid story to treat skin wrinkles looks like it comes crashing down. A ground-breaking 2023 study radioactively labeled the hyaluronic acid in supplements to see if it's absorbed. The study concluded that hyaluronic acid is broken down and is not absorbed in its intact form \\[1\\]. So are supplement companies lying to you about hyaluronic acid? Not so fast, particularly when we factor in a new human randomized controlled trial published in the journal, Scientific Reports, in December 2025 \\[2\\]."
 ---
 
 Here is the exact moment where the hyaluronic acid story to treat skin wrinkles looks like it comes crashing down. A ground-breaking 2023 study radioactively labeled the hyaluronic acid in supplements to see if it's absorbed. The study concluded that hyaluronic acid is broken down and is not absorbed in its intact form \[1\].

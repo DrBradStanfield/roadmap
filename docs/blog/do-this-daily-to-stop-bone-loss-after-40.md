@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=EbDxVr9-MYo"
 publishedAt: "2025-07-03T02:07:16Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["bone density","calcium","dexa","exercise","magnesium","muscle","osteoporosis","resistance training","vitamin d","vitamin d3","vitamin k2"]
+summary: "One in three people who break their hip will be dead within 1 year. After 10 years, only 8.5% will be alive, compared to 39.8% in the general population \\[1\\]. That’s terrifying. And when I was an orthopedic resident assisting in hip operations, I could see why the post-surgery death rate was so high. These patients generally had incredibly weak bones. A hip fracture is a marker of frailty. We’re the ambulance at the bottom of the cliff. The build-up to a hip fracture is decades in the making, and the trouble begins much earlier than most realize. The good news is that we can do something now to prevent problems later. And the earlier we start, the better."
 ---
 
 One in three people who break their hip will be dead within 1 year. After 10 years, only 8.5% will be alive, compared to 39.8% in the general population \[1\].

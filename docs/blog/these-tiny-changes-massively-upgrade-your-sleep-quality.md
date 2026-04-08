@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=gbsGL-LOIx4"
 publishedAt: "2025-05-15T23:17:50Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["circadian","diabetes","hormone","melatonin","skin","sleep","stroke","uv"]
+summary: "I’m extremely interested in showing you tiny changes that you can easily make, that deliver massively outsized returns for your health. And when it comes to sleep, exposure to light has a huge impact and I want to show you some small changes that you can implement. I’m not talking about blue light from your phone. Instead, I want to cover how a certain kind of light at a precise time of day has an outsized impact in improving your sleep."
 ---
 
 I’m extremely interested in showing you tiny changes that you can easily make, that deliver massively outsized returns for your health.

@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=X8uYpZrhaGY"
 publishedAt: "2025-05-22T01:05:30Z"
 tags: ["Diet"]
 keywords: ["blood pressure","cardiovascular","cholesterol","exercise","heart attack","hypertension","ldl","muscle","osteoporosis","prostate","sleep","stroke"]
+summary: "So is coffee good for us or not? There have been troubling worries raised in the past — especially about risks involving cancer, heart disease, and the liver. But the research over the past couple of decades has flipped the script when it comes to coffee and our health. And this latest study finally puts to rest one of the most common concerns I hear all the time from my patients, especially when they’re older."
 ---
 
 So is coffee good for us or not? There have been troubling worries raised in the past — especially about risks involving cancer, heart disease, and the liver. But the research over the past couple of decades has flipped the script when it comes to coffee and our health. And this latest study finally puts to rest one of the most common concerns I hear all the time from my patients, especially when they’re older.

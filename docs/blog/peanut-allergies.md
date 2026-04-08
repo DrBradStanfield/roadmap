@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=j_T6B-KGPTc"
 publishedAt: "2026-01-27T22:29:09Z"
 tags: ["Diet","General Health","Preventative Care","Research"]
 keywords: ["microbiome","skin"]
+summary: "Dr. Ruchi Gupta did everything right to protect her daughter from peanut allergies — and it backfired. Dr. Gupta was a young doctor researching food allergies. She knew the advice. At the time, in 2006, scientists recommended delaying the introduction of possible allergens until age 3 \\[1\\]. But one day, her daughter broke out in hives when her older brother touched her cheek after eating a peanut butter and jelly sandwich. She had developed a peanut allergy anyway. It was just one case in a rising epidemic of peanut allergies. And nobody seemed to know what was going on or how to stop it. This case highlights something doctors got horribly wrong."
 ---
 
 Dr. Ruchi Gupta did everything right to protect her daughter from peanut allergies — and it backfired.

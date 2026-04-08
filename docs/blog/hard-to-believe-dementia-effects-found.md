@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=i9Nm84nqeWA"
 publishedAt: "2025-07-13T22:34:36Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","alzheimer","antioxidant","blood pressure","blood sugar","brain health","cognitive","dementia","diabetes","glp-1","hormone","inflammation","insulin resistance","lifespan","oxidative stress","potassium","sglt2","weight loss"]
+summary: "It was a gamechanger for my type 2 diabetic patients when GLP-1 meds like Ozempic, plus another treatment which I’ll go through shortly, burst onto the scene. We were able to get a lot of these patients off insulin and blood pressure meds, their weight came down, and their energy levels skyrocketed. Then I started prescribing them to my overweight patients and the results were just as dramatic. Now these two medication classes seem poised to offer yet another huge benefit. This time it’s for those at risk for dementia."
 ---
 
 It was a gamechanger for my type 2 diabetic patients when GLP-1 meds like Ozempic, plus another treatment which I’ll go through shortly, burst onto the scene. We were able to get a lot of these patients off insulin and blood pressure meds, their weight came down, and their energy levels skyrocketed.

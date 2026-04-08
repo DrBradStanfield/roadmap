@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=s2bPHAo4z6Y"
 publishedAt: "2024-11-25T20:42:35Z"
 tags: ["Supplements"]
 keywords: ["atherosclerosis","calcium","cardiovascular","skin","vitamin a","vitamin d","vitamin d3","vitamin k","vitamin k1","vitamin k2"]
+summary: "Vitamin K2 supplements are exploding in popularity, with claims of transforming bone and heart health—particularly when paired with Vitamin D3. So, what does the evidence show? Are these supplements worth our time and money?"
 ---
 
 Vitamin K2 supplements are exploding in popularity, with claims of transforming bone and heart health—particularly when paired with Vitamin D3. So, what does the evidence show? Are these supplements worth our time and money?

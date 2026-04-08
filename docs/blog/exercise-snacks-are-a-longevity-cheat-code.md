@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Wdf1OGQWru0"
 publishedAt: "2025-12-10T20:27:49Z"
 tags: ["Exercise"]
 keywords: ["blood pressure","cholesterol","exercise","heart attack","ldl"]
+summary: "If there’s one insight that consistently changes the direction of my patients’ health, it’s this: You don’t need a gym membership to improve your fitness or protect your heart. What really matters might be much smaller—and much easier—than you think. In this article, I’ll walk you through the powerful evidence behind a simple strategy I give to nearly every patient I see. If you’ve ever asked: What’s the one thing I should be doing for my health? Does it really make a difference if I can’t do a full workout? What should I be doing instead? Then this article is for you."
 ---
 
 If there’s one insight that consistently changes the direction of my patients’ health, it’s this:

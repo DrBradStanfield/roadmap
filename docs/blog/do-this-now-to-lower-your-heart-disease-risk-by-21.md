@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=MmKVtX98zlM"
 publishedAt: "2025-06-30T18:04:01Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["blood pressure","cardiovascular","diabetes","exercise","fiber","heart attack","hypertension","potassium","stroke","weight loss"]
+summary: "While I was in my GP office finishing off some paperwork for the day, I came across a new study that reinforces why doctors like me needed to change our approach to how we lower a person’s heart attack risk. The best news is that it doesn’t have to require medications."
 ---
 
 While I was in my GP office finishing off some paperwork for the day, I came across a new study that reinforces why doctors like me needed to change our approach to how we lower a person’s heart attack risk. The best news is that it doesn’t have to require medications.

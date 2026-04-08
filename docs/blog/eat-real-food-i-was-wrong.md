@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=VY5xoJOdcM8"
 publishedAt: "2026-01-19T23:37:09Z"
 tags: ["Diet","General Health","Preventative Care","Research"]
 keywords: ["cholesterol","muscle","olive oil","weight loss"]
+summary: "For years, we’ve been told to “eat real food.” It sounds simple, but the real challenge is figuring out what that actually means—and how official guidelines define it. With the release of the new 2026 Dietary Guidelines, there’s been a surprising shake-up. I went into this expecting the worst. But as it turns out, I may have been wrong. Some parts of these new recommendations are genuinely encouraging—others, not so much. Let’s break down what the new guidelines get right, where they go wrong, and what it all means for your health."
 ---
 
 For years, we’ve been told to “eat real food.” It sounds simple, but the real challenge is figuring out what that actually means—and how official guidelines define it. With the release of the new 2026 Dietary Guidelines, there’s been a surprising shake-up. I went into this expecting the worst. But as it turns out, I may have been wrong. Some parts of these new recommendations are genuinely encouraging—others, not so much.

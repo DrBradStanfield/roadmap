@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=nebqCIeMXL4"
 publishedAt: "2025-02-06T23:11:41Z"
 tags: ["Diet"]
 keywords: ["blood sugar","cardiovascular","circadian","exercise","intermittent fasting","lifespan","longevity","muscle","sleep","weight loss"]
+summary: "There’s finally some consensus in the nutrition field about fasting. We now know how to practice it to provide the most benefits for our energy levels, blood sugar control, and weight loss. In this blog post, I’m going to explain the exact strategy I share with my patients to achieve these results."
 ---
 
 There’s finally some consensus in the nutrition field about fasting. We now know how to practice it to provide the most benefits for our energy levels, blood sugar control, and weight loss. In this blog post, I’m going to explain the exact strategy I share with my patients to achieve these results.

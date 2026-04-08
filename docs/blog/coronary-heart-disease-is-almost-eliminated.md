@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=jrcGb8BbjYQ"
 publishedAt: "2026-02-08T19:17:34Z"
 tags: ["Diet","General Health","Preventative Care","Research"]
 keywords: ["atherosclerosis","blood pressure","bmi","cardiovascular","cholesterol","exercise","fiber","hdl","heart attack","kidney","ldl","olive oil","potassium","sleep","statin","stroke","weight loss"]
+summary: "Many people don’t realize this, but across the world, cardiovascular disease death rates have been falling dramatically \\[1\\]. And today, we have the tools to virtually eliminate it completely. But there are two pieces of the puzzle that remain controversial. This causes a lot of confusion when it comes to the practical steps we can take to lower our risks. And that’s a problem. This article will give you the data you need to know how to move forward."
 ---
 
 Many people don’t realize this, but across the world, cardiovascular disease death rates have been falling dramatically \[1\].

@@ -28,6 +28,7 @@ const GUEST_DAILY_LIMIT = 3;
 const FREE_DAILY_LIMIT = 50;
 const SUBSCRIBER_DAILY_LIMIT = 999; // effectively unlimited
 const HISTORY_TOKEN_BUDGET = 8000;
+const MAX_BLOG_CHARS = 80_000; // ~20K tokens — cap on combined blog articles in context
 
 // ---------------------------------------------------------------------------
 // Algorithm document — read once at module load from project root
@@ -68,6 +69,7 @@ interface BlogIndexEntry {
   tags: string[];
   keywords: string[];
   type?: 'reference' | 'article';
+  summary?: string;
 }
 
 let BLOG_INDEX: BlogIndexEntry[] = [];
@@ -75,11 +77,20 @@ let BLOG_INDEX_TEXT = '';
 try {
   const raw = fs.readFileSync(path.join(process.cwd(), 'docs/blog/index.json'), 'utf-8');
   BLOG_INDEX = JSON.parse(raw);
-  // Compact text index for the system prompt — title + URL + tags (~6.5K tokens)
+  // Compact text index for the system prompt — title + URL + tags + summary (reference only)
   // Keywords are used for server-side matching only, not included in prompt
-  BLOG_INDEX_TEXT = BLOG_INDEX.map(a =>
-    `- ${a.title} [${a.url}]${a.tags.length ? ' (' + a.tags.join(', ') + ')' : ''}`
-  ).join('\n');
+  // Summaries only for reference articles (supplement wiki) to keep token budget reasonable
+  BLOG_INDEX_TEXT = BLOG_INDEX.map(a => {
+    let line = `- ${a.title} [${a.url}]`;
+    if (a.tags.length) line += ` (${a.tags.join(', ')})`;
+    if (a.type === 'reference' && a.summary) {
+      // Truncate to ~50 words to keep index under ~20K tokens
+      const words = a.summary.split(/\s+/);
+      const short = words.length > 50 ? words.slice(0, 50).join(' ') + '...' : a.summary;
+      line += ` — ${short}`;
+    }
+    return line;
+  }).join('\n');
 } catch {
   console.warn('docs/blog/index.json not found — chat will not have blog knowledge');
 }
@@ -433,13 +444,13 @@ export function matchDocumentTitle(
 
 /**
  * Match a user message against the blog index by tags and keywords.
- * Returns the handle of the best-matching article, or null.
+ * Returns handles of the top matching articles, sorted by score descending.
  */
-export function matchBlogArticle(userMessage: string): string | null {
-  if (BLOG_INDEX.length === 0) return null;
+export function matchBlogArticles(userMessage: string, maxResults = 3): string[] {
+  if (BLOG_INDEX.length === 0) return [];
 
   const msgLower = userMessage.toLowerCase();
-  let bestMatch: { handle: string; score: number } | null = null;
+  const matches: Array<{ handle: string; score: number }> = [];
 
   for (const article of BLOG_INDEX) {
     let score = 0;
@@ -464,12 +475,14 @@ export function matchBlogArticle(userMessage: string): string | null {
     // that mention the topic in passing — only when there's already a textual match
     if (article.type === 'reference' && score > 0) score += 5;
 
-    if (score > 2 && (!bestMatch || score > bestMatch.score)) {
-      bestMatch = { handle: article.handle, score };
+    if (score > 2) {
+      matches.push({ handle: article.handle, score });
     }
   }
 
-  return bestMatch?.handle ?? null;
+  // Sort by score descending, return top N handles
+  matches.sort((a, b) => b.score - a.score);
+  return matches.slice(0, maxResults).map(m => m.handle);
 }
 
 /**
@@ -479,7 +492,7 @@ export function matchBlogArticle(userMessage: string): string | null {
  */
 const blogArticleCache = new Map<string, string | null>();
 
-export function loadBlogArticle(handle: string): string | null {
+function loadBlogArticle(handle: string): string | null {
   // Validate handle to prevent path traversal
   if (!/^[a-z0-9-]+$/.test(handle)) return null;
 
@@ -498,6 +511,33 @@ export function loadBlogArticle(handle: string): string | null {
   }
 }
 
+/**
+ * Match a user message against the blog index and load the top matching articles.
+ * Falls back to firstUserMessage if the current message yields no matches.
+ * Returns the combined article content (separated by ---), or null if no matches.
+ */
+export function loadMatchedArticles(
+  message: string,
+  firstUserMessage?: string,
+): string | null {
+  let handles = matchBlogArticles(message);
+  if (handles.length === 0 && firstUserMessage) {
+    handles = matchBlogArticles(firstUserMessage);
+  }
+  if (handles.length === 0) return null;
+
+  const parts: string[] = [];
+  let totalChars = 0;
+  for (const handle of handles) {
+    const content = loadBlogArticle(handle);
+    if (!content) continue;
+    if (totalChars + content.length > MAX_BLOG_CHARS) break;
+    parts.push(content);
+    totalChars += content.length;
+  }
+  return parts.length > 0 ? parts.join('\n\n---\n\n') : null;
+}
+
 // ---------------------------------------------------------------------------
 // Message building (system blocks + conversation messages)
 // ---------------------------------------------------------------------------
@@ -510,7 +550,7 @@ interface SystemBlock {
 
 export function buildSystemBlocks(
   userContextJson: string,
-  opts?: { documentContent?: string | null; orderSummary?: string; blogArticle?: string | null },
+  opts?: { documentContent?: string | null; orderSummary?: string; blogArticles?: string | null },
 ): SystemBlock[] {
   // Cached blocks first (shared across all users), then per-user blocks
   const blocks: SystemBlock[] = [
@@ -554,15 +594,10 @@ export function buildSystemBlocks(
     });
   }
 
-  if (opts?.blogArticle) {
-    // Cap blog article at ~20K tokens to prevent oversized context
-    const MAX_BLOG_CHARS = 80_000;
-    const trimmed = opts.blogArticle.length > MAX_BLOG_CHARS
-      ? opts.blogArticle.slice(0, MAX_BLOG_CHARS) + '\n\n[Article truncated — read the full post at the link above]'
-      : opts.blogArticle;
+  if (opts?.blogArticles) {
     blocks.push({
       type: 'text',
-      text: `## Referenced Blog Article\n\n${trimmed}`,
+      text: `## Referenced Blog Articles\n\n${opts.blogArticles}`,
     });
   }
 

@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Yg77_SrN6rw"
 publishedAt: "2024-09-26T00:17:19Z"
 tags: ["Supplements"]
 keywords: ["alzheimer","brain health","cognitive","dementia","dha","epa","exercise","inflammation","omega-3","stroke","tmg","zinc"]
+summary: "A groundbreaking discovery is overturning everything we thought about omega-3 and brain health. There's a missing link that explains why some studies show remarkable boosts in memory and cognition, while other times omega-3 doesn't seem to help at all. This missing piece shows us a path forward for how we should use omega-3 to improve our brain performance. I'm going to walk us through the details and, by the end, explain how I take omega-3 to get the most benefits."
 ---
 
 A groundbreaking discovery is overturning everything we thought about omega-3 and brain health.

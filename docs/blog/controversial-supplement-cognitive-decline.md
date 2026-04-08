@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=2DONY-rYFQY"
 publishedAt: "2024-08-09T04:19:30Z"
 tags: ["Supplements"]
 keywords: ["aging","antioxidant","cardiovascular","cognitive","exercise","hyaluronic acid","magnesium","skin","sleep","tmg","vitamin a","vitamin e","vitamin k2"]
+summary: "One of my greatest fears as I get older is to have a family member patiently tell me that we've already had the same conversation earlier in the day but for me to have no recollection of it - and for my brain to not function correctly. Cognitive decline is a very real concern as we age, and it's an area of study that has been ongoing for decades. Thinking about cognitive decline and performance highlights both how brilliant and complex the mind is and also how fragile it is. We _are_ our brains; in a very real way, our bodies exist for the sole purpose of supporting our minds. We want to do everything we can to support this incredibly valuable asset. In this article, I'll show you an extremely popular supplement you're probably already taking, as well as the great evidence showing that it improves brain performance and..."
 ---
 
 One of my greatest fears as I get older is to have a family member patiently tell me that we've already had the same conversation earlier in the day but for me to have no recollection of it - and for my brain to not function correctly. Cognitive decline is a very real concern as we age, and it's an area of study that has been ongoing for decades.

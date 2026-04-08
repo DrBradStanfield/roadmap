@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=INeQLAdDkEE"
 publishedAt: "2025-05-15T23:18:01Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","antioxidant","blood pressure","calcium","cholesterol","diabetes","exercise","heart attack","inflammation","iron","lifespan","longevity","muscle","osteoporosis","prostate","resveratrol","testosterone","vitamin a","vitamin d","vitamin e","zinc"]
+summary: "It’s absolutely wild to me how many of my patients at the clinic, when I ask them what supplements they are taking, mention one that is actively damaging their blood vessels. And it’s not just this one. There are four other incredibly popular supplements that the human research shows do more harm than good. I advise my patients to stop taking them immediately."
 ---
 
 It’s absolutely wild to me how many of my patients at the clinic, when I ask them what supplements they are taking, mention one that is actively damaging their blood vessels.

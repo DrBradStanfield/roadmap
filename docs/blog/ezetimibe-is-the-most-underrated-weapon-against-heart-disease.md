@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=uyDC-es2uQI"
 publishedAt: "2025-05-23T03:10:34Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["blood pressure","bmi","cholesterol","dementia","diabetes","exercise","ezetimibe","fiber","hdl","heart attack","hormone","ldl","muscle","psyllium","statin","testosterone"]
+summary: "Heart disease is the world’s biggest killer. And it’s only getting worse. \\[1\\] But there’s a safe, easy, and ridiculously cheap way to slash our risks. A brand-new study has reinforced how effective it can be, and I’ll explain why I take it—even though I’m young and healthy."
 ---
 
 Heart disease is the world’s biggest killer. And it’s only getting worse. \[1\]

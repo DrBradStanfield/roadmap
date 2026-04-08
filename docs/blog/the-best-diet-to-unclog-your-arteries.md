@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=h3V3AnVf_w8"
 publishedAt: "2025-02-15T00:14:11Z"
 tags: ["Diet","Research"]
 keywords: ["atherosclerosis","blood pressure","cardiovascular","cholesterol","exercise","fiber","hypertension","ldl","mediterranean diet","muscle","olive oil","potassium","ultrasound"]
+summary: "The silent buildup of plaque in our arteries is a key risk factor for heart attacks and strokes. But what if you could reverse this dangerous buildup with the right way of eating? In this article, we’ll explore clinical trials that reveal which dietary patterns may help reverse plaque buildup and strengthen heart health. We’ll walk through several major randomized, controlled trials—our gold standard for investigating these questions. Some of the trials included other lifestyle factors alongside diet, and we’ll address that. Then we’ll turn to indirect evidence from cholesterol studies that reinforces our conclusions. By the end, we’ll see a clear pattern of eating that can support healthy arteries and reduce the likelihood of serious cardiovascular events."
 ---
 
 The silent buildup of plaque in our arteries is a key risk factor for heart attacks and strokes. But what if you could reverse this dangerous buildup with the right way of eating? In this article, we’ll explore clinical trials that reveal which dietary patterns may help reverse plaque buildup and strengthen heart health.

@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=yRWVbodt2Lo"
 publishedAt: "2026-01-11T22:03:32Z"
 tags: ["Exercise","General Health","Preventative Care","Research"]
 keywords: ["aging","exercise","inflammation","muscle","obesity","weight loss"]
+summary: "It’s absolutely wild to me how much damage some people have done to their joints by following outdated advice. When I see knee x-rays where all the cartilage has worn away and, instead, bone is grinding against bone, my heart sinks. At that stage, there’s really only one option left — a knee replacement. I wish we could have had a conversation sooner. Because there’s been a profound change in how we understand the prevention and treatment of knee arthritis. And a brand new study has reinforced this change in direction, offering fresh insights into the most promising strategies we can take. Plus, there’s also a medication that’s recently been proven to help."
 ---
 
 It’s absolutely wild to me how much damage some people have done to their joints by following outdated advice.
