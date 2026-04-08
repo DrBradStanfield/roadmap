@@ -1,55 +1,35 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
+import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { getCustomerId, getCustomerInfo, tagShopifyCustomer } from '../lib/route-helpers.server';
 import { migrateGuestChat } from '../lib/supabase.server';
+import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 
-// In-memory rate limiter: 60 requests per minute per customer
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 60;
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-// Clean up stale entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(key);
-  }
-}, 5 * 60_000);
-
-function checkRateLimit(customerId: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(customerId);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(customerId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  entry.count++;
-  return entry.count <= RATE_LIMIT_MAX;
+// In-memory rate limiter factory
+function createRateLimiter(max: number, windowMs: number, cleanupMs: number) {
+  const map = new Map<string, { count: number; resetAt: number }>();
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of map) {
+      if (now > entry.resetAt) map.delete(key);
+    }
+  }, cleanupMs);
+  return (key: string): boolean => {
+    const now = Date.now();
+    const entry = map.get(key);
+    if (!entry || now > entry.resetAt) {
+      map.set(key, { count: 1, resetAt: now + windowMs });
+      return true;
+    }
+    entry.count++;
+    return entry.count <= max;
+  };
 }
 
-// Rate limiter for report emails: 5 per 24 hours per customer
-const REPORT_LIMIT = 5;
-const REPORT_WINDOW_MS = 24 * 60 * 60_000;
-const reportLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of reportLimitMap) {
-    if (now > entry.resetAt) reportLimitMap.delete(key);
-  }
-}, 30 * 60_000);
-
-function checkReportLimit(customerId: string): boolean {
-  const now = Date.now();
-  const entry = reportLimitMap.get(customerId);
-  if (!entry || now > entry.resetAt) {
-    reportLimitMap.set(customerId, { count: 1, resetAt: now + REPORT_WINDOW_MS });
-    return true;
-  }
-  entry.count++;
-  return entry.count <= REPORT_LIMIT;
-}
+const checkRateLimit = createRateLimiter(60, 60_000, 5 * 60_000);           // 60/min per customer
+const checkReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000); // 5/day per customer
+const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000); // 5/day per email
 
 import {
   getOrCreateSupabaseUser,
@@ -80,8 +60,9 @@ import {
   getReminderPreferences,
   toApiReminderPreference,
 } from '../lib/supabase.server';
-import { checkAndSendWelcomeEmail, sendReportEmail, generateReportHtml } from '../lib/email.server';
-import { measurementSchema, profileUpdateSchema, medicationSchema, screeningSchema, supplementSchema, bulkMeasurementSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
+import { checkAndSendWelcomeEmail, sendReportEmail, generateReportHtml, buildReportHtml, sendEmail } from '../lib/email.server';
+import type { HealthInputs, MedicationInputs, ScreeningInputs } from '../../packages/health-core/src/types';
+import { measurementSchema, profileUpdateSchema, medicationSchema, screeningSchema, supplementSchema, bulkMeasurementSchema, healthInputSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
 
 // GET — Load measurements (authenticated via app proxy HMAC)
 // ?metric_type=weight&limit=50  → list measurements for one metric
@@ -162,10 +143,56 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Guest report — stateless email-only flow (no Supabase, no auth required)
+// ---------------------------------------------------------------------------
+
+const guestReportSchema = z.object({
+  email: z.string().email().max(254),
+  inputs: healthInputSchema,
+  medications: z.any().optional(),
+  screenings: z.any().optional(),
+});
+
+async function handleGuestReport(data: unknown) {
+  try {
+    const parsed = guestReportSchema.safeParse(data);
+    if (!parsed.success) {
+      return json({ success: false, error: 'Invalid request data' }, { status: 400 });
+    }
+    const { email, inputs, medications, screenings } = parsed.data;
+
+    if (!checkGuestReportLimit(email.toLowerCase())) {
+      return json({ success: false, error: 'Email limit reached. Try again tomorrow.' }, { status: 429 });
+    }
+
+    const result = buildReportHtml(inputs as HealthInputs, medications as MedicationInputs | undefined, screenings as ScreeningInputs | undefined);
+    if ('error' in result) {
+      return json({ success: false, error: result.error }, { status: 400 });
+    }
+
+    await sendEmail(email, 'Your Personalized Health Plan', result.html);
+    subscribeToKlaviyo(email).catch(() => {});
+
+    return json({ success: true });
+  } catch (error) {
+    console.error('Guest report error:', error);
+    Sentry.captureException(error, { tags: { feature: 'guest_report' } });
+    return json({ success: false, error: 'Failed to send report' }, { status: 500 });
+  }
+}
+
 // POST — Add measurement or update profile
 // DELETE — Remove measurement
 export async function action({ request }: ActionFunctionArgs) {
   const { admin } = await authenticate.public.appProxy(request);
+
+  const body = await request.json();
+
+  // Guest report — no auth required (checked before customerId gate)
+  if (body.guestReport) {
+    return handleGuestReport(body.guestReport);
+  }
 
   const customerId = getCustomerId(request);
   if (!customerId) {
@@ -183,8 +210,6 @@ export async function action({ request }: ActionFunctionArgs) {
 
     const userId = await getOrCreateSupabaseUser(customerId, customerInfo.email, customerInfo.firstName, customerInfo.lastName);
     const client = createUserClient(userId);
-
-    const body = await request.json();
 
     if (request.method === 'POST') {
       // Guest chat migration — POST { migrateGuestChat: sessionToken }

@@ -51,7 +51,6 @@ import {
 } from '@roadmap/health-core';
 import { formatShortDate } from '../lib/constants';
 import { DatePicker, InlineDatePicker, dateValueToISO, getCurrentDateValue, type DateValue } from './DatePicker';
-import type { TabId } from './MobileTabBar';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -162,7 +161,6 @@ interface InputPanelProps {
   isSavingLongitudinal: boolean;
   hasApiResponse: boolean;
   formStage: 1 | 2 | 3 | 4;
-  mobileActiveTab?: TabId;
   setShowUploadModal?: (show: boolean) => void;
   loginUrl?: string;
   activeSuggestionIds?: Set<string>;
@@ -178,7 +176,6 @@ export function InputPanel({
   supplements, onSupplementChange, onSupplementDelete,
   onSaveLongitudinal, isSavingLongitudinal, hasApiResponse,
   formStage,
-  mobileActiveTab,
   setShowUploadModal, loginUrl, activeSuggestionIds,
   healthDocuments, onDocumentDeleted,
 }: InputPanelProps) {
@@ -2262,22 +2259,7 @@ export function InputPanel({
     );
   };
 
-  // ── Mobile: render only the active tab's section ──
-  if (mobileActiveTab && mobileActiveTab !== 'results') {
-    return (
-      <div className="health-input-panel">
-        {mobileActiveTab === 'profile' && <div className="section-card">{renderProfile()}</div>}
-        {mobileActiveTab === 'vitals' && <div className="section-card">{renderVitals()}</div>}
-        {mobileActiveTab === 'blood-tests' && <div className="section-card">{renderBloodTests()}</div>}
-        {mobileActiveTab === 'medications' && renderMedications()}
-        {mobileActiveTab === 'screening' && <>{renderScreening()}{renderBoneDensity()}</>}
-        {mobileActiveTab === 'supplements' && renderSupplements()}
-        {renderSaveButton()}
-      </div>
-    );
-  }
-
-  // ── Desktop: render all sections (progressive disclosure) ──
+  // ── Render all sections with progressive disclosure (both mobile and desktop) ──
   return (
     <div className="health-input-panel">
       {/* Card 1: Units + Basic Info + Vitals (stage 3+) */}

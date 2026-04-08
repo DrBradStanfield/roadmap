@@ -22,9 +22,13 @@ import {
   getProteinEvidence,
   getBmiEvidence,
 } from '@roadmap/health-core';
-import { type ApiReminderPreference, sendReportEmail, getReportHtml } from '../lib/api';
+import { type ApiReminderPreference, sendReportEmail, getReportHtml, sendGuestReport } from '../lib/api';
 import { FeedbackForm } from './FeedbackForm';
 import { ChatSection } from './ChatSection';
+// @ts-ignore — JSON import for blog post cards
+import blogIndex from '../../../docs/blog/index.json';
+
+const LATEST_BLOG_POSTS = (blogIndex as Array<{ title: string; url: string; tags: string[] }>).slice(0, 3);
 
 // Auth state type (matches HealthTool)
 interface AuthState {
@@ -53,6 +57,11 @@ interface ResultsPanelProps {
   sex?: 'male' | 'female';
   hideInlineChat?: boolean;
   onInlineChatExpand?: () => void;
+  guestReportData?: {
+    inputs: Record<string, unknown>;
+    medications?: Record<string, unknown>;
+    screenings?: Record<string, unknown>;
+  };
 }
 
 function getBmiStatus(bmiCategory: string, waistToHeightRatio?: number): { label: string; className: string } {
@@ -383,25 +392,111 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
     );
   }
 
-  return (
-    <a href={authState.loginUrl || "/account/login"} className="guest-cta no-print">
-      <div className="guest-cta-text">
-        {redirectFailed ? (
-          <>
-            <strong>Welcome back</strong>
-            <span>Sign in to access your saved data and health history.</span>
-          </>
-        ) : (
-          <>
-            <strong>Get Your Personalized Health Report</strong>
-            <span>Create a free account to save your data and get an email summary to discuss with doctor.</span>
-          </>
-        )}
+  if (redirectFailed) {
+    return (
+      <a href={authState.loginUrl || "/account/login"} className="guest-cta no-print">
+        <div className="guest-cta-text">
+          <strong>Welcome back</strong>
+          <span>Sign in to access your saved data and health history.</span>
+        </div>
+        <span className="guest-cta-btn">Sign In</span>
+      </a>
+    );
+  }
+
+  return null; // Guest email capture is rendered separately via GuestEmailCapture
+}
+
+type GuestEmailState = 'idle' | 'sending' | 'prompt-account' | 'blog-posts';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function GuestEmailCapture({ guestReportData, loginUrl }: {
+  guestReportData: { inputs: Record<string, unknown>; medications?: Record<string, unknown>; screenings?: Record<string, unknown> };
+  loginUrl?: string;
+}) {
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [state, setState] = useState<GuestEmailState>('idle');
+
+  const handleSubmit = async () => {
+    const trimmed = email.trim();
+    if (!trimmed || !EMAIL_REGEX.test(trimmed)) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+    setEmailError('');
+    setState('sending');
+
+    const result = await sendGuestReport(
+      trimmed,
+      guestReportData.inputs,
+      guestReportData.medications,
+      guestReportData.screenings,
+    );
+
+    if (result.success) {
+      setState('prompt-account');
+    } else {
+      setEmailError(result.error || 'Failed to send. Please try again.');
+      setState('idle');
+    }
+  };
+
+  if (state === 'prompt-account') {
+    return (
+      <div className="email-capture no-print">
+        <div className="email-capture-success">
+          <strong>Check your inbox! Your personalized health plan has been sent.</strong>
+        </div>
+        <div className="email-capture-account-prompt">
+          <p>Want to save your data and track changes over time?</p>
+          <a href={loginUrl || '/account/login'} className="btn-primary email-capture-account-btn">Create Free Account</a>
+          <button type="button" className="email-capture-dismiss" onClick={() => setState('blog-posts')}>Maybe later</button>
+        </div>
       </div>
-      <span className="guest-cta-btn">
-        {redirectFailed ? 'Sign In' : 'Email Me My Results'}
-      </span>
-    </a>
+    );
+  }
+
+  if (state === 'blog-posts') {
+    return (
+      <div className="email-capture no-print">
+        <div className="email-capture-blog-posts">
+          <strong>Latest articles</strong>
+          {LATEST_BLOG_POSTS.map(post => (
+            <a key={post.url} href={post.url} className="blog-post-card" target="_blank" rel="noopener noreferrer">
+              <span className="blog-post-title">{post.title}</span>
+              {post.tags?.[0] && <span className="blog-post-tag">{post.tags[0]}</span>}
+            </a>
+          ))}
+        </div>
+        <button type="button" className="email-capture-dismiss" onClick={() => setState('idle')}>Send to another email</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="email-capture no-print">
+      <div className="email-capture-row">
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
+          onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+          className={emailError ? 'error' : ''}
+        />
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={handleSubmit}
+          disabled={state === 'sending'}
+        >
+          {state === 'sending' ? 'Sending...' : 'Get Your Personalized Plan'}
+        </button>
+      </div>
+      {emailError && <span className="email-capture-error">{emailError}</span>}
+    </div>
   );
 }
 
@@ -489,7 +584,7 @@ function ReminderSettings({
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, hideInlineChat, onInlineChatExpand }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, hideInlineChat, onInlineChatExpand, guestReportData }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -624,7 +719,8 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
   return (
     <div className="health-results-panel">
       {/* Account Status */}
-      <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} onPrint={authState?.isLoggedIn ? handlePrint : undefined} onEmail={authState?.isLoggedIn ? handleEmailReport : undefined} emailStatus={emailStatus} printStatus={printStatus} />
+      <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} onPrint={authState?.isLoggedIn ? handlePrint : undefined} onEmail={authState?.isLoggedIn ? handleEmailReport : undefined} emailStatus={emailStatus} printStatus={printStatus} />
+      {guestReportData && <GuestEmailCapture guestReportData={guestReportData} loginUrl={authState?.loginUrl} />}
 
       {/* Quick Stats */}
       <section className="quick-stats">
@@ -766,15 +862,6 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
           sex={sex}
           age={results?.age}
         />
-      )}
-
-      {!authState?.isLoggedIn && (
-        <a href={authState?.loginUrl || "/account/login"} className="guest-cta-inline no-print">
-          <span>{redirectFailed ? 'Sign in to access your saved data.' : 'Save your data and get an email summary to discuss with doctor.'}</span>
-          <span className="guest-cta-btn">
-            {redirectFailed ? 'Sign In' : 'Email Me My Results'}
-          </span>
-        </a>
       )}
 
       <FeedbackForm />

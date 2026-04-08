@@ -491,6 +491,33 @@ export async function sendReportEmail(): Promise<{ success: boolean; error?: str
 }
 
 /**
+ * Send a guest report email (no login required).
+ * Submits health data + email to the backend, which generates and sends the report.
+ */
+export async function sendGuestReport(
+  email: string,
+  inputs: Record<string, unknown>,
+  medications?: Record<string, unknown>,
+  screenings?: Record<string, unknown>,
+): Promise<{ success: boolean; error?: string }> {
+  return apiCall(
+    async () => {
+      const response = await fetch(`${PROXY_PATH}/api/measurements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guestReport: { email, inputs, medications, screenings },
+        }),
+      });
+      const result = await parseJsonResponse<{ success: boolean; error?: string }>(response);
+      return result ?? { success: false, error: 'Network error' };
+    },
+    'Error sending guest report',
+    { success: false, error: 'Network error' },
+  );
+}
+
+/**
  * Get the health report as HTML (for printing).
  */
 export async function getReportHtml(): Promise<{ success: boolean; html?: string; error?: string }> {

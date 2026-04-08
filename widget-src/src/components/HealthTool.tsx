@@ -12,13 +12,6 @@ import {
   FIELD_TO_METRIC,
   medicationsToInputs,
   screeningsToInputs,
-  calculateAge,
-  calculateBMI,
-  LIPID_TREATMENT_TARGETS,
-  resolveBestLipidMarker,
-  HBA1C_THRESHOLDS,
-  TRIGLYCERIDES_THRESHOLDS,
-  BP_THRESHOLDS,
   computeFormStage,
   resolveEmailConfirmStatus,
   FIELD_METRIC_MAP,
@@ -36,7 +29,10 @@ import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { listConversations, loadConversation, getGuestSessionToken, clearGuestSessionToken, type ChatMessage } from '../lib/chat-api';
 import { UploadModal, FloatingUploadIndicator } from './UploadModal';
 import { useIsMobile } from '../lib/useIsMobile';
-import { MobileTabBar, MobileTabNav, type TabId, type Tab } from './MobileTabBar';
+import { MobileTabBar, type TabId } from './MobileTabBar';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import type { Swiper as SwiperType } from 'swiper';
+import 'swiper/css';
 import {
   saveToLocalStorage,
   loadFromLocalStorage,
@@ -631,90 +627,27 @@ export function HealthTool() {
 
   // Mobile tab state
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState<TabId>('profile');
+  const [activeTab, setActiveTab] = useState<TabId>('input');
 
 
-  // Compute which tabs are visible (medications + screening are conditional)
-  const tabs: Tab[] = useMemo(() => {
-    // Medications visible: lipids elevated OR weight cascade trigger
-    const ei = effectiveInputs;
-    const nonHdl = (ei.totalCholesterol !== undefined && ei.hdlC !== undefined)
-      ? ei.totalCholesterol - ei.hdlC : undefined;
-    const lipidsElevated = resolveBestLipidMarker(ei.apoB, nonHdl, ei.ldlC)?.elevated ?? false;
 
-    const bmi = (ei.weightKg !== undefined && ei.heightCm !== undefined)
-      ? calculateBMI(ei.weightKg, ei.heightCm) : undefined;
-    const whr = (ei.waistCm !== undefined && ei.heightCm !== undefined)
-      ? ei.waistCm / ei.heightCm : undefined;
-    let weightCascadeVisible = false;
-    if (bmi !== undefined && bmi > 25) {
-      if (bmi > 28) {
-        weightCascadeVisible = true;
-      } else {
-        weightCascadeVisible =
-          (ei.hba1c !== undefined && ei.hba1c >= HBA1C_THRESHOLDS.prediabetes) ||
-          (ei.triglycerides !== undefined && ei.triglycerides >= TRIGLYCERIDES_THRESHOLDS.borderline) ||
-          (ei.systolicBp !== undefined && ei.systolicBp >= BP_THRESHOLDS.stage1Sys) ||
-          (whr !== undefined && whr >= 0.5);
-      }
-    }
-    // Also show medications when user has entered any relevant blood test values
-    // (even if not elevated — allows recording meds when values are well-controlled)
-    const hasLipidInput = ei.apoB !== undefined || ei.ldlC !== undefined
-      || ei.totalCholesterol !== undefined || ei.hdlC !== undefined;
-    const hasWeightInput = ei.hba1c !== undefined || ei.triglycerides !== undefined
-      || (ei.weightKg !== undefined && ei.heightCm !== undefined);
-    const medsVisible = lipidsElevated || weightCascadeVisible || hasLipidInput || hasWeightInput;
+  // Swiper ref for programmatic slide control (tab button clicks)
+  const swiperRef = useRef<SwiperType | null>(null);
 
-    // Screening visible: birthYear set + age-based eligibility
-    let screeningVisible = false;
-    if (inputs.birthYear) {
-      const age = calculateAge(inputs.birthYear, inputs.birthMonth ?? 1);
-      screeningVisible =
-        age >= 35 ||
-        (inputs.sex === 'female' && age >= 25) ||
-        (inputs.sex === 'female' && age >= 40) ||
-        (age >= 50 && age <= 80) ||
-        (inputs.sex === 'male' && age >= 45) ||
-        (inputs.sex === 'female' && age >= 45) ||
-        (inputs.sex === 'female' && age >= 50) || // DEXA
-        (inputs.sex === 'male' && age >= 70);     // DEXA
-    }
-
-    return [
-      { id: 'profile', label: 'Profile', visible: true },
-      { id: 'vitals', label: 'Vitals', visible: formStage >= 3 },
-      { id: 'blood-tests', label: 'Blood Tests', visible: formStage >= 4 },
-      { id: 'medications', label: 'Medications', visible: formStage >= 4 && medsVisible },
-      { id: 'screening', label: 'Screening', visible: formStage >= 4 && screeningVisible },
-      { id: 'supplements', label: 'Supplements', visible: authState.isLoggedIn && formStage >= 4 },
-      { id: 'results', label: 'Results', visible: true },
-      { id: 'chat', label: 'Chat', visible: formStage >= 4 },
-    ];
-  }, [effectiveInputs, inputs.birthYear, inputs.birthMonth, inputs.sex, formStage, authState.isLoggedIn]);
-
-  // Auto-fallback: if active tab becomes invisible, switch to first visible tab
+  // Sync tab button clicks → Swiper
   useEffect(() => {
-    const current = tabs.find(t => t.id === activeTab);
-    if (current && !current.visible) {
-      const firstVisible = tabs.find(t => t.visible);
-      if (firstVisible) setActiveTab(firstVisible.id);
+    const index = activeTab === 'input' ? 0 : 1;
+    if (swiperRef.current && swiperRef.current.activeIndex !== index) {
+      swiperRef.current.slideTo(index);
     }
-  }, [tabs, activeTab]);
+  }, [activeTab]);
 
-  // Auto-navigate to Results tab on mobile when first suggestions appear
-  const hasAutoNavigatedRef = useRef(false);
-  const prevSuggestionsCountRef = useRef(results?.suggestions?.length ?? 0);
+  // Re-measure Swiper autoHeight when slide content changes
   useEffect(() => {
-    if (!isMobile || hasAutoNavigatedRef.current) return;
-    const count = results?.suggestions?.length ?? 0;
-    // Trigger when suggestions first appear (from 0 to >0)
-    if (prevSuggestionsCountRef.current === 0 && count > 0) {
-      hasAutoNavigatedRef.current = true;
-      setActiveTab('results');
+    if (swiperRef.current) {
+      swiperRef.current.updateAutoHeight();
     }
-    prevSuggestionsCountRef.current = count;
-  }, [isMobile, results?.suggestions?.length]);
+  }, [formStage]);
 
   const handleReminderPreferenceChange = useCallback(async (category: string, enabled: boolean) => {
     // Optimistic update
@@ -931,6 +864,7 @@ export function HealthTool() {
     sex: inputs.sex,
     hideInlineChat: floatingChatOpen && !isMobile,
     onInlineChatExpand: () => setFloatingChatOpen(true),
+    guestReportData: !authState.isLoggedIn ? { inputs: effectiveInputs, medications, screenings } : undefined,
   };
 
   return (
@@ -945,32 +879,48 @@ export function HealthTool() {
 
       {isMobile ? (
         <>
-          <MobileTabBar tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-          <div className="mobile-tab-content">
-            {activeTab === 'chat' ? (
-              <ChatSection
-                isLoggedIn={authState.isLoggedIn}
-                loginUrl={authState.loginUrl}
-                guestInputs={!authState.isLoggedIn ? { ...effectiveInputs, unitSystem, medications, screenings } : null}
-                prefetchedData={chatPrefetch}
-              />
-            ) : activeTab === 'results' ? (
+          <MobileTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+          <Swiper
+            autoHeight
+            touchStartPreventDefault={false}
+            onSwiper={(s) => { swiperRef.current = s; }}
+            onSlideChange={(s) => setActiveTab(s.activeIndex === 0 ? 'input' : 'plan')}
+          >
+            <SwiperSlide>
+              <InputPanel {...inputPanelProps} />
+            </SwiperSlide>
+            <SwiperSlide>
               <div className="health-tool-right">
                 <ResultsPanel {...resultsPanelProps} />
               </div>
-            ) : (
-              <InputPanel {...inputPanelProps} mobileActiveTab={activeTab} />
-            )}
-            <MobileTabNav tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
-            {activeTab !== 'results' && (
-              <button
-                className="btn-primary mobile-view-results-btn"
-                onClick={() => setActiveTab('results')}
-              >
-                View Results
-              </button>
-            )}
-          </div>
+              {formStage >= 4 && (
+                <ChatSection
+                  isLoggedIn={authState.isLoggedIn}
+                  loginUrl={authState.loginUrl}
+                  guestInputs={!authState.isLoggedIn ? { ...effectiveInputs, unitSystem, medications, screenings } : null}
+                  prefetchedData={chatPrefetch}
+                />
+              )}
+            </SwiperSlide>
+          </Swiper>
+          {formStage >= 4 && activeTab === 'plan' && !floatingChatOpen && (
+            <button
+              className="chat-fab no-print"
+              onClick={() => setFloatingChatOpen(true)}
+              aria-label="Open chat"
+            >
+              <span className="chat-fab-icon">💬</span>
+              <span className="chat-fab-label">Ask about your health</span>
+            </button>
+          )}
+          {formStage >= 2 && activeTab === 'input' && (
+            <button
+              className="btn-primary mobile-view-plan-btn"
+              onClick={() => setActiveTab('plan')}
+            >
+              See Your Personalized Plan
+            </button>
+          )}
         </>
       ) : (
         <div className="health-tool-content">
@@ -1021,7 +971,7 @@ export function HealthTool() {
           <span className="chat-fab-label">Ask about your health</span>
         </button>
       )}
-      {!isMobile && floatingChatOpen && (
+      {floatingChatOpen && (
         <ChatSection
           isLoggedIn={authState.isLoggedIn}
           loginUrl={authState.loginUrl}

@@ -14,3 +14,4 @@ shopify.app.toml
 fly.toml
 *.js.map
 docs/wiki/research/
+docs/supplement-wiki.md

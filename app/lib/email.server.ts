@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 import * as Sentry from '@sentry/remix';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { HealthInputs, HealthResults, Suggestion, MedicationInputs } from '../../packages/health-core/src/types';
+import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from '../../packages/health-core/src/types';
 import type { UnitSystem, MetricType } from '../../packages/health-core/src/units';
 import { calculateHealthResults, getBMICategory, getEgfrStatus, getLpaStatus, getLipidStatus, getProteinRate } from '../../packages/health-core/src/calculations';
 import { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence } from '../../packages/health-core/src/evidence';
@@ -32,7 +32,50 @@ const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL || 'https://drstanfield.
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
-// loadHealthData() imported from supabase.server.ts (shared with chat.server.ts)
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+/** Escape user-provided strings before interpolating into HTML email templates. */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/** Send an email via Resend. Throws if Resend is not configured. */
+export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+  if (!resend) throw new Error('Email service not configured');
+  await resend.emails.send({
+    from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
+    to,
+    subject,
+    html,
+  });
+}
+
+/**
+ * Build a health report HTML string from pre-computed data.
+ * Pure function — no Supabase dependency. Shared by authenticated and guest flows.
+ */
+export function buildReportHtml(
+  inputs: HealthInputs,
+  medInputs?: MedicationInputs,
+  screenInputs?: ScreeningInputs,
+  firstName?: string | null,
+): { html: string } | { error: string } {
+  if (!inputs.heightCm || !inputs.sex) {
+    return { error: 'Insufficient data (need height + sex)' };
+  }
+  const unitSystem: UnitSystem = inputs.unitSystem || 'si';
+  const results = calculateHealthResults(inputs, unitSystem, medInputs, screenInputs);
+  const html = buildWelcomeEmailHtml(inputs, results, results.suggestions, unitSystem, firstName ?? null, medInputs, results.age);
+  return { html };
+}
+
 
 // ---------------------------------------------------------------------------
 // Main entry point — fire-and-forget, never throws
@@ -82,29 +125,16 @@ export async function checkAndSendWelcomeEmail(
       }
       const { profile, inputs, medInputs, screenInputs } = data;
 
-      // 3. Require minimum data (height + sex)
-      if (!inputs.heightCm || !inputs.sex) {
-        console.log('Insufficient data for welcome email (need height + sex)');
-        // Revert flag — user may add data later
+      // 3. Build report HTML (shared with guest + on-demand report flows)
+      const result = buildReportHtml(inputs, medInputs, screenInputs, profile.first_name);
+      if ('error' in result) {
+        console.log(`Skipping welcome email: ${result.error}`);
         await client.from('profiles').update({ welcome_email_sent: false }).eq('id', userId);
-        return true; // Not an error — just insufficient data
+        return true;
       }
 
-      // 5. Calculate results (suggestions are generated inside calculateHealthResults)
-      const unitSystem: UnitSystem = inputs.unitSystem || 'si';
-      const results = calculateHealthResults(inputs, unitSystem, medInputs, screenInputs);
-      const suggestions = results.suggestions;
-
-      // 6. Build and send email
-      const firstName = profile.first_name || null;
-      const html = buildWelcomeEmailHtml(inputs, results, suggestions, unitSystem, firstName, medInputs, results.age);
-
-      await resend.emails.send({
-        from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
-        to: profile.email,
-        subject: 'Your Personalized Health Roadmap',
-        html,
-      });
+      // 6. Send email
+      await sendEmail(profile.email, 'Your Personalized Health Roadmap', result.html);
 
       console.log(`Welcome email sent to ${profile.email}`);
       return true;
@@ -138,18 +168,9 @@ export async function generateReportHtml(
     return { error: 'Profile not found' };
   }
   const { profile, inputs, medInputs, screenInputs } = data;
-
-  if (!inputs.heightCm || !inputs.sex) {
-    return { error: 'Insufficient data (need height + sex)' };
-  }
-
-  const unitSystem: UnitSystem = inputs.unitSystem || 'si';
-  const results = calculateHealthResults(inputs, unitSystem, medInputs, screenInputs);
-  const suggestions = results.suggestions;
-  const firstName = profile.first_name || null;
-  const html = buildWelcomeEmailHtml(inputs, results, suggestions, unitSystem, firstName, medInputs, results.age);
-
-  return { html, email: profile.email };
+  const result = buildReportHtml(inputs, medInputs, screenInputs, profile.first_name);
+  if ('error' in result) return result;
+  return { html: result.html, email: profile.email };
 }
 
 /**
@@ -169,13 +190,7 @@ export async function sendReportEmail(
     return { success: false, error: result.error };
   }
 
-  await resend.emails.send({
-    from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
-    to: result.email,
-    subject: 'Your Health Roadmap Report',
-    html: result.html,
-  });
-
+  await sendEmail(result.email, 'Your Health Roadmap Report', result.html);
   return { success: true };
 }
 
@@ -211,8 +226,8 @@ export function buildWelcomeEmailHtml(
   medications?: MedicationInputs,
   age?: number,
 ): string {
-  const greeting = firstName ? `Hi ${firstName},` : 'Hello,';
-  const roadmapUrl = `${SHOPIFY_STORE_URL}/pages/roadmap`;
+  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : 'Hello,';
+  const roadmapUrl = SHOPIFY_STORE_URL;
   const sex = inputs.sex;
 
   // Demographics line
@@ -442,8 +457,8 @@ export function buildReminderEmailHtml(
   bloodTestDates: BloodTestDate[],
   preferencesUrl: string,
 ): string {
-  const greeting = firstName ? `Hi ${firstName},` : 'Hello,';
-  const roadmapUrl = `${SHOPIFY_STORE_URL}/pages/roadmap`;
+  const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : 'Hello,';
+  const roadmapUrl = SHOPIFY_STORE_URL;
 
   // Group reminders
   const screeningReminders = reminders.filter(r => r.group === 'screening');
@@ -733,17 +748,17 @@ const STATUS_COLORS: Record<RangeStatus, string> = {
 
 function metricRow(label: string, value: string): string {
   return `<tr>
-          <td style="padding:8px 0;color:#555;font-size:14px;border-bottom:1px solid #f0f0f0;">${label}</td>
-          <td style="padding:8px 0;color:#1a1a1a;font-size:14px;font-weight:600;text-align:right;border-bottom:1px solid #f0f0f0;">${value}</td>
+          <td style="padding:8px 0;color:#555;font-size:14px;border-bottom:1px solid #f0f0f0;">${escapeHtml(label)}</td>
+          <td style="padding:8px 0;color:#1a1a1a;font-size:14px;font-weight:600;text-align:right;border-bottom:1px solid #f0f0f0;">${escapeHtml(value)}</td>
           <td style="padding:8px 0;border-bottom:1px solid #f0f0f0;"></td>
         </tr>`;
 }
 
 function metricRowWithRange(label: string, value: string, rangeText: string, status: RangeStatus): string {
   return `<tr>
-          <td style="padding:8px 0;color:#555;font-size:14px;border-bottom:1px solid #f0f0f0;">${label}</td>
-          <td style="padding:8px 0;color:#1a1a1a;font-size:14px;font-weight:600;text-align:right;border-bottom:1px solid #f0f0f0;">${value}</td>
-          <td style="padding:8px 0;color:${STATUS_COLORS[status]};font-size:12px;text-align:right;border-bottom:1px solid #f0f0f0;padding-left:12px;">${rangeText}</td>
+          <td style="padding:8px 0;color:#555;font-size:14px;border-bottom:1px solid #f0f0f0;">${escapeHtml(label)}</td>
+          <td style="padding:8px 0;color:#1a1a1a;font-size:14px;font-weight:600;text-align:right;border-bottom:1px solid #f0f0f0;">${escapeHtml(value)}</td>
+          <td style="padding:8px 0;color:${STATUS_COLORS[status]};font-size:12px;text-align:right;border-bottom:1px solid #f0f0f0;padding-left:12px;">${escapeHtml(rangeText)}</td>
         </tr>`;
 }
 

@@ -4,6 +4,7 @@
   --color-primary: #0066cc;
   --color-primary-hover: #0052a3;
   --color-brand: #00a38b;
+  --color-brand-hover: var(--color-brand-hover);
 
   /* Grays */
   --color-gray-light: #888;
@@ -100,14 +101,11 @@ input[type="number"] {
   }
 }
 
-/* Mobile Tab Bar + Nav — hidden on desktop, shown on mobile */
+/* Mobile Tab Bar — hidden on desktop, shown on mobile */
 .mobile-tab-bar {
   display: none;
 }
-.mobile-tab-nav {
-  display: none;
-}
-.mobile-view-results-btn {
+.mobile-view-plan-btn {
   display: none;
 }
 
@@ -143,34 +141,14 @@ input[type="number"] {
     background: #fff;
   }
 
-  .mobile-tab-bar-container.has-overflow::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 40px;
-    background: linear-gradient(to right, transparent, #fff);
-    pointer-events: none;
-    z-index: 11;
-  }
-
   .mobile-tab-bar {
     display: flex;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    gap: 4px;
     padding: 8px 0;
     border-bottom: 1px solid var(--color-gray-border);
-    scrollbar-width: none;
-  }
-
-  .mobile-tab-bar::-webkit-scrollbar {
-    display: none;
   }
 
   .mobile-tab {
-    flex-shrink: 0;
+    flex: 1;
     padding: 8px 16px;
     font-size: 14px;
     font-weight: 500;
@@ -179,7 +157,7 @@ input[type="number"] {
     border: none;
     border-bottom: 2px solid transparent;
     cursor: pointer;
-    white-space: nowrap;
+    text-align: center;
     transition: color 0.2s, border-color 0.2s;
   }
 
@@ -188,38 +166,22 @@ input[type="number"] {
     border-bottom-color: var(--color-primary);
   }
 
-  .mobile-tab-content {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+  /* Swiper handles the 2-tab layout (autoHeight, swipe, slide sync).
+     These styles override the desktop results panel for mobile context. */
+  .swiper {
     padding-top: 16px;
   }
 
-  .mobile-tab-content .section-card {
+  .swiper-slide {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .swiper-slide .section-card {
     margin-bottom: 0;
   }
 
-  /* Guest CTA: fixed at bottom on mobile */
-  .guest-cta {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    top: auto;
-    margin: 0;
-    border-radius: 0;
-    z-index: 100;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
-    padding: 12px 16px;
-  }
-
-  /* Bottom padding so content isn't hidden behind fixed CTA */
-  .mobile-tab-content .health-results-panel {
-    padding-bottom: 80px;
-  }
-
-  /* Results panel inside mobile tab: remove sticky + background */
-  .mobile-tab-content .health-tool-right {
+  .swiper-slide .health-tool-right {
     position: static;
     max-height: none;
     overflow-y: visible;
@@ -228,38 +190,29 @@ input[type="number"] {
     box-shadow: none;
   }
 
-  /* "View Results" button below nav on input tabs */
-  .mobile-view-results-btn {
+
+  .btn-primary.mobile-view-plan-btn {
     display: block;
-    width: 100%;
+    position: fixed;
+    bottom: 12px;
+    left: 15px;
+    right: 15px;
+    width: auto;
+    box-sizing: border-box;
     padding: 14px 20px;
     font-size: 16px;
-  }
-
-  /* Next/Back navigation */
-  .mobile-tab-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .mobile-tab-nav-btn {
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 500;
     border-radius: 8px;
-    border: 1px solid var(--color-gray-border);
-    background: #fff;
-    color: var(--color-gray-dark);
-    cursor: pointer;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+    background-color: var(--color-brand);
+    border-color: var(--color-brand);
+    z-index: 20;
+  }
+  .btn-primary.mobile-view-plan-btn:hover {
+    background-color: var(--color-brand-hover);
+    border-color: var(--color-brand-hover);
   }
 
-  .mobile-tab-nav-btn--primary {
-    background: var(--color-primary);
-    color: #fff;
-    border-color: var(--color-primary);
-  }
+
 }
 
 .health-tool-left {
@@ -302,6 +255,7 @@ input[type="number"] {
 
 .unit-toggle select {
   width: 100%;
+  box-sizing: border-box;
   padding: 10px 12px;
   font-size: 16px;
   border: 1px solid var(--color-gray-border);
@@ -421,6 +375,7 @@ input[type="number"] {
 .health-field input,
 .health-field select {
   width: 100%;
+  box-sizing: border-box;
   padding: 10px 12px;
   font-size: 16px;
   border: 1px solid var(--color-gray-border);
@@ -1068,6 +1023,137 @@ input[type="number"] {
 .guest-cta-inline .guest-cta-btn:hover {
   background: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+/* Email capture for guest users */
+
+.email-capture-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.email-capture-row input[type="email"] {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 15px;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 8px;
+  outline: none;
+  min-width: 0;
+}
+
+.email-capture-row input[type="email"]:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.email-capture-row input[type="email"].error {
+  border-color: #ef4444;
+}
+
+.email-capture-row .btn-primary {
+  white-space: nowrap;
+  padding: 10px 20px;
+  font-size: 15px;
+  background-color: var(--color-brand);
+  border-color: var(--color-brand);
+}
+.email-capture-row .btn-primary:hover {
+  background-color: var(--color-brand-hover);
+  border-color: var(--color-brand-hover);
+}
+
+.email-capture-error {
+  display: block;
+  color: #ef4444;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.email-capture-success {
+  text-align: center;
+  padding: 8px 0;
+  color: var(--color-brand);
+}
+
+.email-capture-account-prompt {
+  text-align: center;
+  margin-top: 12px;
+}
+
+.email-capture-account-prompt p {
+  font-size: 14px;
+  color: var(--color-gray-dark);
+  margin: 0 0 12px;
+}
+
+.btn-primary.email-capture-account-btn {
+  display: inline-block;
+  text-decoration: none;
+  padding: 10px 24px;
+  font-size: 15px;
+  background-color: var(--color-brand);
+  border-color: var(--color-brand);
+}
+.btn-primary.email-capture-account-btn:hover {
+  background-color: var(--color-brand-hover);
+  border-color: var(--color-brand-hover);
+}
+
+.email-capture-dismiss {
+  display: block;
+  margin: 8px auto 0;
+  background: none;
+  border: none;
+  color: var(--color-gray-medium);
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.email-capture-blog-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.email-capture-blog-posts strong {
+  font-size: 14px;
+  color: var(--color-gray-dark);
+  margin-bottom: 4px;
+}
+
+.blog-post-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: box-shadow 0.15s;
+}
+
+.blog-post-card:hover {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.blog-post-title {
+  font-size: 14px;
+  color: var(--color-gray-dark);
+  font-weight: 500;
+}
+
+.blog-post-tag {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-gray-medium);
+  background: #f0f4f8;
+  padding: 2px 8px;
+  border-radius: 10px;
 }
 
 .account-status-row {
