@@ -160,7 +160,7 @@ interface InputPanelProps {
   onSaveLongitudinal: (bloodTestDate?: string) => void;
   isSavingLongitudinal: boolean;
   hasApiResponse: boolean;
-  formStage: 1 | 2 | 3 | 4;
+  formStage: 1 | 2 | 3;
   setShowUploadModal?: (show: boolean) => void;
   loginUrl?: string;
   activeSuggestionIds?: Set<string>;
@@ -216,21 +216,26 @@ export function InputPanel({
     const def = UNIT_DEFS[metric];
     return def.label.si !== def.label.conventional;
   };
-  const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthYear >= 1900 && inputs.birthMonth);
+  const prefillComplete = !!(inputs.sex && inputs.heightCm);
 
-  // Animated collapse: delay before collapsing so user sees their input registered
-  // Skip animation on mount if already collapsed (returning users) to avoid CLS
+  // Collapse only on return visits (data pre-loaded at mount). No auto-collapse on first visit.
+  const isReturningUser = useRef(prefillComplete);
+  const canCollapse = isReturningUser.current && prefillComplete;
+  const [collapsed, setCollapsed] = useState(isReturningUser.current);
   const [collapseAnimating, setCollapseAnimating] = useState(false);
-  const [collapsed, setCollapsed] = useState(prefillComplete);
   const hasMountedRef = useRef(false);
 
   useEffect(() => {
     if (!hasMountedRef.current) {
       hasMountedRef.current = true;
-      // On mount: skip animation — initial useState values are already correct
+      return; // Skip animation on mount — returning users start collapsed via useState
+    }
+    if (!canCollapse) {
+      setCollapsed(false);
+      setCollapseAnimating(false);
       return;
     }
-    if (prefillComplete && !prefillExpanded) {
+    if (!prefillExpanded) {
       setCollapseAnimating(true);
       const timer = setTimeout(() => {
         setCollapsed(true);
@@ -241,7 +246,7 @@ export function InputPanel({
       setCollapsed(false);
       setCollapseAnimating(false);
     }
-  }, [prefillComplete, prefillExpanded]);
+  }, [prefillExpanded, canCollapse]);
 
   // Feet/inches state for US height input
   const [heightFeet, setHeightFeet] = useState<string>('');
@@ -474,7 +479,7 @@ export function InputPanel({
     const effectiveHint = resolveHint(config);
     const r = range(field);
     const previousLabel = getPreviousLabel(field);
-    const needsAttention = field === 'weightKg' && formStage === 3 && inputs.weightKg === undefined;
+    const needsAttention = field === 'weightKg' && formStage === 2 && inputs.weightKg === undefined;
     // In expanded mode with previous data, show "Previous:" reference instead of placeholder
     const isExpandedWithData = isLoggedIn && hasPreviousValue(field) && (
       isBloodTest ? bloodTestsExpanded : expandedVitals.has(field)
@@ -690,18 +695,18 @@ export function InputPanel({
 
       <section className="health-section">
         <h3
-          className={`health-section-title${prefillComplete ? ' health-section-title--collapsible' : ''}`}
-          onClick={prefillComplete ? () => setPrefillExpanded(!prefillExpanded) : undefined}
+          className={`health-section-title${canCollapse ? ' health-section-title--collapsible' : ''}`}
+          onClick={canCollapse ? () => setPrefillExpanded(!prefillExpanded) : undefined}
         >
           Basic Information
-          {prefillComplete && (
+          {canCollapse && (
             <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
           )}
         </h3>
 
         <div className={`prefill-summary-wrapper${collapsed && !prefillExpanded ? ' visible' : ''}`}>
           <p className="prefill-summary" onClick={() => setPrefillExpanded(true)}>
-            {inputs.sex === 'male' ? 'Male' : 'Female'} · {formatHeightDisplay(inputs.heightCm!, unitSystem)} tall · Born {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(inputs.birthMonth || 1) - 1]} {inputs.birthYear}{inputs.birthYear && inputs.birthMonth ? ` (Age ${calculateAge(inputs.birthYear, inputs.birthMonth)})` : ''}
+            {inputs.sex === 'male' ? 'Male' : 'Female'} · {formatHeightDisplay(inputs.heightCm!, unitSystem)} tall{inputs.birthYear && inputs.birthMonth ? ` · Born ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][inputs.birthMonth - 1]} ${inputs.birthYear} (Age ${calculateAge(inputs.birthYear, inputs.birthMonth)})` : ''}
           </p>
         </div>
 
@@ -804,47 +809,6 @@ export function InputPanel({
               )}
             </div>
 
-            {formStage >= 2 && (
-              <div className="health-field-group stage-reveal">
-                <div className={`health-field${formStage === 2 && !inputs.birthMonth ? ' field-attention' : ''}`}>
-                  <label htmlFor="birthMonth">Birth Month</label>
-                  <select
-                    id="birthMonth"
-                    value={inputs.birthMonth || ''}
-                    onChange={(e) => updateField('birthMonth', parseNumber(e.target.value))}
-                  >
-                    <option value="">Month...</option>
-                    {[
-                      'January', 'February', 'March', 'April', 'May', 'June',
-                      'July', 'August', 'September', 'October', 'November', 'December'
-                    ].map((month, i) => (
-                      <option key={i + 1} value={i + 1}>{month}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {inputs.birthMonth && (
-                  <div className={`health-field stage-reveal${formStage === 2 && !inputs.birthYear ? ' field-attention' : ''}`}>
-                    <label htmlFor="birthYear">Birth Year</label>
-                    <input
-                      type="number"
-                      id="birthYear"
-                      onWheel={blurOnWheel}
-                      value={inputs.birthYear || ''}
-                      onChange={(e) => {
-                        const num = parseNumber(e.target.value);
-                        if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
-                        updateField('birthYear', num);
-                      }}
-                      onBlur={() => validateOnBlur('birthYear')}
-                      placeholder=""
-                      min="1900"
-                      max={new Date().getFullYear()}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -866,89 +830,133 @@ export function InputPanel({
           return renderLongitudinalField(cfg);
         })}
 
-        {formStage >= 4 && (
-          hasBpPreviousData && !bpExpanded && bpData ? (
-            <div className="stage-reveal">
-              {renderCollapsedBp(bpData)}
-            </div>
-          ) : (
-            <div className="health-field stage-reveal">
-              <label>Blood Pressure (mmHg)
-                <span className="bp-info-tooltip-wrap" tabIndex={0}>
-                  <span className="bp-info-icon" aria-label="How to measure blood pressure">&#9432;</span>
-                  <span className="bp-info-tooltip">
-                    Use a home blood pressure monitor or ask your doctor at your next visit.{' '}
-                    <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/monitoring-your-blood-pressure-at-home" target="_blank" rel="noopener noreferrer">Learn more &rarr;</a>
-                  </span>
+        {hasBpPreviousData && !bpExpanded && bpData ? (
+          <div>
+            {renderCollapsedBp(bpData)}
+          </div>
+        ) : (
+          <div className="health-field">
+            <label>Blood Pressure (mmHg)
+              <span className="bp-info-tooltip-wrap" tabIndex={0}>
+                <span className="bp-info-icon" aria-label="How to measure blood pressure">&#9432;</span>
+                <span className="bp-info-tooltip">
+                  Use a home blood pressure monitor or ask your doctor at your next visit.{' '}
+                  <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/monitoring-your-blood-pressure-at-home" target="_blank" rel="noopener noreferrer">Learn more &rarr;</a>
                 </span>
-              </label>
-              {bpExpanded && bpLabel && (
-                <span className="previous-reference">Previous: {bpLabel}</span>
-              )}
-              <div className="longitudinal-input-row">
-                <div className="bp-fieldset">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    id="systolicBp"
-                    onWheel={blurOnWheel}
-                    value={inputs.systolicBp ?? ''}
-                    onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
-                    onBlur={() => validateOnBlur('systolicBp')}
-                    placeholder={bpExpanded ? '' : getPreviousPlaceholder('systolicBp')}
-                    min={60}
-                    max={250}
-                    className={errors.systolicBp ? 'error' : ''}
-                  />
-                  <span className="bp-separator">/</span>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    id="diastolicBp"
-                    onWheel={blurOnWheel}
-                    value={inputs.diastolicBp ?? ''}
-                    onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
-                    onBlur={() => validateOnBlur('diastolicBp')}
-                    placeholder={bpExpanded ? '' : getPreviousPlaceholder('diastolicBp')}
-                    min={40}
-                    max={150}
-                    className={errors.diastolicBp ? 'error' : ''}
-                  />
-                </div>
-                {isLoggedIn && hasApiResponse && hasBpValue && (
-                  <button
-                    className="btn-primary save-inline-btn"
-                    onClick={() => onSaveLongitudinal()}
-                    disabled={isSavingLongitudinal}
-                    title="Save new values"
-                  >
-                    {isSavingLongitudinal ? '...' : 'Save'}
-                  </button>
-                )}
+              </span>
+            </label>
+            {bpExpanded && bpLabel && (
+              <span className="previous-reference">Previous: {bpLabel}</span>
+            )}
+            <div className="longitudinal-input-row">
+              <div className="bp-fieldset">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  id="systolicBp"
+                  onWheel={blurOnWheel}
+                  value={inputs.systolicBp ?? ''}
+                  onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
+                  onBlur={() => validateOnBlur('systolicBp')}
+                  placeholder={bpExpanded ? '' : getPreviousPlaceholder('systolicBp')}
+                  min={60}
+                  max={250}
+                  className={errors.systolicBp ? 'error' : ''}
+                />
+                <span className="bp-separator">/</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  id="diastolicBp"
+                  onWheel={blurOnWheel}
+                  value={inputs.diastolicBp ?? ''}
+                  onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
+                  onBlur={() => validateOnBlur('diastolicBp')}
+                  placeholder={bpExpanded ? '' : getPreviousPlaceholder('diastolicBp')}
+                  min={40}
+                  max={150}
+                  className={errors.diastolicBp ? 'error' : ''}
+                />
               </div>
-              {errors.systolicBp && (
-                <span className="error-message">{errors.systolicBp}</span>
+              {isLoggedIn && hasApiResponse && hasBpValue && (
+                <button
+                  className="btn-primary save-inline-btn"
+                  onClick={() => onSaveLongitudinal()}
+                  disabled={isSavingLongitudinal}
+                  title="Save new values"
+                >
+                  {isSavingLongitudinal ? '...' : 'Save'}
+                </button>
               )}
-              {errors.diastolicBp && (
-                <span className="error-message">{errors.diastolicBp}</span>
-              )}
-              <div className="field-meta">
-                <span className="field-hint">{getBpTargetText()}</span>
-                {!bpExpanded && bpLabel && (
-                  <a
-                    className="previous-value"
-                    href={`/pages/health-history?metric=systolic_bp`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >{bpLabel}</a>
-                )}
-              </div>
             </div>
-          )
+            {errors.systolicBp && (
+              <span className="error-message">{errors.systolicBp}</span>
+            )}
+            {errors.diastolicBp && (
+              <span className="error-message">{errors.diastolicBp}</span>
+            )}
+            <div className="field-meta">
+              <span className="field-hint">{getBpTargetText()}</span>
+              {!bpExpanded && bpLabel && (
+                <a
+                  className="previous-value"
+                  href={`/pages/health-history?metric=systolic_bp`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >{bpLabel}</a>
+              )}
+            </div>
+          </div>
         )}
       </section>
     );
   };
+
+  const renderBirthInfo = () => (
+    <div className="health-field-group">
+      <div className="health-field">
+        <label htmlFor="birthMonth">Birth Month
+          <span className="bp-info-tooltip-wrap" tabIndex={0}>
+            <span className="bp-info-icon" aria-label="Why we ask for your birth date">&#9432;</span>
+            <span className="bp-info-tooltip">
+              Used to calculate age-based screening suggestions (cancer, bone density) and kidney function.
+            </span>
+          </span>
+        </label>
+        <select
+          id="birthMonth"
+          value={inputs.birthMonth || ''}
+          onChange={(e) => updateField('birthMonth', parseNumber(e.target.value))}
+        >
+          <option value="">Month...</option>
+          {ALL_MONTHS.map((m, i) => (
+            <option key={i + 1} value={i + 1}>{m.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {inputs.birthMonth && (
+        <div className="health-field stage-reveal">
+          <label htmlFor="birthYear">Birth Year</label>
+          <input
+            type="number"
+            id="birthYear"
+            onWheel={blurOnWheel}
+            value={inputs.birthYear || ''}
+            onChange={(e) => {
+              const num = parseNumber(e.target.value);
+              if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
+              updateField('birthYear', num);
+            }}
+            onBlur={() => validateOnBlur('birthYear')}
+            placeholder=""
+            min="1900"
+            max={new Date().getFullYear()}
+          />
+        </div>
+      )}
+    </div>
+  );
 
   const renderBloodTests = () => {
     const isCollapsed = hasAnyBloodTestData && !bloodTestsExpanded;
@@ -2270,23 +2278,28 @@ export function InputPanel({
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
   return (
     <div className="health-input-panel">
-      {/* Card 1: Units + Basic Info + Vitals (stage 3+) */}
+      {/* Card 1: Units + Basic Info + Vitals + Birth Info (stage 2+) */}
       <div className="section-card">
         {renderProfile()}
-        {formStage >= 3 && <div className="stage-reveal">{renderVitals()}</div>}
+        {formStage >= 2 && <div className="stage-reveal">{renderVitals()}</div>}
+        {formStage >= 2 && (
+          <div className={`prefill-fields-wrapper${collapseAnimating && !prefillExpanded ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
+            <div>{renderBirthInfo()}</div>
+          </div>
+        )}
       </div>
 
-      {/* Card 2: Blood Tests (stage 4+) */}
-      {formStage >= 4 && (
+      {/* Card 2: Blood Tests (stage 3+) */}
+      {formStage >= 3 && (
         <div className="section-card stage-reveal">
           {renderBloodTests()}
         </div>
       )}
 
-      {formStage >= 4 && renderMedications()}
-      {formStage >= 4 && renderScreening()}
-      {formStage >= 4 && renderBoneDensity()}
-      {formStage >= 4 && isLoggedIn && renderSupplements()}
+      {formStage >= 3 && renderMedications()}
+      {formStage >= 3 && renderScreening()}
+      {formStage >= 3 && renderBoneDensity()}
+      {formStage >= 3 && isLoggedIn && renderSupplements()}
       {healthDocuments && healthDocuments.length > 0 && (
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}

@@ -510,7 +510,7 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
   }
 
   return (
-    <div className={`email-capture no-print${formStage === 4 ? ' field-attention' : ''}`}>
+    <div className={`email-capture no-print${formStage === 3 ? ' field-attention' : ''}`}>
       <p className="email-guest-helper">{helperText}</p>
       <div className="email-capture-row">
         <input

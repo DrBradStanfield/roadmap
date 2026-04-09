@@ -655,16 +655,15 @@ Source: `suggestions.ts`
 
 Source: `mappings.ts` -> `computeFormStage()`
 
-New users see fields revealed in 4 stages. Returning users with data skip to stage 4.
+New users see fields revealed in 3 stages. Returning users with data skip to stage 3.
 
 | Stage | Gate Condition | Fields Visible | Attention Glow |
 |-------|---------------|----------------|----------------|
 | 1 | Always | Units, Sex, Height | Sex |
-| 2 | `sex !== undefined AND heightCm !== undefined` | Birth Month, Birth Year | Birth Month |
-| 3 | `birthMonth !== undefined AND birthYear !== undefined AND birthYear >= 1900` | Weight, Waist | Weight |
-| 4 | `weightKg !== undefined` | BP, Blood Tests, Medications, Screening | None |
+| 2 | `sex !== undefined AND heightCm !== undefined` | Weight, Waist, BP, Birth Month/Year | Weight |
+| 3 | `weightKg !== undefined` | Blood Tests, Medications, Screening, Bone Density, Supplements | None (Email for guests) |
 
-Logic checks from stage 4 down (short-circuit), so returning users skip to full form.
+Logic checks from stage 3 down (short-circuit), so returning users skip to full form.
 
 ### Field Categories
 

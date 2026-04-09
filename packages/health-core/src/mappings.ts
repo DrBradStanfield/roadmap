@@ -462,18 +462,16 @@ export function diffProfileFields(
 }
 
 /**
- * Compute the progressive disclosure stage (1–4) based on which inputs are filled.
+ * Compute the progressive disclosure stage (1–3) based on which inputs are filled.
  *
- * Stage 1: Always (sex + height shown)
- * Stage 2: sex AND heightCm filled (birth month/year shown)
- * Stage 3: birthMonth AND birthYear filled (weight + waist shown)
- * Stage 4: weightKg filled (BP, blood tests, medications, screening shown)
+ * Stage 1: Always (units, sex, height shown)
+ * Stage 2: sex AND heightCm filled (weight, waist, BP, birth month/year shown)
+ * Stage 3: weightKg filled (blood tests, medications, screening shown)
  *
- * Checks from stage 4 downward so returning users with data skip to full form.
+ * Checks from stage 3 downward so returning users with data skip to full form.
  */
-export function computeFormStage(inputs: Partial<HealthInputs>): 1 | 2 | 3 | 4 {
-  if (inputs.weightKg !== undefined) return 4;
-  if (inputs.birthMonth !== undefined && inputs.birthYear !== undefined && inputs.birthYear >= 1900) return 3;
+export function computeFormStage(inputs: Partial<HealthInputs>): 1 | 2 | 3 {
+  if (inputs.weightKg !== undefined) return 3;
   if (inputs.sex !== undefined && inputs.heightCm !== undefined) return 2;
   return 1;
 }

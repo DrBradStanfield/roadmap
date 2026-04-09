@@ -614,40 +614,25 @@ describe('computeFormStage', () => {
     expect(computeFormStage({ sex: 'female', heightCm: 165 })).toBe(2);
   });
 
-  it('returns 2 when sex + height set but only birthMonth (no birthYear)', () => {
-    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6 })).toBe(2);
+  it('returns 2 when sex + height + birth info set but no weight (birth no longer advances stage)', () => {
+    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 1985 })).toBe(2);
   });
 
-  it('returns 3 when birthMonth AND birthYear are set', () => {
-    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 1985 })).toBe(3);
-  });
-
-  it('returns 4 when weightKg is set', () => {
+  it('returns 3 when weightKg is set', () => {
     expect(computeFormStage({
       sex: 'female', heightCm: 160, birthMonth: 3, birthYear: 1990, weightKg: 65,
-    })).toBe(4);
+    })).toBe(3);
   });
 
-  it('returns 4 for returning user with all data', () => {
+  it('returns 3 for returning user with all data', () => {
     expect(computeFormStage({
       sex: 'male', heightCm: 180, birthMonth: 1, birthYear: 1980,
       weightKg: 85, waistCm: 90, hba1c: 39, ldlC: 2.5,
-    })).toBe(4);
+    })).toBe(3);
   });
 
-  it('returns 4 even if intermediate fields missing (short-circuit)', () => {
-    expect(computeFormStage({ weightKg: 70 })).toBe(4);
-  });
-
-  it('returns 3 even if sex/height missing (short-circuit)', () => {
-    expect(computeFormStage({ birthMonth: 5, birthYear: 1990 })).toBe(3);
-  });
-
-  it('returns 2 when birthYear is partial (< 1900) — prevents premature collapse', () => {
-    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 1 })).toBe(2);
-    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 19 })).toBe(2);
-    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 198 })).toBe(2);
-    expect(computeFormStage({ sex: 'male', heightCm: 175, birthMonth: 6, birthYear: 1980 })).toBe(3);
+  it('returns 3 even if intermediate fields missing (short-circuit)', () => {
+    expect(computeFormStage({ weightKg: 70 })).toBe(3);
   });
 });
 

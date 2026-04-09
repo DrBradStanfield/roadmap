@@ -90,7 +90,21 @@ function getAuthState(): AuthState {
 }
 
 export function HealthTool() {
-  const [inputs, setInputs] = useState<Partial<HealthInputs>>({});
+  const [inputs, setInputs] = useState<Partial<HealthInputs>>(() => {
+    // Pre-load prefill fields from localStorage so InputPanel's first render
+    // correctly detects returning users (for Basic Information collapse).
+    if (!getAuthState().isLoggedIn && hasAuthenticatedFlag()) return {};
+    const cached = loadFromLocalStorage();
+    if (!cached || Object.keys(cached.inputs).length === 0) return {};
+    const prefill: Partial<HealthInputs> = {};
+    for (const field of PREFILL_FIELDS) {
+      if (cached.inputs[field] !== undefined) {
+        (prefill as any)[field] = cached.inputs[field];
+      }
+    }
+    if (cached.inputs.unitSystem) prefill.unitSystem = cached.inputs.unitSystem;
+    return prefill;
+  });
   const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>([]);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
@@ -391,19 +405,19 @@ export function HealthTool() {
   }, [inputs, previousMeasurements, authState.isLoggedIn]);
 
   // Progressive disclosure: compute which stage of the form to show.
-  // Override to stage 4 if user has saved blood test data (e.g. from lab import).
+  // Override to stage 3 if user has saved blood test data (e.g. from lab import).
   const formStage = useMemo(() => {
     const stage = computeFormStage(effectiveInputs);
-    if (stage < 4 && previousMeasurements.some(m => BLOOD_TEST_METRICS.includes(m.metricType))) {
-      return 4 as const;
+    if (stage < 3 && previousMeasurements.some(m => BLOOD_TEST_METRICS.includes(m.metricType))) {
+      return 3 as const;
     }
     return stage;
   }, [effectiveInputs, previousMeasurements]);
 
-  // Pre-fetch chat conversations in background when chat becomes visible (stage 4)
+  // Pre-fetch chat conversations in background when chat becomes visible (stage 3)
   // So messages are ready instantly when the user clicks the chat bubble
   useEffect(() => {
-    if (formStage < 4 || chatPrefetch) return;
+    if (formStage < 3 || chatPrefetch) return;
     listConversations().then(async (result) => {
       if (!result) return;
       let msgs: ChatMessage[] = [];
@@ -890,7 +904,7 @@ export function HealthTool() {
               <div className="health-tool-right">
                 <ResultsPanel {...resultsPanelProps} />
               </div>
-              {formStage >= 4 && (
+              {formStage >= 3 && (
                 <ChatSection
                   isLoggedIn={authState.isLoggedIn}
                   loginUrl={authState.loginUrl}
@@ -900,7 +914,7 @@ export function HealthTool() {
               )}
             </SwiperSlide>
           </Swiper>
-          {formStage >= 4 && activeTab === 'plan' && !floatingChatOpen && (
+          {formStage >= 3 && activeTab === 'plan' && !floatingChatOpen && (
             <button
               className="chat-fab no-print"
               onClick={() => setFloatingChatOpen(true)}
@@ -958,7 +972,7 @@ export function HealthTool() {
       )}
 
       {/* Floating chat FAB — desktop only (mobile uses tab) */}
-      {!isMobile && formStage >= 4 && !floatingChatOpen && (
+      {!isMobile && formStage >= 3 && !floatingChatOpen && (
         <button
           className="chat-fab no-print"
           onClick={() => setFloatingChatOpen(true)}
