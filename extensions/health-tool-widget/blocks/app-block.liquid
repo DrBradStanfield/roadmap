@@ -29,14 +29,29 @@
 {% endunless %}
 
 <!-- Hero: outside React mount point, never replaced by JS -->
-{% assign ab = shop.metafields.health_roadmap.ab_config.value %}
+{% assign ab_config = shop.metafields.health_roadmap.ab_config.value %}
+{% assign heading_test = nil %}
+{% assign subheading_test = nil %}
+{% assign email_helper_test = nil %}
+{% if ab_config.testId %}
+  {% comment %}Legacy single-test format{% endcomment %}
+  {% if ab_config.target == 'heading' %}{% assign heading_test = ab_config %}{% endif %}
+  {% if ab_config.target == 'subheading' %}{% assign subheading_test = ab_config %}{% endif %}
+{% else %}
+  {% comment %}New array format{% endcomment %}
+  {% for test in ab_config %}
+    {% if test.target == 'heading' %}{% assign heading_test = test %}{% endif %}
+    {% if test.target == 'subheading' %}{% assign subheading_test = test %}{% endif %}
+    {% if test.target == 'email-guest-helper' %}{% assign email_helper_test = test %}{% endif %}
+  {% endfor %}
+{% endif %}
 {% assign default_heading = "Get Your Personalized Health Plan" %}
 {% assign default_subheading = "Enter your health information below to receive personalized suggestions to discuss with your healthcare provider. The more information you provide, the more tailored your suggestions will be." %}
 <div class="hero-section">
   <div class="hero-text">
-    {% if ab and ab.target == 'heading' %}
-      {% for variant in ab.variants %}
-        <h1 data-variant="{{ variant.id }}" data-test="{{ ab.testId }}"
+    {% if heading_test %}
+      {% for variant in heading_test.variants %}
+        <h1 data-variant="{{ variant.id }}" data-test="{{ heading_test.testId }}"
             {% unless forloop.first %}style="display:none"{% endunless %}>
           {{ variant.value }}
         </h1>
@@ -44,9 +59,9 @@
     {% else %}
       <h1>{{ default_heading }}</h1>
     {% endif %}
-    {% if ab and ab.target == 'subheading' %}
-      {% for variant in ab.variants %}
-        <p data-variant="{{ variant.id }}" data-test="{{ ab.testId }}"
+    {% if subheading_test %}
+      {% for variant in subheading_test.variants %}
+        <p data-variant="{{ variant.id }}" data-test="{{ subheading_test.testId }}"
            {% unless forloop.first %}style="display:none"{% endunless %}>
           {{ variant.value }}
         </p>
@@ -71,22 +86,59 @@
   </div>
 </div>
 
+{% if email_helper_test %}
+  <div style="display:none" aria-hidden="true">
+    {% for variant in email_helper_test.variants %}
+      <span class="ab-email-helper" data-variant="{{ variant.id }}" data-test="{{ email_helper_test.testId }}">{{ variant.value }}</span>
+    {% endfor %}
+  </div>
+{% endif %}
+
 <script>
 (function() {
   var KEY = 'hr_ab';
   var els = document.querySelectorAll('[data-variant]');
   if (!els.length) return;
-  var testId = els[0].dataset.test;
-  var ids = [];
-  els.forEach(function(e) { if (ids.indexOf(e.dataset.variant) < 0) ids.push(e.dataset.variant); });
-  var stored = null;
-  try { stored = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
-  var v = (stored && stored.t === testId) ? stored.v : null;
-  if (!v || ids.indexOf(v) < 0) {
-    v = ids[Math.floor(Math.random() * ids.length)];
-    localStorage.setItem(KEY, JSON.stringify({ t: testId, v: v }));
+
+  // Group by test ID
+  var groups = {};
+  els.forEach(function(e) {
+    var tid = e.dataset.test;
+    if (!groups[tid]) groups[tid] = { ids: [], els: [] };
+    groups[tid].els.push(e);
+    if (groups[tid].ids.indexOf(e.dataset.variant) < 0) groups[tid].ids.push(e.dataset.variant);
+  });
+
+  // Load stored assignments (handle old {t,v} and new {tests:{}} format)
+  // Format shared with getABAssignments() in widget-src/src/lib/api.ts
+  var raw = {};
+  try { raw = JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e) {}
+  var tests = {};
+  if (raw.tests) {
+    tests = raw.tests;
+  } else if (raw.t && raw.v) {
+    tests[raw.t] = raw.v;
   }
-  els.forEach(function(e) { e.style.display = e.dataset.variant === v ? '' : 'none'; });
+
+  // Assign per test group
+  var activeIds = {};
+  Object.keys(groups).forEach(function(tid) {
+    activeIds[tid] = 1;
+    var g = groups[tid];
+    var v = tests[tid];
+    if (!v || g.ids.indexOf(v) < 0) {
+      v = g.ids[Math.floor(Math.random() * g.ids.length)];
+    }
+    tests[tid] = v;
+    g.els.forEach(function(e) { e.style.display = e.dataset.variant === v ? '' : 'none'; });
+  });
+
+  // Clean up stale assignments (tests no longer in DOM)
+  Object.keys(tests).forEach(function(tid) {
+    if (!activeIds[tid]) delete tests[tid];
+  });
+
+  localStorage.setItem(KEY, JSON.stringify({ tests: tests }));
 })();
 </script>
 

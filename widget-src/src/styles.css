@@ -70,6 +70,7 @@ input[type="number"] {
   margin: 0 auto;
   padding: 0 0 24px;
   color: var(--color-text);
+  isolation: isolate;
 }
 
 /* Hero Section — outside React, rendered by Liquid */
@@ -1089,6 +1090,13 @@ input[type="number"] {
 }
 
 /* Email capture for guest users */
+
+.email-guest-helper {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
 
 .email-capture-row {
   display: flex;

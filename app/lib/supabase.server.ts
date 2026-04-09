@@ -2130,7 +2130,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 // ---------------------------------------------------------------------------
 
 export type ABTestStatus = 'draft' | 'active' | 'paused' | 'completed';
-export type ABTestTarget = 'heading' | 'subheading';
+export type ABTestTarget = 'heading' | 'subheading' | 'email-guest-helper';
 
 export interface ABVariant {
   id: string;
@@ -2161,18 +2161,18 @@ export async function getABTests(): Promise<ABTest[]> {
   return data || [];
 }
 
-export async function getActiveABTest(): Promise<ABTest | null> {
-  if (!supabaseAdmin) return null;
+export async function getActiveABTests(): Promise<ABTest[]> {
+  if (!supabaseAdmin) return [];
   const { data, error } = await supabaseAdmin
     .from('ab_tests')
     .select('*')
     .eq('status', 'active')
-    .maybeSingle();
+    .order('created_at', { ascending: false });
   if (error) {
-    console.error('Failed to fetch active AB test:', error.message);
-    return null;
+    console.error('Failed to fetch active AB tests:', error.message);
+    return [];
   }
-  return data;
+  return data || [];
 }
 
 export async function getABTestById(testId: string): Promise<ABTest | null> {

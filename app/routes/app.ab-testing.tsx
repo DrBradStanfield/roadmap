@@ -20,7 +20,7 @@ import {
 import { authenticate } from "../shopify.server";
 import {
   getABTests,
-  getActiveABTest,
+  getActiveABTests,
   getABTestById,
   createABTest,
   updateABTestStatus,
@@ -41,7 +41,7 @@ const abVariantSchema = z.object({
 
 const createTestSchema = z.object({
   name: z.string().min(1).max(200),
-  target: z.enum(['heading', 'subheading']),
+  target: z.enum(['heading', 'subheading', 'email-guest-helper']),
   variants: z.array(abVariantSchema).min(2).max(5),
 });
 
@@ -60,7 +60,7 @@ function handleGraphQLError(e: any, operation: string): { error: string } {
   return { error: typeof details === 'string' ? details : JSON.stringify(details) };
 }
 
-async function writeABMetafield(admin: any, shopId: string, test: ABTest): Promise<{ error: string | null }> {
+async function writeABMetafield(admin: any, shopId: string, tests: ABTest[]): Promise<{ error: string | null }> {
   try {
     const result = await admin.graphql(`
       mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
@@ -76,11 +76,11 @@ async function writeABMetafield(admin: any, shopId: string, test: ABTest): Promi
           key: "ab_config",
           ownerId: shopId,
           type: "json",
-          value: JSON.stringify({
-            testId: test.id,
-            target: test.target,
-            variants: test.variants,
-          }),
+          value: JSON.stringify(tests.map(t => ({
+            testId: t.id,
+            target: t.target,
+            variants: t.variants,
+          }))),
         }],
       },
     });
@@ -170,20 +170,24 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const testId = formData.get('testId') as string;
       if (!testId) return json({ success: false, error: 'Missing testId' });
 
-      // Parallel: fetch test data, active test, and shop ID simultaneously
-      const [test, active, shopId] = await Promise.all([
+      // Parallel: fetch test data, active tests, and shop ID simultaneously
+      const [test, activeTests, shopId] = await Promise.all([
         getABTestById(testId),
-        getActiveABTest(),
+        getActiveABTests(),
         getShopId(admin),
       ]);
       if (!test) return json({ success: false, error: 'Test not found' });
 
-      if (active && active.id !== testId) {
-        await updateABTestStatus(active.id, 'paused');
+      // Guard: only one active test per target element
+      const conflict = activeTests.find(t => t.target === test.target && t.id !== testId);
+      if (conflict) {
+        return json({ success: false, error: `"${conflict.name}" already targets ${test.target}. Pause it first.` });
       }
-      await updateABTestStatus(testId, 'active');
 
-      const metafieldResult = await writeABMetafield(admin, shopId, test);
+      await updateABTestStatus(testId, 'active');
+      // Re-query to get authoritative list, then sync metafield
+      const allActive = await getActiveABTests();
+      const metafieldResult = await writeABMetafield(admin, shopId, allActive);
       if (metafieldResult.error) {
         return json({ success: true, metafieldError: metafieldResult.error });
       }
@@ -199,8 +203,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         updateABTestStatus(testId, status),
         getShopId(admin),
       ]);
-      const deleteResult = await deleteABMetafield(admin, shopId);
-      return json({ success: true, metafieldError: deleteResult.error });
+      // Sync metafield with remaining active tests
+      const allActive = await getActiveABTests();
+      const metafieldResult = allActive.length
+        ? await writeABMetafield(admin, shopId, allActive)
+        : await deleteABMetafield(admin, shopId);
+      return json({ success: true, metafieldError: metafieldResult.error });
     }
 
     default:
@@ -325,7 +333,8 @@ export default function ABTesting() {
     );
   }
 
-  const targetLabel = testTarget === 'heading' ? 'Heading' : 'Subheading';
+  const targetLabels: Record<ABTestTarget, string> = { heading: 'Heading', subheading: 'Subheading', 'email-guest-helper': 'Email Helper Text' };
+  const targetLabel = targetLabels[testTarget];
 
   const handleCreate = () => {
     const variants: ABVariant[] = [
@@ -368,13 +377,14 @@ export default function ABTesting() {
               <BlockStack gap="300">
                 <Divider />
                 <TextField label="Test Name" value={testName} onChange={setTestName} autoComplete="off" />
-                <InlineStack gap="200" blockAlign="center">
+                <InlineStack gap="200" blockAlign="center" wrap>
                   <Text as="span" variant="bodySm">Element to test:</Text>
                   <Button size="slim" variant={testTarget === 'heading' ? 'primary' : undefined} onClick={() => setTestTarget('heading')}>Heading</Button>
                   <Button size="slim" variant={testTarget === 'subheading' ? 'primary' : undefined} onClick={() => setTestTarget('subheading')}>Subheading</Button>
+                  <Button size="slim" variant={testTarget === 'email-guest-helper' ? 'primary' : undefined} onClick={() => setTestTarget('email-guest-helper')}>Email Helper</Button>
                 </InlineStack>
-                <TextField label={`Variant A ${targetLabel}`} value={variantAValue} onChange={setVariantAValue} autoComplete="off" multiline={testTarget === 'subheading' ? 2 : undefined} />
-                <TextField label={`Variant B ${targetLabel}`} value={variantBValue} onChange={setVariantBValue} autoComplete="off" multiline={testTarget === 'subheading' ? 2 : undefined} />
+                <TextField label={`Variant A ${targetLabel}`} value={variantAValue} onChange={setVariantAValue} autoComplete="off" multiline={testTarget !== 'heading' ? 2 : undefined} />
+                <TextField label={`Variant B ${targetLabel}`} value={variantBValue} onChange={setVariantBValue} autoComplete="off" multiline={testTarget !== 'heading' ? 2 : undefined} />
                 <Button variant="primary" onClick={handleCreate} disabled={!testName || !variantAValue || !variantBValue || isSubmitting}>
                   Create Test
                 </Button>

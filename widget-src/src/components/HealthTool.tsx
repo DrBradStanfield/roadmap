@@ -651,7 +651,7 @@ export function HealthTool() {
     if (swiperRef.current) {
       swiperRef.current.updateAutoHeight();
     }
-  }, [formStage]);
+  }, [formStage, supplements, healthDocuments]);
 
   const handleReminderPreferenceChange = useCallback(async (category: string, enabled: boolean) => {
     // Optimistic update

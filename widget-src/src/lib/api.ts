@@ -994,33 +994,43 @@ export function getVisitorId(): string {
   return id;
 }
 
-// Key format shared with inline script in app-block.liquid: { t: testId, v: variantId }
-export function getABAssignment(): { testId: string; variantId: string } | null {
+// Key format shared with inline script in app-block.liquid: { tests: { testId: variantId, ... } }
+// Backwards compat: also reads old single-test format { t: testId, v: variantId }
+export function getABAssignments(): Record<string, string> {
   try {
-    const stored = JSON.parse(localStorage.getItem('hr_ab') || '');
-    if (stored?.t && stored?.v) return { testId: stored.t, variantId: stored.v };
+    const raw = JSON.parse(localStorage.getItem('hr_ab') || '{}');
+    if (raw.tests) return raw.tests;
+    if (raw.t && raw.v) return { [raw.t]: raw.v };
   } catch { /* no assignment */ }
-  return null;
+  return {};
+}
+
+export function getABAssignment(): { testId: string; variantId: string } | null {
+  const all = getABAssignments();
+  const entry = Object.entries(all)[0];
+  return entry ? { testId: entry[0], variantId: entry[1] } : null;
 }
 
 function trackABEvent(eventType: 'impression' | 'conversion'): void {
-  const ab = getABAssignment();
-  if (!ab) return;
-  // Skip redundant impression calls — server deduplicates, but this avoids the network roundtrip
-  if (eventType === 'impression') {
-    const sentKey = `hr_ab_imp_${ab.testId}`;
-    if (localStorage.getItem(sentKey)) return;
-    localStorage.setItem(sentKey, '1');
+  const assignments = getABAssignments();
+  const visitorId = getVisitorId();
+  for (const [testId, variantId] of Object.entries(assignments)) {
+    // Skip redundant impression calls — server deduplicates, but this avoids the network roundtrip
+    if (eventType === 'impression') {
+      const sentKey = `hr_ab_imp_${testId}`;
+      if (localStorage.getItem(sentKey)) continue;
+      localStorage.setItem(sentKey, '1');
+    }
+    apiCall(
+      () => fetch(`${PROXY_PATH}/api/ab`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [eventType]: { testId, variantId, visitorId } }),
+      }),
+      `AB ${eventType} tracking failed`,
+      null,
+    );
   }
-  apiCall(
-    () => fetch(`${PROXY_PATH}/api/ab`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ [eventType]: { testId: ab.testId, variantId: ab.variantId, visitorId: getVisitorId() } }),
-    }),
-    `AB ${eventType} tracking failed`,
-    null,
-  );
 }
 
 export function trackABImpression(): void { trackABEvent('impression'); }

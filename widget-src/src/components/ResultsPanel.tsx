@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import type { HealthResults, Suggestion } from '@roadmap/health-core';
 import {
   type UnitSystem,
@@ -22,7 +22,7 @@ import {
   getProteinEvidence,
   getBmiEvidence,
 } from '@roadmap/health-core';
-import { type ApiReminderPreference, sendReportEmail, getReportHtml, sendGuestReport, trackABConversion } from '../lib/api';
+import { type ApiReminderPreference, sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments } from '../lib/api';
 import { FeedbackForm } from './FeedbackForm';
 import { ChatSection } from './ChatSection';
 // @ts-ignore — JSON import for blog post cards
@@ -59,8 +59,8 @@ interface ResultsPanelProps {
   onInlineChatExpand?: () => void;
   guestReportData?: {
     inputs: Record<string, unknown>;
-    medications?: Record<string, unknown>;
-    screenings?: Record<string, unknown>;
+    medications?: Record<string, unknown>[];
+    screenings?: Record<string, unknown>[];
   };
   formStage?: number;
 }
@@ -412,14 +412,26 @@ type GuestEmailState = 'idle' | 'sending' | 'prompt-account' | 'blog-posts';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const DEFAULT_EMAIL_HELPER = 'Get your personalized plan emailed to you, with detailed explanations and clinical references for every suggestion.';
+
+function getEmailHelperText(): string {
+  const assignments = getABAssignments();
+  for (const [testId, variantId] of Object.entries(assignments)) {
+    const el = document.querySelector(`.ab-email-helper[data-variant="${variantId}"][data-test="${testId}"]`);
+    if (el?.textContent) return el.textContent;
+  }
+  return DEFAULT_EMAIL_HELPER;
+}
+
 function GuestEmailCapture({ guestReportData, loginUrl, formStage }: {
-  guestReportData: { inputs: Record<string, unknown>; medications?: Record<string, unknown>; screenings?: Record<string, unknown> };
+  guestReportData: { inputs: Record<string, unknown>; medications?: Record<string, unknown>[]; screenings?: Record<string, unknown>[] };
   loginUrl?: string;
   formStage?: number;
 }) {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [state, setState] = useState<GuestEmailState>('idle');
+  const helperText = useMemo(() => getEmailHelperText(), []);
 
   const handleSubmit = async () => {
     const trimmed = email.trim();
@@ -480,6 +492,7 @@ function GuestEmailCapture({ guestReportData, loginUrl, formStage }: {
 
   return (
     <div className={`email-capture no-print${formStage === 4 ? ' field-attention' : ''}`}>
+      <p className="email-guest-helper">{helperText}</p>
       <div className="email-capture-row">
         <input
           type="email"
