@@ -1915,6 +1915,7 @@ input[type="number"] {
 .feedback-section {
   text-align: center;
   position: relative;
+  margin-top: 10px;
 }
 
 .feedback-links {
@@ -2899,6 +2900,27 @@ input[type="number"] {
   outline: none;
   border-color: var(--color-brand);
   box-shadow: 0 0 0 3px rgba(0, 163, 139, 0.1);
+}
+
+.chat-collapsed-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.chat-feedback-link {
+  background: none;
+  border: none;
+  color: var(--color-gray-light);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.chat-feedback-link:hover {
+  color: var(--color-brand);
+  text-decoration: underline;
 }
 
 .chat-icon {

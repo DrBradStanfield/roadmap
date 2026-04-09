@@ -18,6 +18,7 @@ import {
   type ChatPack,
 } from '../lib/chat-api';
 import { renderMarkdown } from '../lib/markdown';
+import { FeedbackForm } from './FeedbackForm';
 
 export interface ChatPrefetchData {
   conversations: ChatConversation[];
@@ -69,6 +70,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [dailyRemaining, setDailyRemaining] = useState<number | null>(prefetchedData?.dailyRemaining ?? null);
   const [messageCredits, setMessageCredits] = useState<number>(prefetchedData?.messageCredits ?? 0);
   const [creditPacks, setCreditPacks] = useState<ChatPack[]>([]);
@@ -227,6 +229,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
       setShowDisclosure(true);
     }
     setIsExpanded(true);
+    setShowFeedback(false);
     loadConversationsIfNeeded();
   }, [isLoggedIn, onExpand, loadConversationsIfNeeded]);
 
@@ -269,10 +272,24 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
   if (!isExpanded) {
     return (
       <div className="chat-section no-print">
-        <div className="chat-collapsed" onClick={handleExpand} role="button" tabIndex={0}>
-          <span className="chat-icon">💬</span>
-          <span className="chat-placeholder">Ask about your health suggestions...</span>
+        <div className="chat-collapsed-row">
+          <div className="chat-collapsed" onClick={handleExpand} role="button" tabIndex={0}>
+            <span className="chat-icon">💬</span>
+            <span className="chat-placeholder">Ask about your health suggestions</span>
+          </div>
+          {!isLoggedIn && (
+            <button
+              type="button"
+              className="chat-feedback-link"
+              onClick={() => setShowFeedback(f => !f)}
+            >
+              Send feedback
+            </button>
+          )}
         </div>
+        {showFeedback && (
+          <FeedbackForm initialExpanded showSourceLink={false} onClose={() => setShowFeedback(false)} />
+        )}
       </div>
     );
   }
@@ -385,7 +402,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
             value={inputText}
             onChange={e => setInputText(e.target.value.slice(0, MAX_CHARS))}
             onKeyDown={handleKeyDown}
-            placeholder={limitReached ? 'Daily limit reached' : 'Ask about your health suggestions...'}
+            placeholder={limitReached ? 'Daily limit reached' : 'Ask about your health suggestions'}
             disabled={isLoading || limitReached}
             rows={1}
           />

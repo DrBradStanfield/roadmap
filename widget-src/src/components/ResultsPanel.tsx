@@ -423,11 +423,20 @@ function getEmailHelperText(): string {
   return DEFAULT_EMAIL_HELPER;
 }
 
-function GuestEmailCapture({ guestReportData, loginUrl, formStage }: {
-  guestReportData: { inputs: Record<string, unknown>; medications?: Record<string, unknown>[]; screenings?: Record<string, unknown>[] };
-  loginUrl?: string;
-  formStage?: number;
-}) {
+type GuestReportData = { inputs: Record<string, unknown>; medications?: Record<string, unknown>[]; screenings?: Record<string, unknown>[] };
+
+interface GuestEmailHook {
+  email: string;
+  setEmail: (v: string) => void;
+  emailError: string;
+  setEmailError: (v: string) => void;
+  state: GuestEmailState;
+  setState: (s: GuestEmailState) => void;
+  helperText: string;
+  handleSubmit: () => void;
+}
+
+function useGuestEmailCapture(guestReportData: GuestReportData): GuestEmailHook {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [state, setState] = useState<GuestEmailState>('idle');
@@ -457,6 +466,16 @@ function GuestEmailCapture({ guestReportData, loginUrl, formStage }: {
       setState('idle');
     }
   };
+
+  return { email, setEmail, emailError, setEmailError, state, setState, helperText, handleSubmit };
+}
+
+function GuestEmailCapture({ hook, loginUrl, formStage }: {
+  hook: GuestEmailHook;
+  loginUrl?: string;
+  formStage?: number;
+}) {
+  const { email, setEmail, emailError, setEmailError, state, setState, helperText, handleSubmit } = hook;
 
   if (state === 'prompt-account') {
     return (
@@ -703,6 +722,9 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
     };
   }, [results?.suggestions]);
 
+  // Shared state for guest email capture (top + bottom instances stay in sync)
+  const guestEmailHook = useGuestEmailCapture(guestReportData ?? { inputs: {} });
+
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
@@ -736,7 +758,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
     <div className="health-results-panel">
       {/* Account Status */}
       <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} onPrint={authState?.isLoggedIn ? handlePrint : undefined} onEmail={authState?.isLoggedIn ? handleEmailReport : undefined} emailStatus={emailStatus} printStatus={printStatus} />
-      {guestReportData && <GuestEmailCapture guestReportData={guestReportData} loginUrl={authState?.loginUrl} formStage={formStage} />}
+      {guestReportData && <GuestEmailCapture hook={guestEmailHook} loginUrl={authState?.loginUrl} formStage={formStage} />}
 
       {/* Quick Stats */}
       <section className="quick-stats">
@@ -879,6 +901,8 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
           age={results?.age}
         />
       )}
+
+      {guestReportData && <GuestEmailCapture hook={guestEmailHook} loginUrl={authState?.loginUrl} />}
 
       <FeedbackForm />
 
