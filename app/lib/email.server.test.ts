@@ -127,7 +127,7 @@ describe('buildWelcomeEmailHtml', () => {
   it('includes CTA button with roadmap link', () => {
     const html = buildWelcomeEmailHtml(minimalInputs, minimalResults, [], 'si', null);
 
-    expect(html).toContain('/pages/roadmap');
+    expect(html).toContain('https://drstanfield.com');
     expect(html).toContain('View Your Full Roadmap');
   });
 
@@ -571,7 +571,7 @@ describe('buildReminderEmailHtml', () => {
   it('includes CTA button with roadmap link', () => {
     const html = buildReminderEmailHtml('Test', [screeningReminder], [], preferencesUrl);
 
-    expect(html).toContain('/pages/roadmap');
+    expect(html).toContain('https://drstanfield.com');
     expect(html).toContain('View Your Health Roadmap');
   });
 

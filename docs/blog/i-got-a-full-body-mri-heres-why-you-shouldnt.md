@@ -93,7 +93,7 @@ But for me, I'm fairly relaxed about this. Before the scan, I knew that if somet
 
 So what did I actually find out from my scan? The results came back normal.
 
-It does not change my approach to other cancer screening programs. I'll still do bowel cancer screening, for example. And you can find the details about recommended screenings customized to you with my [Health Roadmap app](https://drstanfield.com/pages/roadmap) \[19\].
+It does not change my approach to other cancer screening programs. I'll still do bowel cancer screening, for example. And you can find the details about recommended screenings customized to you with my [Health Roadmap app](https://drstanfield.com) \[19\].
 
 I plan on repeating my MRI scan in about 3 years.
 
@@ -135,4 +135,4 @@ I plan on repeating my MRI scan in about 3 years.
 
 18\. [https://link.springer.com/article/10.1007/s00330-025-12192-x](https://link.springer.com/article/10.1007/s00330-025-12192-x)
 
-19\. [https://drstanfield.com/pages/roadmap](https://drstanfield.com/pages/roadmap)
+19\. [https://drstanfield.com](https://drstanfield.com)

@@ -246,7 +246,7 @@ async function processUserReminders(profile: DbProfile, now: Date): Promise<bool
   const token = await getOrCreateUnsubscribeToken(profile.id);
   const preferencesUrl = token
     ? `${SHOPIFY_STORE_URL}/apps/health-tool-1/api/reminders?token=${token}`
-    : `${SHOPIFY_STORE_URL}/pages/roadmap`;
+    : SHOPIFY_STORE_URL;
 
   // Build and send email
   const html = buildReminderEmailHtml(

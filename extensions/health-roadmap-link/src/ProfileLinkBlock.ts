@@ -1,6 +1,6 @@
 import { extension } from "@shopify/ui-extensions/customer-account";
 
-const DEFAULT_URL = "https://drstanfield.com/pages/roadmap";
+const DEFAULT_URL = "https://drstanfield.com";
 
 export default extension(
   "customer-account.profile.block.render",
