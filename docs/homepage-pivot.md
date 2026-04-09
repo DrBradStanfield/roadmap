@@ -4,14 +4,17 @@
 
 The homepage currently functions as a supplement sales page. The Health Roadmap tool — Brad's main differentiator and lead capture device — is buried behind a tiny parenthetical link. This pivot makes the Roadmap widget the homepage's centerpiece, with a new lightweight email capture flow that doesn't require Shopify account creation.
 
-Brad will handle the Shopify theme/homepage layout changes (hero image, heading, navigation restructuring). This plan covers the **widget code changes** only.
+**Stage 1** (this document's original scope) covers widget code changes: mobile 2-tab layout, guest email capture, Klaviyo integration, post-email flow.
 
-### Homepage text (Brad implements in Shopify theme)
+**Stage 2** (appended below) covers the hero section and A/B testing system: hero image + heading built into the app block, A/B test management dashboard, conversion tracking with statistical significance.
+
+Brad handles the Shopify theme changes separately: placing the app block on the homepage, removing the old hero/Klaviyo form, navigation restructuring, `/pages/roadmap` redirect.
+
+### Default homepage text
 
 - **Heading**: "Get Your Personalized Health Plan"
-- **Subheading**: "Enter your health information below to receive personalized suggestions to discuss with your healthcare provider."
+- **Subheading**: "Enter your health information below to receive personalized suggestions to discuss with your healthcare provider. The more information you provide, the more tailored your suggestions will be."
 - The widget replaces the 3 Pillars section and "As a Family Medicine Doctor..." intro text
-- `/pages/roadmap` redirects to homepage
 
 ## Changes Overview
 
@@ -468,3 +471,417 @@ Supabase (existing flow)   Supabase (existing flow)
 1. **Klaviyo list ID**: Brad needs to create a "Roadmap Guests" list in Klaviyo and add `KLAVIYO_LIST_ID` to `.env`
 2. **Fly.io env**: `KLAVIYO_API_KEY` and `KLAVIYO_LIST_ID` need to be set as Fly secrets for production
 3. **Blog posts staleness**: Blog post cards are baked into the widget at build time from `docs/blog/index.json`. They update whenever the widget is rebuilt (which happens on deploys). If this becomes a staleness issue, can switch to runtime fetch later.
+
+---
+
+# STAGE 2: Hero Section + A/B Testing Dashboard
+
+## Context
+
+Stage 1 makes the widget the homepage's centerpiece with email capture. Stage 2 adds:
+1. A **hero section** (Brad's image + heading/subheading) built into the app block itself
+2. An **A/B testing system** to optimize heading copy for email conversions, managed entirely from the Shopify app dashboard
+
+The hero must be part of the app block (not the Shopify theme) so that A/B test variants can be controlled programmatically. If the heading lived in the theme, changing it would require manual Shopify admin edits — unusable for automated experiments.
+
+---
+
+## Design Decisions & Rationale
+
+### Why the hero lives outside the React mount point
+
+The hero (image + heading + subheading) is rendered as static HTML in `app-block.liquid`, **above** the `#health-tool-root` div that React mounts into. React never touches the hero.
+
+Why this matters:
+1. **Performance**: The hero image and heading render instantly as pure HTML/CSS. The 881KB React bundle loads with `defer` — if the hero were inside React, visitors would see a skeleton placeholder for 1-2 seconds before the heading appeared.
+2. **CLS prevention**: The hero's dimensions are locked by CSS before any JS executes. No layout shift.
+3. **A/B text swap is instant**: A synchronous inline script (~10 lines, <0.1ms) picks the variant before the browser's first paint. No flash.
+
+The tradeoff: the hero can't use React state or components. This is fine — the hero is static content (an image, a heading, a subheading). It doesn't need interactivity.
+
+### Why Shopify metafields for A/B config delivery
+
+The A/B test configuration (which variants exist, what their heading/subheading text is) needs to get from the admin dashboard into the storefront HTML. Three options were considered:
+
+1. **API call from widget** — Rejected. Any fetch before rendering the heading causes either a flash (async) or a delay (blocking). Both are unacceptable for the homepage hero.
+
+2. **Hardcoded in Liquid template** — Rejected. Changing variants would require a Shopify extension deploy (`npx shopify app deploy --force`). You can't iterate on A/B tests if each change takes 2 minutes to deploy.
+
+3. **Shopify shop metafield** ✅ — The admin dashboard writes test config to `shop.metafields.health_roadmap.ab_config` via the Admin GraphQL API. Liquid reads the metafield at page render time and outputs ALL variant headings into the HTML (non-active ones hidden with `style="display:none"`). A tiny inline script picks one based on localStorage. No API call needed. Config changes are live within Shopify's metafield cache TTL (~1-2 minutes). No deploy needed.
+
+### Why Supabase for event tracking (not Shopify metafields or counters)
+
+A/B testing requires tracking impressions (page views per variant) and conversions (email captures per variant), then computing statistical significance.
+
+Metafield-based counters were considered: store `{ a: { impressions: 1234, conversions: 56 } }` and increment on each event. Rejected because:
+1. **Race conditions**: Two visitors hit the page simultaneously → both read count 1234 → both write 1235 → one impression lost. Metafields have no atomic increment.
+2. **No deduplication**: Same visitor refreshing the page would inflate impression counts. Metafields have no UNIQUE constraints.
+3. **Data loss**: Any workaround (in-memory buffering, periodic flush) loses data on server restart. Fly.io machines restart on deploys.
+
+Supabase handles all three natively: `INSERT ... ON CONFLICT DO NOTHING` for deduplication, concurrent writes are safe, data persists across deploys.
+
+### Why a two-proportion z-test for statistical significance
+
+This is the standard test for comparing conversion rates between two groups. It answers: "Is the difference in conversion rates statistically significant, or could it be due to random chance?"
+
+Alternatives considered:
+- **Chi-squared test**: Equivalent for 2×2 contingency tables; z-test is simpler to implement and interpret.
+- **Bayesian approach**: More nuanced but harder to explain in a dashboard. A p-value + confidence level is universally understood.
+- **No significance testing**: Rejected. Without it, Brad might declare a winner based on noise (e.g., 5.1% vs 4.9% with 50 visitors).
+
+---
+
+## Hero Section
+
+### Layout
+
+**Desktop (>768px):**
+```
+┌────────────────────────────────────────────────┐
+│  H1 + Subheading (55%)    │  Brad's image (45%)│
+├────────────────────────────────────────────────┤
+│  [Input Form]          │  [Results Panel]       │
+│  (existing two-column widget layout)            │
+└────────────────────────────────────────────────┘
+```
+
+**Mobile (≤768px):** Same side-by-side layout. Image shrinks to ~20-25% width. H1 and subheading scale down with `clamp()` font sizes.
+
+### Hero HTML structure
+
+```html
+<!-- Hero: outside React mount point, never replaced -->
+<div class="hero-section">
+  <div class="hero-text">
+    <h1>Get Your Personalized Health Plan</h1>
+    <p>Enter your health information below...</p>
+  </div>
+  <div class="hero-image">
+    <img src="..." srcset="..." fetchpriority="high" width="..." height="...">
+  </div>
+</div>
+
+<!-- React mounts here (form + results only) -->
+<div id="health-tool-root">
+  ...skeleton blocks (no header — hero replaces it)...
+</div>
+```
+
+### Hero image hosting
+
+The image URL is hardcoded in `app-block.liquid` pointing to the Shopify Files CDN. `width` and `height` attributes on the `<img>` tag + `aspect-ratio` in CSS lock the layout before the image downloads, preventing CLS.
+
+### Hero scope
+
+The hero appears on **every page** that has the widget app block — homepage, `/pages/roadmap`, etc. No conditional logic needed.
+
+---
+
+## A/B Testing System
+
+### Architecture overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Admin Dashboard (/app/ab-testing)                          │
+│  Create test → Save to Supabase → Write Shopify metafield   │
+│  View results → Query Supabase → Calculate z-test            │
+└──────────────┬──────────────────────────────────┬───────────┘
+               │                                  │
+       Supabase (source of truth)      Shopify metafield (delivery)
+       ab_tests, ab_events             shop.metafields.health_roadmap.ab_config
+               │                                  │
+               │                    ┌─────────────┘
+               │                    ▼
+               │         Liquid renders ALL variant values
+               │         for the targeted element into HTML
+               │                    │
+               │                    ▼
+               │         Inline script picks one
+               │         variant from localStorage
+               │         (before first paint)
+               │                    │
+               │                    ▼
+               │         React mounts, fires impression
+               │         beacon via sendBeacon()
+               │                    │
+               │                    ▼
+               └──── POST /api/ab ──┘
+                     (impression or conversion event)
+```
+
+### Config delivery via Shopify metafields
+
+When a test is activated in the admin dashboard:
+1. Test config saved to Supabase (source of truth for test metadata + results)
+2. Config written to `shop.metafields.health_roadmap.ab_config` via Admin GraphQL API
+
+Liquid reads the metafield and renders variants for the targeted element only. Each test has a `target` (`'heading'` or `'subheading'`) and variants with a single `value` field:
+
+```liquid
+{% assign ab = shop.metafields.health_roadmap.ab_config.value %}
+{% if ab and ab.target == 'heading' %}
+  {% for variant in ab.variants %}
+    <h1 data-variant="{{ variant.id }}" data-test="{{ ab.testId }}"
+        {% unless forloop.first %}style="display:none"{% endunless %}>
+      {{ variant.value }}
+    </h1>
+  {% endfor %}
+{% else %}
+  <h1>{{ default_heading }}</h1>
+{% endif %}
+{% if ab and ab.target == 'subheading' %}
+  {% for variant in ab.variants %}
+    <p data-variant="{{ variant.id }}" data-test="{{ ab.testId }}"
+       {% unless forloop.first %}style="display:none"{% endunless %}>
+      {{ variant.value }}
+    </p>
+  {% endfor %}
+{% else %}
+  <p>{{ default_subheading }}</p>
+{% endif %}
+```
+
+This means heading and subheading tests are independent — you run one at a time. The untested element always shows its default. To add new testable elements in the future, add a new `ab.target` value and a corresponding Liquid block.
+
+### Variant assignment (inline script)
+
+Runs synchronously before first paint (~0.1ms). Same pattern as the existing auto-redirect script already in `app-block.liquid` (lines 14-28).
+
+```javascript
+(function() {
+  var KEY = 'hr_ab';
+  var els = document.querySelectorAll('[data-variant]');
+  if (!els.length) return; // no active test
+
+  // Collect unique variant IDs
+  var testId = els[0].dataset.test;
+  var ids = [];
+  els.forEach(function(e) {
+    if (ids.indexOf(e.dataset.variant) < 0) ids.push(e.dataset.variant);
+  });
+
+  // Check localStorage for existing assignment
+  var stored = null;
+  try { stored = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
+
+  // Reassign if stored test doesn't match current test
+  var v = (stored && stored.t === testId) ? stored.v : null;
+  if (!v || ids.indexOf(v) < 0) {
+    v = ids[Math.floor(Math.random() * ids.length)];
+    localStorage.setItem(KEY, JSON.stringify({ t: testId, v: v }));
+  }
+
+  // Show assigned variant, hide others
+  els.forEach(function(e) {
+    e.style.display = e.dataset.variant === v ? '' : 'none';
+  });
+})();
+```
+
+**Why this doesn't flash**: All variant texts exist in the server-rendered HTML. The script doesn't fetch or create text — it only toggles `display` on elements that are already in the DOM. The browser hasn't painted yet when this runs (synchronous script before any deferred content).
+
+**Test ID mismatch**: If Brad activates a new test, returning visitors have a stale test ID in localStorage. The script detects the mismatch (`stored.t !== testId`) and reassigns. This is correct behavior — a new test should start fresh.
+
+### Database schema
+
+```sql
+CREATE TABLE ab_tests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft'
+    CHECK (status IN ('draft', 'active', 'paused', 'completed')),
+  target TEXT NOT NULL DEFAULT 'heading',
+  variants JSONB NOT NULL,
+  -- Example: [
+  --   { "id": "a", "value": "Get Your Personalized Health Plan", "weight": 50 },
+  --   { "id": "b", "value": "Free Health Recommendations...", "weight": 50 }
+  -- ]
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE ab_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  test_id UUID NOT NULL REFERENCES ab_tests(id),
+  variant_id TEXT NOT NULL,
+  visitor_id TEXT NOT NULL,
+  event_type TEXT NOT NULL CHECK (event_type IN ('impression', 'conversion')),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (test_id, visitor_id, event_type)
+);
+```
+
+**Visitor ID**: Random UUID generated on first visit, stored in `localStorage('hr_vid')`. Shared across all tests. The `UNIQUE (test_id, visitor_id, event_type)` constraint means:
+- Refreshing the page doesn't add duplicate impressions (`INSERT ... ON CONFLICT DO NOTHING`)
+- Submitting email twice doesn't double-count conversions
+- Same visitor can have both an impression AND a conversion (different `event_type`)
+
+**No RLS needed**: Both tables are accessed exclusively via the service key — admin dashboard reads (bypasses RLS) and the storefront `api.ab.ts` endpoint writes (also service key, since guests have no Supabase auth). Standard `GRANT` permissions suffice.
+
+### Event tracking
+
+**Impressions**: After React mounts, `trackABImpression()` reads the assigned variant from localStorage and fires a POST via `fetch` (wrapped in `apiCall` for error handling). A localStorage flag (`hr_ab_imp_<testId>`) prevents redundant network calls on subsequent page loads — server-side deduplication via UNIQUE constraint is the safety net. One impression per visitor per test.
+
+**Conversions**: When guest email is captured successfully, `trackABConversion()` fires a POST with the test/variant/visitor IDs. Recorded in `ab_events` via the same `api.ab.ts` endpoint.
+
+**API endpoint**: `POST /apps/health-tool-1/api/ab` — new route `app/routes/api.ab.ts`. HMAC-verified via `authenticate.public.appProxy()`. Uses existing app proxy config (all `/apps/health-tool-1/*` paths proxy to Fly.io — no `shopify.app.toml` change needed).
+
+### Admin dashboard
+
+**New route: `app/routes/app.ab-testing.tsx`**
+
+Uses Shopify Polaris components, consistent with the existing dashboard at `app._index.tsx`.
+
+**Test list view:**
+- Table of all tests with status badges (draft / active / paused / completed)
+- "Create Test" button
+- Click a test to see results
+
+**Create test:**
+- Test name
+- Target element selector: Heading / Subheading (extensible to future elements)
+- Variant A and B values (the text for the selected element)
+- "Create Test" button (saves as draft)
+
+**Results view:**
+- Per-variant row: impressions, conversions, conversion rate
+- Relative improvement (e.g., "+12% vs control")
+- Statistical significance indicator
+- "Winner" badge when significance threshold is met
+- "Pause" / "Complete" buttons
+
+**Activating a test:**
+1. Pauses any currently active test (only one active at a time)
+2. Saves test to Supabase
+3. Writes config to Shopify metafield via `admin.graphql()` (Admin GraphQL API, available from `authenticate.admin(request)`)
+4. If metafield write fails → show error with "Retry" button. Test data is safe in Supabase; only storefront delivery is affected.
+
+**Pausing/completing a test:**
+1. Updates status in Supabase
+2. Deletes the Shopify metafield → storefront falls back to default heading
+
+**NavMenu**: Add "A/B Tests" link in `app/routes/app.tsx`.
+
+### Statistical significance
+
+**Two-proportion z-test**, computed server-side in the loader:
+
+```
+p_a = conversions_a / impressions_a
+p_b = conversions_b / impressions_b
+p_pool = (conversions_a + conversions_b) / (impressions_a + impressions_b)
+z = (p_a - p_b) / sqrt(p_pool * (1 - p_pool) * (1/n_a + 1/n_b))
+p_value = 2 * (1 - Φ(|z|))    // two-tailed test
+```
+
+Dashboard display:
+- **"Not enough data"** — fewer than 100 impressions per variant
+- **"Not significant"** — p > 0.05
+- **"Significant (95% confidence)"** — p ≤ 0.05
+- **"Highly significant (99% confidence)"** — p ≤ 0.01
+
+~15 lines of TypeScript. Normal CDF approximated via Abramowitz & Stegun rational function. No external stats library needed.
+
+### Shopify scopes
+
+Current scopes: `write_app_proxy,read_customers,write_customers,read_orders,read_all_orders`
+
+App-owned metafields (created via the app's own Admin API session) should not require additional scopes on Shopify API version 2025-10 — apps have implicit access to their own metafields. To verify during implementation: attempt a `metafieldsSet` mutation in the admin route. If it fails with a scope error, add `read_metafields,write_metafields` to `shopify.app.toml` and redeploy.
+
+---
+
+## Pitfalls & Edge Cases
+
+| Scenario | Behavior | Why this is safe |
+|----------|----------|-----------------|
+| No active test | Liquid renders default heading. Inline script finds no `[data-variant]` elements, exits immediately. | The `{% else %}` branch in Liquid guarantees a heading always appears. |
+| Test changed (new test activated) | Inline script detects test ID mismatch in localStorage → clears stale assignment → picks new variant randomly. | Returning visitors don't get stuck on old test's variant. New test starts with a clean slate. |
+| Test paused mid-experiment | Metafield deleted → Liquid renders default heading. Old localStorage data is harmless (no matching `data-variant` elements to toggle). | No JS errors. Impression beacons will fail silently (no active test in DB). |
+| Visitor clears localStorage | Gets randomly reassigned on next visit. | Minor noise in the data. At scale (hundreds of visitors), impact is negligible. |
+| Multiple tabs open | Same localStorage → same variant assignment across tabs. | Consistent experience. Impression only recorded once (DB dedup). |
+| JS disabled | First variant visible via HTML (no `style="display:none"`). Others hidden. | SEO crawlers see the control variant. A/B test only runs for JS-enabled visitors (>99% of real users). |
+| Shopify metafield cache delay | ~1-2 minutes between admin activating a test and storefront showing new variants. | A/B tests run for days/weeks. A 2-minute delay on activation is immaterial. |
+| Dual write failure (Supabase succeeds, metafield fails) | Test data is safe in Supabase. Storefront shows default heading until metafield write is retried. | Admin UI shows error with "Retry" button. No data loss. |
+| Impression fetch fails (network error) | Impression not recorded for that visitor. | `apiCall` wrapper catches and logs. At scale, a few lost impressions don't affect statistical significance. |
+| Concurrent impression writes | Supabase handles concurrent `INSERT ... ON CONFLICT DO NOTHING` natively. | No race conditions, no lost data. |
+| Extension size limit (10MB) | Hero image URL hardcoded to Shopify Files CDN, not stored as extension asset. | The 881KB JS bundle + CSS already take significant space. Adding a hero image as an asset would risk hitting the limit. |
+
+---
+
+## Files Summary (Stage 2)
+
+### Hero
+| File | Changes |
+|------|---------|
+| `extensions/health-tool-widget/blocks/app-block.liquid` | Add hero HTML above `#health-tool-root`, remove old `<h2>/<p>` from skeleton |
+| `widget-src/src/styles.css` | `.hero-section` grid, `.hero-text` typography, `.hero-image` sizing, mobile responsive. Remove `.health-tool-header` styles. |
+| `widget-src/src/components/HealthTool.tsx` | Remove `.health-tool-header` div (lines 872-878) |
+
+### A/B Testing
+| File | Changes |
+|------|---------|
+| `supabase/rls-policies.sql` | Add `ab_tests` (with `target` column) + `ab_events` tables |
+| `extensions/health-tool-widget/blocks/app-block.liquid` | Metafield-driven variant rendering (target-based) + inline A/B script |
+| `app/routes/api.ab.ts` | **New** — POST impression/conversion events (HMAC-verified, Zod-validated, rate-limited) |
+| `app/routes/app.ab-testing.tsx` | **New** — Admin dashboard: create/manage tests, view results with z-test significance |
+| `app/routes/app.ab-testing.test.ts` | **New** — Unit tests for normalCDF + calculateSignificance (13 tests) |
+| `app/lib/ab-stats.ts` | **New** — Statistical significance functions (normalCDF, calculateSignificance) |
+| `app/lib/rate-limiter.ts` | **New** — Extracted shared rate limiter factory (used by api.measurements + api.ab) |
+| `app/routes/app.tsx` | Add "A/B Tests" to NavMenu |
+| `app/lib/supabase.server.ts` | AB query helpers (create test, update status, record event, get results) |
+| `widget-src/src/lib/api.ts` | Impression/conversion tracking helpers, visitor ID generation, localStorage dedup |
+| `widget-src/src/components/HealthTool.tsx` | Fire impression on mount |
+| `widget-src/src/components/ResultsPanel.tsx` | Fire conversion on successful email capture |
+
+### Not modified (intentionally)
+- `shopify.app.toml` — existing app proxy covers `/api/ab`. Metafield scopes likely not needed (app-owned). Verify during implementation.
+- `packages/health-core/` — no health calculation changes
+- `sync-embed.liquid` — existing sync flow unchanged
+- `app/routes/api.measurements.ts` — conversion event recorded in `api.ab.ts`, not here (separation of concerns). Guest report handler (Stage 1) passes through variant info but doesn't record it itself.
+
+---
+
+## Implementation Order (Stage 2)
+
+### Phase 1: Hero (visual, no A/B yet)
+1. Hero HTML + CSS in `app-block.liquid` + `styles.css`
+2. Remove old header from `HealthTool.tsx`
+3. Build widget, deploy, verify hero renders correctly on desktop + mobile
+
+### Phase 2: A/B Infrastructure
+4. Create Supabase tables (`ab_tests`, `ab_events`) via SQL migration
+5. Add AB query helpers to `supabase.server.ts`
+6. Create `api.ab.ts` endpoint (impression/conversion tracking)
+7. Add metafield-driven variant rendering + inline A/B script to `app-block.liquid`
+8. Add React-side AB logic (visitor ID, impression beacon, conversion tracking in email capture)
+
+### Phase 3: Admin Dashboard
+9. Create `app.ab-testing.tsx` (Polaris UI: test list, create, results)
+10. Add metafield write on test activation/pause via Admin GraphQL API
+11. Add NavMenu link
+12. Implement z-test statistical significance display
+
+### Phase 4: Deploy + Verify
+13. Verify metafield scopes (add to `shopify.app.toml` if needed, redeploy)
+14. Build widget, deploy extensions + backend
+15. Create first test via dashboard, verify end-to-end flow
+
+---
+
+## Verification (Stage 2)
+
+1. **Hero renders instantly** — image + heading visible before React loads (disable JS to confirm)
+2. **No CLS** — Lighthouse audit shows 0 CLS from hero section
+3. **Mobile layout** — side-by-side with small image (~20-25% width) on right
+4. **SEO** — view source shows control heading in raw HTML (no JS needed for crawlers)
+5. **No flash on A/B swap** — all variants server-rendered, script picks one before paint
+6. **A/B assignment sticky** — clear localStorage, reload → get assigned. Reload again → same variant
+7. **Test change handled** — activate new test → returning visitors get reassigned
+8. **No active test fallback** — delete metafield → default heading shows, no JS errors
+9. **Impressions deduplicated** — refresh page → no duplicate rows in `ab_events`
+10. **Conversion tracked** — submit email → `ab_events` has conversion row with correct test/variant
+11. **Dashboard results** — impressions, conversions, conversion rates per variant displayed correctly
+12. **Statistical significance** — with sufficient test data, correct p-value and confidence level shown
+13. **Only one active test** — activating a new test pauses the currently active one
+14. **Metafield retry** — if metafield write fails, error message + retry button in admin UI

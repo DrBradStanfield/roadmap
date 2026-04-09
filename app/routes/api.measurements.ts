@@ -5,27 +5,7 @@ import { authenticate } from '../shopify.server';
 import { getCustomerId, getCustomerInfo, tagShopifyCustomer } from '../lib/route-helpers.server';
 import { migrateGuestChat } from '../lib/supabase.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
-
-// In-memory rate limiter factory
-function createRateLimiter(max: number, windowMs: number, cleanupMs: number) {
-  const map = new Map<string, { count: number; resetAt: number }>();
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of map) {
-      if (now > entry.resetAt) map.delete(key);
-    }
-  }, cleanupMs);
-  return (key: string): boolean => {
-    const now = Date.now();
-    const entry = map.get(key);
-    if (!entry || now > entry.resetAt) {
-      map.set(key, { count: 1, resetAt: now + windowMs });
-      return true;
-    }
-    entry.count++;
-    return entry.count <= max;
-  };
-}
+import { createRateLimiter } from '../lib/rate-limiter';
 
 const checkRateLimit = createRateLimiter(60, 60_000, 5 * 60_000);           // 60/min per customer
 const checkReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000); // 5/day per customer

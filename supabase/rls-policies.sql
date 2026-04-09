@@ -932,6 +932,37 @@ ALTER TABLE guest_chat_sessions ENABLE ROW LEVEL SECURITY;
 -- Session management is server-side only via supabaseAdmin.
 -- Chat messages are in chat_conversations/chat_messages (already RLS-protected).
 
+-- ===== A/B Testing tables =====
+-- Accessed via service key only (admin dashboard reads, storefront endpoint writes).
+-- Storefront writes are HMAC-verified via Shopify app proxy.
+
+CREATE TABLE IF NOT EXISTS ab_tests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft'
+    CHECK (status IN ('draft', 'active', 'paused', 'completed')),
+  target TEXT NOT NULL DEFAULT 'heading',
+  variants JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Migration: add target column if table already exists
+ALTER TABLE ab_tests ADD COLUMN IF NOT EXISTS target TEXT NOT NULL DEFAULT 'heading';
+
+CREATE TABLE IF NOT EXISTS ab_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  test_id UUID NOT NULL REFERENCES ab_tests(id),
+  variant_id TEXT NOT NULL,
+  visitor_id TEXT NOT NULL,
+  event_type TEXT NOT NULL CHECK (event_type IN ('impression', 'conversion')),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE (test_id, visitor_id, event_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ab_events_test_variant ON ab_events(test_id, variant_id);
+CREATE INDEX IF NOT EXISTS idx_ab_events_test_type ON ab_events(test_id, event_type);
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

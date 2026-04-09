@@ -2124,3 +2124,161 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     ),
   };
 }
+
+// ---------------------------------------------------------------------------
+// A/B Testing
+// ---------------------------------------------------------------------------
+
+export type ABTestStatus = 'draft' | 'active' | 'paused' | 'completed';
+export type ABTestTarget = 'heading' | 'subheading';
+
+export interface ABVariant {
+  id: string;
+  value: string;
+  weight: number;
+}
+
+export interface ABTest {
+  id: string;
+  name: string;
+  status: ABTestStatus;
+  target: ABTestTarget;
+  variants: ABVariant[];
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getABTests(): Promise<ABTest[]> {
+  if (!supabaseAdmin) return [];
+  const { data, error } = await supabaseAdmin
+    .from('ab_tests')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.error('Failed to fetch AB tests:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+export async function getActiveABTest(): Promise<ABTest | null> {
+  if (!supabaseAdmin) return null;
+  const { data, error } = await supabaseAdmin
+    .from('ab_tests')
+    .select('*')
+    .eq('status', 'active')
+    .maybeSingle();
+  if (error) {
+    console.error('Failed to fetch active AB test:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function getABTestById(testId: string): Promise<ABTest | null> {
+  if (!supabaseAdmin) return null;
+  const { data, error } = await supabaseAdmin
+    .from('ab_tests')
+    .select('*')
+    .eq('id', testId)
+    .single();
+  if (error) {
+    console.error('Failed to fetch AB test:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function createABTest(name: string, target: ABTestTarget, variants: ABVariant[]): Promise<ABTest | null> {
+  if (!supabaseAdmin) return null;
+  const { data, error } = await supabaseAdmin
+    .from('ab_tests')
+    .insert({ name, target, variants })
+    .select()
+    .single();
+  if (error) {
+    console.error('Failed to create AB test:', error.message);
+    return null;
+  }
+  return data;
+}
+
+export async function updateABTestStatus(testId: string, status: ABTestStatus): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+  const { error } = await supabaseAdmin
+    .from('ab_tests')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', testId);
+  if (error) {
+    console.error('Failed to update AB test status:', error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function recordABEvent(
+  testId: string,
+  variantId: string,
+  visitorId: string,
+  eventType: 'impression' | 'conversion',
+): Promise<boolean> {
+  if (!supabaseAdmin) return false;
+  const { error } = await supabaseAdmin
+    .from('ab_events')
+    .upsert(
+      { test_id: testId, variant_id: variantId, visitor_id: visitorId, event_type: eventType },
+      { onConflict: 'test_id,visitor_id,event_type', ignoreDuplicates: true },
+    );
+  if (error) {
+    console.error('Failed to record AB event:', error.message);
+    return false;
+  }
+  return true;
+}
+
+export interface ABTestResults {
+  test: ABTest;
+  variantResults: Array<{
+    variantId: string;
+    impressions: number;
+    conversions: number;
+  }>;
+}
+
+export async function getABTestResults(testId: string): Promise<ABTestResults | null> {
+  if (!supabaseAdmin) return null;
+
+  const test = await getABTestById(testId);
+  if (!test) return null;
+
+  // Count events per variant per type
+  const { data: events, error } = await supabaseAdmin
+    .from('ab_events')
+    .select('variant_id, event_type')
+    .eq('test_id', testId);
+  if (error) {
+    console.error('Failed to fetch AB events:', error.message);
+    return null;
+  }
+
+  // Aggregate counts
+  const counts = new Map<string, { impressions: number; conversions: number }>();
+  for (const variant of test.variants) {
+    counts.set(variant.id, { impressions: 0, conversions: 0 });
+  }
+  for (const event of events || []) {
+    const entry = counts.get(event.variant_id);
+    if (!entry) continue;
+    if (event.event_type === 'impression') entry.impressions++;
+    else if (event.event_type === 'conversion') entry.conversions++;
+  }
+
+  return {
+    test,
+    variantResults: Array.from(counts.entries()).map(([variantId, c]) => ({
+      variantId,
+      impressions: c.impressions,
+      conversions: c.conversions,
+    })),
+  };
+}

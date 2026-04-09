@@ -28,6 +28,68 @@
 </script>
 {% endunless %}
 
+<!-- Hero: outside React mount point, never replaced by JS -->
+{% assign ab = shop.metafields.health_roadmap.ab_config.value %}
+{% assign default_heading = "Get Your Personalized Health Plan" %}
+{% assign default_subheading = "Enter your health information below to receive personalized suggestions to discuss with your healthcare provider. The more information you provide, the more tailored your suggestions will be." %}
+<div class="hero-section">
+  <div class="hero-text">
+    {% if ab and ab.target == 'heading' %}
+      {% for variant in ab.variants %}
+        <h1 data-variant="{{ variant.id }}" data-test="{{ ab.testId }}"
+            {% unless forloop.first %}style="display:none"{% endunless %}>
+          {{ variant.value }}
+        </h1>
+      {% endfor %}
+    {% else %}
+      <h1>{{ default_heading }}</h1>
+    {% endif %}
+    {% if ab and ab.target == 'subheading' %}
+      {% for variant in ab.variants %}
+        <p data-variant="{{ variant.id }}" data-test="{{ ab.testId }}"
+           {% unless forloop.first %}style="display:none"{% endunless %}>
+          {{ variant.value }}
+        </p>
+      {% endfor %}
+    {% else %}
+      <p>{{ default_subheading }}</p>
+    {% endif %}
+  </div>
+  <div class="hero-image">
+    <img
+      src="https://cdn.shopify.com/s/files/1/0736/2907/3693/files/SMILING_2.webp?v=1754525200&width=800"
+      srcset="
+        https://cdn.shopify.com/s/files/1/0736/2907/3693/files/SMILING_2.webp?v=1754525200&width=200 200w,
+        https://cdn.shopify.com/s/files/1/0736/2907/3693/files/SMILING_2.webp?v=1754525200&width=400 400w,
+        https://cdn.shopify.com/s/files/1/0736/2907/3693/files/SMILING_2.webp?v=1754525200&width=800 800w,
+        https://cdn.shopify.com/s/files/1/0736/2907/3693/files/SMILING_2.webp?v=1754525200&width=900 900w"
+      sizes="(max-width: 768px) 25vw, 45vw"
+      width="800"
+      height="1000"
+      fetchpriority="high"
+      alt="Dr Brad Stanfield">
+  </div>
+</div>
+
+<script>
+(function() {
+  var KEY = 'hr_ab';
+  var els = document.querySelectorAll('[data-variant]');
+  if (!els.length) return;
+  var testId = els[0].dataset.test;
+  var ids = [];
+  els.forEach(function(e) { if (ids.indexOf(e.dataset.variant) < 0) ids.push(e.dataset.variant); });
+  var stored = null;
+  try { stored = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
+  var v = (stored && stored.t === testId) ? stored.v : null;
+  if (!v || ids.indexOf(v) < 0) {
+    v = ids[Math.floor(Math.random() * ids.length)];
+    localStorage.setItem(KEY, JSON.stringify({ t: testId, v: v }));
+  }
+  els.forEach(function(e) { e.style.display = e.dataset.variant === v ? '' : 'none'; });
+})();
+</script>
+
 <div id="health-tool-root"
   {% if customer %}
     data-logged-in="true"
@@ -40,11 +102,6 @@
 >
   <!-- Static skeleton: replaced when React mounts -->
   <div class="health-tool">
-    <div class="health-tool-header">
-      <h2>Health Roadmap - How to Look Young and Feel Strong</h2>
-      <p>Enter your health information below to receive personalized
-        suggestions to discuss with your healthcare provider.</p>
-    </div>
     <div class="health-tool-content">
       <div class="health-tool-left">
         <!-- Matches stage-1 profile form: section padding + Units + Sex + Height fields -->

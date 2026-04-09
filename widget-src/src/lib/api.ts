@@ -979,3 +979,49 @@ export async function deleteLabValue(labValueId: string): Promise<boolean> {
     return false;
   }
 }
+
+// ---------------------------------------------------------------------------
+// A/B Testing
+// ---------------------------------------------------------------------------
+
+export function getVisitorId(): string {
+  const KEY = 'hr_vid';
+  let id = localStorage.getItem(KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(KEY, id);
+  }
+  return id;
+}
+
+// Key format shared with inline script in app-block.liquid: { t: testId, v: variantId }
+export function getABAssignment(): { testId: string; variantId: string } | null {
+  try {
+    const stored = JSON.parse(localStorage.getItem('hr_ab') || '');
+    if (stored?.t && stored?.v) return { testId: stored.t, variantId: stored.v };
+  } catch { /* no assignment */ }
+  return null;
+}
+
+function trackABEvent(eventType: 'impression' | 'conversion'): void {
+  const ab = getABAssignment();
+  if (!ab) return;
+  // Skip redundant impression calls — server deduplicates, but this avoids the network roundtrip
+  if (eventType === 'impression') {
+    const sentKey = `hr_ab_imp_${ab.testId}`;
+    if (localStorage.getItem(sentKey)) return;
+    localStorage.setItem(sentKey, '1');
+  }
+  apiCall(
+    () => fetch(`${PROXY_PATH}/api/ab`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [eventType]: { testId: ab.testId, variantId: ab.variantId, visitorId: getVisitorId() } }),
+    }),
+    `AB ${eventType} tracking failed`,
+    null,
+  );
+}
+
+export function trackABImpression(): void { trackABEvent('impression'); }
+export function trackABConversion(): void { trackABEvent('conversion'); }

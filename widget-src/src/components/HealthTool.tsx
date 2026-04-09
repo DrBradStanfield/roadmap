@@ -22,7 +22,7 @@ import {
   type ApiMedication,
   type ApiScreening,
 } from '@roadmap/health-core';
-import { PROXY_PATH, type ApiSupplement } from '../lib/api';
+import { type ApiSupplement } from '../lib/api';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
@@ -57,6 +57,7 @@ import {
   setGlobalReminderOptout,
   sendWelcomeEmail,
   PROXY_PATH,
+  trackABImpression,
   type ApiReminderPreference,
   type ApiDocument,
   getHealthDocuments,
@@ -371,6 +372,9 @@ export function HealthTool() {
 
     loadData();
   }, [authState.isLoggedIn]);
+
+  // Fire A/B impression once on mount
+  useEffect(() => { trackABImpression(); }, []);
 
   // Effective inputs for results calculation: form inputs + fallback to previousMeasurements
   const effectiveInputs = useMemo(() => {
@@ -869,14 +873,6 @@ export function HealthTool() {
 
   return (
     <div className="health-tool">
-      <div className="health-tool-header">
-        <h2>Health Roadmap - How to Look Young and Feel Strong</h2>
-        <p>
-          Enter your health information below to receive personalized
-          suggestions to discuss with your healthcare provider.
-        </p>
-      </div>
-
       {isMobile ? (
         <>
           <MobileTabBar activeTab={activeTab} onTabChange={setActiveTab} />

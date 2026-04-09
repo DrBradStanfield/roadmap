@@ -22,7 +22,7 @@ import {
   getProteinEvidence,
   getBmiEvidence,
 } from '@roadmap/health-core';
-import { type ApiReminderPreference, sendReportEmail, getReportHtml, sendGuestReport } from '../lib/api';
+import { type ApiReminderPreference, sendReportEmail, getReportHtml, sendGuestReport, trackABConversion } from '../lib/api';
 import { FeedbackForm } from './FeedbackForm';
 import { ChatSection } from './ChatSection';
 // @ts-ignore — JSON import for blog post cards
@@ -436,6 +436,7 @@ function GuestEmailCapture({ guestReportData, loginUrl }: {
     );
 
     if (result.success) {
+      trackABConversion();
       setState('prompt-account');
     } else {
       setEmailError(result.error || 'Failed to send. Please try again.');
@@ -695,9 +696,9 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
           <div className="placeholder-icon">📊</div>
           <h3>Enter your information</h3>
           <p>
-            Fill in your height and sex to see your personalized health
+            Fill in your height and sex to see the beginning of your personalized health
             suggestions. The more information you provide, the more tailored
-            your recommendations will be.
+            your suggestions will be.
           </p>
         </div>
       </div>

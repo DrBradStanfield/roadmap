@@ -4,7 +4,7 @@
   --color-primary: #0066cc;
   --color-primary-hover: #0052a3;
   --color-brand: #00a38b;
-  --color-brand-hover: var(--color-brand-hover);
+  --color-brand-hover: #008f7a;
 
   /* Grays */
   --color-gray-light: #888;
@@ -20,6 +20,12 @@
   /* Text */
   --color-text: #1a1a1a;
   --color-text-heading: #111;
+  --color-text-secondary: #666;
+
+  /* Layout */
+  --container-max-width: 1200px;
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
 
   /* Spacing */
   --spacing-xs: 4px;
@@ -59,32 +65,38 @@ input[type="number"] {
 
 /* Health Tool Container */
 .health-tool {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, sans-serif;
-  max-width: 1200px;
+  font-family: var(--font-family-base);
+  max-width: var(--container-max-width);
   margin: 0 auto;
-  padding: 24px 0;
+  padding: 0 0 24px;
   color: var(--color-text);
 }
 
-.health-tool-header {
-  text-align: center;
-  margin-bottom: 32px;
+/* Hero Section — outside React, rendered by Liquid */
+.hero-section {
+  display: grid;
+  grid-template-columns: 77% 23%;
+  gap: 0;
+  align-items: center;
+  max-width: var(--container-max-width);
+  font-family: var(--font-family-base);
 }
 
-.health-tool-header h2 {
-  font-size: 28px;
-  font-weight: 600;
+.hero-text h1 {
+  font-size: clamp(20px, 4vw, 40px);
   margin: 0 0 12px;
-  color: var(--color-text-heading);
 }
 
-.health-tool-header p {
-  font-size: 16px;
-  color: var(--color-gray-medium);
+.hero-text p {
+  font-size: clamp(14px, 2vw, 18px);
   margin: 0;
-  max-width: 600px;
-  margin-inline: auto;
+}
+
+.hero-image img {
+  width: 100%;
+  height: auto;
+  border-radius: 0;
+  display: block;
 }
 
 /* Two-Panel Layout */
@@ -111,7 +123,7 @@ input[type="number"] {
 
 @media (max-width: 768px) {
   .health-tool {
-    padding: 16px 0;
+    padding: 0 0 16px;
   }
 
   .stats-grid {
@@ -122,8 +134,18 @@ input[type="number"] {
     padding: 12px !important;
   }
 
-  .health-tool-header {
-    margin-bottom: 16px;
+  .hero-section {
+    grid-template-columns: 100% 0%;
+    gap: 0px;
+    margin-top: 16px;
+  }
+
+  .hero-image {
+    display: none;
+  }
+
+  .hero-text h1 {
+    text-align: center;
   }
 
   .account-status-row {
@@ -191,7 +213,9 @@ input[type="number"] {
   }
 
 
-  .btn-primary.mobile-view-plan-btn {
+  .btn-primary.mobile-view-plan-btn,
+  .btn-primary.mobile-view-plan-btn:hover,
+  .btn-primary.mobile-view-plan-btn:active {
     display: block;
     position: fixed;
     bottom: 12px;
@@ -203,13 +227,9 @@ input[type="number"] {
     font-size: 16px;
     border-radius: 8px;
     box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
-    background-color: var(--color-brand);
+    background: var(--color-brand);
     border-color: var(--color-brand);
     z-index: 20;
-  }
-  .btn-primary.mobile-view-plan-btn:hover {
-    background-color: var(--color-brand-hover);
-    border-color: var(--color-brand-hover);
   }
 
 
@@ -226,6 +246,7 @@ input[type="number"] {
   position: sticky;
   top: 24px;
   max-height: calc(100vh - 48px);
+  min-height: 360px;
   overflow-y: auto;
   background: #f8f9fa;
   border-radius: 12px;
@@ -398,6 +419,34 @@ input[type="number"] {
 
 .health-field input::placeholder {
   color: #aaa;
+}
+
+.sex-toggle {
+  display: flex;
+  border: 1px solid var(--color-gray-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sex-toggle-btn {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  background: #fff;
+  color: var(--color-gray-medium);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.sex-toggle-btn:first-child {
+  border-right: 1px solid var(--color-gray-border);
+}
+
+.sex-toggle-btn--active {
+  background: var(--color-brand);
+  color: #fff;
 }
 
 .error-message {
@@ -2037,7 +2086,8 @@ input[type="number"] {
 
 /* Attention cue: pulsing glow guides user to the next field */
 .field-attention select,
-.field-attention input {
+.field-attention input,
+.field-attention .sex-toggle {
   -webkit-animation: attention-pulse 2s ease-in-out infinite;
   animation: attention-pulse 2s ease-in-out infinite;
 }
