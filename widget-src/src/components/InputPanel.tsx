@@ -708,19 +708,27 @@ export function InputPanel({
         <div className={`prefill-fields-wrapper${collapseAnimating && !prefillExpanded ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
           <div>
             <div className={`health-field${!inputs.sex ? ' field-attention' : ''}`}>
-              <label htmlFor="sex">Sex</label>
-              <select
-                id="sex"
-                value={inputs.sex || ''}
-                onChange={(e) =>
-                  updateField('sex', e.target.value as 'male' | 'female')
-                }
-                className={errors.sex ? 'error' : ''}
-              >
-                <option value="">Select...</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
+              <label>Sex</label>
+              <div className="sex-toggle" role="radiogroup" aria-label="Sex">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={inputs.sex === 'male'}
+                  className={`sex-toggle-btn${inputs.sex === 'male' ? ' sex-toggle-btn--active' : ''}`}
+                  onClick={() => updateField('sex', 'male')}
+                >
+                  Male
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={inputs.sex === 'female'}
+                  className={`sex-toggle-btn${inputs.sex === 'female' ? ' sex-toggle-btn--active' : ''}`}
+                  onClick={() => updateField('sex', 'female')}
+                >
+                  Female
+                </button>
+              </div>
               {errors.sex && <span className="error-message">{errors.sex}</span>}
             </div>
 

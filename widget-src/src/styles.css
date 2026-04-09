@@ -53,14 +53,14 @@ input[type="number"] {
   border-radius: 12px;
   padding: 1px 8px;
   font-size: 0.85em;
-  color: var(--color-primary);
+  color: var(--color-brand);
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.15s, border-color 0.15s;
 }
 .unit-toggle-pill:hover {
-  background-color: #f0f7ff;
-  border-color: var(--color-primary);
+  background-color: rgba(0, 163, 139, 0.08);
+  border-color: var(--color-brand);
 }
 
 /* Health Tool Container */
@@ -184,8 +184,8 @@ input[type="number"] {
   }
 
   .mobile-tab--active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
+    color: var(--color-brand);
+    border-bottom-color: var(--color-brand);
   }
 
   /* Swiper handles the 2-tab layout (autoHeight, swipe, slide sync).
@@ -287,8 +287,8 @@ input[type="number"] {
 
 .unit-toggle select:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(0, 163, 139, 0.1);
 }
 
 .health-section {
@@ -408,8 +408,8 @@ input[type="number"] {
 .health-field input:focus,
 .health-field select:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(0, 163, 139, 0.1);
 }
 
 .health-field input.error,
@@ -723,8 +723,8 @@ input[type="number"] {
 }
 
 .suggestions-group-title.info {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
+  color: var(--color-brand);
+  border-color: var(--color-brand);
 }
 
 .suggestions-group-title.supplements {
@@ -770,8 +770,11 @@ input[type="number"] {
 
 .suggestion-card-clickable .suggestion-body:hover .suggestion-title,
 .suggestion-subsection-clickable .suggestion-body:hover .suggestion-title {
-  color: var(--color-primary);
+  color: var(--color-brand);
 }
+.suggestion-attention .suggestion-body:hover .suggestion-title { color: #fd7e14; }
+.suggestion-urgent .suggestion-body:hover .suggestion-title { color: var(--color-error); }
+.skin-card .suggestion-body:hover .suggestion-title { color: #D63384; }
 
 .suggestion-card:last-child {
   margin-bottom: 0;
@@ -786,7 +789,7 @@ input[type="number"] {
 }
 
 .suggestion-card.suggestion-info {
-  border-left-color: var(--color-primary);
+  border-left-color: var(--color-brand);
 }
 
 .suggestion-card.supplement-card {
@@ -831,7 +834,7 @@ input[type="number"] {
 .suggestion-attention.suggestion-highlight,
 .suggestion-attention .suggestion-highlight { background-color: rgba(253, 126, 20, 0.06); }
 .suggestion-info.suggestion-highlight,
-.suggestion-info .suggestion-highlight { background-color: rgba(0, 102, 204, 0.06); }
+.suggestion-info .suggestion-highlight { background-color: rgba(0, 163, 139, 0.06); }
 .supplement-card.suggestion-highlight { background-color: rgba(0, 163, 139, 0.06); }
 .skin-card.suggestion-highlight { background-color: rgba(214, 51, 132, 0.06); }
 
@@ -884,8 +887,8 @@ input[type="number"] {
 }
 
 .suggestion-badge.suggestion-info {
-  background: #e3f2fd;
-  color: var(--color-primary);
+  background: #e0f5f1;
+  color: var(--color-brand);
 }
 
 .suggestion-title {
@@ -937,7 +940,7 @@ input[type="number"] {
 
 .evidence-toggle {
   font-size: 13px;
-  color: var(--color-primary, #1a73e8);
+  color: var(--color-brand);
   cursor: pointer;
   user-select: none;
 }
@@ -963,7 +966,7 @@ input[type="number"] {
 
 .evidence-refs a {
   font-size: 12px;
-  color: var(--color-primary, #1a73e8);
+  color: var(--color-brand);
   text-decoration: none;
   line-height: 1.5;
 }
@@ -971,6 +974,14 @@ input[type="number"] {
 .evidence-refs a:hover {
   text-decoration: underline;
 }
+
+/* Evidence links inherit section color */
+.suggestion-attention .evidence-toggle,
+.suggestion-attention .evidence-refs a { color: #fd7e14; }
+.suggestion-urgent .evidence-toggle,
+.suggestion-urgent .evidence-refs a { color: var(--color-error); }
+.skin-card .evidence-toggle,
+.skin-card .evidence-refs a { color: #D63384; }
 
 /* Disclaimer */
 .health-disclaimer {
@@ -1093,7 +1104,7 @@ input[type="number"] {
 }
 
 .email-capture-row input[type="email"]:focus {
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
 
@@ -1268,8 +1279,8 @@ input[type="number"] {
   font-size: 12px;
   padding: 4px 10px;
   background: transparent;
-  color: var(--color-primary);
-  border: 1px solid var(--color-primary);
+  color: var(--color-brand);
+  border: 1px solid var(--color-brand);
   border-radius: 6px;
   white-space: nowrap;
   cursor: pointer;
@@ -1277,7 +1288,7 @@ input[type="number"] {
 }
 
 .action-btn-small:hover {
-  background: var(--color-primary);
+  background: var(--color-brand);
   color: #fff;
 }
 
@@ -1289,7 +1300,7 @@ input[type="number"] {
 .feedback-btn-small {
   font-size: 12px;
   padding: 4px 12px;
-  background: var(--color-primary);
+  background: var(--color-brand);
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -1299,7 +1310,7 @@ input[type="number"] {
 }
 
 .feedback-btn-small:hover {
-  background: var(--color-primary-hover);
+  background: var(--color-brand-hover);
   color: #fff;
 }
 
@@ -1315,8 +1326,8 @@ input[type="number"] {
   font-size: 14px;
   padding: 8px 20px;
   background: transparent;
-  color: var(--color-primary);
-  border: 1px solid var(--color-primary);
+  color: var(--color-brand);
+  border: 1px solid var(--color-brand);
   border-radius: 6px;
   white-space: nowrap;
   cursor: pointer;
@@ -1324,7 +1335,7 @@ input[type="number"] {
 }
 
 .action-btn:hover {
-  background: var(--color-primary);
+  background: var(--color-brand);
   color: #fff;
 }
 
@@ -1335,7 +1346,7 @@ input[type="number"] {
 
 /* Migration Prompt */
 .health-tool-migration-prompt {
-  background: #e3f2fd;
+  background: #e0f5f1;
   border: 1px solid #bbdefb;
   border-radius: 12px;
   padding: 20px;
@@ -1374,29 +1385,29 @@ input[type="number"] {
 }
 
 .migration-btn.primary {
-  background: var(--color-primary);
+  background: var(--color-brand);
   color: #fff;
 }
 
 .migration-btn.primary:hover {
-  background: var(--color-primary-hover);
+  background: var(--color-brand-hover);
 }
 
 .migration-btn.secondary {
   background: #fff;
-  color: var(--color-primary);
-  border: 1px solid var(--color-primary);
+  color: var(--color-brand);
+  border: 1px solid var(--color-brand);
 }
 
 .migration-btn.secondary:hover {
-  background: #e3f2fd;
+  background: #e0f5f1;
 }
 
 /* Previous Value Label (longitudinal fields) */
 .previous-value {
   display: block;
   font-size: 12px;
-  color: var(--color-primary);
+  color: var(--color-brand);
   margin-top: 4px;
   font-style: italic;
   text-decoration: none;
@@ -1463,7 +1474,7 @@ input[type="number"] {
 
 .collapsed-field-label:hover {
   text-decoration: underline;
-  color: var(--color-primary);
+  color: var(--color-brand);
 }
 
 .collapsed-field-value {
@@ -1493,7 +1504,7 @@ input[type="number"] {
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
-  color: var(--color-primary);
+  color: var(--color-brand);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1501,9 +1512,9 @@ input[type="number"] {
 }
 
 .collapsed-field-add:hover {
-  background: var(--color-primary);
+  background: var(--color-brand);
   color: white;
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
 }
 
 /* Previous value reference shown in expanded mode */
@@ -1535,7 +1546,7 @@ input[type="number"] {
 /* Primary Button Base */
 .btn-primary {
   font-weight: 500;
-  background: var(--color-primary);
+  background: var(--color-brand);
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -1544,7 +1555,7 @@ input[type="number"] {
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-hover);
+  background: var(--color-brand-hover);
 }
 
 .btn-primary:active {
@@ -1644,7 +1655,7 @@ input[type="number"] {
 }
 
 .bp-info-tooltip a {
-  color: var(--color-primary);
+  color: var(--color-brand);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -1780,7 +1791,7 @@ input[type="number"] {
   font-size: 14px;
   font-weight: 500;
   background: #f8f9fa;
-  color: var(--color-primary);
+  color: var(--color-brand);
   border: 1px solid var(--color-gray-border);
   border-radius: 8px;
   cursor: pointer;
@@ -1788,7 +1799,7 @@ input[type="number"] {
 }
 
 .history-load-more:hover {
-  background: #e3f2fd;
+  background: #e0f5f1;
 }
 
 .history-load-more:disabled {
@@ -1908,7 +1919,7 @@ input[type="number"] {
   font-size: 14px;
   font-weight: 500;
   color: #fff;
-  background: var(--color-primary);
+  background: var(--color-brand);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -1916,7 +1927,7 @@ input[type="number"] {
 }
 
 .feedback-btn:hover {
-  background: var(--color-primary-hover);
+  background: var(--color-brand-hover);
   color: #fff;
 }
 
@@ -1927,7 +1938,7 @@ input[type="number"] {
 }
 
 .source-code-link:hover {
-  color: var(--color-primary);
+  color: var(--color-brand);
   text-decoration: underline;
 }
 
@@ -1961,8 +1972,8 @@ input[type="number"] {
 .feedback-input:focus,
 .feedback-textarea:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 2px rgba(0, 163, 139, 0.15);
 }
 
 .feedback-textarea {
@@ -2163,7 +2174,7 @@ input[type="number"] {
 }
 
 .upload-lab-tooltip-link {
-  color: var(--color-primary);
+  color: var(--color-brand);
   text-decoration: none;
   font-weight: 500;
 }
@@ -2238,8 +2249,8 @@ input[type="number"] {
 }
 
 .upload-dropzone:hover {
-  border-color: var(--color-primary);
-  background: #f0f7ff;
+  border-color: var(--color-brand);
+  background: rgba(0, 163, 139, 0.08);
 }
 
 .upload-dropzone-icon {
@@ -2304,7 +2315,7 @@ input[type="number"] {
 
 .upload-progress-fill {
   height: 100%;
-  background: var(--color-primary);
+  background: var(--color-brand);
   border-radius: 3px;
   transition: width 0.3s ease;
   font-size: 0;
@@ -2576,7 +2587,7 @@ input[type="number"] {
 
 .floating-upload-fill {
   height: 100%;
-  background: var(--color-primary);
+  background: var(--color-brand);
   border-radius: 2px;
   font-size: 0;
   line-height: 0;
@@ -2699,7 +2710,7 @@ input[type="number"] {
 
 .health-record-item:hover {
   background: #fff;
-  border-color: var(--color-primary);
+  border-color: var(--color-brand);
 }
 
 .health-record-date {
@@ -2875,8 +2886,8 @@ input[type="number"] {
 
 .chat-collapsed:focus-visible {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(0, 163, 139, 0.1);
 }
 
 .chat-icon {
@@ -3068,14 +3079,14 @@ input[type="number"] {
   background: transparent;
   border: 1px dashed var(--color-gray-border);
   border-radius: 6px;
-  color: var(--color-primary);
+  color: var(--color-brand);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
 
 .chat-new-btn:hover {
-  background: #e8f4fd;
-  border-color: var(--color-primary);
+  background: rgba(0, 163, 139, 0.08);
+  border-color: var(--color-brand);
 }
 
 .chat-thread-item {
@@ -3093,7 +3104,7 @@ input[type="number"] {
 }
 
 .chat-thread-item.active {
-  background: #e8f4fd;
+  background: rgba(0, 163, 139, 0.08);
 }
 
 .chat-thread-title {
@@ -3181,7 +3192,7 @@ input[type="number"] {
 }
 
 .chat-message--user .chat-message-content {
-  background: var(--color-primary);
+  background: var(--color-brand);
   color: #fff;
   border-radius: 12px 12px 4px 12px;
   padding: 10px 14px;
@@ -3242,7 +3253,7 @@ input[type="number"] {
 }
 
 .chat-message--assistant .chat-message-content a {
-  color: var(--color-primary);
+  color: var(--color-brand);
   text-decoration: underline;
 }
 
@@ -3390,8 +3401,8 @@ input[type="number"] {
 
 .chat-input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(0, 163, 139, 0.1);
 }
 
 .chat-input:disabled {
@@ -3599,7 +3610,7 @@ input[type="number"] {
 }
 
 .supplement-chip:hover {
-  background: var(--color-primary-light, #e0eaff);
+  background: rgba(0, 163, 139, 0.1);
 }
 
 .supplement-row {
@@ -3691,6 +3702,6 @@ input[type="number"] {
 }
 
 .supplement-custom {
-  color: var(--color-primary, #4a7dff);
+  color: var(--color-brand);
   font-style: italic;
 }

@@ -105,6 +105,12 @@ export function initSentry() {
       // DuckDuckGo Privacy Browser injects feature registry code into pages;
       // these errors are from their content scripts, not our code.
       /feature named `.+` was not found/,
+      // Judge.me review widget errors — third-party script, but attributed to our
+      // bundle because Sentry's setTimeout instrumentation wraps their callbacks.
+      /jdgm\./,
+      // Facebook/Instagram in-app browser's native Java bridge failures.
+      // Only occurs in Android WebViews — our app never uses Java bridges.
+      /Java bridge method invocation error/,
     ],
     allowUrls: [
       // Only capture errors originating from our own widget bundles
