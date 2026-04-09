@@ -77,6 +77,10 @@ Some data files are shared with the marketing workspace at `~/Library/CloudStora
 - `app/lib/email.server.ts` — Welcome + reminder emails via Resend. `suggestionEvidence()` renders evidence fields (reason, guidelines, references) inline in emails.
 - `app/lib/reminder-cron.server.ts` — Daily reminder cron (8:00 UTC, batches of 50)
 - `app/routes/api.reminders.ts` — Reminder preferences API + token-based unsubscribe page
+- `app/routes/api.ab.ts` — A/B test impression/conversion tracking (HMAC auth, rate-limited)
+- `app/routes/app.ab-testing.tsx` — A/B testing admin dashboard (Polaris UI)
+- `app/lib/ab-stats.ts` — Statistical significance (normalCDF, two-proportion z-test)
+- `app/lib/rate-limiter.ts` — Shared in-memory rate limiter factory
 
 **Health Core Library (`packages/health-core/src/`):**
 - `calculations.ts` — Health formulas (IBW, BMI, protein, eGFR)
@@ -285,6 +289,29 @@ Missing any step causes **silent data loss**:
 **Data sync**: Dual-sync design — `sync-embed.liquid` handles non-widget pages, `HealthTool.tsx` handles widget page. Both check for meaningful cloud data before syncing, both set `health_roadmap_authenticated` localStorage flag for auto-redirect. **See Dangerous Gotchas for invariants that must not be broken.**
 
 **Auto-redirect**: Shopify customer accounts live on `shopify.com`, not the storefront. If `health_roadmap_authenticated` flag exists but no storefront session, redirects once per browser session to acquire session. Flag only set after confirming cloud data exists.
+
+## A/B Testing
+
+Managed from the Shopify app dashboard at `/app/ab-testing`. Full design rationale in `docs/homepage-pivot.md` (Stage 2).
+
+**How it works**: Each test targets a single element (`heading` or `subheading`) with two or more text variants. Test config is stored in Supabase (`ab_tests` table), delivered to the storefront via a Shopify shop metafield (`health_roadmap.ab_config`), and rendered in `app-block.liquid` with all variants in the HTML. A synchronous inline script picks one variant from localStorage before first paint (zero flash). Impressions and conversions are tracked in `ab_events` and displayed with statistical significance (two-proportion z-test) in the admin dashboard.
+
+**Key files:**
+- `app/routes/app.ab-testing.tsx` — Admin dashboard (Polaris UI: create/activate/pause/complete tests, view results)
+- `app/routes/api.ab.ts` — Storefront endpoint for impression/conversion events (HMAC-verified, rate-limited)
+- `app/lib/ab-stats.ts` — Statistical significance functions (`normalCDF`, `calculateSignificance`)
+- `app/lib/supabase.server.ts` — AB query helpers (`getABTests`, `createABTest`, `recordABEvent`, `getABTestResults`, etc.)
+- `extensions/health-tool-widget/blocks/app-block.liquid` — Metafield-driven variant rendering + inline assignment script
+- `widget-src/src/lib/api.ts` — Client-side `trackABImpression()`, `trackABConversion()`, `getVisitorId()`
+
+**localStorage keys** (shared between inline Liquid script and React):
+- `hr_ab` — variant assignment: `{ t: testId, v: variantId }`. Written by inline script in `app-block.liquid`, read by `getABAssignment()` in `api.ts`.
+- `hr_vid` — anonymous visitor UUID for event deduplication
+- `hr_ab_imp_<testId>` — flag to skip redundant impression network calls
+
+**Adding new testable elements**: Add the target value to `ABTestTarget` type in `supabase.server.ts`, add it to the Zod enum in `app.ab-testing.tsx`, add a `{% if ab.target == 'new_element' %}` block in `app-block.liquid`, and add a button to the admin create form.
+
+**Only one test can be active at a time.** Activating a new test pauses the current one. Pausing/completing deletes the Shopify metafield → storefront falls back to default text.
 
 ## Sentry
 

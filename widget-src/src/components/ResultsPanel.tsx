@@ -62,6 +62,7 @@ interface ResultsPanelProps {
     medications?: Record<string, unknown>;
     screenings?: Record<string, unknown>;
   };
+  formStage?: number;
 }
 
 function getBmiStatus(bmiCategory: string, waistToHeightRatio?: number): { label: string; className: string } {
@@ -411,9 +412,10 @@ type GuestEmailState = 'idle' | 'sending' | 'prompt-account' | 'blog-posts';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function GuestEmailCapture({ guestReportData, loginUrl }: {
+function GuestEmailCapture({ guestReportData, loginUrl, formStage }: {
   guestReportData: { inputs: Record<string, unknown>; medications?: Record<string, unknown>; screenings?: Record<string, unknown> };
   loginUrl?: string;
+  formStage?: number;
 }) {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -477,7 +479,7 @@ function GuestEmailCapture({ guestReportData, loginUrl }: {
   }
 
   return (
-    <div className="email-capture no-print">
+    <div className={`email-capture no-print${formStage === 4 ? ' field-attention' : ''}`}>
       <div className="email-capture-row">
         <input
           type="email"
@@ -585,7 +587,7 @@ function ReminderSettings({
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, hideInlineChat, onInlineChatExpand, guestReportData }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, hideInlineChat, onInlineChatExpand, guestReportData, formStage }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -721,7 +723,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
     <div className="health-results-panel">
       {/* Account Status */}
       <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} onPrint={authState?.isLoggedIn ? handlePrint : undefined} onEmail={authState?.isLoggedIn ? handleEmailReport : undefined} emailStatus={emailStatus} printStatus={printStatus} />
-      {guestReportData && <GuestEmailCapture guestReportData={guestReportData} loginUrl={authState?.loginUrl} />}
+      {guestReportData && <GuestEmailCapture guestReportData={guestReportData} loginUrl={authState?.loginUrl} formStage={formStage} />}
 
       {/* Quick Stats */}
       <section className="quick-stats">

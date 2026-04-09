@@ -869,6 +869,7 @@ export function HealthTool() {
     hideInlineChat: floatingChatOpen && !isMobile,
     onInlineChatExpand: () => setFloatingChatOpen(true),
     guestReportData: !authState.isLoggedIn ? { inputs: effectiveInputs, medications, screenings } : undefined,
+    formStage,
   };
 
   return (
