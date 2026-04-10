@@ -515,6 +515,7 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
       <div className="email-capture-row">
         <input
           type="email"
+          id={formStage !== undefined ? 'guestEmail' : undefined}
           placeholder="Email"
           value={email}
           onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}

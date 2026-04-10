@@ -832,6 +832,16 @@ export function HealthTool() {
     }
   }, [authState.isLoggedIn]);
 
+  const handleAutoFocusEmail = useCallback(() => {
+    if (authState.isLoggedIn) return;
+    if (isMobile) {
+      setActiveTab('plan');
+      setTimeout(() => document.getElementById('guestEmail')?.focus(), 400);
+    } else {
+      document.getElementById('guestEmail')?.focus();
+    }
+  }, [authState.isLoggedIn, isMobile]);
+
   const inputPanelProps = {
     inputs,
     onChange: handleInputChange,
@@ -860,6 +870,7 @@ export function HealthTool() {
     onDocumentDeleted: (docId: string) => {
       setHealthDocuments(prev => prev.filter(d => d.id !== docId));
     },
+    onAutoFocusEmail: handleAutoFocusEmail,
   };
 
   const resultsPanelProps = {

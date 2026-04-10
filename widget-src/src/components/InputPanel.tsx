@@ -166,6 +166,7 @@ interface InputPanelProps {
   activeSuggestionIds?: Set<string>;
   healthDocuments?: ApiDocument[];
   onDocumentDeleted?: (docId: string) => void;
+  onAutoFocusEmail?: () => void;
 }
 
 export function InputPanel({
@@ -177,10 +178,13 @@ export function InputPanel({
   onSaveLongitudinal, isSavingLongitudinal, hasApiResponse,
   formStage,
   setShowUploadModal, loginUrl, activeSuggestionIds,
-  healthDocuments, onDocumentDeleted,
+  healthDocuments, onDocumentDeleted, onAutoFocusEmail,
 }: InputPanelProps) {
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
+  const hasAutoFocusedEmail = useRef(false);
+  const weightFocusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const focusById = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus());
   const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
 
   // Expand/collapse state for display-first longitudinal fields
@@ -216,7 +220,7 @@ export function InputPanel({
     const def = UNIT_DEFS[metric];
     return def.label.si !== def.label.conventional;
   };
-  const prefillComplete = !!(inputs.sex && inputs.heightCm);
+  const prefillComplete = !!(inputs.sex && inputs.heightCm && inputs.birthYear && inputs.birthYear >= 1900 && inputs.birthMonth);
 
   // Collapse only on return visits (data pre-loaded at mount). No auto-collapse on first visit.
   const isReturningUser = useRef(prefillComplete);
@@ -518,6 +522,22 @@ export function InputPanel({
                 return;
               }
               updateField(field, parseAndConvert(field, raw));
+              if (field === 'weightKg' && !hasAutoFocusedEmail.current && onAutoFocusEmail) {
+                if (weightFocusTimer.current) clearTimeout(weightFocusTimer.current);
+                const weightNum = parseFloat(raw);
+                if (/^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
+                  const couldExtend = /^\d{2}$/.test(raw) && weightNum * 10 <= r.max;
+                  if (!couldExtend) {
+                    hasAutoFocusedEmail.current = true;
+                    requestAnimationFrame(() => onAutoFocusEmail());
+                  } else {
+                    weightFocusTimer.current = setTimeout(() => {
+                      hasAutoFocusedEmail.current = true;
+                      onAutoFocusEmail();
+                    }, 800);
+                  }
+                }
+              }
             }}
             onBlur={() => setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; })}
             placeholder={isExpandedWithData ? '' : getPreviousPlaceholder(field)}
@@ -713,14 +733,21 @@ export function InputPanel({
         <div className={`prefill-fields-wrapper${collapseAnimating && !prefillExpanded ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
           <div>
             <div className={`health-field${!inputs.sex ? ' field-attention' : ''}`}>
-              <label>Sex</label>
+              <label>Sex
+                <span className="bp-info-tooltip-wrap" tabIndex={0}>
+                  <span className="bp-info-icon" aria-label="Why we ask for your sex">&#9432;</span>
+                  <span className="bp-info-tooltip">
+                    Used to calculate ideal body weight, kidney function, and screening programs.
+                  </span>
+                </span>
+              </label>
               <div className="sex-toggle" role="radiogroup" aria-label="Sex">
                 <button
                   type="button"
                   role="radio"
                   aria-checked={inputs.sex === 'male'}
                   className={`sex-toggle-btn${inputs.sex === 'male' ? ' sex-toggle-btn--active' : ''}`}
-                  onClick={() => updateField('sex', 'male')}
+                  onClick={() => { updateField('sex', 'male'); focusById(unitSystem === 'si' ? 'heightCm' : 'heightFeet'); }}
                 >
                   Male
                 </button>
@@ -729,7 +756,7 @@ export function InputPanel({
                   role="radio"
                   aria-checked={inputs.sex === 'female'}
                   className={`sex-toggle-btn${inputs.sex === 'female' ? ' sex-toggle-btn--active' : ''}`}
-                  onClick={() => updateField('sex', 'female')}
+                  onClick={() => { updateField('sex', 'female'); focusById(unitSystem === 'si' ? 'heightCm' : 'heightFeet'); }}
                 >
                   Female
                 </button>
@@ -749,6 +776,11 @@ export function InputPanel({
                     const raw = e.target.value;
                     setRawInputs(prev => ({ ...prev, heightCm: raw }));
                     updateField('heightCm', parseAndConvert('heightCm', raw));
+                    const heightNum = parseFloat(raw);
+                    const heightRange = range('heightCm');
+                    if (/^\d{3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && inputs.weightKg === undefined) {
+                      focusById('weightKg');
+                    }
                   }}
                   onBlur={() => setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; })}
                   placeholder=""
@@ -773,6 +805,9 @@ export function InputPanel({
                         updateField('heightCm', feetInchesToCm(feet, inches));
                       } else {
                         updateField('heightCm', undefined);
+                      }
+                      if (val.length === 1) {
+                        focusById('heightInches');
                       }
                     }}
                     placeholder=""
