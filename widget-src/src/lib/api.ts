@@ -988,7 +988,15 @@ export function getVisitorId(): string {
   const KEY = 'hr_vid';
   let id = localStorage.getItem(KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    id = crypto.randomUUID?.() ??
+      Array.from(crypto.getRandomValues(new Uint8Array(16)))
+        .map((b, i) => {
+          if (i === 6) b = (b & 0x0f) | 0x40;  // version 4
+          if (i === 8) b = (b & 0x3f) | 0x80;  // variant 1
+          return b.toString(16).padStart(2, '0');
+        })
+        .join('')
+        .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
     localStorage.setItem(KEY, id);
   }
   return id;
