@@ -152,7 +152,14 @@ async function handleGuestReport(data: unknown) {
     }
 
     await sendEmail(email, 'Your Personalized Health Plan', result.html);
-    subscribeToKlaviyo(email).catch(() => {});
+    subscribeToKlaviyo({
+      email,
+      sex: inputs.sex,
+      heightCm: inputs.heightCm,
+      weightKg: inputs.weightKg,
+      birthMonth: inputs.birthMonth,
+      birthYear: inputs.birthYear,
+    }).catch(() => {});
 
     return json({ success: true });
   } catch (error) {

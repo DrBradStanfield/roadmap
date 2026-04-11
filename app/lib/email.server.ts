@@ -126,7 +126,14 @@ export async function checkAndSendWelcomeEmail(
       }
       const { profile, inputs, medInputs, screenInputs } = data;
 
-      subscribeToKlaviyo(profile.email).catch(() => {});
+      subscribeToKlaviyo({
+        email: profile.email,
+        sex: inputs.sex,
+        heightCm: inputs.heightCm,
+        weightKg: inputs.weightKg,
+        birthMonth: inputs.birthMonth,
+        birthYear: inputs.birthYear,
+      }).catch(() => {});
 
       // 3. Build report HTML (shared with guest + on-demand report flows)
       const result = buildReportHtml(inputs, medInputs, screenInputs, profile.first_name);
