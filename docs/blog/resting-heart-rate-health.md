@@ -93,7 +93,7 @@ So, what can you do to help improve your health and lower your resting heart rat
 
 Moderate exercise in daily life is a critical component of a healthy lifestyle. Studies have shown that people engaged in vigorous sports, for example, have a 23% lower risk of death than those less active.
 
-Engaging in physical activity can be difficult, and if you try to jump in at a level higher than you can handle, you risk injury. It's always better to start slow with something you can handle and grow from there. In my [roadmap to health](https://drstanfield.com/pages/roadmap#exercise-beginner), I outline a series of beginner, intermediate, and advanced exercises you can incorporate into your daily life.
+Engaging in physical activity can be difficult, and if you try to jump in at a level higher than you can handle, you risk injury. It's always better to start slow with something you can handle and grow from there. In my [roadmap to health](https://drstanfield.com/), I outline a series of beginner, intermediate, and advanced exercises you can incorporate into your daily life.
 
 The beginner exercises include:
 

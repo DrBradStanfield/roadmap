@@ -111,6 +111,9 @@ export function initSentry() {
       // Facebook/Instagram in-app browser's native Java bridge failures.
       // Only occurs in Android WebViews — our app never uses Java bridges.
       /Java bridge method invocation error/,
+      // Raty star rating plugin (third-party, e.g. Judge.me) — attributed to our
+      // bundle because Sentry's setTimeout instrumentation wraps their callbacks.
+      /\.raty\b/,
     ],
     allowUrls: [
       // Only capture errors originating from our own widget bundles
