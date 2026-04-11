@@ -102,7 +102,7 @@ If we're in the group of very high-volume athletes, these studies suggest we cou
 
 Personally, I exercise because the evidence for its benefits is overwhelming. I also started taking lipid-lowering medications a few years ago, even though I'm only 34 now without any other risk factors. I want to avoid plaque formation as much as possible. Especially with this exercise data. It's not a matter of either-or, but both-and.
 
-I aim to get my LDL-c below 50-60mg/dL due to the PESA study. You can get your own personalized health plan to discuss with your doctor [here](https://drstanfield.com).
+I aim to get my LDL-c below 50-60mg/dL due to the PESA study. You can get your own personalized health plan to discuss with your doctor [here](https://drstanfield.com/pages/roadmap).
 
 For most, it's a bit of a shock to learn that exercise might have a downside when it comes to blood vessel health. But health is full of surprises like that — which is why it's so important to stay on top of the latest evidence and work with your doctor on a comprehensive approach to heart health.
 

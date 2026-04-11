@@ -121,7 +121,7 @@ When you exercise, you feel sore, fatigued, and weak. That's because exercise, t
 
 Out of everything, if you take anything away from this post, let it be that you should customize your routine for your own needs, your own body, and your own goals. I can't tell you how many reps to do of what weight or what set – at least not unless you're my patient – because those answers will vary for everyone.
 
-Whether you're a beginner at exercise or you're more advanced and trying to take your health to the next level, there's always another step you can take on your health journey. The [roadmap](https://drstanfield.com) to success isn't fixed. You have to balance what you want with what you can do and make sure you're addressing all three core pillars of health, not just relying on one to solve the equation.
+Whether you're a beginner at exercise or you're more advanced and trying to take your health to the next level, there's always another step you can take on your health journey. The [roadmap](https://drstanfield.com/pages/roadmap) to success isn't fixed. You have to balance what you want with what you can do and make sure you're addressing all three core pillars of health, not just relying on one to solve the equation.
 
 Don't be afraid to take it slow, to work out what you need as you go, and to build up as you go along. Most people aren't going to jump head-first into setting up a home gym, after all. We all start somewhere; what's important is that we start.
 
