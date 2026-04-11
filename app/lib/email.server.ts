@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import * as Sentry from '@sentry/remix';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { subscribeToKlaviyo } from './klaviyo.server';
 import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from '../../packages/health-core/src/types';
 import type { UnitSystem, MetricType } from '../../packages/health-core/src/units';
 import { calculateHealthResults, getBMICategory, getEgfrStatus, getLpaStatus, getLipidStatus, getProteinRate } from '../../packages/health-core/src/calculations';
@@ -124,6 +125,8 @@ export async function checkAndSendWelcomeEmail(
         return false;
       }
       const { profile, inputs, medInputs, screenInputs } = data;
+
+      subscribeToKlaviyo(profile.email).catch(() => {});
 
       // 3. Build report HTML (shared with guest + on-demand report flows)
       const result = buildReportHtml(inputs, medInputs, screenInputs, profile.first_name);
