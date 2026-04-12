@@ -72,23 +72,38 @@ export async function subscribeToKlaviyo(data: KlaviyoProfileData): Promise<void
     if (data.birthYear) properties.birth_year = data.birthYear;
 
     if (Object.keys(properties).length > 0) {
-      const profileResponse = await fetch('https://a.klaviyo.com/api/profiles/', {
+      // Try creating the profile; on 409 (duplicate), extract the ID and PATCH instead
+      const createRes = await fetch('https://a.klaviyo.com/api/profiles/', {
         method: 'POST',
         headers,
         body: JSON.stringify({
           data: {
             type: 'profile',
-            attributes: {
-              email: data.email,
-              properties,
-            },
+            attributes: { email: data.email, properties },
           },
         }),
       });
 
-      if (!profileResponse.ok) {
-        const body = await profileResponse.text().catch(() => '');
-        console.warn(`Klaviyo profile update failed: ${profileResponse.status} ${body.slice(0, 200)}`);
+      if (createRes.status === 409) {
+        // Extract existing profile ID from the 409 error response
+        const errBody = await createRes.json().catch(() => null);
+        const profileId = errBody?.errors?.[0]?.meta?.duplicate_profile_id;
+        if (profileId) {
+          const patchRes = await fetch(`https://a.klaviyo.com/api/profiles/${profileId}/`, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify({
+              data: { type: 'profile', id: profileId, attributes: { properties } },
+            }),
+          });
+          if (!patchRes.ok) {
+            const body = await patchRes.text().catch(() => '');
+            console.warn(`Klaviyo profile PATCH failed: ${patchRes.status} ${body.slice(0, 200)}`);
+          }
+        }
+      } else if (!createRes.ok) {
+        const body = await createRes.text().catch(() => '');
+        console.warn(`Klaviyo profile update failed: ${createRes.status} ${body.slice(0, 200)}`);
       }
     }
   } catch (error) {
