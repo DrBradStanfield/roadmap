@@ -60,6 +60,7 @@ import {
   sendWelcomeEmail,
   PROXY_PATH,
   trackABImpression,
+  trackABConversion,
   type ApiReminderPreference,
   type ApiDocument,
   getHealthDocuments,
@@ -346,6 +347,8 @@ export function HealthTool() {
               sendWelcomeEmail().then(result => {
                 if (!result.success) {
                   setEmailConfirmStatus('error');
+                } else {
+                  trackABConversion();
                 }
               }).catch(() => {
                 setEmailConfirmStatus('error');
