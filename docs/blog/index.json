@@ -1,32 +1,8 @@
 [
   {
-    "title": "The Anti-Aging Supplement Scam (New Evidence)",
-    "handle": "the-anti-aging-supplement-scam-new-evidence",
-    "url": "https://drstanfield.com/blogs/articles/the-anti-aging-supplement-scam-new-evidence",
-    "youtube": "https://www.youtube.com/watch?v=Y28TiY5muIo",
-    "tags": [
-      "Supplements",
-      "Research"
-    ],
-    "keywords": [
-      "aging",
-      "anti-aging",
-      "fish oil",
-      "lifespan",
-      "longevity",
-      "nad+",
-      "rapamycin",
-      "resveratrol",
-      "skin"
-    ],
-    "publishedAt": "2026-04-09T12:00:00Z",
-    "summary": "This article examines the NIH Interventions Testing Program (ITP), the most rigorous longevity testing program in the world. The 2026 ITP results showed that all 11 compounds tested — including astaxanthin at lower doses and AKG (alpha-ketoglutarate) — failed to extend mouse lifespan. AKG failed twice at different starting ages, undermining Rejuvant's $80/month supplement claims. The article traces the pattern of supplement hype cycles from resveratrol to NR to astaxanthin, and notes that only prescription drugs (rapamycin, acarbose, canagliflozin, 17-alpha-estradiol) have shown reproducible lifespan extension in the ITP."
-  },
-  {
     "title": "New Study Says I Was Wrong About NMN and NR?",
     "handle": "new-study-says-i-was-wrong-about-nmn-and-nr",
     "url": "https://drstanfield.com/blogs/articles/new-study-says-i-was-wrong-about-nmn-and-nr",
-    "youtube": "https://www.youtube.com/watch?v=XB6B_XjQMa8",
     "tags": [
       "Supplements",
       "Research"
@@ -45,7 +21,31 @@
       "sarcopenia"
     ],
     "publishedAt": "2026-04-09T12:00:00Z",
+    "youtube": "https://www.youtube.com/watch?v=XB6B_XjQMa8",
     "summary": "Dr. Brad Stanfield examines whether NMN and NR supplements are worth the premium price. A new study claimed NR boosted NAD 2.3x more than NMN, but a larger 65-person trial found no difference. More importantly, three independent research groups have confirmed that gut bacteria break both NMN and NR down into cheap nicotinic acid before the body rebuilds it into NAD. Meta-analyses of clinical trials show no significant improvements in muscle function, metabolism, or cognition from NAD boosting — even in long-COVID patients where NAD tripled. Exercise-trained older adults maintained youthful NAD levels naturally, making regular physical activity the evidence-based approach."
+  },
+  {
+    "title": "The Anti-Aging Supplement Scam (New Evidence)",
+    "handle": "the-anti-aging-supplement-scam-new-evidence",
+    "url": "https://drstanfield.com/blogs/articles/the-anti-aging-supplement-scam-new-evidence",
+    "tags": [
+      "Supplements",
+      "Research"
+    ],
+    "keywords": [
+      "aging",
+      "anti-aging",
+      "fish oil",
+      "lifespan",
+      "longevity",
+      "nad+",
+      "rapamycin",
+      "resveratrol",
+      "skin"
+    ],
+    "publishedAt": "2026-04-09T12:00:00Z",
+    "youtube": "https://www.youtube.com/watch?v=Y28TiY5muIo",
+    "summary": "This article examines the NIH's Interventions Testing Program (ITP), the most rigorous longevity testing program in the world, which tests compounds across three independent lab sites simultaneously. The 2026 ITP results showed that all 11 compounds tested — including astaxanthin at lower doses and AKG (alpha-ketoglutarate) — failed to extend mouse lifespan. AKG failed twice at different starting ages, undermining Rejuvant's $80/month supplement claims. The article traces the pattern of supplement hype cycles from resveratrol to NR to astaxanthin, and notes that only prescription drugs (rapamycin, acarbose, canagliflozin, 17-alpha-estradiol) have shown reproducible lifespan extension in the ITP."
   },
   {
     "title": "I Got a Full-Body MRI. Here's Why You Shouldn't.",

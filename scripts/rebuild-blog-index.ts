@@ -20,10 +20,17 @@ interface IndexEntry {
   tags: string[];
   keywords: string[];
   publishedAt: string;
-  type?: 'reference' | 'article';
+  type?: 'reference' | 'article' | 'guideline' | 'pathway';
   youtube?: string;
   summary?: string;
 }
+
+// Directories to scan for content files
+const CONTENT_DIRS = [
+  path.join(process.cwd(), 'docs/blog'),
+  path.join(process.cwd(), 'docs/guideline'),
+  path.join(process.cwd(), 'docs/pathway'),
+];
 
 function parseFrontmatter(content: string): Record<string, any> | null {
   const match = content.match(/^---\n([\s\S]*?)\n---/);
@@ -53,34 +60,37 @@ function parseFrontmatter(content: string): Record<string, any> | null {
 }
 
 function main() {
-  const files = fs.readdirSync(BLOG_DIR).filter(f => f.endsWith('.md'));
-  console.log(`Found ${files.length} .md files in ${BLOG_DIR}`);
-
   const index: IndexEntry[] = [];
 
-  for (const file of files) {
-    const content = fs.readFileSync(path.join(BLOG_DIR, file), 'utf-8');
-    const fm = parseFrontmatter(content);
-    if (!fm || !fm.title) {
-      console.warn(`  ⚠ Skipping ${file} — no valid frontmatter`);
-      continue;
+  for (const dir of CONTENT_DIRS) {
+    if (!fs.existsSync(dir)) continue;
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
+    console.log(`Found ${files.length} .md files in ${dir}`);
+
+    for (const file of files) {
+      const content = fs.readFileSync(path.join(dir, file), 'utf-8');
+      const fm = parseFrontmatter(content);
+      if (!fm || !fm.title) {
+        console.warn(`  ⚠ Skipping ${file} — no valid frontmatter`);
+        continue;
+      }
+
+      const handle = file.replace('.md', '');
+      const entry: IndexEntry = {
+        title: fm.title,
+        handle,
+        url: fm.url || `https://drstanfield.com/blogs/articles/${handle}`,
+        tags: Array.isArray(fm.tags) ? fm.tags : [],
+        keywords: Array.isArray(fm.keywords) ? fm.keywords : [],
+        publishedAt: fm.publishedAt || '',
+      };
+
+      if (fm.type) entry.type = fm.type;
+      if (fm.youtube) entry.youtube = fm.youtube;
+      if (fm.summary) entry.summary = fm.summary;
+
+      index.push(entry);
     }
-
-    const handle = file.replace('.md', '');
-    const entry: IndexEntry = {
-      title: fm.title,
-      handle,
-      url: fm.url || `https://drstanfield.com/blogs/articles/${handle}`,
-      tags: Array.isArray(fm.tags) ? fm.tags : [],
-      keywords: Array.isArray(fm.keywords) ? fm.keywords : [],
-      publishedAt: fm.publishedAt || '',
-    };
-
-    if (fm.type) entry.type = fm.type;
-    if (fm.youtube) entry.youtube = fm.youtube;
-    if (fm.summary) entry.summary = fm.summary;
-
-    index.push(entry);
   }
 
   // Sort by publishedAt descending (newest first)

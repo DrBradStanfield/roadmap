@@ -68,29 +68,36 @@ interface BlogIndexEntry {
   url: string;
   tags: string[];
   keywords: string[];
-  type?: 'reference' | 'article';
+  type?: 'reference' | 'article' | 'guideline' | 'pathway';
   summary?: string;
 }
 
 let BLOG_INDEX: BlogIndexEntry[] = [];
 let BLOG_INDEX_TEXT = '';
+let GUIDELINE_INDEX_TEXT = '';
 try {
   const raw = fs.readFileSync(path.join(process.cwd(), 'docs/blog/index.json'), 'utf-8');
   BLOG_INDEX = JSON.parse(raw);
-  // Compact text index for the system prompt — title + URL + tags + summary (reference only)
+  // Build two index text blocks: blog articles + clinical guidelines
   // Keywords are used for server-side matching only, not included in prompt
-  // Summaries only for reference articles (supplement wiki) to keep token budget reasonable
-  BLOG_INDEX_TEXT = BLOG_INDEX.map(a => {
+  const blogEntries: string[] = [];
+  const guidelineEntries: string[] = [];
+  for (const a of BLOG_INDEX) {
     let line = `- ${a.title} [${a.url}]`;
     if (a.tags.length) line += ` (${a.tags.join(', ')})`;
-    if (a.type === 'reference' && a.summary) {
-      // Truncate to ~50 words to keep index under ~20K tokens
+    if ((a.type === 'reference' || a.type === 'guideline' || a.type === 'pathway') && a.summary) {
       const words = a.summary.split(/\s+/);
       const short = words.length > 50 ? words.slice(0, 50).join(' ') + '...' : a.summary;
       line += ` — ${short}`;
     }
-    return line;
-  }).join('\n');
+    if (a.type === 'guideline' || a.type === 'pathway') {
+      guidelineEntries.push(line);
+    } else {
+      blogEntries.push(line);
+    }
+  }
+  BLOG_INDEX_TEXT = blogEntries.join('\n');
+  GUIDELINE_INDEX_TEXT = guidelineEntries.join('\n');
 } catch {
   console.warn('docs/blog/index.json not found — chat will not have blog knowledge');
 }
@@ -471,9 +478,9 @@ export function matchBlogArticles(userMessage: string, maxResults = 3): string[]
       if (msgLower.includes(word)) score += 1;
     }
 
-    // Reference articles (supplement wiki) get a boost to outrank blog posts
-    // that mention the topic in passing — only when there's already a textual match
-    if (article.type === 'reference' && score > 0) score += 5;
+    // Boost by content type — guidelines > reference articles > blog posts
+    if ((article.type === 'guideline' || article.type === 'pathway') && score > 0) score += 8;
+    else if (article.type === 'reference' && score > 0) score += 5;
 
     if (score > 2) {
       matches.push({ handle: article.handle, score });
@@ -492,6 +499,13 @@ export function matchBlogArticles(userMessage: string, maxResults = 3): string[]
  */
 const blogArticleCache = new Map<string, string | null>();
 
+function getContentDir(handle: string): string {
+  const entry = BLOG_INDEX.find(a => a.handle === handle);
+  if (entry?.type === 'guideline') return 'docs/guideline';
+  if (entry?.type === 'pathway') return 'docs/pathway';
+  return 'docs/blog';
+}
+
 function loadBlogArticle(handle: string): string | null {
   // Validate handle to prevent path traversal
   if (!/^[a-z0-9-]+$/.test(handle)) return null;
@@ -500,8 +514,9 @@ function loadBlogArticle(handle: string): string | null {
   if (cached !== undefined) return cached;
 
   try {
+    const dir = getContentDir(handle);
     const content = fs.readFileSync(
-      path.join(process.cwd(), 'docs/blog', `${handle}.md`), 'utf-8',
+      path.join(process.cwd(), dir, `${handle}.md`), 'utf-8',
     );
     blogArticleCache.set(handle, content);
     return content;
@@ -572,6 +587,11 @@ export function buildSystemBlocks(
     ...(BLOG_INDEX_TEXT ? [{
       type: 'text' as const,
       text: `## Blog Articles Index\n\nDr Stanfield's blog articles — reference and link to these when relevant:\n\n${BLOG_INDEX_TEXT}`,
+      cache_control: { type: 'ephemeral' as const },
+    }] : []),
+    ...(GUIDELINE_INDEX_TEXT ? [{
+      type: 'text' as const,
+      text: `## Clinical Guidelines Index\n\nEvidence-based clinical guidelines — use these for authoritative recommendations:\n\n${GUIDELINE_INDEX_TEXT}`,
       cache_control: { type: 'ephemeral' as const },
     }] : []),
     {

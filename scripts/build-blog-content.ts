@@ -37,7 +37,7 @@ interface IndexEntry {
   tags: string[];
   keywords: string[];
   publishedAt: string;
-  type?: 'reference' | 'article';
+  type?: 'reference' | 'article' | 'guideline' | 'pathway';
   summary?: string;
 }
 
@@ -168,8 +168,10 @@ async function main() {
   fs.mkdirSync(BLOG_DIR, { recursive: true });
 
   // Preserve `type` and `summary` fields from existing index (Shopify doesn't store them)
-  const existingTypeMap = new Map<string, 'reference' | 'article'>();
+  // Also preserve non-Shopify entries (guideline/pathway) that live in other directories
+  const existingTypeMap = new Map<string, IndexEntry['type']>();
   const existingSummaryMap = new Map<string, string>();
+  const nonShopifyEntries: IndexEntry[] = [];
   try {
     const oldIndex: IndexEntry[] = JSON.parse(
       fs.readFileSync(path.join(BLOG_DIR, 'index.json'), 'utf-8'),
@@ -177,12 +179,16 @@ async function main() {
     for (const entry of oldIndex) {
       if (entry.type) existingTypeMap.set(entry.handle, entry.type);
       if (entry.summary) existingSummaryMap.set(entry.handle, entry.summary);
+      // Guideline/pathway entries don't come from Shopify — preserve them as-is
+      if (entry.type === 'guideline' || entry.type === 'pathway') {
+        nonShopifyEntries.push(entry);
+      }
     }
     if (existingTypeMap.size > 0) {
       console.log(`Preserving 'type' field for ${existingTypeMap.size} entries from existing index.`);
     }
-    if (existingSummaryMap.size > 0) {
-      console.log(`Preserving 'summary' field for ${existingSummaryMap.size} entries from existing index.`);
+    if (nonShopifyEntries.length > 0) {
+      console.log(`Preserving ${nonShopifyEntries.length} non-Shopify entries (guideline/pathway).`);
     }
   } catch (err: any) {
     if (err?.code !== 'ENOENT') throw err;
@@ -228,6 +234,9 @@ ${markdown}
     if (preservedSummary) entry.summary = preservedSummary;
     index.push(entry);
   }
+
+  // Merge non-Shopify entries back into the index
+  index.push(...nonShopifyEntries);
 
   // Write index.json
   fs.writeFileSync(
