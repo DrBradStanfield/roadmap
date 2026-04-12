@@ -1,7 +1,23 @@
 import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core';
 import type { UnitSystem } from '@roadmap/health-core';
-import { validateInputValue } from '@roadmap/health-core';
+import { healthInputSchema } from '@roadmap/health-core';
 import type { ApiReminderPreference } from './api';
+
+/**
+ * Sanitize inputs against the Zod schema (single source of truth).
+ * Validates each field individually — invalid fields are stripped,
+ * unknown fields (e.g. unitSystem) pass through unchanged.
+ */
+function sanitizeInputs(inputs: Partial<HealthInputs>): Partial<HealthInputs> {
+  const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean } }>;
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(inputs)) {
+    if (!(key in shape) || shape[key].safeParse(value).success) {
+      result[key] = value;
+    }
+  }
+  return result as Partial<HealthInputs>;
+}
 
 const STORAGE_KEY = 'health_roadmap_data';
 const UNIT_PREF_KEY = 'health_roadmap_unit_system';
@@ -52,26 +68,20 @@ export function loadFromLocalStorage(): LoadedData | null {
 
     const data: StoredData = JSON.parse(stored);
 
-    // Sanitize identity fields (no unit conversion) to catch values
-    // saved before client-side validation was added (e.g. birthYear: 2980)
-    const SANITIZE_FIELDS = ['birthYear', 'birthMonth', 'systolicBp', 'diastolicBp', 'psa'] as const;
-    for (const field of SANITIZE_FIELDS) {
-      if (data.inputs[field] !== undefined) {
-        const validated = validateInputValue(field, data.inputs[field] as number);
-        if (validated === undefined) {
-          delete (data.inputs as Record<string, unknown>)[field];
-        }
-      }
-    }
+    // Validate ALL input fields against the Zod schema (single source of truth).
+    // localStorage is an untrusted boundary — extensions, corrupted writes, or
+    // stale data can inject NaN, Infinity, or out-of-range values that crash
+    // the widget. Invalid fields are stripped; unknown fields pass through.
+    const sanitizedInputs = sanitizeInputs(data.inputs);
 
     return {
-      inputs: data.inputs,
-      // Coerce measurement values to numbers — stale localStorage from older
-      // versions may contain PostgREST NUMERIC strings (e.g. "5.2" not 5.2).
-      previousMeasurements: (data.previousMeasurements ?? []).map(m => ({
-        ...m,
-        value: Number(m.value),
-      })),
+      inputs: sanitizedInputs,
+      // Coerce measurement values to numbers and filter out non-finite values.
+      // Stale localStorage may contain PostgREST NUMERIC strings (e.g. "5.2")
+      // or corrupted NaN/Infinity values.
+      previousMeasurements: (data.previousMeasurements ?? [])
+        .filter(m => m.value != null && m.value !== '' && Number.isFinite(Number(m.value)))
+        .map(m => ({ ...m, value: Number(m.value) })),
       medications: data.medications ?? [],
       screenings: data.screenings ?? [],
       reminderPreferences: data.reminderPreferences ?? [],

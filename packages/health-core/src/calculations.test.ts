@@ -325,6 +325,26 @@ describe('calculateHealthResults', () => {
     expect(results.ldlC).toBe(2.5);
   });
 
+  it('calculates non-HDL when total > HDL', () => {
+    const results = calculateHealthResults({
+      heightCm: 175,
+      sex: 'male',
+      totalCholesterol: 5.0,
+      hdlC: 1.5,
+    });
+    expect(results.nonHdlCholesterol).toBe(3.5);
+  });
+
+  it('does not produce negative non-HDL when HDL > total (data entry error)', () => {
+    const results = calculateHealthResults({
+      heightCm: 175,
+      sex: 'male',
+      totalCholesterol: 2.0,
+      hdlC: 4.0,
+    });
+    expect(results.nonHdlCholesterol).toBeUndefined();
+  });
+
   it('does not include apoB or ldlC when not provided', () => {
     const results = calculateHealthResults({
       heightCm: 175,

@@ -173,9 +173,12 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   }
 
   // Calculate non-HDL cholesterol if both total and HDL are provided
+  // Guard: HDL > total is a data-entry error — don't store a negative result
   if (inputs.totalCholesterol !== undefined && inputs.hdlC !== undefined) {
     const nonHdl = inputs.totalCholesterol - inputs.hdlC;
-    results.nonHdlCholesterol = Math.round(nonHdl * 10) / 10;
+    if (nonHdl > 0) {
+      results.nonHdlCholesterol = Math.round(nonHdl * 10) / 10;
+    }
   }
 
   // Pass through lipid values for snapshot tile cascade
