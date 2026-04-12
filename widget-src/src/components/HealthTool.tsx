@@ -43,6 +43,8 @@ import {
   getAuthRedirectFlag,
   consumeEmailConfirmFlag,
   hasAuthenticatedFlag,
+  safeSetItem,
+  safeRemoveItem,
 } from '../lib/storage';
 import {
   loadLatestMeasurements,
@@ -172,7 +174,7 @@ export function HealthTool() {
       } else {
         next[field] = toggled;
       }
-      localStorage.setItem('health_roadmap_unit_overrides', JSON.stringify(next));
+      safeSetItem('health_roadmap_unit_overrides', JSON.stringify(next));
       return next;
     });
   }, [unitSystem]);
@@ -184,7 +186,7 @@ export function HealthTool() {
     setInputs(prev => ({ ...prev, unitSystem: system }));
     // Clear per-field overrides when global unit changes
     setUnitOverrides({});
-    localStorage.removeItem('health_roadmap_unit_overrides');
+    safeRemoveItem('health_roadmap_unit_overrides');
   }, []);
 
   // Load data on mount (from cloud if logged in, otherwise localStorage)

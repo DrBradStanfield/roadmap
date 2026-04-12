@@ -156,3 +156,20 @@ export function consumeEmailConfirmFlag(): string | null {
 export function hasAuthenticatedFlag(): boolean {
   try { return !!localStorage.getItem('health_roadmap_authenticated'); } catch { return false; }
 }
+
+// ---------------------------------------------------------------------------
+// Generic safe accessors — for modules that manage their own localStorage keys.
+// In sandboxed iframes (about:srcdoc), property access throws SecurityError.
+// ---------------------------------------------------------------------------
+
+export function safeGetItem(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+export function safeSetItem(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch {}
+}
+
+export function safeRemoveItem(key: string): void {
+  try { localStorage.removeItem(key); } catch {}
+}

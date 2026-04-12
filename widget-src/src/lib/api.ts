@@ -1,4 +1,5 @@
 import type { HealthInputs } from '@roadmap/health-core';
+import { safeGetItem, safeSetItem } from './storage';
 import {
   measurementsToInputs,
   diffInputsToMeasurements,
@@ -984,21 +985,24 @@ export async function deleteLabValue(labValueId: string): Promise<boolean> {
 // A/B Testing
 // ---------------------------------------------------------------------------
 
+let cachedVisitorId: string | null = null;
+
 export function getVisitorId(): string {
+  if (cachedVisitorId) return cachedVisitorId;
   const KEY = 'hr_vid';
-  let id = localStorage.getItem(KEY);
-  if (!id) {
-    id = crypto.randomUUID?.() ??
-      Array.from(crypto.getRandomValues(new Uint8Array(16)))
-        .map((b, i) => {
-          if (i === 6) b = (b & 0x0f) | 0x40;  // version 4
-          if (i === 8) b = (b & 0x3f) | 0x80;  // variant 1
-          return b.toString(16).padStart(2, '0');
-        })
-        .join('')
-        .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
-    localStorage.setItem(KEY, id);
-  }
+  const stored = safeGetItem(KEY);
+  if (stored) { cachedVisitorId = stored; return stored; }
+  const id = crypto.randomUUID?.() ??
+    Array.from(crypto.getRandomValues(new Uint8Array(16)))
+      .map((b, i) => {
+        if (i === 6) b = (b & 0x0f) | 0x40;  // version 4
+        if (i === 8) b = (b & 0x3f) | 0x80;  // variant 1
+        return b.toString(16).padStart(2, '0');
+      })
+      .join('')
+      .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+  safeSetItem(KEY, id);
+  cachedVisitorId = id;
   return id;
 }
 
@@ -1026,8 +1030,8 @@ function trackABEvent(eventType: 'impression' | 'conversion'): void {
     // Skip redundant impression calls — server deduplicates, but this avoids the network roundtrip
     if (eventType === 'impression') {
       const sentKey = `hr_ab_imp_${testId}`;
-      if (localStorage.getItem(sentKey)) continue;
-      localStorage.setItem(sentKey, '1');
+      if (safeGetItem(sentKey)) continue;
+      safeSetItem(sentKey, '1');
     }
     apiCall(
       () => fetch(`${PROXY_PATH}/api/ab`, {

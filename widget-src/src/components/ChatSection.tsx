@@ -19,6 +19,7 @@ import {
 } from '../lib/chat-api';
 import { renderMarkdown } from '../lib/markdown';
 import { FeedbackForm } from './FeedbackForm';
+import { safeGetItem, safeSetItem } from '../lib/storage';
 
 export interface ChatPrefetchData {
   conversations: ChatConversation[];
@@ -110,7 +111,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
   // Load conversations and show disclosure on mount when startExpanded
   useEffect(() => {
     if (startExpanded) {
-      if (!localStorage.getItem('health_roadmap_chat_disclosed')) {
+      if (!safeGetItem('health_roadmap_chat_disclosed')) {
         setShowDisclosure(true);
       }
       loadConversationsIfNeeded();
@@ -224,7 +225,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
   const handleExpand = useCallback(() => {
     // Delegate to parent (e.g. open floating FAB chat) if provided
     if (onExpand) { onExpand(); return; }
-    const disclosed = localStorage.getItem('health_roadmap_chat_disclosed');
+    const disclosed = safeGetItem('health_roadmap_chat_disclosed');
     if (!disclosed) {
       setShowDisclosure(true);
     }
@@ -234,7 +235,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
   }, [isLoggedIn, onExpand, loadConversationsIfNeeded]);
 
   const dismissDisclosure = useCallback(() => {
-    localStorage.setItem('health_roadmap_chat_disclosed', '1');
+    safeSetItem('health_roadmap_chat_disclosed', '1');
     setShowDisclosure(false);
   }, []);
 
