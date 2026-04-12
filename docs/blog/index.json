@@ -8926,5 +8926,51 @@
     "publishedAt": "2024-01-09T11:21:25Z",
     "type": "reference",
     "summary": "Acetyl-L-carnitine (ALCAR) is an acetylated form of L-carnitine, a naturally occurring compound derived from the amino acids lysine and methionine. Carnitine plays a critical role in energy production by transporting long-chain fatty acids into the mitochondria, where they undergo beta-oxidation to produce adenosine triphosphate (ATP). Approximately 95% of total body carnitine is stored in heart and skeletal muscle, with the remainder in the liver, kidneys, and circulating plasma."
+  },
+  {
+    "title": "Diet: Clinical Dietary Guidance",
+    "handle": "diet",
+    "url": "https://drstanfield.com/blogs/articles/diet",
+    "tags": [
+      "Guideline"
+    ],
+    "keywords": [
+      "diet",
+      "nutrition",
+      "sodium",
+      "salt",
+      "dash",
+      "mediterranean",
+      "fiber",
+      "whole grains",
+      "vegetables",
+      "fruits",
+      "protein",
+      "saturated fat",
+      "unsaturated fat",
+      "olive oil",
+      "ultraprocessed",
+      "processed food",
+      "added sugar",
+      "sugar",
+      "alcohol",
+      "potassium",
+      "cholesterol",
+      "ldl",
+      "blood pressure",
+      "hypertension",
+      "weight loss",
+      "obesity",
+      "omega-3",
+      "fish oil",
+      "nuts",
+      "legumes",
+      "dairy",
+      "red meat",
+      "processed meat"
+    ],
+    "publishedAt": "",
+    "type": "guideline",
+    "summary": "AHA 2026 dietary guidance compiled with Dr. Stanfield's clinical framework. Covers 9 features of heart-healthy dietary patterns: energy balance, vegetables/fruits, whole grains, healthy protein sources, unsaturated fats, minimally processed foods, limiting added sugars, reducing sodium, and alcohol guidance. Brad's approach aligns with most AHA recommendations, with specific divergences on omega-3 supplementation and more aggressive lipid targets."
   }
 ]

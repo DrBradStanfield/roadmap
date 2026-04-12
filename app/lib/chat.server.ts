@@ -22,7 +22,7 @@ import { decodeSex, decodeUnitSystem } from '../../packages/health-core/src/type
 // ---------------------------------------------------------------------------
 
 const CHAT_MODEL = 'claude-haiku-4-5-20251001';
-const CHAT_MAX_TOKENS = 1024;
+const CHAT_MAX_TOKENS = 2048;
 const MAX_MESSAGE_LENGTH = 500;
 const GUEST_DAILY_LIMIT = 3;
 const FREE_DAILY_LIMIT = 50;
