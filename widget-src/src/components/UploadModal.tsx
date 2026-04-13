@@ -193,6 +193,11 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
       onProgressUpdate?.(p);
     };
 
+    // Collect file metadata for Sentry context on errors
+    const fileNames = files.map(f => f.name);
+    const fileTypes = files.map(f => f.type || 'unknown');
+    const fileCount = files.length;
+
     try {
       const upload = await loadUploadBundle();
       const zipFiles = files.filter(f => upload.isZip(f));
@@ -246,7 +251,10 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
       if (!abort.signal.aborted) {
         const code = err instanceof UploadError ? err.code : 'unknown';
         console.error('Upload processing error:', code, err);
-        Sentry.captureException(err, { tags: { uploadErrorCode: code } });
+        Sentry.captureException(err, {
+          tags: { uploadErrorCode: code },
+          extra: { fileNames, fileTypes, fileCount },
+        });
         setError(err instanceof UploadError
           ? UPLOAD_ERROR_MESSAGES[err.code]
           : 'An error occurred while processing files. Please try again.');
