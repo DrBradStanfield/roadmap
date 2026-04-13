@@ -61,6 +61,10 @@ export async function subscribeToKlaviyo(data: KlaviyoProfileData): Promise<void
     if (!subResponse.ok) {
       const body = await subResponse.text().catch(() => '');
       console.warn(`Klaviyo subscription failed: ${subResponse.status} ${body.slice(0, 200)}`);
+      Sentry.captureException(new Error(`Klaviyo subscription failed (${subResponse.status})`), {
+        extra: { status: subResponse.status, errorText: body.slice(0, 500) },
+        tags: { feature: 'klaviyo' },
+      });
     }
 
     // 2. Set custom profile properties via the Profiles API (which accepts properties)
@@ -99,11 +103,19 @@ export async function subscribeToKlaviyo(data: KlaviyoProfileData): Promise<void
           if (!patchRes.ok) {
             const body = await patchRes.text().catch(() => '');
             console.warn(`Klaviyo profile PATCH failed: ${patchRes.status} ${body.slice(0, 200)}`);
+            Sentry.captureException(new Error(`Klaviyo profile PATCH failed (${patchRes.status})`), {
+              extra: { status: patchRes.status, errorText: body.slice(0, 500) },
+              tags: { feature: 'klaviyo' },
+            });
           }
         }
       } else if (!createRes.ok) {
         const body = await createRes.text().catch(() => '');
         console.warn(`Klaviyo profile update failed: ${createRes.status} ${body.slice(0, 200)}`);
+        Sentry.captureException(new Error(`Klaviyo profile update failed (${createRes.status})`), {
+          extra: { status: createRes.status, errorText: body.slice(0, 500) },
+          tags: { feature: 'klaviyo' },
+        });
       }
     }
   } catch (error) {

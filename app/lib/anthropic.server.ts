@@ -652,7 +652,10 @@ export async function pollBatch(
   });
 
   if (!statusResponse.ok) {
-    throw new Error(`Batch status error (${statusResponse.status})`);
+    const errorText = await statusResponse.text().catch(() => 'Unknown error');
+    const err = new Error(`Batch status error (${statusResponse.status})`);
+    Sentry.captureException(err, { extra: { status: statusResponse.status, errorText } });
+    throw err;
   }
 
   const statusData = await statusResponse.json();
@@ -671,7 +674,10 @@ export async function pollBatch(
   });
 
   if (!resultsResponse.ok) {
-    throw new Error(`Batch results error (${resultsResponse.status})`);
+    const errorText = await resultsResponse.text().catch(() => 'Unknown error');
+    const err = new Error(`Batch results error (${resultsResponse.status})`);
+    Sentry.captureException(err, { extra: { status: resultsResponse.status, errorText } });
+    throw err;
   }
 
   // Parse JSONL — some entries contain literal newlines in markdown content,
