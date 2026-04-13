@@ -517,7 +517,7 @@ async function fetchAnthropicRaw(
     const errorText = await response.text().catch(() => 'Unknown error');
     const err = new Error(`Anthropic API error (status ${response.status})`);
     console.error(err.message, errorText);
-    Sentry.captureException(err, { extra: { status: response.status } });
+    Sentry.captureException(err, { extra: { status: response.status, errorText } });
     throw err;
   }
 
@@ -620,7 +620,7 @@ export async function createBatch(
     const errorText = await response.text().catch(() => 'Unknown error');
     const err = new Error(`Batch API error (status ${response.status})`);
     console.error(err.message, errorText);
-    Sentry.captureException(err, { extra: { status: response.status } });
+    Sentry.captureException(err, { extra: { status: response.status, errorText } });
     throw err;
   }
 
