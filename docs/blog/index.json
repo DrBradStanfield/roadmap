@@ -8941,6 +8941,7 @@
       "salt",
       "dash",
       "mediterranean",
+      "portfolio diet",
       "fiber",
       "whole grains",
       "vegetables",
@@ -8949,6 +8950,7 @@
       "saturated fat",
       "unsaturated fat",
       "olive oil",
+      "coconut oil",
       "ultraprocessed",
       "processed food",
       "added sugar",
@@ -8965,12 +8967,30 @@
       "fish oil",
       "nuts",
       "legumes",
+      "lentils",
+      "chickpeas",
+      "beans",
       "dairy",
       "red meat",
-      "processed meat"
+      "processed meat",
+      "eggs",
+      "ibs",
+      "irritable bowel",
+      "ibd",
+      "crohn",
+      "ulcerative colitis",
+      "fodmap",
+      "low fodmap",
+      "gut health",
+      "psyllium",
+      "oats",
+      "coffee",
+      "caffeine",
+      "intermittent fasting",
+      "fasting"
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "AHA 2026 dietary guidance compiled with Dr. Stanfield's clinical framework. Covers 9 features of heart-healthy dietary patterns: energy balance, vegetables/fruits, whole grains, healthy protein sources, unsaturated fats, minimally processed foods, limiting added sugars, reducing sodium, and alcohol guidance. Brad's approach aligns with most AHA recommendations, with specific divergences on omega-3 supplementation and more aggressive lipid targets."
+    "summary": "AHA 2026 dietary guidance compiled with Dr. Stanfield's clinical framework. Covers 9 heart-healthy dietary features, priority foods (legumes for protein + fibre + potassium), DASH/Mediterranean/Portfolio diet patterns with specific daily servings, DGA 2020-2025 food group targets, and IBS/IBD dietary management including low-FODMAP guidance and IBS-safe alternatives. Brad's divergences on omega-3 supplementation and alcohol noted."
   }
 ]
