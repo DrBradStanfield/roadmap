@@ -342,13 +342,16 @@ export function HealthTool() {
               }
             }
 
+            // Track A/B conversion immediately — don't gate on email success.
+            // The sync path already set isFirstSaveRef = false, so the guard in
+            // handleSaveLongitudinal won't double-fire.
+            trackABConversion();
+
             // Trigger welcome email only if profile saved (needs height + sex)
             if (profileSaved) {
               sendWelcomeEmail().then(result => {
                 if (!result.success) {
                   setEmailConfirmStatus('error');
-                } else {
-                  trackABConversion();
                 }
               }).catch(() => {
                 setEmailConfirmStatus('error');
@@ -554,6 +557,11 @@ export function HealthTool() {
           return next;
         });
 
+        // Track A/B conversion on first-ever save (covers direct logged-in users
+        // who skip the guest→login sync path).
+        if (isFirstSaveRef.current) {
+          trackABConversion();
+        }
         isFirstSaveRef.current = false;
         setSaveStatus('saved');
         setIsSavingLongitudinal(false);

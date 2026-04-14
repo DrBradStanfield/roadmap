@@ -98,6 +98,27 @@
           }).catch(function() {});
         }
 
+        // A/B conversion tracking — fire immediately, don't gate on email success.
+        try {
+          var abRaw = JSON.parse(localStorage.getItem('hr_ab') || '{}');
+          var abTests = {};
+          if (abRaw.tests) {
+            abTests = abRaw.tests;
+          } else if (abRaw.t && abRaw.v) {
+            abTests[abRaw.t] = abRaw.v;
+          }
+          var vid = localStorage.getItem('hr_vid');
+          if (vid) {
+            Object.keys(abTests).forEach(function(tid) {
+              fetch(PROXY.replace('/api/measurements', '/api/ab'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ conversion: { testId: tid, variantId: abTests[tid], visitorId: vid } })
+              }).catch(function() {});
+            });
+          }
+        } catch(e) {}
+
         // Welcome email is best-effort — only update flag on error
         fetch(PROXY, {
           method: 'POST',
@@ -106,26 +127,6 @@
         }).then(function(r) { return r.json(); }).then(function(result) {
           if (!result || !result.success) {
             sessionStorage.setItem('health_roadmap_email_confirm', 'error');
-          } else {
-            try {
-              var abRaw = JSON.parse(localStorage.getItem('hr_ab') || '{}');
-              var abTests = {};
-              if (abRaw.tests) {
-                abTests = abRaw.tests;
-              } else if (abRaw.t && abRaw.v) {
-                abTests[abRaw.t] = abRaw.v;
-              }
-              var vid = localStorage.getItem('hr_vid');
-              if (vid) {
-                Object.keys(abTests).forEach(function(tid) {
-                  fetch(PROXY.replace('/api/measurements', '/api/ab'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ conversion: { testId: tid, variantId: abTests[tid], visitorId: vid } })
-                  }).catch(function() {});
-                });
-              }
-            } catch(e) {}
           }
         }).catch(function() {
           sessionStorage.setItem('health_roadmap_email_confirm', 'error');
