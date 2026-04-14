@@ -12,6 +12,8 @@ summary: "AHA 2026 dietary guidance compiled with Dr. Stanfield's clinical frame
 
 This guideline covers the 9 features of a heart-healthy dietary pattern as defined by the AHA 2026 Scientific Statement, cross-referenced with Dr. Stanfield's Health Roadmap algorithm.
 
+*Note: Bracketed numbers like [3], [22-26] refer to the AHA 2026 paper's reference list (DOI: 10.1161/CIR.0000000000001435). Key studies are also cited with full DOIs in each section's References.*
+
 ---
 
 ## Dietary Principles
@@ -66,26 +68,81 @@ Heart-healthy dietary patterns should be established early in life (from age 1 y
 
 ## Feature 4: Healthy Protein Sources
 
-**Guideline position:** Recommendations centre on promoting heart-healthy protein *sources* rather than protein quantity. The relationship between protein quantity and cardiovascular health is uncertain [32].
+**Guideline position:** The AHA 2026 recommends focusing on protein *sources* rather than protein *quantity* — the relationship between protein quantity and cardiovascular health is uncertain [32]. Recommendations: shift from meat to plant sources (legumes, nuts), regularly consume fish/seafood, choose low-fat dairy, and if red meat is desired, choose lean cuts, avoid processed forms, and limit portion size [33-52].
 
-**4a. Plant sources (legumes and nuts):** Dietary patterns higher in legumes and lower in red/processed meat are associated with lower CVD and coronary heart disease risk [33-35]. Nuts are associated with lower CVD and all-cause mortality risk [36,37]. Plant-based meat alternatives require caution — many are ultraprocessed with added sugars, sodium, and preservatives [38].
+### Source matters more than quantity
 
-**4b. Fish and seafood:** Dietary patterns containing nonfried fish/seafood are associated with lower CVD events and MI risk [39-41]. Fish oil supplementation alone has not been demonstrated to lower CVD risk in otherwise healthy adults and may increase atrial fibrillation risk [42-44].
+This is one of the most important and nuanced areas of nutrition science. The evidence consistently shows that **the source of protein determines its health impact, not the total amount:**
 
-**4c. Dairy:** Low-fat dairy in dietary patterns is associated with lower CVD risk [23]. Evidence on full-fat vs low-fat dairy and CVD is limited and inconclusive [45]. Continue prior guidance: replace dairy fat with unsaturated fat sources, choose nonfat or low-fat dairy [1].
+- **Plant protein** (legumes, nuts, beans) is associated with *lower* all-cause mortality. An additional 3% energy from plant proteins per day was associated with a 5% lower risk of death from all causes (Naghshi 2020, BMJ, 32 cohort studies). A separate cohort study found high plant protein intake cut mortality risk by 36% (HR = 0.64) [DOI: 10.1038/s41598-023-30455-9].
 
-**4d. Red and processed meat:** Replacing red meat (including lean, unprocessed) with healthier protein sources, especially plant sources, improves CVD risk factors [22,49]. Associations strongest for processed meat. Processed meats include bacon, sausage, hot dogs, deli meats. Approaches: choose lean cuts, limit portion size and frequency [50-52].
+- **Animal protein** (especially red meat and dairy, but not fish) is associated with *higher* mortality. High animal protein intake increased mortality risk by 52% (HR = 1.52) in one cohort [DOI: 10.1038/s41598-023-30455-9]. The Rotterdam Study (meta-analysis) found the association was "mainly explained by higher animal protein intake... contributed to by protein from meat and dairy" [DOI: 10.1007/s10654-020-00607-6].
 
-**Brad's position:** Partially aligns. The algorithm recommends 1.2g/kg IBW daily protein (0.9g/kg if eGFR < 45) but focuses on *amount* rather than *source*. The `lipid-diet` section recommends specific plant protein sources (edamame, legumes) for lipid management.
+- **Fish protein** is the exception among animal proteins — associated with 21% lower mortality risk (HR = 0.79) [DOI: 10.1038/s41598-023-30455-9].
 
-**Divergence on omega-3 supplementation:** The AHA states fish oil supplementation "has not been demonstrated to lower CVD risk in otherwise healthy adults" and may increase AF risk. Brad recommends omega-3 supplementation for all users (`supplement-omega3`) based on two lines of evidence: (1) The VITAL trial (Manson 2019, NEJM) showed a 28% reduction in myocardial infarction with marine omega-3, and the Bernasconi 2021 meta-analysis confirmed reduced cardiovascular events and cardiac death with benefits increasing at higher doses. (2) Cognitive protection — Jerneren 2015 and Oulhaj 2016 found that B-vitamin supplementation slowed brain atrophy by 40%, but only in participants with adequate omega-3 levels, suggesting omega-3 is necessary for B-vitamins to exert their neuroprotective effect. Brad weighs the MI reduction data plus the B-vitamin cognitive synergy as supporting supplementation despite the AHA's cautious position on overall CVD risk.
+- **Total protein** is associated with *lower* all-cause mortality and is NOT significantly associated with CVD or cancer mortality when analysed without regard to source (Naghshi 2020, BMJ) [DOI: 10.1136/bmj.m2412].
 
-**Algorithm gap:** No suggestion to shift from animal to plant protein sources. The protein-target suggestion is quantity-focused, not source-focused.
+### The IGF-1/mTOR/cancer concern
 
-**References:**
-- Naghshi 2020, protein intake and mortality, systematic review (DOI: 10.1136/bmj.m2412)
-- Bernasconi 2021, omega-3 and CV events, meta-analysis (DOI: 10.1016/j.mayocp.2021.02.008)
-- Manson 2019, VITAL trial, marine omega-3 and CVD/cancer (DOI: 10.1056/NEJMoa1811403)
+Dr. Valter Longo's landmark 2014 study (6,381 adults, 18-year follow-up) found that in adults aged 50-65, the high-protein group had a 74% increase in all-cause mortality (HR: 1.74) and were 4x more likely to die of cancer (HR: 4.33) compared to the low-protein group. However, **when animal protein was controlled for, the association was eliminated or significantly reduced** — suggesting animal protein mediates these relationships [DOI: 10.1016/j.cmet.2014.02.006].
+
+The mechanism: high protein (especially animal protein rich in leucine and methionine) activates the mTOR pathway, a master regulator of cell growth. When mTOR is chronically activated, it promotes growth over repair — potentially accelerating cancer. This is why protein *source* matters: plant proteins are lower in methionine and leucine than animal proteins.
+
+**Critical age qualification:** The negative association with high protein only held until age ~65. After 65, the association reverses — lower protein intake is associated with *higher* cancer mortality. Higher protein after 65 may be necessary to prevent age-related muscle and weight loss [DOI: 10.1016/j.cmet.2014.02.006].
+
+### How much protein: the dose-response
+
+- **RDA:** 0.8 g/kg/day (minimum to prevent deficiency, not optimal)
+- **PROT-AGE / ESPEN (over 65):** 1.0-1.2 g/kg/day for healthy older adults [DOI: 10.3390/nu10030360]
+- **Morton 2018 meta-analysis:** muscle gains plateau at ~1.6 g/kg/day during resistance training [DOI: 10.1136/bjsports-2017-097608]
+- **Newer meta-analysis:** the dose-response for lean body mass rapidly diminishes after **1.3 g/kg/day** (inflection point) — most muscle benefits are captured below 1.6 g/kg [DOI: 10.1093/nutrit/nuaa104]
+- **Weight loss:** high-protein diets (1.07-1.6 g/kg/day) reduce body weight (-0.79 kg) and fat mass (-0.87 kg) while preserving lean mass compared to standard protein [DOI: 10.7570/jomes20028]
+
+### Kidney considerations
+
+- Current CKD guidelines: avoid >1.3 g/kg/day for mild CKD (stages 1-2); restrict to 0.6-0.8 g/kg/day for moderate-severe CKD (stages 3-5) [DOI: 10.1001/jamanetworkopen.2024.26577]
+- High-protein diets can cause intraglomerular hypertension, hyperfiltration, and proteinuria [DOI: 10.1681/ASN.2020010028]
+- One cohort (1,797 adults, 6 years) found 50% higher CKD risk in the highest protein tertile [DOI: 10.1053/j.jrn.2018.10.007]
+- **However:** a recent study found higher protein intake in older adults with mild-moderate CKD actually *reduced* mortality by 33% at 1.6 vs 0.8 g/kg/day — "benefits of proteins may outweigh the risks" [DOI: 10.1001/jamanetworkopen.2024.26577]
+
+### Ultra-processed "high protein" products
+
+The protein trend has been hijacked by the food industry. High-protein products have quadrupled in the past decade [DOI: 10.52361/fsbh.2024.4.e9]. A study of the Spanish market found **91% of foods with protein claims were classified as "less healthy"** — more than 50% were high in fat or sodium, ~25% high in sugar or saturated fat [DOI: 10.3390/nu16244281].
+
+Critically, protein-enriched ultra-processed foods **do not prevent overeating** — they lead to the same overconsumption as other UPFs [DOI: 10.1038/s42255-025-01247-4]. When protein is isolated from its whole-food context, the fibre, phytonutrients, and micronutrients that drive health benefits are lost.
+
+### Brad's position
+
+**Target: 1.2 g/kg of ideal body weight per day.** This is Brad's personal target and what he advises patients. The evidence doesn't show meaningful additional benefit above ~1.3 g/kg for most people — and 1.2 g/kg is already a challenging target to achieve from primarily plant-based sources, which is where the protein should come from. It's above the RDA (0.8 g/kg) to capture muscle maintenance and weight management benefits, but well below the 2.2 g/kg that some influencers promote without supporting evidence.
+
+**Source priority:** Prioritise plant-based proteins — legumes (lentils, chickpeas, beans), nuts, and pea protein. Brad personally uses pea protein powder because it's relatively low in methionine (the amino acid flagged by Longo's research as potentially promoting cancer growth). Fish is the best animal protein source. If red meat is consumed, choose lean cuts and limit frequency.
+
+**Avoid ultra-processed protein products.** A handful of almonds (30g) provides 6g protein, 3.5g fibre, potassium, calcium, and no artificial ingredients. A protein bar provides isolated protein stripped of these co-occurring nutrients.
+
+**Use ideal body weight, not actual body weight,** to calculate the target — overweight individuals using actual body weight will overshoot.
+
+**CKD adjustment:** The algorithm reduces to 1.0 g/kg for eGFR < 45 (CKD-3b boundary). This is conservative but aligns with current guidelines for moderate-severe CKD.
+
+**Algorithm links:** `protein-target` suggestion (1.2 g/kg IBW, CKD-adjusted), `lipid-diet` (plant protein sources for lipid management).
+
+**Algorithm gap:** The `protein-target` suggestion is quantity-focused. It should also emphasise protein source — prioritising plant sources and fish, limiting red/processed meat. This aligns with both the AHA 2026 position and the mortality data.
+
+### Omega-3 supplementation divergence
+
+The AHA states fish oil supplementation "has not been demonstrated to lower CVD risk in otherwise healthy adults" and may increase AF risk [42-44]. Brad recommends omega-3 supplementation for all users (`supplement-omega3`) based on two lines of evidence: (1) The VITAL trial (Manson 2019, NEJM) showed a 28% reduction in myocardial infarction, and the Bernasconi 2021 meta-analysis confirmed reduced cardiovascular events and cardiac death with benefits increasing at higher doses. (2) Cognitive protection — Jerneren 2015 and Oulhaj 2016 found that B-vitamin supplementation slowed brain atrophy by 40%, but only in participants with adequate omega-3 levels, suggesting omega-3 is necessary for B-vitamins to exert their neuroprotective effect.
+
+### References
+- Naghshi 2020, protein intake and mortality, BMJ, 32 cohort studies (DOI: 10.1136/bmj.m2412)
+- Longo 2014, low protein and IGF-1/cancer/mortality, Cell Metabolism (DOI: 10.1016/j.cmet.2014.02.006)
+- Morton 2018, protein supplementation and muscle gains meta-analysis, BJSM (DOI: 10.1136/bjsports-2017-097608)
+- Dose-response protein and muscle mass meta-analysis, Nutr Rev (DOI: 10.1093/nutrit/nuaa104)
+- Protein intake and cancer umbrella review, Eur J Nutr (DOI: 10.1007/s00394-024-03380-4)
+- High-protein diet-induced weight loss, J Obes Metab Syndr (DOI: 10.7570/jomes20028)
+- Protein and CKD mortality, JAMA Netw Open (DOI: 10.1001/jamanetworkopen.2024.26577)
+- High-protein UPFs and energy balance, Nat Metab (DOI: 10.1038/s42255-025-01247-4)
+- Protein claims and food quality, Nutrients (DOI: 10.3390/nu16244281)
+- Bernasconi 2021, omega-3 meta-analysis (DOI: 10.1016/j.mayocp.2021.02.008)
+- Manson 2019, VITAL trial (DOI: 10.1056/NEJMoa1811403)
 
 ---
 
