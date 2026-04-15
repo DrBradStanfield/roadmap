@@ -118,7 +118,7 @@ BEGIN
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -147,6 +147,7 @@ END $$;
 -- DROP first because changing RETURNS TABLE columns requires it (Postgres can't ALTER return type).
 
 DROP FUNCTION IF EXISTS get_latest_measurements();
+DROP FUNCTION IF EXISTS get_latest_measurements(uuid);  -- clean up old overload
 CREATE OR REPLACE FUNCTION get_latest_measurements()
 RETURNS TABLE (
   id UUID,
@@ -169,11 +170,11 @@ BEGIN
     m.created_at,
     m.source,
     m.external_id
-  FROM health_measurements m
+  FROM public.health_measurements m
   WHERE m.user_id = auth.uid()
   ORDER BY m.metric_type, m.recorded_at DESC;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = '';
 
 -- Grant execute to authenticated role so custom JWT users can call this RPC
 GRANT EXECUTE ON FUNCTION get_latest_measurements() TO authenticated;
@@ -488,11 +489,11 @@ RETURNS TABLE (metric_type TEXT, recorded_at TIMESTAMPTZ) AS $$
 BEGIN
   RETURN QUERY
   SELECT DISTINCT ON (m.metric_type) m.metric_type, m.recorded_at
-  FROM health_measurements m
+  FROM public.health_measurements m
   WHERE m.user_id = target_user_id
   ORDER BY m.metric_type, m.recorded_at DESC;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 -- ===== Cron lock table =====
 -- Coordinates the reminder cron job across multiple Fly.io machines.
@@ -698,15 +699,15 @@ CREATE OR REPLACE FUNCTION deduct_message_credit(target_user_id UUID)
 RETURNS INTEGER AS $$
 DECLARE new_balance INTEGER;
 BEGIN
-  UPDATE profiles SET message_credits = message_credits - 1
+  UPDATE public.profiles SET message_credits = message_credits - 1
   WHERE id = target_user_id AND message_credits > 0
   RETURNING message_credits INTO new_balance;
   IF NOT FOUND THEN RETURN -1; END IF;
-  INSERT INTO message_credit_transactions (user_id, amount, balance_after, reason)
+  INSERT INTO public.message_credit_transactions (user_id, amount, balance_after, reason)
   VALUES (target_user_id, -1, new_balance, 'chat_message');
   RETURN new_balance;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 GRANT EXECUTE ON FUNCTION deduct_message_credit(UUID) TO authenticated;
 
@@ -716,16 +717,16 @@ CREATE OR REPLACE FUNCTION add_message_credits(
 ) RETURNS INTEGER AS $$
 DECLARE new_balance INTEGER;
 BEGIN
-  UPDATE profiles SET message_credits = message_credits + credit_amount
+  UPDATE public.profiles SET message_credits = message_credits + credit_amount
   WHERE id = target_user_id
   RETURNING message_credits INTO new_balance;
   IF NOT FOUND THEN RETURN -1; END IF;
-  INSERT INTO message_credit_transactions (user_id, amount, balance_after, reason, order_id)
+  INSERT INTO public.message_credit_transactions (user_id, amount, balance_after, reason, order_id)
   VALUES (target_user_id, credit_amount, new_balance, 'purchase', shopify_order_id);
   RETURN new_balance;
 EXCEPTION WHEN unique_violation THEN RETURN NULL;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 GRANT EXECUTE ON FUNCTION add_message_credits(UUID, INT, TEXT) TO authenticated;
 
@@ -879,7 +880,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = '';
 
 CREATE OR REPLACE FUNCTION enforce_supplement_history_immutability()
 RETURNS TRIGGER AS $$
@@ -898,7 +899,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = '';
 
 DROP TRIGGER IF EXISTS trg_medication_history_immutable ON medication_history;
 CREATE TRIGGER trg_medication_history_immutable
@@ -962,6 +963,9 @@ CREATE TABLE IF NOT EXISTS ab_events (
 
 CREATE INDEX IF NOT EXISTS idx_ab_events_test_variant ON ab_events(test_id, variant_id);
 CREATE INDEX IF NOT EXISTS idx_ab_events_test_type ON ab_events(test_id, event_type);
+
+ALTER TABLE ab_tests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ab_events ENABLE ROW LEVEL SECURITY;
 
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
