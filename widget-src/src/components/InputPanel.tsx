@@ -703,8 +703,9 @@ export function InputPanel({
   const renderProfile = () => (
     <>
       <div className="unit-toggle">
-        <label>Units:</label>
+        <label htmlFor="hr-unit-select">Units:</label>
         <select
+          id="hr-unit-select"
           value={unitSystem}
           onChange={(e) => onUnitSystemChange(e.target.value as UnitSystem)}
         >
