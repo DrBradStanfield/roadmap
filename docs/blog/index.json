@@ -9051,5 +9051,30 @@
     "publishedAt": "",
     "type": "guideline",
     "summary": "Comprehensive exercise guidance built from AHA 2024 resistance training statement, 2025 UK Biobank vigorous dose-response data, Schoenfeld meta-analyses on training volume/frequency/load, and condition-specific evidence (BP, arthritis, diabetes, cognition, bone density). Covers minimum effective dose, cardiorespiratory and resistance training prescription, power training, exercise for specific conditions, and the high-volume plaque paradox. Brad's algorithm recommends 150+ min/wk cardio + 2-3 resistance sessions."
+  },
+  {
+    "title": "This $2 Remedy Beats Every Cold Medicine",
+    "handle": "this-2-remedy-beats-every-cold-medicine",
+    "url": "https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine",
+    "youtube": "https://www.youtube.com/watch?v=Pi7syWem5CM",
+    "tags": [
+      "Supplements",
+      "Research",
+      "General Health"
+    ],
+    "keywords": [
+      "cold",
+      "flu",
+      "honey",
+      "iodine",
+      "immune",
+      "inflammation",
+      "vitamin c",
+      "vitamin d",
+      "zinc"
+    ],
+    "product": "microvitamin",
+    "publishedAt": "2026-04-16T12:00:00Z",
+    "summary": "Evidence-based review of three cheap cold remedies that outperform most commercial cold medicines. Zinc acetate or gluconate lozenges (dissolved in mouth, not swallowed) shortened colds by ~33% in meta-analyses when started within 24 hours. Hypertonic saline nasal irrigation supplies chloride ions that help nasal cells produce antiviral hypochlorous acid, reducing cold duration by ~2 days in RCTs. Honey reliably improved cough frequency, severity, and overall symptoms across 14 trials. Also covers emerging evidence on nitric oxide nasal spray and povidone-iodine."
   }
 ]
