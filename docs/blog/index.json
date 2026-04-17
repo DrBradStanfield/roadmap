@@ -14277,33 +14277,6 @@
     "summary": "Clinical pathway for mumps: assessment of parotid swelling, confirmation with PCR, isolation advice, management of symptoms and complications, contact management by immune status, and MMR vaccination. Always discuss with your doctor."
   },
   {
-    "title": "Pathway: Myalgic Encephalomyelitis/Chronic Fatigue Syndrome (ME/CFS)",
-    "handle": "myalgic-encephalomyelitischronic-fatigue-syndrome-mecfs",
-    "url": "/pathway/myalgic-encephalomyelitischronic-fatigue-syndrome-mecfs",
-    "tags": [
-      "Guideline"
-    ],
-    "keywords": [
-      "chronic fatigue syndrome",
-      "me/cfs",
-      "myalgic encephalomyelitis",
-      "post-exertional malaise",
-      "pem",
-      "pacing",
-      "orthostatic intolerance",
-      "pots",
-      "postural orthostatic tachycardia",
-      "fatigue",
-      "unrefreshing sleep",
-      "brain fog",
-      "cognitive impairment",
-      "long covid",
-      "fibromyalgia"
-    ],
-    "type": "pathway",
-    "summary": "Clinical pathway for ME/CFS: diagnosis using IOM 2015 criteria (fatigue, PEM, unrefreshing sleep, cognitive/orthostatic features), assessment including NASA Lean Test and baseline investigations, and management covering pacing, sleep, orthostatic intolerance (including POTS), pain, psychological sup"
-  },
-  {
     "title": "Pathway: Myelodysplastic Neoplasms",
     "handle": "myelodysplastic-neoplasms",
     "url": "/pathway/myelodysplastic-neoplasms",
@@ -14536,31 +14509,6 @@
     ],
     "type": "pathway",
     "summary": "Clinical pathway for non-acute asthma management in adults and young people (≥12 years): diagnosis, assessment, AIR therapy step plan, traditional ICS/SABA therapy, inhaler technique, self-management, and when to refer."
-  },
-  {
-    "title": "Pathway: Non-Fatal Strangulation and/or Suffocation",
-    "handle": "non-fatal-strangulation-andor-suffocation",
-    "url": "/pathway/non-fatal-strangulation-andor-suffocation",
-    "tags": [
-      "Guideline"
-    ],
-    "keywords": [
-      "strangulation",
-      "suffocation",
-      "choking",
-      "intimate partner violence",
-      "ipv",
-      "family violence",
-      "domestic violence",
-      "neck injury",
-      "asphyxiation",
-      "NFSS",
-      "assault",
-      "physical abuse",
-      "loss of consciousness"
-    ],
-    "type": "pathway",
-    "summary": "Clinical pathway for non-fatal strangulation and/or suffocation (NFSS): when to seek emergency care, background on risk, assessment findings, documentation, risk assessment in the context of family or partner violence, and community management. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Non-insulin Diabetes Medications",
@@ -22442,29 +22390,6 @@
     "summary": "Clinical pathway for hip imaging in children: red flags requiring immediate hospital assessment, conditions warranting X-ray or ultrasound (DDH, SUFE, Perthes, transient synovitis), and age-based imaging guidance. Your doctor will determine which imaging is appropriate and arrange referral."
   },
   {
-    "title": "Home Oxygen Therapy",
-    "handle": "home-oxygen-raw",
-    "url": "/pathway/home-oxygen-raw",
-    "tags": [
-      "Guideline"
-    ],
-    "keywords": [
-      "home oxygen",
-      "long-term oxygen therapy",
-      "LTOT",
-      "domiciliary oxygen",
-      "hypoxia",
-      "COPD",
-      "oxygen saturation",
-      "PaO2",
-      "cor pulmonale",
-      "oxygen therapy",
-      "respiratory"
-    ],
-    "type": "pathway",
-    "summary": "Clinical pathway for home oxygen therapy: who benefits from long-term oxygen, the criteria for assessment, and what to expect. Always discuss with your doctor."
-  },
-  {
     "title": "HPV Vaccination",
     "handle": "hpv-vaccination",
     "url": "/pathway/hpv-vaccination",
@@ -23402,32 +23327,6 @@
     ],
     "type": "pathway",
     "summary": "Clinical pathway for leg ulcers: red flags, assessment by ulcer type (venous, arterial, diabetic, lymphatic), ABPI measurement, wound management with TIMES framework, and management principles including compression therapy for venous ulcers. Always discuss with your doctor."
-  },
-  {
-    "title": "Legionellosis",
-    "handle": "legionellosis-raw",
-    "url": "/pathway/legionellosis-raw",
-    "tags": [
-      "Guideline"
-    ],
-    "keywords": [
-      "legionellosis",
-      "legionnaires disease",
-      "legionella",
-      "pontiac fever",
-      "pneumonia",
-      "atypical pneumonia",
-      "community acquired pneumonia",
-      "cap",
-      "potting mix",
-      "compost",
-      "doxycycline",
-      "roxithromycin",
-      "crb-65",
-      "corb score"
-    ],
-    "type": "pathway",
-    "summary": "Clinical pathway for legionellosis (Legionnaires' disease and Pontiac fever): background, risk factors, severity scoring with CRB-65 and CORB, antibiotic management including macrolide addition for suspected Legionella, and prevention advice. Always discuss with your doctor."
   },
   {
     "title": "Long COVID",
