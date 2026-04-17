@@ -73,31 +73,61 @@ interface BlogIndexEntry {
 }
 
 let BLOG_INDEX: BlogIndexEntry[] = [];
-let BLOG_INDEX_TEXT = '';
-let GUIDELINE_INDEX_TEXT = '';
+
+function buildKnowledgeOverview(): string {
+  if (BLOG_INDEX.length === 0) return '';
+  const blogCount = BLOG_INDEX.filter(a => !a.type || a.type === 'article').length;
+  const refCount = BLOG_INDEX.filter(a => a.type === 'reference').length;
+  const guidelines = BLOG_INDEX.filter(a => a.type === 'guideline');
+  const pathwayCount = BLOG_INDEX.filter(a => a.type === 'pathway').length;
+
+  const guidelineLines = guidelines.map(g => {
+    let line = `- ${g.title}`;
+    if (g.summary) {
+      const words = g.summary.split(/\s+/);
+      line += ` — ${words.length > 50 ? words.slice(0, 50).join(' ') + '...' : g.summary}`;
+    }
+    return line;
+  }).join('\n');
+
+  // Load pathway categories if available
+  let pathwaySection = '';
+  if (pathwayCount > 0) {
+    try {
+      const catRaw = fs.readFileSync(path.join(process.cwd(), 'docs/pathway/categories.json'), 'utf-8');
+      const categories: Record<string, string[]> = JSON.parse(catRaw);
+      const catLines = Object.entries(categories)
+        .sort((a, b) => b[1].length - a[1].length)
+        .map(([cat, names]) => {
+          const examples = names.slice(0, 5).join(', ');
+          return `- ${cat} (${names.length}): ${examples}${names.length > 5 ? '...' : ''}`;
+        });
+      pathwaySection = `### Clinical Pathways (${pathwayCount} conditions)\nEvidence-based clinical pathways from Auckland Region HealthPathways, organized by specialty:\n${catLines.join('\n')}`;
+    } catch {
+      pathwaySection = `### Clinical Pathways (${pathwayCount} conditions)\nEvidence-based pathways covering cardiovascular, respiratory, endocrine, GI, dermatology, musculoskeletal, neurology, haematology, infectious disease, and more. Source: Auckland Region HealthPathways.`;
+    }
+  }
+
+  return `## Knowledge Base
+
+You have access to a health knowledge base with ${BLOG_INDEX.length} entries. When the user asks about a topic, relevant content is automatically loaded into this conversation by a server-side keyword matcher. You do not need to search or request content — if it's relevant, it will appear below.
+
+### Blog & Reference Articles (${blogCount + refCount})
+${blogCount} video-based articles and ${refCount} supplement reference articles covering: supplements, skin health, bone health, sleep, longevity, diet, exercise, blood pressure, cholesterol, and blood test interpretation.
+
+### Clinical Guidelines
+${guidelineLines}
+
+${pathwaySection}
+
+If matched content appears below, use it to inform your answer. If no content is loaded for a topic, answer from the algorithm, evidence, and product knowledge above.`;
+}
+
+let KNOWLEDGE_OVERVIEW = '';
 try {
   const raw = fs.readFileSync(path.join(process.cwd(), 'docs/blog/index.json'), 'utf-8');
   BLOG_INDEX = JSON.parse(raw);
-  // Build two index text blocks: blog articles + clinical guidelines
-  // Keywords are used for server-side matching only, not included in prompt
-  const blogEntries: string[] = [];
-  const guidelineEntries: string[] = [];
-  for (const a of BLOG_INDEX) {
-    let line = `- ${a.title} [${a.url}]`;
-    if (a.tags.length) line += ` (${a.tags.join(', ')})`;
-    if ((a.type === 'reference' || a.type === 'guideline' || a.type === 'pathway') && a.summary) {
-      const words = a.summary.split(/\s+/);
-      const short = words.length > 50 ? words.slice(0, 50).join(' ') + '...' : a.summary;
-      line += ` — ${short}`;
-    }
-    if (a.type === 'guideline' || a.type === 'pathway') {
-      guidelineEntries.push(line);
-    } else {
-      blogEntries.push(line);
-    }
-  }
-  BLOG_INDEX_TEXT = blogEntries.join('\n');
-  GUIDELINE_INDEX_TEXT = guidelineEntries.join('\n');
+  KNOWLEDGE_OVERVIEW = buildKnowledgeOverview();
 } catch {
   console.warn('docs/blog/index.json not found — chat will not have blog knowledge');
 }
@@ -584,14 +614,9 @@ export function buildSystemBlocks(
       text: `## Dr Stanfield's Products\n\n${PRODUCTS_DOC}`,
       cache_control: { type: 'ephemeral' as const },
     }] : []),
-    ...(BLOG_INDEX_TEXT ? [{
+    ...(KNOWLEDGE_OVERVIEW ? [{
       type: 'text' as const,
-      text: `## Blog Articles Index\n\nDr Stanfield's blog articles — reference and link to these when relevant:\n\n${BLOG_INDEX_TEXT}`,
-      cache_control: { type: 'ephemeral' as const },
-    }] : []),
-    ...(GUIDELINE_INDEX_TEXT ? [{
-      type: 'text' as const,
-      text: `## Clinical Guidelines Index\n\nEvidence-based clinical guidelines — use these for authoritative recommendations:\n\n${GUIDELINE_INDEX_TEXT}`,
+      text: KNOWLEDGE_OVERVIEW,
       cache_control: { type: 'ephemeral' as const },
     }] : []),
     {

@@ -277,9 +277,10 @@ Anthropic's prompt caching lets you mark content blocks with `cache_control`. On
 │  ~8K tokens                                          │
 │  cache_control: { type: "ephemeral" }  ← breakpoint 3│
 ├──────────────────────────────────────────────────────┤
-│  BLOG INDEX (Phase 3)                                │
-│  Article titles, URLs, tags for keyword matching     │
-│  ~1-2K tokens                                        │
+│  KNOWLEDGE BASE OVERVIEW                             │
+│  Compact description: blog/reference article counts, │
+│  3 guideline summaries, pathway categories.          │
+│  ~2-3K tokens (constant regardless of entry count).  │
 │  cache_control: { type: "ephemeral" }  ← breakpoint 4│
 ├──────────────────────────────────────────────────────┤
 │  USER CONTEXT (not cached — changes per user)        │
@@ -303,14 +304,14 @@ Anthropic's prompt caching lets you mark content blocks with `cache_control`. On
 
 ### Why this layout
 - **Breakpoints 1-3** (system + algorithm, evidence, products): These are identical across ALL users and ALL requests. One cache write serves every user for 5 minutes.
-- **Breakpoint 4** (blog index, Phase 3): Also identical across all users. Separate so product changes don't invalidate the blog cache.
+- **Breakpoint 4** (knowledge base overview): Compact description of available content — blog/reference article counts and topic areas, 3 guideline summaries, pathway categories with example conditions. ~2-3K tokens, constant regardless of how many entries are in the index. Individual titles, summaries, and keywords stay in `index.json` in server memory — the server-side matcher (`matchBlogArticles()`) uses them on every request to find and load relevant content automatically.
 - **User context is NOT cached**: It's different per user, so caching would miss. Placing it after the cached blocks is correct — uncached tokens after a cache hit are fine.
 - **Order data is cached server-side** (10-min TTL in-memory map), but NOT in the prompt cache (per-user). Fetched from Shopify Admin API via GraphQL, parallelized with health context assembly.
 - **Evidence and products are included in full** (not filtered per user): Filtering would make the content differ per user, preventing cross-user cache hits. The caching savings far outweigh including extra tokens.
 
 ### Requirements met
-- Haiku 4.5 minimum for caching: **4,096 tokens**. Our static portion is ~26K — easily qualifies.
-- Max 4 breakpoints per request: We use **3** (4 when blog index added in Phase 3).
+- Haiku 4.5 minimum for caching: **4,096 tokens**. Our static portion is ~28K — easily qualifies.
+- Max 4 breakpoints per request: We use **4**.
 - TTL: 5 minutes (default). With regular usage, cache stays warm.
 
 ### Cache invalidation
@@ -341,22 +342,18 @@ These change infrequently (weekly at most), so cache hit rate should be very hig
 - Read from disk on server startup and on file change (or simply on each request — negligible I/O)
 - Updates take effect on next deploy (cache invalidated by content change)
 
-### Blog articles: two-layer design
+### Content knowledge: two-layer design
 
-The chatbot knows about 162 blog articles. The challenge: including all article content in every message would cost ~580K tokens — obviously impossible. Instead, we use a two-layer design that keeps costs minimal while giving the chatbot deep article knowledge when it matters.
+The chatbot has access to 543+ content entries (278 blog/reference articles + 3 clinical guidelines + 263+ clinical pathways, growing as more pathways are scraped). Including all content in every message would be impossible (~1.9M tokens). Instead, we use a two-layer design: a compact knowledge base overview in the cached prompt, and server-side matching that loads relevant content on demand.
 
-**Layer 1: Blog index (always included, cached)**
+**Layer 1: Knowledge base overview (always included, cached)**
 
-At server startup, `docs/blog/index.json` is loaded and formatted as a compact list:
-```
-- Article Title [url] (Diet, Research)
-- Article Title [url] (Supplements)
-...
-```
+At server startup, `docs/blog/index.json` is loaded into memory. A compact overview is built and cached in the system prompt (~2-3K tokens):
+- Blog/reference article counts and topic areas
+- 3 clinical guideline entries with summaries (diet, exercise, sleep)
+- Clinical pathway categories with example conditions (from `docs/pathway/categories.json`)
 
-This gives the LLM a complete map of all 162 articles — titles, URLs, and tags — so it can reference and link to any article even without seeing the full content. ~6.5K tokens, cached via Anthropic's prompt caching (90% discount after first request). Cost per message: **~$0.00007**.
-
-**Why include the index at all?** Without it, the LLM wouldn't know which articles exist. It could only discuss articles that happen to match the current message. With the index, it can proactively suggest relevant articles ("You might also want to read my article on...") and link to them.
+Individual titles, summaries, and URLs are NOT in the prompt — they stay in server memory for the matcher. This keeps the cached prompt at ~32K tokens regardless of how many entries are added. Following Karpathy's approach: the LLM needs awareness of the knowledge base, but the server-side matcher handles the actual content navigation.
 
 **Layer 2: Full article content (on-demand, not cached)**
 
@@ -372,9 +369,11 @@ When a user asks about a specific topic (e.g., "should I take berberine?"), serv
 
 **Article caching:** Articles are cached in memory after first read (`blogArticleCache` map). No per-request disk I/O after the first access. Handle values are validated against `/^[a-z0-9-]+$/` to prevent path traversal.
 
-**Why not include all article content?** 162 articles × ~3.6K tokens = ~580K tokens. Even at cache prices this would cost $0.06/message. The on-demand approach costs $0.004 only when relevant.
+**Why not include all content?** 543+ entries × ~3.6K tokens = ~1.9M tokens. Even at cache prices this would be prohibitive. The on-demand approach costs $0.004 only when relevant.
 
-**Why server-side matching instead of letting the LLM decide?** The LLM would need to see the article content to decide if it's relevant — a chicken-and-egg problem. Server-side keyword matching is fast (in-memory, <1ms), costs zero tokens, and uses health/supplement-specific keyword extraction (132 unique terms across all articles) for better relevance than title-only matching.
+**Why not include individual titles in the prompt?** At 543+ entries (growing to 800+), even title-only listings consume 18-35K tokens. The server-side matcher doesn't use the prompt text — it reads from the in-memory JSON array. The LLM only needs to know the knowledge base exists and what topics it covers, not every individual title. A compact overview (~2-3K tokens) provides that awareness while keeping the prompt size constant.
+
+**Why server-side matching instead of letting the LLM decide?** The LLM would need to see the content to decide if it's relevant — a chicken-and-egg problem. Server-side keyword matching is fast (in-memory, <1ms), costs zero tokens, and uses health/supplement-specific keywords for better relevance than title-only matching. Guideline and pathway entries get a +8 score boost (vs +5 for reference articles) to prioritize clinical content.
 
 **Why keywords, not just tags?** Shopify tags are broad categories ("Diet", "Research", "Supplements"). A user asking "should I take berberine?" wouldn't match the tag "Supplements" specifically enough. Keywords extracted from article content ("berberine", "blood sugar", "metformin", "hba1c") provide precise matching.
 
