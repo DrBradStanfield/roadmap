@@ -1,0 +1,284 @@
+[
+  {
+    "query": "I have high blood pressure, what does the algorithm suggest?",
+    "expected": ["hypertension-in-adults"],
+    "category": "cardiovascular",
+    "notes": "lay term → clinical"
+  },
+  {
+    "query": "What does HTN mean?",
+    "expected": ["hypertension-in-adults"],
+    "category": "cardiovascular",
+    "notes": "abbreviation"
+  },
+  {
+    "query": "My chest hurts when I walk up stairs",
+    "expected": ["chest-pain", "acute-coronary-syndromes-acs"],
+    "category": "cardiovascular",
+    "notes": "symptom description"
+  },
+  {
+    "query": "I think I might be having a heart attack",
+    "expected": ["acute-coronary-syndromes-acs", "chest-pain"],
+    "category": "cardiovascular",
+    "notes": "lay term for MI"
+  },
+  {
+    "query": "My LDL cholesterol is too high",
+    "expected": ["hyperlipidaemia", "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"],
+    "category": "cardiovascular",
+    "notes": "abbreviation LDL + clinical concept"
+  },
+  {
+    "query": "HbA1c of 6.5 — what does that mean?",
+    "expected": ["diabetes-screening-and-diagnosis-in-adults"],
+    "category": "metabolic",
+    "notes": "lab value abbreviation"
+  },
+  {
+    "query": "Type 2 diabetes treatment options",
+    "expected": ["type-2-diabetes", "diabetes-screening-and-diagnosis-in-adults"],
+    "category": "metabolic"
+  },
+  {
+    "query": "T2DM diagnosis criteria",
+    "expected": ["type-2-diabetes", "diabetes-screening-and-diagnosis-in-adults"],
+    "category": "metabolic",
+    "notes": "abbreviation"
+  },
+  {
+    "query": "My TSH came back abnormal",
+    "expected": ["hypothyroidism", "hyperthyroidism", "impalpable-thyroid-nodule", "palpable-thyroid-nodule", "thyroid-disease-in-pregnancy", "goitre-in-adults"],
+    "category": "metabolic",
+    "notes": "TSH abnormal can point to any thyroid pathway — all are relevant"
+  },
+  {
+    "query": "I feel cold all the time and gained weight",
+    "expected": ["hypothyroidism"],
+    "category": "metabolic",
+    "notes": "symptom cluster"
+  },
+  {
+    "query": "I've been feeling depressed for months",
+    "expected": ["depression-in-adults-and-older-persons"],
+    "category": "mental-health"
+  },
+  {
+    "query": "I feel anxious all the time",
+    "expected": ["anxiety-distress-and-agitation-in-palliative-care", "anxiety-in-children-and-youth"],
+    "category": "mental-health",
+    "notes": "no dedicated adult anxiety pathway — palliative or children closest"
+  },
+  {
+    "query": "I think I have ADHD",
+    "expected": ["adhd-in-adults"],
+    "category": "mental-health"
+  },
+  {
+    "query": "I can't fall asleep at night",
+    "expected": ["insomnia"],
+    "category": "sleep"
+  },
+  {
+    "query": "I snore loudly and wake up tired",
+    "expected": ["obstructive-sleep-apnoea-osa-in-adults", "snoring-and-sleep-apnoea-in-children"],
+    "category": "sleep",
+    "notes": "empty keyword entry for OSA — expect fail at baseline"
+  },
+  {
+    "query": "Do I have sleep apnea?",
+    "expected": ["obstructive-sleep-apnoea-osa-in-adults"],
+    "category": "sleep",
+    "notes": "lay variant 'apnea' vs indexed 'apnoea'"
+  },
+  {
+    "query": "Knee pain going up stairs",
+    "expected": ["knee-injuries", "osteoarthritis-oa", "hip-and-knee-joint-replacement"],
+    "category": "musculoskeletal"
+  },
+  {
+    "query": "Chronic lower back pain",
+    "expected": ["back-and-neck-pain"],
+    "category": "musculoskeletal",
+    "notes": "lay 'lower back' → indexed 'back'"
+  },
+  {
+    "query": "Tennis elbow pain",
+    "expected": ["tennis-and-golfer-s-elbow"],
+    "category": "musculoskeletal"
+  },
+  {
+    "query": "Frozen shoulder treatment",
+    "expected": ["shoulder-pain"],
+    "category": "musculoskeletal",
+    "notes": "frozen shoulder is covered by the shoulder-pain pathway (listed in its keywords)"
+  },
+  {
+    "query": "Heartburn after meals",
+    "expected": ["nsaids-and-dyspepsia-heartburn", "reflux-and-gord-in-children"],
+    "category": "gi",
+    "notes": "no dedicated adult GORD pathway — children's pathway is closest content match"
+  },
+  {
+    "query": "Acid reflux keeping me awake",
+    "expected": ["nsaids-and-dyspepsia-heartburn", "reflux-and-gord-in-children"],
+    "category": "gi",
+    "notes": "GERD lay term; no adult-specific GORD pathway"
+  },
+  {
+    "query": "IBS symptoms and treatment",
+    "expected": ["irritable-bowel-syndrome-ibs"],
+    "category": "gi"
+  },
+  {
+    "query": "Chronic constipation",
+    "expected": ["constipation-in-adults"],
+    "category": "gi"
+  },
+  {
+    "query": "Severe stomach pain",
+    "expected": ["acute-abdominal-pain-in-adults"],
+    "category": "gi",
+    "notes": "lay 'stomach' → indexed 'abdominal'"
+  },
+  {
+    "query": "Chronic cough for weeks",
+    "expected": ["chronic-cough-in-adults"],
+    "category": "respiratory"
+  },
+  {
+    "query": "I think I have asthma",
+    "expected": ["non-acute-asthma-in-adults-and-young-people", "acute-asthma-in-adults-and-young-people"],
+    "category": "respiratory"
+  },
+  {
+    "query": "COPD exacerbation symptoms",
+    "expected": ["acute-exacerbation-of-copd", "copd-diagnosis-and-initial-management"],
+    "category": "respiratory"
+  },
+  {
+    "query": "Shortness of breath on exertion",
+    "expected": ["dyspnoea", "chest-pain", "acute-exacerbation-of-copd"],
+    "category": "respiratory"
+  },
+  {
+    "query": "Bleeding after menopause",
+    "expected": ["postmenopausal-bleeding"],
+    "category": "womens-health"
+  },
+  {
+    "query": "Hot flashes menopause",
+    "expected": ["menopause-hormone-therapy-mht"],
+    "category": "womens-health"
+  },
+  {
+    "query": "PCOS diagnosis",
+    "expected": ["polycystic-ovary-syndrome-pcos"],
+    "category": "womens-health"
+  },
+  {
+    "query": "Trouble peeing at night",
+    "expected": ["lower-urinary-tract-symptoms-in-men-luts", "benign-prostatic-hyperplasia"],
+    "category": "mens-health",
+    "notes": "lay → LUTS/BPH"
+  },
+  {
+    "query": "BPH treatment options",
+    "expected": ["benign-prostatic-hyperplasia", "lower-urinary-tract-symptoms-in-men-luts"],
+    "category": "mens-health",
+    "notes": "abbreviation"
+  },
+  {
+    "query": "Erectile dysfunction",
+    "expected": ["erectile-dysfunction"],
+    "category": "mens-health"
+  },
+  {
+    "query": "Prostate cancer screening",
+    "expected": ["prostate-cancer-testing", "prostate-cancer-diagnosis"],
+    "category": "mens-health"
+  },
+  {
+    "query": "Acne treatment",
+    "expected": ["acne"],
+    "category": "dermatology"
+  },
+  {
+    "query": "Headache for days",
+    "expected": ["headaches-in-adults"],
+    "category": "neuro"
+  },
+  {
+    "query": "Migraine treatment",
+    "expected": ["headaches-in-adults"],
+    "category": "neuro",
+    "notes": "migraine is a headache subtype — no dedicated pathway"
+  },
+  {
+    "query": "Osteoporosis treatment",
+    "expected": ["medications-for-osteoporosis", "calcium-supplementation-in-osteoporosis"],
+    "category": "bone-health"
+  },
+  {
+    "query": "Should I take vitamin D every day?",
+    "expected": ["vitamin-d-benefits-forms-dosing-and-side-effects", "vitamin-d-supplementation"],
+    "category": "supplement"
+  },
+  {
+    "query": "Best omega-3 dose",
+    "expected": ["omega-3-fish-oil-benefits-forms-dosing-and-side-effects"],
+    "category": "supplement"
+  },
+  {
+    "query": "Creatine for muscle growth",
+    "expected": ["creatine-benefits-best-forms-dosing-and-side-effects"],
+    "category": "supplement"
+  },
+  {
+    "query": "Magnesium glycinate for sleep",
+    "expected": ["magnesium-benefits-best-forms-dosing"],
+    "category": "supplement"
+  },
+  {
+    "query": "Berberine blood sugar",
+    "expected": ["berberine-benefits-forms-dosing-and-side-effects"],
+    "category": "supplement"
+  },
+  {
+    "query": "Is protein powder worth taking?",
+    "expected": ["protein-powders-benefits-types-dosing-and-side-effects"],
+    "category": "supplement"
+  },
+  {
+    "query": "Benefits of choline",
+    "expected": ["choline-benefits-best-forms-dosing-and-side-effects"],
+    "category": "supplement"
+  },
+  {
+    "query": "Zone 2 cardio training",
+    "expected": ["exercise"],
+    "category": "lifestyle"
+  },
+  {
+    "query": "How much sodium per day",
+    "expected": ["diet"],
+    "category": "lifestyle"
+  },
+  {
+    "query": "Intermittent fasting for weight loss",
+    "expected": ["doctor-recommended-intermittent-fasting-hack-that-actually-works", "new-studies-reveal-the-best-type-of-intermittent-fasting", "longevity-experts-warning-fasting"],
+    "category": "lifestyle"
+  },
+  {
+    "query": "MI is low in my blood test",
+    "expected": [],
+    "category": "ambiguous",
+    "notes": "MI here means mean iron / myocardial infarction abbreviation — should NOT match cardiac pathway. Tests false positive risk."
+  },
+  {
+    "query": "I feel bad",
+    "expected": [],
+    "category": "ambiguous",
+    "notes": "too vague — any match is a false positive"
+  }
+]

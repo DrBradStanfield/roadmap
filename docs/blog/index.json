@@ -9524,9 +9524,27 @@
     "tags": [
       "Guideline"
     ],
-    "keywords": [],
+    "keywords": [
+      "COPD",
+      "chronic obstructive pulmonary disease",
+      "advanced COPD",
+      "end-stage COPD",
+      "FEV1",
+      "breathlessness",
+      "dyspnoea",
+      "long-term oxygen therapy",
+      "LTOT",
+      "exacerbation",
+      "emphysema",
+      "chronic bronchitis",
+      "airway obstruction",
+      "oxygen saturation",
+      "palliative care",
+      "advance care planning",
+      "CPR"
+    ],
     "type": "pathway",
-    "summary": ""
+    "summary": "Advanced or end-stage COPD is characterized by FEV1 less than 30% of predicted, significant weight loss, frequent hospitalizations for exacerbations, breathlessness at rest or minimal exertion, and the need for long-term oxygen therapy. Management focuses on advance care planning discussions, optimized COPD pharmacotherapy, breathlessness management with morphine, symptom control, home oxygen support, and palliative care coordination when needed. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Advanced or End-Stage Heart Failure",
@@ -9907,9 +9925,25 @@
       "medications",
       "prescribing"
     ],
-    "keywords": [],
+    "keywords": [
+      "anti-epileptic medication",
+      "AED",
+      "seizure",
+      "epilepsy",
+      "carbamazepine",
+      "lamotrigine",
+      "levetiracetam",
+      "sodium valproate",
+      "phenytoin",
+      "clobazam",
+      "topiramate",
+      "seizure control",
+      "drug interactions",
+      "monotherapy",
+      "anticonvulsant"
+    ],
     "type": "pathway",
-    "summary": ""
+    "summary": "Anti-epileptic drugs (AEDs) prevent seizures in people with epilepsy, with first-line choices depending on seizure type (sodium valproate, lamotrigine, or levetiracetam for primary generalised; carbamazepine, lamotrigine, or levetiracetam for focal epilepsies). Treatment typically begins after unprovoked seizures, starting with monotherapy at low doses titrated slowly to minimise side-effects, while considering pregnancy teratogenicity risks, drug interactions (particularly with oral contraceptives), and the need for monitoring via blood tests. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Anxiety, Distress, and Agitation in Palliative Care",
@@ -10162,9 +10196,28 @@
       "sti-adjacent",
       "sexual-health"
     ],
-    "keywords": [],
+    "keywords": [
+      "bacterial vaginosis",
+      "BV",
+      "vaginal discharge",
+      "fishy odor",
+      "Gardnerella vaginalis",
+      "vaginal pH",
+      "metronidazole",
+      "clindamycin",
+      "ornidazole",
+      "anaerobic bacteria",
+      "lactobacilli",
+      "vaginal microbiome",
+      "asymptomatic BV",
+      "recurrent BV",
+      "vaginal Amies swab",
+      "PCR/NAAT swab",
+      "boric acid pessaries",
+      "condom use"
+    ],
     "type": "pathway",
-    "summary": ""
+    "summary": "Bacterial vaginosis (BV) is caused by loss of normal vaginal bacteria and overgrowth of diverse anaerobic organisms, leading to increased vaginal pH, fishy odor, and thin white discharge; up to 50% of people are asymptomatic. First-line treatment for symptomatic BV is metronidazole 400 mg twice daily for 7 days, with alternatives including clindamycin or ornidazole, while recurrent BV may require specialist assessment and second-line options. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Benign and Premalignant Skin Lesions",
@@ -11407,9 +11460,23 @@
       "steroids",
       "cancer"
     ],
-    "keywords": [],
+    "keywords": [
+      "dexamethasone",
+      "corticosteroids",
+      "steroids",
+      "glucocorticoid",
+      "cancer",
+      "oncology",
+      "palliative care",
+      "spinal cord compression",
+      "brain metastases",
+      "raised intracranial pressure",
+      "chemotherapy-induced nausea",
+      "adrenal suppression",
+      "steroid-induced diabetes"
+    ],
     "type": "pathway",
-    "summary": ""
+    "summary": "Dexamethasone is a potent corticosteroid used in cancer and palliative care to manage emergencies like spinal cord compression and raised intracranial pressure, as well as symptoms like nausea, anorexia, and breathlessness. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Diabetes in Palliative Care",
@@ -12328,9 +12395,26 @@
       "antiviral",
       "pregnancy"
     ],
-    "keywords": [],
+    "keywords": [
+      "herpes simplex virus",
+      "HSV-1",
+      "HSV-2",
+      "genital herpes",
+      "cold sores",
+      "blisters",
+      "ulcers",
+      "sores",
+      "valaciclovir",
+      "aciclovir",
+      "antiviral",
+      "pregnancy",
+      "asymptomatic shedding",
+      "encephalitis",
+      "meningitis",
+      "suppressive therapy"
+    ],
     "type": "pathway",
-    "summary": ""
+    "summary": "Genital herpes is caused by herpes simplex virus types 1 and 2 (HSV-1 and HSV-2) and presents with painful blisters or ulcers in the genital area, often accompanied by flu-like symptoms during the first episode and milder recurrent outbreaks. Treatment with antivirals like valaciclovir or aciclovir can manage symptoms and reduce transmission, while suppressive therapy is recommended during pregnancy from 36 weeks onwards. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Genital Skin Lesions",
@@ -13033,7 +13117,15 @@
       "Graves orbitopathy",
       "de Quervain",
       "subacute thyroiditis",
-      "thyrotoxic periodic paralysis"
+      "thyrotoxic periodic paralysis",
+      "heat intolerance",
+      "weight loss",
+      "unexplained weight loss",
+      "fast heart rate",
+      "palpitations",
+      "tremor",
+      "anxiety",
+      "sweating"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for hyperthyroidism and subclinical hyperthyroidism in adults: red flags, causes including Graves' disease and thyroiditis, assessment, and management including carbimazole dosing, beta blockers, and when specialist referral is needed. Always discuss with your doctor."
@@ -13120,7 +13212,21 @@
       "goitre",
       "thyroid nodule",
       "anti-TPO",
-      "central hypothyroidism"
+      "central hypothyroidism",
+      "cold intolerance",
+      "feeling cold",
+      "always cold",
+      "weight gain",
+      "unexplained weight gain",
+      "fatigue",
+      "tiredness",
+      "dry skin",
+      "hair loss",
+      "low mood",
+      "constipation",
+      "slow heart rate",
+      "brain fog",
+      "puffy face"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for hypothyroidism in adults including subclinical hypothyroidism: when to screen, symptoms and signs, interpreting TSH and FT4 results, thyroxine dosing and monitoring, and when specialist input is needed. Always discuss with your doctor."
@@ -14429,9 +14535,27 @@
       "myeloproliferative",
       "infection"
     ],
-    "keywords": [],
+    "keywords": [
+      "neutrophilia",
+      "elevated neutrophil count",
+      "leukocytosis",
+      "high white blood cell count",
+      "FBC",
+      "full blood count",
+      "WBC",
+      "infection",
+      "inflammation",
+      "CML",
+      "chronic myeloid leukaemia",
+      "myeloproliferative neoplasm",
+      "left shift",
+      "blood film",
+      "neutrophil count",
+      "raised white cells",
+      "stress"
+    ],
     "type": "pathway",
-    "summary": ""
+    "summary": "Neutrophilia is an elevated neutrophil count usually caused by infection, inflammation, or stress, but can occasionally indicate serious conditions like chronic myeloid leukaemia if persistent and unexplained. Management depends on the underlying cause and whether the person is unwell, with most incidental cases monitored through repeated blood tests. Always discuss with your doctor."
   },
   {
     "title": "Pathway: New Patient to Palliative Care",
@@ -14603,7 +14727,11 @@
       "helicobacter pylori",
       "aspirin",
       "naproxen",
-      "diclofenac"
+      "diclofenac",
+      "heartburn after meals",
+      "GORD in adults",
+      "adult GORD",
+      "adult reflux"
     ],
     "type": "pathway",
     "summary": "Clinical guidance on safely using NSAIDs (anti-inflammatories like ibuprofen, naproxen, diclofenac) in patients at risk of stomach or gastrointestinal side effects. Covers contraindications, GI risk stratification, when to add a PPI, and when to refer. Always discuss changes to your medications with"
@@ -14621,9 +14749,27 @@
       "snoring",
       "respiratory"
     ],
-    "keywords": [],
+    "keywords": [
+      "obstructive sleep apnoea",
+      "OSA",
+      "obstructive sleep apnea",
+      "loud snoring",
+      "habitual snoring",
+      "gasping at night",
+      "witnessed pauses in breathing",
+      "waking up tired",
+      "excessive daytime sleepiness",
+      "daytime sleepiness",
+      "stop breathing while sleeping",
+      "STOP-BANG",
+      "Epworth Sleepiness Scale",
+      "sleep study",
+      "CPAP",
+      "mandibular advancement",
+      "oral appliance"
+    ],
     "type": "pathway",
-    "summary": ""
+    "summary": "Obstructive Sleep Apnoea (OSA) is a common form of sleep-disordered breathing where the upper airway repeatedly collapses during sleep, causing symptoms such as loud snoring, witnessed breathing pauses, excessive daytime sleepiness, and morning headaches. Risk factors include obesity, male sex, age over 50, and enlarged tonsils; assessment uses the STOP-BANG questionnaire and Epworth Sleepiness Scale, with treatment options including lifestyle changes, CPAP therapy, mandibular advancement devices, and in some cases surgery. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Oral Allergy Syndrome",
@@ -14827,9 +14973,25 @@
     "tags": [
       "Guideline"
     ],
-    "keywords": [],
+    "keywords": [
+      "pelvic inflammatory disease",
+      "PID",
+      "pelvic infection",
+      "pelvic pain",
+      "chlamydia",
+      "gonorrhoea",
+      "STI",
+      "antibiotics",
+      "infertility",
+      "ectopic pregnancy",
+      "chronic pelvic pain",
+      "salpingitis",
+      "endometritis",
+      "doxycycline",
+      "ceftriaxone"
+    ],
     "type": "pathway",
-    "summary": ""
+    "summary": "Pelvic inflammatory disease (PID) is an infection of the upper genital tract caused by sexually transmitted bacteria like chlamydia and gonorrhoea, or non-sexually acquired bacteria following pregnancy procedures or IUD insertion. Prompt antibiotic treatment is essential to prevent serious complications including tubal infertility, ectopic pregnancy, and chronic pelvic pain. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Peri-procedural Management of Warfarin, DOACs, and Antiplatelets",
@@ -14880,9 +15042,28 @@
       "diabetes",
       "B12"
     ],
-    "keywords": [],
+    "keywords": [
+      "peripheral neuropathy",
+      "neuropathic pain",
+      "tingling in feet",
+      "numbness in hands",
+      "burning feet",
+      "pins and needles",
+      "diabetes",
+      "diabetic neuropathy",
+      "B12 deficiency",
+      "vitamin B12",
+      "gabapentin",
+      "pregabalin",
+      "amitriptyline",
+      "duloxetine",
+      "paresthesias",
+      "nerve damage",
+      "foot care",
+      "alcohol excess"
+    ],
     "type": "pathway",
-    "summary": ""
+    "summary": "Peripheral neuropathy is damage to peripheral nerves causing numbness, tingling, burning pain, or weakness, most commonly from diabetes, vitamin B12 deficiency, or alcohol excess. Treatment focuses on addressing the underlying cause and managing pain with medications like amitriptyline, gabapentin, or topical capsaicin, along with careful foot care to prevent injuries. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Poliomyelitis (Flaccid Paralysis)",
@@ -15492,9 +15673,26 @@
       "paediatric",
       "sepsis"
     ],
-    "keywords": [],
+    "keywords": [
+      "paediatric sepsis",
+      "sepsis in children",
+      "septic shock",
+      "meningococcal sepsis",
+      "meningitis",
+      "severe infection in child",
+      "child very unwell",
+      "unresponsive child",
+      "non-blanching rash",
+      "fever",
+      "lethargy",
+      "not feeding",
+      "mottled skin",
+      "emergency",
+      "red flag sepsis",
+      "amber flag sepsis"
+    ],
     "type": "pathway",
-    "summary": ""
+    "summary": "Sepsis is a life-threatening complication of infection in children that requires immediate recognition and treatment. Red flags include purpuric rash, severe lethargy or unresponsiveness, extreme fever, severe breathing problems, or poor perfusion; any confirmed or suspected infection with one red flag plus a very unwell appearance requires urgent ED transfer, oxygen, IV access, antibiotics (ceftriaxone 50 mg/kg), and fluid resuscitation. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Septic Arthritis",
@@ -26118,9 +26316,26 @@
     "tags": [
       "Guideline"
     ],
-    "keywords": [],
+    "keywords": [
+      "respiratory conditions",
+      "air travel",
+      "flying with asthma",
+      "COPD",
+      "pulmonary fibrosis",
+      "sleep apnoea",
+      "hypoxia",
+      "supplemental oxygen",
+      "fitness to fly",
+      "cabin pressure",
+      "CPAP",
+      "pneumothorax",
+      "interstitial lung disease",
+      "cystic fibrosis",
+      "dyspnoea",
+      "oxygen support"
+    ],
     "type": "pathway",
-    "summary": ""
+    "summary": "Air travel is safe for most patients with respiratory conditions, but patients must be clinically stable and those with risk factors like hypoxaemia, severe asthma, or interstitial lung disease should seek respiratory specialist advice about the need for supplemental oxygen. Always discuss with your doctor."
   },
   {
     "title": "RSV Immunisation",
@@ -26687,9 +26902,25 @@
     "tags": [
       "Guideline"
     ],
-    "keywords": [],
+    "keywords": [
+      "silicosis",
+      "crystalline silica",
+      "silica exposure",
+      "pneumoconiosis",
+      "engineered stone",
+      "stone dust",
+      "quartz dust",
+      "stonemason",
+      "quarry worker",
+      "lung disease",
+      "interstitial lung disease",
+      "HRCT chest",
+      "accelerated silicosis",
+      "occupational health",
+      "dust exposure"
+    ],
     "type": "pathway",
-    "summary": ""
+    "summary": "Accelerated silicosis is an occupational lung disease affecting workers exposed to crystalline silica from engineered stone cutting and polishing, occurring after as little as 6 months of exposure. GPs should assess patients with relevant work history and symptoms—shortness of breath, cough, weight loss—and arrange ACC-funded investigations including HRCT chest CT, spirometry, and autoimmune screening, while advising exposure avoidance and reporting all cases to the Medical Officer of Health. Always discuss with your doctor."
   },
   {
     "title": "Skin Tears",

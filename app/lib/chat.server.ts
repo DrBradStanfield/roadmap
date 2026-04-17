@@ -16,6 +16,7 @@ import { healthInputSchema } from '../../packages/health-core/src/validation';
 import { loadHealthData } from './supabase.server';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
 import { decodeSex, decodeUnitSystem } from '../../packages/health-core/src/types';
+import { SYNONYM_SETS } from './synonyms';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -455,21 +456,48 @@ export function matchDocumentTitle(
 }
 
 /**
+ * Expand a user query via synonym equivalence sets (see synonyms.ts).
+ * Short terms (<=4 chars) require word boundaries to avoid "mi" matching
+ * the suffix of "gained", "ed" matching "tried", etc.
+ */
+function expandQuery(msg: string): string {
+  const msgLower = msg.toLowerCase();
+  const additions: string[] = [];
+  for (const set of SYNONYM_SETS) {
+    const matched = set.find(term => {
+      const t = term.toLowerCase();
+      if (t.length <= 4) {
+        const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`\\b${escaped}\\b`).test(msgLower);
+      }
+      return msgLower.includes(t);
+    });
+    if (matched) {
+      for (const other of set) {
+        if (other !== matched) additions.push(other);
+      }
+    }
+  }
+  return additions.length > 0 ? msg + ' ' + additions.join(' ') : msg;
+}
+
+/**
  * Match a user message against the blog index by tags and keywords.
  * Returns handles of the top matching articles, sorted by score descending.
  */
 export function matchBlogArticles(userMessage: string, maxResults = 3): string[] {
   if (BLOG_INDEX.length === 0) return [];
 
-  const msgLower = userMessage.toLowerCase();
+  const msgLower = expandQuery(userMessage).toLowerCase();
   const matches: Array<{ handle: string; score: number }> = [];
 
   for (const article of BLOG_INDEX) {
     let score = 0;
 
-    // Check keywords (highest signal)
+    // Check keywords (highest signal) — lowercase for case-insensitive match,
+    // otherwise mixed-case keywords like "IBS", "UTI", "HTN" never match.
     for (const kw of article.keywords) {
-      if (msgLower.includes(kw)) score += 2;
+      if (msgLower.includes(kw.toLowerCase())) score += 2;
     }
 
     // Check tags
@@ -698,28 +726,20 @@ export async function getChatCompletion(
 // ---------------------------------------------------------------------------
 
 /**
- * Prime the Anthropic prompt cache by sending a minimal request with the same
- * cached system blocks that real requests use. max_tokens:1 minimizes output cost.
- * The cache is keyed on the input prefix — user context (empty here) is after
- * the last cache breakpoint, so real requests still get cache hits.
+ * Prime the Anthropic prompt cache with `max_tokens:1` against our 4 cached
+ * system blocks. User context (`'{}'`) sits AFTER the last `cache_control`
+ * breakpoint, so real requests with different user context still hit the
+ * shared cached prefix. Returns usage so the caller can record cache metrics.
  */
-export async function warmupCache(): Promise<void> {
+export async function warmupCache(): Promise<AnthropicUsage> {
   const systemBlocks = buildSystemBlocks('{}');
-  await callAnthropicWithUsage({
+  const result = await callAnthropicWithUsage({
     model: CHAT_MODEL,
     max_tokens: 1,
     system: systemBlocks,
     messages: [{ role: 'user', content: 'hi' }],
   });
-}
-
-// Fire once on boot (covers deploy scenario). 5s delay lets health checks pass first.
-if (process.env.NODE_ENV === 'production') {
-  setTimeout(() => {
-    warmupCache()
-      .then(() => console.log('Chat prompt cache warmed'))
-      .catch(err => console.warn('Chat warmup failed (non-fatal):', (err as Error).message));
-  }, 5_000);
+  return result.usage;
 }
 
 // ---------------------------------------------------------------------------
