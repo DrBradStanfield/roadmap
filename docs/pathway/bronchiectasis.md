@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bronchiectasis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bronchiectasis", "chronic cough", "productive cough", "sputum", "phlegm", "lung infection", "recurrent chest infection", "Pseudomonas aeruginosa", "ciprofloxacin", "amoxicillin clavulanic acid", "doxycycline", "roxithromycin", "macrolide", "haemoptysis", "blood in sputum", "HRCT", "high resolution CT", "pulmonary rehabilitation", "sputum clearance", "chest physiotherapy", "COPD", "asthma", "cystic fibrosis", "immunoglobulin deficiency", "ABPA", "allergic bronchopulmonary aspergillosis", "Kartagener syndrome", "influenza vaccine", "pneumococcal vaccine", "spirometry", "FEV1", "inhaled corticosteroid", "bronchodilator", "non-tuberculous mycobacteria", "NTM", "finger clubbing"]
 summary: "Clinical pathway for bronchiectasis: what it is, how doctors diagnose it, community management including antibiotic treatment of exacerbations, and when specialist referral is needed."

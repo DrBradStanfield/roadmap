@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Managing Swallowing Difficulties"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["swallowing difficulties", "dysphagia", "aspiration", "aspiration pneumonia", "coughing when eating", "speech language therapy", "IDDSI", "diet texture", "modified diet", "videofluoroscopy", "dry mouth", "saliva", "quality of life", "swallowing", "dysphagia management", "diet upgrade", "puréed diet", "minced food", "thickened fluids"]
 summary: "Clinical pathway for managing swallowing difficulties in adults aged 16 and over once a diagnosis is established — covering coughing when eating, aspiration pneumonia, quality of life decisions, pain on swallowing, difficulty eating or drinking, cognitive difficulties, medication swallowing, dry mouth, and how to progress diet texture. Always discuss with your doctor."

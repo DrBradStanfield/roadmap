@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Dyspnoea in MND"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["dyspnoea", "breathlessness", "mnd", "motor neurone disease", "als", "amyotrophic lateral sclerosis", "respiratory failure", "bipap", "non-invasive ventilation", "morphine", "palliative", "end of life", "secretions", "cough", "spirometry", "benzodiazepine", "clonazepam", "lorazepam", "midazolam"]
 summary: "Clinical pathway for managing breathlessness (dyspnoea) in motor neurone disease (MND): assessment of respiratory function and reversible causes, non-pharmacological strategies, and stepwise pharmacological management including morphine and benzodiazepines. Always discuss with your doctor."

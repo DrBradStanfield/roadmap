@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hair Loss Subsidy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hair loss", "alopecia", "wig subsidy", "hairpiece", "headwear", "hair loss subsidy", "Ministry of Health subsidy", "cancer hair loss", "chemotherapy hair loss", "wigs and hairpieces", "medical certificate", "NHI"]
 summary: "A government subsidy is available in New Zealand for wigs, hairpieces, or headwear for patients with medically caused hair loss (e.g., cancer, alopecia). Payment ranges from $400 to $2,330 depending on whether hair loss is permanent or temporary. Requires a medical certificate from a GP or specialist. Always discuss with your doctor."

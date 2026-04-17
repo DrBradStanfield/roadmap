@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Diabetes in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["diabetes", "palliative care", "palliative", "end of life", "hypoglycaemia", "hyperglycaemia", "insulin", "blood glucose", "type 1 diabetes", "type 2 diabetes", "metformin", "sulfonylurea", "corticosteroids", "terminal", "hospice", "last days of life", "dying", "HbA1c"]
 summary: "Clinical pathway for managing diabetes in adult palliative care patients: shifting focus from long-term complication prevention to avoiding hypoglycaemia and symptomatic hyperglycaemia, insulin adjustment through clinical stages, and managing steroid-induced hyperglycaemia. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Travel Consultation"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["travel health", "travel consultation", "travel medicine", "vaccines", "vaccinations", "malaria", "malaria prophylaxis", "altitude sickness", "DVT", "jet lag", "travellers diarrhoea", "dengue", "yellow fever", "rabies", "Zika", "motion sickness", "travel insurance", "fitness to fly", "mosquito", "insect repellent"]
 summary: "Clinical pathway for pre-travel health consultation: assessing travel plans and medical conditions, managing travel-specific risks (altitude, DVT, diarrhoea, mosquito-borne illness, malaria), and vaccination planning. Seek advice from your doctor 6–8 weeks before departure. Always discuss with your doctor."

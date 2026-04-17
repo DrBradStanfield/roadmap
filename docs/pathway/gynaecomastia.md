@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Gynaecomastia"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["gynaecomastia", "gynecomastia", "male breast enlargement", "breast tissue men", "pseudo-gynaecomastia", "pubertal gynaecomastia", "testosterone deficiency", "hypogonadism", "estrogen", "tamoxifen", "SERM", "male breast"]
 summary: "Clinical pathway for gynaecomastia (male breast glandular enlargement): background by age group, red flags for breast cancer, assessment approach including history, examination and investigations, and management by cause including trigger elimination, SERM treatment, and surgery. Always discuss with your doctor."

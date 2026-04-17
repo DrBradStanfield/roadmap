@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bow Legs (Genu Varum)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bow legs", "genu varum", "bowed legs", "blount disease", "rickets", "tibial bowing", "physiological bowing", "vitamin D deficiency", "paediatric orthopaedics", "child growth"]
 summary: "Clinical pathway for bow legs in children: background on physiological vs pathological bowing, risk factors for vitamin D deficiency and Blount disease, assessment approach including blood tests, and management guidance. Always discuss with your doctor."

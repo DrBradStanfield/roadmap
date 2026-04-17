@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Shoulder Dislocation and Chronic Instability"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["shoulder dislocation", "shoulder instability", "anterior dislocation", "posterior dislocation", "chronic shoulder instability", "bankart lesion", "hill-sachs", "shoulder reduction", "subluxation", "shoulder pain", "orthopaedic"]
 summary: "Clinical pathway for shoulder dislocation and chronic instability: red flags requiring emergency assessment, assessment approach including X-ray indications, acute reduction techniques, and post-reduction management. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Behavioural and Psychological Symptoms of Dementia (BPSD)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bpsd", "dementia", "behavioural symptoms", "psychological symptoms", "agitation", "aggression", "psychosis", "hallucinations", "wandering", "sleep disturbance", "antipsychotics", "risperidone", "quetiapine", "haloperidol", "citalopram", "mirtazapine", "lorazepam", "zopiclone", "cholinesterase inhibitors", "person-centred care", "carer stress", "abc chart"]
 summary: "Clinical pathway for managing behavioural and psychological symptoms of dementia (BPSD): non-pharmacological approaches first, when to consider psychotropic medication, drug choices and doses, and monitoring. Always discuss management with your doctor."

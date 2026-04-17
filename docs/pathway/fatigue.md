@@ -1,8 +1,8 @@
 ---
 title: "Pathway: Fatigue"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
-keywords: ["fatigue", "tiredness", "malaise", "chronic fatigue", "exhaustion", "post-exertional malaise", "PEM", "anaemia", "thyroid", "depression", "sleep", "ME/CFS", "post-viral fatigue", "long COVID"]
+keywords: ["fatigue","tiredness","malaise","chronic fatigue","exhaustion","post-exertional malaise","PEM","anaemia","thyroid","depression","sleep","ME/CFS","post-viral fatigue","long COVID","feeling tired","always tired","no energy","low energy","lack of energy","exhausted all the time","worn out","gained weight and tired","cold and tired","always exhausted","constantly tired","tired all the time"]
 summary: "Clinical pathway for fatigue in adults: red flags, differential diagnosis, targeted investigations, and management through lifestyle modification and treating underlying causes. Always discuss with your doctor."
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Vertigo"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["vertigo", "dizziness", "bppv", "benign paroxysmal positional vertigo", "meniere disease", "menieres", "vestibular neuronitis", "vestibular neuritis", "labyrinthitis", "spinning", "balance", "tinnitus", "nystagmus", "epley manoeuvre", "dix-hallpike", "peripheral vertigo", "central vertigo", "dysequilibrium", "presyncope"]
 summary: "Clinical pathway for vertigo in adults: red flags, differentiating central from peripheral causes, common conditions (BPPV, Menière disease, vestibular neuronitis), assessment tests, and management including the Epley manoeuvre and medications. Always discuss with your doctor."

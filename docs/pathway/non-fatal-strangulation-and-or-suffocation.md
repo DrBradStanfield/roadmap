@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Non-Fatal Strangulation and/or Suffocation"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["strangulation", "suffocation", "choking", "intimate partner violence", "family violence", "domestic violence", "IPV", "neck injury", "asphyxiation", "sexual assault", "family harm", "NFSS"]
 summary: "Clinical pathway for non-fatal strangulation and/or suffocation: background on risk, what to expect during assessment (history, examination, documentation), when emergency care is needed, and management. Always discuss with your doctor."

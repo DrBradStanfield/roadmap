@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Substance Use in Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["substance use pregnancy", "alcohol pregnancy", "tobacco smoking pregnancy", "cannabis pregnancy", "opioids pregnancy", "methamphetamine pregnancy", "benzodiazepines pregnancy", "drug use pregnancy", "neonatal abstinence syndrome", "NAS", "opioid substitution treatment", "OST", "addiction pregnancy", "withdrawal pregnancy", "polysubstance use", "FASD", "fetal alcohol spectrum disorder", "GHB pregnancy", "cocaine pregnancy", "ecstasy pregnancy", "gabapentin pregnancy", "pregabalin pregnancy"]
 summary: "Clinical pathway for substance use in pregnancy: background on risks, assessment approach, substance-specific harms (alcohol, tobacco, cannabis, opioids, methamphetamine, benzodiazepines, and others), management including withdrawal, neonatal abstinence syndrome, breastfeeding guidance, and patient resources. Always discuss with your doctor."

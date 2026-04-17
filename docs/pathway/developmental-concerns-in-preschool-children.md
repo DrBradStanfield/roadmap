@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Developmental Concerns in Preschool Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["developmental delay", "preschool", "child development", "autism", "asd", "autism spectrum disorder", "global developmental delay", "speech delay", "language delay", "fine motor", "gross motor", "developmental milestones", "early intervention", "paediatric", "child health"]
 summary: "Clinical pathway for developmental concerns in preschool children: red flags, risk factors, assessment approach across five developmental domains, autism screening, and management including early intervention referral. Always discuss with your doctor."

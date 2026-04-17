@@ -1,6 +1,6 @@
 ---
 title: "Pathway: COPD Diagnosis and Initial Management"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["COPD", "chronic obstructive pulmonary disease", "diagnosis", "spirometry", "FEV1", "FVC", "bronchodilator", "airflow obstruction", "breathlessness", "dyspnoea", "cough", "sputum", "emphysema", "smoking", "pack years", "LAMA", "LABA", "SABA", "SAMA", "tiotropium", "salbutamol", "ICS", "inhaled corticosteroid", "pulmonary rehabilitation", "oxygen", "MMRC", "BODE index", "eosinophil", "ACO", "asthma-COPD overlap", "exacerbation", "cor pulmonale", "pulmonary hypertension", "NT-proBNP", "home oxygen", "inhaler", "bpacnz", "GOLD"]
 summary: "How doctors diagnose COPD using history, spirometry, and investigations, and the stepwise approach to initial management including inhalers, lifestyle advice, pulmonary rehabilitation, and when specialist referral is needed."

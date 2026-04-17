@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Enuresis in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["enuresis", "bedwetting", "nocturnal enuresis", "bed wetting", "daytime wetting", "urinary incontinence children", "wetting", "bladder control children", "desmopressin", "oxybutynin", "continence", "constipation children", "overactive bladder children"]
 summary: "Clinical pathway for enuresis (bedwetting and daytime wetting) in children aged 5 and over: types, assessment, behavioural management, and when medication may be considered. Always discuss with your doctor."

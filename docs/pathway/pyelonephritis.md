@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pyelonephritis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pyelonephritis", "kidney infection", "upper uti", "upper urinary tract infection", "uti", "pyelo", "loin pain", "flank pain", "gentamicin", "cefalexin", "urine culture", "sepsis", "complicated uti", "uncomplicated uti", "esbl", "renal impairment"]
 summary: "Clinical pathway for acute pyelonephritis (upper UTI) in adults: red flags, diagnosis criteria, distinguishing uncomplicated from complicated infection, antibiotic selection (cefalexin, gentamicin, co-trimoxazole, ciprofloxacin), and when to escalate to hospital. Always discuss with your doctor."

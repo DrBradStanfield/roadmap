@@ -1,6 +1,6 @@
 ---
 title: "Pathway: CT IVU and CT Renal"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["CT IVU", "CT urogram", "CT renal", "multiphase renal CT", "haematuria", "blood in urine", "renal mass", "kidney mass", "ureteric obstruction", "renal cyst", "Bosniak", "iodine contrast", "IV contrast", "radiation", "kidney imaging"]
 summary: "Clinical pathway for CT IVU (CT Intravenous Urogram / CT Urogram) and Multiphase Renal CT: when these scans are used, radiation and contrast risks, contraindications to IV contrast, and when ultrasound is preferred instead. Always discuss with your doctor."

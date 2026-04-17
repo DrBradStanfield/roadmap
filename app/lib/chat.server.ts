@@ -494,10 +494,17 @@ export function matchBlogArticles(userMessage: string, maxResults = 3): string[]
   for (const article of BLOG_INDEX) {
     let score = 0;
 
-    // Check keywords (highest signal) — lowercase for case-insensitive match,
-    // otherwise mixed-case keywords like "IBS", "UTI", "HTN" never match.
+    // Check keywords (highest signal) — lowercase for case-insensitive match.
+    // Short keywords (≤4 chars) use word boundaries to avoid "ent" matching
+    // "treatment", "AIN" matching "migraine", "mi" matching "minimum", etc.
     for (const kw of article.keywords) {
-      if (msgLower.includes(kw.toLowerCase())) score += 2;
+      const kwLower = kw.toLowerCase();
+      if (kwLower.length <= 4) {
+        const escaped = kwLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (new RegExp(`\\b${escaped}\\b`).test(msgLower)) score += 2;
+      } else {
+        if (msgLower.includes(kwLower)) score += 2;
+      }
     }
 
     // Check tags

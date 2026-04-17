@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Neck Lumps in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["neck lump", "neck mass", "lymph node", "lymphadenopathy", "thyroid nodule", "goitre", "branchial cyst", "thyroglossal cyst", "salivary gland", "metastatic", "lymphoma", "head and neck cancer", "FNA", "fine needle aspiration", "ENT", "tuberculosis", "TB"]
 summary: "Clinical pathway for neck lumps in adults (age ≥15): red flags for head and neck cancer, background on common causes, assessment approach, and management by likely diagnosis. Always discuss with your doctor."

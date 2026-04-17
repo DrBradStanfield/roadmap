@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Abnormal Bleeding or Bruising"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["abnormal bleeding", "bruising", "bleeding disorder", "haemophilia", "von willebrand disease", "vwd", "thrombocytopenia", "petechiae", "purpura", "mucocutaneous bleeding", "coagulopathy", "pfa-100", "platelet function", "epistaxis", "menorrhagia", "tranexamic acid", "anticoagulant", "aspirin", "bleeding history"]
 summary: "Clinical pathway for abnormal bleeding or bruising: distinguishing mucocutaneous from internal bleeding, when to suspect a significant bleeding disorder, blood test investigation (FBC, coagulation screen, PFA-100, vWF), management including tranexamic acid use, and when to seek specialist or emergency input. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Adult Mental Health Counselling and Therapy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["mental health", "counselling", "therapy", "depression", "anxiety", "CBT", "cognitive behavioural therapy", "e-therapy", "helpline", "crisis support", "suicide", "grief", "trauma", "eating disorder", "gambling", "peer support", "psychotherapy", "psychologist", "psychiatrist"]
 summary: "Overview of adult mental health support options in New Zealand: when to seek help, types of therapy, e-therapy programmes, national helplines, and how to find a therapist. Always discuss mental health concerns with your doctor."

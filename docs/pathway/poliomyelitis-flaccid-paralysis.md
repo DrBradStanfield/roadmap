@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Poliomyelitis (Flaccid Paralysis)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["polio", "poliomyelitis", "flaccid paralysis", "acute flaccid paralysis", "AFP", "poliovirus", "paralysis", "vaccination", "infection control", "notifiable disease", "paediatric", "neurology"]
 summary: "Clinical pathway for suspected poliomyelitis and acute flaccid paralysis (AFP): all cases require urgent hospital assessment and public health notification. Covers AFP recognition, non-paralytic infection symptoms, infection control measures, and vaccination priorities. Always discuss with your doctor."

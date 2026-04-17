@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Finger Tip Units"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["finger tip unit", "FTU", "topical cream", "topical steroid", "ointment", "quantity", "dosing", "eczema", "dermatitis", "skin", "paediatric", "body surface area"]
 summary: "Guide to finger tip units (FTUs) for measuring the correct quantity of topical cream or ointment. Includes definition, gram equivalence, and quantity tables for adults and children by body region."

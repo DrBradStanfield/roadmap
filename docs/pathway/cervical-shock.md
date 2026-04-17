@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cervical Shock"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cervical shock", "vasovagal", "iud insertion", "iucd", "pipelle biopsy", "cervix", "bradycardia", "hypotension", "atropine", "uterine procedure", "syncope", "miscarriage", "products of conception"]
 summary: "Clinical pathway for cervical shock — a vasovagal reaction occurring during or after cervical procedures such as IUD insertion or pipelle biopsy. Covers recognition, immediate management steps, and when emergency assessment is needed. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Debriding Wounds"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["wound debridement", "debridement", "eschar", "slough", "necrosis", "wound care", "autolytic debridement", "enzymatic debridement", "mechanical debridement", "conservative sharp debridement", "surgical debridement", "wound bed", "biofilm", "wound infection"]
 summary: "Clinical pathway for wound debridement: types of debridement (autolytic, enzymatic, mechanical, conservative sharp, surgical), wound product selection by exudate level, and assessment approach. Always discuss wound care with your doctor or nurse."

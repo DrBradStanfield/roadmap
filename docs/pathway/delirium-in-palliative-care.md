@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Delirium in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["delirium", "palliative care", "palliative", "end of life", "confusion", "agitation", "hallucinations", "haloperidol", "midazolam", "levomepromazine", "terminal agitation", "CAM", "confusion assessment method", "hyperactive delirium", "hypoactive delirium", "hospice", "dementia", "restlessness"]
 summary: "Clinical pathway for managing delirium in adult palliative care patients: recognising features (hyperactive, hypoactive, mixed), identifying and treating reversible causes, supportive care, and medication management with haloperidol and midazolam. Always discuss with your doctor."

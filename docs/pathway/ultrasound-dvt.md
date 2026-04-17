@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ultrasound for DVT"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["dvt", "deep vein thrombosis", "leg swelling", "leg clot", "ultrasound", "wells score", "d-dimer", "rivaroxaban", "enoxaparin", "anticoagulation", "superficial venous thrombosis", "upper limb dvt", "pregnancy dvt"]
 summary: "Clinical pathway for suspected deep vein thrombosis (DVT): when an ultrasound scan is indicated based on Wells score and D-dimer, short-term anticoagulation while awaiting imaging, and patient resources. Always discuss with your doctor."

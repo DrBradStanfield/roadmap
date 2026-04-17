@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Contact Tracing (Partner Notification)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["contact tracing", "partner notification", "STI", "sexually transmitted infection", "chlamydia", "gonorrhoea", "trichomoniasis", "syphilis", "HIV", "PID", "pelvic inflammatory disease", "urethritis", "epididymo-orchitis", "sexual health", "sexual contacts", "provider referral"]
 summary: "Clinical pathway for partner notification after a positive STI result: which infections require contact tracing, how to advise patients on notifying contacts, the 3-month lookback window, provider referral indications, and when to involve secondary care (syphilis, HIV). Always discuss with your doctor."

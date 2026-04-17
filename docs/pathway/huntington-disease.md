@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Huntington Disease"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["Huntington disease", "HD", "Huntington's", "genetic testing", "pre-symptomatic testing", "CAG repeat", "autosomal dominant", "chorea", "neurological", "genetic counselling", "GHSNZ", "dementia", "hereditary", "neurology"]
 summary: "Clinical pathway for Huntington disease (HD): background on this autosomal dominant condition, assessment of symptoms and family history, types of genetic testing available (diagnostic vs pre-symptomatic), implications of DNA results by CAG repeat count, and when to refer for neurology or genetic health assessment. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Zoledronic Acid Infusion"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["zoledronic acid", "zoledronate", "aclasta", "bisphosphonate", "osteoporosis", "bone density", "infusion", "alendronate", "osteonecrosis of the jaw", "onj", "hypocalcaemia", "renal function", "creatinine clearance", "egfr", "vitamin d", "fracture prevention"]
 summary: "Clinical pathway for zoledronic acid (Aclasta) infusion for osteoporosis: who qualifies, contraindications, pre-procedure workup, infusion technique, post-procedure follow-up, and when to seek specialist input. Always discuss with your doctor."

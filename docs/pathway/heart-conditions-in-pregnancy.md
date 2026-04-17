@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Heart Conditions in Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["heart conditions in pregnancy", "cardiac disease pregnancy", "cardiomyopathy pregnancy", "arrhythmia pregnancy", "heart murmur pregnancy", "peripartum cardiomyopathy", "congenital heart disease pregnancy", "rheumatic heart disease pregnancy", "aortic dissection pregnancy", "myocardial infarction pregnancy", "heart failure pregnancy", "palpitations pregnancy", "ecg pregnancy", "cardiac output pregnancy", "valvular disease pregnancy"]
 summary: "Clinical pathway for heart conditions in pregnancy: background on cardiocirculatory changes, assessment of cardiac symptoms and history, evaluation of murmurs and investigations, and management approach. Always discuss with your doctor."

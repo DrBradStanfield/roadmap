@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Adrenal Nodules"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["adrenal nodule", "adrenal incidentaloma", "adrenal mass", "adrenal tumour", "incidental adrenal", "Cushing's syndrome", "phaeochromocytoma", "pheochromocytoma", "primary aldosteronism", "Conn's syndrome", "cortisol", "aldosterone", "catecholamines", "adrenal adenoma", "adrenal malignancy", "adrenal CT", "adrenal MRI"]
 summary: "Clinical pathway for incidentally detected adrenal nodules on CT or MRI: red flags, risk of malignancy assessment, hormone hypersecretion screening (Cushing's, phaeochromocytoma, primary aldosteronism), and when specialist referral is needed. Always discuss findings with your doctor."

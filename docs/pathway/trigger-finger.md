@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Trigger Finger"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["trigger finger", "locked finger", "steroid injection", "triamcinolone", "tendon sheath", "A1 pulley", "hand therapy", "splinting", "finger locking", "tenosynovitis"]
 summary: "Clinical pathway for trigger finger: background, assessment findings, and management including activity modification, steroid injection with triamcinolone, and when to refer for hand surgery. Always discuss with your doctor."

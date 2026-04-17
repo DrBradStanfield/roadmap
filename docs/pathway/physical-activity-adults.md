@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Physical Activity — Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["physical activity", "exercise", "sedentary", "fitness", "moderate intensity", "vigorous intensity", "muscle strengthening", "resistance training", "green prescription", "active", "walking", "barriers to exercise"]
 summary: "Clinical pathway for physical activity counselling in adults: assessment of current activity levels, readiness to change, contraindications, exercise targets (2.5 hrs/week moderate or 1.25 hrs/week vigorous), and special considerations for adults 65+. Your doctor can help identify the right starting point for you."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Failure to Thrive (Faltering Growth)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["failure to thrive", "faltering growth", "poor weight gain", "FTT", "child weight", "infant feeding", "growth chart", "centile", "paediatric", "child health", "malnutrition", "feeding difficulties", "coeliac", "cystic fibrosis", "developmental delay"]
 summary: "Clinical pathway for failure to thrive (faltering growth) in children under 5: definition, assessment approach including feeding history and social factors, causes (inadequate intake, absorption, or excessive caloric use), and management. Always discuss with your doctor."

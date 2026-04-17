@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Diagnosed Ovarian Cyst"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ovarian cyst", "ovarian mass", "functional cyst", "dermoid cyst", "endometrioma", "cystadenoma", "ovarian torsion", "postmenopausal cyst", "premenopausal cyst", "CA125", "ultrasound", "gynaecology", "ovarian cancer", "haemorrhagic cyst", "complex cyst", "simple cyst"]
 summary: "Clinical pathway for managing an ovarian cyst identified on ultrasound in patients aged 15 and older: red flags (torsion, cancer), classification (simple vs complex, pre- vs postmenopausal), and surveillance or referral thresholds. Always discuss findings with your doctor."

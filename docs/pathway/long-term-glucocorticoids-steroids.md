@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Long Term Glucocorticoids (Steroids)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["glucocorticoids", "steroids", "prednisone", "prednisolone", "corticosteroids", "hydrocortisone", "dexamethasone", "HPA axis", "adrenal suppression", "adrenal insufficiency", "sick day rules", "steroid withdrawal", "steroid taper", "Synacthen", "cortisol", "stress steroids", "MedicAlert"]
 summary: "Clinical pathway for patients on long-term glucocorticoids (steroids): background on HPA axis suppression, monitoring, sick day dosing rules, steroid withdrawal and tapering, and when endocrinology referral is needed. Always discuss with your doctor."

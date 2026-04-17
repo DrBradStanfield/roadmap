@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Developmental Concerns in School-Age Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["developmental delay", "autism", "ASD", "autism spectrum disorder", "intellectual disability", "ADHD", "fetal alcohol spectrum disorder", "speech delay", "school age", "developmental concerns", "developmental disorder", "SENCO", "RTLB", "paediatric assessment"]
 summary: "Clinical pathway for developmental concerns in children aged 5–14 years: assessment approach, differential diagnosis (ASD, intellectual disability, ADHD, speech disorders, fetal alcohol spectrum disorder), management by severity, associated issues, and patient resources. Always discuss with your doctor."

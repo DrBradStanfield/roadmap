@@ -1,6 +1,6 @@
 ---
 title: "Pathway: HPV Vaccination"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hpv", "human papillomavirus", "gardasil", "gardasil 9", "hpv vaccine", "cervical cancer", "genital warts", "vaccination", "immunisation", "hpv immunisation"]
 summary: "Clinical pathway for HPV vaccination: who is eligible, recommended schedules (2-dose vs 3-dose), funded vs unfunded groups, and special considerations including pregnancy and immunocompromised patients. Always discuss with your doctor."

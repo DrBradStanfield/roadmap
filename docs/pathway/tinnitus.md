@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Tinnitus"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["tinnitus", "ringing in ears", "buzzing ears", "hearing noise", "pulsatile tinnitus", "vestibular schwannoma", "acoustic neuroma", "ototoxic medication", "hearing loss", "presbycusis", "Meniere's disease", "audiogram"]
 summary: "Clinical pathway for tinnitus in adults: assessment of cause and severity, red flags requiring urgent investigation (unilateral tinnitus, pulsatile tinnitus, asymmetric hearing loss), and management focused on reducing impact on quality of life. Always discuss with your doctor."

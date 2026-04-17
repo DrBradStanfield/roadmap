@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bronchiolitis in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bronchiolitis", "infant", "wheeze", "crackles", "respiratory distress", "tachypnoea", "oxygen saturation", "bronchiolitis severity", "viral bronchiolitis", "infant wheeze", "RSV", "paediatric respiratory"]
 summary: "Clinical pathway for bronchiolitis in infants and young children: red flags requiring emergency assessment, severity grading (mild/moderate/severe), assessment approach, and management. Salbutamol, steroids, and antibiotics have no role. Always discuss with your doctor."

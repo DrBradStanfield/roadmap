@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Foreign Bodies Ingested by Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["foreign body ingestion", "swallowed object", "button battery", "disc battery", "magnet ingestion", "oesophageal obstruction", "coin swallowing", "children ingestion", "paediatric foreign body", "sharp object swallowed", "lead ingestion"]
 summary: "Clinical pathway for children who have swallowed a foreign body: red flags requiring emergency care (button batteries, magnets, oesophageal obstruction), assessment approach, and management by object type. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Burn Injuries"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["burn", "burns", "scald", "thermal injury", "chemical burn", "electrical burn", "inhalation injury", "wound dressing", "TBSA", "total body surface area", "first aid burn", "burn depth", "skin graft", "toxic shock", "blister", "wound care"]
 summary: "Clinical pathway for burn injuries: first aid, burn depth and TBSA assessment, red flags for specialist referral, primary care wound management by depth, dressing choice, and follow-up review schedule. Always discuss with your doctor."

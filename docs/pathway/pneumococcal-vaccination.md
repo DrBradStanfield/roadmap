@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pneumococcal Vaccination"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pneumococcal", "vaccination", "vaccine", "pneumonia", "meningitis", "septicaemia", "streptococcus pneumoniae", "PCV13", "23PPV", "Prevenar", "Pneumovax", "immunisation", "splenectomy", "asplenia", "immunodeficiency", "HIV", "dialysis", "transplant", "cochlear implant", "invasive pneumococcal disease", "IPD"]
 summary: "Guidance on pneumococcal vaccination: who is eligible, which vaccines are used (PCV13 and 23PPV), funded versus unfunded indications, and high-risk groups. Always discuss with your doctor to confirm eligibility and timing."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Suicide Prevention in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["suicide", "suicidal ideation", "self-harm", "suicide risk", "safety plan", "mental health crisis", "depression", "hopelessness", "suicide prevention", "suicidal thoughts", "crisis helpline"]
 summary: "Clinical pathway for suicide prevention in adults: red flags, risk factor assessment, protective factors, safety planning, and management by level of concern. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Impetigo (School Sores)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["impetigo", "school sores", "skin infection", "staphylococcus", "streptococcus", "cefalexin", "flucloxacillin", "erythromycin", "mrsa", "bullous impetigo", "children", "skin sores", "crusty sores", "blisters"]
 summary: "Clinical pathway for impetigo (school sores) in children: red flags requiring urgent assessment, background on causes and contagion, assessment approach, wound care, antibiotic selection (cefalexin, flucloxacillin, erythromycin), hygiene measures, and recurrence management. Always discuss with your doctor."

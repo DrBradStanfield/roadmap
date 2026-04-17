@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Multiple Sclerosis (MS)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["multiple sclerosis", "ms", "demyelination", "clinically isolated syndrome", "cis", "relapse", "pseudo-relapse", "optic neuritis", "disease modifying drugs", "dmd", "fingolimod", "natalizumab", "dimethyl fumarate", "teriflunomide", "glatiramer acetate", "interferon beta", "methylprednisolone", "spasticity", "pml", "progressive multifocal leukoencephalopathy", "neurology", "autoimmune"]
 summary: "Clinical pathway for Multiple Sclerosis (MS): diagnosis criteria, assessment, distinguishing relapse from pseudo-relapse, disease-modifying drug monitoring, symptom management (spasticity, bladder, fatigue, pain, depression), vaccination guidance, and pregnancy considerations. Always discuss with your doctor."

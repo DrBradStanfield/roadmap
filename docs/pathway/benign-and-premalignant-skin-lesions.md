@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Benign and Premalignant Skin Lesions"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["skin lesion", "actinic keratosis", "seborrhoeic keratosis", "skin tag", "solar lentigo", "naevus", "mole", "congenital naevus", "atypical naevus", "cutaneous horn", "sebaceous cyst", "epidermal cyst", "pyogenic granuloma", "dermatofibroma", "skin check", "cryotherapy", "efudix", "fluorouracil", "imiquimod", "aldara", "skin cancer", "premalignant", "benign skin lesion", "melanoma", "bcc", "scc"]
 summary: "Clinical pathway for benign and premalignant skin lesions: lesion types and features, assessment approach, and management including cryotherapy, fluorouracil, and imiquimod for actinic keratoses. Guidance on when specialist referral is needed. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Land Contamination"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["land contamination", "soil contamination", "arsenic", "lead", "DDT", "organochlorine pesticides", "copper chrome arsenic", "CCA", "heavy metals", "contaminated land", "HAIL", "hazardous activities and industries list", "asbestos in sand", "polycyclic aromatic hydrocarbons", "PAH", "blood lead level", "orchard contamination", "timber treatment"]
 summary: "Guidance on assessing and managing health concerns related to land contamination, including heavy metals (arsenic, lead), organochlorine pesticides (DDT), and petroleum hydrocarbons. Covers exposure risk identification, investigations, and practical advice on minimising risk. Always discuss with your doctor."

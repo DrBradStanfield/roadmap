@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Anaemia in Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["anaemia in pregnancy", "anemia in pregnancy", "iron deficiency pregnancy", "haemoglobin pregnancy", "ferritin pregnancy", "oral iron", "IV iron pregnancy", "B12 deficiency pregnancy", "folate deficiency pregnancy", "MCV pregnancy", "antenatal anaemia"]
 summary: "Clinical pathway for anaemia in pregnancy: definition (Hb < 100 g/L), risk factors, assessment including FBC and ferritin, and management of iron deficiency and other causes. Oral iron is the mainstay of community treatment. Always discuss with your doctor."

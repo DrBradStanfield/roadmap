@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Growth (B4 School Check)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["growth", "b4 school check", "bmi", "child weight", "faltering growth", "obesity", "overweight", "underweight", "percentile", "centile", "weight management", "child health", "preschool"]
 summary: "Clinical pathway for growth assessment at the B4 School Check: BMI for age interpretation, management by percentile category, and when to refer to a general practitioner. Always discuss with your doctor."

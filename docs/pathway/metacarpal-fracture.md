@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Metacarpal Fracture"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["metacarpal fracture", "boxer's fracture", "bennett fracture", "hand fracture", "metacarpal neck", "metacarpal shaft", "metacarpal head", "metacarpal base", "fight bite", "buddy strap", "volar slab", "hand injury", "knuckle fracture", "thumb fracture"]
 summary: "Clinical pathway for metacarpal fractures: assessment including rotational deformity check and X-ray, management by fracture type (head, neck, shaft, base, Bennett fracture), and indications for acute hand surgery versus non-acute orthopaedic referral. Always discuss with your doctor."

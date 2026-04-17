@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Dyspareunia (Deep or Superficial)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["dyspareunia", "painful sex", "superficial dyspareunia", "deep dyspareunia", "vulvodynia", "vaginismus", "vulvar vestibulitis", "pelvic pain", "vaginal pain", "atrophic vaginitis", "vestibulitis", "pelvic floor", "endometriosis", "candidiasis", "bacterial vaginosis", "lichen sclerosis"]
 summary: "Clinical pathway for dyspareunia (painful sex) in women: red flags, causes (superficial and deep), assessment including history and examination, and management options including vulval care, psychosexual advice, topical treatments, and referral. Always discuss with your doctor."

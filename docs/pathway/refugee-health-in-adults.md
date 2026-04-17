@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Refugee Health in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["refugee health", "asylum seeker", "refugee screening", "immigrant health", "tuberculosis", "parasites", "strongyloides", "schistosomiasis", "malaria", "hepatitis B", "hepatitis C", "HIV", "thalassaemia", "sickle cell", "G6PD", "PTSD", "trauma", "mental health", "vitamin D deficiency", "iron deficiency", "thiamine", "intestinal parasites", "mebendazole", "ivermectin", "praziquantel", "interpreter services", "resettlement"]
 summary: "Clinical pathway for health assessment and management of adults of refugee background: covering syndrome-based presentations, infectious diseases (TB, parasites, malaria, blood-borne viruses), nutritional deficiencies, blood disorders, mental health and trauma, pre-existing injuries, and immunisation catch-up. Always discuss with your doctor."

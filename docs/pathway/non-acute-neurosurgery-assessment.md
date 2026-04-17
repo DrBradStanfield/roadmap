@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Non-acute Neurosurgery Assessment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["neurosurgery", "neurosurgical referral", "hydrocephalus", "normal pressure hydrocephalus", "trigeminal neuralgia", "brain tumour", "spinal tumour", "intracranial tumour", "aneurysm", "AV malformation", "cerebrovascular", "Chiari malformation", "syringomyelia", "congenital spinal anomaly", "peripheral nerve decompression", "epilepsy surgery", "movement disorder surgery", "non-acute neurosurgery"]
 summary: "Clinical criteria for non-acute neurosurgery referral: conditions seen (hydrocephalus, trigeminal neuralgia, brain/spinal tumours, aneurysms, Chiari malformations, syringomyelia, congenital spinal anomalies, peripheral nerve decompression, epilepsy surgery, movement disorder surgery), conditions not seen (craniosynostosis, some spinal conditions with neurological deficit depending on region), and alternative pathways."

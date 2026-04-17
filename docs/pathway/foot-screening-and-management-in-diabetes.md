@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Foot Screening and Management in Diabetes"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["diabetic foot", "foot screening", "diabetes foot ulcer", "dfu", "diabetic neuropathy", "peripheral arterial disease", "pad", "charcot foot", "critical limb ischaemia", "podiatry", "diabetic foot infection", "foot ulcer", "neuropathic foot", "ischaemic foot", "monofilament", "amputation", "foot care", "diabetes complications"]
 summary: "Clinical pathway for foot screening and management in people with diabetes: annual screening schedule, risk stratification (low/moderate/high/active), examination findings for neuropathy and ischaemia, management by risk category, antibiotic regimens for foot infection, and when to seek urgent specialist assessment. Always discuss your foot care with your doctor."

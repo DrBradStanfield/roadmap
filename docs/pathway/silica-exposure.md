@@ -1,3 +1,11 @@
+---
+title: "Pathway: Silica Exposure"
+type: "pathway"
+tags: ["Guideline"]
+keywords: ["silicosis", "crystalline silica", "silica exposure", "pneumoconiosis", "engineered stone", "stone dust", "quartz dust", "stonemason", "quarry worker", "lung disease", "interstitial lung disease", "HRCT chest", "accelerated silicosis", "occupational health", "dust exposure"]
+summary: "Accelerated silicosis is an occupational lung disease affecting workers exposed to crystalline silica from engineered stone cutting and polishing, occurring after as little as 6 months of exposure. Assessment includes work history and symptoms—shortness of breath, cough, weight loss—with investigations including HRCT chest CT, spirometry, and autoimmune screening, alongside exposure avoidance and mandatory reporting of all cases. Always discuss with your doctor."
+---
+
 # Silica Exposure
 
 > Auckland Region HealthPathways clinical guidance for GPs. Source: files/631794.htm

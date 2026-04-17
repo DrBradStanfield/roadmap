@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Colorectal Symptoms"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["colorectal symptoms", "rectal bleeding", "bowel habit change", "altered bowel habit", "colorectal cancer", "bowel cancer", "colonoscopy", "CT colonography", "FIT", "faecal immunochemical test", "iron deficiency anaemia", "IBD", "inflammatory bowel disease", "diverticular disease", "haemorrhoids", "anal fissure", "IBS", "constipation", "diarrhoea", "rectal mass", "abdominal mass", "faecal calprotectin", "Lynch syndrome", "family history colorectal cancer"]
 summary: "Clinical pathway for colorectal symptoms in adults: assessment approach including history, examination and investigations; FIT pathway criteria; referral thresholds by urgency (2-week vs 6-week categories); management of masses, persistent symptoms, and other causes. Always discuss with your doctor."

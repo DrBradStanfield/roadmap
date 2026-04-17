@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Wrist Pain in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["wrist pain", "carpal tunnel syndrome", "de quervain", "scaphoid fracture", "scapholunate instability", "tfcc", "triangular fibrocartilage", "kienböck disease", "ganglia", "gout", "inflammatory arthritis", "osteoarthritis", "cmcj", "druj", "ulnar nerve compression", "complex regional pain syndrome", "crps", "wrist assessment", "hand pain", "radial wrist pain", "ulnar wrist pain"]
 summary: "Clinical pathway for wrist pain in adults: red flags, history and examination approach, differential diagnosis by anatomical location (radial, ulnar, central, multiple), imaging guidance, and management by cause. Always discuss with your doctor."

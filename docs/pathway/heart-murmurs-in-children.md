@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Heart Murmurs in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["heart murmur", "innocent murmur", "congenital heart disease", "paediatric cardiology", "VSD", "ASD", "patent ductus arteriosus", "aortic coarctation", "pulmonary stenosis", "tetralogy of Fallot", "cyanosis", "cardiac", "children", "infants", "paediatric", "murmur grading"]
 summary: "Clinical pathway for heart murmurs in children: red flags requiring urgent assessment, background on innocent vs structural murmurs, assessment approach including murmur grading, and management. Always discuss with your doctor."

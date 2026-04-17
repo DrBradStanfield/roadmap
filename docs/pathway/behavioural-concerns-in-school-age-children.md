@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Behavioural Concerns in School Age Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["behavioural concerns", "child behaviour", "ADHD", "ASD", "autism", "oppositional defiant disorder", "ODD", "conduct disorder", "CD", "school age", "children", "anxiety", "depression", "developmental", "parenting", "incredible years"]
 summary: "Clinical pathway for behavioural concerns in school age children: when to seek urgent help, assessment approach, possible underlying causes, and management strategies including parenting programmes and when specialist referral is needed. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Warts and Verrucas"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["wart", "warts", "verruca", "verrucas", "plantar wart", "HPV", "human papilloma virus", "salicylic acid", "cryotherapy", "duct tape", "skin", "podiatry", "5-fluorouracil"]
 summary: "Clinical pathway for warts and verrucas (plantar warts): how to tell them apart from corns and calluses, when treatment is needed, and what the treatment options are — including duct tape, salicylic acid, cryotherapy, and refractory options. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Assessing Genetic Risk"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["genetics", "genetic risk", "family history", "genetic testing", "hereditary", "single gene disorder", "chromosomal condition", "multifactorial", "cystic fibrosis", "Huntington disease", "Fragile X", "haemophilia", "Down syndrome", "familial cancer", "genetic counselling", "carrier testing", "prenatal testing", "dysmorphic", "balanced translocation"]
 summary: "Clinical pathway for assessing genetic risk: identifying patients with a personal or family history of hereditary conditions (cancers, single gene disorders, chromosomal conditions), taking a 3-generation family history, recognising features suggestive of inherited conditions, and when to refer to Genetic Health Services NZ. Always discuss with your doctor."

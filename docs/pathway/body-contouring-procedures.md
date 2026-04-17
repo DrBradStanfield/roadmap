@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Body Contouring Procedures"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["body contouring", "skin removal surgery", "abdominoplasty", "abdominal lipectomy", "apronectomy", "excess skin", "bariatric surgery", "skin excision", "intertrigo", "lipodystrophy", "arm lift", "thigh lift", "buttock lift", "plastic surgery", "post weight loss surgery"]
 summary: "Clinical pathway for publicly funded body contouring surgery in adults: eligibility criteria, assessment of physical and functional impact, surgical risk factors, and management including referral. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Deep Vein Thrombosis (DVT)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["dvt", "deep vein thrombosis", "blood clot", "leg clot", "leg swelling", "venous thrombosis", "thrombosis", "anticoagulation", "rivaroxaban", "dabigatran", "warfarin", "enoxaparin", "clexane", "wells score", "d-dimer", "pulmonary embolism", "vte", "venous thromboembolism", "clot in leg", "swollen leg"]
 summary: "Clinical pathway for deep vein thrombosis (DVT): symptoms and risk factors, assessment using Well's score and D-dimer, short-term anticoagulation while awaiting ultrasound, and longer-term management with DOACs (rivaroxaban, dabigatran) or warfarin. Always discuss with your doctor."

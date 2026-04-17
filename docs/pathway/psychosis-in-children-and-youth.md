@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Psychosis in Children and Youth"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["psychosis", "first episode psychosis", "early psychosis", "bipolar disorder", "adolescent mental health", "youth mental health", "delusions", "hallucinations", "schizophrenia", "psychotic disorder", "mania", "prodrome", "BLIPS", "child mental health"]
 summary: "Clinical pathway for psychosis in children and youth: red flags, background on presentation in adolescence, assessment approach including history, medical causes and investigations, and management. Early specialist referral is key — always discuss with your doctor."

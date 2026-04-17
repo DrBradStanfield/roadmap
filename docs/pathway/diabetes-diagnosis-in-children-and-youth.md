@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Diabetes Diagnosis in Children and Youth"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["diabetes", "type 1 diabetes", "type 2 diabetes", "DKA", "diabetic ketoacidosis", "childhood diabetes", "paediatric diabetes", "hyperglycaemia", "polyuria", "polydipsia", "weight loss", "bedwetting", "MODY", "HbA1c", "blood glucose", "ketones", "insulin", "children", "youth"]
 summary: "Clinical pathway for diagnosing diabetes in children and young people under 15 years. Covers red flags for diabetic ketoacidosis, symptoms of new-onset diabetes, assessment including finger-prick glucose testing, and when urgent hospital assessment is required. Always discuss concerns with your doctor."

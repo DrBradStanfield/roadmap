@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Umbilical Hernia in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["umbilical hernia", "belly button hernia", "navel hernia", "hernia children", "hernia toddler", "hernia infant", "paediatric hernia", "strangulated hernia"]
 summary: "Clinical pathway for umbilical hernia in children: background on natural history (most resolve by age 3), when to seek specialist assessment, and reassurance for parents. Always discuss with your doctor."

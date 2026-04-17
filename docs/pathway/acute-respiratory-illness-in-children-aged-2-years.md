@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Respiratory Illness in Children Under 2 Years"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["acute respiratory illness", "children", "infant", "cough", "bronchiolitis", "croup", "epiglottitis", "pertussis", "whooping cough", "pneumonia", "wheeze", "stridor", "paediatric", "pediatric", "respiratory distress", "viral upper respiratory tract infection", "URTI", "apnoea", "tachypnoea", "cyanosis"]
 summary: "Clinical pathway for acute respiratory illness in children under 2 years: red flags requiring emergency care, differential diagnosis (croup, epiglottitis, bronchiolitis, pneumonia, pertussis, asthma, URTI), severity assessment, and management by presentation. Always discuss with your doctor."

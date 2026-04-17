@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Foot Injuries"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["foot injury", "foot fracture", "talus fracture", "calcaneal fracture", "metatarsal fracture", "lisfranc injury", "jones fracture", "stress fracture", "fifth metatarsal", "foot sprain", "foot pain", "foot trauma", "avulsion fracture", "snowboarder fracture"]
 summary: "Clinical pathway for acute foot injuries in adults: injury types (talus, calcaneal, metatarsal, Lisfranc, stress fracture), assessment approach including x-ray indications, and management by fracture type. Always discuss with your doctor."

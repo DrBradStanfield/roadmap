@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Dental Trauma"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["dental trauma", "knocked out tooth", "avulsed tooth", "tooth avulsion", "fractured tooth", "tooth fracture", "luxation", "displaced tooth", "loose tooth", "dental injury", "tooth replantation", "dental emergency", "primary tooth", "permanent tooth", "tooth storage", "milk tooth storage"]
 summary: "Clinical pathway for dental trauma in adults and children: red flags requiring emergency care, assessment approach, and management by injury type (avulsed permanent or primary tooth, fractured tooth, luxated tooth). Permanent teeth should be replanted as soon as possible. Always discuss with your doctor or dentist."

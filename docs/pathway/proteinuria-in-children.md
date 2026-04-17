@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Proteinuria in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["proteinuria", "protein in urine", "nephrotic syndrome", "nephrotic range", "glomerulonephritis", "orthostatic proteinuria", "urine protein creatinine ratio", "PCR", "kidney disease", "CKD", "children", "paediatric", "haematuria", "hypertension", "oedema", "albumin", "renal"]
 summary: "Clinical pathway for proteinuria in children: red flags requiring urgent assessment, background on causes and significance, step-by-step assessment approach, and management guidance based on dipstick and urine protein:creatinine ratio results. Always discuss findings with your doctor."

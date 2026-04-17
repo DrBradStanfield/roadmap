@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Meningococcal Vaccination"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["meningococcal", "meningococcal vaccination", "bexsero", "menquadfi", "nimenrix", "meningococcal b", "meningococcal acwy", "meningitis", "childhood immunisation", "national immunisation schedule", "asplenia", "complement deficiency", "hiv", "splenectomy", "stem cell transplant", "boarding school", "hall of residence", "hajj", "meningococcal booster", "paracetamol bexsero", "funded vaccine"]
 summary: "Clinical pathway for meningococcal vaccination in New Zealand: funded and non-funded schedules by age group and risk indication, including Bexsero (MenB) and MenACWY vaccines (MenQuadfi, Nimenrix). Covers the National Immunisation Schedule, high-risk groups, paracetamol prophylaxis with Bexsero, and patient resources. Always discuss your vaccination options with your doctor."

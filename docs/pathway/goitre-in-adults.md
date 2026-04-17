@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Goitre in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["goitre", "goiter", "thyroid", "thyroid enlargement", "thyroid swelling", "neck lump", "neck swelling", "thyroid nodule", "graves disease", "hashimotos", "euthyroid", "TSH", "thyroid function", "iodine deficiency", "hyperthyroidism", "hypothyroidism", "thyroid cancer"]
 summary: "Clinical pathway for goitre (thyroid enlargement) in adults: red flags requiring urgent referral, causes of goitre, assessment approach including TSH testing, and management by cause. Always discuss with your doctor."

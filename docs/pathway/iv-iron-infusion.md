@@ -1,6 +1,6 @@
 ---
 title: "Pathway: IV Iron Infusion"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["iv iron", "iron infusion", "ferric carboxymaltose", "ferinject", "iron deficiency anaemia", "iron deficiency", "intravenous iron", "ferritin", "anaemia", "iron replacement", "hypophosphataemia", "iron infusion side effects", "anaphylaxis iron"]
 summary: "Clinical pathway for IV iron infusion in adults and patients aged 14+: diagnosis criteria, contraindications, dosage (weight-based), administration, monitoring for reactions, and follow-up. Always discuss with your doctor."

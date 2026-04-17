@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Autonomic Dysreflexia (Hypertensive Crisis)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["autonomic dysreflexia", "hypertensive crisis", "spinal cord injury", "sci", "tetraplegia", "paraplegia", "t6", "blood pressure", "urinary retention", "faecal impaction", "glyceryl trinitrate", "catheter", "bradycardia"]
 summary: "Clinical pathway for autonomic dysreflexia (AD) in spinal cord injury at or above T6 — a potentially life-threatening hypertensive emergency. Covers recognition of symptoms, step-by-step management of elevated BP including bladder drainage and bowel disimpaction, drug treatment with glyceryl trinitrate, and when to call an ambulance. Always discuss with your doctor."

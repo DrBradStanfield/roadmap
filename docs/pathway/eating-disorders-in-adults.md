@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Eating Disorders in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["eating disorder", "anorexia nervosa", "bulimia nervosa", "binge eating disorder", "ARFID", "OSFED", "disordered eating", "purging", "malnutrition", "SCOFF questionnaire", "hypokalaemia", "electrolyte", "weight loss", "body image", "binge eating", "laxative misuse", "mental health"]
 summary: "Clinical pathway for eating disorders in adults (age ≥18): red flags requiring emergency care, SCOFF screening, assessment including examination and blood tests, condition-specific management for anorexia nervosa, bulimia nervosa, binge eating disorder, ARFID, and OSFED, and monitoring for severe or enduring illness. Always discuss with your doctor."

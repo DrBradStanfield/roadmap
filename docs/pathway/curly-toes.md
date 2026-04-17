@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Curly Toes"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["curly toes", "toe deformity", "flexion deformity", "paediatric foot", "childhood foot", "malrotation toes", "overlapping toes", "toe curling", "podiatry", "orthopaedic", "paediatric"]
 summary: "Clinical pathway for curly toes in children: background on this common congenital condition, assessment approach, and management including when orthopaedic referral is warranted. Most cases resolve without treatment by age 2. Always discuss with your doctor."

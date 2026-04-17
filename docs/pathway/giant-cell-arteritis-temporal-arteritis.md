@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Giant-cell Arteritis (Temporal Arteritis)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["giant cell arteritis", "GCA", "temporal arteritis", "polymyalgia rheumatica", "PMR", "vision loss", "headache", "jaw claudication", "prednisone", "corticosteroids", "temporal artery biopsy", "ESR", "CRP", "rheumatology"]
 summary: "Clinical pathway for giant-cell arteritis (GCA): red flags including visual symptoms, assessment of headache and jaw claudication, CRP/ESR investigations, risk stratification, and management with urgent corticosteroids, osteoporosis prophylaxis, and rheumatology referral. Always discuss with your doctor."

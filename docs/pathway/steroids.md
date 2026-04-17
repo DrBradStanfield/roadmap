@@ -1,6 +1,6 @@
 ---
 title: "Pathway: IBD Medications (Steroids & Others)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["inflammatory bowel disease", "IBD", "steroids", "prednisone", "mesalazine", "sulfasalazine", "azathioprine", "mercaptopurine", "methotrexate", "infliximab", "adalimumab", "biologics", "thiopurines", "Crohn's disease", "ulcerative colitis", "immunosuppression", "aminosalicylates"]
 summary: "Overview of medications used to manage inflammatory bowel disease (IBD), including aminosalicylates, steroids, immunomodulators, and biologics. Covers indications, monitoring, and key safety considerations. Always discuss treatment decisions with your doctor."

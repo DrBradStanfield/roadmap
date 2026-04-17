@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Influenza"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["influenza", "flu", "influenza-like illness", "oseltamivir", "zanamivir", "antiviral", "respiratory infection", "fever", "myalgia", "pandemic", "epidemic", "seasonal flu", "reye syndrome", "avian influenza", "influenza vaccination", "secondary bacterial pneumonia"]
 summary: "Clinical pathway for influenza in adults and children: background on transmission and risk, clinical diagnosis of influenza-like illness, complications and high-risk groups, management with supportive care and antivirals, and when to seek urgent care. Always discuss with your doctor."

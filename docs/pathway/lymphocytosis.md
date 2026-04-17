@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Lymphocytosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["lymphocytosis", "high lymphocytes", "lymphocyte count", "white blood cells", "lymphoproliferative", "b-cll", "chronic lymphocytic leukaemia", "monoclonal b-cell lymphocytosis", "immunophenotyping", "blood film", "lymphoma", "leukaemia", "haematology", "full blood count", "fbc"]
 summary: "Clinical pathway for lymphocytosis: background on causes (acute vs persistent), assessment including history, examination, and investigation approach, and a management algorithm with thresholds for monitoring, immunophenotyping, and haematology referral. Always discuss with your doctor."

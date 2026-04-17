@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Scoliosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["scoliosis", "spinal curvature", "idiopathic scoliosis", "adolescent scoliosis", "rib hump", "cobb angle", "adam's forward bend test", "neuromuscular scoliosis", "congenital scoliosis", "degenerative scoliosis", "back deformity"]
 summary: "Clinical pathway for scoliosis in children, adolescents, and adults: background, assessment including Adam's Forward Bend Test, red flags for curve progression, and management approach. Primarily covers patients up to age 25. Always discuss with your doctor."

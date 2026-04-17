@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Female Genital Mutilation (FGM)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["female genital mutilation", "fgm", "female circumcision", "cutting", "deinfibulation", "infibulation", "clitoridectomy", "excision", "type iii fgm", "refugee health", "women's health", "dyspareunia", "dysmenorrhoea"]
 summary: "Clinical pathway for female genital mutilation (FGM): background, assessment approach, types of FGM, potential complications, and management including deinfibulation and child protection. Always discuss with your doctor."

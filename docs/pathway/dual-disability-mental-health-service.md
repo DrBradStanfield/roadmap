@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Dual Disability Mental Health Service"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["intellectual disability", "dual disability", "mental health", "learning disability", "autism", "behavioural change", "psychiatric assessment", "neurodevelopmental", "ID mental health"]
 summary: "Overview of the Regional Dual Disability Mental Health Service for people with intellectual disability who also have significant mental health concerns. Covers who the service is for, physical causes to rule out first, and when to seek specialist input. Always discuss with your doctor."

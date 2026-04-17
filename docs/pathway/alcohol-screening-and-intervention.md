@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Alcohol Screening and Intervention"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["alcohol", "alcohol use disorder", "AUD", "AUDIT", "AUDIT-C", "hazardous drinking", "alcohol dependence", "alcohol withdrawal", "brief intervention", "naltrexone", "disulfiram", "diazepam", "thiamine", "Wernicke encephalopathy", "FASD", "fetal alcohol spectrum disorder", "detox", "alcohol screening"]
 summary: "Clinical pathway for identifying and managing alcohol use disorder in adults and young people: screening with AUDIT-C, red flags requiring emergency care, assessment of withdrawal risk and dependence, and management ranging from brief advice to medications (naltrexone, disulfiram, diazepam) and community support. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Polymyalgia Rheumatica (PMR)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["polymyalgia rheumatica", "PMR", "giant-cell arteritis", "temporal arteritis", "GCA", "inflammatory rheumatic", "morning stiffness", "shoulder pain", "pelvic girdle pain", "prednisone", "prednisolone", "corticosteroids", "ESR", "CRP", "rheumatology", "muscle stiffness", "older adults"]
 summary: "Clinical pathway for polymyalgia rheumatica (PMR): a clinical diagnosis of inflammatory pain and stiffness in older adults managed with prednisone in primary care. Covers assessment, investigations, steroid dosing and tapering, relapse management, and when to seek rheumatology input. Always discuss with your doctor."

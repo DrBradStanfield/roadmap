@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Abdominal Aortic Aneurysm"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["abdominal aortic aneurysm", "aaa", "aortic aneurysm", "aortic rupture", "aortic dissection", "vascular", "abdominal ultrasound", "pulsatile mass", "statin", "aspirin", "blood pressure", "hypertension", "smoking", "cardiovascular risk"]
 summary: "Clinical pathway for abdominal aortic aneurysm (AAA): red flags requiring emergency care, background on diagnosis and rupture risk, assessment approach, and management including risk factor reduction and surveillance. Always discuss with your doctor."

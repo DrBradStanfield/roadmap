@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Prostate Cancer Diagnosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["prostate cancer", "PSA", "prostate specific antigen", "DRE", "digital rectal examination", "haematuria", "bone pain", "spinal cord compression", "urology", "BRCA", "Lynch syndrome", "benign prostatic hyperplasia", "BPH", "lower urinary tract symptoms", "LUTS"]
 summary: "Clinical pathway for prostate cancer diagnosis in symptomatic men: red flags, risk factors, assessment approach including PSA and DRE, and management based on PSA levels. Always discuss with your doctor."

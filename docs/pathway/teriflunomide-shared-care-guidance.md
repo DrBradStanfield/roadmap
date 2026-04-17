@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Teriflunomide Shared Care Guidance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["teriflunomide", "aubagio", "multiple sclerosis", "ms", "disease-modifying drug", "dmd", "relapsing-remitting ms", "shared care", "immunosuppression", "liver monitoring", "lft", "fbc", "contraception", "pregnancy", "drug interactions", "neurology"]
 summary: "Shared care guidance for primary care management of teriflunomide (Aubagio) in relapsing-remitting multiple sclerosis. Covers monitoring schedule, adverse effects, drug interactions, vaccinations, and pregnancy considerations. Always discuss with your doctor."

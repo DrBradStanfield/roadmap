@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Urticaria (Hives)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["urticaria", "hives", "acute urticaria", "chronic urticaria", "hives treatment", "allergic hives", "antihistamine", "angioedema", "urticarial vasculitis", "itchy rash", "wheals", "cetirizine", "loratadine", "omalizumab", "pruritus"]
 summary: "Clinical pathway for urticaria (hives) in adults and children: assessment approach, distinguishing acute from chronic urticaria, triggers, red flags for urticarial vasculitis, and stepwise management with antihistamines and second-line treatments. Always discuss with your doctor."

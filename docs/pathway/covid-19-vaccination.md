@@ -1,6 +1,6 @@
 ---
 title: "Pathway: COVID-19 Vaccination"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["covid-19", "covid", "coronavirus", "vaccination", "vaccine", "comirnaty", "pfizer", "mrna", "booster", "immunocompromised", "myocarditis", "pericarditis", "anaphylaxis", "pregnancy", "bell's palsy", "adverse event", "rheumatology", "immunosuppressive"]
 summary: "Clinical guidance on COVID-19 vaccination in New Zealand: who is eligible, recommended schedules, special considerations (pregnancy, immunocompromise, rheumatology disease), adverse events, and post-vaccination symptoms. Always discuss with your doctor."

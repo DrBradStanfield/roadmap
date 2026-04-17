@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bartholin's Cyst or Abscess"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bartholin", "bartholin's cyst", "bartholin's abscess", "vulvar cyst", "vulvar abscess", "bartholinitis", "word catheter", "marsupialisation", "vulval swelling", "vestibular gland"]
 summary: "Clinical pathway for Bartholin's cyst or abscess: background, assessment including suspicious features for carcinoma, and management by presentation type (asymptomatic cyst, spontaneously discharging abscess, non-discharging abscess). Includes antibiotic options and when to refer. Always discuss with your doctor."

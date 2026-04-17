@@ -1,10 +1,9 @@
 ---
-title: Obstructive Sleep Apnoea (OSA) in Adults
-source: Auckland Region HealthPathways
-pathway_id: 12505
-last_scraped: 2026-04-17
-tags: [sleep, OSA, CPAP, STOP-BANG, Epworth, snoring, respiratory]
-chatbot_ready: true
+title: "Pathway: Obstructive Sleep Apnoea (OSA) in Adults"
+type: "pathway"
+tags: ["Guideline"]
+keywords: ["obstructive sleep apnoea", "OSA", "obstructive sleep apnea", "sleep apnea", "sleep apnoea", "loud snoring", "snoring", "gasping at night", "excessive daytime sleepiness", "daytime sleepiness", "STOP-BANG", "Epworth Sleepiness Scale", "sleep study", "CPAP", "mandibular advancement"]
+summary: "Obstructive Sleep Apnoea (OSA) is a common form of sleep-disordered breathing where the upper airway repeatedly collapses during sleep, causing symptoms such as loud snoring, witnessed breathing pauses, excessive daytime sleepiness, and morning headaches. Assessment uses the STOP-BANG questionnaire and Epworth Sleepiness Scale, with treatment options including CPAP therapy and mandibular advancement devices. Always discuss with your doctor."
 ---
 
 > **Clinical guidance note:** This content is adapted from a clinical pathway for use as a reference tool. It is not a substitute for professional medical assessment. Always advise the user to discuss symptoms with their doctor for personalised evaluation and management.

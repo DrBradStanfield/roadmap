@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Weakness and Fatigue in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["weakness", "fatigue", "cancer-related fatigue", "palliative care", "dexamethasone", "corticosteroids", "energy conservation", "cachexia", "anorexia", "end of life", "terminal", "hospice"]
 summary: "Clinical pathway for managing weakness and fatigue in adults receiving palliative care. Covers symptom assessment, identifying reversible causes (metabolic, anaemia, medications, emotional), and a multi-component management plan including activity pacing, exercise, emotional support, nutritional support, and corticosteroids. Always discuss with your doctor."

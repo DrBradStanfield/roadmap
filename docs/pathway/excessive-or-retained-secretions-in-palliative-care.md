@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Excessive or Retained Secretions in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["secretions", "retained secretions", "excessive secretions", "death rattle", "noisy breathing", "palliative care", "palliative", "end of life", "dying", "hyoscine butylbromide", "buscopan", "anticholinergic", "terminal", "hospice", "syringe driver", "oral hygiene", "mouth care", "motor neurone disease", "MND"]
 summary: "Clinical pathway for managing excessive or retained secretions (death rattle) in the final stages of dying: repositioning, oral hygiene, family support, and hyoscine butylbromide by subcutaneous route. Always discuss with your doctor."

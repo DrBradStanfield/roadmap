@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Haematospermia"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["haematospermia", "blood in semen", "blood in ejaculate", "haematuria", "prostatitis", "prostate", "PSA", "STI", "urethritis", "ejaculation", "urology", "BPH", "benign prostatic hyperplasia"]
 summary: "Clinical pathway for haematospermia (blood in semen) in adults: nearly always benign and self-limiting. Covers red flags, risk factor assessment, investigations including MSU and STI testing, and management by cause. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sudden or Recent Vision Loss"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["vision loss", "sudden vision loss", "eye", "retinal detachment", "retinal artery occlusion", "retinal vein occlusion", "giant cell arteritis", "GCA", "optic neuritis", "acute glaucoma", "angle closure glaucoma", "vitreous haemorrhage", "macular degeneration", "floaters", "flashes", "afferent pupillary defect", "RAPD", "homonymous hemianopia", "binocular", "monocular", "stroke", "TIA"]
 summary: "Clinical pathway for sudden or recent non-traumatic vision loss: red flags requiring emergency care, differential diagnosis (vascular, ocular, optic nerve, neurological causes), assessment approach, and management. Always discuss with your doctor."

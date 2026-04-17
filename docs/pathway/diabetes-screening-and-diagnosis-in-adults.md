@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Diabetes Screening and Diagnosis in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["diabetes", "type 2 diabetes", "type 1 diabetes", "prediabetes", "hba1c", "blood sugar", "blood glucose", "diabetes screening", "diabetes diagnosis", "fasting glucose", "glucose tolerance test", "insulin resistance", "diabetic ketoacidosis", "dka", "hyperglycaemia", "polyuria", "polydipsia", "gestational diabetes"]
 summary: "Clinical pathway for diabetes screening and diagnosis in adults without a current diabetes diagnosis. Covers who to test, how often, diagnostic thresholds (including updated July 2026 HbA1c thresholds), assessing for type 1 and complex diabetes, and when urgent referral is needed. Always discuss with your doctor."

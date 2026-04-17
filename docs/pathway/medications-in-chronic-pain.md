@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Medications in Chronic Pain"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["chronic pain", "neuropathic pain", "nociceptive pain", "nociplastic pain", "paracetamol", "nsaids", "gabapentin", "pregabalin", "gabapentinoids", "tricyclic antidepressants", "nortriptyline", "amitriptyline", "opioids", "tramadol", "capsaicin", "lidocaine", "venlafaxine", "mirtazapine", "clonidine", "low dose naltrexone", "medicinal cannabis", "fibromyalgia", "pain management", "opioid reduction", "analgesics", "antidepressants for pain"]
 summary: "Clinical guidance on medications used in chronic non-cancer pain: drug selection by pain type (nociceptive, neuropathic, nociplastic), dosing principles, safety considerations, and the limited role of opioids. Always discuss treatment options with your doctor."

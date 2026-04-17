@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Prostate Cancer Testing"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["prostate cancer", "PSA", "prostate specific antigen", "prostate screening", "DRE", "digital rectal examination", "LUTS", "lower urinary tract symptoms", "urology", "prostate biopsy", "BRCA", "benign prostatic hyperplasia", "BPH", "haematuria", "prostatitis"]
 summary: "Clinical pathway for prostate cancer testing in asymptomatic men: red flags, risk factors, informed consent for PSA testing including benefits and harms, digital rectal examination, and management based on PSA results and age. Always discuss with your doctor."

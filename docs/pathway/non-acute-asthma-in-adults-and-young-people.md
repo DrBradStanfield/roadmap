@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Non-acute Asthma in Adults and Young People"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["asthma", "non-acute asthma", "wheeze", "breathlessness", "chest tightness", "cough", "ICS", "inhaled corticosteroid", "AIR therapy", "anti-inflammatory reliever", "budesonide", "formoterol", "SABA", "salbutamol", "LABA", "SMART protocol", "dry powder inhaler", "DPI", "spacer", "spirometry", "PEFR", "peak expiratory flow", "eosinophils", "IgE", "bronchial challenge", "occupational asthma", "asthma action plan", "step therapy", "montelukast", "omalizumab", "mepolizumab", "LAMA", "tiotropium", "asthma control test", "atopy", "allergic bronchopulmonary aspergillosis", "respiratory nursing", "COPD", "ACOS"]
 summary: "Clinical pathway for non-acute asthma management in adults and young people (≥12 years): diagnosis, assessment, AIR therapy step plan, traditional ICS/SABA therapy, inhaler technique, self-management, and when to refer."

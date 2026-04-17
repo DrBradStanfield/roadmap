@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Lactation Insufficiency"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["lactation insufficiency", "low milk supply", "breastfeeding", "galactagogue", "domperidone", "tongue-tie", "infant weight loss", "breast milk", "milk supply", "lactation consultant", "newborn feeding", "supplementary feeding", "breast expression", "engorgement"]
 summary: "Clinical pathway for lactation insufficiency: red flags for urgent care, assessment of infant and maternal factors, distinguishing true from perceived low supply, and management including latch support, breast expression, domperidone, and supplementary feeding. Always discuss with your doctor."

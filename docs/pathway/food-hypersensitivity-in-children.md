@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Food Hypersensitivity in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["food allergy", "food hypersensitivity", "food intolerance", "anaphylaxis", "FPIES", "FPIP", "IgE", "cow's milk allergy", "CMPA", "eosinophilic oesophagitis", "lactose intolerance", "urticaria", "angioedema", "epipen", "adrenaline autoinjector", "skin prick test", "cetirizine", "loratadine", "children", "paediatric", "infant formula", "eczema"]
 summary: "Clinical pathway for food hypersensitivity in children: red flags for anaphylaxis and FPIES, distinguishing IgE-mediated from non-IgE-mediated food allergy and food intolerance, assessment approach including allergy testing, and management by type. Always discuss with your doctor."

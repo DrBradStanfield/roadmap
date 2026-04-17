@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cardiac Catheterisation Complications"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cardiac catheterisation", "coronary angiography", "angioplasty", "stenting", "TAVI", "trans-aortic valve implantation", "radial artery", "femoral artery", "contrast reaction", "clopidogrel allergy", "pseudo-aneurysm", "arteriovenous fistula", "arterial thrombosis", "stent thrombosis", "access site complications", "PCI complications"]
 summary: "Clinical pathway for managing common complications after cardiac catheterisation (coronary angiography, angioplasty, stenting, TAVI). Covers contrast reactions, clopidogrel allergy, site pain, swelling, bleeding, bruising, infection, arterial thrombosis, and other serious complications. Always discuss concerns with your doctor."

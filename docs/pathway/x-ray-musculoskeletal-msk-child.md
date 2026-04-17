@@ -1,6 +1,6 @@
 ---
 title: "Pathway: X-ray Musculoskeletal (MSK) — Child"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["x-ray child", "paediatric x-ray", "musculoskeletal imaging child", "bone pain child", "joint pain child", "septic arthritis child", "osteomyelitis child", "scoliosis child", "knee pain child", "bow legs", "flat feet child", "inflammatory arthritis child", "osteochondritis dissecans", "rickets", "paediatric orthopaedics", "radiation imaging", "bone age", "growth plate"]
 summary: "Clinical pathway for musculoskeletal X-ray in children aged 14 and under: red flags requiring emergency assessment, accepted indications by body region (spine, shoulder and upper limb, knee, lower limb, foot), and situations where X-ray is not routinely recommended. Always discuss with your doctor."

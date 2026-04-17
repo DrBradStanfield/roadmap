@@ -1,6 +1,6 @@
 ---
 title: "Pathway: ACC Musculoskeletal Integrated Care (ICP-MSK)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["acc", "icp-msk", "integrated care pathway", "musculoskeletal", "knee injury", "shoulder injury", "lumbar spine", "acl", "rotator cuff", "disc prolapse", "fracture", "ligament rupture", "rehabilitation", "orthopaedic", "physiotherapy", "vocational rehabilitation", "acc claim", "return to work"]
 summary: "Overview of the ACC Musculoskeletal Integrated Care Pathway (ICP-MSK): what it is, which injuries are eligible (knee, shoulder, lumbar spine), and what the process involves. Referral is made by your doctor. Always discuss eligibility with your doctor."

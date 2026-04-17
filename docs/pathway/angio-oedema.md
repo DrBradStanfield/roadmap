@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Angio-oedema"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["angio-oedema", "angioedema", "angioedema", "facial swelling", "urticaria", "hives", "anaphylaxis", "ACE inhibitor", "hereditary angioedema", "HAE", "C1 esterase inhibitor", "antihistamine", "allergy", "IgE", "swelling", "lips", "tongue"]
 summary: "Clinical pathway for angio-oedema: red flags (anaphylaxis), classification by type (allergic, ACE inhibitor-induced, hereditary, acquired, idiopathic), assessment approach, and management with antihistamines and corticosteroids. Referral to immunology for refractory or hereditary/acquired cases. Always discuss with your doctor."

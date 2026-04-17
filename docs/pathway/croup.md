@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Croup"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["croup", "laryngotracheobronchitis", "barking cough", "stridor", "croup in children", "dexamethasone croup", "prednisolone croup", "nebulised adrenaline", "upper airway obstruction", "paediatric respiratory", "viral croup", "spasmodic croup"]
 summary: "Clinical pathway for croup (laryngotracheobronchitis) in children: red flags, severity assessment (mild/moderate/severe), and management including steroids and nebulised adrenaline. Always discuss with your doctor."

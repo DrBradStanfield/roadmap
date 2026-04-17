@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Compression Therapy for Varicose Veins"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["compression stockings", "varicose veins", "venous insufficiency", "compression therapy", "ABPI", "ankle brachial pressure index", "leg swelling", "oedema", "venous ulcer", "chronic venous insufficiency", "compression hosiery"]
 summary: "Guidance on compression stocking use for varicose veins and chronic venous insufficiency: when compression is appropriate, how to assess arterial circulation first (ABPI), choosing the right grade, fitting, and practical management. Always discuss with your doctor."

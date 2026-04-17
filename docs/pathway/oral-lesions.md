@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Oral Lesions"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["oral lesions", "mouth sores", "oral cancer", "leukoplakia", "erythroplakia", "mouth ulcer", "oral ulcer", "lip lesion", "throat pain", "neck lump", "oral cavity", "HPV", "biopsy", "dysplasia", "atypia", "tonsillar", "buccal"]
 summary: "Clinical pathway for oral lesions: red flags for possible oral cancer, assessment of high-risk sites and patient risk factors, and management approach. Always discuss with your doctor."

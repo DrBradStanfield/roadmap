@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Plantar Fasciitis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["plantar fasciitis", "heel pain", "plantar fascia", "calcaneus", "foot pain", "heel spur", "arch pain", "podiatry", "physiotherapy", "steroid injection", "orthotics", "stretching"]
 summary: "Clinical pathway for plantar fasciitis: background, risk factors, assessment including differential diagnosis, and conservative through procedural management options. Always discuss with your doctor."

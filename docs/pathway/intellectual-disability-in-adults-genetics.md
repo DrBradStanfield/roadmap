@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Intellectual Disability in Adults — Genetics"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["intellectual disability", "genetics", "genetic testing", "genetic health service", "GHSNZ", "chromosomal", "developmental disability", "down syndrome", "fragile X", "prenatal testing", "reproductive risk", "genetic counselling", "dysmorphic", "family tree"]
 summary: "Clinical pathway for adults with intellectual disability where a genetic cause is suspected or unidentified. Covers assessment, when to refer for genetic investigation, and how to access psychological assessment for formal diagnosis. Always discuss with your doctor."

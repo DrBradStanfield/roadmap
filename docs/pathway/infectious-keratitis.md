@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Infectious Keratitis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["infectious keratitis", "keratitis", "corneal ulcer", "corneal infection", "contact lens eye infection", "bacterial keratitis", "acanthamoeba keratitis", "red eye", "painful eye", "corneal infiltrate", "corneal opacity", "pseudomonas", "eye pain contact lens", "hypopyon", "photophobia"]
 summary: "Clinical pathway for infectious keratitis: a sight-threatening corneal infection, most commonly linked to contact lens wear. Covers red flags, assessment of the painful red eye, and immediate management steps before urgent ophthalmology review. Always managed by your doctor — this is a specialist-requiring emergency."

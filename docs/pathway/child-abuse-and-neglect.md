@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Child Abuse and Neglect"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["child abuse", "child neglect", "inflicted injury", "non-accidental injury", "child protection", "Oranga Tamariki", "paediatrics", "safeguarding", "family violence", "child safety", "physical abuse", "emotional abuse", "neglect", "developmental delay", "faltering growth"]
 summary: "Clinical pathway for identifying and managing suspected child abuse or neglect: red flags requiring urgent specialist involvement, risk factors for vulnerability, assessment of injuries and caregiver interaction, and management steps by risk level. Always discuss with your doctor."

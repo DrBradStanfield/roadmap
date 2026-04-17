@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Clavicle Fracture"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["clavicle fracture", "broken collarbone", "collar bone", "clavicle", "orthopaedic", "fracture", "shoulder injury", "skin tenting", "non-union", "brachial plexus", "arm sling", "shoulder exercises", "displacement"]
 summary: "Clinical pathway for clavicle (collarbone) fractures: assessment for displacement and neurovascular compromise, conservative management with broad arm sling and exercises, and when urgent orthopaedic assessment is needed. Always discuss with your doctor."

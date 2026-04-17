@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Warfarin Over-anticoagulation"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["warfarin", "over-anticoagulation", "INR", "elevated INR", "bleeding", "anticoagulation", "vitamin K", "phytomenadione", "supratherapeutic", "warfarin reversal", "blood thinners", "anticoagulant bleeding"]
 summary: "Clinical pathway for warfarin over-anticoagulation: managing active bleeding (significant or minor) at any INR, and managing high INR without bleeding by INR range. Covers vitamin K (phytomenadione) dosing and when to seek urgent medical assessment. Always discuss with your doctor."

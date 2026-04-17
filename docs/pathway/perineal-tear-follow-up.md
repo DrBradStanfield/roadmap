@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Perineal Tear Follow-up"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["perineal tear", "third degree tear", "fourth degree tear", "anal sphincter", "perineal repair", "vaginal delivery", "postnatal", "faecal incontinence", "flatus incontinence", "pelvic floor", "obstetric anal sphincter injury", "OASI", "postpartum"]
 summary: "Follow-up care for women who sustained a third- or fourth-degree perineal tear during vaginal delivery. Covers assessment at 6 weeks and 6 months postpartum, symptoms to watch for, and when to discuss with your doctor."

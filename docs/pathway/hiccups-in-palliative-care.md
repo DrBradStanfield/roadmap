@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hiccups in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hiccups", "palliative care", "intractable hiccups", "hiccough", "chlorpromazine", "baclofen", "metoclopramide", "haloperidol", "dexamethasone", "gabapentin", "simeticone", "nifedipine", "midazolam", "terminal care", "advanced cancer"]
 summary: "Clinical pathway for managing hiccups in adults receiving palliative care: when treatment is needed, common causes, non-pharmacological measures, and medications. Always discuss management with your doctor."

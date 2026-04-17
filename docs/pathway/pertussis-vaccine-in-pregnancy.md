@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pertussis Vaccine in Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pertussis", "whooping cough", "bordetella pertussis", "tdap", "boostrix", "pregnancy vaccine", "antenatal immunisation", "pertussis vaccination", "maternal vaccination", "neonatal protection", "whooping cough vaccine pregnancy"]
 summary: "Clinical pathway for pertussis (whooping cough) vaccination in pregnancy: timing, dosing, catch-up options, and household contact vaccination. Vaccination is recommended in every pregnancy from 16 weeks. Always discuss with your doctor or midwife."

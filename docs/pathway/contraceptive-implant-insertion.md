@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Contraceptive Implant Insertion (Jadelle)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["contraceptive implant", "jadelle", "larc", "long-acting reversible contraception", "implant insertion", "levonorgestrel implant", "subdermal implant", "contraception", "quick start", "lidocaine", "trocar", "jadelle insertion", "contraceptive rods"]
 summary: "Clinical pathway for contraceptive implant (Jadelle) insertion: pre-procedure counselling including side-effects and risks, quick start method, step-by-step insertion procedure, and post-procedure care. Always discuss with your doctor."

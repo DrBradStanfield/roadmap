@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Lower Urinary Tract Symptoms in Men (LUTS)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["luts", "lower urinary tract symptoms", "bph", "benign prostatic hyperplasia", "prostate", "urinary symptoms", "nocturia", "urinary retention", "psa", "prostate specific antigen", "overactive bladder", "cauda equina", "haematuria", "urinary frequency", "hesitancy", "dribbling", "nocturnal polyuria"]
 summary: "Clinical pathway for lower urinary tract symptoms (LUTS) in men: red flags, assessment including IPSS scoring, PSA interpretation, and management of BPH, overactive bladder, nocturnal polyuria, and post-micturition dribbling. Always discuss with your doctor."

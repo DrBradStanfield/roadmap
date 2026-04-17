@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Anaphylaxis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["anaphylaxis", "adrenaline", "epinephrine", "epipen", "allergic reaction", "angio-oedema", "angioedema", "urticaria", "bronchospasm", "laryngeal oedema", "adrenaline auto-injector", "hypotension", "stridor", "shock", "insect sting", "food allergy", "venom allergy", "biphasic reaction", "tryptase"]
 summary: "Clinical pathway for anaphylaxis in adults and children: recognising life-threatening airway, breathing, and circulation features, immediate IM adrenaline dosing by weight and age, IV fluids, second-line medications, monitoring requirements, and follow-up. Always discuss with your doctor."

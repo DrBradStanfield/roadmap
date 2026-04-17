@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Carotid Ultrasound"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["carotid ultrasound", "carotid artery", "TIA", "transient ischaemic attack", "stroke", "ABCD2", "carotid stenosis", "endarterectomy", "anterior circulation", "posterior circulation", "amaurosis fugax", "dysphasia", "carotid imaging"]
 summary: "Clinical pathway for carotid ultrasound in adults: when it is indicated (suspected anterior circulation TIA within 2 weeks, low risk, specialist-recommended), red flags requiring emergency admission rather than imaging, ABCD2 score for stroke risk, and criteria that exclude public funding. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pulmonary Embolism (PE)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pulmonary embolism", "pe", "dvt", "deep vein thrombosis", "blood clot", "lung clot", "wells score", "wells criteria", "d-dimer", "perc", "anticoagulation", "warfarin", "doac", "pleuritic chest pain", "dyspnoea", "tachycardia", "haemoptysis", "venous thromboembolism", "vte"]
 summary: "Clinical pathway for suspected pulmonary embolism (PE): red flags requiring emergency assessment, risk factor review, Wells' score probability stratification, D-dimer and PERC rule interpretation, and anticoagulation duration after diagnosis. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: First Carpometacarpal Joint Osteoarthritis (CMCJ OA)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["thumb arthritis", "cmcj", "carpometacarpal", "thumb base pain", "hand osteoarthritis", "thumb oa", "first cmcj", "basal thumb arthritis", "pinch weakness", "thumb joint pain", "steroid injection thumb", "hand therapy", "thumb surgery"]
 summary: "Clinical pathway for first carpometacarpal joint (CMCJ) osteoarthritis: background, assessment (pain features, examination, investigations), and management (analgesia, hand therapy, steroid injection, surgery). Always discuss with your doctor."

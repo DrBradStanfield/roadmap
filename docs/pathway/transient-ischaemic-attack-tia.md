@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Transient Ischaemic Attack (TIA)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["tia", "transient ischaemic attack", "mini stroke", "stroke prevention", "fast test", "antiplatelet", "clopidogrel", "aspirin", "carotid stenosis", "atrial fibrillation", "statin", "atorvastatin", "secondary prevention", "amaurosis fugax", "dysphasia", "hemiplegia"]
 summary: "Clinical pathway for TIA (mini-stroke) in adults: red flags requiring emergency care, FAST screening, typical vs atypical features, differential diagnosis, acute and long-term management including antiplatelet therapy, blood pressure lowering, and statins. Always discuss with your doctor."

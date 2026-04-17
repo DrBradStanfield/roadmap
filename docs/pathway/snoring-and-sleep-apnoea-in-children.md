@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Snoring and Sleep Apnoea in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["snoring", "sleep apnoea", "sleep apnea", "OSA", "obstructive sleep apnoea", "children", "paediatric", "adenoids", "tonsils", "adenotonsillectomy", "sleep disordered breathing", "OSAS"]
 summary: "Clinical pathway for snoring and sleep apnoea in children: signs to watch for, risk factors, what your doctor will assess, and management options including nasal steroids and referral for adenotonsillectomy. Always discuss with your doctor."

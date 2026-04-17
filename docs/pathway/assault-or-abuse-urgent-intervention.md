@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Assault or Abuse — Urgent Intervention"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["assault", "abuse", "child abuse", "domestic violence", "sexual assault", "family violence", "safeguarding", "oranga tamariki", "child protection", "women's refuge", "crisis support", "police", "mandatory reporting"]
 summary: "Urgent intervention guidance for assault or abuse situations in New Zealand. Covers when and how to contact Oranga Tamariki, Police, and crisis services for both children and adults, including sexual assault. Always contact emergency services (111) if someone is in immediate danger."

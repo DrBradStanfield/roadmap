@@ -1,6 +1,6 @@
 ---
 title: "Pathway: BCG Vaccination"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bcg", "bcg vaccine", "tuberculosis", "tb", "vaccination", "immunisation", "immunization", "mycobacterium", "miliary tb", "tb meningitis", "mantoux", "live vaccine", "newborn", "infant", "immunosuppressed"]
 summary: "Clinical pathway for BCG vaccination in children under 5 years: eligibility criteria, contraindications, and aftercare. BCG protects against serious TB disease in children. Always discuss with your doctor."

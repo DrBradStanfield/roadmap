@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ingrown Toenail"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ingrown toenail", "onychocryptosis", "nail", "toenail", "matrixectomy", "phenol", "sodium hydroxide", "granulation tissue", "nail spike", "toe infection", "podiatry"]
 summary: "Clinical pathway for ingrown toenail (onychocryptosis): staging (1–3), assessment including risk factors for complications, and management from conservative nail spike removal to chemical matrixectomy. Always discuss with your doctor."

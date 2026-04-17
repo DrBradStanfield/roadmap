@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cellulitis in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cellulitis", "erysipelas", "skin infection", "necrotising fasciitis", "MRSA", "flucloxacillin", "cefalexin", "probenecid", "orbital cellulitis", "preseptal cellulitis", "soft tissue infection", "antibiotics", "limb elevation", "red leg", "DVT", "venous insufficiency", "sepsis"]
 summary: "Clinical pathway for cellulitis in adults: red flags requiring emergency assessment, severity classification (mild/moderate/severe), differential diagnosis, antibiotic selection by allergy status and infection severity, limb elevation, follow-up, and when to refer. Always discuss with your doctor."

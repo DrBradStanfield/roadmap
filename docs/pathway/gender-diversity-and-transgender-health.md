@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Gender Diversity and Transgender Health"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["transgender", "gender diverse", "non-binary", "gender affirming", "GAHT", "gender dysphoria", "gender incongruence", "gender affirmation", "puberty blockers", "GnRH analogue", "estrogen therapy", "testosterone therapy", "E-GAHT", "T-GAHT", "gender transition", "takatāpui", "intersex", "hormone therapy", "masculinising", "feminising"]
 summary: "Clinical pathway for gender-affirming healthcare in New Zealand. Covers assessment approach, gender-affirming hormone therapy (E-GAHT and T-GAHT) initiation and monitoring, puberty blockers (with current legal update), non-medical body interventions, cancer screening, voice therapy, and surgery. Always discuss with your doctor."

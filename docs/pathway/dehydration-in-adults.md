@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Dehydration in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["dehydration", "fluid loss", "oral rehydration", "iv fluids", "gastroenteritis", "vomiting", "diarrhoea", "hyperemesis", "ketones", "postural hypotension", "normal saline", "antiemetics", "metoclopramide", "ondansetron", "rehydration"]
 summary: "Clinical pathway for dehydration in adults: red flags, assessment of severity (mild/moderate/severe), examination findings, investigations, and management including oral rehydration and IV fluids. Covers dehydration from diarrhoea, vomiting, and hyperemesis in pregnancy under 20 weeks. Always discuss with your doctor."

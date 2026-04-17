@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Contraception After Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["contraception", "postpartum contraception", "contraception after birth", "contraception after abortion", "contraception after miscarriage", "ectopic pregnancy", "gestational trophoblastic disease", "IUD", "Jadelle", "implant", "combined pill", "progestogen-only pill", "DMPA", "depo provera", "emergency contraception", "lactational amenorrhoea", "breastfeeding contraception", "LARC"]
 summary: "Clinical pathway for contraception after birth, miscarriage, ectopic pregnancy, abortion, and gestational trophoblastic disease. Covers timing, method options (IUDs, implants, pills, barrier, lactational amenorrhoea), contraindications, emergency contraception, and when to seek specialist advice. Always discuss with your doctor."

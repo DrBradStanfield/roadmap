@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Myelodysplastic Neoplasms"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["myelodysplastic neoplasms", "mds", "myelodysplastic syndrome", "cytopenias", "anaemia", "neutropenia", "thrombocytopenia", "bone marrow", "haematology", "circulating blasts", "fbc", "full blood count", "haemoglobin", "platelet", "splenomegaly", "lymphadenopathy"]
 summary: "Clinical pathway for myelodysplastic neoplasms (MDS): when to suspect MDS from FBC findings, assessment including examination for cytopenias and organomegaly, when to request acute versus non-acute haematology assessment, and ongoing primary care management including immunisation. Always discuss with your doctor."

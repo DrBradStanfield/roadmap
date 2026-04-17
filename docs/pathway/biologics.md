@@ -1,6 +1,6 @@
 ---
 title: "Pathway: IBD Medications — Biologics and Immunomodulators"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["biologics", "immunomodulators", "IBD", "inflammatory bowel disease", "Crohn's disease", "ulcerative colitis", "aminosalicylates", "mesalazine", "sulfasalazine", "prednisone", "steroids", "azathioprine", "mercaptopurine", "methotrexate", "infliximab", "adalimumab", "thiopurines", "TNF blockers", "maintenance therapy"]
 summary: "Overview of medications used to treat inflammatory bowel disease (IBD), including aminosalicylates, steroids, immunomodulators (thiopurines, methotrexate), and biologics (infliximab, adalimumab). Covers indications, dosing, monitoring, and key safety warnings. Always discuss with your doctor."

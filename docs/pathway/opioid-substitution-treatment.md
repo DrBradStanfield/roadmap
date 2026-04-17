@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Opioid Substitution Treatment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["opioid substitution treatment", "ost", "methadone", "buprenorphine", "naloxone", "suboxone", "opioid dependence", "addiction", "opioid use disorder", "withdrawal", "harm reduction"]
 summary: "Overview of opioid substitution treatment (OST) for opioid dependence: what it involves, the medications used (methadone, buprenorphine+naloxone), overdose risk reduction with naloxone, and how to access treatment. All prescribing must be arranged through your doctor and an authorised specialist service."

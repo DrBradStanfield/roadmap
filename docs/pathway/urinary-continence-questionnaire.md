@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Urinary Continence Questionnaire"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["urinary incontinence", "continence", "stress incontinence", "urge incontinence", "overactive bladder", "mixed incontinence", "leaking urine", "bladder control", "incontinence questionnaire", "iciq"]
 summary: "A validated 3-question screening tool to identify urinary incontinence and classify its type — stress, urge, mixed, or other — to guide further discussion with your doctor."

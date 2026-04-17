@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Rhinosinusitis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["rhinosinusitis", "sinusitis", "sinus infection", "nasal congestion", "sinus pain", "acute sinusitis", "chronic sinusitis", "nasal polyps", "post-viral rhinosinusitis", "bacterial sinusitis", "facial pain", "blocked nose", "nasal discharge"]
 summary: "Clinical pathway for rhinosinusitis (sinus infection) in adults and children: red flags requiring emergency care, classification into acute vs chronic, assessment approach, and stepwise management including saline irrigation, nasal steroids, and antibiotics when indicated. Always discuss with your doctor."

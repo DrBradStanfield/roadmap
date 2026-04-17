@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Azathioprine Shared Care Guidance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["azathioprine", "immunosuppressant", "thiopurine", "TPMT", "shared care", "eczema", "inflammatory bowel disease", "crohn's disease", "ulcerative colitis", "rheumatoid arthritis", "organ transplant", "myelosuppression", "mercaptopurine", "drug monitoring", "FBC", "liver function"]
 summary: "Shared care guidance for GPs managing patients on azathioprine initiated by a specialist. Covers indications, dosing, monitoring schedule, adverse effects, drug interactions, pregnancy considerations, vaccinations, and when to stop and refer urgently. Always discuss with your doctor."

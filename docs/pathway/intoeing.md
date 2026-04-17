@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Intoeing"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["intoeing", "pigeon toes", "metatarsus adductus", "tibial torsion", "femoral anteversion", "intoeing gait", "toddler walking", "child orthopaedics", "W sitting", "banana foot"]
 summary: "Clinical pathway for intoeing (pigeon-toed gait) in children: common causes by age group, red flags requiring urgent assessment, examination approach, and management. Most physiological intoeing resolves on its own without treatment. Always discuss concerns with your doctor."

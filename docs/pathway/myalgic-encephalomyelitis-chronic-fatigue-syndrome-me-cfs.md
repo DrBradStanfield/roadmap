@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Myalgic Encephalomyelitis/Chronic Fatigue Syndrome (ME/CFS)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["me/cfs", "myalgic encephalomyelitis", "chronic fatigue syndrome", "chronic fatigue", "post-exertional malaise", "pem", "pots", "orthostatic intolerance", "unrefreshing sleep", "brain fog", "cognitive impairment", "fatigue", "long covid", "fibromyalgia", "pacing", "amitriptyline", "nortriptyline", "fludrocortisone", "propranolol", "low-dose naltrexone"]
 summary: "Clinical pathway for ME/CFS: red flags, IOM diagnostic criteria (substantial fatigue >6 months, post-exertional malaise, unrefreshing sleep, cognitive impairment or orthostatic intolerance), assessment approach, and management including pacing, sleep, orthostatic intolerance, pain, and psychological support. Always discuss with your doctor."

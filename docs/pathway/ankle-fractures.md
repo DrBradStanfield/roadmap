@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ankle Fractures"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ankle fracture", "ankle injury", "malleolar fracture", "bimalleolar", "trimalleolar", "fibula fracture", "weber classification", "maisonneuve", "talus fracture", "tibial fracture", "distal fibula", "ankle cast", "moonboot", "plaster of paris", "pop", "orthopaedic", "backslab", "ankle rehabilitation"]
 summary: "Clinical pathway for ankle fractures: assessment of fracture type and stability, red flags requiring urgent orthopaedic assessment (open fracture, neurovascular compromise, displaced or unstable fractures), management by AO/Weber classification, and rehabilitation. Always discuss with your doctor."

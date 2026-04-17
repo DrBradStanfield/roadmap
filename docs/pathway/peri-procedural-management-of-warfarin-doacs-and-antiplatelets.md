@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Peri-procedural Management of Warfarin, DOACs, and Antiplatelets"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["warfarin", "DOAC", "antiplatelet", "anticoagulant", "surgery", "procedure", "bridging therapy", "INR", "heparin", "enoxaparin", "LMWH", "peri-operative", "perioperative", "blood thinner", "aspirin", "clopidogrel", "rivaroxaban", "apixaban", "dabigatran", "thromboembolism", "bleeding risk", "DVT", "PE", "atrial fibrillation", "mechanical valve"]
 summary: "Clinical pathway for managing patients on warfarin, DOACs, or antiplatelet agents around procedures and surgery. Covers minor vs major procedure thresholds, bridging therapy indications and dosing, timing of DOAC cessation and restart, and antiplatelet management. Always discuss your anticoagulation plan with your doctor or specialist before any procedure."

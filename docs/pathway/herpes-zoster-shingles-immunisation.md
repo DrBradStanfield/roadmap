@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Herpes Zoster (Shingles) Immunisation"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["shingles", "herpes zoster", "shingrix", "zostavax", "zoster vaccine", "postherpetic neuralgia", "immunisation", "vaccination", "shingles vaccine", "immunocompromised", "dmard", "stem cell transplant", "haematological malignancy", "HIV", "kidney disease", "CKD"]
 summary: "Clinical pathway for shingles (herpes zoster) immunisation: who qualifies for the funded Shingrix vaccine, special considerations (previous shingles, ophthalmic zoster, pregnancy, immunocompromised patients), dosing schedule, and patient resources. Always discuss with your doctor."

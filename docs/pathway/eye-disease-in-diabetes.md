@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Eye Disease in Diabetes"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["diabetic retinopathy", "diabetic maculopathy", "retinal screening", "diabetes eye disease", "proliferative retinopathy", "macular oedema", "diabetic eye", "retinal photo-screening", "visual acuity", "floaters diabetes", "cataract diabetes"]
 summary: "Clinical pathway for eye disease in diabetes: background on diabetic retinopathy and maculopathy, assessment approach including visual acuity and fundoscopy, retinal screening criteria and timing, and management by severity. Always discuss with your doctor."

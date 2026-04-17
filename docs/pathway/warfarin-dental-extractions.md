@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Warfarin — Dental Extractions"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["warfarin", "dental extraction", "tooth extraction", "anticoagulant", "INR", "tranexamic acid", "bleeding", "dentist", "anticoagulation", "blood thinner"]
 summary: "Clinical pathway for managing warfarin patients undergoing dental extractions. Covers INR thresholds, peri-operative haemostasis with tranexamic acid, post-operative care, drugs to avoid, and when referral is needed. Always discuss with your doctor or dentist."

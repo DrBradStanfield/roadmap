@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Depression in Children and Youth"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["depression", "child depression", "youth depression", "adolescent depression", "paediatric depression", "ssri", "fluoxetine", "sertraline", "antidepressant", "suicidal ideation", "self-harm", "PHQ-A", "SPARX", "CBT", "child mental health", "youth mental health"]
 summary: "Clinical pathway for depression in children (prepubescent) and youth (under 18 years): red flags, assessment including screening questions and severity grading, and management by age group and severity — from lifestyle and phone support through to antidepressants in severe cases. Always discuss with your doctor."

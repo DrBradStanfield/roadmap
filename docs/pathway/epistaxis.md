@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Epistaxis (Nosebleed)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["epistaxis", "nosebleed", "nose bleed", "nasal bleeding", "anterior epistaxis", "little's area", "silver nitrate", "cautery", "nasal pack", "bleeding nose", "nosebleed treatment", "recurrent nosebleed"]
 summary: "Clinical pathway for epistaxis (nosebleed) in adults and children: first-aid compression technique, vasoconstrictor and cautery treatments, topical care, and when to seek emergency or specialist assessment. Always discuss with your doctor."

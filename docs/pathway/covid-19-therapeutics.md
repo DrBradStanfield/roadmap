@@ -1,6 +1,6 @@
 ---
 title: "Pathway: COVID-19 Therapeutics"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["covid-19", "covid", "paxlovid", "nirmatrelvir", "ritonavir", "remdesivir", "antiviral", "covid treatment", "covid antivirals", "sars-cov-2", "covid-19 treatment", "immunocompromised", "covid eligibility"]
 summary: "Clinical pathway for COVID-19 antiviral treatment in adults and children: eligibility criteria for Paxlovid and remdesivir, contraindications, drug interactions, dosing (including renal dose adjustment), and advance prescriptions. Always discuss with your doctor."

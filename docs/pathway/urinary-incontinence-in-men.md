@@ -1,8 +1,8 @@
 ---
 title: "Pathway: Urinary Incontinence in Men"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
-keywords: ["urinary incontinence", "male incontinence", "overactive bladder", "urge incontinence", "stress incontinence", "overflow incontinence", "LUTS", "lower urinary tract symptoms", "benign prostatic hyperplasia", "BPH", "bladder control", "enuresis", "nocturia", "prostate", "pelvic floor"]
+keywords: ["urinary incontinence","male incontinence","overactive bladder","urge incontinence","stress incontinence","overflow incontinence","LUTS","lower urinary tract symptoms","benign prostatic hyperplasia","BPH","bladder control","enuresis","nocturia","prostate","pelvic floor","leaking urine","accidents","can't hold urine","wet myself","urine leaks"]
 summary: "Clinical pathway for urinary incontinence in men: red flags, assessment including bladder diary and investigations, and management of urge, overflow, and post-surgical incontinence. Always discuss with your doctor."
 ---
 

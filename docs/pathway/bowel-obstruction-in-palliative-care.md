@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bowel Obstruction in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["palliative care", "bowel obstruction", "malignant bowel obstruction", "intestinal obstruction", "nausea", "vomiting", "colic", "constipation", "metoclopramide", "hyoscine", "haloperidol", "dexamethasone", "syringe driver", "pseudo-obstruction", "peritoneal carcinomatosis", "hospice"]
 summary: "Clinical pathway for managing bowel obstruction in adult palliative care patients: assessment of partial vs complete obstruction, causes, investigations, surgical considerations, symptomatic medication management (prokinetics, antisecretory agents, antiemetics), and when to seek specialist palliative care advice. Always discuss with your doctor."

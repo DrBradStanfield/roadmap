@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Aminosalicylates (ASA) for Inflammatory Bowel Disease"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["aminosalicylates", "asa", "mesalazine", "sulphasalazine", "olsalazine", "pentasa", "asacol", "ulcerative colitis", "crohn's disease", "ibd", "inflammatory bowel disease", "5-asa", "ibd medications", "thiopurines", "azathioprine", "biologics", "infliximab", "adalimumab", "immunomodulators"]
 summary: "Clinical guidance on aminosalicylates (ASA) and other IBD medications: indications, dosing, monitoring, and safety warnings for mesalazine, sulphasalazine, olsalazine, steroids, thiopurines, and biologics. Always discuss medication changes with your doctor."

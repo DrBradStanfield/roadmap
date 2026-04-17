@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Eye Assessment in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["eye assessment", "visual acuity", "red eye", "floaters", "flashes", "diplopia", "photophobia", "eye pain", "blurred vision", "visual loss", "fundus", "ophthalmoscope", "corneal abrasion", "fluorescein", "iritis", "glaucoma", "macular degeneration", "retinal detachment", "visual field", "eye examination"]
 summary: "Clinical pathway for eye assessment in adults: how your doctor examines the eye, what symptoms and signs matter, examination steps including visual acuity, visual fields, pupil reactions, and fundus, and what findings may require urgent referral. Always discuss with your doctor."

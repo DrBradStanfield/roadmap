@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Temporomandibular Disorder (TMD)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["tmd", "temporomandibular disorder", "jaw pain", "tmj", "clicking jaw", "jaw clicking", "jaw locking", "facial pain", "teeth grinding", "bruxism", "jaw clenching", "occlusal splint", "jaw stiffness"]
 summary: "Clinical pathway for temporomandibular disorder (TMD): assessment of jaw pain, clicking, and limited mouth opening; conservative management with physiotherapy, analgesia, and occlusal splints; and when specialist referral is needed. Always discuss with your doctor."

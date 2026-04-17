@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Insulin Pumps"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["insulin pump", "cgm", "continuous glucose monitoring", "automated insulin delivery", "AID", "closed loop", "artificial pancreas", "type 1 diabetes", "t:slim", "tandem", "ypsopump", "mylife", "basal insulin", "bolus", "infusion set", "special authority", "DKA", "hypoglycaemia", "hyperglycaemia"]
 summary: "Clinical pathway for insulin pump management in primary care: funded pump types (Tandem t:slim X2, mylife YpsoPump), consumables prescribing, troubleshooting blood glucose problems, pump failure, and when to refer to diabetes specialist. Always discuss with your doctor."

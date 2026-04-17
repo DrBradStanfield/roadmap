@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Low-risk Endometrial Cancer Follow-up"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["endometrial cancer", "uterine cancer", "cancer follow-up", "hysterectomy", "vaginal bleeding", "vaginal vault recurrence", "lymphoedema", "oestrogen deficiency", "menopause", "gynaecology oncology", "pelvic mass", "cancer surveillance"]
 summary: "Clinical pathway for general practice follow-up of patients after low-risk endometrial cancer treatment. Covers assessment at 6 and 18 months, symptoms to watch for, warning signs requiring urgent review, and management of psychosocial and menopausal concerns. Always discuss with your doctor."

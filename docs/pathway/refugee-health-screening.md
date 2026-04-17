@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Refugee Health Screening"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["refugee health", "refugee screening", "asylum seeker", "tuberculosis screening", "parasite screening", "refugee quota", "immigrant health", "settlement health", "IGRA", "quantiferon", "schistosomiasis", "strongyloides", "thalassaemia", "hepatitis B", "HIV", "refugee assessment", "vitamin D deficiency", "iron deficiency", "thiamine deficiency"]
 summary: "Clinical pathway for initial health screening of former refugees and asylum seekers arriving in New Zealand: comprehensive history, examination, investigations (TB, parasites, blood tests), and management of identified conditions including infections, deficiencies, and thalassaemia. Always discuss with your doctor."

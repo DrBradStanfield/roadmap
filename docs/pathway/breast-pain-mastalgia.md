@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Breast Pain (Mastalgia)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["breast pain", "mastalgia", "mastodynia", "cyclical breast pain", "non-cyclical breast pain", "breast tenderness", "mastalgia treatment", "breast cancer red flags", "breast examination", "evening primrose oil", "topical diclofenac", "gynaecomastia", "costochondritis", "breast cyst", "fibrocystic disease"]
 summary: "Clinical pathway for breast pain (mastalgia) in adults: red flags for breast cancer, assessment approach, causes (cyclical, non-cyclical, musculoskeletal, extramammary), and conservative management options. Always discuss symptoms with your doctor."

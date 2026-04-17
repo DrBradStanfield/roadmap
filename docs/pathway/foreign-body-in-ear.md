@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Foreign Body in Ear"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["foreign body ear", "ear foreign body", "object in ear", "button battery ear", "ear removal", "ear canal", "otolaryngology", "ENT", "ear infection", "insect in ear", "child ear"]
 summary: "Clinical pathway for a foreign body in the ear: red flags requiring same-day specialist care (button batteries), assessment approach, removal techniques, and when ENT referral is needed. Always discuss with your doctor."

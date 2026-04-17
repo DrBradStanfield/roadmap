@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Benign Prostatic Hyperplasia (BPH)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["benign prostatic hyperplasia", "bph", "prostate", "luts", "lower urinary tract symptoms", "urinary retention", "ipss", "doxazosin", "tamsulosin", "finasteride", "nocturia", "frequency", "hesitancy", "poor flow", "overactive bladder", "psa", "dre", "digital rectal examination"]
 summary: "Clinical pathway for benign prostatic hyperplasia (BPH) in men: red flags, assessment including IPSS scoring and examination, and management by severity (mild/moderate/severe). Covers watchful waiting, lifestyle measures, and medications your doctor may consider. Always discuss with your doctor."

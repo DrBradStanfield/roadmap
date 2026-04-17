@@ -1,3 +1,11 @@
+---
+title: "Pathway: Respiratory Conditions and Air Travel"
+type: "pathway"
+tags: ["Guideline"]
+keywords: ["respiratory conditions", "air travel", "flying with asthma", "flying with COPD", "COPD", "pulmonary fibrosis", "sleep apnoea", "hypoxia", "supplemental oxygen", "fitness to fly", "cabin pressure", "CPAP", "pneumothorax", "interstitial lung disease", "oxygen support"]
+summary: "Air travel is safe for most patients with respiratory conditions, but patients must be clinically stable and those with risk factors like hypoxaemia, severe asthma, or interstitial lung disease should seek respiratory specialist advice about the need for supplemental oxygen. Always discuss with your doctor."
+---
+
 # Respiratory Conditions and Air Travel
 
 > Auckland Region HealthPathways clinical guidance for GPs. Source: files/393920.htm

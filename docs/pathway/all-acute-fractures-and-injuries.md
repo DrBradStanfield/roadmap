@@ -1,6 +1,6 @@
 ---
 title: "Pathway: All Acute Fractures and Injuries"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["fracture", "broken bone", "injury", "orthopaedic", "splint", "backslab", "sling", "cast", "haemarthrosis", "osteoporosis", "minimal trauma fracture", "pathological fracture", "pain relief", "immobilisation", "physiotherapy", "non-accidental injury", "analgesia"]
 summary: "General guidance for acute fracture and injury management: initial pain relief and immobilisation, history-taking, red flags (pathological fractures, non-accidental injury), follow-up including osteoporosis screening, physiotherapy, and return to activity. Always discuss with your doctor."

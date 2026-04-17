@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Epilepsy in Women and Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["epilepsy", "seizure", "pregnancy", "antiepileptic", "antiseizure", "sodium valproate", "lamotrigine", "levetiracetam", "topiramate", "carbamazepine", "folic acid", "contraception", "pre-conception", "eclampsia", "SUDEP", "teratogenicity", "AED", "ASM", "breastfeeding", "postpartum", "neurology"]
 summary: "Clinical pathway for managing epilepsy in women of childbearing age: contraception, pre-conception planning, pregnancy monitoring, delivery precautions, and postpartum care. Covers drug-specific risks (valproate, topiramate, lamotrigine), folic acid dosing, seizure management in pregnancy, and SUDEP risk reduction. Always discuss with your doctor."

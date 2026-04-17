@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Haematuria in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["haematuria", "blood in urine", "microscopic haematuria", "macroscopic haematuria", "visible haematuria", "urinary blood", "renal malignancy", "bladder cancer", "kidney stones", "glomerulonephritis", "urology", "nephrology", "cystoscopy", "MSU", "dipstick urinalysis", "albuminuria", "eGFR", "ACR", "UTI haematuria"]
 summary: "Clinical pathway for haematuria (blood in urine) in adults: distinguishing macroscopic from microscopic haematuria, red-flag features, assessment approach, and management depending on the cause. Always discuss with your doctor."

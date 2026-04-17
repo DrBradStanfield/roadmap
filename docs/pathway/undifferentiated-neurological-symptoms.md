@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Undifferentiated Neurological Symptoms"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["neurological symptoms", "functional neurological disorder", "FND", "numbness", "tingling", "paraesthesia", "weakness", "tremor", "seizure", "multiple sclerosis", "MS", "motor neurone disease", "MND", "Guillain-Barre", "myasthenia gravis", "hyperventilation", "dizziness", "vertigo", "cognitive symptoms", "gait", "paralysis"]
 summary: "Clinical pathway for undifferentiated neurological symptoms: red flags requiring urgent assessment, differential diagnosis including functional neurological disorder (FND), multiple sclerosis, and rarer conditions, assessment approach, and management. Always discuss with your doctor."

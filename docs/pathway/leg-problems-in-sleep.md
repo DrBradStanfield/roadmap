@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Leg Problems in Sleep (RLS, PLMS, Nocturnal Leg Cramps)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["restless legs syndrome", "RLS", "periodic limb movements", "PLMS", "nocturnal leg cramps", "leg cramps", "sleep", "insomnia", "pramipexole", "ropinirole", "dopamine agonist", "clonazepam", "gabapentin", "levodopa", "iron deficiency", "augmentation", "rebound", "sleep disorder"]
 summary: "Clinical pathway for leg problems in sleep — restless legs syndrome (RLS), periodic limb movements of sleep (PLMS), and nocturnal leg cramps: background, assessment criteria, investigations, and stepwise management including non-pharmacological and pharmacological options. Always discuss with your doctor."

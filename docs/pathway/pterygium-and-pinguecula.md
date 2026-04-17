@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pterygium and Pinguecula"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pterygium", "pinguecula", "conjunctiva", "cornea", "eye", "ocular", "red eye", "eye irritation", "UV exposure", "ophthalmology", "conjunctival neoplasia", "lubricant drops", "diclofenac eye drops"]
 summary: "Clinical pathway for pterygium and pinguecula: background on differentiating these benign lesions from malignant conjunctival lesions, assessment approach including visual acuity and slit lamp examination, and management with lubricant drops, NSAID drops, and UV protection. Referral criteria for ophthalmology. Always discuss with your doctor."

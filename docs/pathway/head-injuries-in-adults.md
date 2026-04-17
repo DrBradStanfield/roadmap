@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Head Injuries in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["head injury", "traumatic brain injury", "TBI", "concussion", "mild TBI", "Glasgow Coma Scale", "GCS", "loss of consciousness", "post-traumatic amnesia", "skull fracture", "intracranial", "SCAT5", "BIST", "concussion clinic", "return to sport", "return to work", "sport concussion"]
 summary: "Clinical pathway for head injuries in adults: red flags requiring emergency care, assessment of severity including the Glasgow Coma Scale and post-traumatic amnesia, management of mild TBI and concussion, monitoring criteria, advice on rest and graduated return to activity, and indications for concussion clinic referral. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: First Seizure in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["seizure", "first seizure", "epilepsy", "convulsion", "syncope", "vasovagal", "blackout", "loss of consciousness", "anti-seizure medication", "ASM", "neurology", "tonic-clonic", "postictal", "psychogenic seizure", "cardiac syncope", "topiramate"]
 summary: "Clinical pathway for adults presenting with a possible first seizure: assessment approach, differential diagnosis (vasovagal syncope, cardiac syncope, psychogenic seizure), investigations, management including when to admit, driving advice, and when neurology referral is needed. Always discuss with your doctor."

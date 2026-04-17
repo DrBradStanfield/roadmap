@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Oral Care in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["oral care", "palliative care", "dry mouth", "xerostomia", "candida", "mouth care", "oral candidiasis", "nystatin", "fluconazole", "mucositis", "mouthwash", "chlorhexidine", "dying patient", "end of life", "terminal care", "ulceration"]
 summary: "Clinical pathway for oral care in adults receiving palliative care: maintaining a healthy mouth, managing dry mouth, candida, ulceration, painful mouth, and oral care in a dying patient. Always discuss management with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Subcutaneous Foreign Bodies"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["foreign body", "subcutaneous", "splinter", "glass", "wound", "puncture", "plantar", "foot", "removal", "infection", "tetanus", "antibiotics", "soft tissue"]
 summary: "Clinical pathway for soft-tissue (subcutaneous) foreign bodies: assessment including depth and infection, when removal can be done in general practice, when to seek urgent care, antibiotic use for plantar puncture wounds, and tetanus prophylaxis. Always discuss with your doctor."

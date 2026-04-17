@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Submandibular Gland Disorders"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["submandibular gland", "salivary gland", "sialoadenitis", "salivary stone", "sialolithiasis", "submandibular swelling", "salivary gland tumour", "neck lump", "jaw swelling", "flucloxacillin", "erythromycin", "ORL", "ENT referral"]
 summary: "Clinical pathway for submandibular gland disorders: distinguishing salivary stones (sialoadenitis) from tumours, when to seek urgent assessment, and primary care management including antibiotics and sialogogue advice. Always discuss with your doctor."

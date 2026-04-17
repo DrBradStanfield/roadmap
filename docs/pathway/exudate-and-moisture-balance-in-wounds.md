@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Exudate and Moisture Balance in Wounds"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["wound exudate", "wound moisture", "wound dressing", "maceration", "excoriation", "wound healing", "alginate", "foam dressing", "hydrocolloid", "hydrofibre", "super absorbent dressing", "negative pressure wound therapy", "NPWT", "wound management", "eschar", "slough"]
 summary: "Clinical pathway for managing exudate and moisture balance in wounds: assessment of exudate level and surrounding skin condition, and selection of appropriate dressings based on moisture level. Always discuss with your doctor."

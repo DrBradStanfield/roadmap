@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Bipolar Disorder"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bipolar disorder", "mania", "hypomania", "bipolar depression", "mixed episode", "cyclothymia", "mood disorder", "psychosis", "mental health", "acute mania", "bipolar I", "bipolar II"]
 summary: "Clinical pathway for new acute presentations suggestive of bipolar disorder: red flags requiring emergency assessment, background on bipolar types, assessment including mental health screening and investigations, and management approach. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Adverse Events Following Immunisation (AEFIs)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["AEFI", "adverse event following immunisation", "vaccine reaction", "vaccine side effect", "anaphylaxis", "fainting", "hypotonic hyporesponsive episode", "HHE", "vaccination", "immunisation", "vaccine adverse reaction", "CARM", "post-vaccination", "seizure after vaccine", "myocarditis vaccine"]
 summary: "Clinical pathway for adverse events following immunisation (AEFIs): red flags requiring immediate treatment, classification of event types, assessment, reporting obligations to CARM, and management. Always discuss with your doctor."

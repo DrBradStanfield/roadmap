@@ -110,7 +110,13 @@ function matchBlogArticles(userMessage, maxResults = 3) {
     let score = 0;
 
     for (const kw of article.keywords || []) {
-      if (msgLower.includes(kw.toLowerCase())) score += 2;
+      const kwLower = kw.toLowerCase();
+      if (kwLower.length <= 4) {
+        const escaped = kwLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (new RegExp(`\\b${escaped}\\b`).test(msgLower)) score += 2;
+      } else {
+        if (msgLower.includes(kwLower)) score += 2;
+      }
     }
     for (const tag of article.tags || []) {
       if (msgLower.includes(tag.toLowerCase())) score += 1;

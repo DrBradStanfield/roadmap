@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Adult ORL Head and Neck Surgery Assessment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["orl", "ent", "head and neck", "otolaryngology", "epistaxis", "nosebleed", "tonsillectomy", "peritonsillar abscess", "parapharyngeal abscess", "airway obstruction", "foreign body", "otitis externa", "ramsay hunt", "malignant otitis externa", "mastoiditis", "cholesteatoma", "nasal fracture", "sinusitis", "ear infection", "neck infection", "head and neck bleeding"]
 summary: "Clinical pathway for acute ORL (ear, nose, and throat) and head and neck presentations in adults: when urgent specialist assessment is needed, red flag conditions, and conditions that require a different specialty. Always discuss with your doctor."

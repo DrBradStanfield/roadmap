@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Calprotectin"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["calprotectin", "faecal calprotectin", "ibd", "inflammatory bowel disease", "ibs", "irritable bowel syndrome", "crohn's disease", "ulcerative colitis", "gut inflammation", "bowel", "diarrhoea", "stool test", "colonoscopy"]
 summary: "Clinical pathway for faecal calprotectin testing: what it measures, when it is appropriate as a second-line investigation to differentiate IBS from IBD, how to interpret results, and when further investigation is needed. Always discuss with your doctor."

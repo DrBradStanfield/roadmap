@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Insomnia"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["insomnia", "sleep problems", "can't sleep", "difficulty sleeping", "sleep disorder", "sleep hygiene", "CBT-I", "cognitive behavioural therapy insomnia", "sleep restriction", "stimulus control", "sleep hygiene", "melatonin", "zopiclone", "temazepam", "amitriptyline", "hypnotics", "sleep diary", "insomnia severity index", "Epworth sleepiness scale", "chronic insomnia", "short-term insomnia", "psychophysiological insomnia", "sleep phase disorder", "delayed sleep phase", "advanced sleep phase", "shift work sleep disorder", "sleep apnoea insomnia", "waking early", "difficulty falling asleep", "night waking", "sleep quality"]
 summary: "Clinical pathway for insomnia in adults: assessment, CBT-I components (sleep restriction, stimulus control, sleep hygiene, cognitive therapy, relaxation), medication options, and when to seek specialist care. Treatment choices should be discussed with your doctor."

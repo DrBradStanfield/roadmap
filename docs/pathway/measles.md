@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Measles"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["measles", "morbilli", "rubeola", "mmr", "mmr vaccine", "maculopapular rash", "koplik spots", "post-exposure prophylaxis", "pep", "immunoglobulin", "viral rash", "prodromal", "coryza", "conjunctivitis", "infectious disease", "notifiable disease", "measles contact", "measles exposure", "measles immunity", "measles vaccination"]
 summary: "Clinical pathway for measles: recognising symptoms (prodrome, rash, Koplik's spots), assessing immunity status, diagnostic testing (nasopharyngeal PCR swab), public health notification requirements, isolation advice, management of confirmed cases and contacts, post-exposure prophylaxis, infection control in healthcare settings, and MMR vaccination guidance. Always discuss with your doctor."

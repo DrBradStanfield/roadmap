@@ -1,8 +1,8 @@
 ---
 title: "Pathway: Weight-related Concerns in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
-keywords: ["obesity", "overweight", "underweight", "BMI", "weight loss", "weight gain", "weight management", "GLP-1", "semaglutide", "tirzepatide", "bariatric surgery", "anti-obesity medication", "diet", "nutrition", "waist circumference", "metabolic health", "cardiovascular risk", "diabetes", "unintentional weight loss", "unintentional weight gain"]
+keywords: ["obesity","overweight","underweight","BMI","weight loss","weight gain","weight management","GLP-1","semaglutide","tirzepatide","bariatric surgery","anti-obesity medication","diet","nutrition","waist circumference","metabolic health","cardiovascular risk","diabetes","unintentional weight loss","unintentional weight gain","gained weight","putting on weight","unexplained weight gain","can't lose weight","losing weight"]
 summary: "Clinical pathway for weight-related concerns in adults: red flags, BMI and waist circumference assessment, lifestyle and dietary management, anti-obesity medication options (including semaglutide and tirzepatide), and when your healthcare provider may recommend further support or referral."
 ---
 

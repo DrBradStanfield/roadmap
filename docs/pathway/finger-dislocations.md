@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Finger Dislocations"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["finger dislocation", "PIP dislocation", "DIP dislocation", "MCPJ dislocation", "proximal interphalangeal", "distal interphalangeal", "metacarpophalangeal", "hand injury", "finger reduction", "buddy strap", "splint", "digital block", "volar plate", "collateral ligament"]
 summary: "Clinical pathway for isolated finger dislocations: assessment including X-ray and neurovascular status, when to seek urgent hand surgery, reduction technique by dislocation type, and post-reduction splinting. Always discuss with your doctor."

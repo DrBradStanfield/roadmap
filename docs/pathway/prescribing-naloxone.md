@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Prescribing Naloxone"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["naloxone", "opioid overdose", "opioid antagonist", "opioid safety", "overdose prevention", "naloxone kit", "opioid dependence", "opioid addiction", "methadone", "oxycodone", "fentanyl", "morphine", "codeine", "buprenorphine", "harm reduction"]
 summary: "Clinical pathway for prescribing naloxone to patients at risk of opioid overdose. Covers background on opioid overdose risk, risk factor assessment, how to discuss naloxone with patients, overdose response instructions, and when to consider referral for opioid dependence or addiction. Always discuss with your doctor."

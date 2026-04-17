@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Home Oxygen"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["home oxygen", "long-term oxygen therapy", "ltot", "domiciliary oxygen", "hypoxia", "oxygen saturation", "pao2", "copd oxygen", "cor pulmonale", "oxygen therapy", "breathlessness", "dyspnoea", "oxygen at home"]
 summary: "Clinical criteria for long-term home oxygen therapy (LTOT): who benefits, what oxygen saturation thresholds apply, and what conditions must be met before assessment. Always discuss with your doctor."

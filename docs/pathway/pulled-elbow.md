@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pulled Elbow"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pulled elbow", "nursemaid's elbow", "radial head subluxation", "paediatric elbow", "elbow injury", "child arm injury", "supination flexion", "hyperpronation", "annular ligament", "elbow reduction"]
 summary: "Clinical pathway for pulled elbow (radial head subluxation) in young children: background, assessment, reduction techniques (supination-flexion and hyperpronation), and when to arrange X-ray or orthopaedic assessment. Always discuss with your doctor."

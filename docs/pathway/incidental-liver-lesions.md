@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Incidental Liver Lesions"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["liver lesion", "incidental liver lesion", "liver mass", "hepatic haemangioma", "focal nodular hyperplasia", "fnh", "hepatocellular adenoma", "hca", "hepatocellular carcinoma", "hcc", "liver cyst", "liver cancer", "metastatic liver", "alpha fetoprotein", "afp", "ca19-9", "liver ultrasound", "liver mri", "liver ct"]
 summary: "Clinical pathway for incidental liver lesions found on imaging: assessment approach including risk factors for malignancy, types of lesion (haemangioma, FNH, adenoma, cyst, HCC, metastatic), and management by lesion type. Always discuss with your doctor."

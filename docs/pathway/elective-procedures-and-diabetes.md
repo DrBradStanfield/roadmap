@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Elective Procedures and Diabetes"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["diabetes", "elective procedure", "surgery", "endoscopy", "colonoscopy", "gastroscopy", "insulin", "perioperative", "bowel preparation", "fasting", "hypoglycaemia", "blood glucose", "type 1 diabetes", "type 2 diabetes", "insulin pump", "oral medication", "metformin"]
 summary: "How to manage diabetes medications (oral agents and insulin) around elective procedures and surgery, including pre-operative preparation, fasting instructions, insulin dose adjustments for morning vs afternoon lists, and bowel preparation protocols. Always follow the specific instructions given by your surgical or specialist team."

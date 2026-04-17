@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Down Syndrome"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["Down syndrome", "trisomy 21", "chromosomal disorder", "intellectual disability", "congenital heart disease", "hypothyroidism", "hearing impairment", "atlantoaxial instability", "genetic counselling", "developmental delay", "screening", "dementia", "coeliac disease"]
 summary: "Clinical pathway for Down syndrome: background on types and associated conditions, common features for diagnosis, initial management and family support, age-based screening schedules from birth through adulthood, associated conditions to monitor, and when genetic counselling is appropriate. Always discuss with your doctor."

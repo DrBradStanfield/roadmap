@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Syphilis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["syphilis", "treponema pallidum", "STI", "sexually transmitted infection", "syphilis serology", "primary syphilis", "secondary syphilis", "latent syphilis", "tertiary syphilis", "neurosyphilis", "congenital syphilis", "syphilis in pregnancy", "Jarisch-Herxheimer", "doxy-PEP", "sexual health", "penicillin", "chancre", "syphilis rash", "syphilis outbreak"]
 summary: "Clinical pathway for syphilis: when to test, stages of infection, interpretation of serology, management (specialist-led), treatment approach, contact tracing, and when to seek urgent advice. Always discuss with your doctor — syphilis serology is complex and management is led by sexual health services."

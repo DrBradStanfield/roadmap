@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Dupuytren Disease"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["dupuytren", "dupuytren disease", "dupuytren contracture", "dupuytren's", "palmar fibrosis", "finger contracture", "hand contracture", "flexion deformity", "plantar fibroma", "peyronie", "knuckle pads", "hand surgery"]
 summary: "Clinical pathway for Dupuytren disease: background on disease progression, risk factors, assessment of functional impairment and joint contractures, and management including surgery criteria and postoperative care. Always discuss with your doctor."

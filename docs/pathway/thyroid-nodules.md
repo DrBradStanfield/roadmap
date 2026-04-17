@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Thyroid Nodules"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["thyroid nodule", "thyroid nodules", "impalpable thyroid", "palpable thyroid", "thyroid cancer", "thyroid lump", "neck lump", "FNA", "fine needle aspiration", "TI-RADS", "TIRADS", "thyroid ultrasound", "TSH", "radionuclide scan", "thyroid specialist", "Bethesda", "thyroid biopsy", "incidental thyroid", "goitre", "endocrinology"]
 summary: "Clinical pathway for thyroid nodules in adults and children. Covers assessment of palpable and incidentally found (impalpable) thyroid nodules, red flags for thyroid cancer, TI-RADS risk stratification, when to arrange TSH, ultrasound, or radionuclide scan, FNA referral criteria, active surveillance, and when specialist assessment is needed. Always discuss with your doctor."

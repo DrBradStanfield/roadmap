@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Corns and Calluses"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["corns", "calluses", "callus", "corn", "foot pain", "thickened skin", "podiatry", "keratolytic", "diabetic foot", "Charcot foot", "hammer toe", "footwear", "foot care", "salicylic acid", "urea cream"]
 summary: "Clinical pathway for corns and calluses: background on causes, how to distinguish from warts, conservative management including keratolytics and footwear advice, and when to seek podiatry or specialist review — especially for patients with diabetes or peripheral vascular disease. Always discuss with your doctor."

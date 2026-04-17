@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hypertension in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hypertension", "high blood pressure", "blood pressure", "antihypertensive", "ACE inhibitor", "ARB", "calcium channel blocker", "thiazide", "beta blocker", "ambulatory blood pressure monitoring", "white coat hypertension", "resistant hypertension", "secondary hypertension", "cardiovascular risk", "systolic", "diastolic", "DASH diet", "BP target"]
 summary: "Clinical pathway for hypertension in adults: diagnosis thresholds, blood pressure measurement technique, ambulatory monitoring, cardiovascular risk assessment, lifestyle changes, antihypertensive drug selection and BP targets, and management of special groups including the elderly and resistant hypertension. Always discuss with your doctor."

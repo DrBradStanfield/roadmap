@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Allergic Rhinitis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["allergic rhinitis", "hay fever", "hayfever", "rhinitis", "nasal congestion", "sneezing", "rhinorrhoea", "nasal spray", "antihistamine", "intranasal corticosteroid", "dust mite", "pollen", "allergy", "allergen", "immunotherapy", "desensitisation", "nasal polyps", "sinusitis"]
 summary: "Clinical pathway for allergic rhinitis (hay fever): red flags, assessment including allergy testing, allergen avoidance strategies, and stepwise management with intranasal corticosteroids, antihistamines, saline irrigation, and when to refer. Always discuss with your doctor."

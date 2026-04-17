@@ -1,6 +1,6 @@
 ---
 title: "Pathway: B-Cell Chronic Lymphocytic Leukaemia (B-CLL)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["b-cll", "b cell chronic lymphocytic leukaemia", "cll", "chronic lymphocytic leukaemia", "leukaemia", "lymphocytosis", "haematology", "lymphadenopathy", "immunophenotyping", "lymphocyte", "splenomegaly", "shingrix", "zostavax", "cytopenias", "lymphocyte doubling time", "ecog"]
 summary: "Clinical pathway for B-Cell Chronic Lymphocytic Leukaemia (B-CLL): background on disease course, assessment including immunophenotyping, indications for haematology referral, and ongoing GP monitoring including vaccinations and malignancy screening. Always discuss with your doctor."

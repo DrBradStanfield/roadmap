@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Malignant Spinal Cord Compression"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["malignant spinal cord compression", "MSCC", "spinal cord compression", "cancer", "metastases", "spinal metastases", "back pain", "radicular pain", "oncological emergency", "dexamethasone", "radiation oncology", "cauda equina", "myeloma", "prostate cancer", "lung cancer", "breast cancer", "MRI spine", "neurological", "bowel dysfunction", "bladder dysfunction", "palliative care"]
 summary: "Clinical pathway for malignant spinal cord compression (MSCC): an oncological emergency. Covers red flags, assessment, emergency dexamethasone dosing, imaging, and when to seek radiation oncology vs palliative care support. This is a medical emergency — always discuss with your doctor immediately."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Children's Eye Problems"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["children eye problems", "paediatric eye", "strabismus", "squint", "red reflex", "amblyopia", "nystagmus", "esotropia", "exotropia", "conjunctivitis", "nasolacrimal duct", "cataract", "vision loss child", "photophobia", "corneal opacity"]
 summary: "Clinical pathway for eye problems in children: red flags requiring urgent assessment, vision and red reflex assessment, strabismus and eye movement evaluation, and management by cause. Always discuss with your doctor."

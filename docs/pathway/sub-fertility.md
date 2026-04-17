@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sub-fertility"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sub-fertility", "infertility", "fertility", "conception", "trying to conceive", "IVF", "ovulation", "PCOS", "endometriosis", "semen analysis", "FSH", "AMH", "folic acid", "sperm", "ovarian reserve", "fertility specialist"]
 summary: "Clinical pathway for couples and individuals experiencing difficulty conceiving: when to investigate, what tests are recommended, lifestyle factors that affect fertility, supplements, and when to consider specialist referral. Always discuss with your doctor."

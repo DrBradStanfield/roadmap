@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Eczema in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["eczema", "atopic dermatitis", "children", "kids", "infant", "toddler", "itchy skin", "rash", "emollient", "moisturiser", "topical steroid", "corticosteroid", "eczema herpeticum", "infected eczema", "cetirizine", "cephalexin", "flucloxacillin", "tacrolimus", "pimecrolimus"]
 summary: "Clinical pathway for eczema (atopic dermatitis) in children: red flags requiring emergency care, background, assessment, everyday management with emollients, and treatment of flares and infections including antibiotic and antiviral options. Always discuss with your doctor."

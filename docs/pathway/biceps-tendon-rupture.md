@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Biceps Tendon Rupture"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["biceps tendon rupture", "proximal biceps rupture", "distal biceps rupture", "popeye sign", "biceps tendon", "hook test", "rotator cuff", "tendon rupture", "elbow", "shoulder", "supination weakness", "orthopaedic"]
 summary: "Clinical pathway for biceps tendon rupture: distinguishing proximal vs distal ruptures, assessment including the Hook Test, and management (proximal usually conservative; distal usually requires surgery). Always discuss with your doctor."

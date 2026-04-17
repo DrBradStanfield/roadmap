@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Psychosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["psychosis", "acute psychosis", "first episode psychosis", "schizophrenia", "hallucinations", "delusions", "thought disorder", "antipsychotic", "mental health", "bipolar psychosis", "substance-induced psychosis", "delusional disorder", "prodromal", "early psychosis"]
 summary: "Clinical pathway for new or acute presentations of psychosis: red flags requiring emergency response, background on causes, assessment approach including early warning signs and organic causes to exclude, investigations, and management. Always discuss with your doctor."

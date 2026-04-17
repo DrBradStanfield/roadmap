@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Leg Ulcers"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["leg ulcer", "venous ulcer", "arterial ulcer", "lymphatic ulcer", "critical limb ischaemia", "ABPI", "ankle brachial pressure index", "compression therapy", "wound care", "venous insufficiency", "peripheral vascular disease", "diabetic foot", "cellulitis", "wound healing"]
 summary: "Clinical pathway for leg ulcers: red flags, assessment by ulcer type (venous, arterial, diabetic, lymphatic), ABPI measurement, wound management with TIMES framework, and management principles including compression therapy for venous ulcers. Always discuss with your doctor."

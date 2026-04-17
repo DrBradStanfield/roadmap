@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Spasticity in Spinal Cord Impairment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["spinal cord injury", "sci", "spasticity", "muscle spasms", "baclofen", "intrathecal baclofen", "botulinum toxin", "clonus", "upper motor neuron", "modified ashworth", "spinal cord impairment", "diazepam"]
 summary: "Clinical guidance for spasticity in spinal cord impairment: causes of increasing spasticity, assessment using Modified Ashworth Scale, non-pharmacological and pharmacological management including baclofen, and intrathecal baclofen pump monitoring. Spasticity management is complex — always discuss with your doctor."

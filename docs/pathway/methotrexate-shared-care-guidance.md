@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Methotrexate Shared Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["methotrexate", "MTX", "shared care", "rheumatoid arthritis", "psoriasis", "inflammatory bowel disease", "crohn's", "folic acid", "immunosuppressant", "disease modifying drug", "DMARD", "monitoring", "LFTs", "FBC", "neutropenia", "thrombocytopenia", "pneumonitis"]
 summary: "Shared care guidance for patients on methotrexate (MTX): what the drug is used for, dosing with folic acid, routine blood monitoring schedule, side effects to watch for, drug interactions, pregnancy risks, and vaccination precautions. Always follow your doctor's instructions — this is a specialist-initiated medication."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Neutropenia"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["neutropenia", "low neutrophils", "low white blood cells", "neutrophil count", "FBC", "full blood count", "blood film", "haematology", "clozapine neutropenia", "drug-induced neutropenia", "bone marrow", "white cell count", "infection risk", "agranulocytosis", "severe neutropenia", "mild neutropenia", "moderate neutropenia"]
 summary: "Clinical pathway for neutropenia: classification by severity (mild/moderate/severe), causes including drug-induced and bone marrow pathology, assessment with FBC and blood film, and management steps including when to seek same-day versus non-urgent haematology assessment. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Syringe Drivers"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["syringe driver", "NIKI T34", "subcutaneous infusion", "palliative care", "continuous subcutaneous infusion", "CSCI", "breakthrough doses", "end of life", "terminal", "hospice", "opioids", "antiemetics"]
 summary: "Clinical pathway for the use of syringe drivers (continuous subcutaneous infusion pumps) in palliative care. Covers indications, advantages and disadvantages, medication selection and compatibility, breakthrough dose management, and how to arrange a driver at home or in residential care. Always discuss with your doctor or palliative care team."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pilonidal Disease"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pilonidal disease", "pilonidal sinus", "pilonidal cyst", "pilonidal abscess", "natal cleft", "hair ingrown", "perianal", "general surgery", "abscess drainage", "amoxicillin clavulanic acid", "augmentin", "cellulitis", "chronic pilonidal", "hair removal"]
 summary: "Clinical pathway for pilonidal disease: background on sinus/abscess formation, assessment findings, and management by presentation type (abscess requiring urgent surgery, chronic disease, or asymptomatic). Includes antibiotic guidance and preventive advice. Always discuss with your doctor."

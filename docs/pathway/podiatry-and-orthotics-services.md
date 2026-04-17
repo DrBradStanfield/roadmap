@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Podiatry and Orthotics Services"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["podiatry", "orthotics", "foot care", "diabetic foot", "foot ulcer", "Charcot foot", "ingrown toenail", "heel pain", "arch pain", "foot infection", "peripheral vascular disease", "orthotics", "prosthetics", "lower limb", "callus", "peripheral arterial disease", "foot deformity", "plantar fasciitis"]
 summary: "Overview of podiatry and orthotics services: what podiatrists treat, red flags in diabetic and non-diabetic foot disease, risk stratification for diabetic foot, orthotics eligibility, and patient resources. Always discuss specific concerns with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Neurosurgery Assessment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["neurosurgery", "brain tumour", "intracranial haematoma", "subarachnoid haemorrhage", "hydrocephalus", "head injury", "cranial trauma", "pituitary apoplexy", "intracranial infection", "spinal infection", "cauda equina", "myelomeningocele", "acute neurology", "emergency neurosurgery"]
 summary: "Conditions that require urgent neurosurgery assessment: brain tumours, intracranial bleeding, subarachnoid haemorrhage, hydrocephalus, head trauma, pituitary apoplexy, intracranial infection, and spinal infection with neurological impairment. These are emergencies — call 111 or go to ED immediately."

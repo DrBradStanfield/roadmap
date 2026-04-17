@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Medications for Osteoporosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["osteoporosis", "bisphosphonate", "alendronate", "risedronate", "zoledronate", "zoledronic acid", "denosumab", "teriparatide", "raloxifene", "oestrogen", "bone density", "fracture prevention", "P1NP", "bone turnover", "calcium", "vitamin D", "menopause", "HRT", "hormone therapy"]
 summary: "Medications used to treat osteoporosis: bisphosphonates (alendronate, risedronate, zoledronic acid) are first-line; oestrogen therapy, raloxifene, teriparatide, and denosumab are alternatives or second-line. Includes dosing, monitoring with P1NP, contraindications, and key safety considerations. Always discuss with your doctor."

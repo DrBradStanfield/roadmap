@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Delirium"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["delirium", "acute confusion", "confused", "confusion", "agitation", "hallucinations", "dementia", "cognitive impairment", "4AT", "delirium assessment", "lewy body", "antipsychotics", "haloperidol", "delirium causes", "delirium treatment", "delirium management"]
 summary: "Clinical pathway for delirium in adults: when to call an ambulance, how doctors assess and diagnose delirium (vs dementia vs depression), common causes, non-pharmacological management (PINCHES ME), medications including haloperidol and cautions in Lewy body dementia, and when hospital admission is needed. Always discuss with your doctor."

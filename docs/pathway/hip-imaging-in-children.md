@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hip Imaging in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hip imaging", "children", "paediatric hip", "developmental dysplasia", "DDH", "slipped upper femoral epiphysis", "SUFE", "Perthes disease", "transient synovitis", "irritable hip", "septic arthritis", "osteomyelitis", "apophysitis", "hip x-ray", "hip ultrasound", "limp", "hip pain", "child limp"]
 summary: "Clinical pathway for hip imaging in children: red flags requiring immediate hospital assessment, conditions warranting X-ray or ultrasound (DDH, SUFE, Perthes, transient synovitis), and age-based imaging guidance. Your doctor will determine which imaging is appropriate and arrange referral."

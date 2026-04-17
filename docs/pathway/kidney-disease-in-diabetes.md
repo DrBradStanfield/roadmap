@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Kidney Disease in Diabetes"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["diabetic kidney disease", "diabetic nephropathy", "albuminuria", "microalbuminuria", "macroalbuminuria", "ACR", "albumin creatinine ratio", "eGFR", "chronic kidney disease", "CKD", "diabetes", "type 2 diabetes", "ACE inhibitor", "ARB", "SGLT2 inhibitor", "empagliflozin", "GLP-1", "blood pressure", "nephrology", "kidney"]
 summary: "Clinical pathway for kidney disease in diabetes: screening with urine ACR and eGFR, diagnosis of diabetic kidney disease, management with RAA blockade, glycaemic optimisation (including SGLT2 inhibitors), cardiovascular risk reduction, and when to refer to nephrology. Always discuss with your doctor."

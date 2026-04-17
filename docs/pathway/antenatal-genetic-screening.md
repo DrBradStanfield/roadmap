@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Antenatal Genetic Screening"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["antenatal screening", "genetic screening", "pregnancy", "down syndrome", "trisomy 21", "trisomy 18", "trisomy 13", "edwards syndrome", "patau syndrome", "neural tube defect", "spina bifida", "anencephaly", "maternal serum screening", "MSS1", "MSS2", "nuchal translucency", "NIPS", "non-invasive prenatal screening", "amniocentesis", "chorionic villus sampling", "CVS", "aneuploidy", "LMC", "lead maternity carer"]
 summary: "Antenatal genetic screening in New Zealand: what conditions are screened for, which tests are offered at each stage of pregnancy (MSS1, MSS2, ultrasound, NIPS), and when referral to the Maternal Fetal Medicine Unit is needed. Always discuss your results and options with your doctor or midwife."

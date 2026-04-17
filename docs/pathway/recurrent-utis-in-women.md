@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Recurrent UTIs in Women"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["recurrent uti", "urinary tract infection", "cystitis", "pyelonephritis", "bacteriuria", "dysuria", "nitrofurantoin", "trimethoprim", "vaginal estrogen", "estriol", "methenamine hippurate", "d-mannose", "prophylactic antibiotics", "postmenopausal", "atrophic vaginitis", "midstream urine", "msu"]
 summary: "Clinical pathway for recurrent UTIs in women: defined as 3 or more episodes per year or 2 in 6 months. Covers risk factors by age group, assessment including MSU and imaging indications, and management with preventive strategies, prophylactic antibiotics, vaginal estrogens, and antibiotic alternatives. Always discuss with your doctor."

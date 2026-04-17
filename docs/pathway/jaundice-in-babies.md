@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Jaundice in Babies"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["jaundice", "neonatal jaundice", "newborn jaundice", "bilirubin", "hyperbilirubinaemia", "biliary atresia", "kernicterus", "phototherapy", "breast milk jaundice", "prolonged jaundice", "pale stools", "conjugated bilirubin", "unconjugated bilirubin"]
 summary: "Clinical pathway for jaundice in babies: red flags requiring urgent assessment, background on bilirubin types, assessment approach, and management by age and bilirubin type. Always discuss with your doctor."

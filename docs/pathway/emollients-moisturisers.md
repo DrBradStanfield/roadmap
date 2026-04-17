@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Emollients and Moisturisers"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["emollient", "moisturiser", "dry skin", "eczema", "ointment", "cream", "lotion", "paraffin", "cetomacrogol", "transepidermal water loss", "skin barrier", "dermatitis", "emollient prescribing", "skin hydration"]
 summary: "Clinical guidance on emollients (moisturisers) for dry skin conditions including eczema: formulation types (ointments, creams, lotions), how to use them effectively, prescribing quantities, and important safety advice around paraffin-based products and fire risk. Always discuss specific treatment choices with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Spirometry Interpretation"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["spirometry", "fev1", "fvc", "fev1/fvc ratio", "lung function", "obstructive", "restrictive", "airflow obstruction", "copd diagnosis", "asthma", "bronchodilator", "predicted value", "lower limit of normal", "lln", "pulmonary fibrosis", "interstitial lung disease"]
 summary: "How spirometry results are interpreted by doctors: key measurements (FEV1, FVC, ratio), obstructive vs restrictive patterns, severity grading, and what normal results mean. Always discuss with your doctor."

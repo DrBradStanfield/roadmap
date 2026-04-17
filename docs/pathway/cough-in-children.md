@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cough in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cough", "children", "paediatric", "croup", "pertussis", "whooping cough", "asthma", "bronchiolitis", "pneumonia", "wet cough", "dry cough", "post-viral cough", "habit cough", "psychogenic cough", "tracheomalacia", "tuberculosis", "foreign body", "inhaled foreign body", "chronic cough"]
 summary: "Clinical pathway for cough in children: red flags requiring emergency assessment, differential diagnosis (asthma, croup, pertussis, post-viral, inhaled foreign body, tuberculosis, psychogenic cough), assessment approach, and management by cause. Always discuss with your doctor."

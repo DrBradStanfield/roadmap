@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sexual Health in Youth"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sexual health", "youth", "adolescent", "STI", "chlamydia", "syphilis", "HPV", "contraception", "consent", "sexual safety", "sexual history", "confidentiality", "teenager"]
 summary: "Clinical pathway for sexual health in youth: background on adolescent sexuality, assessment approach including confidentiality, sexual history, and safety screening, STI testing recommendations, and management options. Always discuss with your doctor."

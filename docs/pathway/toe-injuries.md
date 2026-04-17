@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Toe Injuries"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["toe injury", "toe fracture", "broken toe", "hallux fracture", "great toe", "lesser toe", "buddy strapping", "toe spica", "mallet toe", "phalanx fracture", "RICE", "foot injury"]
 summary: "Clinical pathway for toe injuries in adults: assessment including when to X-ray, management by injury type (hallux vs lesser toes, displaced vs undisplaced), and when orthopaedic referral is needed. Most toe fractures heal with minimal treatment. Always discuss with your doctor."

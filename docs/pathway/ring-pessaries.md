@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ring Pessaries"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ring pessary", "pessary", "pelvic organ prolapse", "prolapse", "vaginal prolapse", "pessary fitting", "pessary check", "estrogen cream", "Ovestin", "pelvic floor", "urinary incontinence"]
 summary: "Clinical pathway for ring pessary use in pelvic organ prolapse: background, fitting, ongoing checks, managing complications, and when to refer to gynaecology. Always discuss with your doctor."

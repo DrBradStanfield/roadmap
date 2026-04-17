@@ -1,11 +1,9 @@
 ---
-title: Peripheral Neuropathy
-category: Neurology
-source: HealthPathways NZ
-last_reviewed: 2023-12-12
-next_review: 2029-12-01
-topic_code: "22964"
-tags: [neurology, neuropathy, peripheral-neuropathy, neuropathic-pain, diabetes, B12]
+title: "Pathway: Peripheral Neuropathy"
+type: "pathway"
+tags: ["Guideline"]
+keywords: ["peripheral neuropathy", "neuropathic pain", "tingling in feet", "numbness in hands", "burning feet", "pins and needles", "diabetic neuropathy", "B12 deficiency", "vitamin B12", "gabapentin", "pregabalin", "amitriptyline", "duloxetine", "nerve damage", "alcohol excess"]
+summary: "Peripheral neuropathy is damage to peripheral nerves causing numbness, tingling, burning pain, or weakness, most commonly from diabetes, vitamin B12 deficiency, or alcohol excess. Treatment focuses on addressing the underlying cause and managing pain with medications like amitriptyline, gabapentin, or topical capsaicin, along with careful foot care to prevent injuries. Always discuss with your doctor."
 ---
 
 # Peripheral Neuropathy

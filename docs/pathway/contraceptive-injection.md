@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Contraceptive Injection (Depo-Provera)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["contraceptive injection", "depo-provera", "DMPA", "depot medroxyprogesterone acetate", "contraception", "birth control", "injection contraception", "progestogen", "family planning", "reproductive health"]
 summary: "Clinical pathway for the contraceptive injection (DMPA / Depo-Provera): who it suits, contraindications, how to start, side effects including irregular bleeding and bone density, and when to consider switching. Always discuss with your doctor."

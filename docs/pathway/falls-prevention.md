@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Falls Prevention"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["falls", "fall prevention", "older adults", "balance", "frailty", "postural hypotension", "gait", "strength training", "vitamin D", "bisphosphonate", "osteoporosis", "polypharmacy", "benzodiazepine", "timed up and go", "chair stand test"]
 summary: "Clinical pathway for falls prevention in older adults: screening questions, risk factor identification, multifactorial assessment, and management by risk level (low, moderate, high). Covers postural hypotension, at-risk medications, home safety, strength and balance training, vitamin D, and bisphosphonates. Always discuss with your doctor."

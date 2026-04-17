@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Paediatric ORL / Head and Neck Surgery Assessment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["child ear nose throat", "paediatric ENT", "tonsillectomy haemorrhage", "post tonsillectomy bleeding", "peritonsillar abscess", "quinsy", "airway obstruction children", "foreign body throat", "foreign body ear", "foreign body nose", "mastoiditis child", "otitis externa complications", "Ramsay Hunt syndrome", "epistaxis child", "nasal fracture child", "cholesteatoma", "parapharyngeal abscess", "head neck infection child", "ORL", "head and neck surgery child"]
 summary: "Clinical pathway for acute ear, nose, throat, and head and neck conditions in children under 15: red flags requiring emergency specialist assessment, conditions requiring urgent ORL review, and conditions managed by other specialties. Always discuss with your doctor."

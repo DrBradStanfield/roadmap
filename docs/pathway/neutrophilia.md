@@ -1,10 +1,9 @@
 ---
-title: Neutrophilia
-category: haematology
-tags: [neutrophilia, FBC, white cell count, CML, myeloproliferative, infection]
-source: Auckland Region HealthPathways
-topic_code: 180553
-last_updated: 2026-04-17
+title: "Pathway: Neutrophilia"
+type: "pathway"
+tags: ["Guideline"]
+keywords: ["neutrophilia", "elevated neutrophil count", "leukocytosis", "high white blood cell count", "FBC", "full blood count", "WBC", "infection", "inflammation", "CML", "chronic myeloid leukaemia", "myeloproliferative neoplasm", "left shift", "blood film"]
+summary: "Neutrophilia is an elevated neutrophil count usually caused by infection, inflammation, or stress, but can occasionally indicate serious conditions like chronic myeloid leukaemia if persistent and unexplained. Management depends on the underlying cause and whether the person is unwell, with most incidental cases monitored through repeated blood tests. Always discuss with your doctor."
 ---
 
 # Neutrophilia

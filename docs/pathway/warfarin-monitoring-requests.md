@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Warfarin Monitoring"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["warfarin", "INR monitoring", "anticoagulation", "anticoagulant", "blood thinners", "INR testing", "warfarin dose", "community pharmacy anticoagulant", "CPAM", "anticoagulation management", "warfarin management"]
 summary: "Overview of warfarin monitoring in the community, including the Community Pharmacy Anticoagulant Management (CPAM) service, eligibility criteria, exclusions, and what information your healthcare provider will need to manage your warfarin safely."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Respiratory Infection in Spinal Cord Impairment (SCI)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["spinal cord injury", "sci", "respiratory infection", "chest infection", "pneumonia", "pulmonary embolism", "autonomic dysreflexia", "BiPAP", "cough assist", "hypoventilation", "tetraplegic", "cervical sci", "spinal cord impairment"]
 summary: "Clinical guidance for respiratory infection in spinal cord impairment: red flags requiring emergency assessment, assessment of respiratory function, management of chest infections, and prevention. People with cervical or high thoracic SCI have very limited respiratory reserve and can decompensate rapidly. Always discuss with your doctor."

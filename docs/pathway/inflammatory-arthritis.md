@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Inflammatory Arthritis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["inflammatory arthritis", "rheumatoid arthritis", "spondyloarthritis", "psoriatic arthritis", "ankylosing spondylitis", "reactive arthritis", "connective tissue disorder", "SLE", "lupus", "Sjögren's", "gout", "CPPD", "pseudogout", "crystal arthropathy", "palindromic rheumatism", "DMARD", "methotrexate", "hydroxychloroquine", "sulphasalazine", "leflunomide", "CCP antibody", "rheumatoid factor", "ANA", "morning stiffness", "joint swelling", "synovitis", "dactylitis", "enthesitis", "rheumatic fever", "HLA-B27"]
 summary: "Clinical pathway for inflammatory arthritis in adults (aged 15+): how it is assessed, initial and long-term management, when specialist referral is needed, and the role of DMARDs. All diagnosis and treatment decisions require a doctor. Seek urgent care for a single hot swollen joint."

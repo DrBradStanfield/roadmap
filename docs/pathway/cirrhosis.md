@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cirrhosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cirrhosis", "liver disease", "hepatic", "fibrosis", "liver failure", "hepatocellular carcinoma", "liver cancer", "ascites", "encephalopathy", "varices", "portal hypertension", "spontaneous bacterial peritonitis", "sbp", "hepatitis", "fatty liver", "masld", "alcohol liver disease", "decompensated cirrhosis", "child-pugh", "spironolactone", "lactulose", "rifaximin", "carvedilol"]
 summary: "Clinical pathway for known cirrhosis: red flags requiring emergency assessment, diagnosis and causes, assessment approach, management including lifestyle, medications to avoid, and complication management (ascites, encephalopathy, varices, SBP). Always discuss with your doctor."

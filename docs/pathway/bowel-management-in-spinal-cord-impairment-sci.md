@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bowel Management in Spinal Cord Impairment (SCI)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bowel management", "spinal cord impairment", "sci", "constipation", "faecal incontinence", "digital evacuation", "reflex bowel", "flaccid bowel", "upper motor neuron", "lower motor neuron", "suppositories", "colostomy", "bristol stool chart", "autonomic dysreflexia", "laxatives", "psyllium"]
 summary: "Clinical pathway for bowel management in spinal cord impairment — covering reflex and flaccid bowel types, bowel regimen assessment, evacuation techniques, constipation and loose stool management, and when to refer for surgical options. Always discuss with your doctor."

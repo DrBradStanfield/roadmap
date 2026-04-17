@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acne"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["acne", "acne vulgaris", "pimples", "comedones", "blackheads", "whiteheads", "nodules", "cysts", "isotretinoin", "roaccutane", "oratane", "benzoyl peroxide", "retinoid", "adapalene", "tretinoin", "azelaic acid", "doxycycline", "minocycline", "erythromycin", "spironolactone", "oral contraceptive", "acne scarring", "nodulocystic acne", "acne treatment", "teenage acne", "adult acne", "acne rosacea", "acne severity", "acne mild moderate severe", "PCOS acne", "hormonal acne"]
 summary: "Clinical pathway for acne in adolescents and adults: assessment of severity, topical and systemic treatment options including antibiotics and isotretinoin, and when to seek specialist care. Always discuss treatment choices with your doctor."

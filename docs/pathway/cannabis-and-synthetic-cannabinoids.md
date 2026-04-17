@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cannabis and Synthetic Cannabinoids"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cannabis", "marijuana", "THC", "synthetic cannabinoids", "synnies", "cannabinoid hyperemesis", "cannabis withdrawal", "drug use", "substance use disorder", "cannabis dependence", "addiction", "drug driving"]
 summary: "Clinical pathway for cannabis and synthetic cannabinoid use: red flags, background on drug types and potency, assessment of severity and dependence, withdrawal management, and harm reduction strategies. Always discuss with your doctor."

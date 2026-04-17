@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Vaccine Storage and Cold Chain Breaches"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["vaccine storage", "cold chain", "cold chain breach", "immunisation", "vaccine potency", "fridge temperature", "vaccine refrigerator", "immunisation coordinator", "vaccine excursion", "2 to 8 degrees"]
 summary: "Clinical pathway for managing vaccine cold chain requirements and breaches: maintaining 2–8°C storage, steps to take after a breach including quarantine and documentation, and when to contact your immunisation coordinator. Discuss specific incidents with your healthcare provider or local immunisation coordinator."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Inguinal Hernia in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["inguinal hernia", "hernia", "groin lump", "paediatric hernia", "strangulated hernia", "herniotomy", "undescended testis", "hydrocele", "scrotal lump", "children"]
 summary: "Clinical pathway for inguinal hernia in children: red flags for strangulation requiring emergency care, assessment approach, differential diagnosis, and post-operative follow-up. Always discuss with your doctor."

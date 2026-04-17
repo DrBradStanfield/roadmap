@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acromioclavicular (AC) Joint Injury"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["acromioclavicular", "ac joint", "ac joint injury", "shoulder injury", "shoulder dislocation", "ac joint sprain", "ac joint separation", "collarbone injury", "clavicle injury", "shoulder fall", "cross chest test", "shoulder pain"]
 summary: "Clinical pathway for acromioclavicular (AC) joint injury: grading (Grade 1–6), assessment including the cross chest test, and management by grade from conservative care to urgent orthopaedic referral. Always discuss with your doctor."

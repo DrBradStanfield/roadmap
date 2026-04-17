@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Risk-taking in Youth"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["risk-taking", "youth", "adolescent", "teenager", "risk behaviour", "substance use", "alcohol", "sexual health", "suicide risk", "mental health", "HEeADSSS", "BEARDS", "protective factors", "vulnerability factors", "adolescent development"]
 summary: "Clinical pathway for assessing and managing risk-taking behaviour in young people: distinguishing normal from concerning behaviour, using the HEeADSSS framework, identifying risk and protective factors, stratifying overall risk (no/low/moderate/high), and management by risk level. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Physical Health and Mental Illness"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["mental illness", "serious mental illness", "SMI", "schizophrenia", "bipolar disorder", "major depressive disorder", "antipsychotic", "metabolic syndrome", "cardiovascular risk", "psychotropic medication", "clozapine", "lithium", "hyperprolactinaemia", "weight gain", "cardiometabolic screening"]
 summary: "Clinical pathway for managing the physical health of people with serious mental illness or addiction. Covers proactive health screening, cardiometabolic monitoring, medication side-effects (antipsychotics, lithium, clozapine), and management of associated conditions including cardiovascular disease, obesity, smoking, and substance use. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Breast Screening and Surveillance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["breast screening", "mammogram", "mammography", "breast cancer", "breast surveillance", "breastscreen aotearoa", "breast cancer risk", "breast awareness", "breast cancer follow-up"]
 summary: "Clinical pathway for breast screening and surveillance in New Zealand women: who is eligible for routine mammography, screening programme details, assessment including breast cancer risk, and surveillance after breast cancer treatment. Always discuss with your doctor."

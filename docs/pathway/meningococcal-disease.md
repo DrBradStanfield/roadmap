@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Meningococcal Disease"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["meningococcal", "meningitis", "meningococcaemia", "neisseria meningitidis", "septicaemia", "petechial rash", "purpuric rash", "bacterial meningitis", "ceftriaxone", "benzylpenicillin", "sepsis", "meningococcal disease", "meningococcal vaccination", "close contact prophylaxis"]
 summary: "Clinical pathway for meningococcal disease in adults and children: recognition of invasive disease (meningitis and septicaemia), red flags, emergency management including antibiotics and fluids, public health notification obligations, and management of close contacts. This is a medical emergency — always call emergency services immediately if meningococcal disease is suspected."

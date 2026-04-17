@@ -1,6 +1,6 @@
 ---
 title: "Pathway: CT Sinus"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ct sinus", "sinus ct scan", "rhinosinusitis", "chronic sinusitis", "sinusitis", "nasal obstruction", "nasal polyp", "sinonasal malignancy", "orbital cellulitis", "intracranial complication", "sinusitis red flags", "corticosteroid nasal spray"]
 summary: "When a CT sinus scan may be needed: red flags requiring emergency care, criteria for publicly funded scanning, and warning signs of malignancy or serious complications. Your doctor decides whether a CT is appropriate — this information helps you understand the process."

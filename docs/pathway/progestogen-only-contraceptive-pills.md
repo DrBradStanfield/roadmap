@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Progestogen-only Contraceptive Pills (POP)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["progestogen-only pill", "POP", "mini pill", "contraception", "cerazette", "microlut", "noriday", "desogestrel", "levonorgestrel", "norethisterone", "birth control", "hormonal contraception", "missed pill", "breastfeeding contraception"]
 summary: "Clinical pathway for progestogen-only contraceptive pills (POPs): who they suit, contraindications, available options in New Zealand, starting methods, missed pill guidance, and when to seek medical advice. Always discuss with your doctor."

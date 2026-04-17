@@ -1,9 +1,9 @@
 ---
-title: Pelvic Inflammatory Disease (PID)
-category: Women's Health / Sexual Health
-source: HealthPathways Auckland
-topic_code: 317065
-last_reviewed: 2026-04-17
+title: "Pathway: Pelvic Inflammatory Disease (PID)"
+type: "pathway"
+tags: ["Guideline"]
+keywords: ["pelvic inflammatory disease", "PID", "pelvic infection", "chlamydia", "gonorrhoea", "STI", "antibiotics", "infertility", "ectopic pregnancy", "chronic pelvic pain", "salpingitis", "endometritis", "doxycycline", "ceftriaxone"]
+summary: "Pelvic inflammatory disease (PID) is an infection of the upper genital tract caused by sexually transmitted bacteria like chlamydia and gonorrhoea, or non-sexually acquired bacteria following pregnancy procedures or IUD insertion. Prompt antibiotic treatment is essential to prevent serious complications including tubal infertility, ectopic pregnancy, and chronic pelvic pain. Always discuss with your doctor."
 ---
 
 # Pelvic Inflammatory Disease (PID)

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Vaginal Prolapse"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["vaginal prolapse", "pelvic organ prolapse", "cystocele", "rectocele", "uterine prolapse", "pelvic floor dysfunction", "prolapse grading", "ring pessary", "pelvic floor exercises", "vaginal estrogen", "women's health", "urogynaecology", "enterocele", "urethrocele", "pelvic floor weakness"]
 summary: "Clinical pathway for vaginal (pelvic organ) prolapse in women: background, assessment including prolapse grading and pelvic floor strength, and management covering lifestyle modification, pelvic floor physiotherapy, vaginal estrogen, ring pessary, and indications for specialist referral. Always discuss with your doctor."

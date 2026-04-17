@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Advance Care Planning (ACP)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["advance care planning", "ACP", "advance directive", "living will", "enduring power of attorney", "EPA", "goals of care", "shared goals of care", "CPR", "resuscitation", "palliative care", "serious illness conversation", "end of life", "dying", "whānau", "organ donation"]
 summary: "Overview of advance care planning (ACP) in New Zealand — what it involves, when to consider it, key documents (advance care plan, advance directive, enduring power of attorney, shared goals of care), and how to start the conversation with your doctor."

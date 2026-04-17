@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Irritable Bowel Syndrome (IBS)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["IBS", "irritable bowel syndrome", "rome criteria", "rome iv", "fodmap", "low fodmap", "bloating", "abdominal pain", "bowel habit", "diarrhoea", "constipation", "ibs-d", "ibs-c", "mixed ibs", "functional bowel disorder", "faecal calprotectin", "mebeverine", "loperamide", "peppermint oil", "antidepressants for IBS", "visceral hypersensitivity", "gut-directed hypnotherapy", "bile salt malabsorption", "lactose intolerance", "wheat intolerance", "probiotics ibs", "coeliac", "inflammatory bowel disease"]
 summary: "Clinical pathway for irritable bowel syndrome (IBS) in adults and adolescents: Rome IV diagnostic criteria, red flags requiring investigation, dietary management including low-FODMAP, lifestyle measures, complementary treatments, and symptom-targeted medications. Always discuss your symptoms with your doctor."

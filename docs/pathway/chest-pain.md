@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Chest Pain"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["chest pain", "angina", "acs", "acute coronary syndrome", "heart attack", "stemi", "nstemi", "pericarditis", "pneumothorax", "pulmonary embolism", "aortic dissection", "musculoskeletal chest pain", "gord", "costochondritis", "ecg"]
 summary: "Clinical pathway for chest pain in adults: red flags requiring emergency assessment, differential diagnosis (ACS, PE, pneumothorax, aortic dissection, pericarditis, musculoskeletal, GORD), assessment approach including ECG and cardiovascular risk factors, and management by cause. Always discuss with your doctor."

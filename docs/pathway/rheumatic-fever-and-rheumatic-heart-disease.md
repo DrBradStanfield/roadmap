@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Rheumatic Fever and Rheumatic Heart Disease"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["rheumatic fever", "rheumatic heart disease", "ARF", "RHD", "group A streptococcus", "GAS", "benzathine penicillin", "secondary prophylaxis", "Sydenham's chorea", "carditis", "erythema marginatum", "Jones criteria", "strep throat", "heart valve", "Māori", "Pacific peoples"]
 summary: "Clinical pathway for acute rheumatic fever (ARF) and rheumatic heart disease (RHD): red flags, high-risk groups, assessment including clinical features and diagnostic approach, and management including secondary prophylaxis with benzathine penicillin. Always discuss with your doctor."

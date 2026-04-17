@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Infectious Mononucleosis (Glandular Fever)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["infectious mononucleosis", "glandular fever", "EBV", "Epstein-Barr virus", "mononucleosis", "mono", "EBV serology", "lymphadenopathy", "pharyngitis", "splenomegaly", "fatigue", "CMV", "toxoplasmosis", "acute HIV", "Paul Bunnell", "FBC", "atypical lymphocytes"]
 summary: "Clinical pathway for infectious mononucleosis (glandular fever): diagnosis, blood test approach, management, and when to seek further medical attention. Always discuss with your doctor."

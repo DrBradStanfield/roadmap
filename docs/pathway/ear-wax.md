@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ear Wax"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ear wax", "cerumen", "earwax", "ear canal", "ear blockage", "microsuction", "ear irrigation", "ear syringing", "hearing loss", "tinnitus", "olive oil", "ear drops", "otitis externa"]
 summary: "Clinical pathway for ear wax (cerumen) blockage: background on normal ear physiology, assessment, and management options including softening drops, microsuction, and ear irrigation with contraindications. Always discuss with your doctor."

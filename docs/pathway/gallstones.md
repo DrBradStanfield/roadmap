@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Gallstones"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["gallstones", "cholelithiasis", "biliary colic", "cholecystitis", "cholangitis", "pancreatitis", "gallbladder", "jaundice", "cholecystectomy", "common bile duct", "porcelain gallbladder", "murphy's sign", "right upper quadrant pain"]
 summary: "Clinical pathway for gallstones: red flags requiring emergency assessment (jaundice, cholecystitis, cholangitis, pancreatitis), assessment including risk factors and differential diagnosis, and management of symptomatic and asymptomatic gallstones including analgesia, ultrasound, and criteria for surgical referral. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Breast Symptoms"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["breast symptoms", "breast lump", "breast cancer", "nipple discharge", "nipple change", "breast pain", "fibroadenoma", "inflammatory breast cancer", "paget's disease", "gynaecomastia", "breast examination", "BRCA", "mammogram", "breast screening"]
 summary: "Clinical pathway for breast symptoms: red flags suggesting breast cancer, assessment approach including history and examination, management of benign versus potentially malignant findings. Always discuss new breast symptoms with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sedation for MRI in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["mri sedation", "claustrophobia", "mri anxiety", "lorazepam mri", "mri scan", "benzodiazepine sedation", "mri claustrophobia medication", "sedation radiology"]
 summary: "Clinical pathway for managing anxiety and claustrophobia before an MRI scan in adults. Covers who may benefit from sedation, contraindications, lorazepam dosing, and important instructions for patients. Always discuss with your doctor."

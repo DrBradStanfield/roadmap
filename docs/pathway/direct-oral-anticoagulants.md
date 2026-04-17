@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Direct Oral Anticoagulants (DOACs)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["DOAC", "direct oral anticoagulant", "dabigatran", "rivaroxaban", "anticoagulation", "warfarin", "blood thinner", "DVT", "pulmonary embolism", "PE", "atrial fibrillation", "AF", "stroke prevention", "VTE", "venous thromboembolism", "enoxaparin", "LMWH", "idarucizumab", "Praxbind", "Cockcroft-Gault", "creatinine clearance", "renal impairment", "bleeding risk", "mechanical heart valve", "pradaxa", "xarelto", "factor Xa inhibitor", "thrombin inhibitor"]
 summary: "Clinical pathway for direct oral anticoagulants (DOACs) — dabigatran and rivaroxaban — covering indications, contraindications, dosing by indication, renal function monitoring, drug interactions, bleeding risk, and when to seek specialist advice. Always discuss with your doctor."

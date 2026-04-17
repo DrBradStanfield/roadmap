@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Community Acquired Pneumonia (CAP) in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pneumonia", "cap", "community acquired pneumonia", "crb-65", "corb", "legionella", "legionnaires disease", "respiratory infection", "amoxicillin", "doxycycline", "streptococcus pneumoniae", "lower respiratory tract", "antibiotic", "oxygen saturation", "sao2"]
 summary: "Clinical pathway for community acquired pneumonia (CAP) in adults: severity scoring with CRB-65, indications for hospital admission, antibiotic regimens for mild and moderate CAP, Legionella assessment and treatment, and follow-up recommendations. Always discuss with your doctor."

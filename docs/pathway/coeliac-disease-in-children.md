@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Coeliac Disease in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["coeliac disease", "celiac", "gluten", "coeliac children", "tissue transglutaminase", "tTG", "endomysial antibody", "EMA", "gluten-free diet", "malabsorption", "paediatric coeliac", "faltering growth", "dermatitis herpetiformis", "small bowel biopsy"]
 summary: "Clinical pathway for coeliac disease in children under 15: who to test, which blood tests to arrange, how to interpret serology results, and management of confirmed diagnosis including gluten-free diet and follow-up. Always discuss with your doctor."

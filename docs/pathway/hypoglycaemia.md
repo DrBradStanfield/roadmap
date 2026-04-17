@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hypoglycaemia"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hypoglycaemia", "hypoglycemia", "low blood sugar", "blood glucose", "hypo", "diabetes", "insulin", "sulfonylurea", "glucagon", "blood glucose monitoring", "type 1 diabetes", "type 2 diabetes", "hypoglycaemic unawareness"]
 summary: "Clinical pathway for hypoglycaemia in adults and children: red flags requiring emergency care, symptoms and causes, acute management with fast-acting carbohydrate or glucagon, and post-episode follow-up including driving advice and dose adjustments. Always discuss with your doctor."

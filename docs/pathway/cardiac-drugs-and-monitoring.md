@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cardiac Drugs and Monitoring"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["amiodarone", "clopidogrel", "flecainide", "perhexiline", "prasugrel", "sotalol", "ticagrelor", "anti-arrhythmic", "antiplatelet", "atrial fibrillation", "ventricular tachycardia", "heart failure", "stent", "acute coronary syndrome", "ACS", "PCI", "cardiac monitoring", "drug interactions", "QT prolongation", "thyroid dysfunction", "pulmonary toxicity"]
 summary: "Overview of common cardiac medications — amiodarone, clopidogrel, flecainide, perhexiline, prasugrel, sotalol, and ticagrelor — including indications, adverse effects, drug interactions, and monitoring requirements. These medications are typically initiated by cardiologists and monitored in general practice. Always discuss changes with your doctor."

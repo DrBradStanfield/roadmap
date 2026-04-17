@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Rhesus D in Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["rhesus d", "rh negative", "rhd negative", "anti-d", "anti-d immunoglobulin", "sensitisation", "haemolytic disease of the newborn", "feto-maternal haemorrhage", "kleihauer test", "antenatal prophylaxis", "miscarriage", "ectopic pregnancy", "antepartum haemorrhage", "chorionic villus sampling", "amniocentesis"]
 summary: "Clinical pathway for Rhesus D management in pregnancy: when anti-D immunoglobulin is indicated following sensitising events, dosing by gestation, routine antenatal prophylaxis, and when to involve obstetric specialist care. Always discuss with your doctor."

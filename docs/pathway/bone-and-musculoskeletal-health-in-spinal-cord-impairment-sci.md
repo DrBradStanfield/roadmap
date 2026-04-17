@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bone and Musculoskeletal Health in Spinal Cord Impairment (SCI)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["spinal cord impairment", "sci", "osteoporosis", "osteopenia", "heterotopic ossification", "carpal tunnel syndrome", "rotator cuff", "contractures", "spasticity", "insufficiency fracture", "bone density", "dxa", "etidronate", "indometacin", "denosumab"]
 summary: "Clinical pathway for bone and musculoskeletal health in spinal cord impairment — covering osteoporosis, heterotopic ossification, carpal tunnel syndrome, rotator cuff injury, insufficiency fractures, spasticity, and contractures. Includes assessment, investigation, and management approach. Always discuss with your doctor."

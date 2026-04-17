@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Raised Ferritin and Haemochromatosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ferritin", "raised ferritin", "haemochromatosis", "hereditary haemochromatosis", "iron overload", "transferrin saturation", "HFE gene", "venesection", "C282Y", "H63D", "iron", "metabolic hyperferritinaemia", "haematology", "genetic counselling", "fatty liver", "haemophagocytic lymphohistiocytosis", "still's disease"]
 summary: "Clinical pathway for raised ferritin and haemochromatosis: distinguishing iron overload from other causes of raised ferritin, when to check transferrin saturation and HFE gene testing, management based on transferrin saturation, genetic counselling for confirmed haemochromatosis, and when specialist referral is needed. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: National Bowel Screening Programme"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bowel screening", "bowel cancer", "colorectal cancer", "FIT", "faecal immunochemical test", "NBSP", "colonoscopy", "colorectal screening", "colon cancer screening", "bowel cancer screening", "stool test", "faecal occult blood", "FOBT", "polyp", "adenoma"]
 summary: "New Zealand's National Bowel Screening Programme: who is eligible (ages 58–74), how the FIT test works, what a positive or negative result means, when colonoscopy is required, and what to expect from the process. Always discuss your results with your doctor."

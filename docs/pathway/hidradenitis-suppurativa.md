@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hidradenitis Suppurativa"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hidradenitis suppurativa", "HS", "skin abscess", "sinus tract", "axilla", "groin", "follicular", "Hurley stage", "doxycycline", "rifampicin", "clindamycin", "adalimumab", "biologic", "de-roofing", "spironolactone", "metformin", "acne inversa"]
 summary: "Clinical pathway for hidradenitis suppurativa (HS): background on this chronic inflammatory skin disease, assessment including Hurley staging, and step-up management from lifestyle measures through antibiotics, adjuvant treatments, biologics, and surgery. Always discuss with your doctor."

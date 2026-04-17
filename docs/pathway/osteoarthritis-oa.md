@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Osteoarthritis (OA)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["osteoarthritis", "OA", "joint pain", "arthritis", "knee pain", "hip pain", "hand pain", "NSAID", "paracetamol", "joint replacement", "physiotherapy", "cartilage", "CPPD", "pseudogout", "intra-articular", "corticosteroid injection", "capsaicin", "glucosamine"]
 summary: "Clinical pathway for osteoarthritis in adults: red flags, assessment, differential diagnoses (CPPD, femoro-acetabular impingement, trochanteric pain), non-pharmacological management, analgesic options (paracetamol, topical NSAIDs, capsaicin, oral NSAIDs, intra-articular steroids), and criteria for joint replacement referral. All treatment decisions should be discussed with your doctor."

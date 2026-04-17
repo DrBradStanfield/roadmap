@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Carer Stress"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["carer stress", "caregiver burnout", "elder care", "carer burnout", "respite care", "carer support", "older adults", "elder abuse", "carer wellbeing", "dementia carer", "family carer"]
 summary: "Clinical pathway for identifying and managing carer stress in those caring for an older person. Covers stress indicators, assessment approach, and management options including respite care and support services. Always discuss with your doctor."

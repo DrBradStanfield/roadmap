@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Child with a Limp"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["child limp", "paediatric limp", "hip pain child", "septic arthritis", "osteomyelitis", "perthes disease", "sufe", "slipped upper femoral epiphysis", "transient synovitis", "irritable hip", "developmental dysplasia hip", "ddh", "juvenile idiopathic arthritis", "jia", "toddler fracture", "osgood schlatter", "rheumatic fever", "bone infection child", "non weight bearing child"]
 summary: "Clinical pathway for a child presenting with a limp or reluctance to weight-bear: red flags requiring urgent assessment, differential diagnosis by age (transient synovitis, Perthes, SUFE, septic arthritis, DDH, JIA, fracture), assessment approach, and management by cause. Always discuss with your doctor."

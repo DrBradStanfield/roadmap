@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Nipple Pain in Breastfeeding"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["nipple pain", "breastfeeding", "sore nipples", "cracked nipples", "nipple thrush", "candida", "nipple vasospasm", "blocked nipple pore", "milk bleb", "white spot", "nipple eczema", "nipple dermatitis", "nipple trauma", "tongue-tie", "latch", "breastfeeding attachment", "HSV", "herpes simplex", "bacterial nipple infection", "mastitis", "postpartum", "lactation"]
 summary: "Clinical pathway for nipple pain in breastfeeding: red flags (HSV infection), assessment of causes (poor latch, nipple trauma, bacterial infection, thrush, vasospasm, blocked pore, eczema), and management by cause including drug names and doses. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Recurrent Staphylococcal Infection"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["staph", "staphylococcus aureus", "MRSA", "MSSA", "recurrent skin infection", "boils", "abscess", "impetigo", "folliculitis", "decolonisation", "mupirocin", "flucloxacillin", "cefalexin", "bleach bath", "chlorhexidine", "skin infection", "nasal carriage"]
 summary: "Clinical pathway for managing recurrent Staphylococcus aureus skin and soft tissue infections — including MRSA and MSSA. Covers background, assessment, skin care, antibiotic treatment, and decolonisation. Always discuss management with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Stroke"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["stroke", "ischaemic stroke", "haemorrhagic stroke", "TIA", "transient ischaemic attack", "FAST", "thrombolysis", "clot retrieval", "clopidogrel", "aspirin", "antiplatelet", "anticoagulation", "atrial fibrillation", "statin", "atorvastatin", "blood pressure", "secondary prevention", "aphasia", "dysphasia", "facial droop", "arm weakness", "speech disturbance"]
 summary: "Clinical pathway for stroke and TIA: red flags, FAST screening tool, acute vs subacute management, and long-term secondary prevention including antiplatelet therapy, blood pressure control, and statins. Always discuss with your doctor."

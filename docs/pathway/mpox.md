@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Mpox"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["mpox", "monkeypox", "orthopoxvirus", "clade I", "clade II", "GBMSM", "tecovirimat", "JYNNEOS", "mpox vaccine", "poxvirus", "proctitis", "mpox rash", "post-exposure prophylaxis", "mpox isolation"]
 summary: "Clinical pathway for mpox: background on clades, assessment criteria (clinical and epidemiological), symptoms, infection control, testing, management including tecovirimat eligibility, supportive care by symptom, vaccination (pre- and post-exposure), and close contact guidance. Always discuss with your doctor."

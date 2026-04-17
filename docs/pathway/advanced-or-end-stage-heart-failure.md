@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Advanced or End-Stage Heart Failure"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["advanced heart failure", "end-stage heart failure", "palliative care", "heart failure", "decompensated heart failure", "cardiac palliative", "fluid overload", "dyspnoea", "diuretics", "de-prescribing", "advance care plan", "ICD deactivation", "cachexia", "renal impairment", "opioids", "furosemide", "sacubitril", "empagliflozin", "goals of care"]
 summary: "Clinical pathway for advanced or end-stage heart failure: identifying patients with deteriorating or end-stage disease, early advance care planning conversations, de-prescribing of cardiac medications, and symptom management. Always discuss with your doctor."

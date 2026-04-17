@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Refugee Health in Children and Adolescents"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["refugee health", "children", "adolescents", "paediatric", "immigrant health", "tuberculosis", "TB", "parasites", "malaria", "hepatitis", "vitamin D", "iron deficiency", "thalassaemia", "sickle cell", "G6PD", "worms", "schistosomiasis", "strongyloides", "giardia", "tinea", "scabies", "trachoma", "mental health", "PTSD", "immunisation", "catch-up vaccinations", "thiamine", "beriberi", "dental health", "trauma"]
 summary: "Clinical pathway for the assessment and management of children and adolescents with refugee-like experiences. Covers background, syndrome-based assessment, infectious diseases (parasites, TB, malaria, blood-borne viruses), non-communicable conditions (nutritional deficiencies, blood disorders, dental and hearing issues), pre-existing injuries, disabilities, and immunisation. Always discuss with your doctor."

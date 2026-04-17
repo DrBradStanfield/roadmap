@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Non-insulin Diabetes Medications"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["diabetes medications", "type 2 diabetes", "metformin", "SGLT2 inhibitor", "empagliflozin", "GLP-1 receptor agonist", "dulaglutide", "liraglutide", "DPP-4 inhibitor", "vildagliptin", "pioglitazone", "sulfonylurea", "gliclazide", "glipizide", "acarbose", "HbA1c", "glycaemic control", "diabetic ketoacidosis", "DKA", "hypoglycaemia", "non-insulin", "oral diabetes", "prediabetes"]
 summary: "Overview of non-insulin medications used in type 2 diabetes and prediabetes: choosing between medication classes, dosing, advantages, adverse effects, contraindications, and sick day management. This information supports conversations with your doctor — your doctor will determine the right medication for your situation."

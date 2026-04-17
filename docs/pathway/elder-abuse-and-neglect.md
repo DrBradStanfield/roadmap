@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Elder Abuse and Neglect"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["elder abuse", "elder neglect", "older person abuse", "carer stress", "financial abuse", "self-neglect", "neglect", "psychological abuse", "physical abuse", "sexual abuse", "institutional abuse", "age concern", "vulnerable adult", "dementia abuse"]
 summary: "Clinical pathway for suspected elder abuse and neglect: types of abuse, key risk factors, signs and symptoms across all abuse categories, questions to ask, risk stratification, and management overview. Always discuss with your doctor."

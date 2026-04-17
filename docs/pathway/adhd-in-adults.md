@@ -1,6 +1,6 @@
 ---
 title: "Pathway: ADHD in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["adhd", "attention deficit hyperactivity disorder", "methylphenidate", "ritalin", "dexamfetamine", "lisdexamfetamine", "vyvanse", "atomoxetine", "strattera", "concerta", "inattention", "hyperactivity", "impulsivity", "neurodevelopmental", "stimulant medication", "adult adhd", "adhd diagnosis", "adhd treatment"]
 summary: "Clinical pathway for ADHD in adults (18+): background, diagnostic criteria, assessment approach, red flags for urgent review, lifestyle interventions, and medication options including methylphenidate, dexamfetamine, lisdexamfetamine, and atomoxetine. ADHD diagnosis and prescribing requires specialist competence — always discuss with your doctor."

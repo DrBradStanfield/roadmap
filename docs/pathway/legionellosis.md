@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Legionellosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["legionellosis", "legionnaires disease", "legionella", "pontiac fever", "legionella pneumophila", "legionella longbeachae", "potting mix", "compost", "pneumonia", "atypical pneumonia", "crb-65", "roxithromycin", "doxycycline", "community acquired pneumonia", "notifiable disease"]
 summary: "Clinical overview of Legionellosis (Legionnaires' disease and Pontiac fever): background, how to recognise it, severity assessment using CRB-65, antibiotic treatment, and prevention — particularly for soil/potting mix exposure in New Zealand. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Wrist and Forearm Fractures in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["wrist fracture child", "forearm fracture child", "buckle fracture", "torus fracture", "greenstick fracture", "paediatric fracture", "FOOSH", "scaphoid fracture", "Monteggia", "Galeazzi", "compartment syndrome", "growth plate", "physeal injury", "distal radius fracture", "children broken wrist", "broken arm child"]
 summary: "Clinical pathway for wrist and forearm fractures in children: red flags requiring emergency assessment, fracture types (buckle/torus, greenstick, complete, growth plate), assessment approach, and management by fracture type. Always discuss with your doctor."

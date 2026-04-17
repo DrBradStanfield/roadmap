@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acitretin Shared Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["acitretin", "retinoid", "psoriasis", "ichthyosis", "darier disease", "shared care", "dermatology", "skin cancer prophylaxis", "dyslipidaemia", "teratogen", "liver monitoring", "LFT", "lipids", "pregnancy", "contraception", "drug interactions", "methotrexate", "tetracycline"]
 summary: "Shared care guidance for GPs managing patients on acitretin (oral retinoid) initiated by a specialist. Covers indications, contraindications, dosing, monitoring schedule (LFTs and lipids at 1 month then 3–6 monthly), adverse effects, drug interactions, and pregnancy precautions. Always discuss ongoing management with your prescribing specialist or GP."

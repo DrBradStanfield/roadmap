@@ -1,8 +1,8 @@
 ---
 title: "Pathway: Headaches in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
-keywords: ["headache", "migraine", "tension headache", "cluster headache", "medication overuse headache", "thunderclap headache", "aura", "sumatriptan", "triptan", "topiramate", "propranolol", "amitriptyline", "giant cell arteritis", "subarachnoid haemorrhage", "chronic headache"]
+keywords: ["headache","migraine","tension headache","cluster headache","medication overuse headache","thunderclap headache","aura","sumatriptan","triptan","topiramate","propranolol","amitriptyline","giant cell arteritis","subarachnoid haemorrhage","chronic headache","pounding headache","throbbing head","migraine-like","bad headache"]
 summary: "Clinical pathway for headaches in adults: red flags requiring emergency assessment, differential diagnosis (migraine, tension-type, cluster, medication overuse), assessment approach, and management by headache type including acute and preventive treatments. Always discuss with your doctor."
 ---
 

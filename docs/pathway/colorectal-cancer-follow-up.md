@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Colorectal Cancer Follow-up"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["colorectal cancer", "bowel cancer", "colon cancer", "rectal cancer", "cancer follow-up", "cancer surveillance", "CEA", "carcinoembryonic antigen", "colonoscopy", "cancer recurrence", "LARS", "low anterior resection syndrome", "stoma", "chemotherapy side effects", "radiotherapy side effects"]
 summary: "Clinical pathway for follow-up of colorectal cancer after curative treatment: surveillance schedule (CEA, colonoscopy, CT), symptoms of recurrence to watch for, managing treatment side-effects including LARS, frequent bowel motions, rectal bleeding, and sexual dysfunction. Always discuss with your doctor."

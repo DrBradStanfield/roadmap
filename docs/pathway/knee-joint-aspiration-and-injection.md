@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Knee Joint Aspiration and Injection"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["knee aspiration", "joint aspiration", "knee injection", "corticosteroid injection", "intra-articular injection", "knee effusion", "knee swelling", "methylprednisolone", "triamcinolone", "lidocaine", "septic arthritis", "gout", "rheumatoid arthritis", "osteoarthritis", "haemarthrosis", "synovial fluid", "knee procedure"]
 summary: "Clinical pathway for knee joint aspiration and intra-articular corticosteroid injection in adults aged 18 and over. Covers indications, contraindications, procedure steps, adverse effects, post-procedure care, and interpretation of aspirate results. Always discuss with your doctor."

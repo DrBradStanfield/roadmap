@@ -1,6 +1,6 @@
 ---
 title: "Pathway: RSV Immunisation"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["rsv", "respiratory syncytial virus", "rsv vaccine", "arexvy", "palivizumab", "synagis", "rsv immunisation", "rsv vaccination", "rsv prevention", "infant rsv", "older adult rsv"]
 summary: "Clinical pathway for RSV immunisation in adults and high-risk infants: vaccine options (Arexvy, palivizumab), funded eligibility, high-risk groups, efficacy data, and co-administration considerations. Always discuss with your doctor."

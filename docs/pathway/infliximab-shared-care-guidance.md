@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Infliximab Shared Care Guidance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["infliximab", "remicade", "anti-TNF", "biologic", "TNF blocker", "shared care", "rheumatoid arthritis", "ankylosing spondylitis", "psoriatic arthritis", "psoriasis", "inflammatory bowel disease", "crohn's disease", "ulcerative colitis", "behcet's disease", "sarcoidosis", "immunosuppression", "tuberculosis", "TB", "demyelinating disease"]
 summary: "Shared care guidance for GPs managing patients on infliximab following specialist initiation: when to stop the drug urgently, monitoring requirements, adverse effects, vaccinations, surgery, and pregnancy considerations. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Oral Allergy Syndrome"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["oral allergy syndrome", "oas", "pollen food allergy", "pollen food syndrome", "food allergy", "latex fruit syndrome", "birch pollen", "grass pollen", "ragweed", "antihistamine", "food intolerance", "mouth itching", "lip swelling", "tingling mouth"]
 summary: "Clinical pathway for oral allergy syndrome (OAS): background on the pollen-food cross-reaction mechanism, assessment including pollen and food history, and management with antihistamines and dietary advice. Discuss with your doctor if you have a history of anaphylaxis."

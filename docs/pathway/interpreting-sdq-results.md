@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Interpreting SDQ Results"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sdq", "strengths and difficulties questionnaire", "b4 school check", "b4sc", "child behaviour", "emotional wellbeing", "child development", "behavioural concerns", "mental health child", "early childhood", "developmental concerns", "preschool assessment"]
 summary: "Clinical pathway for interpreting Strengths and Difficulties Questionnaire (SDQ) results from B4 School Checks: scoring thresholds for concern, assessment considerations, and management based on level of concern including referral to Ministry of Education Early Intervention and child mental health services. Always discuss with your doctor."

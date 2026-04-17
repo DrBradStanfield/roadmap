@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Knock Knees (Genu Valgum)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["knock knees", "genu valgum", "bow legs", "valgus", "paediatric orthopaedics", "inter-malleolar distance", "rickets", "vitamin D deficiency", "leg alignment", "children", "skeletal development"]
 summary: "Clinical pathway for knock knees (genu valgum) in children: distinguishing physiological from pathological causes, assessment including inter-malleolar distance and vitamin D risk factors, blood tests, and management. Most cases in children under 8 are normal development requiring no treatment. Always discuss with your doctor."

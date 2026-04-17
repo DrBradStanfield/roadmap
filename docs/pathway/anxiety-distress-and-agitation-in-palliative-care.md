@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Anxiety, Distress, and Agitation in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline", "Palliative Care", "Mental Health"]
 keywords: ["anxiety", "distress", "agitation", "palliative care", "terminal agitation", "benzodiazepine", "lorazepam", "midazolam", "clonazepam", "serotonin toxicity", "opioid toxicity", "delirium", "end of life", "dying", "spiritual distress", "fear"]
 summary: "Clinical pathway for managing anxiety, distress, and agitation in adult palliative care patients. Covers assessment of causes including psychological distress, physical symptoms, opioid toxicity, and terminal agitation, plus management with benzodiazepines and supportive care. Always discuss with your doctor or palliative care team."

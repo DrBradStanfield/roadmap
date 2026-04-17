@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Plagiocephaly"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["plagiocephaly", "flat head", "brachycephaly", "positional plagiocephaly", "deformational plagiocephaly", "baby head shape", "torticollis", "craniosynostosis", "tummy time", "sternocleidomastoid", "infant head", "head flattening"]
 summary: "Clinical pathway for positional plagiocephaly (flat or misshapen head shape) in infants: red flags for raised intracranial pressure or craniosynostosis, assessment including severity grading and torticollis, and conservative management with repositioning advice. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Migrant and Refugee Services"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["refugee", "migrant", "asylum seeker", "former refugee", "resettlement", "refugee health screening", "interpreter", "MELAA", "Asian health", "refugee quota", "convention refugee", "CORS", "refugee family support", "immigration", "ethnicity"]
 summary: "Overview of migrant and refugee categories in New Zealand, health screening processes, and support services available to people of refugee or migrant background. Always discuss your specific situation with your doctor."

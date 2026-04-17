@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Short and Tall Stature in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["short stature", "tall stature", "growth", "growth chart", "growth velocity", "height percentile", "paediatric", "children", "puberty", "midparental height", "familial short stature", "constitutional delay", "coeliac disease", "thyroid", "growth hormone", "Tanner staging", "bone age"]
 summary: "Clinical pathway for short and tall stature in children: red flags, background on growth assessment, examination including height plotting and midparental height, investigations, and when specialist referral is needed. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Candidiasis (Thrush)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["candidiasis", "thrush", "vaginal thrush", "vulvovaginal candidiasis", "penile thrush", "balanitis", "candida albicans", "candida", "recurrent thrush", "recurrent candidiasis", "vaginal discharge", "vaginal itch", "fluconazole", "clotrimazole", "miconazole", "nystatin", "antifungal", "thrush treatment", "thrush in pregnancy", "genital thrush", "dyspareunia", "vulval itch", "vaginal infection"]
 summary: "Clinical pathway for candidiasis (thrush) in adults: diagnosis, treatment for acute and recurrent cases, management in pregnancy, and when to seek specialist advice. Always discuss treatment with your doctor."

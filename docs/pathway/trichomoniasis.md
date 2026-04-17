@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Trichomoniasis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["trichomoniasis", "trichomonas vaginalis", "STI", "vaginal discharge", "urethritis", "metronidazole", "ornidazole", "vaginal swab", "contact tracing", "sexually transmitted infection"]
 summary: "Clinical pathway for trichomoniasis: who to test, symptoms, investigations, treatment with metronidazole or ornidazole, management in pregnancy, treatment failure, contact tracing, and follow-up. Always discuss with your doctor."

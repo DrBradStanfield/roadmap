@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Anxiety in Children and Youth"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["anxiety", "children", "youth", "adolescent", "paediatric", "generalised anxiety disorder", "GAD", "social anxiety", "separation anxiety", "panic disorder", "OCD", "phobia", "PTSD", "school refusal", "SSRI", "fluoxetine", "sertraline", "CBT", "SPARX", "mental health", "depression", "suicidal ideation"]
 summary: "Clinical pathway for anxiety in children and young people aged 18 and under: red flags, assessment by age group, common anxiety disorders, severity grading, and a stepped-care management approach including psychoeducation, therapy, and medication options. Always discuss with your doctor."

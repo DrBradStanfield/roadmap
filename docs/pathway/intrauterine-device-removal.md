@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Intrauterine Device (IUD) Removal"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["iud removal", "coil removal", "mirena removal", "jaydess removal", "copper iud", "lng-ius", "levonorgestrel", "intrauterine device", "contraception", "iud threads", "pid", "ectopic pregnancy", "iud pregnancy", "menopause contraception"]
 summary: "Clinical pathway for intrauterine device (IUD) removal: indications, timing considerations, thread management, management when pregnant with IUD in situ, and menopause-related decisions. Always discuss with your doctor."

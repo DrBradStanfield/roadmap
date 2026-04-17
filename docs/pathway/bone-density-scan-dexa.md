@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bone Density Scan (DEXA)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bone density", "dexa", "dexa scan", "osteoporosis", "osteopenia", "fracture risk", "frax", "garvan", "bmd", "bisphosphonate", "denosumab", "bone mineral density", "fracture prevention"]
 summary: "Clinical pathway for bone density scanning (DEXA): fracture risk classification using FRAX or Garvan calculators, criteria for when a DEXA scan is and is not indicated, and management principles including medications for osteoporosis. Always discuss with your doctor."

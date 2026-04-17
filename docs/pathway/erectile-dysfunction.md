@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Erectile Dysfunction"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["erectile dysfunction", "ED", "impotence", "sildenafil", "tadalafil", "viagra", "cialis", "phosphodiesterase inhibitor", "PDE5", "premature ejaculation", "peyronie's disease", "testosterone deficiency", "priapism", "sexual dysfunction"]
 summary: "Clinical pathway for erectile dysfunction in men: red flags, assessment including cardiovascular and hormonal factors, and management options including lifestyle changes, phosphodiesterase 5 inhibitors (sildenafil, tadalafil), psychological therapies, and when to involve your doctor."

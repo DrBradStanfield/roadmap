@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Eyelid Lesions"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["eyelid lesion", "chalazion", "meibomian cyst", "stye", "hordeolum", "xanthelasma", "papilloma", "basal cell carcinoma", "bcc", "squamous cell carcinoma", "scc", "dacryocystitis", "lacrimal mucocoele", "cyst of moll", "eyelid cancer", "eyelid lump", "eyelid swelling"]
 summary: "Clinical pathway for eyelid lesions: distinguishing benign from malignant eyelid lumps, red flags for cancer, and management of chalazion, stye, xanthelasma, dacryocystitis, and papillomas. Always discuss with your doctor."

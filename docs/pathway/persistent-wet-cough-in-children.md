@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Persistent Wet Cough in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["wet cough", "persistent cough", "children", "protracted bacterial bronchitis", "bronchiectasis", "cystic fibrosis", "tuberculosis", "TB", "amoxicillin", "paediatric cough", "lower respiratory tract infection", "chronic cough"]
 summary: "Clinical pathway for persistent wet cough in children lasting more than 4 weeks: assessment approach, likely diagnoses (protracted bacterial bronchitis, bronchiectasis, cystic fibrosis, TB), antibiotic management, and when to refer. Always discuss with your doctor."

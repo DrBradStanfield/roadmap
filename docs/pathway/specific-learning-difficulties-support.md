@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Specific Learning Difficulties Support"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["specific learning difficulties", "dyslexia", "dyspraxia", "sensory processing disorder", "developmental coordination disorder", "learning disability", "SPELD", "SENCO", "RTLB", "learning support", "child health", "paediatric"]
 summary: "Overview of specific learning difficulties in children (dyslexia, dyspraxia, sensory processing disorder, developmental coordination disorder), initial assessment considerations, and how to access learning support. Always discuss with your doctor."

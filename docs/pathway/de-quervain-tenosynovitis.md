@@ -1,6 +1,6 @@
 ---
 title: "Pathway: De Quervain Tenosynovitis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["de quervain", "tenosynovitis", "wrist pain", "thumb pain", "radial wrist pain", "finkelstein", "tendon", "hand pain", "splint", "steroid injection", "hand therapy", "physiotherapy"]
 summary: "Clinical pathway for De Quervain tenosynovitis: assessment including the Finkelstein test, differential diagnoses, and stepwise management from NSAIDs and rest through splinting, steroid injection, and surgical referral. Always discuss with your doctor."

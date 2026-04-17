@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Lead Poisoning"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["lead poisoning", "lead exposure", "blood lead level", "BLL", "heavy metal", "lead paint", "chelation", "occupational exposure", "lead toxicity", "lead screening", "pica", "neurodevelopmental"]
 summary: "Clinical pathway for lead poisoning: background on exposure sources, assessment including blood lead level testing, and management by BLL range. Includes monitoring schedules, referral thresholds, and patient advice. Always discuss with your doctor."

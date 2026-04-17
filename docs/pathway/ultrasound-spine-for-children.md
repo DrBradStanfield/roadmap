@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ultrasound Spine for Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sacral dimple", "spinal ultrasound", "paediatric spine", "spina bifida occulta", "tethered cord", "sacral pit", "cutaneous stigmata", "spine ultrasound children", "newborn sacral dimple", "spinal dysraphism"]
 summary: "Clinical pathway for spinal ultrasound in children: which sacral dimples and pits warrant urgent imaging, features that raise concern, and when your doctor may refer for further investigation. Always discuss with your doctor."

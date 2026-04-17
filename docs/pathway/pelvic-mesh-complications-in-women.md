@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pelvic Mesh Complications in Women"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pelvic mesh", "surgical mesh", "mesh complications", "mesh extrusion", "mesh erosion", "transvaginal mesh", "TVT", "mesh removal", "prolapse repair", "stress urinary incontinence", "mesh pain", "bladder mesh", "vaginal mesh", "fistula", "mesh infection"]
 summary: "Clinical pathway for women experiencing complications from pelvic surgical mesh (used for prolapse repair or urinary incontinence). Covers symptoms to watch for, assessment approach, and management options including specialist referral. Always discuss with your doctor."

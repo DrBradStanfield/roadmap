@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Influenza Immunisation"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["influenza", "flu", "flu vaccine", "influenza vaccine", "flu shot", "immunisation", "vaccination", "funded vaccine", "influvac", "flucelvax", "fluad", "fluzone", "egg allergy", "flu jab", "annual flu vaccine", "influenza prevention", "pregnancy vaccine"]
 summary: "Clinical pathway for influenza immunisation: who is eligible for the funded vaccine, recommended groups, contraindications, vaccine options (egg-based vs cell-based), special considerations (pregnancy, immunocompromise, anticoagulants, travel), and timing guidance. Always discuss with your doctor."

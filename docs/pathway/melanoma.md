@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Melanoma"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["melanoma", "skin cancer", "pigmented lesion", "mole", "naevus", "skin lesion", "dermatoscopy", "excision biopsy", "breslow thickness", "ABCDEFG", "ugly duckling", "melanoma in situ", "lentigo maligna", "nodular melanoma", "amelanotic melanoma", "acral melanoma", "subungual melanoma", "skin check"]
 summary: "Clinical pathway for melanoma: assessment of pigmented skin lesions using ABCDEFG criteria and ugly duckling approach, types of melanoma, management by suspicion level including excision margins, long-term follow-up schedule by stage, and patient education on sun safety. Always discuss with your doctor."

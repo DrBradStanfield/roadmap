@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Vitamin D Supplementation"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["vitamin d", "vitamin d deficiency", "cholecalciferol", "colecalciferol", "supplementation", "osteoporosis", "osteomalacia", "rickets", "bone health", "sunlight", "uvb", "25(oh)d", "deficiency", "bisphosphonate", "pregnancy", "breastfeeding"]
 summary: "Clinical pathway for vitamin D supplementation in adults: who needs supplementation, when to test, and how to dose colecalciferol for prevention vs confirmed deficiency. Covers pregnancy, breastfeeding, and patients with risk factors. Always discuss with your doctor."

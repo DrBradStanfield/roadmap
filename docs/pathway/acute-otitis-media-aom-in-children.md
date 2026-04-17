@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Otitis Media (AOM) in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ear infection", "otitis media", "AOM", "middle ear infection", "ear pain", "otalgia", "ear discharge", "mastoiditis", "amoxicillin", "tympanic membrane", "perforation", "grommets", "glue ear", "children", "paediatric", "antibiotics"]
 summary: "Clinical pathway for acute otitis media (AOM) in children: red flags requiring emergency care, diagnostic criteria, antibiotic indications and dosing, management with or without perforation, and follow-up. Always discuss with your doctor."

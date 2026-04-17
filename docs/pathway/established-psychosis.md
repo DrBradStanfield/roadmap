@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Established Psychosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["psychosis", "established psychosis", "schizophrenia", "antipsychotics", "delusions", "hallucinations", "thought disorder", "negative symptoms", "clozapine", "risperidone", "quetiapine", "olanzapine", "relapse prevention", "mental health", "affective psychosis", "delusional disorder"]
 summary: "Clinical pathway for patients with a confirmed diagnosis of psychosis or a psychotic disorder. Covers red flags, background, assessment of symptoms and physical health, medication monitoring, and relapse prevention strategies. Always discuss with your doctor."

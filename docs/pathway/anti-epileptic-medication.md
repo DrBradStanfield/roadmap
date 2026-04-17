@@ -1,10 +1,9 @@
 ---
-title: Anti-Epileptic Medication
-pathway_id: 40432
-topic_code: 468635
-source: HealthPathways Auckland
-last_reviewed: 2025-10-01
-tags: [neurology, epilepsy, medications, prescribing]
+title: "Pathway: Anti-Epileptic Medication"
+type: "pathway"
+tags: ["Guideline"]
+keywords: ["anti-epileptic medication", "AED", "seizure", "epilepsy", "carbamazepine", "lamotrigine", "levetiracetam", "sodium valproate", "phenytoin", "clobazam", "topiramate", "anticonvulsant", "monotherapy", "drug interaction", "SJS", "teratogen"]
+summary: "Anti-epileptic drugs (AEDs) prevent seizures in people with epilepsy, with first-line choices depending on seizure type (sodium valproate, lamotrigine, or levetiracetam for primary generalised; carbamazepine, lamotrigine, or levetiracetam for focal epilepsies). Treatment typically begins after unprovoked seizures, starting with monotherapy at low doses titrated slowly to minimise side-effects, while considering pregnancy teratogenicity risks, drug interactions, and the need for monitoring. Always discuss with your doctor."
 ---
 
 > **Clinical guidance note:** This content is drawn from HealthPathways clinical guidelines for use as a reference tool. Decisions about anti-epileptic medication — including which drug to start, dose titration, and monitoring — should be made by or in close consultation with the prescribing doctor managing the patient's epilepsy. Drug interactions, pregnancy considerations, and psychiatric comorbidities require individual clinical judgement.

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Community Pharmacy Services"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["community pharmacy", "pharmacist", "medicines supply", "trimethoprim", "levonorgestrel", "emergency contraception", "sildenafil", "melatonin", "oral contraceptive", "chloramphenicol", "warfarin monitoring", "smoking cessation", "vaccination", "opioid substitution", "methadone", "buprenorphine", "gout", "medicines adherence", "MUR", "MASS"]
 summary: "Overview of medicines and services available from community pharmacists in New Zealand without a GP prescription, including restricted medicines supply (trimethoprim, emergency contraception, sildenafil, melatonin, oral contraceptives), monitoring services (warfarin), and other pharmacy services. Always discuss significant health concerns with your doctor."

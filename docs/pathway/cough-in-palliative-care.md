@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cough in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cough", "palliative care", "palliative", "end of life", "morphine", "pholcodine", "nebulised saline", "dry cough", "moist cough", "productive cough", "lung cancer", "terminal", "hospice", "anticholinergic", "corticosteroids", "active cycle of breathing"]
 summary: "Clinical pathway for managing cough in adult palliative care patients: identifying causes (cancer-related, treatment complications, non-malignant), dry vs moist cough treatment, and when to seek specialist palliative care advice. Always discuss management with your doctor."

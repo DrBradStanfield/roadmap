@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Poisoning and Drug Overdose"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["poisoning", "drug overdose", "overdose", "toxicology", "paracetamol overdose", "opioid overdose", "toxidrome", "antidote", "self-harm", "accidental ingestion", "children poisoning", "substance overdose", "recreational drugs", "poisons centre"]
 summary: "Clinical pathway for poisoning and drug overdose: red flags requiring emergency care, toxidrome recognition, assessment approach, and management including Poisons Centre guidance. Always discuss with your doctor."

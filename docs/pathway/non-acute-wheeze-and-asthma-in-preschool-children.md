@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Non-acute Wheeze and Asthma in Preschool Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["wheeze", "asthma", "preschool", "children", "toddler", "infant", "salbutamol", "inhaled corticosteroid", "ics", "saba", "fluticasone", "beclometasone", "montelukast", "spacer", "viral wheeze", "preschool asthma", "bronchodilator", "reliever inhaler", "preventer inhaler", "inhaler technique", "asthma action plan", "breathlessness", "cough", "bronchiectasis", "cystic fibrosis"]
 summary: "Clinical pathway for preschool children (aged 1–4 years) with recurrent wheeze or possible asthma: red flags, assessment, diagnosis of viral wheeze vs preschool asthma, and stepwise medication management. Always discuss with your doctor."

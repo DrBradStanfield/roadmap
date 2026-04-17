@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Chronic Hepatitis C"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hepatitis c", "hcv", "chronic hepatitis", "liver disease", "maviret", "glecaprevir", "pibrentasvir", "direct-acting antivirals", "daa", "cirrhosis", "hepatocellular carcinoma", "liver fibrosis", "apri score", "injecting drug use", "hcv antibody", "hcv rna", "fibroscan"]
 summary: "Clinical pathway for chronic hepatitis C (HCV): who to test, how to interpret results, treatment with Maviret (glecaprevir + pibrentasvir) in primary care, drug interactions, monitoring, long-term follow-up, and when specialist referral is needed. Always discuss with your doctor."

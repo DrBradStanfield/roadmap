@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Testosterone Undecanoate (Reandron) Injections"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["testosterone", "reandron", "testosterone undecanoate", "testosterone injection", "hypogonadism", "testosterone deficiency", "testosterone replacement", "TRT", "sustanon", "intramuscular injection", "polycythaemia", "endocrinology"]
 summary: "Clinical pathway for administering Reandron (testosterone undecanoate 1000 mg) injections in cisgender men with testosterone deficiency. Covers contraindications, injection technique, dosing schedule, adverse effects, and monitoring. Specialist-initiated treatment — discuss with your doctor."

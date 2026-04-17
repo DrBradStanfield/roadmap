@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ganglia"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ganglion", "ganglia", "wrist cyst", "tendon cyst", "mucous cyst", "wrist lump", "hand lump", "foot lump", "synovial cyst", "bible bump", "needle aspiration", "ganglion aspiration"]
 summary: "Clinical pathway for ganglia (joint or tendon cysts): background, assessment approach including red flags, differential diagnosis, and management options from watchful waiting to aspiration and surgery. Always discuss with your doctor."

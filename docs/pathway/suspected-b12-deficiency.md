@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Suspected B12 Deficiency"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["b12 deficiency", "vitamin b12", "cobalamin", "pernicious anaemia", "macrocytosis", "macrocytic anaemia", "hydroxocobalamin", "intrinsic factor", "metformin", "folate", "subacute combined degeneration", "peripheral neuropathy", "methylmalonic acid", "holotranscobalamin", "homocysteine", "vegan b12"]
 summary: "Clinical pathway for suspected vitamin B12 deficiency: when to test, how to interpret serum B12 levels (thresholds at 110 and 170 pmol/L), investigation of pernicious anaemia, and management by symptom type (neurological vs non-neurological vs asymptomatic). Always discuss with your doctor."

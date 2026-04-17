@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Carpal Tunnel Syndrome"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["carpal tunnel syndrome", "CTS", "median nerve", "wrist pain", "hand numbness", "tingling fingers", "thenar wasting", "wrist splint", "carpal tunnel release", "nerve conduction studies", "steroid injection", "Phalen test", "Tinel test", "hand therapy", "paraesthesia"]
 summary: "Clinical pathway for carpal tunnel syndrome: diagnosis based on characteristic symptoms and signs, conservative management options (splinting, hand therapy, steroid injection), and when surgery may be considered. Always discuss your symptoms with your doctor."

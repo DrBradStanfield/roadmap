@@ -1,11 +1,9 @@
 ---
-title: "Dexamethasone in Palliative Care and Oncology"
-category: "Oncology / Palliative Care"
-tags: [dexamethasone, corticosteroids, palliative care, oncology, steroids, cancer]
-source: "Auckland Region HealthPathways"
-source_url: "https://aucklandregion.communityhealthpathways.org/36365.htm"
-last_reviewed: "2026-04-17"
-chatbot_ready: true
+title: "Pathway: Dexamethasone in Palliative Care and Oncology"
+type: "pathway"
+tags: ["Guideline"]
+keywords: ["dexamethasone", "corticosteroids", "steroids", "glucocorticoid", "cancer", "oncology", "palliative care", "spinal cord compression", "brain metastases", "raised intracranial pressure", "chemotherapy-induced nausea", "adrenal suppression", "tapering", "SVCO"]
+summary: "Dexamethasone is a potent corticosteroid used in cancer and palliative care to manage emergencies like spinal cord compression and raised intracranial pressure, as well as symptoms like nausea, anorexia, and breathlessness. Always discuss with your doctor."
 ---
 
 # Dexamethasone in Palliative Care and Oncology

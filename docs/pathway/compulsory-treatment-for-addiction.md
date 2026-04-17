@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Compulsory Treatment for Addiction"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["compulsory treatment", "addiction", "substance addiction", "SACAT", "compulsory assessment", "severe substance addiction", "capacity", "addiction treatment", "involuntary treatment", "substance use disorder", "CADS", "detox", "withdrawal"]
 summary: "Overview of the Substance Addiction (Compulsory Assessment and Treatment) Act 2017 in New Zealand — who it applies to, the criteria that must be met, how the process works, and patient and family resources. This is a specialist-led legal process; always discuss with your doctor."

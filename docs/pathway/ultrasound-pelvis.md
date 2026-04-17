@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pelvic Ultrasound"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pelvic ultrasound", "pelvis ultrasound", "abnormal uterine bleeding", "AUB", "menorrhagia", "intermenstrual bleeding", "postmenopausal bleeding", "PMB", "ovarian cyst", "ovarian cancer", "endometriosis", "fibroids", "PCOS", "polycystic ovary syndrome", "chronic pelvic pain", "dysmenorrhoea", "amenorrhoea", "endometrial cancer", "IUD", "IUCD", "cervical polyp", "retained products of conception", "pelvic mass"]
 summary: "Clinical pathway covering when a pelvic ultrasound is indicated in women: conditions that warrant imaging, clinical criteria by condition, and what the ultrasound can and cannot show. Always discuss with your doctor."

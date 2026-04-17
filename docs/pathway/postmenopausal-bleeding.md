@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Postmenopausal Bleeding"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["postmenopausal bleeding", "PMB", "endometrial cancer", "endometrial hyperplasia", "vaginal atrophy", "transvaginal ultrasound", "endometrial thickness", "pipelle biopsy", "tamoxifen", "menopause hormone therapy", "MHT", "estriol", "vaginal estrogen", "uterine cancer", "gynaecology"]
 summary: "Clinical pathway for postmenopausal bleeding: background, possible causes, assessment approach, investigation with pelvic ultrasound, and management based on endometrial thickness and biopsy results. Always discuss with your doctor."

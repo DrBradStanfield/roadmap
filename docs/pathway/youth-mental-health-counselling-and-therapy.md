@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Youth Mental Health Counselling and Therapy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["youth mental health", "child mental health", "adolescent mental health", "counselling", "therapy", "depression", "anxiety", "CBT", "cognitive behavioural therapy", "SPARX", "e-therapy", "digital mental health", "youth counselling", "mental health support", "children", "teenagers", "young people", "eating disorders", "suicide support", "helpline", "online therapy"]
 summary: "Clinical pathway for youth mental health counselling and therapy: when to seek urgent assessment, e-therapy tools (SPARX, Just a Thought, Beating the Blues), digital self-help resources, and crisis helplines for children and young people. Always discuss with your healthcare provider."

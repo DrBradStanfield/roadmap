@@ -1,6 +1,6 @@
 ---
 title: "Pathway: CT Kidneys, Ureters, and Bladder (CT KUB)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ct kub", "renal colic", "kidney stone", "urinary tract stone", "ureteric stone", "flank pain", "haematuria", "pyelonephritis", "renal ultrasound", "ct scan kidney", "urinary stone", "nephrolithiasis", "ureterolithiasis"]
 summary: "Clinical pathway for CT KUB (CT scan of kidneys, ureters, and bladder): red flags requiring emergency care, when CT KUB is appropriate versus ultrasound, radiation and contrast considerations, and management context. Always discuss with your doctor."

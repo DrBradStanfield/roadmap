@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Fingolimod Shared Care Guidance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["fingolimod", "gilenya", "multiple sclerosis", "ms", "relapsing-remitting ms", "immunomodulator", "disease modifying drug", "dmd", "shared care", "lymphopenia", "macular oedema", "bradycardia", "hepatotoxicity"]
 summary: "Shared care guidance for GPs managing patients on fingolimod (Gilenya) for relapsing-remitting multiple sclerosis. Covers monitoring schedule, adverse effects, missed doses, drug interactions, vaccinations, and pregnancy. Always discuss with your doctor."

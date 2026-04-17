@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Special Authority for Special Foods"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["special authority", "special foods", "oral nutritional supplements", "PHARMAC", "malnutrition", "malnourishment", "enteral nutrition", "ONS", "food first", "underweight", "weight loss", "dietitian", "cystic fibrosis", "IBD", "liver disease", "renal failure", "COPD", "short bowel syndrome", "hyperemesis gravidarum", "epidermolysis bullosa"]
 summary: "Clinical pathway for subsidised oral nutritional supplements (Special Foods) in New Zealand: eligibility criteria including qualifying medical conditions and malnourishment definitions, the Food First approach that must be trialled first, and patient resources. Always discuss with your doctor."

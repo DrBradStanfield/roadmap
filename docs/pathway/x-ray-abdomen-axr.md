@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Abdominal X-ray (AXR)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["abdominal x-ray", "axr", "kub", "kidney ureter bladder", "abdominal pain", "bowel obstruction", "constipation", "renal colic", "renal tract stones", "ureteric stent", "iud removal", "intrauterine device", "foreign body ingestion", "radiation", "radiology", "abdominal imaging"]
 summary: "Clinical pathway for abdominal X-ray (AXR) in adults and children: when it is indicated, when it should not delay acute admission, accepted indications including constipation, IUD-related issues, renal tract stones, and foreign body ingestion in children, and situations where alternative imaging is recommended. Always discuss with your doctor."

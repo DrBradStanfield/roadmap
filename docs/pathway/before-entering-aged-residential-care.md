@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Before Entering Aged Residential Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["aged residential care", "ARC", "rest home", "nursing home", "residential care", "dementia care", "hospital level care", "enduring power of attorney", "EPA", "advance care plan", "ACP", "older adult", "carer stress", "functional decline", "NASC assessment", "aged care placement"]
 summary: "Clinical pathway for assessing whether an older adult requires aged residential care (ARC): care levels (rest home, hospital, dementia), alternatives to placement, advance care planning, enduring power of attorney, and CPR discussions. Always discuss with your doctor."

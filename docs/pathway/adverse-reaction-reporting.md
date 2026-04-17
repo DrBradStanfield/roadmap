@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Adverse Reaction Reporting"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["adverse reaction", "adverse drug reaction", "adverse event", "CARM", "pharmacovigilance", "side effect", "anaphylaxis", "drug reaction", "vaccine reaction", "medicine reaction", "reporting", "NZ Pharmacovigilance Centre"]
 summary: "What counts as a reportable adverse reaction to a medicine, device, or vaccine in New Zealand — including serious adverse events, what information is gathered, and how reporting works through CARM. Always discuss suspected adverse reactions with your doctor."

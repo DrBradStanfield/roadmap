@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Long COVID"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["long covid", "post covid", "post-covid syndrome", "post-viral fatigue", "covid fatigue", "brain fog", "post-exertional malaise", "pem", "pese", "parosmia", "anosmia", "breathlessness", "pots", "autonomic dysfunction", "me cfs", "chronic fatigue", "covid recovery"]
 summary: "Clinical pathway for long COVID (post-COVID-19 syndrome): background, common symptoms, assessment approach, and management by symptom type including fatigue, breathlessness, brain fog, cough, and taste or smell changes. Always discuss with your doctor."

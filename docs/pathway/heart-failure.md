@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Heart Failure"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["heart failure", "HFrEF", "HFpEF", "HFmrEF", "ejection fraction", "breathlessness", "dyspnoea", "oedema", "NT-proBNP", "BNP", "NYHA", "furosemide", "loop diuretic", "ACE inhibitor", "ARB", "ARNI", "sacubitril valsartan", "entresto", "beta blocker", "bisoprolol", "carvedilol", "metoprolol", "spironolactone", "eplerenone", "mineralocorticoid receptor antagonist", "MRA", "SGLT2 inhibitor", "empagliflozin", "dapagliflozin", "digoxin", "cardiac rehabilitation", "cardiomyopathy", "atrial fibrillation", "iron deficiency"]
 summary: "Clinical pathway for heart failure in adults: types (HFrEF, HFmrEF, HFpEF), red flags, symptoms and signs, NT-proBNP interpretation, NYHA classification, guideline-directed medical therapy (the four pillars: ACEi/ARB/ARNI, beta-blocker, MRA, SGLT2 inhibitor), diuretics, lifestyle advice, and self-monitoring. Always discuss with your doctor."

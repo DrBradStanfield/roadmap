@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Genital Warts"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["genital warts", "HPV", "human papillomavirus", "condyloma", "condylomata acuminata", "imiquimod", "podophyllotoxin", "condyline", "cryotherapy", "anogenital", "sexually transmitted infection", "STI", "wart", "penile", "vulval", "perianal", "cervical wart", "anal wart", "urethral wart"]
 summary: "Clinical pathway for genital warts (anogenital HPV): how they are assessed and diagnosed, when treatment is needed, and what the treatment options are — including patient-applied creams, cryotherapy, and surgery. Guidance on special groups including pregnant, breastfeeding, and immunocompromised patients. Always discuss diagnosis and treatment with your doctor."

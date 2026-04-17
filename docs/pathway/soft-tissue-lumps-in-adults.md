@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Soft Tissue Lumps in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["soft tissue lump", "sarcoma", "soft tissue tumor", "lipoma", "liposarcoma", "soft tissue mass", "lump", "swelling", "thigh lump", "subcutaneous lump", "deep fascia", "orthopaedic referral", "ultrasound soft tissue", "excision biopsy", "ganglion", "haematoma"]
 summary: "Clinical pathway for soft tissue lumps in adults (trunk and limbs, age ≥15): red flags for sarcoma, assessment approach including history, examination and imaging, and management by risk level. Always discuss new or changing lumps with your doctor."

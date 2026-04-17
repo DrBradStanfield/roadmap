@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Terminal Haemorrhage in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["terminal haemorrhage", "palliative care", "bleeding", "haemorrhage", "midazolam", "anticipatory", "advance care plan", "emergency letter", "haemoptysis", "carotid bleed", "aortic aneurysm", "tumour erosion", "coagulopathy", "sedation", "melaena"]
 summary: "Clinical pathway for anticipating and managing terminal haemorrhage in adult palliative care: recognising internal bleeding, anticipatory planning (emergency letter, dark towels, midazolam), what to do during a massive haemorrhage, and aftercare including debriefing. Always discuss with your doctor."

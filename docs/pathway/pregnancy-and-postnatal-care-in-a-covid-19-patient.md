@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pregnancy and Postnatal Care in a COVID-19 Patient"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pregnancy", "covid-19", "covid", "postnatal", "antenatal", "coronavirus", "maternity", "breastfeeding", "VTE", "venous thromboembolism", "pre-eclampsia", "preterm", "fetal growth restriction", "placental insufficiency", "enoxaparin", "obstetric"]
 summary: "Clinical pathway for managing pregnancy and postnatal care in a patient with COVID-19: background on maternal and fetal risks, risk factors for complications, escalation triggers requiring urgent obstetric assessment, VTE prophylaxis dosing, and postnatal monitoring. Always discuss with your doctor."

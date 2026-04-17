@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Allergic Conjunctivitis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["allergic conjunctivitis", "red eye", "itchy eyes", "eye allergy", "seasonal conjunctivitis", "perennial conjunctivitis", "hay fever eyes", "olopatadine", "patanol", "lodoxamide", "cromoglicate", "mast cell stabiliser", "antihistamine eye drops", "lubricant eye drops"]
 summary: "Clinical pathway for allergic conjunctivitis in adults and children: red flags (contact lens wearers, decreased vision, corneal changes), assessment approach, and stepwise management from cold compresses through lubricant drops, mast cell stabilisers, and combined antihistamine/mast cell stabiliser drops. Referral to ophthalmology for vision loss or corneal involvement. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Catheter Change or Trial of Void"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["catheter", "urinary catheter", "trial of void", "catheter removal", "catheter change", "urinary retention", "benign prostatic hyperplasia", "bph", "alpha blocker", "doxazosin", "tamsulosin", "urology", "long-term catheter", "bladder"]
 summary: "Clinical pathway for urinary catheter removal (trial of void) or planned catheter change: timing of removal, step-by-step removal procedure, management of successful and unsuccessful voiding, and when to seek specialist review. Always discuss with your doctor."

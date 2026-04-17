@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Spirometry Testing"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["spirometry", "lung function test", "FEV1", "FVC", "COPD", "asthma", "lung disease", "pulmonary function", "breathing test", "obstructive", "restrictive", "FEV1/FVC ratio"]
 summary: "Overview of spirometry testing: what it measures, when it is used, and absolute and relative contraindications. Spirometry requires specialist equipment and trained staff — your doctor will arrange this if clinically indicated."

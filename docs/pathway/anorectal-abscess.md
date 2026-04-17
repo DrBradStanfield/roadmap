@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Anorectal Abscess"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["anorectal abscess", "perianal abscess", "rectal abscess", "perianal pain", "anal abscess", "ischiorectal abscess", "intersphincteric abscess", "horseshoe abscess", "fistula", "anal pain", "perianal lump", "surgical drainage"]
 summary: "Clinical pathway for anorectal abscess: background, assessment (history, examination, investigations), and management including analgesia, antibiotic use, and surgical drainage. Requires urgent surgical referral. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Syncope and Presyncope"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["syncope", "presyncope", "fainting", "blackout", "funny turn", "vasovagal", "postural hypotension", "pots", "postural orthostatic tachycardia", "cardiac syncope", "collapse", "loss of consciousness", "dizziness", "lightheaded", "orthostatic", "fludrocortisone"]
 summary: "Clinical pathway for syncope and presyncope: red flags requiring urgent assessment (exertional, no warning, with palpitations/chest pain), differential diagnosis (vasovagal, postural hypotension, POTS, cardiac, seizure), assessment approach including ECG and lying/standing blood pressure, and management by cause. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Diabetes in Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["diabetes in pregnancy", "gestational diabetes", "gdm", "pre-existing diabetes", "hba1c pregnancy", "ogtt", "glucose challenge test", "gct", "insulin pregnancy", "metformin pregnancy", "blood glucose pregnancy", "postpartum diabetes", "type 2 diabetes risk"]
 summary: "Clinical pathway for diabetes in pregnancy: screening all pregnant women with HbA1c at booking, diagnosing gestational diabetes with OGTT or glucose challenge test at 24–28 weeks, managing blood glucose targets during pregnancy, and postpartum follow-up. Always discuss with your doctor or midwife."

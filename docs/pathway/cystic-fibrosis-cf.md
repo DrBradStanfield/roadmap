@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cystic Fibrosis (CF)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cystic fibrosis", "cf", "cftr", "trikafta", "elexacaftor", "tezacaftor", "ivacaftor", "meconium ileus", "bronchiectasis", "pancreatic insufficiency", "azoospermia", "newborn screening", "irt", "genetic carrier", "respiratory", "paediatric"]
 summary: "Clinical pathway for cystic fibrosis (CF): background on genetics and presentation, newborn and at-risk screening, symptom assessment, management of known CF including Trikafta drug interactions and exacerbations, and when to refer. Always discuss with your doctor."

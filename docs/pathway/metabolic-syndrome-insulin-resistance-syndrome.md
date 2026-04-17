@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Metabolic Syndrome (Insulin Resistance Syndrome)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["metabolic syndrome", "insulin resistance", "waist circumference", "triglycerides", "hdl", "blood pressure", "fasting glucose", "type 2 diabetes", "cardiovascular risk", "obesity", "dyslipidaemia", "prediabetes", "fatty liver", "pcos", "sleep apnoea", "lifestyle modification", "weight management"]
 summary: "Clinical pathway for metabolic syndrome (insulin resistance syndrome): diagnostic criteria based on elevated waist circumference plus two additional risk factors, risk factor assessment, associated conditions, and management focused on lifestyle modification and treating individual risk factors. Always discuss with your doctor."

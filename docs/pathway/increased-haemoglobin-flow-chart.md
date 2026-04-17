@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Increased Haemoglobin"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["increased haemoglobin", "polycythaemia", "polycythemia", "polycythaemia vera", "erythrocytosis", "haematocrit", "raised haemoglobin", "high haemoglobin", "EPO", "JAK2", "thrombosis", "erythropoietin"]
 summary: "Clinical flow chart for investigating increased haemoglobin: red flags requiring urgent assessment, haematocrit thresholds, exclusion of secondary causes (respiratory, renal disease), EPO and JAK2 testing to distinguish polycythaemia vera from other causes, and when to refer to haematology. Always discuss with your doctor."

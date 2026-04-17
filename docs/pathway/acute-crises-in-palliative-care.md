@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Crises in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["palliative care", "acute crisis", "midazolam", "haloperidol", "levomepromazine", "opioid", "morphine", "delirium", "dyspnoea", "breathlessness", "pain", "syringe driver", "subcutaneous", "opioid toxicity", "terminal agitation"]
 summary: "Clinical pathway for managing acute crises in adult palliative care patients: assessment of cause and distress, route of administration choices, medication protocols for distress (midazolam), delirium (haloperidol, levomepromazine), pain (opioids), and breathlessness (morphine). Always discuss with your doctor."

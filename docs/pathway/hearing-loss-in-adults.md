@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hearing Loss in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hearing loss", "deafness", "sensorineural hearing loss", "conductive hearing loss", "sudden hearing loss", "presbyacusis", "tinnitus", "audiometry", "hearing aid", "vestibular schwannoma", "acoustic neuroma", "otosclerosis", "cholesteatoma", "noise-induced hearing loss", "ototoxic medications", "ENT", "ORL", "prednisone"]
 summary: "Clinical pathway for hearing loss in adults: red flags requiring emergency care, types of hearing loss (sudden vs long-standing, sensorineural vs conductive), assessment including otoscopy and tuning fork tests, causes, investigations, and management. Always discuss with your doctor."

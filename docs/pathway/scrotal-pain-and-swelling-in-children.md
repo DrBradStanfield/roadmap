@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Scrotal Pain and Swelling in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["scrotal pain", "scrotal swelling", "testicular torsion", "epididymo-orchitis", "hydrocele", "varicocele", "inguinal hernia", "idiopathic scrotal oedema", "torsion testicular appendage", "paediatric urology", "children", "scrotum", "testis"]
 summary: "Clinical pathway for scrotal pain and swelling in children under 15: red flags requiring emergency assessment, differential diagnosis (testicular torsion, epididymo-orchitis, hydrocele, hernia, and others), assessment approach, and management by cause. Always discuss with your doctor."

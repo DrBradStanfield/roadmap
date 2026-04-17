@@ -1,8 +1,8 @@
 ---
 title: "Pathway: Hypothyroidism"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
-keywords: ["hypothyroidism", "underactive thyroid", "thyroid", "TSH", "thyroxine", "levothyroxine", "subclinical hypothyroidism", "hashimoto", "hashimoto's thyroiditis", "thyroid function", "FT4", "T4", "T3", "myxoedema", "goitre", "thyroid nodule", "anti-TPO", "central hypothyroidism"]
+keywords: ["hypothyroidism","underactive thyroid","thyroid","TSH","thyroxine","levothyroxine","subclinical hypothyroidism","hashimoto","hashimoto's thyroiditis","thyroid function","FT4","T4","T3","myxoedema","goitre","thyroid nodule","anti-TPO","central hypothyroidism","cold intolerance"]
 summary: "Clinical pathway for hypothyroidism in adults including subclinical hypothyroidism: when to screen, symptoms and signs, interpreting TSH and FT4 results, thyroxine dosing and monitoring, and when specialist input is needed. Always discuss with your doctor."
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sleep Disorder Specialised Assessment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sleep disorder", "sleep specialist", "sleep clinic", "obstructive sleep apnoea", "OSA", "narcolepsy", "parasomnia", "periodic limb movement", "excessive daytime sleepiness", "Epworth sleepiness scale", "CPAP", "sleep study", "polysomnography", "obesity hypoventilation", "sleepy driver"]
 summary: "When a specialist sleep assessment is needed: high-risk OSA features (sleepy-driver episodes, high-risk occupation, cardiovascular comorbidities, Epworth score ≥18), non-respiratory sleep disorders (narcolepsy, parasomnia, periodic limb movement), and unexplained excessive daytime sleepiness. Always discuss with your doctor."

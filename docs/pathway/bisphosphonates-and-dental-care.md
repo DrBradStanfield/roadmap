@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bisphosphonates and Dental Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bisphosphonates", "osteonecrosis of the jaw", "ONJ", "dental extraction", "osteoporosis", "zoledronic acid", "alendronate", "risedronate", "denosumab", "oral health", "dental care", "MRONJ", "medication-related osteonecrosis"]
 summary: "Clinical pathway for managing dental care in patients taking bisphosphonates: background on osteonecrosis of the jaw (ONJ) risk, pre-treatment oral assessment, and ongoing dental management. Always discuss with your doctor before any dental procedures."

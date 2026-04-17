@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Post-operative Care of Cardiac Patients"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cardiac surgery", "post-operative", "sternotomy", "coronary artery bypass graft", "cabg", "heart valve surgery", "wound care", "pleural effusion", "anticoagulation", "warfarin", "mechanical valve", "atrial fibrillation", "af", "amiodarone", "mobilisation", "anaemia", "neurocognitive", "driving after surgery", "flying after surgery", "sternal healing"]
 summary: "Clinical pathway for GP follow-up of patients discharged after cardiac surgery. Covers the most common post-operative complications including wound and sternal healing, pleural effusions, atrial fibrillation, anticoagulation management, anaemia, neurocognitive and visual disturbances, medication reconciliation, and return-to-activity advice. Always discuss your recovery and any concerns with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bariatric Surgery Complications"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bariatric surgery", "gastric bypass", "gastric band", "sleeve gastrectomy", "roux-en-y", "staple leak", "internal hernia", "bowel obstruction", "gastric prolapse", "wernicke encephalopathy", "thiamine deficiency", "tachycardia", "bariatric complications", "weight loss surgery"]
 summary: "Clinical pathway for bariatric surgery complications: red flags (persistent tachycardia >120 bpm), assessment by surgery type (adjustable gastric band, sleeve gastrectomy, Roux-en-Y bypass), and management including emergency gastric band deflation. Always discuss with your doctor."

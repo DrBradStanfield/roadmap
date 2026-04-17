@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Blood or Body Fluid Exposures"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["needlestick", "needlestick injury", "blood exposure", "body fluid exposure", "bbfe", "hiv pep", "post-exposure prophylaxis", "hepatitis b", "hepatitis c", "hbv", "hcv", "blood-borne virus", "sharps injury", "occupational exposure", "hbig", "hepatitis b immunoglobulin"]
 summary: "Clinical pathway for blood or body fluid exposures (BBFE) including needlestick injury: risk assessment by body fluid type and exposure features, immediate first aid, management of possible HIV/HBV/HCV exposure including PEP eligibility, hepatitis B immunoglobulin (HBIG) indications, and follow-up testing schedule. Time-sensitive — always discuss with your doctor urgently."

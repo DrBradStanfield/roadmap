@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Gastroscopy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["gastroscopy", "endoscopy", "dyspepsia", "heartburn", "dysphagia", "haematemesis", "melaena", "iron deficiency anaemia", "helicobacter pylori", "h. pylori", "gastric cancer", "peptic ulcer", "reflux", "GORD", "upper GI"]
 summary: "Clinical guidance on when gastroscopy (upper endoscopy) may be needed: urgent red flags, alarm symptoms warranting earlier investigation, and situations where a trial of treatment is appropriate first. Always discuss with your doctor."

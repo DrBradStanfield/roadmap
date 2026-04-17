@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Macular Degeneration"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["macular degeneration", "AMD", "age-related macular degeneration", "central vision loss", "distorted vision", "metamorphopsia", "drusen", "neovascular AMD", "geographic atrophy", "VEGF", "amsler grid", "retina", "ophthalmology", "vision loss", "eye"]
 summary: "Clinical pathway for age-related macular degeneration (AMD): red flags requiring urgent assessment, background on AMD types, assessment approach, and management including supplements and lifestyle measures. Always discuss with your doctor."

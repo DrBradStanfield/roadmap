@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ankle Sprain"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ankle sprain", "lateral ligament", "ankle injury", "sprained ankle", "grade 1 sprain", "grade 2 sprain", "grade 3 sprain", "ankle instability", "tubigrip", "physiotherapy ankle", "ankle rehabilitation", "RICE", "ankle swelling", "ankle bruising"]
 summary: "Clinical pathway for ankle sprain management: grading (Grade 1–3), compression and immobilisation, analgesia, physiotherapy referral, and when to seek orthopaedic assessment. Always discuss with your doctor."

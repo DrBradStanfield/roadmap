@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Prediabetes"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["prediabetes", "hba1c", "impaired fasting glucose", "impaired glucose tolerance", "blood sugar", "diabetes prevention", "metformin", "insulin resistance", "weight loss", "lifestyle", "cardiovascular risk"]
 summary: "Clinical pathway for prediabetes: diagnostic criteria, risk stratification, lifestyle management (weight loss, diet, exercise), and when metformin is considered. Always discuss management with your doctor."

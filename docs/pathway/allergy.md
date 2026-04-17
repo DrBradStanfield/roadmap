@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Allergy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["allergy", "food allergy", "ige", "anaphylaxis", "urticaria", "hives", "angio-oedema", "bee sting", "wasp sting", "insect sting", "medication allergy", "penicillin allergy", "pen-fast", "food intolerance", "lactose intolerance", "immunotherapy", "desensitisation", "skin prick test", "specific ige", "venom immunotherapy"]
 summary: "Clinical pathway for allergy in adults and children: covers IgE-mediated food allergy, stinging insect allergy, and medication allergy. Includes distinguishing true allergy from intolerance, PEN-FAST score for penicillin allergy, and when specialist immunology assessment is needed. Always discuss with your doctor."

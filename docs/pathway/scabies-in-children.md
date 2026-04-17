@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Scabies in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["scabies", "children", "kids", "itchy rash", "mites", "permethrin", "sarcoptes", "skin infestation", "burrows", "crusted scabies", "norwegian scabies", "impetigo", "cellulitis", "skin infection", "antihistamine", "ivermectin", "decontamination"]
 summary: "Clinical pathway for scabies in children: recognising the rash and burrows, first-line treatment with permethrin, household decontamination, managing itch, and when to seek further medical advice. Always discuss with your doctor."

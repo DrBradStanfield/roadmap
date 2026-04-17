@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pruritus in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pruritus", "itch", "palliative care", "cholestasis", "uraemic itch", "opioid-induced itch", "emollients", "antihistamine", "gabapentin", "rifampicin", "sertraline", "mirtazapine", "paroxetine", "naltrexone", "dry skin", "lymphoma", "jaundice", "terminal care"]
 summary: "Clinical pathway for managing pruritus (itch) in adults receiving palliative care: identifying the cause, topical treatments, condition-specific medications, and practical measures. Always discuss management with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Non-suicidal Deliberate Self-harm"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["self-harm", "deliberate self-harm", "DSH", "cutting", "self-injury", "non-suicidal self-injury", "NSSI", "borderline personality disorder", "BPD", "mental health", "coping", "emotional distress", "youth mental health"]
 summary: "Clinical pathway for non-suicidal deliberate self-harm: when to seek emergency care, structured assessment using the ABCS approach, identification of underlying mental health conditions, and management including coping strategies and safety planning. Always discuss with your doctor."

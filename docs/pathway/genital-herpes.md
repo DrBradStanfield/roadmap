@@ -1,9 +1,9 @@
 ---
-title: Genital Herpes
-source: Auckland HealthPathways (NZ primary care clinical guidance)
-topic_code: "301192"
-last_updated: 2026-04-17
-tags: [sexual-health, sti, hsv, herpes, antiviral, pregnancy]
+title: "Pathway: Genital Herpes"
+type: "pathway"
+tags: ["Guideline"]
+keywords: ["herpes simplex virus", "HSV-1", "HSV-2", "genital herpes", "blisters", "ulcers", "sores", "valaciclovir", "aciclovir", "antiviral", "pregnancy", "asymptomatic shedding", "suppressive therapy"]
+summary: "Genital herpes is caused by herpes simplex virus types 1 and 2 (HSV-1 and HSV-2) and presents with painful blisters or ulcers in the genital area, often accompanied by flu-like symptoms during the first episode and milder recurrent outbreaks. Treatment with antivirals like valaciclovir or aciclovir can manage symptoms and reduce transmission, while suppressive therapy is recommended during pregnancy from 36 weeks onwards. Always discuss with your doctor."
 ---
 
 > **Note:** This information is a clinical summary for educational purposes. Always consult your doctor or healthcare provider for diagnosis and personal treatment advice.

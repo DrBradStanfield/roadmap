@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Intestinal Parasites"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["intestinal parasites", "strongyloidiasis", "strongyloides", "amoebiasis", "giardia", "giardiasis", "cryptosporidium", "cryptosporidiosis", "threadworms", "pinworms", "roundworm", "whipworm", "hookworm", "tapeworm", "taeniasis", "cysticercosis", "delusional infestation", "worms", "ivermectin", "mebendazole", "metronidazole", "parasite", "faecal-oral", "tropical", "refugee health", "travel medicine"]
 summary: "Clinical pathway for intestinal parasites in general practice: covers strongyloidiasis, amoebiasis, giardiasis, cryptosporidiosis, threadworms, roundworm/whipworm/hookworm, tapeworm, and delusional infestation — including who to investigate, treatment regimens, and when to seek infectious diseases advice. Always discuss with your doctor."

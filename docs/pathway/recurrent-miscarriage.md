@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Recurrent Miscarriage"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["recurrent miscarriage", "pregnancy loss", "miscarriage", "antiphospholipid syndrome", "karyotype", "anticardiolipin", "lupus anticoagulant", "B2 glycoprotein", "bHCG", "thyroid", "PCOS", "fertility", "first trimester loss", "chromosomal abnormality"]
 summary: "Clinical pathway for recurrent miscarriage: definition (3+ consecutive first-trimester losses), risk factors, investigations including antiphospholipid antibodies and parental karyotype, and management including reassurance that unexplained cases carry ~75% chance of future successful pregnancy. Always discuss with your doctor."

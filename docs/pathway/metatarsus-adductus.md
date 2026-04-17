@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Metatarsus Adductus"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["metatarsus adductus", "intoeing", "congenital foot deformity", "forefoot", "paediatric foot", "club foot", "hip dysplasia", "stretching exercises", "paediatric orthopaedics", "C-shape foot"]
 summary: "Clinical pathway for metatarsus adductus in infants and children: background, assessment (including Bleck's heel line and severity grading), and management by severity — from observation to stretching exercises to orthopaedic referral. Always discuss with your doctor."

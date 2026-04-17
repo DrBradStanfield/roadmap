@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Constipation in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["constipation", "bowel", "laxatives", "hard stool", "infrequent stools", "impaction", "faecal impaction", "macrogol", "osmotic laxative", "stimulant laxative", "bulk forming", "stool softener", "dyssynergic defecation", "pelvic floor", "bowel habit", "bristol stool chart", "overflow diarrhoea", "haemorrhoids", "anal fissure", "IBS", "irritable bowel syndrome"]
 summary: "Clinical pathway for constipation in adults: red flags to watch for, how doctors assess and classify constipation, lifestyle measures, and the full laxative treatment ladder. Always discuss symptoms and treatment with your doctor."

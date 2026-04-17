@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Renal Ultrasound"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["renal ultrasound", "kidney ultrasound", "kidney scan", "proteinuria", "haematuria", "blood in urine", "eGFR", "chronic kidney disease", "CKD", "urinary tract infection", "UTI", "polycystic kidney", "pyelonephritis", "renal stones", "kidney investigation", "kidney imaging"]
 summary: "Clinical pathway explaining when a renal (kidney) ultrasound is recommended — covering indications in adults and children including abnormal kidney function, protein or blood in urine, recurrent infections, and suspected kidney obstruction. Always discuss with your doctor."

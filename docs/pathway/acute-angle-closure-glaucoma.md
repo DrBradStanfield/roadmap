@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Angle-Closure Glaucoma"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["acute angle-closure glaucoma", "glaucoma", "eye pain", "red eye", "vision loss", "intraocular pressure", "ophthalmic emergency", "haloes", "corneal oedema", "pilocarpine", "acetazolamide", "timolol", "mannitol"]
 summary: "Clinical pathway for acute angle-closure glaucoma: an ophthalmic emergency causing rapid vision loss. Covers red flags, risk factors, assessment findings, and emergency management including drugs used. Always seek emergency care immediately if this is suspected."

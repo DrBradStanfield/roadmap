@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hydroxychloroquine Shared Care Guidance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hydroxychloroquine", "plaquenil", "rheumatoid arthritis", "lupus", "SLE", "antimalarial", "shared care", "retinopathy", "maculopathy", "ophthalmology", "QT prolongation", "DMARD"]
 summary: "Shared care guidance for patients on hydroxychloroquine (Plaquenil) — initiated by a specialist for rheumatoid arthritis, lupus (SLE/discoid), or antimalarial use. Covers red flags, monitoring schedule, adverse effects, drug interactions, vaccinations, pregnancy, and surgery. Always discuss with your doctor."

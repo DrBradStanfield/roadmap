@@ -1,8 +1,8 @@
 ---
 title: "Pathway: Hyperthyroidism"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
-keywords: ["hyperthyroidism", "overactive thyroid", "thyroid", "TSH", "Graves' disease", "graves disease", "thyroiditis", "toxic goitre", "multinodular goitre", "carbimazole", "propylthiouracil", "radioiodine", "thyroid storm", "thyrotoxicosis", "subclinical hyperthyroidism", "TRAb", "TSH receptor antibody", "FT4", "FT3", "thyroid eye disease", "Graves orbitopathy", "de Quervain", "subacute thyroiditis", "thyrotoxic periodic paralysis"]
+keywords: ["hyperthyroidism","overactive thyroid","thyroid","TSH","Graves' disease","graves disease","thyroiditis","toxic goitre","multinodular goitre","carbimazole","propylthiouracil","radioiodine","thyroid storm","thyrotoxicosis","subclinical hyperthyroidism","TRAb","TSH receptor antibody","FT4","FT3","thyroid eye disease","Graves orbitopathy","de Quervain","subacute thyroiditis","thyrotoxic periodic paralysis","heat intolerance"]
 summary: "Clinical pathway for hyperthyroidism and subclinical hyperthyroidism in adults: red flags, causes including Graves' disease and thyroiditis, assessment, and management including carbimazole dosing, beta blockers, and when specialist referral is needed. Always discuss with your doctor."
 ---
 

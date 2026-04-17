@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Marfan Syndrome"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["marfan syndrome", "marfan", "aortic dissection", "aortic dilation", "connective tissue disorder", "tall stature", "joint hypermobility", "lens dislocation", "ectopia lentis", "scoliosis", "mitral valve prolapse", "genetic counselling", "echocardiogram", "FBN1"]
 summary: "Clinical pathway for suspected Marfan syndrome. Covers which features should prompt suspicion, key cardiovascular and ocular complications, when to arrange echocardiography, when to refer to genetics or cardiology, and important patient safety advice. Chest pain in Marfan syndrome is a medical emergency. Always discuss with your doctor."

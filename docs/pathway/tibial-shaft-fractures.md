@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Tibial Shaft Fractures"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["tibial shaft fracture", "tibia fracture", "broken leg", "shin fracture", "toddler's fracture", "compartment syndrome", "open fracture", "orthopaedic", "fracture management", "splinting", "plaster cast", "backslab", "non-accidental injury"]
 summary: "Clinical pathway for tibial shaft fractures in adults and children: red flags requiring emergency care, assessment including neurovascular status and compartment syndrome, and initial management including splinting and casting. Always discuss with your doctor."

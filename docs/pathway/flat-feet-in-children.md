@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Flat Feet in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["flat feet", "pes planus", "paediatric foot", "flexible flat foot", "rigid flat foot", "tarsal coalition", "longitudinal arch", "children orthopaedics", "calf contracture"]
 summary: "Clinical pathway for flat feet in children under 15 years: red flags, background on physiological versus pathological flat feet, assessment approach, and management. Flexible pain-free flat feet usually require no treatment. Always discuss concerns with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pertussis (Whooping Cough)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pertussis", "whooping cough", "bordetella", "bordetella pertussis", "paroxysmal cough", "inspiratory whoop", "azithromycin", "notifiable disease", "infant cough", "apnoea", "cyanosis", "macrolide", "co-trimoxazole", "erythromycin", "immunisation", "vaccination", "outbreak"]
 summary: "Clinical pathway for pertussis (whooping cough): red flags requiring emergency assessment, background on transmission and risk, assessment of characteristic symptoms and contacts, antibiotic treatment (azithromycin first-line), isolation requirements, close contact prophylaxis, and prevention through vaccination. Always discuss with your doctor."

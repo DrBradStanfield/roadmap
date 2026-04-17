@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Thyroid Function Tests"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["thyroid function tests", "TFT", "TSH", "FT4", "FT3", "hypothyroidism", "hyperthyroidism", "subclinical hypothyroidism", "subclinical hyperthyroidism", "Graves disease", "thyroid antibodies", "anti-TPO", "TSH receptor antibodies", "levothyroxine", "thyroxine", "amiodarone", "lithium", "central hypothyroidism", "sick euthyroid", "non-thyroid illness"]
 summary: "Clinical pathway for thyroid function test interpretation: when to order TSH vs full TFT, reflex testing rules, medication effects, autoantibody indications, and a structured guide to interpreting abnormal TSH/FT4 combinations. Always discuss results and management with your doctor."

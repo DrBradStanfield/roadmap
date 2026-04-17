@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Foreign Body in Nose"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["foreign body in nose", "nasal foreign body", "button battery nose", "nose foreign body child", "object in nose", "nasal obstruction child", "parent's kiss technique", "co-phenylcaine", "otrivin", "ENT referral"]
 summary: "Clinical pathway for a foreign body in the nose: red flags requiring urgent ENT assessment (especially button batteries), assessment approach including history and examination, and step-by-step management options your doctor may consider. Always discuss with your doctor."

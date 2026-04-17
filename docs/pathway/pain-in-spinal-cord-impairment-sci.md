@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pain in Spinal Cord Impairment (SCI)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["spinal cord injury", "sci", "neuropathic pain", "spasticity pain", "musculoskeletal pain", "gabapentin", "pregabalin", "tricyclic antidepressants", "nortriptyline", "syrinx", "chronic pain", "spinal cord impairment"]
 summary: "Clinical guidance for assessing and managing pain in spinal cord impairment: musculoskeletal, neuropathic, and spasticity-related pain. Pain presentation in SCI can be atypical. Always discuss with your doctor."

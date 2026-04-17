@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Venous Thromboembolism (VTE) Risk in Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["vte pregnancy", "venous thromboembolism pregnancy", "dvt pregnancy", "blood clot pregnancy", "thrombophilia pregnancy", "factor v leiden pregnancy", "lmwh pregnancy", "heparin pregnancy", "thromboprophylaxis pregnancy", "postpartum clot", "pulmonary embolism pregnancy", "antiphospholipid syndrome pregnancy", "pregnancy blood clot risk"]
 summary: "Clinical pathway for assessing and managing venous thromboembolism (VTE) risk in pregnancy: risk factors, thrombophilia, risk scoring, and thromboprophylaxis guidance. Always discuss with your doctor or midwife."

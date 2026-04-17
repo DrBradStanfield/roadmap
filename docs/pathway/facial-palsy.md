@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Facial Palsy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["facial palsy", "Bell's palsy", "VII nerve", "cranial nerve", "facial paralysis", "Ramsay Hunt syndrome", "herpes zoster", "prednisone", "aciclovir", "valaciclovir", "eye protection", "upper motor neurone", "lower motor neurone", "neurology", "bilateral facial palsy", "forehead sparing", "stroke", "TIA"]
 summary: "Clinical pathway for facial palsy including Bell's palsy and Ramsay Hunt syndrome: assessment of typical features, red flags requiring urgent neurology, steroid and antiviral prescribing, eye protection, and follow-up. Always discuss with your doctor."

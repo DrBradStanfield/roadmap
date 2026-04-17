@@ -1,6 +1,6 @@
 ---
 title: "Pathway: ECG Images — Arrhythmias and Conduction Abnormalities"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ecg", "electrocardiogram", "arrhythmia", "conduction abnormality", "atrial fibrillation", "af", "atrial flutter", "heart block", "av block", "complete heart block", "first degree av block", "mobitz", "lbbb", "rbbb", "left bundle branch block", "right bundle branch block", "svt", "supraventricular tachycardia", "ventricular tachycardia", "vt", "wolff-parkinson-white", "wpw", "pre-excitation", "palpitations"]
 summary: "ECG reference for common arrhythmias and conduction abnormalities encountered in primary care, including clinical notes on urgency, management direction, and prognosis for each pattern. Sub-page of the Palpitations pathway."

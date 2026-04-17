@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ciclosporin Shared Care Guidance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ciclosporin", "cyclosporine", "immunosuppressant", "dermatology", "rheumatology", "psoriasis", "inflammatory arthritis", "shared care", "monitoring", "renal impairment", "hypertension", "drug interactions"]
 summary: "Shared care guidance for patients prescribed ciclosporin by a dermatology or rheumatology specialist. Covers monitoring schedule, warning signs to act on, adverse effects, vaccinations, and pregnancy safety. Always follow your specialist's advice and discuss any concerns with your doctor."

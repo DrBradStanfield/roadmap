@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Herpes Simplex Keratitis / Dendritic Ulcer"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["herpes simplex keratitis", "dendritic ulcer", "HSK", "HSV eye", "red eye", "corneal ulcer", "aciclovir eye ointment", "fluorescein", "corneal abrasion", "eye pain", "photophobia", "blurred vision", "keratitis"]
 summary: "Clinical pathway for herpes simplex keratitis (dendritic ulcer): background, red flags requiring same-day ophthalmology, assessment including fluorescein staining, and management with aciclovir 3% eye ointment. Always discuss with your doctor."

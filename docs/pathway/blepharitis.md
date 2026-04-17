@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Blepharitis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["blepharitis", "eyelid inflammation", "lid hygiene", "meibomian gland", "dry eye", "chalazion", "eyelid", "fusidic acid", "doxycycline", "eye drops", "lubricant drops", "rosacea", "conjunctivitis"]
 summary: "Clinical pathway for blepharitis: red flags, background, assessment approach, and stepwise management including lid hygiene, lubricant drops, topical antibiotics, topical steroids, and oral antibiotics. Always discuss with your doctor."

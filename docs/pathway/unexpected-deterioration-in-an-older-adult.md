@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Unexpected Deterioration in an Older Adult"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["older adult", "frailty", "functional decline", "delirium", "falls", "deterioration", "geriatric", "acute on chronic", "advance care plan", "dehydration", "urinary tract infection", "heart failure", "copd", "pneumonia", "medication review", "polypharmacy"]
 summary: "Clinical pathway for unexpected deterioration in an older adult: red flags, assessment approach including history, markers of deterioration, and triggers, plus management by acuity. A sudden decline in function in an older person is never normal ageing — investigate urgently. Always discuss with your doctor."

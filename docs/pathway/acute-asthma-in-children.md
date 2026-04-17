@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Asthma in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["asthma", "acute asthma", "children", "paediatric asthma", "wheeze", "wheezing", "salbutamol", "bronchospasm", "respiratory distress", "inhaler", "spacer", "prednisolone", "breathlessness", "child asthma", "nebuliser"]
 summary: "Clinical pathway for acute asthma in children aged 1–11 years: severity classification (mild, moderate, severe, life-threatening), assessment approach, and management by severity including bronchodilators, steroids, and when to call an ambulance. Always seek medical assessment for anything beyond mild symptoms."

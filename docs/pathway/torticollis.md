@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Torticollis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["torticollis", "wry neck", "twisted neck", "sternomastoid", "sternocleidomastoid", "SCM", "sternomastoid tumour", "congenital torticollis", "plagiocephaly", "neck tilt", "infant neck", "baby neck"]
 summary: "Clinical pathway for non-acute torticollis in children: background on congenital sternomastoid tightening, assessment findings, conservative management (positioning, physiotherapy), and when surgery may be considered. Always discuss with your doctor."

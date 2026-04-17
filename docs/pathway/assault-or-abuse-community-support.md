@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Assault or Abuse — Community Support"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["assault", "abuse", "family violence", "domestic violence", "sexual assault", "sexual harm", "elder abuse", "refuge", "helpline", "counselling", "family harm", "interpersonal violence", "rape crisis", "women's refuge", "stopping violence", "perpetrator programme"]
 summary: "Community support services for people affected by family or interpersonal violence, sexual assault, or elder abuse in New Zealand. Includes national helplines, counselling registers, refuge services, elder abuse support, services for children, and programmes for people wanting to stop violent behaviour."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Scrotal Lumps in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["scrotal lump", "scrotal swelling", "testicular torsion", "testicular cancer", "epididymal cyst", "hydrocele", "varicocele", "epididymo-orchitis", "inguinal hernia", "spermatocele", "scrotal pain", "testicular lump"]
 summary: "Clinical pathway for scrotal lumps in adults (aged 15+): red flags requiring emergency assessment, differential diagnosis including testicular torsion, testicular cancer, hydrocele, epididymal cyst, varicocele, and hernia, plus assessment approach and management by cause. Always discuss with your doctor."

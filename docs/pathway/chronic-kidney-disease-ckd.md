@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Chronic Kidney Disease (CKD)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["chronic kidney disease", "ckd", "egfr", "uacr", "albuminuria", "proteinuria", "renal impairment", "kidney disease", "nephrology", "ace inhibitor", "arb", "sglt2 inhibitor", "creatinine", "haematuria", "hyperkalaemia", "glomerulonephritis", "diabetic nephropathy", "renal ultrasound"]
 summary: "Clinical pathway for chronic kidney disease (CKD) in adults: red flags, screening criteria, diagnosis (eGFR and uACR), staging, management of blood pressure and CKD progression, monitoring schedules, and referral thresholds. Always discuss with your doctor."

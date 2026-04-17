@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Enteral Feeding Tubes in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["enteral feeding", "peg tube", "gastrostomy", "jejunostomy", "rig tube", "feeding tube", "nasogastric", "tube feeding", "peristomal", "buried bumper", "hypergranulation", "tube blockage", "tube migration", "aspiration", "peg nurse"]
 summary: "Clinical pathway for managing enteral feeding tubes in adults in the community: routine monitoring, assessment of complications (tube dislodgement, aspiration, diarrhoea, buried bumper, hypergranulation, leaking, dermatitis, infection, blockage, migration), and management of each complication. Always discuss with your doctor or the specialist nurse."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Metatarsalgia"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["metatarsalgia", "forefoot pain", "ball of foot pain", "morton's neuroma", "metatarsal pain", "foot pain", "stress fracture", "metatarsal head", "foot", "podiatry", "orthotics", "nsaid", "paracetamol"]
 summary: "Clinical pathway for metatarsalgia (pain in the ball of the foot): causes including Morton's neuroma and stress fracture, assessment approach, and stepwise management from footwear changes and padding through to podiatry and specialist referral. Always discuss with your doctor."

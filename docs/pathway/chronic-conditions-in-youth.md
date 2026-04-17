@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Chronic Conditions in Youth"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["chronic illness", "youth", "adolescent", "young people", "transition", "diabetes", "asthma", "epilepsy", "cystic fibrosis", "cancer", "obesity", "inflammatory bowel disease", "IBD", "Crohn's", "disability", "chronic condition management", "teenager health"]
 summary: "Guidance for young people (and their families) living with a chronic condition — covering what to expect during assessment, how doctors approach management, transition to adult services, and support resources. Always discuss your situation with your doctor."

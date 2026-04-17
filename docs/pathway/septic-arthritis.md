@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Septic Arthritis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["septic arthritis", "infected joint", "joint infection", "bacterial arthritis", "hot joint", "swollen joint", "monoarthritis", "acute arthritis", "staphylococcus aureus", "joint pain", "joint swelling", "prosthetic joint infection", "haematogenous", "osteomyelitis", "gout differential", "rheumatic fever", "reactive arthritis", "gonococcal arthritis"]
 summary: "Clinical pathway for suspected septic arthritis in adults: recognising the presentation, key risk factors, differential diagnosis, when to refer urgently, and when investigations are appropriate. Suspected septic arthritis requires immediate medical assessment — always discuss with your doctor."

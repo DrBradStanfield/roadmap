@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Radiation in Medical Imaging"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["radiation", "medical imaging", "x-ray", "ct scan", "mri", "ultrasound", "mammogram", "pet scan", "dexa", "fluoroscopy", "millisievert", "msv", "ionising radiation", "radiation dose", "radiation risk", "pregnancy and radiation", "paediatric imaging", "diagnostic imaging"]
 summary: "Reference guide on radiation exposure from diagnostic imaging: which scans use ionising radiation, relative dose comparisons, organ sensitivity, and special considerations for pregnancy and children. No red flags — discuss imaging decisions with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Asthma in Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["asthma", "pregnancy", "inhaler", "salbutamol", "prednisone", "inhaled corticosteroid", "preventer", "reliever", "GINA", "asthma control", "flare-up", "exacerbation", "prenatal asthma", "respiratory", "bronchodilator"]
 summary: "Clinical pathway for managing asthma during pregnancy: background on how pregnancy affects asthma, risk factors for flare-ups, GINA asthma control criteria, safe medications in pregnancy, and when hospital delivery is recommended. Always discuss with your doctor."

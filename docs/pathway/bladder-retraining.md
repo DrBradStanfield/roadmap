@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bladder Retraining"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bladder retraining", "overactive bladder", "urinary urgency", "urinary frequency", "urge incontinence", "pelvic floor", "bladder diary", "caffeine", "nocturia", "urinary leakage"]
 summary: "Clinical pathway for overactive bladder symptoms — urinary urgency, frequency, and urge incontinence. Covers fluid management, urgency suppression techniques, pelvic floor exercises, and when medication may help. Always discuss symptoms with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Non-acute Asthma in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["asthma", "children", "wheeze", "inhaler", "salbutamol", "ICS", "inhaled corticosteroid", "LABA", "montelukast", "budesonide", "fluticasone", "beclometasone", "salmeterol", "formoterol", "spacer", "SABA", "reliever", "preventer", "asthma action plan", "stepwise", "paediatric asthma"]
 summary: "Clinical pathway for non-acute asthma in children aged 5–11 years: red flags, diagnosis, assessment, stepwise inhaler management (SABA, ICS, ICS/LABA, montelukast), and when a doctor should consider specialist referral. Always discuss management changes with your doctor."

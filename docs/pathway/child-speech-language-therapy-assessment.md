@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Child Speech Language Therapy Assessment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["speech language therapy", "speech delay", "language delay", "stuttering", "dyspraxia", "apraxia", "feeding difficulties", "swallowing", "dysphagia", "child development", "communication delay", "social communication", "autism", "down syndrome", "cerebral palsy", "SLT"]
 summary: "Overview of speech language therapy (SLT) for children: what SLTs treat, when to seek assessment, and where to find support. Referral decisions and service allocation are made by your doctor. Always discuss concerns with your doctor."

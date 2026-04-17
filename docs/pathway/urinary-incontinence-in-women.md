@@ -1,8 +1,8 @@
 ---
 title: "Pathway: Urinary Incontinence in Women"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
-keywords: ["urinary incontinence", "stress incontinence", "urge incontinence", "mixed incontinence", "overactive bladder", "pelvic floor", "bladder retraining", "oxybutynin", "solifenacin", "vaginal estrogen", "continence", "nocturia", "haematuria", "prolapse", "pelvic floor exercises"]
+keywords: ["urinary incontinence","stress incontinence","urge incontinence","mixed incontinence","overactive bladder","pelvic floor","bladder retraining","oxybutynin","solifenacin","vaginal estrogen","continence","nocturia","haematuria","prolapse","pelvic floor exercises","leaking urine","accidents","can't hold urine","wet myself","urine leaks","leak when I cough","leak when I laugh"]
 summary: "Clinical pathway for urinary incontinence in women: red flags, assessment approach, and management by type (stress, urge, mixed). Covers lifestyle changes, pelvic floor exercises, bladder retraining, vaginal estrogens, and anticholinergic medications. Always discuss with your doctor."
 ---
 

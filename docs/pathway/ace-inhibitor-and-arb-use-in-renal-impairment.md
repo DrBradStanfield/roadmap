@@ -1,6 +1,6 @@
 ---
 title: "Pathway: ACE Inhibitor and ARB Use in Renal Impairment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ace inhibitor", "arb", "angiotensin", "renal impairment", "ckd", "chronic kidney disease", "egfr", "captopril", "enalapril", "lisinopril", "perindopril", "quinapril", "ramipril", "candesartan", "losartan", "irbesartan", "hyperkalaemia", "potassium", "nephrology", "glomerular filtration rate", "albuminuria", "hypertension", "blood pressure"]
 summary: "Clinical pathway for starting and monitoring ACE inhibitors and ARBs in patients with renal impairment: baseline eGFR, dose initiation, one-week eGFR recheck, threshold for stopping (>25% drop), potassium monitoring, and when to seek nephrology advice. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Tennis and Golfer's Elbow"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["tennis elbow", "golfer's elbow", "lateral epicondylitis", "medial epicondylitis", "epicondyle", "elbow pain", "forearm pain", "tendinopathy", "overuse injury", "physiotherapy", "corticosteroid injection", "NSAIDs"]
 summary: "Clinical pathway for tennis elbow (lateral epicondylitis) and golfer's elbow (medial epicondylitis): background, assessment, and management including activity modification, physical therapy, splinting, NSAIDs, and corticosteroid injections. Always discuss with your doctor."

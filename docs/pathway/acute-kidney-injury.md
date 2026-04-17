@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Kidney Injury"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["acute kidney injury", "aki", "renal impairment", "creatinine", "egfr", "hyperkalaemia", "kidney failure", "nephrotoxic", "triple whammy", "ace inhibitor", "nsaid", "sepsis", "glomerulonephritis", "urinary obstruction", "ckd"]
 summary: "Clinical pathway for acute kidney injury (AKI) in adults: definition and staging by creatinine rise, red flags requiring emergency care, risk factors, examination findings, initial investigations, and management by AKI stage including medication review and long-term monitoring. Always discuss with your doctor."

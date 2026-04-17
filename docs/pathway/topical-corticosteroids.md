@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Topical Corticosteroids"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["topical corticosteroid", "steroid cream", "steroid ointment", "hydrocortisone", "betamethasone", "mometasone", "clobetasol", "eczema", "dermatitis", "psoriasis", "skin inflammation", "topical steroid withdrawal", "TSW", "steroid hesitancy", "fingertip unit", "soak and smear", "potency", "mild steroid", "potent steroid", "very potent steroid"]
 summary: "Clinical guidance on topical corticosteroids: potency classification, prescribing approach by body area and disease severity, application technique, adverse effects, and topical steroid withdrawal. Always discuss with your doctor."

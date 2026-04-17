@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Fever in Returning Travellers"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["fever", "returning traveller", "travel medicine", "malaria", "dengue", "typhoid", "viral haemorrhagic fever", "chikungunya", "zika", "leptospirosis", "rickettsial", "lyme disease", "hepatitis a", "tropical infection", "travel history"]
 summary: "Clinical pathway for fever after overseas travel: red flags requiring emergency care, detailed travel history and exposure assessment, disease-specific investigations, and management by diagnosis including drug treatments. Always discuss with your doctor."

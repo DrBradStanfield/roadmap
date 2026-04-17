@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Colonoscopy and CT Colonography (CTC)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["colonoscopy", "ct colonography", "ctc", "bowel investigation", "colorectal cancer", "rectal bleeding", "iron deficiency anaemia", "altered bowel habit", "bowel polyp", "colorectal symptoms", "family history bowel cancer", "lower bowel"]
 summary: "Clinical pathway for lower bowel investigation in adults: symptoms that warrant colonoscopy or CT colonography, red flags, how to choose between the two investigations, and what the procedures involve. Always discuss with your doctor."

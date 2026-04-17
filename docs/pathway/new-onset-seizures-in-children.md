@@ -1,6 +1,6 @@
 ---
 title: "Pathway: New-onset Seizures in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["seizures", "epilepsy", "children", "paediatric seizure", "febrile seizure", "tonic-clonic", "absence seizure", "focal seizure", "status epilepticus", "midazolam", "diazepam", "syncope", "breath-holding", "non-epileptic", "hypoglycaemia", "ECG", "long QT"]
 summary: "Clinical pathway for new-onset seizures in children under 15: red flags requiring emergency care, background on epileptic vs non-epileptic causes, detailed assessment approach, acute seizure management including rescue medication dosing, post-seizure care, and when specialist referral is needed. Always discuss with your doctor."

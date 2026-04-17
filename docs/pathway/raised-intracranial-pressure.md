@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Raised Intracranial Pressure (Palliative Care)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["raised intracranial pressure", "ICP", "increased intracranial pressure", "brain metastases", "brain tumour", "palliative care", "dexamethasone", "headache cancer", "corticosteroids brain", "end of life neurology", "palliative headache", "brain cancer symptoms"]
 summary: "Clinical pathway for raised intracranial pressure in palliative patients: recognition, assessment, and corticosteroid management. Always discuss with your doctor."

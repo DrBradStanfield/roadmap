@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Advanced Kidney Disease"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["advanced kidney disease", "stage 5 ckd", "chronic kidney disease", "egfr", "gfr", "dialysis", "kidney failure", "uraemia", "nephrology", "palliative care", "renal", "fatigue", "anaemia", "restless legs", "itch", "constipation", "anorexia", "nausea", "kidney replacement therapy"]
 summary: "Clinical pathway for managing symptoms in adults with advanced (stage 5) chronic kidney disease (eGFR <15 mL/min/1.73 m²), including fatigue, pain, nausea, restless legs, itch, depression, constipation, and end-of-life care. Always discuss with your doctor."

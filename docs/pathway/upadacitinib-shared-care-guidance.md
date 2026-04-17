@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Upadacitinib Shared Care Guidance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["upadacitinib", "rinvoq", "jak inhibitor", "dmard", "rheumatoid arthritis", "ankylosing spondylitis", "psoriatic arthritis", "atopic dermatitis", "crohn's disease", "ulcerative colitis", "inflammatory bowel disease", "shared care", "immunosuppression", "biologic", "special authority"]
 summary: "Shared care guidance for GPs managing patients on upadacitinib (a JAK inhibitor DMARD). Covers red flags requiring urgent action, monitoring requirements, adverse effects, drug interactions, and special situations (surgery, pregnancy, COVID-19, vaccinations). Always discuss changes with your prescribing specialist."

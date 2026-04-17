@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Lower Abdominal and Pelvic Pain in Women"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pelvic pain", "lower abdominal pain", "women", "ectopic pregnancy", "pelvic inflammatory disease", "PID", "ovarian cyst", "endometriosis", "dysmenorrhoea", "STI", "miscarriage", "appendicitis", "urinary tract infection", "ureteric colic", "mittelschmerz", "adnexal", "tubo-ovarian abscess", "vaginal bleeding", "vaginal discharge"]
 summary: "Clinical pathway for acute lower abdominal and pelvic pain in women: red flags requiring emergency care, differential diagnosis (gynaecological, urological, gastrointestinal causes), assessment approach, and management. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Health and Frailty Assessment for Older Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["frailty", "older adults", "frailty scale", "clinical frailty scale", "activities of daily living", "ADL", "IADL", "cognitive impairment", "GPCOG", "falls prevention", "advance care planning", "ACP", "enduring power of attorney", "EPA", "aged care", "medication review", "deprescribing", "immunisation", "shingles", "influenza", "elder abuse", "nutritional assessment"]
 summary: "Clinical pathway for assessing health and frailty in older adults. Covers the Clinical Frailty Scale (scores 1–9), assessment of daily function, cognition, nutrition, social support, driving safety, and medications. Management includes immunisations, advance care planning, and enduring power of attorney. Always discuss with your doctor."

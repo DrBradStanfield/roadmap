@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hand Hygiene"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hand hygiene", "hand washing", "hand rub", "alcohol hand rub", "infection prevention", "infection control", "hand washing technique", "gloves", "dermatitis", "C. difficile", "norovirus", "gastroenteritis", "standard precautions"]
 summary: "Evidence-based guidance on effective hand hygiene — when to wash hands, correct technique, alcohol-based hand rub use, glove use, and skin care. Based on WHO and national infection prevention guidelines."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Splenectomy in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["splenectomy", "hyposplenism", "asplenia", "post-splenectomy", "functional asplenia", "overwhelming post-splenectomy infection", "opsi", "prophylactic antibiotics", "spleen", "encapsulated organisms", "howell-jolly bodies", "splenectomy vaccination", "splenectomy immunisation"]
 summary: "Clinical pathway for adults after splenectomy or with hyposplenism: infection risk education, emergency antibiotic supply, prophylactic antibiotics (2+ years), vaccinations against encapsulated organisms, bite management, and travel precautions. Always discuss with your doctor."

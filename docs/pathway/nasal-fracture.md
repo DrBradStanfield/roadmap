@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Nasal Fracture"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["nasal fracture", "broken nose", "nose injury", "septal haematoma", "epistaxis", "nasal deformity", "nasal obstruction", "facial fracture", "manipulation under anaesthetic", "ORL", "ENT"]
 summary: "Clinical pathway for nasal fracture: red flags requiring emergency assessment, assessment approach including septal haematoma check, and management based on deformity and timing. Always discuss with your doctor."

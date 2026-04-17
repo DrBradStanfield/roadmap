@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Mastitis and Breast Abscess"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["mastitis", "breast abscess", "breastfeeding", "lactation", "galactocele", "inflammatory mastitis", "bacterial mastitis", "breast infection", "flucloxacillin", "amoxicillin clavulanic acid", "inflammatory breast cancer", "breast lump", "nipple discharge"]
 summary: "Clinical pathway for mastitis and breast abscess: red flags, background on inflammatory vs bacterial mastitis, assessment approach, and management by diagnosis (inflammatory mastitis, bacterial mastitis, breast abscess, galactocele). Covers both breastfeeding/lactating patients and non-lactating patients. Always discuss with your doctor."

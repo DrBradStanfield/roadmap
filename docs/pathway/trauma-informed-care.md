@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Trauma-informed Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["trauma", "trauma-informed care", "adverse childhood experiences", "ACEs", "PTSD", "psychological trauma", "mental health", "trauma history", "complex trauma", "emotional trauma", "childhood trauma"]
 summary: "An overview of trauma and trauma-informed care: what trauma is, its effects on health, how healthcare works with people who have a trauma history, and management approaches for children and adults. Always discuss your situation with your doctor."

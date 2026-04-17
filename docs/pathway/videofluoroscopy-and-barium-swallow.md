@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Videofluoroscopy and Barium Swallow"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["videofluoroscopy", "barium swallow", "dysphagia", "swallowing difficulty", "oropharyngeal dysphagia", "VFSS", "speech language therapy", "aspiration", "oesophageal dysphagia", "retrosternal dysphagia", "swallowing assessment", "fluoroscopy", "radiology", "barium meal"]
 summary: "Clinical pathway for swallowing investigations: when videofluoroscopy (VFSS) versus barium swallow is appropriate, indications for each, and how your healthcare provider determines the right investigation. Always discuss with your doctor."

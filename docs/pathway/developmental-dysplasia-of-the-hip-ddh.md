@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Developmental Dysplasia of the Hip (DDH)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["DDH", "developmental dysplasia of the hip", "hip dysplasia", "congenital hip dislocation", "Barlow test", "Ortolani test", "hip examination", "infant hip", "paediatric orthopaedic", "breech presentation", "hip abduction", "hip X-ray", "Pavlik harness"]
 summary: "Clinical pathway for developmental dysplasia of the hip (DDH) in infants and children: risk factors, clinical examination by age (Barlow/Ortolani tests, hip abduction), imaging guidance, and management based on examination findings and X-ray results. Always discuss findings and next steps with your doctor."

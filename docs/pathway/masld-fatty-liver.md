@@ -1,6 +1,6 @@
 ---
 title: "Pathway: MASLD (Fatty Liver)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["masld", "nafld", "fatty liver", "non-alcoholic fatty liver disease", "metabolic dysfunction associated steatotic liver disease", "liver fibrosis", "fib-4", "fibroscan", "alt", "ast", "liver function tests", "insulin resistance", "metabolic syndrome", "steatohepatitis", "cirrhosis"]
 summary: "Clinical pathway for MASLD (formerly NAFLD/fatty liver): who to assess, FIB-4 calculation to stratify fibrosis risk, fibroscan thresholds, when to refer to gastroenterology, and management of metabolic risk factors. Always discuss with your doctor."

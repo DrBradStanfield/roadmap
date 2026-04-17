@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Atrial Fibrillation (AF)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["atrial fibrillation", "AF", "arrhythmia", "irregular heartbeat", "palpitations", "stroke prevention", "anticoagulation", "warfarin", "dabigatran", "rivaroxaban", "DOAC", "NOAC", "CHA2DS2-VASc", "HAS-BLED", "rate control", "rhythm control", "cardioversion", "metoprolol", "diltiazem", "digoxin", "beta blocker", "calcium channel blocker", "paroxysmal AF", "persistent AF", "permanent AF", "ablation", "pulmonary vein isolation", "heart failure", "stroke", "ECG", "echocardiogram", "4S-AF", "EHRA score"]
 summary: "Clinical pathway for confirmed atrial fibrillation: when to seek urgent help, how doctors assess and classify AF (including stroke risk via CHA₂DS₂-VASc), and the ABC management approach covering anticoagulation, rate vs rhythm control, and cardiovascular risk factor management."

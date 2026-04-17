@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Oral Iron"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["oral iron", "iron deficiency", "iron deficiency anaemia", "IDA", "ferrous fumarate", "ferrous sulphate", "iron supplement", "iron tablet", "anaemia", "haemoglobin", "iron stores", "iron absorption", "iron side effects", "ferritin"]
 summary: "Clinical guidance on oral iron treatment for iron deficiency anaemia: which preparations to use, dosing targets, how to improve absorption, managing side effects, and when to consider IV iron or referral. Always discuss your treatment plan with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Adalimumab Shared Care Guidance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["adalimumab", "humira", "amgevita", "anti-TNF", "biologic", "shared care", "rheumatoid arthritis", "ankylosing spondylitis", "psoriatic arthritis", "psoriasis", "ulcerative colitis", "crohn's disease", "inflammatory bowel disease", "immunosuppression", "TNF inhibitor", "biosimilar"]
 summary: "Shared care guidance for GPs managing patients on adalimumab (Humira/Amgevita): when to stop the drug urgently, ongoing monitoring, adverse effects, vaccinations, and special situations including surgery, pregnancy, and skin cancer surveillance. Always discuss with your doctor."

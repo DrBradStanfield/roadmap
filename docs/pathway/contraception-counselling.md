@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Contraception Counselling"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["contraception", "birth control", "pill", "IUD", "implant", "injection", "LARC", "condom", "combined oral contraceptive", "progestogen-only pill", "depo provera", "contraceptive implant", "family planning", "fertility awareness", "emergency contraception"]
 summary: "Clinical pathway for contraception counselling: assessment of patient circumstances and medical eligibility, overview of available methods (LARCs, oral pills, injections, barrier methods, fertility awareness), drug interactions, and special circumstances including adolescents, epilepsy, and perimenopause. Always discuss with your doctor."

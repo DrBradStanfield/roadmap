@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Subcutaneous Fluid Administration in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline", "Palliative Care"]
 keywords: ["subcutaneous fluids", "hypodermoclysis", "palliative care", "dehydration", "end of life", "fluid administration", "sodium chloride", "syringe driver", "hydration", "dying"]
 summary: "Clinical pathway for subcutaneous fluid administration in adult palliative care. Oral hydration is always preferred when possible. Subcutaneous fluids are rarely used in the last days of life, and have significant limitations. Decisions should be made with your doctor and palliative care team."

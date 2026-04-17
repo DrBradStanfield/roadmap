@@ -1,7 +1,9 @@
 ---
-title: Advanced or End-stage COPD
-source: https://aucklandregion.communityhealthpathways.org/16601.htm
-last-reviewed: 2025-12
+title: "Pathway: Advanced or End-stage COPD"
+type: "pathway"
+tags: ["Guideline"]
+keywords: ["COPD", "chronic obstructive pulmonary disease", "advanced COPD", "end-stage COPD", "FEV1", "long-term oxygen therapy", "LTOT", "exacerbation", "emphysema", "chronic bronchitis", "breathlessness", "dyspnoea", "palliative care", "advance care planning", "morphine", "oxygen saturation"]
+summary: "Advanced or end-stage COPD is characterized by FEV1 less than 30% of predicted, significant weight loss, frequent exacerbations, breathlessness at rest or minimal exertion, and the need for long-term oxygen therapy. Management focuses on advance care planning, optimized pharmacotherapy, breathlessness management with morphine, symptom control, and palliative care coordination when needed. Always discuss with your doctor."
 ---
 
 > This information is for health professionals. Always use your clinical judgement and defer to your treating clinician for decisions about individual patients.

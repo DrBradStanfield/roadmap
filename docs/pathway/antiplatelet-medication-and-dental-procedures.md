@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Antiplatelet Medication and Dental Procedures"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["antiplatelet", "dental", "aspirin", "clopidogrel", "dipyridamole", "ticagrelor", "tooth extraction", "dental surgery", "bleeding", "blood thinners", "platelets", "haemostasis"]
 summary: "Clinical pathway for patients on antiplatelet medication undergoing dental procedures: key principle that stopping antiplatelet therapy is riskier than the bleeding risk from dental surgery, management of bleeding with haemostatic measures, and when to defer to specialist dental assessment. Always discuss with your doctor."

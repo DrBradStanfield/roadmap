@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Lymphoedema"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["lymphoedema", "lymphedema", "limb swelling", "oedema", "cellulitis", "compression garment", "lymphatic", "primary lymphoedema", "secondary lymphoedema", "lymph node surgery", "cancer treatment swelling"]
 summary: "Clinical pathway for lymphoedema: red flags (cellulitis), background, assessment of risk factors and affected limb, and management including skin care, compression, exercise, and when to request lymphoedema therapy. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Shaft Forearm Fractures"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["forearm fracture", "radius fracture", "ulna fracture", "nightstick fracture", "Monteggia fracture", "Galleazzi fracture", "compartment syndrome", "greenstick fracture", "fracture dislocation", "plaster of paris", "orthopaedic", "cast"]
 summary: "Clinical pathway for shaft forearm fractures in adults and children: assessment including neurovascular function and compartment syndrome, fracture type classification, and management by age group and fracture pattern. Always discuss with your doctor."

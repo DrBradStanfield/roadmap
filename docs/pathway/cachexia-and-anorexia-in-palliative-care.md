@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cachexia and Anorexia in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline", "Palliative Care"]
 keywords: ["cachexia", "anorexia", "palliative care", "weight loss", "muscle wasting", "appetite loss", "cancer cachexia", "dexamethasone", "megestrol acetate", "mirtazapine", "domperidone", "nutritional supplements", "enteral feeding", "end of life", "dying", "family support"]
 summary: "Clinical pathway for cachexia and anorexia in adult palliative care. Cachexia is a complex metabolic syndrome that cannot be reversed by nutrition alone. Management focuses on addressing treatable causes, dietary support, selected medications, and family education. Always discuss with your doctor and palliative care team."

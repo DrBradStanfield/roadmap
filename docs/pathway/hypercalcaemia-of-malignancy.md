@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hypercalcaemia of Malignancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hypercalcaemia", "hypercalcemia", "malignancy", "cancer", "high calcium", "palliative care", "bisphosphonate", "paraneoplastic", "serum calcium", "haloperidol", "nausea", "dehydration", "rehydration", "thirst", "polyuria", "constipation", "delirium", "confusion"]
 summary: "Clinical pathway for hypercalcaemia of malignancy in adult palliative care: recognising symptoms (polydipsia, polyuria, constipation), assessment including corrected serum calcium, initial management with hydration and haloperidol, and decision framework for active treatment with IV rehydration and bisphosphonates. Always discuss with your doctor."

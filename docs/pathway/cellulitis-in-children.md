@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cellulitis in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cellulitis", "skin infection", "children", "paediatric", "cefalexin", "flucloxacillin", "trimethoprim", "sulfamethoxazole", "MRSA", "streptococcus", "staphylococcus", "necrotising fasciitis", "periorbital cellulitis", "skin", "antibiotics", "erythema"]
 summary: "Clinical pathway for cellulitis in children: red flags requiring emergency assessment, background on common pathogens, assessment approach, and antibiotic management. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Elbow Fractures in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["elbow fracture", "children", "paediatric", "supracondylar", "lateral condylar", "medial epicondylar", "olecranon", "radial head", "radial neck", "FOOSH", "fall", "compartment syndrome", "backslab", "ossification", "neurovascular", "orthopaedic"]
 summary: "Clinical pathway for elbow fractures in children: assessment including neurovascular status and X-ray interpretation, fracture types (supracondylar, lateral condylar, medial epicondylar, olecranon, proximal radius), and management by fracture type. Always discuss with your doctor."

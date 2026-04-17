@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Abortion for Fetal Anomalies or Genetic Disorders"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["abortion", "termination", "fetal anomaly", "genetic disorder", "congenital abnormality", "chorionic villus sampling", "cvs", "amniocentesis", "antenatal screening", "postnatal depression", "pregnancy loss", "grief", "retained products of conception", "RPOC", "family tree", "genetic counselling"]
 summary: "Clinical pathway for managing abortion following fetal anomalies or genetic disorders: pre-abortion assessment triggers, post-abortion follow-up, GP management including grief support, postnatal depression screening, and post-abortion care. Always discuss with your doctor."

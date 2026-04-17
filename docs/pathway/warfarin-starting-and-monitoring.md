@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Warfarin - Starting and Monitoring"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["warfarin", "INR", "anticoagulation", "blood thinners", "starting warfarin", "INR monitoring", "warfarin dose", "coumadin", "marevan", "atrial fibrillation anticoagulation", "DVT treatment", "PE treatment", "mechanical heart valve", "warfarin interactions", "vitamin K", "DOAC", "dabigatran", "rivaroxaban", "HAS-BLED", "CHA2DS2-VASc", "clexane", "bridging anticoagulation"]
 summary: "Clinical pathway for starting and monitoring warfarin: indications, suitability assessment, DOAC comparison, target INR by indication, duration of treatment, initiation dosing, ongoing INR monitoring frequency, dose adjustment, and drug interactions. Always discuss with your doctor."

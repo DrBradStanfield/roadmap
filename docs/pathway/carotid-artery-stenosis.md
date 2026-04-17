@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Carotid Artery Stenosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["carotid artery stenosis", "carotid stenosis", "carotid ultrasound", "carotid endarterectomy", "cea", "tia", "transient ischaemic attack", "stroke", "amaurosis fugax", "carotid bruit", "cta", "dysphasia", "antiplatelet", "statin", "cardiovascular risk"]
 summary: "Clinical pathway for carotid artery stenosis: distinguishing symptomatic from asymptomatic disease, red flag symptoms requiring urgent assessment, investigation approach, and management including cardiovascular risk reduction. Always discuss with your doctor."

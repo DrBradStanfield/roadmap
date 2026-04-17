@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Chest X-ray (CXR)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["chest x-ray", "cxr", "chest radiograph", "radiology", "haemoptysis", "pneumothorax", "pneumonia", "lung cancer", "dyspnoea", "shortness of breath", "chronic cough", "asthma", "tuberculosis", "tb", "lung nodules", "pleural effusion", "pulmonary embolism", "copd", "interstitial lung disease", "bronchiectasis", "sarcoidosis", "polymyalgia rheumatica", "foreign body", "bronchiolitis", "drug-induced lung disease", "amiodarone", "methotrexate", "nitrofurantoin"]
 summary: "Clinical guidance on when a chest X-ray (CXR) is indicated: emergency situations requiring immediate care, accepted indications for adults and children, and conditions where a CXR is not typically required. Always discuss with your doctor."

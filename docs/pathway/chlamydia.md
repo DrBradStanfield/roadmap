@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Chlamydia"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["chlamydia", "chlamydia trachomatis", "sti", "sexually transmitted infection", "doxycycline", "azithromycin", "pcr", "naat swab", "contact tracing", "pelvic inflammatory disease", "pid", "epididymo-orchitis", "doxy-pep", "gonorrhoea", "sexual health", "msm", "anogenital infection", "anorectal chlamydia", "test of cure", "reactive arthritis"]
 summary: "Clinical pathway for chlamydia: who to test, how to collect specimens, treatment by clinical situation (uncomplicated, anorectal, pregnancy, gonorrhoea co-infection), contact tracing, doxy-PEP eligibility, and when specialist advice is needed. Always discuss your situation with your doctor."

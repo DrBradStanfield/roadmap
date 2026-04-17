@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Baker Cyst in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["baker cyst", "popliteal cyst", "knee swelling", "child", "children", "paediatric", "bursa", "gastrocnemius", "semimembranosus", "transillumination", "back of knee"]
 summary: "Clinical pathway for Baker cyst (popliteal cyst) in children: background, assessment including transillumination, management with typical resolution timeline, and when to seek specialist review. Always discuss with your doctor."

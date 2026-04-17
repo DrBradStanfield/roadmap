@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pipelle Biopsy Procedure"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pipelle biopsy", "endometrial biopsy", "uterine biopsy", "abnormal uterine bleeding", "postmenopausal bleeding", "AUB", "endometrial hyperplasia", "endometrial cancer", "heavy menstrual bleeding", "post-coital bleeding", "endometrial cells"]
 summary: "Clinical pathway for pipelle endometrial biopsy: indications, contraindications, pre-procedure preparation, step-by-step procedure, and post-procedure management including how to act on results. Always discuss with your doctor."

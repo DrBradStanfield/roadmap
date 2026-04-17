@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pulmonary Rehabilitation"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pulmonary rehabilitation", "COPD", "chronic obstructive pulmonary disease", "bronchiectasis", "interstitial lung disease", "breathlessness", "dyspnoea", "exercise capacity", "lung disease", "MMRC", "spirometry", "respiratory physiotherapy"]
 summary: "Overview of pulmonary rehabilitation for people with chronic lung disease: what it is, who may benefit, when it may not be appropriate, and how your doctor can refer you. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pneumonia in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pneumonia", "children", "paediatric", "chest infection", "antibiotics", "amoxicillin", "respiratory", "tachypnoea", "fever", "lung infection", "kids", "infant", "toddler"]
 summary: "Clinical pathway for pneumonia in children: red flags requiring urgent medical assessment, how pneumonia is diagnosed on clinical grounds, severity assessment, antibiotic treatment (amoxicillin first-line), and follow-up care. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Impalpable Thyroid Nodule"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["thyroid nodule", "incidental thyroid", "impalpable thyroid", "thyroid incidentaloma", "TI-RADS", "thyroid ultrasound", "FNA", "fine needle aspiration", "TSH", "radionuclide scan", "thyroid cancer", "subclinical hyperthyroidism", "PET CT thyroid", "FDG avid", "thyroid surveillance"]
 summary: "Clinical pathway for an incidentally discovered thyroid nodule that is not palpable on examination: assessment including TSH, risk stratification by TI-RADS grade, criteria for FNA referral, and follow-up surveillance. Always discuss with your doctor."

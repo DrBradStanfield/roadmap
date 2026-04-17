@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Weight Management in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["childhood obesity", "overweight children", "paediatric obesity", "child BMI", "weight management children", "childhood weight", "BMI percentile", "acanthosis nigricans", "paediatric hypertension", "childhood diabetes", "NAFLD children", "obstructive sleep apnoea children", "semaglutide adolescent", "wegovy adolescent", "healthy weight children"]
 summary: "Clinical pathway for managing overweight and obesity in children: BMI assessment, weight classification, comorbidity screening, investigations, lifestyle management, and when to seek specialist assessment. Always discuss with your doctor."

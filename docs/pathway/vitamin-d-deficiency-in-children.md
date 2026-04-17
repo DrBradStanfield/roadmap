@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Vitamin D Deficiency in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["vitamin D deficiency", "children", "rickets", "hypocalcaemia", "colecalciferol", "vitamin D supplementation", "breastfeeding", "25(OH)D", "bone health", "paediatric", "STOSS therapy", "iron deficiency", "nutritional deficiency", "infant supplementation"]
 summary: "Clinical pathway for vitamin D deficiency in children: risk factors, assessment, investigations, 25(OH)D interpretation, prophylaxis and treatment by age group, and management of associated deficiencies. Always discuss with your doctor."

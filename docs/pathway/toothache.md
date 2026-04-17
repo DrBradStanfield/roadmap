@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Toothache"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["toothache", "dental pain", "pulpitis", "dental abscess", "dry socket", "alveolar osteitis", "root canal", "trigeminal neuralgia", "ludwig's angina", "odontogenic infection", "tooth decay", "orofacial pain", "temporomandibular", "sinusitis", "dental"]
 summary: "Clinical pathway for toothache and orofacial pain in adults and children: red flags requiring emergency assessment, differential diagnosis (pulpitis, dental abscess, dry socket, infected root canal, trigeminal neuralgia), assessment approach, and pain management including analgesics and antibiotics. Always discuss with your doctor."

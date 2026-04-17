@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Genital Dermatology"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["genital dermatology", "genital itch", "genital rash", "genital pain", "genital lump", "lichen sclerosus", "lichen planus", "lichen simplex", "genital eczema", "genital psoriasis", "genital ulcer", "vulvodynia", "balanitis", "hidradenitis suppurativa", "extramammary paget's disease", "vulval cancer", "penile cancer", "candidiasis", "atrophic vaginitis", "genitourinary syndrome of menopause", "genital warts", "molluscum contagiosum", "scabies", "pubic lice"]
 summary: "Clinical pathway for genital skin conditions: differential diagnosis by presentation (itch, pain, lump), examination findings, investigations, and condition-specific management including topical steroids for lichen sclerosus and psoriasis, GSM treatment, and referral thresholds for suspected malignancy. Always discuss with your doctor."

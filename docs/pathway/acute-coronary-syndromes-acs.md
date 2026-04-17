@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Coronary Syndromes (ACS)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["acute coronary syndrome", "acs", "heart attack", "myocardial infarction", "stemi", "nstemi", "unstable angina", "chest pain", "troponin", "ecg", "electrocardiogram", "angina", "crescendo angina", "cardiac ischaemia", "cardiac arrest", "aspirin", "glyceryl trinitrate", "nitroglycerin", "morphine", "oxygen therapy", "edacs score", "cardiac rehabilitation", "cardiovascular risk", "ticagrelor", "heart failure", "coronary artery", "bundle branch block"]
 summary: "Clinical pathway for suspected acute coronary syndrome (ACS): when to seek emergency care, how doctors assess for heart attack, initial treatment measures while awaiting transfer, and long-term management after an ACS event."

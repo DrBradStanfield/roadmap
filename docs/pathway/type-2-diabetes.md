@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Type 2 Diabetes"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["type 2 diabetes", "t2dm", "hba1c", "blood glucose", "insulin", "metformin", "empagliflozin", "dulaglutide", "liraglutide", "sglt2", "glp-1", "sulfonylurea", "diabetic complications", "diabetic retinopathy", "diabetic nephropathy", "diabetic neuropathy", "diabetic foot", "hypoglycaemia", "hyperglycaemia", "dka", "hhs", "glycaemic control", "cardiovascular risk", "diabetes management", "prediabetes"]
 summary: "Clinical pathway for established type 2 diabetes (non-pregnant adults): HbA1c targets, glycaemic monitoring, lifestyle management (diet, exercise, weight loss), medication stepwise approach (metformin, SGLT2 inhibitors, GLP-1 agonists, insulin), annual review checklist, complications screening (eyes, kidneys, feet, cardiovascular), and sick day management. Always discuss changes to your management with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Needle Phobia and Vaccination"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["needle phobia", "needle fear", "vaccination anxiety", "vasovagal", "fainting", "syncope", "blood phobia", "EMLA", "Ametop", "lorazepam", "benzodiazepine", "applied muscle tension", "immunisation"]
 summary: "Clinical pathway for managing needle phobia and vaccination anxiety: assessment, normalising the phobia, applied muscle tension exercises, topical anaesthetics (EMLA, Ametop), and when your doctor may consider a short-acting benzodiazepine. Always discuss with your doctor."

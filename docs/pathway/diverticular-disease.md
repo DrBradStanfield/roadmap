@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Diverticular Disease"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["diverticular disease", "diverticulitis", "diverticulosis", "diverticulum", "colon", "sigmoid colon", "abdominal pain", "left lower quadrant pain", "bowel", "colonic diverticula", "colovesical fistula", "amoxicillin clavulanate", "cefalexin", "metronidazole", "high fibre diet", "peritonism", "sepsis", "rectal bleeding", "abscess"]
 summary: "Clinical pathway for diverticular disease: red flags requiring emergency assessment, assessment of uncomplicated vs complicated diverticulitis, community management with analgesia and antibiotics, and follow-up advice including diet and colonoscopy indications. Always discuss with your doctor."

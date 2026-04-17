@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Emergency Contraception"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["emergency contraception", "morning after pill", "copper IUD", "Cu-IUD", "levonorgestrel", "LNG-EC", "unprotected sex", "UPSI", "contraceptive failure", "plan B", "postcoital contraception"]
 summary: "Clinical pathway for emergency contraception after unprotected sexual intercourse or contraceptive failure. Covers the two main options — copper IUD (most effective) and oral levonorgestrel — including timing, dosing, BMI considerations, and follow-up. Always discuss with your doctor."

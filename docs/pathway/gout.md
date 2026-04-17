@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Gout"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["gout", "urate", "uric acid", "allopurinol", "colchicine", "febuxostat", "probenecid", "gout flare", "gout attack", "tophus", "tophi", "hyperuricaemia", "monosodium urate", "MSU crystals", "serum urate", "urate-lowering therapy", "ULT", "joint aspiration", "metatarsophalangeal", "MTP", "pseudogout", "CPPD", "septic arthritis", "gout management", "gout treatment", "gout diet", "purine", "allopurinol dose", "HLA-B5801"]
 summary: "Clinical pathway for gout: diagnosis, acute flare treatment (NSAIDs, colchicine, prednisone), urate-lowering therapy (allopurinol first-line with treat-to-target approach, dose titration, alternatives), flare prophylaxis, lifestyle advice, and referral thresholds. Always discuss diagnosis and treatment changes with your doctor."

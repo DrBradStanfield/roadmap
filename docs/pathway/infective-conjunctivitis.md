@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Infective Conjunctivitis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["conjunctivitis", "pink eye", "red eye", "bacterial conjunctivitis", "viral conjunctivitis", "eye discharge", "eye infection", "chloramphenicol", "contact lens", "orbital cellulitis", "epidemic keratoconjunctivitis", "chlamydia conjunctivitis", "gonococcal conjunctivitis"]
 summary: "Clinical pathway for infective conjunctivitis in adults and children (not neonates): red flags, assessment of bacterial vs viral type, management including when antibiotics are and are not appropriate, and contact lens advice. Always discuss with your doctor."

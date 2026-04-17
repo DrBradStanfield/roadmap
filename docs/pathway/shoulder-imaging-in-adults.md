@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Shoulder Imaging in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["shoulder pain", "shoulder imaging", "shoulder x-ray", "shoulder ultrasound", "shoulder mri", "rotator cuff", "bursitis", "frozen shoulder", "osteoarthritis", "septic arthritis", "osteomyelitis", "shoulder deformity", "shoulder swelling"]
 summary: "Clinical pathway for shoulder imaging in adults: red flags requiring urgent assessment, when X-ray or ultrasound is appropriate, and when MRI referral may be considered. Always discuss with your doctor."

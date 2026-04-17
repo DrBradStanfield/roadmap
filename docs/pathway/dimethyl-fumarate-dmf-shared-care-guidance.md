@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Dimethyl Fumarate (DMF) Shared Care Guidance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["dimethyl fumarate", "DMF", "tecfidera", "multiple sclerosis", "MS", "disease-modifying drug", "DMD", "relapsing-remitting", "immunomodulator", "lymphopenia", "shared care", "neurology"]
 summary: "Shared care guidance for GPs managing patients on dimethyl fumarate (Tecfidera) for relapsing-remitting multiple sclerosis. Covers monitoring schedule, adverse effects, drug interactions, vaccinations, and pregnancy considerations. Always discuss with your doctor."

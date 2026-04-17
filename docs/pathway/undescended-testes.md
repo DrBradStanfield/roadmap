@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Undescended Testes"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["undescended testes", "undescended testis", "cryptorchidism", "retractile testes", "orchidopexy", "udt", "paediatric", "child health", "testes", "testis", "scrotum"]
 summary: "Clinical pathway for undescended testes in children: background on causes and risks, how examination distinguishes undescended from retractile testes, and when referral to paediatric surgery is needed. Always discuss with your doctor."

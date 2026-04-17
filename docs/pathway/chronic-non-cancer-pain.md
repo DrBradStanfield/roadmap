@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Chronic Non-cancer Pain"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["chronic pain", "persistent pain", "non-cancer pain", "nociceptive", "neuropathic", "nociplastic", "radicular pain", "CRPS", "complex regional pain syndrome", "fibromyalgia", "pain management", "opioids", "nerve block", "spinal cord stimulator", "flare-up", "pain diary", "psychosocial", "CBT", "ACT", "pacing"]
 summary: "Clinical pathway for chronic non-cancer pain (persistent pain lasting 3+ months): assessment framework covering pain types, red flags, CRPS diagnosis, psychosocial factors; and management emphasising non-pharmacological approaches (physical activity, psychosocial support, self-management), pharmacological options, and when specialist referral is needed. Always discuss your situation with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pruritus (Itching)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pruritus", "itching", "itch", "dry skin", "eczema", "urticaria", "scabies", "neuropathic itch", "aquagenic pruritus", "antihistamine", "emollient", "gabapentin", "amitriptyline", "capsaicin", "menthol", "phototherapy", "brachioradial pruritus", "notalgia paraesthetica"]
 summary: "Clinical pathway for pruritus (itching) in adults: background, assessment framework by rash presence and distribution, common causes, investigations, and management including skin care, topical and systemic treatments. Always discuss with your doctor."

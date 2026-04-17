@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Postoperative Urologic Complications"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["postoperative", "urology", "urologic", "TURP", "TURBT", "TRUS", "prostate biopsy", "ureteroscopy", "urethrotomy", "haematuria", "blood in urine", "urinary tract infection", "UTI", "urinary flow", "bladder overactivity", "catheter", "catheter blockage", "catheter leakage", "post-surgery", "urinary retention"]
 summary: "Clinical pathway for the most common complications presenting after urologic procedures (TURP, TURBT, TRUS biopsy, urethrotomy, ureteroscopy): haematuria, infection, flow reduction, bladder overactivity, and catheter problems. Always discuss with your doctor."

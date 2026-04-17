@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Latent Tuberculosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["latent tuberculosis", "ltbi", "latent tb", "quantiferon", "igra", "mantoux", "tuberculin skin test", "tst", "mycobacterium tuberculosis", "tb screening", "isoniazid", "rifampicin", "interferon gamma", "bcg"]
 summary: "Clinical pathway for latent tuberculosis infection (LTBI): who to screen, how to test (IGRA vs TST), how to interpret results, and when to refer. LTBI is asymptomatic and non-infectious — treatment decisions are made by specialists. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Abnormal Liver Function Tests"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["liver function tests", "lft", "alt", "ast", "alp", "ggt", "bilirubin", "albumin", "inr", "hepatitis", "fatty liver", "masld", "nafld", "cholestasis", "jaundice", "liver disease", "cirrhosis", "haemochromatosis", "hepatocellular", "transaminase"]
 summary: "Clinical pathway for abnormal liver function tests (LFTs): red flags, assessment approach including LFT pattern interpretation (ALT/AST, GGT, ALP, bilirubin, albumin/INR), causes of liver injury, investigation strategy by pattern, and criteria for ultrasound and specialist referral. Always discuss with your doctor."

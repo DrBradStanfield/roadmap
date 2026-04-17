@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Perthes Disease"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["perthes disease", "legg-calve-perthes", "avascular necrosis", "femoral head", "child limp", "hip pain children", "paediatric hip", "osteonecrosis", "childhood hip disease"]
 summary: "Clinical pathway for Perthes disease in children: red flags for septic arthritis and osteomyelitis, background on avascular necrosis of the femoral head, assessment including X-ray, and management ranging from activity restriction to specialist referral. Always discuss with your doctor."

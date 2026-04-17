@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Familial Breast or Ovarian Cancer Syndromes"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["familial breast cancer", "hereditary breast cancer", "BRCA1", "BRCA2", "ovarian cancer", "familial ovarian cancer", "hereditary cancer", "genetic testing", "cancer genetics", "family history cancer", "TP53", "PTEN", "PALB2", "genetic assessment"]
 summary: "Clinical pathway for familial breast or ovarian cancer syndromes: background on BRCA mutations and risk, personal and family history assessment, eligibility criteria for genetic referral via eviQ guidelines, and preventive strategies. Assessment and referral decisions should always be made by your doctor."

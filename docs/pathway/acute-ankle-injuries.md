@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Ankle Injuries"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ankle injury", "ankle sprain", "ankle fracture", "ottawa ankle rules", "lateral ligament", "medial malleolus", "fibula", "achilles tendon", "ankle pain", "weight bearing", "musculoskeletal", "foot injury"]
 summary: "Clinical pathway for acute ankle injuries: assessment approach using the Ottawa rules to guide X-ray decisions, anatomy of the ankle joint, examination findings, and X-ray interpretation. Your doctor will determine whether you have a sprain, fracture, or other injury and manage accordingly."

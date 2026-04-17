@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Foreign Bodies Inhaled by Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["inhaled foreign body", "choking", "child", "airway obstruction", "foreign body aspiration", "bronchoscopy", "stridor", "wheeze", "paediatric", "peanut", "respiratory distress"]
 summary: "Clinical pathway for inhaled foreign bodies in children: red flags requiring emergency care, background on risk groups, assessment approach, and management. Children aged 6 months to 4 years are at greatest risk. Always discuss with your doctor."

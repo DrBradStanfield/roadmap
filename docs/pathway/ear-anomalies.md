@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ear Anomalies"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ear anomaly", "ear deformity", "prominent ears", "microtia", "atresia", "ear malformation", "otoplasty", "ear surgery", "pinna", "ear correction", "congenital ear", "ear asymmetry"]
 summary: "Clinical pathway for ear anomalies in children and adults: types of ear deformities (prominent ears, microtia, atresia), assessment approach including severity and psychological impact, and when referral to plastic surgery or ENT is appropriate. Always discuss with your doctor."

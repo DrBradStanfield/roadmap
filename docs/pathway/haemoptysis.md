@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Haemoptysis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["haemoptysis", "coughing up blood", "haemoptysis", "haemoptysis", "blood in sputum", "lung cancer", "tuberculosis", "bronchiectasis", "pulmonary embolism", "respiratory", "chest x-ray", "goodpasture", "vasculitis", "haematuria"]
 summary: "Clinical pathway for haemoptysis (coughing up blood): red flags requiring emergency assessment, assessment approach, causes from minor (bronchitis, infection) to serious (lung cancer, pulmonary haemorrhage syndromes), investigations, and management including when to refer for acute vs non-acute respiratory assessment. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Familial Colorectal or Endometrial Cancer Syndromes"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["familial colorectal cancer", "Lynch syndrome", "FAP", "familial adenomatous polyposis", "hereditary colorectal cancer", "endometrial cancer", "hereditary cancer", "MLH1", "MSH2", "MSH6", "PMS2", "EPCAM", "APC gene", "MutYH", "genetic testing", "family history cancer", "GHSNZ", "FGICS", "Cowden syndrome", "microsatellite instability"]
 summary: "Clinical pathway for familial colorectal or endometrial cancer syndromes: overview of Lynch syndrome, FAP, MAP and rare syndromes, criteria for genetic assessment (GHSNZ), indications for Familial Gastrointestinal Cancer Service referral, and management by risk level. All assessment and referral decisions must be made by your doctor."

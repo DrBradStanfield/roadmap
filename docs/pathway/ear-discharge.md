@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ear Discharge"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ear discharge", "otorrhoea", "otitis externa", "otitis media", "tympanostomy tube", "grommets", "cholesteatoma", "CSOM", "chronic suppurative otitis media", "ear infection", "perforated eardrum", "ciprofloxacin", "ciproxin", "sofradex", "ear drops"]
 summary: "Clinical pathway for ear discharge: red flags requiring emergency assessment, conditions that can cause ear discharge (otitis externa, otitis media, grommets, CSOM, cholesteatoma), assessment approach, and management by cause including ear drop options. Always discuss with your doctor."

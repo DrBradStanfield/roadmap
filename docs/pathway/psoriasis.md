@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Psoriasis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["psoriasis", "plaque psoriasis", "guttate psoriasis", "scalp psoriasis", "psoriatic arthritis", "nail psoriasis", "flexural psoriasis", "palmoplantar psoriasis", "erythrodermic psoriasis", "pustular psoriasis", "calcipotriol", "betamethasone", "Daivobet", "methotrexate", "topical corticosteroid", "emollient", "phototherapy", "UVB", "skin", "rash", "scale", "silvery scale"]
 summary: "Clinical pathway for psoriasis in adults (aged 15+): when to seek urgent care, patterns of psoriasis, assessment approach, and management by body area including emollients, topical corticosteroids, calcipotriol combinations, and when specialist referral is needed. Always discuss diagnosis and treatment with your doctor."

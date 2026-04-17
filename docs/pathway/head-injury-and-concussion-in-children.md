@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Head Injury and Concussion in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["head injury", "concussion", "children", "paediatric", "traumatic brain injury", "TBI", "AVPU", "Glasgow Coma Scale", "GCS", "non-accidental injury", "skull fracture", "concussion syndrome", "SCAT5", "BIST", "return to sport", "return to school"]
 summary: "Clinical pathway for head injury and concussion in children under 15 years: red flags requiring emergency assessment, assessment of consciousness and neurological status, features of significant head injury, acute management including observation criteria, discharge guidance, and follow-up for concussion syndrome. Always discuss with your doctor."

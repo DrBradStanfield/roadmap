@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Corticosteroid Injections into Joints"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["corticosteroid injection", "steroid injection", "joint injection", "intra-articular", "triamcinolone", "methylprednisolone", "Depo-Medrol", "Kenacort", "frozen shoulder", "adhesive capsulitis", "rotator cuff impingement", "tennis elbow", "golfer's elbow", "lateral epicondylitis", "medial epicondylitis", "carpal tunnel syndrome", "De Quervain's tenosynovitis", "trigger finger", "thumb osteoarthritis", "trochanteric bursitis", "greater trochanteric pain syndrome", "knee osteoarthritis", "plantar fasciitis", "lidocaine", "local anaesthetic", "joint aspiration"]
 summary: "Clinical guidance on corticosteroid injections into joints and soft tissue: indications by joint/condition, drug doses, contraindications, adverse effects, and post-procedure care. Always discuss with your doctor."

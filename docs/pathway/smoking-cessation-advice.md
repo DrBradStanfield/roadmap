@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Smoking Cessation Advice"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["smoking cessation", "quit smoking", "nicotine replacement therapy", "NRT", "varenicline", "champix", "bupropion", "zyban", "nortriptyline", "vaping", "e-cigarette", "tobacco", "nicotine dependence", "withdrawal", "smokefree", "ABC pathway"]
 summary: "Clinical pathway for smoking cessation: ABC approach (Ask, Brief advice, Cessation support), assessment of nicotine dependence, management options including NRT, varenicline, bupropion, and nortriptyline, and special considerations for pregnancy, mental health, and weight gain. Always discuss medications with your doctor."

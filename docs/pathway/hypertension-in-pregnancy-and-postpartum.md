@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hypertension in Pregnancy and Postpartum"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hypertension", "pre-eclampsia", "eclampsia", "HELLP", "gestational hypertension", "pregnancy", "postpartum", "high blood pressure pregnancy", "pre-eclampsia symptoms", "preeclampsia", "antihypertensive pregnancy", "nifedipine", "labetalol", "methyldopa", "magnesium sulphate", "aspirin pregnancy", "blood pressure 140", "proteinuria"]
 summary: "Clinical pathway for hypertension in pregnancy and postpartum: red flags requiring emergency care, types of hypertensive disorders (gestational hypertension, pre-eclampsia, HELLP, eclampsia, chronic hypertension), assessment, and management including drugs your doctor may consider. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Diabetes Self-monitoring"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["diabetes", "blood glucose monitoring", "CGM", "continuous glucose monitoring", "finger prick", "HbA1c", "hypoglycaemia", "type 1 diabetes", "type 2 diabetes", "insulin", "glucose meter", "freestyle libre", "dexcom", "automated insulin delivery", "AID", "time in range", "ketone monitoring", "SMBG", "self-monitoring blood glucose"]
 summary: "How people with diabetes monitor their glucose levels: finger-prick blood glucose meters, continuous glucose monitoring (CGM) devices, who is eligible for funded devices in New Zealand, glucose targets, and how to interpret CGM data. Always discuss your monitoring plan with your doctor."

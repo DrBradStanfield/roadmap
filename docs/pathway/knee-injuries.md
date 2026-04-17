@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Knee Injuries"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["knee injury", "knee pain", "ACL", "anterior cruciate ligament", "PCL", "posterior cruciate ligament", "MCL", "LCL", "collateral ligament", "meniscal tear", "meniscus", "knee fracture", "patellar dislocation", "knee dislocation", "haemarthrosis", "effusion", "Ottawa knee rules", "RICE", "physiotherapy"]
 summary: "Clinical pathway for acute knee injuries: identifying injury type (ACL, PCL, collateral ligament, meniscal tear, fracture, dislocation), assessment including Ottawa knee rules for X-ray, and management by injury type. Always discuss with your doctor."

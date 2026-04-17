@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Zoledronic Acid Infusion Checklist"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["zoledronic acid", "zoledronate", "aclasta", "bisphosphonate", "osteoporosis", "infusion", "bone density", "hypocalcaemia", "creatinine clearance", "renal function", "infusion checklist"]
 summary: "Pre-infusion safety checklist for zoledronic acid (Aclasta/zoledronate) in osteoporosis: eligibility criteria, contraindications, medication adjustments, hydration, vitamin D loading, and post-infusion monitoring. Always discuss with your doctor."

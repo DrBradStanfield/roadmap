@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Multi-Drug Resistant Organisms (MDRO)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["MDRO", "MRSA", "ESBL", "VRE", "CRO", "CRE", "CPE", "methicillin-resistant staphylococcus aureus", "extended spectrum beta lactamase", "vancomycin-resistant enterococcus", "carbapenem-resistant", "antibiotic resistance", "multi-drug resistant", "decolonisation", "mupirocin", "infection control"]
 summary: "Clinical pathway for multi-drug resistant organisms (MDRO) including MRSA, ESBL, VRE, and CRO: who is at risk, when to suspect, screening approach, infection control, and organism-specific management. Always discuss with your doctor."

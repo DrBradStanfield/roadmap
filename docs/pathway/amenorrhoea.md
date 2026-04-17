@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Amenorrhoea"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["amenorrhoea", "amenorrhea", "no period", "missed period", "absent period", "primary amenorrhoea", "secondary amenorrhoea", "PCOS", "polycystic ovary syndrome", "hypothalamic amenorrhoea", "primary ovarian insufficiency", "premature ovarian failure", "hyperprolactinaemia", "prolactinoma", "Turner syndrome", "Kallmann syndrome", "menstruation", "menstrual", "FSH", "LH", "estradiol", "female athlete triad"]
 summary: "Clinical pathway for amenorrhoea (absent periods): types, causes, assessment approach including blood tests and examination, and management by cause. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Interpreting PEDS Results"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["PEDS", "parents evaluation of developmental status", "child development", "developmental delay", "B4 School Check", "speech delay", "language delay", "developmental screening", "developmental milestones", "paediatric", "pediatric"]
 summary: "Guidance on what PEDS (Parents' Evaluation of Developmental Status) results mean for your child's development, including what your doctor looks at and what may happen next. Always discuss results with your doctor."

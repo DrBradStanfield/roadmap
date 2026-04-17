@@ -1,6 +1,6 @@
 ---
 title: "Pathway: IBD Medications"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ibd", "inflammatory bowel disease", "ulcerative colitis", "crohn's disease", "aminosalicylates", "mesalazine", "sulphasalazine", "prednisone", "steroids", "azathioprine", "mercaptopurine", "thiopurines", "methotrexate", "immunomodulators", "biologics", "infliximab", "adalimumab", "tnf blocker", "ibd medications", "ibd treatment"]
 summary: "Overview of the four medication classes used in inflammatory bowel disease (IBD): aminosalicylates, steroids, immunomodulators (thiopurines and methotrexate), and biologics. Covers indications, dosing, side effects, and monitoring. All IBD medications are managed by or in close collaboration with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Seizures in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["seizure", "palliative care", "epilepsy", "convulsion", "status epilepticus", "midazolam", "buccal midazolam", "diazepam", "anticonvulsant", "antiepileptic", "end of life", "terminal", "brain tumour", "cerebral metastases", "benzodiazepine"]
 summary: "Clinical pathway for managing seizures in adults receiving palliative care: assessment approach, acute seizure management with midazolam or diazepam, post-seizure management, and family/carer guidance. Always discuss with your doctor."

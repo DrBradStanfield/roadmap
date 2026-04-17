@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Scleritis and Episcleritis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["scleritis", "episcleritis", "red eye", "eye pain", "sclera", "episclera", "ibuprofen", "prednisone", "ophthalmology", "rheumatoid arthritis", "autoimmune", "connective tissue disease", "uveitis", "necrotising scleritis", "eye inflammation"]
 summary: "Clinical pathway for scleritis and episcleritis: distinguishing features, red flags requiring urgent ophthalmology assessment, and management. Scleritis is serious and requires prompt medical attention; episcleritis is benign and self-limiting. Always discuss with your doctor."

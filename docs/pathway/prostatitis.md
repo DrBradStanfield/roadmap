@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Prostatitis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["prostatitis", "acute bacterial prostatitis", "chronic prostatitis", "chronic pelvic pain syndrome", "dysuria", "perineal pain", "urinary frequency", "prostate infection", "UTI male", "co-trimoxazole", "norfloxacin", "doxycycline", "alpha blocker", "tamsulosin", "doxazosin"]
 summary: "Clinical pathway for prostatitis in men: types (acute bacterial, chronic bacterial, chronic non-bacterial), red flags, assessment including urine culture and STI testing, and antibiotic management by severity. Always discuss with your doctor."

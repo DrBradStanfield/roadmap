@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Low FODMAP Diet"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["low fodmap", "fodmap", "ibs", "irritable bowel syndrome", "bloating", "abdominal pain", "fructose malabsorption", "dietary therapy", "elimination diet", "reintroduction", "dietitian", "gut symptoms", "wind", "diarrhoea", "constipation"]
 summary: "Clinical pathway for the low FODMAP diet: when it may help, red flags to rule out before starting, what the elimination and reintroduction phases involve, and why dietitian supervision is essential. Always discuss with your doctor."

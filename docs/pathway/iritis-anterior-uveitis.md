@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Iritis (Anterior Uveitis)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["iritis", "anterior uveitis", "uveitis", "red eye", "photophobia", "eye pain", "eye inflammation", "cyclopentolate", "prednisolone", "ankylosing spondylitis", "HLA-B27", "hypopyon", "synechiae", "endophthalmitis", "posterior uveitis"]
 summary: "Clinical pathway for iritis (anterior uveitis): red flags requiring urgent ophthalmology assessment, background on associated conditions, examination findings, and management. Always discuss with your doctor."

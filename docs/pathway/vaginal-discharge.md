@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Vaginal Discharge"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["vaginal discharge", "bacterial vaginosis", "candidiasis", "thrush", "trichomoniasis", "chlamydia", "gonorrhoea", "cervicitis", "vaginitis", "genitourinary syndrome of menopause", "atrophic vaginitis", "metronidazole", "fluconazole", "clotrimazole", "vaginal estrogen"]
 summary: "Clinical pathway for vaginal discharge: history, examination, investigations, and management of common causes including bacterial vaginosis, candidiasis, trichomoniasis, STIs, physiological discharge, and genitourinary syndrome of menopause. Always discuss with your doctor."

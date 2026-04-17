@@ -1,6 +1,6 @@
 ---
 title: "Pathway: X-ray Musculoskeletal (MSK) – Adult"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["x-ray", "musculoskeletal", "msk", "bone pain", "joint pain", "spine x-ray", "back pain", "shoulder x-ray", "hip x-ray", "knee x-ray", "fracture", "osteoporosis", "osteoarthritis", "ankylosing spondylitis", "inflammatory arthritis", "septic arthritis", "osteomyelitis", "cauda equina", "scoliosis", "radiology", "imaging", "radiation"]
 summary: "Clinical pathway for musculoskeletal X-ray in adults: when imaging is warranted by body region (spine, upper limb, pelvis/hip, lower limb), red flags that require urgent assessment, conditions typically diagnosed clinically without X-ray, and when your doctor may refer for imaging. Always discuss with your healthcare provider."

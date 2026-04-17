@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hypercalcaemia"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hypercalcaemia", "high calcium", "hyperparathyroidism", "primary hyperparathyroidism", "PTH", "parathyroid", "calcium", "myeloma", "malignancy", "sarcoidosis", "renal calculi", "kidney stones", "osteoporosis", "DEXA", "parathyroid surgery"]
 summary: "Clinical pathway for hypercalcaemia: red flags requiring emergency assessment, causes (primary hyperparathyroidism, malignancy, medications, sarcoidosis), investigation approach including PTH interpretation, and management. Always discuss with your doctor."

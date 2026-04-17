@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Soft Tissue Abscesses"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["abscess", "soft tissue abscess", "skin abscess", "boil", "furuncle", "incision and drainage", "cellulitis", "necrotising fasciitis", "MRSA", "flucloxacillin", "cefalexin", "trimethoprim", "pus", "fluctuance", "pilonidal", "sepsis"]
 summary: "Clinical pathway for soft tissue abscesses in the trunk and limbs (all ages): red flags requiring urgent care, assessment approach, incision and drainage, antibiotic selection including penicillin allergy and MRSA, and follow-up. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Newborn Hearing Screening and Early Intervention"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["newborn hearing screening", "infant hearing", "hearing loss", "universal newborn hearing screening", "UNHS", "otoacoustic emissions", "OAE", "audiology", "congenital hearing loss", "early intervention", "neonatal", "baby hearing test", "CHARGE", "Down syndrome", "cleft palate", "cytomegalovirus", "meningitis", "cochlear implant"]
 summary: "Overview of the Universal Newborn Hearing Screening and Early Intervention Programme: aims, screening results, risk factors for progressive or late-onset hearing loss, and what happens if hearing loss is identified. Discuss any concerns about your baby's hearing with your doctor."

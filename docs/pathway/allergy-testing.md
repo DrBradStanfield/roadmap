@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Allergy Testing"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["allergy testing", "IgE", "skin prick test", "blood test", "sIgE", "RAST", "allergen", "allergic reaction", "anaphylaxis", "urticaria", "angioedema", "atopy", "eczema", "allergic rhinitis", "asthma", "food allergy", "aeroallergen"]
 summary: "Clinical pathway for allergy testing in adults and children: when to test for specific IgE, choice between skin prick testing and blood (sIgE) testing, what conditions are and are not due to IgE, and how to interpret results. Always discuss with your doctor."

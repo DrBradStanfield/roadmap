@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Gonorrhoea"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["gonorrhoea", "gonorrhea", "neisseria gonorrhoeae", "sti", "sexually transmitted infection", "urethral discharge", "ceftriaxone", "azithromycin", "chlamydia", "pelvic inflammatory disease", "pid", "epididymo-orchitis", "msm", "contact tracing", "test of cure", "naat", "pcr swab", "doxy-pep", "sexual health"]
 summary: "Clinical pathway for gonorrhoea: who to test, how to collect specimens, treatment regimens (ceftriaxone + azithromycin), management of special situations (pregnancy, anorectal infection, co-infection), contact tracing, notification, and when to seek sexual health advice. Always discuss with your doctor."

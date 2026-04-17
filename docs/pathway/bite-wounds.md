@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bite Wounds"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bite wound", "animal bite", "dog bite", "cat bite", "human bite", "bite infection", "rabies", "tetanus", "prophylactic antibiotics", "wound care", "amoxicillin clavulanic acid", "augmentin", "wound irrigation", "non-accidental injury"]
 summary: "Clinical pathway for human and animal bite wounds: red flags, risk assessment (infection, blood-borne viruses, rabies), wound management, indications for specialist referral, prophylactic and therapeutic antibiotic regimens. Always discuss with your doctor."

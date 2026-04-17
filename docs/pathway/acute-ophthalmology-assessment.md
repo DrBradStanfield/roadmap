@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Eye Problems"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["eye pain", "vision loss", "red eye", "iritis", "glaucoma", "corneal ulcer", "scleritis", "eye injury", "chemical burn", "dacryocystitis", "sudden vision loss", "strabismus", "nystagmus", "photophobia", "ophthalmology", "eye emergency"]
 summary: "Clinical pathway for acute eye problems in adults and children: red flag conditions requiring urgent ophthalmology assessment, what your doctor will examine, and when to seek emergency care. Always discuss with your doctor."

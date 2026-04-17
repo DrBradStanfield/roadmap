@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Family Violence"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["family violence", "domestic violence", "intimate partner violence", "abuse", "child abuse", "elder abuse", "sexual assault", "risk assessment", "disclosure", "protection order", "women's refuge", "oranga tamariki", "strangulation", "coercive control"]
 summary: "Clinical pathway for identifying and responding to family violence: when and how to ask, indicators of abuse, risk assessment questions, management by risk category, and national helplines. Always discuss your situation with your doctor."

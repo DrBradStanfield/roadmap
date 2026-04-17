@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Perinatal Mental Health"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["perinatal mental health", "postnatal depression", "antenatal depression", "postpartum psychosis", "baby blues", "EPDS", "Edinburgh Postnatal Depression Scale", "PHQ-9", "GAD-7", "bipolar disorder pregnancy", "anxiety pregnancy", "depression pregnancy", "breastfeeding antidepressants", "maternal mental health"]
 summary: "Clinical pathway for perinatal mental health covering the pre-pregnancy, antenatal, and postpartum periods. Includes red flags, risk factors, screening tools (EPDS, PHQ-9, GAD-7), and management of depression, anxiety, bipolar disorder, and substance misuse. Always discuss with your doctor."

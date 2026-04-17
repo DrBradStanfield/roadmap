@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Calcium Supplementation in Osteoporosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["calcium", "calcium supplementation", "osteoporosis", "bone health", "vitamin D", "dietary calcium", "calcium carbonate", "bisphosphonate", "cardiovascular risk", "myocardial infarction", "Paget disease", "hypocalcaemia", "bone density"]
 summary: "Clinical guidance on calcium supplementation in osteoporosis: routine supplementation is no longer recommended due to lack of fracture benefit and possible cardiovascular risk. Diet-first approach; supplement only when dietary intake is insufficient. Always discuss with your doctor."

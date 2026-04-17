@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sudden Unexpected Death in Infancy (SUDI)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sudi", "sids", "cot death", "sudden unexpected death in infancy", "sudden infant death syndrome", "infant sleep", "safe sleep", "bed sharing", "prone sleeping", "PEPE", "baby sleep safety", "infant mortality"]
 summary: "Clinical pathway for SUDI (sudden unexpected death in infancy) prevention: risk factors, safe sleep assessment, and management of modifiable risks including smoking, bed-sharing, and sleep position. Always discuss with your doctor."

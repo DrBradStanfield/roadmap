@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Methamphetamine (P)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["methamphetamine", "meth", "crystal meth", "P", "ice", "stimulant", "amphetamine", "drug withdrawal", "drug addiction", "substance use", "methamphetamine psychosis", "intoxication", "cravings", "harm reduction", "CADS", "benzodiazepine", "olanzapine", "quetiapine"]
 summary: "Clinical pathway for methamphetamine (P) use in adults: red flags requiring emergency care, assessment of intoxication and withdrawal, management of acute presentations and community withdrawal, harm reduction strategies, and when to seek specialist support. Always discuss with your doctor."

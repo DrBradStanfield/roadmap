@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Chronic Red Eye"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["red eye", "chronic red eye", "blepharitis", "dry eye", "allergic conjunctivitis", "rosacea keratitis", "pterygium", "pinguecula", "ectropion", "entropion", "thyroid eye disease", "conjunctiva", "eye redness", "eye irritation"]
 summary: "Clinical pathway for chronic red eye: common causes including blepharitis, dry eye, allergic conjunctivitis, and rosacea keratitis, with key diagnostic indicators to guide assessment. Presentation is typically bilateral but can be unilateral. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Incidental Findings on Imaging"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["incidental finding", "incidentaloma", "CT scan", "MRI", "imaging", "mesenteric panniculitis", "gallbladder polyps", "coronary artery calcification", "CAC", "adrenal nodule", "thyroid nodule", "ovarian cyst", "cerebral infarction", "chiari malformation", "intracranial aneurysm", "arachnoid cyst", "meningioma", "pineal cyst", "pulmonary nodule", "pleural effusion", "endometrial abnormality", "pancreatic lesion", "splenic artery aneurysm"]
 summary: "Clinical pathway for managing incidental findings on imaging: background, organ-system findings (abdominal, cardiac, endocrine, gynaecological, neurological, respiratory), and recommended management steps. Always discuss unexpected imaging findings with your doctor."

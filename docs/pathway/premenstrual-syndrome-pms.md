@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Premenstrual Syndrome (PMS)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pms", "premenstrual syndrome", "pmdd", "premenstrual dysphoric disorder", "pme", "premenstrual exacerbation", "luteal phase", "menstrual cycle", "mood swings", "irritability", "bloating", "ssri", "sertraline", "fluoxetine", "escitalopram", "spironolactone", "combined oral contraceptive", "drospirenone", "estradiol", "progesterone"]
 summary: "Clinical pathway for premenstrual syndrome (PMS), PMDD, and premenstrual exacerbation (PME): background and definitions, symptom assessment, severity grading, lifestyle and supplement options, and medical management including SSRIs and hormonal therapy. Always discuss with your doctor."

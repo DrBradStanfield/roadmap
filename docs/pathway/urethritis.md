@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Urethritis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["urethritis", "urethral discharge", "dysuria", "gonorrhoea", "chlamydia", "Mycoplasma genitalium", "non-gonococcal urethritis", "NGU", "ceftriaxone", "doxycycline", "azithromycin", "STI", "contact tracing"]
 summary: "Clinical pathway for urethritis in men: causes (gonococcal vs non-gonococcal), assessment, investigations, treatment by clinical presentation, management of persistent or recurrent disease, and contact tracing. Always discuss with your doctor."

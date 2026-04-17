@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bunions (Hallux Valgus)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bunion", "hallux valgus", "foot pain", "metatarsal", "metatarsophalangeal", "toe deformity", "orthotics", "podiatry", "osteotomy", "footwear", "metatarsalgia", "hammer toe", "claw toe", "Morton's neuroma"]
 summary: "Clinical pathway for bunions (hallux valgus): background, assessment approach, conservative management including footwear advice and orthotics, pain relief options, and when surgery may be considered. Always discuss with your doctor."

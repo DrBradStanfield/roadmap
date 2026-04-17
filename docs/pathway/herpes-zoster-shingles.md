@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Herpes Zoster (Shingles)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["shingles", "herpes zoster", "varicella zoster", "vzv", "postherpetic neuralgia", "ramsay hunt", "antiviral", "valaciclovir", "aciclovir", "zoster", "blistering rash", "dermatomal", "chickenpox reactivation"]
 summary: "Clinical pathway for herpes zoster (shingles): red flags requiring urgent review, background on VZV reactivation, assessment including Ramsay Hunt syndrome, and management with antivirals, analgesia, steroids, and wound care. Always discuss with your doctor."

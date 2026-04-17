@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Speech and Language Difficulties in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["speech delay", "language delay", "speech and language", "children", "developmental milestones", "stuttering", "babbling", "expressive language", "receptive language", "voice difficulties", "autism", "developmental delay", "hearing", "speech therapy"]
 summary: "Clinical pathway for speech and language difficulties in children: red flags, developmental milestones by age group (birth to 11 years), assessment approach including hearing screening, and management of speech delays, stuttering, and voice difficulties. Always discuss concerns with your doctor."

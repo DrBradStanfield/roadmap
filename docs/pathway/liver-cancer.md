@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Liver Cancer"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["liver cancer", "hepatocellular carcinoma", "hcc", "cholangiocarcinoma", "hepatitis b", "hepatitis c", "cirrhosis", "nafld", "fatty liver", "liver lesion", "alpha-fetoprotein", "afp", "liver ultrasound", "tace", "liver transplant", "haemochromatosis"]
 summary: "Clinical pathway for liver cancer (HCC and intrahepatic cholangiocarcinoma): risk factors, symptoms, assessment including ultrasound and bloods, and management covering surveillance, treatment options, optimising liver health, and psychosocial support. Always discuss with your doctor."

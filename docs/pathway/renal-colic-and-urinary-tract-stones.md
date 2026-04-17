@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Renal Colic and Urinary Tract Stones"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["renal colic", "kidney stones", "urinary tract stones", "ureteric stones", "nephrolithiasis", "haematuria", "flank pain", "loin pain", "CT KUB", "hydronephrosis", "lithotripsy", "ureteroscopy", "alpha blocker", "diclofenac", "stone prevention"]
 summary: "Clinical pathway for renal colic and urinary tract stones: red flags requiring emergency care, assessment approach, management by stone size and location, stone prevention advice, and guidance for patients with ureteric stents. Always discuss with your doctor."

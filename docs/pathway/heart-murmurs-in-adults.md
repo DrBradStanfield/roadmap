@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Heart Murmurs in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["heart murmur", "cardiac murmur", "valvular heart disease", "infective endocarditis", "rheumatic fever", "rheumatic heart disease", "aortic stenosis", "mitral regurgitation", "echocardiography", "systolic murmur", "diastolic murmur", "flow murmur", "structural heart disease", "cardiology"]
 summary: "Clinical pathway for heart murmurs in adults: red flags requiring urgent assessment, background on murmur types, assessment criteria (history, examination, investigations), and management including indications for echocardiography and cardiology referral. Always discuss with your doctor."

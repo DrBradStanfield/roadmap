@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Bilateral Red Eye"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["red eye", "bilateral red eye", "conjunctivitis", "adenoviral conjunctivitis", "allergic conjunctivitis", "bacterial conjunctivitis", "acute angle closure glaucoma", "iritis", "uveitis", "keratitis", "scleritis", "episcleritis", "chemical eye injury", "eye pain", "eye discharge", "photophobia"]
 summary: "Clinical pathway for acute bilateral red eye: urgent red flags (chemical injury, angle closure glaucoma), differential diagnosis by key features, and when to see a doctor. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cataracts"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cataract", "cataracts", "vision loss", "blurred vision", "glare", "lens opacity", "visual acuity", "eye", "ophthalmology", "optometry", "nuclear cataract", "posterior subcapsular", "cortical cataract", "red reflex", "night driving", "double vision"]
 summary: "Clinical pathway for cataracts: red flags requiring urgent assessment, background on types and symptoms, assessment approach including visual acuity and red reflex, and management options. Always discuss with your doctor."

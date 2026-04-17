@@ -1,6 +1,6 @@
 ---
 title: "Pathway: CT Chest"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ct chest", "ct scan chest", "computed tomography chest", "haemoptysis", "lung cancer", "pulmonary nodule", "chest x-ray", "lung nodule", "ct contrast", "radiation risk", "chest imaging", "respiratory"]
 summary: "When a CT chest scan is indicated: critical situations requiring emergency care, accepted indications for urgent and non-urgent CT, radiation and contrast risks, and patient resources. Always discuss with your doctor."

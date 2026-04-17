@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Benzodiazepine and Zopiclone Withdrawal"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["benzodiazepine", "zopiclone", "withdrawal", "benzo", "diazepam", "lorazepam", "temazepam", "clonazepam", "alprazolam", "oxazepam", "dependence", "addiction", "deprescribing", "dose reduction", "sedative withdrawal", "z-drug"]
 summary: "Clinical pathway for managing benzodiazepine and zopiclone withdrawal in general practice. Covers background, risk assessment, dependence vs addiction, equivalent dose tables, supervised gradual dose reduction, and relapse prevention. Applies to patients who developed dependence from prescribed medications. Always discuss with your doctor."

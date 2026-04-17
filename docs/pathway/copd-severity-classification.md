@@ -1,6 +1,6 @@
 ---
 title: "Pathway: COPD Severity Classification"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["copd", "chronic obstructive pulmonary disease", "spirometry", "fev1", "mmrc", "dyspnoea", "breathlessness", "severity", "mild copd", "moderate copd", "severe copd", "bode index", "cat score", "copd assessment test", "salbutamol", "tiotropium", "salmeterol", "formoterol", "inhaled corticosteroid", "bronchodilator", "pulmonary rehabilitation", "exacerbation"]
 summary: "Clinical classification of COPD severity using the MMRC dyspnoea scale, COPD Assessment Test (CAT), and FEV1 spirometry results, with a three-tier framework (mild/moderate/severe) to guide management including inhaler selection and pulmonary rehabilitation. Always discuss with your doctor."

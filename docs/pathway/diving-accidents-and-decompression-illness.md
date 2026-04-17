@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Diving Accidents and Decompression Illness"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["diving", "decompression illness", "dci", "the bends", "barotrauma", "hyperbaric", "scuba", "decompression sickness", "gas embolism", "pfo", "nitrogen narcosis", "near drowning", "dive accident"]
 summary: "Clinical pathway for diving accidents and decompression illness (DCI): red flags, symptoms, risk factors, assessment including barotrauma and differential diagnoses, and emergency management with oxygen therapy and hyperbaric referral. Always discuss with your doctor."

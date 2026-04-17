@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Joint Aspiration"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["joint aspiration", "arthrocentesis", "joint effusion", "synovial fluid", "septic arthritis", "gout", "pseudogout", "inflammatory arthritis", "joint injection", "knee aspiration", "crystal arthropathy", "monosodium urate", "calcium pyrophosphate"]
 summary: "Overview of joint aspiration (arthrocentesis): when it is performed, contraindications, what to expect during the procedure, and how results are interpreted. Always discuss with your doctor."

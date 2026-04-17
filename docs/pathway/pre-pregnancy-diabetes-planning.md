@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pre-pregnancy Diabetes Planning"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pre-pregnancy", "preconception", "diabetes", "type 1 diabetes", "type 2 diabetes", "pregnancy planning", "HbA1c", "glycaemic control", "folate", "iodine", "insulin", "metformin", "blood glucose", "congenital malformations", "pregnancy complications", "contraception", "vitamin D", "retinal screening"]
 summary: "Clinical pathway for pre-pregnancy planning in people with existing type 1 or type 2 diabetes. Covers glycaemic targets, medication review, supplementation, lifestyle, and when to seek specialist care. Always discuss your specific situation with your doctor."

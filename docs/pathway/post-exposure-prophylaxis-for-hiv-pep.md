@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Post-exposure Prophylaxis for HIV (PEP)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pep", "post-exposure prophylaxis", "hiv", "antiretroviral", "needle stick", "sexual exposure", "hiv prevention", "tenofovir", "emtricitabine", "dolutegravir", "truvada", "prep", "sti", "hepatitis b", "occupational exposure"]
 summary: "Clinical pathway for post-exposure prophylaxis (PEP) after potential HIV exposure: when PEP is indicated, risk assessment by exposure type, prescribing regimens (3-drug and 2-drug), contraindications, baseline investigations, and follow-up. PEP must be started within 72 hours — always discuss urgently with your doctor."

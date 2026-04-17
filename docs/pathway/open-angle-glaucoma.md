@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Open-angle Glaucoma"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["open-angle glaucoma", "OAG", "glaucoma", "intraocular pressure", "IOP", "optic disc", "visual field", "glaucoma drops", "steroid-induced glaucoma", "eye pressure", "optometry", "ophthalmology", "angle-closure glaucoma"]
 summary: "Clinical pathway for open-angle glaucoma: red flags for acute angle-closure, background on OAG, risk factor assessment, and management of patients already on glaucoma treatment. Always discuss with your doctor."

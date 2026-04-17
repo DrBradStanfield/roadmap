@@ -1,8 +1,8 @@
 ---
 title: "Pathway: Palpitations in Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
-keywords: ["palpitations", "pregnancy", "arrhythmia", "tachycardia", "extrasystoles", "ectopic beats", "SVT", "supraventricular tachycardia", "atrial fibrillation", "atrial flutter", "ECG", "heart rate", "obstetric", "maternity", "cardiac", "hyperemesis"]
+keywords: ["palpitations","pregnancy","arrhythmia","tachycardia","extrasystoles","ectopic beats","SVT","supraventricular tachycardia","atrial fibrillation","atrial flutter","ECG","heart rate","obstetric","maternity","cardiac","hyperemesis","heart racing","heart pounding","fluttering in chest","skipped heartbeats","heart skipping"]
 summary: "Clinical pathway for palpitations in pregnancy: red flags requiring urgent assessment, background on normal pregnancy-related cardiac changes, assessment approach including ECG and blood tests, and management. Always discuss with your doctor."
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Medication Management in Older Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["polypharmacy", "deprescribing", "older adults", "medication review", "adverse drug reactions", "medication management", "drug interactions", "beers criteria", "anticholinergics", "benzodiazepines", "nsaids", "statins", "ssri", "frailty", "falls", "cognitive impairment"]
 summary: "Clinical pathway for medication management in older adults: recognising polypharmacy risks, identifying medicine-related problems, deprescribing principles, medicines to avoid, and strategies to improve adherence. Always discuss changes to your medications with your doctor."

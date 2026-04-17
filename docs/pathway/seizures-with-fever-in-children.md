@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Seizures with Fever in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["febrile seizure", "seizure with fever", "fever convulsion", "children seizure", "febrile convulsion", "midazolam", "diazepam", "status epilepticus", "meningitis", "encephalitis", "paediatric seizure"]
 summary: "Clinical pathway for seizures with fever in children aged 6 months to 6 years: red flags requiring emergency care, background on febrile seizures, assessment approach, acute seizure management, post-seizure care, and when urgent paediatric assessment is needed. Always discuss with your doctor."

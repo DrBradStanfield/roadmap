@@ -1,6 +1,6 @@
 ---
 title: "Pathway: CT Head"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ct head", "ct scan", "brain scan", "cognitive impairment", "dementia", "headache", "seizure", "tia", "transient ischaemic attack", "stroke", "focal neurological signs", "space occupying lesion", "intracranial pathology", "subarachnoid haemorrhage", "radiation", "iv contrast"]
 summary: "Clinical pathway for CT head scans: when they are indicated (cognitive impairment, headache red flags, seizures, TIA, focal neurological signs), radiation and contrast safety considerations, and conditions that require emergency or specialist assessment instead. Always discuss with your doctor."

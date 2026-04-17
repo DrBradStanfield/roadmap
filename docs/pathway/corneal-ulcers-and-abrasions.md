@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Corneal Ulcers and Abrasions"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["corneal ulcer", "corneal abrasion", "red eye", "eye pain", "keratitis", "infectious keratitis", "herpes simplex keratitis", "dendritic ulcer", "marginal keratitis", "recurrent corneal erosion", "contact lens", "fluorescein", "photophobia", "hypopyon", "chloramphenicol", "eye drops", "corneal opacity"]
 summary: "Clinical pathway for corneal ulcers and abrasions: red flags, background, assessment approach (including visual acuity, fluorescein staining, and differentiating abrasion from ulcer), and management by type. Always discuss with your doctor."

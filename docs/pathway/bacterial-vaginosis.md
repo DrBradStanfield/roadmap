@@ -1,10 +1,9 @@
 ---
-title: Bacterial Vaginosis
-section: sexual-health
-tags: [vaginal-discharge, bv, bacterial-vaginosis, sti-adjacent, sexual-health]
-source: HealthPathways Auckland
-topic_code: 987744
-last_scraped: 2026-04-17
+title: "Pathway: Bacterial Vaginosis"
+type: "pathway"
+tags: ["Guideline"]
+keywords: ["bacterial vaginosis", "BV", "vaginal discharge", "fishy odor", "Gardnerella vaginalis", "metronidazole", "clindamycin", "anaerobic bacteria", "vaginal pH", "recurrent BV", "ornidazole", "asymptomatic", "vaginal microbiome"]
+summary: "Bacterial vaginosis (BV) is caused by loss of normal vaginal bacteria and overgrowth of diverse anaerobic organisms, leading to increased vaginal pH, fishy odor, and thin white discharge; up to 50% of people are asymptomatic. First-line treatment for symptomatic BV is metronidazole, with alternatives including clindamycin or ornidazole, while recurrent BV may require specialist assessment. Always discuss with your doctor."
 ---
 
 # Bacterial Vaginosis

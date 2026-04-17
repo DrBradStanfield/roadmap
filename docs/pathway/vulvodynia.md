@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Vulvodynia"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["vulvodynia", "vulvar pain", "chronic vulvar discomfort", "vestibulodynia", "neuropathic pain", "pelvic floor dysfunction", "dyspareunia", "amitriptyline", "gabapentin", "lidocaine", "women's health physiotherapy", "psychosexual", "genital pain"]
 summary: "Clinical pathway for vulvodynia: definition, assessment, examination, and multidisciplinary management including skin care, pain medications, physiotherapy, psychosexual support, and chronic pain management. Always discuss with your doctor."

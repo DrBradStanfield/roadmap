@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Mothers, Babies, and Parenting Community Support"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pregnancy", "parenting", "antenatal", "postnatal", "postpartum", "breastfeeding", "midwife", "perinatal", "baby", "newborn", "mothers", "parenting support", "pregnancy loss", "miscarriage", "stillbirth", "teen parents", "grandparents raising grandchildren", "sleep advice", "food support", "mental health", "well child"]
 summary: "Community support services for mothers, babies, and parents in New Zealand: helplines, parenting education, mental health support, sleep advice, pregnancy loss support, food assistance, and how to find a midwife. Always discuss your situation with your doctor or midwife."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Dystonic Reactions"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["acute dystonic reaction", "dystonia", "oculogyric crisis", "torticollis", "opisthotonus", "benzatropine", "benztropine", "metoclopramide", "antipsychotic", "drug-induced dystonia", "promethazine", "diazepam", "muscle spasm", "medication side effect"]
 summary: "Clinical pathway for acute dystonic reactions: recognition of presentations (oculogyric crisis, torticollis, opisthotonus, laryngospasm), causative medications, and management with benzatropine, promethazine, or diazepam. Always discuss with your doctor."

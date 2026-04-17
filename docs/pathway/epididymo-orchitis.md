@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Epididymo-orchitis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["epididymo-orchitis", "epididymitis", "orchitis", "testicular pain", "scrotal pain", "testicular swelling", "scrotal swelling", "epididymis", "testis", "testicular infection", "STI testicular", "chlamydia epididymitis", "gonorrhoea epididymitis", "urethral discharge men", "testicular torsion", "scrotal lump", "ceftriaxone doxycycline", "urinary pathogen epididymitis", "E. coli epididymitis", "contact tracing STI", "sexual health men", "male genital infection"]
 summary: "Clinical pathway for epididymo-orchitis in adults: distinguishing STI-associated from urinary-pathogen-associated causes, antibiotic treatment, and when acute urology referral is needed. Always discuss assessment and treatment with your doctor."

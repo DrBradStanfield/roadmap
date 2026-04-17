@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hernia in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hernia", "inguinal hernia", "femoral hernia", "ventral hernia", "incisional hernia", "umbilical hernia", "strangulated hernia", "reducible hernia", "groin lump", "abdominal wall hernia", "hernia repair", "laparoscopic hernia", "mesh repair", "hernia strangulation", "bowel obstruction"]
 summary: "Clinical pathway for hernia in adults: red flags requiring emergency assessment (strangulation, obstruction), hernia types (inguinal, femoral, ventral, incisional), assessment approach, and management including conservative, surgical, and post-repair care. Always discuss your specific situation with your doctor."

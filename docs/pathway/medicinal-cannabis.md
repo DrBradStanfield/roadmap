@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Medicinal Cannabis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["medicinal cannabis", "CBD", "cannabidiol", "THC", "tetrahydrocannabinol", "cannabis oil", "Sativex", "chronic pain", "nausea", "multiple sclerosis", "epilepsy", "palliative care", "medicinal cannabis scheme", "cannabis prescription"]
 summary: "Clinical pathway for medicinal cannabis in New Zealand: contraindications, assessment, product selection (CBD vs THC), dosing principles, driving and drug testing considerations, and monitoring. Medicinal cannabis is not first-line for any condition — always discuss with your doctor."

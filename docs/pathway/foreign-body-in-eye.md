@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Foreign Body in Eye"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["foreign body in eye", "corneal foreign body", "conjunctival foreign body", "eye trauma", "penetrating eye injury", "open globe", "rust ring", "corneal abrasion", "chloramphenicol", "fluorescein", "ocular injury"]
 summary: "Clinical pathway for a foreign body in the eye: red flags for penetrating injury requiring emergency assessment, examination approach, and management of conjunctival, corneal, and rust ring foreign bodies. Always discuss with your doctor."

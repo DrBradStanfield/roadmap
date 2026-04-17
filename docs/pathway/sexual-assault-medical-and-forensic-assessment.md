@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sexual Assault Medical and Forensic Assessment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sexual assault", "rape", "sexual violence", "forensic examination", "SARC", "Pohutukawa", "Te Puaruruhau", "child protection", "ECP", "emergency contraception", "STI prophylaxis", "DNA evidence", "forensic medical examination", "family violence", "sexual abuse"]
 summary: "Clinical pathway for the medical and forensic assessment of sexual assault in New Zealand (Auckland region). Covers services available for both children/young people (Te Puaruruhau) and adults (Pohutukawa Adult Sexual Assault Service), what to expect from an assessment, and available support. Police involvement is not required to access care."

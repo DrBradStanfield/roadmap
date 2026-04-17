@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Fibromyalgia Diagnostic Criteria"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["fibromyalgia", "widespread pain", "WPI", "SSS", "symptom severity", "chronic pain", "fatigue", "fibromyalgia diagnosis", "ACR criteria", "pain index"]
 summary: "2016 ACR diagnostic criteria for fibromyalgia: Widespread Pain Index (WPI) body map, Symptom Severity Score (SSS) for fatigue, unrefreshed sleep, and cognitive symptoms, and the three conditions required for diagnosis. Always discuss with your doctor."

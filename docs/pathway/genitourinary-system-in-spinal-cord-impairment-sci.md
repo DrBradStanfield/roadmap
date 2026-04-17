@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Genitourinary System in Spinal Cord Impairment (SCI)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["spinal cord injury", "sci", "neurogenic bladder", "urinary tract infection", "uti", "catheter", "suprapubic catheter", "intermittent self-catheterisation", "isc", "autonomic dysreflexia", "renal failure", "bladder management", "spinal cord impairment"]
 summary: "Clinical guidance for urinary tract management in spinal cord impairment: neurogenic bladder screening, UTI recognition and treatment, catheter blockage management, suprapubic catheter issues, and intermittent self-catheterisation. Management is complex in SCI — always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Palpable Thyroid Nodule"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["thyroid nodule", "thyroid lump", "thyroid cancer", "TSH", "thyroid ultrasound", "FNA", "fine needle aspiration", "Bethesda", "goitre", "neck lump", "thyroid", "hyperthyroid", "hypothyroid", "cervical lymphadenopathy", "thyroid eye disease"]
 summary: "Clinical pathway for a palpable thyroid nodule in adults and children: background on prevalence and malignancy rates, assessment including history, examination and red flags for thyroid cancer, TSH testing, and management pathways. Always discuss with your doctor."

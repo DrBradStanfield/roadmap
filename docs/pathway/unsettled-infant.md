@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Unsettled Infant"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["unsettled infant", "crying baby", "colic", "infant crying", "baby irritability", "infant settling", "excessive crying", "baby crying", "GORD in children", "reflux infant", "cow's milk protein intolerance", "infant sleep", "postnatal depression", "infant feeding difficulties"]
 summary: "Clinical pathway for unsettled infants: red flags requiring emergency assessment, background on normal infant crying and colic, assessment of feeding, sleeping, and family factors, and management including soothing techniques, parental support, and when to consider underlying causes. Always discuss with your doctor."

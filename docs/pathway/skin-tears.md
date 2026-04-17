@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Skin Tears"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["skin tear", "skin tears", "flap wound", "skin flap", "wound dressing", "wound care", "ISTAP", "silicone dressing", "skin fragility", "wound healing", "tetanus", "wound infection", "cellulitis", "lower limb wound"]
 summary: "Clinical pathway for skin tears: classification (ISTAP types 1–3), wound assessment, step-by-step management including flap approximation, dressing selection, and infection monitoring. Requires emergency assessment for uncontrollable bleeding, deep or necrotic flaps, or exposed muscle/bone/tendon. Always discuss with your doctor."

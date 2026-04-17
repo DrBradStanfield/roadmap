@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ankylosing Spondylitis (AS)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ankylosing spondylitis", "AS", "inflammatory back pain", "HLA-B27", "axial spondyloarthritis", "sacroiliac", "rheumatology", "BASDAI", "spondyloarthropathy", "dactylitis", "enthesitis"]
 summary: "Clinical pathway for ankylosing spondylitis (AS): background on HLA-B27, scoring symptoms and other factors to suspect AS, examination findings, management including NSAIDs and lifestyle, and indications for rheumatology referral. Always discuss with your doctor."

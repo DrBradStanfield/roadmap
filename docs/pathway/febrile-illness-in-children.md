@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Febrile Illness in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["fever", "febrile illness", "child fever", "fever in children", "high temperature", "febrile", "sepsis", "meningitis", "UTI", "urinary tract infection", "paracetamol", "paediatric", "fever management", "tachycardia", "tachypnoea", "petechial rash", "Kawasaki"]
 summary: "Clinical pathway for febrile illness in children: red flags requiring emergency care (age < 6 weeks, fever in infants < 3 months), severity assessment (mild, moderate, severe), investigation guidance, and management with antipyretics. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bone Pain"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bone pain", "bone cancer", "sarcoma", "osteomyelitis", "stress fracture", "osteoporotic fracture", "metastatic bone disease", "myeloma", "Paget disease", "spinal infection", "growing pains", "bone tenderness", "impending fracture", "skeletal pain"]
 summary: "Clinical pathway for bone pain: red flags (neoplasm, infection, fracture), assessment approach including history and investigations, specific conditions to consider (sarcoma, osteomyelitis, Paget disease, stress fracture, spinal infection), and management by suspected cause. Always discuss with your doctor."

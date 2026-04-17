@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Tremor"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["tremor", "essential tremor", "parkinson tremor", "resting tremor", "physiological tremor", "cerebellar tremor", "shaking", "involuntary movement", "propranolol", "primidone"]
 summary: "Clinical pathway for tremor in adults: distinguishing essential tremor, Parkinson disease, enhanced physiological tremor, and cerebellar tremor. Covers assessment, investigations, and management including medications for essential tremor. Always discuss with your doctor."

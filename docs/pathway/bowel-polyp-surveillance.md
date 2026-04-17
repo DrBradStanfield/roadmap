@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bowel Polyp Surveillance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bowel polyp", "colon polyp", "colonoscopy", "adenoma", "sessile serrated polyp", "serrated polyp", "colorectal cancer surveillance", "polyp follow-up", "hyperplastic polyp", "serrated polyposis syndrome", "tubulovillous adenoma", "dysplasia", "bowel cancer surveillance"]
 summary: "Clinical pathway for bowel polyp surveillance after colonoscopy: determines surveillance interval based on polyp type, size, and number. Covers adenomas, sessile serrated polyps, serrated polyposis syndrome, and when to refer for genetic assessment. Always discuss with your doctor."

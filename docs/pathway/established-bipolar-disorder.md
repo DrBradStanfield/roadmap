@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Established Bipolar Disorder"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bipolar disorder", "bipolar", "mania", "hypomania", "mood stabiliser", "lithium", "valproate", "lamotrigine", "carbamazepine", "quetiapine", "olanzapine", "risperidone", "manic episode", "bipolar depression", "cyclothymia", "mental health", "mood disorder"]
 summary: "Clinical pathway for managing established (confirmed) bipolar disorder in adults: background, assessment, monitoring of mood stabilisers and antipsychotics, lifestyle, and psychological supports. Always discuss with your doctor."

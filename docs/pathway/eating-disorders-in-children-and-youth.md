@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Eating Disorders in Children and Youth"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["eating disorder", "anorexia nervosa", "bulimia nervosa", "binge eating disorder", "ARFID", "avoidant restrictive food intake disorder", "OSFED", "weight loss", "food restriction", "purging", "adolescent", "children", "youth", "malnutrition", "refeeding syndrome", "amenorrhoea", "body image"]
 summary: "Clinical pathway for eating disorders in children and youth (aged 17 and under): red flags requiring emergency assessment, types of eating disorders including anorexia nervosa, bulimia nervosa, binge eating disorder, and ARFID, full assessment approach, and management. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Peripheral Arterial Disease"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["peripheral arterial disease", "PAD", "intermittent claudication", "critical limb ischaemia", "acute limb ischaemia", "ABPI", "ankle brachial pressure index", "peripheral vascular disease", "PVD", "leg pain", "claudication", "vascular", "clopidogrel", "statin", "antiplatelet"]
 summary: "Clinical pathway for peripheral arterial disease (PAD): red flags for critical and acute limb ischaemia, assessment including history, examination, ABPI, and blood tests, and management covering exercise therapy, cardiovascular risk factor reduction, antiplatelet therapy, and when specialist referral is needed. Always discuss with your doctor."

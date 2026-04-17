@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Chronic Abdominal Pain in Children and Youth"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["chronic abdominal pain", "recurrent abdominal pain", "functional abdominal pain", "irritable bowel syndrome", "IBS", "abdominal migraine", "functional dyspepsia", "coeliac disease", "inflammatory bowel disease", "IBD", "children", "paediatric", "stomach pain", "tummy pain", "school age"]
 summary: "Clinical pathway for chronic or recurrent abdominal pain in children and young people: red flags, background on functional vs organic causes, assessment approach, and management including reassurance, lifestyle measures, and when medication may be considered. Always discuss with your doctor."

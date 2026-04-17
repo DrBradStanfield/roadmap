@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Insulin for Type 2 Diabetes"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["insulin", "type 2 diabetes", "basal insulin", "bolus insulin", "premixed insulin", "HbA1c", "blood glucose", "hypoglycaemia", "glargine", "lantus", "NovoRapid", "Humalog", "Ryzodeg", "isophane", "NPH", "insulin titration", "glucose monitoring", "diabetes management"]
 summary: "Clinical pathway for insulin therapy in type 2 diabetes: stepped treatment approach (basal → second-step → third-step), insulin types, starting doses, titration rules, monitoring, hypoglycaemia management, and patient self-management. Always discuss changes to your insulin regimen with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Suicide Prevention in Youth"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["suicide", "suicidal ideation", "youth suicide", "self-harm", "mental health", "depression", "adolescent", "teenager", "rangatahi", "safety plan", "suicide risk", "hopelessness", "crisis", "child mental health"]
 summary: "Clinical pathway for suicidal ideation and suicide risk in young people aged 18 and under: red flags, background, risk assessment, protective factors, and management approach including safety planning, medication considerations, and crisis resources. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Medications for Perinatal Depression and Anxiety"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["perinatal depression", "postnatal depression", "antenatal depression", "pregnancy anxiety", "postpartum depression", "antidepressant pregnancy", "ssri pregnancy", "sertraline pregnancy", "breastfeeding antidepressant", "perinatal mental health", "sodium valproate pregnancy", "lamotrigine pregnancy", "venlafaxine pregnancy"]
 summary: "Clinical pathway for medication use in perinatal depression and anxiety: red flags, background on safety evidence, assessment of teratogenesis risk and patient factors, and management including drug selection for pregnancy and breastfeeding. Always discuss with your doctor."

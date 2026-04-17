@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Myocarditis and Pericarditis After COVID-19 Vaccination"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["myocarditis", "pericarditis", "covid-19 vaccine", "mrna vaccine", "vaccine side effects", "chest pain after vaccination", "troponin", "ecg", "colchicine", "nsaids", "cardiac inflammation", "covid vaccination", "vaccine myocarditis"]
 summary: "Clinical pathway for suspected myocarditis or pericarditis following COVID-19 vaccination: red flags, assessment approach (ECG, troponin, CRP), management, and post-discharge follow-up. Always discuss with your doctor."

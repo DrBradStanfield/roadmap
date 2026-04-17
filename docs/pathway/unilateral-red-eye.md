@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Unilateral Red Eye"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["red eye", "unilateral red eye", "conjunctivitis", "iritis", "uveitis", "keratitis", "acute angle closure glaucoma", "scleritis", "episcleritis", "subconjunctival haemorrhage", "herpes simplex keratitis", "herpes zoster", "corneal abrasion", "allergic conjunctivitis", "photophobia", "eye pain", "vision loss"]
 summary: "Clinical pathway for unilateral red eye: causes ranging from self-limiting conjunctivitis to sight-threatening conditions (acute angle closure glaucoma, keratitis, iritis, scleritis), key diagnostic features, and when urgent assessment is needed. Always discuss with your doctor."

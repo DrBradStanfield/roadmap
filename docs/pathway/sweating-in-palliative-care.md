@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sweating in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sweating", "hyperhidrosis", "diaphoresis", "nocturnal sweating", "palliative care", "paraneoplastic fever", "celecoxib", "famotidine", "dexamethasone", "prednisone", "end of life", "terminal", "cancer"]
 summary: "Clinical pathway for managing sweating (hyperhidrosis) in adults receiving palliative care. Covers common causes including infection, medications, endocrine causes, and disseminated cancer; non-pharmacological cooling measures; and pharmacological options including paracetamol, NSAIDs, famotidine, and corticosteroids. Always discuss with your doctor."

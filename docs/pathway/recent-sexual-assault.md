@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Recent Sexual Assault"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sexual assault", "rape", "sexual abuse", "forensic evidence", "emergency contraception", "sti prophylaxis", "sexual violence", "crisis support", "acc sensitive claim", "pohutukawa", "post-assault care", "sexual assault < 7 days", "sexual assault 7 to 28 days"]
 summary: "Clinical pathway for adults or adolescents presenting after sexual assault within the past month. Covers red flags, triage approach, forensic evidence preservation, police reporting options, STI screening and prophylaxis, emergency contraception, ACC sensitive claims, and crisis support. Always discuss with your doctor."

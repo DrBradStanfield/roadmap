@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Radionuclide Thyroid Scan (Adult)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["radionuclide thyroid scan", "nuclear medicine thyroid", "thyroid scan", "thyroid scintigraphy", "thyrotoxicosis", "suppressed TSH", "thyroid nodule", "Graves disease", "hot nodule", "cold nodule", "nuclear medicine"]
 summary: "Clinical pathway for radionuclide thyroid scan in adults: when it is indicated, contraindications, and drug considerations before scanning. This investigation is ordered by a doctor — always discuss with your doctor."

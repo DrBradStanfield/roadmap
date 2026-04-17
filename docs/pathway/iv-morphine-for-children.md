@@ -1,6 +1,6 @@
 ---
 title: "Pathway: IV Morphine for Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["iv morphine", "morphine children", "paediatric pain", "opioid children", "naloxone", "respiratory depression", "paediatric analgesia", "morphine dose", "children pain management"]
 summary: "Clinical pathway for administering IV morphine in children: dosing by age and weight, dilution, monitoring parameters (AVPU, respiratory rate, pain score), naloxone reversal, and when to escalate. Always discuss with your doctor."

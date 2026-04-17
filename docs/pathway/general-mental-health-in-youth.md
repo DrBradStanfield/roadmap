@@ -1,6 +1,6 @@
 ---
 title: "Pathway: General Mental Health in Youth"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["youth mental health", "adolescent mental health", "teen depression", "anxiety in youth", "emotional dysregulation", "eating disorders", "school avoidance", "suicidality", "self-harm", "substance use", "HEEADSSS", "GAD-7", "PHQ-A", "K10", "SACS", "child mental health"]
 summary: "Clinical pathway for mental health concerns in children and young people: background, indicators of concern, assessment tools (HEEADSSS, GAD-7, PHQ-A, K10), and management approach covering mild-to-moderate symptoms through to complex presentations. Always discuss with your doctor."

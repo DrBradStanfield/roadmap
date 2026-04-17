@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Non-Melanoma Skin Cancer"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["skin cancer", "basal cell carcinoma", "bcc", "squamous cell carcinoma", "scc", "bowen's disease", "keratinocyte cancer", "non-melanoma skin cancer", "cryotherapy", "imiquimod", "fluorouracil", "efudix", "skin check", "excision biopsy", "dermoscopy", "sun protection", "nicotinamide", "skin lesion"]
 summary: "Clinical pathway for non-melanoma skin cancer (BCC and SCC): recognition, assessment including dermoscopy, management with excision or non-surgical options (cryotherapy, fluorouracil, imiquimod), high-risk features requiring specialist referral, and long-term follow-up. Always discuss with your doctor."

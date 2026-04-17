@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Birth after Caesarean Section"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["caesarean section", "caesarean", "VBAC", "vaginal birth after caesarean", "ERCS", "elective repeat caesarean", "trial of labour", "TOL", "birth options", "previous caesarean", "repeat caesarean", "PBAC"]
 summary: "Clinical pathway for women with a previous caesarean section discussing birth options in a subsequent pregnancy: vaginal birth after caesarean (VBAC) versus elective repeat caesarean section (ERCS), including key benefits and risks, eligibility, and when obstetric review is required. Always discuss with your doctor or Lead Maternity Carer."

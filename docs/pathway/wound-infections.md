@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Wound Infections"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["wound infection", "infected wound", "wound care", "cellulitis", "necrotising fasciitis", "sepsis", "wound swab", "flucloxacillin", "cephalexin", "MRSA", "wound dehiscence", "purulent discharge", "erythema", "antibiotics for wound", "surgical wound", "bite wound", "skin infection"]
 summary: "Clinical pathway for wound infections: red flags requiring emergency care, signs of localised vs spreading infection, when to swab, wound care management, and antibiotic guidance. Always discuss with your doctor."

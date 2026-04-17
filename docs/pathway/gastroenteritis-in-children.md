@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Gastroenteritis in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["gastroenteritis", "children", "diarrhoea", "vomiting", "dehydration", "rehydration", "oral rehydration therapy", "ORT", "rotavirus", "norovirus", "campylobacter", "ondansetron", "stomach bug", "gastro", "tummy bug", "kids", "paediatric"]
 summary: "Clinical pathway for gastroenteritis in children: red flags requiring emergency care, assessment of dehydration severity, oral rehydration therapy, medication considerations, and when to seek further medical assessment. Always discuss with your doctor."

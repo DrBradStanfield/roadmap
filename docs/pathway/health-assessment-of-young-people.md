@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Health Assessment of Young People"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["young people", "adolescent", "youth", "teenager", "health assessment", "HEEADSSS", "psychosocial", "puberty", "adolescent development", "mental health youth", "substance use youth", "resilience", "confidentiality", "consent", "GAD-7", "K10", "SACS"]
 summary: "Clinical pathway for health assessment of young people aged 10–24 years: background on adolescent development, psychosocial assessment using the HEEADSSS framework, focused physical examination, and management including mental health, growth concerns, and preventive activities. Always discuss with your doctor."

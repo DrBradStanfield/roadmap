@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Parkinson Disease"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["parkinson disease", "parkinson's", "bradykinesia", "tremor", "rigidity", "levodopa", "dopamine agonist", "rasagiline", "entacapone", "stalevo", "carbidopa", "sinemet", "madopar", "pramipexole", "ropinirole", "dopamine", "parkinsonism", "parkinson plus", "neurodegenerative", "movement disorder", "dyskinesia", "wearing off", "freezing", "festination", "orthostatic hypotension", "REM sleep behaviour disorder"]
 summary: "Clinical pathway for Parkinson disease: background, assessment of cardinal features (bradykinesia, tremor, rigidity), warning signs for Parkinson-plus syndromes, drug treatment overview (levodopa, dopamine agonists, COMT inhibitors), and management of non-motor symptoms. Diagnosis and drug initiation are led by a neurologist. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Herpes Zoster Ophthalmicus"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["herpes zoster ophthalmicus", "shingles eye", "HZO", "zoster", "shingles", "V1 dermatome", "iritis", "keratitis", "valaciclovir", "aciclovir", "nasociliary", "postherpetic neuralgia", "eye rash", "corneal", "antiviral"]
 summary: "Clinical pathway for herpes zoster ophthalmicus (shingles affecting the eye): red flags requiring urgent ophthalmology referral, assessment including visual acuity and signs of iritis/keratitis, and antiviral management. Always discuss with your doctor."

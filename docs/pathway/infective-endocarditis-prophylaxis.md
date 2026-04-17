@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Infective Endocarditis Prophylaxis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["infective endocarditis", "endocarditis prophylaxis", "antibiotic prophylaxis", "dental prophylaxis", "heart valve", "prosthetic valve", "rheumatic heart disease", "congenital heart disease", "amoxicillin", "clindamycin", "clarithromycin", "SBE", "cardiac conditions"]
 summary: "Clinical pathway for infective endocarditis (IE) prophylaxis: which patients are at risk, which procedures require prophylaxis, and antibiotic regimens (amoxicillin, clarithromycin, or clindamycin). Always discuss with your doctor."

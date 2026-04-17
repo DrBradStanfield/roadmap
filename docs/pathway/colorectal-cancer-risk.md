@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Colorectal Cancer Risk"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["colorectal cancer", "bowel cancer", "CRC", "family history", "Lynch syndrome", "FAP", "familial adenomatous polyposis", "colonoscopy", "bowel screening", "IBD", "inflammatory bowel disease", "hereditary cancer", "cancer risk", "NZFGCS"]
 summary: "Clinical pathway for assessing colorectal cancer (CRC) risk based on family history, IBD, and previous CRC. Covers the three familial risk categories and corresponding surveillance and referral recommendations. Always discuss with your doctor."

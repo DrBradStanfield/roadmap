@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Thrombocytosis (High Platelets)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["thrombocytosis", "thrombocythaemia", "high platelets", "elevated platelets", "essential thrombocythaemia", "polycythaemia vera", "myelofibrosis", "myeloproliferative", "reactive thrombocytosis", "platelet count", "haematology", "iron deficiency", "CRP", "ferritin", "aspirin", "cancer risk", "splenomegaly"]
 summary: "Clinical pathway for thrombocytosis (persistently elevated platelet count) in adults: red flags requiring urgent haematology advice, background on primary vs secondary causes, assessment approach, and a stepwise management algorithm including when to refer. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Fetal Renal Tract Dilatation"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["fetal renal tract dilatation", "antenatal hydronephrosis", "renal pelvis dilatation", "pyelectasis", "hydronephrosis", "antenatal ultrasound", "fetal kidney", "renal ultrasound", "anteroposterior renal pelvis diameter", "APRPD", "A1 A2 A3 classification", "P1 P2 P3 classification", "postnatal renal follow-up", "lead maternity carer", "LMC", "paediatric nephrology", "maternal fetal medicine"]
 summary: "Clinical pathway for fetal renal tract dilatation detected on antenatal ultrasound. Covers the A1–A3 antenatal classification system, postnatal P1–P3 classification, and follow-up ultrasound timing based on risk category. Management is guided by your doctor and the lead maternity carer. Always discuss results with your healthcare team."

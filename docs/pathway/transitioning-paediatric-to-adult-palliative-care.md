@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Transitioning from Paediatric to Adult Palliative Care Services"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["palliative care", "paediatric", "transition", "adult palliative care", "life-limiting illness", "adolescent", "young adult", "hospice", "advance care plan", "multidisciplinary", "general practice"]
 summary: "Three-phase framework for transitioning young people with life-limiting illnesses from paediatric to adult palliative care services. Covers roles of paediatric team, adult palliative care, and general practice across phases of preparation, step-up, and settling into adult services. Transition planning begins from age 12, with full transition by age 18."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ultrasound Neck and Thyroid"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["neck ultrasound", "thyroid ultrasound", "neck lump", "neck mass", "thyroid nodule", "thyroid cancer", "goitre", "thyroid swelling", "incidental thyroid nodule", "FDG-avid", "PET CT", "Bethesda", "cervical lymphadenopathy", "compressive symptoms", "stridor", "dysphagia", "hoarseness", "hyperthyroidism", "hypothyroidism"]
 summary: "Clinical pathway for neck and thyroid ultrasound: when imaging is recommended (neck masses, thyroid nodules, incidental findings), red flags for thyroid cancer, compressive symptoms requiring urgent assessment, and when alternative investigations are more appropriate. Always discuss with your doctor."

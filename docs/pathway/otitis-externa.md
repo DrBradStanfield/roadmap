@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Otitis Externa"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["otitis externa", "ear infection", "outer ear", "ear canal", "swimmer's ear", "otalgia", "ear pain", "ear discharge", "otorrhoea", "ear drops", "pseudomonas", "fungal ear", "ramsay hunt", "malignant otitis externa", "ear canal inflammation"]
 summary: "Clinical pathway for otitis externa (outer ear infection): red flags requiring urgent care, background on bacterial and fungal causes, assessment approach, and management with ear drops and oral antibiotics where needed. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Iodine Supplementation in Pregnancy and Breastfeeding"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["iodine", "iodine deficiency", "pregnancy", "breastfeeding", "antenatal", "potassium iodate", "thyroid", "hypothyroid", "hyperthyroid", "Graves disease", "Hashimoto", "goitre", "amiodarone", "lithium", "prenatal vitamins", "folate", "supplement pregnancy"]
 summary: "Clinical guidance on iodine supplementation during pregnancy and breastfeeding: who needs it, recommended dose, thyroid condition considerations, medication interactions, and when to defer to your doctor."

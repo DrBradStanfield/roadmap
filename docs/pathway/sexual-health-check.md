@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sexual Health Check"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sexual health check", "STI screening", "sexually transmitted infection", "HIV", "syphilis", "chlamydia", "gonorrhoea", "trichomoniasis", "hepatitis B", "hepatitis C", "MSM", "PrEP", "doxy-PEP", "sexual history", "contact tracing"]
 summary: "Clinical pathway for sexual health screening in adults: who to offer testing to, taking a sexual history, investigations by patient group (women, men who have sex with women, MSM, transgender/non-binary), and management including immunisation and risk reduction. Always discuss with your doctor."

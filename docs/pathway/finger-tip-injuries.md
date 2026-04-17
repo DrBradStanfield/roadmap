@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Finger Tip Injuries"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["fingertip injury", "finger injury", "subungual haematoma", "nail bed injury", "mallet finger", "mallet deformity", "phalangeal fracture", "tuft fracture", "nail avulsion", "finger amputation", "crush injury", "terminal phalanx", "digital block"]
 summary: "Clinical pathway for fingertip injuries in adults and children: assessment of nail, bone, tendon, and soft tissue involvement; management of subungual haematoma, phalangeal fractures, mallet deformity, and nail bed injuries; and indications for acute hand surgery referral. Always discuss with your doctor."

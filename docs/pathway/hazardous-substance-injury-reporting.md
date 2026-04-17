@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hazardous Substance Injury Reporting"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hazardous substance", "chemical injury", "poisoning", "chemical burn", "carbon monoxide", "lead poisoning", "silica exposure", "notification", "occupational exposure", "chemical exposure", "toxic", "HSNO"]
 summary: "Overview of hazardous substance injury reporting in New Zealand: what counts as a hazardous substance, what exposures require notification, what is excluded, and what patients can expect when a notification is made. Always discuss with your doctor."

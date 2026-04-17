@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Parotid Gland Disorders"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["parotid", "parotid gland", "parotid swelling", "parotitis", "sialoadenitis", "salivary gland", "salivary stone", "parotid tumour", "sialadenitis", "sjögren syndrome", "mumps", "facial swelling", "jaw swelling", "salivary duct", "flucloxacillin"]
 summary: "Clinical pathway for parotid gland disorders: assessment of unilateral vs bilateral swelling, focal vs generalised swelling, management of acute sialoadenitis including antibiotic treatment, and when to seek specialist assessment. Always discuss with your doctor."

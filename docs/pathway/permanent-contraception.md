@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Permanent Contraception"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["permanent contraception", "vasectomy", "tubal ligation", "sterilisation", "salpingectomy", "Filshie clip", "contraception", "family planning", "fertility", "azoospermia", "regret", "reversal"]
 summary: "Clinical pathway for permanent contraception: background on vasectomy and tubal ligation (procedures, failure rates, reversal), assessment including factors that predict regret, management of both procedures and post-procedure care. Always discuss with your doctor."

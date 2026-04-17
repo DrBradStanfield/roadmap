@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Dengue Fever"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["dengue", "dengue fever", "dengue haemorrhagic fever", "severe dengue", "tropical fever", "returning traveller", "fever", "thrombocytopenia", "aedes", "mosquito", "pacific", "dengue ns1", "dengue pcr", "dengue rash", "petechiae", "dengue shock"]
 summary: "Clinical pathway for dengue fever in returning travellers: background, disease phases (febrile/critical/recovery), symptoms and warning features, risk factors for severe disease, investigations (NS1Ag, FBC, LFTs), supportive management, monitoring, and when to escalate. Dengue is a notifiable condition. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Domperidone as Galactagogue"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["domperidone", "galactagogue", "breastfeeding", "milk supply", "lactation", "prolactin", "low milk supply", "insufficient milk", "motilium", "breastmilk"]
 summary: "Clinical guidance on the use of domperidone to increase breast milk supply (galactagogue). Covers what domperidone is, its regulatory status in New Zealand, evidence for benefits, and cardiac safety considerations. Always discuss with your doctor before use."

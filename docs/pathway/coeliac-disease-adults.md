@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Coeliac Disease (Adults)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["coeliac disease", "celiac", "gluten", "gluten intolerance", "gluten-free diet", "tTG IgA", "tissue transglutaminase", "small bowel biopsy", "gastroscopy", "IgA deficiency", "malabsorption", "dermatitis herpetiformis", "FODMAP", "coeliac", "wheat", "rye", "barley"]
 summary: "Clinical pathway for coeliac disease in adults: who to test, what blood tests to order, how diagnosis is confirmed by biopsy, and lifelong management with a gluten-free diet. Discuss testing and diagnosis with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Exacerbation of COPD"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["COPD", "chronic obstructive pulmonary disease", "acute exacerbation", "exacerbation", "copd flare", "breathlessness", "dyspnoea", "wheeze", "cough", "sputum", "salbutamol", "inhaler", "spacer", "nebuliser", "prednisone", "prednisolone", "corticosteroid", "amoxicillin", "doxycycline", "antibiotic", "oxygen saturation", "pulse oximetry", "bronchodilator", "ipratropium", "LABA", "LAMA", "ICS", "inhaled corticosteroid", "CRP", "CURB-65", "chest X-ray", "respiratory failure", "sepsis", "cyanosis", "pulmonary rehabilitation", "COPD action plan", "advance care plan", "respiratory nursing"]
 summary: "Clinical pathway for acute exacerbations of COPD: when to call an ambulance, how doctors assess severity, community vs hospital management, bronchodilator and antibiotic treatment, corticosteroids, and follow-up care."

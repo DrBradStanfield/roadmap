@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Anal Fissure"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["anal fissure", "rectal pain", "painful defecation", "anal tear", "sphincter spasm", "glyceryl trinitrate", "diltiazem", "proctosedyl", "ultraproct", "rectal bleeding", "chronic fissure", "sentinel pile", "topical ointment", "anal canal"]
 summary: "Clinical pathway for anal fissure: assessment of acute vs chronic fissure, risk factors for primary and secondary causes, topical treatment with glyceryl trinitrate or diltiazem paste, and when to refer for surgical assessment. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sexuality in Spinal Cord Impairment (SCI)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["spinal cord injury", "sci", "sexuality", "erectile dysfunction", "fertility", "sexual function", "orgasm", "pde5 inhibitors", "sildenafil", "tadalafil", "contraception", "pregnancy sci", "autonomic dysreflexia", "spinal cord impairment"]
 summary: "Clinical guidance for sexuality in spinal cord impairment: changes in sexual function for men and women, erectile dysfunction management, fertility concerns, skin care during sex, autonomic dysreflexia risk, contraception, and pregnancy considerations. Sexual function changes are common after SCI — always discuss with your doctor."

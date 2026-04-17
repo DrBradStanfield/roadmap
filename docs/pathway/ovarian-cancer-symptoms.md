@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ovarian Cancer Symptoms"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ovarian cancer", "pelvic pain", "abdominal bloating", "CA125", "pelvic mass", "ascites", "postmenopausal bleeding", "BRCA", "HNPCC", "Lynch syndrome", "ovarian cyst", "gynaecology", "women's health"]
 summary: "Clinical pathway for women with new or persisting abdominal or pelvic symptoms that may indicate ovarian cancer. Covers red flags, risk factors, assessment (including CA125 and pelvic ultrasound), and management by menopausal status and CA125 result. Always discuss with your doctor."

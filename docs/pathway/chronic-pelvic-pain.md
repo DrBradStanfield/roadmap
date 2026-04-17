@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Chronic Pelvic Pain"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["chronic pelvic pain", "pelvic pain", "endometriosis", "adenomyosis", "pelvic inflammatory disease", "vulvodynia", "interstitial cystitis", "dysmenorrhoea", "pelvic congestion", "pudendal neuralgia", "cyclic pain", "dyspareunia", "pelvic floor", "musculoskeletal pelvic pain"]
 summary: "Clinical pathway for chronic pelvic pain in women: red flags, common contributing causes (gynaecological, urological, gastrointestinal, musculoskeletal, neurological, psychological), assessment approach, and management including non-pharmacological strategies, medications, and flare management. Always discuss with your doctor."

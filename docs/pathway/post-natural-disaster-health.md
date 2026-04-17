@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Post-Natural Disaster Health"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["natural disaster", "flood", "cyclone", "storm", "earthquake", "wildfire", "heatwave", "drought", "disaster recovery", "PTSD", "acute stress", "leptospirosis", "cellulitis", "flood wound", "gastroenteritis", "smoke inhalation", "thunderstorm asthma", "psychological first aid", "disaster mental health"]
 summary: "Clinical pathway for health problems arising from natural disasters or adverse weather events, covering physical injuries, disaster-specific infections, and mental health support. Includes red flags, disaster-type assessment, wound care, antibiotic guidance, and staged psychological management. Always discuss with your doctor."

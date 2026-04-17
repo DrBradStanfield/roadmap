@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sulfasalazine Shared Care Guidance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sulfasalazine", "salazopyrin", "shared care", "DMARD", "inflammatory arthritis", "ulcerative colitis", "crohn's disease", "inflammatory bowel disease", "IBD", "rheumatoid arthritis", "immunomodulator", "monitoring", "FBC", "LFT", "neutropenia", "thrombocytopenia"]
 summary: "Shared care guidance for sulfasalazine: monitoring requirements, red flags requiring urgent specialist contact, adverse effects, drug interactions, and guidance for pregnancy and breastfeeding. This medication is initiated by a specialist. Always discuss with your doctor."

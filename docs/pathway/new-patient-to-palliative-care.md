@@ -1,6 +1,6 @@
 ---
 title: "Pathway: New Patient to Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["palliative care", "end of life", "advance care plan", "ACP", "enduring power of attorney", "EPA", "hospice", "life-limiting illness", "goals of care", "syringe driver", "CPR", "assisted dying", "SPICT", "surprise question"]
 summary: "Clinical pathway for initiating palliative care in adults with life-limiting illness: identifying palliative care needs, early conversations about goals and CPR, holistic assessment, advance care planning, medications, and when to seek specialist palliative care support. Always discuss with your doctor."

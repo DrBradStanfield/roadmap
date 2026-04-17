@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Malaria"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["malaria", "plasmodium", "falciparum", "vivax", "fever", "travel", "returned traveller", "prophylaxis", "doxycycline", "atovaquone", "proguanil", "malarone", "mefloquine", "artemether", "mosquito", "antimalarial", "tropical disease", "infectious disease"]
 summary: "Clinical pathway for malaria in returned travellers: always consider malaria in any febrile patient who has returned from an endemic area. Covers prophylaxis for travellers, assessment for severe malaria, clinical presentation, investigations, and management. All suspected cases require specialist infectious diseases assessment — treatment is only available in hospital. Always discuss with your doctor."

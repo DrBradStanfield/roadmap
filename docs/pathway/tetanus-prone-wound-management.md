@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Tetanus-prone Wound Management"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["tetanus", "wound", "tetanus vaccination", "tetanus immunoglobulin", "TIG", "dirty wound", "clean wound", "boostrix", "tdap", "clostridium tetani", "wound management", "immunisation", "bite wound", "crush injury", "burn", "avulsion"]
 summary: "Clinical pathway for assessing and managing tetanus-prone wounds: classifying wounds as clean or dirty, reviewing vaccination history, and determining need for tetanus vaccine and/or tetanus immunoglobulin (TIG). Always discuss with your doctor."

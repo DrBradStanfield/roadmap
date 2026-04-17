@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Superior Vena Cava Obstruction (SVCO) in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline", "Palliative Care", "Oncology"]
 keywords: ["superior vena cava obstruction", "svco", "palliative care", "oncology", "dyspnoea", "facial swelling", "lung cancer", "lymphoma", "dexamethasone", "stenting", "radiotherapy", "emergency", "end of life"]
 summary: "Clinical pathway for SVCO in adult oncology and palliative care patients. SVCO is an oncological emergency requiring urgent hospital assessment unless the patient is in the last days of life and no further intervention is wanted. Symptoms include breathlessness, facial swelling, and distended neck veins. Always discuss with your doctor."

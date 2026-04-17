@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ectropion and Entropion"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ectropion", "entropion", "eyelid", "lower eyelid", "eyelid turning", "watering eye", "epiphora", "corneal abrasion", "corneal staining", "fluorescein", "seventh nerve palsy", "artificial tears", "chloramphenicol", "eye irritation", "ophthalmology"]
 summary: "Clinical pathway for ectropion (outward eyelid rotation) and entropion (inward eyelid rotation): red flags, background, assessment including fluorescein staining and visual acuity, and management with artificial tears, antibiotics, and lid taping. Always discuss with your doctor."

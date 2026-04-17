@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Tongue-tie (Ankyloglossia) and Breastfeeding Difficulties"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["tongue-tie", "ankyloglossia", "breastfeeding", "frenulum", "frenotomy", "frenectomy", "lingual frenulum", "breastfeeding difficulties", "nipple pain", "infant feeding", "lactation", "lip tie", "BTAT", "Bristol Tongue Assessment Tool"]
 summary: "Clinical pathway for tongue-tie (ankyloglossia) in infants with breastfeeding difficulties: assessment of tongue mobility and frenulum, when surgery is considered, potential complications of frenotomy, and patient resources. Always discuss with your doctor."

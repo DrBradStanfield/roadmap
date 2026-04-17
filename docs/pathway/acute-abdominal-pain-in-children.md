@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Abdominal Pain in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["abdominal pain", "stomach pain", "tummy pain", "children", "paediatric", "appendicitis", "intussusception", "testicular torsion", "ovarian torsion", "mesenteric adenitis", "peritonitis", "constipation", "gastroenteritis", "pyloric stenosis", "volvulus", "hernia", "bile vomiting", "scrotal pain"]
 summary: "Clinical pathway for acute abdominal pain in children under 15: red flags requiring emergency care, differential diagnosis by age group (surgical vs non-surgical causes), assessment approach, and community management for non-specific pain. Always discuss with your doctor."

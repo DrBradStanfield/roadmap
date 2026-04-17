@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Infectious Gastroenteritis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["gastroenteritis", "diarrhoea", "diarrhea", "vomiting", "stomach bug", "campylobacter", "salmonella", "giardia", "cryptosporidium", "norovirus", "rotavirus", "shigella", "listeria", "c. difficile", "clostridium difficile", "e. coli", "vtec", "stec", "yersinia", "typhoid", "food poisoning", "infectious diarrhoea", "bacterial gastroenteritis", "viral gastroenteritis"]
 summary: "Clinical pathway for infectious gastroenteritis: when to seek urgent care, assessment, investigation, and management by causative organism (viral, Campylobacter, Giardia, C. difficile, Shigella, Salmonella, Listeria, VTEC/STEC, and others). Most cases are self-limiting and managed with fluids. Always discuss with your doctor."

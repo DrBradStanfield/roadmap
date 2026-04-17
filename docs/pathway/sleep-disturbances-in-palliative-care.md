@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sleep Disturbances in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sleep disturbances", "palliative care", "insomnia", "hypersomnia", "zopiclone", "temazepam", "clonazepam", "melatonin", "sleep hygiene", "end of life", "terminal", "hospice"]
 summary: "Clinical pathway for managing sleep disturbances in adults receiving palliative care. Covers assessment of contributing causes (physical, psychological, environmental, medication-related), non-pharmacological management including sleep hygiene and stimulus control, and pharmacological options for refractory insomnia. Always discuss with your doctor."

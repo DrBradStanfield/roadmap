@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Culturally and Linguistically Diverse (CALD) Young People"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["CALD", "culturally and linguistically diverse", "refugee", "migrant", "young people", "youth", "cultural identity", "edgewalking", "PTSD", "cultural health", "child and youth health", "cultural competency", "immigrant health"]
 summary: "Clinical pathway for supporting culturally and linguistically diverse (CALD) young people in primary care: background on cultural stressors, assessment of cultural identity and health needs (including refugee-specific issues), and management principles. Always discuss with your doctor."

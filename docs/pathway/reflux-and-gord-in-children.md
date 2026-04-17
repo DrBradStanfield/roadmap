@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Reflux and GORD in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["reflux", "gord", "gastro-oesophageal reflux", "spilling", "regurgitation", "vomiting", "infant", "baby", "children", "pyloric stenosis", "haematemesis", "omeprazole", "alginate", "gaviscon", "cow's milk protein", "eosinophilic oesophagitis", "faltering growth"]
 summary: "Clinical pathway for reflux and GORD in infants, children, and adolescents: red flags requiring emergency assessment, distinguishing physiological spilling from GORD, lifestyle measures, and when medications may be considered. Always discuss with your doctor."

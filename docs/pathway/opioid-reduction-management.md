@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Opioid Reduction Management"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["opioid reduction", "opioid tapering", "opioid withdrawal", "opioid dependence", "opioid addiction", "codeine", "morphine", "oxycodone", "tramadol", "fentanyl", "methadone", "withdrawal symptoms", "opioid weaning", "chronic pain", "opioid tapering plan", "opioid-induced endocrinopathy", "adrenal insufficiency"]
 summary: "Clinical pathway for reducing prescribed opioids: background on managed withdrawal, assessment of dependence and addiction features, tapering plans, managing withdrawal symptoms, and relapse prevention. This is a complex process managed by your doctor — always discuss with them before making any changes."

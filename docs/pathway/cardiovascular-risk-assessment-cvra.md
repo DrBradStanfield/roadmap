@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cardiovascular Risk Assessment (CVRA)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cardiovascular risk", "cvra", "cvd risk", "heart disease risk", "framingham", "cvd prevention", "lipids", "cholesterol", "blood pressure", "hypertension", "diabetes", "statin", "aspirin", "primary prevention", "secondary prevention", "familial hypercholesterolaemia", "hdl", "ldl", "tc:hdl", "hba1c", "maori", "pacific peoples", "indo-asian"]
 summary: "Clinical pathway for cardiovascular risk assessment in adults: who to screen and at what age, risk factors to assess, how risk is calculated and categorised, management targets for blood pressure and LDL, aspirin use, lifestyle interventions, and how often to repeat the assessment. Your doctor will determine your individual risk and guide treatment decisions."

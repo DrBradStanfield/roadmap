@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cervical Polyps"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cervical polyp", "endocervical polyp", "cervical polyps", "abnormal vaginal bleeding", "post-coital bleeding", "postmenopausal bleeding", "cervical screening", "HPV co-test", "cytology", "gynaecology", "speculum examination", "polyp removal"]
 summary: "Clinical pathway for cervical polyps: background, assessment including HPV co-test, and management by polyp size and appearance. Covers when referral to gynaecology is needed. Always discuss with your doctor."

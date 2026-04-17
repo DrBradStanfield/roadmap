@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Long QT Syndrome"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["long qt syndrome", "long qt", "qtc", "qt interval", "torsades de pointes", "syncope", "sudden cardiac death", "inherited long qt", "congenital long qt", "acquired long qt", "qt prolongation", "ecg", "qtc threshold", "bazett formula", "medication qt", "electrolyte qt"]
 summary: "Clinical pathway for long QT syndrome: red flags, background on acquired vs congenital types, medications that prolong QT, assessment including QTc thresholds and measurement method, causes to investigate, and management including electrolyte correction and medication dose thresholds. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hip and Knee Joint Replacement"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hip replacement", "knee replacement", "joint replacement", "arthroplasty", "total hip replacement", "total knee replacement", "osteoarthritis", "orthopaedic surgery", "joint pain", "hip pain", "knee pain", "functional limitation", "BMI surgery", "joint surgery fitness"]
 summary: "Clinical pathway for assessing suitability for hip or knee joint replacement surgery: when non-surgical treatment should be tried first, how your doctor assesses pain and functional limitations, factors that may defer or prevent surgery, and what to expect from the surgical pathway. Always discuss with your doctor."

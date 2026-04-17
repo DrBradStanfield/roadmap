@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Punch or Shave Biopsy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["skin biopsy", "punch biopsy", "shave biopsy", "skin lesion", "histology", "dermatology", "skin cancer", "melanoma", "BCC", "SCC", "basal cell carcinoma", "squamous cell carcinoma", "seborrhoeic keratosis", "skin tag", "minor surgery", "local anaesthetic", "lidocaine"]
 summary: "Clinical guidance on shave and punch biopsies for histological diagnosis of skin lesions: when each method is appropriate, procedural steps, risks, and follow-up. Suspected melanoma always requires excision biopsy — never a shave or punch. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Trigger Thumb in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["trigger thumb", "trigger thumb in children", "congenital clasped thumb", "paediatric hand", "thumb flexion", "IP joint", "MCP joint", "thumb nodule", "paediatric orthopaedics"]
 summary: "Clinical pathway for trigger thumb in children: two distinct conditions (classic trigger thumb and congenital clasped thumb), how they present, and when specialist assessment is needed. Always discuss with your doctor."

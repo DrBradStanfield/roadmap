@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Epilepsy in Children and Young People"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["epilepsy", "seizures", "children", "paediatric epilepsy", "anti-seizure medication", "ASM", "carbamazepine", "lamotrigine", "levetiracetam", "sodium valproate", "clobazam", "ethosuximide", "phenytoin", "breakthrough seizures", "developmental regression", "epilepsy syndrome"]
 summary: "Clinical pathway for established epilepsy in children and young people under 15 years: red flags, background on epilepsy diagnosis, ongoing management in primary care, medication side effects, sick day and missed dose guidance, co-morbidities, and when to seek specialist review. Always discuss with your doctor."

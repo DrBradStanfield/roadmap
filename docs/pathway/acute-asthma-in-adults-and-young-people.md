@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Acute Asthma in Adults and Young People"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["asthma", "acute asthma", "bronchospasm", "salbutamol", "ventolin", "nebuliser", "spacer", "PEF", "peak flow", "oxygen saturation", "ipratropium", "prednisone", "corticosteroid", "SABA", "ICS", "reliever inhaler", "preventer inhaler", "budesonide", "formoterol", "AIR therapy", "wheeze", "dyspnoea", "breathlessness", "respiratory distress", "silent chest", "magnesium sulphate", "hydrocortisone", "life-threatening asthma", "severe asthma"]
 summary: "Clinical pathway for acute asthma in adults and young people aged 12 years and over: severity assessment using PEF, oxygen saturation, respiratory rate and heart rate; emergency management for life-threatening, severe, and mild-to-moderate attacks; discharge criteria and follow-up. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Anaemia in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["anaemia", "anemia", "haemoglobin", "iron deficiency", "ferritin", "B12 deficiency", "folate deficiency", "macrocytic", "microcytic", "normocytic", "reticulocyte", "haemolysis", "thalassaemia", "blood transfusion", "haematology", "MCV", "FBC", "full blood count", "myeloma", "myelodysplasia"]
 summary: "Clinical pathway for anaemia in adults: red flags, diagnostic approach using FBC/ferritin/B12/folate/MCV/reticulocytes, cause-based investigation (iron deficiency, B12/folate, haemolysis, chronic inflammation, bone marrow disease), and management including when to refer to haematology. Always discuss with your doctor."

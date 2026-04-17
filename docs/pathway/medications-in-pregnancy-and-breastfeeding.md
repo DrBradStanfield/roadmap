@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Medications in Pregnancy and Breastfeeding"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["medications in pregnancy", "medications breastfeeding", "prescribing pregnancy", "teratogenicity", "safe medicines pregnancy", "breastfeeding drugs", "lactation medications", "pregnancy pharmacology", "ACE inhibitors pregnancy", "NSAIDs pregnancy", "anticonvulsants pregnancy", "valproate pregnancy", "warfarin pregnancy", "retinoids pregnancy", "LactMed", "infant drug exposure"]
 summary: "Clinical guidance on prescribing medications during pregnancy and breastfeeding. Covers key prescribing principles, drugs with proven teratogenicity, trimester-specific risks, breastfeeding safety considerations, and infant monitoring. Always discuss medication use in pregnancy or breastfeeding with your doctor."

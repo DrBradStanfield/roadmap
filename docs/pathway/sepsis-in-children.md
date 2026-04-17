@@ -1,11 +1,9 @@
 ---
-title: Sepsis in Children
-aliases: [paediatric sepsis, sepsis child, child sepsis, red flag sepsis, amber flag sepsis]
-age_range: 0–11 years
-tags: [emergency, infection, paediatric, sepsis]
-source: Auckland Region HealthPathways
-source_url: https://aucklandregion.communityhealthpathways.org/files/713149.htm
-last_updated: 2026-04-17
+title: "Pathway: Sepsis in Children"
+type: "pathway"
+tags: ["Guideline"]
+keywords: ["paediatric sepsis", "sepsis in children", "septic shock", "meningococcal sepsis", "meningitis", "severe infection in child", "unresponsive child", "non-blanching rash", "fever", "lethargy", "not feeding", "mottled skin", "red flag sepsis"]
+summary: "Sepsis is a life-threatening complication of infection in children that requires immediate recognition and treatment. Red flags include purpuric rash, severe lethargy or unresponsiveness, extreme fever, severe breathing problems, or poor perfusion; any confirmed or suspected infection with one red flag plus a very unwell appearance requires urgent ED transfer, oxygen, IV access, antibiotics, and fluid resuscitation. Always discuss with your doctor."
 ---
 
 # Sepsis in Children (Age 0–11 Years)

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Infantile Haemangioma"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["infantile haemangioma", "haemangioma", "strawberry birthmark", "vascular tumour", "propranolol", "PHACE syndrome", "PELVIS syndrome", "birthmark", "skin lesion", "infant skin", "paediatric", "vascular lesion"]
 summary: "Clinical pathway for infantile haemangioma in infants: background on natural history, red flags requiring urgent assessment, assessment approach including segmental and congenital abnormality associations, and management including propranolol use and family education. Always discuss with your doctor."

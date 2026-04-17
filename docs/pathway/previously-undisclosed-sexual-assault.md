@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Previously Undisclosed Sexual Assault"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sexual assault", "sexual abuse", "childhood abuse", "rape", "non-consensual sex", "unwanted touching", "sensitive claims", "ACC sensitive claim", "DSAC", "crisis support", "sexual violence", "trauma", "forensic assessment"]
 summary: "Clinical pathway for managing disclosure of a previously undisclosed sexual assault or childhood abuse in adults: when and how to ask about abuse history, providing emotional support, navigating the ACC sensitive claims process, and connecting patients to crisis and counselling support. Always discuss with your doctor."

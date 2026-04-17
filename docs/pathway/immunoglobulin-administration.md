@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Immunoglobulin Administration"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["immunoglobulin", "passive immunity", "anti-D", "hepatitis B immunoglobulin", "tetanus immunoglobulin", "zoster immunoglobulin", "varicella zoster", "measles immunoglobulin", "rabies immunoglobulin", "IM injection", "blood product", "NZ Blood Service", "post-exposure prophylaxis"]
 summary: "Clinical pathway for the administration of immunoglobulin in general practice: background, safety precautions, vaccine interactions, and adverse reactions. Your doctor will confirm eligibility, obtain consent, and coordinate ordering through the NZ Blood Service. Always discuss with your doctor."

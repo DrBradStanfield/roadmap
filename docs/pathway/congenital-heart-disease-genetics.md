@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Congenital Heart Disease - Genetics"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["congenital heart disease", "CHD", "genetics", "genetic counselling", "family history", "recurrence risk", "ASD", "VSD", "tetralogy of Fallot", "antenatal", "fetal medicine", "chromosomal conditions"]
 summary: "Clinical pathway for the genetic aspects of congenital heart disease (CHD): background on common defects and chromosomal associations, assessment including a 3-generation family tree, recurrence risk counselling, and when to request genetic health assessment. Always discuss with your doctor."

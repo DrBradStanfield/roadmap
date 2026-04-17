@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Sepsis in Adults, Young People, and Pregnant Women"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sepsis", "septic shock", "red flag sepsis", "amber flag sepsis", "infection", "organ failure", "sepsis six", "ceftriaxone", "blood cultures", "maternal sepsis", "post-sepsis syndrome", "AVPU", "vital signs", "systolic blood pressure", "tachycardia", "tachypnoea"]
 summary: "Clinical pathway for recognising and managing sepsis in adults and young people aged 12 and over, including pregnant women and those up to 6 weeks postpartum. Covers risk factors, Red Flag vs Amber Flag sepsis criteria, the Sepsis Six immediate management bundle, and post-recovery support. This is a medical emergency — always discuss with your doctor."

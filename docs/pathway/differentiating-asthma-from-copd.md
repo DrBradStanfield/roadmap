@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Differentiating Asthma from COPD"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["asthma", "COPD", "chronic obstructive pulmonary disease", "differentiate", "diagnosis", "spirometry", "FEV1", "FVC", "bronchodilator", "reversibility", "airflow obstruction", "wheeze", "breathlessness", "cough", "sputum", "atopy", "hay fever", "prednisolone", "steroid trial", "beclomethasone", "inhaled corticosteroid", "ACOS", "asthma-COPD overlap", "eosinophilic", "dynamic hyperinflation", "air trapping", "GOLD", "GINA"]
 summary: "How doctors use symptoms, history, and spirometry to distinguish asthma from COPD, and when to consider asthma-COPD overlap syndrome (ACOS)."

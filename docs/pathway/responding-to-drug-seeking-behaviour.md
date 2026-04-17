@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Responding to Drug-Seeking Behaviour"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["drug seeking", "drug-seeking behaviour", "controlled drugs", "opioids", "benzodiazepines", "prescription drugs", "doctor shopping", "addiction", "dependence", "methylphenidate", "zopiclone", "morphine", "oxycodone", "codeine", "tramadol", "clonazepam", "pregabalin", "gabapentin", "quetiapine"]
 summary: "Clinical pathway for managing patients who may be seeking controlled drugs inappropriately — covering assessment, recognition, legal obligations, and management strategies. Always discuss with your doctor."

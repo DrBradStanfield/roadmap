@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Tuberculosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["tuberculosis", "tb", "mycobacterium tuberculosis", "latent tb", "active tb", "pulmonary tb", "extrapulmonary tb", "tb contact", "tb symptoms", "tb diagnosis", "tb treatment", "ltbi", "sputum afb", "rifampicin", "haemoptysis", "night sweats", "tb chest xray"]
 summary: "Clinical pathway for tuberculosis (TB): recognising symptoms of active pulmonary and extrapulmonary TB, identifying high-risk patients, diagnostic approach including chest X-ray and sputum culture, and management of suspected and confirmed TB. TB is a notifiable disease — always discuss with your doctor."

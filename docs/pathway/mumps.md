@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Mumps"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["mumps", "parotitis", "parotid swelling", "MMR", "salivary gland", "orchitis", "aseptic meningitis", "notifiable disease", "viral infection", "immunisation"]
 summary: "Clinical pathway for mumps: assessment of parotid swelling, confirmation with PCR, isolation advice, management of symptoms and complications, contact management by immune status, and MMR vaccination. Always discuss with your doctor."

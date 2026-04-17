@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Dysmorphic Child — Genetics"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["dysmorphic child", "dysmorphism", "genetics", "genetic testing", "developmental delay", "Down syndrome", "Fragile X", "Prader-Willi", "fetal alcohol spectrum disorder", "FASD", "chromosomal", "paediatrics", "intellectual disability", "dysmorphology"]
 summary: "Clinical pathway for a child with unusual facial or physical features: what assessment involves, common conditions to consider, and when your doctor will refer for genetic or paediatric review. Always discuss with your doctor."

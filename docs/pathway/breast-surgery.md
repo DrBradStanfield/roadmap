@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Breast Surgery"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["breast surgery", "breast reduction", "breast reconstruction", "breast asymmetry", "breast absence", "gynaecomastia", "breast augmentation", "breast anomaly", "mastectomy", "lumpectomy", "breast implant", "breast prosthesis", "plastic surgery", "tuberous breast"]
 summary: "Clinical pathway for plastic and reconstructive breast surgery: eligibility criteria, surgical risk factors, management by condition (absence, asymmetry, anomaly, augmentation complications, reconstruction, reduction, gynaecomastia), and when referral to plastic surgery is appropriate. Always discuss with your doctor."

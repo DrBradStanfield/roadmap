@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Fontanelle Development"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["fontanelle", "anterior fontanelle", "soft spot", "craniosynostosis", "fontanel", "baby head", "infant skull", "fontanelle closure", "head circumference", "paediatric", "newborn", "infant development"]
 summary: "Clinical pathway for fontanelle development concerns in infants: what is normal, when to reassure, and when to seek further assessment. Most fontanelle variation is benign and requires no investigation. Always discuss concerns with your doctor."

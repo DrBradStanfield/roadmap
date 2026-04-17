@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Endometrial Cells on Cervical Screening Results"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["endometrial cells", "cervical screening", "pap smear", "atypical endometrial cells", "AG2", "AC2", "endometrial cancer", "endometrial hyperplasia", "pipelle biopsy", "pelvic ultrasound", "abnormal uterine bleeding", "postmenopausal bleeding", "glandular cells", "cervical cytology"]
 summary: "Clinical pathway for endometrial cells found on cervical screening results: red flags requiring urgent assessment, background on significance of benign vs atypical cells, risk factor assessment, and management by result type (atypical AG2, adenocarcinoma AC2, or benign). Always discuss with your doctor."

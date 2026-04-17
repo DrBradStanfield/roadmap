@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Humerus Fractures"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["humerus fracture", "broken arm", "broken humerus", "proximal humerus", "humeral neck fracture", "humeral shaft fracture", "surgical neck of humerus", "greater tuberosity fracture", "shoulder fracture", "upper arm fracture", "foosh", "fall on outstretched hand", "osteoporosis fracture", "neer classification", "axillary nerve", "radial nerve", "collar and cuff", "fracture clinic", "orthopaedic", "physiotherapy"]
 summary: "Clinical pathway for humerus (upper arm) fractures: when to seek emergency care, assessment approach, fracture types, and management by fracture location including collar and cuff, physiotherapy timelines, and when orthopaedic referral is needed. Always discuss with your doctor."

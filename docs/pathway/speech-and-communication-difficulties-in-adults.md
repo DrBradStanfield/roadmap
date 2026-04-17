@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Speech and Communication Difficulties in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["speech difficulties", "communication difficulties", "aphasia", "dysphasia", "dysarthria", "apraxia", "dyspraxia", "stuttering", "fluency", "dysphonia", "voice problems", "speech language therapy", "SLT", "augmentative communication", "AAC", "TalkLink", "stroke speech", "parkinson speech", "motor neurone disease speech", "cognitive communication"]
 summary: "Clinical pathway for speech and communication difficulties in adults: types of difficulty (dysarthria, apraxia, aphasia, stuttering, voice problems, social communication), assessment approach, management by situation (new onset, pre-existing stable, pre-existing with change), and when to refer for speech language therapy or neurology assessment. Always discuss with your doctor."

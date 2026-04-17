@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pre-exposure Prophylaxis for HIV (PrEP)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["prep", "pre-exposure prophylaxis", "hiv prevention", "tenofovir", "emtricitabine", "sexual health", "msm", "hiv risk", "antiretroviral", "truvada"]
 summary: "Clinical pathway for pre-exposure prophylaxis (PrEP) for HIV prevention: who is eligible, baseline assessment, prescribing (daily or 2-1-1), contraindications, monitoring schedule, and when to seek specialist advice. PrEP is funded in New Zealand for eligible patients. Always discuss with your doctor."

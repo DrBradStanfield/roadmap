@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Lung Cancer"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["lung cancer", "haemoptysis", "chest x-ray", "spirometry", "smoking cessation", "respiratory assessment", "ECOG", "CT chest", "PET CT", "superior vena cava obstruction", "spinal cord compression", "pleural effusion", "finger clubbing", "COPD", "asbestos", "non-small cell", "lung mass", "lung nodule", "pulmonary", "oncology", "chemotherapy", "immunotherapy", "advance care planning", "palliative care", "cancer society"]
 summary: "Clinical pathway for lung cancer: red flags, risk factors, high-suspicion criteria, initial investigations including chest X-ray and bloods, management including urgent referral, psychosocial support, and follow-up care after diagnosis. All assessment and management requires your doctor's involvement."

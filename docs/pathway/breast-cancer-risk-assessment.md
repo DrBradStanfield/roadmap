@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Breast Cancer Risk Assessment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["breast cancer", "breast cancer risk", "family history breast cancer", "BRCA1", "BRCA2", "familial breast cancer", "breast screening", "genetic testing", "mammogram", "breast cancer genetics", "high risk breast cancer", "moderate risk breast cancer", "TP53", "breast cancer prevention"]
 summary: "Clinical pathway for assessing breast cancer risk in asymptomatic patients based on family history and personal risk factors. Covers familial risk categories (high, moderate, average), personal risk factors, when genetics referral is needed, and screening/surveillance recommendations. Always discuss with your doctor."

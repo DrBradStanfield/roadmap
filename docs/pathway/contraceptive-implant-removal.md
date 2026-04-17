@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Contraceptive Implant Removal"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["contraceptive implant", "Jadelle", "Implanon", "levonorgestrel", "etonogestrel", "implant removal", "LARC", "long-acting reversible contraception", "fertility", "menopause", "irregular bleeding", "impalpable implant", "contraception"]
 summary: "Clinical pathway for contraceptive implant removal: types of implant (Jadelle, Implanon NXT), reasons for removal, timing considerations including fertility intentions and menopause, the removal procedure, and what to expect before and after. Always discuss with your doctor."

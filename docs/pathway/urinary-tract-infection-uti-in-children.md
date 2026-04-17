@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Urinary Tract Infection (UTI) in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["uti", "urinary tract infection", "children", "paediatric", "kids", "dysuria", "pyuria", "bacteriuria", "pyelonephritis", "cefalexin", "nitrofurantoin", "haematuria", "renal", "sepsis", "fever", "urine culture", "dipstick", "clean catch urine", "recurrent uti", "constipation", "prophylactic antibiotics", "renal ultrasound"]
 summary: "Clinical pathway for urinary tract infection (UTI) in children under 15: red flags, age-based assessment and urine collection, dipstick interpretation, antibiotic selection and duration, recurrence prevention, and when hospital assessment is needed. Always discuss with your doctor."

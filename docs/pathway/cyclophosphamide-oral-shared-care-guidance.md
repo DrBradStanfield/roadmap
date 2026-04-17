@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cyclophosphamide (Oral) Shared Care Guidance"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cyclophosphamide", "shared care", "immunosuppressant", "alkylating agent", "rheumatology", "vasculitis", "SLE", "lupus", "rheumatoid arthritis", "haemorrhagic cystitis", "leukopenia", "neutropenia", "lymphopenia", "cyclophosphamide monitoring", "PCP prophylaxis", "trimethoprim", "co-trimoxazole"]
 summary: "Shared care guidance for oral cyclophosphamide in rheumatology and autoimmune conditions. Covers background, indications, dosage, monitoring, adverse effects, vaccinations, and pregnancy. This medication is initiated by a specialist; your GP manages ongoing monitoring and safety checks."

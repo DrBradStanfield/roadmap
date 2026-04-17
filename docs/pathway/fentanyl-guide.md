@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Fentanyl Guide (Palliative Care)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline", "Palliative Care", "Pharmacology"]
 keywords: ["fentanyl", "opioid", "palliative care", "pain management", "fentanyl patch", "transdermal fentanyl", "intranasal fentanyl", "syringe driver", "morphine equivalent", "MEDD", "breakthrough pain", "renal failure", "end of life", "analgesia"]
 summary: "Clinical guide for fentanyl use in adult palliative care, including patch initiation, dose calculation using morphine equivalent daily dose (MEDD), breakthrough medication, intranasal fentanyl, and end-of-life syringe driver use. Fentanyl is approximately 100 times more potent than oral morphine. Always discuss prescribing decisions with your doctor or palliative care team."

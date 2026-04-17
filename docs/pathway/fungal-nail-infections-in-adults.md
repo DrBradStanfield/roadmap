@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Fungal Nail Infections in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["fungal nail infection", "onychomycosis", "tinea unguium", "nail fungus", "terbinafine", "itraconazole", "amorolfine", "ciclopirox", "dermatophyte", "trichophyton", "nail lacquer", "antifungal", "thickened nail", "discoloured nail"]
 summary: "Clinical pathway for fungal nail infections (onychomycosis) in adults: background, assessment including typical features, risk factors, differential diagnosis and laboratory testing, and management with oral antifungals (terbinafine, itraconazole) or topical nail lacquers. Always discuss treatment options with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Myotonic Dystrophy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["myotonic dystrophy", "myotonia", "DM1", "dystrophia myotonica", "muscle weakness", "DMPK gene", "CTG repeat", "cardiac conduction", "heart block", "cataracts", "sleep apnoea", "genetic counselling", "neuromuscular", "mexiletine", "phenytoin"]
 summary: "Clinical pathway for suspected or confirmed myotonic dystrophy type 1 (DM1). Covers characteristic features (myotonia, muscle weakness, cataracts, cardiac conduction disturbances), assessment approach, when to refer to genetics or neurology, ongoing monitoring in general practice, and treatment of symptomatic myotonia. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hepatitis B (HBV)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hepatitis b", "hbv", "hbsag", "chronic hepatitis b", "liver disease", "cirrhosis", "hepatocellular carcinoma", "hcc", "antiviral", "entecavir", "tenofovir", "hbv dna", "hbeag", "liver fibrosis", "fibroscan", "hepatitis b serology", "hbig", "hbv reactivation", "liver cancer surveillance"]
 summary: "Clinical pathway for Hepatitis B (HBV): who to test, interpreting serology results, assessment of acute vs chronic infection, management of acute HBV, chronic HBV monitoring and antiviral treatment in primary care, HBV in pregnancy, and when to refer to specialist care. Always discuss with your doctor."

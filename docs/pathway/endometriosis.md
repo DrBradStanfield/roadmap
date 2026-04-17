@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Endometriosis"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["endometriosis", "pelvic pain", "dysmenorrhoea", "period pain", "dyspareunia", "sub-fertility", "infertility", "hormonal treatment", "progestin", "norethisterone", "Mirena", "COCP", "neuromodulators", "gabapentin", "nortriptyline", "endometrioma", "laparoscopy", "chronic pelvic pain", "anovulation", "amenorrhoea"]
 summary: "Clinical pathway for endometriosis: background, symptoms to recognise, assessment approach, and medical management options including hormonal therapy, analgesia, and neuromodulators. Includes when specialist referral is needed. Always discuss with your doctor."

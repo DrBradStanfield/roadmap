@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Prostate Cancer — Management"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["prostate cancer", "prostate", "PSA", "radical prostatectomy", "brachytherapy", "active surveillance", "radiation therapy", "LHRH agonist", "goserelin", "leuprorelin", "Gleason", "ISUP grade", "watchful waiting", "hormone therapy", "metastatic prostate cancer", "urology"]
 summary: "Clinical pathway for management of diagnosed prostate cancer: active surveillance criteria, surgery options, radiation treatments, advanced disease management including hormone therapy, and patient resources. Always discuss treatment options with your doctor and specialist team."

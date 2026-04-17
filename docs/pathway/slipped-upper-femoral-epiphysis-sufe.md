@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Slipped Upper Femoral Epiphysis (SUFE)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["sufe", "slipped upper femoral epiphysis", "slipped capital femoral epiphysis", "scfe", "hip pain", "limp", "child limp", "paediatric hip", "growth plate", "epiphysis", "knee pain child", "thigh pain child", "orthopaedic"]
 summary: "Clinical pathway for slipped upper femoral epiphysis (SUFE) in children: background on the condition, characteristic features, assessment including examination and X-ray, and management including non-weight-bearing and urgent orthopaedic referral. Always discuss with your doctor."

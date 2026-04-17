@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Zika Virus"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["zika", "zika virus", "flavivirus", "arboviral", "mosquito", "aedes", "congenital zika", "microcephaly", "guillain-barre", "dengue", "chikungunya", "travel", "tropical", "sexually transmitted", "pregnancy", "birth defects", "pcr", "maculopapular rash", "arthralgia", "fever", "returning traveller"]
 summary: "Clinical pathway for Zika virus: assessment of travel exposure and symptoms, laboratory testing indications, supportive management, travel advice, and post-travel precautions against sexual transmission. Always discuss with your doctor."

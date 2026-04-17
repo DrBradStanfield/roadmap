@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Floaters, Flashes, and Retinal Detachment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["floaters", "flashes", "retinal detachment", "retinal tear", "posterior vitreous detachment", "pvd", "vitreous", "ophthalmology", "eye", "vision loss", "visual field defect", "short-sightedness", "myopia"]
 summary: "Clinical pathway for floaters and flashes in adults: red flags requiring urgent ophthalmology assessment, background on PVD vs retinal tear vs detachment, assessment approach, and management by urgency. Always discuss with your doctor."

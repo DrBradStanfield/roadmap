@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Determine Injury Type"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["injury type", "blunt force", "sharp force", "strangulation", "burn", "bruise", "abrasion", "laceration", "incision", "stab", "bite mark", "transient lesion", "intimate partner violence", "forensic", "trauma", "wound assessment"]
 summary: "Clinical pathway for classifying injury type: blunt force injuries (bruise, abrasion, laceration, transient lesion), sharp force injuries (incision, stab, bite mark), strangulation, and burn injuries — including sub-types, clinical features, and healing characteristics. Always assess with your doctor."

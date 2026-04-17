@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Scabies in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["scabies", "sarcoptes scabiei", "mites", "itchy rash", "permethrin", "ivermectin", "crusted scabies", "norwegian scabies", "parotitis", "skin infestation", "burrows", "pruritus"]
 summary: "Clinical pathway for scabies in adults: diagnosis of the itchy mite-caused rash, treatment with permethrin (first line) or ivermectin (second line), environmental decontamination, and managing contacts. Special attention to aged care settings. Always discuss with your doctor."

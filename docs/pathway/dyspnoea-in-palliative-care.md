@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Dyspnoea in Palliative Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["dyspnoea", "breathlessness", "palliative care", "palliative", "end of life", "morphine", "midazolam", "lorazepam", "benzodiazepine", "oxygen", "nebuliser", "corticosteroids", "pursed lips breathing", "activity pacing", "syringe driver", "COPD", "lung cancer", "terminal", "hospice", "breathlessness management plan", "superior vena cava obstruction"]
 summary: "Clinical pathway for managing dyspnoea (breathlessness) in adult palliative care patients: non-pharmacological techniques (breathing retraining, pacing, positioning), pharmacological management (morphine, benzodiazepines, corticosteroids, nebulisers, oxygen), and end-of-life syringe driver use. Always discuss with your doctor."

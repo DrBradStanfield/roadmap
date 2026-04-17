@@ -1,6 +1,6 @@
 ---
 title: "Pathway: MGUS (Monoclonal Gammopathy of Undetermined Significance)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["mgus", "monoclonal gammopathy", "paraprotein", "multiple myeloma", "serum protein electrophoresis", "spe", "immunoglobulin", "serum free light chains", "sflc", "myeloma", "lymphoma", "amyloidosis", "plasmacytoma", "gammopathy", "crab features", "bone marrow", "IgG", "IgA", "IgM", "haematology"]
 summary: "Clinical pathway for MGUS (monoclonal gammopathy of undetermined significance): background on gammopathies, diagnostic criteria distinguishing MGUS from multiple myeloma and other conditions, risk stratification for progression (5–58% at 20 years based on three risk factors), and monitoring schedule. Lifelong follow-up is required. Always discuss with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Head Lice"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["head lice", "nits", "lice", "pediculosis", "dimethicone", "nit comb", "permethrin", "malathion", "itchy scalp", "lice treatment", "wet combing"]
 summary: "Clinical pathway for head lice: background, assessment approach, and management options including dimethicone lotion, physical removal, and second-line treatments. Usually managed at home; discuss treatment choice and prevention with your doctor."

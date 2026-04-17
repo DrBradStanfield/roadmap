@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Abnormal Uterine Bleeding"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["abnormal uterine bleeding", "aub", "heavy menstrual bleeding", "hmb", "intermenstrual bleeding", "imb", "irregular periods", "endometrial cancer", "endometrial hyperplasia", "fibroids", "adenomyosis", "polyps", "mirena", "levonorgestrel iud", "tranexamic acid", "norethisterone", "medroxyprogesterone", "pipelle biopsy", "pelvic ultrasound", "perimenopausal bleeding", "menorrhagia", "anovulation", "pcos"]
 summary: "Clinical pathway for abnormal uterine bleeding (AUB) in non-pregnant women of reproductive age: definitions, red flags, assessment approach, investigations including pelvic ultrasound and pipelle biopsy, and management options by cause. Always discuss with your doctor."

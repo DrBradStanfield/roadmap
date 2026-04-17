@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Trigeminal Neuralgia"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["trigeminal neuralgia", "facial pain", "face pain", "electric face pain", "shock face pain", "carbamazepine", "gabapentin", "pregabalin", "jaw pain", "cheek pain", "trigeminal nerve", "anti-seizure medication"]
 summary: "Clinical pathway for trigeminal neuralgia: characteristic features (unilateral brief electric/shock-like facial pain triggered by touch or movement), assessment including neurological exam, differential diagnosis, and stepwise medication management starting with carbamazepine. Always discuss with your doctor."

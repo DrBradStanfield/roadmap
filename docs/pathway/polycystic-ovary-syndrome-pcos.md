@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Polycystic Ovary Syndrome (PCOS)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pcos", "polycystic ovary syndrome", "irregular periods", "amenorrhoea", "hirsutism", "androgen excess", "hyperandrogenism", "acne", "alopecia", "subfertility", "infertility", "insulin resistance", "metformin", "combined oral contraceptive", "spironolactone", "endometrial protection", "metabolic syndrome", "women's health", "menstrual irregularity"]
 summary: "Clinical pathway for polycystic ovary syndrome (PCOS): background, diagnostic criteria for adults and adolescents, investigations to exclude other causes, and management targeting hyperandrogenism, irregular periods, fertility, and metabolic risks. Always discuss with your doctor."

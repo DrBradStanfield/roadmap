@@ -1,8 +1,8 @@
 ---
 title: "Pathway: Chronic Cough in Adults"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
-keywords: ["chronic cough", "cough", "persistent cough", "subacute cough", "postnasal drip", "rhinosinusitis", "GORD", "gastro-oesophageal reflux", "ACE inhibitor cough", "asthma", "eosinophilic bronchitis", "lung cancer", "haemoptysis", "tuberculosis", "spirometry", "chest X-ray", "proton pump inhibitor", "omeprazole", "codeine", "bronchiectasis", "COPD", "long COVID", "pertussis", "whooping cough", "sleep apnoea"]
+keywords: ["chronic cough","cough","persistent cough","subacute cough","postnasal drip","rhinosinusitis","GORD","gastro-oesophageal reflux","ACE inhibitor cough","asthma","eosinophilic bronchitis","lung cancer","haemoptysis","tuberculosis","spirometry","chest X-ray","proton pump inhibitor","omeprazole","codeine","bronchiectasis","COPD","long COVID","pertussis","whooping cough","sleep apnoea","cough that won't go away","coughing for weeks","long-standing cough"]
 summary: "Clinical pathway for chronic cough in adults (cough lasting 3–8 weeks or more): red flags, common causes, how doctors investigate, and treatment approaches for productive and non-productive cough. Always discuss your symptoms with your doctor."
 ---
 

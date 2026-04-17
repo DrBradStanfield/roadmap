@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Harmful Gambling"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["harmful gambling", "problem gambling", "gambling disorder", "gambling harm", "addiction", "impulse control", "naltrexone", "dopamine agonist", "gambling helpline", "safer gambling", "self-exclusion", "multi-venue exclusion", "motivational interviewing"]
 summary: "Clinical pathway for harmful gambling: red flags, assessment including screening questions and severity grading, management by readiness to change, medication considerations (naltrexone, dopamine agonists), and support resources. Always discuss with your doctor."

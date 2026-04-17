@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Penis and Foreskin Problems in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["phimosis", "foreskin", "foreskin problems", "penis problems", "balanitis", "hypospadias", "smegma", "prepuce", "BXO", "balanitis xerotica obliterans", "circumcision", "paediatric urology", "children", "boys", "foreskin retraction", "betamethasone", "foreskin care"]
 summary: "Clinical pathway for penis and foreskin problems in pre-adolescent boys: normal variation (smegma, non-retractile foreskin), phimosis assessment and steroid treatment, balanitis management, and hypospadias recognition. Always discuss findings with your doctor."

@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Angina"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["angina", "chest pain", "stable angina", "unstable angina", "cardiac chest pain", "coronary artery disease", "glyceryl trinitrate", "GTN", "beta blocker", "aspirin", "statin", "atorvastatin", "bisoprolol", "nitrate", "calcium channel blocker", "cardiovascular risk"]
 summary: "Clinical pathway for angina: red flags requiring emergency care, background on stable vs unstable angina, assessment criteria, and management including medications and lifestyle modification. Always discuss with your doctor."

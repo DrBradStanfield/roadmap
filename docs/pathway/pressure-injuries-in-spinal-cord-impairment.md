@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pressure Injuries in Spinal Cord Impairment"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["spinal cord injury", "sci", "pressure injury", "pressure ulcer", "pressure sore", "wound care", "skin breakdown", "sskin", "wound staging", "spinal cord impairment", "tissue damage"]
 summary: "Clinical guidance for assessing and managing pressure injuries in spinal cord impairment: staging, causative factors, wound assessment using T.I.M.E.S., off-loading, and prevention using the SSKIN framework. Even minor redness should be taken seriously. Always discuss with your doctor."

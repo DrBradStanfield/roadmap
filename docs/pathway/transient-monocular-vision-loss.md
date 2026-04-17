@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Transient Monocular Vision Loss"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["transient monocular vision loss", "amaurosis fugax", "retinal TIA", "giant cell arteritis", "GCA", "temporal arteritis", "retinal migraine", "raised intracranial pressure", "papilloedema", "carotid stenosis", "vision loss", "monocular blindness"]
 summary: "Clinical pathway for transient monocular vision loss: red flags, key causes (amaurosis fugax/retinal TIA, giant cell arteritis, migraine, raised intracranial pressure), assessment approach, and management by cause. Always discuss with your doctor."

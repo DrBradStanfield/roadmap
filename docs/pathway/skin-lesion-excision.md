@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Skin Lesion Excision"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["skin lesion", "excision", "biopsy", "melanoma", "BCC", "basal cell carcinoma", "SCC", "squamous cell carcinoma", "mole removal", "skin cancer", "skin surgery", "local anaesthetic", "sutures", "histology", "wound care", "skin lesion removal"]
 summary: "Overview of skin lesion excision: when excision is appropriate, excision margins by lesion type, anticoagulant considerations, the procedure steps, wound closure and suture timing by body site, histology requirements, and follow-up after results. Always discuss with your doctor."

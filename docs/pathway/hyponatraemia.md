@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Hyponatraemia"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["hyponatraemia", "hyponatremia", "low sodium", "low serum sodium", "siadh", "syndrome of inappropriate adh", "adh", "antidiuretic hormone", "volume depletion", "hypovolaemia", "fluid overload", "adrenal insufficiency", "cortisol", "thiazide", "water intoxication", "electrolytes", "sodium", "hhs", "dka", "hyperosmolar"]
 summary: "Clinical pathway for hyponatraemia (low serum sodium): red flags requiring emergency assessment, classification by severity and volume status, causes including SIADH, drugs, adrenal insufficiency, and volume depletion, investigation approach, and management by cause. Always discuss with your doctor."

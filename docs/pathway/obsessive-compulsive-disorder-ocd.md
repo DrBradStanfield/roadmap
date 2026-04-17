@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Obsessive Compulsive Disorder (OCD)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["OCD", "obsessive compulsive disorder", "obsessions", "compulsions", "intrusive thoughts", "CBT", "exposure and response prevention", "ERP", "SSRI", "fluoxetine", "sertraline", "paroxetine", "clomipramine", "mental health", "anxiety", "trichotillomania", "hoarding", "body dysmorphic disorder"]
 summary: "Clinical pathway for obsessive compulsive disorder (OCD) in adults and young people: red flags, background on obsessions and compulsions, structured assessment, and management including psychological therapy (CBT/ERP) and pharmacological treatment (SSRIs). Always discuss with your doctor."

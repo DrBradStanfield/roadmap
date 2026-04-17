@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Bariatric Surgery"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["bariatric surgery", "weight loss surgery", "obesity surgery", "sleeve gastrectomy", "gastric bypass", "BMI", "obesity", "weight loss", "diabetes", "metabolic surgery", "bmi criteria", "weight management"]
 summary: "Overview of bariatric (weight loss) surgery: who may be eligible, associated conditions that improve with weight loss, absolute and relative exclusions, and what to discuss with your doctor."

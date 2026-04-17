@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Breast Engorgement and Oversupply"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["breast engorgement", "oversupply", "hyperlactation", "breastfeeding", "mastitis", "blocked ducts", "milk supply", "lactation", "engorgement", "reverse pressure softening", "nipple shield", "lactation suppression", "perinatal loss"]
 summary: "Clinical pathway for breast engorgement and oversupply (hyperlactation) during breastfeeding: background, assessment of predisposing factors, mother and infant signs, distinguishing engorgement from oversupply and mastitis, and management including feeding techniques, reverse pressure softening, cold compresses, and anti-inflammatories. Always discuss with your doctor or midwife."

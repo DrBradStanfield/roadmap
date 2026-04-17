@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Haemorrhoids"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["haemorrhoids", "piles", "rectal bleeding", "perianal", "haemorrhoidectomy", "proctoscopy", "constipation", "anal pain", "thrombosed haemorrhoid", "perianal haematoma", "banding", "sclerotherapy", "laxatives", "Proctosedyl", "Ultraproct"]
 summary: "Clinical pathway for haemorrhoids (piles): assessment including symptoms, examination and proctoscopy; conservative management with lifestyle changes and laxatives; local preparations; procedural and surgical options by haemorrhoid type; and when to refer to general surgery. Always discuss with your doctor."

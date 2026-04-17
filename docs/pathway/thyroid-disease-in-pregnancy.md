@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Thyroid Disease in Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["thyroid", "pregnancy", "hypothyroidism", "hyperthyroidism", "tsh", "thyroxine", "levothyroxine", "graves disease", "postpartum thyroiditis", "subclinical hypothyroidism", "subclinical hyperthyroidism", "trab", "tpo antibodies", "iodine", "antithyroid drugs", "carbimazole", "propylthiouracil", "antenatal", "perinatal", "tft", "free t4", "ft4"]
 summary: "Clinical pathway for thyroid disease in pregnancy: when to test, how to interpret gestational TSH/FT4 reference intervals, management of hypothyroidism and hyperthyroidism before and during pregnancy, postpartum thyroiditis, and when to seek specialist advice. Always discuss with your doctor."

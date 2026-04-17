@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Incidental Renal Lesion"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["renal lesion", "kidney lesion", "incidental renal mass", "renal cyst", "renal cell carcinoma", "rcc", "angiomyolipoma", "aml", "bosniak", "kidney cyst", "renal mass", "kidney cancer", "solid renal mass", "echogenic renal lesion", "renal ultrasound"]
 summary: "Clinical pathway for renal lesions found incidentally on imaging (ultrasound or CT). Covers assessment for malignancy risk, Bosniak cyst classification, management of solid renal masses and angiomyolipoma, and when urology referral is needed. Always discuss with your doctor."

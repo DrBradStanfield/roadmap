@@ -1,6 +1,6 @@
 ---
 title: "Pathway: UTIs and Asymptomatic Bacteriuria in Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["uti pregnancy", "urinary tract infection pregnancy", "asymptomatic bacteriuria pregnancy", "cystitis pregnancy", "pyelonephritis pregnancy", "group b strep pregnancy", "gbs bacteriuria", "urine culture pregnancy", "nitrofurantoin pregnancy", "cefalexin pregnancy", "antibiotic pregnancy uti", "sterile pyuria pregnancy"]
 summary: "Clinical pathway for managing UTIs and asymptomatic bacteriuria in pregnancy: screening, red flags for pyelonephritis and sepsis, antibiotic safety in pregnancy, and management by diagnosis including acute cystitis, recurrent cystitis, GBS bacteriuria, and asymptomatic bacteriuria. Always discuss with your doctor or lead maternity carer."

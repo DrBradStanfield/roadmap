@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Genital Skin Lesions"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["genital skin lesions", "genital warts", "molluscum contagiosum", "genital lump", "vulval intraepithelial neoplasia", "VIN", "penile intraepithelial neoplasia", "PeIN", "anal intraepithelial neoplasia", "AIN", "fordyce spots", "vestibular papillae", "pearly penile papules", "genital ulcer", "genital herpes", "syphilis", "donovanosis", "lymphogranuloma venereum", "genital squamous cell carcinoma", "MPox", "STI", "sexual health"]
 summary: "Overview of genital skin lesions including differential diagnosis of lumps, ulcers, and non-ulcerative changes in males and females. Auckland HealthPathways refers to NZSHS guidelines for this topic. Always discuss with your doctor."

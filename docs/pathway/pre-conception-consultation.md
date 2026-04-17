@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Pre-conception Consultation"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["pre-conception", "preconception", "pregnancy planning", "fertility", "folic acid", "iodine", "rubella", "varicella", "genetic risk", "antenatal", "conception", "pregnancy", "prenatal", "subfertility"]
 summary: "Clinical guidance for pre-conception consultations: history-taking (medical, obstetric, genetic, lifestyle), examination, investigations (antenatal bloods, thyroid, HIV), supplementation (folic acid, iodine), lifestyle advice (smoking, alcohol, BMI, exercise), immunisations (rubella, varicella, pertussis), and referrals. Always discuss with your doctor."

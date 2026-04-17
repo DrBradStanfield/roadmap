@@ -1,6 +1,6 @@
 ---
 title: "Pathway: ADHD in Children and Youth — Ongoing Care"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["adhd", "attention deficit hyperactivity disorder", "methylphenidate", "ritalin", "concerta", "lisdexamfetamine", "dexamfetamine", "atomoxetine", "clonidine", "stimulant medication", "adhd medication", "adhd children", "adhd youth", "adhd ongoing care", "adhd side effects", "adhd review", "adhd management", "adhd behavioural", "adhd school"]
 summary: "Clinical pathway for ongoing management of ADHD in children and youth who already have a formal diagnosis. Covers medication options (methylphenidate, lisdexamfetamine, dexamfetamine, atomoxetine), dose monitoring, side-effect management, behavioural supports, and when to seek specialist advice. Always discuss with your doctor."

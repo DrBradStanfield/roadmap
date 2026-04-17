@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Abdominal Ultrasound"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["abdominal ultrasound", "ultrasound abdomen", "liver function tests", "LFT", "abnormal LFT", "ALP", "GGT", "ALT", "biliary colic", "gallstones", "gallbladder", "cholecystitis", "cholangitis", "jaundice", "hepatocellular carcinoma", "HCC", "abdominal aortic aneurysm", "AAA", "abdominal mass", "hepatomegaly", "abdominal pain"]
 summary: "Clinical guidance on when an abdominal ultrasound is considered: indications in adults and children, red flags requiring emergency assessment, and what the scan can investigate. Always discuss with your doctor."

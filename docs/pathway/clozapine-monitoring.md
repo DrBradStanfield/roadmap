@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Clozapine Monitoring"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["clozapine", "clozaril", "clopine", "antipsychotic", "schizophrenia", "treatment-resistant psychosis", "agranulocytosis", "neutropenia", "FBC", "blood monitoring", "constipation", "cardiomyopathy", "myocarditis", "hypersalivation", "mental health", "seizures", "clozapine levels"]
 summary: "Clinical pathway for monitoring adults on clozapine transferred to general practice. Covers blood monitoring schedule, red flags (neutropenic sepsis, life-threatening constipation, cardiomyopathy, seizures), assessment at each review, adverse effect management, and when to seek urgent mental health advice. Always discuss with your doctor."

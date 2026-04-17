@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Middle and Proximal Phalanx Fractures"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["phalanx fracture", "finger fracture", "proximal phalanx", "middle phalanx", "phalangeal fracture", "buddy strap", "zimmer splint", "rotational deformity", "intra-articular fracture", "interphalangeal joint", "boutonniere deformity", "hand injury", "finger injury", "greenstick fracture"]
 summary: "Clinical pathway for middle and proximal phalanx fractures: assessment including rotational deformity check and X-ray, and management by fracture type (phalangeal shaft, intra-articular IPJ fractures). Always discuss with your doctor."

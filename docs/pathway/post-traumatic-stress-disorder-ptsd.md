@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Post-Traumatic Stress Disorder (PTSD)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ptsd", "post-traumatic stress disorder", "trauma", "flashbacks", "nightmares", "hypervigilance", "avoidance", "complex ptsd", "emdr", "cbt", "trauma-focused therapy", "sertraline", "escitalopram", "venlafaxine", "prazosin", "acute stress reaction", "psychological trauma", "military veterans", "sexual assault", "domestic violence"]
 summary: "Clinical pathway for post-traumatic stress disorder (PTSD) in adults and children: red flags, diagnostic criteria, risk factors, screening, assessment of co-morbidities, and management including psychological therapies and pharmacotherapy. Always discuss with your doctor."

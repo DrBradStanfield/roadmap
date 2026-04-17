@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Ulnar Nerve Compression (UNC)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["ulnar nerve", "ulnar nerve compression", "cubital tunnel syndrome", "cubital tunnel", "UNC", "tingling fingers", "ring finger numbness", "little finger numbness", "elbow nerve", "Guyon's canal", "nerve entrapment", "hand weakness", "froment's sign", "wartenburg's sign"]
 summary: "Clinical pathway for ulnar nerve compression (cubital tunnel syndrome): red flags, assessment including history and examination, differential diagnoses, and management including splinting, activity modification, and when surgery may be considered. Always discuss with your doctor."

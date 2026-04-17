@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Analgesia in Adults with Acute Pain"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["acute pain", "analgesia", "pain management", "pain ladder", "paracetamol", "nsaid", "opioid", "morphine", "oxycodone", "codeine", "tramadol", "naloxone", "neuropathic pain", "gabapentin", "pregabalin", "amitriptyline", "nortriptyline", "entonox", "pain score", "who pain ladder", "analgesic", "celecoxib", "ibuprofen", "antiemetic", "ondansetron"]
 summary: "Clinical pathway for acute pain in adults: step-up WHO-style pain ladder (paracetamol/NSAIDs → weak opioids → strong opioids), dosing for each drug class, naloxone use, neuropathic adjuvants (tricyclics, gabapentinoids), exit strategy, and when to escalate to hospital. Always discuss with your doctor."

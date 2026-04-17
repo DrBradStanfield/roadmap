@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Cholinesterase Inhibitors (CHEIs)"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["cholinesterase inhibitor", "chei", "dementia", "alzheimer", "donepezil", "rivastigmine", "galantamine", "cognitive impairment", "lewy body dementia", "parkinson's dementia", "vascular dementia", "deprescribing", "anticholinergic", "bradycardia"]
 summary: "Clinical pathway for cholinesterase inhibitors (CHEIs) used in dementia: which patients are suitable, how these medications work, the three available drugs (donepezil, rivastigmine, galantamine), monitoring, and when to stop. Always discuss with your doctor."

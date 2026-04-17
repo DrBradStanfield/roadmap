@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Haematuria in Children"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["haematuria", "blood in urine", "haematuria children", "microscopic haematuria", "macroscopic haematuria", "haematuria proteinuria", "glomerulonephritis", "renal disease children", "hypercalciuria", "alport syndrome", "IgA nephropathy", "paediatric urology", "paediatric nephrology", "urine dipstick children", "renal function children"]
 summary: "Clinical pathway for haematuria (blood in urine) in children: red flags requiring emergency assessment, background on causes and prevalence, assessment approach including history, examination, and initial investigations, and management by haematuria type (isolated microscopic, microscopic with proteinuria, macroscopic). Always discuss with your doctor."

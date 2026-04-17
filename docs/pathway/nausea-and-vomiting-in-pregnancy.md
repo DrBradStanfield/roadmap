@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Nausea and Vomiting in Pregnancy"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["nausea", "vomiting", "pregnancy", "morning sickness", "hyperemesis gravidarum", "hyperemesis", "NVP", "antiemetics", "dehydration", "Wernicke's encephalopathy", "molar pregnancy", "gestational trophoblastic disease", "cyclizine", "metoclopramide", "ondansetron", "promethazine", "prochlorperazine", "thiamine", "pyridoxine", "folic acid", "PUQE", "first trimester", "second trimester"]
 summary: "Clinical pathway for nausea and vomiting in pregnancy: red flags, assessment (including PUQE-24 scoring), and management by severity — from non-pharmacological measures through antiemetics and IV fluids. Always discuss with your doctor."

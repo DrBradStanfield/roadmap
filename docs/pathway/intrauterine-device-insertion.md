@@ -1,6 +1,6 @@
 ---
 title: "Pathway: Intrauterine Device (IUD) Insertion"
-type: "guideline"
+type: "pathway"
 tags: ["Guideline"]
 keywords: ["IUD", "intrauterine device", "Mirena", "Jaydess", "copper IUD", "LNG-IUS", "contraception", "LARC", "insertion", "ectopic pregnancy", "expulsion", "perforation", "pelvic infection", "levonorgestrel", "emergency contraception"]
 summary: "Clinical pathway covering IUD types (copper Cu-IUD, Mirena, Jaydess), side effects, post-insertion care, warning signs of ectopic pregnancy and device expulsion, and when to seek urgent medical advice. Always discuss with your doctor."
