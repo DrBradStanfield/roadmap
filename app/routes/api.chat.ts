@@ -4,10 +4,12 @@
  * GET  /api/chat                         — List conversations + daily remaining
  * GET  /api/chat?conversationId=xxx      — Load conversation messages
  * POST /api/chat { message, conversationId? } — Send message, get response
+ * POST /api/chat { warmupOnly: true }    — Prime Anthropic prompt cache (fired on chat-open)
  * DELETE /api/chat { conversationId }    — Delete conversation
  */
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
+import { authenticate } from '../shopify.server';
 import { getAuthenticatedUser, EXEMPT_CUSTOMERS, checkSubscriptionFromTags, getCustomerOrders, getClientIp } from '../lib/route-helpers.server';
 import { logAudit, getProfile, deductMessageCredit, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
@@ -122,22 +124,17 @@ async function refreshSubscriptionIfStale(
   return plan;
 }
 
+// Warmup cooldown. 4 min deliberately < 5-min Anthropic TTL so the cache
+// stays warm across rapid chat-open events. Starts at 0 so the first click
+// after a deploy/restart fires immediately.
+let lastWarmupAt = 0;
+const WARMUP_MIN_INTERVAL = 4 * 60_000;
+
 // ---------------------------------------------------------------------------
 // GET — list conversations or load conversation messages
 // ---------------------------------------------------------------------------
 
-// Prompt cache warmup cooldown (4 min — cache TTL is 5 min)
-let lastWarmupAt = Date.now();
-const WARMUP_COOLDOWN = 4 * 60_000;
-
 export async function loader({ request }: LoaderFunctionArgs) {
-  // Warm the Anthropic prompt cache if stale — fires in background, doesn't block response.
-  // Must be before the guest early-return so first-time visitors also trigger warmup.
-  if (Date.now() - lastWarmupAt > WARMUP_COOLDOWN) {
-    lastWarmupAt = Date.now();
-    warmupCache().catch(err => console.warn('Chat warmup failed:', (err as Error).message));
-  }
-
   try {
     const url = new URL(request.url);
 
@@ -256,6 +253,43 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     const body = await request.json();
+
+    // ----- WARMUP — prime Anthropic prompt cache (event-driven from the widget) -----
+    // HMAC-only auth: skip `getAuthOrGuest` so a speculative warmup never creates
+    // orphaned guest sessions, and logged-in users don't pay the ~400ms Shopify
+    // GraphQL + Supabase hop. Shopify's proxy is the only trusted caller; cost
+    // is further bounded by `WARMUP_MIN_INTERVAL`.
+    if (body.warmupOnly === true) {
+      console.log('Chat warmup: endpoint hit');
+      await authenticate.public.appProxy(request);
+
+      if (Date.now() - lastWarmupAt < WARMUP_MIN_INTERVAL) {
+        console.log('Chat warmup: skipped (within cooldown)');
+        return json({ ok: true, skipped: true });
+      }
+      lastWarmupAt = Date.now();
+      const started = Date.now();
+      try {
+        const usage = await warmupCache();
+        // cacheReadTokens > 0 → prior warmup's cache is still live.
+        // cacheHitRatio: 0 on real POSTs despite a recent success here → cache
+        // prefix is diverging between warmup and real requests; inspect blocks.
+        console.log(JSON.stringify({
+          evt: 'chat_warmup',
+          ok: true,
+          durationMs: Date.now() - started,
+          inputTokens: usage.inputTokens,
+          cacheReadTokens: usage.cacheReadTokens,
+          cacheCreationTokens: usage.cacheCreationTokens,
+        }));
+        return json({ ok: true });
+      } catch (err) {
+        console.error('Chat warmup: failed', err);
+        Sentry.captureException(err, { tags: { feature: 'chat', step: 'warmup' } });
+        const message = err instanceof Error ? err.message : String(err);
+        return json({ ok: false, error: message }, { status: 500 });
+      }
+    }
 
     let auth: AuthResult;
     try {
