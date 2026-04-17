@@ -3,7 +3,6 @@ import {
   buildConversationMessages,
   buildSystemBlocks,
   matchDocumentTitle,
-  matchBlogArticle,
   assembleGuestChatContext,
   checkDailyLimit,
   incrementDailyLimitCache,
@@ -126,7 +125,7 @@ describe('buildSystemBlocks', () => {
   });
 
   it('adds blog article block when blog article provided', () => {
-    const blocks = buildSystemBlocks('{}', { blogArticle: 'Berberine article content...' });
+    const blocks = buildSystemBlocks('{}', { blogArticles: 'Berberine article content...' });
     expect(blocks).toHaveLength(baseCount + 1);
     expect(blocks[baseCount].text).toContain('Berberine article content');
   });
@@ -310,10 +309,10 @@ describe('checkDailyLimit', () => {
       expect(result.allowed).toBe(false);
     });
 
-    it('fails open on DB error', async () => {
+    it('fails closed on DB error', async () => {
       const result = await checkDailyLimit(mockClient(0, true), uniqueUserId(), 'free', 5);
-      expect(result.allowed).toBe(true);
-      expect(result.remaining).toBe(1);
+      expect(result.allowed).toBe(false);
+      expect(result.remaining).toBe(0);
       expect(result.useCredit).toBe(false);
     });
 

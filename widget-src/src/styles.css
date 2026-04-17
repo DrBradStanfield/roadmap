@@ -3024,8 +3024,9 @@ input[type="number"] {
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 440px;
-  height: 560px;
+  width: 640px;
+  height: 720px;
+  max-height: calc(100vh - 48px);
   z-index: 100;
   background: #fff;
   border: 1px solid var(--color-gray-border);
@@ -3336,6 +3337,65 @@ input[type="number"] {
   }
 }
 
+/* Thinking text (replaces dots during loading) */
+
+.chat-thinking-text {
+  font-size: 13px;
+  color: var(--color-gray-medium);
+  animation: chat-thinking-fade 1.5s ease-in-out infinite;
+}
+
+@keyframes chat-thinking-fade {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Scroll-to-bottom button */
+
+.chat-scroll-btn {
+  position: sticky;
+  bottom: 8px;
+  align-self: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text);
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  z-index: 1;
+}
+
+.chat-scroll-btn:hover {
+  background: var(--color-bg-light);
+}
+
+/* Offline indicator */
+
+.chat-offline {
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--color-gray-medium);
+  text-align: center;
+}
+
+/* External link indicator */
+
+.chat-message-content a[target="_blank"]::after {
+  content: " ↗";
+  font-size: 0.75em;
+}
+
+/* Table overflow */
+
+.md-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
 /* Error */
 
 .chat-error {
@@ -3454,38 +3514,14 @@ input[type="number"] {
   width: 100%;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 12px;
   color: var(--color-gray-light);
   padding: 0 2px;
 }
 
-/* Disclosure overlay */
-
-.chat-disclosure {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.95);
-  text-align: center;
-  animation: stage-reveal 0.2s ease-out;
-}
-
-.chat-disclosure p {
-  font-size: 14px;
-  color: var(--color-gray-medium);
-  line-height: 1.6;
-  max-width: 320px;
-}
-
-.chat-disclosure .btn-primary {
-  padding: 8px 24px;
-  font-size: 14px;
+.chat-doctor-note {
+  font-style: italic;
 }
 
 /* --- Mobile (≤768px) --- */

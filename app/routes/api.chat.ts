@@ -29,6 +29,18 @@ import {
 
 import { buildPackUrls } from '../lib/message-packs';
 
+/** Generate a conversation title from the first user message. */
+function generateTitle(message: string): string {
+  const sentenceMatch = message.match(/^(.+?[.?!])\s/);
+  if (sentenceMatch && sentenceMatch[1].length > 15 && sentenceMatch[1].length <= 80) {
+    return sentenceMatch[1];
+  }
+  if (message.length <= 80) return message;
+  const truncated = message.slice(0, 80);
+  const lastSpace = truncated.lastIndexOf(' ');
+  return lastSpace > 40 ? truncated.slice(0, lastSpace) + '…' : truncated + '…';
+}
+
 // ---------------------------------------------------------------------------
 // Unified auth: handles both authenticated users and guests
 // ---------------------------------------------------------------------------
@@ -237,6 +249,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 // ---------------------------------------------------------------------------
 
 export async function action({ request }: ActionFunctionArgs) {
+  const t0 = Date.now();
   try {
     if (process.env.CHAT_ENABLED === 'false') {
       return json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
@@ -299,6 +312,7 @@ export async function action({ request }: ActionFunctionArgs) {
         auth.admin ? getCachedOrders(auth.admin, auth.customerId!) : Promise.resolve(''),
       ]);
     }
+    const tAfterContext = Date.now();
 
     if (!context) {
       const err = new Error('Chat: Could not load health data');
@@ -349,7 +363,7 @@ export async function action({ request }: ActionFunctionArgs) {
     // Create or validate conversation
     let activeConversationId = conversationId;
     if (!activeConversationId) {
-      const title = message.slice(0, 80);
+      const title = generateTitle(message);
       const { data: conv, error: convError } = await auth.client
         .from('chat_conversations')
         .insert({ user_id: auth.userId, title })
@@ -414,12 +428,15 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // Match and load blog articles — try current message, fall back to first message
     const firstUserMsg = history.find(m => m.role === 'user');
-    const blogArticles = loadMatchedArticles(message, firstUserMsg?.content);
+    const userMsgCount = history.filter(m => m.role === 'user').length;
+    const blogArticles = loadMatchedArticles(message, firstUserMsg?.content, userMsgCount);
 
     // Build system blocks + messages, call LLM
     const systemBlocks = buildSystemBlocks(context.userContextJson, { documentContent, orderSummary, blogArticles });
     const messages = buildConversationMessages(history, message);
+    const tBeforeLlm = Date.now();
     const completion = await getChatCompletion(systemBlocks, messages);
+    const tAfterLlm = Date.now();
 
     // Fire-and-forget: save assistant message + update timestamp after returning response
     // User sees the response immediately — DB writes happen in background
@@ -462,6 +479,20 @@ export async function action({ request }: ActionFunctionArgs) {
       cacheRead: completion.usage.cacheReadTokens,
       cacheCreation: completion.usage.cacheCreationTokens,
     });
+
+    console.log(JSON.stringify({
+      evt: 'chat_timing',
+      totalMs: Date.now() - t0,
+      contextMs: tAfterContext - t0,
+      preLlmMs: tBeforeLlm - t0,
+      llmMs: tAfterLlm - tBeforeLlm,
+      inputTokens: completion.usage.inputTokens,
+      outputTokens: completion.usage.outputTokens,
+      cacheReadTokens: completion.usage.cacheReadTokens,
+      cacheCreationTokens: completion.usage.cacheCreationTokens,
+      cacheHitRatio: Math.round(100 * completion.usage.cacheReadTokens / Math.max(1, completion.usage.inputTokens)) / 100,
+      isGuest: auth.isGuest,
+    }));
 
     const finalRemaining = limitCheck.useCredit ? 0 : Math.max(0, limitCheck.remaining - 1);
     return json({

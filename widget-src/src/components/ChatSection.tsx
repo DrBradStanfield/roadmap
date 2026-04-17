@@ -19,7 +19,6 @@ import {
 } from '../lib/chat-api';
 import { renderMarkdown } from '../lib/markdown';
 import { FeedbackForm } from './FeedbackForm';
-import { safeGetItem, safeSetItem } from '../lib/storage';
 
 export interface ChatPrefetchData {
   conversations: ChatConversation[];
@@ -45,6 +44,19 @@ interface ChatSectionProps {
 }
 
 const MAX_CHARS = 500;
+
+const THINKING_MESSAGES = [
+  'Reviewing your health data…',
+  'Checking clinical guidelines…',
+  'Looking up relevant research…',
+  'Cross-referencing your results…',
+  'Consulting the evidence…',
+  'Pulling the latest guidelines…',
+  'Framing the answer…',
+  'Double-checking the numbers…',
+  'Almost there…',
+  'Preparing response…',
+];
 
 /** Memoized message bubble — avoids re-parsing markdown on every render */
 const ChatMessageBubble = React.memo(function ChatMessageBubble({ msg }: { msg: ChatMessage }) {
@@ -78,14 +90,53 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
   const [error, setError] = useState<string | null>(null);
   const [showThreads, setShowThreads] = useState(false);
   const [hasLoadedConversations, setHasLoadedConversations] = useState(!!prefetchedData);
+  const [thinkingIndex, setThinkingIndex] = useState(0);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom when messages change
+  // Cycle thinking messages while loading, with random 1-3s intervals
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!isLoading) { setThinkingIndex(0); return; }
+    let timeout: ReturnType<typeof setTimeout>;
+    const scheduleNext = () => {
+      const delay = 1000 + Math.random() * 2000;
+      timeout = setTimeout(() => {
+        setThinkingIndex(i => (i + 1) % THINKING_MESSAGES.length);
+        scheduleNext();
+      }, delay);
+    };
+    scheduleNext();
+    return () => clearTimeout(timeout);
+  }, [isLoading]);
+
+  // Track scroll position — only auto-scroll if user is near bottom
+  const handleMessagesScroll = useCallback(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const shouldShow = el.scrollHeight - el.scrollTop - el.clientHeight > 100;
+    setShowScrollBtn(prev => prev === shouldShow ? prev : shouldShow);
+  }, []);
+
+  useEffect(() => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    if (nearBottom) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [messages]);
+
+  // Network offline detection
+  useEffect(() => {
+    const off = () => setIsOffline(true);
+    const on = () => setIsOffline(false);
+    window.addEventListener('offline', off);
+    window.addEventListener('online', on);
+    return () => { window.removeEventListener('offline', off); window.removeEventListener('online', on); };
+  }, []);
 
   // Lazy-load conversations (only when user first expands the chat)
   const loadConversationsIfNeeded = useCallback(async () => {
@@ -108,12 +159,9 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
     }
   }, [hasLoadedConversations, isLoggedIn]);
 
-  // Load conversations and show disclosure on mount when startExpanded
+  // Load conversations on mount when startExpanded
   useEffect(() => {
     if (startExpanded) {
-      if (!safeGetItem('health_roadmap_chat_disclosed')) {
-        setShowDisclosure(true);
-      }
       loadConversationsIfNeeded();
     }
   }, [startExpanded, loadConversationsIfNeeded]);
@@ -141,6 +189,10 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
     const trimmed = inputText.trim();
     if (!trimmed || isLoading) return;
     if (trimmed.length > MAX_CHARS) return;
+    if (isOffline) {
+      setError("You're offline. Check your connection and try again.");
+      return;
+    }
 
     setError(null);
 
@@ -199,7 +251,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
     }
 
     setIsLoading(false);
-  }, [inputText, isLoading, activeConversationId]);
+  }, [inputText, isLoading, activeConversationId, isOffline]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -220,24 +272,13 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
     }
   }, [activeConversationId]);
 
-  // First-use disclosure
-  const [showDisclosure, setShowDisclosure] = useState(false);
   const handleExpand = useCallback(() => {
     // Delegate to parent (e.g. open floating FAB chat) if provided
     if (onExpand) { onExpand(); return; }
-    const disclosed = safeGetItem('health_roadmap_chat_disclosed');
-    if (!disclosed) {
-      setShowDisclosure(true);
-    }
     setIsExpanded(true);
     setShowFeedback(false);
     loadConversationsIfNeeded();
-  }, [isLoggedIn, onExpand, loadConversationsIfNeeded]);
-
-  const dismissDisclosure = useCallback(() => {
-    safeSetItem('health_roadmap_chat_disclosed', '1');
-    setShowDisclosure(false);
-  }, []);
+  }, [onExpand, loadConversationsIfNeeded]);
 
   const limitReached = dailyRemaining !== null && dailyRemaining <= 0 && messageCredits <= 0;
   const [awaitingPurchase, setAwaitingPurchase] = useState(false);
@@ -297,14 +338,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
 
   // ----- EXPANDED STATE -----
   return (
-    <div className="chat-section chat-expanded no-print">
-      {showDisclosure && (
-        <div className="chat-disclosure">
-          <p>Your health data is used to provide personalized responses. Conversations are stored in your account. This is not medical advice.</p>
-          <button className="btn-primary" onClick={dismissDisclosure}>Got it</button>
-        </div>
-      )}
-
+    <div className="chat-section chat-expanded no-print" role="dialog" aria-label="Health Roadmap Chat">
       <div className="chat-header">
         <button className="chat-threads-btn" onClick={() => setShowThreads(!showThreads)}>
           {showThreads ? 'Back' : 'History'}
@@ -322,6 +356,9 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
                 key={conv.id}
                 className={`chat-thread-item ${conv.id === activeConversationId ? 'active' : ''}`}
                 onClick={() => selectConversation(conv.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectConversation(conv.id); } }}
               >
                 <span className="chat-thread-title">{conv.title || 'Untitled'}</span>
                 <button
@@ -338,10 +375,10 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
         )}
 
         {!showThreads && (
-          <div className="chat-messages">
+          <div className="chat-messages" ref={messagesContainerRef} onScroll={handleMessagesScroll}>
             {messages.length === 0 && !isLoading && (
               <div className="chat-empty">
-                <p>Ask a question about your health suggestions, blood tests, or screenings to discuss with your doctor.</p>
+                <p>Ask about your personalized suggestions based on your health data, clinical research, and Dr Brad's preventative care algorithm.</p>
               </div>
             )}
             {messages.map(msg => (
@@ -350,9 +387,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
             {isLoading && (
               <div className="chat-message chat-message--assistant">
                 <div className="chat-loading">
-                  <span className="chat-dot"></span>
-                  <span className="chat-dot"></span>
-                  <span className="chat-dot"></span>
+                  <span className="chat-thinking-text">{THINKING_MESSAGES[thinkingIndex]}</span>
                 </div>
               </div>
             )}
@@ -390,13 +425,16 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
               </div>
             )}
             {error && <div className="chat-error">{error}</div>}
-            <div ref={messagesEndRef} />
+            {showScrollBtn && (
+              <button className="chat-scroll-btn" onClick={() => { const el = messagesContainerRef.current; if (el) el.scrollTop = el.scrollHeight; }}>↓</button>
+            )}
           </div>
         )}
       </div>
 
       {!showThreads && (
         <div className="chat-input-bar">
+          {isOffline && <div className="chat-offline">You're offline</div>}
           <textarea
             ref={inputRef}
             className="chat-input"
@@ -415,6 +453,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
             Send
           </button>
           <div className="chat-input-meta">
+            <span className="chat-doctor-note">Always discuss with your doctor</span>
             <span className="chat-char-count">{inputText.length}/{MAX_CHARS}</span>
           </div>
         </div>

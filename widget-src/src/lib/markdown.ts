@@ -28,7 +28,7 @@ export function renderMarkdown(md: string): string {
 
       if (!inTable) {
         if (inList) { html.push('</ul>'); inList = false; }
-        html.push('<table class="md-table">');
+        html.push('<div class="md-table-wrap"><table class="md-table">');
         inTable = true;
       }
       const cells = line.trim().slice(1, -1).split('|').map(c => inlineFormat(escapeHtml(c.trim())));
@@ -37,7 +37,7 @@ export function renderMarkdown(md: string): string {
       html.push(`<tr>${cells.map(c => `<${tag}>${c}</${tag}>`).join('')}</tr>`);
       continue;
     } else if (inTable) {
-      html.push('</table>');
+      html.push('</table></div>');
       inTable = false;
     }
 
@@ -70,7 +70,7 @@ export function renderMarkdown(md: string): string {
   }
 
   if (inList) html.push('</ul>');
-  if (inTable) html.push('</table>');
+  if (inTable) html.push('</table></div>');
 
   return html.join('\n');
 }
