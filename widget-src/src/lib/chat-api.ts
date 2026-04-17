@@ -84,7 +84,14 @@ export async function listConversations(): Promise<ChatListResult | null> {
     const sessionToken = getGuestSessionToken();
     const params = sessionToken ? `?sessionToken=${encodeURIComponent(sessionToken)}` : '';
     const response = await fetch(`${PROXY_PATH}/api/chat${params}`);
-    if (!response.ok) return null;
+    if (!response.ok) {
+      Sentry.captureMessage('Chat listConversations failed', {
+        level: 'warning',
+        tags: { feature: 'chat' },
+        extra: { status: response.status, contentType: response.headers.get('content-type') },
+      });
+      return null;
+    }
     const result = await parseJsonResponse<any>(response);
     if (!result?.success) return null;
 
@@ -113,7 +120,14 @@ export async function loadConversation(conversationId: string): Promise<ChatMess
     const response = await fetch(
       `${PROXY_PATH}/api/chat?${params}`,
     );
-    if (!response.ok) return [];
+    if (!response.ok) {
+      Sentry.captureMessage('Chat loadConversation failed', {
+        level: 'warning',
+        tags: { feature: 'chat' },
+        extra: { status: response.status, contentType: response.headers.get('content-type') },
+      });
+      return [];
+    }
     const result = await parseJsonResponse<{
       success: boolean;
       messages: ChatMessage[];
@@ -163,6 +177,16 @@ export async function sendMessage(
     }
 
     if (!response.ok || !data?.success) {
+      Sentry.captureMessage('Chat sendMessage failed', {
+        level: 'error',
+        tags: { feature: 'chat' },
+        extra: {
+          status: response.status,
+          contentType: response.headers.get('content-type'),
+          dataNull: data === null,
+          dataError: data?.error ?? null,
+        },
+      });
       return {
         result: null,
         error: { error: data?.error ?? 'Failed to send message' },
@@ -203,7 +227,14 @@ export async function deleteConversation(conversationId: string): Promise<boolea
         ...(sessionToken ? { sessionToken } : {}),
       }),
     });
-    if (!response.ok) return false;
+    if (!response.ok) {
+      Sentry.captureMessage('Chat deleteConversation failed', {
+        level: 'warning',
+        tags: { feature: 'chat' },
+        extra: { status: response.status, contentType: response.headers.get('content-type') },
+      });
+      return false;
+    }
     const data = await parseJsonResponse<{ success: boolean }>(response);
     return data?.success ?? false;
   } catch (error) {

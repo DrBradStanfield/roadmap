@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=PvzE-1f5dW4"
 publishedAt: "2025-09-07T21:16:10Z"
 tags: ["Skin Health"]
 keywords: ["aging","anti-aging","collagen","exercise","gut health","hyaluronic acid","inflammation","microbiome","muscle","oxidative stress","photoaging","resistance training","selenium","skin","sleep","spf","sunscreen","tretinoin","uv","vitamin a","vitamin b3","vitamin c","vitamin d","vitamin e","wrinkles","zinc"]
+product: "sleep"
 summary: "Here’s an evidence-based skincare routine that I use and recommend to my patients in the clinic. It starts with the fundamentals, and we’ll look at some of the latest evidence for their impact. Then we’ll move through some additional, more advanced therapies. This way, you can pick and choose the best mix for you when it comes to preventing—and even reversing—the signs of skin aging."
 ---
 

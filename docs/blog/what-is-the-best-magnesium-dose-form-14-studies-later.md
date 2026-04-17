@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=oL6CtBcfcDo"
 publishedAt: "2025-07-01T18:11:29Z"
 tags: ["Supplements"]
 keywords: ["antioxidant","blood pressure","blood sugar","calcium","cholesterol","cognitive","dementia","diabetes","exercise","fiber","glycine","insomnia","magnesium","melatonin","muscle","potassium","sleep","taurine"]
+product: "microvitamin"
 summary: "There are two huge mistakes that are often made with magnesium, and I see it all the time at the clinic. So instead of making those mistakes, let’s arm you with the knowledge to avoid them. Plus, we’ll go through common questions about dose and forms of magnesium."
 ---
 

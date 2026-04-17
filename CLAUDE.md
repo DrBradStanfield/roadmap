@@ -150,7 +150,7 @@ rm -f extensions/health-tool-widget/assets/*.map
 npx shopify app deploy --force
 
 # 5. Resolve symlinks for remote Docker builders (Dropbox not available on Fly build servers)
-cp -L docs/products.md docs/products.md
+cp -L docs/products.md /tmp/_products.md && rm docs/products.md && mv /tmp/_products.md docs/products.md
 
 # 6. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives)
 fly deploy
@@ -160,7 +160,7 @@ git checkout docs/products.md
 ```
 
 **Important deploy notes:**
-- **Symlink resolution before deploy**: `docs/products.md` is a symlink to the claude_business Dropbox folder. Fly.io's remote builders can't follow local symlinks. `cp -L` dereferences it into a real file for the build. `git checkout` restores the symlink after deploy.
+- **Symlink resolution before deploy**: `docs/products.md` is a symlink to the claude_business Dropbox folder. Fly.io's remote builders can't follow local symlinks. The deploy command dereferences the symlink to a temp file, removes the symlink, then moves the real file into place. `git checkout` restores the symlink after deploy. **Do NOT use `cp -L file file`** — `cp` follows destination symlinks, so the symlink is never replaced.
 - `fly deploy` must be run from the **project root** (`/roadmap/`), not a subdirectory. The Dockerfile is at root level. Do NOT use `--app` flag — Fly reads `fly.toml` from the current directory.
 - `npx shopify app deploy --force` — the `--force` flag is required in non-interactive environments (CI, Claude Code). Without it, the CLI prompts for confirmation and hangs.
 - `SENTRY_AUTH_TOKEN` is only used locally for sourcemap uploads. Fly.io only needs `SENTRY_DSN` (already set as a secret).

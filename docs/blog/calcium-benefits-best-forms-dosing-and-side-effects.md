@@ -5,6 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["calcium", "calcium carbonate", "calcium citrate", "calcium citrate malate", "calcium hydroxyapatite", "bone density", "osteoporosis", "bone health", "vitamin d", "vitamin d3", "vitamin k", "vitamin k2", "boron", "magnesium", "fracture", "dexa", "heart attack", "stroke", "cardiovascular", "kidney", "kidney stones", "blood pressure", "hypertension", "cholesterol", "ldl", "hdl", "colorectal cancer", "colon cancer", "prostate", "breast cancer", "preeclampsia", "weight loss", "metabolic syndrome", "iron", "aging", "longevity", "postmenopausal", "dairy", "collagen"]
+product: "microvitamin"
 summary: "Calcium is the most abundant mineral in the human body. Approximately 99% of the body's calcium is stored in bones and teeth as calcium hydroxyapatite, where it provides structural rigidity. The remaining 1% circulates in the blood, extracellular fluid, muscle, and other tissues, mediating vascular contraction and dilation, muscle contraction, nerve transmission, blood clotting, and hormonal secretion."
 ---
 

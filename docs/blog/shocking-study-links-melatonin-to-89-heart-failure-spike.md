@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=L_WgUlPNYHo"
 publishedAt: "2025-11-23T19:52:54Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["cardiovascular","circadian","hormone","inflammation","insomnia","melatonin","sleep"]
+product: "sleep"
 summary: "People who use melatonin supplements have an 89% higher risk of developing heart failure, according to a new study of over 130,000 adults \\[1\\]. And there were two other equally grim findings we’ll look at in a moment. This is major news, and it’s been making headlines \\[2\\], especially because melatonin use has been rising sharply — including the use of very high doses over 5 mg/day \\[3\\]. But the problem is, up to this point, we haven’t had great data about long-term safety. This new study looked at patient outcomes over five years. So it promises to finally help fill in that knowledge gap about long-term use. And, at first glance, it looks like melatonin is a disaster for heart health. So let’s dive into the details of this study and see if we should stop taking melatonin immediately."
 ---
 

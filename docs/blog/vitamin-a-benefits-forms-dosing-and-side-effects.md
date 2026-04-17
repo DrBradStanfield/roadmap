@@ -5,6 +5,7 @@ publishedAt: "2025-11-19T03:51:25Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["vitamin a", "retinol", "retinoid", "retinyl palmitate", "retinyl acetate", "beta-carotene", "alpha-carotene", "beta-cryptoxanthin", "carotenoid", "cod liver oil", "skin", "wrinkles", "photoaging", "retinoid", "tretinoin", "vision", "eye health", "macular degeneration", "lutein", "zeaxanthin", "lycopene", "bone density", "osteoporosis", "breast cancer", "lung cancer", "colon cancer", "melanoma", "immune", "measles", "acne", "aging", "liver", "birth defects", "vitamin e", "zinc", "selenium", "iron", "calcium"]
+product: "microvitamin"
 summary: "Vitamin A is the name of a group of fat-soluble retinoids — primarily retinol and retinyl esters — that are essential for vision, immune function, cellular communication, growth, development, and reproduction. Vitamin A supports cell growth and differentiation, playing a critical role in the normal formation and maintenance of the heart, lungs, eyes, and other organs. It is also critical for vision as an essential component of rhodopsin, the light-sensitive protein in retinal rod cells that responds to light entering the eye, and because it supports the normal differentiation and functioning of the conjunctival membranes and cornea."
 ---
 

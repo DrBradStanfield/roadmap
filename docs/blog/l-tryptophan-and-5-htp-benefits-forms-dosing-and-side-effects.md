@@ -5,6 +5,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["tryptophan", "l-tryptophan", "5-htp", "5-hydroxytryptophan", "serotonin", "melatonin", "sleep", "insomnia", "depression", "anxiety", "mood", "migraine", "weight loss", "fibromyalgia", "niacin", "griffonia simplicifolia", "tryptopure", "kynurenine", "brain health", "cognitive", "glycine"]
+product: "sleep"
 summary: "L-Tryptophan is one of the nine essential amino acids, meaning the human body cannot synthesize it and must obtain it from dietary protein sources. It is found in many protein-rich foods, including cheese, chicken, eggs, fish, milk, nuts, soy, tofu, and turkey. A typical 100 g (3.5 oz) serving of these foods provides 100-500 mg of L-tryptophan. The estimated average requirement for adults is approximately 4 mg per kg of body weight per day (roughly 280 mg for a 70 kg individual), with the recommended dietary allowance set at approximately 5 mg/kg/day. Typical adult intakes in omnivorous populations average 900-1,000 mg per day, well above minimum requirements."
 ---
 

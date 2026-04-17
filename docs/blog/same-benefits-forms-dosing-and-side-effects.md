@@ -5,6 +5,7 @@ publishedAt: "2025-10-04T20:21:25Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["same", "s-adenosyl-methionine", "sam-e", "ademetionine", "depression", "anxiety", "osteoarthritis", "joint health", "liver", "fibromyalgia", "cognitive", "brain health", "inflammation", "betaine", "tmg", "folate", "vitamin b12", "homocysteine", "cardiovascular", "methylation", "serotonin", "dopamine", "glutathione", "parkinson"]
+product: "microvitamin"
 summary: "S-Adenosyl-L-methionine (SAMe) is a naturally occurring compound found in virtually every cell in the body. It is synthesized endogenously from the essential amino acid methionine and adenosine triphosphate (ATP) in a reaction catalyzed by the enzyme methionine adenosyltransferase (MAT). SAMe serves as the principal methyl donor in the body, participating in over 100 methylation reactions that regulate gene expression, neurotransmitter synthesis, protein function, and lipid metabolism. After donating its methyl group, SAMe is converted to S-adenosylhomocysteine (SAH), which is subsequently hydrolyzed to homocysteine."
 ---
 

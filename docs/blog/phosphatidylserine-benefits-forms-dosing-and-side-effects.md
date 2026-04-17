@@ -5,6 +5,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["phosphatidylserine", "cognitive", "brain health", "memory", "cortisol", "exercise", "dementia", "alzheimer", "depression", "anxiety", "choline", "phosphatidylcholine", "citicoline", "aging", "longevity", "inflammation", "dha", "omega-3", "fish oil"]
+product: "microvitamin"
 summary: "Phosphatidylserine (PS) is a phospholipid — a fatty substance that forms a critical structural component of cell membranes in all living organisms. It belongs to the glycerophospholipid class, characterized by a glycerol backbone linked to two fatty acid chains, a phosphate group, and a serine amino acid head group. This structure distinguishes it from other major phospholipids such as phosphatidylcholine (which has a choline head group) and phosphatidylethanolamine (which has an ethanolamine head group)."
 ---
 

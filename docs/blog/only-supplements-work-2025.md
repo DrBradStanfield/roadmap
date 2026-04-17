@@ -5,6 +5,7 @@ youtube: "https://www.youtube.com/watch?v=uwnXLsAL9wM"
 publishedAt: "2024-11-19T03:13:05Z"
 tags: ["Supplements"]
 keywords: ["aging","alzheimer","antioxidant","blood pressure","blood sugar","brain health","cardiovascular","cholesterol","cognitive","collagen","creatine","dementia","dha","epa","estrogen","exercise","fiber","glycine","heart attack","hyaluronic acid","magnesium","melatonin","muscle","omega-3","peptide","psyllium","skin","sleep","testosterone","tmg","uric acid","vitamin a","vitamin b3","vitamin k2","wrinkles","zinc"]
+product: "sleep"
 summary: "This post summarizes the supplements I take. We'll start with the three supplements that have strong evidence backing their benefits for improving muscle performance. After that, we'll delve into a supplement I take for memory and cognitive function. Disclaimer: Just because I take these supplements doesn't mean that you should as well. Always consult with a healthcare professional before adding any new supplements to your regimen."
 ---
 

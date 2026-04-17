@@ -102,9 +102,10 @@ async function refreshSubscriptionIfStale(
 
   const plan = await checkSubscriptionFromTags(auth.admin, auth.customerId);
   // Fire-and-forget update
-  updateSubscriptionPlan(auth.userId, plan).catch(err =>
-    console.error('Failed to update subscription plan:', err),
-  );
+  updateSubscriptionPlan(auth.userId, plan).catch(err => {
+    console.error('Failed to update subscription plan:', err);
+    Sentry.captureException(err, { tags: { feature: 'chat' } });
+  });
   return plan;
 }
 
@@ -288,6 +289,12 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     if (!context) {
+      const err = new Error('Chat: Could not load health data');
+      console.error(err.message);
+      Sentry.captureException(err, {
+        tags: { feature: 'chat' },
+        extra: { isGuest: auth.isGuest, userId: auth.userId },
+      });
       return json({ success: false, error: 'Could not load health data' }, { status: 500 });
     }
 
@@ -338,7 +345,12 @@ export async function action({ request }: ActionFunctionArgs) {
         .single();
 
       if (convError || !conv) {
-        console.error('Error creating conversation:', convError);
+        const err = new Error('Chat: Failed to create conversation');
+        console.error(err.message, convError);
+        Sentry.captureException(err, {
+          tags: { feature: 'chat' },
+          extra: { userId: auth.userId, dbError: convError?.message },
+        });
         return json({ success: false, error: 'Failed to create conversation' }, { status: 500 });
       }
       activeConversationId = conv.id;
@@ -364,7 +376,12 @@ export async function action({ request }: ActionFunctionArgs) {
       });
 
     if (userMsgError) {
-      console.error('Error saving user message:', userMsgError);
+      const err = new Error('Chat: Failed to save user message');
+      console.error(err.message, userMsgError);
+      Sentry.captureException(err, {
+        tags: { feature: 'chat' },
+        extra: { userId: auth.userId, conversationId: activeConversationId, dbError: userMsgError.message },
+      });
       return json({ success: false, error: 'Failed to save message' }, { status: 500 });
     }
 
@@ -406,7 +423,13 @@ export async function action({ request }: ActionFunctionArgs) {
         model: CHAT_MODEL,
       })
       .then(({ error }) => {
-        if (error) console.error('Error saving assistant message:', error);
+        if (error) {
+          console.error('Error saving assistant message:', error);
+          Sentry.captureException(new Error('Chat: Failed to save assistant message'), {
+            tags: { feature: 'chat' },
+            extra: { conversationId: activeConversationId, dbError: error.message },
+          });
+        }
       });
 
     auth.client
@@ -414,7 +437,13 @@ export async function action({ request }: ActionFunctionArgs) {
       .update({ updated_at: new Date().toISOString() })
       .eq('id', activeConversationId)
       .then(({ error }) => {
-        if (error) console.error('Error updating conversation timestamp:', error);
+        if (error) {
+          console.error('Error updating conversation timestamp:', error);
+          Sentry.captureException(new Error('Chat: Failed to update conversation timestamp'), {
+            tags: { feature: 'chat' },
+            extra: { conversationId: activeConversationId, dbError: error.message },
+          });
+        }
       });
 
     logAudit(auth.userId, 'CHAT_MESSAGE', 'chat', activeConversationId, {
