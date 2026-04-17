@@ -10746,7 +10746,10 @@
       "long COVID",
       "pertussis",
       "whooping cough",
-      "sleep apnoea"
+      "sleep apnoea",
+      "cough that won't go away",
+      "coughing for weeks",
+      "long-standing cough"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for chronic cough in adults (cough lasting 3–8 weeks or more): red flags, common causes, how doctors investigate, and treatment approaches for productive and non-productive cough. Always discuss your symptoms with your doctor."
@@ -11780,7 +11783,12 @@
       "nt-probnp",
       "interstitial lung disease",
       "oxygen saturation",
-      "hypoxia"
+      "hypoxia",
+      "can't catch my breath",
+      "winded easily",
+      "gasping for air",
+      "out of breath",
+      "hard to breathe"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for dyspnoea (shortness of breath) in adults: red flags requiring emergency assessment, causes (respiratory, cardiac, vascular, haematological, neuromuscular, breathing pattern disorders), assessment approach including history, examination, spirometry, NT-proBNP, and management stra"
@@ -12152,7 +12160,19 @@
       "sleep",
       "ME/CFS",
       "post-viral fatigue",
-      "long COVID"
+      "long COVID",
+      "feeling tired",
+      "always tired",
+      "no energy",
+      "low energy",
+      "lack of energy",
+      "exhausted all the time",
+      "worn out",
+      "gained weight and tired",
+      "cold and tired",
+      "always exhausted",
+      "constantly tired",
+      "tired all the time"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for fatigue in adults: red flags, differential diagnosis, targeted investigations, and management through lifestyle modification and treating underlying causes. Always discuss with your doctor."
@@ -12758,7 +12778,11 @@
       "amitriptyline",
       "giant cell arteritis",
       "subarachnoid haemorrhage",
-      "chronic headache"
+      "chronic headache",
+      "pounding headache",
+      "throbbing head",
+      "migraine-like",
+      "bad headache"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for headaches in adults: red flags requiring emergency assessment, differential diagnosis (migraine, tension-type, cluster, medication overuse), assessment approach, and management by headache type including acute and preventive treatments. Always discuss with your doctor."
@@ -13118,14 +13142,7 @@
       "de Quervain",
       "subacute thyroiditis",
       "thyrotoxic periodic paralysis",
-      "heat intolerance",
-      "weight loss",
-      "unexplained weight loss",
-      "fast heart rate",
-      "palpitations",
-      "tremor",
-      "anxiety",
-      "sweating"
+      "heat intolerance"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for hyperthyroidism and subclinical hyperthyroidism in adults: red flags, causes including Graves' disease and thyroiditis, assessment, and management including carbimazole dosing, beta blockers, and when specialist referral is needed. Always discuss with your doctor."
@@ -13213,20 +13230,7 @@
       "thyroid nodule",
       "anti-TPO",
       "central hypothyroidism",
-      "cold intolerance",
-      "feeling cold",
-      "always cold",
-      "weight gain",
-      "unexplained weight gain",
-      "fatigue",
-      "tiredness",
-      "dry skin",
-      "hair loss",
-      "low mood",
-      "constipation",
-      "slow heart rate",
-      "brain fog",
-      "puffy face"
+      "cold intolerance"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for hypothyroidism in adults including subclinical hypothyroidism: when to screen, symptoms and signs, interpreting TSH and FT4 results, thyroxine dosing and monitoring, and when specialist input is needed. Always discuss with your doctor."
@@ -17003,7 +17007,12 @@
       "diverticulitis",
       "gastroenteritis",
       "sepsis",
-      "surgical abdomen"
+      "surgical abdomen",
+      "tummy ache",
+      "severe stomach ache",
+      "abdominal cramps",
+      "stomach hurts",
+      "belly hurts"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for acute abdominal pain in adults (aged 15 and over): red flags requiring emergency care, assessment approach including history and examination, differential diagnosis by location and type, investigations, and management by cause. Always discuss with your doctor."
@@ -18075,7 +18084,14 @@
       "facet joint",
       "nsaid",
       "physiotherapy",
-      "musculoskeletal"
+      "musculoskeletal",
+      "sore back",
+      "aching back",
+      "back hurts",
+      "stiff neck",
+      "neck ache",
+      "lower back pain",
+      "upper back pain"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for back and neck pain in adults: red flags requiring urgent assessment (cauda equina, spinal cord compression, infection, malignancy, fracture), assessment approach, pain classification (mechanical vs radicular vs serious pathology), and management including analgesia, self-management, and when to seek specialist input. Always discuss with your doctor."
@@ -24805,7 +24821,12 @@
       "obstetric",
       "maternity",
       "cardiac",
-      "hyperemesis"
+      "hyperemesis",
+      "heart racing",
+      "heart pounding",
+      "fluttering in chest",
+      "skipped heartbeats",
+      "heart skipping"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for palpitations in pregnancy: red flags requiring urgent assessment, background on normal pregnancy-related cardiac changes, assessment approach including ECG and blood tests, and management. Always discuss with your doctor."
@@ -26890,7 +26911,11 @@
       "polymyalgia rheumatica",
       "corticosteroid injection",
       "physiotherapy",
-      "musculoskeletal"
+      "musculoskeletal",
+      "can't lift my arm",
+      "shoulder stiff",
+      "shoulder hurts",
+      "sore shoulder"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for shoulder pain in adults: red flags, differential diagnosis (rotator cuff, frozen shoulder, impingement, AC joint, glenohumeral osteoarthritis), assessment approach, and management by cause including analgesia, physiotherapy, and steroid injections. Always discuss with your doctor."
@@ -28410,7 +28435,12 @@
       "enuresis",
       "nocturia",
       "prostate",
-      "pelvic floor"
+      "pelvic floor",
+      "leaking urine",
+      "accidents",
+      "can't hold urine",
+      "wet myself",
+      "urine leaks"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for urinary incontinence in men: red flags, assessment including bladder diary and investigations, and management of urge, overflow, and post-surgical incontinence. Always discuss with your doctor."
@@ -28437,7 +28467,14 @@
       "nocturia",
       "haematuria",
       "prolapse",
-      "pelvic floor exercises"
+      "pelvic floor exercises",
+      "leaking urine",
+      "accidents",
+      "can't hold urine",
+      "wet myself",
+      "urine leaks",
+      "leak when I cough",
+      "leak when I laugh"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for urinary incontinence in women: red flags, assessment approach, and management by type (stress, urge, mixed). Covers lifestyle changes, pelvic floor exercises, bladder retraining, vaginal estrogens, and anticholinergic medications. Always discuss with your doctor."
@@ -28761,7 +28798,12 @@
       "cardiovascular risk",
       "diabetes",
       "unintentional weight loss",
-      "unintentional weight gain"
+      "unintentional weight gain",
+      "gained weight",
+      "putting on weight",
+      "unexplained weight gain",
+      "can't lose weight",
+      "losing weight"
     ],
     "type": "pathway",
     "summary": "Clinical pathway for weight-related concerns in adults: red flags, BMI and waist circumference assessment, lifestyle and dietary management, anti-obesity medication options (including semaglutide and tirzepatide), and when your healthcare provider may recommend further support or referral."

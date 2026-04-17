@@ -54,9 +54,9 @@
   },
   {
     "query": "I feel cold all the time and gained weight",
-    "expected": ["hypothyroidism"],
+    "expected": ["fatigue", "weight-related-concerns-in-adults", "hypothyroidism"],
     "category": "metabolic",
-    "notes": "symptom cluster"
+    "notes": "symptom cluster — should route to symptom pathway (fatigue or weight-concerns) with built-in differential, not directly to hypothyroidism"
   },
   {
     "query": "I've been feeling depressed for months",
