@@ -20,6 +20,7 @@ import {
   matchDocumentTitle,
   loadMatchedArticles,
   getChatCompletion,
+  warmupCache,
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
   FREE_DAILY_LIMIT,
@@ -113,7 +114,18 @@ async function refreshSubscriptionIfStale(
 // GET — list conversations or load conversation messages
 // ---------------------------------------------------------------------------
 
+// Prompt cache warmup cooldown (4 min — cache TTL is 5 min)
+let lastWarmupAt = Date.now();
+const WARMUP_COOLDOWN = 4 * 60_000;
+
 export async function loader({ request }: LoaderFunctionArgs) {
+  // Warm the Anthropic prompt cache if stale — fires in background, doesn't block response.
+  // Must be before the guest early-return so first-time visitors also trigger warmup.
+  if (Date.now() - lastWarmupAt > WARMUP_COOLDOWN) {
+    lastWarmupAt = Date.now();
+    warmupCache().catch(err => console.warn('Chat warmup failed:', (err as Error).message));
+  }
+
   try {
     const url = new URL(request.url);
 

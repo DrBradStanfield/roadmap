@@ -718,6 +718,35 @@ export async function getChatCompletion(
 }
 
 // ---------------------------------------------------------------------------
+// Prompt cache warmup
+// ---------------------------------------------------------------------------
+
+/**
+ * Prime the Anthropic prompt cache by sending a minimal request with the same
+ * cached system blocks that real requests use. max_tokens:1 minimizes output cost.
+ * The cache is keyed on the input prefix — user context (empty here) is after
+ * the last cache breakpoint, so real requests still get cache hits.
+ */
+export async function warmupCache(): Promise<void> {
+  const systemBlocks = buildSystemBlocks('{}');
+  await callAnthropicWithUsage({
+    model: CHAT_MODEL,
+    max_tokens: 1,
+    system: systemBlocks,
+    messages: [{ role: 'user', content: 'hi' }],
+  });
+}
+
+// Fire once on boot (covers deploy scenario). 5s delay lets health checks pass first.
+if (process.env.NODE_ENV === 'production') {
+  setTimeout(() => {
+    warmupCache()
+      .then(() => console.log('Chat prompt cache warmed'))
+      .catch(err => console.warn('Chat warmup failed (non-fatal):', (err as Error).message));
+  }, 5_000);
+}
+
+// ---------------------------------------------------------------------------
 // Exports for testing
 // ---------------------------------------------------------------------------
 
