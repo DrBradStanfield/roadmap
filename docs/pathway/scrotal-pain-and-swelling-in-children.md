@@ -2,7 +2,7 @@
 title: "Pathway: Scrotal Pain and Swelling in Children"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["scrotal pain", "scrotal swelling", "testicular torsion", "epididymo-orchitis", "hydrocele", "varicocele", "inguinal hernia", "idiopathic scrotal oedema", "torsion testicular appendage", "paediatric urology", "children", "scrotum", "testis"]
+keywords: ["scrotal pain", "scrotal swelling", "testicular torsion", "epididymo-orchitis", "hydrocele", "varicocele", "inguinal hernia", "idiopathic scrotal oedema", "torsion testicular appendage", "paediatric urology", "children", "scrotum", "testis", "my son's testicle hurts", "child swollen scrotum", "boy sudden testicle pain", "kid groin swelling", "toddler swollen balls", "son scrotum red and swollen", "child one testicle bigger", "boy testicle emergency", "son testicle pain vomiting", "child painless scrotal lump", "baby boy swollen groin", "son twisted testicle"]
 summary: "Clinical pathway for scrotal pain and swelling in children under 15: red flags requiring emergency assessment, differential diagnosis (testicular torsion, epididymo-orchitis, hydrocele, hernia, and others), assessment approach, and management by cause. Always discuss with your doctor."
 ---
 

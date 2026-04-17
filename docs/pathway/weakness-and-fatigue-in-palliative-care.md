@@ -2,7 +2,7 @@
 title: "Pathway: Weakness and Fatigue in Palliative Care"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["weakness", "fatigue", "cancer-related fatigue", "palliative care", "dexamethasone", "corticosteroids", "energy conservation", "cachexia", "anorexia", "end of life", "terminal", "hospice"]
+keywords: ["weakness", "fatigue", "cancer-related fatigue", "palliative care", "dexamethasone", "corticosteroids", "energy conservation", "cachexia", "anorexia", "end of life", "terminal", "hospice", "too tired to get out of bed", "cancer tiredness", "no energy cancer", "end of life exhaustion", "dying person tired", "terminal weakness", "chemo fatigue", "carer patient worn out", "no strength left", "too weak to walk", "bedbound fatigue", "steroids for energy palliative"]
 summary: "Clinical pathway for managing weakness and fatigue in adults receiving palliative care. Covers symptom assessment, identifying reversible causes (metabolic, anaemia, medications, emotional), and a multi-component management plan including activity pacing, exercise, emotional support, nutritional support, and corticosteroids. Always discuss with your doctor."
 ---
 

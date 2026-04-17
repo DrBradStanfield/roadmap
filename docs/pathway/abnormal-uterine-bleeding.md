@@ -2,7 +2,7 @@
 title: "Pathway: Abnormal Uterine Bleeding"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["abnormal uterine bleeding", "aub", "heavy menstrual bleeding", "hmb", "intermenstrual bleeding", "imb", "irregular periods", "endometrial cancer", "endometrial hyperplasia", "fibroids", "adenomyosis", "polyps", "mirena", "levonorgestrel iud", "tranexamic acid", "norethisterone", "medroxyprogesterone", "pipelle biopsy", "pelvic ultrasound", "perimenopausal bleeding", "menorrhagia", "anovulation", "pcos"]
+keywords: ["abnormal uterine bleeding", "aub", "heavy menstrual bleeding", "hmb", "intermenstrual bleeding", "imb", "irregular periods", "endometrial cancer", "endometrial hyperplasia", "fibroids", "adenomyosis", "polyps", "mirena", "levonorgestrel iud", "tranexamic acid", "norethisterone", "medroxyprogesterone", "pipelle biopsy", "pelvic ultrasound", "perimenopausal bleeding", "menorrhagia", "anovulation", "pcos", "heavy periods", "flooding periods", "bleeding between periods", "spotting between periods", "passing clots", "period clots", "long periods", "period won't stop", "unpredictable periods", "erratic periods", "breakthrough bleeding", "mid cycle bleeding", "period soaking through pads", "missed periods", "period too heavy", "changing pads every hour", "soaking through clothes", "period lasting weeks", "random vaginal bleeding", "bleeding after sex", "period twice a month", "anaemia from periods", "tired from heavy periods", "iron low from periods"]
 summary: "Clinical pathway for abnormal uterine bleeding (AUB) in non-pregnant women of reproductive age: definitions, red flags, assessment approach, investigations including pelvic ultrasound and pipelle biopsy, and management options by cause. Always discuss with your doctor."
 ---
 

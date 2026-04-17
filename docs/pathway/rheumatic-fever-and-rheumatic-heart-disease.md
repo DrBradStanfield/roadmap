@@ -2,7 +2,7 @@
 title: "Pathway: Rheumatic Fever and Rheumatic Heart Disease"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["rheumatic fever", "rheumatic heart disease", "ARF", "RHD", "group A streptococcus", "GAS", "benzathine penicillin", "secondary prophylaxis", "Sydenham's chorea", "carditis", "erythema marginatum", "Jones criteria", "strep throat", "heart valve", "Māori", "Pacific peoples"]
+keywords: ["rheumatic fever", "rheumatic heart disease", "ARF", "RHD", "group A streptococcus", "GAS", "benzathine penicillin", "secondary prophylaxis", "Sydenham's chorea", "carditis", "erythema marginatum", "Jones criteria", "strep throat", "heart valve", "Māori", "Pacific peoples", "heart damage from strep", "sore joints after strep throat", "swollen joints after throat infection", "penicillin injections for rheumatic fever", "jerky movements after strep", "migratory joint pain", "strep heart complications", "heart murmur after throat infection", "rheumatic fever prevention", "worsening handwriting child", "recurrent rheumatic fever", "valve damage from strep"]
 summary: "Clinical pathway for acute rheumatic fever (ARF) and rheumatic heart disease (RHD): red flags, high-risk groups, assessment including clinical features and diagnostic approach, and management including secondary prophylaxis with benzathine penicillin. Always discuss with your doctor."
 ---
 

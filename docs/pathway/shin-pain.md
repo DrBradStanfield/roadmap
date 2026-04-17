@@ -2,7 +2,7 @@
 title: "Pathway: Shin Pain"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["shin pain", "shin splints", "medial tibial stress syndrome", "MTSS", "stress fracture", "tibialis posterior", "exertional compartment syndrome", "tibia", "leg pain", "overuse injury", "exercise injury"]
+keywords: ["shin pain", "shin splints", "medial tibial stress syndrome", "MTSS", "stress fracture", "tibialis posterior", "exertional compartment syndrome", "tibia", "leg pain", "overuse injury", "exercise injury", "pain in front of lower leg", "shin hurts when running", "sore shins", "lower leg pain after running", "front of leg hurts", "shin bone pain", "running leg pain", "shin pain walking", "shin swelling", "leg pain exercise"]
 summary: "Clinical pathway for shin pain in adults: causes (shin splints, stress fracture, exertional compartment syndrome, tibialis posterior dysfunction), assessment approach, and management by diagnosis. Always discuss with your doctor."
 ---
 

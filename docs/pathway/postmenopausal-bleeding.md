@@ -2,7 +2,7 @@
 title: "Pathway: Postmenopausal Bleeding"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["postmenopausal bleeding", "PMB", "endometrial cancer", "endometrial hyperplasia", "vaginal atrophy", "transvaginal ultrasound", "endometrial thickness", "pipelle biopsy", "tamoxifen", "menopause hormone therapy", "MHT", "estriol", "vaginal estrogen", "uterine cancer", "gynaecology"]
+keywords: ["postmenopausal bleeding", "PMB", "endometrial cancer", "endometrial hyperplasia", "vaginal atrophy", "transvaginal ultrasound", "endometrial thickness", "pipelle biopsy", "tamoxifen", "menopause hormone therapy", "MHT", "estriol", "vaginal estrogen", "uterine cancer", "gynaecology", "bleeding after menopause", "period started again", "spotting after menopause", "brown discharge after menopause", "light bleeding years after menopause", "blood after not having periods", "unexpected vaginal bleeding", "discharge with blood after menopause", "post-menopausal spotting", "bleeding when on HRT", "uterine lining too thick", "womb cancer symptoms"]
 summary: "Clinical pathway for postmenopausal bleeding: background, possible causes, assessment approach, investigation with pelvic ultrasound, and management based on endometrial thickness and biopsy results. Always discuss with your doctor."
 ---
 

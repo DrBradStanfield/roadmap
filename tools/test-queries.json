@@ -1,272 +1,401 @@
 [
   {
     "query": "I have high blood pressure, what does the algorithm suggest?",
-    "expected": ["hypertension-in-adults"],
+    "expected": [
+      "hypertension-in-adults"
+    ],
     "category": "cardiovascular",
     "notes": "lay term → clinical"
   },
   {
     "query": "What does HTN mean?",
-    "expected": ["hypertension-in-adults"],
+    "expected": [
+      "hypertension-in-adults"
+    ],
     "category": "cardiovascular",
     "notes": "abbreviation"
   },
   {
     "query": "My chest hurts when I walk up stairs",
-    "expected": ["chest-pain", "acute-coronary-syndromes-acs"],
+    "expected": [
+      "chest-pain",
+      "acute-coronary-syndromes-acs"
+    ],
     "category": "cardiovascular",
     "notes": "symptom description"
   },
   {
     "query": "I think I might be having a heart attack",
-    "expected": ["acute-coronary-syndromes-acs", "chest-pain"],
+    "expected": [
+      "acute-coronary-syndromes-acs",
+      "chest-pain"
+    ],
     "category": "cardiovascular",
     "notes": "lay term for MI"
   },
   {
     "query": "My LDL cholesterol is too high",
-    "expected": ["hyperlipidaemia", "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"],
+    "expected": [
+      "hyperlipidaemia",
+      "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"
+    ],
     "category": "cardiovascular",
     "notes": "abbreviation LDL + clinical concept"
   },
   {
     "query": "HbA1c of 6.5 — what does that mean?",
-    "expected": ["diabetes-screening-and-diagnosis-in-adults"],
+    "expected": [
+      "diabetes-screening-and-diagnosis-in-adults"
+    ],
     "category": "metabolic",
     "notes": "lab value abbreviation"
   },
   {
     "query": "Type 2 diabetes treatment options",
-    "expected": ["type-2-diabetes", "diabetes-screening-and-diagnosis-in-adults"],
+    "expected": [
+      "type-2-diabetes",
+      "diabetes-screening-and-diagnosis-in-adults"
+    ],
     "category": "metabolic"
   },
   {
     "query": "T2DM diagnosis criteria",
-    "expected": ["type-2-diabetes", "diabetes-screening-and-diagnosis-in-adults"],
+    "expected": [
+      "type-2-diabetes",
+      "diabetes-screening-and-diagnosis-in-adults"
+    ],
     "category": "metabolic",
     "notes": "abbreviation"
   },
   {
     "query": "My TSH came back abnormal",
-    "expected": ["hypothyroidism", "hyperthyroidism", "impalpable-thyroid-nodule", "palpable-thyroid-nodule", "thyroid-disease-in-pregnancy", "goitre-in-adults"],
+    "expected": [
+      "hypothyroidism",
+      "hyperthyroidism",
+      "impalpable-thyroid-nodule",
+      "palpable-thyroid-nodule",
+      "thyroid-disease-in-pregnancy",
+      "goitre-in-adults"
+    ],
     "category": "metabolic",
     "notes": "TSH abnormal can point to any thyroid pathway — all are relevant"
   },
   {
     "query": "I feel cold all the time and gained weight",
-    "expected": ["fatigue", "weight-related-concerns-in-adults", "hypothyroidism"],
+    "expected": [
+      "fatigue",
+      "weight-related-concerns-in-adults",
+      "hypothyroidism"
+    ],
     "category": "metabolic",
     "notes": "symptom cluster — should route to symptom pathway (fatigue or weight-concerns) with built-in differential, not directly to hypothyroidism"
   },
   {
     "query": "I've been feeling depressed for months",
-    "expected": ["depression-in-adults-and-older-persons"],
+    "expected": [
+      "depression-in-adults-and-older-persons"
+    ],
     "category": "mental-health"
   },
   {
     "query": "I feel anxious all the time",
-    "expected": ["anxiety-distress-and-agitation-in-palliative-care", "anxiety-in-children-and-youth"],
+    "expected": [
+      "anxiety-distress-and-agitation-in-palliative-care",
+      "anxiety-in-children-and-youth"
+    ],
     "category": "mental-health",
     "notes": "no dedicated adult anxiety pathway — palliative or children closest"
   },
   {
     "query": "I think I have ADHD",
-    "expected": ["adhd-in-adults"],
+    "expected": [
+      "adhd-in-adults"
+    ],
     "category": "mental-health"
   },
   {
     "query": "I can't fall asleep at night",
-    "expected": ["insomnia"],
+    "expected": [
+      "insomnia"
+    ],
     "category": "sleep"
   },
   {
     "query": "I snore loudly and wake up tired",
-    "expected": ["obstructive-sleep-apnoea-osa-in-adults", "snoring-and-sleep-apnoea-in-children"],
+    "expected": [
+      "obstructive-sleep-apnoea-osa-in-adults",
+      "snoring-and-sleep-apnoea-in-children"
+    ],
     "category": "sleep",
     "notes": "empty keyword entry for OSA — expect fail at baseline"
   },
   {
     "query": "Do I have sleep apnea?",
-    "expected": ["obstructive-sleep-apnoea-osa-in-adults"],
+    "expected": [
+      "obstructive-sleep-apnoea-osa-in-adults"
+    ],
     "category": "sleep",
     "notes": "lay variant 'apnea' vs indexed 'apnoea'"
   },
   {
     "query": "Knee pain going up stairs",
-    "expected": ["knee-injuries", "osteoarthritis-oa", "hip-and-knee-joint-replacement"],
+    "expected": [
+      "knee-injuries",
+      "osteoarthritis-oa",
+      "hip-and-knee-joint-replacement"
+    ],
     "category": "musculoskeletal"
   },
   {
     "query": "Chronic lower back pain",
-    "expected": ["back-and-neck-pain"],
+    "expected": [
+      "back-and-neck-pain"
+    ],
     "category": "musculoskeletal",
     "notes": "lay 'lower back' → indexed 'back'"
   },
   {
     "query": "Tennis elbow pain",
-    "expected": ["tennis-and-golfer-s-elbow"],
+    "expected": [
+      "tennis-and-golfer-s-elbow"
+    ],
     "category": "musculoskeletal"
   },
   {
     "query": "Frozen shoulder treatment",
-    "expected": ["shoulder-pain"],
+    "expected": [
+      "shoulder-pain"
+    ],
     "category": "musculoskeletal",
     "notes": "frozen shoulder is covered by the shoulder-pain pathway (listed in its keywords)"
   },
   {
     "query": "Heartburn after meals",
-    "expected": ["nsaids-and-dyspepsia-heartburn", "reflux-and-gord-in-children"],
+    "expected": [
+      "nsaids-and-dyspepsia-heartburn",
+      "reflux-and-gord-in-children"
+    ],
     "category": "gi",
     "notes": "no dedicated adult GORD pathway — children's pathway is closest content match"
   },
   {
     "query": "Acid reflux keeping me awake",
-    "expected": ["nsaids-and-dyspepsia-heartburn", "reflux-and-gord-in-children"],
+    "expected": [
+      "nsaids-and-dyspepsia-heartburn",
+      "reflux-and-gord-in-children"
+    ],
     "category": "gi",
     "notes": "GERD lay term; no adult-specific GORD pathway"
   },
   {
     "query": "IBS symptoms and treatment",
-    "expected": ["irritable-bowel-syndrome-ibs"],
+    "expected": [
+      "irritable-bowel-syndrome-ibs"
+    ],
     "category": "gi"
   },
   {
     "query": "Chronic constipation",
-    "expected": ["constipation-in-adults"],
+    "expected": [
+      "constipation-in-adults"
+    ],
     "category": "gi"
   },
   {
     "query": "Severe stomach pain",
-    "expected": ["acute-abdominal-pain-in-adults"],
+    "expected": [
+      "acute-abdominal-pain-in-adults"
+    ],
     "category": "gi",
     "notes": "lay 'stomach' → indexed 'abdominal'"
   },
   {
     "query": "Chronic cough for weeks",
-    "expected": ["chronic-cough-in-adults"],
+    "expected": [
+      "chronic-cough-in-adults"
+    ],
     "category": "respiratory"
   },
   {
     "query": "I think I have asthma",
-    "expected": ["non-acute-asthma-in-adults-and-young-people", "acute-asthma-in-adults-and-young-people"],
+    "expected": [
+      "non-acute-asthma-in-adults-and-young-people",
+      "acute-asthma-in-adults-and-young-people"
+    ],
     "category": "respiratory"
   },
   {
     "query": "COPD exacerbation symptoms",
-    "expected": ["acute-exacerbation-of-copd", "copd-diagnosis-and-initial-management"],
+    "expected": [
+      "acute-exacerbation-of-copd",
+      "copd-diagnosis-and-initial-management"
+    ],
     "category": "respiratory"
   },
   {
     "query": "Shortness of breath on exertion",
-    "expected": ["dyspnoea", "chest-pain", "acute-exacerbation-of-copd"],
+    "expected": [
+      "dyspnoea",
+      "chest-pain",
+      "acute-exacerbation-of-copd"
+    ],
     "category": "respiratory"
   },
   {
     "query": "Bleeding after menopause",
-    "expected": ["postmenopausal-bleeding"],
+    "expected": [
+      "postmenopausal-bleeding"
+    ],
     "category": "womens-health"
   },
   {
     "query": "Hot flashes menopause",
-    "expected": ["menopause-hormone-therapy-mht"],
+    "expected": [
+      "menopause-hormone-therapy-mht"
+    ],
     "category": "womens-health"
   },
   {
     "query": "PCOS diagnosis",
-    "expected": ["polycystic-ovary-syndrome-pcos"],
+    "expected": [
+      "polycystic-ovary-syndrome-pcos"
+    ],
     "category": "womens-health"
   },
   {
     "query": "Trouble peeing at night",
-    "expected": ["lower-urinary-tract-symptoms-in-men-luts", "benign-prostatic-hyperplasia"],
+    "expected": [
+      "lower-urinary-tract-symptoms-in-men-luts",
+      "benign-prostatic-hyperplasia"
+    ],
     "category": "mens-health",
     "notes": "lay → LUTS/BPH"
   },
   {
     "query": "BPH treatment options",
-    "expected": ["benign-prostatic-hyperplasia", "lower-urinary-tract-symptoms-in-men-luts"],
+    "expected": [
+      "benign-prostatic-hyperplasia",
+      "lower-urinary-tract-symptoms-in-men-luts"
+    ],
     "category": "mens-health",
     "notes": "abbreviation"
   },
   {
     "query": "Erectile dysfunction",
-    "expected": ["erectile-dysfunction"],
+    "expected": [
+      "erectile-dysfunction"
+    ],
     "category": "mens-health"
   },
   {
     "query": "Prostate cancer screening",
-    "expected": ["prostate-cancer-testing", "prostate-cancer-diagnosis"],
+    "expected": [
+      "prostate-cancer-testing",
+      "prostate-cancer-diagnosis"
+    ],
     "category": "mens-health"
   },
   {
     "query": "Acne treatment",
-    "expected": ["acne"],
+    "expected": [
+      "acne"
+    ],
     "category": "dermatology"
   },
   {
     "query": "Headache for days",
-    "expected": ["headaches-in-adults"],
+    "expected": [
+      "headaches-in-adults"
+    ],
     "category": "neuro"
   },
   {
     "query": "Migraine treatment",
-    "expected": ["headaches-in-adults"],
+    "expected": [
+      "headaches-in-adults"
+    ],
     "category": "neuro",
     "notes": "migraine is a headache subtype — no dedicated pathway"
   },
   {
     "query": "Osteoporosis treatment",
-    "expected": ["medications-for-osteoporosis", "calcium-supplementation-in-osteoporosis"],
+    "expected": [
+      "medications-for-osteoporosis",
+      "calcium-supplementation-in-osteoporosis"
+    ],
     "category": "bone-health"
   },
   {
     "query": "Should I take vitamin D every day?",
-    "expected": ["vitamin-d-benefits-forms-dosing-and-side-effects", "vitamin-d-supplementation"],
+    "expected": [
+      "vitamin-d-benefits-forms-dosing-and-side-effects",
+      "vitamin-d-supplementation"
+    ],
     "category": "supplement"
   },
   {
     "query": "Best omega-3 dose",
-    "expected": ["omega-3-fish-oil-benefits-forms-dosing-and-side-effects"],
+    "expected": [
+      "omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+    ],
     "category": "supplement"
   },
   {
     "query": "Creatine for muscle growth",
-    "expected": ["creatine-benefits-best-forms-dosing-and-side-effects"],
+    "expected": [
+      "creatine-benefits-best-forms-dosing-and-side-effects"
+    ],
     "category": "supplement"
   },
   {
     "query": "Magnesium glycinate for sleep",
-    "expected": ["magnesium-benefits-best-forms-dosing"],
+    "expected": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
     "category": "supplement"
   },
   {
     "query": "Berberine blood sugar",
-    "expected": ["berberine-benefits-forms-dosing-and-side-effects"],
+    "expected": [
+      "berberine-benefits-forms-dosing-and-side-effects"
+    ],
     "category": "supplement"
   },
   {
     "query": "Is protein powder worth taking?",
-    "expected": ["protein-powders-benefits-types-dosing-and-side-effects"],
+    "expected": [
+      "protein-powders-benefits-types-dosing-and-side-effects"
+    ],
     "category": "supplement"
   },
   {
     "query": "Benefits of choline",
-    "expected": ["choline-benefits-best-forms-dosing-and-side-effects"],
+    "expected": [
+      "choline-benefits-best-forms-dosing-and-side-effects"
+    ],
     "category": "supplement"
   },
   {
     "query": "Zone 2 cardio training",
-    "expected": ["exercise"],
+    "expected": [
+      "exercise"
+    ],
     "category": "lifestyle"
   },
   {
     "query": "How much sodium per day",
-    "expected": ["diet"],
+    "expected": [
+      "diet"
+    ],
     "category": "lifestyle"
   },
   {
     "query": "Intermittent fasting for weight loss",
-    "expected": ["doctor-recommended-intermittent-fasting-hack-that-actually-works", "new-studies-reveal-the-best-type-of-intermittent-fasting", "longevity-experts-warning-fasting"],
+    "expected": [
+      "doctor-recommended-intermittent-fasting-hack-that-actually-works",
+      "new-studies-reveal-the-best-type-of-intermittent-fasting",
+      "longevity-experts-warning-fasting"
+    ],
     "category": "lifestyle"
   },
   {
@@ -280,5 +409,1033 @@
     "expected": [],
     "category": "ambiguous",
     "notes": "too vague — any match is a false positive"
+  },
+  {
+    "query": "I keep getting bruises all over my legs and I haven't bumped into anything",
+    "expected": [
+      "abnormal-bleeding-or-bruising"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I had a tooth pulled last week and the bleeding just won't stop",
+    "expected": [
+      "abnormal-bleeding-or-bruising"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I've noticed tiny red and purple dots appearing on my arms",
+    "expected": [
+      "abnormal-bleeding-or-bruising"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my pain is really bad and the paracetamol isn't helping",
+    "expected": [
+      "analgesia-in-adults-with-acute-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "can you take ibuprofen and paracetamol at the same time",
+    "expected": [
+      "analgesia-in-adults-with-acute-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "how long should I stay on strong painkillers after an injury",
+    "expected": [
+      "analgesia-in-adults-with-acute-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I have a stabbing pain in my chest every time I take a deep breath",
+    "expected": [
+      "chest-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my chest has been hurting and it's spreading up to my jaw and I feel sweaty",
+    "expected": [
+      "chest-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "sudden tearing chest pain between my shoulder blades",
+    "expected": [
+      "chest-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I've had constant pain in my back for the last 6 months and nothing helps",
+    "expected": [
+      "chronic-non-cancer-pain",
+      "back-and-neck-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my nerve pain is burning all the time and it's ruining my life",
+    "expected": [
+      "chronic-non-cancer-pain",
+      "peripheral-neuropathy"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I feel depressed because of my pain and I can't exercise anymore",
+    "expected": [
+      "chronic-non-cancer-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I haven't been able to poo in four days and my belly feels really full",
+    "expected": [
+      "constipation-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my stools come out like dry hard pellets and it's really painful",
+    "expected": [
+      "constipation-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I'm totally backed up pushing really hard on the toilet but nothing comes out",
+    "expected": [
+      "constipation-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I have really bad bone pain and a high fever after coming back from Thailand",
+    "expected": [
+      "dengue-fever",
+      "fever-in-returning-travellers"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my eyes hurt and I have a fever just got back from Fiji last week",
+    "expected": [
+      "dengue-fever",
+      "fever-in-returning-travellers"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I have an itchy rash and low platelets after a trip to Indonesia",
+    "expected": [
+      "dengue-fever",
+      "fever-in-returning-travellers"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "what are the best chronic pain pills",
+    "expected": [
+      "medications-in-chronic-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my pain tablets aren't working anymore what can I try",
+    "expected": [
+      "medications-in-chronic-pain",
+      "chronic-non-cancer-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "can I take an antidepressant for chronic pain",
+    "expected": [
+      "medications-in-chronic-pain",
+      "chronic-non-cancer-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I keep waking up at night with acid burning my throat",
+    "expected": [
+      "nsaids-and-dyspepsia-heartburn"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "feel like there's a lump stuck in my throat after eating",
+    "expected": [
+      "nsaids-and-dyspepsia-heartburn"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my stomach is full and burning after every meal and I've been on ibuprofen",
+    "expected": [
+      "nsaids-and-dyspepsia-heartburn"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I have burning pain in my legs but I can't feel them after spinal cord injury",
+    "expected": [
+      "pain-in-spinal-cord-impairment-sci"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my shoulder really hurts from using my wheelchair all day",
+    "expected": [
+      "pain-in-spinal-cord-impairment-sci",
+      "shoulder-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I've got a syrinx after my spinal injury now getting new pain",
+    "expected": [
+      "pain-in-spinal-cord-impairment-sci"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I'm changing my pad every hour is that normal",
+    "expected": [
+      "abnormal-uterine-bleeding"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I had bleeding after sex and I'm worried",
+    "expected": [
+      "post-coital-bleeding",
+      "abnormal-uterine-bleeding"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my period has been going on for three weeks",
+    "expected": [
+      "abnormal-uterine-bleeding"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I have sudden stabbing pain in my lower left belly",
+    "expected": [
+      "acute-lower-abdominal-and-pelvic-pain-in-women",
+      "acute-abdominal-pain-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "sharp pain in my lower stomach and I missed my period",
+    "expected": [
+      "acute-lower-abdominal-and-pelvic-pain-in-women"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "pain during sex and cramping in my pelvis",
+    "expected": [
+      "acute-lower-abdominal-and-pelvic-pain-in-women",
+      "chronic-pelvic-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my heel kills every morning when I get out of bed",
+    "expected": [
+      "ankle-and-foot-pain-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I twisted my ankle a few weeks ago and it's still swollen",
+    "expected": [
+      "ankle-and-foot-pain-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "burning pain between my toes in tight shoes",
+    "expected": [
+      "ankle-and-foot-pain-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my bones feel sore all over and I don't know why",
+    "expected": [
+      "bone-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "bone pain waking me up at night",
+    "expected": [
+      "bone-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my rib bones are tender to touch with no injury",
+    "expected": [
+      "bone-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my breasts ache and feel heavy before my period",
+    "expected": [
+      "breast-pain-mastalgia"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "shooting pain in one breast not related to my cycle",
+    "expected": [
+      "breast-pain-mastalgia"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my breasts are really tender and sore since starting the pill",
+    "expected": [
+      "breast-pain-mastalgia"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I've had pelvic pain for months and nothing is fixing it",
+    "expected": [
+      "chronic-pelvic-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "constant dull ache in my pelvis not related to my period",
+    "expected": [
+      "chronic-pelvic-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "pelvic pain that keeps coming back for years",
+    "expected": [
+      "chronic-pelvic-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I have MND and I'm getting short of breath at night",
+    "expected": [
+      "dyspnoea-in-mnd",
+      "dyspnoea"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my husband has ALS and is having trouble breathing and coughing up mucus",
+    "expected": [
+      "dyspnoea-in-mnd"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "motor neurone disease struggling to breathe what can the doctor give",
+    "expected": [
+      "dyspnoea-in-mnd"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I got a fever a week after coming back from holiday in Thailand",
+    "expected": [
+      "fever-in-returning-travellers",
+      "dengue-fever"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "sweating and shaking since I got back from Africa worried it's malaria",
+    "expected": [
+      "fever-in-returning-travellers"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "went on safari mosquito bit me loads now I feel terrible with a fever",
+    "expected": [
+      "fever-in-returning-travellers"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I had COVID and now I'm exhausted all the time and crash after any activity",
+    "expected": [
+      "myalgic-encephalomyelitis-chronic-fatigue-syndrome-me-cfs",
+      "fatigue"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I'm always tired no matter how much I sleep and get dizzy when I stand up",
+    "expected": [
+      "myalgic-encephalomyelitis-chronic-fatigue-syndrome-me-cfs",
+      "fatigue"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "ME CFS pacing and energy envelope",
+    "expected": [
+      "myalgic-encephalomyelitis-chronic-fatigue-syndrome-me-cfs"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I have a bump on the side of my neck that's been there for a month",
+    "expected": [
+      "neck-lumps-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "painless hard lump under my jaw not going away",
+    "expected": [
+      "neck-lumps-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my neck gland has been swollen for weeks and won't go down",
+    "expected": [
+      "neck-lumps-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my baby has been coughing for weeks and makes a whooping sound",
+    "expected": [
+      "pertussis-whooping-cough",
+      "cough-in-children",
+      "persistent-wet-cough-in-children"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "child coughs so hard they vomit and goes blue",
+    "expected": [
+      "pertussis-whooping-cough"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I was near someone with whooping cough while pregnant do I need antibiotics",
+    "expected": [
+      "pertussis-whooping-cough"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I keep getting blood after sex is that normal",
+    "expected": [
+      "post-coital-bleeding"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "why do I have light spotting after intercourse",
+    "expected": [
+      "post-coital-bleeding"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "pink discharge after sex worried about cervical cancer",
+    "expected": [
+      "post-coital-bleeding"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I had my last period 3 years ago but I'm bleeding again",
+    "expected": [
+      "postmenopausal-bleeding"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "noticed some brown spotting and I went through menopause two years ago",
+    "expected": [
+      "postmenopausal-bleeding"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I'm on HRT and getting unexpected bleeding",
+    "expected": [
+      "postmenopausal-bleeding"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my child had strep throat and now has swollen knees and a limp",
+    "expected": [
+      "rheumatic-fever-and-rheumatic-heart-disease"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my daughter's handwriting is getting worse and she's making jerky movements",
+    "expected": [
+      "rheumatic-fever-and-rheumatic-heart-disease"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "doctor said I have a heart murmur after a throat infection could it be rheumatic fever",
+    "expected": [
+      "rheumatic-fever-and-rheumatic-heart-disease"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I found a hard lump on my testicle",
+    "expected": [
+      "scrotal-lumps-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my ball sac feels like a bag of worms",
+    "expected": [
+      "scrotal-lumps-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "painless swelling on one testicle no pain",
+    "expected": [
+      "scrotal-lumps-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my shin hurts when I run",
+    "expected": [
+      "shin-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "pain in the front of my lower leg after exercise",
+    "expected": [
+      "shin-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "sore shins and a numb big toe",
+    "expected": [
+      "shin-pain"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I have a painless lump under my skin on my thigh that seems to be getting bigger",
+    "expected": [
+      "soft-tissue-lumps-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "soft fatty lump on my back had it for years is it a lipoma",
+    "expected": [
+      "soft-tissue-lumps-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "hard bump under skin that feels fixed and is about 6cm",
+    "expected": [
+      "soft-tissue-lumps-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my wrist hurts when I type at work",
+    "expected": [
+      "wrist-pain-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "I fell and now my wrist is sore and swollen",
+    "expected": [
+      "wrist-pain-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "numbness and tingling in my fingers coming from wrist",
+    "expected": [
+      "wrist-pain-in-adults"
+    ],
+    "category": "symptomatic"
+  },
+  {
+    "query": "my child's tummy hurts really bad and he can't walk",
+    "expected": [
+      "acute-abdominal-pain-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "toddler stomach ache with green vomit",
+    "expected": [
+      "acute-abdominal-pain-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "kid with right side belly pain and fever",
+    "expected": [
+      "acute-abdominal-pain-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my 8 year old keeps getting tummy aches every week",
+    "expected": [
+      "chronic-abdominal-pain-in-children-and-youth"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "child missing school because of stomach pain",
+    "expected": [
+      "chronic-abdominal-pain-in-children-and-youth"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "doctor says nothing wrong but my kid always has belly pain",
+    "expected": [
+      "chronic-abdominal-pain-in-children-and-youth"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my toddler hasn't pooed in 4 days what do I do",
+    "expected": [
+      "constipation-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my kid keeps holding in their poo and is scared of the toilet",
+    "expected": [
+      "constipation-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "there is poo leaking in my child's underpants",
+    "expected": [
+      "constipation-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my toddler has been coughing for 2 weeks and it's worse at night",
+    "expected": [
+      "cough-in-children",
+      "persistent-wet-cough-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my 3 year old has a barking cough and sounds like a seal",
+    "expected": [
+      "cough-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "baby coughing so hard they vomit after a cold",
+    "expected": [
+      "cough-in-children",
+      "pertussis-whooping-cough"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my child keeps getting headaches what should I do",
+    "expected": [
+      "headaches-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "toddler waking up crying with headache",
+    "expected": [
+      "headaches-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my daughter has a headache every day at school",
+    "expected": [
+      "headaches-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my kid has a lump on the side of their neck",
+    "expected": [
+      "neck-lumps-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "toddler neck swelling not going away after cold",
+    "expected": [
+      "neck-lumps-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "hard bump on baby's neck worried about lymphoma",
+    "expected": [
+      "neck-lumps-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my toddler has had a wet cough for 6 weeks",
+    "expected": [
+      "persistent-wet-cough-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "child keeps coughing up green phlegm after every cold",
+    "expected": [
+      "persistent-wet-cough-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "kid finished antibiotics but wet cough came straight back",
+    "expected": [
+      "persistent-wet-cough-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my preemie is not meeting milestones",
+    "expected": [
+      "preterm-and-low-birth-weight-infants"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "baby born at 32 weeks coming home from NICU",
+    "expected": [
+      "preterm-and-low-birth-weight-infants"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "iron drops making my premature baby constipated",
+    "expected": [
+      "preterm-and-low-birth-weight-infants"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my son woke up crying his testicle hurts",
+    "expected": [
+      "scrotal-pain-and-swelling-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "toddler has one swollen ball no pain",
+    "expected": [
+      "scrotal-pain-and-swelling-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "8 year old boy swollen red scrotum with vomiting",
+    "expected": [
+      "scrotal-pain-and-swelling-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my toddler started shaking during a fever",
+    "expected": [
+      "seizures-with-fever-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "child had a fit with a temperature will they get epilepsy",
+    "expected": [
+      "seizures-with-fever-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "baby convulsed with high fever when to call ambulance",
+    "expected": [
+      "seizures-with-fever-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my child is gaining too much weight",
+    "expected": [
+      "weight-management-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "overweight toddler",
+    "expected": [
+      "weight-management-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "my daughter is overweight and won't stop eating",
+    "expected": [
+      "weight-management-in-children"
+    ],
+    "category": "pediatric"
+  },
+  {
+    "query": "I'm 8 weeks pregnant and throwing up everything I eat",
+    "expected": [
+      "nausea-and-vomiting-in-pregnancy"
+    ],
+    "category": "pregnancy"
+  },
+  {
+    "query": "Is all day sickness normal in pregnancy or just morning",
+    "expected": [
+      "nausea-and-vomiting-in-pregnancy"
+    ],
+    "category": "pregnancy"
+  },
+  {
+    "query": "I've been diagnosed with HG and can't keep anything down",
+    "expected": [
+      "nausea-and-vomiting-in-pregnancy"
+    ],
+    "category": "pregnancy"
+  },
+  {
+    "query": "my nipples are burning after breastfeeding",
+    "expected": [
+      "nipple-pain-in-breastfeeding"
+    ],
+    "category": "pregnancy"
+  },
+  {
+    "query": "breastfeeding hurts every time baby latches",
+    "expected": [
+      "nipple-pain-in-breastfeeding"
+    ],
+    "category": "pregnancy"
+  },
+  {
+    "query": "white blister on nipple while breastfeeding",
+    "expected": [
+      "nipple-pain-in-breastfeeding"
+    ],
+    "category": "pregnancy"
+  },
+  {
+    "query": "I'm 7 weeks pregnant and started spotting",
+    "expected": [
+      "pain-and-bleeding-in-early-pregnancy"
+    ],
+    "category": "pregnancy"
+  },
+  {
+    "query": "sharp pain on one side early pregnancy with light bleeding",
+    "expected": [
+      "pain-and-bleeding-in-early-pregnancy"
+    ],
+    "category": "pregnancy"
+  },
+  {
+    "query": "passed a clot at 9 weeks am I having a miscarriage",
+    "expected": [
+      "pain-and-bleeding-in-early-pregnancy"
+    ],
+    "category": "pregnancy"
+  },
+  {
+    "query": "I'm pregnant and so itchy at night especially my hands and feet",
+    "expected": [
+      "rash-and-itch-in-pregnancy"
+    ],
+    "category": "pregnancy"
+  },
+  {
+    "query": "itchy bumpy rash on my stretch marks 36 weeks pregnant",
+    "expected": [
+      "rash-and-itch-in-pregnancy"
+    ],
+    "category": "pregnancy"
+  },
+  {
+    "query": "blisters appearing around my belly button during pregnancy",
+    "expected": [
+      "rash-and-itch-in-pregnancy"
+    ],
+    "category": "pregnancy"
+  },
+  {
+    "query": "my mum is on morphine for cancer and hasn't had a bowel movement in 5 days",
+    "expected": [
+      "constipation-in-palliative-care-and-oncology"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "constipation in hospice patient on fentanyl patch",
+    "expected": [
+      "constipation-in-palliative-care-and-oncology"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "dad is dying and completely blocked up can't go to the toilet",
+    "expected": [
+      "constipation-in-palliative-care-and-oncology"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "my mum has terminal cancer and she can't stop coughing",
+    "expected": [
+      "cough-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "how do you suppress cough in a dying person",
+    "expected": [
+      "cough-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "cough relief for someone in palliative care",
+    "expected": [
+      "cough-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "my mum is dying and can't catch her breath",
+    "expected": [
+      "dyspnoea-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "terminal breathlessness morphine dose",
+    "expected": [
+      "dyspnoea-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "breathless end of life what to expect at home",
+    "expected": [
+      "dyspnoea-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "my dad is on morphine for cancer and keeps feeling sick",
+    "expected": [
+      "nausea-and-vomiting-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "she's in hospice and can't keep anything down",
+    "expected": [
+      "nausea-and-vomiting-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "constant nausea and vomiting after chemotherapy palliative patient",
+    "expected": [
+      "nausea-and-vomiting-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "what can I give my dad for cancer pain at end of life",
+    "expected": [
+      "pain-management-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "morphine side effects constipation nausea palliative",
+    "expected": [
+      "pain-management-in-palliative-care",
+      "constipation-in-palliative-care-and-oncology"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "burning nerve pain cancer not controlled by morphine",
+    "expected": [
+      "pain-management-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "my mum has cancer and is too tired to get out of bed",
+    "expected": [
+      "weakness-and-fatigue-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "chemo fatigue getting worse what can we do",
+    "expected": [
+      "weakness-and-fatigue-in-palliative-care"
+    ],
+    "category": "palliative"
+  },
+  {
+    "query": "dad is bedbound and has no strength left palliative",
+    "expected": [
+      "weakness-and-fatigue-in-palliative-care"
+    ],
+    "category": "palliative"
   }
 ]

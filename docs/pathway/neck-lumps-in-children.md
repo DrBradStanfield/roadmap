@@ -2,7 +2,7 @@
 title: "Pathway: Neck Lumps in Children"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["neck lump", "neck mass", "children", "lymphadenopathy", "cervical lymph node", "lymphoma", "thyroglossal cyst", "branchial cyst", "reactive hyperplasia", "cervical abscess", "mycobacterium", "bacterial lymphadenitis", "paediatric", "pediatric", "neck swelling"]
+keywords: ["neck lump", "neck mass", "children", "lymphadenopathy", "cervical lymph node", "lymphoma", "thyroglossal cyst", "branchial cyst", "reactive hyperplasia", "cervical abscess", "mycobacterium", "bacterial lymphadenitis", "paediatric", "pediatric", "neck swelling", "lump on child's neck", "child swollen gland", "kid neck lump", "bump on neck child", "toddler neck lump", "swollen lymph node child", "child neck bump not going away", "hard lump neck child", "baby neck swelling", "swollen gland in child's neck"]
 summary: "Clinical pathway for neck lumps in children under 15: red flags, assessment approach, differential diagnosis (reactive hyperplasia, congenital cysts, lymphoma, infection), and management including antibiotic options. Most neck lumps in children are benign and require observation only. Always discuss with your doctor."
 ---
 

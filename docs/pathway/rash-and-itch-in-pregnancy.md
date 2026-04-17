@@ -2,7 +2,7 @@
 title: "Pathway: Rash and Itch in Pregnancy"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["rash in pregnancy", "itch in pregnancy", "cholestasis of pregnancy", "pemphigoid gestationis", "PUPPP", "pruritic urticarial papules", "polymorphic eruption of pregnancy", "prurigo of pregnancy", "atopic eruption of pregnancy", "varicella in pregnancy", "chickenpox in pregnancy", "pustular psoriasis in pregnancy", "bile acids", "ursodeoxycholic acid", "pregnancy skin conditions", "pregnancy itch", "VZV pregnancy"]
+keywords: ["rash in pregnancy", "itch in pregnancy", "cholestasis of pregnancy", "pemphigoid gestationis", "PUPPP", "pruritic urticarial papules", "polymorphic eruption of pregnancy", "prurigo of pregnancy", "atopic eruption of pregnancy", "varicella in pregnancy", "chickenpox in pregnancy", "pustular psoriasis in pregnancy", "bile acids", "ursodeoxycholic acid", "pregnancy skin conditions", "pregnancy itch", "VZV pregnancy", "itchy belly pregnant", "itchy skin pregnancy", "rash on bump", "itchy stretch marks pregnancy", "obstetric cholestasis", "cholestasis itching", "itchy hands and feet pregnancy", "itchy at night pregnancy", "bumpy rash pregnancy", "blisters pregnancy", "eczema flare pregnancy", "skin rash third trimester"]
 summary: "Clinical pathway for rash and itch in pregnancy: red flags requiring urgent assessment, approach to itchy versus non-itchy rash versus itch-without-rash, key pregnancy-specific conditions (cholestasis, pemphigoid gestationis, PUPPP, atopic eruption, prurigo), viral exposures, and management by diagnosis. Always discuss with your doctor."
 ---
 

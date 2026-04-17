@@ -2,7 +2,7 @@
 title: "Pathway: Preterm and Low-Birth-Weight Infants"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["preterm", "premature baby", "low birth weight", "NICU", "neonatal", "corrected age", "retinopathy of prematurity", "ROP", "ferrous sulfate", "vitamin D", "immunisation", "GORD", "reflux", "failure to thrive", "faltering growth", "necrotising enterocolitis", "NEC", "SUDI", "safe sleep"]
+keywords: ["preterm", "premature baby", "low birth weight", "NICU", "neonatal", "corrected age", "retinopathy of prematurity", "ROP", "ferrous sulfate", "vitamin D", "immunisation", "GORD", "reflux", "failure to thrive", "faltering growth", "necrotising enterocolitis", "NEC", "SUDI", "safe sleep", "preemie", "born early", "early baby", "premature birth", "small for gestational age", "catch-up growth", "NICU discharge", "preterm feeding", "preemie milestones", "iron supplement baby"]
 summary: "Clinical pathway for the primary care management of preterm (born before 37 weeks) and low-birth-weight (under 2500 g) infants: assessment using corrected age, growth and feeding monitoring, medications, immunisation schedule, developmental follow-up, and when to seek urgent paediatric review. Always discuss with your doctor."
 ---
 

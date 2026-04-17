@@ -2,7 +2,7 @@
 title: "Pathway: Constipation in Palliative Care and Oncology"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["constipation", "palliative care", "oncology", "opioid-induced constipation", "laxatives", "macrogol", "bisacodyl", "senna", "docusate", "methylnaltrexone", "relistor", "rectal examination", "suppositories", "enema", "bowel obstruction", "faecal impaction", "docusate enema", "fleet enema", "sodium citrate", "micolette", "lactulose", "bowel motions", "stool chart", "dysphagia", "anticholinergic", "opioids", "bowel care"]
+keywords: ["constipation", "palliative care", "oncology", "opioid-induced constipation", "laxatives", "macrogol", "bisacodyl", "senna", "docusate", "methylnaltrexone", "relistor", "rectal examination", "suppositories", "enema", "bowel obstruction", "faecal impaction", "docusate enema", "fleet enema", "sodium citrate", "micolette", "lactulose", "bowel motions", "stool chart", "dysphagia", "anticholinergic", "opioids", "bowel care", "constipation from morphine", "opioid constipation", "cancer patient constipation", "can't poo on morphine", "end of life constipation", "constipation from chemo", "constipation terminal illness", "hospice constipation", "bowel problems palliative", "no bowel movement cancer", "constipated on fentanyl", "dying patient constipation"]
 summary: "Clinical guidance for managing constipation in adults receiving palliative or oncology care: assessment including rectal examination, causes (opioids, anticholinergics, metabolic, mechanical, neurological), laxative selection (stimulant/softener combinations, macrogol, rectal preparations), and escalation to methylnaltrexone for opioid-induced constipation. Always discuss management with your doctor."
 ---
 

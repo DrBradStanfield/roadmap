@@ -2,7 +2,7 @@
 title: "Pathway: Chronic Abdominal Pain in Children and Youth"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["chronic abdominal pain", "recurrent abdominal pain", "functional abdominal pain", "irritable bowel syndrome", "IBS", "abdominal migraine", "functional dyspepsia", "coeliac disease", "inflammatory bowel disease", "IBD", "children", "paediatric", "stomach pain", "tummy pain", "school age"]
+keywords: ["chronic abdominal pain", "recurrent abdominal pain", "functional abdominal pain", "irritable bowel syndrome", "IBS", "abdominal migraine", "functional dyspepsia", "coeliac disease", "inflammatory bowel disease", "IBD", "children", "paediatric", "stomach pain", "tummy pain", "school age", "child stomach aches often", "kid frequent tummy pain", "recurring belly pain child", "my child always has stomach pain", "ongoing tummy aches in kids", "child complains of stomach pain every week", "belly pain keeps coming back child", "long-lasting tummy pain child", "chronic stomach ache in toddler", "child missing school stomach pain", "functional tummy pain child", "child stomach pain no cause found"]
 summary: "Clinical pathway for chronic or recurrent abdominal pain in children and young people: red flags, background on functional vs organic causes, assessment approach, and management including reassurance, lifestyle measures, and when medication may be considered. Always discuss with your doctor."
 ---
 

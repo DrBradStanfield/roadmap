@@ -2,7 +2,7 @@
 title: "Pathway: Seizures with Fever in Children"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["febrile seizure", "seizure with fever", "fever convulsion", "children seizure", "febrile convulsion", "midazolam", "diazepam", "status epilepticus", "meningitis", "encephalitis", "paediatric seizure"]
+keywords: ["febrile seizure", "seizure with fever", "fever convulsion", "children seizure", "febrile convulsion", "midazolam", "diazepam", "status epilepticus", "meningitis", "encephalitis", "paediatric seizure", "child fit during fever", "my kid had a seizure with fever", "shaking fit fever child", "toddler shaking during fever", "baby convulsing with temperature", "child turned blue during seizure", "fever fit toddler what to do", "first febrile seizure scared", "seizure stopped breathing child", "will my child get epilepsy after febrile seizure", "febrile seizure how long is normal"]
 summary: "Clinical pathway for seizures with fever in children aged 6 months to 6 years: red flags requiring emergency care, background on febrile seizures, assessment approach, acute seizure management, post-seizure care, and when urgent paediatric assessment is needed. Always discuss with your doctor."
 ---
 

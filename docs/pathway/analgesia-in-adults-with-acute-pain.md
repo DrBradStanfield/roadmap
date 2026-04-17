@@ -2,7 +2,7 @@
 title: "Pathway: Analgesia in Adults with Acute Pain"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["acute pain", "analgesia", "pain management", "pain ladder", "paracetamol", "nsaid", "opioid", "morphine", "oxycodone", "codeine", "tramadol", "naloxone", "neuropathic pain", "gabapentin", "pregabalin", "amitriptyline", "nortriptyline", "entonox", "pain score", "who pain ladder", "analgesic", "celecoxib", "ibuprofen", "antiemetic", "ondansetron"]
+keywords: ["acute pain", "analgesia", "pain management", "pain ladder", "paracetamol", "nsaid", "opioid", "morphine", "oxycodone", "codeine", "tramadol", "naloxone", "neuropathic pain", "gabapentin", "pregabalin", "amitriptyline", "nortriptyline", "entonox", "pain score", "who pain ladder", "analgesic", "celecoxib", "ibuprofen", "antiemetic", "ondansetron", "pain relief", "painkiller", "strong painkiller", "pain not controlled", "pain medication", "burning pain", "shooting pain", "severe pain", "nerve pain", "pain tablet", "diclofenac", "naproxen", "opioid safety", "opioid overdose", "constipation opioid", "nitrous oxide", "pain weaning", "what can I take for pain", "over the counter pain relief", "pain pills not working", "how to manage pain at home", "short term pain relief", "pain getting worse", "side effects of painkillers", "stopping pain medication", "can I take ibuprofen and paracetamol together", "pain after injury", "acute pain treatment", "how long to take painkillers"]
 summary: "Clinical pathway for acute pain in adults: step-up WHO-style pain ladder (paracetamol/NSAIDs → weak opioids → strong opioids), dosing for each drug class, naloxone use, neuropathic adjuvants (tricyclics, gabapentinoids), exit strategy, and when to escalate to hospital. Always discuss with your doctor."
 ---
 

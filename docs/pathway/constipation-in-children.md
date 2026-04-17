@@ -2,7 +2,7 @@
 title: "Pathway: Constipation in Children"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["constipation", "children", "paediatric", "laxative", "lactulose", "macrogol", "faecal impaction", "soiling", "overflow incontinence", "functional constipation", "hirschsprung", "bowel habits", "stool", "toddler", "infant"]
+keywords: ["constipation", "children", "paediatric", "laxative", "lactulose", "macrogol", "faecal impaction", "soiling", "overflow incontinence", "functional constipation", "hirschsprung", "bowel habits", "stool", "toddler", "infant", "child can't poo", "toddler constipated", "kid hard poo", "child hasn't pooed in days", "baby not pooing", "child straining to poo", "child scared of toilet", "poo leaking in underpants", "child holding in poo", "child stomach pain no poo"]
 summary: "Clinical pathway for constipation in children: red flags, background on normal stool patterns, assessment approach, and management including dietary advice, toileting routines, and laxatives (lactulose, macrogol, picosulfate). Always discuss with your doctor."
 ---
 

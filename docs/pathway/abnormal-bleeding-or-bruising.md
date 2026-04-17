@@ -2,7 +2,7 @@
 title: "Pathway: Abnormal Bleeding or Bruising"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["abnormal bleeding", "bruising", "bleeding disorder", "haemophilia", "von willebrand disease", "vwd", "thrombocytopenia", "petechiae", "purpura", "mucocutaneous bleeding", "coagulopathy", "pfa-100", "platelet function", "epistaxis", "menorrhagia", "tranexamic acid", "anticoagulant", "aspirin", "bleeding history"]
+keywords: ["abnormal bleeding", "bruising", "bleeding disorder", "haemophilia", "von willebrand disease", "vwd", "thrombocytopenia", "petechiae", "purpura", "mucocutaneous bleeding", "coagulopathy", "pfa-100", "platelet function", "epistaxis", "menorrhagia", "tranexamic acid", "anticoagulant", "aspirin", "bleeding history", "easy bruising", "unexplained bruising", "bruising for no reason", "nosebleeds", "gums bleeding", "bleeding gums", "heavy periods", "prolonged bleeding", "spontaneous bruising", "blood spots on skin", "red spots on skin", "random bruising", "bleeding easily", "blood under skin", "joint bleeding", "haematoma", "bruise easily", "keep bruising", "bleeding too long", "cut won't stop bleeding", "wound keeps bleeding", "tiny purple dots on skin", "pinpoint red dots on skin", "bleeding after tooth pulled", "bleed a lot", "bleeding tendency"]
 summary: "Clinical pathway for abnormal bleeding or bruising: distinguishing mucocutaneous from internal bleeding, when to suspect a significant bleeding disorder, blood test investigation (FBC, coagulation screen, PFA-100, vWF), management including tranexamic acid use, and when to seek specialist or emergency input. Always discuss with your doctor."
 ---
 

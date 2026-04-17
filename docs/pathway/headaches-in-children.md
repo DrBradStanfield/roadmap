@@ -2,7 +2,7 @@
 title: "Pathway: Headaches in Children"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["headache", "migraine", "children", "paediatric", "tension headache", "paracetamol", "ibuprofen", "pizotifen", "propranolol", "nadolol", "amitriptyline", "topiramate", "sodium valproate", "riboflavin", "vitamin B2", "ondansetron", "brain tumour", "meningism", "papilloedema", "medication overuse headache", "chronic daily headache"]
+keywords: ["headache", "migraine", "children", "paediatric", "tension headache", "paracetamol", "ibuprofen", "pizotifen", "propranolol", "nadolol", "amitriptyline", "topiramate", "sodium valproate", "riboflavin", "vitamin B2", "ondansetron", "brain tumour", "meningism", "papilloedema", "medication overuse headache", "chronic daily headache", "child headache", "kid says head hurts", "my child keeps getting headaches", "toddler headache", "headache in kids", "my son has a headache", "my daughter has a headache", "child waking up with headache", "school age headaches", "child headache no fever", "child migraine", "kids headache every day"]
 summary: "Clinical pathway for headaches in children: red flags requiring emergency assessment, common causes (migraine, tension headache), assessment approach, and management including acute analgesia and prophylactic options. Always discuss with your doctor."
 ---
 

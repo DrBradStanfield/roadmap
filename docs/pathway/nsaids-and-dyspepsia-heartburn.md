@@ -2,7 +2,7 @@
 title: "Pathway: NSAIDs and Dyspepsia / Heartburn"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["nsaid", "nsaids", "dyspepsia", "heartburn", "ibuprofen", "anti-inflammatory", "ppi", "proton pump inhibitor", "omeprazole", "pantoprazole", "cox-2", "celecoxib", "stomach pain", "gastric ulcer", "peptic ulcer", "gi bleed", "gastrointestinal", "helicobacter pylori", "aspirin", "naproxen", "diclofenac"]
+keywords: ["nsaid", "nsaids", "dyspepsia", "heartburn", "ibuprofen", "anti-inflammatory", "ppi", "proton pump inhibitor", "omeprazole", "pantoprazole", "cox-2", "celecoxib", "stomach pain", "gastric ulcer", "peptic ulcer", "gi bleed", "gastrointestinal", "helicobacter pylori", "aspirin", "naproxen", "diclofenac", "heartburn after meals", "acid reflux", "burning in chest", "sour taste in mouth", "regurgitation", "indigestion after eating", "food coming back up", "burning throat", "gerd", "gord", "reflux", "stomach burning", "acid in throat", "bitter taste", "stomach upset after ibuprofen", "acid indigestion", "waking up with heartburn", "reflux at night", "lump in throat feeling", "chronic cough from acid", "nausea after eating", "bloating after meals", "water brash", "chest burning after eating", "acid coming up", "pressure in chest after food", "too much acid in stomach"]
 summary: "Clinical guidance on safely using NSAIDs (anti-inflammatories like ibuprofen, naproxen, diclofenac) in patients at risk of stomach or gastrointestinal side effects. Covers contraindications, GI risk stratification, when to add a PPI, and when to refer. Always discuss changes to your medications with your doctor."
 ---
 

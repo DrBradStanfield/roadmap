@@ -2,7 +2,7 @@
 title: "Pathway: Nausea and Vomiting in Palliative Care"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["nausea", "vomiting", "palliative care", "antiemetic", "haloperidol", "metoclopramide", "domperidone", "levomepromazine", "cyclizine", "prochlorperazine", "dexamethasone", "lorazepam", "bowel obstruction", "raised intracranial pressure", "gastric stasis", "terminal care", "advanced cancer", "opioid-induced nausea"]
+keywords: ["nausea", "vomiting", "palliative care", "antiemetic", "haloperidol", "metoclopramide", "domperidone", "levomepromazine", "cyclizine", "prochlorperazine", "dexamethasone", "lorazepam", "bowel obstruction", "raised intracranial pressure", "gastric stasis", "terminal care", "advanced cancer", "opioid-induced nausea", "sick from morphine", "cancer nausea", "chemo vomiting", "dying person feeling sick", "nausea at end of life", "can't keep anything down", "vomiting from pain medication", "queasy after chemo", "constant nausea terminal illness", "mum keeps vomiting on palliative care", "nausea hospice", "feel sick all the time cancer"]
 summary: "Clinical pathway for managing nausea and vomiting in adults receiving palliative care: assessment approach, identifying the cause, non-pharmacological measures, and antiemetic medications by cause. Always discuss management with your doctor."
 ---
 

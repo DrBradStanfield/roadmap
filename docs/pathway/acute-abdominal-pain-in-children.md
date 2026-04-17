@@ -2,7 +2,7 @@
 title: "Pathway: Acute Abdominal Pain in Children"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["abdominal pain", "stomach pain", "tummy pain", "children", "paediatric", "appendicitis", "intussusception", "testicular torsion", "ovarian torsion", "mesenteric adenitis", "peritonitis", "constipation", "gastroenteritis", "pyloric stenosis", "volvulus", "hernia", "bile vomiting", "scrotal pain"]
+keywords: ["abdominal pain", "stomach pain", "tummy pain", "children", "paediatric", "appendicitis", "intussusception", "testicular torsion", "ovarian torsion", "mesenteric adenitis", "peritonitis", "constipation", "gastroenteritis", "pyloric stenosis", "volvulus", "hernia", "bile vomiting", "scrotal pain", "my child's tummy hurts", "kid with belly pain", "toddler stomach ache", "child sudden tummy pain", "baby screaming holding stomach", "child can't walk from stomach pain", "green vomit child", "child stomach pain won't go away", "child right side belly pain", "toddler crying stomach"]
 summary: "Clinical pathway for acute abdominal pain in children under 15: red flags requiring emergency care, differential diagnosis by age group (surgical vs non-surgical causes), assessment approach, and community management for non-specific pain. Always discuss with your doctor."
 ---
 

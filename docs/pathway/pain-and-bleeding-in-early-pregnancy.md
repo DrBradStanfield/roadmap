@@ -2,7 +2,7 @@
 title: "Pathway: Pain and Bleeding in Early Pregnancy"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["early pregnancy", "miscarriage", "ectopic pregnancy", "bleeding in pregnancy", "first trimester bleeding", "threatened miscarriage", "incomplete miscarriage", "cervical shock", "beta hCG", "anti-D", "products of conception", "molar pregnancy", "pregnancy of unknown location", "retained products of conception"]
+keywords: ["early pregnancy", "miscarriage", "ectopic pregnancy", "bleeding in pregnancy", "first trimester bleeding", "threatened miscarriage", "incomplete miscarriage", "cervical shock", "beta hCG", "anti-D", "products of conception", "molar pregnancy", "pregnancy of unknown location", "retained products of conception", "spotting first trimester", "cramping early pregnancy", "pain in early pregnancy", "miscarriage signs", "am I having a miscarriage", "shoulder tip pain pregnancy", "heavy bleeding pregnancy", "passing tissue early pregnancy", "pelvic pain early pregnancy", "ectopic pregnancy symptoms", "bleeding and pain early pregnancy"]
 summary: "Clinical pathway for pain and bleeding in early pregnancy: red flags requiring emergency care (ectopic pregnancy, cervical shock, haemodynamic instability), assessment including ectopic symptoms and signs, investigations, and management based on scan findings (viable pregnancy, miscarriage, ectopic, uncertain viability). Always discuss with your doctor."
 ---
 

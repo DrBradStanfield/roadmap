@@ -2,7 +2,7 @@
 title: "Pathway: Pain Management in Palliative Care"
 type: "pathway"
 tags: ["Guideline"]
-keywords: ["palliative care", "pain management", "cancer pain", "opioids", "morphine", "oxycodone", "fentanyl", "methadone", "neuropathic pain", "breakthrough pain", "syringe driver", "subcutaneous opioid", "gabapentin", "pregabalin", "dexamethasone", "bisphosphonates", "paracetamol", "NSAID", "controlled release", "palliative analgesia", "existential distress", "total pain"]
+keywords: ["palliative care", "pain management", "cancer pain", "opioids", "morphine", "oxycodone", "fentanyl", "methadone", "neuropathic pain", "breakthrough pain", "syringe driver", "subcutaneous opioid", "gabapentin", "pregabalin", "dexamethasone", "bisphosphonates", "paracetamol", "NSAID", "controlled release", "palliative analgesia", "existential distress", "total pain", "cancer pain relief", "end of life pain", "morphine for cancer", "pain at end of life", "bone pain cancer", "nerve pain cancer", "opioid side effects", "slow release morphine", "pain pump dying", "terminal pain medication", "pain not controlled", "amitriptyline nerve pain"]
 summary: "Clinical pathway for pain management in adults with advanced illness or cancer: assessment approach, non-pharmacological measures, opioid initiation and titration (morphine, oxycodone), co-analgesics for neuropathic or bone pain, and when to seek specialist advice. Always discuss management with your doctor."
 ---
 
