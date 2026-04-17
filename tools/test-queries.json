@@ -45,7 +45,8 @@
   {
     "query": "HbA1c of 6.5 — what does that mean?",
     "expected": [
-      "diabetes-screening-and-diagnosis-in-adults"
+      "diabetes-screening-and-diagnosis-in-adults",
+      "cardiovascular-risk-assessment-cvra"
     ],
     "category": "metabolic",
     "notes": "lab value abbreviation"
@@ -364,7 +365,8 @@
   {
     "query": "Is protein powder worth taking?",
     "expected": [
-      "protein-powders-benefits-types-dosing-and-side-effects"
+      "protein-powders-benefits-types-dosing-and-side-effects",
+      "diet"
     ],
     "category": "supplement"
   },
@@ -394,7 +396,9 @@
     "expected": [
       "doctor-recommended-intermittent-fasting-hack-that-actually-works",
       "new-studies-reveal-the-best-type-of-intermittent-fasting",
-      "longevity-experts-warning-fasting"
+      "longevity-experts-warning-fasting",
+      "diet",
+      "weight-related-concerns-in-adults"
     ],
     "category": "lifestyle"
   },
@@ -420,7 +424,9 @@
   {
     "query": "I had a tooth pulled last week and the bleeding just won't stop",
     "expected": [
-      "abnormal-bleeding-or-bruising"
+      "abnormal-bleeding-or-bruising",
+      "antiplatelet-medication-and-dental-procedures",
+      "thrombocytopenia-low-platelets"
     ],
     "category": "symptomatic"
   },
@@ -485,14 +491,16 @@
     "query": "my nerve pain is burning all the time and it's ruining my life",
     "expected": [
       "chronic-non-cancer-pain",
-      "peripheral-neuropathy"
+      "peripheral-neuropathy",
+      "postherpetic-neuralgia"
     ],
     "category": "symptomatic"
   },
   {
     "query": "I feel depressed because of my pain and I can't exercise anymore",
     "expected": [
-      "chronic-non-cancer-pain"
+      "chronic-non-cancer-pain",
+      "depression-in-adults-and-older-persons"
     ],
     "category": "symptomatic"
   },
@@ -537,7 +545,8 @@
     "query": "I have an itchy rash and low platelets after a trip to Indonesia",
     "expected": [
       "dengue-fever",
-      "fever-in-returning-travellers"
+      "fever-in-returning-travellers",
+      "thrombocytopenia-low-platelets"
     ],
     "category": "symptomatic"
   },
@@ -552,7 +561,8 @@
     "query": "my pain tablets aren't working anymore what can I try",
     "expected": [
       "medications-in-chronic-pain",
-      "chronic-non-cancer-pain"
+      "chronic-non-cancer-pain",
+      "analgesia-in-adults-with-acute-pain"
     ],
     "category": "symptomatic"
   },
@@ -648,7 +658,8 @@
     "query": "pain during sex and cramping in my pelvis",
     "expected": [
       "acute-lower-abdominal-and-pelvic-pain-in-women",
-      "chronic-pelvic-pain"
+      "chronic-pelvic-pain",
+      "acute-abdominal-pain-in-adults"
     ],
     "category": "symptomatic"
   },
@@ -690,7 +701,8 @@
   {
     "query": "my rib bones are tender to touch with no injury",
     "expected": [
-      "bone-pain"
+      "bone-pain",
+      "all-acute-fractures-and-injuries"
     ],
     "category": "symptomatic"
   },
@@ -711,7 +723,8 @@
   {
     "query": "my breasts are really tender and sore since starting the pill",
     "expected": [
-      "breast-pain-mastalgia"
+      "breast-pain-mastalgia",
+      "combined-oral-contraceptive-pill"
     ],
     "category": "symptomatic"
   },
@@ -776,7 +789,9 @@
   {
     "query": "went on safari mosquito bit me loads now I feel terrible with a fever",
     "expected": [
-      "fever-in-returning-travellers"
+      "fever-in-returning-travellers",
+      "dengue-fever",
+      "malaria"
     ],
     "category": "symptomatic"
   },
@@ -784,7 +799,8 @@
     "query": "I had COVID and now I'm exhausted all the time and crash after any activity",
     "expected": [
       "myalgic-encephalomyelitis-chronic-fatigue-syndrome-me-cfs",
-      "fatigue"
+      "fatigue",
+      "covid-19"
     ],
     "category": "symptomatic"
   },
@@ -806,21 +822,25 @@
   {
     "query": "I have a bump on the side of my neck that's been there for a month",
     "expected": [
-      "neck-lumps-in-adults"
+      "neck-lumps-in-adults",
+      "acute-adult-orl-head-and-neck-surgery-assessment"
     ],
     "category": "symptomatic"
   },
   {
     "query": "painless hard lump under my jaw not going away",
     "expected": [
-      "neck-lumps-in-adults"
+      "neck-lumps-in-adults",
+      "soft-tissue-lumps-in-adults",
+      "fine-needle-aspiration-fna"
     ],
     "category": "symptomatic"
   },
   {
     "query": "my neck gland has been swollen for weeks and won't go down",
     "expected": [
-      "neck-lumps-in-adults"
+      "neck-lumps-in-adults",
+      "acute-adult-orl-head-and-neck-surgery-assessment"
     ],
     "category": "symptomatic"
   },
@@ -836,7 +856,8 @@
   {
     "query": "child coughs so hard they vomit and goes blue",
     "expected": [
-      "pertussis-whooping-cough"
+      "pertussis-whooping-cough",
+      "cough-in-children"
     ],
     "category": "symptomatic"
   },
@@ -878,21 +899,26 @@
   {
     "query": "noticed some brown spotting and I went through menopause two years ago",
     "expected": [
-      "postmenopausal-bleeding"
+      "postmenopausal-bleeding",
+      "menopause-hormone-therapy-mht",
+      "low-risk-endometrial-cancer-follow-up"
     ],
     "category": "symptomatic"
   },
   {
     "query": "I'm on HRT and getting unexpected bleeding",
     "expected": [
-      "postmenopausal-bleeding"
+      "postmenopausal-bleeding",
+      "menopause-hormone-therapy-mht"
     ],
     "category": "symptomatic"
   },
   {
     "query": "my child had strep throat and now has swollen knees and a limp",
     "expected": [
-      "rheumatic-fever-and-rheumatic-heart-disease"
+      "rheumatic-fever-and-rheumatic-heart-disease",
+      "sore-throat",
+      "bone-and-joint-infections-in-children"
     ],
     "category": "symptomatic"
   },
@@ -983,7 +1009,8 @@
   {
     "query": "I fell and now my wrist is sore and swollen",
     "expected": [
-      "wrist-pain-in-adults"
+      "wrist-pain-in-adults",
+      "wrist-fractures-in-adults"
     ],
     "category": "symptomatic"
   },
@@ -1032,7 +1059,8 @@
   {
     "query": "doctor says nothing wrong but my kid always has belly pain",
     "expected": [
-      "chronic-abdominal-pain-in-children-and-youth"
+      "chronic-abdominal-pain-in-children-and-youth",
+      "acute-abdominal-pain-in-children"
     ],
     "category": "pediatric"
   },
@@ -1125,21 +1153,24 @@
   {
     "query": "my toddler has had a wet cough for 6 weeks",
     "expected": [
-      "persistent-wet-cough-in-children"
+      "persistent-wet-cough-in-children",
+      "cough-in-children"
     ],
     "category": "pediatric"
   },
   {
     "query": "child keeps coughing up green phlegm after every cold",
     "expected": [
-      "persistent-wet-cough-in-children"
+      "persistent-wet-cough-in-children",
+      "cough-in-children"
     ],
     "category": "pediatric"
   },
   {
     "query": "kid finished antibiotics but wet cough came straight back",
     "expected": [
-      "persistent-wet-cough-in-children"
+      "persistent-wet-cough-in-children",
+      "cough-in-children"
     ],
     "category": "pediatric"
   },
@@ -1195,14 +1226,16 @@
   {
     "query": "child had a fit with a temperature will they get epilepsy",
     "expected": [
-      "seizures-with-fever-in-children"
+      "seizures-with-fever-in-children",
+      "epilepsy-in-children-and-young-people"
     ],
     "category": "pediatric"
   },
   {
     "query": "baby convulsed with high fever when to call ambulance",
     "expected": [
-      "seizures-with-fever-in-children"
+      "seizures-with-fever-in-children",
+      "febrile-illness-in-children"
     ],
     "category": "pediatric"
   },
@@ -1314,14 +1347,17 @@
   {
     "query": "my mum is on morphine for cancer and hasn't had a bowel movement in 5 days",
     "expected": [
-      "constipation-in-palliative-care-and-oncology"
+      "constipation-in-palliative-care-and-oncology",
+      "pain-management-in-palliative-care"
     ],
     "category": "palliative"
   },
   {
     "query": "constipation in hospice patient on fentanyl patch",
     "expected": [
-      "constipation-in-palliative-care-and-oncology"
+      "constipation-in-palliative-care-and-oncology",
+      "fentanyl-guide",
+      "constipation-in-adults"
     ],
     "category": "palliative"
   },
@@ -1377,14 +1413,16 @@
   {
     "query": "my dad is on morphine for cancer and keeps feeling sick",
     "expected": [
-      "nausea-and-vomiting-in-palliative-care"
+      "nausea-and-vomiting-in-palliative-care",
+      "pain-management-in-palliative-care"
     ],
     "category": "palliative"
   },
   {
     "query": "she's in hospice and can't keep anything down",
     "expected": [
-      "nausea-and-vomiting-in-palliative-care"
+      "nausea-and-vomiting-in-palliative-care",
+      "bowel-obstruction-in-palliative-care"
     ],
     "category": "palliative"
   },
@@ -1420,7 +1458,9 @@
   {
     "query": "my mum has cancer and is too tired to get out of bed",
     "expected": [
-      "weakness-and-fatigue-in-palliative-care"
+      "weakness-and-fatigue-in-palliative-care",
+      "hypercalcaemia-of-malignancy",
+      "dexamethasone-in-palliative-care-and-oncology"
     ],
     "category": "palliative"
   },
