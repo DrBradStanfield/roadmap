@@ -51,9 +51,6 @@ function ChatBubble({ isLoggedIn, loginUrl, fabLabel, guestInputs }: ChatBubbleP
 }
 
 function mount() {
-  // Skip if the health widget is on this page (it has its own chat)
-  if (document.getElementById('health-tool-root')) return;
-
   const container = document.getElementById('health-chat-root');
   if (!container) return;
 
