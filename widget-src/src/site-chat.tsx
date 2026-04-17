@@ -6,7 +6,7 @@
  * Reads guest health data from localStorage (entered on roadmap page).
  * Logged-in users get full personalization from Supabase (server-side).
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ChatSection } from './components/ChatSection';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -25,6 +25,20 @@ interface ChatBubbleProps {
 
 function ChatBubble({ isLoggedIn, loginUrl, fabLabel, guestInputs }: ChatBubbleProps) {
   const [open, setOpen] = useState(false);
+  const [widgetChatOpen, setWidgetChatOpen] = useState(false);
+
+  // Hide FAB when the widget's embedded chat is expanded (roadmap page only)
+  useEffect(() => {
+    const widgetRoot = document.getElementById('health-tool-root');
+    if (!widgetRoot) return;
+
+    const check = () => setWidgetChatOpen(!!widgetRoot.querySelector('.chat-expanded'));
+    check();
+
+    const observer = new MutationObserver(check);
+    observer.observe(widgetRoot, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   if (open) {
     return (
@@ -37,6 +51,8 @@ function ChatBubble({ isLoggedIn, loginUrl, fabLabel, guestInputs }: ChatBubbleP
       />
     );
   }
+
+  if (widgetChatOpen) return null;
 
   return (
     <button
