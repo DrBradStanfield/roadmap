@@ -2,9 +2,16 @@
 /**
  * LLM router test harness.
  *
- * Imports routeQuery directly — no replica logic. Each query runs N times
- * and passes only if the expected handle is in the intersection of all runs
- * (i.e., consistently returned). Acceptance bar: pass rate ≥ 90%, variance ≤ 5%.
+ * Reads the same shared sources as app/lib/chat-router.server.ts — the
+ * chat-router-prompt.md file and docs/blog/index.json — and calls Anthropic
+ * directly. Kept self-contained (no import of chat-router.server.ts) because
+ * tsx can't resolve the health-core workspace package through the Remix
+ * server-module import chain. The prompt + index + model fully determine
+ * routing behavior, so sharing those files catches any drift.
+ *
+ * Each query runs N times; pass = at least one expected handle appears in
+ * the intersection of all runs (consistently returned across retries).
+ * Acceptance bar: pass rate ≥ 90%, variance ≤ 5%.
  *
  * Usage:
  *   npx tsx tools/test-chatbot-matching.ts
@@ -18,10 +25,10 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { routeQuery } from '../app/lib/chat-router.server';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const REPO_ROOT = path.resolve(__dirname, '..');
 
 // ---------------------------------------------------------------------------
 // CLI args
@@ -40,9 +47,86 @@ const concurrency = Math.max(1, parseInt(getArg('--concurrency', '5'), 10));
 const verbose = args.includes('--verbose');
 const categoryFilter = args.includes('--category') ? getArg('--category', '') : null;
 
-if (!process.env.ANTHROPIC_API_KEY) {
+const apiKey = process.env.ANTHROPIC_API_KEY;
+if (!apiKey) {
   console.error('Error: ANTHROPIC_API_KEY is not set');
   process.exit(1);
+}
+
+// ---------------------------------------------------------------------------
+// Shared sources — read the same files chat-router.server.ts uses
+// ---------------------------------------------------------------------------
+
+const ROUTER_MODEL = 'claude-haiku-4-5-20251001';
+
+interface BlogIndexEntry {
+  title: string;
+  handle: string;
+  type?: 'reference' | 'article' | 'guideline' | 'pathway';
+  summary?: string;
+}
+
+const BLOG_INDEX: BlogIndexEntry[] = JSON.parse(
+  fs.readFileSync(path.join(REPO_ROOT, 'docs/blog/index.json'), 'utf-8')
+);
+
+const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
+
+const TYPE_ORDER: Record<string, number> = { pathway: 0, guideline: 1, reference: 2, article: 3 };
+
+const ROUTER_INDEX_BLOCK: string = [...BLOG_INDEX]
+  .sort((a, b) => {
+    const tr = (TYPE_ORDER[a.type ?? 'article'] ?? 3) - (TYPE_ORDER[b.type ?? 'article'] ?? 3);
+    if (tr !== 0) return tr;
+    return a.handle.localeCompare(b.handle);
+  })
+  .map(e => `[${e.type ?? 'article'}] ${e.handle}: ${e.summary ?? e.title}`)
+  .join('\n');
+
+const ROUTER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8');
+
+// ---------------------------------------------------------------------------
+// Anthropic API call — minimal fetch glue, same body shape as routeQuery
+// ---------------------------------------------------------------------------
+
+async function routeQuery(currentMessage: string): Promise<string[]> {
+  const body = {
+    model: ROUTER_MODEL,
+    max_tokens: 200,
+    temperature: 0,
+    system: [
+      { type: 'text', text: ROUTER_PROMPT, cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: ROUTER_INDEX_BLOCK, cache_control: { type: 'ephemeral' } },
+    ],
+    messages: [{ role: 'user', content: `Current query: ${currentMessage}` }],
+  };
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey!,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  if (!res.ok) return [];
+
+  const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
+  const text = data.content?.find(c => c.type === 'text')?.text ?? '';
+
+  try {
+    const parsed = JSON.parse(text) as { handles?: unknown };
+    if (!Array.isArray(parsed.handles)) return [];
+    return parsed.handles
+      .filter((h): h is string => typeof h === 'string' && /^[a-z0-9-]+$/.test(h) && h.length <= 120)
+      .filter(h => VALID_HANDLES.has(h))
+      .slice(0, 3);
+  } catch {
+    return [];
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -70,7 +154,7 @@ if (filtered.length === 0) {
 }
 
 // ---------------------------------------------------------------------------
-// Run each query N times and compute intersection of handles across all runs
+// Run each query N times and compute intersection of handles
 // ---------------------------------------------------------------------------
 
 interface QueryResult {
@@ -80,31 +164,22 @@ interface QueryResult {
   passed: boolean;
 }
 
-async function runQuery(q: TestQuery): Promise<QueryResult> {
+async function runOne(q: TestQuery): Promise<QueryResult> {
   const allRuns: string[][] = [];
   for (let i = 0; i < runs; i++) {
-    const result = await routeQuery(q.query);
-    allRuns.push(result.handles);
+    allRuns.push(await routeQuery(q.query));
   }
-
-  // Intersection: handles that appear in every run
   const intersection = allRuns[0].filter(h => allRuns.every(run => run.includes(h)));
 
   let passed: boolean;
   if (q.expected.length === 0) {
-    // Out-of-scope: router must return empty on every run
     passed = allRuns.every(run => run.length === 0);
   } else {
-    // At least one expected handle must be in the intersection
     passed = q.expected.some(e => intersection.includes(e));
   }
 
   return { query: q, allRuns, intersection, passed };
 }
-
-// ---------------------------------------------------------------------------
-// Concurrency-limited runner
-// ---------------------------------------------------------------------------
 
 async function runAll(): Promise<QueryResult[]> {
   const results: QueryResult[] = [];
@@ -114,7 +189,7 @@ async function runAll(): Promise<QueryResult[]> {
   async function worker() {
     while (queue.length > 0) {
       const q = queue.shift()!;
-      results.push(await runQuery(q));
+      results.push(await runOne(q));
       completed++;
       process.stdout.write(`\r  ${completed}/${filtered.length} queries`);
     }
@@ -132,25 +207,28 @@ async function runAll(): Promise<QueryResult[]> {
 // Main
 // ---------------------------------------------------------------------------
 
-const BOLD  = '\x1b[1m';
+const BOLD = '\x1b[1m';
 const GREEN = '\x1b[32m';
-const RED   = '\x1b[31m';
+const RED = '\x1b[31m';
 const YELLOW = '\x1b[33m';
-const GREY  = '\x1b[90m';
+const GREY = '\x1b[90m';
 const RESET = '\x1b[0m';
 
 console.log(`\n${BOLD}=== LLM Router Test Harness ===${RESET}\n`);
+console.log(`Index:       ${BLOG_INDEX.length} entries`);
 console.log(`Queries:     ${filtered.length}`);
 console.log(`Runs each:   ${runs}`);
 console.log(`Concurrency: ${concurrency}`);
 console.log(`Threshold:   ≤${(varianceThreshold * 100).toFixed(0)}% variance\n`);
 
+const t0 = Date.now();
 const results = await runAll();
+const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
 
-const passed  = results.filter(r => r.passed);
-const failed  = results.filter(r => !r.passed);
+const passed = results.filter(r => r.passed);
+const failed = results.filter(r => !r.passed);
 const passRate = passed.length / results.length;
-const varRate  = failed.length / results.length;
+const varRate = failed.length / results.length;
 
 const byCategory: Record<string, { pass: number; fail: number }> = {};
 for (const r of results) {
@@ -158,20 +236,20 @@ for (const r of results) {
   byCategory[r.query.category][r.passed ? 'pass' : 'fail']++;
 }
 
-console.log(`\n${BOLD}=== Results ===${RESET}\n`);
+console.log(`\n${BOLD}=== Results (${elapsed}s) ===${RESET}\n`);
 console.log(`Total:       ${results.length}`);
 console.log(`${GREEN}Passing:     ${passed.length}${RESET}`);
 console.log(`${RED}Failing:     ${failed.length}${RESET}`);
 
 const passOk = passRate >= 0.9;
-const varOk  = varRate <= varianceThreshold;
+const varOk = varRate <= varianceThreshold;
 console.log(`Pass rate:   ${BOLD}${(passRate * 100).toFixed(1)}%${RESET} ${passOk ? `${GREEN}✓${RESET}` : `${RED}✗ need ≥90%${RESET}`}`);
 console.log(`Variance:    ${BOLD}${(varRate * 100).toFixed(1)}%${RESET} ${varOk ? `${GREEN}✓${RESET}` : `${RED}✗ max ${(varianceThreshold * 100).toFixed(0)}%${RESET}`}`);
 
 console.log(`\n${BOLD}--- By category ---${RESET}`);
 for (const [cat, stats] of Object.entries(byCategory).sort((a, b) => b[1].fail - a[1].fail)) {
   const total = stats.pass + stats.fail;
-  const rate  = (stats.pass / total * 100).toFixed(0);
+  const rate = (stats.pass / total * 100).toFixed(0);
   const colour = stats.fail === 0 ? GREEN : (stats.pass === 0 ? RED : YELLOW);
   console.log(`  ${colour}${cat.padEnd(20)} ${stats.pass}/${total} (${rate}%)${RESET}`);
 }
