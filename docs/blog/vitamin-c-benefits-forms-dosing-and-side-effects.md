@@ -5,7 +5,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["vitamin c", "ascorbic acid", "calcium ascorbate", "sodium ascorbate", "ascorbyl palmitate", "liposomal vitamin c", "ester-c", "antioxidant", "immune", "collagen", "skin", "iron", "blood pressure", "hypertension", "blood sugar", "diabetes", "insulin resistance", "gout", "uric acid", "kidney", "cardiovascular", "heart health", "stroke", "cancer", "cataracts", "inflammation", "depression", "exercise", "aging", "longevity", "scurvy", "copper"]
-summary: "Vitamin C (L-ascorbic acid) is an essential water-soluble vitamin that humans cannot synthesize endogenously due to a mutation in the gene encoding L-gulonolactone oxidase, which catalyzes the final step in ascorbic acid biosynthesis. Most other animals produce vitamin C internally; humans must obtain it entirely from the diet or supplements."
+summary: "Reference on vitamin C: immune support, collagen synthesis, antioxidant, modest blood pressure reduction, shorter cold duration. Higher risk of deficiency in smokers, post-bariatric surgery, restrictive diets. Ascorbic acid preferred form; 75-200 mg/day typical; kidney stone risk at higher doses in men. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/vitamin-c-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/vitamin-c-benefits-forms-dosing-and-side-effects)*

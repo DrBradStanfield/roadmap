@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=r2vdiBHkNNA"
 publishedAt: "2025-10-29T02:10:26Z"
 tags: ["General Health","Preventative Care"]
 keywords: ["blood pressure","blood sugar","calcium","cardiovascular","cholesterol","dementia","diabetes","ezetimibe","hba1c","heart attack","iron","ldl","melatonin","sglt2","sleep"]
-summary: "Getting patients off inappropriate medications is one of the most important and difficult tasks to get right in clinical practice. Here’s the step-by-step approach I follow—an approach recently updated because of a new clinical trial. Let’s start with some sobering statistics. Over 40% of adults over 75 are prescribed 5 or more medications \\[1\\]. And as I explain to my patients, while those medications may have given you a benefit when you were younger, as we get older, the risks from those medications can start to outweigh the benefits—and they can turn into poison. In one study of nursing home residents, efforts to reduce unnecessary prescriptions slashed mortality risk by 26% and fall risks by 24% \\[2\\]. But this raises an important set of questions. When does it make sense to stop medications? Which medications should be stopped? And how can we get this process right? Let’s take a closer..."
+summary: "Dr Brad’s deprescribing post: thoughtfully stopping unnecessary medications in older adults reduces falls, hospitalizations, and mortality. Covers polypharmacy, aspirin risks, sedatives, hyponatremia, SGLT2 inhibitors, and a 3-phase clinical framework."
 ---
 
 Getting patients off inappropriate medications is one of the most important and difficult tasks to get right in clinical practice.

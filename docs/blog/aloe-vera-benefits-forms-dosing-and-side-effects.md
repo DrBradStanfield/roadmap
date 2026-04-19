@@ -5,7 +5,7 @@ publishedAt: "2025-06-10T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["aloe", "aloe vera", "skin", "gut health", "inflammation", "wound healing", "diabetes", "blood sugar", "constipation", "fiber", "probiotic", "prebiotic", "psoriasis", "hba1c", "insulin resistance", "weight loss", "collagen"]
-summary: "Aloe vera (typically labeled as Aloe barbadensis) is a short-stemmed, cactus-like succulent plant with thick, fleshy leaves that has been used medicinally for thousands of years. Historical records document its use in ancient Greece, Rome, Babylonia, and China for skin conditions, wound healing, and digestive ailments. The plant is now grown commercially in subtropical regions around the world, including the southern border areas of Texas, New Mexico, Arizona, and California."
+summary: "Reference on aloe vera: skin healing, gut health, blood sugar, constipation, GERD. Topical use for burns, sunburn, psoriasis, acne; oral use for IBS, ulcerative colitis, diabetes. Gel vs latex distinction critical — latex carries carcinogenicity and liver toxicity risks. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/aloe-vera-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/aloe-vera-benefits-forms-dosing-and-side-effects)*

@@ -6,7 +6,7 @@ publishedAt: "2026-03-18T06:09:58Z"
 tags: ["Research","Supplements"]
 keywords: ["antioxidant","blood pressure","cholesterol","diabetes","hormone","inflammation","insomnia","insulin resistance","ldl","melatonin","obesity","oxidative stress","skin","sleep"]
 product: "sleep"
-summary: "You get whiplash from the contrasting headlines. One minute, the internet is ablaze from an alarming study linking melatonin to a sharp increase in the risk of heart failure \\[1\\]. The next, a new study tells a completely different story \\[2\\]. This is why clickbait sucks, and it confuses everyone. Luckily though, when you go through the data, it actually all points in the same direction and gives us a clear picture regarding whether to take melatonin supplements or not."
+summary: "Dr Brad's melatonin heart health post: a flawed observational study raised alarm but a 63-RCT meta-analysis shows melatonin reduces blood pressure, LDL, and inflammation. Covers sleep, heart disease, dosing (0.3-1mg), timing, and product quality."
 ---
 
 You get whiplash from the contrasting headlines. One minute, the internet is ablaze from an alarming study linking melatonin to a sharp increase in the risk of heart failure \[1\]. The next, a new study tells a completely different story \[2\].

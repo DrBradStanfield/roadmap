@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=zQO4YOSoZ_g"
 publishedAt: "2025-08-29T18:23:08Z"
 tags: ["Exercise"]
 keywords: ["aging","exercise","longevity"]
-summary: "A pretty damning analysis on Zone 2 exercise training was just published, and it concluded that current evidence does not support Zone 2 training as the optimal intensity for improving mitochondrial or fatty acid oxidative capacity \\[1\\]. Yet Zone 2 training has been discussed at length by voices like Dr. Peter Attia as a sweet spot that gives us some of the strongest benefits from exercise. So should you and I incorporate Zone 2 exercise into our training protocol, or should we prioritize other forms of exercise? The answer is nuanced, so let’s take a look."
+summary: "Dr Brad’s Zone 2 training post: evidence does not support Zone 2 as optimal for mitochondrial function or fat oxidation in non-elite adults. Higher intensity exercise outperforms Zone 2; prioritize 75 min/week vigorous activity before adding Zone 2."
 ---
 
 A pretty damning analysis on Zone 2 exercise training was just published, and it concluded that current evidence does not support Zone 2 training as the optimal intensity for improving mitochondrial or fatty acid oxidative capacity \[1\].

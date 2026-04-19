@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["selenium", "selenium glycinate", "selenomethionine", "selenite", "selenate", "selenium yeast", "thyroid", "antioxidant", "immune", "cancer", "cardiovascular", "heart health", "diabetes", "insulin resistance", "cognitive", "brain health", "alzheimer", "dementia", "inflammation", "aging", "longevity", "iodine", "vitamin e", "coq10", "zinc", "copper"]
-summary: "Selenium is an essential trace mineral required for the biosynthesis of 25 distinct selenoproteins in humans. These selenoproteins incorporate selenium in the form of selenocysteine — the 21st amino acid in the genetic code — and play critical roles in antioxidant defense, thyroid hormone metabolism, DNA synthesis, reproduction, and protection from oxidative damage and infection. The selenium concentration in the thyroid gland is higher than in any other organ in the body, reflecting its importance in thyroid function."
+summary: "Reference on selenium: thyroid hormone metabolism, antioxidant defense, immune function, and fertility; food sources (Brazil nuts richest); organic vs inorganic forms; safe dosing range and toxicity ceiling. Covers thyroid disease and low-intake populations. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/selenium-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/selenium-benefits-forms-dosing-and-side-effects)*

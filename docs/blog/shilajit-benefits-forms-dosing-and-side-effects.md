@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["shilajit", "fulvic acid", "testosterone", "energy", "aging", "adaptogen", "fertility", "cholesterol", "ldl", "hdl", "triglycerides", "blood sugar", "diabetes", "insulin resistance", "bone density", "osteoporosis", "collagen", "coq10", "cognitive", "brain health", "alzheimer", "inflammation", "anti-aging", "longevity", "muscle", "strength training", "exercise", "iron", "zinc", "calcium", "magnesium", "copper", "selenium", "chromium", "potassium"]
-summary: "Shilajit is a black-brown, tar-like resinous substance (sometimes called \"mineral pitch\" or \"moumiyo\") produced from the slow decomposition of plant material over centuries within mountain rocks. It is found primarily in the Himalayan Mountains between India and Nepal, as well as in the Altai Mountains of Russia and Mongolia, the Caucasus, the Pamir Plateau, Tibet, Afghanistan, and the Andes of northern Chile. The substance exudes from cracks and crevices in steep rock faces at altitudes between 1,000 and 5,000 meters, typically during hot summer months when rising temperatures soften the resin."
+summary: "Reference on shilajit: testosterone support in older men, bone density in postmenopausal women, exercise fatigue reduction. Most evidence is small, short-term, and industry-funded. Resin (300-2000mg/day) or standardized extract (200-500mg/day). Heavy metal contamination risk — third-party testing essential. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/shilajit-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/shilajit-benefits-forms-dosing-and-side-effects)*

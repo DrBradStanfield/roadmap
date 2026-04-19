@@ -5,7 +5,7 @@ publishedAt: "2024-04-15T13:42:51Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["bilberry", "anthocyanin", "anthocyanoside", "eye health", "vision", "night vision", "retinopathy", "antioxidant", "cardiovascular", "blood sugar", "diabetes", "insulin resistance", "cholesterol", "ldl", "triglycerides", "inflammation", "blood pressure", "dry eye", "varicose veins", "chronic venous insufficiency", "skin", "cognitive", "lutein", "quercetin"]
-summary: "Bilberry (Vaccinium myrtillus L.) is a low-growing deciduous shrub in the family Ericaceae, native to northern Europe, northern Asia, and parts of North America. Often called \"European blueberry,\" it is closely related to but distinct from the North American highbush blueberry (Vaccinium corymbosum). While its outer skin is dark blue or purple like a blueberry, bilberry flesh is characteristically purple rather than light green, reflecting a substantially different polyphenol profile."
+summary: "Reference on bilberry: retinopathy, dry eye, blood sugar, vascular health. Best evidence for diabetic/hypertensive retinopathy. Look for 36% anthocyanoside extract. Caution with blood thinners and diabetes meds. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/bilberry-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/bilberry-benefits-forms-dosing-and-side-effects)*

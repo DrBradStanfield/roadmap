@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=d44hcq-JLCI"
 publishedAt: "2025-12-03T16:41:41Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["cardiovascular","diabetes","exercise","heart attack","hormone","omega-3","stroke","vitamin d","vitamin d3"]
-summary: "A new vitamin D study has completely changed my view and the advice I give to my patients in the clinic. Because it takes a novel approach, it uncovered something we may have been missing to this point."
+summary: "Dr Brad's vitamin D post: TARGET-D trial found 52% fewer recurrent heart attacks with treat-to-target dosing post-MI, but was unblinded. Brad now offers vitamin D testing as option to post-MI patients. Covers cardiovascular risk and deficiency."
 ---
 
 A new vitamin D study has completely changed my view and the advice I give to my patients in the clinic. Because it takes a novel approach, it uncovered something we may have been missing to this point.

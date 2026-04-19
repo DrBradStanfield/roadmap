@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["dhea", "dehydroepiandrosterone", "prasterone", "dhea sulfate", "7-keto dhea", "testosterone", "estrogen", "hormone", "aging", "longevity", "anti-aging", "depression", "bone density", "osteoporosis", "insulin resistance", "diabetes", "cognitive", "brain health", "skin", "adrenal", "lupus", "fertility", "exercise", "weight loss", "cholesterol", "hdl", "triglycerides", "heart health", "cardiovascular", "immune", "melatonin", "sleep"]
-summary: "Dehydroepiandrosterone (DHEA) is a steroid hormone produced primarily by the adrenal glands, with smaller contributions from the gonads and brain. It is the most abundant circulating steroid hormone in the human body and serves as a precursor to both androgens (including testosterone) and estrogens (including estradiol), after first being converted to androstenedione. DHEA circulates predominantly in its sulfated form, DHEA sulfate (DHEA-S), which has a longer half-life and serves as a reservoir that tissues can convert back to DHEA as needed."
+summary: "Reference on DHEA: hormone studied for adrenal insufficiency, depression, vaginal dryness and painful sex (FDA-approved), and bone density in women. Anti-aging evidence weak. Oral 25-50 mg/day with hormone monitoring. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/dhea-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/dhea-benefits-dosing-and-side-effects)*

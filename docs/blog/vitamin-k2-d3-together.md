@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=s2bPHAo4z6Y"
 publishedAt: "2024-11-25T20:42:35Z"
 tags: ["Supplements"]
 keywords: ["atherosclerosis","calcium","cardiovascular","skin","vitamin a","vitamin d","vitamin d3","vitamin k","vitamin k1","vitamin k2"]
-summary: "Vitamin K2 supplements are exploding in popularity, with claims of transforming bone and heart health—particularly when paired with Vitamin D3. So, what does the evidence show? Are these supplements worth our time and money?"
+summary: "Dr Brad's vitamin K2 + D3 post: MK7 90mcg worthwhile for bone health and may reduce arterial calcium in those with high CAC scores, but cardiovascular evidence is still emerging. Covers K1 vs K2, bone density, atherosclerosis, warfarin interaction, MicroVitamin."
 ---
 
 Vitamin K2 supplements are exploding in popularity, with claims of transforming bone and heart health—particularly when paired with Vitamin D3. So, what does the evidence show? Are these supplements worth our time and money?

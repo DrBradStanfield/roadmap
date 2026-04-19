@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=lb5FleSDefo"
 publishedAt: "2025-08-28T23:51:02Z"
 tags: ["Diet","Preventative Care"]
 keywords: ["atherosclerosis","blood pressure","cardiovascular","diabetes","heart attack","hypertension","inflammation","potassium","stroke"]
-summary: "Strokes are one of the leading causes of death globally \\[1\\]. But when I talk to my patients in the clinic about how to protect themselves from a stroke, they are often surprised by a significant yet overlooked risk factor that’s easy to fix. And they’re even more intrigued when I tell them that it has to do with a mineral deficiency. Let me explain, and then I’ll show you how to fix it."
+summary: "Dr Brad’s post on potassium deficiency and stroke risk: how low potassium raises blood pressure and stroke risk, how much potassium we need, food sources vs supplements, and the safe blood pressure target. Covers: stroke prevention, heart health, blood pressure, mineral deficiency."
 ---
 
 Strokes are one of the leading causes of death globally \[1\].

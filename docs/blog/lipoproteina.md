@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Zc0FURnxO5I"
 publishedAt: "2025-07-16T00:05:32Z"
 tags: ["Preventative Care"]
 keywords: ["blood pressure","blood sugar","bmi","cholesterol","exercise","ezetimibe","hdl","heart attack","ldl","pcsk9","statin","stroke","triglycerides"]
-summary: "Unless you’ve seen a lipidologist, you’ve probably never heard of the potentially lifesaving blood test for lipoprotein(a). You only need to get this blood test once in your life, and I encourage all of my patients, if it’s a financial option, to pay the $51 for it because the results have huge ramifications for how we try to lower their heart disease risks."
+summary: "Dr Brad’s lipoprotein(a) post: get tested once ($51) — 1 in 5 people have elevated Lp(a), it’s genetic not lifestyle-driven, and high levels raise heart attack risk up to 45%. If elevated, aggressively lower LDL-c to 40-50 mg/dL with statin + ezetimibe."
 ---
 
 Unless you’ve seen a lipidologist, you’ve probably never heard of the potentially lifesaving blood test for lipoprotein(a).

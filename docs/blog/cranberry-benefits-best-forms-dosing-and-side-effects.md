@@ -5,7 +5,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["cranberry", "proanthocyanidins", "PACs", "urinary tract", "UTI", "antioxidant", "inflammation", "blood pressure", "cardiovascular", "gut health", "microbiome", "kidney", "cholesterol", "blood sugar", "insulin resistance", "diabetes", "cognitive", "brain health", "skin"]
-summary: "Cranberries (Vaccinium macrocarpon) are tart, red berries native to the acidic wetlands and bogs of northeastern North America. They contain a diverse array of polyphenolic compounds, including proanthocyanidins (PACs), anthocyanins, flavonols, and phenolic acids such as benzoic acid. Among these, A-type proanthocyanidins (A-type PACs) are the most clinically significant compounds, as they have been shown to inhibit the adhesion of uropathogenic E. coli bacteria to the walls of the bladder and urinary tract epithelial cells. This anti-adhesion mechanism is specific to A-type PACs; B-type PACs, which are common in other fruits such as apples and plums as well as peanut skins, do not demonstrate this activity."
+summary: "Reference on cranberry: UTI prevention, bladder health. Women with recurrent UTIs, children, men with urinary symptoms. Juice or capsules (36 mg PACs/day); kidney stone risk at high doses; warfarin interaction. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/cranberry-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/cranberry-benefits-best-forms-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=MmKVtX98zlM"
 publishedAt: "2025-06-30T18:04:01Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["blood pressure","cardiovascular","diabetes","exercise","fiber","heart attack","hypertension","potassium","stroke","weight loss"]
-summary: "While I was in my GP office finishing off some paperwork for the day, I came across a new study that reinforces why doctors like me needed to change our approach to how we lower a person’s heart attack risk. The best news is that it doesn’t have to require medications."
+summary: "Dr Brad’s blood pressure post: target systolic below 120 (not 140) cuts heart attack, stroke, and death risk by 21-27%, per SPRINT and two China RCTs. Covers hypertension, Type 2 diabetes, DASH diet, sodium reduction, exercise snacks, weight loss, and at-home BP monitors."
 ---
 
 While I was in my GP office finishing off some paperwork for the day, I came across a new study that reinforces why doctors like me needed to change our approach to how we lower a person’s heart attack risk. The best news is that it doesn’t have to require medications.

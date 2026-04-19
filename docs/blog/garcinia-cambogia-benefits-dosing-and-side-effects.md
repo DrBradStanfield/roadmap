@@ -5,7 +5,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["garcinia cambogia", "HCA", "hydroxycitric acid", "weight loss", "appetite", "obesity", "bmi", "triglycerides", "cholesterol", "ldl", "hdl", "insulin", "blood sugar", "kidney", "calcium", "potassium", "magnesium", "serotonin", "depression", "liver"]
-summary: "Garcinia cambogia (also known as Garcinia gummi-gutta, Malabar tamarind, or brindle berry) is a tree native to India and Southeast Asia, commonly found in tropical evergreen forests. The fruit has a long history in traditional medicine — used as a tea for inflammation and stomach complaints — and its rind has been used as a food preservative and culinary ingredient throughout the region."
+summary: "Reference on garcinia cambogia (HCA): weight loss, appetite suppression. Clinical evidence is weak — women-only modest benefit. Serious liver injury risk (transplant, death cases reported). Avoid with SSRIs. Unsafe in bipolar disorder. Doses 900-1500mg HCA/day before meals. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/garcinia-cambogia-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/garcinia-cambogia-benefits-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["iodine", "kelp", "thyroid", "potassium iodide", "metabolism", "hypothyroidism", "selenium", "iron", "calcium", "magnesium", "folate", "vitamin a", "cognitive", "brain health", "weight loss", "blood pressure", "blood sugar", "diabetes", "insulin resistance", "obesity", "breast cancer", "inflammation", "fiber", "aging", "longevity", "gut health"]
-summary: "Iodine is a trace element that is an essential component of the thyroid hormones thyroxine (T4) and triiodothyronine (T3). These hormones regulate many critical biochemical reactions, including protein synthesis and enzymatic activity, and are the principal determinants of metabolic rate throughout the body. Thyroid hormones are also required for proper skeletal and central nervous system development in fetuses and infants."
+summary: "Reference on iodine and kelp: thyroid health, fetal brain development. Deficiency risk in pregnant women, vegans, salt-avoiders. Potassium iodide preferred over kelp; RDA 150 mcg/day. Excess risks thyroid dysfunction. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/kelp-and-iodine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/kelp-and-iodine-benefits-forms-dosing-and-side-effects)*

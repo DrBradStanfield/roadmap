@@ -6,7 +6,7 @@ type: "reference"
 tags: ["Supplements"]
 keywords: ["calcium", "calcium carbonate", "calcium citrate", "calcium citrate malate", "calcium hydroxyapatite", "bone density", "osteoporosis", "bone health", "vitamin d", "vitamin d3", "vitamin k", "vitamin k2", "boron", "magnesium", "fracture", "dexa", "heart attack", "stroke", "cardiovascular", "kidney", "kidney stones", "blood pressure", "hypertension", "cholesterol", "ldl", "hdl", "colorectal cancer", "colon cancer", "prostate", "breast cancer", "preeclampsia", "weight loss", "metabolic syndrome", "iron", "aging", "longevity", "postmenopausal", "dairy", "collagen"]
 product: "microvitamin"
-summary: "Calcium is the most abundant mineral in the human body. Approximately 99% of the body's calcium is stored in bones and teeth as calcium hydroxyapatite, where it provides structural rigidity. The remaining 1% circulates in the blood, extracellular fluid, muscle, and other tissues, mediating vascular contraction and dilation, muscle contraction, nerve transmission, blood clotting, and hormonal secretion."
+summary: "Reference on calcium: bone health, fracture prevention, osteoporosis. Postmenopausal women, older adults, vegans, and pregnant women most at risk of deficiency. Forms include carbonate and citrate (citrate preferred for PPI users). Typical supplemental doses 500-1,200 mg/day; high doses may raise cardiovascular and kidney stone risk. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/calcium-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/calcium-benefits-best-forms-dosing-and-side-effects)*

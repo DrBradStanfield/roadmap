@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=_RqDZXI4iC4"
 publishedAt: "2025-09-16T22:23:51Z"
 tags: ["Exercise"]
 keywords: ["betaine","cardiovascular","exercise","fiber","muscle","rapamycin","resistance training","strength training","tmg"]
-summary: "Here’s why power training is the most underrated exercise for our long-term health — and how to incorporate it into your exercise plan."
+summary: "Dr Brad’s post on power training (fast, explosive movements like plyometrics and jump training): why it’s underrated for longevity, how it preserves fast-twitch muscle fibres and reduces falls risk, and how to incorporate it at any age. Always discuss with your doctor."
 ---
 
 Here’s why power training is the most underrated exercise for our long-term health — and how to incorporate it into your exercise plan.

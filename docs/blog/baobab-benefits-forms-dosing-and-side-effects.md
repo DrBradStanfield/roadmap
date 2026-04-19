@@ -5,7 +5,7 @@ publishedAt: "2024-03-27T03:38:34Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["baobab", "antioxidant", "fiber", "gut health", "prebiotic", "vitamin c", "blood sugar", "diabetes", "insulin resistance", "inflammation", "iron", "calcium", "potassium", "weight loss", "obesity", "cholesterol", "cardiovascular", "microbiome"]
-summary: "Baobab (Adansonia digitata L.) is a tree native to sub-Saharan Africa, often called the \"Tree of Life,\" the \"monkey bread tree,\" the \"cream of tartar tree,\" or \"the upside down tree\" due to its distinctive silhouette of root-like branches. The tree produces a large, gourd-shaped fruit containing a soft, powdery pulp and kidney-shaped seeds. Unlike most fruits, baobab fruit naturally dries while still on the branch — the pulp dehydrates to approximately 10–14% moisture content inside the hard shell — requiring minimal processing to produce a shelf-stable powder."
+summary: "Reference on baobab: high fiber, gut health, blood sugar after meals, vitamin C, iron absorption. Adults wanting a fiber or nutrient boost. Powder 5-30 g/day; start low to avoid bloating. Caution in kidney disease. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/baobab-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/baobab-benefits-forms-dosing-and-side-effects)*

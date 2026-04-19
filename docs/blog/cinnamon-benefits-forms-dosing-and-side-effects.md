@@ -5,7 +5,7 @@ publishedAt: "2024-06-19T07:17:08Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["cinnamon", "cassia cinnamon", "ceylon cinnamon", "cinnamomum verum", "cinnamomum cassia", "cinnamomum burmannii", "cinnamomum loureiroi", "cinnamon extract", "cinnulin pf", "cinsulin", "blood sugar", "diabetes", "insulin resistance", "hba1c", "cholesterol", "ldl", "hdl", "triglycerides", "inflammation", "antioxidant", "coumarin", "cinnamaldehyde", "proanthocyanidins", "blood pressure", "hypertension", "weight loss", "obesity", "cognitive", "brain health", "cardiovascular", "chromium", "berberine", "metformin", "statin", "manganese"]
-summary: "Cinnamon is a spice derived from the inner bark of several evergreen trees in the genus Cinnamomum, cultivated primarily in South and Southeast Asia. It has been used for thousands of years as both a flavoring agent and a traditional remedy for conditions ranging from digestive complaints to parasitic infections. In recent decades, cinnamon has attracted significant scientific interest for its potential effects on blood sugar regulation, cholesterol, inflammation, and antioxidant defense."
+summary: "Reference on cinnamon: blood sugar, cholesterol, inflammation. Adults with type 2 diabetes or prediabetes. Cassia vs Ceylon forms; Ceylon safer (lower coumarin). Dosing 1-6g/day bark or 250-500mg extract. Coumarin liver/bleeding risk; interacts with blood thinners. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/cinnamon-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/cinnamon-benefits-forms-dosing-and-side-effects)*

@@ -6,7 +6,7 @@ publishedAt: "2024-11-19T03:13:05Z"
 tags: ["Supplements"]
 keywords: ["aging","alzheimer","antioxidant","blood pressure","blood sugar","brain health","cardiovascular","cholesterol","cognitive","collagen","creatine","dementia","dha","epa","estrogen","exercise","fiber","glycine","heart attack","hyaluronic acid","magnesium","melatonin","muscle","omega-3","peptide","psyllium","skin","sleep","testosterone","tmg","uric acid","vitamin a","vitamin b3","vitamin k2","wrinkles","zinc"]
 product: "sleep"
-summary: "This post summarizes the supplements I take. We'll start with the three supplements that have strong evidence backing their benefits for improving muscle performance. After that, we'll delve into a supplement I take for memory and cognitive function. Disclaimer: Just because I take these supplements doesn't mean that you should as well. Always consult with a healthcare professional before adding any new supplements to your regimen."
+summary: "Dr Brad's supplement stack post: creatine 5g, protein 1.6g/kg, TMG 500mg, multivitamin, omega-3 1g, psyllium husk, collagen 10-15g, hyaluronic acid 200mg, melatonin 300mcg, glycine+NAC for glutathione. Covers muscle, brain, heart, skin, sleep."
 ---
 
 This post summarizes the supplements I take. We'll start with the three supplements that have strong evidence backing their benefits for improving muscle performance. After that, we'll delve into a supplement I take for memory and cognitive function.

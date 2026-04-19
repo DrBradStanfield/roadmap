@@ -5,7 +5,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["glutamine", "l-glutamine", "amino acid", "gut health", "leaky gut", "immune", "muscle", "exercise", "ibs", "irritable bowel syndrome", "sickle cell disease", "oral mucositis", "inflammation", "muscle recovery", "creatine", "glycine", "protein", "sarcopenia", "cancer", "critical care", "microbiome", "fiber"]
-summary: "L-glutamine is the most abundant free amino acid in the human body and plasma, serving as a key building block for proteins and a major nitrogen and carbon donor in numerous metabolic pathways. It is synthesized primarily in skeletal muscle, liver, and brain via the enzyme glutamine synthetase, which catalyzes the ATP-dependent amidation of glutamate with ammonia. Because the body can produce it endogenously — at a rate of approximately 50-80 grams per day — glutamine is classified as a non-essential amino acid under normal physiological conditions."
+summary: "Reference on glutamine (L-glutamine): gut health, leaky gut, IBS-D, immune support, muscle recovery. Benefits most during stress, illness, or intense exercise. Powder form preferred; 5-15 g/day typical. Avoid in liver failure, kidney disease, active cancer. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/glutamine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/glutamine-benefits-forms-dosing-and-side-effects)*

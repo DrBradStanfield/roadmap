@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["valerian", "valerian root", "valerenic acid", "valepotriates", "sleep", "insomnia", "anxiety", "relaxation", "melatonin", "GABA", "sleep quality", "circadian", "depression", "cognitive", "brain health", "restless legs syndrome"]
-summary: "Valerian (Valeriana officinalis) is a perennial herb native to Europe and temperate regions of Asia, whose roots and rhizomes have been used as a sedative and anxiolytic for over 2,000 years. Hippocrates described its therapeutic properties in the 5th century BCE, Dioscorides recommended it for sleep disturbances in the 1st century CE, and Galen prescribed valerian for insomnia in the 2nd century. During medieval Europe, valerian earned the name \"All-Heal\" for its broad application in treating ailments ranging from plague symptoms to nervous disorders. In the 16th century, it was used to treat nervousness, trembling, headaches, and heart palpitations. During World War II, it was distributed in England to help civilians cope with the stress of air raids."
+summary: "Reference on valerian root: sleep aid, anxiety, relaxation. Mixed evidence for insomnia (modest subjective benefit, weak objective data); not recommended for restless legs. Standardized extract 300-900 mg before bed. Avoid in pregnancy. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/valerian-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/valerian-benefits-forms-dosing-and-side-effects)*

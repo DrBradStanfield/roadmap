@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=3Vp3i4bS8VU"
 publishedAt: "2025-10-15T20:07:54Z"
 tags: ["Supplements"]
 keywords: ["ashwagandha","cognitive","creatine","exercise","muscle"]
-summary: "A new clinical study has found no benefit of ashwagandha supplementation on aerobic capacity, muscle oxygenation, or blood parameters in healthy men. I don't take ashwagandha myself. But if you're currently taking it, this study doesn't necessarily mean you should stop — as I’ll explain in this article. Plus, at the end, I’ll share an alternative supplement with strong evidence for boosting exercise performance."
+summary: "Dr Brad’s ashwagandha post: no evidence for exercise performance; may help stress and anxiety. Covers 600mg/day RCT, VO2max, cortisol, HPA axis, creatine as alternative for muscle and cognitive performance in men, women, and older adults."
 ---
 
 A new clinical study has found **no benefit** of ashwagandha supplementation on **aerobic capacity, muscle oxygenation, or blood parameters** in healthy men.

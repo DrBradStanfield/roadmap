@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["bone broth", "collagen", "collagen peptides", "gelatin", "glycine", "proline", "glutamine", "amino acids", "joint health", "gut health", "skin", "wrinkles", "osteoarthritis", "inflammation", "muscle", "sarcopenia", "bone density", "osteoporosis", "hyaluronic acid", "aging", "longevity", "sleep", "protein", "calcium", "magnesium", "potassium", "sodium", "iron", "zinc", "phosphorus", "creatine", "taurine", "fiber", "gut health", "microbiome"]
-summary: "Bone broth is a savory, nutrient-rich liquid made by simmering animal bones — often with attached connective tissue, cartilage, and sometimes residual meat — in water for an extended period, typically 12 to 48 hours, along with vegetables, aromatics, herbs, and spices. This prolonged cooking process extracts collagen from the bones and connective tissues, which converts into gelatin during simmering, along with minerals, amino acids, and other compounds. The resulting liquid contains significant amounts of protein (typically 8-10 grams per cup), potassium, and sodium, with smaller amounts of other minerals such as calcium, magnesium, phosphorus, and zinc."
+summary: "Reference on bone broth: joint pain, skin wrinkles, muscle mass, sleep (glycine). Most evidence is for collagen peptides, not broth directly. Liquid/powder/capsule; 2-3 cups/day for joints. High sodium content; caution in kidney disease. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/bone-broth-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/bone-broth-benefits-forms-dosing-and-side-effects)*

@@ -6,7 +6,7 @@ publishedAt: "2025-07-01T18:11:29Z"
 tags: ["Supplements"]
 keywords: ["antioxidant","blood pressure","blood sugar","calcium","cholesterol","cognitive","dementia","diabetes","exercise","fiber","glycine","insomnia","magnesium","melatonin","muscle","potassium","sleep","taurine"]
 product: "microvitamin"
-summary: "There are two huge mistakes that are often made with magnesium, and I see it all the time at the clinic. So instead of making those mistakes, let’s arm you with the knowledge to avoid them. Plus, we’ll go through common questions about dose and forms of magnesium."
+summary: "Dr Brad’s magnesium post: favor glycinate or taurate forms; avoid oxide (poorly absorbed). Blood tests miss deficiency. RDA 420mg men/320mg women; 126mg supplement tops up diet. Best RCT evidence is for sleep in older adults."
 ---
 
 There are two huge mistakes that are often made with magnesium, and I see it all the time at the clinic. So instead of making those mistakes, let’s arm you with the knowledge to avoid them.

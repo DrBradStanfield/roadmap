@@ -5,7 +5,7 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["nattokinase", "fibrinolytic", "cardiovascular", "blood clot", "blood pressure", "hypertension", "cholesterol", "ldl", "hdl", "triglycerides", "atherosclerosis", "stroke", "heart attack", "deep vein thrombosis", "inflammation", "cognitive", "brain health", "dementia", "alzheimer", "natto", "vitamin k", "blood sugar", "insulin resistance", "aging", "longevity"]
-summary: "Nattokinase is a serine protease enzyme produced by the bacterium Bacillus subtilis var. natto during the fermentation of soybeans to create natto, a traditional Japanese food. The enzyme was first identified and extracted from natto in 1987 by Japanese researcher Dr. Hiroyuki Sumi, who discovered its potent ability to dissolve fibrin, the structural protein of blood clots. Nattokinase consists of a single polypeptide chain of 275 amino acids with a molecular weight of approximately 27.7 kDa, featuring a conserved catalytic triad (Asp-32, His-64, Ser-221) characteristic of the subtilisin family of serine proteases."
+summary: "Reference on nattokinase: blood clot prevention, blood pressure, heart health. Adults with cardiovascular risk, hypertension, or interest in clot-dissolving enzymes. Enteric-coated or softgel forms, 2000-4000 FU/day; avoid with blood thinners or aspirin. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/nattokinase-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/nattokinase-benefits-forms-dosing-and-side-effects)*

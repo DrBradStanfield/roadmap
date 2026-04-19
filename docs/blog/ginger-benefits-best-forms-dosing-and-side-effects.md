@@ -5,7 +5,7 @@ publishedAt: "2025-05-13T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["ginger", "gingerols", "shogaols", "nausea", "inflammation", "digestion", "pain", "gut health", "osteoarthritis", "motion sickness", "pregnancy nausea", "chemotherapy nausea", "blood sugar", "diabetes", "hba1c", "weight loss", "migraine", "menstrual pain", "indigestion", "heartburn", "cognitive", "brain health", "muscle", "exercise"]
-summary: "Ginger (Zingiber officinale) is a flowering plant whose rhizome (underground stem) has been used for thousands of years as both a culinary spice and a traditional medicine. Native to the warm regions of Southeast Asia, ginger is now cultivated in parts of South America, Africa, the Middle East, and the Caribbean. It has been used traditionally to treat a wide range of ailments, from digestive complaints and respiratory illness to arthritis and nausea."
+summary: "Reference on ginger: nausea (pregnancy, chemotherapy), indigestion, joint pain, blood sugar, menstrual pain. Powder 1-3g/day or extract 100-500mg/day. Caution: bleeding risk with blood thinners, CYP3A4 interactions. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/ginger-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/ginger-benefits-best-forms-dosing-and-side-effects)*

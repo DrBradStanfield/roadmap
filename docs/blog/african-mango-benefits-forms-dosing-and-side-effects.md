@@ -5,7 +5,7 @@ publishedAt: "2024-01-15T22:42:51Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["african mango", "irvingia gabonensis", "weight loss", "cholesterol", "ldl", "hdl", "triglycerides", "blood sugar", "obesity", "fiber", "inflammation"]
-summary: "African mango (Irvingia gabonensis, also called sweet bush mango, wild mango, or dika nut tree) is a tree species native to the tropical forests of West and Central Africa, particularly Nigeria, Cameroon, Ghana, and neighboring countries. The tree produces a fruit similar in external appearance to the common mango (Mangifera indica), but the two species are botanically unrelated — African mango belongs to the family Irvingiaceae, while common mango belongs to Anacardiaceae."
+summary: "Reference on African mango (Irvingia gabonensis): weight loss, cholesterol, blood sugar. Marketed for obesity and weight management; very weak evidence — only 3 small trials from one research group. IGOB131 extract 300mg/day studied. GI side effects possible. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/african-mango-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/african-mango-benefits-forms-dosing-and-side-effects)*

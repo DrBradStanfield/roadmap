@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["garlic", "allicin", "aged garlic extract", "black garlic", "s-allyl-cysteine", "SAC", "blood pressure", "hypertension", "cholesterol", "ldl", "hdl", "triglycerides", "cardiovascular", "atherosclerosis", "heart health", "immune", "inflammation", "statin", "warfarin", "blood sugar", "diabetes", "insulin resistance"]
-summary: "Garlic (Allium sativum) has been used both as a culinary ingredient and for medicinal purposes for thousands of years. Ancient writings from Egypt, Greece, and India describe its application for headache, pneumonia, throat conditions, and gastrointestinal disorders. In the 19th century, Louis Pasteur observed that garlic exhibited antibacterial properties, laying the groundwork for modern scientific investigation. The isolation of allicin — garlic's principal organosulfur compound — in 1944 enabled the development of standardized garlic extracts and supplements."
+summary: "Reference on garlic: high blood pressure, cholesterol, immune support, joint pain, atherosclerosis. Forms include aged garlic extract, powder, black garlic. Bleeding risk; stop before surgery; interacts with warfarin. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/garlic-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/garlic-benefits-best-forms-dosing-and-side-effects)*

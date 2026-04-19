@@ -5,7 +5,7 @@ publishedAt: "2025-06-03T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["huperzine a", "acetylcholinesterase", "alzheimer", "cognitive", "brain health", "memory", "dementia", "neuroprotection", "choline", "nootropic", "acetylcholine", "vascular dementia", "donepezil", "club moss", "huperzia serrata"]
-summary: "Huperzine A is a naturally occurring sesquiterpene alkaloid with the molecular formula C₁₅H₁₈N₂O and a molecular weight of 242.32 g/mol, primarily isolated from the Chinese club moss Huperzia serrata (Thunb. ex Murray) Trevis. It functions as a potent, reversible, and selective inhibitor of acetylcholinesterase (AChE), the enzyme responsible for breaking down the neurotransmitter acetylcholine in the synaptic cleft. By blocking AChE, huperzine A increases acetylcholine concentrations in the brain, supporting cognitive functions such as memory, learning, and attention."
+summary: "Reference on huperzine A: memory, cognitive function, Alzheimer's disease, vascular dementia. Adults with dementia or age-related memory concerns. Natural Huperzia serrata extract preferred; 50-400 mcg/day, cycling recommended. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/huperzine-a-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/huperzine-a-benefits-forms-dosing-and-side-effects)*

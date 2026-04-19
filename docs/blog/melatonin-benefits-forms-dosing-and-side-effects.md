@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["melatonin", "sleep", "insomnia", "circadian", "jet lag", "aging", "antioxidant", "migraine", "anxiety", "depression", "cancer", "diabetes", "blood pressure", "blood sugar", "bone density", "tinnitus", "irritable bowel syndrome", "GERD", "shift work", "children", "autism", "ADHD", "menopause", "glycine", "magnesium glycinate", "tryptophan", "serotonin"]
-summary: "Melatonin (N-acetyl-5-methoxytryptamine) is a hormone produced primarily by the pineal gland in the brain from the amino acid tryptophan, with serotonin as an intermediate in the biosynthetic pathway. Secretion follows a robust circadian rhythm: levels are low during the day and rise sharply in the evening in response to darkness, typically peaking between 2:00 and 4:00 a.m., before declining toward morning. This rhythmic pattern is regulated by the suprachiasmatic nucleus (SCN) of the hypothalamus, the body's master circadian clock, which receives light-dark signals from the retina. Melatonin binds to high-affinity G-protein-coupled receptors MT1 and MT2 in the SCN, where MT1 activation inhibits neuronal firing and MT2 mediates phase shifts of the circadian clock."
+summary: "Reference on melatonin: sleep onset, jet lag, delayed sleep phase, migraine prevention. Children with ASD/ADHD, menopausal women, shift workers. Start low (0.3-3 mg). Caution with diabetes, fractures. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/melatonin-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/melatonin-benefits-forms-dosing-and-side-effects)*

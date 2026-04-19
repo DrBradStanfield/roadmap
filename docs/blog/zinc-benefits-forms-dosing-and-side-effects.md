@@ -5,7 +5,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["zinc", "zinc glycinate", "zinc gluconate", "zinc acetate", "zinc picolinate", "zinc citrate", "zinc oxide", "zinc carnosine", "zinc sulfate", "immune", "sleep", "testosterone", "copper", "selenium", "acne", "macular degeneration", "cold", "wound healing", "diabetes", "insulin resistance", "depression", "cholesterol", "inflammation", "gut health", "prostate", "cognitive", "brain health"]
-summary: "Zinc is an essential trace mineral involved in the catalytic activity of hundreds of enzymes and plays critical roles in immune function, protein and DNA synthesis, wound healing, cell signaling and division, and the sense of taste. The total amount of zinc in the human body is approximately 1.5 g in women and 2.5 g in men, with most stored in skeletal muscle and bone. Unlike iron or calcium, the body has no specialized zinc storage system, making consistent dietary intake essential."
+summary: "Reference on zinc: immune function, cold duration, wound healing, acne, eye health. At risk: vegans, older adults, gut disorders. Forms: glycinate; gluconate/acetate for cold lozenges. RDA 8-11 mg, UL 40 mg. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/zinc-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/zinc-benefits-forms-dosing-and-side-effects)*

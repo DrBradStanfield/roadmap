@@ -5,7 +5,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["flaxseed", "flaxseed oil", "omega-3", "omega-6", "ala", "alpha-linolenic acid", "gla", "gamma-linolenic acid", "evening primrose oil", "borage oil", "black currant oil", "hemp oil", "epa", "dha", "fish oil", "inflammation", "blood pressure", "hypertension", "cholesterol", "ldl", "hdl", "triglycerides", "heart health", "cardiovascular", "acne", "eczema", "dry eye", "rheumatoid arthritis", "diabetes", "insulin resistance", "weight loss", "skin", "hair loss", "brain health", "cognitive", "adhd", "depression", "seed oil", "olive oil", "fiber", "gut health"]
-summary: "Flaxseed oil and the omega-6-rich seed oils — evening primrose, borage, black currant, and hemp — are among the most widely consumed plant-based fatty acid supplements. They provide two distinct categories of polyunsaturated fatty acids: alpha-linolenic acid (ALA), an omega-3 fatty acid, and gamma-linolenic acid (GLA), an omega-6 fatty acid. Both are considered \"good\" fats, as opposed to saturated fats that may increase cardiovascular risk."
+summary: "Reference on flaxseed oil, evening primrose, borage, and hemp oils: heart health, blood pressure, acne, dry eye, joint pain. ALA for vegans; whole flaxseed best for blood pressure. GLA may lower seizure threshold. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/flaxseed-oil-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/flaxseed-oil-benefits-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=szMdop7aBxw"
 publishedAt: "2025-02-23T23:47:06Z"
 tags: ["General Health","Diet","Exercise"]
 keywords: ["blood pressure","bmi","cardiovascular","exercise","hypertension","insomnia","microbiome","muscle","potassium","sleep","stroke","weight loss"]
-summary: "High blood pressure is often called a silent killer because it’s easy to overlook until serious complications arise. Over time, it damages the walls of our blood vessels and increases our risk of heart attacks and strokes. But there are proven steps we can take to significantly lower our blood pressure—and we can do it naturally, without relying solely on medications. In this article, I’ll show you four powerful ways to reduce blood pressure, supported by scientific studies. If you want to receive weekly health research summaries and the health strategies I share with my patients, check the resources at the end of this article."
+summary: "Dr Brad’s blood pressure post: diet, exercise, and sleep can meaningfully lower hypertension without medication. Covers DASH diet, potassium, fibre, isometric exercise (wall squats best per 2023 meta-analysis), and sleep quality. For hypertension, high BP, cardiovascular risk."
 ---
 
 High blood pressure is often called a silent killer because it’s easy to overlook until serious complications arise. Over time, it damages the walls of our blood vessels and increases our risk of heart attacks and strokes. But there are proven steps we can take to significantly lower our blood pressure—and we can do it naturally, without relying solely on medications.

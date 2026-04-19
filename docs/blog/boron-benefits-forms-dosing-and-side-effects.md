@@ -5,7 +5,7 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["boron", "boron citrate", "boron glycinate", "calcium fructoborate", "bone density", "osteoporosis", "osteoarthritis", "calcium", "vitamin d", "testosterone", "estrogen", "inflammation", "cognitive", "brain health", "magnesium", "selenium", "copper", "manganese", "chromium", "iodine", "zinc", "prostate", "cancer", "arthritis", "hormone"]
-summary: "Boron is a trace mineral found naturally in plants, soil, and water. It is present in the human body at low concentrations, with the highest levels in bone, nails, and hair, and lower levels in fat tissue. Unlike essential minerals such as magnesium or zinc, boron is not classified as an essential nutrient for humans — no specific biochemical function requiring boron has been definitively identified, and no disease is known to be caused by a lack of boron. Consequently, no Recommended Dietary Allowance (RDA) or Adequate Intake (AI) has been established."
+summary: "Reference on boron: bone health, joint pain (osteoarthritis), vitamin D, cognition. Forms: calcium fructoborate, citrate, glycinate; 1-3 mg/day general, 6 mg for joints. Caution with estrogen-sensitive conditions. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/boron-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/boron-benefits-forms-dosing-and-side-effects)*

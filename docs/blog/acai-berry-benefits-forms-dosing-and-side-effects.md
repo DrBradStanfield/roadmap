@@ -5,7 +5,7 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["acai", "acai berry", "anthocyanin", "antioxidant", "inflammation", "cholesterol", "hdl", "ldl", "cardiovascular", "heart health", "oxidative stress", "exercise", "muscle", "weight loss", "obesity", "cognitive", "brain health", "cancer", "skin", "gut health", "fiber", "aging", "longevity"]
-summary: "Acai (pronounced ah-sigh-EE) berry is the fruit of the acai palm (Euterpe oleracea Mart.), also known as the cabbage palm, indigenous to the floodplains and swamps of northern South America, particularly the Amazon River estuary in Brazil. The small, dark-purple drupe has been a dietary staple for indigenous populations in the Brazilian Amazon for centuries and has gained global popularity as a so-called \"superfood\" since the early 2000s."
+summary: "Reference on acai berry: antioxidant effects, modest anti-inflammatory benefits, possible HDL cholesterol support, exercise recovery. Evidence is limited; no proven weight loss effect. Frozen pulp or freeze-dried powder preferred over capsules (extreme quality variability). Caution with blood thinners, diabetes medications. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/acai-berry-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/acai-berry-benefits-forms-dosing-and-side-effects)*

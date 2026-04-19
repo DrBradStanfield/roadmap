@@ -5,7 +5,7 @@ publishedAt: "2025-12-15T01:17:08Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["vitamin k", "vitamin k2", "mk-7", "mk-4", "menaquinone", "phylloquinone", "bone density", "osteoporosis", "cardiovascular", "arterial calcification", "coronary artery calcium", "osteocalcin", "matrix gla protein", "warfarin", "blood clotting", "nocturnal leg cramps", "calcium", "vitamin d3", "bone health", "arterial stiffness", "fracture risk", "postmenopausal", "natto", "fermented foods"]
-summary: "Vitamin K is a group of fat-soluble vitamins sharing a common 2-methyl-1,4-naphthoquinone ring structure. The designation \"K\" comes from the German word \"Koagulation,\" reflecting its discovery in the 1920s by Danish biochemist Henrik Dam as an anti-hemorrhagic factor essential for blood clotting. In 1943, Dam and American biochemist Edward Doisy shared the Nobel Prize in Physiology or Medicine for discovering vitamin K and elucidating its chemical structure."
+summary: "Reference on vitamin K: bone health, cardiovascular health, nocturnal leg cramps. Older adults, postmenopausal women. Forms K1, K2 MK-7 (90-375 mcg/day), K2 MK-4 (45 mg pharmacological). Avoid if on warfarin without medical supervision. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/vitamin-k-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/vitamin-k-benefits-forms-dosing-and-side-effects)*

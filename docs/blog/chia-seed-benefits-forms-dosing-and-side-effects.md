@@ -5,7 +5,7 @@ publishedAt: "2024-05-24T09:51:25Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["chia", "chia seed", "omega-3", "fiber", "blood sugar", "weight loss", "gut health", "heart health", "blood pressure", "triglycerides", "cholesterol", "inflammation", "antioxidant", "calcium", "magnesium", "phosphorus", "iron", "zinc", "manganese", "protein", "prebiotic", "diabetes", "insulin resistance", "cardiovascular", "bone density", "microbiome"]
-summary: "Chia seeds are the small, edible seeds of Salvia hispanica L., a flowering plant in the Lamiaceae (mint) family native to central Mexico and Guatemala. These oval-shaped seeds typically measure approximately 2.1 mm in length, 1.3 mm in width, and 0.8 mm in thickness, and display a mottled appearance ranging from black and gray to white. Despite their diminutive size, chia seeds are among the most nutrient-dense foods available, providing exceptionally high concentrations of dietary fiber, plant-based omega-3 fatty acids, complete protein, and essential minerals per serving."
+summary: "Reference on chia seeds: high fiber, plant-based omega-3 (ALA), blood sugar, blood pressure, gut and bone health. Dose 1-2 tbsp/day; soak before eating to avoid choking. Caution if kidney stone history (oxalates). Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/chia-seed-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/chia-seed-benefits-forms-dosing-and-side-effects)*

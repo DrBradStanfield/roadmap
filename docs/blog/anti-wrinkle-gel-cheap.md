@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=jeE9B8ChudI"
 publishedAt: "2024-11-13T03:38:58Z"
 tags: ["Skin Health"]
 keywords: ["aging","collagen","hyaluronic acid","photoaging","retinoid","retinol","skin","sunscreen","tretinoin","uv","vitamin a","wrinkles"]
-summary: "The top nightly anti-wrinkle treatment is cheap, safe, and backed by decades of clinical research. In this blog post, I'll explain what this treatment is, the recent advances that have made it even better, and show you the evidence that it works. Plus, I'll walk you through my simple nightly skin-care routine that you can use to keep your skin healthy and youthful."
+summary: "Dr Brad's retinoids post: tretinoin and adapalene are the most evidence-backed nightly anti-wrinkle treatments, affordable and available over-the-counter. Covers photoaging, collagen loss, wrinkles, vitamin A, alpha hydroxy acids, skincare routine."
 ---
 
 The top nightly anti-wrinkle treatment is cheap, safe, and backed by decades of clinical research.

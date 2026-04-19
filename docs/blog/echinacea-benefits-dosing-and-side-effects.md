@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["echinacea", "echinacea purpurea", "echinacea angustifolia", "echinacea pallida", "immune", "cold", "flu", "inflammation", "anxiety", "upper respiratory tract infection", "cichoric acid", "alkamides", "coronavirus", "antiviral", "immune system"]
-summary: "Echinacea — commonly known as purple coneflower — is a group of nine related plant species indigenous to North America. Three species have been used medicinally and are found in dietary supplements: Echinacea purpurea, E. angustifolia, and E. pallida. The plant was originally discovered and used by Native Americans for respiratory tract infections, tooth pain, and snakebite. Today, echinacea is primarily promoted as a dietary supplement for the common cold and other upper respiratory tract infections, based on the hypothesis that certain species may stimulate the immune system."
+summary: "Reference on echinacea: cold prevention, upper respiratory infections, immune support. E. purpurea aerial extract most studied; ~900 mg/day. Avoid with autoimmune disease or immunosuppressants. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/echinacea-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/echinacea-benefits-dosing-and-side-effects)*

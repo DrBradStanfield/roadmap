@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=T5oaU73bJ_Y"
 publishedAt: "2025-10-30T21:45:08Z"
 tags: ["Diet","General Health","Preventative Care","Research"]
 keywords: ["blood sugar","diabetes","exercise","glp-1","inflammation","ldl","muscle","obesity","vitamin d","weight loss"]
-summary: "It’s GLP-1 medications. I'm not going to keep you guessing. The FDA recently approved these medications for the treatment of fatty liver. But which GLP-1 medication is best? How do you minimize side effects? And no medication is ever a replacement for a great diet, so what’s the optimal diet to reverse fatty liver?"
+summary: "Dr Brad’s fatty liver post: FDA-approved semaglutide (Wegovy) resolves NAFLD/MASH in ~63% of patients; tirzepatide may be more effective. Covers GLP-1 side effects, muscle loss risk, protein intake 1.2g/kg, resistance exercise, black coffee, vitamin D, and LDL management."
 ---
 
 It’s GLP-1 medications. I'm not going to keep you guessing. The FDA recently approved these medications for the treatment of fatty liver. But which GLP-1 medication is best? How do you minimize side effects? And no medication is ever a replacement for a great diet, so what’s the optimal diet to reverse fatty liver?

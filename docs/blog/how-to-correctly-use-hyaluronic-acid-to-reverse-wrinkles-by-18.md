@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=b9tGX9FTnPI"
 publishedAt: "2025-04-24T01:49:02Z"
 tags: ["Research","Skin Health","General Health"]
 keywords: ["aging","hyaluronic acid","skin","wrinkles"]
-summary: "It sounds too good to be true: that simply taking a supplement can reverse skin wrinkles. So is this really possible? Well, after some initial controversy with Hyaluronic Acid supplements, it looks like the answer is a resounding yes—but only if it’s used correctly."
+summary: "Dr Brad’s hyaluronic acid post: oral HA supplements reduce wrinkles by up to 18.8% in RCTs despite only 0.2% bioavailability — gut bacteria metabolites drive the effect, not direct absorption. Covers sodium hyaluronate 200mg, molecular weight myth, skin aging, wrinkles, safety."
 ---
 
 It sounds too good to be true: that simply taking a supplement can reverse skin wrinkles. So is this really possible? Well, after some initial controversy with Hyaluronic Acid supplements, it looks like the answer is a resounding yes—but only if it’s used correctly.

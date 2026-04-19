@@ -6,7 +6,7 @@ type: "reference"
 tags: ["Supplements"]
 keywords: ["phosphatidylserine", "cognitive", "brain health", "memory", "cortisol", "exercise", "dementia", "alzheimer", "depression", "anxiety", "choline", "phosphatidylcholine", "citicoline", "aging", "longevity", "inflammation", "dha", "omega-3", "fish oil"]
 product: "microvitamin"
-summary: "Phosphatidylserine (PS) is a phospholipid — a fatty substance that forms a critical structural component of cell membranes in all living organisms. It belongs to the glycerophospholipid class, characterized by a glycerol backbone linked to two fatty acid chains, a phosphate group, and a serine amino acid head group. This structure distinguishes it from other major phospholipids such as phosphatidylcholine (which has a choline head group) and phosphatidylethanolamine (which has an ethanolamine head group)."
+summary: "Reference on phosphatidylserine (PS): memory, cognitive decline, stress, cortisol reduction. Older adults with memory concerns; athletes managing exercise stress. Soy/sunflower forms (100-300 mg/day); PS-DHA conjugate shows more promise. Caution with blood thinners. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/phosphatidylserine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/phosphatidylserine-benefits-forms-dosing-and-side-effects)*

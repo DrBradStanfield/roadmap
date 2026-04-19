@@ -5,7 +5,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["omega-3", "fish oil", "epa", "dha", "cardiovascular", "triglycerides", "inflammation", "brain health", "heart attack", "stroke", "cholesterol", "ldl", "hdl", "blood pressure", "depression", "anxiety", "cognitive", "alzheimer", "dementia", "diabetes", "insulin resistance", "arthritis", "dry eye", "cancer", "pregnancy", "sleep", "migraine", "aging", "longevity", "muscle", "krill oil", "algal oil", "dpa"]
-summary: "Omega-3 fatty acids are a family of polyunsaturated fatty acids (PUFAs) characterized by a carbon-carbon double bond located three carbons from the methyl end of the fatty acid chain. The three omega-3s of greatest clinical importance are alpha-linolenic acid (ALA, 18 carbons), eicosapentaenoic acid (EPA, 20 carbons), and docosahexaenoic acid (DHA, 22 carbons)."
+summary: "Reference on omega-3 (fish oil): heart health, triglyceride reduction, brain and cognitive benefits, EPA vs DHA distinction, oily fish vs supplement dosing, and safety. Covers who benefits most — cardiovascular disease, high triglycerides, brain health. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/omega-3-fish-oil-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/omega-3-fish-oil-benefits-forms-dosing-and-side-effects)*

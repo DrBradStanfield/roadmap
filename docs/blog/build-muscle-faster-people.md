@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=EltoTYKvVoM"
 publishedAt: "2024-08-29T19:37:29Z"
 tags: ["Exercise"]
 keywords: ["exercise","fiber","muscle","resistance training","sleep"]
-summary: "Imagine building muscle faster than 99% of people, training smarter—not harder—by following the recommendations of leading exercise scientists like Dr. Mike Israetel and Professor Brad Schoenfeld. In this post, I'll walk you through 10 of the most effective, evidence-based strategies they've developed to help you build muscle faster than you ever thought possible. And this isn't just about looking good—it's about your long-term health too. A growing body of evidence suggests that higher muscle strength is associated with lower all-cause death rates \\[1\\]. So, let's dive into these 10 strategies."
+summary: "Dr Brad's muscle building post: 10 evidence-based strategies including training within MRV, 10-20 sets/week per muscle group, 2+ min rest intervals, full range of motion, slow eccentric phase, progressive overload, 1.6g protein/kg/day, and periodization. For gym-goers and resistance training."
 ---
 
 Imagine building muscle faster than 99% of people, training smarter—not harder—by following the recommendations of leading exercise scientists like Dr. Mike Israetel and Professor Brad Schoenfeld.

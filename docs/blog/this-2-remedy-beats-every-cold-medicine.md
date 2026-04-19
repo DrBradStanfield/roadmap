@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Pi7syWem5CM"
 publishedAt: "2026-04-16T12:00:00Z"
 tags: ["Supplements", "Research", "General Health"]
 keywords: ["cold", "flu", "honey", "iodine", "immune", "inflammation", "vitamin c", "vitamin d", "zinc"]
-summary: "Evidence-based review of three cheap cold remedies that outperform most commercial cold medicines. Zinc acetate or gluconate lozenges (dissolved in mouth, not swallowed) shortened colds by ~33% in meta-analyses when started within 24 hours. Hypertonic saline nasal irrigation supplies chloride ions that help nasal cells produce antiviral hypochlorous acid, reducing cold duration by ~2 days in RCTs. Honey reliably improved cough frequency, severity, and overall symptoms across 14 trials. Also covers emerging evidence on nitric oxide nasal spray and povidone-iodine. Practical dosing: zinc lozenges every 2 hours while awake (>75mg/day), saline rinse several times daily, honey before bed."
+summary: "Dr Brad's cold remedies post: zinc lozenges, hypertonic saline rinse, and honey outperform most OTC cold medicines. Zinc acetate/gluconate >75mg/day shortens colds ~33%; saline cuts duration ~2 days; honey eases cough."
 ---
 
 ## Zinc Lozenges: The Accidental Discovery

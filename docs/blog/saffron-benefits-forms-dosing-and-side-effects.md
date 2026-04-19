@@ -5,7 +5,7 @@ publishedAt: "2025-09-28T09:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["saffron", "crocin", "safranal", "picrocrocin", "crocetin", "depression", "mood", "anxiety", "eye health", "cognitive", "brain health", "alzheimer", "sleep", "insomnia", "melatonin", "weight loss", "inflammation", "antioxidant", "age-related macular degeneration", "lutein", "zeaxanthin"]
-summary: "Saffron is a spice derived from the dried stigmas of the crocus flower (Crocus sativus), a sterile, fall-blooming perennial in the Iridaceae family. The plant produces vibrant purple flowers, from which only the central red stigmas are harvested entirely by hand — a process requiring roughly 75,000 to 150,000 flowers per kilogram of spice, making saffron the most expensive culinary ingredient by weight. Iran dominates global production, contributing over 85-90% of world supply, with other notable producers including Afghanistan, India (Kashmir), Greece, and Spain."
+summary: "Reference on saffron: mood support, depression, anxiety, sleep, eye health (macular degeneration), cognitive decline. Adults with mild-to-moderate depression or poor sleep. Standardized extracts (Affron, Safr'Inside); typical doses 28-30 mg/day. Caution with blood thinners. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/saffron-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/saffron-benefits-forms-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ publishedAt: "2024-02-04T08:47:08Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["alpha lipoic acid", "antioxidant", "blood sugar", "diabetes", "insulin resistance", "neuropathy", "inflammation", "weight loss", "nerve pain", "peripheral neuropathy", "brain health", "alzheimer", "cognitive", "liver disease", "skin", "coq10", "vitamin c", "omega-3", "fish oil", "epa", "dha"]
-summary: "Alpha-lipoic acid (ALA), also known as lipoic acid or thioctic acid, is a sulfur-containing compound naturally produced in the body. It functions as a cofactor for mitochondrial enzymes — specifically pyruvate dehydrogenase and alpha-ketoglutarate dehydrogenase — that are essential for converting glucose into cellular energy (ATP). Unlike most antioxidants, alpha-lipoic acid is both water-soluble and fat-soluble, meaning it can function in virtually every tissue and cellular compartment in the body."
+summary: "Reference on alpha-lipoic acid (ALA): nerve pain, blood sugar control, weight loss. Best evidence for diabetic neuropathy and insulin sensitivity. Forms: racemic or R-ALA, 300-1800 mg/day. Heartburn common. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/alpha-lipoic-acid-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/alpha-lipoic-acid-benefits-forms-dosing-and-side-effects)*

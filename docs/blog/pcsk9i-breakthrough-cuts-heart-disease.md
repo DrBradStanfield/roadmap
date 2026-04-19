@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=iTgNqFNW6n0"
 publishedAt: "2025-12-16T20:07:50Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["atherosclerosis","cardiovascular","cholesterol","diabetes","exercise","fiber","heart attack","ldl","pcsk9","psyllium","statin","stroke"]
-summary: "A revolutionary new approach to cholesterol-lowering has just changed the game. For decades, we’ve known that LDL cholesterol plays a central role in heart disease. But recent breakthroughs have taken us far beyond statins—into the world of gene-guided therapies that can slash heart attack and stroke risk by double digits. In this article, we’ll explore the decades of science that led to this moment, the trials that proved it works, and what this means for the future of heart disease prevention."
+summary: "Dr Brad’s PCSK9 inhibitor post: injectable evolocumab cuts first heart attack and stroke risk by 25% (VESALIUS-CV), and oral enlicitide cuts LDL ~58% in familial hypercholesterolaemia. Covers statins, LDL, cholesterol, cardiovascular primary prevention."
 ---
 
 A revolutionary new approach to cholesterol-lowering has just changed the game. For decades, we’ve known that LDL cholesterol plays a central role in heart disease. But recent breakthroughs have taken us far beyond statins—into the world of gene-guided therapies that can slash heart attack and stroke risk by double digits.

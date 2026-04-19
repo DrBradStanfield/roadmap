@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=d1rs0DqKSJQ"
 publishedAt: "2025-09-15T00:17:53Z"
 tags: ["Exercise"]
 keywords: ["blood pressure","blood sugar","cholesterol","creatine","exercise","iron","muscle","rapamycin","resistance training","strength training","tmg"]
-summary: "Don’t be like health guru Bryan Johnson, who seemingly repeated this workout each week because it was scientifically “the best.” That’s how an extremely well-written article by coach Steve Magness on exercise training history finishes. This article provides a wonderful overview of the history of exercise training and the lessons learned over the decades. I want to share some of the insights with you, so we can make sure we’re maximizing our benefits from our own exercise plans in the limited time we have. Then I’ll share whether I agree with his critique of Bryan Johnson or not."
+summary: "Dr Brad's exercise training post: variety, recovery, and power training matter more than any single \"best\" workout. Covers resistance and endurance combo, exercise snacks, 6 min/day vigorous activity reducing mortality, and power training for aging adults."
 ---
 
 Don’t be like health guru Bryan Johnson, who seemingly repeated this workout each week because it was scientifically “the best.”

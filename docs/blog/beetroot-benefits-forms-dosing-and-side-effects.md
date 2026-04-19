@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["beetroot", "beet juice", "nitrate", "nitric oxide", "blood pressure", "hypertension", "exercise", "endurance", "cardiovascular", "heart health", "inflammation", "antioxidant", "betalains", "muscle", "strength training", "resistance training", "aging", "longevity", "migraine", "kidney", "cognitive", "brain health", "betaine"]
-summary: "Beetroot (Beta vulgaris) is a root vegetable that has become one of the most widely researched dietary sources of inorganic nitrate. Beetroot naturally contains nitrate, which the body converts to the vasodilator nitric oxide (NO) through a two-step process: bacteria in the oral cavity first reduce dietary nitrate (NO₃⁻) to nitrite (NO₂⁻), which is then converted to nitric oxide in the stomach and vasculature under acidic or hypoxic conditions. This nitrate-nitrite-NO pathway is distinct from the classical L-arginine/endothelial nitric oxide synthase (eNOS) pathway, and provides an alternative route for NO production that is particularly active when oxygen levels are low — precisely when vasodilation is most needed."
+summary: "Reference on beetroot (beet juice): blood pressure, exercise endurance. For hypertension or heart disease. Juice or concentrate, 300-600 mg nitrate/day, 2-3 hrs before exercise. Nitrate content varies by product. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/beetroot-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/beetroot-benefits-forms-dosing-and-side-effects)*

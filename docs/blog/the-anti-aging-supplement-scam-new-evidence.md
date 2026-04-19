@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Y28TiY5muIo"
 publishedAt: "2026-04-09T12:00:00Z"
 tags: ["Supplements", "Research"]
 keywords: ["aging", "anti-aging", "fish oil", "lifespan", "longevity", "nad+", "rapamycin", "resveratrol", "skin"]
-summary: "This article examines the NIH's Interventions Testing Program (ITP), the most rigorous longevity testing program in the world, which tests compounds across three independent lab sites simultaneously. The 2026 ITP results showed that all 11 compounds tested — including astaxanthin at lower doses and AKG (alpha-ketoglutarate) — failed to extend mouse lifespan. AKG failed twice at different starting ages, undermining Rejuvant's $80/month supplement claims. The article traces the pattern of supplement hype cycles from resveratrol to NR to astaxanthin, and notes that only prescription drugs (rapamycin, acarbose, canagliflozin, 17-alpha-estradiol) have shown reproducible lifespan extension in the ITP."
+summary: "Dr Brad's anti-aging supplement skepticism post: most longevity supplements (AKG, resveratrol, NR, fish oil, astaxanthin) failed to extend lifespan in the ITP's 2026 results. Only prescription drugs (rapamycin, acarbose, canagliflozin) have shown reproducible lifespan extension."
 ---
 
 ## The Program Nobody Talks About

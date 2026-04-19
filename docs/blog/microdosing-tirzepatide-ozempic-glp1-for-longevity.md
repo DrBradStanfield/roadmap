@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=4FJsXRYOMpc"
 publishedAt: "2025-10-22T04:35:09Z"
 tags: ["Preventative Care"]
 keywords: ["aging","alzheimer","anti-aging","blood pressure","caloric restriction","dementia","diabetes","glp-1","hormone","inflammation","kidney","lifespan","longevity","metformin","muscle","peptide","rapamycin","weight loss"]
-summary: "Longevity influencer Bryan Johnson stirred up a ton of interest when he started a microdosing experiment about a year ago \\[1\\]. His experiment had some unexpected results — as we’ll see in a minute. And it helped fuel the exploding microdosing trend. So let’s take a look at the logic behind microdosing GLP-1 and GIP meds (the combination found in Tirzepatide), and then address the crucial question: Is this even a good idea?"
+summary: "Dr Brad’s GLP-1 microdosing post: not recommended for healthy non-obese non-diabetic adults — benefits are hypothetical, muscle loss risk is real. Covers Ozempic, tirzepatide, semaglutide, weight loss, longevity, inflammation, calorie restriction."
 ---
 
 Longevity influencer Bryan Johnson stirred up a ton of interest when he started a microdosing experiment about a year ago \[1\].

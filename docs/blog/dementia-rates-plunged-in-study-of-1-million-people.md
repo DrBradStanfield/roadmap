@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=dpnYzGyL7qY"
 publishedAt: "2025-11-11T23:54:44Z"
 tags: ["Preventative Care"]
 keywords: ["aging","alzheimer","antioxidant","blood pressure","brain health","cholesterol","cognitive","creatine","dementia","diabetes","exercise","ezetimibe","hdl","inflammation","ldl","obesity","pcsk9","statin","tmg"]
-summary: "A new study of over 1 million people has found impressive dementia risk reductions linked to cholesterol. But there’s been a huge controversy surrounding how we should think about cholesterol and brain health. Is lowering our blood cholesterol levels helpful? Or actually harmful? This new study gives us fresh data that helps clarify what’s going on. And in this article, we’ll also cover the key risk factors for dementia that you can do something about — starting today."
+summary: "Dr Brad’s dementia prevention post: long-term LDL lowering strongly protects against dementia. Covers statins, ezetimibe, PCSK9 inhibitors, 1M-person Mendelian randomization study, Alzheimer’s, vascular dementia, hearing loss, depression, creatine, TMG, multivitamin."
 ---
 
 A new study of over 1 million people has found impressive dementia risk reductions linked to cholesterol.

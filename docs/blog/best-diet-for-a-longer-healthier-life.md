@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=6k5q80tGIPg"
 publishedAt: "2025-03-11T22:57:23Z"
 tags: ["Diet","General Health","Research"]
 keywords: ["ala","blood pressure","calcium","cardiovascular","dha","diabetes","epa","exercise","fiber","gut health","inflammation","iron","kidney","magnesium","muscle","obesity","olive oil","omega-3","potassium","skin","stroke","vitamin b12","vitamin d","weight loss","zinc"]
-summary: "How do we know, truly know, what the best diet is for a longer, healthier life? Well instead of guessing, we can engineer the best diet from first principles thinking. First principles thinking cuts through the noise by focusing on the most basic truths. And when we get this right, we can add 7.3 healthy years to our life \\[1\\]. In this article, I’ll reveal three foundational principles that make achieving this goal not just possible, but straightforward."
+summary: "Dr Brad’s best diet post: optimize around 3 principles — essential vitamins/minerals (potassium, magnesium), 1.6g/kg protein favoring plants, and high fiber. Legumes top the list. Avoid processed carbs, sugar, saturated fat, and excess salt."
 ---
 
 How do we know, truly know, what the best diet is for a longer, healthier life?

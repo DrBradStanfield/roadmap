@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["lycopene", "antioxidant", "prostate", "cardiovascular", "heart health", "blood pressure", "cholesterol", "ldl", "skin", "uv", "photoaging", "wrinkles", "tomato", "carotenoid", "cancer", "prostate cancer", "lung cancer", "inflammation", "beta-carotene", "lutein", "zeaxanthin", "vitamin c", "vitamin e", "selenium", "statin", "spf", "sunscreen", "aging", "longevity", "mediterranean diet", "olive oil"]
-summary: "Lycopene is a fat-soluble red pigment and carotenoid antioxidant with the molecular formula C40H56 and a molecular weight of 536.9 g/mol. It is an acyclic isoprenoid consisting of eight isoprene units and 11 conjugated double bonds, and is one of the most potent biological antioxidants identified — with a singlet oxygen quenching capacity approximately twice that of beta-carotene and ten times greater than alpha-tocopherol (vitamin E). Unlike provitamin A carotenoids such as beta-carotene, lycopene is a non-provitamin A carotenoid: it cannot be converted to vitamin A in the human body because it lacks the cyclic beta-ionone rings required for retinal conversion."
+summary: "Reference on lycopene: antioxidant, prostate cancer, heart health, blood pressure, skin UV protection, male infertility. Tomato oleoresin or synthetic forms, 6-25 mg/day by indication; always take with fat. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/lycopene-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/lycopene-benefits-forms-dosing-and-side-effects)*

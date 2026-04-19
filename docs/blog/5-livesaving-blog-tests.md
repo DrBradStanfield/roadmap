@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=snAnrbt_JQo"
 publishedAt: "2024-09-04T05:32:23Z"
 tags: ["Preventative Care"]
 keywords: ["atherosclerosis","blood pressure","blood sugar","cardiovascular","cholesterol","cognitive","creatinine","diabetes","exercise","ezetimibe","glp-1","hba1c","hdl","heart attack","hormone","insulin resistance","kidney","ldl","metformin","muscle","obesity","pcsk9","potassium","prostate","psa","psyllium","statin","stroke","testosterone","triglycerides","vitamin d"]
-summary: "Ever wonder if your annual check-up is catching all the right things? What if you're missing a crucial blood test that could have easily prevented a serious health issue like a heart attack? In this blog post, I'll reveal 5 lifesaving blood tests that everyone should get, plus another 4 that certain groups of people should also consider. And if one of these tests reveals something concerning, don't worry - I'll guide you through the next steps to protect your health. Plus, I'll explore whether specific blood tests can help with early cancer detection and what you need to know about them."
+summary: "Dr Brad's blood tests post: recommends Lp(a), lipid panel (LDL/ApoB), HbA1c, kidney function, and full blood count for all adults; PSA for men; thyroid and vitamin D only if symptomatic. Covers LDL targets, statins, pre-diabetes, cardiovascular risk."
 ---
 
 Ever wonder if your annual check-up is catching all the right things? What if you're missing a crucial blood test that could have easily prevented a serious health issue like a heart attack?

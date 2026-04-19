@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=X8uYpZrhaGY"
 publishedAt: "2025-05-22T01:05:30Z"
 tags: ["Diet"]
 keywords: ["blood pressure","cardiovascular","cholesterol","exercise","heart attack","hypertension","ldl","muscle","osteoporosis","prostate","sleep","stroke"]
-summary: "So is coffee good for us or not? There have been troubling worries raised in the past — especially about risks involving cancer, heart disease, and the liver. But the research over the past couple of decades has flipped the script when it comes to coffee and our health. And this latest study finally puts to rest one of the most common concerns I hear all the time from my patients, especially when they’re older."
+summary: "Dr Brad’s coffee post: evidence supports 2-3 cups of filtered coffee daily as beneficial — lowers risk of heart disease, stroke, atrial fibrillation, liver disease, and cancer. Covers caffeine timing, cholesterol, sleep, and safe daily intake of up to 400mg."
 ---
 
 So is coffee good for us or not? There have been troubling worries raised in the past — especially about risks involving cancer, heart disease, and the liver. But the research over the past couple of decades has flipped the script when it comes to coffee and our health. And this latest study finally puts to rest one of the most common concerns I hear all the time from my patients, especially when they’re older.

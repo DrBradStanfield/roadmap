@@ -6,7 +6,7 @@ publishedAt: "2025-03-26T19:59:34Z"
 tags: ["Supplements","Research"]
 keywords: ["aging","brain health","cognitive","creatine","creatinine","exercise","gout","hormone","kidney","longevity","muscle","resistance training","sleep","testosterone","triglycerides","uric acid"]
 product: "microvitamin-plus"
-summary: "This decades-old supplement is quietly revolutionizing the longevity space. While fitness enthusiasts have sworn by creatine for building muscle and strength, emerging research shows it may be connected to aging in other surprising ways. In this article, I’ll break down the cutting-edge studies transforming our understanding of creatine’s powerful effects beyond just muscle building."
+summary: "Dr Brad’s creatine post: recommends 5g daily creatine monohydrate for muscle, cognition, and healthy aging. Covers memory benefits in older adults and women, osteosarcopenia, cardiovascular markers, hair loss and kidney safety myths, loading phase myth."
 ---
 
 This decades-old supplement is quietly revolutionizing the longevity space. While fitness enthusiasts have sworn by creatine for building muscle and strength, emerging research shows it may be connected to aging in other surprising ways.

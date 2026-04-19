@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Sdjegey8Lhw"
 publishedAt: "2025-07-17T22:34:02Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","creatine","exercise","muscle","resistance training","strength training","tmg"]
-summary: "A world-renowned researcher, Dr. Brad Schoenfeld, recently highlighted a study he described as “the closest thing we have to the fountain of youth” \\[1\\]. This article explores that study and Dr. Schoenfeld’s commentary, because most people drastically underestimate just how significant a difference exercise makes. The numbers in the new study might surprise you—they certainly surprised me. They relate to how adults in their late 60s who exercise compare to those in their 20s who don’t."
+summary: “Dr Brad’s resistance training post: 70-year-olds who strength train maintain physical function comparable to non-training adults in their 20s. Covers muscle loss, aging, sit-to-stand test, neuromuscular adaptation, muscle power, and exercise guidelines.”
 ---
 
 A world-renowned researcher, Dr. Brad Schoenfeld, recently highlighted a study he described as “the closest thing we have to the fountain of youth” \[1\].

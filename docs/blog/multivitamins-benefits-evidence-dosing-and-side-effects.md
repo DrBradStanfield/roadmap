@@ -5,7 +5,7 @@ publishedAt: "2025-04-01T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["multivitamin", "vitamin", "mineral", "vitamin a", "vitamin b1", "vitamin b2", "vitamin b3", "vitamin b5", "vitamin b6", "vitamin b7", "vitamin b9", "vitamin b12", "vitamin c", "vitamin d", "vitamin d3", "vitamin e", "vitamin k", "folate", "folic acid", "magnesium", "zinc", "selenium", "iron", "calcium", "potassium", "iodine", "boron", "chromium", "copper", "manganese", "cognitive", "brain health", "aging", "longevity", "cancer", "cardiovascular", "heart attack", "stroke", "dementia", "alzheimer", "depression", "diabetes", "blood pressure", "cholesterol", "bone density", "osteoporosis", "inflammation", "eye health", "sleep", "choline", "citicoline"]
-summary: "Multivitamin/mineral (MVM) supplements are dietary products containing combinations of essential vitamins and minerals intended to compensate for potential nutritional shortfalls in the diet. They are the most commonly consumed dietary supplement in the United States, taken by approximately one-third of all adults and one-quarter of children and adolescents. U.S. sales of all dietary supplements totaled an estimated $55.7 billion in 2020, of which $8.0 billion was for MVMs and multivitamins."
+summary: "Reference on multivitamins: nutrient gaps, memory, bone and immune health. For adults with poor diet or deficiency risk. COSMOS trial found cognitive benefit in older adults; mixed evidence for heart disease, cancer. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/multivitamins-benefits-evidence-dosing-and-side-effects](https://drstanfield.com/blogs/articles/multivitamins-benefits-evidence-dosing-and-side-effects)*

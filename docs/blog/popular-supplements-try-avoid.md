@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=eeYQk7iaXo0"
 publishedAt: "2024-08-11T19:43:34Z"
 tags: ["Supplements"]
 keywords: ["aging","antioxidant","blood sugar","calcium","cardiovascular","cholesterol","cognitive","coq10","creatine","curcumin","diabetes","exercise","folate","folic acid","glycine","inflammation","iron","kidney","longevity","lung cancer","metformin","muscle","nad","niacin","nmn","osteoporosis","oxidative stress","pcsk9","resveratrol","sleep","statin","testosterone","vitamin a","vitamin b3","vitamin c","vitamin d","vitamin e","zinc"]
-summary: "Supplements are very popular the world over and range from simple vitamins and minerals to exotic plants and extracts to untested mixtures of unknown ingredients. I'm not against taking supplements. Far from it; in fact, here's the list of everything I take myself. What I am against is supplements that have either not shown any benefit in clinical trials or that have drawbacks that far outweigh their benefits. Today's list is nine of the second category: supplements I would never take because the risks far outweigh the benefits, as shown in human clinical trials."
+summary: "Dr Brad's supplements-to-avoid post: 9 supplements with risks outweighing benefits per clinical trials. Covers antioxidants (vitamins A, C, E), CoQ10, resveratrol, metformin (non-diabetics), iron, calcium, high-dose folic acid, niacin, and fat burners."
 ---
 
 Supplements are very popular the world over and range from simple vitamins and minerals to exotic plants and extracts to untested mixtures of unknown ingredients.

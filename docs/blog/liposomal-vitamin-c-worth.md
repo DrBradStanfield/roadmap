@@ -4,7 +4,7 @@ url: "https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth"
 publishedAt: "2024-12-09T15:30:08Z"
 tags: ["Supplements"]
 keywords: ["antioxidant","atherosclerosis","cardiovascular","cholesterol","collagen","iron","kidney","ldl","muscle","oxidative stress","skin","triglycerides","ultrasound","uv","vitamin c"]
-summary: "How often have you heard the advice that, when you're sick, you should drink orange juice? There's a reason behind that advice: oranges are packed with vitamin C. They aren't the only foods to give you the essential vitamin, but they're one of the most readily accessible and, critically, delicious for children."
+summary: "Dr Brad's liposomal vitamin C post: not worth the cost — absorption is higher but no proven clinical benefit over regular vitamin C. Covers liposome mechanism, absorption studies, cataract/cardiovascular claims, cost comparison, kidney stones, scurvy, antioxidant."
 ---
 
 How often have you heard the advice that, when you're sick, you should drink orange juice? There's a reason behind that advice: oranges are packed with vitamin C.

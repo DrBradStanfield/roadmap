@@ -5,7 +5,7 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["iron", "ferrous sulfate", "ferrous bisglycinate", "ferrous fumarate", "ferrous gluconate", "ferric iron", "heme iron", "carbonyl iron", "ferritin", "hemoglobin", "anemia", "iron deficiency", "fatigue", "pregnancy", "restless legs", "blood donation", "thyroid", "heart failure", "cognitive", "brain health", "depression", "anxiety", "exercise", "athletic performance", "vitamin c", "calcium"]
-summary: "Iron is an essential mineral required in small amounts for a wide range of critical physiological functions. It is a core component of hemoglobin, the erythrocyte (red blood cell) protein responsible for transporting oxygen from the lungs to tissues throughout the body. Iron also forms part of myoglobin, a protein that provides oxygen to muscle tissue, supporting muscle metabolism and healthy connective tissue. Beyond oxygen transport, iron is necessary for physical growth, neurological development, cellular functioning, the synthesis of certain hormones, and the conversion of thyroid hormones — specifically, the conversion of thyroxine (T4) into the biologically active triiodothyronine (T3)."
+summary: "Reference on iron: anemia, fatigue, restless legs, pregnancy, athletic performance. Common in women, adolescent girls, vegetarians, athletes. Ferrous bisglycinate best tolerated; 50-100 mg/day for deficiency. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/iron-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/iron-benefits-forms-dosing-and-side-effects)*

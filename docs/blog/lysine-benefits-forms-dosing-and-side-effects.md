@@ -5,7 +5,7 @@ publishedAt: "2025-01-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["lysine", "l-lysine", "herpes", "cold sores", "collagen", "calcium", "immune", "hair loss", "iron", "sleep", "canker sores", "anxiety", "cortisol", "osteoporosis", "bone density", "arginine", "amino acid"]
-summary: "Lysine (L-lysine) is one of nine essential amino acids that the human body cannot synthesize and must obtain from dietary sources. It plays fundamental roles in protein synthesis, collagen formation, calcium absorption, immune function, and the production of carnitine — a molecule essential for fatty acid metabolism and energy production."
+summary: "Reference on lysine (L-lysine): cold sore prevention, herpes, canker sores, calcium and iron absorption, anxiety, hair loss. Dosing 1-3 g/day for herpes. L-lysine HCl form is 80% actual lysine by weight. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/lysine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/lysine-benefits-forms-dosing-and-side-effects)*

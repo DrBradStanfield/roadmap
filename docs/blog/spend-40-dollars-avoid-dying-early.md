@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=RvosFvR0h3w"
 publishedAt: "2024-10-29T00:20:09Z"
 tags: ["General Health"]
 keywords: ["blood pressure","exercise","hypertension","lifespan","potassium","sleep","stroke","weight loss"]
-summary: "There's a silent killer nearly 50% of people don't know about until it's too late. But here's the good news: You can uncover this risk for only $40 dollars. And here's even better news: There are simple, practical steps you can start taking today to lower your risks and avoid cutting short your lifespan. In this blog post, I'll explain this hidden health risk, why a $40 purchase might be one of the best investments you can make, and the simple, practical steps you can start taking today to take control of your long-term health."
+summary: "Dr Brad's blood pressure post: hypertension can shorten life by 12.2 years and 46% of sufferers don't know they have it. Recommends a ~$40 home monitor plus 5 steps: reduce sodium, DASH diet, limit alcohol, exercise, and weight loss."
 ---
 
 There's a silent killer nearly 50% of people don't know about until it's too late. But here's the good news: You can uncover this risk for only $40 dollars. And here's even better news: There are simple, practical steps you can start taking today to lower your risks and avoid cutting short your lifespan.

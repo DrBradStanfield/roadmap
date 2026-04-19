@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=RZwvaP5--gA"
 publishedAt: "2024-10-22T02:04:46Z"
 tags: ["Skin Health"]
 keywords: ["aging","collagen","retinoid","retinol","skin","spf","sunscreen","tretinoin","uv","vitamin a","vitamin b3","wrinkles","zinc"]
-summary: "Are you tired of spending a fortune on fancy anti-wrinkle products? Well, the most effective one might cost you much less than your morning coffee! In this blog post, we'll dive into why this affordable cream works so well and how you can choose the best version and ingredients for your skin. We'll explore what actually causes our skin to age and wrinkle, look at other anti-wrinkle ingredients that truly deliver results based on human clinical research, and debunk the ones that are just hype. By the end, you'll know exactly why our skin ages and how to combat it effectively without breaking the bank. And it's not just about looking good. How our skin looks reflects our chances of living a long life. \\[1\\]"
+summary: "Dr Brad's anti-wrinkle skin care post: sunscreen is the most effective anti-aging cream, with mineral (zinc oxide) or bemotrizinol options recommended. Covers retinoids (adapalene vs tretinoin), ceramides, niacinamide, AHAs, BHAs, wrinkles, skin aging."
 ---
 
 Are you tired of spending a fortune on fancy anti-wrinkle products? Well, the most effective one might cost you much less than your morning coffee!

@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=cIrRyu5_thc"
 publishedAt: "2026-02-25T02:32:08Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["aging","blood pressure","cardiovascular","cognitive","exercise","muscle","rapamycin"]
-summary: "I honestly can't believe what I've just read. I was going through the nitric oxide supplement literature, and it’s a lot more promising than I’d thought before starting my review—especially since nitric oxide levels decline with age. Then I started looking for a good brand, and I came across Nitralis from a company called DoNotAge. The more I looked, the worse it got. In this article, I’ll break down the research so that if you decide to start taking nitric oxide supplements, you don’t get duped by marketing hype—and you can select a good brand. I’m not affiliated with any nitric oxide supplement brand."
+summary: "Dr Brad’s nitric oxide post: L-arginine and L-citrulline don’t reliably improve performance; beetroot nitrate at 380mg+/day reduces blood pressure. DoNotAge Nitralis is underdosed with a fraudulent trial. Recommends nitrate-rich foods or quality beetroot juice."
 ---
 
 I honestly can't believe what I've just read.  

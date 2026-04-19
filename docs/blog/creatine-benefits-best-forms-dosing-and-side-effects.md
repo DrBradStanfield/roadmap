@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["creatine", "creatine monohydrate", "creatine hydrochloride", "creatine hcl", "bcaa", "branched-chain amino acids", "leucine", "isoleucine", "valine", "muscle", "strength training", "resistance training", "exercise", "cognitive", "brain health", "energy", "sarcopenia", "aging", "longevity", "depression", "sleep", "collagen", "taurine", "hmb", "glutamine", "insulin resistance", "diabetes", "heart health", "cardiovascular", "bone density", "osteoporosis", "fibromyalgia", "weight loss"]
-summary: "Creatine is a non-essential amino acid naturally produced in the human body from other amino acids (arginine, glycine, and methionine), primarily in the kidneys and liver. Approximately 95% of the body's creatine is stored in skeletal muscle tissue, with the remainder distributed across the heart, brain, and other tissues. It plays a critical role in energy metabolism by facilitating the rapid regeneration of adenosine triphosphate (ATP) through the phosphocreatine system — the primary energy pathway for high-intensity, short-duration activities such as weightlifting and sprinting."
+summary: "Reference on creatine: muscle strength, muscle size, sarcopenia, cognitive function under sleep deprivation. Benefits older adults, athletes, and vegetarians. Best form: creatine monohydrate 3-5 g/day. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/creatine-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/creatine-benefits-best-forms-dosing-and-side-effects)*

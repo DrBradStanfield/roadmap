@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=sa2S90cYzzA"
 publishedAt: "2025-02-09T04:39:49Z"
 tags: ["General Health","Diet","Research"]
 keywords: ["calcium","inflammation","stroke","vitamin d3","vitamin k2"]
-summary: "Dental plaque doesn’t just cause cavities and bad breath. Poor oral health has also been linked to serious problems such as heart disease and stroke. In this article, I’ll share the teeth-cleaning routine I give to my patients, based on the latest scientific evidence. This routine involves five key steps to help remove and prevent plaque buildup, reduce the risk of gum disease, and protect overall health. I’ll also discuss why factors like diet, lifestyle habits, and certain nutrients are important for keeping our teeth and gums in top condition."
+summary: "Dr Brad’s dental plaque post: recommends a 5-step oral hygiene routine — floss first, water flosser, 2-3 min brushing, 1500ppm fluoride toothpaste, and dental visits every 6-12 months. Covers gum disease, cavities, PFAS-free floss, electric toothbrush, xylitol, vitamin D3/K2."
 ---
 
 Dental plaque doesn’t just cause cavities and bad breath. Poor oral health has also been linked to serious problems such as heart disease and stroke. In this article, I’ll share the teeth-cleaning routine I give to my patients, based on the latest scientific evidence.

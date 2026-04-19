@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["electrolytes", "sodium", "potassium", "magnesium", "calcium", "chloride", "bicarbonate", "phosphate", "hydration", "exercise", "rehydration", "blood pressure", "hypertension", "heart health", "muscle", "cramps", "dehydration", "hyponatremia", "hyperkalemia", "kidney", "insulin resistance", "diabetes", "bone density", "osteoporosis", "cardiovascular", "strength training", "resistance training", "sleep", "aging", "longevity", "gut health", "mediterranean diet"]
-summary: "Electrolytes are minerals that dissociate into charged ions when dissolved in body fluids, enabling them to conduct electrical signals essential for virtually every physiological process. In the human body, the primary electrolytes are sodium (Na+), potassium (K+), chloride (Cl-), calcium (Ca2+), magnesium (Mg2+), phosphate (PO43-), and bicarbonate (HCO3-). Together, these ions regulate fluid distribution between intracellular and extracellular compartments, generate the electrical gradients that drive nerve impulses and muscle contractions, maintain acid-base balance, and support enzymatic reactions throughout the body."
+summary: "Reference on electrolytes: hydration, muscle cramps, fatigue, heart rhythm, bone health. Key minerals: sodium, potassium, magnesium, calcium. Supplements mainly needed for endurance exercise >90 min or heat exposure. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/electrolytes-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/electrolytes-benefits-dosing-and-side-effects)*

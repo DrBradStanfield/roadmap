@@ -6,7 +6,7 @@ publishedAt: "2025-10-16T20:05:51Z"
 tags: ["Supplements"]
 keywords: ["aging","blood pressure","bmi","bone density","calcium","exercise","heart attack","inflammation","ldl","longevity","muscle","omega-3","vitamin d","vitamin d3"]
 product: "microvitamin"
-summary: "The latest headlines are claiming that a new study shows vitamin D can slow aging. But is that actually what the study shows? What Vitamin D dose should we take? And should we get a Vitamin D blood test? Let’s take a look."
+summary: "Dr Brad’s vitamin D post: the telomere study headline is overblown — 140 base pairs is within measurement error and didn’t improve heart attack or cancer outcomes in VITAL. Covers vitamin D dose (600-1000 IU), routine blood testing, bone density risk at high doses, telomere aging."
 ---
 
 The latest headlines are claiming that a new study shows vitamin D can slow aging.

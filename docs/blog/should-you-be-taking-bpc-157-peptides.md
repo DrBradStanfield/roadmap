@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Y6smr1o-f9o"
 publishedAt: "2025-02-16T20:15:44Z"
 tags: ["Research"]
 keywords: ["betaine","blood sugar","bpc-157","creatine","diabetes","exercise","hormone","inflammation","muscle","peptide","skin"]
-summary: "People are reporting dramatic effects from BPC-157 in terms of injury healing and performance enhancement. So should you start taking it? Let’s take a look at what the scientific evidence says."
+summary: "Dr Brad’s BPC-157 post: skip it — no human RCTs exist, only animal data. Covers injury healing claims, tendon repair, peptide safety unknowns, USADA ban, and proven alternatives (creatine, betaine) for recovery."
 ---
 
 People are reporting dramatic effects from BPC-157 in terms of injury healing and performance enhancement. So should you start taking it? Let’s take a look at what the scientific evidence says.

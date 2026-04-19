@@ -5,7 +5,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["licorice", "DGL", "deglycyrrhizinated licorice", "glycyrrhizin", "glycyrrhizic acid", "glabridin", "heartburn", "GERD", "acid reflux", "gut health", "peptic ulcer", "duodenal ulcer", "gastritis", "Helicobacter pylori", "adrenal", "cortisol", "blood pressure", "hypertension", "hypokalemia", "potassium", "inflammation", "antioxidant", "oral health", "canker sores", "aphthous ulcers", "fatigue"]
-summary: "Licorice root, derived from the perennial plant Glycyrrhiza glabra (from the Greek glykos meaning \"sweet\" and rhiza meaning \"root\"), has been used in traditional medicine for thousands of years. The earliest documented uses date back to approximately 2500 BCE in Assyrian and Egyptian cultures, where it was employed as an expectorant and digestive remedy. By the time of ancient Greek civilization (4th century BCE) and Chinese medicine (documented around 200 BCE), licorice was prescribed for respiratory ailments, sore throats, and gastrointestinal discomfort."
+summary: "Reference on licorice and DGL: heartburn, acid reflux, peptic ulcers, canker sores. DGL is safer; regular licorice raises blood pressure and depletes potassium. Avoid in hypertension, pregnancy, heart disease. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/licorice-and-dgl-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/licorice-and-dgl-benefits-forms-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=OlWlBckB1WE"
 publishedAt: "2026-04-01T19:40:22Z"
 tags: ["Preventative Care","Research"]
 keywords: ["breast cancer","lifespan","lung cancer","mri","stroke","ultrasound"]
-summary: "I recently got a full-body MRI scan, even though the American College of Radiology explicitly advises against it \\[1\\]. There's now a booming industry selling full-body MRI scans directly to the public. Celebrities are endorsing them. Companies have raised hundreds of millions in funding. And the pitch is compelling: catch cancer before it's too late. In this article, I want to explain why the evidence tells a much more complicated story — why it's probably best that you don't get one yourself, and what my results actually showed."
+summary: "Dr Brad's full-body MRI post: advises against routine scans for most people — high incidental finding rates (36%), no lifespan benefit data, and overdiagnosis risk. Covers Prenuvo, ACR guidelines, cancer screening, thyroid overdiagnosis case study."
 ---
 
 I recently got a full-body MRI scan, even though the American College of Radiology explicitly advises against it \[1\].

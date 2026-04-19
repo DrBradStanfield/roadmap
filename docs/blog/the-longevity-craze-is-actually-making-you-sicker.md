@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=4l35bPuNOEs"
 publishedAt: "2025-07-29T23:10:36Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["breast cancer","calcium","cervical","cholesterol","exercise","ldl","longevity","lung cancer","mri","prostate","ultrasound"]
-summary: "There’s an engineering concept that applies here: “the best part is no part. The best process is no process.” That concept was drilled into me during medical school and during my training as a junior doctor. Sometimes the best test is no test, and the best treatment is to avoid an unnecessary one. But that’s not the approach that longevity clinics, which are springing up everywhere, take. Instead, they offer an ever-growing list of tests to assess your health \\[1\\]. Behind it all, the logic feels compelling. The more information we gather, the better our health outcomes can be. We’ll spot all the problems and be able to fix them before they get worse. But the picture is quite different in reality. More testing and more information can often lead to worse health outcomes. When I tell my patients this, most are skeptical. So I tell them about South Korea."
+summary: “Dr Brad’s longevity clinic post: aggressive screening (full-body MRI, excess lab tests) often harms more than it helps via overdiagnosis and cascade of care. Covers thyroid cancer, incidental findings, prostate screening, evidence-based guidelines.”
 ---
 
 There’s an engineering concept that applies here: “the best part is no part. The best process is no process.”

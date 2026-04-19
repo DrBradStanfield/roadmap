@@ -5,7 +5,7 @@ publishedAt: "2025-06-17T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["lithium", "lithium orotate", "lithium aspartate", "lithium carbonate", "lithium citrate", "cognitive", "brain health", "mood", "dementia", "alzheimer", "depression", "anxiety", "longevity", "neuroprotection", "suicide", "bipolar", "aging", "anti-aging", "inflammation", "GSK-3"]
-summary: "Lithium is a naturally occurring alkali metal and trace mineral found in varying concentrations in soil, water, and certain foods. While not classified as an \"essential\" mineral (i.e., no established biological requirement has been proven), lithium has a long history in medicine and an emerging body of evidence suggesting potential benefits at very low doses for mood, cognition, and neuroprotection."
+summary: "Reference on low-dose lithium: mood, depression, dementia, neuroprotection. OTC forms: lithium orotate, aspartate (typically 5mg elemental lithium/day). Distinct from prescription lithium for bipolar disorder. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/lithium-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/lithium-benefits-forms-dosing-and-side-effects)*

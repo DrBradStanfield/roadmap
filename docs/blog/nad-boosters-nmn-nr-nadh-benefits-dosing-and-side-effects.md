@@ -5,7 +5,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["nad+", "nmn", "nicotinamide riboside", "nadh", "niacin", "niacinamide", "nicotinamide mononucleotide", "aging", "longevity", "anti-aging", "energy", "mitochondria", "coq10", "resveratrol", "tmg", "betaine", "insulin resistance", "diabetes", "blood sugar", "cognitive", "brain health", "alzheimer", "dementia", "depression", "cardiovascular", "inflammation", "exercise", "muscle", "sleep", "chronic fatigue", "sarcopenia"]
-summary: "Nicotinamide adenine dinucleotide (NAD) is a coenzyme essential for energy production in mitochondria throughout the body. It exists in two interconvertible forms: NAD+ (the oxidized form, carrying a positive charge) and NADH (the reduced form, with a hydrogen atom attached, making it electrically neutral). NAD+ participates in hundreds of metabolic reactions, including cellular respiration, DNA repair, sirtuin-mediated deacetylation, and regulation of circadian rhythm. Every living cell depends on NAD+ to convert nutrients into usable energy via the electron transport chain."
+summary: "Reference on NAD boosters (NMN, NR, NADH): energy, fatigue, muscle, cognitive function. Adults with chronic fatigue, insulin resistance, or age-related decline. NMN 250-900mg/day, NR 250-1000mg/day, NADH 5-20mg; human trial results largely disappointing. Cancer and kidney concerns noted. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects)*

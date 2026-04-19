@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=zphjOojmo1M"
 publishedAt: "2026-03-04T00:31:31Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["alzheimer","brain health","cholesterol","cognitive","dementia","diabetes","inflammation","ldl","oxidative stress","sleep"]
-summary: "Right now, more than 7 million Americans are living with Alzheimer's disease. By 2060, that number is projected to nearly double to 13.8 million people. Between 2000 and 2022, deaths from Alzheimer's disease increased by more than 142% \\[1\\]. And Alzheimer's is just one type of dementia. Taking all forms together, there are an estimated 49 million people over 65 worldwide living with dementia \\[2\\]. But currently, there's no cure for dementia, and treatment options are severely limited. Recent FDA-approved medications like donanemab show only modest benefits. They can slow the condition, not stop or reverse it. And they're very expensive and carry risks. This is why prevention has become so crucial. If we can identify modifiable risk factors — things we can actually change in our daily lives — we might be able to delay or prevent dementia before it starts. And that brings us to your morning coffee...."
+summary: "Dr Brad's coffee and dementia post: 2-3 cups/day of caffeinated coffee linked to ~19% lower dementia risk in a 131,821-person study. Covers caffeine mechanism, decaf vs caffeinated, optimal timing, filtered coffee, LDL risk from unfiltered."
 ---
 
 Right now, more than 7 million Americans are living with Alzheimer's disease. By 2060, that number is projected to nearly double to 13.8 million people. Between 2000 and 2022, deaths from Alzheimer's disease increased by more than 142% \[1\].

@@ -6,7 +6,7 @@ publishedAt: "2024-12-31T00:13:37Z"
 tags: ["Supplements"]
 keywords: ["aging","anti-aging","cardiovascular","collagen","exercise","hyaluronic acid","inflammation","longevity","peptide","photoaging","skin","sleep","sunscreen","uv","wrinkles","zinc"]
 product: "microvitamin-plus"
-summary: "One of the only constants in life is aging. The passage of time affects us all, though not always equally; differences in genetics, in exposure to things light ultraviolet radiation and environmental contamination, in our overall health and access to medical care, can all influence how we age. A significant subset of the overall population faces aging with a degree of resistance. It's understandably difficult to see the effects of the passage of time written on our bodies. The beauty industry, built on assuaging this fear, offers thousands of products to help counteract the effects of aging. The trouble is, there's no end to the grifters and profiteers who will happily sell snake oil with bold claims to people desperate to turn back time. The beauty industry is rife with people who make claims on just about everything, many of which are unsubstantiated or blown out of proportion. Without experience..."
+summary: "Dr Brad's skin tightening post: hyaluronic acid and collagen peptides are the only supplements with evidence for reducing wrinkles and improving skin elasticity. Covers sunscreen (zinc oxide), safe vs harmful UV filters, aging skin, photoaging, skin tightening."
 ---
 
 One of the only constants in life is aging. The passage of time affects us all, though not always equally; differences in genetics, in exposure to things light ultraviolet radiation and environmental contamination, in our overall health and access to medical care, can all influence how we age.

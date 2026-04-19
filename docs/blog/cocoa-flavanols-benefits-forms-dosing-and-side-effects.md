@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["cocoa", "cocoa flavanols", "dark chocolate", "epicatechin", "flavanols", "cardiovascular", "blood pressure", "cholesterol", "ldl", "hdl", "triglycerides", "heart health", "cognitive", "brain health", "blood sugar", "insulin resistance", "diabetes", "antioxidant", "inflammation", "stroke", "heart attack", "atherosclerosis", "depression", "anxiety", "skin", "wrinkles", "gut health", "microbiome", "prebiotic", "exercise", "aging", "longevity", "caffeine", "iron", "copper", "magnesium", "calcium"]
-summary: "Cocoa flavanols are a class of polyphenolic antioxidant compounds found naturally in cacao beans, the raw material for cocoa powder and chocolate. Flavanols belong to the broader flavonoid family and can exist as simple monomers (catechins, particularly epicatechin) or as linked polymers known as proanthocyanidins (PACs). Note that flavanols differ from flavonols (such as quercetin), which contain a ketone group and have distinct biological activities."
+summary: "Reference on cocoa flavanols: heart health, blood pressure, cholesterol, blood sugar. Adults seeking cardiovascular support. Standardized extract (200-500 mg/day) preferred; Dutching destroys up to 90% of flavanols. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/cocoa-flavanols-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/cocoa-flavanols-benefits-forms-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["lutein", "zeaxanthin", "meso-zeaxanthin", "eye health", "macular degeneration", "vision", "blue light", "cataracts", "retina", "macula", "carotenoid", "lycopene", "vitamin c", "vitamin e", "zinc", "copper", "omega-3", "fish oil", "dha", "epa", "beta-carotene", "astaxanthin", "saffron", "cognitive", "brain health", "skin", "uv", "photoaging", "inflammation", "antioxidant", "aging", "longevity"]
-summary: "Lutein and zeaxanthin are xanthophyll carotenoid pigments — a subclass of the carotenoid family that also includes beta-carotene and lycopene. Lutein and zeaxanthin share the same molecular formula (C40H56O2) and are structural isomers: lutein has one beta-ionone ring and one epsilon-ionone ring, while zeaxanthin has two beta-ionone rings, differing in the position of a single double bond. A third related compound, meso-zeaxanthin, is a stereoisomer of zeaxanthin that is synthesized locally in the retina from lutein rather than obtained directly from the diet."
+summary: "Reference on lutein and zeaxanthin: eye health, macular degeneration (AMD) prevention and slowing, blue light protection, and cataract risk reduction; food sources (leafy greens, egg yolk); dosing (10mg lutein/2mg zeaxanthin); and evidence quality. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/lutein-and-zeaxanthin-benefits-forms-dosing-and-side-effects)*

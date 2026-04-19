@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=JfMD6nU-hS4"
 publishedAt: "2025-08-14T19:50:15Z"
 tags: ["Diet"]
 keywords: ["blood pressure","bone density","calcium","cardiovascular","fiber","healthspan","heart attack","lifespan","magnesium","mediterranean diet","muscle","olive oil","potassium","psyllium","stroke","weight loss"]
-summary: "When I talk with my patients at the clinic, I see this problem all the time. They feel overwhelmed by conflicting information about a healthy diet. What they’re looking for is a simple, evidence-backed guide to know what to put on their plate. And that’s what the Food Pyramid was supposed to be. But it was actually a bit of a mess, which is why it was finally abandoned. There’s a much better alternative, though. It was developed by scientists at Harvard. And it’s the guide I share with my patients. So let me explain what it says and unpack some of the research that backs it up."
+summary: "Dr Brad’s healthy diet post: recommends Harvard’s Healthy Eating Plate over USDA MyPlate — favors plant-based protein and fatty fish (~1.2g/kg/day), whole grains, olive oil, varied vegetables, and water over dairy. Covers heart disease, blood pressure, weight loss, fiber."
 ---
 
 When I talk with my patients at the clinic, I see this problem all the time. They feel overwhelmed by conflicting information about a healthy diet. What they’re looking for is a simple, evidence-backed guide to know what to put on their plate.

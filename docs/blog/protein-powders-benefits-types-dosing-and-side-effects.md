@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["protein powder", "whey protein", "casein", "pea protein", "soy protein", "rice protein", "collagen", "creatine", "muscle", "strength training", "resistance training", "exercise", "sarcopenia", "weight loss", "obesity", "diabetes", "insulin resistance", "blood sugar", "cardiovascular", "bone density", "aging", "longevity", "amino acids", "leucine", "bcaa", "hemp protein", "egg protein", "plant protein"]
-summary: "Protein is an essential macronutrient required to build, maintain, and repair muscle tissue, and it plays a central role in virtually every metabolic process in the human body. Protein powders offer a concentrated source of protein without the significant saturated fat, cholesterol, or excess carbohydrates that can accompany whole-food protein sources such as meats and dairy. However, protein powders are ultra-processed foods, and the whole foods from which they are derived provide important nutrients beyond protein — including vitamins, minerals, healthful fats, complex carbohydrates, and fiber — that powders typically lack."
+summary: "Reference on protein powders: muscle building, muscle maintenance, sarcopenia prevention, weight management. Older adults, athletes, vegans/vegetarians. Types: whey (fast), casein (slow), pea, soy, rice, collagen. Dosing 0.55-0.80 g/lb for athletes. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects](https://drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects)*

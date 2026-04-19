@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=WAo-f0_s9p0"
 publishedAt: "2025-04-28T17:51:00Z"
 tags: ["General Health","Supplements","Research"]
 keywords: ["aging","berberine","blood sugar","bmi","cardiovascular","cholesterol","diabetes","exercise","ezetimibe","glp-1","hba1c","hdl","ldl","lifespan","metformin","muscle","obesity","pcsk9","prostate","testosterone","triglycerides","weight loss"]
-summary: "It’s been called “nature’s Ozempic.” It’s touted for everything from fighting cancer to alleviating depression. In this article, we’ll separate the marketing hype from the evidence-backed benefits. And we’ll look at the one instance where I recommend Berberine to my patients."
+summary: “Dr Brad’s berberine post: modest evidence for blood sugar and cholesterol in pre-diabetics/type 2 diabetes; not recommended for healthy adults due to possible muscle and testosterone harms. Covers metformin comparison, weight loss, LDL, HbA1c, GLP-1.”
 ---
 
 It’s been called “nature’s Ozempic.” It’s touted for everything from fighting cancer to alleviating depression.

@@ -5,7 +5,7 @@ publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["st johns wort", "hypericum", "hypericum perforatum", "hypericin", "hyperforin", "depression", "mood", "anxiety", "antidepressant", "ssri", "serotonin", "melatonin", "sleep", "insomnia", "menopause", "hot flashes", "wound healing", "skin", "drug interactions", "statin", "warfarin", "cyclosporine", "oral contraceptives", "serotonin syndrome", "photosensitivity", "adhd", "sad", "seasonal affective disorder", "pms", "smoking cessation", "black cohosh", "quercetin", "flavonoids", "herbal supplement"]
-summary: "St. John's wort (Hypericum perforatum) is a flowering plant that has been used medicinally for centuries across Greek, Islamic, and Chinese traditional medicine systems. The plant's name refers to John the Baptist, as it blooms around the time of his feast day in late June. Also known as hypericum, Klamath weed, and goatweed, St. John's wort is one of the most widely used herbal remedies worldwide, primarily for the treatment of mild to moderate depression."
+summary: "Reference on St. John's wort: mild to moderate depression, low mood, menopause hot flashes. Comparable to SSRIs; not for severe depression. Extract 300 mg 3x/day. Interacts with contraceptives, statins, warfarin. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/st-johns-wort-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/st-johns-wort-benefits-forms-dosing-and-side-effects)*

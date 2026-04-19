@@ -6,7 +6,7 @@ publishedAt: "2025-05-27T22:11:28Z"
 tags: ["Supplements"]
 keywords: ["aging","antioxidant","blood pressure","blood sugar","cholesterol","collagen","diabetes","glycine","heart attack","inflammation","lifespan","longevity","muscle","obesity","oxidative stress","skin","sleep"]
 product: "sleep"
-summary: "I choose the supplements I take after carefully considering their benefits and their safety. I wasn’t sure about glycine but there’s one impact we’ve seen in studies that convinced me to start taking it. We’ll walk through those studies plus look at a number of other promising health benefits of glycine. And just because I take a supplement does not in any way mean that you should as well."
+summary: "Dr Brad’s glycine post: he takes 3g/day for sleep quality (falls asleep faster, less groggy) with a strong safety profile. Covers metabolic health, blood sugar, inflammation, heart attack risk, longevity in mice, and brain function."
 ---
 
 I choose the supplements I take after carefully considering their benefits and their safety. I wasn’t sure about glycine but there’s one impact we’ve seen in studies that convinced me to start taking it. We’ll walk through those studies plus look at a number of other promising health benefits of glycine.

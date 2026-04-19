@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=YoSwyPtaU74"
 publishedAt: "2026-01-19T23:37:28Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["aging","bmi","diabetes","exercise","glp-1","hormone","lifespan","longevity","obesity","osteoporosis","rapamycin","sleep","testosterone","trt"]
-summary: "A massive new study published in Nature found that castration increases lifespan across vertebrate species, including zoo mammals, rodents, and wild animals \\[1\\]. This aligns with historical human data: Korean eunuchs lived 14–19 years longer than their peers \\[2\\]. Now unless you’re Bryan Johnson, I’m sure you wouldn’t consider chopping off your balls in pursuit of longevity. But here’s the question: are there ways we can apply this knowledge to our own health and in relation to testosterone replacement therapy?"
+summary: "Dr Brad’s testosterone and lifespan post: castration studies show a longevity signal but low testosterone causes diabetes, osteoporosis, and higher mortality. Fix root causes first (obesity, exercise, sleep), then TRT only for confirmed hypogonadism."
 ---
 
 A massive new study published in Nature found that castration increases lifespan across vertebrate species, including zoo mammals, rodents, and wild animals \[1\].

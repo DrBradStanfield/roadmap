@@ -5,7 +5,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["olive leaf", "olive leaf extract", "oleuropein", "hydroxytyrosol", "blood pressure", "hypertension", "cholesterol", "ldl", "triglycerides", "blood sugar", "hba1c", "diabetes", "insulin resistance", "cardiovascular", "antioxidant", "inflammation", "immune", "bone density", "osteoporosis", "olive oil", "quercetin", "heart health"]
-summary: "Olive leaf extract (OLE) is derived from the leaves of the olive tree (Olea europaea), an evergreen species in the Oleaceae family native to the Mediterranean Basin. The leaves contain a rich array of phenolic compounds — including oleuropein, hydroxytyrosol, tyrosol, verbascoside, and flavonoids such as luteolin and quercetin — at concentrations far exceeding those found in olive fruit or olive oil. Total phenolic content in fresh olive leaves reaches approximately 1,450 mg per 100 g, with oleuropein alone comprising 1–14% of the dry leaf weight, and up to 17–23% in certain cultivars. By contrast, oleuropein is present in only minute amounts in olive oil, and some extra virgin olive oils contain none at all."
+summary: "Reference on olive leaf extract: blood pressure, cholesterol, blood sugar. Evidence mainly in hypertension or type 2 diabetes. Dose by oleuropein content (100-136 mg/day); may interact with BP and diabetes drugs. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/olive-leaf-extract-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/olive-leaf-extract-benefits-forms-dosing-and-side-effects)*

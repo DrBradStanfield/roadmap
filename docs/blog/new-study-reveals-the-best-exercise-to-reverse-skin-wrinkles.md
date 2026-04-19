@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=_YU77NJ04XM"
 publishedAt: "2025-04-30T00:47:40Z"
 tags: ["Exercise","Skin Health"]
 keywords: ["aging","antioxidant","collagen","exercise","inflammation","muscle","resistance training","skin","sleep"]
-summary: "Exercise has long been celebrated as a potent weapon against aging in our muscles, bones, and organs. But what about our skin—our body’s largest organ and most visible sign of aging? Groundbreaking research has finally explored the connection and found significant improvements in skin aging are possible. But the type of exercise matters. In this article, I’ll unpack the study’s findings and reveal how we should exercise to reap the largest benefit."
+summary: "Dr Brad’s skin aging and exercise post: combine resistance and aerobic training for best results. Resistance training boosts dermal thickness via biglycan; aerobic raises IL-15 and reduces inflammation. Both improve elasticity and collagen."
 ---
 
 Exercise has long been celebrated as a potent weapon against aging in our muscles, bones, and organs. But what about our skin—our body’s largest organ and most visible sign of aging? Groundbreaking research has finally explored the connection and found significant improvements in skin aging are possible. But the type of exercise matters. In this article, I’ll unpack the study’s findings and reveal how we should exercise to reap the largest benefit.

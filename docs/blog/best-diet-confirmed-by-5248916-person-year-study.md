@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=6geV5d39eA0"
 publishedAt: "2026-03-25T16:57:15Z"
 tags: ["Diet","Research"]
 keywords: ["blood pressure","blood sugar","cholesterol","diabetes","inflammation","insulin resistance","ldl","mediterranean diet","triglycerides","weight loss"]
-summary: "A new study that tracked 5,248,916 person-years of follow-up has confirmed the best diet for your health \\[1\\]. This is such a relief after all the flip-flops. We had the fat-free 90s. Then the Atkins explosion of the early 2000s. Now there's keto influencers and high-protein cheese puffs on grocery shelves. There have been decades of nutrition advice, billions in revenue raked in by a food industry who are only too eager to cash in on these trends, and people are still confused. Which diet is best when it comes to heart health? Should we aim for low fat? Or target low carbs? And what if this whole debate has been a distraction?"
+summary: "Dr Brad's review of a 5.2M person-year diet study: why food quality beats low-fat/low-carb framing, the case for Mediterranean and plant-forward eating (legumes, whole foods, unsaturated fats), and why processed food is the real issue regardless of macro labelling."
 ---
 
 A new study that tracked 5,248,916 person-years of follow-up has confirmed the best diet for your health \[1\].

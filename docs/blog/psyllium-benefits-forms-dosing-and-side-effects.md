@@ -5,7 +5,7 @@ publishedAt: "2025-05-13T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["psyllium", "psyllium husk", "fiber", "soluble fiber", "cholesterol", "ldl", "hdl", "triglycerides", "blood sugar", "diabetes", "insulin resistance", "hba1c", "constipation", "gut health", "microbiome", "prebiotic", "weight loss", "obesity", "blood pressure", "hypertension", "cardiovascular", "heart health", "ibs", "irritable bowel syndrome", "collagen", "creatine", "taurine", "inflammation"]
-summary: "Psyllium is a soluble fiber derived from the seed husks of Plantago ovata, an annual herb native to the Mediterranean region, North Africa, and the Indian subcontinent. The husk is approximately 85-90% fiber by dry weight, of which roughly 70-80% is soluble fiber and 20-30% is insoluble fiber. The soluble fraction consists primarily of arabinoxylan, a branched hemicellulose polysaccharide with a high molecular weight of 2-3 million Daltons, which forms a highly viscous, non-fermentable gel upon contact with water."
+summary: "Reference on psyllium husk: constipation, LDL cholesterol, blood sugar, IBS, weight management. AGA first-line fiber for chronic constipation; FDA heart health claim. Whole husk or powder, 5-15 g/day. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/psyllium-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/psyllium-benefits-forms-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["reishi", "reishi mushroom", "ganoderma lucidum", "beta-glucan", "ganoderic acid", "triterpene", "polysaccharide", "mushroom", "immune", "adaptogen", "inflammation", "cancer", "diabetes", "blood sugar", "hba1c", "insulin resistance", "liver", "gut health", "microbiome", "fibromyalgia", "cholesterol", "ldl", "triglycerides", "sleep", "insomnia", "cardiovascular", "heart health", "blood pressure", "statin", "probiotic", "prebiotic", "fiber", "aging", "longevity", "anti-aging"]
-summary: "Reishi (Ganoderma lucidum) is an edible mushroom with a long history of use in traditional Chinese medicine, where it has been valued for purported benefits including increasing vitality and strengthening the heart. In the United States, reishi supplements are most commonly promoted for immune system support, blood sugar management, cardiovascular function, liver protection, and anti-tumor activity."
+summary: "Reference on reishi mushroom: immune support, cancer adjunct, blood sugar, liver health. Evidence mostly preclinical; small trials. Extract or powder 1,500-5,400 mg/day. Liver injury risk; avoid with anticoagulants. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/reishi-mushroom-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/reishi-mushroom-benefits-forms-dosing-and-side-effects)*

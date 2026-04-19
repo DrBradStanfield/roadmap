@@ -5,7 +5,7 @@ publishedAt: "2024-01-22T10:04:17Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["alginate", "alginic acid", "sodium alginate", "reflux", "heartburn", "GERD", "gaviscon", "acid reflux", "gut health", "fiber", "calcium", "magnesium"]
-summary: "Alginates are natural, edible polysaccharide polymers derived from the cell walls of brown algae (seaweed). They have been used for decades to treat the symptoms of gastroesophageal reflux disease (GERD) -- heartburn, acid regurgitation, and indigestion -- by a mechanism fundamentally different from acid-suppressive medications. Rather than reducing acid production in the stomach, alginates form a physical gel barrier (often called a \"raft\") that floats on top of the stomach contents, mechanically preventing the reflux of acid, pepsin, and bile into the esophagus."
+summary: "Reference on alginates (Gaviscon, sodium alginate): heartburn, acid reflux, GERD, throat reflux. Safe in pregnancy. Liquid, chewable, or capsule; 200–1000 mg after meals up to 4x daily. Separate from meds 2h. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/alginates-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/alginates-benefits-forms-dosing-and-side-effects)*

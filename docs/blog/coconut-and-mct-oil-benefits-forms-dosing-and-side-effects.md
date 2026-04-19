@@ -5,7 +5,7 @@ publishedAt: "2024-07-08T17:21:25Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["coconut oil", "mct oil", "medium chain triglycerides", "caprylic acid", "capric acid", "lauric acid", "weight loss", "obesity", "cholesterol", "ldl", "hdl", "triglycerides", "cardiovascular", "heart health", "cognitive", "brain health", "dementia", "alzheimer", "blood sugar", "insulin resistance", "diabetes", "blood pressure", "skin", "inflammation", "gut health", "olive oil", "saturated fat", "ketogenic", "intermittent fasting", "exercise", "muscle", "epilepsy", "sleep"]
-summary: "Medium chain triglycerides (MCTs) are a class of saturated fats composed of glycerol attached to fatty acids with carbon chains of 6 to 12 atoms in length. The three primary MCTs of nutritional interest are caprylic acid (C8, 8 carbons), capric acid (C10, 10 carbons), and lauric acid (C12, 12 carbons). Virgin (\"cold pressed\") coconut oil is the most widely consumed natural source of MCTs, containing approximately 62% MCTs by weight, although the majority of this is lauric acid. The remaining composition includes long-chain triglycerides (LCTs) that give coconut oil its semi-solid consistency at room temperature."
+summary: "Reference on coconut oil and MCT oil: weight loss, cognitive support in MCI, skin moisturizing. MCT oil (C8/C10) differs from coconut oil; 5-30 g/day dosing. AHA cautions on LDL and cardiovascular risk. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/coconut-and-mct-oil-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/coconut-and-mct-oil-benefits-forms-dosing-and-side-effects)*

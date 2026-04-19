@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=mdwZIFEHfu4"
 publishedAt: "2025-03-25T23:52:48Z"
 tags: ["Supplements","General Health","Research"]
 keywords: ["aging","alzheimer","anti-aging","blood pressure","blood sugar","bmi","brain health","cholesterol","dementia","diabetes","exercise","hba1c","inflammation","ldl","lifespan","magnesium","muscle","oxidative stress","taurine","triglycerides"]
-summary: "There’s a popular ingredient in energy drinks that’s recently been gaining attention for its potential to fight aging and boost key health parameters. But does the research support the hype? We'll dive into recent studies to see whether this ingredient truly lives up to its promising claims. Plus, I’ll share why I’ve chosen to include it in my regimen, even though I’m waiting on more data to see if the claims about aging pan out."
+summary: "Dr Brad’s taurine post: promising evidence supports it for metabolic health (blood sugar, blood pressure, cholesterol, triglycerides) and exercise performance; aging/lifespan data is still preliminary. Covers dosing 1-6g/day, dementia risk, safety."
 ---
 
 There’s a popular ingredient in energy drinks that’s recently been gaining attention for its potential to fight aging and boost key health parameters.

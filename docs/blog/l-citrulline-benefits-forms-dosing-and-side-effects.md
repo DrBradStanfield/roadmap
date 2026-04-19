@@ -5,7 +5,7 @@ publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["l-citrulline", "citrulline malate", "nitric oxide", "blood pressure", "hypertension", "exercise", "erectile dysfunction", "arginine", "heart health", "cardiovascular", "blood sugar", "inflammation", "muscle", "strength training", "resistance training", "aging", "longevity"]
-summary: "L-citrulline is a non-essential, non-proteinogenic amino acid that functions as an intermediate in the urea cycle and serves as a precursor to L-arginine, the direct substrate for nitric oxide (NO) synthesis. The \"L\" prefix indicates the naturally occurring stereoisomer. The compound was first isolated from watermelon (Citrullus vulgaris) in 1914 by Japanese researchers Yotaro Koga and Ryo Odake, and its name derives from the Latin word for watermelon."
+summary: "Reference on L-citrulline: blood pressure, erectile dysfunction, exercise performance. Best evidence in adults with elevated BP and men with mild ED. Pure form preferred over citrulline malate. Doses 1.5-6 g/day. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/l-citrulline-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/l-citrulline-benefits-forms-dosing-and-side-effects)*

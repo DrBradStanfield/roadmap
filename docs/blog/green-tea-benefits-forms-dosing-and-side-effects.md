@@ -5,7 +5,7 @@ publishedAt: "2024-12-24T00:38:34Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["green tea", "EGCG", "epigallocatechin gallate", "matcha", "catechins", "l-theanine", "antioxidant", "weight loss", "cardiovascular", "heart health", "cholesterol", "ldl", "blood pressure", "blood sugar", "diabetes", "insulin resistance", "cognitive", "brain health", "dementia", "alzheimer", "cancer", "breast cancer", "prostate", "colon cancer", "lung cancer", "stroke", "inflammation", "gut health", "microbiome", "caffeine", "iron", "liver", "kidney"]
-summary: "Green tea is made from the leaves of Camellia sinensis, the same plant used to produce black and oolong teas. The difference lies in processing: green tea leaves are lightly steamed or pan-fired to halt enzymatic oxidation, preserving their natural polyphenolic compounds. Black tea is fully fermented, and oolong tea is partially fermented. This minimal oxidation is what gives green tea its characteristic higher catechin content."
+summary: "Reference on green tea (EGCG, matcha): heart health, blood pressure, cholesterol, blood sugar, weight, cognition. 2-4 cups/day for general health. Supplements risk liver injury above 338 mg EGCG/day; avoid with iron. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/green-tea-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/green-tea-benefits-forms-dosing-and-side-effects)*

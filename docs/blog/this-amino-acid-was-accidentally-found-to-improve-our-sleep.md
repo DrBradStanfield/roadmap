@@ -6,7 +6,7 @@ publishedAt: "2025-08-20T02:05:05Z"
 tags: ["Supplements"]
 keywords: ["aging","blood pressure","circadian","collagen","diabetes","exercise","glycine","inflammation","lifespan","longevity","magnesium","melatonin","obesity","oxidative stress","sleep"]
 product: "sleep"
-summary: "The link between the amino acid glycine and how it can improve our sleep was initially found completely by accident. And the studies since then have shown us how we can best use glycine to improve our sleep."
+summary: "Dr Brad's glycine post: 3g glycine before bed improves sleep quality and reduces next-day fatigue without disrupting sleep architecture. Covers dosage, melatonin 300mcg, magnesium, morning light, and exercise for sleep."
 ---
 
 The link between the amino acid glycine and how it can improve our sleep was initially found completely by accident.

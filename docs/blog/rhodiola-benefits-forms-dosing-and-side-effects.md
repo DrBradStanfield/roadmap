@@ -5,7 +5,7 @@ publishedAt: "2025-09-21T21:38:34Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["rhodiola", "rhodiola rosea", "adaptogen", "stress", "fatigue", "depression", "anxiety", "cognitive", "brain health", "exercise", "ashwagandha", "salidroside", "rosavin", "sleep", "insomnia", "blood pressure", "blood sugar"]
-summary: "Rhodiola rosea L. is a perennial flowering plant that grows in cold, high-altitude regions of Eastern Europe (particularly Siberia), Asia, and certain mountainous or coastal areas of North America and Scandinavia. The plant belongs to the Crassulaceae family and is commonly known as \"golden root,\" \"rose root,\" \"arctic root,\" \"rosenroot,\" or \"king's crown\". Rhodiola has a long history of traditional use in Russia, Scandinavia, and other parts of Northern Europe for improving work performance, physical endurance, fatigue resistance, depression, and altitude sickness."
+summary: "Reference on rhodiola rosea: stress, fatigue, mild depression, anxiety. Evidence preliminary. Standardized extract 200-680 mg/day (3% rosavins). Caution with antidepressants and blood pressure meds. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/rhodiola-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/rhodiola-benefits-forms-dosing-and-side-effects)*

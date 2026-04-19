@@ -5,7 +5,7 @@ publishedAt: "2024-11-15T04:30:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["ginseng", "panax ginseng", "american ginseng", "korean red ginseng", "ginsenosides", "cognitive", "brain health", "energy", "fatigue", "immune", "blood sugar", "diabetes", "insulin resistance", "testosterone", "erectile dysfunction", "hba1c", "inflammation", "aging", "longevity", "adaptogen"]
-summary: "Ginseng is the dried root of several species within the Araliaceae family of herbs and one of the most widely consumed herbal supplements in the world. It has been used for millennia in traditional Chinese medicine as a tonic to promote vitality, strengthen the immune system, and resist physiological and psychological stress. The term \"adaptogen\" is frequently applied to ginseng — referring to the concept that it helps the body resist and recover from various stressors — though this classification remains more traditional than rigorously scientific."
+summary: "Reference on ginseng (Panax ginseng, Korean red ginseng, American ginseng): fatigue, blood sugar control, erectile dysfunction, sexual function, immune support. Forms: root powder 1000-3000 mg/day, standardized extract 200-400 mg/day. Avoid in pregnancy, breast cancer, and warfarin use. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/ginseng-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/ginseng-benefits-forms-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["milk thistle", "silymarin", "silybin", "silibinin", "silybinin", "liver", "hepatoprotective", "detox", "antioxidant", "diabetes", "blood sugar", "hba1c", "insulin resistance", "cholesterol", "ldl", "hdl", "triglycerides", "inflammation", "fatty liver", "hepatitis", "cirrhosis", "liver enzymes", "drug interactions", "statin", "metformin", "menopause", "acne", "cancer", "kidney"]
-summary: "Milk thistle (Silybum marianum) is a thistle-like flowering herb in the Asteraceae family, native to the Mediterranean region, southern Europe, and parts of Asia and North Africa. It has been used medicinally for over two millennia — the Greek physician Dioscorides first documented its healing properties around 40–90 AD for treating liver ailments, and by the 16th century European herbalists like John Gerard had noted its use for liver support and digestive issues. Today, milk thistle is one of the most widely used herbal supplements worldwide, primarily promoted for liver health, diabetes management, and antioxidant support."
+summary: "Reference on milk thistle (silymarin): liver health, fatty liver, blood sugar in type 2 diabetes, drug-induced liver injury, menopausal hot flashes. Standardized extract 200 mg 2-3x/day. Warfarin interaction risk. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/milk-thistle-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/milk-thistle-benefits-best-forms-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=naT5JJtthVk"
 publishedAt: "2025-12-23T18:44:46Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["aging","alzheimer","blood pressure","cognitive","creatine","dementia","exercise","glp-1","inflammation","muscle","omega-3","tmg"]
-summary: "I absolutely love what’s just happened. Medicine is full of examples where there’s been failure after failure to treat a specific health condition, only for a treatment to appear from a completely different area of research. Take knee osteoarthritis for example. We haven't had a good treatment option to add to diet and exercise. But then GLP-1 therapies, originally designed to help type 2 diabetics lower their sugar levels, started to show significant benefits for arthritis as well. Then there’s penicillin. Its discovery was a complete accident, but it went on to have an enormous positive impact on a range of deadly diseases. These serendipitous moments are amazing, and it looks like the same thing has happened for dementia. Recent research has uncovered a surprising beneficial effect from a vaccine developed to address a problem that, on the surface, appears completely unrelated. But we may have never gotten the data..."
+summary: "Dr Brad’s shingles vaccine post: strong quasi-experimental evidence (Wales natural experiment) shows shingles vaccination reduces dementia risk by ~20% relatively. Covers varicella zoster virus, vascular dementia, Zostavax vs Shingrix, plus supplements like creatine, omega-3, TMG, multivitamin."
 ---
 
 I absolutely love what’s just happened.

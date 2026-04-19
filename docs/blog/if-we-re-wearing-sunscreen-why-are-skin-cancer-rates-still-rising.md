@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=vAPc_XE-QuU"
 publishedAt: "2025-08-14T00:22:32Z"
 tags: ["Skin Health"]
 keywords: ["aging","photoaging","skin","spf","sunscreen","uv","vitamin d"]
-summary: "You’ll hear people say we’re using more sunscreen, but skin cancer rates are rising. They go on to conclude that sunscreen must not help, and we don’t need to use it. But this can be a literally deadly conclusion to draw. We need to take a closer look at what’s really going on and avoid some myths that can lead us to sharply increase our skin cancer risks."
+summary: "Dr Brad’s sunscreen post: sunscreen works but three myths (tanning beds, safe tanning, sunscreen-as-full-protection) drive rising skin cancer rates. Covers SPF limits, UVA vs UVB, melanoma risk, photoaging, and how to reduce UV exposure."
 ---
 
 You’ll hear people say we’re using more sunscreen, but skin cancer rates are rising. They go on to conclude that sunscreen must not help, and we don’t need to use it.

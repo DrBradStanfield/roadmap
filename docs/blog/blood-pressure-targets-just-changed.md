@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=tvH0gMgSLd8"
 publishedAt: "2025-11-26T19:24:41Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["blood pressure","brain health","cardiovascular","dementia","diabetes","heart attack","hypertension","muscle","potassium","stroke"]
-summary: "Is something dark happening right under our noses? There’s a change that’s quietly crept up on us for the past few decades, and it’s been so slow that we’ve barely noticed. Since the 1970s, doctors have slowly lowered blood pressure targets. That’s provided justification to prescribe more and more blood pressure pills to an ever-increasing percentage of the population. Is there some grand conspiracy going on here to push ‘big pharma’ drugs onto people? Or is there genuine evidence to adopt more aggressive blood pressure targets? Particularly since the new blood pressure guidelines published in August of this year have changed their wording on what levels we should target."
+summary: "Dr Brad’s blood pressure post: targets below 120 mmHg systolic are evidence-based, not Big Pharma-driven. Covers hypertension history, SPRINT trial, dementia risk, 2025 guidelines, salt, potassium, and weight loss."
 ---
 
 Is something dark happening right under our noses?

@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=FWcaFMQufFA"
 publishedAt: "2025-09-11T23:24:13Z"
 tags: ["Diet"]
 keywords: ["atherosclerosis","blood sugar","cardiovascular","diabetes","exercise","fiber","glp-1","glycine","hba1c","hormone","inflammation","insulin resistance","magnesium","melatonin","muscle","obesity","skin","sleep","stroke","weight loss"]
-summary: "Insulin resistance is at the root of many chronic health conditions, including type 2 diabetes, cardiovascular disease, and obesity. While there’s no shortage of diet advice online, most people are overwhelmed by conflicting recommendations. In this article, I’ll walk you through the exact approach I use with my patients to reverse insulin resistance and reduce visceral fat — all backed by human clinical studies. You'll discover the most effective dietary strategies, the science behind them, and practical tips to make lasting change."
+summary: "Dr Brad’s visceral fat diet post: no single best diet — sustainable calorie reduction via high protein, high fiber, and less processed food reduces visceral fat and insulin resistance. Covers type 2 diabetes, HbA1c, obesity, sleep, exercise, GLP-1."
 ---
 
 Insulin resistance is at the root of many chronic health conditions, including type 2 diabetes, cardiovascular disease, and obesity. While there’s no shortage of diet advice online, most people are overwhelmed by conflicting recommendations. In this article, I’ll walk you through the exact approach I use with my patients to reverse insulin resistance and reduce visceral fat — all backed by human clinical studies. You'll discover the most effective dietary strategies, the science behind them, and practical tips to make lasting change.

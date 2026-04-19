@@ -5,7 +5,7 @@ publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["holy basil", "tulsi", "ocimum sanctum", "ocimum tenuiflorum", "adaptogen", "stress", "anxiety", "blood sugar", "diabetes", "hba1c", "insulin resistance", "inflammation", "immune system", "eugenol", "ursolic acid", "oleanolic acid", "cortisol", "depression", "cognitive", "brain health", "antioxidant"]
-summary: "Holy basil (Ocimum sanctum or Ocimum tenuiflorum) is a shrub in the basil family (Lamiaceae) thought to have originated in the Indian subcontinent. In traditional Ayurvedic medicine, holy basil is known as \"tulsi,\" \"The Queen of Herbs,\" and \"the elixir of life,\" where it has been used for thousands of years to boost general health, well-being, and longevity and to assist in dealing with the stresses of daily life. It is considered one of the most important plants in Ayurveda and is grown in nearly every Hindu household, where it holds religious and medicinal significance."
+summary: "Reference on holy basil (tulsi): stress, anxiety, blood sugar (type 2 diabetes), immune support, cognition. Adults with stress symptoms or type 2 diabetes. Extract 300-1200 mg/day or leaf powder 1000-2500 mg/day. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/holy-basil-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/holy-basil-benefits-forms-dosing-and-side-effects)*

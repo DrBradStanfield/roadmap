@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=DgRIRPEf0VQ"
 publishedAt: "2025-11-15T23:06:00Z"
 tags: ["General Health","Research"]
 keywords: ["betaine","bmi","diabetes","exercise","hormone","insulin resistance","muscle","obesity","sleep","testosterone","tmg","weight loss"]
-summary: "For years, researchers have observed a troubling trend: testosterone levels in men seem to be declining across generations. This hormone, crucial for male health, has been linked to energy, mood, muscle mass, and even heart health. But a new study is challenging what we thought we knew — suggesting the supposed decline may be based on a surprising technical detail. In this article, we’ll dive into the science, explore global trends, and unpack what might really be going on with men’s testosterone levels."
+summary: "Dr Brad’s testosterone post: the reported generational decline in men’s T may be a measurement artifact, not a real trend. Covers low testosterone symptoms, obesity link, sleep, resistance exercise, and TMG supplementation."
 ---
 
 For years, researchers have observed a troubling trend: testosterone levels in men seem to be declining across generations. This hormone, crucial for male health, has been linked to energy, mood, muscle mass, and even heart health. But a new study is challenging what we thought we knew — suggesting the supposed decline may be based on a surprising technical detail.

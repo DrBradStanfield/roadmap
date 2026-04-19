@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["coq10", "ubiquinol", "ubiquinone", "coenzyme q10", "cardiovascular", "heart health", "heart failure", "statin", "energy", "mitochondria", "blood pressure", "aging", "cholesterol", "ldl", "hdl", "triglycerides", "blood sugar", "diabetes", "insulin resistance", "hba1c", "migraine", "fibromyalgia", "inflammation", "brain health", "cognitive", "skin", "wrinkles", "anti-aging", "longevity"]
-summary: "Coenzyme Q10 (CoQ10), also known as ubiquinone or ubidecarenone, is a naturally occurring fat-soluble compound essential for cellular energy production. It resides in the inner mitochondrial membrane of virtually every cell, where it serves as an electron carrier in the mitochondrial electron transport chain -- the process by which cells generate adenosine triphosphate (ATP), the primary energy currency of the body. The organs with the highest energy demands -- the heart, liver, kidneys, and pancreas -- contain the greatest concentrations of CoQ10."
+summary: "Reference on CoQ10 (ubiquinol/ubiquinone): heart failure, migraine prevention, statin-related muscle pain and fatigue. Evidence strongest for heart failure (adjunct to medication) and migraine. Ubiquinol preferred over 60; typical dosing 100-300 mg/day with food. Caution with blood thinners, diabetes meds, and during cancer treatment. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/coq10-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/coq10-benefits-best-forms-dosing-and-side-effects)*

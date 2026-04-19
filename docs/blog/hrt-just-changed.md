@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Ksb6VbiQNKY"
 publishedAt: "2026-01-16T00:00:34Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["breast cancer","dementia","estrogen","hormone","stroke"]
-summary: "There’s been a dramatic change when it comes to hormone therapy. In the U.S., the FDA essentially just admitted they’ve taken the wrong approach for decades, potentially keeping millions of women from an effective treatment. So make sure that your wife or partner knows what’s just happened—because it could help with their bone strength, heart health, and other symptoms. And this change highlights an issue where too much caution can backfire—where a great treatment option is wrongly withheld. Here’s how it happened."
+summary: "Dr Brad’s HRT post: the FDA removed estrogen warning labels in 2025; start HRT before 60 or within 10 years of menopause for mortality benefit. Covers hot flashes, menopause symptoms, breast cancer risk, shared decision-making."
 ---
 
 There’s been a dramatic change when it comes to hormone therapy. In the U.S., the FDA essentially just admitted they’ve taken the wrong approach for decades, potentially keeping millions of women from an effective treatment. So make sure that your wife or partner knows what’s just happened—because it could help with their bone strength, heart health, and other symptoms.

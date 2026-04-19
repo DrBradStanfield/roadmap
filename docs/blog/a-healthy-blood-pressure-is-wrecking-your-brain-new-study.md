@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=5yCsB1iRR1o"
 publishedAt: "2025-02-25T23:56:58Z"
 tags: ["General Health"]
 keywords: ["aging","blood pressure","cardiovascular","cognitive","dementia","diabetes","exercise","fiber","heart attack","hypertension","inflammation","oxidative stress","potassium","stroke","weight loss"]
-summary: "You probably know high blood pressure is dangerous for your heart. But did you know it’s also dangerous for your brain? And it’s not just about strokes, either. High blood pressure is also one of the most significant risk factors for dementia \\[1\\]. And here’s a troubling fact. What we thought was a healthy blood pressure level may actually be doing harm, needlessly raising our risks of cognitive decline. In this article, we’ll explore a brand-new study giving us fresh evidence that we need to lower our blood pressure more than we thought. We’ll look at what our new target blood pressure should be, according to the research. And if you want weekly health research summaries and health strategies I share with my patients, click the link in the pinned comment below."
+summary: "Dr Brad’s blood pressure post: the old 140 systolic target is too high — aim for under 120 to protect both heart and brain. Covers dementia risk, SPRINT trial, DASH diet, sodium, exercise, and weight loss for hypertension."
 ---
 
 You probably know high blood pressure is dangerous for your heart. But did you know it’s also dangerous for your brain? And it’s not just about strokes, either. High blood pressure is also one of the most significant risk factors for dementia \[1\].

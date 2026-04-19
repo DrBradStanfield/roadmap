@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=q71tHoHeXZo"
 publishedAt: "2024-07-11T21:04:17Z"
 tags: ["Research"]
 keywords: ["ala","alzheimer","breast cancer","cardiovascular","cholesterol","dementia","dha","epa","fish oil","heart attack","inflammation","omega-3","stroke"]
-summary: "If you've paid much attention to health and supplements over the years, chances are you're pretty familiar with Omega-3s. They're commonly advertised in everything from supplements to salmon, and for ages, they've been one of the least controversial nutrients. Omega-3s are good for you, right? Last month, a concerning study was published. That study involved over 400,000 people, and the results showed that people who took Omega-3 supplements have a 133% higher risk of developing an abnormal heart rhythm called atrial fibrillation. If that's true, it throws a lot of things into question about the benefits and usefulness of Omega-3 fatty acids, especially in supplement form. Before you panic and throw away your Omega-3s, let's dig deeper because there's more than meets the eye with the current study, past studies, and the truth of fatty acids. There's an important lesson to be found here, and I'll lead you to it,..."
+summary: "Dr Brad's omega-3 post: supplements at ~1g/day are still worth taking despite a 2024 UK Biobank study showing 133% higher atrial fibrillation risk. Covers EPA, DHA, ALA, fish oil, heart disease, AF risk, megadosing concerns, VITAL and STRENGTH trials."
 ---
 
 If you've paid much attention to health and supplements over the years, chances are you're pretty familiar with Omega-3s. They're commonly advertised in everything from supplements to salmon, and for ages, they've been one of the least controversial nutrients. Omega-3s are good for you, right?

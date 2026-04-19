@@ -5,7 +5,7 @@ publishedAt: "2025-01-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["pomegranate", "pomegranate extract", "pomegranate juice", "punicalagin", "ellagic acid", "urolithin", "antioxidant", "cardiovascular", "blood pressure", "hypertension", "atherosclerosis", "cholesterol", "ldl", "triglycerides", "prostate", "psa", "cognitive", "brain health", "blood sugar", "diabetes", "insulin resistance", "hba1c", "inflammation", "exercise", "muscle", "testosterone", "heart health", "aging", "longevity", "gut health", "microbiome", "potassium", "vitamin c", "folate"]
-summary: "Pomegranate (Punica granatum) is a fruit-bearing shrub or small tree native to Iran and India, now cultivated across the Mediterranean, Southeast Asia, and the southwestern United States. The name derives from the Latin pomum granatum (\"apple with many seeds\"), reflecting the fruit's distinctive internal structure of hundreds of juice-filled arils surrounding hard seeds. Global pomegranate production exceeded 8.5 million tonnes as of 2025, with cultivated area estimated at over 300,000 hectares worldwide."
+summary: "Reference on pomegranate: blood pressure, heart health, blood sugar, exercise recovery. Most evidence in adults with hypertension or metabolic syndrome. Juice or extract forms. Caution with BP medications and statins. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/pomegranate-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/pomegranate-benefits-forms-dosing-and-side-effects)*

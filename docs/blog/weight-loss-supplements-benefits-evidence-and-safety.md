@@ -5,7 +5,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["weight loss", "obesity", "appetite", "metabolism", "fat burner", "caffeine", "green tea", "garcinia cambogia", "chromium", "fiber", "glucomannan", "chitosan", "carnitine", "conjugated linoleic acid", "forskolin", "raspberry ketone", "bitter orange", "synephrine", "ephedra", "calcium", "vitamin d", "probiotic", "prebiotic", "gut health", "microbiome", "blood sugar", "insulin resistance", "bmi", "intermittent fasting", "caloric restriction", "exercise"]
-summary: "More than two-thirds of adults and nearly one-third of children and adolescents in the United States are overweight or have obesity. Approximately 45% of Americans who are overweight and 67% of those with obesity are actively trying to lose weight. About 15% of U.S. adults have used a weight-loss dietary supplement at some point, with more women reporting use (21%) than men (10%). Americans spend approximately $2.1 billion per year on weight-loss supplements in pill form alone."
+summary: "Reference on weight loss supplements: appetite, fat burning, metabolism. For adults with overweight or obesity. Covers caffeine, green tea, CLA, chromium, garcinia cambogia, fiber; most show modest 1-2 kg benefit. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/weight-loss-supplements-benefits-evidence-and-safety](https://drstanfield.com/blogs/articles/weight-loss-supplements-benefits-evidence-and-safety)*

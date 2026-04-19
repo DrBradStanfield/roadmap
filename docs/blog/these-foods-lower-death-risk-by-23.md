@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=ShWcFg8jdPk"
 publishedAt: "2025-03-17T00:43:40Z"
 tags: ["General Health"]
 keywords: ["aging","alzheimer","blood pressure","blood sugar","bmi","cardiovascular","cholesterol","diabetes","gut health","inflammation","ldl","lifespan","microbiome","obesity","psyllium","stroke","weight loss"]
-summary: "People are constantly looking for that magic supplement that will significantly extend lifespan and boost health. Well, we don’t need to wait for the next scientific breakthrough. We already have something like this that’s found in abundance in certain foods. And its effects are so dramatic it does almost seem like magic. It can cut overall death risks by a massive 23%. And increasing our intake can add years to our lives — even if we start late. Yet, if we don’t use it correctly, it might do more harm than good. In this article, I’ll reveal this powerful ingredient, its surprising benefits, and how you can easily incorporate it into your diet the right way for a longer, healthier life."
+summary: "Dr Brad’s dietary fibre post: high fibre intake (25-32g/day) cuts all-cause mortality by 23% per a 64-study meta-analysis. Covers heart disease, LDL cholesterol, blood pressure, weight loss, diabetes, gut health, colorectal cancer, psyllium husk, and pairing with protein."
 ---
 
 People are constantly looking for that magic supplement that will significantly extend lifespan and boost health. Well, we don’t need to wait for the next scientific breakthrough. We already have something like this that’s found in abundance in certain foods. And its effects are so dramatic it does almost seem like magic.

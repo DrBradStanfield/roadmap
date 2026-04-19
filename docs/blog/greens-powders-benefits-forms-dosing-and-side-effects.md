@@ -5,7 +5,7 @@ publishedAt: "2024-12-30T12:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["greens powder", "spirulina", "chlorella", "wheatgrass", "barley grass", "antioxidant", "gut health", "microbiome", "probiotic", "prebiotic", "fiber", "vitamin a", "vitamin c", "vitamin k", "iron", "blood pressure", "inflammation", "immune function", "oxidative stress", "energy", "cholesterol", "heart health", "cardiovascular", "diabetes", "blood sugar", "weight loss", "aging", "longevity", "skin"]
-summary: "Greens powders — also called super greens or green superfood powders — are dietary supplements consisting of dehydrated and pulverized vegetables, fruits, grasses, algae, and other plant-based ingredients, designed to deliver concentrated micronutrients in a convenient, shelf-stable form. A typical serving of 5-10 grams is mixed into water, juice, or a smoothie and provides a broad spectrum of vitamins (notably A, C, and K), minerals (iron, potassium, magnesium), antioxidants, and phytonutrients that might otherwise require consuming several servings of whole produce."
+summary: "Reference on greens powders (super greens, AG1 etc.): what they contain, evidence quality (mostly weak observational), whether they replace vegetables, nutrient bioavailability, cost-benefit vs whole food, and Brad's clinical take (whole foods preferred). Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/greens-powders-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/greens-powders-benefits-forms-dosing-and-side-effects)*

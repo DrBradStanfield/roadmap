@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["vitamin b", "vitamin b1", "vitamin b2", "vitamin b3", "vitamin b5", "vitamin b6", "vitamin b7", "vitamin b12", "folate", "folic acid", "niacin", "biotin", "b complex", "thiamine", "riboflavin", "pantothenic acid", "pyridoxine", "cobalamin", "methylcobalamin", "methylfolate", "cognitive", "brain health", "depression", "energy", "homocysteine", "cardiovascular", "heart health", "neuropathy", "anemia", "neural tube defects", "cholesterol", "nad+", "nmn", "nicotinamide riboside", "choline", "inflammation", "diabetes", "metformin", "blood pressure", "migraine", "skin", "aging"]
-summary: "The B vitamins are a family of eight water-soluble nutrients that serve as essential coenzymes in cellular metabolism, energy production, DNA synthesis, neurotransmitter formation, and red blood cell development. Unlike fat-soluble vitamins, B vitamins are not stored in the body in significant quantities (with the notable exception of vitamin B12, which accumulates in the liver with stores lasting several years), and excess intake is generally excreted in urine. This means consistent dietary or supplemental intake is required to maintain adequate status."
+summary: "Reference on B vitamins: energy metabolism, brain health, depression, stroke prevention. At-risk groups include older adults, vegans, metformin users, and MTHFR carriers. Covers all eight B vitamins, active forms (methylfolate, methylcobalamin), and megadose risks. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/b-vitamins-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/b-vitamins-benefits-forms-dosing-and-side-effects)*

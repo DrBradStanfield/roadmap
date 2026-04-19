@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["black seed oil", "nigella sativa", "thymoquinone", "black cumin seed oil", "blood sugar", "diabetes", "insulin resistance", "hba1c", "cholesterol", "ldl", "hdl", "triglycerides", "blood pressure", "hypertension", "weight loss", "obesity", "inflammation", "immune", "asthma", "osteoarthritis", "thyroid", "gut health", "acne", "skin", "antioxidant", "omega-3", "seed oil"]
-summary: "Black seed oil is extracted from the seeds of Nigella sativa, an annual flowering herb in the Ranunculaceae (buttercup) family native to Southwest Asia, North Africa, and the Mediterranean region. The plant has been cultivated for medicinal purposes for over 2,000 years, with archaeological evidence tracing its use to ancient Egyptian, Greek, and Middle Eastern civilizations. Black seeds were found in the tomb of Pharaoh Tutankhamun, and Greek physicians including Hippocrates and Dioscorides documented their therapeutic applications. In Islamic tradition, black seed has been described as a remedy for \"everything except death,\" and it has been a staple of Ayurvedic and Unani medical systems for respiratory, digestive, and inflammatory conditions."
+summary: "Reference on black seed oil (Nigella sativa): blood sugar, cholesterol, blood pressure, weight loss, asthma, joint pain. Oil or seed powder; oil 1,000-3,000 mg/day. Interacts with diabetes/BP meds; avoid in pregnancy. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/black-seed-oil-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/black-seed-oil-benefits-forms-dosing-and-side-effects)*

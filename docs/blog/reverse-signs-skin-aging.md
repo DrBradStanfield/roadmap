@@ -6,7 +6,7 @@ publishedAt: "2024-12-17T01:24:10Z"
 tags: ["Skin Health"]
 keywords: ["aging","collagen","exercise","fiber","hyaluronic acid","olive oil","peptide","photoaging","resistance training","retinoid","retinol","skin","sleep","spf","sunscreen","tretinoin","uv","vitamin b3","wrinkles","zinc"]
 product: "microvitamin-plus"
-summary: "Here is the full protocol to reverse the signs of skin aging based on the latest science. This is not for vanity reasons. How our skin looks reflects our chances of living a long life. If we see a young person in the mirror, we are more likely to identify as being young and practice those healthy life habits. I've structured these strategies to follow a typical daily routine."
+summary: "Dr Brad's skin aging reversal post: 8 strategies — mineral sunscreen, ceramide moisturizer, hyaluronic acid supplements, collagen peptides (10-15g), retinoids (tretinoin/adapalene), AHA/BHA exfoliants, exercise, diet. Covers wrinkles and photoaging."
 ---
 
 Here is the full protocol to reverse the signs of skin aging based on the latest science. This is not for vanity reasons. How our skin looks reflects our chances of living a long life.

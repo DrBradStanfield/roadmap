@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=lzW5URw1ktc"
 publishedAt: "2024-10-14T22:54:37Z"
 tags: ["Diet"]
 keywords: ["blood pressure","bone density","calcium","cardiovascular","dementia","diabetes","estrogen","exercise","fiber","hypertension","intermittent fasting","kidney","lifespan","longevity","mediterranean diet","muscle","olive oil","rapamycin","resistance training","stroke","testosterone","weight loss"]
-summary: "What if the secret to avoiding heart attacks and feeling full of energy isn't the keto or even the Mediterranean diet? In this article, I'll reveal the surprising history of diet advice, including the big mistakes that held us back. I'll share new research that's giving us a better idea of which diet could help prevent heart attacks, assist with weight loss, and keep our muscles strong. And the results might surprise you. To understand why this diet is so powerful, we need to look at how our thinking has changed about the three big nutrients: protein, fats, and carbs. Let's start with protein, where the latest data finally gives us a clear picture."
+summary: "Dr Brad's best diet post: high protein (1.6g/kg/day, primarily plant-based), unsaturated fats, high fiber, whole carbs, and low salt reduce heart disease, dementia, and death risk. Covers Mediterranean, keto, vegan, weight loss, muscle, aging."
 ---
 
 What if the secret to avoiding heart attacks and feeling full of energy isn't the keto or even the Mediterranean diet?

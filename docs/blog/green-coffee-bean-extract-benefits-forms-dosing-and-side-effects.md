@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["green coffee", "green coffee bean extract", "chlorogenic acid", "chlorogenic acids", "weight loss", "blood pressure", "blood sugar", "diabetes", "insulin resistance", "obesity", "bmi", "triglycerides", "cholesterol", "ldl", "hdl", "antioxidant", "inflammation", "caffeine", "gut health", "microbiome"]
-summary: "Green coffee bean extract (GCE) is a dietary supplement derived from unroasted beans of Coffea species, primarily Coffea arabica and Coffea canephora (robusta). Unlike roasted coffee, which loses the majority of its polyphenolic compounds during the roasting process (up to 70-90% degradation), green coffee beans retain high concentrations of chlorogenic acids (CGAs) — a family of polyphenolic esters formed by the conjugation of hydroxycinnamic acids (caffeic, ferulic, and p-coumaric acids) with quinic acid. CGAs typically comprise 5-14% of green coffee bean dry weight, with 5-O-caffeoylquinic acid (5-CQA) being the most abundant isomer."
+summary: "Reference on green coffee bean extract: weight loss, blood sugar, blood pressure, cholesterol. Useful for overweight or diabetic adults. Standardized extracts (Svetol/GCA) 200-400 mg/day; key study retracted, evidence modest. Contains caffeine; avoid in pregnancy. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/green-coffee-bean-extract-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/green-coffee-bean-extract-benefits-forms-dosing-and-side-effects)*

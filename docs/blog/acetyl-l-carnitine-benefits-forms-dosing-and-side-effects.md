@@ -5,7 +5,7 @@ publishedAt: "2024-01-09T11:21:25Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["acetyl-l-carnitine", "carnitine", "l-carnitine", "cognitive", "brain health", "blood pressure", "neuropathy", "depression", "alzheimer", "dementia", "diabetes", "insulin resistance", "heart health", "cardiovascular", "inflammation", "exercise", "weight loss", "cholesterol", "ldl", "triglycerides", "anxiety"]
-summary: "Acetyl-L-carnitine (ALCAR) is an acetylated form of L-carnitine, a naturally occurring compound derived from the amino acids lysine and methionine. Carnitine plays a critical role in energy production by transporting long-chain fatty acids into the mitochondria, where they undergo beta-oxidation to produce adenosine triphosphate (ATP). Approximately 95% of total body carnitine is stored in heart and skeletal muscle, with the remainder in the liver, kidneys, and circulating plasma."
+summary: "Reference on acetyl-L-carnitine (ALCAR): memory, nerve pain, depression, blood pressure. May help older adults with early cognitive decline, diabetic neuropathy, low mood. Typical dose 1-3 g/day. Avoid if on chemotherapy or with thyroid/seizure disorders. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/acetyl-l-carnitine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/acetyl-l-carnitine-benefits-forms-dosing-and-side-effects)*

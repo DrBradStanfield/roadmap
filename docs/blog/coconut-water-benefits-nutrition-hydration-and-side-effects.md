@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["coconut water", "electrolytes", "potassium", "sodium", "magnesium", "calcium", "hydration", "blood pressure", "hypertension", "kidney", "diabetes", "blood sugar", "cholesterol", "ldl", "hdl", "triglycerides", "gut health", "inflammation", "exercise", "weight loss", "heart health", "cardiovascular"]
-summary: "Coconut water is the clear to slightly cloudy liquid endosperm found inside immature (green) coconuts of the coconut palm (Cocos nucifera). It comprises approximately 95% water along with small amounts of sugars, electrolytes, amino acids, vitamins, minerals, and phytohormones such as cytokinins, yielding a low caloric content of approximately 18-22 kcal per 100 mL (41-51 kcal per 240 mL serving) for 100% pure coconut water without additives. Harvested primarily from young green coconuts in tropical regions such as Southeast Asia, the Pacific Islands, and parts of Latin America, coconut water has been consumed traditionally as a refreshing beverage and for rehydration after physical exertion or illness due to its balanced electrolyte profile, particularly high potassium levels exceeding 250 mg per 100 mL."
+summary: "Reference on coconut water: natural electrolyte drink for hydration, blood pressure support, exercise recovery. High potassium (400-500 mg/cup); low calorie. Caution: hyperkalemia risk in kidney disease, diabetes, or on ACE inhibitors/potassium-sparing diuretics. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/coconut-water-benefits-nutrition-hydration-and-side-effects](https://drstanfield.com/blogs/articles/coconut-water-benefits-nutrition-hydration-and-side-effects)*

@@ -6,7 +6,7 @@ publishedAt: "2025-07-30T20:38:06Z"
 tags: ["Supplements"]
 keywords: ["alzheimer","antioxidant","blood pressure","blood sugar","bone density","boron","brain health","cardiovascular","cholesterol","cognitive","collagen","creatine","dementia","dha","epa","exercise","glycine","hba1c","hormone","hyaluronic acid","inflammation","ldl","lifespan","magnesium","melatonin","muscle","omega-3","prostate","psyllium","selenium","skin","sleep","taurine","tmg","triglycerides","vitamin a","vitamin b6","vitamin d","vitamin e","vitamin k2","wrinkles","zinc"]
 product: "microvitamin-plus"
-summary: "Just because I take a supplement does NOT in any way mean that you should as well. As a practicing family medicine doctor, there are only three supplements that the data convinced me to take. In this article, I’ll share what they are, why I take them, and some of the science behind them — so you can understand the reasoning, not just the conclusion."
+summary: "Dr Brad’s supplement stack post: he takes only omega-3 (~1g), MicroVitamin multivitamin, and a sleep supplement (melatonin 300mcg, magnesium glycinate, glycine). Covers dementia risk, atrial fibrillation, B vitamin-omega-3 synergy, vitamin D dosing, creatine, collagen, psyllium, taurine."
 ---
 
 Just because I take a supplement does **NOT** in any way mean that you should as well.

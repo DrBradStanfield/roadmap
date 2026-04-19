@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=nZfOGLklnBM"
 publishedAt: "2024-08-22T00:56:03Z"
 tags: ["Diet"]
 keywords: ["blood pressure","blood sugar","cardiovascular","diabetes","exercise","insulin resistance","intermittent fasting","lifespan","longevity","muscle","obesity","oxidative stress","resistance training","sarcopenia","sleep","weight loss"]
-summary: "Intermittent fasting has surged in popularity, touted as a powerful tool for weight loss, metabolic health, and longevity. Yet, despite its initial hype, some of the most respected voices in the field of longevity, including Dr. Peter Attia and Dr. Rhonda Patrick, have shifted their stance on fasting. This blog post delves into the reasons behind this change and offers evidence-based insights on how to approach fasting to optimize health."
+summary: "Dr Brad's intermittent fasting post: fasting benefits are likely from calorie restriction, not meal timing. Covers muscle loss risk with multi-day fasts, protein intake (1.6g/kg), sarcopenia, weight loss, blood sugar, autophagy."
 ---
 
 Intermittent fasting has surged in popularity, touted as a powerful tool for weight loss, metabolic health, and longevity. Yet, despite its initial hype, some of the most respected voices in the field of longevity, including Dr. Peter Attia and Dr. Rhonda Patrick, have shifted their stance on fasting. This blog post delves into the reasons behind this change and offers evidence-based insights on how to approach fasting to optimize health.

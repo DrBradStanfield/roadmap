@@ -5,7 +5,7 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["ashwagandha", "withania somnifera", "withanolides", "KSM-66", "Sensoril", "Shoden", "stress", "anxiety", "cortisol", "sleep", "insomnia", "testosterone", "cognitive", "brain health", "inflammation", "depression", "thyroid", "muscle", "strength training", "resistance training", "exercise", "aging", "longevity", "melatonin", "rhodiola"]
-summary: "Ashwagandha (Withania somnifera) is an evergreen shrub cultivated in tropical and subtropical areas of Asia, Africa, and Europe. The plant's roots have been used for centuries in Ayurvedic and Unani medicine as an adaptogen — loosely defined as a compound that increases the ability to resist, adapt to, or become resilient against biological, physical, or chemical stressors. Ashwagandha is also known as \"Indian ginseng\" (despite no botanical relation to ginseng) and \"winter cherry,\" though it should not be confused with Physalis alkekengi, which shares this common name. The species name somnifera derives from Latin for \"sleep-inducing,\" signifying another traditional use."
+summary: "Reference on ashwagandha: stress, anxiety, sleep, testosterone (men), cognitive function. Most studied in adults with stress or insomnia. Forms: KSM-66, Sensoril, Shoden; 300-600 mg/day standardized extract for 8-12 weeks. Liver injury and thyroid effects reported. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/ashwagandha-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/ashwagandha-benefits-forms-dosing-and-side-effects)*

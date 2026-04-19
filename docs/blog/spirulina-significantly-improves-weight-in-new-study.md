@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Xcha7yqRglo"
 publishedAt: "2025-10-15T01:14:52Z"
 tags: ["Supplements"]
 keywords: ["antioxidant","blood pressure","blood sugar","cardiovascular","cholesterol","exercise","fiber","hdl","hypertension","inflammation","insulin resistance","ldl","obesity","oxidative stress","triglycerides","weight loss"]
-summary: "A new meta-analysis suggests spirulina—a blue-green algae extract—can improve body weight, cholesterol, and blood pressure in overweight and obese individuals. But before jumping on the supplement train, it’s worth digging into the evidence to see how strong the impact really is, how meaningful it is in practice, and whether spirulina makes sense as part of your routine."
+summary: "Dr Brad’s spirulina post: modest benefits for weight, LDL, and blood pressure in overweight adults, but evidence quality is low and effects are smaller than DASH diet or fiber supplements. Covers dosing 2-3g/day, cholesterol, triglycerides, hypertension, obesity."
 ---
 
 A new meta-analysis suggests spirulina—a blue-green algae extract—can improve body weight, cholesterol, and blood pressure in overweight and obese individuals. But before jumping on the supplement train, it’s worth digging into the evidence to see how strong the impact really is, how meaningful it is in practice, and whether spirulina makes sense as part of your routine.

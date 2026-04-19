@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["prebiotic", "prebiotics", "fiber", "inulin", "FOS", "fructooligosaccharides", "GOS", "galactooligosaccharides", "PHGG", "guar fiber", "acacia fiber", "glucomannan", "soluble corn fiber", "wheat dextrin", "psyllium", "gut health", "microbiome", "cholesterol", "ldl", "weight loss", "obesity", "blood sugar", "diabetes", "insulin resistance", "constipation", "irritable bowel syndrome", "depression", "anxiety", "migraine", "osteoarthritis", "inflammation", "cognitive", "brain health", "sleep", "skin", "immune", "bifidobacterium", "short-chain fatty acids", "butyrate"]
-summary: "Prebiotics are non-digestible carbohydrates — primarily complex sugars and fibers — that pass through the upper gastrointestinal tract undigested and serve as fermentable substrates (\"food\") for beneficial bacteria in the colon. Unlike probiotics (live microorganisms taken to directly colonize the gut), prebiotics selectively stimulate the growth and activity of bacteria already residing in the gastrointestinal tract, particularly species of Bifidobacterium and Lactobacillus that are associated with improved health outcomes."
+summary: "Reference on prebiotics: gut health, constipation, IBS, mood, anxiety, blood sugar, immune support. Most adults get far less than clinical doses. Types: inulin, FOS, GOS, PHGG, psyllium; 2-20 g/day by indication. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/prebiotics-benefits-types-dosing-and-side-effects](https://drstanfield.com/blogs/articles/prebiotics-benefits-types-dosing-and-side-effects)*

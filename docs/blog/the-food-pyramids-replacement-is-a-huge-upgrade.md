@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=RseqXn3s_zI"
 publishedAt: "2025-06-12T23:08:09Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["blood pressure","calcium","cardiovascular","cholesterol","diabetes","exercise","ldl","mediterranean diet","muscle","obesity","olive oil","potassium","psyllium","statin","weight loss"]
-summary: "The Food Pyramid is probably the most widely recognized guide to healthy nutrition, yet doctors raised worries from the start. In this article, we’ll look at why it was eventually abandoned. I’ll also reveal why its replacement can still be problematic and what you need to know to make sure you’re putting the best meal for your health on your plate."
+summary: "Dr Brad’s healthy eating plate post: Harvard’s Healthy Eating Plate beats MyPlate and the Food Pyramid for practical meal planning. Covers whole grains, healthy protein up to 1.6g/kg/day, olive oil, vegetables, fruit, fibre, and limiting dairy and processed meat."
 ---
 
 The Food Pyramid is probably the most widely recognized guide to healthy nutrition, yet doctors raised worries from the start. In this article, we’ll look at why it was eventually abandoned. I’ll also reveal why its replacement can still be problematic and what you need to know to make sure you’re putting the best meal for your health on your plate.

@@ -6,7 +6,7 @@ type: "reference"
 tags: ["Supplements"]
 keywords: ["menopause", "soy isoflavones", "black cohosh", "red clover", "phytoestrogens", "hot flashes", "estrogen", "hormone", "genistein", "daidzein", "equol", "bone density", "osteoporosis", "cholesterol", "ldl", "cardiovascular", "breast cancer", "thyroid", "sleep", "anxiety", "depression", "cognitive", "progesterone", "weight loss", "inflammation"]
 product: "sleep"
-summary: "Menopause is the permanent cessation of menstrual cycles, defined retrospectively as occurring after 12 consecutive months of amenorrhea in the absence of other pathological or physiological causes. It typically occurs at approximately age 51 and results from the exhaustion of ovarian follicles, leading to a profound decline in estrogen and progesterone production. Vasomotor symptoms — hot flashes and night sweats — affect 75-80% of menopausal women, often persisting for 1 to 6 years, and represent the most common reason women seek treatment."
+summary: "Reference on menopause supplements: hot flashes, night sweats, bone loss. Soy isoflavones (50-120 mg/day), red clover, black cohosh, progesterone cream. Liver risk (black cohosh); soy: thyroid, breast cancer risk. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/menopause-supplements-benefits-evidence-dosing-and-side-effects](https://drstanfield.com/blogs/articles/menopause-supplements-benefits-evidence-dosing-and-side-effects)*

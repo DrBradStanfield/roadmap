@@ -6,7 +6,7 @@ publishedAt: "2025-10-03T23:28:30Z"
 tags: ["Supplements"]
 keywords: ["cognitive","diabetes","exercise","glycine","insomnia","magnesium","melatonin","potassium","sleep"]
 product: "sleep"
-summary: "Sleep is one of the most powerful tools we have for health, yet many people struggle to get enough quality rest. While melatonin often gets the spotlight, a new clinical trial tested a different supplement that may help. Involving 155 adults with poor sleep, the study found a meaningful improvement in insomnia scores compared to placebo. In this article, we’ll unpack the results, explore how big of an impact this supplement really makes, and consider whether it might be worth adding to your sleep toolkit."
+summary: "Dr Brad’s magnesium bisglycinate post: supports sleep quality and recommends it as part of a broader sleep strategy. Covers 250mg elemental dose, insomnia severity index results, magnesium deficiency, and glycine synergy for poor sleep."
 ---
 
 Sleep is one of the most powerful tools we have for health, yet many people struggle to get enough quality rest. While melatonin often gets the spotlight, a new clinical trial tested a different supplement that may help. Involving 155 adults with poor sleep, the study found a meaningful improvement in insomnia scores compared to placebo. In this article, we’ll unpack the results, explore how big of an impact this supplement really makes, and consider whether it might be worth adding to your sleep toolkit.

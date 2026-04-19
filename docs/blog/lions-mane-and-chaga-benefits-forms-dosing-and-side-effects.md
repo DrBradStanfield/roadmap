@@ -5,7 +5,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["lions mane", "chaga", "mushroom", "hericium erinaceus", "inonotus obliquus", "nerve growth factor", "cognitive", "brain health", "beta-glucan", "erinacine", "hericenone", "dementia", "alzheimer", "depression", "anxiety", "immune", "inflammation", "gut health", "neuropathy", "blood sugar", "diabetes", "kidney"]
-summary: "Lion's mane (Hericium erinaceus) and chaga (Inonotus obliquus) are two fungi with long histories of use in traditional medicine, particularly in East Asia and Northern Europe. Both are widely marketed as dietary supplements with claims ranging from cognitive enhancement to immune support. However, the clinical evidence behind these two organisms differs substantially — and in many cases falls short of the marketing claims."
+summary: "Reference on lion's mane and chaga mushrooms: cognitive support, mood, immune function. Lion's mane may help mild cognitive impairment; chaga has no human trials. Forms differ (fruiting body vs mycelium). Chaga carries kidney injury risk from oxalates. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/lions-mane-and-chaga-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/lions-mane-and-chaga-benefits-forms-dosing-and-side-effects)*

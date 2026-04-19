@@ -5,7 +5,7 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["glutathione", "NAC", "n-acetyl cysteine", "antioxidant", "detox", "liver", "immune", "skin", "aging", "longevity", "inflammation", "glycine", "cysteine", "whey protein", "alpha lipoic acid", "vitamin c", "liposomal glutathione", "s-acetyl glutathione", "reduced glutathione", "oxidative stress", "diabetes", "insulin resistance", "cognitive", "brain health", "alzheimer", "skin lightening", "anti-aging", "liver health"]
-summary: "Glutathione (GSH) is a tripeptide composed of three amino acids — cysteine, glutamic acid, and glycine — and is the most abundant intracellular antioxidant in the human body. It exists in virtually every cell, with the highest concentrations found in the liver (up to 10 mM), where it plays a central role in detoxification, and in the lungs, kidneys, and brain. Glutathione functions through two primary mechanisms: direct scavenging of reactive oxygen species (ROS) and serving as a cofactor for glutathione peroxidase, a family of enzymes that neutralize hydrogen peroxide and lipid peroxides."
+summary: "Reference on glutathione: antioxidant, liver health, immune support, aging, cognitive function. Levels decline with age and in chronic disease. Forms include NAC (most evidence-backed), GlyNAC, liposomal, and reduced glutathione; typical dosing 600-1800 mg/day NAC. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/glutathione-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/glutathione-benefits-forms-dosing-and-side-effects)*

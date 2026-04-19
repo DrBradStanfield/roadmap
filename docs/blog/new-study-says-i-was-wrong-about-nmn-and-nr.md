@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=XB6B_XjQMa8"
 publishedAt: "2026-04-09T12:00:00Z"
 tags: ["Supplements", "Research"]
 keywords: ["aging", "anti-aging", "exercise", "gut health", "insulin resistance", "longevity", "microbiome", "nad+", "niacin", "nmn", "sarcopenia"]
-summary: "Dr. Brad Stanfield examines whether NMN and NR supplements are worth the premium price. A new study claimed NR boosted NAD 2.3x more than NMN, but a larger 65-person trial found no difference. More importantly, three independent research groups have confirmed that gut bacteria break both NMN and NR down into cheap nicotinic acid before the body rebuilds it into NAD. Meta-analyses of clinical trials show no significant improvements in muscle function, metabolism, or cognition from NAD boosting — even in long-COVID patients where NAD tripled. Exercise-trained older adults maintained youthful NAD levels naturally, making regular physical activity the evidence-based approach."
+summary: "Dr Brad's NMN and NR post: gut bacteria break both down into cheap nicotinic acid before NAD is rebuilt, making premium NAD supplements no better than basic niacin. Covers meta-analyses showing no muscle, metabolic, or cognitive benefit; exercise as the evidence-based approach to NAD."
 ---
 
 Charles Brenner is not a scammer. He's a genuine biochemist — the man who discovered nicotinamide riboside back in 2004. He's published hundreds of papers. And when a new study came out last month showing that his supplement, NR, boosted NAD levels 2.3 times more than its main rival NMN, he was quick to share it on X.

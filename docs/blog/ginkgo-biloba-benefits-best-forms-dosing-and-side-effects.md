@@ -5,7 +5,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["ginkgo biloba", "ginkgo", "cognitive", "brain health", "memory", "dementia", "alzheimer", "tinnitus", "circulation", "vertigo", "neuropathy", "blood pressure", "diabetes", "insulin resistance", "inflammation", "aging", "longevity", "anxiety"]
-summary: "Ginkgo biloba is one of the oldest living tree species on earth, commonly referred to as a \"living fossil.\" It is the sole surviving member of the family Ginkgoaceae, a primitive plant lineage dating back over 200 million years. The tree has a long history of use in traditional Chinese medicine for treating cough, diarrhea, and other conditions. Today, ginkgo leaf extract is one of the most widely consumed herbal supplements worldwide, promoted for cognitive enhancement, memory support, circulation, tinnitus, anxiety, and a range of other conditions."
+summary: "Reference on ginkgo biloba: memory, brain health, vertigo, tinnitus. Evidence largely disappointing; modest benefit for vertigo and diabetic nerve pain. Standardized extract, 120-240 mg/day. Bleeding risk. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/ginkgo-biloba-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/ginkgo-biloba-benefits-best-forms-dosing-and-side-effects)*

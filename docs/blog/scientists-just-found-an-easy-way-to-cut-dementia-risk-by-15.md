@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=vUUqRQzQls0"
 publishedAt: "2025-05-20T20:21:44Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","blood pressure","brain health","cardiovascular","cognitive","dementia","diabetes","exercise","fiber","heart attack","hypertension","inflammation","oxidative stress","potassium","stroke","weight loss"]
-summary: "A new human study has found an easy way for us to slash our dementia risks by 15% over a 4-year time period, which probably compounds to a much higher risk reduction the earlier we start this method. In this article, we’ll unpack the study and explain how you can apply its lesson to protect your brain health."
+summary: "Dr Brad’s blood pressure and dementia post: target systolic BP below 120 to cut dementia risk 15% and heart attack/stroke risk 27%. Covers DASH diet, salt reduction, exercise, weight loss, and BP medications for hypertension."
 ---
 
 A new human study has found an easy way for us to slash our dementia risks by 15% over a 4-year time period, which probably compounds to a much higher risk reduction the earlier we start this method. In this article, we’ll unpack the study and explain how you can apply its lesson to protect your brain health.

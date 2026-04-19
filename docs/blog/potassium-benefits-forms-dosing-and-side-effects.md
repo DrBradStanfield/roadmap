@@ -5,7 +5,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["potassium", "potassium citrate", "potassium chloride", "potassium gluconate", "potassium bicarbonate", "blood pressure", "hypertension", "cardiovascular", "stroke", "heart attack", "kidney", "electrolytes", "muscle", "bone density", "osteoporosis", "diabetes", "insulin resistance", "blood sugar", "magnesium", "sodium", "calcium", "sleep", "hypokalemia", "hyperkalemia"]
-summary: "Potassium is an essential mineral and the most abundant intracellular cation in the human body. It is required for normal cell function because of its role in maintaining intracellular fluid volume and transmembrane electrochemical gradients. The total amount of potassium in the adult body is approximately 45 millimole (mmol) per kilogram of body weight — roughly 140 g for a 175-pound adult. Most potassium resides inside cells, with only a small amount in extracellular fluid. The intracellular concentration of potassium is about 30 times higher than the extracellular concentration, and this gradient is maintained via the sodium-potassium (Na+/K+) ATPase transporter."
+summary: "Reference on potassium: blood pressure, stroke risk, heart health, muscle cramps, electrolyte balance. Deficiency common in people eating processed foods or taking diuretics. Forms include citrate, gluconate, chloride; supplements typically capped at 99 mg/pill. Caution with kidney disease. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/potassium-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/potassium-benefits-forms-dosing-and-side-effects)*

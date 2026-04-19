@@ -4,7 +4,7 @@ url: "https://drstanfield.com/blogs/articles/supplement-gummies-compared-capsule
 publishedAt: "2025-01-29T16:30:07Z"
 tags: ["Supplements"]
 keywords: ["folate","magnesium","vitamin b12","vitamin b9","vitamin c","vitamin d","vitamin e"]
-summary: "If you've decided that you want to start adding some form of supplement to your diet, you quickly discover that there's another choice to make: how to do it. Supplements come in many forms! These forms are generally known as the delivery mechanism and can impact how effective a supplement is. The question is, which form is the best, and are there other considerations to keep in mind? Let's talk about it."
+summary: "Dr Brad's comparison of supplement gummies vs capsules: why capsules are clinically superior (no added sugar, higher dose capacity, better stability), problems with gummies (sugar content, underdosing, heat instability), and Brad's recommendation to choose capsules. Covers: supplement forms, absorption, quality."
 ---
 
 If you've decided that you want to start adding some form of supplement to your diet, you quickly discover that there's another choice to make: how to do it. Supplements come in many forms! These forms are generally known as the delivery mechanism and can impact how effective a supplement is. The question is, which form is the best, and are there other considerations to keep in mind? Let's talk about it.

@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["vitamin e", "tocopherol", "tocotrienol", "alpha-tocopherol", "gamma-tocopherol", "antioxidant", "cardiovascular", "heart health", "prostate cancer", "alzheimer", "dementia", "cognitive", "brain health", "skin", "wrinkles", "sunscreen", "uv", "photoaging", "diabetes", "insulin resistance", "liver disease", "cholesterol", "ldl", "hdl", "stroke", "cancer", "inflammation", "aging", "longevity", "selenium", "vitamin c", "eye health"]
-summary: "Vitamin E is not a single molecule but a family of eight fat-soluble compounds with antioxidant activity: four tocopherols (alpha, beta, gamma, delta) and four tocotrienols (alpha, beta, gamma, delta). Of these eight forms, only alpha-tocopherol is recognized to meet human nutritional requirements, and the Recommended Dietary Allowance (RDA) is defined exclusively for alpha-tocopherol."
+summary: "Reference on vitamin E: antioxidant, fatty liver (NASH), Alzheimer's, heart health. RDA 15 mg/day; diet usually sufficient. Supplements may raise prostate cancer risk; natural vs synthetic forms differ in potency. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/vitamin-e-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/vitamin-e-benefits-forms-dosing-and-side-effects)*

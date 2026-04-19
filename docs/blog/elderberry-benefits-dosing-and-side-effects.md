@@ -5,7 +5,7 @@ publishedAt: "2025-01-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["elderberry", "sambucus nigra", "anthocyanin", "anthocyanoside", "immune", "cold", "flu", "influenza", "antiviral", "antioxidant", "quercetin", "rutin", "vitamin c", "inflammation", "cytokine", "blood sugar", "insulin resistance", "gut health", "microbiome", "cholesterol", "blood pressure"]
-summary: "Elderberry refers to the small, dark purple fruit of the European elder tree (Sambucus nigra), a fast-growing deciduous shrub or small tree in the Adoxaceae family that can reach heights of 8 to 30 feet. Native to Europe, western Asia, North Africa, and parts of North America where it has naturalized, elderberry has been cultivated for centuries for its flowers and fruits. The American elderberry (S. canadensis) is a closely related native North American species, while S. cerulea (blue elderberry) is found in western North America. The term \"elderberry\" in most clinical and supplement contexts refers specifically to Sambucus nigra."
+summary: "Reference on elderberry: cold and flu symptom relief, immune support. Evidence mixed; small trials suggest may shorten illness. Syrup or capsule forms. Raw berries are toxic. Caution with autoimmune disease. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/elderberry-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/elderberry-benefits-dosing-and-side-effects)*

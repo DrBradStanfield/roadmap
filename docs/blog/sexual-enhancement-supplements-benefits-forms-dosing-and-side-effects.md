@@ -5,7 +5,7 @@ publishedAt: "2025-10-18T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["yohimbe", "yohimbine", "horny goat weed", "epimedium", "icariin", "tribulus terrestris", "maca", "maca root", "ginseng", "panax ginseng", "korean red ginseng", "l-arginine", "arginine", "erectile dysfunction", "libido", "testosterone", "sexual health", "nitric oxide", "zinc", "magnesium", "blood pressure", "cardiovascular", "anxiety", "depression", "cocoa", "fenugreek"]
-summary: "Sexual enhancement supplements represent one of the largest and most problematic categories in the dietary supplement market. These products — which include herbal extracts like yohimbe, horny goat weed (epimedium), tribulus terrestris, maca root, and ginseng, along with amino acids such as L-arginine — are widely marketed for improving libido, erectile function, and sexual performance. The global market for sexual health supplements reached an estimated USD 3.5 billion in 2023, with projections indicating growth to over USD 7 billion by 2030."
+summary: "Reference on sexual enhancement supplements: libido, erectile dysfunction. Covers maca root, yohimbine, L-arginine, ginseng, horny goat weed, tribulus. Evidence weak for most; major adulteration risk. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects)*

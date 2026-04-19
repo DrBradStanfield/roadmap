@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=8ZN1xCr4SPs"
 publishedAt: "2025-03-02T16:40:02Z"
 tags: ["Research","General Health"]
 keywords: ["aging","betaine","blood pressure","bmi","bone density","cardiovascular","diabetes","exercise","hormone","muscle","obesity","skin","testosterone","tmg"]
-summary: "Testosterone therapy for older men has skyrocketed in popularity. If you’re reading this article, chances are you’ve considered it or know someone who has. And the chances are also good that you’re aware of some of the controversy surrounding it. There have been sharp disagreements about its benefits and risks and who should be using it. By the end of this article, you'll have the insights you need to make an informed decision about testosterone therapy. We’re going to look at the fascinating history of testosterone treatment, see what the best science says right now, and talk about a controversy around a new study that could change how we move forward."
+summary: "Dr Brad’s testosterone therapy post: only use TRT if testosterone is clinically low with symptoms — not for age-related decline. Covers TRAVERSE trial flaws, cardiovascular risks, erythrocytosis, and addressing obesity and exercise first."
 ---
 
 Testosterone therapy for older men has skyrocketed in popularity. If you’re reading this article, chances are you’ve considered it or know someone who has. And the chances are also good that you’re aware of some of the controversy surrounding it. There have been sharp disagreements about its benefits and risks and who should be using it.

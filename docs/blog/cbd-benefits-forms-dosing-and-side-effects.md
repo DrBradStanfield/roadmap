@@ -5,7 +5,7 @@ publishedAt: "2024-05-17T22:30:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["cbd", "cannabidiol", "cbda", "cbg", "hemp extract", "hemp oil", "anxiety", "sleep", "insomnia", "pain", "inflammation", "epilepsy", "seizures", "schizophrenia", "psychosis", "depression", "blood pressure", "neuropathy", "arthritis", "parkinson", "ptsd", "melatonin", "l-theanine", "omega-3", "fish oil"]
-summary: "Cannabidiol (CBD) is one of over 100 cannabinoid compounds found in the Cannabis sativa plant. Unlike tetrahydrocannabinol (THC) — the primary psychoactive cannabinoid responsible for marijuana's intoxicating effects — CBD is not believed to produce psychoactive effects affecting perception and behavior. The cannabis plant contains approximately 540 chemical substances, with CBD and THC being the two dominant cannabinoids."
+summary: "Reference on CBD (cannabidiol): anxiety, insomnia, pain, and epilepsy/seizures. Adults use it for social anxiety (300 mg), sleep problems (160 mg), and chronic pain. Forms: full-spectrum, isolate, oils, topicals. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/cbd-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/cbd-benefits-forms-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ publishedAt: "2025-05-13T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["probiotic", "prebiotic", "gut health", "microbiome", "lactobacillus", "bifidobacterium", "saccharomyces boulardii", "digestion", "immune", "inflammation", "irritable bowel syndrome", "cholesterol", "ldl", "weight loss", "obesity", "depression", "anxiety", "eczema", "diarrhea", "antibiotic", "bloating", "fiber", "psyllium", "yogurt", "kombucha", "fermented foods"]
-summary: "Probiotics are live microorganisms that, when administered in adequate amounts, confer a health benefit on the host. This definition, established by the International Scientific Association for Probiotics and Prebiotics (ISAPP), distinguishes probiotics from the many \"live culture\" products that have not demonstrated health benefits in controlled trials. Most probiotic organisms are bacteria — primarily from the genera Lactobacillus (now reclassified into several genera within the family Lactobacillaceae), Bifidobacterium, Streptococcus, Enterococcus, Escherichia, and Bacillus — though the yeast Saccharomyces boulardii is also widely used."
+summary: "Reference on probiotics: gut health, IBS symptom relief, immune modulation, antibiotic-associated diarrhea prevention; key strains (Lactobacillus, Bifidobacterium); dosing and CFU guidance; and safety. Covers bloating, irregular bowel, gut flora restoration. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/probiotics-benefits-strains-dosing-and-side-effects](https://drstanfield.com/blogs/articles/probiotics-benefits-strains-dosing-and-side-effects)*

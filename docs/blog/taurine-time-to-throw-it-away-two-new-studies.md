@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=Onkl2RDBP8c"
 publishedAt: "2025-07-08T18:07:26Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["aging","blood pressure","blood sugar","cholesterol","diabetes","hba1c","inflammation","ldl","lifespan","muscle","nad","taurine","triglycerides"]
-summary: "Two years ago, a breakthrough study yielded exciting evidence that taurine could help combat aging. But a study just published casts serious doubt on those earlier results. And this is actually a great thing, as I’ll explain. So is it time to throw your taurine supplements in the garbage? Let’s take a look at what the new study tells us and what it means."
+summary: "Dr Brad’s taurine post: taurine likely does not decline with age, undermining the 2023 lifespan theory, but Brad continues taking it for metabolic benefits. Covers blood sugar, blood pressure, cholesterol, HbA1c, triglycerides, cancer safety concern, aging, supplements."
 ---
 
 Two years ago, a breakthrough study yielded exciting evidence that taurine could help combat aging. But a study just published casts serious doubt on those earlier results. And this is actually a great thing, as I’ll explain.

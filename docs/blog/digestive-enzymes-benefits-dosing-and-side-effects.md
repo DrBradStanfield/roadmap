@@ -5,7 +5,7 @@ publishedAt: "2024-09-04T23:34:17Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["digestive enzymes", "bromelain", "papain", "lactase", "lipase", "amylase", "protease", "pancreatin", "alpha-galactosidase", "phytase", "gut health", "digestion", "bloating", "lactose intolerance", "exocrine pancreatic insufficiency", "inflammation", "iron", "fiber", "probiotic", "prebiotic", "microbiome", "blood sugar", "diabetes", "insulin resistance", "folate", "folic acid", "calcium", "weight loss"]
-summary: "Digestive enzymes are specialized proteins produced by the gastrointestinal system that catalyze the hydrolysis of complex food molecules — carbohydrates, proteins, and fats — into simpler, absorbable nutrients such as monosaccharides, amino acids, and fatty acids. These enzymes function as biological catalysts, accelerating breakdown reactions without being consumed in the process, and are essential for maintaining metabolic health and preventing malabsorption."
+summary: "Reference on digestive enzymes: bloating, gas, lactose intolerance, malabsorption, pancreatic insufficiency. Bromelain, lactase, alpha-galactosidase, pancreatin; plant, fungal, and animal forms. Dosing by enzyme type; interactions with blood thinners and diabetes drugs. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/digestive-enzymes-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/digestive-enzymes-benefits-dosing-and-side-effects)*

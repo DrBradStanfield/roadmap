@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["amla", "indian gooseberry", "vitamin c", "antioxidant", "cholesterol", "ldl", "hdl", "triglycerides", "diabetes", "blood sugar", "hba1c", "insulin resistance", "blood pressure", "hypertension", "heart health", "cardiovascular", "atherosclerosis", "inflammation", "statin", "metformin", "gut health", "fiber"]
-summary: "Amla (Emblica officinalis), also known as amalaki or Indian gooseberry, is one of the most widely used ingredients in traditional Ayurvedic medicine. The fruit has been used for thousands of years across the Indian subcontinent for a broad range of health conditions, and in recent decades has attracted scientific interest for its potential effects on blood sugar control, blood lipid levels, cardiovascular health, and digestive function."
+summary: "Reference on amla (Indian gooseberry): blood sugar, cholesterol, heart health, blood pressure. Adults with type 2 diabetes or high cholesterol. Powder 1-3g/day or extract 500-1000mg/day; caution with diabetes drugs. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/amla-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/amla-benefits-forms-dosing-and-side-effects)*

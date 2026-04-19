@@ -4,7 +4,7 @@ url: "https://drstanfield.com/blogs/articles/iron-supplementation-good-health"
 publishedAt: "2024-09-26T14:30:01Z"
 tags: ["Diet","General Health"]
 keywords: ["cognitive","colon cancer","exercise","gut health","iron","skin","zinc"]
-summary: "Iron isn't just a metallic element used for building skyscrapers and the frames of cars; it's also a critical micronutrient used throughout the body in essential functions. Iron is required for proper physical growth, neurological development, the function of your cells, the synthesis of some hormones, and the creation of hemoglobin (and, thus, the transport of oxygen through the blood.) As is so often the case with essential vitamins and minerals, there's a market for supplements that give you more, often more than you need. The question is, is supplementing additional iron beneficial to your health, or are there risks that outweigh any possible benefit?"
+summary: "Dr Brad's iron supplementation post: avoid iron supplements unless prescribed for confirmed deficiency — excess causes GI damage, organ iron build-up, and zinc absorption issues. Covers iron deficiency anemia, high-risk groups (pregnancy, vegans, menorrhagia), and upper intake limits."
 ---
 
 Iron isn't just a metallic element used for building skyscrapers and the frames of cars; it's also a critical micronutrient used throughout the body in essential functions. Iron is required for proper physical growth, neurological development, the function of your cells, the synthesis of some hormones, and the creation of hemoglobin (and, thus, the transport of oxygen through the blood.)

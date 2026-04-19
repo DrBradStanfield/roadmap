@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["resveratrol", "trans-resveratrol", "pterostilbene", "antioxidant", "aging", "longevity", "cardiovascular", "heart health", "inflammation", "sirtuin", "blood pressure", "cholesterol", "ldl", "hdl", "blood sugar", "diabetes", "insulin resistance", "cognitive", "brain health", "alzheimer", "dementia", "obesity", "weight loss", "caloric restriction", "exercise", "nad+", "quercetin", "anti-aging", "lifespan", "healthspan", "statin", "metformin", "triglycerides", "hba1c"]
-summary: "Resveratrol (3,5,4'-trihydroxystilbene) is a naturally occurring stilbenoid polyphenol with the chemical formula C14H12O3. It functions as a phytoalexin — a compound plants produce in response to stress, injury, or pathogen attack to defend against fungal infections and environmental damage. Resveratrol is found in the skins of red grapes, grape seeds, purple grape juice, red wine, peanuts, blueberries, cranberries, and in particularly high concentrations in the roots of Japanese knotweed (Polygonum cuspidatum), which is the most common source for supplements."
+summary: "Reference on resveratrol: heart health, blood pressure, blood sugar, and memory. Mixed human evidence — animal benefits rarely translate. Trans-resveratrol preferred; 150–500 mg/day; higher doses may raise LDL. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/resveratrol-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/resveratrol-benefits-forms-dosing-and-side-effects)*

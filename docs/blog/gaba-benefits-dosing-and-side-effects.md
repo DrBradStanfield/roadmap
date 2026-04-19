@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["gaba", "gamma-aminobutyric acid", "anxiety", "sleep", "insomnia", "stress", "relaxation", "blood pressure", "hypertension", "muscle", "growth hormone", "cognitive", "brain health", "pharmagaba", "vitamin b6", "l-theanine", "magnesium", "depression", "epilepsy"]
-summary: "Gamma-aminobutyric acid (GABA) is the primary inhibitory neurotransmitter in the vertebrate central nervous system (CNS). It functions by reducing neuronal excitability — blocking impulses between nerve cells to produce a calming effect on brain activity. GABA is synthesized from the excitatory neurotransmitter glutamate via the enzyme glutamate decarboxylase (GAD), which requires pyridoxal 5'-phosphate (PLP), the active form of vitamin B6, as an essential cofactor. Once synthesized, GABA is stored in synaptic vesicles and released into the synaptic cleft upon neuronal depolarization, where it binds to specific receptors on postsynaptic neurons, leading to hyperpolarization and inhibition of action potential firing."
+summary: "Reference on GABA: stress, relaxation, sleep, blood pressure, muscle mass. Limited evidence oral GABA crosses the blood-brain barrier; effects are modest. Dosing ranges 100-3,000 mg depending on use. Avoid in pregnancy and with alcohol. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/gaba-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/gaba-benefits-dosing-and-side-effects)*

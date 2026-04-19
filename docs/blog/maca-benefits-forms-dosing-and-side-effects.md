@@ -5,7 +5,7 @@ publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["maca", "maca root", "maca powder", "gelatinized maca", "black maca", "red maca", "yellow maca", "libido", "sexual function", "erectile dysfunction", "fertility", "testosterone", "estrogen", "hormone", "energy", "adaptogen", "menopause", "anxiety", "depression", "sperm", "blood pressure", "antioxidant", "exercise", "aging"]
-summary: "Maca (Lepidium meyenii), also known as Peruvian ginseng, is a starchy root vegetable in the Brassicaceae (cruciferous) family, native to the high-altitude central Andes of Peru at elevations between 4,000 and 4,500 meters. The edible portion is a fleshy, radish-like underground tuber (technically a fused hypocotyl and taproot) measuring 10-14 cm in length and 3-5 cm in width when fresh. Maca has been cultivated for over 2,000 years in the Peruvian Andes, with archaeological evidence of domestication dating back approximately 1,300-2,000 years in the Junín region."
+summary: "Reference on maca root: libido, sexual function, erectile dysfunction, sperm quality, menopausal symptoms. Used by men and postmenopausal women. Powder or capsules; 1,500-3,000 mg/day. Thyroid caution; avoid in hormone-sensitive conditions. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/maca-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/maca-benefits-forms-dosing-and-side-effects)*

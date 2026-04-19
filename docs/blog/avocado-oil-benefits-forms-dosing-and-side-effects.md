@@ -5,7 +5,7 @@ publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["avocado oil", "monounsaturated fat", "oleic acid", "cholesterol", "ldl", "hdl", "triglycerides", "heart health", "cardiovascular", "skin", "cooking oil", "olive oil", "seed oil", "inflammation", "blood pressure", "diabetes", "insulin resistance", "obesity", "weight loss", "vitamin e", "lutein", "Mediterranean diet", "smoke point", "phytosterols", "beta-sitosterol"]
-summary: "Avocado oil is an edible oil extracted from the pulp (mesocarp) of the avocado fruit (Persea americana Mill.), a subtropical tree crop native to Central America and now cultivated globally in regions including Mexico, California, New Zealand, Peru, Chile, and parts of Africa. Unlike most vegetable oils, which are derived from seeds or kernels, avocado oil comes from the fleshy fruit surrounding the seed, giving it a distinctive fatty acid profile dominated by monounsaturated fats — particularly oleic acid, which typically comprises 42–80% of total fatty acids depending on cultivar, region, and extraction method."
+summary: "Reference on avocado oil: heart health, cholesterol, skin moisturizing, carotenoid absorption. Extra virgin to refined forms; 1-2 tbsp/day. Latex allergy risk; warfarin interaction. Commercial adulteration common. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/avocado-oil-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/avocado-oil-benefits-forms-dosing-and-side-effects)*

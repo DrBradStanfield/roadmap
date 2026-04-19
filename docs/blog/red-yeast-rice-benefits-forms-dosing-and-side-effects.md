@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["red yeast rice", "monacolin K", "lovastatin", "cholesterol", "ldl", "hdl", "triglycerides", "statin", "cardiovascular", "heart attack", "stroke", "coq10", "blood pressure", "blood sugar", "diabetes", "insulin resistance", "inflammation", "liver", "citrinin", "nattokinase", "berberine", "ezetimibe", "pcsk9", "fish oil", "psyllium", "fiber"]
-summary: "Red yeast rice (RYR) is a substance produced by fermenting white rice with the mold Monascus purpureus. It has been used in East Asian cuisine and traditional Chinese medicine for over 1,000 years, dating back to at least 800 AD during the Tang Dynasty. In traditional Chinese cooking, red yeast rice serves as a natural red pigment, flavor enhancer, and food preservative — it colors and flavors meats such as char siu (barbecued pork) and Peking duck, and features in fermented products like red bean curd (tofuyo), rice vinegar, and rice wines."
+summary: "Reference on red yeast rice: LDL cholesterol lowering, heart attack risk reduction. For high cholesterol or statin-intolerant adults. Monacolin K (like lovastatin); 1,200-2,400 mg/day. Muscle, liver, citrinin risks. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/red-yeast-rice-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/red-yeast-rice-benefits-forms-dosing-and-side-effects)*

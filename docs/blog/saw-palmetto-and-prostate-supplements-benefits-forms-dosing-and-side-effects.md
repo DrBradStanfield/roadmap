@@ -5,7 +5,7 @@ publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["saw palmetto", "prostate", "BPH", "beta-sitosterol", "psa", "prostate cancer", "pumpkin seed", "pygeum", "stinging nettle", "selenium", "zinc", "hair loss", "androgenetic alopecia", "finasteride", "testosterone", "dht", "urinary", "cholesterol", "ldl", "inflammation"]
-summary: "Saw palmetto (Serenoa repens) is a small palm tree native to the southeastern United States and West Indies, growing up to 10 feet tall with fan-shaped leaves. The plant's primary medicinal value lies in the oily compounds found in its berries, which are rich in fatty acids (70-95% of extract content), phytosterols (including beta-sitosterol), flavonoids, and other bioactive compounds. The ripe berries are harvested in late summer through fall and processed into extracts that form the basis of one of the most widely used supplements for prostate health."
+summary: "Reference on saw palmetto and prostate supplements: BPH urinary symptoms, hair loss. Lipid extract 320mg/day; beta-sitosterol 30-91mg/day. Evidence mixed; excess zinc linked to prostate cancer risk. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/saw-palmetto-and-prostate-supplements-benefits-forms-dosing-and-side-effects)*

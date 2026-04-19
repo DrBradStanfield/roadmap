@@ -5,7 +5,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["arginine", "l-arginine", "l-arginine hcl", "arginine silicate inositol", "nitrosigine", "nitric oxide", "blood pressure", "hypertension", "cardiovascular", "heart health", "heart attack", "exercise", "muscle", "erectile dysfunction", "cognitive", "brain health", "diabetes", "insulin resistance", "migraine", "inflammation", "citrulline", "creatinine", "kidney"]
-summary: "L-arginine, commonly referred to as arginine, is a semi-essential (conditionally essential) amino acid that serves as the primary substrate for the synthesis of nitric oxide (NO), a potent vasodilator produced by the enzyme nitric oxide synthase (eNOS). Nitric oxide, working through the second messenger cyclic guanosine monophosphate (cGMP), relaxes vascular smooth muscle, increases arterial blood flow, and plays a central role in endothelial function, blood pressure regulation, and cardiovascular homeostasis."
+summary: "Reference on L-arginine: blood pressure, erectile dysfunction, heart failure, exercise endurance. Forms: L-arginine HCl (deduct 17% for free arginine), Nitrosigine. Doses 4-15 g/day; contraindicated post-heart attack. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/arginine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/arginine-benefits-forms-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["manuka honey", "UMF", "MGO", "methylglyoxal", "antibacterial", "wound healing", "honey", "GERD", "acid reflux", "burns", "dry eye", "gut health", "inflammation", "quercetin", "antioxidant", "cough", "sore throat", "blood sugar", "diabetes", "cholesterol", "triglycerides", "skin"]
-summary: "Manuka honey is a monofloral honey derived primarily from the nectar of the manuka tree (Leptospermum scoparium), which grows throughout New Zealand and Eastern Australia. Unlike conventional honeys, manuka honey contains exceptionally high concentrations of methylglyoxal (MGO), an antibacterial compound that gives it unique therapeutic properties. MGO levels in manuka honey range from 85 mg/kg to greater than 1,000 mg/kg, compared to 0.4–24.1 mg/kg in non-manuka varieties such as citrus, honeydew, and multifloral honeys."
+summary: "Reference on manuka honey: wound healing, acid reflux (GERD), antibacterial, dry eye, oral health. UMF 15+ for therapeutic use; 1-2 tsp/day general wellness, 5g three times daily for GERD. Avoid in infants. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/manuka-honey-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/manuka-honey-benefits-forms-dosing-and-side-effects)*

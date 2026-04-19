@@ -5,7 +5,7 @@ publishedAt: "2024-02-17T07:30:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["apple cider vinegar", "acetic acid", "blood sugar", "diabetes", "insulin resistance", "weight loss", "obesity", "cholesterol", "triglycerides", "hba1c", "gut health", "intermittent fasting", "bmi", "heart health", "blood pressure", "depression", "kidney", "inflammation", "fiber", "prebiotic", "probiotic", "mediterranean diet"]
-summary: "Apple cider vinegar (ACV) is a fermented liquid produced from apple juice through a two-stage process: alcoholic fermentation by yeast converts sugars to ethanol, followed by acetic acid fermentation by Acetobacter species that oxidize the ethanol into acetic acid. The final product contains 4-6% acetic acid by volume, as required by the FDA, which defines apple cider vinegar as containing no less than 4% acetic acid. This places ACV in the mildly acidic range, similar to balsamic vinegar (4.5% acetic acid) and somewhat less acidic than distilled white vinegar (5-10%)."
+summary: "Reference on apple cider vinegar: blood sugar control, weight loss, cholesterol. Studied in insulin resistance, type 2 diabetes, overweight adults. Liquid form only (pills ineffective); 1-2 tbsp/day diluted in water. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/apple-cider-vinegar-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/apple-cider-vinegar-benefits-forms-dosing-and-side-effects)*

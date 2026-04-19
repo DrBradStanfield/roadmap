@@ -5,7 +5,7 @@ publishedAt: "2024-03-07T17:34:17Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["astaxanthin", "antioxidant", "carotenoid", "triglycerides", "hdl", "cholesterol", "ldl", "inflammation", "skin", "wrinkles", "photoaging", "uv", "exercise", "cardiovascular", "lutein", "lycopene", "beta-carotene", "eye health", "joint health", "omega-3", "fish oil", "krill", "hyaluronic acid", "selenium", "vitamin e", "vitamin c", "resveratrol", "blood pressure", "heart attack", "stroke", "cognitive", "brain health", "aging", "longevity", "anti-aging", "muscle", "strength training", "resistance training", "testosterone", "estrogen", "spf", "sunscreen", "sleep"]
-summary: "Astaxanthin is a red-orange carotenoid pigment with potent antioxidant activity, naturally produced by the freshwater microalga Haematococcus pluvialis. Through the food chain, astaxanthin accumulates in the tissues of crustaceans (shrimp, krill, crab, crayfish) and gives wild salmon, trout, and flamingos their characteristic pink-red coloration. It can also be produced by fermentation of the red yeast Phaffia rhodozyma or synthesized chemically."
+summary: "Reference on astaxanthin: antioxidant carotenoid studied for skin UV protection, triglycerides, HDL, joint pain, exercise recovery, and eye fatigue. Natural algal form (4-18 mg/day) used in trials; take with fat. Evidence is mixed and preliminary. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/astaxanthin-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/astaxanthin-benefits-forms-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["l-theanine", "anxiety", "sleep", "relaxation", "cognitive", "focus", "green tea", "gaba", "serotonin", "brain health", "blood pressure", "caffeine", "depression", "insomnia", "alpha waves", "suntheanine", "schizophrenia", "adhd", "stress"]
-summary: "L-theanine (gamma-glutamylethylamide) is a water-soluble, non-proteinogenic amino acid found primarily in the leaves of Camellia sinensis — the plant that produces green tea, black tea, and white tea — as well as certain species of mushroom (genus Boletus). First isolated from green tea leaves by Japanese scientists in 1949, L-theanine accounts for approximately 1-2% of the dry weight of tea leaves and is the compound largely responsible for the characteristic umami taste of green tea. It is structurally related to the excitatory neurotransmitter glutamate and the inhibitory neurotransmitter GABA, which is central to its proposed neurological effects."
+summary: "Reference on L-theanine: relaxation, anxiety, sleep, focus. Found in green tea; also taken as supplement. Common dose 200-400 mg/day; forms include Suntheanine. Clinical evidence modest — benefits clearest in schizophrenia; limited for stress, sleep, or anxiety disorders. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/l-theanine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/l-theanine-benefits-forms-dosing-and-side-effects)*

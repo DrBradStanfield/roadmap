@@ -5,7 +5,7 @@ publishedAt: "2024-06-06T08:34:17Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["choline", "choline bitartrate", "citicoline", "cdp-choline", "alpha-gpc", "phosphatidylcholine", "lecithin", "cognitive", "brain health", "memory", "acetylcholine", "liver", "fatty liver", "tmao", "cardiovascular", "stroke", "alzheimer", "dementia", "betaine", "folate", "pregnancy", "asthma", "parkinson", "glaucoma"]
-summary: "Choline is an essential nutrient required for cell membrane structure, neurotransmitter synthesis, lipid transport, and methyl group metabolism. It is a precursor to phosphatidylcholine and sphingomyelin — two major phospholipids vital for the structural integrity of all plant and animal cell membranes. Choline is also required for the synthesis of acetylcholine, a neurotransmitter critical for memory, mood, muscle control, and other brain and nervous system functions. Beyond these roles, choline participates in modulating gene expression through epigenetic mechanisms (DNA and histone methylation), lipid transport from the liver, and early brain development."
+summary: "Reference on choline: memory, fatty liver, brain health in pregnancy. Deficiency common in women and older adults. CDP-choline preferred for cognition; choline bitartrate raises TMAO and cardiovascular risk; alpha-GPC linked to stroke. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/choline-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/choline-benefits-best-forms-dosing-and-side-effects)*

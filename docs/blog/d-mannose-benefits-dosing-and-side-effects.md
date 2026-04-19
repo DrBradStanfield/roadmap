@@ -5,7 +5,7 @@ publishedAt: "2024-08-23T00:51:25Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["d-mannose", "mannose", "urinary tract", "UTI", "bladder health", "gut health", "prebiotic", "diabetes", "blood sugar", "insulin resistance", "fiber"]
-summary: "D-mannose is a naturally occurring simple sugar (monosaccharide) closely related to glucose. It is an epimer of glucose, differing only in the configuration of the hydroxyl group at the C-2 carbon position. Despite being a sugar, D-mannose follows a distinct metabolic pathway in the human body — only a small fraction is metabolized for energy, while the majority is rapidly excreted unchanged in urine after oral ingestion. This unique pharmacokinetic property is central to its proposed mechanism of action in preventing urinary tract infections (UTIs)."
+summary: "Reference on D-mannose: UTI prevention, recurrent bladder infections. Women with frequent UTIs, especially postmenopausal. Powder or capsules, 1.5-2 g/day. Largest RCT (2024, n=598) showed no benefit vs. placebo; earlier uncontrolled studies positive. Generally well-tolerated; mild diarrhea reported. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/d-mannose-benefits-dosing-and-side-effects](https://drstanfield.com/blogs/articles/d-mannose-benefits-dosing-and-side-effects)*

@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=2NwiJAmNdoA"
 publishedAt: "2025-06-04T02:39:33Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
 keywords: ["bone density","creatine","exercise","heart attack","insulin resistance","muscle","tmg"]
-summary: "We all know exercise is crucial for our health. But we’re super busy, so we need to extract the maximum benefit from the exercise we do manage to fit in during the limited time we have. The good news is that emerging research is radically shifting our understanding. We now know we can reap surprisingly large benefits from much smaller amounts of exercise. So how much exercise do we really need to see significant health impacts? We’ll go through the eye-opening numbers from some recent studies."
+summary: "Dr Brad’s exercise time post: even short bouts of vigorous activity (exercise snacks) yield major health benefits. Weekend warrior pattern rivals daily exercise. Covers muscle loss after 30, VILPA, all-cause mortality risk, 115 min vs 150 min WHO target."
 ---
 
 We all know exercise is crucial for our health. But we’re super busy, so we need to extract the maximum benefit from the exercise we do manage to fit in during the limited time we have. The good news is that emerging research is radically shifting our understanding. We now know we can reap surprisingly large benefits from much smaller amounts of exercise.

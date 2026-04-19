@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=h0b3EfuKaYQ"
 publishedAt: "2025-09-09T00:29:58Z"
 tags: ["Preventative Care","Supplements"]
 keywords: ["alzheimer","cognitive","dementia","inflammation","iron"]
-summary: "“Lithium deficiency is … a potential common mechanism for the … degeneration of the brain that leads to the onset of Alzheimer’s disease.” That’s the conclusion from a groundbreaking study just published in the journal Nature \\[1\\]. Alzheimer’s disease is one of the leading causes of death, but we’re still unsure about exactly what drives it. This compelling research points to a possible new mechanism. And this raises the potential of giving us a novel way to both detect and treat this debilitating disease. So let’s unpack the study and consider whether it’s time to start taking lithium supplements."
+summary: “Dr Brad’s low-dose lithium post: cautiously interested but not yet recommending supplements. Lithium orotate may prevent Alzheimer’s plaque buildup; lithium carbonate likely ineffective. Covers dementia, cognitive decline, brain aging in adults.”
 ---
 
 “Lithium deficiency is … a potential common mechanism for the … degeneration of the brain that leads to the onset of Alzheimer’s disease.”

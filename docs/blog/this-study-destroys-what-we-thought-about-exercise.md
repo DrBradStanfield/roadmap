@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=53oDnQef_qo"
 publishedAt: "2025-11-10T23:48:11Z"
 tags: ["Exercise","General Health","Research"]
 keywords: ["diabetes","exercise","resistance training"]
-summary: "A new study has changed the exercise advice I give to my patients in the clinic. The standard recommendations are to get at least 150 minutes a week of moderate intensity exercise or 75 minutes a week of vigorous exercise (which is useful if you’re short on time). This assumes vigorous exercise is about twice as effective as moderate. But a new study blows that assumption out of the water. And this has some important implications for how we approach exercise to maximize our health."
+summary: "Dr Brad’s exercise intensity post: vigorous activity is 4-9x more effective than moderate, not 2x as guidelines assume. Covers VILPA, exercise snacks, zone 2 training, diabetes and mortality risk, sedentary adults, time-poor patients."
 ---
 
 A new study has changed the exercise advice I give to my patients in the clinic.

@@ -5,7 +5,7 @@ publishedAt: "2025-07-19T04:04:17Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["pqq", "pyrroloquinoline quinone", "mitochondria", "cognitive", "brain health", "energy", "antioxidant", "coq10", "nad+", "inflammation", "cholesterol", "ldl", "aging", "longevity", "anti-aging", "sleep", "nerve growth factor", "neuroprotective", "exercise", "muscle", "insulin resistance", "diabetes", "liver"]
-summary: "Pyrroloquinoline quinone (PQQ) is a redox-active, water-soluble quinone compound with the chemical structure 4,5-dihydro-4,5-dioxo-1H-pyrrolo[2,3-f]quinoline-2,7,9-tricarboxylic acid. It is a reddish-brown antioxidant compound that functions primarily as a cofactor for bacterial dehydrogenases and exhibits potent antioxidant properties in mammalian systems. PQQ was first discovered in the late 1960s as a novel cofactor in bacterial enzymes like glucose and alcohol dehydrogenases, with researchers Christopher Anthony and Leslie Zatman characterizing its unusual properties. Its full chemical structure was elucidated in the 1970s, and the total chemical synthesis was achieved in 1981 by E. J. Corey and A. Tramontano through a 10-step route."
+summary: "Reference on PQQ (pyrroloquinoline quinone): memory, brain health, energy, mood, sleep, muscle, cholesterol. Studied in middle-aged and older adults. Typical 20 mg/day. Evidence limited and mostly industry-funded. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/pqq-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/pqq-benefits-forms-dosing-and-side-effects)*

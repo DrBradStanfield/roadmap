@@ -4,7 +4,7 @@ url: "https://drstanfield.com/blogs/articles/blood-type-diet-needs"
 publishedAt: "2024-12-07T00:20:31Z"
 tags: ["Diet"]
 keywords: ["bmi","exercise","inflammation","insulin resistance","kidney","mediterranean diet","sleep"]
-summary: "In the world of nutrition, there are dozens of different kinds of diets. Cutting out sugar, cutting out processed foods, cutting out gluten, eating a mediterranean diet, eating a low-carb diet, a ketogenic diet; these are all examples of how different people attempt to tailor their diets to their needs. Diets are also notoriously hard to stick to, especially if you live in America, where it's both harder, more expensive, and more time-consuming to do so than to just eat whatever comes your way. This means that diets are often viewed as ineffective. The diet itself may be fine, but the friction involved in sticking to it is high enough that you're more likely to \"relapse\" and lose the benefits of the diet. Throughout the last few decades, more and more attention has been paid to this problem. Some people have worked to make healthier foods more readily available. Some..."
+summary: "Dr Brad's blood type diet post: the science doesn't support eating by blood type — multiple RCTs show diet benefits are blood-type-independent. Covers D'Adamo theory, lectin hypothesis, ABO genetics, and why the underlying diets still improve health."
 ---
 
 In the world of nutrition, there are dozens of different kinds of diets. Cutting out sugar, cutting out processed foods, cutting out gluten, eating a mediterranean diet, eating a low-carb diet, a ketogenic diet; these are all examples of how different people attempt to tailor their diets to their needs.

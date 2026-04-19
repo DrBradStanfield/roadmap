@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=HWEAjoApMm8"
 publishedAt: "2024-11-04T03:29:43Z"
 tags: ["Research","Diet","General Health"]
 keywords: ["bmi","breast cancer","cervical","colon cancer","exercise","inflammation","kidney","lung cancer","mediterranean diet","mri","obesity","olive oil","prostate","skin","spf","sunscreen"]
-summary: "Do you know how much we can control our chances of getting cancer, one of the biggest dangers to our health? Cancer took nearly 10 million lives around the world in 2022 and affects 40 percent of us during our lifetimes. It's critical to understand how we can protect ourselves. The choices we make have a massive impact on our risks. While our genes play a role, a recent global study found that half of the cancer deaths in men and almost 40% in women come from things that we can do something about and prevent. In this blog post, I'll explain what those factors are, including the top three that we absolutely need to focus on. I'll show you the research on their dramatic impact and give you some practical steps you can start right away. These are the same steps I use with my patients. I'll also tell..."
+summary: "Dr Brad's cancer prevention post: lifestyle factors cause ~50% of cancer deaths in men and ~40% in women — all modifiable. Covers sun/SPF, exercise, Mediterranean diet, alcohol, obesity, smoking, HPV vaccine, and screening limits (Galleri test, full-body MRI caution)."
 ---
 
 Do you know how much we can control our chances of getting cancer, one of the biggest dangers to our health?

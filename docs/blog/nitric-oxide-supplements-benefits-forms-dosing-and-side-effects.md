@@ -5,7 +5,7 @@ publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["nitric oxide", "l-arginine", "l-citrulline", "citrulline malate", "beetroot", "blood pressure", "hypertension", "exercise", "cardiovascular", "erectile dysfunction", "muscle", "strength training", "resistance training", "endurance", "heart health", "inflammation", "cognitive", "brain health"]
-summary: "Nitric oxide (NO) is a highly reactive, short-lived gaseous free radical that functions as one of the most critical signaling molecules in human physiology. It is produced endogenously by nitric oxide synthase (NOS) enzymes in various cell types and plays essential roles in regulating vascular tone, platelet function, neurotransmission, immune responses, and numerous other biological processes. NO has a half-life of only 3-5 seconds in biological systems due to its rapid reactivity with oxygen, hemoglobin, and other molecules, confining its actions to local environments and requiring continuous production for sustained effects."
+summary: "Reference on nitric oxide supplements: blood pressure, exercise, erectile dysfunction. Adults with hypertension or ED. L-arginine, L-citrulline, beetroot nitrate; 3-8g/day. Avoid post-heart attack or kidney disease. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/nitric-oxide-supplements-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/nitric-oxide-supplements-benefits-forms-dosing-and-side-effects)*

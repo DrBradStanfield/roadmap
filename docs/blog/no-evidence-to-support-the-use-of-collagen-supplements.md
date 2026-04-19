@@ -6,7 +6,7 @@ publishedAt: "2025-08-27T21:15:34Z"
 tags: ["Skin Health","Supplements"]
 keywords: ["aging","collagen","peptide","skin","wrinkles"]
 product: "microvitamin-plus"
-summary: "A brand-new analysis just made a shocking claim: “There is no clinical evidence to support the use of collagen supplements to prevent or treat skin aging” \\[1\\]."
+summary: “Dr Brad's collagen peptides post: evidence likely supports benefits for skin hydration, elasticity, and wrinkles despite a 2025 meta-analysis claiming otherwise. Covers statistical pooling flaws, industry bias concerns, mechanism via fibroblasts, and Brad's personal decision to continue taking collagen.”
 ---
 
 A brand-new analysis just made a shocking claim:

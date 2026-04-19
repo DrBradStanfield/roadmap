@@ -5,7 +5,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["turmeric", "curcumin", "curcuminoids", "inflammation", "joint health", "osteoarthritis", "rheumatoid arthritis", "cognitive", "brain health", "antioxidant", "pain", "depression", "diabetes", "insulin resistance", "cholesterol", "ldl", "hdl", "triglycerides", "blood sugar", "hba1c", "liver", "fatty liver", "weight loss", "obesity", "blood pressure", "gut health", "ulcerative colitis", "cancer", "migraine", "eye health", "gout", "uric acid", "aging"]
-summary: "Turmeric is a spice derived from the dried rhizome (underground stem) of the plant Curcuma longa, a member of the ginger family grown commercially in Southeast Asia and India. Its primary bioactive compounds are curcuminoids, of which curcumin is the most abundant and well-studied, giving turmeric its characteristic orange-yellow color. The other two curcuminoids in turmeric are demethoxycurcumin and bisdemethoxycurcumin."
+summary: "Reference on turmeric and curcumin: joint pain, osteoarthritis, gut health, depression, cholesterol. Enhanced forms (Meriva, BCM-95) with a fatty meal; 500-1500 mg/day. Liver caution with high-bioavailability forms. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/turmeric-curcumin-benefits-best-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/turmeric-curcumin-benefits-best-forms-dosing-and-side-effects)*

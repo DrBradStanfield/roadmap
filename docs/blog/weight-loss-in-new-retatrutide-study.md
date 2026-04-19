@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=w0A_VRT3rIE"
 publishedAt: "2025-12-18T05:52:56Z"
 tags: ["General Health","Preventative Care","Research"]
 keywords: ["blood sugar","bmi","diabetes","glp-1","peptide","skin","weight loss"]
-summary: "A freshly published study has demonstrated a staggering 28.7% weight loss over a 68-week time period from a drug called retatrutide. Even more surprising, it also brought profound relief from knee arthritis pain. But the first thought that should go off in our minds is: what’s the downside? Let’s take a look at the results and see how this new treatment compares to what’s already on the market."
+summary: "Dr Brad’s retatrutide post: tirzepatide remains the better-tolerated choice despite retatrutide’s 28.7% weight loss. Covers GLP-1/GIP/glucagon triple agonist, phase 3 trial, dysesthesia, cardiac risk, comparison with semaglutide and tirzepatide for obesity."
 ---
 
 A freshly published study has demonstrated a staggering **28.7% weight loss over a 68-week** time period from a drug called **retatrutide**. Even more surprising, it also brought **profound relief from knee arthritis pain**.

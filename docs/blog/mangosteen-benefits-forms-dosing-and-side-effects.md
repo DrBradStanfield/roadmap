@@ -5,7 +5,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["mangosteen", "xanthones", "alpha-mangostin", "gamma-mangostin", "antioxidant", "inflammation", "anti-inflammatory", "garcinia mangostana", "skin", "diabetes", "blood sugar", "insulin resistance", "cancer", "neuroprotection", "brain health", "alzheimer", "cognitive", "gut health", "antimicrobial", "obesity", "weight loss", "cholesterol", "cardiovascular", "heart health"]
-summary: "Mangosteen (Garcinia mangostana L.) is a tropical evergreen tree in the Clusiaceae family, native to the rainforests of Southeast Asia — specifically the Sunda Islands and Moluccas of Malaysia and Indonesia. The fruit, often called the \"Queen of Fruits,\" features a thick, leathery, reddish-purple rind (pericarp) that exudes yellow latex when cut, enclosing 4-8 segments of soft, white, juicy aril with a sweet-tangy flavor blending notes of citrus, peach, and lychee. Despite the similarity in name, mangosteen is entirely unrelated to the mango."
+summary: "Reference on mangosteen: antioxidant, anti-inflammatory, acne, bad breath. Mostly preclinical evidence; two small RCTs only. Pericarp extract 200-400 mg/day. Avoid chronic high-dose juice (lactic acidosis risk). Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/mangosteen-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/mangosteen-benefits-forms-dosing-and-side-effects)*

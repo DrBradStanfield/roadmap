@@ -5,7 +5,7 @@ publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["berberine", "berberine hcl", "berberine hydrochloride", "berberine sulfate", "dihydroberberine", "berberine phytosome", "blood sugar", "diabetes", "insulin resistance", "cholesterol", "ldl", "triglycerides", "weight loss", "gut health", "inflammation", "hba1c", "metabolic syndrome", "heart health", "cardiovascular", "metformin", "statin", "glp-1", "pcsk9", "obesity"]
-summary: "Berberine is a bright yellow alkaloid compound found naturally in several plant families, including Berberidaceae (barberry, Oregon grape), Ranunculaceae (Chinese goldthread, Coptis chinensis), Papaveraceae (greater celandine), and Rutaceae (Amur cork tree, Phellodendron amurense). It is classified as a quaternary ammonium salt belonging to the protoberberine subclass of isoquinoline alkaloids, characterized by a benzylisoquinoline backbone. The compound appears as a yellow crystalline solid with a melting point of 145 degrees C, exhibits low solubility in water (approximately 1 part in 500 by weight), and displays strong yellow fluorescence under ultraviolet light -- a property that led to its historical use as a natural dye (Natural Yellow 18, CI 75160)."
+summary: "Reference on berberine: blood sugar, cholesterol, insulin resistance, weight loss. People with type 2 diabetes, prediabetes, or high LDL. Forms include HCl, phytosome, dihydroberberine; typical doses 900-1500 mg/day with meals. Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/berberine-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/berberine-benefits-forms-dosing-and-side-effects)*
