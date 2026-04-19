@@ -3,7 +3,7 @@ title: "Pathway: Dyspnoea (Shortness of Breath)"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["dyspnoea","shortness of breath","breathlessness","copd","asthma","heart failure","pulmonary embolism","pneumothorax","spirometry","breathing pattern disorder","hyperventilation","mmrc","nt-probnp","interstitial lung disease","oxygen saturation","hypoxia","can't catch my breath","winded easily","gasping for air","out of breath","hard to breathe"]
-summary: "Clinical pathway for dyspnoea (shortness of breath) in adults: red flags requiring emergency assessment, causes (respiratory, cardiac, vascular, haematological, neuromuscular, breathing pattern disorders), assessment approach including history, examination, spirometry, NT-proBNP, and management stra"
+summary: "Clinical pathway for dyspnoea (shortness of breath) in adults: red flags, differential diagnosis (COPD, asthma, heart failure, PE, pneumothorax, anaemia, breathing pattern disorder), assessment including spirometry and NT-proBNP, and management by cause. Always discuss with your doctor."
 ---
 
 # Dyspnoea (Shortness of Breath)
