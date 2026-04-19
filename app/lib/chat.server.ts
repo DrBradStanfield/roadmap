@@ -16,7 +16,6 @@ import { healthInputSchema } from '../../packages/health-core/src/validation';
 import { loadHealthData } from './supabase.server';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
 import { decodeSex, decodeUnitSystem } from '../../packages/health-core/src/types';
-import { SYNONYM_SETS } from './synonyms';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -111,7 +110,7 @@ function buildKnowledgeOverview(): string {
 
   return `## Knowledge Base
 
-You have access to a health knowledge base with ${BLOG_INDEX.length} entries. When the user asks about a topic, relevant content is automatically loaded into this conversation by a server-side keyword matcher. You do not need to search or request content — if it's relevant, it will appear below.
+You have access to a health knowledge base with ${BLOG_INDEX.length} entries. When the user asks about a topic, a retrieval step loads relevant content if available. You do not need to search or request content — if it's relevant, it will appear below.
 
 ### Blog & Reference Articles (${blogCount + refCount})
 ${blogCount} video-based articles and ${refCount} supplement reference articles covering: supplements, skin health, bone health, sleep, longevity, diet, exercise, blood pressure, cholesterol, and blood test interpretation.
@@ -426,7 +425,6 @@ export function matchDocumentTitle(
 
   const msgLower = userMessage.toLowerCase();
 
-  // Check each document title for keyword overlap with the user's message
   let bestMatch: { title: string; score: number } | null = null;
 
   for (const doc of documents) {
@@ -434,14 +432,12 @@ export function matchDocumentTitle(
     const typeLower = doc.documentType.toLowerCase().replace('_', ' ');
     let score = 0;
 
-    // Check document type keywords
     for (const kw of DOCUMENT_KEYWORDS) {
       if (msgLower.includes(kw) && (titleLower.includes(kw) || typeLower.includes(kw))) {
         score += 2;
       }
     }
 
-    // Check title words
     const titleWords = titleLower.split(/\W+/).filter(w => w.length > 3);
     for (const word of titleWords) {
       if (msgLower.includes(word)) score++;
@@ -453,83 +449,6 @@ export function matchDocumentTitle(
   }
 
   return bestMatch?.title ?? null;
-}
-
-/**
- * Expand a user query via synonym equivalence sets (see synonyms.ts).
- * Short terms (<=4 chars) require word boundaries to avoid "mi" matching
- * the suffix of "gained", "ed" matching "tried", etc.
- */
-function expandQuery(msg: string): string {
-  const msgLower = msg.toLowerCase();
-  const additions: string[] = [];
-  for (const set of SYNONYM_SETS) {
-    const matched = set.find(term => {
-      const t = term.toLowerCase();
-      if (t.length <= 4) {
-        const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        return new RegExp(`\\b${escaped}\\b`).test(msgLower);
-      }
-      return msgLower.includes(t);
-    });
-    if (matched) {
-      for (const other of set) {
-        if (other !== matched) additions.push(other);
-      }
-    }
-  }
-  return additions.length > 0 ? msg + ' ' + additions.join(' ') : msg;
-}
-
-/**
- * Match a user message against the blog index by tags and keywords.
- * Returns handles of the top matching articles, sorted by score descending.
- */
-export function matchBlogArticles(userMessage: string, maxResults = 3): string[] {
-  if (BLOG_INDEX.length === 0) return [];
-
-  const msgLower = expandQuery(userMessage).toLowerCase();
-  const matches: Array<{ handle: string; score: number }> = [];
-
-  for (const article of BLOG_INDEX) {
-    let score = 0;
-
-    // Check keywords (highest signal) — lowercase for case-insensitive match.
-    // Short keywords (≤4 chars) use word boundaries to avoid "ent" matching
-    // "treatment", "AIN" matching "migraine", "mi" matching "minimum", etc.
-    for (const kw of article.keywords) {
-      const kwLower = kw.toLowerCase();
-      if (kwLower.length <= 4) {
-        const escaped = kwLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        if (new RegExp(`\\b${escaped}\\b`).test(msgLower)) score += 2;
-      } else {
-        if (msgLower.includes(kwLower)) score += 2;
-      }
-    }
-
-    // Check tags
-    for (const tag of article.tags) {
-      if (msgLower.includes(tag.toLowerCase())) score += 1;
-    }
-
-    // Check title words (3+ chars)
-    const titleWords = article.title.toLowerCase().split(/\W+/).filter(w => w.length > 3);
-    for (const word of titleWords) {
-      if (msgLower.includes(word)) score += 1;
-    }
-
-    // Boost by content type — guidelines > reference articles > blog posts
-    if ((article.type === 'guideline' || article.type === 'pathway') && score > 0) score += 8;
-    else if (article.type === 'reference' && score > 0) score += 5;
-
-    if (score > 2) {
-      matches.push({ handle: article.handle, score });
-    }
-  }
-
-  // Sort by score descending, return top N handles
-  matches.sort((a, b) => b.score - a.score);
-  return matches.slice(0, maxResults).map(m => m.handle);
 }
 
 /**
@@ -567,26 +486,20 @@ function loadBlogArticle(handle: string): string | null {
 }
 
 /**
- * Match a user message against the blog index and load the top matching articles.
- * Falls back to firstUserMessage if the current message yields no matches.
- * Returns the combined article content (separated by ---), or null if no matches.
+ * Load and concatenate blog article content for the handles returned by the LLM router.
+ * Reuses the existing path-traversal-safe, memoized loadBlogArticle().
  */
-export function loadMatchedArticles(
-  message: string,
-  firstUserMessage?: string,
-  userMessageCount?: number,
-): string | null {
-  let handles = matchBlogArticles(message);
-  if (handles.length === 0 && firstUserMessage && (userMessageCount ?? 0) < 5) {
-    handles = matchBlogArticles(firstUserMessage);
-  }
+export function loadMatchedArticlesFromHandles(handles: string[]): string | null {
   if (handles.length === 0) return null;
 
   const parts: string[] = [];
   let totalChars = 0;
   for (const handle of handles) {
     const content = loadBlogArticle(handle);
-    if (!content) continue;
+    if (!content) {
+      Sentry.captureMessage(`Router picked handle with no content: ${handle}`, { level: 'warning' });
+      continue;
+    }
     if (totalChars + content.length > MAX_BLOG_CHARS) break;
     parts.push(content);
     totalChars += content.length;
@@ -716,6 +629,7 @@ export async function getChatCompletion(
   const body = {
     model: CHAT_MODEL,
     max_tokens: CHAT_MAX_TOKENS,
+    temperature: 0.3,
     system: systemBlocks,
     messages,
   };

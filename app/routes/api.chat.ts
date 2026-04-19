@@ -20,7 +20,7 @@ import {
   buildSystemBlocks,
   buildConversationMessages,
   matchDocumentTitle,
-  loadMatchedArticles,
+  loadMatchedArticlesFromHandles,
   getChatCompletion,
   warmupCache,
   CHAT_MODEL,
@@ -28,6 +28,7 @@ import {
   FREE_DAILY_LIMIT,
   GUEST_DAILY_LIMIT,
 } from '../lib/chat.server';
+import { routeQuery, warmupRouter, sanitizeForRouter, ROUTER_VERSION } from '../lib/chat-router.server';
 
 import { buildPackUrls } from '../lib/message-packs';
 
@@ -270,7 +271,8 @@ export async function action({ request }: ActionFunctionArgs) {
       lastWarmupAt = Date.now();
       const started = Date.now();
       try {
-        const usage = await warmupCache();
+        // Warm both the main LLM cache (4 blocks) and the router cache (2 blocks) in parallel.
+        const [usage] = await Promise.all([warmupCache(), warmupRouter()]);
         // cacheReadTokens > 0 → prior warmup's cache is still live.
         // cacheHitRatio: 0 on real POSTs despite a recent success here → cache
         // prefix is diverging between warmup and real requests; inspect blocks.
@@ -332,21 +334,61 @@ export async function action({ request }: ActionFunctionArgs) {
       return json({ success: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)` }, { status: 400 });
     }
 
-    // Assemble context — guest uses client-supplied inputs, authenticated loads from Supabase
+    // Sanitize message for router (strips control chars, caps at 2000 chars)
+    const sanitizedCurrent = sanitizeForRouter(message);
+
+    // History pre-load: for existing conversations load now so router gets context.
+    // For new conversations (no conversationId yet) history is empty by definition.
+    let history: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    if (conversationId) {
+      const { data: historyRows } = await auth.client
+        .from('chat_messages')
+        .select('role, content')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+      history = (historyRows ?? []) as Array<{ role: 'user' | 'assistant'; content: string }>;
+    }
+
+    const firstUserMsg = history.find(m => m.role === 'user')?.content;
+    const recentUserMsgs = history.filter(m => m.role === 'user').slice(-3).map(m => m.content);
+    const sanitizedFirst = firstUserMsg ? sanitizeForRouter(firstUserMsg) : undefined;
+    const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
+
+    // Assemble context + run router in parallel. Router runs alongside context/orders
+    // to reclaim ~300ms of latency — routerResult is awaited before the main LLM call.
     let context;
     let orderSummary = '';
+    let routerResult;
 
     if (auth.isGuest) {
-      context = body.guestInputs
-        ? assembleGuestChatContext(body.guestInputs)
-        : { userContextJson: '{}', subscriptionPlan: 'free', messageCredits: 0, healthDocuments: [] };
-    } else {
-      [context, orderSummary] = await Promise.all([
-        assembleChatContext(auth.client, auth.userId),
-        auth.admin ? getCachedOrders(auth.admin, auth.customerId!) : Promise.resolve(''),
+      [context, routerResult] = await Promise.all([
+        Promise.resolve(
+          body.guestInputs
+            ? assembleGuestChatContext(body.guestInputs)
+            : { userContextJson: '{}', subscriptionPlan: 'free', messageCredits: 0, healthDocuments: [] }
+        ),
+        routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent),
       ]);
+    } else {
+      let ctxResult: [Awaited<ReturnType<typeof assembleChatContext>>, string];
+      [ctxResult, routerResult] = await Promise.all([
+        Promise.all([
+          assembleChatContext(auth.client, auth.userId),
+          auth.admin ? getCachedOrders(auth.admin, auth.customerId!) : Promise.resolve(''),
+        ]) as Promise<[Awaited<ReturnType<typeof assembleChatContext>>, string]>,
+        routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent),
+      ]);
+      [context, orderSummary] = ctxResult;
     }
     const tAfterContext = Date.now();
+
+    if (routerResult.error) {
+      Sentry.captureMessage(`Router: ${routerResult.error}`, {
+        level: 'warning',
+        tags: { feature: 'chat', subsystem: 'router' },
+        extra: { latencyMs: routerResult.latencyMs, cacheHit: routerResult.cacheHit },
+      });
+    }
 
     if (!context) {
       const err = new Error('Chat: Could not load health data');
@@ -416,16 +458,7 @@ export async function action({ request }: ActionFunctionArgs) {
       activeConversationId = conv.id;
     }
 
-    // Load history FIRST (before insert) to avoid fragile content-based dedup
-    const { data: historyRows } = await auth.client
-      .from('chat_messages')
-      .select('role, content')
-      .eq('conversation_id', activeConversationId)
-      .order('created_at', { ascending: true });
-
-    const history = (historyRows ?? []) as Array<{ role: 'user' | 'assistant'; content: string }>;
-
-    // Then insert user message
+    // Insert user message (history already loaded above for existing convs)
     const { error: userMsgError } = await auth.client
       .from('chat_messages')
       .insert({
@@ -460,23 +493,25 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
-    // Match and load blog articles — try current message, fall back to first message
-    const firstUserMsg = history.find(m => m.role === 'user');
-    const userMsgCount = history.filter(m => m.role === 'user').length;
-    const blogArticles = loadMatchedArticles(message, firstUserMsg?.content, userMsgCount);
+    // Load content from router handles (router already ran in parallel with context above)
+    const blogArticles = loadMatchedArticlesFromHandles(routerResult.handles);
 
     // Build system blocks + messages, call LLM
     const systemBlocks = buildSystemBlocks(context.userContextJson, { documentContent, orderSummary, blogArticles });
-    const messages = buildConversationMessages(history, message);
+    const conversationMessages = buildConversationMessages(history, message);
     const tBeforeLlm = Date.now();
-    const completion = await getChatCompletion(systemBlocks, messages);
+    const completion = await getChatCompletion(systemBlocks, conversationMessages);
     const tAfterLlm = Date.now();
 
-    // Fire-and-forget: save assistant message + update timestamp after returning response
-    // User sees the response immediately — DB writes happen in background
+    // Pre-generate the assistant message UUID so chat_match_events can FK it cleanly.
+    const assistantMessageId = crypto.randomUUID();
+
+    // Fire-and-forget: save assistant message, then (nested) log match event.
+    // Nesting ensures the chat_messages FK is satisfied before match_events insert.
     auth.client
       .from('chat_messages')
       .insert({
+        id: assistantMessageId,
         conversation_id: activeConversationId,
         user_id: auth.userId,
         role: 'assistant',
@@ -485,26 +520,53 @@ export async function action({ request }: ActionFunctionArgs) {
         output_tokens: completion.usage.outputTokens,
         model: CHAT_MODEL,
       })
-      .then(({ error }) => {
-        if (error) {
-          console.error('Error saving assistant message:', error);
+      .then(({ error: msgError }: { error: { message: string } | null }) => {
+        if (msgError) {
+          console.error('Error saving assistant message:', msgError);
           Sentry.captureException(new Error('Chat: Failed to save assistant message'), {
             tags: { feature: 'chat' },
-            extra: { conversationId: activeConversationId, dbError: error.message },
+            extra: { conversationId: activeConversationId, dbError: msgError.message },
           });
+          return;
         }
+        // FK on message_id now satisfied — safe to insert match event
+        auth.client
+          .from('chat_match_events')
+          .insert({
+            message_id: assistantMessageId,
+            conversation_id: activeConversationId,
+            user_id: auth.userId,
+            message: sanitizedCurrent,
+            router_context: { first: sanitizedFirst ?? null, recent: sanitizedRecent },
+            matched_handles: routerResult.handles,
+            router_version: ROUTER_VERSION,
+            router_latency_ms: routerResult.latencyMs,
+            router_cache_hit: routerResult.cacheHit,
+            router_input_tokens: routerResult.usage.inputTokens,
+            router_cache_read_tokens: routerResult.usage.cacheReadTokens,
+            router_raw: routerResult.error ? (routerResult.rawJson?.slice(0, 500) ?? null) : null,
+            router_error: routerResult.error,
+          })
+          .then(({ error: matchError }: { error: { message: string } | null }) => {
+            if (matchError) {
+              Sentry.captureException(new Error('Chat: match-event insert failed'), {
+                tags: { feature: 'chat' },
+                extra: { dbError: matchError.message, messageId: assistantMessageId },
+              });
+            }
+          });
       });
 
     auth.client
       .from('chat_conversations')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', activeConversationId)
-      .then(({ error }) => {
-        if (error) {
-          console.error('Error updating conversation timestamp:', error);
+      .then(({ error: tsError }: { error: { message: string } | null }) => {
+        if (tsError) {
+          console.error('Error updating conversation timestamp:', tsError);
           Sentry.captureException(new Error('Chat: Failed to update conversation timestamp'), {
             tags: { feature: 'chat' },
-            extra: { conversationId: activeConversationId, dbError: error.message },
+            extra: { conversationId: activeConversationId, dbError: tsError.message },
           });
         }
       });
@@ -525,6 +587,12 @@ export async function action({ request }: ActionFunctionArgs) {
       cacheReadTokens: completion.usage.cacheReadTokens,
       cacheCreationTokens: completion.usage.cacheCreationTokens,
       cacheHitRatio: Math.round(100 * completion.usage.cacheReadTokens / Math.max(1, completion.usage.inputTokens)) / 100,
+      routerMs: routerResult.latencyMs,
+      routerCacheHit: routerResult.cacheHit,
+      routerInputTokens: routerResult.usage.inputTokens,
+      routerCacheReadTokens: routerResult.usage.cacheReadTokens,
+      handleCount: routerResult.handles.length,
+      routerError: routerResult.error,
       isGuest: auth.isGuest,
     }));
 

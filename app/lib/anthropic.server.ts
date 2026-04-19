@@ -491,7 +491,7 @@ export interface AnthropicUsage {
 
 /** Shared fetch + retry + error handling. Returns text content + usage metrics. */
 async function fetchAnthropicRaw(
-  apiKey: string, body: Record<string, unknown>, retries = 2,
+  apiKey: string, body: Record<string, unknown>, retries = 2, timeoutMs = 60_000,
 ): Promise<{ content: string; usage: AnthropicUsage }> {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -501,7 +501,7 @@ async function fetchAnthropicRaw(
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(60_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   // Retry on rate limit (429) with exponential backoff
@@ -510,7 +510,7 @@ async function fetchAnthropicRaw(
     const delay = Math.max(retryAfter * 1000, (3 - retries) * 5_000);
     console.warn(`Anthropic 429 rate limited, retrying in ${delay}ms (${retries} retries left)`);
     await new Promise(resolve => setTimeout(resolve, delay));
-    return fetchAnthropicRaw(apiKey, body, retries - 1);
+    return fetchAnthropicRaw(apiKey, body, retries - 1, timeoutMs);
   }
 
   if (!response.ok) {
@@ -544,11 +544,11 @@ async function callAnthropic(apiKey: string, body: Record<string, unknown>, retr
 
 /** Text + usage wrapper — for chat (prompt caching metrics). */
 export async function callAnthropicWithUsage(
-  body: Record<string, unknown>, retries = 2,
+  body: Record<string, unknown>, retries = 2, timeoutMs = 60_000,
 ): Promise<{ content: string; usage: AnthropicUsage }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
-  return fetchAnthropicRaw(apiKey, body, retries);
+  return fetchAnthropicRaw(apiKey, body, retries, timeoutMs);
 }
 
 /** Strip markdown code fences (```json ... ```) from LLM response text */

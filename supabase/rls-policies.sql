@@ -967,6 +967,48 @@ CREATE INDEX IF NOT EXISTS idx_ab_events_test_type ON ab_events(test_id, event_t
 ALTER TABLE ab_tests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ab_events ENABLE ROW LEVEL SECURITY;
 
+-- ===== chat_match_events (v2 LLM router logging) =====
+-- Apply to staging BEFORE deploying Phase A code.
+-- Apply to production BEFORE deploying Phase A code to production.
+-- Rollback: dropping this table is safe — additive only, no existing tables modified.
+
+CREATE TABLE IF NOT EXISTS chat_match_events (
+  id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  message_id      uuid UNIQUE REFERENCES chat_messages(id) ON DELETE CASCADE,
+  conversation_id uuid REFERENCES chat_conversations(id) ON DELETE CASCADE,
+  user_id         uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  message         text NOT NULL,
+  router_context  jsonb,
+  matched_handles text[] NOT NULL DEFAULT '{}',
+  router_version  integer NOT NULL,
+  router_latency_ms        integer,
+  router_cache_hit         boolean,
+  router_input_tokens      integer,
+  router_cache_read_tokens integer,
+  router_raw      text,
+  router_error    text,
+  created_at      timestamptz NOT NULL DEFAULT now()
+);
+
+-- (user_id, created_at) for weekly review queries filtered by user
+CREATE INDEX IF NOT EXISTS idx_match_events_user_created  ON chat_match_events (user_id, created_at DESC);
+-- GIN on matched_handles for "which queries got handle X" lookups
+CREATE INDEX IF NOT EXISTS idx_match_events_handles       ON chat_match_events USING GIN (matched_handles);
+-- Partial index on failures only — fast error-rate dashboards
+CREATE INDEX IF NOT EXISTS idx_match_events_error_created ON chat_match_events (created_at DESC) WHERE router_error IS NOT NULL;
+
+ALTER TABLE chat_match_events ENABLE ROW LEVEL SECURITY;
+
+-- INSERT only: users log their own events via auth.client (user JWT).
+-- No SELECT / UPDATE / DELETE policies — analytics reads go through supabaseAdmin.
+-- Mirrors the chat_messages INSERT policy pattern above.
+DROP POLICY IF EXISTS "Users can create own match events" ON chat_match_events;
+CREATE POLICY "Users can create own match events"
+  ON chat_match_events FOR INSERT
+  WITH CHECK (user_id = auth.uid());
+
+GRANT INSERT ON chat_match_events TO authenticated;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,
