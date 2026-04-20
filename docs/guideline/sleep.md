@@ -3,7 +3,7 @@ title: "Sleep: Clinical Insomnia Guidance"
 type: "guideline"
 tags: ["Guideline"]
 keywords: ["sleep", "insomnia", "sleep hygiene", "CBT-I", "cognitive behavioural therapy", "melatonin", "zopiclone", "zolpidem", "benzodiazepine", "DORA", "suvorexant", "lemborexant", "doxepin", "ramelteon", "trazodone", "magnesium glycinate", "glycine", "sleep restriction", "stimulus control", "sleep duration", "PSQI", "ISI", "Epworth", "ICSD-3", "sleep apnea", "restless legs", "circadian rhythm", "shift work", "sleep supplement", "valerian", "L-theanine", "GABA", "tryptophan", "5-HTP"]
-summary: "UpToDate 2025-2026 insomnia guidelines compiled with Dr. Stanfield's clinical framework. Covers ICSD-3-TR diagnosis, CBT-I as first-line treatment, pharmacotherapy drug classes with dosing tables, and supplement evidence (melatonin, magnesium glycinate, glycine). Key divergence: Brad advocates 300–800mcg melatonin vs typical 3–5mg OTC dose — this aligns with evidence that doses below 1mg may be as effective as higher amounts. Brad's Sleep product (melatonin + magnesium glycinate + glycine) is his curated evidence-based stack."
+summary: "Sleep and insomnia — can't sleep, trouble staying asleep, sleep hygiene, CBT-I as first-line, melatonin dosing, magnesium glycinate, glycine. Covers ICSD-3-TR diagnosis, CBT-I techniques, pharmacotherapy drug classes (DORAs, Z-drugs, doxepin, trazodone) with dosing tables, and supplement evidence. Brad's key divergence: 300–800mcg melatonin vs typical 3–5mg OTC. Compiled from UpToDate 2025–2026 insomnia articles, Auckland HealthPathways, and Brad's clinical framework."
 ---
 
 # Sleep: Clinical Insomnia Guidance

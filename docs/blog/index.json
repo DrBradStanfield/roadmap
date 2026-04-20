@@ -9015,7 +9015,7 @@
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "AHA 2026 dietary guidance compiled with Dr. Stanfield's clinical framework. Covers 9 heart-healthy dietary features, priority foods (legumes for protein + fibre + potassium), DASH/Mediterranean/Portfolio diet patterns with specific daily servings, DGA 2020-2025 food group targets, and IBS/IBD dietary management including low-FODMAP guidance and IBS-safe alternatives. Brad's divergences on omega-3 supplementation and alcohol noted."
+    "summary": "Diet — what to eat, Mediterranean, DASH, Portfolio diet, best proteins, saturated fat, sodium, fibre, ultra-processed food, added sugar, alcohol. Covers 9 heart-healthy dietary features, priority foods (legumes for protein + fibre + potassium), specific daily serving targets, and IBS/IBD dietary management including low-FODMAP guidance. Compiled from AHA 2026 dietary guidance, US DGA 2020–2025 food group targets, and Brad's clinical framework. Brad's divergences on omega-3 supplementation and alcohol noted."
   },
   {
     "title": "Exercise: Clinical Exercise Guidance",
@@ -9074,7 +9074,7 @@
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "Comprehensive exercise guidance built from AHA 2024 resistance training statement, 2025 UK Biobank vigorous dose-response data, Schoenfeld meta-analyses on training volume/frequency/load, and condition-specific evidence (BP, arthritis, diabetes, cognition, bone density). Covers minimum effective dose, cardiorespiratory and resistance training prescription, power training, exercise for specific conditions, and the high-volume plaque paradox. Brad's algorithm recommends 150+ min/wk cardio + 2-3 resistance sessions."
+    "summary": "Exercise — how much per week, what intensity, cardio vs resistance training, strength and power training, specific guidance for blood pressure, knee arthritis, diabetes, cognition, and bone density. Covers minimum effective dose, the high-volume plaque paradox, and Brad's 150+ min/wk cardio + 2–3 resistance sessions baseline. Built from AHA 2024 resistance exercise statement, US Physical Activity Guidelines, WHO 2020, Schoenfeld meta-analyses, 2025 UK Biobank dose-response data, and condition-specific RCTs."
   },
   {
     "title": "Sleep: Clinical Insomnia Guidance",
@@ -9121,7 +9121,7 @@
     ],
     "publishedAt": "",
     "type": "guideline",
-    "summary": "UpToDate 2025-2026 insomnia guidelines compiled with Dr. Stanfield's clinical framework. Covers ICSD-3-TR diagnosis, CBT-I as first-line treatment, pharmacotherapy drug classes with dosing tables, and supplement evidence (melatonin, magnesium glycinate, glycine). Key divergence: Brad advocates 300–800mcg melatonin vs typical 3–5mg OTC dose — this aligns with evidence that doses below 1mg may be as effective as higher amounts. Brad's Sleep product (melatonin + magnesium glycinate + glycine) is his curated evidence-based stack."
+    "summary": "Sleep and insomnia — can't sleep, trouble staying asleep, sleep hygiene, CBT-I as first-line, melatonin dosing, magnesium glycinate, glycine. Covers ICSD-3-TR diagnosis, CBT-I techniques, pharmacotherapy drug classes (DORAs, Z-drugs, doxepin, trazodone) with dosing tables, and supplement evidence. Brad's key divergence: 300–800mcg melatonin vs typical 3–5mg OTC. Compiled from UpToDate 2025–2026 insomnia articles, Auckland HealthPathways, and Brad's clinical framework."
   },
   {
     "title": "Pathway: Abdominal Aortic Aneurysm",
@@ -18862,7 +18862,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Clinical pathway for headaches in adults: red flags requiring emergency assessment, differential diagnosis (migraine, tension-type, cluster, medication overuse), assessment approach, and management by headache type including acute and preventive treatments. Always discuss with your doctor."
+    "summary": "Headache in adults — migraine, tension-type, cluster, medication-overuse, thunderclap (red flag). Covers headache for days or weeks, chronic headache, pounding or throbbing pain, assessment approach, red flags requiring emergency assessment, and management including acute triptans and preventive treatments (topiramate, propranolol, amitriptyline). Always discuss with your doctor."
   },
   {
     "title": "Pathway: Headaches in Children",

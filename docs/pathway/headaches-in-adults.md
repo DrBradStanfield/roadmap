@@ -3,7 +3,7 @@ title: "Pathway: Headaches in Adults"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["headache","migraine","tension headache","cluster headache","medication overuse headache","thunderclap headache","aura","sumatriptan","triptan","topiramate","propranolol","amitriptyline","giant cell arteritis","subarachnoid haemorrhage","chronic headache","pounding headache","throbbing head","migraine-like","bad headache"]
-summary: "Clinical pathway for headaches in adults: red flags requiring emergency assessment, differential diagnosis (migraine, tension-type, cluster, medication overuse), assessment approach, and management by headache type including acute and preventive treatments. Always discuss with your doctor."
+summary: "Headache in adults — migraine, tension-type, cluster, medication-overuse, thunderclap (red flag). Covers headache for days or weeks, chronic headache, pounding or throbbing pain, assessment approach, red flags requiring emergency assessment, and management including acute triptans and preventive treatments (topiramate, propranolol, amitriptyline). Always discuss with your doctor."
 ---
 
 # Headaches in Adults

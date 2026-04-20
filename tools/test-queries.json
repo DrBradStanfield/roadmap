@@ -666,7 +666,8 @@
   {
     "query": "my heel kills every morning when I get out of bed",
     "expected": [
-      "ankle-and-foot-pain-in-adults"
+      "ankle-and-foot-pain-in-adults",
+      "plantar-fasciitis"
     ],
     "category": "symptomatic"
   },
@@ -680,7 +681,8 @@
   {
     "query": "burning pain between my toes in tight shoes",
     "expected": [
-      "ankle-and-foot-pain-in-adults"
+      "ankle-and-foot-pain-in-adults",
+      "metatarsalgia"
     ],
     "category": "symptomatic"
   },
@@ -1478,181 +1480,180 @@
     ],
     "category": "palliative"
   },
-
   {
     "query": "How often should I workout?",
-    "expected": ["exercise"],
+    "expected": [
+      "exercise"
+    ],
     "category": "lifestyle",
     "source": "production",
     "notes": "Short/vague — real opening query from a user; should route to exercise guideline"
   },
   {
     "query": "what exercise should I do?",
-    "expected": ["exercise"],
+    "expected": [
+      "exercise"
+    ],
     "category": "lifestyle",
     "source": "production",
     "notes": "Bare question — common opener with no specifics"
   },
   {
     "query": "what is the best diet for me?",
-    "expected": ["diet"],
+    "expected": [
+      "diet"
+    ],
     "category": "lifestyle",
     "source": "production",
     "notes": "Personalised diet query — appeared 5x in one day (most common real query)"
   },
   {
     "query": "what is the best diet?",
-    "expected": ["diet"],
+    "expected": [
+      "diet"
+    ],
     "category": "lifestyle",
     "source": "production",
     "notes": "Generic diet query without personalisation — still routes to diet guideline"
   },
   {
     "query": "What is the best way to eat",
-    "expected": ["diet"],
+    "expected": [
+      "diet"
+    ],
     "category": "lifestyle",
     "source": "production",
     "notes": "Informal rephrase of diet question, no question mark"
   },
   {
     "query": "What does the evidence say about the DASH diet for blood pressure?",
-    "expected": ["diet", "blood-pressure-targets-just-changed", "the-fastest-way-to-lower-your-blood-pressure-naturally"],
+    "expected": [
+      "diet",
+      "blood-pressure-targets-just-changed",
+      "the-fastest-way-to-lower-your-blood-pressure-naturally"
+    ],
     "category": "lifestyle",
     "source": "production",
     "notes": "Clinical-style phrasing with specific diet name — high quality query"
   },
   {
     "query": "how can I build a workout routine for my life based on this?",
-    "expected": ["exercise"],
+    "expected": [
+      "exercise"
+    ],
     "category": "lifestyle",
     "source": "production",
     "notes": "Follow-up query referencing prior context ('this') — tests conversation-aware routing"
   },
   {
     "query": "I'm thinking about becoming Vegan, should I?",
-    "expected": ["diet", "suspected-b12-deficiency"],
+    "expected": [
+      "diet",
+      "suspected-b12-deficiency"
+    ],
     "category": "lifestyle",
     "source": "production",
     "notes": "Lifestyle/diet question; vegan raises B12 deficiency concern — both handles relevant"
   },
   {
     "query": "I'm thinking about trying CrossFit. How healthy would that be?",
-    "expected": ["exercise"],
+    "expected": [
+      "exercise"
+    ],
     "category": "lifestyle",
     "source": "production",
     "notes": "Exercise query using brand name CrossFit — no dedicated pathway, exercise guideline is correct"
   },
   {
     "query": "What age is DEXA scan recommended?",
-    "expected": ["bone-density-scan-dexa", "medications-for-osteoporosis"],
+    "expected": [
+      "bone-density-scan-dexa",
+      "medications-for-osteoporosis"
+    ],
     "category": "bone-health",
     "source": "production",
     "notes": "Screening question — DEXA pathway is the correct target"
   },
   {
     "query": "what is my ldl?",
-    "expected": ["hyperlipidaemia", "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"],
+    "expected": [
+      "hyperlipidaemia",
+      "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"
+    ],
     "category": "cardiovascular",
     "source": "production",
     "notes": "Short personalised query — user expecting chatbot to read their profile data"
   },
   {
     "query": "I've been having chest pain. What are the red flags?",
-    "expected": ["chest-pain", "angina", "acute-coronary-syndromes-acs"],
+    "expected": [
+      "chest-pain",
+      "angina",
+      "acute-coronary-syndromes-acs"
+    ],
     "category": "cardiovascular",
     "source": "production",
     "notes": "Safety query — chest pain red flags. Real user message word-for-word."
   },
   {
     "query": "Pravastatin VS rosuvastatin",
-    "expected": ["hyperlipidaemia", "ezetimibe-is-the-most-underrated-weapon-against-heart-disease", "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"],
+    "expected": [
+      "hyperlipidaemia",
+      "ezetimibe-is-the-most-underrated-weapon-against-heart-disease",
+      "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"
+    ],
     "category": "cardiovascular",
     "source": "production",
     "notes": "Drug comparison query — clinical abbreviation style, no full question"
   },
   {
     "query": "Which statin to take with ezitimibe",
-    "expected": ["hyperlipidaemia", "ezetimibe-is-the-most-underrated-weapon-against-heart-disease"],
+    "expected": [
+      "hyperlipidaemia",
+      "ezetimibe-is-the-most-underrated-weapon-against-heart-disease"
+    ],
     "category": "cardiovascular",
     "source": "production",
     "notes": "Misspelling of ezetimibe — tests robustness to typos"
   },
   {
-    "query": "Is MicroVitamin safe to take with blood thinners?",
-    "expected": ["direct-oral-anticoagulants", "warfarin-starting-and-monitoring", "multivitamins-benefits-evidence-dosing-and-side-effects"],
-    "category": "product",
-    "source": "production",
-    "notes": "Product-safety query — blood thinners raises anticoagulant pathway concern"
-  },
-  {
-    "query": "What makes MicroVitamin different from other multivitamins?",
-    "expected": ["multivitamins-benefits-evidence-dosing-and-side-effects"],
-    "category": "product",
-    "source": "production",
-    "notes": "Product comparison query — most common product type; should pull multivitamin reference"
-  },
-  {
-    "query": "How does MicroVitamin compare to AG1?",
-    "expected": ["multivitamins-benefits-evidence-dosing-and-side-effects"],
-    "category": "product",
-    "source": "production",
-    "notes": "Competitor comparison — AG1 is Athletic Greens; no dedicated pathway, multivitamin reference is closest"
-  },
-  {
     "query": "Should I take magnesium? What form is best?",
-    "expected": ["magnesium-benefits-best-forms-dosing"],
+    "expected": [
+      "magnesium-benefits-best-forms-dosing"
+    ],
     "category": "supplement",
     "source": "production",
     "notes": "Two-part question — common real query pattern; magnesium reference article is correct match"
   },
   {
     "query": "What is my protein target and why?",
-    "expected": ["protein-powders-benefits-types-dosing-and-side-effects", "exercise"],
+    "expected": [
+      "protein-powders-benefits-types-dosing-and-side-effects",
+      "exercise"
+    ],
     "category": "supplement",
     "source": "production",
     "notes": "Personalised protein query — user expects profile-aware answer"
   },
   {
     "query": "if im an athlete should I not have a higher protein target",
-    "expected": ["protein-powders-benefits-types-dosing-and-side-effects", "exercise"],
+    "expected": [
+      "protein-powders-benefits-types-dosing-and-side-effects",
+      "exercise"
+    ],
     "category": "supplement",
     "source": "production",
     "notes": "Informal spelling, no capitalisation — athlete protein question; tests colloquial handling"
   },
   {
     "query": "Magnesium glycinate for sleep",
-    "expected": ["magnesium-benefits-best-forms-dosing", "melatonin-benefits-forms-dosing-and-side-effects"],
+    "expected": [
+      "magnesium-benefits-best-forms-dosing",
+      "melatonin-benefits-forms-dosing-and-side-effects"
+    ],
     "category": "supplement",
     "source": "production",
     "notes": "Ingredient + use-case query — very common pattern in supplement chatbots"
-  },
-  {
-    "query": "The micro vitamin + powder contains creatine. What is your creatine source? Creapure?",
-    "expected": ["creatine-benefits-best-forms-dosing-and-side-effects"],
-    "category": "product",
-    "source": "production",
-    "notes": "Ingredient sourcing question — Creapure is a brand of creatine monohydrate"
-  },
-  {
-    "query": "Is there any issue taking Sleep and the magnesium dosage within it along with either the microvitamin pill or powder, which also has magnesium in it?",
-    "expected": ["magnesium-benefits-best-forms-dosing", "multivitamins-benefits-evidence-dosing-and-side-effects"],
-    "category": "product",
-    "source": "production",
-    "notes": "Long multi-product safety query — tests handling of verbose real-world messages"
-  },
-  {
-    "query": "Are the vitamins organic food based",
-    "expected": ["multivitamins-benefits-evidence-dosing-and-side-effects"],
-    "category": "product",
-    "source": "production",
-    "notes": "No punctuation; common customer question about ingredient sourcing"
-  },
-  {
-    "query": "Do you have 3rd party testing?",
-    "expected": ["multivitamins-benefits-evidence-dosing-and-side-effects"],
-    "category": "product",
-    "source": "production",
-    "notes": "Quality/trust query — very common for supplement buyers; should at minimum pull multivitamin reference"
   },
   {
     "query": "hello",
@@ -1711,17 +1712,66 @@
     "notes": "Shipping/tax query — out of scope; should not match any health content"
   },
   {
-    "query": "Are you working on a good omega 3 supplement for customers?",
-    "expected": ["omega-3-fish-oil-benefits-forms-dosing-and-side-effects"],
+    "query": "Is MicroVitamin safe to take with blood thinners?",
+    "expected": [],
     "category": "product",
     "source": "production",
-    "notes": "Product pipeline question — partially in scope (omega-3 content exists); tests intent disambiguation"
+    "notes": "Product-safety query — blood thinners raises anticoagulant pathway concern | Expected: empty handles — product questions are answered by products.md in the main LLM context, router should correctly return nothing per Rule 6."
+  },
+  {
+    "query": "What makes MicroVitamin different from other multivitamins?",
+    "expected": [],
+    "category": "product",
+    "source": "production",
+    "notes": "Product comparison query — most common product type; should pull multivitamin reference | Expected: empty handles — product questions are answered by products.md in the main LLM context, router should correctly return nothing per Rule 6."
+  },
+  {
+    "query": "How does MicroVitamin compare to AG1?",
+    "expected": [],
+    "category": "product",
+    "source": "production",
+    "notes": "Competitor comparison — AG1 is Athletic Greens; no dedicated pathway, multivitamin reference is closest | Expected: empty handles — product questions are answered by products.md in the main LLM context, router should correctly return nothing per Rule 6."
+  },
+  {
+    "query": "The micro vitamin + powder contains creatine. What is your creatine source? Creapure?",
+    "expected": [],
+    "category": "product",
+    "source": "production",
+    "notes": "Ingredient sourcing question — Creapure is a brand of creatine monohydrate | Expected: empty handles — product questions are answered by products.md in the main LLM context, router should correctly return nothing per Rule 6."
+  },
+  {
+    "query": "Is there any issue taking Sleep and the magnesium dosage within it along with either the microvitamin pill or powder, which also has magnesium in it?",
+    "expected": [],
+    "category": "product",
+    "source": "production",
+    "notes": "Long multi-product safety query — tests handling of verbose real-world messages | Expected: empty handles — product questions are answered by products.md in the main LLM context, router should correctly return nothing per Rule 6."
+  },
+  {
+    "query": "Are the vitamins organic food based",
+    "expected": [],
+    "category": "product",
+    "source": "production",
+    "notes": "No punctuation; common customer question about ingredient sourcing | Expected: empty handles — product questions are answered by products.md in the main LLM context, router should correctly return nothing per Rule 6."
+  },
+  {
+    "query": "Do you have 3rd party testing?",
+    "expected": [],
+    "category": "product",
+    "source": "production",
+    "notes": "Quality/trust query — very common for supplement buyers; should at minimum pull multivitamin reference | Expected: empty handles — product questions are answered by products.md in the main LLM context, router should correctly return nothing per Rule 6."
+  },
+  {
+    "query": "Are you working on a good omega 3 supplement for customers?",
+    "expected": [],
+    "category": "product",
+    "source": "production",
+    "notes": "Product pipeline question — partially in scope (omega-3 content exists); tests intent disambiguation | Expected: empty handles — product questions are answered by products.md in the main LLM context, router should correctly return nothing per Rule 6."
   },
   {
     "query": "Why did your product not get the approval from consumer lab",
-    "expected": ["multivitamins-benefits-evidence-dosing-and-side-effects"],
+    "expected": [],
     "category": "product",
     "source": "production",
-    "notes": "Negative-sentiment question about ConsumerLab result — tests if chatbot routes to product info"
+    "notes": "Negative-sentiment question about ConsumerLab result — tests if chatbot routes to product info | Expected: empty handles — product questions are answered by products.md in the main LLM context, router should correctly return nothing per Rule 6."
   }
 ]
