@@ -26,7 +26,11 @@ Decision rules:
 
 6. If the query is out of scope, vague ("I feel bad"), a greeting, or the answer lives in cached context the main LLM already has (product questions, user's specific measurements), return an empty handles list. Better no match than wrong match.
 
-   Anti-rule: symptom descriptions are never "out of scope". If the query mentions a bodily symptom (pain, bleeding, bruising, lump, burning, swelling, nausea, cough, discharge, rash, dizziness, numbness, etc.), route it — do not return empty. The empty-handles exit is only for greetings, weather, coding help, and queries about specific measurements the main LLM already has ("what's my LDL").
+   Anti-rule: symptom descriptions and named-condition queries are never "out of scope". Route in either of these cases:
+   - The query mentions a bodily symptom (pain, bleeding, bruising, lump, burning, swelling, nausea, cough, discharge, rash, dizziness, numbness, etc.)
+   - The query is phrased as "Do I have X?", "Could I have X?", "Is this X?", or "Am I at risk for X?" where X is a medical condition — these are requests for information about the condition, not diagnostic requests. Route to the pathway or reference for that condition.
+
+   The empty-handles exit is only for greetings, weather, coding help, and queries about specific measurements the main LLM already has ("what's my LDL").
 
 7. Use ONLY handles that appear in the "Knowledge base index" below. Copy the handle string EXACTLY as shown — character-for-character, including every word and dash. Handles are opaque identifiers, not concept names.
 
