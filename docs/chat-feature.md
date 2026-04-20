@@ -101,22 +101,13 @@ The chatbot's context is assembled server-side per request. Two classes of conte
 
 ## Access rules
 
-| User type | Behavior |
-|---|---|
-| **Guest** (unauthenticated) | 3 messages/day — conversion gate. Client-supplied health inputs (from widget) drive personalization. |
-| **Logged in, free tier** | 50 messages/day. Counter shown. |
-| **Logged in, paid tier** | Effectively unlimited (soft cap 999/day). |
-| **Exempt (Brad)** | 999/day for testing. |
+No per-user daily limit. Guests and logged-in users can chat freely — the goal is maximum usage so we can read real conversations and iterate on the router/content system. Abuse is bounded at the edges by:
 
-### Daily limit implementation
+- **Per-IP guest-session gate** (silent): max 10 new sessions/hour and 3 sessions/24h per IP for guests (see `getOrCreateGuestSession` in `supabase.server.ts`). Real users never hit these.
+- **Per-message length cap**: 500 characters, enforced client and server side (`MAX_MESSAGE_LENGTH` in `chat.server.ts`).
+- **Router + content caps**: context assembly tops out at ~25-40K input tokens per request regardless of conversation length.
 
-- "Day" = UTC calendar day (midnight UTC reset)
-- Tracked server-side from `chat_messages` table (count WHERE role='user' AND created_at >= today)
-- Counts user-sent messages, not assistant responses
-- Checked *before* the LLM API call (no wasted spend on over-limit users)
-- In-memory cache per process: `{userId: {count, dateString}}` to avoid DB query per request
-
-The chatbot acts as a sales assistant — product questions, order lookups, and blog discussions should flow freely for logged-in users. The 3-message guest limit exists solely to convert visitors to accounts.
+The `message_credits` column on `profiles` and the Shopify credit-pack purchase flow remain in the database and in `deductMessageCredit` / `buildPackUrls`, but the chat endpoint no longer reads or writes them. Reinstating a limit is a surgical re-wire, not a rebuild.
 
 ---
 
@@ -163,7 +154,7 @@ The chatbot acts as a sales assistant — product questions, order lookups, and 
 **Indexes**:
 - `(user_id, updated_at DESC)` on conversations — listing threads
 - `(conversation_id, created_at ASC)` on messages — loading a thread
-- `(user_id, created_at DESC) WHERE role = 'user'` on messages — daily limit counting
+- `(user_id, created_at DESC) WHERE role = 'user'` on messages — per-user activity queries
 
 **RLS**:
 - SELECT/INSERT/DELETE WHERE user_id = auth.uid() on both tables
@@ -201,7 +192,6 @@ The chatbot acts as a sales assistant — product questions, order lookups, and 
 ### Input constraints
 
 - Max 500 characters per message (enforced client + server)
-- Message counter near input: "2 of 3 messages remaining today"
 - Send button disabled while waiting for response
 - Loading indicator (animated dots) while waiting
 
@@ -231,8 +221,7 @@ The chatbot acts as a sales assistant — product questions, order lookups, and 
 {
   "conversationId": "abc-123",
   "messageId": "def-456",
-  "content": "Your LDL is 3.8 mmol/L, which is above...",
-  "dailyRemaining": 2
+  "content": "Your LDL is 3.8 mmol/L, which is above..."
 }
 ```
 
@@ -242,7 +231,7 @@ The chatbot acts as a sales assistant — product questions, order lookups, and 
 
 **Delete conversation:** `DELETE /api/chat` with `{conversationId}`
 
-**Error responses:** 401 (not authenticated), 429 (daily limit), 400 (message too long/invalid), 500 (LLM error)
+**Error responses:** 401 (not authenticated), 429 (guest-session IP abuse gate), 400 (message too long/invalid), 500 (LLM error)
 
 ---
 
@@ -257,7 +246,7 @@ The chatbot acts as a sales assistant — product questions, order lookups, and 
    - Shopify app proxy HMAC (rejects unauthenticated)
    - Existing 60 req/min per customer
    - Chat-specific: 10 req/min per user (prevents rapid-fire abuse)
-   - Daily limit: 3/day guest, 50/day free, 999/day paid
+   - Guest-session IP gate: 10 new sessions/hour and 3 sessions/24h per IP
    - Concurrent stream limit: 1 per user
 7. **RLS on chat tables** — users can only access their own conversations
 8. **Audit logging** — `logAudit()` for chat message creation and conversation deletion
@@ -303,7 +292,6 @@ Guests on the roadmap page have already entered health data in the widget (heigh
 2. In-memory IP rate limit: 10 requests/hour (prevents rapid-fire session creation)
 3. Session limit: max 3 sessions per IP per 24 hours (prevents incognito cycling)
 4. Session-IP binding: token only valid from originating IP
-5. Daily message limit: `checkDailyLimit()` counts messages in DB (same function for guests and authenticated users)
 
 ### Migration flow
 
@@ -314,37 +302,16 @@ When a guest creates an account:
 
 ---
 
-## Shopify billing (Phase 2)
+## Billing (not currently enforced)
 
-### Why phase it
+Limits were removed in favour of maximum usage for iteration. The billing substrate is still in the DB:
 
-- Validates demand first: if users rarely hit the 3/day limit, billing isn't urgent
-- Chat feature is independently valuable without billing
-- Billing adds: webhook handlers, subscription state, upgrade UI, Shopify scope changes, testing
+- `profiles.message_credits` column
+- `profiles.subscription_plan` column (still refreshed lazily from Shopify tags on list-conversations)
+- `deductMessageCredit()` / `add_message_credits` RPCs
+- `buildPackUrls()` and the Shopify credit-pack products
 
-### When to build
-
-After chat v1 is live and you see users consistently hitting the daily limit.
-
-### Architecture (planned, not built)
-
-**Profile columns** (added now, populated later):
-```
-subscription_plan TEXT DEFAULT 'free'
-subscription_id TEXT         -- Shopify subscription GID
-subscription_expires_at TIMESTAMPTZ
-```
-
-**Flow:**
-1. User clicks "Upgrade" in chat UI
-2. `POST /api/billing` → server calls Shopify `appSubscriptionCreate` GraphQL → returns `confirmationUrl`
-3. User approves on Shopify-hosted payment page
-4. Shopify sends `APP_SUBSCRIPTIONS_UPDATE` webhook → updates `profiles.subscription_plan`
-5. Chat API checks `subscription_plan` on each request to determine daily limit
-
-**Pricing** (TBD — placeholder $4.99/month):
-- At ~$0.012/message, 100 messages/month costs ~$1.20 in API fees → ~75% margin
-- Shopify takes 0% on first $1M revenue
+Nothing in the chat request path reads or writes these. To reinstate a limit, re-introduce a check that counts `chat_messages` rows for the day and wire it into `api.chat.ts` before the LLM call — the rest of the purchase flow (webhooks, pack products) is intact.
 
 ---
 

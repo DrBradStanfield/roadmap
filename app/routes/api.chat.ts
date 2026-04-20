@@ -10,11 +10,9 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node';
 import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
-import { getAuthenticatedUser, EXEMPT_CUSTOMERS, checkSubscriptionFromTags, getCustomerOrders, getClientIp } from '../lib/route-helpers.server';
-import { logAudit, getProfile, deductMessageCredit, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
+import { getAuthenticatedUser, checkSubscriptionFromTags, getCustomerOrders, getClientIp } from '../lib/route-helpers.server';
+import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
-  checkDailyLimit,
-  incrementDailyLimitCache,
   assembleChatContext,
   assembleGuestChatContext,
   buildSystemBlocks,
@@ -25,12 +23,8 @@ import {
   warmupCache,
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
-  FREE_DAILY_LIMIT,
-  GUEST_DAILY_LIMIT,
 } from '../lib/chat.server';
 import { routeQuery, warmupRouter, sanitizeForRouter, ROUTER_VERSION } from '../lib/chat-router.server';
-
-import { buildPackUrls } from '../lib/message-packs';
 
 /** Generate a conversation title from the first user message. */
 function generateTitle(message: string): string {
@@ -146,9 +140,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json({
         success: true,
         conversations: [],
-        dailyRemaining: GUEST_DAILY_LIMIT,
-        messageCredits: 0,
-        packs: [],
         isGuest: true,
       });
     }
@@ -189,47 +180,42 @@ export async function loader({ request }: LoaderFunctionArgs) {
       });
     }
 
-    // List conversations + get profile for plan check (parallelize)
-    const [convResult, profile] = await Promise.all([
-      auth.client
-        .from('chat_conversations')
-        .select('id, title, created_at, updated_at')
-        .order('updated_at', { ascending: false })
-        .limit(50),
-      auth.isGuest ? Promise.resolve(null) : getProfile(auth.client),
-    ]);
+    const { data: convData, error: convError } = await auth.client
+      .from('chat_conversations')
+      .select('id, title, created_at, updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(50);
 
-    if (convResult.error) {
-      console.error('Error listing conversations:', convResult.error);
+    if (convError) {
+      console.error('Error listing conversations:', convError);
       return json({ success: false, error: 'Failed to load conversations' }, { status: 500 });
     }
 
-    const messageCredits = profile?.message_credits ?? 0;
-    const isExempt = !auth.isGuest && auth.customerId && EXEMPT_CUSTOMERS.has(auth.customerId);
-
-    // Lazy subscription check (at most once per 24 hours)
-    const plan = (!auth.isGuest && auth.customerId && profile)
-      ? await refreshSubscriptionIfStale(
-          { admin: auth.admin, customerId: auth.customerId, userId: auth.userId },
+    // Off the response path: load profile + refresh subscription plan from
+    // Shopify tags at most once per 24h. Guest requests have no profile to refresh.
+    if (!auth.isGuest && auth.customerId) {
+      const customerId = auth.customerId;
+      (async () => {
+        const profile = await getProfile(auth.client);
+        if (!profile) return;
+        await refreshSubscriptionIfStale(
+          { admin: auth.admin, customerId, userId: auth.userId },
           profile,
-        )
-      : 'free';
-
-    const limitResult = isExempt
-      ? { allowed: true, remaining: 999, useCredit: false, messageCredits }
-      : await checkDailyLimit(auth.client, auth.userId, plan, messageCredits, auth.isGuest);
+        );
+      })().catch(err => {
+        console.error('Subscription refresh failed:', err);
+        Sentry.captureException(err, { tags: { feature: 'chat' } });
+      });
+    }
 
     return json({
       success: true,
-      conversations: (convResult.data ?? []).map(c => ({
+      conversations: (convData ?? []).map((c: { id: string; title: string; created_at: string; updated_at: string }) => ({
         id: c.id,
         title: c.title,
         updatedAt: c.updated_at,
         createdAt: c.created_at,
       })),
-      dailyRemaining: limitResult.remaining,
-      messageCredits,
-      packs: (!auth.isGuest && limitResult.remaining <= 0 && messageCredits <= 0) ? buildPackUrls() : [],
       ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
     });
   } catch (error) {
@@ -400,42 +386,6 @@ export async function action({ request }: ActionFunctionArgs) {
       return json({ success: false, error: 'Could not load health data' }, { status: 500 });
     }
 
-    const isExempt = !auth.isGuest && auth.customerId && EXEMPT_CUSTOMERS.has(auth.customerId);
-    const limitCheck = isExempt
-      ? { allowed: true, remaining: 999, useCredit: false, messageCredits: context.messageCredits }
-      : await checkDailyLimit(auth.client, auth.userId, context.subscriptionPlan, context.messageCredits, auth.isGuest);
-    let responseCredits = limitCheck.messageCredits;
-
-    if (!limitCheck.allowed) {
-      return json({
-        success: false,
-        error: 'limit_reached',
-        dailyRemaining: 0,
-        messageCredits: 0,
-        packs: buildPackUrls(),
-      }, { status: 429 });
-    }
-
-    // Deduct a credit if daily limit was exceeded
-    if (limitCheck.useCredit) {
-      const newBalance = await deductMessageCredit(auth.userId);
-      if (newBalance === -1) {
-        // Race condition: credits exhausted between check and deduct
-        return json({
-          success: false,
-          error: 'limit_reached',
-          dailyRemaining: 0,
-          messageCredits: 0,
-          packs: buildPackUrls(),
-        }, { status: 429 });
-      }
-      responseCredits = newBalance;
-    }
-
-    if (!isExempt && !limitCheck.useCredit) {
-      incrementDailyLimitCache(auth.userId);
-    }
-
     // Create or validate conversation
     let activeConversationId = conversationId;
     if (!activeConversationId) {
@@ -596,15 +546,11 @@ export async function action({ request }: ActionFunctionArgs) {
       isGuest: auth.isGuest,
     }));
 
-    const finalRemaining = limitCheck.useCredit ? 0 : Math.max(0, limitCheck.remaining - 1);
     return json({
       success: true,
       conversationId: activeConversationId,
       messageId: null,
       content: completion.content,
-      dailyRemaining: finalRemaining,
-      messageCredits: responseCredits,
-      packs: (!auth.isGuest && finalRemaining <= 0 && responseCredits <= 0) ? buildPackUrls() : [],
       ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
     });
   } catch (error) {

@@ -818,7 +818,6 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
       {!hideInlineChat && (
         <ChatSection
           isLoggedIn={authState?.isLoggedIn ?? false}
-          loginUrl={authState?.loginUrl}
           onExpand={onInlineChatExpand}
         />
       )}

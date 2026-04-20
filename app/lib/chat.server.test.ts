@@ -4,30 +4,8 @@ import {
   buildSystemBlocks,
   matchDocumentTitle,
   assembleGuestChatContext,
-  checkDailyLimit,
-  incrementDailyLimitCache,
   MAX_MESSAGE_LENGTH,
-  GUEST_DAILY_LIMIT,
-  FREE_DAILY_LIMIT,
-  SUBSCRIBER_DAILY_LIMIT,
 } from './chat.server';
-
-/** Mock Supabase client that returns a configurable message count. */
-function mockClient(messageCount: number, shouldError = false) {
-  return {
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          eq: () => ({
-            gte: () => shouldError
-              ? { count: null, error: { message: 'DB error' } }
-              : { count: messageCount, error: null },
-          }),
-        }),
-      }),
-    }),
-  } as any;
-}
 
 describe('buildConversationMessages', () => {
   it('adds new message to empty history', () => {
@@ -242,116 +220,8 @@ describe('matchDocumentTitle', () => {
   });
 });
 
-describe('checkDailyLimit', () => {
-  // Use unique user IDs to avoid cache interference between tests
-  let testUserId = 0;
-  function uniqueUserId() { return `test-user-limit-${++testUserId}`; }
-
-  describe('guest user', () => {
-    it('allows message when under guest limit', async () => {
-      const result = await checkDailyLimit(mockClient(1), uniqueUserId(), 'free', 0, true);
-      expect(result).toEqual({ allowed: true, remaining: GUEST_DAILY_LIMIT - 1, useCredit: false, messageCredits: 0 });
-    });
-
-    it('denies guest at limit with no credits', async () => {
-      const result = await checkDailyLimit(mockClient(GUEST_DAILY_LIMIT), uniqueUserId(), 'free', 0, true);
-      expect(result).toEqual({ allowed: false, remaining: 0, useCredit: false, messageCredits: 0 });
-    });
-  });
-
-  describe('free user (logged in)', () => {
-    it('allows message when under daily limit', async () => {
-      const result = await checkDailyLimit(mockClient(1), uniqueUserId(), 'free', 0);
-      expect(result).toEqual({ allowed: true, remaining: FREE_DAILY_LIMIT - 1, useCredit: false, messageCredits: 0 });
-    });
-
-    it('allows message when at 0 messages', async () => {
-      const result = await checkDailyLimit(mockClient(0), uniqueUserId(), 'free', 0);
-      expect(result).toEqual({ allowed: true, remaining: FREE_DAILY_LIMIT, useCredit: false, messageCredits: 0 });
-    });
-
-    it('denies message at limit with no credits', async () => {
-      const result = await checkDailyLimit(mockClient(FREE_DAILY_LIMIT), uniqueUserId(), 'free', 0);
-      expect(result).toEqual({ allowed: false, remaining: 0, useCredit: false, messageCredits: 0 });
-    });
-
-    it('allows message at limit when credits available', async () => {
-      const result = await checkDailyLimit(mockClient(FREE_DAILY_LIMIT), uniqueUserId(), 'free', 5);
-      expect(result).toEqual({ allowed: true, remaining: 0, useCredit: true, messageCredits: 5 });
-    });
-  });
-
-  describe('subscriber', () => {
-    it('allows message when under subscriber limit', async () => {
-      const result = await checkDailyLimit(mockClient(5), uniqueUserId(), 'subscriber', 0);
-      expect(result).toEqual({ allowed: true, remaining: SUBSCRIBER_DAILY_LIMIT - 5, useCredit: false, messageCredits: 0 });
-    });
-
-    it('denies subscriber at limit with no credits', async () => {
-      const result = await checkDailyLimit(mockClient(SUBSCRIBER_DAILY_LIMIT), uniqueUserId(), 'subscriber', 0);
-      expect(result).toEqual({ allowed: false, remaining: 0, useCredit: false, messageCredits: 0 });
-    });
-
-    it('allows subscriber at limit when credits available', async () => {
-      const result = await checkDailyLimit(mockClient(SUBSCRIBER_DAILY_LIMIT), uniqueUserId(), 'subscriber', 25);
-      expect(result).toEqual({ allowed: true, remaining: 0, useCredit: true, messageCredits: 25 });
-    });
-  });
-
-  describe('defaults and edge cases', () => {
-    it('defaults to free plan when plan is undefined', async () => {
-      const result = await checkDailyLimit(mockClient(FREE_DAILY_LIMIT), uniqueUserId());
-      expect(result.allowed).toBe(false);
-    });
-
-    it('treats unknown plan as free', async () => {
-      const result = await checkDailyLimit(mockClient(FREE_DAILY_LIMIT), uniqueUserId(), 'unknown', 0);
-      expect(result.allowed).toBe(false);
-    });
-
-    it('fails closed on DB error', async () => {
-      const result = await checkDailyLimit(mockClient(0, true), uniqueUserId(), 'free', 5);
-      expect(result.allowed).toBe(false);
-      expect(result.remaining).toBe(0);
-      expect(result.useCredit).toBe(false);
-    });
-
-    it('passes through messageCredits value', async () => {
-      const result = await checkDailyLimit(mockClient(1), uniqueUserId(), 'free', 42);
-      expect(result.messageCredits).toBe(42);
-    });
-  });
-
-  describe('cache behavior', () => {
-    it('uses cached count on second call', async () => {
-      const userId = uniqueUserId();
-      // First call: DB says 1 message
-      await checkDailyLimit(mockClient(1), userId, 'free', 0);
-      // Second call with different mock — should use cache, not DB
-      const result = await checkDailyLimit(mockClient(999), userId, 'free', 0);
-      expect(result.remaining).toBe(FREE_DAILY_LIMIT - 1); // From cached count of 1, not mock's 999
-    });
-
-    it('incrementDailyLimitCache updates cached count', async () => {
-      const userId = uniqueUserId();
-      await checkDailyLimit(mockClient(FREE_DAILY_LIMIT - 1), userId, 'free', 0);
-      incrementDailyLimitCache(userId);
-      // Now cache has count=FREE_DAILY_LIMIT, at limit
-      const result = await checkDailyLimit(mockClient(999), userId, 'free', 0);
-      expect(result.allowed).toBe(false);
-      expect(result.remaining).toBe(0);
-    });
-  });
-});
-
 describe('constants', () => {
   it('has correct message length limit', () => {
     expect(MAX_MESSAGE_LENGTH).toBe(500);
-  });
-
-  it('has correct daily limits', () => {
-    expect(GUEST_DAILY_LIMIT).toBe(3);
-    expect(FREE_DAILY_LIMIT).toBe(50);
-    expect(SUBSCRIBER_DAILY_LIMIT).toBe(999);
   });
 });

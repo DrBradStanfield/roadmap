@@ -440,8 +440,6 @@ export function HealthTool() {
         conversations: result.conversations,
         messages: msgs,
         activeConversationId: activeId,
-        dailyRemaining: result.dailyRemaining,
-        messageCredits: result.messageCredits,
       });
     });
   }, [formStage, chatPrefetch, authState.isLoggedIn]);
@@ -931,7 +929,6 @@ export function HealthTool() {
               {formStage >= 3 && (
                 <ChatSection
                   isLoggedIn={authState.isLoggedIn}
-                  loginUrl={authState.loginUrl}
                   guestInputs={!authState.isLoggedIn ? { ...effectiveInputs, unitSystem, medications, screenings } : null}
                   prefetchedData={chatPrefetch}
                 />
@@ -1009,7 +1006,6 @@ export function HealthTool() {
       {floatingChatOpen && (
         <ChatSection
           isLoggedIn={authState.isLoggedIn}
-          loginUrl={authState.loginUrl}
           startExpanded
           onClose={() => setFloatingChatOpen(false)}
           guestInputs={!authState.isLoggedIn ? { ...effectiveInputs, unitSystem, medications, screenings } : null}

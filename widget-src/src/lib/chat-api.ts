@@ -23,38 +23,22 @@ export interface ChatMessage {
   createdAt: string;
 }
 
-export interface ChatPack {
-  name: string;
-  price: string;
-  amount: number;
-  url: string;
-}
-
 export interface SendMessageResult {
   conversationId: string;
   messageId: string | null;
   content: string;
-  dailyRemaining: number;
-  messageCredits: number;
-  packs?: ChatPack[];
   sessionToken?: string;
   isGuest?: boolean;
 }
 
 export interface ChatListResult {
   conversations: ChatConversation[];
-  dailyRemaining: number;
-  messageCredits: number;
-  packs?: ChatPack[];
   sessionToken?: string;
   isGuest?: boolean;
 }
 
 export interface ChatError {
   error: string;
-  dailyRemaining?: number;
-  messageCredits?: number;
-  packs?: ChatPack[];
 }
 
 // ---------------------------------------------------------------------------
@@ -100,9 +84,6 @@ export async function listConversations(): Promise<ChatListResult | null> {
 
     return {
       conversations: result.conversations,
-      dailyRemaining: result.dailyRemaining,
-      messageCredits: result.messageCredits ?? 0,
-      packs: result.packs,
       sessionToken: result.sessionToken,
       isGuest: result.isGuest,
     };
@@ -167,12 +148,7 @@ export async function sendMessage(
     if (response.status === 429) {
       return {
         result: null,
-        error: {
-          error: data?.error ?? 'limit_reached',
-          dailyRemaining: data?.dailyRemaining ?? 0,
-          messageCredits: data?.messageCredits ?? 0,
-          packs: data?.packs,
-        },
+        error: { error: data?.error ?? 'rate_limited' },
       };
     }
 
@@ -198,9 +174,6 @@ export async function sendMessage(
         conversationId: data.conversationId,
         messageId: data.messageId,
         content: data.content,
-        dailyRemaining: data.dailyRemaining,
-        messageCredits: data.messageCredits ?? 0,
-        packs: data.packs,
         sessionToken: data.sessionToken,
         isGuest: data.isGuest,
       },

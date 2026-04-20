@@ -18,12 +18,11 @@ initSentry();
 
 interface ChatBubbleProps {
   isLoggedIn: boolean;
-  loginUrl?: string;
   fabLabel: string;
   guestInputs: Record<string, unknown> | null;
 }
 
-function ChatBubble({ isLoggedIn, loginUrl, fabLabel, guestInputs }: ChatBubbleProps) {
+function ChatBubble({ isLoggedIn, fabLabel, guestInputs }: ChatBubbleProps) {
   const [open, setOpen] = useState(false);
   const [widgetChatOpen, setWidgetChatOpen] = useState(false);
 
@@ -44,7 +43,6 @@ function ChatBubble({ isLoggedIn, loginUrl, fabLabel, guestInputs }: ChatBubbleP
     return (
       <ChatSection
         isLoggedIn={isLoggedIn}
-        loginUrl={loginUrl}
         startExpanded
         onClose={() => setOpen(false)}
         guestInputs={guestInputs}
@@ -71,7 +69,6 @@ function mount() {
   if (!container) return;
 
   const isLoggedIn = container.dataset.loggedIn === 'true';
-  const loginUrl = container.dataset.loginUrl || undefined;
   const productTitle = container.dataset.productTitle;
 
   const fabLabel = productTitle
@@ -97,7 +94,6 @@ function mount() {
     <ErrorBoundary>
       <ChatBubble
         isLoggedIn={isLoggedIn}
-        loginUrl={loginUrl}
         fabLabel={fabLabel}
         guestInputs={guestInputs}
       />

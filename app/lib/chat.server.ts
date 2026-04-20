@@ -24,9 +24,6 @@ import { decodeSex, decodeUnitSystem } from '../../packages/health-core/src/type
 const CHAT_MODEL = 'claude-haiku-4-5-20251001';
 const CHAT_MAX_TOKENS = 2048;
 const MAX_MESSAGE_LENGTH = 500;
-const GUEST_DAILY_LIMIT = 3;
-const FREE_DAILY_LIMIT = 50;
-const SUBSCRIBER_DAILY_LIMIT = 999; // effectively unlimited
 const HISTORY_TOKEN_BUDGET = 8000;
 const MAX_BLOG_CHARS = 80_000; // ~20K tokens — cap on combined blog articles in context
 
@@ -170,95 +167,6 @@ try {
 
 // Pre-concatenate at module level to avoid per-request string allocation
 const SYSTEM_PROMPT_WITH_ALGORITHM = CHAT_SYSTEM_PROMPT + ALGORITHM_DOC;
-
-// ---------------------------------------------------------------------------
-// Daily limit check
-// ---------------------------------------------------------------------------
-
-const dailyLimitCache = new Map<string, { count: number; dateString: string }>();
-
-// Clear stale entries every 30 minutes
-setInterval(() => {
-  const today = utcDateString();
-  for (const [key, entry] of dailyLimitCache) {
-    if (entry.dateString !== today) dailyLimitCache.delete(key);
-  }
-}, 30 * 60_000);
-
-function utcDateString(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-export interface DailyLimitResult {
-  allowed: boolean;
-  remaining: number;
-  useCredit: boolean;
-  messageCredits: number;
-}
-
-export async function checkDailyLimit(
-  client: SupabaseClient,
-  userId: string,
-  subscriptionPlan: string = 'free',
-  messageCredits: number = 0,
-  isGuest: boolean = false,
-): Promise<DailyLimitResult> {
-  const limit = isGuest ? GUEST_DAILY_LIMIT
-    : subscriptionPlan === 'subscriber' ? SUBSCRIBER_DAILY_LIMIT
-    : FREE_DAILY_LIMIT;
-  const today = utcDateString();
-
-  // Check cache first
-  const cached = dailyLimitCache.get(userId);
-  if (cached && cached.dateString === today && cached.count < limit) {
-    return { allowed: true, remaining: limit - cached.count, useCredit: false, messageCredits };
-  }
-
-  // Query DB for authoritative count (explicit user_id for defense-in-depth beyond RLS)
-  const startOfDay = `${today}T00:00:00.000Z`;
-  const { count, error } = await client
-    .from('chat_messages')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('role', 'user')
-    .gte('created_at', startOfDay);
-
-  if (error) {
-    console.error('Error checking daily limit:', error);
-    Sentry.captureException(new Error('Daily limit check failed'), {
-      extra: { userId, error },
-      tags: { feature: 'chat' },
-    });
-    return { allowed: false, remaining: 0, useCredit: false, messageCredits };
-  }
-
-  const messageCount = count ?? 0;
-  dailyLimitCache.set(userId, { count: messageCount, dateString: today });
-
-  const remaining = Math.max(0, limit - messageCount);
-
-  if (messageCount < limit) {
-    return { allowed: true, remaining, useCredit: false, messageCredits };
-  }
-
-  // Daily limit exhausted — check credits
-  if (messageCredits > 0) {
-    return { allowed: true, remaining: 0, useCredit: true, messageCredits };
-  }
-
-  return { allowed: false, remaining: 0, useCredit: false, messageCredits: 0 };
-}
-
-/** Increment the cached count after a successful message send. */
-export function incrementDailyLimitCache(userId: string): void {
-  const today = utcDateString();
-  const cached = dailyLimitCache.get(userId);
-  if (cached && cached.dateString === today) {
-    cached.count++;
-  } else {
-    dailyLimitCache.set(userId, { count: 1, dateString: today });
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Context assembly (cached per user for 5 minutes)
@@ -667,4 +575,4 @@ export async function warmupCache(): Promise<AnthropicUsage> {
 // Exports for testing
 // ---------------------------------------------------------------------------
 
-export { CHAT_MODEL, MAX_MESSAGE_LENGTH, GUEST_DAILY_LIMIT, FREE_DAILY_LIMIT, SUBSCRIBER_DAILY_LIMIT };
+export { CHAT_MODEL, MAX_MESSAGE_LENGTH };

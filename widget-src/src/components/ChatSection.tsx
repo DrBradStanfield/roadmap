@@ -16,7 +16,6 @@ import {
   triggerWarmup,
   type ChatConversation,
   type ChatMessage,
-  type ChatPack,
 } from '../lib/chat-api';
 import { renderMarkdown } from '../lib/markdown';
 import { FeedbackForm } from './FeedbackForm';
@@ -25,13 +24,10 @@ export interface ChatPrefetchData {
   conversations: ChatConversation[];
   messages: ChatMessage[];
   activeConversationId: string | null;
-  dailyRemaining: number;
-  messageCredits: number;
 }
 
 interface ChatSectionProps {
   isLoggedIn: boolean;
-  loginUrl?: string;
   /** When true, renders expanded immediately (skips collapsed bubble) */
   startExpanded?: boolean;
   /** External close handler — used by floating FAB to control open/close */
@@ -77,7 +73,7 @@ const ChatMessageBubble = React.memo(function ChatMessageBubble({ msg }: { msg: 
   );
 });
 
-export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onExpand, guestInputs, prefetchedData }: ChatSectionProps) {
+export function ChatSection({ isLoggedIn, startExpanded, onClose, onExpand, guestInputs, prefetchedData }: ChatSectionProps) {
   const [conversations, setConversations] = useState<ChatConversation[]>(prefetchedData?.conversations ?? []);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(prefetchedData?.activeConversationId ?? null);
   const [messages, setMessages] = useState<ChatMessage[]>(prefetchedData?.messages ?? []);
@@ -85,9 +81,6 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [dailyRemaining, setDailyRemaining] = useState<number | null>(prefetchedData?.dailyRemaining ?? null);
-  const [messageCredits, setMessageCredits] = useState<number>(prefetchedData?.messageCredits ?? 0);
-  const [creditPacks, setCreditPacks] = useState<ChatPack[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showThreads, setShowThreads] = useState(false);
   const [hasLoadedConversations, setHasLoadedConversations] = useState(!!prefetchedData);
@@ -153,9 +146,6 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
     const result = await listConversations();
     if (result) {
       setConversations(result.conversations);
-      setDailyRemaining(result.dailyRemaining);
-      setMessageCredits(result.messageCredits);
-      if (result.packs?.length) setCreditPacks(result.packs);
 
       // Auto-load the most recent conversation if guest has one (resume after refresh)
       if (!isLoggedIn && result.conversations.length > 0) {
@@ -220,17 +210,7 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
 
     if (sendError) {
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
-      if (sendError.error === 'limit_reached') {
-        setDailyRemaining(0);
-        setMessageCredits(0);
-        if (sendError.packs?.length) {
-          setCreditPacks(sendError.packs);
-        } else {
-          setError("You've reached your daily message limit. Check back tomorrow.");
-        }
-      } else {
-        setError(sendError.error);
-      }
+      setError(sendError.error);
       setIsLoading(false);
       return;
     }
@@ -243,9 +223,6 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
         createdAt: new Date().toISOString(),
       };
       setMessages(prev => [...prev, assistantMsg]);
-      setDailyRemaining(result.dailyRemaining);
-      setMessageCredits(result.messageCredits);
-      if (result.packs?.length) setCreditPacks(result.packs);
 
       if (!activeConversationId) {
         setActiveConversationId(result.conversationId);
@@ -287,36 +264,6 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
     setShowFeedback(false);
     loadConversationsIfNeeded();
   }, [onExpand, loadConversationsIfNeeded]);
-
-  const limitReached = dailyRemaining !== null && dailyRemaining <= 0 && messageCredits <= 0;
-  const [awaitingPurchase, setAwaitingPurchase] = useState(false);
-  const lastCreditCheck = useRef(0);
-
-  // Refresh credits when user returns to tab after purchasing
-  useEffect(() => {
-    if (!awaitingPurchase) return;
-    const handleFocus = async () => {
-      if (Date.now() - lastCreditCheck.current < 5000) return;
-      lastCreditCheck.current = Date.now();
-      const result = await listConversations();
-      if (result) {
-        setMessageCredits(result.messageCredits);
-        setDailyRemaining(result.dailyRemaining);
-        if (result.messageCredits > 0) {
-          setCreditPacks([]);
-        }
-      }
-      // Always reset — either purchase succeeded (credits > 0) or user abandoned
-      setAwaitingPurchase(false);
-    };
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [awaitingPurchase]);
-
-  const openPackCheckout = useCallback((url: string) => {
-    setAwaitingPurchase(true);
-    window.open(url, '_blank', 'width=500,height=700,scrollbars=yes');
-  }, []);
 
   // ----- COLLAPSED STATE (guests and logged-in) -----
   if (!isExpanded) {
@@ -399,39 +346,6 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
                 </div>
               </div>
             )}
-            {limitReached && !isLoggedIn && (
-              <div className="chat-upgrade">
-                <p>You've used your free messages for today.</p>
-                <p className="chat-upgrade-subtitle">Create a free account for 50 daily messages, saved chat history, and personalized health tracking.</p>
-                <a href={loginUrl || '/account/login'} className="chat-pack-btn chat-signup-btn">
-                  <span className="chat-pack-amount">Create Free Account</span>
-                </a>
-              </div>
-            )}
-            {limitReached && isLoggedIn && creditPacks.length > 0 && (
-              <div className="chat-upgrade">
-                {awaitingPurchase ? (
-                  <p>Complete your purchase in the checkout window. Credits will appear automatically.</p>
-                ) : (
-                  <>
-                    <p>You've used all your free messages for today.</p>
-                    <p className="chat-upgrade-subtitle">Get more messages instantly:</p>
-                    <div className="chat-pack-options">
-                      {creditPacks.map(pack => (
-                        <button
-                          key={pack.name}
-                          className="chat-pack-btn"
-                          onClick={() => openPackCheckout(pack.url)}
-                        >
-                          <span className="chat-pack-amount">{pack.amount} messages</span>
-                          <span className="chat-pack-price">{pack.price}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
             {error && <div className="chat-error">{error}</div>}
             {showScrollBtn && (
               <button className="chat-scroll-btn" onClick={() => { const el = messagesContainerRef.current; if (el) el.scrollTop = el.scrollHeight; }}>↓</button>
@@ -449,14 +363,14 @@ export function ChatSection({ isLoggedIn, loginUrl, startExpanded, onClose, onEx
             value={inputText}
             onChange={e => setInputText(e.target.value.slice(0, MAX_CHARS))}
             onKeyDown={handleKeyDown}
-            placeholder={limitReached ? 'Daily limit reached' : 'Ask about your health suggestions'}
-            disabled={isLoading || limitReached}
+            placeholder="Ask about your health suggestions"
+            disabled={isLoading}
             rows={1}
           />
           <button
             className="chat-send-btn btn-primary"
             onClick={handleSend}
-            disabled={isLoading || !inputText.trim() || limitReached}
+            disabled={isLoading || !inputText.trim()}
           >
             Send
           </button>
