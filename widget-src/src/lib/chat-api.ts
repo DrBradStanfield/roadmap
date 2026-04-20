@@ -217,20 +217,3 @@ export async function deleteConversation(conversationId: string): Promise<boolea
   }
 }
 
-/**
- * Prime the Anthropic prompt cache on the server. Fire-and-forget — if it
- * fails, the next real chat message just pays the cold-cache cost. No
- * sessionToken: the server's warmup branch is HMAC-only and deliberately
- * doesn't touch guest sessions.
- */
-export async function triggerWarmup(): Promise<void> {
-  try {
-    await fetch(`${PROXY_PATH}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ warmupOnly: true }),
-    });
-  } catch (err) {
-    Sentry.captureException(err, { tags: { feature: 'chat', step: 'warmup' } });
-  }
-}

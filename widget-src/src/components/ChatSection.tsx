@@ -13,7 +13,6 @@ import {
   loadConversation,
   sendMessage,
   deleteConversation,
-  triggerWarmup,
   type ChatConversation,
   type ChatMessage,
 } from '../lib/chat-api';
@@ -131,13 +130,6 @@ export function ChatSection({ isLoggedIn, startExpanded, onClose, onExpand, gues
     window.addEventListener('online', on);
     return () => { window.removeEventListener('offline', off); window.removeEventListener('online', on); };
   }, []);
-
-  // Prime the Anthropic prompt cache when the chat panel becomes visible.
-  // Server-side cooldown dedupes rapid toggles. Called as a statement (not
-  // returned) so React doesn't treat the Promise as a cleanup function.
-  useEffect(() => {
-    if (isExpanded) triggerWarmup();
-  }, [isExpanded]);
 
   // Lazy-load conversations (only when user first expands the chat)
   const loadConversationsIfNeeded = useCallback(async () => {

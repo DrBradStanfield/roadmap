@@ -554,23 +554,6 @@ export async function getChatCompletion(
 // Prompt cache warmup
 // ---------------------------------------------------------------------------
 
-/**
- * Prime the Anthropic prompt cache with `max_tokens:1` against our 4 cached
- * system blocks. User context (`'{}'`) sits AFTER the last `cache_control`
- * breakpoint, so real requests with different user context still hit the
- * shared cached prefix. Returns usage so the caller can record cache metrics.
- */
-export async function warmupCache(): Promise<AnthropicUsage> {
-  const systemBlocks = buildSystemBlocks('{}');
-  const result = await callAnthropicWithUsage({
-    model: CHAT_MODEL,
-    max_tokens: 1,
-    system: systemBlocks,
-    messages: [{ role: 'user', content: 'hi' }],
-  });
-  return result.usage;
-}
-
 // ---------------------------------------------------------------------------
 // Exports for testing
 // ---------------------------------------------------------------------------

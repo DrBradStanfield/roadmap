@@ -218,15 +218,3 @@ export async function routeQuery(
   }
 }
 
-// ---------------------------------------------------------------------------
-// Warmup — prime the router's two Anthropic cache blocks at server start /
-// chat-open time. Call alongside warmupCache() in the warmupOnly handler.
-// ---------------------------------------------------------------------------
-
-export async function warmupRouter(): Promise<void> {
-  try {
-    await routeQuery('health');
-  } catch (err) {
-    console.warn('Router warmup failed (non-fatal):', err);
-  }
-}
