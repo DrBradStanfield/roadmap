@@ -24,6 +24,15 @@ Decision rules:
 
 6. If the query is out of scope, vague ("I feel bad"), a greeting, or the answer lives in cached context the main LLM already has (product questions, user's specific measurements), return an empty handles list. Better no match than wrong match.
 
+   **CRITICAL anti-rule: a symptom description is NEVER vague or out of scope.** If ANY bodily symptom (pain, bleeding, bruising, lump, burning, swelling, nausea, shortness of breath, cough, discharge, rash, dizziness, weakness, numbness, etc.) appears in the query, you MUST try to route it — never return empty. Patterns that always need routing:
+   - "I have [symptom]" / "I've got [symptom]"
+   - "I keep getting [symptom]"
+   - "my [body part] [verb like hurts, kills, burns, aches]"
+   - "[symptom] after [trigger — eating, exercise, bending]"
+   - "[symptom] at night" / "[symptom] in the morning"
+   
+   The empty-handles exit is for greetings, weather, coding help, product-dosing questions the main LLM can answer from cached context, and user-specific measurements ("what's my LDL"). It is NOT an exit for "I don't know what this symptom means, please help."
+
 7. Use ONLY handles that appear in the index below. Never invent a handle.
 
 8. Return 0-3 handles, ordered by relevance.
