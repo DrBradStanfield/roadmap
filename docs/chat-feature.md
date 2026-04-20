@@ -103,7 +103,7 @@ The chatbot's context is assembled server-side per request. Two classes of conte
 
 No per-user daily limit. Guests and logged-in users can chat freely — the goal is maximum usage so we can read real conversations and iterate on the router/content system. Abuse is bounded at the edges by:
 
-- **Per-IP guest-session gate** (silent): max 10 new sessions/hour and 3 sessions/24h per IP for guests (see `getOrCreateGuestSession` in `supabase.server.ts`). Real users never hit these.
+- **Per-IP guest-session gate** (silent): max 10 new guest sessions/hour per IP, in-memory per process (see `getOrCreateGuestSession` in `supabase.server.ts`). Brakes naive single-IP floods; does not stop IP rotation.
 - **Per-message length cap**: 500 characters, enforced client and server side (`MAX_MESSAGE_LENGTH` in `chat.server.ts`).
 - **Router + content caps**: context assembly tops out at ~25-40K input tokens per request regardless of conversation length.
 
@@ -246,7 +246,7 @@ The `message_credits` column on `profiles` and the Shopify credit-pack purchase 
    - Shopify app proxy HMAC (rejects unauthenticated)
    - Existing 60 req/min per customer
    - Chat-specific: 10 req/min per user (prevents rapid-fire abuse)
-   - Guest-session IP gate: 10 new sessions/hour and 3 sessions/24h per IP
+   - Guest-session IP gate: 10 new sessions/hour per IP (in-memory, per process)
    - Concurrent stream limit: 1 per user
 7. **RLS on chat tables** — users can only access their own conversations
 8. **Audit logging** — `logAudit()` for chat message creation and conversation deletion
@@ -289,9 +289,8 @@ Guests on the roadmap page have already entered health data in the widget (heigh
 ### Anti-abuse layers
 
 1. Shopify HMAC: all requests verified through app proxy
-2. In-memory IP rate limit: 10 requests/hour (prevents rapid-fire session creation)
-3. Session limit: max 3 sessions per IP per 24 hours (prevents incognito cycling)
-4. Session-IP binding: token only valid from originating IP
+2. In-memory IP rate limit: 10 new guest sessions/hour per IP (brakes rapid-fire session creation; resets on redeploy, per-process)
+3. Session-IP binding: token only valid from originating IP
 
 ### Migration flow
 

@@ -232,10 +232,12 @@ export async function getOrCreateSupabaseUser(
 // Guest chat session management
 // ---------------------------------------------------------------------------
 
-// IP rate limit for guest sessions: 10 requests/hour
+// IP rate limit for guest session creation: 10 new sessions/hour per IP,
+// per-process in-memory. Resets on redeploy; effective ceiling is ~N × 10/hr
+// where N is the Fly machine count. Sophisticated IP-rotation abuse isn't
+// caught here — would need an upstream WAF.
 const GUEST_IP_RATE_WINDOW_MS = 60 * 60_000;
 const GUEST_IP_RATE_MAX = 10;
-const GUEST_MAX_SESSIONS_PER_IP = 3; // per 24 hours
 const guestIpRateMap = new Map<string, { count: number; resetAt: number }>();
 
 setInterval(() => {
@@ -286,18 +288,6 @@ export async function getOrCreateGuestSession(
     guestIpRateMap.set(ip, { count: 1, resetAt: now + GUEST_IP_RATE_WINDOW_MS });
   } else {
     ipEntry.count++;
-  }
-
-  // Check IP session limit (max 3 per 24h)
-  const twentyFourHoursAgo = new Date(now - 24 * 60 * 60_000).toISOString();
-  const { count } = await supabaseAdmin
-    .from('guest_chat_sessions')
-    .select('*', { count: 'exact', head: true })
-    .eq('ip_address', ip)
-    .gte('created_at', twentyFourHoursAgo);
-
-  if ((count ?? 0) >= GUEST_MAX_SESSIONS_PER_IP) {
-    throw new GuestRateLimitError('Session limit reached');
   }
 
   // Create ghost auth user + profile + session
