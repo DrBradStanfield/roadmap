@@ -18,10 +18,10 @@ if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey || !supabaseJwtSecre
 
 // ---------------------------------------------------------------------------
 // Admin client — service key, bypasses RLS.
-// Used ONLY for user creation and profile lookups.
+// Used for user creation, profile lookups, and platform-bot writes (Discord).
 // ---------------------------------------------------------------------------
 
-const supabaseAdmin = supabaseUrl && supabaseServiceKey
+export const supabaseAdmin = supabaseUrl && supabaseServiceKey
   ? createClient(supabaseUrl, supabaseServiceKey)
   : null;
 
@@ -1803,6 +1803,13 @@ export async function loadHealthData(client: SupabaseClient) {
 export async function deleteAllUserData(userId: string): Promise<{ measurementsDeleted: number }> {
   if (!supabaseAdmin) {
     throw new Error('Supabase admin client not configured');
+  }
+
+  // Safeguard: the Discord bot profile is shared across all Discord conversations.
+  // Deleting it would wipe the entire Discord chat history in one request.
+  const discordBotProfileId = process.env.DISCORD_BOT_PROFILE_ID;
+  if (discordBotProfileId && userId === discordBotProfileId) {
+    throw new Error('Refusing to delete shared Discord bot profile');
   }
 
   // 1. Log the deletion before removing data

@@ -658,6 +658,20 @@ CREATE POLICY "Users can delete own messages"
 GRANT SELECT, INSERT, UPDATE, DELETE ON chat_conversations TO authenticated;
 GRANT SELECT, INSERT, DELETE ON chat_messages TO authenticated;
 
+-- Discord bot: multi-platform chat support.
+-- Discord conversations all reference a single shared bot profile (DISCORD_BOT_PROFILE_ID env var);
+-- individual Discord users are tracked via external_id on the conversation.
+-- discord_message_id on chat_messages lets reply chains resolve to their conversation
+-- in one indexed lookup (see idx_chat_messages_discord_msg_id below).
+ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS platform TEXT NOT NULL DEFAULT 'shopify';
+ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS external_id TEXT;
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS discord_message_id TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_chat_messages_discord_msg_id
+  ON chat_messages (discord_message_id) WHERE discord_message_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_chat_conversations_platform_external
+  ON chat_conversations (platform, external_id) WHERE external_id IS NOT NULL;
+
 -- Profile billing columns (Phase 2 — chat subscription)
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_plan TEXT DEFAULT 'free';
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_id TEXT;

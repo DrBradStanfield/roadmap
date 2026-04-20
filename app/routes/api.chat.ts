@@ -18,22 +18,11 @@ import {
   matchDocumentTitle,
   loadMatchedArticlesFromHandles,
   getChatCompletion,
+  generateTitle,
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION } from '../lib/chat-router.server';
-
-/** Generate a conversation title from the first user message. */
-function generateTitle(message: string): string {
-  const sentenceMatch = message.match(/^(.+?[.?!])\s/);
-  if (sentenceMatch && sentenceMatch[1].length > 15 && sentenceMatch[1].length <= 80) {
-    return sentenceMatch[1];
-  }
-  if (message.length <= 80) return message;
-  const truncated = message.slice(0, 80);
-  const lastSpace = truncated.lastIndexOf(' ');
-  return lastSpace > 40 ? truncated.slice(0, lastSpace) + '…' : truncated + '…';
-}
 
 // ---------------------------------------------------------------------------
 // Unified auth: handles both authenticated users and guests

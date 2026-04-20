@@ -560,6 +560,22 @@ export async function getChatCompletion(
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
+// Conversation title generation
+// ---------------------------------------------------------------------------
+
+/** Generate a conversation title from the first user message. */
+export function generateTitle(firstMessage: string): string {
+  const sentenceMatch = firstMessage.match(/^(.+?[.?!])\s/);
+  if (sentenceMatch && sentenceMatch[1].length > 15 && sentenceMatch[1].length <= 80) {
+    return sentenceMatch[1];
+  }
+  if (firstMessage.length <= 80) return firstMessage;
+  const truncated = firstMessage.slice(0, 80);
+  const lastSpace = truncated.lastIndexOf(' ');
+  return lastSpace > 40 ? truncated.slice(0, lastSpace) + '…' : truncated + '…';
+}
+
+// ---------------------------------------------------------------------------
 // Exports for testing
 // ---------------------------------------------------------------------------
 

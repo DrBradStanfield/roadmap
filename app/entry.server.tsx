@@ -9,6 +9,7 @@ import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
 import * as Sentry from "@sentry/remix";
 import { stopReminderCron } from './lib/reminder-cron.server';
+import { stopDiscordBot } from './lib/discord-bot.server';
 import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl } from '../packages/health-core/src/sentry-scrub';
 
 Sentry.init({
@@ -82,6 +83,7 @@ Sentry.init({
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully...');
   stopReminderCron();
+  stopDiscordBot();
   setTimeout(() => {
     console.log('Graceful shutdown complete');
     process.exit(0);
