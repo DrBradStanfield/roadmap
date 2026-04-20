@@ -44,8 +44,9 @@ function getArg(flag: string, defaultValue: string): string {
 const runs = Math.max(1, parseInt(getArg('--runs', '3'), 10));
 const varianceThreshold = parseFloat(getArg('--variance-threshold', '0.05'));
 // Default concurrency 1: the 80K-token index counts toward ITPM on cold cache.
-// After warmup, cache reads don't count toward ITPM, but concurrent first-requests
-// would each try to re-create the cache. Serial is safest for Tier 1 accounts (50K ITPM).
+// Five concurrent cold requests each recreate the cache = 400K tokens/min, blows
+// the Tier 1 50K ITPM limit. Post-warmup, cache reads consume ITPM at a reduced
+// rate, so --concurrency 3 is usually safe; bump manually if runs feel slow.
 const concurrency = Math.max(1, parseInt(getArg('--concurrency', '1'), 10));
 const verbose = args.includes('--verbose');
 const categoryFilter = args.includes('--category') ? getArg('--category', '') : null;
@@ -132,13 +133,12 @@ async function routeQuery(currentMessage: string, retryOnRateLimit = true): Prom
   if (!res.ok) return { handles: [], rateLimited: res.status === 429 };
 
   const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
-  const text = data.content?.find(c => c.type === 'text')?.text ?? '';
+  const text = (data.content?.find(c => c.type === 'text')?.text ?? '').trim();
 
-  // Haiku often wraps JSON in markdown fences despite the prompt saying not to.
-  // Matches app/lib/anthropic.server.ts:stripCodeFences.
-  const stripped = text.trim().startsWith('```')
-    ? text.trim().replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
-    : text.trim();
+  // Haiku often wraps JSON in markdown fences despite the prompt rule.
+  const stripped = text.startsWith('```')
+    ? text.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+    : text;
 
   try {
     const parsed = JSON.parse(stripped) as { handles?: unknown };
@@ -247,9 +247,9 @@ console.log(`Concurrency: ${concurrency}`);
 console.log(`Threshold:   ≤${(varianceThreshold * 100).toFixed(0)}% variance\n`);
 
 // Warm the prompt cache with one call before running the suite. First call
-// creates the 80K-token cache (counts toward ITPM); subsequent calls read from
-// cache (does NOT count toward ITPM). Without this, Tier 1 accounts hit the
-// 50K ITPM limit immediately.
+// creates the 80K-token cache block; subsequent calls read from it at a
+// reduced ITPM rate. Without the warmup, Tier 1 accounts hit the 50K ITPM
+// limit on the first real query.
 console.log('Warming prompt cache...');
 const warmResult = await routeQuery('health');
 if (warmResult.rateLimited) {
