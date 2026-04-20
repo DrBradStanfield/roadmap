@@ -43,7 +43,10 @@ function getArg(flag: string, defaultValue: string): string {
 
 const runs = Math.max(1, parseInt(getArg('--runs', '3'), 10));
 const varianceThreshold = parseFloat(getArg('--variance-threshold', '0.05'));
-const concurrency = Math.max(1, parseInt(getArg('--concurrency', '5'), 10));
+// Default concurrency 1: the 80K-token index counts toward ITPM on cold cache.
+// After warmup, cache reads don't count toward ITPM, but concurrent first-requests
+// would each try to re-create the cache. Serial is safest for Tier 1 accounts (50K ITPM).
+const concurrency = Math.max(1, parseInt(getArg('--concurrency', '1'), 10));
 const verbose = args.includes('--verbose');
 const categoryFilter = args.includes('--category') ? getArg('--category', '') : null;
 
@@ -89,7 +92,12 @@ const ROUTER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-router-
 // Anthropic API call — minimal fetch glue, same body shape as routeQuery
 // ---------------------------------------------------------------------------
 
-async function routeQuery(currentMessage: string): Promise<string[]> {
+interface RouteResult {
+  handles: string[];
+  rateLimited: boolean;
+}
+
+async function routeQuery(currentMessage: string, retryOnRateLimit = true): Promise<RouteResult> {
   const body = {
     model: ROUTER_MODEL,
     max_tokens: 200,
@@ -109,23 +117,39 @@ async function routeQuery(currentMessage: string): Promise<string[]> {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(30_000),
   });
 
-  if (!res.ok) return [];
+  // Rate-limited: wait for the reset window and retry once. Anthropic returns
+  // retry-after header; default to 30s which matches a typical ITPM refill window.
+  if (res.status === 429 && retryOnRateLimit) {
+    const retryAfter = parseInt(res.headers.get('retry-after') ?? '30', 10);
+    process.stdout.write(` [429, waiting ${retryAfter}s]`);
+    await new Promise(r => setTimeout(r, retryAfter * 1000));
+    return routeQuery(currentMessage, false);
+  }
+
+  if (!res.ok) return { handles: [], rateLimited: res.status === 429 };
 
   const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
   const text = data.content?.find(c => c.type === 'text')?.text ?? '';
 
+  // Haiku often wraps JSON in markdown fences despite the prompt saying not to.
+  // Matches app/lib/anthropic.server.ts:stripCodeFences.
+  const stripped = text.trim().startsWith('```')
+    ? text.trim().replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
+    : text.trim();
+
   try {
-    const parsed = JSON.parse(text) as { handles?: unknown };
-    if (!Array.isArray(parsed.handles)) return [];
-    return parsed.handles
+    const parsed = JSON.parse(stripped) as { handles?: unknown };
+    if (!Array.isArray(parsed.handles)) return { handles: [], rateLimited: false };
+    const handles = parsed.handles
       .filter((h): h is string => typeof h === 'string' && /^[a-z0-9-]+$/.test(h) && h.length <= 120)
       .filter(h => VALID_HANDLES.has(h))
       .slice(0, 3);
+    return { handles, rateLimited: false };
   } catch {
-    return [];
+    return { handles: [], rateLimited: false };
   }
 }
 
@@ -167,7 +191,8 @@ interface QueryResult {
 async function runOne(q: TestQuery): Promise<QueryResult> {
   const allRuns: string[][] = [];
   for (let i = 0; i < runs; i++) {
-    allRuns.push(await routeQuery(q.query));
+    const { handles } = await routeQuery(q.query);
+    allRuns.push(handles);
   }
   const intersection = allRuns[0].filter(h => allRuns.every(run => run.includes(h)));
 
@@ -220,6 +245,18 @@ console.log(`Queries:     ${filtered.length}`);
 console.log(`Runs each:   ${runs}`);
 console.log(`Concurrency: ${concurrency}`);
 console.log(`Threshold:   ≤${(varianceThreshold * 100).toFixed(0)}% variance\n`);
+
+// Warm the prompt cache with one call before running the suite. First call
+// creates the 80K-token cache (counts toward ITPM); subsequent calls read from
+// cache (does NOT count toward ITPM). Without this, Tier 1 accounts hit the
+// 50K ITPM limit immediately.
+console.log('Warming prompt cache...');
+const warmResult = await routeQuery('health');
+if (warmResult.rateLimited) {
+  console.error('\nWarmup rate-limited. If on Anthropic Tier 1 (50K ITPM), wait 60s and retry.');
+  process.exit(1);
+}
+console.log('Cache warmed. Running test suite.\n');
 
 const t0 = Date.now();
 const results = await runAll();
