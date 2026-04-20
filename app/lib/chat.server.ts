@@ -204,7 +204,12 @@ export async function assembleChatContext(
   if (!data) return null;
 
   const { profile, inputs, medInputs, screenInputs, healthDocuments } = data;
-  const unitSystem = decodeUnitSystem(profile.unit_system) || 'si';
+
+  // Incomplete profile — can't personalize chat. Surface upstream as "load
+  // health data" failure so the UI prompts the user to finish onboarding.
+  if (profile.sex == null) return null;
+
+  const unitSystem = profile.unit_system != null ? decodeUnitSystem(profile.unit_system) : 'si';
 
   const results = calculateHealthResults(inputs, unitSystem, medInputs, screenInputs);
 

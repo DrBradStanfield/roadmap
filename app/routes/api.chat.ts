@@ -161,7 +161,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
       return json({
         success: true,
-        messages: (data ?? []).map(m => ({
+        messages: (data ?? []).map((m: { id: string; role: string; content: string; created_at: string }) => ({
           id: m.id,
           role: m.role,
           content: m.content,
