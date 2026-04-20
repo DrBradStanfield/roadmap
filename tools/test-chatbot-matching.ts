@@ -133,12 +133,14 @@ async function routeQuery(currentMessage: string, retryOnRateLimit = true): Prom
   if (!res.ok) return { handles: [], rateLimited: res.status === 429 };
 
   const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
-  const text = (data.content?.find(c => c.type === 'text')?.text ?? '').trim();
+  const text = data.content?.find(c => c.type === 'text')?.text ?? '';
 
-  // Haiku often wraps JSON in markdown fences despite the prompt rule.
-  const stripped = text.startsWith('```')
-    ? text.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
-    : text;
+  // Haiku sometimes adds prose after the JSON (esp. on urgent-sounding symptom
+  // queries). Extract the JSON object between first { and last } — same logic
+  // as app/lib/anthropic.server.ts:extractJsonObject.
+  const first = text.indexOf('{');
+  const last = text.lastIndexOf('}');
+  const stripped = first !== -1 && last > first ? text.slice(first, last + 1) : text;
 
   try {
     const parsed = JSON.parse(stripped) as { handles?: unknown };

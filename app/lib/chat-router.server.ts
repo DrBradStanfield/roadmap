@@ -10,7 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
 import * as Sentry from '@sentry/remix';
-import { callAnthropicWithUsage, stripCodeFences, type AnthropicUsage } from './anthropic.server';
+import { callAnthropicWithUsage, extractJsonObject, type AnthropicUsage } from './anthropic.server';
 
 // ---------------------------------------------------------------------------
 // Version — bump when router prompt or index format changes so chat_match_events
@@ -184,10 +184,10 @@ export async function routeQuery(
   let rawJson: string | null = null;
 
   try {
-    const result = await callAnthropicWithUsage(body, 0, 5_000);
+    const result = await callAnthropicWithUsage(body, 5_000);
     rawJson = result.content;
 
-    const parsed = RouterOutput.parse(JSON.parse(stripCodeFences(rawJson)));
+    const parsed = RouterOutput.parse(JSON.parse(extractJsonObject(rawJson)));
 
     // Allowlist: drop any handle the router hallucinated
     const validHandles = parsed.handles.filter(h => VALID_HANDLES.has(h));

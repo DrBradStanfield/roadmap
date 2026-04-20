@@ -489,9 +489,9 @@ export interface AnthropicUsage {
   cacheReadTokens: number;
 }
 
-/** Shared fetch + retry + error handling. Returns text content + usage metrics. */
+/** Shared fetch + error handling. Returns text content + usage metrics. */
 async function fetchAnthropicRaw(
-  apiKey: string, body: Record<string, unknown>, retries = 2, timeoutMs = 60_000,
+  apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000,
 ): Promise<{ content: string; usage: AnthropicUsage }> {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -504,14 +504,9 @@ async function fetchAnthropicRaw(
     signal: AbortSignal.timeout(timeoutMs),
   });
 
-  // Retry on rate limit (429) with exponential backoff
-  if (response.status === 429 && retries > 0) {
-    const retryAfter = parseInt(response.headers.get('retry-after') || '0', 10);
-    const delay = Math.max(retryAfter * 1000, (3 - retries) * 5_000);
-    console.warn(`Anthropic 429 rate limited, retrying in ${delay}ms (${retries} retries left)`);
-    await new Promise(resolve => setTimeout(resolve, delay));
-    return fetchAnthropicRaw(apiKey, body, retries - 1, timeoutMs);
-  }
+  // 429 is a signal something structural is wrong (account tier too low, a
+  // runaway caller, or an Anthropic outage). Don't retry silently — surface
+  // the error so the deeper issue gets fixed.
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
@@ -537,18 +532,18 @@ async function fetchAnthropicRaw(
 }
 
 /** Text-only wrapper — existing callers unchanged. */
-async function callAnthropic(apiKey: string, body: Record<string, unknown>, retries = 2): Promise<string> {
-  const result = await fetchAnthropicRaw(apiKey, body, retries);
+async function callAnthropic(apiKey: string, body: Record<string, unknown>): Promise<string> {
+  const result = await fetchAnthropicRaw(apiKey, body);
   return result.content;
 }
 
 /** Text + usage wrapper — for chat (prompt caching metrics). */
 export async function callAnthropicWithUsage(
-  body: Record<string, unknown>, retries = 2, timeoutMs = 60_000,
+  body: Record<string, unknown>, timeoutMs = 60_000,
 ): Promise<{ content: string; usage: AnthropicUsage }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
-  return fetchAnthropicRaw(apiKey, body, retries, timeoutMs);
+  return fetchAnthropicRaw(apiKey, body, timeoutMs);
 }
 
 /** Strip markdown code fences (```json ... ```) from LLM response text */
@@ -559,6 +554,20 @@ export function stripCodeFences(text: string): string {
     return trimmed.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
   }
   return trimmed;
+}
+
+/**
+ * Extract the outermost JSON object from LLM text. Tolerant of code fences,
+ * leading/trailing prose, and post-output commentary (some models — notably
+ * Haiku on emergent medical queries — still append explanation even after
+ * being told "JSON only"). Callers that need strict JSON should prefer this
+ * over stripCodeFences.
+ */
+export function extractJsonObject(text: string): string {
+  const first = text.indexOf('{');
+  const last = text.lastIndexOf('}');
+  if (first === -1 || last <= first) return text;
+  return text.slice(first, last + 1);
 }
 
 // ---------------------------------------------------------------------------
