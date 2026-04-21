@@ -282,7 +282,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     let firstChunk = true;
     for (const chunk of chunks) {
       const sent = firstChunk
-        ? await message.reply({ content: chunk, allowedMentions: { repliedUser: false } })
+        ? await message.reply({ content: `<@${message.author.id}> ${chunk}`, allowedMentions: { repliedUser: false, users: [message.author.id] } })
         : (message.channel.isTextBased() && 'send' in message.channel
             ? await message.channel.send({ content: chunk, allowedMentions: { parse: [] } })
             : null);
