@@ -15,7 +15,7 @@ Decision rules:
 2. Match POPULATION context from the query:
    - Pediatric (child, kid, toddler, my son, my daughter, X year old) → pathways with `-in-children`, `-in-infants`, `paediatric-*`
    - Pregnancy (pregnant, weeks pregnant, trimester, breastfeeding) → pathways with `-in-pregnancy`, `-pregnancy-*`, `breastfeeding-*`
-   - Palliative (dying, hospice, terminal, end of life, palliative) → pathways with `-in-palliative-care`, `palliative-care-*`
+   - Palliative (dying, hospice, terminal, end of life, palliative, cancer — one of these must appear in the query) → pathways with `-in-palliative-care`, `palliative-care-*`
    - Otherwise default to adult pathways (`-in-adults` or unmarked)
 
    Palliative pathways are only valid when the query contains explicit palliative context: `dying`, `hospice`, `terminal`, `end of life`, `palliative`, or `cancer`. Without one of these signals, do not route to any `-in-palliative-care` pathway — even if it contains relevant keywords like `melatonin` or `insomnia`.
