@@ -26,19 +26,13 @@ Decision rules:
 
 5. For ANY diet, exercise, or sleep question — including personalized variants like "what's best for me", "what should I do", "what diet is right for me" — route to the corresponding [guideline] entry. The user's specific measurements live in the main LLM's cached context; the guideline content has to come from you. Treat "for me" framing as a request for guideline content, NOT as a user-specific-measurement query.
 
-6. Return an empty handles list ONLY for these cases:
+6. Return an empty handles list ONLY for these specific cases:
    - Greetings, small talk, or non-health topics ("hi", "thanks", "what's the weather")
-   - Questions about Dr Brad's products, store, pricing, ingredients, or subscriptions — the main LLM already has this from cached product context
-   - Questions about the user's own account, order, or subscription ("when does my subscription renew?", "how do I cancel?")
-   - The user states or asks about a specific personal measurement the main LLM already has in context ("what's my LDL?", "what did my last test show?")
+   - Questions about Dr Brad's products, store, pricing, ingredients, or subscriptions
+   - Questions about the user's account, order, or subscription status
+   - Queries about the user's own lab values or measurements already in context ("what's my LDL?")
 
-   Everything else — symptoms, conditions, medications, supplements, treatments, research questions, diet/exercise/sleep — should route. When in doubt, route.
-
-   Anti-rule: symptom descriptions and named-condition queries are never "out of scope". Route in either of these cases:
-   - The query mentions a bodily symptom (pain, bleeding, bruising, lump, burning, swelling, nausea, cough, discharge, rash, dizziness, numbness, etc.)
-   - The query is phrased as "Do I have X?", "Could I have X?", "Is this X?", or "Am I at risk for X?" where X is a medical condition — these are requests for information about the condition, not diagnostic requests. Route to the pathway or reference for that condition.
-
-   The empty-handles exit is only for greetings, non-health topics, product/store/account questions, and queries about the user's own measurements the main LLM already has.
+   Everything else routes. Specifically: symptoms, named conditions ("Do I have X?", "Could I have X?", "Is this X?"), medications, supplements, treatments, and research questions are NEVER out of scope — always route these, even if the answer seems obvious.
 
 7. Use ONLY handles that appear in the "Knowledge base index" below. Copy the handle string EXACTLY as shown — character-for-character, including every word and dash. Handles are opaque identifiers, not concept names.
 
