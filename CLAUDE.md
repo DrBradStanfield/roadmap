@@ -336,6 +336,7 @@ Backend: Initialized in `app/entry.server.tsx`.
 - **Algorithm & evidence docs**: When changing health calculations in `packages/health-core/src/`, update `health_roadmap_algorithm.md`. When changing clinical evidence or references, update `packages/health-core/src/evidence.ts`. Then check if `roadmap_text.html` covers the same topic. All three files must stay in sync.
 - **Every feature/behavior change must include unit tests.** Run `npm test` before deploying.
 - **Bug fix workflow**: Write failing test → confirm it fails → fix → confirm it passes.
+- **Chatbot quality regression workflow**: When a real user interaction reveals a wrong or missing response, always add the query to `tools/test-queries.json` (with `"source": "production"`) before or alongside the fix. This is the Phase D iteration loop — every real failure becomes a permanent regression test.
 - **Run tests in a Bash subagent** to keep verbose output out of main context.
 - **If an approach is failing, stop and re-plan** rather than pushing through.
 - **Self-improving docs**: When you discover a new gotcha, repeated mistake, or useful pattern during work, proactively suggest adding it to CLAUDE.md (if project-wide) or memory (if preference/workflow). This makes our docs compound over time.
