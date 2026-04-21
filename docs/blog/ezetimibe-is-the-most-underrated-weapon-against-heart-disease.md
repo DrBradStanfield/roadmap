@@ -4,8 +4,8 @@ url: "https://drstanfield.com/blogs/articles/ezetimibe-is-the-most-underrated-we
 youtube: "https://www.youtube.com/watch?v=uyDC-es2uQI"
 publishedAt: "2025-05-23T03:10:34Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]
-keywords: ["blood pressure","bmi","cholesterol","dementia","diabetes","exercise","ezetimibe","fiber","hdl","heart attack","hormone","ldl","muscle","psyllium","statin","testosterone"]
-summary: "Dr Brad’s ezetimibe post: combination therapy (low-dose statin + ezetimibe 10mg) beats statins alone for lowering LDL and preventing heart disease. Covers LDL myths, statin side effects (dementia, testosterone, muscle), plaque buildup, and Brad’s own pravastatin + ezetimibe regimen."
+keywords: ["blood pressure","bmi","cholesterol","dementia","diabetes","exercise","ezetimibe","fiber","hdl","heart attack","hormone","ldl","muscle","psyllium","statin","testosterone","pitavastatin","which statin","best statin","statin comparison","statin recommendation","hydrophilic statin","low dose statin"]
+summary: "Dr Brad’s statin and ezetimibe post: for statin selection questions (which statin, best statin, statin comparison, statin side effects), Brad’s approach is low-dose hydrophilic statin (pravastatin 20mg, rosuvastatin 5mg, or pitavastatin 1–2mg) combined with ezetimibe 10mg — beats high-dose monotherapy for both efficacy and tolerability. Covers LDL myths, statin side effects (dementia, testosterone, muscle), combination therapy evidence, and Brad’s own pravastatin 20mg + ezetimibe 10mg regimen."
 ---
 
 Heart disease is the world’s biggest killer. And it’s only getting worse. \[1\]
