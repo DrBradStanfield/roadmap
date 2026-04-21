@@ -499,17 +499,15 @@ async function loadThreadHistory(
   message: GuildMessage,
   botUserId: string,
 ): Promise<Array<{ role: 'user' | 'assistant'; content: string }>> {
-  if (!message.channel.isThread()) return [];
-
   const fetched = await message.channel.messages.fetch({
     limit: HISTORY_MSG_LIMIT,
     before: message.id,
   });
 
   return [...fetched.values()]
-    .sort((a, b) => a.createdTimestamp - b.createdTimestamp)  // oldest first
-    .filter(m => !m.author.bot || m.author.id === botUserId)  // skip other bots
-    .filter(m => (m.content ?? '').length > 0)                // skip attachment-only
+    .sort((a, b) => a.createdTimestamp - b.createdTimestamp)
+    .filter(m => !m.author.bot || m.author.id === botUserId)
+    .filter(m => m.content.length > 0)
     .map(m => ({
       role: (m.author.id === botUserId ? 'assistant' : 'user') as 'user' | 'assistant',
       content: m.content,
