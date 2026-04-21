@@ -38,6 +38,10 @@ const DISCORD_DEDICATED_AI_CHANNEL_ID = process.env.DISCORD_DEDICATED_AI_CHANNEL
 // Channel where the bot posts a welcome message when a new member joins.
 // Typically #general. If unset, the welcome feature is disabled.
 const DISCORD_GENERAL_CHANNEL_ID = process.env.DISCORD_GENERAL_CHANNEL_ID;
+// Comma-separated channel IDs where the bot never responds, even if @mentioned.
+const DISCORD_EXCLUDED_CHANNEL_IDS = new Set(
+  (process.env.DISCORD_EXCLUDED_CHANNEL_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
+);
 
 // ---------------------------------------------------------------------------
 // Message length + rate limits
@@ -182,6 +186,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
   if (message.guild?.id !== DISCORD_GUILD_ID) return;   // DMs (null guild) and other servers
   if (message.system) return;                            // system / join messages
   if (message.mentions.everyone) return;                 // @everyone / @here — server-wide broadcasts, never meant for the bot
+  if (DISCORD_EXCLUDED_CHANNEL_IDS.has(message.channelId)) return; // explicitly blocked channels
 
   const content = message.content?.trim() ?? '';
   if (!content) return;                                  // attachment-only, stickers, etc.
