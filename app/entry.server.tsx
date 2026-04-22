@@ -26,7 +26,20 @@ Sentry.init({
     // Shopify's privacy/cookie consent banner: URIError from decodeURIComponent on malformed cookies
     /cdn\/shopifycloud\/privacy-banner/,
   ],
-  beforeSend(event) {
+  beforeSend(event, hint) {
+    // Known Remix library bug: @remix-run/web-fetch doesn't check stream.locked before
+    // calling cancel() on abort. Fires when a user closes the tab while request.json()
+    // holds a reader on the body stream. Confirmed benign — user is already gone, no
+    // data affected. Drop only when the stack confirms it originates in the library.
+    const err = hint?.originalException;
+    if (
+      err instanceof TypeError &&
+      err.message.includes('Cannot cancel a stream that already has a reader') &&
+      err.stack?.includes('@remix-run/web-fetch')
+    ) {
+      return null;
+    }
+
     // Scrub PII/PHI from event data before it leaves the server
     if (event.extra) {
       event.extra = scrubSensitiveData(event.extra) as Record<string, unknown>;
