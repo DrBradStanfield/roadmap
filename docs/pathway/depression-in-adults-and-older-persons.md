@@ -208,7 +208,7 @@ Your doctor will monitor for potential complications of antidepressant treatment
 
 **Stopping medication:**
 
-- Antidepressants should be tapered gradually over at least 4 weeks (not usually needed for fluoxetine). Paroxetine and venlafaxine need a longer taper due to their shorter half-life.
+- Antidepressants should be tapered gradually over at least 4 weeks (not usually needed for fluoxetine). Paroxetine and venlafaxine (venlafaxine is an SNRI, not an SSRI, but follows the same tapering principles) need a longer taper due to their shorter half-life.
 - You may experience some withdrawal-type symptoms when reducing — these are usually mild and self-limiting, but tell your doctor if they are severe.
 
 **Hyponatraemia (low sodium):**
@@ -224,11 +224,15 @@ Your doctor will monitor for potential complications of antidepressant treatment
 
 **Sexual dysfunction:**
 
-- A common side effect of antidepressants. Tell your doctor — strategies include dose reduction, changing the timing of the dose, or switching to a different antidepressant (e.g., mirtazapine or bupropion, which have lower rates of sexual side effects).
+- A common side effect of antidepressants that often persists throughout the course of treatment, not just in the early weeks. It is a leading cause of non-adherence. Tell your doctor — strategies include dose reduction, changing the timing of the dose, or switching to a different antidepressant (e.g., mirtazapine or bupropion, which have lower rates of sexual side effects).
 
 **QT prolongation:**
 
 - Some antidepressants (especially citalopram, escitalopram, and tricyclic antidepressants) can affect heart rhythm. Your doctor may arrange an ECG before starting treatment if you have relevant risk factors (e.g., heart disease, other QT-prolonging medications, electrolyte abnormalities).
+
+**Bleeding risk:**
+
+- SSRIs reduce platelet serotonin uptake, which can impair platelet function and increase bleeding risk — particularly gastrointestinal bleeding. This risk is significantly increased when SSRIs are taken together with NSAIDs (e.g., ibuprofen, naproxen) or anticoagulants (e.g., warfarin, apixaban). Your doctor will advise caution with concurrent NSAID use.
 
 **Overdose risk:**
 
