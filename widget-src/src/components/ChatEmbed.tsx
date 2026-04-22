@@ -181,9 +181,8 @@ export function ChatEmbed({ isLoggedIn, guestInputs }: ChatEmbedProps) {
             className="chat-send-btn btn-primary"
             onClick={actions.handleSend}
             disabled={state.isLoading || !state.inputText.trim()}
-          >
-            Send
-          </button>
+            aria-label="Send"
+          >↑</button>
           <div className="chat-input-meta">
             <span className="chat-doctor-note">Always discuss with your doctor</span>
             <span className="chat-char-count">{state.inputText.length}/{MAX_CHARS}</span>

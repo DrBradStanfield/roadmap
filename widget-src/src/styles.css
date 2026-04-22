@@ -3055,8 +3055,8 @@ input[type="number"] {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--color-gray-border);
-  background: #fafafa;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
   flex-shrink: 0;
 }
 
@@ -3109,17 +3109,17 @@ input[type="number"] {
   padding: 8px;
   margin-bottom: 6px;
   font-size: 13px;
-  font-weight: 500;
-  background: transparent;
-  border: 1px dashed var(--color-gray-border);
-  border-radius: 6px;
+  font-weight: 600;
+  background: rgba(0, 163, 139, 0.07);
+  border: 1px solid rgba(0, 163, 139, 0.2);
+  border-radius: 8px;
   color: var(--color-brand);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
 
 .chat-new-btn:hover {
-  background: rgba(0, 163, 139, 0.08);
+  background: rgba(0, 163, 139, 0.13);
   border-color: var(--color-brand);
 }
 
@@ -3134,11 +3134,12 @@ input[type="number"] {
 }
 
 .chat-thread-item:hover {
-  background: #eee;
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .chat-thread-item.active {
   background: rgba(0, 163, 139, 0.08);
+  box-shadow: inset 3px 0 0 var(--color-brand);
 }
 
 .chat-thread-title {
@@ -3188,10 +3189,10 @@ input[type="number"] {
 .chat-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .chat-empty {
@@ -3228,8 +3229,8 @@ input[type="number"] {
 .chat-message--user .chat-message-content {
   background: var(--color-brand);
   color: #fff;
-  border-radius: 12px 12px 4px 12px;
-  padding: 10px 14px;
+  border-radius: 18px 18px 4px 18px;
+  padding: 10px 16px;
   max-width: 80%;
   font-size: 14px;
   line-height: 1.5;
@@ -3237,9 +3238,11 @@ input[type="number"] {
 }
 
 .chat-message--assistant .chat-message-content {
-  background: #f4f5f7;
+  background: #f9fafb;
   color: var(--color-text);
-  border-radius: 12px 12px 12px 4px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border-radius: 4px 14px 14px 14px;
   padding: 10px 14px;
   max-width: 100%;
   font-size: 14px;
@@ -3306,8 +3309,10 @@ input[type="number"] {
   display: flex;
   gap: 5px;
   padding: 10px 14px;
-  background: #f4f5f7;
-  border-radius: 12px 12px 12px 4px;
+  background: #f9fafb;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border-radius: 4px 14px 14px 14px;
 }
 
 .chat-dot {
@@ -3472,8 +3477,8 @@ input[type="number"] {
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 8px;
-  padding: 10px 14px;
-  border-top: 1px solid var(--color-gray-border);
+  padding: 12px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
   background: #fff;
   flex-shrink: 0;
 }
@@ -3481,11 +3486,11 @@ input[type="number"] {
 .chat-input {
   flex: 1;
   min-width: 0;
-  padding: 9px 12px;
+  padding: 10px 14px;
   font-size: 14px;
   font-family: inherit;
   border: 1px solid var(--color-gray-border);
-  border-radius: 8px;
+  border-radius: 12px;
   resize: none;
   background: #fff;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -3505,9 +3510,16 @@ input[type="number"] {
 }
 
 .chat-send-btn {
-  padding: 9px 16px;
-  font-size: 14px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .chat-input-meta {
@@ -3555,8 +3567,8 @@ input[type="number"] {
   }
 
   .chat-messages {
-    padding: 12px;
-    gap: 10px;
+    padding: 16px 12px;
+    gap: 14px;
   }
 
   .chat-message--user .chat-message-content,
@@ -3625,6 +3637,10 @@ input[type="number"] {
   body:has(#md-sticky-atc.show) .chat-fab {
     bottom: 80px;
   }
+  /* Hide FAB on the roadmap page — inline embed already provides chat */
+  body:has(#health-chatbot-embed-root) .chat-fab {
+    display: none;
+  }
 }
 
 @keyframes chat-fab-entrance {
@@ -3681,10 +3697,11 @@ input[type="number"] {
 .chat-embed {
   display: flex;
   position: relative;
-  border: 1px solid var(--color-border, #d1d9e6);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   overflow: hidden;
   background: var(--color-bg, #fff);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
   height: 640px;
   margin: 24px 0;
   font-family: inherit;
@@ -3713,7 +3730,7 @@ input[type="number"] {
   align-items: center;
   padding: 0 16px;
   min-height: 49px;
-  border-bottom: 1px solid var(--color-border, #d1d9e6);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .chat-embed-sidebar-title {
@@ -3744,7 +3761,7 @@ input[type="number"] {
   gap: 8px;
   padding: 0 16px;
   min-height: 49px;
-  border-bottom: 1px solid var(--color-border, #d1d9e6);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   background: var(--color-bg, #fff);
   flex-shrink: 0;
 }
@@ -3827,7 +3844,7 @@ input[type="number"] {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px 10px;
-  border-bottom: 1px solid var(--color-border, #d1d9e6);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .chat-embed-drawer-title {
