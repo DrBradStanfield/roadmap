@@ -206,6 +206,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
     setMessages(optimisticMessages);
     setInputText('');
+    postInputSync(instanceId, '');
     setIsLoading(true);
     setIsLocalSender(true);
 
