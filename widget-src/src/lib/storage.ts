@@ -173,3 +173,15 @@ export function safeSetItem(key: string, value: string): void {
 export function safeRemoveItem(key: string): void {
   try { localStorage.removeItem(key); } catch {}
 }
+
+
+/** Assemble guest health inputs from localStorage for chat context. Returns null if no data. */
+export function loadGuestInputs(): Record<string, unknown> | null {
+  const cached = loadFromLocalStorage();
+  if (!cached || Object.keys(cached.inputs).length === 0) return null;
+  return {
+    ...cached.inputs,
+    medications: cached.medications ?? [],
+    screenings: cached.screenings ?? [],
+  };
+}

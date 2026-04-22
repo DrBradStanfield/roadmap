@@ -334,6 +334,7 @@ Backend: Initialized in `app/entry.server.tsx`.
 ## Development Rules
 
 - **Push back on decisions.** Consider 2nd and 3rd order effects rather than just agreeing. Challenge ideas that may have unintended consequences.
+- **Say "I don't know" over guessing.** If you're uncertain about a fact, number, study result, or system behaviour, say so explicitly. A confident wrong answer is far more damaging than admitting uncertainty — especially for health/clinical content where errors could mislead patients or cause harm.
 - **Algorithm & evidence docs**: When changing health calculations in `packages/health-core/src/`, update `health_roadmap_algorithm.md`. When changing clinical evidence or references, update `packages/health-core/src/evidence.ts`. Then check if `roadmap_text.html` covers the same topic. All three files must stay in sync.
 - **Every feature/behavior change must include unit tests.** Run `npm test` before deploying.
 - **Bug fix workflow**: Write failing test → confirm it fails → fix → confirm it passes.
