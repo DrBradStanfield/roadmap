@@ -18,6 +18,12 @@
  *   npx tsx tools/test-chatbot-matching.ts --runs 3 --verbose
  *   npx tsx tools/test-chatbot-matching.ts --category cardiovascular
  *   npx tsx tools/test-chatbot-matching.ts --variance-threshold 0.1
+ *   npx tsx tools/test-chatbot-matching.ts --answer-check   # also test generated answers
+ *
+ * --answer-check: for entries with must_mention/must_not_mention fields, also
+ * calls the main LLM (Haiku) with blocks 1-2 context (system prompt + algorithm)
+ * and asserts the generated answer contains/excludes the specified strings.
+ * Approximates always-cached context; does not load matched content or user data.
  *
  * Exit code 0 if acceptance bar met, 1 otherwise.
  */
@@ -50,11 +56,37 @@ const varianceThreshold = parseFloat(getArg('--variance-threshold', '0.05'));
 const concurrency = Math.max(1, parseInt(getArg('--concurrency', '1'), 10));
 const verbose = args.includes('--verbose');
 const categoryFilter = args.includes('--category') ? getArg('--category', '') : null;
+// When set, entries with must_mention/must_not_mention also call the main LLM to
+// verify the generated answer content (uses blocks 1-2: system prompt + algorithm).
+const answerCheckMode = args.includes('--answer-check');
 
 const apiKey = process.env.ANTHROPIC_API_KEY;
 if (!apiKey) {
   console.error('Error: ANTHROPIC_API_KEY is not set');
   process.exit(1);
+}
+
+// ---------------------------------------------------------------------------
+// Answer-check context — loaded only when --answer-check is set
+// Approximates prompt cache blocks 1-2: system prompt + algorithm.
+// Does NOT load matched content (on-demand) or user data (per-user), so
+// results reflect what the chatbot knows from its always-cached context only.
+// ---------------------------------------------------------------------------
+
+const ANSWER_MODEL = 'claude-haiku-4-5-20251001';
+let ANSWER_SYSTEM_CONTEXT = '';
+
+if (answerCheckMode) {
+  const systemPromptPath = path.join(REPO_ROOT, 'app/lib/chat-system-prompt.md');
+  const algorithmPath = path.join(REPO_ROOT, 'health_roadmap_algorithm.md');
+  if (!fs.existsSync(systemPromptPath) || !fs.existsSync(algorithmPath)) {
+    console.error('Error: --answer-check requires app/lib/chat-system-prompt.md and health_roadmap_algorithm.md');
+    process.exit(1);
+  }
+  ANSWER_SYSTEM_CONTEXT =
+    fs.readFileSync(systemPromptPath, 'utf-8') +
+    '\n\n---\n\n' +
+    fs.readFileSync(algorithmPath, 'utf-8');
 }
 
 // ---------------------------------------------------------------------------
@@ -163,7 +195,10 @@ interface TestQuery {
   query: string;
   expected: string[];
   category: string;
+  source?: string;
   notes?: string;
+  must_mention?: string[];     // answer must contain ALL of these (case-insensitive)
+  must_not_mention?: string[]; // answer must contain NONE of these (case-insensitive)
 }
 
 const ALL_QUERIES: TestQuery[] = JSON.parse(
@@ -183,11 +218,56 @@ if (filtered.length === 0) {
 // Run each query N times and compute intersection of handles
 // ---------------------------------------------------------------------------
 
+interface AnswerCheckResult {
+  passed: boolean;
+  failures: string[];
+  response: string;
+}
+
 interface QueryResult {
   query: TestQuery;
   allRuns: string[][];
   intersection: string[];
+  routingPassed: boolean;
+  answerCheck: AnswerCheckResult | null; // null if not checked
   passed: boolean;
+}
+
+async function checkAnswer(query: string, mustMention: string[], mustNotMention: string[]): Promise<AnswerCheckResult> {
+  const body = {
+    model: ANSWER_MODEL,
+    max_tokens: 800,
+    temperature: 0,
+    system: ANSWER_SYSTEM_CONTEXT,
+    messages: [{ role: 'user', content: query }],
+  };
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey!,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!res.ok) return { passed: false, failures: [`API error ${res.status}`], response: '' };
+
+  const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
+  const response = data.content?.find(c => c.type === 'text')?.text ?? '';
+  const lower = response.toLowerCase();
+
+  const failures: string[] = [];
+  for (const term of mustMention) {
+    if (!lower.includes(term.toLowerCase())) failures.push(`missing: "${term}"`);
+  }
+  for (const term of mustNotMention) {
+    if (lower.includes(term.toLowerCase())) failures.push(`found forbidden: "${term}"`);
+  }
+
+  return { passed: failures.length === 0, failures, response };
 }
 
 async function runOne(q: TestQuery): Promise<QueryResult> {
@@ -198,14 +278,20 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   }
   const intersection = allRuns[0].filter(h => allRuns.every(run => run.includes(h)));
 
-  let passed: boolean;
+  let routingPassed: boolean;
   if (q.expected.length === 0) {
-    passed = allRuns.every(run => run.length === 0);
+    routingPassed = allRuns.every(run => run.length === 0);
   } else {
-    passed = q.expected.some(e => intersection.includes(e));
+    routingPassed = q.expected.some(e => intersection.includes(e));
   }
 
-  return { query: q, allRuns, intersection, passed };
+  let answerCheck: AnswerCheckResult | null = null;
+  if (answerCheckMode && (q.must_mention?.length || q.must_not_mention?.length)) {
+    answerCheck = await checkAnswer(q.query, q.must_mention ?? [], q.must_not_mention ?? []);
+  }
+
+  const passed = routingPassed && (answerCheck === null || answerCheck.passed);
+  return { query: q, allRuns, intersection, routingPassed, answerCheck, passed };
 }
 
 async function runAll(): Promise<QueryResult[]> {
@@ -297,19 +383,30 @@ if (failed.length > 0) {
   console.log(`\n${BOLD}${RED}--- Failing queries ---${RESET}`);
   for (const r of failed) {
     console.log(`\n${RED}✗${RESET} ${BOLD}[${r.query.category}]${RESET} "${r.query.query}"`);
-    if (r.query.expected.length > 0) {
-      console.log(`    Expected:     ${r.query.expected.join(' | ')}`);
-    } else {
-      console.log(`    Expected:     (empty — out-of-scope)`);
+    if (!r.routingPassed) {
+      if (r.query.expected.length > 0) {
+        console.log(`    Expected:     ${r.query.expected.join(' | ')}`);
+      } else {
+        console.log(`    Expected:     (empty — out-of-scope)`);
+      }
+      if (r.intersection.length === 0) {
+        console.log(`    Intersection: ${GREY}∅ (nothing consistent across ${runs} runs)${RESET}`);
+      } else {
+        console.log(`    Intersection: ${r.intersection.join(', ')}`);
+      }
+      if (runs > 1) {
+        const runSummary = r.allRuns.map((run, i) => `[${i + 1}]${run.join(',') || '∅'}`).join(' ');
+        console.log(`    Runs:         ${GREY}${runSummary}${RESET}`);
+      }
     }
-    if (r.intersection.length === 0) {
-      console.log(`    Intersection: ${GREY}∅ (nothing consistent across ${runs} runs)${RESET}`);
-    } else {
-      console.log(`    Intersection: ${r.intersection.join(', ')}`);
-    }
-    if (runs > 1) {
-      const runSummary = r.allRuns.map((run, i) => `[${i + 1}]${run.join(',') || '∅'}`).join(' ');
-      console.log(`    Runs:         ${GREY}${runSummary}${RESET}`);
+    if (r.answerCheck && !r.answerCheck.passed) {
+      console.log(`    Answer check: ${RED}FAIL${RESET}`);
+      for (const f of r.answerCheck.failures) {
+        console.log(`      ${RED}→ ${f}${RESET}`);
+      }
+      if (verbose) {
+        console.log(`    Response:     ${GREY}${r.answerCheck.response.slice(0, 300)}...${RESET}`);
+      }
     }
     if (r.query.notes) console.log(`    Notes:        ${GREY}${r.query.notes}${RESET}`);
   }

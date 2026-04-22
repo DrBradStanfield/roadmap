@@ -1,5 +1,7 @@
 # Health Roadmap Chat — Scope & Requirements
 
+> **New to chatbot work?** Read [`chat-start-here.md`](../../../Library/CloudStorage/Dropbox/YouTube/multivitamin%20%26%20others/claude_business/docs/chat-start-here.md) first — entry point, audit playbook, logging schema. This doc covers user-facing behavior only.
+
 User-facing specification for the Health Roadmap Assistant chatbot: what it does, what it refuses, access rules, UI behavior, conversation storage, security. Sister documents:
 
 - [`chat-architecture.md`](./chat-architecture.md) — technical implementation (matcher, synonyms, index, prompt cache)

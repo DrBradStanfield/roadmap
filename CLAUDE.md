@@ -19,6 +19,7 @@ Some data files are shared with the marketing workspace at `~/Library/CloudStora
 
 - **`docs/products.md`** is a **symlink** → `claude_business/docs/products.md` (the master copy). Do not edit it directly in this repo — edit the master in claude_business instead.
 - **`docs/blog/*.md`** — blog content cache for the chatbot. New posts are written here by the `/blog-post` skill in claude_business (which also publishes to Shopify). To rebuild the full cache from Shopify: `npx tsx scripts/build-blog-content.ts`
+- **Chatbot docs** — for any chatbot work, start with `~/Library/CloudStorage/Dropbox/YouTube/multivitamin & others/claude_business/docs/chat-start-here.md` (entry point, audit playbook, logging schema), then `docs/chat-architecture.md` (technical) or `docs/chat-feature.md` (user spec) as needed.
 
 ## Tech Stack
 

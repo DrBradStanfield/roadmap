@@ -1,5 +1,7 @@
 # Chatbot Architecture
 
+> **New to chatbot work?** Read [`chat-start-here.md`](../../../Library/CloudStorage/Dropbox/YouTube/multivitamin%20%26%20others/claude_business/docs/chat-start-here.md) first — entry point, audit playbook, logging schema. This doc covers technical implementation only.
+
 Technical reference for how the Health Roadmap Assistant finds and delivers relevant content in response to a user query. Sister documents:
 
 - [`chat-feature.md`](./chat-feature.md) — user-facing behavior, scope, access rules, UI, billing

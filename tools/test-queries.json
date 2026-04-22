@@ -1873,6 +1873,8 @@
     ],
     "category": "cardiovascular",
     "source": "production",
+    "must_mention": ["pitavastatin", "ezetimibe", "low-dose"],
+    "must_not_mention": ["atorvastatin 20-40mg as a first choice", "atorvastatin 20-40mg"],
     "notes": "Brad's approach: low-dose hydrophilic statin (pravastatin/rosuvastatin 5mg/pitavastatin) + ezetimibe before dose escalation"
   },
   {
@@ -1883,6 +1885,8 @@
     ],
     "category": "cardiovascular",
     "source": "production",
+    "must_mention": ["pitavastatin", "ezetimibe", "low-dose"],
+    "must_not_mention": ["atorvastatin 20-40mg as a first choice", "atorvastatin 20-40mg"],
     "notes": "Brad favours low-dose hydrophilic statin + ezetimibe over high-dose monotherapy"
   }
 ]
