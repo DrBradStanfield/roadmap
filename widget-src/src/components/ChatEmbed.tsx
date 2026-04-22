@@ -129,7 +129,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs }: ChatEmbedProps) {
           >
             ☰ Threads
           </button>
-          <span className="chat-embed-title">Health Roadmap Chat</span>
+          <span className="chat-embed-title">Discuss Your Health</span>
         </div>
 
         <div
@@ -173,7 +173,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs }: ChatEmbedProps) {
             value={state.inputText}
             onChange={e => actions.handleInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about your health suggestions"
+            placeholder="Ask about your health"
             disabled={state.isLoading}
             rows={1}
           />

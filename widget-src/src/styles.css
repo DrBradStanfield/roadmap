@@ -3709,7 +3709,10 @@ input[type="number"] {
 }
 
 .chat-embed-sidebar-header {
-  padding: 14px 16px 10px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  min-height: 49px;
   border-bottom: 1px solid var(--color-border, #d1d9e6);
 }
 
@@ -3739,7 +3742,8 @@ input[type="number"] {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 0 16px;
+  min-height: 49px;
   border-bottom: 1px solid var(--color-border, #d1d9e6);
   background: var(--color-bg, #fff);
   flex-shrink: 0;
