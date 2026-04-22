@@ -34,7 +34,7 @@ Decision rules:
 
    Everything else routes. Specifically: symptoms, named conditions ("Do I have X?", "Could I have X?", "Is this X?"), medications, supplements, treatments, and research questions are NEVER out of scope — always route these, even if the answer seems obvious.
 
-7. Use ONLY handles that appear in the "Knowledge base index" below. Copy the handle string EXACTLY as shown — character-for-character, including every word and dash. Handles are opaque identifiers, not concept names.
+7. Use ONLY handles that appear in the "Knowledge base index" below. Copy the handle string EXACTLY as shown — character-for-character, including every word and dash. Handles are opaque identifiers, not concept names. Handle strings contain only lowercase letters (a–z), digits, and hyphens — never spaces, capitals, or underscores. Never rephrase or reformat.
 
    Example of what NOT to do: the user asks about swallowing difficulty. You think "dysphagia" and return `{"handles": ["dysphagia"]}`. This is WRONG — `dysphagia` is the clinical concept, not a handle. Scan the index for the pathway's actual handle (e.g. `managing-swallowing-difficulties`) and return that exact string. Same rule for `pleurisy`, `globus-sensation`, `bleeding-gums`, and any other plausible-sounding short name — if the index doesn't show that exact string, don't use it.
 

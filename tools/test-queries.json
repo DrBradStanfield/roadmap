@@ -1888,5 +1888,23 @@
     "must_mention": ["pitavastatin", "ezetimibe", "low-dose"],
     "must_not_mention": ["atorvastatin 20-40mg as a first choice", "atorvastatin 20-40mg"],
     "notes": "Brad favours low-dose hydrophilic statin + ezetimibe over high-dose monotherapy"
+  },
+  {
+    "query": "I take Lixiana, can I take MicroVitamin with it?",
+    "expected": [],
+    "category": "medications",
+    "source": "audit-2026-04-22",
+    "must_mention": ["edoxaban"],
+    "must_not_mention": ["apixaban", "Eliquis"],
+    "notes": "Lixiana = edoxaban (not apixaban). Asserting wrong generic name is a patient safety issue."
+  },
+  {
+    "query": "Why can't I buy MicroVitamin in New Zealand?",
+    "expected": [],
+    "category": "out-of-scope",
+    "source": "audit-2026-04-22",
+    "must_mention": ["Medsafe"],
+    "must_not_mention": ["TGA"],
+    "notes": "NZ regulator is Medsafe, not TGA (Australian). Bot previously got this wrong."
   }
 ]

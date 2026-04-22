@@ -48,39 +48,6 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   process.exit(1);
 }
 
-async function query(sql: string): Promise<unknown[]> {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_SERVICE_KEY!,
-      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-    },
-    body: JSON.stringify({ query: sql }),
-  });
-  if (!res.ok) {
-    // Fall back to direct table query via PostgREST if exec_sql not available
-    throw new Error(`exec_sql failed: ${res.status} ${await res.text()}`);
-  }
-  return res.json() as Promise<unknown[]>;
-}
-
-// PostgREST-based fallback for tables without exec_sql
-async function queryTable(table: string, params: Record<string, string> = {}): Promise<unknown[]> {
-  const qs = new URLSearchParams({ ...params, select: '*' });
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${qs}`, {
-    headers: {
-      'apikey': SUPABASE_SERVICE_KEY!,
-      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      'Prefer': 'return=representation',
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`Query failed for ${table}: ${res.status} ${await res.text()}`);
-  }
-  return res.json() as Promise<unknown[]>;
-}
-
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -102,6 +69,7 @@ interface Message {
 
 interface RoutingEvent {
   created_at: string;
+  message_id: string;
   message: string;
   matched_handles: string[] | null;
   router_latency_ms: number | null;
@@ -170,7 +138,7 @@ async function pullRouting(): Promise<RoutingEvent[]> {
 
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/chat_match_events?` +
-    `select=created_at,message,matched_handles,router_latency_ms,router_cache_hit,router_error,router_raw` +
+    `select=created_at,message_id,message,matched_handles,router_latency_ms,router_cache_hit,router_error,router_raw` +
     `&created_at=gte.${since}` +
     `&order=created_at.asc`,
     {
@@ -200,10 +168,10 @@ function renderConversations(messages: Message[], routing: RoutingEvent[]): stri
     convMap.get(m.conversation_id)!.push(m);
   }
 
-  // Build routing lookup by message text (approximate match)
-  const routingByMessage = new Map<string, RoutingEvent>();
+  // Build routing lookup by message_id (exact match — avoids collision on duplicate queries)
+  const routingById = new Map<string, RoutingEvent>();
   for (const r of routing) {
-    routingByMessage.set(r.message, r);
+    routingById.set(r.message_id, r);
   }
 
   const lines: string[] = [
@@ -244,7 +212,7 @@ function renderConversations(messages: Message[], routing: RoutingEvent[]): stri
 
       // Show routing for user messages
       if (msg.role === 'user') {
-        const route = routingByMessage.get(msg.content);
+        const route = routingById.get(msg.message_id);
         if (route) {
           const handles = route.matched_handles?.length
             ? route.matched_handles.join(', ')
@@ -283,13 +251,9 @@ console.log(`  Since:      ${new Date(Date.now() - days * 24 * 60 * 60 * 1000).t
 
 fs.mkdirSync(outputDir, { recursive: true });
 
-console.log('Pulling messages...');
-const messages = await pullMessages();
-console.log(`  ${messages.length} messages`);
-
-console.log('Pulling routing events...');
-const routing = await pullRouting();
-console.log(`  ${routing.length} routing events`);
+console.log('Pulling messages and routing events...');
+const [messages, routing] = await Promise.all([pullMessages(), pullRouting()]);
+console.log(`  ${messages.length} messages, ${routing.length} routing events`);
 
 // Write raw JSON
 fs.writeFileSync(path.join(outputDir, 'messages.json'), JSON.stringify(messages, null, 2));

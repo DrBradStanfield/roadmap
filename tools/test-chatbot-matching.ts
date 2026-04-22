@@ -77,16 +77,15 @@ const ANSWER_MODEL = 'claude-haiku-4-5-20251001';
 let ANSWER_SYSTEM_CONTEXT = '';
 
 if (answerCheckMode) {
-  const systemPromptPath = path.join(REPO_ROOT, 'app/lib/chat-system-prompt.md');
-  const algorithmPath = path.join(REPO_ROOT, 'health_roadmap_algorithm.md');
-  if (!fs.existsSync(systemPromptPath) || !fs.existsSync(algorithmPath)) {
+  try {
+    ANSWER_SYSTEM_CONTEXT =
+      fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-system-prompt.md'), 'utf-8') +
+      '\n\n---\n\n' +
+      fs.readFileSync(path.join(REPO_ROOT, 'health_roadmap_algorithm.md'), 'utf-8');
+  } catch {
     console.error('Error: --answer-check requires app/lib/chat-system-prompt.md and health_roadmap_algorithm.md');
     process.exit(1);
   }
-  ANSWER_SYSTEM_CONTEXT =
-    fs.readFileSync(systemPromptPath, 'utf-8') +
-    '\n\n---\n\n' +
-    fs.readFileSync(algorithmPath, 'utf-8');
 }
 
 // ---------------------------------------------------------------------------
@@ -233,7 +232,7 @@ interface QueryResult {
   passed: boolean;
 }
 
-async function checkAnswer(query: string, mustMention: string[], mustNotMention: string[]): Promise<AnswerCheckResult> {
+async function checkAnswer(query: string, mustMention: string[], mustNotMention: string[], retryOnRateLimit = true): Promise<AnswerCheckResult> {
   const body = {
     model: ANSWER_MODEL,
     max_tokens: 800,
@@ -252,6 +251,13 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(30_000),
   });
+
+  if (res.status === 429 && retryOnRateLimit) {
+    const retryAfter = parseInt(res.headers.get('retry-after') ?? '30', 10);
+    process.stdout.write(` [429, waiting ${retryAfter}s]`);
+    await new Promise(r => setTimeout(r, retryAfter * 1000));
+    return checkAnswer(query, mustMention, mustNotMention, false);
+  }
 
   if (!res.ok) return { passed: false, failures: [`API error ${res.status}`], response: '' };
 
@@ -286,7 +292,7 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   }
 
   let answerCheck: AnswerCheckResult | null = null;
-  if (answerCheckMode && (q.must_mention?.length || q.must_not_mention?.length)) {
+  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length)) {
     answerCheck = await checkAnswer(q.query, q.must_mention ?? [], q.must_not_mention ?? []);
   }
 

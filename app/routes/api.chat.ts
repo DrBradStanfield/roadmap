@@ -468,6 +468,15 @@ export async function action({ request }: ActionFunctionArgs) {
       cacheCreation: completion.usage.cacheCreationTokens,
     });
 
+    if (routerResult.handles.length > 0 && !completion.content) {
+      console.warn(JSON.stringify({
+        evt: 'chat_silent_drop',
+        conversationId: activeConversationId,
+        matchedHandles: routerResult.handles,
+        inputTokens: completion.usage.inputTokens,
+      }));
+    }
+
     console.log(JSON.stringify({
       evt: 'chat_timing',
       totalMs: Date.now() - t0,

@@ -234,7 +234,17 @@ export async function routeQuery(
     const result = await callAnthropicWithUsage(body, 5_000);
     rawJson = result.content;
 
-    const parsed = RouterOutput.parse(JSON.parse(extractJsonObject(rawJson)));
+    // Sanitize before schema parse: normalise spaces/caps so a malformatted
+    // handle degrades gracefully rather than causing parse() to throw and drop
+    // all handles. e.g. "Cardiovascular Disease" → "cardiovascular-disease".
+    const rawParsed = JSON.parse(extractJsonObject(rawJson)) as { handles?: unknown };
+    if (Array.isArray(rawParsed.handles)) {
+      rawParsed.handles = rawParsed.handles
+        .filter((h): h is string => typeof h === 'string')
+        .map(h => h.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''))
+        .filter(h => h.length > 0);
+    }
+    const parsed = RouterOutput.parse(rawParsed);
 
     // Allowlist: drop any handle the router hallucinated
     const validHandles = parsed.handles.filter(h => VALID_HANDLES.has(h));
