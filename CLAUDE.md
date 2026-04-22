@@ -336,6 +336,7 @@ Backend: Initialized in `app/entry.server.tsx`.
 - **Algorithm & evidence docs**: When changing health calculations in `packages/health-core/src/`, update `health_roadmap_algorithm.md`. When changing clinical evidence or references, update `packages/health-core/src/evidence.ts`. Then check if `roadmap_text.html` covers the same topic. All three files must stay in sync.
 - **Every feature/behavior change must include unit tests.** Run `npm test` before deploying.
 - **Bug fix workflow**: Write failing test → confirm it fails → fix → confirm it passes.
+- **Debug from data, not theory.** When investigating production anomalies (wrong numbers, missing rows, unexpected UI state), query the actual data first — live database rows, external system state, the rendered DOM — before reading code to form a hypothesis. Theories built from code reading alone produce plausible but wrong root causes; a fix that makes sense on paper often patches a symptom of a different underlying bug. Read code to explain *why* the data looks wrong, not to guess *what* is wrong.
 - **Chatbot quality regression workflow**: When a real user interaction reveals a wrong or missing response, always add the query to `tools/test-queries.json` (with `"source": "production"`) before or alongside the fix. This is the Phase D iteration loop — every real failure becomes a permanent regression test.
 - **Run tests in a Bash subagent** to keep verbose output out of main context.
 - **If an approach is failing, stop and re-plan** rather than pushing through.

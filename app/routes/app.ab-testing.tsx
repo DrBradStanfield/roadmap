@@ -129,7 +129,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const resultsMap: Record<string, ABTestResults> = {};
     const testsWithEvents = tests.filter(t => t.status !== 'draft');
     const resultPromises = testsWithEvents.map(async (t) => {
-      const r = await getABTestResults(t.id);
+      const r = await getABTestResults(t);
       if (r) resultsMap[t.id] = r;
     });
     await Promise.all(resultPromises);

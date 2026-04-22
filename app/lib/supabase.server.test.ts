@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   toApiMeasurement, toApiProfile, toApiMedication, toApiScreening, deriveMedicationStatus,
+  aggregateABCounts,
   type DbMeasurement, type DbProfile, type DbMedication, type DbScreening,
+  type ABCountRow,
 } from './supabase.server';
+import type { ABVariant } from './supabase.server';
 
 describe('toApiMeasurement', () => {
   it('converts DB row to camelCase API format', () => {
@@ -302,5 +305,62 @@ describe('deriveMedicationStatus', () => {
 
   it('derives active from yes (legacy compat)', () => {
     expect(deriveMedicationStatus('yes')).toBe('active');
+  });
+});
+
+describe('aggregateABCounts', () => {
+  const variants: ABVariant[] = [
+    { id: 'a', value: 'foo', weight: 50 },
+    { id: 'b', value: 'bar', weight: 50 },
+  ];
+
+  it('aggregates RPC rows into per-variant impression and conversion counts', () => {
+    const rows: ABCountRow[] = [
+      { variant_id: 'a', event_type: 'impression', count: 1307 },
+      { variant_id: 'a', event_type: 'conversion', count: 35 },
+      { variant_id: 'b', event_type: 'impression', count: 1615 },
+      { variant_id: 'b', event_type: 'conversion', count: 26 },
+    ];
+    expect(aggregateABCounts(variants, rows)).toEqual([
+      { variantId: 'a', impressions: 1307, conversions: 35 },
+      { variantId: 'b', impressions: 1615, conversions: 26 },
+    ]);
+  });
+
+  it('handles BIGINT counts returned as strings from Postgres', () => {
+    const rows: ABCountRow[] = [
+      { variant_id: 'a', event_type: 'impression', count: '1307' },
+      { variant_id: 'a', event_type: 'conversion', count: '35' },
+    ];
+    const result = aggregateABCounts(variants, rows);
+    expect(result[0]).toEqual({ variantId: 'a', impressions: 1307, conversions: 35 });
+  });
+
+  it('returns zero counts for variants with no events (e.g. newly added)', () => {
+    const rows: ABCountRow[] = [
+      { variant_id: 'a', event_type: 'impression', count: 500 },
+    ];
+    expect(aggregateABCounts(variants, rows)).toEqual([
+      { variantId: 'a', impressions: 500, conversions: 0 },
+      { variantId: 'b', impressions: 0, conversions: 0 },
+    ]);
+  });
+
+  it('ignores rows for variant IDs not in the test (stale data safety)', () => {
+    const rows: ABCountRow[] = [
+      { variant_id: 'a', event_type: 'impression', count: 100 },
+      { variant_id: 'c', event_type: 'impression', count: 999 },
+    ];
+    const result = aggregateABCounts(variants, rows);
+    expect(result.find(r => r.variantId === 'a')!.impressions).toBe(100);
+    expect(result).toHaveLength(2);
+    expect(result.find(r => r.variantId === 'c')).toBeUndefined();
+  });
+
+  it('handles null rows from RPC (empty result set)', () => {
+    expect(aggregateABCounts(variants, null)).toEqual([
+      { variantId: 'a', impressions: 0, conversions: 0 },
+      { variantId: 'b', impressions: 0, conversions: 0 },
+    ]);
   });
 });

@@ -1,7 +1,7 @@
 import { json, type ActionFunctionArgs } from '@remix-run/node';
 import { z } from 'zod';
 import { authenticate } from '../shopify.server';
-import { recordABEvent } from '../lib/supabase.server';
+import { recordABEvent, type ABEventType } from '../lib/supabase.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 
 // 10 events per minute per visitor (generous, prevents abuse)
@@ -25,7 +25,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const b = body as Record<string, unknown>;
   const eventData = b?.impression || b?.conversion;
-  const eventType: 'impression' | 'conversion' | null = b?.impression ? 'impression'
+  const eventType: ABEventType | null = b?.impression ? 'impression'
     : b?.conversion ? 'conversion'
     : null;
 

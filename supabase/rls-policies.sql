@@ -981,6 +981,20 @@ CREATE INDEX IF NOT EXISTS idx_ab_events_test_type ON ab_events(test_id, event_t
 ALTER TABLE ab_tests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ab_events ENABLE ROW LEVEL SECURITY;
 
+-- Aggregate event counts server-side. Client-side aggregation over .select()
+-- silently truncates at PostgREST's default 1000-row limit once a test
+-- accumulates enough events, producing wrong dashboard numbers.
+CREATE OR REPLACE FUNCTION get_ab_test_counts(p_test_id UUID)
+RETURNS TABLE(variant_id TEXT, event_type TEXT, count BIGINT)
+LANGUAGE sql STABLE AS $$
+  SELECT variant_id, event_type, COUNT(*)::BIGINT
+  FROM ab_events
+  WHERE test_id = p_test_id
+  GROUP BY variant_id, event_type;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_ab_test_counts(UUID) TO service_role;
+
 -- ===== chat_match_events (v2 LLM router logging) =====
 -- Apply to staging BEFORE deploying Phase A code.
 -- Apply to production BEFORE deploying Phase A code to production.

@@ -2128,6 +2128,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 export type ABTestStatus = 'draft' | 'active' | 'paused' | 'completed';
 export type ABTestTarget = 'heading' | 'subheading' | 'email-guest-helper';
+export type ABEventType = 'impression' | 'conversion';
 
 export interface ABVariant {
   id: string;
@@ -2217,7 +2218,7 @@ export async function recordABEvent(
   testId: string,
   variantId: string,
   visitorId: string,
-  eventType: 'impression' | 'conversion',
+  eventType: ABEventType,
 ): Promise<boolean> {
   if (!supabaseAdmin) return false;
   const { error } = await supabaseAdmin
@@ -2242,40 +2243,44 @@ export interface ABTestResults {
   }>;
 }
 
-export async function getABTestResults(testId: string): Promise<ABTestResults | null> {
+export interface ABCountRow {
+  variant_id: string;
+  event_type: ABEventType;
+  count: number | string;
+}
+
+export function aggregateABCounts(
+  variants: ABVariant[],
+  rows: ABCountRow[] | null,
+): ABTestResults['variantResults'] {
+  const counts = new Map<string, { impressions: number; conversions: number }>();
+  for (const variant of variants) {
+    counts.set(variant.id, { impressions: 0, conversions: 0 });
+  }
+  for (const row of rows || []) {
+    const entry = counts.get(row.variant_id);
+    if (!entry) continue;
+    if (row.event_type === 'impression') entry.impressions = Number(row.count);
+    else if (row.event_type === 'conversion') entry.conversions = Number(row.count);
+  }
+  return Array.from(counts.entries()).map(([variantId, c]) => ({
+    variantId,
+    impressions: c.impressions,
+    conversions: c.conversions,
+  }));
+}
+
+export async function getABTestResults(test: ABTest): Promise<ABTestResults | null> {
   if (!supabaseAdmin) return null;
 
-  const test = await getABTestById(testId);
-  if (!test) return null;
-
-  // Count events per variant per type
-  const { data: events, error } = await supabaseAdmin
-    .from('ab_events')
-    .select('variant_id, event_type')
-    .eq('test_id', testId);
+  // Aggregate server-side — client-side reduction over .select() silently
+  // truncates at PostgREST's 1000-row default once a test has enough events.
+  const { data: rows, error } = await supabaseAdmin
+    .rpc('get_ab_test_counts', { p_test_id: test.id });
   if (error) {
-    console.error('Failed to fetch AB events:', error.message);
+    console.error('Failed to fetch AB event counts:', error.message);
     return null;
   }
 
-  // Aggregate counts
-  const counts = new Map<string, { impressions: number; conversions: number }>();
-  for (const variant of test.variants) {
-    counts.set(variant.id, { impressions: 0, conversions: 0 });
-  }
-  for (const event of events || []) {
-    const entry = counts.get(event.variant_id);
-    if (!entry) continue;
-    if (event.event_type === 'impression') entry.impressions++;
-    else if (event.event_type === 'conversion') entry.conversions++;
-  }
-
-  return {
-    test,
-    variantResults: Array.from(counts.entries()).map(([variantId, c]) => ({
-      variantId,
-      impressions: c.impressions,
-      conversions: c.conversions,
-    })),
-  };
+  return { test, variantResults: aggregateABCounts(test.variants, rows) };
 }
