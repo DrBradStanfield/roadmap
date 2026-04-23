@@ -115,6 +115,7 @@ export function HealthTool() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasApiResponse, setHasApiResponse] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'first-saved' | 'error'>('idle');
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
   const isSavingLongitudinalRef = useRef(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -481,6 +482,7 @@ export function HealthTool() {
         setSaveStatus('saving');
         const success = await flushPendingProfileSave();
         setSaveStatus(success ? 'saved' : 'error');
+        if (success) setLastSavedAt(Date.now());
         setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
         // Guests: save everything to localStorage (including longitudinal)
@@ -562,6 +564,7 @@ export function HealthTool() {
         }
         isFirstSaveRef.current = false;
         setSaveStatus('saved');
+        setLastSavedAt(Date.now());
         setIsSavingLongitudinal(false);
         setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
@@ -874,6 +877,7 @@ export function HealthTool() {
     isSavingLongitudinal,
     hasApiResponse,
     formStage,
+    lastSavedAt,
     setShowUploadModal,
     loginUrl: authState.loginUrl,
     activeSuggestionIds,

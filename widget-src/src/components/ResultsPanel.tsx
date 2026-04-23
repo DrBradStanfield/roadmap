@@ -23,6 +23,7 @@ import {
   getBmiEvidence,
 } from '@roadmap/health-core';
 import { type ApiReminderPreference, sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments } from '../lib/api';
+import { ColumnHeader } from './ColumnHeader';
 import { FeedbackForm } from './FeedbackForm';
 import { ChatSection } from './ChatSection';
 // @ts-ignore — JSON import for blog post cards
@@ -306,7 +307,7 @@ function renderGroupedSuggestions(suggestions: Suggestion[], highlightedIds?: Se
   return elements;
 }
 
-function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, redirectFailed, onPrint, onEmail, emailStatus, printStatus }: {
+function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, redirectFailed }: {
   authState?: AuthState;
   saveStatus?: string;
   emailConfirmStatus?: 'idle' | 'sent' | 'error';
@@ -314,10 +315,6 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
   onSaveLongitudinal?: () => Promise<void>;
   isSavingLongitudinal?: boolean;
   redirectFailed?: boolean;
-  onPrint?: () => void;
-  onEmail?: () => void;
-  emailStatus?: 'idle' | 'sending' | 'sent' | 'error';
-  printStatus?: 'idle' | 'loading' | 'error';
 }) {
   const [showFeedback, setShowFeedback] = useState(false);
 
@@ -330,14 +327,6 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
       : saveStatus === 'error' ? 'Failed to save'
       : 'Data synced';
     const statusClass = saveStatus === 'error' ? 'error' : saveStatus === 'saving' ? 'saving' : 'idle';
-
-    const emailLabel = emailStatus === 'sending' ? 'Sending...'
-      : emailStatus === 'sent' ? 'Sent!'
-      : emailStatus === 'error' ? 'Failed'
-      : 'Email';
-    const printLabel = printStatus === 'loading' ? 'Loading...'
-      : printStatus === 'error' ? 'Failed'
-      : 'Print';
 
     return (
       <div className="account-status logged-in">
@@ -352,16 +341,6 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
             >Logged in</a> · <span className={`save-indicator-inline ${statusClass}`}>{statusText}</span>
           </span>
           <div className="account-actions no-print">
-            {onPrint && (
-              <button type="button" className="action-btn-small" onClick={onPrint} disabled={printStatus === 'loading'} title="Print report">
-                {printLabel}
-              </button>
-            )}
-            {onEmail && (
-              <button type="button" className="action-btn-small" onClick={onEmail} disabled={emailStatus === 'sending'} title="Email report to yourself">
-                {emailLabel}
-              </button>
-            )}
             <button
               type="button"
               className="feedback-btn-small"
@@ -729,6 +708,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
+        <ColumnHeader step={2} title="Your personalized plan to discuss with your doctor" meta={null} />
         <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />
         <div className="results-placeholder">
           <div className="placeholder-icon">📊</div>
@@ -755,10 +735,30 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
   const supplementSuggestions = results.suggestions.filter(s => s.category === 'supplements');
   const skinSuggestions = results.suggestions.filter(s => s.category === 'skin');
 
+  const emailLabel = emailStatus === 'sending' ? 'Sending...'
+    : emailStatus === 'sent' ? 'Sent!'
+    : emailStatus === 'error' ? 'Failed'
+    : 'Email';
+  const printLabel = printStatus === 'loading' ? 'Loading...'
+    : printStatus === 'error' ? 'Failed'
+    : 'Print';
+
+  const planHeaderMeta = authState?.isLoggedIn ? (
+    <>
+      <button type="button" className="action-btn-small no-print" onClick={handlePrint} disabled={printStatus === 'loading'} title="Print report">
+        {printLabel}
+      </button>
+      <button type="button" className="action-btn-small no-print" onClick={handleEmailReport} disabled={emailStatus === 'sending'} title="Email report to yourself">
+        {emailLabel}
+      </button>
+    </>
+  ) : null;
+
   return (
     <div className="health-results-panel">
+      <ColumnHeader step={2} title="Your personalized plan to discuss with your doctor" meta={planHeaderMeta} />
       {/* Account Status */}
-      <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} onPrint={authState?.isLoggedIn ? handlePrint : undefined} onEmail={authState?.isLoggedIn ? handleEmailReport : undefined} emailStatus={emailStatus} printStatus={printStatus} />
+      <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />
       {guestReportData && <GuestEmailCapture hook={guestEmailHook} loginUrl={authState?.loginUrl} formStage={formStage} />}
 
       {/* Quick Stats */}

@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { ColumnHeader } from './ColumnHeader';
 import { DocumentLightbox } from './DocumentLightbox';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument, type ApiSupplement } from '../lib/api';
 import type { HealthInputs, ScreeningInputs } from '@roadmap/health-core';
@@ -65,6 +66,18 @@ const BASIC_LONGITUDINAL_FIELDS: FieldConfig[] = [
   { field: 'weightKg', name: 'Weight' },
   { field: 'waistCm', name: 'Waist Circumference' },
 ];
+
+function formatRelativeTime(ts: number): string {
+  const diffMs = Date.now() - ts;
+  if (diffMs < 60_000) return 'just now';
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
 const ALL_MONTHS = [
   { value: '01', label: 'January' },
@@ -161,6 +174,7 @@ interface InputPanelProps {
   isSavingLongitudinal: boolean;
   hasApiResponse: boolean;
   formStage: 1 | 2 | 3;
+  lastSavedAt?: number | null;
   setShowUploadModal?: (show: boolean) => void;
   loginUrl?: string;
   activeSuggestionIds?: Set<string>;
@@ -177,6 +191,7 @@ export function InputPanel({
   supplements, onSupplementChange, onSupplementDelete,
   onSaveLongitudinal, isSavingLongitudinal, hasApiResponse,
   formStage,
+  lastSavedAt,
   setShowUploadModal, loginUrl, activeSuggestionIds,
   healthDocuments, onDocumentDeleted, onAutoFocusEmail,
 }: InputPanelProps) {
@@ -702,28 +717,30 @@ export function InputPanel({
 
   const renderProfile = () => (
     <>
-      <div className="unit-toggle">
-        <label htmlFor="hr-unit-select">Units:</label>
-        <select
-          id="hr-unit-select"
-          value={unitSystem}
-          onChange={(e) => onUnitSystemChange(e.target.value as UnitSystem)}
-        >
-          <option value="si">Metric (kg, cm, mmol/L)</option>
-          <option value="conventional">US (lbs, in, mg/dL)</option>
-        </select>
-      </div>
-
       <section className="health-section">
-        <h3
-          className={`health-section-title${canCollapse ? ' health-section-title--collapsible' : ''}`}
-          onClick={canCollapse ? () => setPrefillExpanded(!prefillExpanded) : undefined}
-        >
-          Basic Information
-          {canCollapse && (
-            <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
-          )}
-        </h3>
+        <div className="hr-section-card-header">
+          <h3
+            className={`health-section-title${canCollapse ? ' health-section-title--collapsible' : ''}`}
+            onClick={canCollapse ? () => setPrefillExpanded(!prefillExpanded) : undefined}
+          >
+            Basic Information
+            {canCollapse && (
+              <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
+            )}
+          </h3>
+          <div className="basic-info-units">
+            <span className="basic-info-units-label">Units</span>
+            <button
+              type="button"
+              className="unit-toggle-pill"
+              onClick={() => onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si')}
+              title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
+              aria-label={`Switch units. Current: ${unitSystem === 'si' ? 'Metric' : 'US'}`}
+            >
+              {unitSystem === 'si' ? 'Metric (kg, cm, mmol/L)' : 'US (in, lbs, mg/dL)'}
+            </button>
+          </div>
+        </div>
 
         <div className={`prefill-summary-wrapper${collapsed && !prefillExpanded ? ' visible' : ''}`}>
           <p className="prefill-summary" onClick={() => setPrefillExpanded(true)}>
@@ -2312,8 +2329,20 @@ export function InputPanel({
   };
 
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
+  const inputHeaderMeta = useMemo(() => {
+    if (!isLoggedIn) return '';
+    const mostRecentMeasurementAt = previousMeasurements.reduce<number>((max, m) => {
+      const t = m.recordedAt ? new Date(m.recordedAt).getTime() : 0;
+      return t > max ? t : max;
+    }, 0);
+    const effectiveSavedAt = lastSavedAt ?? (mostRecentMeasurementAt > 0 ? mostRecentMeasurementAt : null);
+    if (effectiveSavedAt === null) return 'New account';
+    return `Last saved · ${formatRelativeTime(effectiveSavedAt)}`;
+  }, [isLoggedIn, previousMeasurements, lastSavedAt]);
+
   return (
     <div className="health-input-panel">
+      <ColumnHeader step={1} title="Your information" meta={inputHeaderMeta} />
       {/* Card 1: Units + Basic Info + Vitals + Birth Info (stage 2+) */}
       <div className="section-card">
         {renderProfile()}

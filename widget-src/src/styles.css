@@ -68,9 +68,12 @@ input[type="number"] {
   font-family: var(--font-family-base);
   max-width: var(--container-max-width);
   margin: 0 auto;
-  padding: 0 0 24px;
+  padding: 24px 0;
   color: var(--color-text);
   isolation: isolate;
+  background: #f8f9fa;
+  box-shadow: 0 0 0 100vmax #f8f9fa;
+  clip-path: inset(0 -100vmax);
 }
 
 /* Hero Section — outside React, rendered by Liquid */
@@ -3968,4 +3971,66 @@ input[type="number"] {
 .supplement-custom {
   color: var(--color-brand);
   font-style: italic;
+}
+
+/* ─── Column headers (Input / Plan) ───────────────────────────── */
+.hr-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px;
+  margin-bottom: 12px;
+}
+.hr-col-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--color-gray-medium);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hr-col-step {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e6f4f1;
+  color: var(--color-brand);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.hr-col-meta {
+  font-size: 12px;
+  color: var(--color-gray-light);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* ─── Inline unit toggle in Basic Information card header ─────── */
+.hr-section-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.hr-section-card-header .health-section-title {
+  margin: 0;
+}
+.basic-info-units {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-gray-medium);
+  white-space: nowrap;
 }
