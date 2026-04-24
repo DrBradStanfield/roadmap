@@ -48,6 +48,11 @@ const DISCORD_EXCLUDED_CHANNEL_IDS = new Set(
 // ---------------------------------------------------------------------------
 
 const DISCORD_MAX_MESSAGE_CHARS = 2000;     // Discord's own per-message cap
+// Used when splitting our outgoing reply. Discord's hard cap is 2000, but the
+// first chunk is sent via message.reply() with `<@userId> ${chunk}` prepended,
+// which adds ~22 chars for the mention. Using 1950 leaves a safe 50-char buffer
+// so the mention prefix can never push the final payload over 2000 (DiscordAPIError[50035]).
+const DISCORD_SPLIT_CHARS = 1950;
 const USER_RATE_LIMIT_MAX = 10;              // 10 msgs per user per hour
 const USER_RATE_LIMIT_WINDOW_MS = 60 * 60_000;
 const USER_RATE_LIMIT_CLEANUP_MS = 15 * 60_000;
@@ -284,8 +289,12 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       typingInterval = null;
     }
 
-    // Send the response (may need to split across multiple Discord messages)
-    const chunks = splitForDiscord(result.content, DISCORD_MAX_MESSAGE_CHARS);
+    // Send the response (may need to split across multiple Discord messages).
+    // Split at DISCORD_SPLIT_CHARS (1950), not the 2000 hard cap — the first
+    // chunk is sent via message.reply() with `<@userId> ` prepended, which adds
+    // ~22 chars. Splitting at 2000 exactly caused Discord to reject the first
+    // chunk with DiscordAPIError[50035] "content[BASE_TYPE_MAX_LENGTH]".
+    const chunks = splitForDiscord(result.content, DISCORD_SPLIT_CHARS);
     const sentMessages: Message[] = [];
     let firstChunk = true;
     for (const chunk of chunks) {
