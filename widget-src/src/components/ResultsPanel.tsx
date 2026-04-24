@@ -25,7 +25,6 @@ import {
 import { type ApiReminderPreference, sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments } from '../lib/api';
 import { ColumnHeader } from './ColumnHeader';
 import { FeedbackForm } from './FeedbackForm';
-import { ChatSection } from './ChatSection';
 // @ts-ignore — JSON import for blog post cards
 import blogIndex from '../../../docs/blog/index.json';
 
@@ -56,8 +55,6 @@ interface ResultsPanelProps {
   onReminderPreferenceChange?: (category: string, enabled: boolean) => void;
   onGlobalReminderOptout?: () => void;
   sex?: 'male' | 'female';
-  hideInlineChat?: boolean;
-  onInlineChatExpand?: () => void;
   guestReportData?: {
     inputs: Record<string, unknown>;
     medications?: Record<string, unknown>[];
@@ -316,8 +313,6 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
   isSavingLongitudinal?: boolean;
   redirectFailed?: boolean;
 }) {
-  const [showFeedback, setShowFeedback] = useState(false);
-
   if (!authState) return null;
 
   if (authState.isLoggedIn) {
@@ -340,24 +335,12 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
               className="logged-in-link"
             >Logged in</a> · <span className={`save-indicator-inline ${statusClass}`}>{statusText}</span>
           </span>
-          <div className="account-actions no-print">
-            <button
-              type="button"
-              className="feedback-btn-small"
-              onClick={() => setShowFeedback(!showFeedback)}
-            >
-              Send feedback
-            </button>
-          </div>
         </div>
         {emailConfirmStatus === 'sent' && (
           <div className="email-confirm-message">✓ Check your email for your health report!</div>
         )}
         {emailConfirmStatus === 'error' && (
           <div className="email-confirm-message email-confirm-error">Sending your summary email failed. Please contact brad@drstanfield.com for help.</div>
-        )}
-        {showFeedback && (
-          <FeedbackForm initialExpanded showSourceLink={false} onClose={() => setShowFeedback(false)} />
         )}
         {hasUnsavedLongitudinal && onSaveLongitudinal && (
           <button
@@ -599,7 +582,7 @@ function ReminderSettings({
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, hideInlineChat, onInlineChatExpand, guestReportData, formStage }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, guestReportData, formStage }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -763,7 +746,6 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
 
       {/* Quick Stats */}
       <section className="quick-stats">
-        <h3 className="results-section-title">Your Health Snapshot</h3>
         <div className="stats-grid">
           {results.waistToHeightRatio !== undefined && (() => {
             const status = getWaistToHeightStatus(results.waistToHeightRatio);
@@ -814,20 +796,8 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
         </div>
       </section>
 
-      {/* Chat CTA — inline card between stats and suggestions (hidden when floating FAB chat is open) */}
-      {!hideInlineChat && (
-        <ChatSection
-          isLoggedIn={authState?.isLoggedIn ?? false}
-          onExpand={onInlineChatExpand}
-        />
-      )}
-
       {/* Suggestions */}
       <section className="suggestions-section">
-        <h3 className="results-section-title">
-          Suggestions to Discuss with Your Doctor
-        </h3>
-
         {urgentSuggestions.length > 0 && (
           <div className="suggestions-group">
             <h4 className="suggestions-group-title urgent">Requires Attention</h4>

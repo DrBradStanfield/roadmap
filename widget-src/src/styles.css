@@ -157,10 +157,6 @@ input[type="number"] {
     flex-wrap: wrap;
   }
 
-  .account-actions {
-    flex-shrink: 1;
-  }
-
   .mobile-tab-bar-container {
     position: sticky;
     top: 0;
@@ -251,12 +247,7 @@ input[type="number"] {
   position: sticky;
   top: 24px;
   max-height: calc(100vh * 1.5);
-  min-height: 360px;
   overflow-y: auto;
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Input Panel */
@@ -564,7 +555,7 @@ input[type="number"] {
 .health-results-panel {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 8px;
 }
 
 .results-placeholder {
@@ -700,6 +691,7 @@ input[type="number"] {
 
 /* Suggestions */
 .suggestions-group {
+  margin-top: 15px;
   margin-bottom: 20px;
 }
 
@@ -1102,6 +1094,14 @@ input[type="number"] {
   line-height: 1.4;
 }
 
+.email-capture {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
 .email-capture-row {
   display: flex;
   gap: 8px;
@@ -1283,13 +1283,6 @@ input[type="number"] {
   color: var(--color-error);
 }
 
-.account-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
 .action-btn-small {
   font-size: 12px;
   padding: 4px 10px;
@@ -1310,23 +1303,6 @@ input[type="number"] {
 .action-btn-small:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.feedback-btn-small {
-  font-size: 12px;
-  padding: 4px 12px;
-  background: var(--color-brand);
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  text-decoration: none;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.feedback-btn-small:hover {
-  background: var(--color-brand-hover);
-  color: #fff;
 }
 
 /* Report action buttons (bottom, after suggestions) */

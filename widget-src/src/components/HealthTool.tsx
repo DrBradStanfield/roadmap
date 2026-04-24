@@ -906,8 +906,6 @@ export function HealthTool() {
     onReminderPreferenceChange: handleReminderPreferenceChange,
     onGlobalReminderOptout: handleGlobalReminderOptout,
     sex: inputs.sex,
-    hideInlineChat: floatingChatOpen && !isMobile,
-    onInlineChatExpand: () => setFloatingChatOpen(true),
     guestReportData: !authState.isLoggedIn ? { inputs: effectiveInputs, medications, screenings } : undefined,
     formStage,
   };

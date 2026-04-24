@@ -783,7 +783,17 @@ export function InputPanel({
             </div>
 
             <div className={`health-field${inputs.sex && !inputs.heightCm ? ' field-attention' : ''}`}>
-              <label htmlFor="heightCm">{unitSystem === 'si' ? 'Height (cm)' : 'Height'}</label>
+              <label htmlFor="heightCm">
+                Height{' '}
+                <button
+                  type="button"
+                  className="unit-toggle-pill"
+                  onClick={(e) => { e.preventDefault(); onUnitSystemChange(unitSystem === 'si' ? 'conventional' : 'si'); }}
+                  title={`Switch to ${unitSystem === 'si' ? 'US (in, lbs, mg/dL)' : 'Metric (cm, kg, mmol/L)'}`}
+                >
+                  {unitSystem === 'si' ? 'cm' : 'ft/in'}
+                </button>
+              </label>
               {unitSystem === 'si' ? (
                 <input
                   type="number"
