@@ -500,6 +500,10 @@ input[type="number"] {
     grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
+
+  .health-tool {
+    width: min(100vw - 40px, 1600px);
+  }
 }
 
 .med-step-hint {
@@ -4216,7 +4220,19 @@ input[type="number"] {
   .chat-expanded.chat-expanded--inline {
     min-height: 70vh;
   }
-  .chat-embed {
-    margin: 0 10px 12px;
+  .chat-embed,
+  .health-tool-chat .chat-embed {
+    margin: 0 10px;
+    min-height: 300px;
+  }
+
+  .chat-embed:not(.chat-embed--disabled) .chat-header-sub {
+    display: none;
+  }
+
+  .plan-empty-card {
+    padding: 0;
+    min-height: 300px;
+    margin-bottom: 0;
   }
 }
