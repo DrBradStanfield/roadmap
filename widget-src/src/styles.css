@@ -141,6 +141,16 @@ input[type="number"] {
 
   .section-card {
     padding: 12px !important;
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+
+  .field-hint-attention--centered {
+    margin-top: 15px;
+  }
+
+  .health-tool-right {
+    margin: 0 10px;
   }
 
   .hero-section {
@@ -170,7 +180,7 @@ input[type="number"] {
 
   .mobile-tab-bar {
     display: flex;
-    padding: 8px 0;
+    padding-top: 8px;
     border-bottom: 1px solid var(--color-gray-border);
   }
 
@@ -4119,6 +4129,10 @@ input[type="number"] {
 .hr-col-header--muted .hr-col-step {
   background: #eef0f2;
   color: #b8bfc5;
+}
+
+@media (max-width: 768px) {
+  .hr-col-header { display: none; }
 }
 
 /* ─── Inline unit toggle in Basic Information card header ─────── */
