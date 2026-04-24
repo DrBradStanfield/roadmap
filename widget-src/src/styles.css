@@ -4216,4 +4216,7 @@ input[type="number"] {
   .chat-expanded.chat-expanded--inline {
     min-height: 70vh;
   }
+  .chat-embed {
+    margin: 0 10px 12px;
+  }
 }
