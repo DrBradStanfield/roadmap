@@ -146,7 +146,7 @@ input[type="number"] {
   }
 
   .field-hint-attention--centered {
-    margin-top: 15px;
+    margin-top: 15px !important;
   }
 
   .health-tool-right {
@@ -3177,6 +3177,7 @@ input[type="number"] {
 
 .chat-new-btn {
   width: 100%;
+  box-sizing: border-box;
   padding: 8px;
   margin-bottom: 6px;
   font-size: 13px;
@@ -3941,11 +3942,14 @@ input[type="number"] {
   z-index: 10;
   display: flex;
   flex-direction: column;
-  transform: translateX(-100%);
-  transition: transform 0.22s ease;
+  transform: translateX(calc(-100% - 2px));
+  transition: transform 0.22s ease, visibility 0s 0.22s;
+  visibility: hidden;
 }
 .chat-embed-drawer--open {
   transform: translateX(0);
+  visibility: visible;
+  transition: transform 0.22s ease, visibility 0s 0s;
 }
 
 .chat-embed-drawer-overlay {
