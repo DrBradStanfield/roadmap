@@ -671,7 +671,7 @@ export function HealthTool() {
 
   // Sync tab button clicks → Swiper
   useEffect(() => {
-    const index = activeTab === 'input' ? 0 : 1;
+    const index = activeTab === 'input' ? 0 : activeTab === 'plan' ? 1 : 2;
     if (swiperRef.current && swiperRef.current.activeIndex !== index) {
       swiperRef.current.slideTo(index);
     }

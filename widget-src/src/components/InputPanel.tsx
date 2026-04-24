@@ -723,7 +723,7 @@ export function InputPanel({
             className={`health-section-title${canCollapse ? ' health-section-title--collapsible' : ''}`}
             onClick={canCollapse ? () => setPrefillExpanded(!prefillExpanded) : undefined}
           >
-            Basic Information
+            Basic Info
             {canCollapse && (
               <span className={`collapse-chevron${prefillExpanded ? ' expanded' : ''}`}>{'\u25B8'}</span>
             )}
