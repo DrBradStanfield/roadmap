@@ -12,6 +12,7 @@ import { FeedbackForm } from './FeedbackForm';
 import { useChatState, THINKING_MESSAGES, MAX_CHARS } from '../hooks/useChatState';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatThreadList } from './ChatThreadList';
+import { ChatHeaderTitle } from './ChatHeaderTitle';
 
 export type { ChatPrefetchData } from '../hooks/useChatState';
 import type { ChatPrefetchData } from '../hooks/useChatState';
@@ -19,13 +20,14 @@ import type { ChatPrefetchData } from '../hooks/useChatState';
 interface ChatSectionProps {
   isLoggedIn: boolean;
   startExpanded?: boolean;
+  inline?: boolean;
   onClose?: () => void;
   onExpand?: () => void;
   guestInputs?: Record<string, unknown> | null;
   prefetchedData?: ChatPrefetchData | null;
 }
 
-export function ChatSection({ isLoggedIn, startExpanded, onClose, onExpand, guestInputs, prefetchedData }: ChatSectionProps) {
+export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpand, guestInputs, prefetchedData }: ChatSectionProps) {
   const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showThreads, setShowThreads] = useState(false);
@@ -107,13 +109,15 @@ export function ChatSection({ isLoggedIn, startExpanded, onClose, onExpand, gues
 
   // ----- EXPANDED STATE -----
   return (
-    <div className="chat-section chat-expanded no-print" role="dialog" aria-label="Health Roadmap Chat">
+    <div className={`chat-section chat-expanded${inline ? ' chat-expanded--inline' : ''} no-print`} role="dialog" aria-label="Health Roadmap Chat">
       <div className="chat-header">
         <button className="chat-threads-btn" onClick={() => setShowThreads(!showThreads)}>
           {showThreads ? 'Back' : 'History'}
         </button>
-        <span className="chat-title">Health Roadmap Chat</span>
-        <button className="chat-close-btn" onClick={() => { setIsExpanded(false); onClose?.(); }}>✕</button>
+        <ChatHeaderTitle subtitle="Answers cite your plan & the guidelines above" />
+        {!inline && (
+          <button className="chat-close-btn" onClick={() => { setIsExpanded(false); onClose?.(); }}>✕</button>
+        )}
       </div>
 
       <div className="chat-body">
@@ -163,22 +167,24 @@ export function ChatSection({ isLoggedIn, startExpanded, onClose, onExpand, gues
       {!showThreads && (
         <div className="chat-input-bar">
           {state.isOffline && <div className="chat-offline">You're offline</div>}
-          <textarea
-            ref={inputRef}
-            className="chat-input"
-            value={state.inputText}
-            onChange={e => actions.handleInputChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about your health suggestions"
-            disabled={state.isLoading}
-            rows={1}
-          />
-          <button
-            className="chat-send-btn btn-primary"
-            onClick={actions.handleSend}
-            disabled={state.isLoading || !state.inputText.trim()}
-            aria-label="Send"
-          >↑</button>
+          <div className="chat-input-shell">
+            <textarea
+              ref={inputRef}
+              className="chat-input"
+              value={state.inputText}
+              onChange={e => actions.handleInputChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask a follow-up…"
+              disabled={state.isLoading}
+              rows={1}
+            />
+            <button
+              className="chat-send-btn"
+              onClick={actions.handleSend}
+              disabled={state.isLoading || !state.inputText.trim()}
+              aria-label="Send"
+            >↑</button>
+          </div>
           <div className="chat-input-meta">
             <span className="chat-doctor-note">Always discuss with your doctor</span>
             <span className="chat-char-count">{state.inputText.length}/{MAX_CHARS}</span>

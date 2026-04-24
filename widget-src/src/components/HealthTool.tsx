@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   calculateHealthResults,
   validateHealthInputs,
@@ -26,9 +27,10 @@ import { type ApiSupplement } from '../lib/api';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
+import { ChatEmbed } from './ChatEmbed';
 import { listConversations, loadConversation, getGuestSessionToken, clearGuestSessionToken, type ChatMessage } from '../lib/chat-api';
 import { UploadModal, FloatingUploadIndicator } from './UploadModal';
-import { useIsMobile } from '../lib/useIsMobile';
+import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { MobileTabBar, type TabId } from './MobileTabBar';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
@@ -659,6 +661,7 @@ export function HealthTool() {
 
   // Mobile tab state
   const isMobile = useIsMobile();
+  const isWideDesktop = useIsWideDesktop(1200);
   const [activeTab, setActiveTab] = useState<TabId>('input');
 
 
@@ -738,6 +741,7 @@ export function HealthTool() {
 
   const handleInputChange = (newInputs: Partial<HealthInputs>) => {
     setInputs(newInputs);
+    window.dispatchEvent(new CustomEvent('hr:inputs-changed'));
   };
 
   const handleMedicationChange = useCallback((
@@ -910,6 +914,12 @@ export function HealthTool() {
     formStage,
   };
 
+  const chatSectionProps = {
+    isLoggedIn: authState.isLoggedIn,
+    guestInputs: !authState.isLoggedIn ? { ...effectiveInputs, unitSystem, medications, screenings } : null,
+    prefetchedData: chatPrefetch,
+  };
+
   return (
     <div className="health-tool">
       {isMobile ? (
@@ -919,7 +929,10 @@ export function HealthTool() {
             autoHeight
             touchStartPreventDefault={false}
             onSwiper={(s) => { swiperRef.current = s; }}
-            onSlideChange={(s) => setActiveTab(s.activeIndex === 0 ? 'input' : 'plan')}
+            onSlideChange={(s) => {
+              const tabs: TabId[] = ['input', 'plan', 'chat'];
+              setActiveTab(tabs[s.activeIndex] ?? 'input');
+            }}
           >
             <SwiperSlide>
               <InputPanel {...inputPanelProps} />
@@ -928,25 +941,17 @@ export function HealthTool() {
               <div className="health-tool-right">
                 <ResultsPanel {...resultsPanelProps} />
               </div>
-              {formStage >= 3 && (
-                <ChatSection
-                  isLoggedIn={authState.isLoggedIn}
-                  guestInputs={!authState.isLoggedIn ? { ...effectiveInputs, unitSystem, medications, screenings } : null}
-                  prefetchedData={chatPrefetch}
+            </SwiperSlide>
+            <SwiperSlide>
+              <div className="health-tool-chat">
+                <ChatEmbed
+                  isLoggedIn={chatSectionProps.isLoggedIn}
+                  guestInputs={chatSectionProps.guestInputs}
+                  disabled={formStage < 3}
                 />
-              )}
+              </div>
             </SwiperSlide>
           </Swiper>
-          {formStage >= 3 && activeTab === 'plan' && !floatingChatOpen && (
-            <button
-              className="chat-fab no-print"
-              onClick={() => setFloatingChatOpen(true)}
-              aria-label="Open chat"
-            >
-              <span className="chat-fab-icon">💬</span>
-              <span className="chat-fab-label">Ask about your health</span>
-            </button>
-          )}
           {formStage >= 2 && activeTab === 'input' && (
             <button
               className="btn-primary mobile-view-plan-btn"
@@ -964,6 +969,15 @@ export function HealthTool() {
           <div className="health-tool-right">
             <ResultsPanel {...resultsPanelProps} />
           </div>
+          {isWideDesktop && (
+            <div className="health-tool-chat">
+              <ChatEmbed
+                isLoggedIn={chatSectionProps.isLoggedIn}
+                guestInputs={chatSectionProps.guestInputs}
+                disabled={formStage < 3}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -994,8 +1008,9 @@ export function HealthTool() {
         />
       )}
 
-      {/* Floating chat FAB — desktop only (mobile uses tab) */}
-      {!isMobile && formStage >= 3 && !floatingChatOpen && (
+      {/* Floating chat FAB + expanded panel — portaled to body so their
+          position: fixed doesn't resolve against the transform'd .health-tool. */}
+      {!isMobile && formStage >= 3 && !floatingChatOpen && createPortal(
         <button
           className="chat-fab no-print"
           onClick={() => setFloatingChatOpen(true)}
@@ -1003,16 +1018,16 @@ export function HealthTool() {
         >
           <span className="chat-fab-icon">💬</span>
           <span className="chat-fab-label">Ask about your health</span>
-        </button>
+        </button>,
+        document.body,
       )}
-      {floatingChatOpen && (
+      {!isMobile && floatingChatOpen && createPortal(
         <ChatSection
-          isLoggedIn={authState.isLoggedIn}
           startExpanded
           onClose={() => setFloatingChatOpen(false)}
-          guestInputs={!authState.isLoggedIn ? { ...effectiveInputs, unitSystem, medications, screenings } : null}
-          prefetchedData={chatPrefetch}
-        />
+          {...chatSectionProps}
+        />,
+        document.body,
       )}
     </div>
   );

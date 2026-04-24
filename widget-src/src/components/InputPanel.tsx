@@ -749,7 +749,7 @@ export function InputPanel({
         </div>
 
         <div className={`prefill-fields-wrapper${collapseAnimating && !prefillExpanded ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
-          <div>
+          <div className="sex-height-row">
             <div className={`health-field${!inputs.sex ? ' field-attention' : ''}`}>
               <label>Sex
                 <span className="bp-info-tooltip-wrap" tabIndex={0}>
@@ -871,8 +871,13 @@ export function InputPanel({
                 <span className="error-message">{errors.heightCm}</span>
               )}
             </div>
-
           </div>
+
+          {(!inputs.sex || !inputs.heightCm) && (
+            <p className="field-hint-attention field-hint-attention--centered">
+              Enter your sex and height — then more fields will appear.
+            </p>
+          )}
         </div>
       </section>
     </>

@@ -76,7 +76,7 @@ function mount() {
 
   const fabLabel = productTitle
     ? `Questions about ${productTitle}?`
-    : 'Ask about your health';
+    : 'Need help? Ask here';
 
   const guestInputs = isLoggedIn ? null : loadGuestInputs();
 

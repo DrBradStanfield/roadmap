@@ -691,16 +691,16 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
   if (!isValid || !results) {
     return (
       <div className="health-results-panel">
-        <ColumnHeader step={2} title="Your personalized plan to discuss with your doctor" meta={null} />
+        <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={null} muted />
         <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />
-        <div className="results-placeholder">
-          <div className="placeholder-icon">📊</div>
-          <h3>Enter your information</h3>
-          <p>
-            Fill in your height and sex to see the beginning of your personalized health
-            suggestions. The more information you provide, the more tailored
-            your suggestions will be.
-          </p>
+        <div className="plan-empty-card">
+          <div className="plan-empty-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 3v18h18" />
+              <path d="M7 14l4-4 4 3 5-6" />
+            </svg>
+          </div>
+          <h4>Your plan will appear here</h4>
         </div>
       </div>
     );
@@ -739,7 +739,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
 
   return (
     <div className="health-results-panel">
-      <ColumnHeader step={2} title="Your personalized plan to discuss with your doctor" meta={planHeaderMeta} />
+      <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} />
       {/* Account Status */}
       <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />
       {guestReportData && <GuestEmailCapture hook={guestEmailHook} loginUrl={authState?.loginUrl} formStage={formStage} />}

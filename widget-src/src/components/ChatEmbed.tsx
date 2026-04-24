@@ -11,14 +11,47 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useChatState, THINKING_MESSAGES, MAX_CHARS } from '../hooks/useChatState';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatThreadList } from './ChatThreadList';
-import { useIsMobile } from '../lib/useIsMobile';
+import { ColumnHeader } from './ColumnHeader';
+import { ChatHeaderTitle } from './ChatHeaderTitle';
 
 interface ChatEmbedProps {
   isLoggedIn: boolean;
   guestInputs?: Record<string, unknown> | null;
+  disabled?: boolean;
 }
 
-export function ChatEmbed({ isLoggedIn, guestInputs }: ChatEmbedProps) {
+export function ChatEmbed({ isLoggedIn, guestInputs, disabled }: ChatEmbedProps) {
+  if (disabled) {
+    return (
+      <div className="chat-embed-root no-print" role="region" aria-label="Health Roadmap Chat">
+        <ColumnHeader step={3} title="Ask about your plan" meta={null} muted />
+        <div className="chat-embed chat-embed--disabled">
+          <div className="chat-embed-main">
+            <div className="chat-embed-main-header">
+              <ChatHeaderTitle subtitle="Fill in your details first — I'll be here." muted />
+            </div>
+            <div className="chat-input-bar chat-embed-input-bar">
+              <div className="chat-input-shell chat-input-shell--disabled">
+                <textarea
+                  className="chat-input"
+                  placeholder="Fill in your details first…"
+                  disabled
+                  rows={1}
+                  value=""
+                  onChange={() => { /* noop: disabled */ }}
+                />
+                <button className="chat-send-btn" aria-label="Send" disabled>↑</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return <ChatEmbedActive isLoggedIn={isLoggedIn} guestInputs={guestInputs} />;
+}
+
+function ChatEmbedActive({ isLoggedIn, guestInputs }: Omit<ChatEmbedProps, 'disabled'>) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const { state, actions, refs } = useChatState({
@@ -29,7 +62,6 @@ export function ChatEmbed({ isLoggedIn, guestInputs }: ChatEmbedProps) {
 
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile(720);
 
   // Lazy-load conversations: fire only when this panel enters the viewport.
   // Since the embed is placed below the health widget, the widget's API calls
@@ -94,42 +126,32 @@ export function ChatEmbed({ isLoggedIn, guestInputs }: ChatEmbedProps) {
   );
 
   return (
-    <div className="chat-embed no-print" ref={rootRef} role="region" aria-label="Health Roadmap Chat">
+    <div className="chat-embed-root no-print" ref={rootRef}>
+      <ColumnHeader step={3} title="Ask about your plan" meta={null} />
+      <div className="chat-embed" role="region" aria-label="Health Roadmap Chat">
 
-      {/* Mobile drawer overlay */}
       {drawerOpen && (
         <div className="chat-embed-drawer-overlay" onClick={() => setDrawerOpen(false)} />
       )}
 
-      {/* Mobile drawer — thread list mounted here on mobile only */}
       <div className={`chat-embed-drawer ${drawerOpen ? 'chat-embed-drawer--open' : ''}`}>
         <div className="chat-embed-drawer-header">
           <span className="chat-embed-drawer-title">Conversations</span>
           <button className="chat-close-btn" onClick={() => setDrawerOpen(false)}>✕</button>
         </div>
-        {isMobile && threadList}
+        {threadList}
       </div>
 
-      {/* Desktop sidebar — thread list mounted here on desktop only */}
-      <div className="chat-embed-sidebar">
-        <div className="chat-embed-sidebar-header">
-          <span className="chat-embed-sidebar-title">Conversations</span>
-        </div>
-        {!isMobile && threadList}
-      </div>
-
-      {/* Main pane */}
       <div className="chat-embed-main">
         <div className="chat-embed-main-header">
-          {/* Threads button — visible on mobile only */}
           <button
             className="chat-embed-threads-btn"
             onClick={() => setDrawerOpen(true)}
             aria-label="Show conversations"
           >
-            ☰ Threads
+            ☰ History
           </button>
-          <span className="chat-embed-title">Discuss Your Health</span>
+          <ChatHeaderTitle subtitle="Answers cite your plan & the guidelines above" />
         </div>
 
         <div
@@ -167,27 +189,30 @@ export function ChatEmbed({ isLoggedIn, guestInputs }: ChatEmbedProps) {
 
         <div className="chat-input-bar chat-embed-input-bar">
           {state.isOffline && <div className="chat-offline">You're offline</div>}
-          <textarea
-            ref={inputRef}
-            className="chat-input"
-            value={state.inputText}
-            onChange={e => actions.handleInputChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about your health"
-            disabled={state.isLoading}
-            rows={1}
-          />
-          <button
-            className="chat-send-btn btn-primary"
-            onClick={actions.handleSend}
-            disabled={state.isLoading || !state.inputText.trim()}
-            aria-label="Send"
-          >↑</button>
+          <div className="chat-input-shell">
+            <textarea
+              ref={inputRef}
+              className="chat-input"
+              value={state.inputText}
+              onChange={e => actions.handleInputChange(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask a follow-up…"
+              disabled={state.isLoading}
+              rows={1}
+            />
+            <button
+              className="chat-send-btn"
+              onClick={actions.handleSend}
+              disabled={state.isLoading || !state.inputText.trim()}
+              aria-label="Send"
+            >↑</button>
+          </div>
           <div className="chat-input-meta">
             <span className="chat-doctor-note">Always discuss with your doctor</span>
             <span className="chat-char-count">{state.inputText.length}/{MAX_CHARS}</span>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

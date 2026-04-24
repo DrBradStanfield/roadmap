@@ -10,6 +10,7 @@ export const ChatMessageBubble = React.memo(function ChatMessageBubble({ msg }: 
   );
   return (
     <div className={`chat-message chat-message--${msg.role}`}>
+      {msg.role === 'assistant' && <div className="chat-message-name">Dr Brad AI</div>}
       {html ? (
         <div className="chat-message-content" dangerouslySetInnerHTML={{ __html: html }} />
       ) : (

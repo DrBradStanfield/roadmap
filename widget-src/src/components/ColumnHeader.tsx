@@ -4,11 +4,12 @@ interface ColumnHeaderProps {
   step: number;
   title: string;
   meta: ReactNode;
+  muted?: boolean;
 }
 
-export function ColumnHeader({ step, title, meta }: ColumnHeaderProps) {
+export function ColumnHeader({ step, title, meta, muted }: ColumnHeaderProps) {
   return (
-    <div className="hr-col-header">
+    <div className={`hr-col-header${muted ? ' hr-col-header--muted' : ''}`}>
       <div className="hr-col-title">
         <span className="hr-col-step">{step}</span>
         {title}

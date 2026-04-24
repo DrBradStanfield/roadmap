@@ -1,4 +1,4 @@
-export type TabId = 'input' | 'plan';
+export type TabId = 'input' | 'plan' | 'chat';
 
 export interface MobileTabBarProps {
   activeTab: TabId;
@@ -24,6 +24,14 @@ export function MobileTabBar({ activeTab, onTabChange }: MobileTabBarProps) {
           onClick={() => onTabChange('plan')}
         >
           Plan
+        </button>
+        <button
+          role="tab"
+          aria-selected={activeTab === 'chat'}
+          className={`mobile-tab${activeTab === 'chat' ? ' mobile-tab--active' : ''}`}
+          onClick={() => onTabChange('chat')}
+        >
+          Chat
         </button>
       </div>
     </div>
