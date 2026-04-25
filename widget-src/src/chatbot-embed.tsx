@@ -35,7 +35,7 @@ function ChatEmbedRoot({ isLoggedIn, guestInputs }: { isLoggedIn: boolean; guest
     };
   }, []);
 
-  return <ChatEmbed isLoggedIn={isLoggedIn} guestInputs={guestInputs} disabled={formStage < 3} />;
+  return <ChatEmbed isLoggedIn={isLoggedIn} guestInputs={guestInputs} muted={formStage < 3} />;
 }
 
 function mount() {

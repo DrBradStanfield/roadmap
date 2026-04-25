@@ -947,7 +947,7 @@ export function HealthTool() {
                 <ChatEmbed
                   isLoggedIn={chatSectionProps.isLoggedIn}
                   guestInputs={chatSectionProps.guestInputs}
-                  disabled={formStage < 3}
+                  muted={formStage < 3}
                 />
               </div>
             </SwiperSlide>
@@ -974,7 +974,7 @@ export function HealthTool() {
               <ChatEmbed
                 isLoggedIn={chatSectionProps.isLoggedIn}
                 guestInputs={chatSectionProps.guestInputs}
-                disabled={formStage < 3}
+                muted={formStage < 3}
               />
             </div>
           )}

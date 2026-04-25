@@ -1,8 +1,6 @@
 /**
- * ChatEmbed — always-expanded inline chat panel.
- *
- * Desktop (≥720px): left sidebar (thread list) + right pane (messages + input).
- * Mobile (<720px): messages pane with a slide-in drawer for threads.
+ * ChatEmbed — always-expanded inline chat panel. Thread list lives in a
+ * hamburger-triggered drawer at all breakpoints.
  *
  * Conversations load lazily via IntersectionObserver — fires only when the
  * panel scrolls into view, giving the health widget priority on page load.
@@ -17,41 +15,10 @@ import { ChatHeaderTitle } from './ChatHeaderTitle';
 interface ChatEmbedProps {
   isLoggedIn: boolean;
   guestInputs?: Record<string, unknown> | null;
-  disabled?: boolean;
+  muted?: boolean;
 }
 
-export function ChatEmbed({ isLoggedIn, guestInputs, disabled }: ChatEmbedProps) {
-  if (disabled) {
-    return (
-      <div className="chat-embed-root no-print" role="region" aria-label="Health Roadmap Chat">
-        <ColumnHeader step={3} title="Ask about your plan" meta={null} muted />
-        <div className="chat-embed chat-embed--disabled">
-          <div className="chat-embed-main">
-            <div className="chat-embed-main-header">
-              <ChatHeaderTitle subtitle="Fill in your details first — I'll be here." muted />
-            </div>
-            <div className="chat-input-bar chat-embed-input-bar">
-              <div className="chat-input-shell chat-input-shell--disabled">
-                <textarea
-                  className="chat-input"
-                  placeholder="Fill in your details first…"
-                  disabled
-                  rows={1}
-                  value=""
-                  onChange={() => { /* noop: disabled */ }}
-                />
-                <button className="chat-send-btn" aria-label="Send" disabled>↑</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return <ChatEmbedActive isLoggedIn={isLoggedIn} guestInputs={guestInputs} />;
-}
-
-function ChatEmbedActive({ isLoggedIn, guestInputs }: Omit<ChatEmbedProps, 'disabled'>) {
+export function ChatEmbed({ isLoggedIn, guestInputs, muted }: ChatEmbedProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const { state, actions, refs } = useChatState({
@@ -127,7 +94,7 @@ function ChatEmbedActive({ isLoggedIn, guestInputs }: Omit<ChatEmbedProps, 'disa
 
   return (
     <div className="chat-embed-root no-print" ref={rootRef}>
-      <ColumnHeader step={3} title="Ask about your plan" meta={null} />
+      <ColumnHeader step={3} title="Ask about your plan" meta={null} muted={muted} />
       <div className="chat-embed" role="region" aria-label="Health Roadmap Chat">
 
       {drawerOpen && (
@@ -151,7 +118,7 @@ function ChatEmbedActive({ isLoggedIn, guestInputs }: Omit<ChatEmbedProps, 'disa
           >
             ☰ History
           </button>
-          <ChatHeaderTitle subtitle="Answers cite your plan & the guidelines above" />
+          <ChatHeaderTitle subtitle={muted ? "Ask anything about preventative care" : "Answers cite your plan & the guidelines above"} />
         </div>
 
         <div
@@ -161,7 +128,7 @@ function ChatEmbedActive({ isLoggedIn, guestInputs }: Omit<ChatEmbedProps, 'disa
         >
           {state.messages.length === 0 && !state.isLoading && (
             <div className="chat-empty">
-              <p>Ask about your personalized suggestions based on your health data, clinical research, and Dr Brad's preventative care algorithm.</p>
+              <p>{muted ? "Plus when you fill in your details, I'll tailor my answers to your numbers." : "Ask about your personalized suggestions based on your health data, clinical research, and Dr Brad's preventative care algorithm."}</p>
             </div>
           )}
           {state.messages.map(msg => (
