@@ -602,48 +602,67 @@ input[type="number"] {
   min-height: 100%;
 }
 
-.plan-empty-card {
-  border-radius: 12px;
-  border: 1px dashed #d5dadf;
-  background: linear-gradient(180deg, #fbfcfd 0%, #f5f7f9 100%);
-  padding: 48px 32px;
-  text-align: center;
-  color: var(--color-gray-medium);
-  flex: 1;
+.plan-empty-preview {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  /* Mirrors .section-card margin-bottom so the stretched right column's
-     bottom edge aligns with the left column's last card. */
+  gap: 16px;
+  flex: 1;
   margin-bottom: 12px;
 }
 
-.plan-empty-icon {
-  width: 36px;
-  height: 36px;
-  margin: 0 auto 12px;
-  border-radius: 8px;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-  color: var(--color-brand);
-}
-
-.plan-empty-card h4 {
-  margin: 0 0 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-}
-
-.plan-empty-card p {
+.plan-empty-intro {
   margin: 0;
+  padding: 14px 16px;
+  border: 1px solid #d4ebe4;
+  border-radius: 10px;
+  background: #f1faf6;
+  color: var(--color-gray-dark);
   font-size: 13px;
   line-height: 1.55;
-  color: var(--color-gray-medium);
+}
+
+.plan-empty-intro strong {
+  color: var(--color-brand);
+  font-weight: 600;
+}
+
+.stat-card--awaiting {
+  background: #fafbfc;
+  box-shadow: none;
+  border: 1px solid #eceff2;
+  color: #9aa1a8;
+}
+
+.stat-card--awaiting .stat-label {
+  color: #b8bfc5;
+}
+
+.stat-card--awaiting .stat-value {
+  color: #c2c8ce;
+  font-weight: 500;
+}
+
+.stat-card--awaiting .stat-status {
+  color: #d3a36d;
+  background: transparent;
+}
+
+.plan-empty-example {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.plan-empty-example-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9aa1a8;
+}
+
+.plan-empty-example-card {
+  opacity: 0.85;
 }
 
 /* Quick Stats */
@@ -3105,21 +3124,6 @@ input[type="number"] {
   flex-shrink: 0;
 }
 
-.chat-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #e6f4f1;
-  color: var(--color-brand);
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 1px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
 .chat-header-title-block {
   flex: 1;
   min-width: 0;
@@ -3285,8 +3289,8 @@ input[type="number"] {
 
 @media (min-width: 768px) {
   .chat-empty p {
-    margin-top: 45px;
-    margin-bottom: 45px;
+    margin-top: 15px;
+    margin-bottom: 15px;
   }
 }
 
@@ -4140,6 +4144,7 @@ input[type="number"] {
   flex: 1;
   margin: 0 0 12px;
   min-height: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* Inline chat fills the column instead of floating at bottom-right */
@@ -4180,9 +4185,7 @@ input[type="number"] {
     display: none;
   }
 
-  .plan-empty-card {
-    padding: 0;
-    min-height: 300px;
+  .plan-empty-preview {
     margin-bottom: 0;
   }
 }

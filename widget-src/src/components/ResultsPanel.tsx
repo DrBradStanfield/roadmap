@@ -693,14 +693,36 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
       <div className="health-results-panel">
         <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={null} muted />
         <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />
-        <div className="plan-empty-card">
-          <div className="plan-empty-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 3v18h18" />
-              <path d="M7 14l4-4 4 3 5-6" />
-            </svg>
+        <div className="plan-empty-preview">
+          <p className="plan-empty-intro">
+            <strong>Here's what your plan will look like.</strong> Real suggestions appear once you fill in your details.
+          </p>
+          <div className="stats-grid plan-empty-stats">
+            <div className="stat-card stat-card--awaiting">
+              <span className="stat-label">BMI</span>
+              <span className="stat-value">—</span>
+              <span className="stat-status">Awaiting</span>
+            </div>
+            <div className="stat-card stat-card--awaiting">
+              <span className="stat-label">Ideal Body Weight</span>
+              <span className="stat-value">—</span>
+              <span className="stat-status">Awaiting</span>
+            </div>
+            <div className="stat-card stat-card--awaiting">
+              <span className="stat-label">Protein Target</span>
+              <span className="stat-value">—</span>
+              <span className="stat-status">Awaiting</span>
+            </div>
           </div>
-          <h4>Your plan will appear here</h4>
+          <div className="plan-empty-example">
+            <span className="plan-empty-example-label">Example suggestion</span>
+            <div className="suggestion-card priority-low plan-empty-example-card">
+              <div className="suggestion-body">
+                <h4 className="suggestion-title">Increase potassium-rich foods</h4>
+                <p className="suggestion-desc">Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
