@@ -3283,6 +3283,13 @@ input[type="number"] {
   max-width: 280px;
 }
 
+@media (min-width: 768px) {
+  .chat-empty p {
+    margin-top: 45px;
+    margin-bottom: 45px;
+  }
+}
+
 /* Message bubbles */
 
 .chat-message {
