@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { recordABEvent, type ABEventType } from '../lib/supabase.server';
 import { createRateLimiter } from '../lib/rate-limiter';
+import { isBotUA } from '../lib/bot-detect';
 
 // 10 events per minute per visitor (generous, prevents abuse)
 const checkABRateLimit = createRateLimiter(10, 60_000, 5 * 60_000);
@@ -15,6 +16,10 @@ const abEventSchema = z.object({
 
 export async function action({ request }: ActionFunctionArgs) {
   await authenticate.public.appProxy(request);
+
+  if (isBotUA(request.headers.get('user-agent'))) {
+    return json({ success: false, error: 'bot' });
+  }
 
   let body: unknown;
   try {

@@ -96,6 +96,10 @@
 
 <script>
 (function() {
+  // Skip headless browsers / automation frameworks (Puppeteer, Playwright, Selenium).
+  // Their Math.random sometimes lands deterministically in the second variant,
+  // producing SRM in A/B tests. The data-variant elements stay in DOM either way.
+  if (navigator.webdriver) return;
   var KEY = 'hr_ab';
   var els = document.querySelectorAll('[data-variant]');
   if (!els.length) return;
