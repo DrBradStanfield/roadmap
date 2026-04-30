@@ -18655,31 +18655,6 @@
     "summary": "Clinical pathway for haemorrhoids (piles): assessment including symptoms, examination and proctoscopy; conservative management with lifestyle changes and laxatives; local preparations; procedural and surgical options by haemorrhoid type; and when to refer to general surgery. Always discuss with your doctor."
   },
   {
-    "title": "Pathway: Hair Loss Subsidy",
-    "handle": "hair-loss-subsidy",
-    "url": "https://drstanfield.com/blogs/articles/hair-loss-subsidy",
-    "tags": [
-      "Guideline"
-    ],
-    "keywords": [
-      "hair loss",
-      "alopecia",
-      "wig subsidy",
-      "hairpiece",
-      "headwear",
-      "hair loss subsidy",
-      "Ministry of Health subsidy",
-      "cancer hair loss",
-      "chemotherapy hair loss",
-      "wigs and hairpieces",
-      "medical certificate",
-      "NHI"
-    ],
-    "publishedAt": "",
-    "type": "pathway",
-    "summary": "A government subsidy is available in New Zealand for wigs, hairpieces, or headwear for patients with medically caused hair loss (e.g., cancer, alopecia). Payment ranges from $400 to $2,330 depending on whether hair loss is permanent or temporary. Requires a medical certificate from a GP or specialist. Always discuss with your doctor."
-  },
-  {
     "title": "Pathway: Hand Hygiene",
     "handle": "hand-hygiene",
     "url": "https://drstanfield.com/blogs/articles/hand-hygiene",
@@ -30548,5 +30523,31 @@
     "product": "microvitamin-plus",
     "publishedAt": "2026-04-23T12:00:00Z",
     "summary": "Dr Brad's cholesterol target post: LDL below 55 mg/dL is now evidence-backed as superior to the old 70 target (Ez-PAVE RCT, 33% fewer events). Covers PCSK9 inhibitors, ezetimibe underuse, FOURIER, VESALIUS-CV, PESA subclinical atherosclerosis data, and ACC 2026 findings."
+  },
+  {
+    "title": "Lizard Venom Regrows 'Irreplaceable' Cartilage",
+    "handle": "lizard-venom-regrows-irreplaceable-cartilage",
+    "url": "https://drstanfield.com/blogs/articles/lizard-venom-regrows-irreplaceable-cartilage",
+    "youtube": "https://www.youtube.com/watch?v=JM1he4pHzpw",
+    "tags": [
+      "Research",
+      "General Health"
+    ],
+    "keywords": [
+      "cardiovascular",
+      "diabetes",
+      "glp-1",
+      "heart attack",
+      "hyaluronic acid",
+      "inflammation",
+      "kidney",
+      "obesity",
+      "osteoarthritis",
+      "peptide",
+      "stroke",
+      "weight loss"
+    ],
+    "publishedAt": "2026-04-29T12:00:00Z",
+    "summary": "Dr Brad's GLP-1/cartilage post: a 2026 Cell Metabolism study found semaglutide grew cartilage 17% in obese knee osteoarthritis patients, independent of weight loss. Covers Gila monster venom origin, AMPK-PFKFB3 mechanism, pair-fed mouse experiment."
   }
 ]
