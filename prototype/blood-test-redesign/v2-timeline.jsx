@@ -83,7 +83,7 @@ function V2_Timeline({ initialBatches = HISTORY }) {
       background: 'var(--paper)', borderRadius: 'var(--r-lg)', border: '1px solid var(--ink-200)',
       boxShadow: 'var(--shadow-1)', display: 'flex', flexDirection: 'column', overflow: 'hidden',
     }}>
-      <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--ink-100)',
+      <div style={{ padding: '14px 16px 12px',
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: -0.2 }}>Blood Test Results</div>
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
@@ -94,6 +94,11 @@ function V2_Timeline({ initialBatches = HISTORY }) {
           </button>
         </div>
       </div>
+      {/* Inset divider — matches the matrix's horizontal padding so it doesn't go wall-to-wall */}
+      <div style={{
+        height: 1, background: 'var(--ink-100)',
+        margin: `0 ${V2_COL.hPadding}px`,
+      }}/>
 
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0,
