@@ -1,17 +1,25 @@
-// V2 — Timeline Matrix (narrow desktop, ~420–480px wide).
+// V2 — Timeline Matrix (ships from mobile ~360px through desktop ~460px+).
+//
 // Layout, left-to-right:
-//   [Metric name (sticky-left)] [horizontal-scroll strip: older batches → 2 most recent → always-visible draft column] [Trend (sticky-right)]
-// - The whole section is wrapped in a single card (header + matrix together).
-// - The draft column is always present at the right end of the scroll strip.
-// - Default scroll position is max-right: 2 most recent + draft visible.
-// - "Save" commits filled draft values into a new batch; the draft column then resets empty.
-
-// Sized so that at a 460px container with 8px horizontal padding around the
-// matrix (16px total) the visible value strip fits exactly 3 full columns —
-// [most_recent-1] [most_recent] [DRAFT]. No partial 4th column.
-//   16(padding) + name(104) + 3*value(94) + trend(58) = 460 exact.
-// When the trend column is hidden (no series has ≥2 datapoints), the value
-// strip simply expands to fill the freed space.
+//   [Metric name + unit chip + ref label]      sticky-left
+//   [horizontal scroll: older batches → 2 most recent → draft column]
+//   [Trend: sparkline + status tick]            sticky-right (hidden when no series has ≥2 points)
+//
+// Components in this file:
+//   V2_Timeline          — outer card + state. Accepts `initialBatches` prop (default HISTORY).
+//   Matrix               — header row + body rows. Owns scroll-sync across rows.
+//   DateHeaderCell       — column header for each batch (date label, or date picker for the draft column).
+//   ValueCellV2          — read-only value display, status-coloured tick.
+//   InputCellV2          — borderless input in the draft column. Brand-tint bg + brand left-border.
+//   BackfillCellV2       — same look as ValueCellV2 but editable, used for empty cells in existing batch columns. Auto-saves on blur.
+//
+// Numbers are stored in SI canonical units throughout. Per-metric `unitMode`
+// ('si' | 'alt') controls display only — convertFrom() converts user input
+// back to SI before commit.
+//
+// Width math:
+//   16(card hPadding) + name(104) + 3*value(94) + trend(58) = 460px exact at desktop
+//   With trend hidden, the value strip fills the freed 58px (more cols visible or wider drift).
 const V2_COL = {
   name: 104,
   value: 94,
@@ -123,19 +131,17 @@ function Matrix({ columns, batches, draft, updateDraftDate, activeCell, setActiv
     () => METRICS.some(m => batches.filter(b => b.values[m.key] != null).length >= 2),
     [batches]
   );
-  // Each row has its own horizontal scroll container; we keep them in sync via shared scrollLeft state.
-  // This lets sticky metric-name and trend cells live OUTSIDE the scroll viewport (cleaner than CSS sticky-grid).
-  const [scrollLeft, setScrollLeft] = React.useState(0);
+  // Each row has its own horizontal scroll container; we keep them in sync.
+  // Sticky-left (metric name) and sticky-right (trend) cells live OUTSIDE the
+  // scroll viewport, which is cleaner than a single CSS-grid with sticky cols.
   const scrollContainersRef = React.useRef([]);
   const headerScrollRef = React.useRef(null);
   const isSyncingRef = React.useRef(false);
 
-  // Sync scroll across all rows + header
   const handleScroll = (e) => {
     if (isSyncingRef.current) return;
     const sl = e.target.scrollLeft;
     isSyncingRef.current = true;
-    setScrollLeft(sl);
     [headerScrollRef.current, ...scrollContainersRef.current].forEach(el => {
       if (el && el !== e.target) el.scrollLeft = sl;
     });
@@ -149,7 +155,6 @@ function Matrix({ columns, batches, draft, updateDraftDate, activeCell, setActiv
     const max = targets[0].scrollWidth - targets[0].clientWidth;
     if (max <= 0) return;
     targets.forEach(el => { el.scrollLeft = max; });
-    setScrollLeft(max);
   }, [columns.length]);
 
   const registerRowRef = (idx) => (el) => { scrollContainersRef.current[idx] = el; };
@@ -195,11 +200,7 @@ function Matrix({ columns, batches, draft, updateDraftDate, activeCell, setActiv
       {/* Body — vertical scroll */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         {METRICS.map((m, rowIdx) => {
-          const seriesPts = seriesFor(m);
-          const latest = seriesPts[seriesPts.length - 1]?.v;
-          const latestStatus = statusOf(m, latest);
           const isLast = rowIdx === METRICS.length - 1;
-
           const mode = getUnitMode(m.key);
           const displayUnit = mode === 'si' ? m.unit : m.altUnit;
           const displayRefLabel = mode === 'si' ? m.refLabel : m.refLabelAlt;
@@ -250,7 +251,7 @@ function Matrix({ columns, batches, draft, updateDraftDate, activeCell, setActiv
                     // Existing batch — render a value cell. If empty, allow inline backfill.
                     if (v == null) {
                       return (
-                        <BackfillCellV2 key={colIdx} metric={m} batchDate={c.date}
+                        <BackfillCellV2 key={colIdx} metric={m}
                                         active={activeCell === `${c.date}.${m.key}`}
                                         onFocus={() => setActiveCell(`${c.date}.${m.key}`)}
                                         onBlur={() => setActiveCell(null)}
@@ -267,20 +268,25 @@ function Matrix({ columns, batches, draft, updateDraftDate, activeCell, setActiv
               </div>
 
               {/* Sticky trend (hidden when no metric has ≥2 datapoints) */}
-              {showTrend && (
-                <div style={{
-                  width: V2_COL.trend, flexShrink: 0,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  gap: 3, padding: '6px 4px',
-                  borderLeft: '1px solid var(--ink-100)',
-                }}>
-                  <Sparkline metric={m} width={54} height={18} fill={false}/>
-                  <span style={{
-                    width: 16, height: 2.5, borderRadius: 2,
-                    background: latest != null ? STATUS_COLOR[latestStatus].fg : 'var(--ink-200)',
-                  }}/>
-                </div>
-              )}
+              {showTrend && (() => {
+                const seriesPts = seriesFor(m);
+                const latest = seriesPts[seriesPts.length - 1]?.v;
+                const latestStatus = statusOf(m, latest);
+                return (
+                  <div style={{
+                    width: V2_COL.trend, flexShrink: 0,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: 3, padding: '6px 4px',
+                    borderLeft: '1px solid var(--ink-100)',
+                  }}>
+                    <Sparkline metric={m} width={54} height={18} fill={false}/>
+                    <span style={{
+                      width: 16, height: 2.5, borderRadius: 2,
+                      background: latest != null ? STATUS_COLOR[latestStatus].fg : 'var(--ink-200)',
+                    }}/>
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
@@ -408,7 +414,7 @@ function InputCellV2({ metric, value, active, onFocus, onBlur, onChange, display
 
 // Backfill cell — empty cell in an existing batch column. Lets the user
 // click and type to add a value to that batch. Auto-saves on blur.
-function BackfillCellV2({ metric, batchDate, active, onFocus, onBlur, onCommit, displayUnit }) {
+function BackfillCellV2({ metric, active, onFocus, onBlur, onCommit, displayUnit }) {
   const [draft, setDraft] = React.useState('');
   const handleBlur = () => {
     const typed = draft !== '' ? parseFloat(draft) : null;
