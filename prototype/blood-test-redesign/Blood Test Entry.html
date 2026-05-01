@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Blood Test Entry — Design Exploration</title>
+  <link rel="stylesheet" href="tokens.css">
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #f0eee9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    #root { height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="data.jsx"></script>
+  <script type="text/babel" src="v1-inline.jsx"></script>
+  <script type="text/babel" src="v2-timeline.jsx"></script>
+  <script type="text/babel" src="v3-cardstack.jsx"></script>
+  <script type="text/babel" src="v4-ledger.jsx"></script>
+  <script type="text/babel" src="v5-timeline-tight.jsx"></script>
+
+  <script type="text/babel">
+    function App() {
+      return (
+        <DesignCanvas>
+          <DCSection id="current" title="Current UI" subtitle="The existing entry pattern — for reference">
+            <DCArtboard id="current-view" label="View state" width={520} height={700}>
+              <CurrentView/>
+            </DCArtboard>
+            <DCArtboard id="current-entry" label="Entry state" width={520} height={700}>
+              <CurrentEntry/>
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="variations" title="Four directions" subtitle="Each reimagines how results are viewed and entered">
+            <DCArtboard id="v1" label="1 · Inline Edit · conservative-modern" width={560} height={720}>
+              <V1_InlineEdit/>
+            </DCArtboard>
+            <DCArtboard id="v2" label="2 · Timeline Matrix · view state (narrow desktop ~460px)" width={460} height={720}>
+              <V2_Timeline/>
+            </DCArtboard>
+            <DCArtboard id="v2-entry" label="2 · Timeline Matrix · entering" width={460} height={720}>
+              <V2_TimelineEntering/>
+            </DCArtboard>
+            <DCArtboard id="v3" label="3 · Card Stack · mobile-first focused" width={420} height={780}>
+              <V3_CardStack/>
+            </DCArtboard>
+            <DCArtboard id="v4" label="4 · Live Preview Ledger · novel" width={1100} height={720}>
+              <V4_Ledger/>
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="refined" title="V5 — Timeline, tightened" subtitle="Based on V2 + feedback: 2 recent pinned · new-entry column · scrollable older history · fits narrow widths">
+            <DCArtboard id="v5" label="5 · Tight Timeline · view state" width={620} height={720}>
+              <V5_Timeline/>
+            </DCArtboard>
+            <DCArtboard id="v5-entry" label="5 · Tight Timeline · entering" width={620} height={720}>
+              <V5_TimelineEntering/>
+            </DCArtboard>
+          </DCSection>
+
+          <DCPostIt top={40} left={40} width={240}>
+            <strong>Blood test UX</strong><br/>
+            4 directions, from conservative to novel. Each variation handles view · entry · empty states · history. Open any in fullscreen via the ⤢ icon.
+          </DCPostIt>
+        </DesignCanvas>
+      );
+    }
+
+    // Quick faithful-ish recreation of the current UI for comparison
+    function CurrentView() {
+      return (
+        <div style={{ padding: 20, background: '#fff', height: '100%', fontFamily: 'inherit' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+            <div style={{ fontSize: 17, fontWeight: 600 }}>Blood Test Results</div>
+            <button style={{ background: '#00a38b', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 500 }}>Upload Health Records</button>
+          </div>
+          {METRICS.map((m, i) => {
+            const pts = seriesFor(m); const last = pts[pts.length - 1];
+            return (
+              <div key={m.key} style={{ padding: '14px 0', borderBottom: i === METRICS.length-1 ? 'none' : '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: last ? '#111' : '#7b858e' }}>{m.name}</div>
+                  {last && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
+                      <span style={{ fontSize: 17, fontWeight: 600 }}>{last.v}</span>
+                      <span style={{ border: '1px solid #d7f0eb', color: '#00a38b', borderRadius: 10, padding: '1px 8px', fontSize: 11 }}>{m.unit}</span>
+                      <span style={{ color: '#7b858e', fontSize: 12, marginLeft: 4 }}>{formatDate(last.date)}</span>
+                    </div>
+                  )}
+                  <div style={{ fontSize: 11, color: '#a9b0b6', marginTop: 3 }}>{m.refLabel} {m.unit}</div>
+                </div>
+                <button style={{ width: 32, height: 32, border: '1px solid #d7dbdf', borderRadius: 6, background: 'white', color: '#00a38b', fontSize: 16, cursor: 'pointer' }}>+</button>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    function CurrentEntry() {
+      return (
+        <div style={{ padding: 20, background: '#fff', height: '100%', fontFamily: 'inherit', overflow: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, gap: 8 }}>
+            <div style={{ fontSize: 17, fontWeight: 600 }}>Blood Test Results</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button style={{ background: '#00a38b', color: 'white', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 500 }}>Upload Health Records</button>
+              <button style={{ background: 'white', border: '1px solid #d7dbdf', borderRadius: 8, padding: '8px 14px', fontSize: 13 }}>Cancel</button>
+            </div>
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>When were these tests done?</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <select style={{ flex: 1, border: '1px solid #d7dbdf', borderRadius: 6, padding: '8px' }}><option>April</option></select>
+            <select style={{ flex: 1, border: '1px solid #d7dbdf', borderRadius: 6, padding: '8px' }}><option>2026</option></select>
+          </div>
+          <div style={{ fontSize: 12, color: '#7b858e', marginBottom: 16 }}>To enter results from different dates, save each batch separately.</div>
+          {METRICS.slice(0, 5).map(m => {
+            const pts = seriesFor(m); const last = pts[pts.length - 1];
+            return (
+              <div key={m.key} style={{ marginBottom: 18 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{m.name}</span>
+                  <span style={{ border: '1px solid #d7f0eb', color: '#00a38b', borderRadius: 10, padding: '1px 8px', fontSize: 11 }}>{m.unit}</span>
+                </div>
+                {last && <div style={{ fontSize: 11, color: '#7b858e', fontStyle: 'italic', marginBottom: 4 }}>Previous: {last.v} {m.unit} · {formatDate(last.date)}</div>}
+                <input style={{ width: '100%', border: m.key === 'hba1c' ? '1.5px solid #00a38b' : '1px solid #d7dbdf', borderRadius: 6, padding: '9px 10px', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}/>
+                <div style={{ fontSize: 11, color: '#a9b0b6', marginTop: 4 }}>{m.refLabel} {m.unit}</div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    window.App = App;
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>
