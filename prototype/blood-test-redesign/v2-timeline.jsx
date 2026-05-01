@@ -6,12 +6,13 @@
 // - Default scroll position is max-right: 2 most recent + draft visible.
 // - "Save" commits filled draft values into a new batch; the draft column then resets empty.
 
-// Sized so that at a ~460px container (typical InputPanel column on desktop),
-// the visible value strip fits exactly 3 columns — [most_recent-1] [most_recent] [DRAFT].
-//   name(108) + 3*value(90) + trend(58) = 436px, leaving ~20px peek for scroll affordance.
+// Sized so that at a 460px container (typical InputPanel column on desktop)
+// the visible value strip fits exactly 3 full columns — [most_recent-1]
+// [most_recent] [DRAFT]. No partial 4th column.
+//   name(108) + 3*value(98) + trend(58) = 460px exact.
 const V2_COL = {
   name: 108,
-  value: 90,
+  value: 98,
   trend: 58,
   rowMin: 56,
 };
@@ -194,8 +195,8 @@ function Matrix({ columns, draft, updateDraftDate, activeCell, setActiveCell,
                         title="Click to switch units"
                         style={{
                           alignSelf: 'flex-start', marginTop: 3,
-                          background: 'var(--brand-tint)', color: 'var(--brand)',
-                          border: '1px solid var(--brand-soft)', borderRadius: 999,
+                          background: 'var(--ink-50)', color: 'var(--ink-500)',
+                          border: '1px solid var(--ink-200)', borderRadius: 999,
                           padding: '1px 7px', fontSize: 10, fontWeight: 600,
                           cursor: 'pointer', fontFamily: 'inherit', lineHeight: 1.2,
                         }}>{displayUnit}</button>
@@ -272,30 +273,31 @@ function DateHeaderCell({ batch, updateDraftDate, isPinnedRecent }) {
 
   if (batch.isNew) {
     const { day, mon, yr } = formatHeaderDate(batch.date);
+    const openPicker = () => {
+      try { dateInputRef.current?.showPicker?.(); }
+      catch { dateInputRef.current?.click(); }
+    };
     return (
-      <div style={{
-        width: V2_COL.value, flexShrink: 0, padding: '6px 4px',
-        borderLeft: '2px solid var(--brand)', background: 'var(--brand-tint)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-        position: 'relative',
-      }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)' }}>{day} {mon}</div>
-        <div style={{ fontSize: 9, fontWeight: 500, color: 'var(--brand)', opacity: 0.7 }}>'{yr}</div>
-        {/* Calendar icon below the date — opens the native picker */}
-        <button onClick={() => dateInputRef.current?.showPicker?.() || dateInputRef.current?.click()}
-                title="Change date"
-                style={{
-                  marginTop: 2, padding: 0, border: 'none', background: 'transparent',
-                  color: 'var(--brand)', cursor: 'pointer', display: 'flex', alignItems: 'center',
-                }}>
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
-            <rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
-            <line x1="2" y1="6.5" x2="14" y2="6.5" stroke="currentColor" strokeWidth="1.3"/>
-            <line x1="5" y1="2" x2="5" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-            <line x1="11" y1="2" x2="11" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+      <button onClick={openPicker}
+              title="Click to change date"
+              style={{
+                width: V2_COL.value, flexShrink: 0, padding: '6px 4px',
+                borderLeft: '2px solid var(--brand)', background: 'var(--brand-tint)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1,
+                cursor: 'pointer', border: 'none', borderLeftWidth: 2, fontFamily: 'inherit',
+                position: 'relative',
+              }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--brand)' }}>{day} {mon}</span>
+          <svg width="10" height="10" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+            <rect x="2" y="3" width="12" height="11" rx="1.5" stroke="var(--brand)" strokeWidth="1.3"/>
+            <line x1="2" y1="6.5" x2="14" y2="6.5" stroke="var(--brand)" strokeWidth="1.3"/>
+            <line x1="5" y1="2" x2="5" y2="4.5" stroke="var(--brand)" strokeWidth="1.3" strokeLinecap="round"/>
+            <line x1="11" y1="2" x2="11" y2="4.5" stroke="var(--brand)" strokeWidth="1.3" strokeLinecap="round"/>
           </svg>
-        </button>
-        {/* Hidden native date input — sized 0 so it doesn't render, but still focusable for showPicker */}
+        </div>
+        <div style={{ fontSize: 9, fontWeight: 500, color: 'var(--brand)', opacity: 0.7 }}>'{yr}</div>
+        {/* Hidden native date input — opened programmatically by showPicker() */}
         <input ref={dateInputRef} type="date" value={batch.date}
                onChange={e => updateDraftDate(e.target.value)}
                className="bt-date-hidden-icon"
@@ -303,7 +305,7 @@ function DateHeaderCell({ batch, updateDraftDate, isPinnedRecent }) {
                  position: 'absolute', width: 1, height: 1, opacity: 0,
                  pointerEvents: 'none', border: 'none',
                }}/>
-      </div>
+      </button>
     );
   }
   const { day, mon, yr } = formatHeaderDate(batch.date);

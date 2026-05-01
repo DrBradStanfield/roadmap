@@ -9,7 +9,9 @@
     .stage-row { display: flex; gap: 24px; padding: 24px; align-items: flex-start; flex-wrap: wrap; }
     .stage { display: flex; flex-direction: column; gap: 6px; }
     .stage-label { font-size: 11px; font-weight: 600; color: #5b6670; letter-spacing: 0.4px; text-transform: uppercase; }
-    .frame { background: #fff; border: 1px solid #d7dbdf; box-shadow: 0 1px 3px rgba(0,0,0,.06); border-radius: 4px; overflow: hidden; }
+    /* Frame is just a sizing wrapper — no visual styling so the V2 card is the
+       only "outer container" the user sees. */
+    .frame { overflow: hidden; }
     /* hide scrollbars inside the frames for visual cleanliness, like the canvas does */
     .frame *::-webkit-scrollbar { display: none; }
     .frame * { scrollbar-width: none; }
