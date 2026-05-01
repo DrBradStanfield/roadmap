@@ -21,15 +21,18 @@ function emptyDraft() {
   return { date: new Date().toISOString().slice(0, 10), values: {} };
 }
 
-function V2_Timeline() {
+function V2_Timeline({ initialBatches = HISTORY }) {
   const [batches, setBatches] = React.useState(() =>
-    HISTORY.map(h => ({ ...h, values: { ...h.values } }))
+    initialBatches.map(h => ({ ...h, values: { ...h.values } }))
   );
   const [draft, setDraft] = React.useState(emptyDraft);
   const [activeCell, setActiveCell] = React.useState(null);
-  const [unitMode, setUnitMode] = React.useState('si'); // 'si' | 'alt'
-
-  const toggleUnitMode = () => setUnitMode(u => u === 'si' ? 'alt' : 'si');
+  // Per-metric unit choice — matches existing health-roadmap behaviour where
+  // each field's unit toggles independently. Default 'si' for any unset key.
+  const [unitModes, setUnitModes] = React.useState({});
+  const getUnitMode = (key) => unitModes[key] || 'si';
+  const toggleUnitMode = (key) =>
+    setUnitModes(m => ({ ...m, [key]: (m[key] || 'si') === 'si' ? 'alt' : 'si' }));
 
   const sorted = React.useMemo(
     () => [...batches].sort((a, b) => a.date.localeCompare(b.date)),
@@ -56,13 +59,13 @@ function V2_Timeline() {
 
   const saveDraft = () => {
     if (filledCount === 0) return;
-    // Draft values are typed in the current displayUnit. Convert to SI before saving.
+    // Draft values are typed in each metric's current displayUnit. Convert to SI per-metric.
     const filled = Object.entries(draft.values)
       .filter(([_, v]) => v !== '' && v != null)
       .map(([k, v]) => {
         const m = METRICS.find(x => x.key === k);
         const typed = parseFloat(v);
-        const displayUnit = unitMode === 'si' ? m.unit : m.altUnit;
+        const displayUnit = getUnitMode(k) === 'si' ? m.unit : m.altUnit;
         const si = m.convertFrom(typed, displayUnit);
         return [k, si];
       });
@@ -93,13 +96,13 @@ function V2_Timeline() {
               activeCell={activeCell} setActiveCell={setActiveCell}
               updateDraftValue={updateDraftValue}
               backfillBatchValue={backfillBatchValue}
-              unitMode={unitMode} toggleUnitMode={toggleUnitMode}/>
+              getUnitMode={getUnitMode} toggleUnitMode={toggleUnitMode}/>
     </div>
   );
 }
 
 function Matrix({ columns, draft, updateDraftDate, activeCell, setActiveCell,
-                  updateDraftValue, backfillBatchValue, unitMode, toggleUnitMode }) {
+                  updateDraftValue, backfillBatchValue, getUnitMode, toggleUnitMode }) {
   // Each row has its own horizontal scroll container; we keep them in sync via shared scrollLeft state.
   // This lets sticky metric-name and trend cells live OUTSIDE the scroll viewport (cleaner than CSS sticky-grid).
   const [scrollLeft, setScrollLeft] = React.useState(0);
@@ -175,8 +178,9 @@ function Matrix({ columns, draft, updateDraftDate, activeCell, setActiveCell,
           const latestStatus = statusOf(m, latest);
           const isLast = rowIdx === METRICS.length - 1;
 
-          const displayUnit = unitMode === 'si' ? m.unit : m.altUnit;
-          const displayRefLabel = unitMode === 'si' ? m.refLabel : m.refLabelAlt;
+          const mode = getUnitMode(m.key);
+          const displayUnit = mode === 'si' ? m.unit : m.altUnit;
+          const displayRefLabel = mode === 'si' ? m.refLabel : m.refLabelAlt;
 
           return (
             <div key={m.key} style={{
@@ -191,7 +195,7 @@ function Matrix({ columns, draft, updateDraftDate, activeCell, setActiveCell,
                 borderRight: '1px solid var(--ink-100)',
               }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-900)', lineHeight: 1.2 }}>{m.name}</div>
-                <button onClick={toggleUnitMode}
+                <button onClick={() => toggleUnitMode(m.key)}
                         title="Click to switch units"
                         style={{
                           alignSelf: 'flex-start', marginTop: 3,
