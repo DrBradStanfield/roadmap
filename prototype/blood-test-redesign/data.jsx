@@ -3,57 +3,73 @@
 // Band model: optimal[lo,hi] = ok, borderline[lo,hi] = warn, anything else = bad.
 // For higherIsBetter, only the LOW edges of each band are used (statusOf below).
 
+// `convert(v, to)`     SI canonical → display unit
+// `convertFrom(v, from)` display unit → SI canonical (for inputs typed in alt unit)
+// `refLabel` is for SI display; `refLabelAlt` is for alt-unit display.
 const METRICS = [
   {
     // HBA1C_THRESHOLDS: prediabetes ~38.8, diabetes ~47.5 (mmol/mol IFCC)
     key: 'hba1c', name: 'HbA1c', unit: 'mmol/mol', altUnit: '%',
     convert: (v, to) => to === '%' ? +(v * 0.09148 + 2.152).toFixed(1) : v,
-    refLabel: 'Normal: <38.8', optimal: [0, 38.8], borderline: [38.8, 47.5], category: 'Diabetes',
+    convertFrom: (v, from) => from === '%' ? +((v - 2.152) / 0.09148).toFixed(1) : v,
+    refLabel: 'Normal: <38.8', refLabelAlt: 'Normal: <5.7%',
+    optimal: [0, 38.8], borderline: [38.8, 47.5], category: 'Diabetes',
   },
   {
-    // No formal creatinine thresholds in units.ts (used for eGFR derivation).
-    // Keeping plausible adult reference range; flag for review during port.
     key: 'creatinine', name: 'Creatinine', unit: 'µmol/L', altUnit: 'mg/dL',
     convert: (v, to) => to === 'mg/dL' ? +(v / 88.4).toFixed(2) : v,
-    refLabel: 'Reference: 60–110', optimal: [60, 110], borderline: [50, 125], category: 'Kidney',
+    convertFrom: (v, from) => from === 'mg/dL' ? +(v * 88.4).toFixed(0) : v,
+    refLabel: 'Reference: 60–110', refLabelAlt: 'Reference: 0.7–1.2',
+    optimal: [60, 110], borderline: [50, 125], category: 'Kidney',
   },
   {
     // APOB_THRESHOLDS: borderline 0.5, high 0.7, veryHigh 1.0 (g/L)
     key: 'apob', name: 'ApoB', unit: 'g/L', altUnit: 'mg/dL',
     convert: (v, to) => to === 'mg/dL' ? Math.round(v * 100) : v,
-    refLabel: 'Optimal: <0.5', optimal: [0, 0.5], borderline: [0.5, 0.7], category: 'Lipids',
+    convertFrom: (v, from) => from === 'mg/dL' ? +(v / 100).toFixed(2) : v,
+    refLabel: 'Optimal: <0.5', refLabelAlt: 'Optimal: <50',
+    optimal: [0, 0.5], borderline: [0.5, 0.7], category: 'Lipids',
   },
   {
     // LDL_THRESHOLDS: borderline ~3.36, high ~4.14, veryHigh ~4.91 (mmol/L)
     key: 'ldl', name: 'LDL Cholesterol', unit: 'mmol/L', altUnit: 'mg/dL',
     convert: (v, to) => to === 'mg/dL' ? Math.round(v * 38.67) : v,
-    refLabel: 'Optimal: <3.36', optimal: [0, 3.36], borderline: [3.36, 4.14], category: 'Lipids',
+    convertFrom: (v, from) => from === 'mg/dL' ? +(v / 38.67).toFixed(2) : v,
+    refLabel: 'Optimal: <3.36', refLabelAlt: 'Optimal: <130',
+    optimal: [0, 3.36], borderline: [3.36, 4.14], category: 'Lipids',
   },
   {
     // TOTAL_CHOLESTEROL_THRESHOLDS: borderline ~5.17, high ~6.21 (mmol/L)
     key: 'tc', name: 'Total Cholesterol', unit: 'mmol/L', altUnit: 'mg/dL',
     convert: (v, to) => to === 'mg/dL' ? Math.round(v * 38.67) : v,
-    refLabel: 'Optimal: <5.17', optimal: [0, 5.17], borderline: [5.17, 6.21], category: 'Lipids',
+    convertFrom: (v, from) => from === 'mg/dL' ? +(v / 38.67).toFixed(2) : v,
+    refLabel: 'Optimal: <5.17', refLabelAlt: 'Optimal: <200',
+    optimal: [0, 5.17], borderline: [5.17, 6.21], category: 'Lipids',
   },
   {
     // HDL_THRESHOLDS: lowMale ~1.03, lowFemale ~1.29 (mmol/L). Higher is better.
-    // ok = ≥1.29 (female-conservative), warn = 1.03–1.29, bad = <1.03.
     key: 'hdl', name: 'HDL Cholesterol', unit: 'mmol/L', altUnit: 'mg/dL',
     convert: (v, to) => to === 'mg/dL' ? Math.round(v * 38.67) : v,
-    refLabel: 'Optimal: ≥1.29', optimal: [1.29, 5.0], borderline: [1.03, 1.29], category: 'Lipids',
+    convertFrom: (v, from) => from === 'mg/dL' ? +(v / 38.67).toFixed(2) : v,
+    refLabel: 'Optimal: ≥1.29', refLabelAlt: 'Optimal: ≥50',
+    optimal: [1.29, 5.0], borderline: [1.03, 1.29], category: 'Lipids',
     higherIsBetter: true,
   },
   {
-    // TRIGLYCERIDES_THRESHOLDS: borderline ~1.69, high ~2.26, veryHigh ~5.64 (mmol/L)
+    // TRIGLYCERIDES_THRESHOLDS: borderline ~1.69, high ~2.26 (mmol/L)
     key: 'tg', name: 'Triglycerides', unit: 'mmol/L', altUnit: 'mg/dL',
     convert: (v, to) => to === 'mg/dL' ? Math.round(v * 88.57) : v,
-    refLabel: 'Normal: <1.69', optimal: [0, 1.69], borderline: [1.69, 2.26], category: 'Lipids',
+    convertFrom: (v, from) => from === 'mg/dL' ? +(v / 88.57).toFixed(2) : v,
+    refLabel: 'Normal: <1.69', refLabelAlt: 'Normal: <150',
+    optimal: [0, 1.69], borderline: [1.69, 2.26], category: 'Lipids',
   },
   {
     // LPA_THRESHOLDS: normal 75, elevated 125 (nmol/L)
     key: 'lpa', name: 'Lp(a)', unit: 'nmol/L', altUnit: 'nmol/L',
     convert: v => v,
-    refLabel: 'Normal: <75', optimal: [0, 75], borderline: [75, 125], category: 'Lipids',
+    convertFrom: v => v,
+    refLabel: 'Normal: <75', refLabelAlt: 'Normal: <75',
+    optimal: [0, 75], borderline: [75, 125], category: 'Lipids',
   },
 ];
 

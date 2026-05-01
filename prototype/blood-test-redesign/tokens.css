@@ -62,3 +62,17 @@
 .bt-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
 .bt-scroll::-webkit-scrollbar-thumb { background: var(--ink-200); border-radius: 3px; }
 .bt-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* Hide native number-input spinner arrows */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] { -moz-appearance: textfield; }
+
+/* Hide the default calendar picker indicator on date inputs that we
+   replace with a custom icon (used in V2's draft column header). */
+input.bt-date-hidden-icon::-webkit-calendar-picker-indicator { display: none; }
+input.bt-date-hidden-icon::-webkit-inner-spin-button { display: none; }
+input.bt-date-hidden-icon { -moz-appearance: none; }
