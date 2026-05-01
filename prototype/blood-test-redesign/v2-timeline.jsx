@@ -6,15 +6,18 @@
 // - Default scroll position is max-right: 2 most recent + draft visible.
 // - "Save" commits filled draft values into a new batch; the draft column then resets empty.
 
-// Sized so that at a 460px container (typical InputPanel column on desktop)
-// the visible value strip fits exactly 3 full columns — [most_recent-1]
-// [most_recent] [DRAFT]. No partial 4th column.
-//   name(108) + 3*value(98) + trend(58) = 460px exact.
+// Sized so that at a 460px container with 8px horizontal padding around the
+// matrix (16px total) the visible value strip fits exactly 3 full columns —
+// [most_recent-1] [most_recent] [DRAFT]. No partial 4th column.
+//   16(padding) + name(104) + 3*value(94) + trend(58) = 460 exact.
+// When the trend column is hidden (no series has ≥2 datapoints), the value
+// strip simply expands to fill the freed space.
 const V2_COL = {
-  name: 108,
-  value: 98,
+  name: 104,
+  value: 94,
   trend: 58,
   rowMin: 56,
+  hPadding: 8, // matrix container padding (left/right inside the card)
 };
 
 function emptyDraft() {
@@ -92,17 +95,29 @@ function V2_Timeline({ initialBatches = HISTORY }) {
         </div>
       </div>
 
-      <Matrix columns={columns} draft={draft} updateDraftDate={updateDraftDate}
-              activeCell={activeCell} setActiveCell={setActiveCell}
-              updateDraftValue={updateDraftValue}
-              backfillBatchValue={backfillBatchValue}
-              getUnitMode={getUnitMode} toggleUnitMode={toggleUnitMode}/>
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0,
+        padding: `0 ${V2_COL.hPadding}px ${V2_COL.hPadding}px`,
+      }}>
+        <Matrix columns={columns} batches={batches} draft={draft}
+                updateDraftDate={updateDraftDate}
+                activeCell={activeCell} setActiveCell={setActiveCell}
+                updateDraftValue={updateDraftValue}
+                backfillBatchValue={backfillBatchValue}
+                getUnitMode={getUnitMode} toggleUnitMode={toggleUnitMode}/>
+      </div>
     </div>
   );
 }
 
-function Matrix({ columns, draft, updateDraftDate, activeCell, setActiveCell,
+function Matrix({ columns, batches, draft, updateDraftDate, activeCell, setActiveCell,
                   updateDraftValue, backfillBatchValue, getUnitMode, toggleUnitMode }) {
+  // Hide the trend column when no metric has at least two datapoints.
+  // Empty state and single-batch state both fall under this.
+  const showTrend = React.useMemo(
+    () => METRICS.some(m => batches.filter(b => b.values[m.key] != null).length >= 2),
+    [batches]
+  );
   // Each row has its own horizontal scroll container; we keep them in sync via shared scrollLeft state.
   // This lets sticky metric-name and trend cells live OUTSIDE the scroll viewport (cleaner than CSS sticky-grid).
   const [scrollLeft, setScrollLeft] = React.useState(0);
@@ -162,12 +177,14 @@ function Matrix({ columns, draft, updateDraftDate, activeCell, setActiveCell,
           </div>
         </div>
 
-        <div style={{
-          width: V2_COL.trend, flexShrink: 0, padding: '8px 6px',
-          fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--ink-500)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          borderLeft: '1px solid var(--ink-200)',
-        }}>Trend</div>
+        {showTrend && (
+          <div style={{
+            width: V2_COL.trend, flexShrink: 0, padding: '8px 6px',
+            fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--ink-500)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            borderLeft: '1px solid var(--ink-200)',
+          }}>Trend</div>
+        )}
       </div>
 
       {/* Body — vertical scroll */}
@@ -244,19 +261,21 @@ function Matrix({ columns, draft, updateDraftDate, activeCell, setActiveCell,
                 </div>
               </div>
 
-              {/* Sticky trend */}
-              <div style={{
-                width: V2_COL.trend, flexShrink: 0,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: 3, padding: '6px 4px',
-                borderLeft: '1px solid var(--ink-100)',
-              }}>
-                <Sparkline metric={m} width={54} height={18} fill={false}/>
-                <span style={{
-                  width: 16, height: 2.5, borderRadius: 2,
-                  background: latest != null ? STATUS_COLOR[latestStatus].fg : 'var(--ink-200)',
-                }}/>
-              </div>
+              {/* Sticky trend (hidden when no metric has ≥2 datapoints) */}
+              {showTrend && (
+                <div style={{
+                  width: V2_COL.trend, flexShrink: 0,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: 3, padding: '6px 4px',
+                  borderLeft: '1px solid var(--ink-100)',
+                }}>
+                  <Sparkline metric={m} width={54} height={18} fill={false}/>
+                  <span style={{
+                    width: 16, height: 2.5, borderRadius: 2,
+                    background: latest != null ? STATUS_COLOR[latestStatus].fg : 'var(--ink-200)',
+                  }}/>
+                </div>
+              )}
             </div>
           );
         })}
