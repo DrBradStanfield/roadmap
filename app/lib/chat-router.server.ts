@@ -11,6 +11,7 @@ import path from 'path';
 import { z } from 'zod';
 import * as Sentry from '@sentry/remix';
 import { callAnthropicWithUsage, extractJsonObject, type AnthropicUsage } from './anthropic.server';
+import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 
 // ---------------------------------------------------------------------------
 // Version — bump when router prompt or index format changes so chat_match_events
@@ -25,25 +26,7 @@ export const ROUTER_VERSION = 1;
 
 const ROUTER_MODEL = 'claude-haiku-4-5-20251001';
 
-// ---------------------------------------------------------------------------
-// Blog index — loaded once at module start, same pattern as chat.server.ts
-// ---------------------------------------------------------------------------
-
-interface BlogIndexEntry {
-  title: string;
-  handle: string;
-  type?: 'reference' | 'article' | 'guideline' | 'pathway';
-  summary?: string;
-}
-
-let BLOG_INDEX: BlogIndexEntry[] = [];
-
-try {
-  const raw = fs.readFileSync(path.join(process.cwd(), 'docs/blog/index.json'), 'utf-8');
-  BLOG_INDEX = JSON.parse(raw);
-} catch {
-  console.warn('chat-router: docs/blog/index.json not found — router will return empty handles');
-}
+const BLOG_INDEX = loadBlogIndex();
 
 // ---------------------------------------------------------------------------
 // Valid handles allowlist — O(1) lookup to drop hallucinated handles

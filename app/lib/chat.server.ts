@@ -8,6 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/remix';
 import fs from 'fs';
 import path from 'path';
+import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import type { HealthInputs } from '../../packages/health-core/src/types';
 import { calculateHealthResults } from '../../packages/health-core/src/calculations';
 import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
@@ -59,17 +60,7 @@ try {
 // Blog article index — read once at module load
 // ---------------------------------------------------------------------------
 
-interface BlogIndexEntry {
-  title: string;
-  handle: string;
-  url: string;
-  tags: string[];
-  keywords: string[];
-  type?: 'reference' | 'article' | 'guideline' | 'pathway';
-  summary?: string;
-}
-
-let BLOG_INDEX: BlogIndexEntry[] = [];
+const BLOG_INDEX: BlogIndexEntry[] = loadBlogIndex();
 
 function buildKnowledgeOverview(): string {
   if (BLOG_INDEX.length === 0) return '';
@@ -120,14 +111,7 @@ ${pathwaySection}
 If matched content appears below, use it to inform your answer. If no content is loaded for a topic, answer from the algorithm, evidence, and product knowledge above.`;
 }
 
-let KNOWLEDGE_OVERVIEW = '';
-try {
-  const raw = fs.readFileSync(path.join(process.cwd(), 'docs/blog/index.json'), 'utf-8');
-  BLOG_INDEX = JSON.parse(raw);
-  KNOWLEDGE_OVERVIEW = buildKnowledgeOverview();
-} catch {
-  console.warn('docs/blog/index.json not found — chat will not have blog knowledge');
-}
+const KNOWLEDGE_OVERVIEW = buildKnowledgeOverview();
 
 // ---------------------------------------------------------------------------
 // Evidence document — serialized from evidence.ts at module load

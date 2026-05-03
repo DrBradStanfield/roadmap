@@ -613,6 +613,7 @@ input[type="number"] {
 .plan-empty-intro {
   margin: 0;
   padding: 17px;
+  opacity: 0.6;
   border: 1px solid #d4ebe4;
   border-radius: 10px;
   background: #f1faf6;
@@ -662,7 +663,12 @@ input[type="number"] {
 }
 
 .plan-empty-example-card {
-  opacity: 0.85;
+  opacity: 0.6;
+}
+
+.plan-empty-example-card .suggestion-title,
+.plan-empty-example-card .suggestion-desc {
+  color: var(--color-gray-medium);
 }
 
 /* Quick Stats */

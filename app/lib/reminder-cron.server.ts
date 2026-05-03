@@ -77,7 +77,7 @@ export function startReminderCron(): void {
     if (lastRunDate === todayStr) return;
 
     // Distributed lock — only one machine runs per day across all Fly.io instances
-    const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr);
+    const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'reminder_cron');
     if (!acquired) {
       lastRunDate = todayStr; // Don't keep trying locally either
       return;

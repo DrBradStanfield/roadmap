@@ -1744,12 +1744,18 @@ export async function getLatestMeasurementDatesAdmin(
   return dates;
 }
 
+/** Names of seeded `cron_lock` rows. New crons must add their lock name here AND
+ *  seed a row in supabase/rls-policies.sql — typo on either side silently disables
+ *  the cron (UPDATE matches zero rows → returns false → cron never runs). */
+export type CronLockName = 'reminder_cron' | 'trending_cron';
+
 /** Attempt to acquire the cron lock for today. Returns true if this machine
  *  should run the cron. Uses an atomic UPDATE with WHERE clause to prevent
  *  race conditions between machines. */
 export async function tryAcquireCronLock(
   machineId: string,
   today: string,
+  lockName: CronLockName,
 ): Promise<boolean> {
   if (!supabaseAdmin) return false;
 
@@ -1760,12 +1766,12 @@ export async function tryAcquireCronLock(
       locked_at: new Date().toISOString(),
       lock_date: today,
     })
-    .eq('lock_name', 'reminder_cron')
+    .eq('lock_name', lockName)
     .neq('lock_date', today)
     .select();
 
   if (error) {
-    console.error('Error acquiring cron lock:', error);
+    console.error(`Error acquiring cron lock (${lockName}):`, error);
     return false;
   }
 
