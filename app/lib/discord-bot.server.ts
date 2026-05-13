@@ -12,7 +12,6 @@ import {
   Events,
   GatewayIntentBits,
   Partials,
-  type GuildMember,
   type Message,
   type OmitPartialGroupDMChannel,
 } from 'discord.js';
@@ -35,9 +34,6 @@ const DISCORD_BOT_PROFILE_ID = process.env.DISCORD_BOT_PROFILE_ID;
 // responds to explicit @mentions. Threads under the dedicated channel inherit
 // the opt-in behaviour.
 const DISCORD_DEDICATED_AI_CHANNEL_ID = process.env.DISCORD_DEDICATED_AI_CHANNEL_ID;
-// Channel where the bot posts a welcome message when a new member joins.
-// Typically #general. If unset, the welcome feature is disabled.
-const DISCORD_GENERAL_CHANNEL_ID = process.env.DISCORD_GENERAL_CHANNEL_ID;
 // Comma-separated channel IDs where the bot never responds, even if @mentioned.
 const DISCORD_EXCLUDED_CHANNEL_IDS = new Set(
   (process.env.DISCORD_EXCLUDED_CHANNEL_IDS ?? '').split(',').map(s => s.trim()).filter(Boolean)
@@ -116,21 +112,12 @@ export function startDiscordBot(): void {
     return;
   }
 
-  // Base intents — always safe. GuildMembers is a privileged intent required
-  // for GuildMemberAdd events; only request it if the welcome feature is
-  // configured AND the portal toggle is enabled. Requesting it without the
-  // portal toggle will prevent the bot from connecting at all.
-  const intents = [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ];
-  if (DISCORD_GENERAL_CHANNEL_ID && process.env.DISCORD_GUILD_MEMBERS_INTENT_ENABLED === 'true') {
-    intents.push(GatewayIntentBits.GuildMembers);
-  }
-
   client = new Client({
-    intents,
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
+    ],
     partials: [Partials.Message, Partials.Channel],
   });
 
@@ -141,13 +128,6 @@ export function startDiscordBot(): void {
   client.on(Events.MessageCreate, (message) => {
     handleMessage(message).catch((err) => {
       console.error('Discord message handler error:', err);
-      Sentry.captureException(err, { tags: { platform: PLATFORM_DISCORD } });
-    });
-  });
-
-  client.on(Events.GuildMemberAdd, (member) => {
-    handleMemberJoin(member).catch((err) => {
-      console.error('Discord member-join handler error:', err);
       Sentry.captureException(err, { tags: { platform: PLATFORM_DISCORD } });
     });
   });
@@ -334,51 +314,6 @@ async function handleMessage(message: GuildMessage): Promise<void> {
     await safeReply(message, 'Something went wrong on my end — please try again in a moment.');
   } finally {
     activeLlmCalls--;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Member-join welcome message
-// ---------------------------------------------------------------------------
-
-async function handleMemberJoin(member: GuildMember): Promise<void> {
-  if (member.user.bot) return;
-  if (member.guild.id !== DISCORD_GUILD_ID) return;
-  if (!DISCORD_GENERAL_CHANNEL_ID) return;   // welcome feature disabled
-
-  const channel = await member.guild.channels.fetch(DISCORD_GENERAL_CHANNEL_ID).catch(() => null);
-  if (!channel || !channel.isTextBased() || !('send' in channel)) return;
-
-  const botMention = client?.user ? `<@${client.user.id}>` : 'Dr Brad AI';
-  const aiChannelMention = DISCORD_DEDICATED_AI_CHANNEL_ID
-    ? `<#${DISCORD_DEDICATED_AI_CHANNEL_ID}>`
-    : 'the Dr Brad AI channel';
-
-  const welcome = [
-    `Welcome, <@${member.id}>! 👋`,
-    '',
-    `Great to have you in **Dr Brad Stanfield's** Discord. A few quick things:`,
-    '',
-    `• **Dr Brad** is active here — he reads and replies to messages across the server.`,
-    `• **Dr Brad's AI assistant** (${botMention}) is available in ${aiChannelMention} for evidence-based answers on diet, exercise, sleep, blood tests, cholesterol, supplements, and health conditions. You can also @mention it in any channel.`,
-    `• Browse the channel list on the left — each channel covers a specific topic (cholesterol, blood-tests, sleep, etc).`,
-    '',
-    `For personalized suggestions based on your own numbers, try the Health Roadmap tool at **drstanfield.com**.`,
-    '',
-    `*This server provides educational information only, not personalized medical advice. Always discuss changes with your healthcare provider.*`,
-  ].join('\n');
-
-  try {
-    await channel.send({
-      content: welcome,
-      allowedMentions: { users: [member.id] },
-    });
-  } catch (err) {
-    console.error('Discord welcome send failed:', err);
-    Sentry.captureException(err, {
-      tags: { platform: PLATFORM_DISCORD, subsystem: 'welcome' },
-      extra: { userId: member.id, guildId: member.guild.id },
-    });
   }
 }
 
