@@ -4192,3 +4192,341 @@ input[type="number"] {
     margin-bottom: 0;
   }
 }
+
+/* =============================================================================
+ * BloodTestTimeline (V2) — timeline-matrix UI for the blood-test section.
+ * Rows = metrics; columns = older batches → 2 most recent → draft column.
+ * Width math at 460px: 16(padding) + 104(name) + 3*94(values) + 58(trend) = 460 exact.
+ * Column widths re-tune via CSS custom props if we ever need to change at media queries.
+ * ============================================================================= */
+/* The parent `.section-card--bt` provides the white card frame; this rule
+   only sets the inner layout. No background/border/shadow here to avoid
+   double-containment. */
+.section-card--bt { padding: 0; overflow: hidden; }
+
+.bt-timeline {
+  /* Widths sum to 460px container - 16px padding = 444px:
+     name(144) + 3*value(82) + trend(54) = 444 exact.
+     name(144) is wide enough for "Total Cholesterol" on a single line at 12px/600. */
+  --bt-name-w: 144px;
+  --bt-value-w: 82px;
+  --bt-trend-w: 54px;
+  --bt-h-pad: 8px;
+  --bt-row-min: 56px;
+  --bt-ink-50: #f6f7f8;
+  --bt-ink-100: #eceef0;
+  --bt-ink-200: #d7dbdf;
+  --bt-ink-400: #7b858e;
+  --bt-ink-500: #5b6670;
+  --bt-ink-700: #2b3036;
+  --bt-ink-900: #111417;
+  --bt-ok: #2f9e75;
+  --bt-warn: #c58b2a;
+  --bt-bad: #c65454;
+  --bt-brand-tint: rgba(0, 163, 139, 0.08);
+
+  display: flex;
+  flex-direction: column;
+  font-variant-numeric: tabular-nums;
+}
+
+.bt-timeline-header {
+  padding: 14px 16px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.bt-timeline-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  margin: 0;
+}
+.bt-timeline-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.bt-timeline-actions .btn-primary {
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+.bt-save-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.bt-timeline-divider {
+  height: 1px;
+  background: var(--bt-ink-100);
+  margin: 0 var(--bt-h-pad);
+}
+
+.bt-timeline-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 var(--bt-h-pad) var(--bt-h-pad);
+}
+
+/* Row layout — flex with sticky-left name and sticky-right trend cells, scrollable middle */
+.bt-row {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--bt-ink-100);
+  min-height: var(--bt-row-min);
+}
+.bt-row-last { border-bottom: none; }
+.bt-header-row {
+  background: var(--bt-ink-50);
+  border-bottom: 1px solid var(--bt-ink-200);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.bt-cell-name {
+  width: var(--bt-name-w);
+  flex-shrink: 0;
+  padding: 8px 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid var(--bt-ink-100);
+}
+.bt-cell-header {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--bt-ink-500);
+}
+.bt-name-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bt-ink-900);
+  line-height: 1.2;
+}
+.bt-unit-chip {
+  align-self: flex-start;
+  margin-top: 3px;
+  background: var(--bt-ink-50);
+  color: var(--bt-ink-500);
+  border: 1px solid var(--bt-ink-200);
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.2;
+}
+.bt-ref-label {
+  font-size: 9px;
+  color: var(--bt-ink-400);
+  margin-top: 3px;
+  line-height: 1.2;
+}
+
+.bt-cell-strip {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+  /* Hide horizontal scrollbars — scroll is gesture/wheel only, no visible bar.
+     Firefox: scrollbar-width: none; WebKit: ::-webkit-scrollbar display:none. */
+  scrollbar-width: none;
+}
+.bt-cell-strip::-webkit-scrollbar { display: none; }
+.bt-strip-inner {
+  display: flex;
+  min-width: 100%;
+  height: 100%;
+}
+.bt-strip-spacer {
+  flex: 1 0 0;
+  min-width: 0;
+}
+
+.bt-cell-value {
+  width: var(--bt-value-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 4px;
+  border-left: 1px solid var(--bt-ink-100);
+  background: transparent;
+}
+.bt-cell-pinned {
+  background: var(--bt-ink-50);
+  border-left-color: var(--bt-ink-200);
+}
+.bt-cell-date .bt-date-day,
+.bt-cell-draft-date .bt-date-day {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--bt-ink-500);
+  line-height: 1.2;
+}
+.bt-cell-draft-date .bt-date-day {
+  color: var(--color-brand);
+}
+.bt-cell-date .bt-date-year,
+.bt-cell-draft-date .bt-date-year {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--bt-ink-400);
+  margin-top: 1px;
+  line-height: 1.2;
+}
+.bt-cell-draft-date .bt-date-year {
+  color: var(--color-brand);
+  opacity: 0.7;
+}
+.bt-cell-draft-date {
+  border-left: 2px solid var(--color-brand);
+  background: var(--bt-brand-tint);
+  cursor: pointer;
+  /* `font: inherit` is critical — without it browsers apply default <button>
+     font (often a system UI face) which doesn't match the surrounding date
+     cells rendered as <div>. */
+  font: inherit;
+  position: relative;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+}
+.bt-cell-draft-date .bt-draft-date-year-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 1px;
+}
+.bt-cell-draft-date .bt-draft-date-icon { color: var(--color-brand); }
+.bt-cell-draft-date .bt-date-day {
+  color: var(--color-brand);
+}
+.bt-cell-draft-date .bt-date-year {
+  color: var(--color-brand);
+  opacity: 0.7;
+}
+.bt-cell-draft-date svg { color: var(--color-brand); flex-shrink: 0; }
+.bt-draft-date-icon { margin-top: 2px; }
+.bt-date-hidden-icon {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  border: none;
+}
+.bt-date-hidden-icon::-webkit-calendar-picker-indicator { display: none; }
+
+.bt-value-num {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bt-ink-900);
+  line-height: 1.1;
+}
+
+.bt-status-tick {
+  width: 14px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: transparent;
+  opacity: 0.85;
+}
+/* Fixed-height slot so swapping a tick (~3px) for an error message (~12px)
+   doesn't shift the input above. The whole cell stays visually anchored. */
+.bt-cell-foot {
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.bt-status-tick.bt-status-ok    { background: var(--bt-ok); }
+.bt-status-tick.bt-status-warn  { background: var(--bt-warn); }
+.bt-status-tick.bt-status-bad   { background: var(--bt-bad); }
+.bt-status-tick.bt-status-none  { background: transparent; }
+
+.bt-cell-input {
+  border-left: 2px solid var(--color-brand);
+  background: var(--bt-brand-tint);
+  gap: 4px;
+}
+.bt-cell-backfill {
+  /* Same look as a value cell with no entered value yet */
+}
+
+.bt-input {
+  width: 90%;
+  border: none;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  padding: 2px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bt-ink-900);
+  text-align: center;
+  outline: none;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+/* Explicitly clear focus styling (a global rule elsewhere in styles.css
+   adds a green halo box-shadow to inputs on focus). The active-cell brand
+   underline below is the only treatment we want. */
+.bt-input:focus,
+.bt-input:focus-visible,
+.bt-input:focus-within {
+  outline: none;
+  box-shadow: none;
+  border: none;
+  border-bottom: 1px solid transparent;
+}
+.bt-input::placeholder { color: var(--bt-ink-400); }
+.bt-input.bt-input-active,
+.bt-input:focus.bt-input-active {
+  border-bottom: 1.5px solid var(--color-brand);
+}
+.bt-input.bt-input-error,
+.bt-input.bt-input-error:focus {
+  color: var(--bt-bad);
+  border-bottom: 1.5px solid var(--bt-bad);
+}
+.bt-input-error-text {
+  font-size: 9px;
+  color: var(--bt-bad);
+  font-weight: 600;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.bt-cell-trend {
+  width: var(--bt-trend-w);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 4px;
+  border-left: 1px solid var(--bt-ink-100);
+}
+.bt-header-row .bt-cell-trend {
+  border-left: 1px solid var(--bt-ink-200);
+  padding: 8px 6px;
+}
+
+.bt-rows {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+

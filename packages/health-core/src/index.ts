@@ -194,6 +194,10 @@ export {
 export type { SuggestionEvidence } from './evidence';
 export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence } from './evidence';
 
+// Reference-range hints (blood-test matrix + legacy form labels)
+export type { RefHint, SexedRefHint } from './reference-hints';
+export { REFERENCE_HINTS, refHintFor } from './reference-hints';
+
 // Sentry PII/PHI scrubbing
 export {
   scrubSensitiveData,

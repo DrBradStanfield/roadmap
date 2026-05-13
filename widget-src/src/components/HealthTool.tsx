@@ -50,6 +50,7 @@ import {
 } from '../lib/storage';
 import {
   loadLatestMeasurements,
+  loadAllHistory,
   saveChangedMeasurements,
   addMeasurement,
   saveMedication,
@@ -111,11 +112,19 @@ export function HealthTool() {
     return prefill;
   });
   const [previousMeasurements, setPreviousMeasurements] = useState<ApiMeasurement[]>([]);
+  // Full blood-test history (all draws, all metrics) for the timeline-matrix UI.
+  // Filtered subset of loadAllHistory(); refreshed after each blood-test save.
+  const [bloodTestHistory, setBloodTestHistory] = useState<ApiMeasurement[]>([]);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
   const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasApiResponse, setHasApiResponse] = useState(false);
+  // Filled by BloodTestTimeline on mount so we can flush its in-flight typed
+  // values (draft + backfills) before kicking off the upload-modal flow.
+  // `handleSaveLongitudinal` (legacy path) skips blood-test metrics, so without
+  // this flush, typed-but-unsaved matrix values are lost when the user uploads.
+  const bloodTestFlushRef = useRef<(() => Promise<void>) | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'first-saved' | 'error'>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
@@ -192,6 +201,15 @@ export function HealthTool() {
     setUnitOverrides({});
     safeRemoveItem('health_roadmap_unit_overrides');
   }, []);
+
+  // Load full blood-test history (filtered) for the timeline-matrix UI.
+  // Fire-and-forget so it doesn't block the initial render.
+  const loadBloodTestHistory = () => {
+    loadAllHistory(200).then(rows => {
+      const bloodTestSet = new Set(BLOOD_TEST_METRICS);
+      setBloodTestHistory(rows.filter(r => bloodTestSet.has(r.metricType)));
+    });
+  };
 
   // Load data on mount (from cloud if logged in, otherwise localStorage)
   useEffect(() => {
@@ -283,6 +301,8 @@ export function HealthTool() {
           setReminderPreferences(result.reminderPreferences);
           // Load health documents (fire-and-forget — non-blocking)
           getHealthDocuments().then(docs => setHealthDocuments(docs));
+          // Load full blood-test history for the timeline-matrix UI (fire-and-forget).
+          loadBloodTestHistory();
           // Cache to localStorage for instant display on next page load
           saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, result.reminderPreferences);
         } else {
@@ -373,6 +393,7 @@ export function HealthTool() {
               setMedications(syncResult.medications);
               setScreenings(syncResult.screenings);
               setReminderPreferences(syncResult.reminderPreferences);
+              loadBloodTestHistory();
               saveToLocalStorage(syncResult.inputs, syncResult.previousMeasurements, syncResult.medications, syncResult.screenings, syncResult.reminderPreferences);
             } else {
               previousInputsRef.current = { ...cached.inputs };
@@ -500,7 +521,14 @@ export function HealthTool() {
 
   // Explicit save for longitudinal fields
   // bloodTestDate is an ISO string (e.g., "2026-01-01T00:00:00.000Z") for blood test metrics
-  const handleSaveLongitudinal = useCallback(async (bloodTestDate?: string) => {
+  const handleSaveLongitudinal = useCallback(async (
+    bloodTestDate?: string,
+    // Optional: when provided, save these metric→SI-value pairs at the given
+    // recordedAt instead of reading from the form `inputs` state. Used by the
+    // BloodTestTimeline component to commit a draft batch (and back-filled
+    // values into a past batch). When omitted, the legacy path runs.
+    explicitMeasurements?: Record<string, number>,
+  ) => {
     if (!authState.isLoggedIn) return;
     if (isSavingLongitudinalRef.current) return;
     isSavingLongitudinalRef.current = true;
@@ -513,15 +541,26 @@ export function HealthTool() {
 
       const bloodTestMetrics = new Set(BLOOD_TEST_METRICS);
       const fieldsToSave: Array<{ metricType: string; value: number; recordedAt?: string }> = [];
-      for (const field of LONGITUDINAL_FIELDS) {
-        const value = inputs[field];
-        if (value !== undefined) {
+
+      if (explicitMeasurements) {
+        // Caller supplied a batch directly (bloodTestDate + metric→SI map).
+        for (const [metricType, value] of Object.entries(explicitMeasurements)) {
+          if (value === undefined || value === null || Number.isNaN(value)) continue;
+          fieldsToSave.push({ metricType, value, recordedAt: bloodTestDate });
+        }
+      } else {
+        // Legacy path: read from current form `inputs`. Skip blood-test
+        // metrics — they're committed via BloodTestTimeline's own Save button
+        // which calls this function with explicitMeasurements. Without this
+        // skip, blood-test values mirrored into `inputs` (for live suggestions)
+        // would double-save when the user clicks the global Save button.
+        for (const field of LONGITUDINAL_FIELDS) {
+          const value = inputs[field];
+          if (value === undefined) continue;
           const metricType = FIELD_TO_METRIC[field];
-          if (metricType) {
-            // Use bloodTestDate for blood test metrics, undefined (server uses NOW) for body measurements
-            const recordedAt = bloodTestMetrics.has(metricType) ? bloodTestDate : undefined;
-            fieldsToSave.push({ metricType, value: value as number, recordedAt });
-          }
+          if (!metricType) continue;
+          if (bloodTestMetrics.has(metricType)) continue;
+          fieldsToSave.push({ metricType, value: value as number, recordedAt: undefined });
         }
       }
 
@@ -550,14 +589,26 @@ export function HealthTool() {
         }
         setPreviousMeasurements(newMeasurements);
 
-        // Clear longitudinal input fields
-        setInputs(prev => {
-          const next = { ...prev };
-          for (const field of LONGITUDINAL_FIELDS) {
-            delete (next as any)[field];
-          }
-          return next;
-        });
+        // Append new blood-test rows to the full-history state so the timeline
+        // matrix reflects the save without a reload.
+        const savedBloodTestRows = results.filter((r): r is ApiMeasurement =>
+          r !== null && bloodTestMetrics.has(r.metricType),
+        );
+        if (savedBloodTestRows.length > 0) {
+          setBloodTestHistory(prev => [...prev, ...savedBloodTestRows]);
+        }
+
+        // Clear longitudinal input fields (legacy path only — when caller
+        // supplied explicit values, the form `inputs` weren't used so leave them).
+        if (!explicitMeasurements) {
+          setInputs(prev => {
+            const next = { ...prev };
+            for (const field of LONGITUDINAL_FIELDS) {
+              delete (next as any)[field];
+            }
+            return next;
+          });
+        }
 
         // Track A/B conversion on first-ever save (covers direct logged-in users
         // who skip the guest→login sync path).
@@ -583,6 +634,15 @@ export function HealthTool() {
   // Called when the upload modal opens — ensures typed-but-unsaved values persist.
   const handleUploadStart = useCallback(async () => {
     if (!authState.isLoggedIn) return;
+    // Flush BloodTestTimeline's in-flight draft + backfills BEFORE the legacy
+    // save runs. Sequential (not parallel): handleSaveLongitudinal has a
+    // re-entry guard (isSavingLongitudinalRef) and the matrix flush also goes
+    // through it (via onSaveBatch → handleSaveLongitudinal with explicit args),
+    // so a parallel run would short-circuit one of them.
+    if (bloodTestFlushRef.current) {
+      try { await bloodTestFlushRef.current(); }
+      catch { /* swallow — best-effort flush, legacy save still runs below */ }
+    }
     await handleSaveLongitudinal();
   }, [authState.isLoggedIn, handleSaveLongitudinal]);
 
@@ -598,6 +658,8 @@ export function HealthTool() {
       setReminderPreferences(result.reminderPreferences);
       saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, result.reminderPreferences);
     }
+    // Refresh full blood-test history so the matrix reflects newly extracted lab rows.
+    loadBloodTestHistory();
     // Reload documents
     getHealthDocuments().then(docs => setHealthDocuments(docs));
   }, []);
@@ -728,6 +790,7 @@ export function HealthTool() {
       clearLocalStorage();
       setInputs({});
       setPreviousMeasurements([]);
+      setBloodTestHistory([]);
       setMedications([]);
       setScreenings([]);
       setReminderPreferences([]);
@@ -870,6 +933,9 @@ export function HealthTool() {
     onToggleFieldUnit: handleToggleFieldUnit,
     isLoggedIn: authState.isLoggedIn,
     previousMeasurements,
+    bloodTestHistory,
+    onSaveBloodTestBatch: (date: string, values: Record<string, number>) =>
+      handleSaveLongitudinal(date, values),
     medications,
     onMedicationChange: handleMedicationChange,
     screenings,
@@ -880,6 +946,7 @@ export function HealthTool() {
     onSaveLongitudinal: handleSaveLongitudinal,
     isSavingLongitudinal,
     hasApiResponse,
+    bloodTestFlushRef,
     formStage,
     lastSavedAt,
     setShowUploadModal,

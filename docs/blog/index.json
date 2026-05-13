@@ -1,5 +1,33 @@
 [
   {
+    "title": "99% of Heart Attacks Had This Prior Warning",
+    "handle": "99-of-heart-attacks-had-this-prior-warning",
+    "url": "https://drstanfield.com/blogs/articles/99-of-heart-attacks-had-this-prior-warning",
+    "tags": [
+      "Preventative Care",
+      "Research",
+      "General Health"
+    ],
+    "keywords": [
+      "atherosclerosis",
+      "blood pressure",
+      "cardiovascular",
+      "cholesterol",
+      "diabetes",
+      "exercise",
+      "heart attack",
+      "hypertension",
+      "insulin resistance",
+      "ldl",
+      "statin",
+      "stroke",
+      "triglycerides"
+    ],
+    "publishedAt": "2026-05-08T02:05:49Z",
+    "youtube": "https://youtu.be/XwrjGB0nq1s",
+    "summary": "Dr Brad's heart attack risk post: a 9.3M-person study found >99% of people who had a first heart attack had at least one nonoptimal risk factor (BP ≥120/80, total cholesterol ≥200, fasting glucose ≥100, or any smoking history) before the event. The 'SMuRF-less' phenomenon was a measurement artefact. Brad recommends optimal targets (BP <120/80, LDL <55) plus ApoB testing now that JAMA cost-effectiveness is established and 2026 ACC/AHA guideline includes it."
+  },
+  {
     "title": "This $2 Remedy Beats Every Cold Medicine",
     "handle": "this-2-remedy-beats-every-cold-medicine",
     "url": "https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine",
@@ -30549,5 +30577,34 @@
     ],
     "publishedAt": "2026-04-29T12:00:00Z",
     "summary": "Dr Brad's GLP-1/cartilage post: a 2026 Cell Metabolism study found semaglutide grew cartilage 17% in obese knee osteoarthritis patients, independent of weight loss. Covers Gila monster venom origin, AMPK-PFKFB3 mechanism, pair-fed mouse experiment."
+  },
+  {
+    "title": "The 30-Year Statin Panic Is Finally Over",
+    "handle": "the-30-year-statin-panic-is-finally-over",
+    "url": "https://drstanfield.com/blogs/articles/the-30-year-statin-panic-is-finally-over",
+    "youtube": "https://youtu.be/ovWVNxSiJSE",
+    "tags": [
+      "Research",
+      "Preventative Care",
+      "General Health"
+    ],
+    "keywords": [
+      "atherosclerosis",
+      "cardiovascular",
+      "cholesterol",
+      "cognitive",
+      "dementia",
+      "diabetes",
+      "ezetimibe",
+      "fiber",
+      "heart attack",
+      "ldl",
+      "mediterranean diet",
+      "psyllium",
+      "statin",
+      "stroke"
+    ],
+    "publishedAt": "2026-05-08T12:00:00Z",
+    "summary": "Dr Brad's statin post: SAMSON trial showed 90% of statin side effects come from the nocebo effect, not the drug. Covers Akira Endo's discovery, low-dose statin + ezetimibe combo, new 2026 ACC/AHA LDL <55 mg/dL target, dietary portfolio, muscle myth, dementia and diabetes risks."
   }
 ]

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { ColumnHeader } from './ColumnHeader';
 import { DocumentLightbox } from './DocumentLightbox';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument, type ApiSupplement } from '../lib/api';
@@ -49,9 +49,12 @@ import {
   SCREENING_FOLLOWUP_INFO,
   validateInputValue,
   isBirthYearClearlyInvalid,
+  REFERENCE_HINTS,
+  type SexedRefHint,
 } from '@roadmap/health-core';
 import { formatShortDate } from '../lib/constants';
 import { DatePicker, InlineDatePicker, dateValueToISO, getCurrentDateValue, type DateValue } from './DatePicker';
+import { BloodTestTimeline } from './BloodTestTimeline';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -106,52 +109,42 @@ function scrNum(scr: ScreeningInputs, dbKey: string): number | undefined {
   return scrVal(scr, dbKey) as number | undefined;
 }
 
-const BLOOD_TEST_FIELDS: FieldConfig[] = [
-  {
-    field: 'hba1c', name: 'HbA1c',
-    step: { si: '1', conv: '0.1' },
-    hint: { si: 'Normal: <39 mmol/mol', conv: 'Normal: <5.7%' },
-  },
-  {
-    field: 'creatinine', name: 'Creatinine',
-    step: { si: '1', conv: '0.01' },
-    hint: { si: 'Normal: 45–90 µmol/L', conv: 'Normal: 0.5–1.0 mg/dL' },
-    hintMale: { si: 'Normal: 60–110 µmol/L', conv: 'Normal: 0.7–1.2 mg/dL' },
-    hintFemale: { si: 'Normal: 45–90 µmol/L', conv: 'Normal: 0.5–1.0 mg/dL' },
-  },
-  {
-    field: 'apoB', name: 'ApoB',
-    step: { si: '0.01', conv: '1' },
-    hint: { si: 'Optimal: <0.5 g/L', conv: 'Optimal: <50 mg/dL' },
-  },
-  {
-    field: 'ldlC', name: 'LDL Cholesterol',
-    step: { si: '0.1', conv: '1' },
-    hint: { si: 'Optimal: <1.4 mmol/L', conv: 'Optimal: <55 mg/dL' },
-  },
-  {
-    field: 'totalCholesterol', name: 'Total Cholesterol',
-    step: { si: '0.1', conv: '1' },
-    hint: { si: 'Optimal: <3.5 mmol/L', conv: 'Optimal: <135 mg/dL' },
-  },
-  {
-    field: 'hdlC', name: 'HDL Cholesterol',
-    step: { si: '0.1', conv: '1' },
-    hint: { si: 'Optimal: >1.0 mmol/L (men), >1.3 mmol/L (women)', conv: 'Optimal: >40 mg/dL (men), >50 mg/dL (women)' },
-    hintMale: { si: 'Optimal: >1.0 mmol/L', conv: 'Optimal: >40 mg/dL' },
-    hintFemale: { si: 'Optimal: >1.3 mmol/L', conv: 'Optimal: >50 mg/dL' },
-  },
-  {
-    field: 'triglycerides', name: 'Triglycerides',
-    step: { si: '0.1', conv: '1' },
-    hint: { si: 'Normal: <1.7 mmol/L', conv: 'Normal: <150 mg/dL' },
-  },
-  {
-    field: 'lpa', name: 'Lp(a)',
-    step: { si: '1', conv: '1' },
-    hint: { si: 'Normal: <75 nmol/L', conv: 'Normal: <75 nmol/L' },
-  },
+// Hint table lives in `packages/health-core/src/reference-hints.ts` so the
+// matrix UI and the legacy form labels stay in lockstep. Local config below
+// keeps only UI-specific bits (display name, numeric step). Hints are merged
+// from REFERENCE_HINTS at module-load time.
+interface BloodTestFieldBase {
+  field: keyof HealthInputs;
+  name: string;
+  metric: string;
+  step?: { si: string; conv: string };
+}
+
+const BLOOD_TEST_FIELDS_BASE: BloodTestFieldBase[] = [
+  { field: 'hba1c',            name: 'HbA1c',             metric: 'hba1c',             step: { si: '1',    conv: '0.1' } },
+  { field: 'creatinine',       name: 'Creatinine',        metric: 'creatinine',        step: { si: '1',    conv: '0.01' } },
+  { field: 'apoB',             name: 'ApoB',              metric: 'apob',              step: { si: '0.01', conv: '1' } },
+  { field: 'ldlC',             name: 'LDL Cholesterol',   metric: 'ldl',               step: { si: '0.1',  conv: '1' } },
+  { field: 'totalCholesterol', name: 'Total Cholesterol', metric: 'total_cholesterol', step: { si: '0.1',  conv: '1' } },
+  { field: 'hdlC',             name: 'HDL Cholesterol',   metric: 'hdl',               step: { si: '0.1',  conv: '1' } },
+  { field: 'triglycerides',    name: 'Triglycerides',     metric: 'triglycerides',     step: { si: '0.1',  conv: '1' } },
+  { field: 'lpa',              name: 'Lp(a)',             metric: 'lpa',               step: { si: '1',    conv: '1' } },
 ];
+
+function refHintToFieldHint(rh: { si: string; conv: string }): { si: string; conv: string } {
+  return { si: rh.si, conv: rh.conv };
+}
+
+const BLOOD_TEST_FIELDS: FieldConfig[] = BLOOD_TEST_FIELDS_BASE.map(({ field, name, metric, step }) => {
+  const ref: SexedRefHint | undefined = (REFERENCE_HINTS as Record<string, SexedRefHint | undefined>)[metric];
+  const out: FieldConfig = { field, name, step };
+  if (ref) {
+    out.hint = refHintToFieldHint(ref);
+    if (ref.male) out.hintMale = refHintToFieldHint(ref.male);
+    if (ref.female) out.hintFemale = refHintToFieldHint(ref.female);
+  }
+  return out;
+});
 
 interface InputPanelProps {
   inputs: Partial<HealthInputs>;
@@ -163,6 +156,8 @@ interface InputPanelProps {
   onToggleFieldUnit: (field: string) => void;
   isLoggedIn: boolean;
   previousMeasurements: ApiMeasurement[];
+  bloodTestHistory: ApiMeasurement[];
+  onSaveBloodTestBatch: (date: string, values: Record<string, number>) => Promise<void>;
   medications: ApiMedication[];
   onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];
@@ -173,6 +168,9 @@ interface InputPanelProps {
   onSaveLongitudinal: (bloodTestDate?: string) => void;
   isSavingLongitudinal: boolean;
   hasApiResponse: boolean;
+  // Forwarded to BloodTestTimeline so the parent (HealthTool) can flush
+  // typed-but-unsaved matrix values before kicking off the upload modal.
+  bloodTestFlushRef?: MutableRefObject<(() => Promise<void>) | null>;
   formStage: 1 | 2 | 3;
   lastSavedAt?: number | null;
   setShowUploadModal?: (show: boolean) => void;
@@ -186,10 +184,12 @@ interface InputPanelProps {
 export function InputPanel({
   inputs, onChange, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
-  isLoggedIn, previousMeasurements, medications, onMedicationChange,
+  isLoggedIn, previousMeasurements, bloodTestHistory, onSaveBloodTestBatch,
+  medications, onMedicationChange,
   screenings, onScreeningChange,
   supplements, onSupplementChange, onSupplementDelete,
   onSaveLongitudinal, isSavingLongitudinal, hasApiResponse,
+  bloodTestFlushRef,
   formStage,
   lastSavedAt,
   setShowUploadModal, loginUrl, activeSuggestionIds,
@@ -202,8 +202,8 @@ export function InputPanel({
   const focusById = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus());
   const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
 
-  // Expand/collapse state for display-first longitudinal fields
-  const [bloodTestsExpanded, setBloodTestsExpanded] = useState(false);
+  // Expand/collapse state for display-first longitudinal fields.
+  // (Blood tests have their own matrix UI in BloodTestTimeline; no expand state here.)
   const [expandedVitals, setExpandedVitals] = useState<Set<string>>(new Set());
   const [bpExpanded, setBpExpanded] = useState(false);
   const focusFieldRef = useRef<string | null>(null);
@@ -220,7 +220,7 @@ export function InputPanel({
         input.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     });
-  }, [bloodTestsExpanded, expandedVitals, bpExpanded]);
+  }, [expandedVitals, bpExpanded]);
 
   /** Prevent scroll wheel from changing number input values. */
   const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur();
@@ -363,7 +363,13 @@ export function InputPanel({
     return `${displayValue} ${unit} · ${formatShortDate(measurement.recordedAt)}`;
   };
 
-  const hasLongitudinalValues = LONGITUDINAL_FIELDS.some(f => inputs[f] !== undefined);
+  // Blood-test fields are committed via BloodTestTimeline's own Save button,
+  // so the global "Save New Values" button only cares about non-blood-test
+  // dirty values (weight, waist, BP).
+  const hasLongitudinalValues = LONGITUDINAL_FIELDS.some(f => {
+    if (inputs[f] === undefined) return false;
+    return !BLOOD_TEST_FIELDS.some(cfg => cfg.field === f);
+  });
 
   /** Check if a field has a previous saved measurement. */
   const hasPreviousValue = (field: string): boolean => {
@@ -371,20 +377,13 @@ export function InputPanel({
     return !!metric && previousMeasurements.some(m => m.metricType === metric);
   };
 
-  /** Whether any blood test has saved data (triggers collapsed view). */
-  const hasAnyBloodTestData = isLoggedIn && BLOOD_TEST_FIELDS.some(cfg => hasPreviousValue(cfg.field));
-
   /** Whether any basic vital has saved data (for per-metric collapse). */
   const hasBpPreviousData = isLoggedIn && (hasPreviousValue('systolicBp') || hasPreviousValue('diastolicBp'));
 
-  // Auto-collapse blood tests after save completes
+  // Auto-collapse vitals after save completes
   const wasSaving = useRef(false);
   useEffect(() => {
     if (wasSaving.current && !isSavingLongitudinal) {
-      // Save just finished — collapse if no unsaved values remain
-      if (bloodTestsExpanded && !BLOOD_TEST_FIELDS.some(cfg => inputs[cfg.field] !== undefined)) {
-        setBloodTestsExpanded(false);
-      }
       if (bpExpanded && inputs.systolicBp === undefined && inputs.diastolicBp === undefined) {
         setBpExpanded(false);
       }
@@ -500,9 +499,9 @@ export function InputPanel({
     const previousLabel = getPreviousLabel(field);
     const needsAttention = field === 'weightKg' && formStage === 2 && inputs.weightKg === undefined;
     // In expanded mode with previous data, show "Previous:" reference instead of placeholder
-    const isExpandedWithData = isLoggedIn && hasPreviousValue(field) && (
-      isBloodTest ? bloodTestsExpanded : expandedVitals.has(field)
-    );
+    // Blood tests no longer use this render path (they use BloodTestTimeline);
+    // the `isBloodTest` arg is retained for the legacy signature but always falsy here.
+    const isExpandedWithData = isLoggedIn && hasPreviousValue(field) && expandedVitals.has(field);
     return (
       <div className={`health-field${needsAttention ? ' field-attention' : ''}`} key={field}>
         <label htmlFor={field}>
@@ -1026,80 +1025,23 @@ export function InputPanel({
     </div>
   );
 
-  const renderBloodTests = () => {
-    const isCollapsed = hasAnyBloodTestData && !bloodTestsExpanded;
-
-    return (
-      <section className="health-section">
-        <div className="health-section-header">
-          <h3 className="health-section-title">Blood Test Results</h3>
-          {/* Upload lab results button */}
-          {isLoggedIn ? (
-            <button
-              className="btn-primary upload-lab-btn"
-              onClick={() => setShowUploadModal?.(true)}
-            >
-              Upload Health Records
-            </button>
-          ) : (
-            <div className="upload-lab-wrapper">
-              <button className="btn-primary upload-lab-btn upload-lab-btn--disabled" disabled>
-                Upload Health Records
-              </button>
-              <div className="upload-lab-tooltip">
-                <p>Upload health records to automatically extract blood tests, scan results, and more.</p>
-                {loginUrl && <a href={loginUrl} className="upload-lab-tooltip-link">Log in to use this feature &rarr;</a>}
-              </div>
-            </div>
-          )}
-          {bloodTestsExpanded && hasAnyBloodTestData && (
-            <button
-              className="add-results-btn--cancel"
-              onClick={() => setBloodTestsExpanded(false)}
-            >
-              Cancel
-            </button>
-          )}
-        </div>
-
-        {isCollapsed ? (
-          /* Collapsed view: show saved values as read-only rows */
-          <>
-            {BLOOD_TEST_FIELDS.map(cfg =>
-              renderCollapsedField(cfg, () => {
-                focusFieldRef.current = cfg.field;
-                setBloodTestsExpanded(true);
-              })
-            )}
-          </>
-        ) : (
-          /* Expanded / no-data view: show input fields */
-          <>
-            <DatePicker
-              value={bloodTestDate}
-              onChange={setBloodTestDate}
-              label="When were these tests done?"
-              className="blood-test-date"
-            />
-            <p className="health-section-desc">To enter results from different dates, save each batch separately.</p>
-
-            {BLOOD_TEST_FIELDS.map(cfg => renderLongitudinalField(cfg, true))}
-
-            {/* Section-level save button for blood tests (only when expanded from collapsed view) */}
-            {bloodTestsExpanded && hasAnyBloodTestData && isLoggedIn && hasApiResponse && BLOOD_TEST_FIELDS.some(cfg => inputs[cfg.field] !== undefined) && (
-              <button
-                className="btn-primary save-longitudinal-btn"
-                onClick={() => onSaveLongitudinal(dateValueToISO(bloodTestDate))}
-                disabled={isSavingLongitudinal}
-              >
-                {isSavingLongitudinal ? 'Saving...' : 'Save New Values'}
-              </button>
-            )}
-          </>
-        )}
-      </section>
-    );
-  };
+  const renderBloodTests = () => (
+    <BloodTestTimeline
+      bloodTestHistory={bloodTestHistory}
+      unitSystem={unitSystem}
+      unitOverrides={unitOverrides}
+      onToggleFieldUnit={onToggleFieldUnit}
+      onSaveBatch={onSaveBloodTestBatch}
+      onFieldChange={updateField}
+      isSaving={isSavingLongitudinal}
+      sex={inputs.sex}
+      onUploadClick={isLoggedIn ? () => setShowUploadModal?.(true) : undefined}
+      uploadDisabled={!isLoggedIn}
+      loginUrl={loginUrl}
+      hasApiResponse={hasApiResponse}
+      flushRef={bloodTestFlushRef}
+    />
+  );
 
   const renderMedications = () => (
     <>
@@ -2326,12 +2268,8 @@ export function InputPanel({
 
   const renderSaveButton = () => {
     if (!isLoggedIn || !hasLongitudinalValues) return null;
-    // When blood tests are expanded, they have their own section-level save button.
-    // Only hide the global button if ALL dirty fields are blood tests.
-    const hasNonBloodTestValues = LONGITUDINAL_FIELDS.some(f =>
-      inputs[f] !== undefined && !BLOOD_TEST_FIELDS.some(cfg => cfg.field === f)
-    );
-    if (bloodTestsExpanded && !hasNonBloodTestValues) return null;
+    // Blood-test values are handled by BloodTestTimeline's own Save button;
+    // they never appear in `inputs`, so this button covers weight/waist/BP only.
     return (
       <button
         className="btn-primary save-longitudinal-btn"
@@ -2369,9 +2307,11 @@ export function InputPanel({
         )}
       </div>
 
-      {/* Card 2: Blood Tests (stage 3+) */}
+      {/* Card 2: Blood Tests (stage 3+). `section-card--bt` zeros the
+          card's inner padding so the timeline matrix sits flush against
+          the card edges (column-fit math expects no inner padding). */}
       {formStage >= 3 && (
-        <div className="section-card stage-reveal">
+        <div className="section-card section-card--bt stage-reveal">
           {renderBloodTests()}
         </div>
       )}
