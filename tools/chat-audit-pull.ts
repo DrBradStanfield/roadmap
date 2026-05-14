@@ -74,6 +74,9 @@ interface Message {
   input_tokens: number | null;
   output_tokens: number | null;
   discord_message_id: string | null;
+  /** True when the LLM call failed and we substituted the user-facing fallback message.
+   *  Column is NOT NULL DEFAULT FALSE (migration 2026-05-15), so SELECT always returns a boolean. */
+  is_fallback: boolean;
 }
 
 interface RoutingEvent {
@@ -94,10 +97,11 @@ interface RoutingEvent {
 async function pullMessages(): Promise<Message[]> {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-  // Use PostgREST join syntax
+  // Use PostgREST join syntax. is_fallback is nullable to tolerate rows
+  // from before the 2026-05-15 column-add migration.
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/chat_messages?` +
-    `select=id,created_at,role,content,model,input_tokens,output_tokens,discord_message_id,` +
+    `select=id,created_at,role,content,model,input_tokens,output_tokens,discord_message_id,is_fallback,` +
     `chat_conversations!inner(id,platform,external_id)` +
     `&created_at=gte.${since}` +
     `&order=created_at.asc`,
@@ -122,6 +126,9 @@ async function pullMessages(): Promise<Message[]> {
     input_tokens: number | null;
     output_tokens: number | null;
     discord_message_id: string | null;
+    // PostgREST returns null for rows inserted before the column existed (if any
+    // slipped in pre-migration). Coerced to false in the map below.
+    is_fallback: boolean | null;
     user_id: string;
     chat_conversations: { id: string; platform: string; external_id: string | null };
   }>;
@@ -139,6 +146,7 @@ async function pullMessages(): Promise<Message[]> {
     input_tokens: r.input_tokens,
     output_tokens: r.output_tokens,
     discord_message_id: r.discord_message_id,
+    is_fallback: r.is_fallback ?? false,
   }));
 }
 
@@ -210,7 +218,10 @@ function renderConversations(messages: Message[], routing: RoutingEvent[]): stri
 
     for (const msg of msgs) {
       const ts = new Date(msg.created_at).toISOString().slice(11, 19);
-      const role = msg.role === 'user' ? '**User**' : '**Assistant**';
+      const isFallback = msg.role === 'assistant' && msg.is_fallback;
+      const role = msg.role === 'user'
+        ? '**User**'
+        : isFallback ? '**Assistant** · ⚠️ FALLBACK' : '**Assistant**';
 
       // Truncate very long responses for readability
       const content = msg.content.length > 2000
@@ -415,11 +426,13 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
       const r = routingById.get(m.message_id);
       return r && r.router_error;
     });
+    const hasFallback = msgs.some(m => m.role === 'assistant' && m.is_fallback);
 
     const turnsHtml = msgs.map(msg => {
       const ts = new Date(msg.created_at).toISOString().slice(11, 19);
       const isUser = msg.role === 'user';
       const route = isUser ? routingById.get(msg.message_id) : null;
+      const isFallback = !isUser && msg.is_fallback;
 
       let routerLine = '';
       if (route) {
@@ -438,6 +451,10 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
         modelLine = `<div class="model-meta muted">${escapeHtml(msg.model)} · ${msg.input_tokens ?? '?'}in / ${msg.output_tokens ?? '?'}out tokens</div>`;
       }
 
+      const fallbackBadge = isFallback
+        ? `<span class="fallback-badge" title="Main LLM failed or returned empty — this is the substituted fallback message">FALLBACK</span>`
+        : '';
+
       const triage = !isUser
         ? `<div class="triage" data-msg-id="${msg.message_id}">
              <button type="button" data-state="clean" class="triage-btn clean" title="Mark clean">✓</button>
@@ -450,10 +467,11 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
            </div>`
         : '';
 
-      return `<section class="turn ${isUser ? 'turn-user' : 'turn-assistant'}">
+      return `<section class="turn ${isUser ? 'turn-user' : 'turn-assistant'}${isFallback ? ' turn-fallback' : ''}">
         <div class="turn-header">
           <span class="turn-role">${isUser ? 'User' : 'Assistant'}</span>
           <span class="turn-time muted">${ts}</span>
+          ${fallbackBadge}
         </div>
         ${routerLine}
         ${modelLine}
@@ -463,7 +481,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
     }).join('');
 
     conversationsHtml.push(`
-      <article class="conv" data-conv-id="${convId}" data-platform="${platform}" data-router-error="${hasRouterError ? '1' : '0'}" style="--user-tint: ${userColor};">
+      <article class="conv" data-conv-id="${convId}" data-platform="${platform}" data-router-error="${hasRouterError ? '1' : '0'}" data-fallback="${hasFallback ? '1' : '0'}" style="--user-tint: ${userColor};">
         <header class="conv-header" tabindex="0" role="button" aria-expanded="false">
           <div class="conv-header-left">
             <span class="conv-num">#${convNum}</span>
@@ -473,6 +491,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
           <div class="conv-header-right">
             <span class="turn-count muted">${turnCount} turn${turnCount === 1 ? '' : 's'}</span>
             ${hasRouterError ? '<span class="router-err-badge" title="Router error in this conversation">router err</span>' : ''}
+            ${hasFallback ? '<span class="fallback-badge" title="A fallback message was served in this conversation">fallback</span>' : ''}
             <span class="conv-triage muted" data-conv-triage></span>
             <span class="conv-toggle">▾</span>
           </div>
@@ -571,6 +590,10 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
       padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
       background: #ffe8e8; color: var(--fail); white-space: nowrap;
     }
+    .fallback-badge {
+      padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;
+      background: var(--fail); color: white; white-space: nowrap; letter-spacing: 0.3px;
+    }
     .conv-triage[data-conv-triage]:not(:empty) {
       padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
     }
@@ -583,6 +606,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
     .turn { padding: 12px; margin: 0 0 8px; background: white; border-radius: 6px; }
     .turn-user { background: #f6f5f1; }
     .turn-assistant { background: white; }
+    .turn-fallback { background: #fff2f2; border: 1px solid var(--fail); }
     .turn-header { display: flex; gap: 12px; font-size: 12px; margin-bottom: 6px; }
     .turn-role { font-weight: 600; color: var(--text); }
     .turn-time { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
@@ -744,17 +768,20 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
       const platformSel = document.getElementById('platform-filter');
       const triageSel = document.getElementById('triage-filter');
       const routerErrChk = document.getElementById('router-err-only');
+      const fallbackChk = document.getElementById('fallback-only');
 
       function applyFilters() {
         const q = searchInput.value.toLowerCase();
         const plat = platformSel.value;
         const triageF = triageSel.value;
         const errOnly = routerErrChk.checked;
+        const fbOnly = fallbackChk.checked;
 
         document.querySelectorAll('.conv').forEach(conv => {
           let show = true;
           if (plat !== 'all' && conv.dataset.platform !== plat) show = false;
           if (errOnly && conv.dataset.routerError !== '1') show = false;
+          if (fbOnly && conv.dataset.fallback !== '1') show = false;
           if (q && !conv.textContent.toLowerCase().includes(q)) show = false;
           if (triageF !== 'all') {
             const turns = conv.querySelectorAll('.triage[data-msg-id]');
@@ -772,6 +799,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
       platformSel.addEventListener('change', applyFilters);
       triageSel.addEventListener('change', applyFilters);
       routerErrChk.addEventListener('change', applyFilters);
+      fallbackChk.addEventListener('change', applyFilters);
 
       // Export
       document.getElementById('export-btn').addEventListener('click', () => {
@@ -828,6 +856,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
         <span><strong>${messages.length}</strong> messages</span>
         <span><strong>${webTurns}</strong> web user turns</span>
         <span><strong>${discordTurns}</strong> Discord user turns</span>
+        ${messages.some(m => m.is_fallback) ? `<span><strong>${messages.filter(m => m.is_fallback).length}</strong> fallbacks</span>` : ''}
       </span></p>
       <p class="triage-counter" id="counter">Reviewed: <strong>0 / ${messages.filter(m => m.role === 'assistant').length}</strong></p>
       <div class="controls">
@@ -845,6 +874,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
           <option value="fail">Has ✗ failure</option>
         </select>
         <label><input type="checkbox" id="router-err-only"> Router errors only</label>
+        <label><input type="checkbox" id="fallback-only"> Fallbacks only</label>
         <button type="button" class="export-btn" id="export-btn">Copy triage as markdown</button>
       </div>
     </div>

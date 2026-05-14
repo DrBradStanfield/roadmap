@@ -18,6 +18,7 @@ import {
   matchDocumentTitle,
   loadMatchedArticlesFromHandles,
   getChatCompletion,
+  reportChatFallback,
   generateTitle,
   CHAT_MODEL,
   MAX_MESSAGE_LENGTH,
@@ -398,6 +399,17 @@ export async function action({ request }: ActionFunctionArgs) {
     // Pre-generate the assistant message UUID so chat_match_events can FK it cleanly.
     const assistantMessageId = crypto.randomUUID();
 
+    reportChatFallback({
+      completion,
+      platform: 'shopify',
+      conversationId: activeConversationId,
+      messagePreview: message,
+      latencyMs: tAfterLlm - tBeforeLlm,
+      matchedHandles: routerResult.handles,
+      userId: auth.userId,
+      isGuest: auth.isGuest,
+    });
+
     // Fire-and-forget: save assistant message, then (nested) log match event.
     // Nesting ensures the chat_messages FK is satisfied before match_events insert.
     auth.client
@@ -411,6 +423,7 @@ export async function action({ request }: ActionFunctionArgs) {
         input_tokens: completion.usage.inputTokens,
         output_tokens: completion.usage.outputTokens,
         model: CHAT_MODEL,
+        is_fallback: completion.isFallback,
       })
       .then(({ error: msgError }: { error: { message: string } | null }) => {
         if (msgError) {
@@ -467,15 +480,6 @@ export async function action({ request }: ActionFunctionArgs) {
       cacheRead: completion.usage.cacheReadTokens,
       cacheCreation: completion.usage.cacheCreationTokens,
     });
-
-    if (routerResult.handles.length > 0 && !completion.content) {
-      console.warn(JSON.stringify({
-        evt: 'chat_silent_drop',
-        conversationId: activeConversationId,
-        matchedHandles: routerResult.handles,
-        inputTokens: completion.usage.inputTokens,
-      }));
-    }
 
     console.log(JSON.stringify({
       evt: 'chat_timing',

@@ -13,12 +13,19 @@ import {
   getChatCompletion,
   loadMatchedArticlesFromHandles,
 } from './chat.server';
+import type { ChatFailureMode } from './chat.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION } from './chat-router.server';
 import type { AnthropicUsage } from './anthropic.server';
 
 export interface PlatformCompletionResult {
   content: string;
   usage: AnthropicUsage;
+  /** True when the main-LLM call failed/empty and a fallback message was substituted.
+   *  Callers must propagate to their persistence layer (chat_messages.is_fallback) AND
+   *  to reportChatFallback() for the Sentry alert. */
+  isFallback: boolean;
+  failureMode?: ChatFailureMode;
+  errorDetail?: string;
   router: {
     handles: string[];
     latencyMs: number;
@@ -74,6 +81,9 @@ export async function platformChatCompletion(params: {
   return {
     content: completion.content,
     usage: completion.usage,
+    isFallback: completion.isFallback,
+    failureMode: completion.failureMode,
+    errorDetail: completion.errorDetail,
     router: {
       handles: routerResult.handles,
       latencyMs: routerResult.latencyMs,

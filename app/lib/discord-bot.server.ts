@@ -17,6 +17,7 @@ import {
 } from 'discord.js';
 import * as Sentry from '@sentry/remix';
 import { platformChatCompletion } from './platform-chat.server';
+import { reportChatFallback } from './chat.server';
 import { generateTitle } from './chat.server';
 import { supabaseAdmin } from './supabase.server';
 import { createRateLimiter } from './rate-limiter';
@@ -259,9 +260,24 @@ async function handleMessage(message: GuildMessage): Promise<void> {
 
     const truncatedInput = strippedContent.slice(0, DISCORD_MAX_MESSAGE_CHARS);
 
+    const tBeforeLlm = Date.now();
     const result = await platformChatCompletion({
       message: truncatedInput,
       history,
+    });
+    const tAfterLlm = Date.now();
+
+    // Fire the shared fallback reporter (no-op when result.isFallback is false).
+    // Without this, Discord fallbacks would silently miss Sentry alerts — the
+    // shopify path covers itself in api.chat.ts via the same helper.
+    reportChatFallback({
+      completion: result,
+      platform: 'discord',
+      conversationId: conversationId ?? null,
+      messagePreview: truncatedInput,
+      latencyMs: tAfterLlm - tBeforeLlm,
+      matchedHandles: result.router.handles,
+      authorTag: message.author.tag,
     });
 
     if (typingInterval) {
@@ -298,6 +314,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       assistantContent: result.content,
       assistantDiscordMessageIds: sentMessages.map(m => m.id),
       usage: result.usage,
+      isFallback: result.isFallback,
       router: result.router,
       contextFirst: history.find(m => m.role === 'user')?.content,
       contextRecent: history.filter(m => m.role === 'user').slice(-3).map(m => m.content),
@@ -506,6 +523,7 @@ interface PersistParams {
   assistantContent: string;
   assistantDiscordMessageIds: string[];
   usage: { inputTokens: number; outputTokens: number; cacheCreationTokens: number; cacheReadTokens: number };
+  isFallback: boolean;
   router: {
     handles: string[];
     latencyMs: number;
@@ -583,6 +601,7 @@ async function persistConversation(p: PersistParams): Promise<void> {
       output_tokens: p.usage.outputTokens,
       model: CHAT_MODEL_TAG,
       discord_message_id: firstSentId,
+      is_fallback: p.isFallback,
     });
   if (asstErr) {
     Sentry.captureException(new Error('Discord: failed to save assistant message'), {

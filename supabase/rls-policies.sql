@@ -1044,6 +1044,24 @@ CREATE POLICY "Users can create own match events"
 
 GRANT INSERT ON chat_match_events TO authenticated;
 
+-- ===== chat_messages.is_fallback (2026-05-15) =====
+-- When the main LLM call fails (API error/timeout) or returns empty content,
+-- the chatbot substitutes a friendly fallback message instead of returning a
+-- 500. Those substituted rows are flagged here so audits can distinguish them
+-- from real bot replies. Set by both api.chat.ts (web) and
+-- discord-bot.server.ts (Discord) via the shared reportChatFallback() helper
+-- in app/lib/chat.server.ts.
+
+ALTER TABLE chat_messages
+  ADD COLUMN IF NOT EXISTS is_fallback BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Partial index — sparse-true assumption; only the (rare) fallback rows are
+-- indexed for fast audit queries. If fallback rate ever exceeds ~5% sustained,
+-- Anthropic is broken and we have bigger problems.
+CREATE INDEX IF NOT EXISTS idx_chat_messages_fallback
+  ON chat_messages (created_at DESC)
+  WHERE is_fallback = TRUE;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

@@ -514,9 +514,24 @@ export function buildConversationMessages(
 // Main chat completion
 // ---------------------------------------------------------------------------
 
+/**
+ * User-facing message when the main LLM call fails or returns no content.
+ * Exported so api.chat.ts and tests can reference the exact string.
+ */
+export const FALLBACK_RESPONSE =
+  "Sorry — I'm having trouble responding right now. Please try again, or email brad@drstanfield.com if it keeps happening.";
+
+export type ChatFailureMode = 'api-error' | 'empty-response';
+
 export interface ChatCompletionResult {
   content: string;
   usage: AnthropicUsage;
+  /** True when the LLM call failed or returned empty and we substituted the fallback message. */
+  isFallback: boolean;
+  /** Populated only when isFallback is true. */
+  failureMode?: ChatFailureMode;
+  /** The original error message, if any — for Sentry context. Not shown to users. */
+  errorDetail?: string;
 }
 
 export async function getChatCompletion(
@@ -531,12 +546,91 @@ export async function getChatCompletion(
     messages,
   };
 
-  const result = await callAnthropicWithUsage(body);
+  try {
+    const result = await callAnthropicWithUsage(body);
+    // Empty-response check: API returned 200 but no usable text. Treated as a
+    // failure mode distinct from API errors — different cause, same UX (fallback).
+    if (!result.content || result.content.trim().length === 0) {
+      return {
+        content: FALLBACK_RESPONSE,
+        usage: result.usage,
+        isFallback: true,
+        failureMode: 'empty-response',
+      };
+    }
+    return {
+      content: result.content,
+      usage: result.usage,
+      isFallback: false,
+    };
+  } catch (err) {
+    // API errors (timeout, 5xx, network, malformed response). fetchAnthropicRaw
+    // already Sentry-captures the low-level error; reportChatFallback() below
+    // adds chat-specific context from the call site (web vs Discord).
+    const errorDetail = err instanceof Error ? err.message : String(err);
+    return {
+      content: FALLBACK_RESPONSE,
+      // Usage is unknown when the call failed before returning — zero it out so
+      // downstream logging doesn't mis-charge.
+      usage: { inputTokens: 0, outputTokens: 0, cacheCreationTokens: 0, cacheReadTokens: 0 },
+      isFallback: true,
+      failureMode: 'api-error',
+      errorDetail,
+    };
+  }
+}
 
-  return {
-    content: result.content,
-    usage: result.usage,
+/**
+ * Capture a main-LLM fallback to Sentry with chat-specific context.
+ *
+ * Called from BOTH the web path (api.chat.ts) and the Discord path
+ * (discord-bot.server.ts via platform-chat.server.ts). Without this shared
+ * helper, Discord fallbacks silently miss Sentry alerts and the audit-tool
+ * is_fallback flag.
+ *
+ * No-op when completion.isFallback is false — safe to call unconditionally.
+ *
+ * Failure-mode handling:
+ *  - 'api-error' (5xx/timeout/network) → captureException at level 'error'.
+ *    Sentry groups by exception, matching the surrounding pattern in
+ *    api.chat.ts and the low-level capture in anthropic.server.ts.
+ *  - 'empty-response' (200 with whitespace-only content) → captureMessage at
+ *    level 'warning'. Different cause, lower urgency, no exception to bind to.
+ *
+ * errorDetail is truncated to 500 chars to limit PII exposure — Anthropic 400
+ * responses can echo prompt content.
+ */
+export function reportChatFallback(params: {
+  completion: ChatCompletionResult;
+  platform: 'shopify' | 'discord';
+  conversationId: string | null;
+  messagePreview: string;
+  latencyMs: number;
+  matchedHandles: string[];
+  userId?: string;
+  isGuest?: boolean;
+  authorTag?: string;
+}): void {
+  if (!params.completion.isFallback) return;
+  const failureMode = params.completion.failureMode ?? 'unknown';
+  const errorDetail = params.completion.errorDetail?.slice(0, 500);
+  const tags = { feature: 'chat', subsystem: 'main-llm', failureMode, platform: params.platform };
+  const extras = {
+    conversationId: params.conversationId,
+    platform: params.platform,
+    userId: params.userId,
+    isGuest: params.isGuest,
+    authorTag: params.authorTag,
+    messagePreview: params.messagePreview.slice(0, 100),
+    latencyMs: params.latencyMs,
+    matchedHandles: params.matchedHandles,
+    errorDetail,
   };
+  if (failureMode === 'api-error') {
+    Sentry.captureException(new Error(errorDetail ?? 'main-LLM api-error'), { level: 'error', tags, extra: extras });
+  } else {
+    Sentry.captureMessage(`Chat: main-LLM fallback (${failureMode})`, { level: 'warning', tags, extra: extras });
+  }
 }
 
 // ---------------------------------------------------------------------------
