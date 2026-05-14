@@ -2,7 +2,7 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-r
 import * as Sentry from '@sentry/remix';
 import { z } from 'zod';
 import { authenticate } from '../shopify.server';
-import { getCustomerId, getCustomerInfo, tagShopifyCustomer } from '../lib/route-helpers.server';
+import { getCustomerId, getCustomerInfo, tagShopifyCustomer, ensureKlaviyoSubscribed } from '../lib/route-helpers.server';
 import { migrateGuestChat } from '../lib/supabase.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 import { createRateLimiter } from '../lib/rate-limiter';
@@ -212,6 +212,7 @@ export async function action({ request }: ActionFunctionArgs) {
         const sent = await checkAndSendWelcomeEmail(userId, client);
         // Fire-and-forget: tag Shopify customer for Klaviyo audiences
         tagShopifyCustomer(admin, customerId).catch(() => {});
+        ensureKlaviyoSubscribed(customerInfo.email).catch(() => {});
         return json({ success: sent });
       }
 
@@ -373,6 +374,7 @@ export async function action({ request }: ActionFunctionArgs) {
         // Fire-and-forget: welcome email + tagging
         checkAndSendWelcomeEmail(userId, client).catch(err => Sentry.captureException(err));
         tagShopifyCustomer(admin, customerId).catch(() => {});
+        ensureKlaviyoSubscribed(customerInfo.email).catch(() => {});
 
         return json({
           success: true,
@@ -404,6 +406,7 @@ export async function action({ request }: ActionFunctionArgs) {
       });
       // Fire-and-forget: tag Shopify customer for Klaviyo audiences
       tagShopifyCustomer(admin, customerId).catch(() => {});
+      ensureKlaviyoSubscribed(customerInfo.email).catch(() => {});
 
       return json({ success: true, data: toApiMeasurement(measurement) });
     }

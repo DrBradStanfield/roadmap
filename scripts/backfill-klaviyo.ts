@@ -144,14 +144,10 @@ async function* fetchTaggedCustomers(): AsyncGenerator<ShopifyCustomer[]> {
 // Klaviyo: bulk subscribe a batch of profiles
 // ---------------------------------------------------------------------------
 
-interface KlaviyoProfile {
-  email: string;
-  firstName?: string | null;
-  lastName?: string | null;
-}
-
-async function klaviyoBulkSubscribe(profiles: KlaviyoProfile[]): Promise<void> {
-  if (!profiles.length) return;
+// Note: the bulk-subscribe endpoint only accepts `email` + `subscriptions` per
+// profile. Names and other properties belong on a separate Profiles API call.
+async function klaviyoBulkSubscribe(emails: string[]): Promise<void> {
+  if (!emails.length) return;
   const res = await fetch('https://a.klaviyo.com/api/profile-subscription-bulk-create-jobs/', {
     method: 'POST',
     headers: {
@@ -165,12 +161,10 @@ async function klaviyoBulkSubscribe(profiles: KlaviyoProfile[]): Promise<void> {
         type: 'profile-subscription-bulk-create-job',
         attributes: {
           profiles: {
-            data: profiles.map((p) => ({
+            data: emails.map((email) => ({
               type: 'profile',
               attributes: {
-                email: p.email,
-                ...(p.firstName ? { first_name: p.firstName } : {}),
-                ...(p.lastName ? { last_name: p.lastName } : {}),
+                email,
                 subscriptions: { email: { marketing: { consent: 'SUBSCRIBED' } } },
               },
             })),
@@ -201,7 +195,7 @@ async function main() {
   let totalSkippedUnsubscribed = 0;
   let totalSubscribed = 0;
   let pageNum = 0;
-  let pendingBatch: KlaviyoProfile[] = [];
+  let pendingBatch: string[] = [];
 
   async function flushBatch() {
     if (!pendingBatch.length) return;
@@ -215,7 +209,7 @@ async function main() {
       }
     } else {
       totalSubscribed += pendingBatch.length;
-      console.log(`  [dry run] Would subscribe ${pendingBatch.length}: ${pendingBatch.slice(0, 3).map((p) => p.email).join(', ')}${pendingBatch.length > 3 ? ', …' : ''}`);
+      console.log(`  [dry run] Would subscribe ${pendingBatch.length}: ${pendingBatch.slice(0, 3).join(', ')}${pendingBatch.length > 3 ? ', …' : ''}`);
     }
     pendingBatch = [];
   }
@@ -237,7 +231,7 @@ async function main() {
         continue;
       }
       totalEligible++;
-      pendingBatch.push({ email: c.email, firstName: c.firstName, lastName: c.lastName });
+      pendingBatch.push(c.email);
       if (pendingBatch.length >= KLAVIYO_BATCH_SIZE) {
         await flushBatch();
       }
