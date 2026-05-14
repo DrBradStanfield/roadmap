@@ -24,8 +24,22 @@
  * also calls the main LLM (Haiku) with the full production context: blocks 1-3
  * (system prompt + algorithm + products knowledge) PLUS matched pathway/blog content
  * loaded from the handles the router returned (block 4). The check runs N times
- * (matching --runs) and requires majority pass so a single stochastic blip doesn't
- * flip the test. Does not load user data.
+ * (matching --answer-check-runs, default = --runs) and requires majority pass so
+ * a single stochastic blip doesn't flip the test. Does not load user data.
+ *
+ * COST DISCIPLINE — read this before iterating, the audit cycle of 2026-05-14/15
+ * burned ~$30 because of these mistakes:
+ *   - DEFAULT TO --category WHEN ITERATING. A full suite re-run is 30 queries × 4+
+ *     LLM calls = 120+ calls. A single --category run is 1-3 queries. 30-50x
+ *     cheaper per iteration. Only run the full suite at end-of-session.
+ *   - DEFAULT TO --answer-check-runs 1 WHEN ITERATING. The default 3 triples
+ *     answer-check cost. Only use 3 for the final verification.
+ *   - READ THE BOT'S RESPONSE BEFORE RE-EDITING TESTS. Use --verbose and look at
+ *     what the bot actually produced. Rewriting must_mention/must_not_mention
+ *     blindly leads to multiple re-runs that each cost real money.
+ *   - EDITING THE SYSTEM PROMPT INVALIDATES THE 5-MIN ANTHROPIC PROMPT CACHE.
+ *     Every re-run after a prompt edit pays cache-write price (1.25x base) instead
+ *     of cache-read (0.10x base). Batch prompt edits where possible.
  *
  * Exit code 0 if acceptance bar met, 1 otherwise.
  */
