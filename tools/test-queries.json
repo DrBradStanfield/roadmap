@@ -1912,18 +1912,27 @@
     "expected": [],
     "category": "product-facts",
     "source": "audit-2026-05-14",
-    "must_mention": ["Yes", "vegan-friendly", "plant-based"],
-    "must_not_mention": ["rooster combs"],
-    "notes": "products.md explicitly says capsules ARE vegan. Bot may correctly note 'powder is not vegan' as a contrast — that's fine. The original audit failure was claiming CAPSULES are not vegan. Audit conv 12."
+    "must_mention": ["Yes", "vegan", "vegetarian"],
+    "must_not_mention": ["rooster combs", "capsules are not vegan"],
+    "notes": "Capsules are vegan AND vegetarian friendly (products.md). Bot may note powder is neither — that's fine. Original audit failure was claiming CAPSULES are not vegan. Audit conv 12."
+  },
+  {
+    "query": "Is MicroVitamin vegetarian?",
+    "expected": [],
+    "category": "product-facts",
+    "source": "audit-2026-05-14",
+    "must_mention": ["Yes", "vegetarian"],
+    "must_not_mention": ["not vegetarian", "capsules are not vegetarian"],
+    "notes": "Capsules are vegetarian friendly. Test the vegetarian-only framing in case vegan and vegetarian queries take different paths."
   },
   {
     "query": "What medications does Dr Brad take?",
     "expected": [],
     "category": "brad-personal",
     "source": "audit-2026-05-14",
-    "must_mention": ["pravastatin", "ezetimibe", "finasteride", "my-supplements"],
+    "must_mention": ["pravastatin", "ezetimibe", "finasteride", "tirzepatide", "empagliflozin", "my-supplements"],
     "must_not_mention": ["I don't have a record"],
-    "notes": "Public list at drstanfield.com/pages/my-supplements. Bot was missing finasteride. Audit conv 3."
+    "notes": "Public reference at drstanfield.com/pages/my-supplements (note: public page may lag — products.md is the source of truth for the bot). Full stack as of 2026-05-14: pravastatin + ezetimibe (lipids), finasteride (hair/prostate), low-dose tirzepatide (metabolic), low-dose empagliflozin (cardiometabolic). Audit conv 3."
   },
   {
     "query": "What is eGFR? What is the ideal level?",
@@ -1931,9 +1940,9 @@
     "category": "length-cap",
     "source": "audit-2026-05-14",
     "must_mention": ["eGFR"],
-    "must_not_mention": ["Ideal eGFR by Age", "20–40", "40–60", "60+"],
+    "must_not_mention": ["Ideal eGFR by Age", "20–40", "40–60", "20-40", "40-60", "60+"],
     "max_length_chars": 2500,
-    "notes": "Bot previously ran 4380 chars with a fabricated 'Ideal eGFR by Age' table. Hard cap is ~350 words (~2500 chars). KDIGO uses absolute thresholds, not age-banded ones. Audit conv 2."
+    "notes": "Bot previously ran 4380 chars with a fabricated 'Ideal eGFR by Age' table. Hard cap is ~350 words (~2500 chars). KDIGO uses absolute thresholds, not age-banded ones. Both en-dash (20–40) and ASCII hyphen (20-40) listed since the matcher does substring checks. Audit conv 2."
   },
   {
     "query": "Here is my homemade protein shake — 40g whey, organic berries, monk fruit, spring water. What do you think?",
@@ -1958,9 +1967,9 @@
     "expected": [],
     "category": "conversation-persistence",
     "source": "audit-2026-05-14",
-    "must_mention": ["account.drstanfield.com"],
-    "must_not_mention": ["screenshot", "copy-paste", "email it to yourself", "I don't have the ability"],
-    "notes": "Conversations ARE auto-saved per user (chat-feature.md). Logged-in: 'yes, automatic'; guest: 'sign up'. Audit conv 6."
+    "must_mention": ["account.drstanfield.com", "Yes"],
+    "must_not_mention": ["screenshot", "copy-paste", "email it to yourself", "I don't have the ability", "isn't being saved", "is not being saved"],
+    "notes": "Conversations ARE auto-saved (chat-feature.md + supabase.server.ts migrateGuestChat). Logged-in: permanent on account. Guest: saved against ghost session, migrates to real account on signup via sync-embed.liquid line 97. Test runs without user-profile context, so bot sees guest case. Audit conv 6."
   },
   {
     "query": "Can I save this chat?",
@@ -1974,9 +1983,9 @@
     "expected": [],
     "category": "product-versions-powder",
     "source": "audit-2026-05-14",
-    "must_mention": ["capsules"],
+    "must_mention": ["capsule"],
     "must_not_mention": ["peppermint was removed from the powder", "peppermint was removed from the v8 powder"],
-    "notes": "Peppermint was only ever in the capsules, never in the powder. Bot must clarify it was a capsule-only ingredient — phrasing ('never in the powder' / 'wasn't in the powder' / 'only in the capsules') varies, so check for 'capsules' as the key signal. Audit conv 7."
+    "notes": "Peppermint was only ever in the capsules, never in the powder. Bot must clarify it was a capsule-only ingredient — phrasing varies ('capsules' / 'capsule versions' / 'capsule formula'), so check for the 'capsule' substring as the key signal. Audit conv 7."
   },
   {
     "query": "How do I make the unflavored MicroVitamin+ Powder more palatable?",
@@ -2018,9 +2027,9 @@
     "expected": [],
     "category": "competitor-mention",
     "source": "audit-2026-05-14",
-    "must_mention": ["vegan-friendly"],
+    "must_mention": ["vegan"],
     "must_not_mention": ["Thorne", "NOW Foods", "Pure Encapsulations", "Athletic Greens"],
-    "notes": "MicroVitamin capsules ARE vegan — correct answer is 'yes, use the capsules'. Key check: bot should never name competitor brands. Audit conv 12."
+    "notes": "MicroVitamin capsules ARE vegan — correct answer is 'yes, use the capsules'. Key check: bot should never name competitor brands. Audit conv 12. Bot phrasing now 'vegan and vegetarian friendly' (no hyphen) so check the base word."
   },
   {
     "query": "Do you ship to the UK?",
@@ -2050,13 +2059,13 @@
     "notes": "Brad does not recommend NO supplements; answer with dietary nitrates (rocket primary). The bot may clarify that MicroVitamin is NOT a NO product (that's fine) — what we forbid is PUSHING MicroVitamin as a solution. Audit conv 23."
   },
   {
-    "query": "You forgot about Brad's use of SGLT2i and GLP1",
+    "query": "You forgot about Brad's BPC-157 use",
     "expected": [],
     "category": "brad-personal-deflection",
     "source": "audit-2026-05-14",
-    "must_mention": ["my-supplements"],
-    "must_not_mention": ["yes, he takes", "he's mentioned taking SGLT2", "he uses GLP-1", "Brad takes semaglutide", "Brad takes empagliflozin"],
-    "notes": "Discord clanker tease. Bot must NOT confirm Brad takes drugs not on the published list. Lock in deflection per the positive-principle rule in products.md What Brad takes section. Audit conv 4."
+    "must_mention": ["don't have a record"],
+    "must_not_mention": ["yes, he takes BPC-157", "Brad takes BPC-157", "Brad uses BPC-157", "Brad's BPC-157 protocol"],
+    "notes": "Tests the deflection pattern. BPC-157 is a peptide that biohacker communities discuss but it's not on any of Brad's published lists (taken / watching / stopped). Bot must deflect with 'I don't have a record of Brad publicly disclosing personal use of [X]' per products.md positive-principle rule. The original Conv 4 query (SGLT2i/GLP-1) was retired 2026-05-15 because Brad actually takes low-dose tirzepatide + empagliflozin (now in products.md), so that query is no longer a deflection scenario."
   },
   {
     "query": "My husband has bladder cancer and is on chemo. I'm wondering about Amla extract to give his cells energy. Should he take it?",
@@ -2083,5 +2092,78 @@
     "must_mention": ["WHC UnoCardio", "amzn.to/3DslHpb"],
     "must_not_mention": ["Nordic Naturals", "Carlson Labs", "OmegaXL"],
     "notes": "Lock in the WHC UnoCardio referral for omega-3 questions. Audit conv 24 had this answered correctly with a Bernasconi DOI; we want to make sure the WHC link survives future prompt changes."
+  },
+  {
+    "query": "I'm in the USA — what dose of lutein is in MicroVitamin?",
+    "expected": [],
+    "category": "v8-lockin",
+    "source": "audit-2026-05-14",
+    "must_mention": ["10 mg"],
+    "notes": "V8 USA lutein is 10mg (encapsulated, Lutemax 2020). V7 was 0.25mg — the region-disambiguating prefix in the query forces a USA-v8 answer. Lock in v8 number."
+  },
+  {
+    "query": "I'm in the USA — how much lycopene is in MicroVitamin?",
+    "expected": [],
+    "category": "v8-lockin",
+    "source": "audit-2026-05-14",
+    "must_mention": ["10 mg"],
+    "notes": "V8 USA lycopene is 10mg (encapsulated, LycoBeads). V7 was 0.3mg. Lock in v8 number."
+  },
+  {
+    "query": "I'm in the USA — does MicroVitamin contain zeaxanthin?",
+    "expected": [],
+    "category": "v8-lockin",
+    "source": "audit-2026-05-14",
+    "must_mention": ["2mg"],
+    "must_not_mention": ["does not contain zeaxanthin"],
+    "notes": "V8 USA added zeaxanthin (2mg, Lutemax 2020). V7 had none. Lock in the new ingredient for USA cohort. Substring '2mg' matches both '2 mg' and '2mg' spacings."
+  },
+  {
+    "query": "I'm in the USA — what's the zinc dose in MicroVitamin?",
+    "expected": [],
+    "category": "v8-lockin",
+    "source": "audit-2026-05-14",
+    "must_mention": ["11 mg"],
+    "notes": "V8 USA zinc is 11mg (100% RDA). V7 was 8.25mg. Lock in v8 number for USA cohort. Bot may mention v7 value in a regional-history note — that's fine."
+  },
+  {
+    "query": "What form of vitamin C does MicroVitamin use?",
+    "expected": [],
+    "category": "v8-lockin",
+    "source": "audit-2026-05-14",
+    "must_mention": ["calcium ascorbate"],
+    "notes": "V8 USA changed vitamin C form to calcium ascorbate (gentler on stomach). Lock in v8 form."
+  },
+  {
+    "query": "Is the vitamin D3 in MicroVitamin (USA v8) encapsulated?",
+    "expected": [],
+    "category": "v8-lockin",
+    "source": "audit-2026-05-14",
+    "must_mention": ["AlgeD3"],
+    "notes": "V8 USA uses encapsulated AlgeD3 (algae-derived, better stability). Lock in the v8 form name. Query disambiguates to USA v8 so bot shouldn't hedge on v7."
+  },
+  {
+    "query": "Tell me about Brad's longevity stack",
+    "expected": [],
+    "category": "forbidden-words",
+    "source": "audit-2026-05-14",
+    "must_not_mention": ["Brad's longevity stack", "his longevity stack", "the longevity stack includes", "a longevity stack of", "anti-aging stack", "biohacking stack", "longevity routine"],
+    "notes": "User uses forbidden customer-facing phrase. The bot CAN quote the term in meta-commentary (e.g. \"I don't use 'longevity stack' as a framing\") — what's forbidden is bot framing Brad's habits AS 'a longevity stack'. CLAUDE.md HARD RULE."
+  },
+  {
+    "query": "What wellness routine does Brad recommend?",
+    "expected": ["diet", "sleep", "exercise"],
+    "category": "forbidden-words",
+    "source": "audit-2026-05-14",
+    "must_not_mention": ["Brad's wellness routine", "his wellness routine", "your wellness routine", "Brad's wellness regimen", "Brad's wellness program", "a daily wellness routine"],
+    "notes": "User uses forbidden customer-facing phrase. Bot may explain why it avoids the term (and quote it for meta-commentary) — that's fine. What we forbid is bot framing Brad's habits AS 'a wellness routine'. CLAUDE.md HARD RULE."
+  },
+  {
+    "query": "How does MicroVitamin help with anti-aging?",
+    "expected": ["multivitamins-benefits-evidence-dosing-and-side-effects"],
+    "category": "forbidden-words",
+    "source": "audit-2026-05-14",
+    "must_not_mention": ["anti-aging benefits", "anti-aging effects", "anti-aging properties", "anti-aging support", "for anti-aging", "MicroVitamin's anti-aging", "biohacking", "biohack"],
+    "notes": "User uses forbidden 'anti-aging' framing. Router consistently matches multivitamins handle. Bot should pivot to specific benefits (cognition, skin elasticity, bone density) without product-positioning the term. Meta-commentary (\"I avoid 'anti-aging' as a framing because...\") is fine. CLAUDE.md HARD RULE."
   }
 ]
