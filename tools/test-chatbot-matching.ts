@@ -21,9 +21,11 @@
  *   npx tsx tools/test-chatbot-matching.ts --answer-check   # also test generated answers
  *
  * --answer-check: for entries with must_mention/must_not_mention/max_length_chars,
- * also calls the main LLM (Haiku) with blocks 1-3 context (system prompt + algorithm
- * + products knowledge) and asserts the generated answer matches the constraints.
- * Approximates always-cached production context; does not load matched content or user data.
+ * also calls the main LLM (Haiku) with the full production context: blocks 1-3
+ * (system prompt + algorithm + products knowledge) PLUS matched pathway/blog content
+ * loaded from the handles the router returned (block 4). The check runs N times
+ * (matching --runs) and requires majority pass so a single stochastic blip doesn't
+ * flip the test. Does not load user data.
  *
  * Exit code 0 if acceptance bar met, 1 otherwise.
  */
@@ -58,9 +60,12 @@ const verbose = args.includes('--verbose');
 const categoryFilter = args.includes('--category') ? getArg('--category', '') : null;
 const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
 // When set, entries with must_mention/must_not_mention/max_length_chars also call
-// the main LLM to verify generated content (uses blocks 1-3: system prompt +
-// algorithm + products knowledge).
+// the main LLM to verify generated content. Loads blocks 1-3 (system prompt +
+// algorithm + products) AND matched pathway/blog content (block 4) so the bot has
+// the same context production does. Runs --answer-check-runs times (default = --runs,
+// usually 3) and requires majority pass. Set --answer-check-runs 1 to cut API spend.
 const answerCheckMode = args.includes('--answer-check');
+const answerCheckRuns = Math.max(1, parseInt(getArg('--answer-check-runs', String(runs)), 10));
 
 const apiKey = process.env.ANTHROPIC_API_KEY;
 if (!apiKey) {
@@ -70,9 +75,10 @@ if (!apiKey) {
 
 // ---------------------------------------------------------------------------
 // Answer-check context — loaded only when --answer-check is set
-// Approximates prompt cache blocks 1-3: system prompt + algorithm + products.
-// Does NOT load matched content (on-demand) or user data (per-user), so
-// results reflect what the chatbot knows from its always-cached context only.
+// Static portion: prompt cache blocks 1-3 (system prompt + algorithm + products).
+// Dynamic portion (per-query, in checkAnswer): block 4 matched pathway/blog
+// content, loaded via loadMatchedContent() from the routing intersection.
+// Does NOT load user data (per-user, would require a fake profile).
 // ---------------------------------------------------------------------------
 
 const ANSWER_MODEL = 'claude-haiku-4-5-20251001';
@@ -110,6 +116,46 @@ const BLOG_INDEX: BlogIndexEntry[] = JSON.parse(
 );
 
 const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
+
+// Mirrors chat.server.ts loadMatchedArticlesFromHandles. Cap matches production (80K chars ≈ 20K tokens).
+const MAX_BLOG_CHARS = 80_000;
+const matchedContentCache = new Map<string, string | null>();
+
+function getContentDir(handle: string): string {
+  const entry = BLOG_INDEX.find(a => a.handle === handle);
+  if (entry?.type === 'guideline') return 'docs/guideline';
+  if (entry?.type === 'pathway') return 'docs/pathway';
+  return 'docs/blog';
+}
+
+function loadHandleContent(handle: string): string | null {
+  if (!/^[a-z0-9-]+$/.test(handle)) return null;
+  if (matchedContentCache.has(handle)) return matchedContentCache.get(handle) ?? null;
+  try {
+    const content = fs.readFileSync(
+      path.join(REPO_ROOT, getContentDir(handle), `${handle}.md`), 'utf-8',
+    );
+    matchedContentCache.set(handle, content);
+    return content;
+  } catch {
+    matchedContentCache.set(handle, null);
+    return null;
+  }
+}
+
+function loadMatchedContent(handles: string[]): string | null {
+  if (handles.length === 0) return null;
+  const parts: string[] = [];
+  let totalChars = 0;
+  for (const handle of handles) {
+    const content = loadHandleContent(handle);
+    if (!content) continue;
+    if (totalChars + content.length > MAX_BLOG_CHARS) break;
+    parts.push(content);
+    totalChars += content.length;
+  }
+  return parts.length > 0 ? parts.join('\n\n---\n\n') : null;
+}
 
 const TYPE_ORDER: Record<string, number> = { pathway: 0, guideline: 1, reference: 2, article: 3 };
 
@@ -238,12 +284,16 @@ interface QueryResult {
   passed: boolean;
 }
 
-async function checkAnswer(query: string, mustMention: string[], mustNotMention: string[], maxLengthChars: number | undefined, retryOnRateLimit = true): Promise<AnswerCheckResult> {
+async function checkAnswer(query: string, mustMention: string[], mustNotMention: string[], maxLengthChars: number | undefined, matchedHandles: string[] = [], retryOnRateLimit = true): Promise<AnswerCheckResult> {
+  const matchedContent = loadMatchedContent(matchedHandles);
+  const system = matchedContent
+    ? `${ANSWER_SYSTEM_CONTEXT}\n\n---\n\n## Referenced Blog Articles\n\n${matchedContent}`
+    : ANSWER_SYSTEM_CONTEXT;
   const body = {
     model: ANSWER_MODEL,
     max_tokens: 800,
     temperature: 0,
-    system: ANSWER_SYSTEM_CONTEXT,
+    system,
     messages: [{ role: 'user', content: query }],
   };
 
@@ -262,10 +312,14 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
     const retryAfter = parseInt(res.headers.get('retry-after') ?? '30', 10);
     process.stdout.write(` [429, waiting ${retryAfter}s]`);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
-    return checkAnswer(query, mustMention, mustNotMention, maxLengthChars, false);
+    return checkAnswer(query, mustMention, mustNotMention, maxLengthChars, matchedHandles, false);
   }
 
-  if (!res.ok) return { passed: false, failures: [`API error ${res.status}`], response: '' };
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    const detail = body.slice(0, 200).replace(/\s+/g, ' ');
+    return { passed: false, failures: [`API error ${res.status}: ${detail}`], response: '' };
+  }
 
   const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
   const response = data.content?.find(c => c.type === 'text')?.text ?? '';
@@ -302,7 +356,20 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
 
   let answerCheck: AnswerCheckResult | null = null;
   if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || typeof q.max_length_chars === 'number')) {
-    answerCheck = await checkAnswer(q.query, q.must_mention ?? [], q.must_not_mention ?? [], q.max_length_chars);
+    const answerRuns: AnswerCheckResult[] = [];
+    for (let i = 0; i < answerCheckRuns; i++) {
+      answerRuns.push(await checkAnswer(q.query, q.must_mention ?? [], q.must_not_mention ?? [], q.max_length_chars, intersection));
+    }
+    const passCount = answerRuns.filter(r => r.passed).length;
+    const majority = Math.floor(answerCheckRuns / 2) + 1;
+    const overallPass = passCount >= majority;
+    answerCheck = {
+      passed: overallPass,
+      failures: overallPass
+        ? []
+        : answerRuns.flatMap((r, i) => r.passed ? [] : r.failures.map(f => `run ${i + 1}: ${f}`)),
+      response: answerRuns[answerRuns.length - 1].response,
+    };
   }
 
   const passed = routingPassed && (answerCheck === null || answerCheck.passed);

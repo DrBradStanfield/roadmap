@@ -1930,9 +1930,9 @@
     "expected": [],
     "category": "brad-personal",
     "source": "audit-2026-05-14",
-    "must_mention": ["pravastatin", "ezetimibe", "finasteride", "tirzepatide", "empagliflozin", "my-supplements"],
+    "must_mention": ["pravastatin", "ezetimibe", "finasteride", "tirzepatide", "empagliflozin", "off-label", "my-supplements"],
     "must_not_mention": ["I don't have a record"],
-    "notes": "Public reference at drstanfield.com/pages/my-supplements (note: public page may lag — products.md is the source of truth for the bot). Full stack as of 2026-05-14: pravastatin + ezetimibe (lipids), finasteride (hair/prostate), low-dose tirzepatide (metabolic), low-dose empagliflozin (cardiometabolic). Audit conv 3."
+    "notes": "Full stack as of 2026-05-15: pravastatin + ezetimibe (lipids), finasteride (hair/prostate), Tirzepatide 1.25mg/wk (off-label, food noise + BP), Empagliflozin 6.25mg/day (off-label, renal). CRITICAL: 'off-label' must appear — both Tirzepatide and Empagliflozin are taken against guidelines and the disclosure is a clinical-safety claim. Audit conv 3."
   },
   {
     "query": "What is eGFR? What is the ideal level?",
