@@ -33,21 +33,21 @@ A surge-detection trending sidebar on the blog index, rendered in a newspaper-st
 
 **Formula:** `score = current_7d_sessions / baseline_weekly_sessions`
 
-Where `baseline_weekly_sessions = prior_60d_sessions / 60 * 7`.
+Where `baseline_weekly_sessions = prior_baseline_sessions / BASELINE_WINDOW_DAYS * 7`.
 
 **Constants** (in [app/lib/trending-cron.server.ts](../app/lib/trending-cron.server.ts)):
 
 | Constant | Value | Purpose |
 |---|---|---|
-| `MIN_ARTICLE_AGE_DAYS` | 60 | Drop newly-published articles (no real baseline yet) |
+| `MIN_ARTICLE_AGE_DAYS` | 45 | Drop newly-published articles. Must be ≥ the leading edge of the baseline query (-45d), or the window predates publication and the ratio is inflated by zero-traffic days |
 | `MIN_CURRENT_7D_VIEWS` | 50 | Floor: prevent low-traffic noise from gaming the ratio |
-| `MIN_BASELINE_WEEKLY_VIEWS` | 10 | Floor: prevent tiny-baseline articles from inflating the ratio |
-| `BASELINE_WINDOW_DAYS` | 60 | Window length used as denominator (must match query SINCE/UNTIL) |
+| `MIN_BASELINE_WEEKLY_VIEWS` | 12 | Floor: prevent tiny-baseline articles from inflating the ratio (bumped from 10 to compensate for the shorter 37-day baseline) |
+| `BASELINE_WINDOW_DAYS` | 37 | Window length used as denominator (must match query SINCE/UNTIL) |
 | `TOP_N` | 5 | How many entries to write to the metafield |
 | `TARGET_HOUR_UTC` | 3 | Cron tick hour (offset from reminder cron at 8) |
 | `CRON_INTERVAL_MS` | 60 min | Interval check; only proceeds at TARGET_HOUR_UTC |
 
-**Pure function:** `computeTrending(current7dRows, prior60dRows, blogIndex, now)` — testable without network.
+**Pure function:** `computeTrending(current7dRows, priorBaselineRows, blogIndex, now)` — testable without network.
 
 **Locale aggregation:** URLs like `/en-au/blogs/articles/foo` and `/blogs/articles/foo` are merged via regex `^/(?:[a-z-]+/)?blogs/articles/([\w-]+)/?$` so future markets aggregate automatically.
 
@@ -62,7 +62,7 @@ Mirrors the reminder cron skeleton:
 5. On lock acquisition: query Shopify Admin, compute, write metafield.
 6. Sentry instrumentation: `tags: { feature: 'trending_cron' }`.
 
-The lock is row-keyed by `lock_name`. Reminder uses `'reminder_cron'`, trending uses `'trending_cron'`. Lock names are typed as `CronLockName` (union) — see [app/lib/supabase.server.ts:1747](../app/lib/supabase.server.ts#L1747). New crons must add their lock name to the union AND seed a row in [supabase/rls-policies.sql:512](../supabase/rls-policies.sql#L512); a typo silently disables the cron.
+The lock is row-keyed by `lock_name`. Reminder uses `'reminder_cron'`, trending uses `'trending_cron'`. Lock names are typed as `CronLockName` (union) — see [app/lib/supabase.server.ts:1747](../app/lib/supabase.server.ts#L1747). New crons must add their lock name to the union AND seed a row alongside the existing entries in [supabase/rls-policies.sql](../supabase/rls-policies.sql) (around line 511); a typo silently disables the cron.
 
 ## ShopifyQL query
 
@@ -75,7 +75,7 @@ ORDER BY sessions DESC
 LIMIT 500
 ```
 
-(Two queries run — one for the 7-day current window, one for the prior 60 days.)
+(Two queries run — one for the 7-day current window `SINCE -8d UNTIL -1d`, one for the prior baseline `SINCE -45d UNTIL -9d`.)
 
 **Why this exact shape:**
 - Dataset names available in 2025-10 Admin API are limited to `sales`, `customers`, `sessions`. Page-view datasets like `online_store_page_views` don't exist.
@@ -183,3 +183,4 @@ shopify theme push --path=theme --theme=178593038621 \
 - **`shopify theme push` exit code lies.** Returns 0 even on per-file errors. Parse the JSON output for `errors` / `warning` keys.
 - **ShopifyQL ≠ SQL.** No `count()`, no `count(*)`. Use named pre-aggregated metrics. Datasets in 2025-10 Admin API are limited to `sales`, `customers`, `sessions`.
 - **Sessions data is per-landing-page**, not per-page-view. Articles users navigate to from elsewhere on-site won't count. For Brad's blog this is fine; for other blogs evaluate before reusing.
+- **`cron_lock` seed rows must NOT use `lock_date = NULL`.** The acquisition query is `UPDATE … WHERE lock_date != $today`. PostgreSQL evaluates `NULL != $today` as `NULL` (treated as false), so a NULL seed row never matches and the cron silently fails forever — no errors, no Sentry, no logs. Seed with a sentinel past date (`'1970-01-01'`), and `tryAcquireCronLock` also uses `.or('lock_date.is.null,lock_date.neq.$today')` as belt-and-braces defense.

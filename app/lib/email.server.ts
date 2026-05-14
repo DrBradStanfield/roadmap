@@ -97,9 +97,9 @@ export async function checkAndSendWelcomeEmail(
       return false;
     }
 
-    // 1. Atomic claim: only one concurrent caller wins the race.
-    //    .neq('welcome_email_sent', true) matches both false and null values,
-    //    so only one UPDATE succeeds if sync-embed and widget fire simultaneously.
+    // 1. Atomic claim: only one concurrent caller wins the race. The column is
+    //    `BOOLEAN DEFAULT FALSE` so existing rows are never NULL — `.neq(…, true)`
+    //    matches every `false` row, and only the first UPDATE returns the row.
     const { data: claimed, error: flagError } = await client
       .from('profiles')
       .update({ welcome_email_sent: true })

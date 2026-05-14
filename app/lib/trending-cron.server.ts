@@ -1,10 +1,11 @@
 /**
  * Trending blog articles cron job.
  *
- * Once per day, queries Shopify Admin (ShopifyQL) for `online_store_page_views`
- * over the last 7 days and the prior ~60 days. Computes a fold-change ratio
- * (current_7d / baseline_weekly) per article, filters by age + view floors,
- * and writes the top 5 to the `health_roadmap.trending_articles` shop metafield.
+ * Once per day, queries Shopify Admin (ShopifyQL) for landing-page `sessions`
+ * over the last 7 days and the prior baseline window. Computes a fold-change
+ * ratio (current_7d / baseline_weekly) per article, filters by age + view
+ * floors, and writes the top 5 to the `health_roadmap.trending_articles` shop
+ * metafield.
  *
  * The storefront (Liquid section blog-newspaper-header) reads the metafield
  * to render a "Trending" sidebar.
@@ -22,13 +23,18 @@ const TARGET_HOUR_UTC = 3;
 const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 const SHOP_DOMAIN = process.env.SHOPIFY_SHOP_DOMAIN || 'microvitamin.myshopify.com';
 
-const MIN_ARTICLE_AGE_DAYS = 60;
+// Articles younger than this are dropped — they don't have a clean baseline
+// window. Must be >= the leading edge of QUERY_PRIOR_BASELINE (-45d), otherwise
+// the baseline window extends past the article's publication date and the
+// ratio is inflated by zero-traffic days.
+const MIN_ARTICLE_AGE_DAYS = 45;
 const MIN_CURRENT_7D_VIEWS = 50;
-const MIN_BASELINE_WEEKLY_VIEWS = 10;
+// Bumped from 10: shorter 37d window gives each low-traffic day more weight.
+const MIN_BASELINE_WEEKLY_VIEWS = 12;
 const TOP_N = 5;
-// Baseline window length in days. Must match the SINCE/UNTIL range of QUERY_PRIOR_60D
-// or the per-week rate calculation drifts.
-const BASELINE_WINDOW_DAYS = 60;
+// Baseline window length in days. Must match the SINCE/UNTIL range of
+// QUERY_PRIOR_BASELINE or the per-week rate calculation drifts.
+const BASELINE_WINDOW_DAYS = 37;
 
 const ARTICLE_URL_RE = /^\/(?:[a-z-]+\/)?blogs\/articles\/([\w-]+)\/?$/;
 
@@ -40,8 +46,8 @@ const ARTICLE_URL_RE = /^\/(?:[a-z-]+\/)?blogs\/articles\/([\w-]+)\/?$/;
 // so landing-page sessions is a reasonable trending proxy.
 const QUERY_LAST_7D =
   'FROM sessions SHOW sessions GROUP BY landing_page_path SINCE -8d UNTIL -1d ORDER BY sessions DESC LIMIT 500';
-const QUERY_PRIOR_60D =
-  'FROM sessions SHOW sessions GROUP BY landing_page_path SINCE -68d UNTIL -9d ORDER BY sessions DESC LIMIT 500';
+const QUERY_PRIOR_BASELINE =
+  'FROM sessions SHOW sessions GROUP BY landing_page_path SINCE -45d UNTIL -9d ORDER BY sessions DESC LIMIT 500';
 
 const METAFIELD_NAMESPACE = 'health_roadmap';
 const METAFIELD_KEY = 'trending_articles';
@@ -208,12 +214,12 @@ function aggregateByHandle(rows: UrlViewRow[]): Map<string, number> {
 /** Pure function — accepts pre-fetched data so it's testable without network. */
 export function computeTrending(
   current7dRows: UrlViewRow[],
-  prior60dRows: UrlViewRow[],
+  priorBaselineRows: UrlViewRow[],
   blogIndex: Map<string, BlogIndexEntry>,
   now: Date = new Date(),
 ): TrendingEntry[] {
   const current7dByHandle = aggregateByHandle(current7dRows);
-  const prior60dByHandle = aggregateByHandle(prior60dRows);
+  const priorBaselineByHandle = aggregateByHandle(priorBaselineRows);
 
   const minPublishedAt = new Date(now.getTime() - MIN_ARTICLE_AGE_DAYS * 86400 * 1000);
 
@@ -229,8 +235,8 @@ export function computeTrending(
     if (Number.isNaN(publishedAt.getTime())) continue;
     if (publishedAt > minPublishedAt) continue;
 
-    const baseline60d = prior60dByHandle.get(handle) ?? 0;
-    const baselineWeekly = (baseline60d / BASELINE_WINDOW_DAYS) * 7;
+    const baselineSessions = priorBaselineByHandle.get(handle) ?? 0;
+    const baselineWeekly = (baselineSessions / BASELINE_WINDOW_DAYS) * 7;
     if (baselineWeekly < MIN_BASELINE_WEEKLY_VIEWS) continue;
 
     const score = current7d / baselineWeekly;
@@ -245,16 +251,16 @@ export function computeTrending(
 export async function computeAndWriteTrending(): Promise<TrendingEntry[]> {
   const { admin } = await unauthenticated.admin(SHOP_DOMAIN);
 
-  const [current7dRows, prior60dRows, shopId] = await Promise.all([
+  const [current7dRows, priorBaselineRows, shopId] = await Promise.all([
     runShopifyQL(admin, QUERY_LAST_7D),
-    runShopifyQL(admin, QUERY_PRIOR_60D),
+    runShopifyQL(admin, QUERY_PRIOR_BASELINE),
     getShopId(admin),
   ]);
 
   const blogIndex = new Map<string, BlogIndexEntry>(
     loadBlogIndex().map(entry => [entry.handle, entry]),
   );
-  const ranked = computeTrending(current7dRows, prior60dRows, blogIndex);
+  const ranked = computeTrending(current7dRows, priorBaselineRows, blogIndex);
 
   for (const entry of ranked) {
     console.log(

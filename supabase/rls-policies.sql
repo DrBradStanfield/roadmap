@@ -505,12 +505,15 @@ CREATE TABLE IF NOT EXISTS cron_lock (
   lock_date TEXT
 );
 
+-- lock_date is seeded with a sentinel past date (not NULL) because
+-- `WHERE lock_date != today` evaluates to NULL on NULL rows (not true), so a
+-- NULL seed would silently block lock acquisition.
 INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
-VALUES ('reminder_cron', NULL, NULL, NULL)
+VALUES ('reminder_cron', NULL, NULL, '1970-01-01')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
-VALUES ('trending_cron', NULL, NULL, NULL)
+VALUES ('trending_cron', NULL, NULL, '1970-01-01')
 ON CONFLICT DO NOTHING;
 
 -- ===== Enable RLS on infrastructure tables =====

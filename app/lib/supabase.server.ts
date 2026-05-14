@@ -1759,6 +1759,15 @@ export async function tryAcquireCronLock(
 ): Promise<boolean> {
   if (!supabaseAdmin) return false;
 
+  // `today` is interpolated into the PostgREST `.or()` filter below — guard
+  // against anything other than a YYYY-MM-DD literal so a future caller
+  // can't accidentally bypass the lock by passing a value containing `,` or `)`.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) return false;
+
+  // `lock_date IS NULL OR lock_date != today`. Required because seed rows can
+  // start with lock_date = NULL, and `NULL != $today` evaluates to NULL in SQL
+  // (treated as false) — so a bare `.neq` would never match unseeded locks and
+  // the cron would fail silently.
   const { data, error } = await supabaseAdmin
     .from('cron_lock')
     .update({
@@ -1767,7 +1776,7 @@ export async function tryAcquireCronLock(
       lock_date: today,
     })
     .eq('lock_name', lockName)
-    .neq('lock_date', today)
+    .or(`lock_date.is.null,lock_date.neq.${today}`)
     .select();
 
   if (error) {
