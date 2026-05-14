@@ -20,10 +20,10 @@
  *   npx tsx tools/test-chatbot-matching.ts --variance-threshold 0.1
  *   npx tsx tools/test-chatbot-matching.ts --answer-check   # also test generated answers
  *
- * --answer-check: for entries with must_mention/must_not_mention fields, also
- * calls the main LLM (Haiku) with blocks 1-2 context (system prompt + algorithm)
- * and asserts the generated answer contains/excludes the specified strings.
- * Approximates always-cached context; does not load matched content or user data.
+ * --answer-check: for entries with must_mention/must_not_mention/max_length_chars,
+ * also calls the main LLM (Haiku) with blocks 1-3 context (system prompt + algorithm
+ * + products knowledge) and asserts the generated answer matches the constraints.
+ * Approximates always-cached production context; does not load matched content or user data.
  *
  * Exit code 0 if acceptance bar met, 1 otherwise.
  */
@@ -56,8 +56,10 @@ const varianceThreshold = parseFloat(getArg('--variance-threshold', '0.05'));
 const concurrency = Math.max(1, parseInt(getArg('--concurrency', '1'), 10));
 const verbose = args.includes('--verbose');
 const categoryFilter = args.includes('--category') ? getArg('--category', '') : null;
-// When set, entries with must_mention/must_not_mention also call the main LLM to
-// verify the generated answer content (uses blocks 1-2: system prompt + algorithm).
+const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
+// When set, entries with must_mention/must_not_mention/max_length_chars also call
+// the main LLM to verify generated content (uses blocks 1-3: system prompt +
+// algorithm + products knowledge).
 const answerCheckMode = args.includes('--answer-check');
 
 const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -68,7 +70,7 @@ if (!apiKey) {
 
 // ---------------------------------------------------------------------------
 // Answer-check context — loaded only when --answer-check is set
-// Approximates prompt cache blocks 1-2: system prompt + algorithm.
+// Approximates prompt cache blocks 1-3: system prompt + algorithm + products.
 // Does NOT load matched content (on-demand) or user data (per-user), so
 // results reflect what the chatbot knows from its always-cached context only.
 // ---------------------------------------------------------------------------
@@ -81,9 +83,11 @@ if (answerCheckMode) {
     ANSWER_SYSTEM_CONTEXT =
       fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-system-prompt.md'), 'utf-8') +
       '\n\n---\n\n' +
-      fs.readFileSync(path.join(REPO_ROOT, 'health_roadmap_algorithm.md'), 'utf-8');
+      fs.readFileSync(path.join(REPO_ROOT, 'health_roadmap_algorithm.md'), 'utf-8') +
+      '\n\n---\n\n## Dr Stanfield\'s Products\n\n' +
+      fs.readFileSync(path.join(REPO_ROOT, 'docs/products.md'), 'utf-8');
   } catch {
-    console.error('Error: --answer-check requires app/lib/chat-system-prompt.md and health_roadmap_algorithm.md');
+    console.error('Error: --answer-check requires app/lib/chat-system-prompt.md, health_roadmap_algorithm.md, and docs/products.md');
     process.exit(1);
   }
 }
@@ -205,12 +209,13 @@ const ALL_QUERIES: TestQuery[] = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'test-queries.json'), 'utf-8')
 );
 
-const filtered = categoryFilter
-  ? ALL_QUERIES.filter(q => q.category === categoryFilter)
-  : ALL_QUERIES;
+let filtered = ALL_QUERIES;
+if (categoryFilter) filtered = filtered.filter(q => q.category === categoryFilter);
+if (sourceFilter) filtered = filtered.filter(q => q.source === sourceFilter);
 
 if (filtered.length === 0) {
-  console.error(`No queries match category "${categoryFilter}"`);
+  const desc = [categoryFilter && `category "${categoryFilter}"`, sourceFilter && `source "${sourceFilter}"`].filter(Boolean).join(' AND ');
+  console.error(`No queries match ${desc}`);
   process.exit(1);
 }
 
