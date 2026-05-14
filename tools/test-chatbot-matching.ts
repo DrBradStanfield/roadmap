@@ -67,11 +67,15 @@ const sourceFilter = args.includes('--source') ? getArg('--source', '') : null;
 const answerCheckMode = args.includes('--answer-check');
 const answerCheckRuns = Math.max(1, parseInt(getArg('--answer-check-runs', String(runs)), 10));
 
-const apiKey = process.env.ANTHROPIC_API_KEY;
+// Prefer ANTHROPIC_TEST_API_KEY if set — keeps harness spend isolated from
+// production billing. Falls back to ANTHROPIC_API_KEY for backward compatibility.
+const apiKey = process.env.ANTHROPIC_TEST_API_KEY || process.env.ANTHROPIC_API_KEY;
 if (!apiKey) {
-  console.error('Error: ANTHROPIC_API_KEY is not set');
+  console.error('Error: ANTHROPIC_TEST_API_KEY or ANTHROPIC_API_KEY must be set');
   process.exit(1);
 }
+const usingTestKey = !!process.env.ANTHROPIC_TEST_API_KEY;
+console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 'ANTHROPIC_API_KEY (production key — billing shared with prod)'}`);
 
 // ---------------------------------------------------------------------------
 // Answer-check context — loaded only when --answer-check is set
