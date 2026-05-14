@@ -198,6 +198,7 @@ interface TestQuery {
   notes?: string;
   must_mention?: string[];     // answer must contain ALL of these (case-insensitive)
   must_not_mention?: string[]; // answer must contain NONE of these (case-insensitive)
+  max_length_chars?: number;   // answer must be at most this many characters
 }
 
 const ALL_QUERIES: TestQuery[] = JSON.parse(
@@ -232,7 +233,7 @@ interface QueryResult {
   passed: boolean;
 }
 
-async function checkAnswer(query: string, mustMention: string[], mustNotMention: string[], retryOnRateLimit = true): Promise<AnswerCheckResult> {
+async function checkAnswer(query: string, mustMention: string[], mustNotMention: string[], maxLengthChars: number | undefined, retryOnRateLimit = true): Promise<AnswerCheckResult> {
   const body = {
     model: ANSWER_MODEL,
     max_tokens: 800,
@@ -256,7 +257,7 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
     const retryAfter = parseInt(res.headers.get('retry-after') ?? '30', 10);
     process.stdout.write(` [429, waiting ${retryAfter}s]`);
     await new Promise(r => setTimeout(r, retryAfter * 1000));
-    return checkAnswer(query, mustMention, mustNotMention, false);
+    return checkAnswer(query, mustMention, mustNotMention, maxLengthChars, false);
   }
 
   if (!res.ok) return { passed: false, failures: [`API error ${res.status}`], response: '' };
@@ -271,6 +272,9 @@ async function checkAnswer(query: string, mustMention: string[], mustNotMention:
   }
   for (const term of mustNotMention) {
     if (lower.includes(term.toLowerCase())) failures.push(`found forbidden: "${term}"`);
+  }
+  if (typeof maxLengthChars === 'number' && response.length > maxLengthChars) {
+    failures.push(`length ${response.length} chars > cap ${maxLengthChars}`);
   }
 
   return { passed: failures.length === 0, failures, response };
@@ -292,8 +296,8 @@ async function runOne(q: TestQuery): Promise<QueryResult> {
   }
 
   let answerCheck: AnswerCheckResult | null = null;
-  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length)) {
-    answerCheck = await checkAnswer(q.query, q.must_mention ?? [], q.must_not_mention ?? []);
+  if (answerCheckMode && routingPassed && (q.must_mention?.length || q.must_not_mention?.length || typeof q.max_length_chars === 'number')) {
+    answerCheck = await checkAnswer(q.query, q.must_mention ?? [], q.must_not_mention ?? [], q.max_length_chars);
   }
 
   const passed = routingPassed && (answerCheck === null || answerCheck.passed);
