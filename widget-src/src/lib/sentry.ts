@@ -51,6 +51,19 @@ function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
     return null;
   }
 
+  // Drop errors thrown inside third-party Shopify apps that monkey-patch window.fetch
+  // (UpCart, Appstle Subscriptions). Firefox 150 throws a spurious
+  // "url with embedded credentials" TypeError from their wrappers on plain relative URLs.
+  // Our api.ts already catches the resulting fetch failures.
+  if (event.exception?.values?.some(v =>
+    v.stacktrace?.frames?.some(f =>
+      typeof f.filename === 'string' &&
+      (f.filename.includes('upcart-bundle') || f.filename.includes('appstle-bundles-interceptor'))
+    )
+  )) {
+    return null;
+  }
+
   if (event.request) {
     // Request body always contains health data in this app — remove entirely
     delete event.request.data;
@@ -75,7 +88,7 @@ function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
 }
 
 export function initSentry() {
-  if (initialized || SENTRY_DSN === 'YOUR_SENTRY_DSN') return;
+  if (initialized) return;
   initialized = true;
 
   Sentry.init({
