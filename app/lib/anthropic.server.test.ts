@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { stripCodeFences, resolveLabValues, resolveUnit } from './anthropic.server';
+import { stripCodeFences, extractJsonObject, resolveLabValues, resolveUnit } from './anthropic.server';
 
 // ---------------------------------------------------------------------------
 // Bug: LLM wraps JSON response in markdown code fences (```json ... ```)
@@ -39,6 +39,43 @@ describe('stripCodeFences', () => {
   it('does not strip fences from middle of text', () => {
     const input = 'Some text ```json\n{"key": "value"}\n``` more text';
     expect(stripCodeFences(input)).toBe(input);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug: Haiku occasionally appends explanation prose after the JSON, breaking
+// JSON.parse with "Unexpected non-whitespace character after JSON at position X".
+// extractJsonObject must slice from the first { to the last } to survive this.
+// ---------------------------------------------------------------------------
+
+describe('extractJsonObject', () => {
+  it('extracts JSON when model appends trailing prose', () => {
+    const input = '{"foo": "bar"} Here is some explanation.';
+    expect(JSON.parse(extractJsonObject(input))).toEqual({ foo: 'bar' });
+  });
+
+  it('extracts JSON from inside code fences', () => {
+    const input = '```json\n{"foo": "bar"}\n```';
+    expect(JSON.parse(extractJsonObject(input))).toEqual({ foo: 'bar' });
+  });
+
+  it('extracts JSON with both leading prose and trailing fence', () => {
+    const input = 'Here is the result:\n```json\n{"foo": "bar"}\n```\nDone.';
+    expect(JSON.parse(extractJsonObject(input))).toEqual({ foo: 'bar' });
+  });
+
+  it('preserves braces inside string values', () => {
+    const input = '{"desc": "use {placeholder} syntax"} extra';
+    expect(JSON.parse(extractJsonObject(input))).toEqual({ desc: 'use {placeholder} syntax' });
+  });
+
+  it('returns text unchanged when no braces present', () => {
+    expect(extractJsonObject('no json here')).toBe('no json here');
+  });
+
+  it('returns plain JSON unchanged', () => {
+    const input = '{"foo": "bar"}';
+    expect(extractJsonObject(input)).toBe(input);
   });
 });
 

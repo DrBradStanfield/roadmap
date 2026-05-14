@@ -250,7 +250,7 @@ export async function extractLabResults(
   // Parse + validate
   let parsed: LlmResult;
   try {
-    parsed = llmResultSchema.parse(JSON.parse(stripCodeFences(responseText)));
+    parsed = llmResultSchema.parse(JSON.parse(extractJsonObject(responseText)));
   } catch {
     // Retry once with prefilled assistant turn to force JSON
     const retryBody = {
@@ -261,7 +261,7 @@ export async function extractLabResults(
       ],
     };
     responseText = await callAnthropic(apiKey, retryBody);
-    parsed = llmResultSchema.parse(JSON.parse('{' + responseText));
+    parsed = llmResultSchema.parse(JSON.parse(extractJsonObject('{' + responseText)));
   }
 
   return {
@@ -461,7 +461,7 @@ export async function extractOrClassify(
 
   let parsed: z.infer<typeof unifiedResultSchema>;
   try {
-    parsed = unifiedResultSchema.parse(JSON.parse(stripCodeFences(responseText)));
+    parsed = unifiedResultSchema.parse(JSON.parse(extractJsonObject(responseText)));
   } catch {
     // Retry once with prefilled assistant turn to force JSON
     const retryBody = {
@@ -472,7 +472,7 @@ export async function extractOrClassify(
       ],
     };
     responseText = await callAnthropic(apiKey, retryBody);
-    parsed = unifiedResultSchema.parse(JSON.parse('{' + responseText));
+    parsed = unifiedResultSchema.parse(JSON.parse(extractJsonObject('{' + responseText)));
   }
 
   return toUnifiedResult(parsed);
@@ -715,7 +715,7 @@ export async function pollBatch(
         const textBlock = entry.result.message?.content?.find((b: any) => b.type === 'text');
         if (textBlock?.text) {
           try {
-            const parsed = unifiedResultSchema.parse(JSON.parse(stripCodeFences(textBlock.text)));
+            const parsed = unifiedResultSchema.parse(JSON.parse(extractJsonObject(textBlock.text)));
             resultMap.set(index, toUnifiedResult(parsed));
             continue;
           } catch {
