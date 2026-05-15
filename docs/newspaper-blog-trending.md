@@ -44,8 +44,8 @@ Where `baseline_weekly_sessions = prior_baseline_sessions / BASELINE_WINDOW_DAYS
 | `MIN_BASELINE_WEEKLY_VIEWS` | 12 | Floor: prevent tiny-baseline articles from inflating the ratio (bumped from 10 to compensate for the shorter 37-day baseline) |
 | `BASELINE_WINDOW_DAYS` | 37 | Window length used as denominator (must match query SINCE/UNTIL) |
 | `TOP_N` | 5 | How many entries to write to the metafield |
-| `TARGET_HOUR_UTC` | 3 | Cron tick hour (offset from reminder cron at 8) |
-| `CRON_INTERVAL_MS` | 60 min | Interval check; only proceeds at TARGET_HOUR_UTC |
+| `TARGET_HOUR_UTC` | 3 | Earliest UTC hour the cron is eligible to run each day (offset from reminder cron at 8) |
+| `CRON_INTERVAL_MS` | 60 min | Interval check; first tick at or after TARGET_HOUR_UTC that hasn't run today acquires the lock |
 
 **Pure function:** `computeTrending(current7dRows, priorBaselineRows, blogIndex, now)` — testable without network.
 
@@ -56,9 +56,9 @@ Where `baseline_weekly_sessions = prior_baseline_sessions / BASELINE_WINDOW_DAYS
 Mirrors the reminder cron skeleton:
 
 1. `setInterval` fires every 60 min (auto-started on module import via `startTrendingCron()`).
-2. If UTC hour ≠ 3, return.
+2. If UTC hour < TARGET_HOUR_UTC, return (too early in the day). Using `<` instead of `!==` means any tick after the target hour can run today's cron if it hasn't run yet — resilient to deploys that shift the `setInterval` offset past the target hour.
 3. Local fast-path guard: skip if `lastRunDate === todayStr`.
-4. **Distributed lock** via Supabase `cron_lock` table — `tryAcquireCronLock(machineId, todayStr, 'trending_cron')`. Only one Fly.io machine processes per day even though multiple machines run the interval.
+4. **Distributed lock** via Supabase `cron_lock` table — `tryAcquireCronLock(machineId, todayStr, 'trending_cron')`. Only one Fly.io machine processes per day even though multiple machines run the interval. The lock is the source of truth for "did today's cron run"; `lastRunDate` is a local fast-path optimization.
 5. On lock acquisition: query Shopify Admin, compute, write metafield.
 6. Sentry instrumentation: `tags: { feature: 'trending_cron' }`.
 
