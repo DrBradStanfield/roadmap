@@ -64,13 +64,16 @@ export function startReminderCron(): void {
     return;
   }
 
-  console.log(`Reminder cron started (will run at ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_ID})`);
+  console.log(`Reminder cron started (will run on first tick ≥ ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_ID})`);
 
   cronIntervalId = setInterval(async () => {
     const now = new Date();
 
-    // Only run at the target hour
-    if (now.getUTCHours() !== TARGET_HOUR_UTC) return;
+    // Run on the first tick at or after the target hour each day. Using `<`
+    // instead of `!==` makes the cron resilient to deploys: if a restart
+    // shifts the setInterval offset past the target hour, the next tick
+    // still fires today via the lock guard, rather than waiting 24 hours.
+    if (now.getUTCHours() < TARGET_HOUR_UTC) return;
 
     // Fast local check — skip if already ran today on this machine
     const todayStr = now.toISOString().slice(0, 10);
