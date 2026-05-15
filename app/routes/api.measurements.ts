@@ -18,6 +18,7 @@ import {
   getAllMeasurements,
   getLatestMeasurements,
   addMeasurement,
+  addMeasurementWithStatus,
   correctMeasurement,
   deleteMeasurement,
   toApiMeasurement,
@@ -368,24 +369,32 @@ export async function action({ request }: ActionFunctionArgs) {
 
         const results = await Promise.all(
           bulkValidation.data.bulkMeasurements.map(m =>
-            addMeasurement(client, userId, m.metricType, m.value, m.recordedAt, m.source, m.externalId),
+            addMeasurementWithStatus(client, userId, m.metricType, m.value, m.recordedAt, m.source, m.externalId),
           ),
         );
 
-        const saved = results.filter(Boolean);
-        if (saved.length === 0) {
+        const saved = results.flatMap(r => r.status === 'inserted' ? [r.row] : []);
+        const skippedDuplicates = results.filter(r => r.status === 'duplicate').length;
+        const errors = results.filter(r => r.status === 'error').length;
+
+        // All-duplicates is a legitimate no-op (user re-uploaded the same data).
+        // Only fail if everything errored AND nothing was a known-duplicate.
+        if (saved.length === 0 && errors > 0 && skippedDuplicates === 0) {
           return json({ success: false, error: 'Failed to save measurements' }, { status: 500 });
         }
 
-        // Fire-and-forget: welcome email + tagging
-        checkAndSendWelcomeEmail(userId, client).catch(err => Sentry.captureException(err));
-        tagShopifyCustomer(admin, customerId).catch(() => {});
-        ensureKlaviyoSubscribed(customerInfo.email).catch(() => {});
+        // Skip downstream side-effects when nothing actually changed.
+        if (saved.length > 0) {
+          checkAndSendWelcomeEmail(userId, client).catch(err => Sentry.captureException(err));
+          tagShopifyCustomer(admin, customerId).catch(() => {});
+          ensureKlaviyoSubscribed(customerInfo.email).catch(() => {});
+        }
 
         return json({
           success: true,
-          data: saved.map(m => toApiMeasurement(m!)),
+          data: saved.map(m => toApiMeasurement(m)),
           savedCount: saved.length,
+          skippedDuplicates,
           totalCount: bulkValidation.data.bulkMeasurements.length,
         });
       }
@@ -419,11 +428,18 @@ export async function action({ request }: ActionFunctionArgs) {
       }
 
       const { metricType, value, recordedAt, source, externalId } = validation.data;
-      const measurement = await addMeasurement(client, userId, metricType, value, recordedAt, source, externalId);
+      const insert = await addMeasurementWithStatus(client, userId, metricType, value, recordedAt, source, externalId);
 
-      if (!measurement) {
+      if (insert.status === 'duplicate') {
+        return json(
+          { success: false, error: 'A measurement already exists for this metric at this time. Use the correction UI to update it.' },
+          { status: 409 },
+        );
+      }
+      if (insert.status === 'error') {
         return json({ success: false, error: 'Failed to save' }, { status: 500 });
       }
+      const measurement = insert.row;
 
       // Fire-and-forget: check if welcome email should be sent (widget path)
       checkAndSendWelcomeEmail(userId, client).catch(err => {

@@ -320,22 +320,44 @@ BEGIN
     RAISE EXCEPTION 'Measurement not found or not correctable';
   END IF;
 
-  INSERT INTO public.health_measurements
-    (user_id, metric_type, value, recorded_at, source, corrects_id)
-  VALUES
-    (old_row.user_id,
-     old_row.metric_type,
-     new_value,
-     COALESCE(new_recorded_at, old_row.recorded_at),
-     'manual_correction',
-     old_measurement_id)
-  RETURNING id INTO new_id;
+  BEGIN
+    INSERT INTO public.health_measurements
+      (user_id, metric_type, value, recorded_at, source, corrects_id)
+    VALUES
+      (old_row.user_id,
+       old_row.metric_type,
+       new_value,
+       COALESCE(new_recorded_at, old_row.recorded_at),
+       'manual_correction',
+       old_measurement_id)
+    RETURNING id INTO new_id;
+  EXCEPTION WHEN unique_violation THEN
+    -- A concurrent insert filled the (user, metric, recorded_at) slot
+    -- between the UPDATE above and this INSERT (e.g. another tab uploading
+    -- the same date). Postgres rolls back the whole RPC, so the UPDATE
+    -- flip is also undone. Surface a specific, retriable error.
+    RAISE EXCEPTION 'Conflict: another value was saved at this date while you were correcting. Refresh and try again.'
+      USING ERRCODE = '23505';
+  END;
 
   RETURN new_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
 
 GRANT EXECUTE ON FUNCTION correct_measurement(UUID, NUMERIC, TIMESTAMPTZ) TO authenticated;
+
+-- Two active rows must NOT share (user_id, metric_type, recorded_at).
+-- Catches the case where the LLM extracts a lab report's "current + previous"
+-- side-by-side columns, or where the same file is re-uploaded. The partial
+-- WHERE clause means entered-in-error rows don't count, so the
+-- correct_measurement() flip-then-insert sequence stays safe.
+--
+-- Multiple BP readings on the same day at different times are still allowed
+-- (different recorded_at). Lab-upload always sets recorded_at to midnight UTC
+-- of the day, so dupes within an upload share recorded_at exactly.
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_measurements_user_metric_active
+  ON public.health_measurements(user_id, metric_type, recorded_at)
+  WHERE status = 'active';
 
 -- ===== Audit logs table =====
 -- Tracks all write operations for HIPAA compliance.

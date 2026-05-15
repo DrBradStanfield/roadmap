@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { UnitSystem } from '@roadmap/health-core';
-import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, type PageContent, type ExtractedValue, type ApiMeasurement, type UploadErrorCode } from '../lib/api';
+import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, type PageContent, type ApiMeasurement, type UploadErrorCode } from '../lib/api';
 import { ReviewTable, type FileResult, type DocumentToSave } from './ReviewTable';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -24,7 +24,10 @@ type ModalState = 'select' | 'processing' | 'review' | 'done';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;
-  previousMeasurements: ApiMeasurement[];
+  // Full active history of blood-test metrics for ReviewTable's pre-save dedup.
+  // Required, not optional — the prior "latest-per-metric" view was too narrow,
+  // missing dupes the LLM extracts from historical columns.
+  bloodTestHistory: ApiMeasurement[];
   onComplete: () => void;
   onStart?: () => Promise<void>;
   onClose: () => void;
@@ -92,13 +95,14 @@ interface HealthUploadAPI {
 const MAX_FILES = 200;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-export function UploadModal({ unitSystem, previousMeasurements, onComplete, onStart, onClose, onScreeningUpdate, birthYear, sex, hidden, onProcessingStart, onProcessingEnd, onProgressUpdate }: UploadModalProps) {
+export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart, onClose, onScreeningUpdate, birthYear, sex, hidden, onProcessingStart, onProcessingEnd, onProgressUpdate }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState({ current: 0, total: 0, fileName: '' });
   const [results, setResults] = useState<FileResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
+  const [skippedDuplicates, setSkippedDuplicates] = useState(0);
   const [savedDocCount, setSavedDocCount] = useState(0);
   const [savedLabCount, setSavedLabCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -106,20 +110,32 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile(768);
 
+  // Reset post-save counters. Called whenever the modal fully closes (not when
+  // it's just hidden during background processing), so the next reopen starts
+  // from a clean slate rather than carrying the previous run's tally.
+  const resetSaveCounters = useCallback(() => {
+    setSavedCount(0);
+    setSkippedDuplicates(0);
+    setSavedDocCount(0);
+    setSavedLabCount(0);
+  }, []);
+
   // Dismiss modal — during processing/review, just hides (keeps state alive for floating indicator).
   // Only fully ends the upload flow from select or done states.
   const handleClose = useCallback(() => {
     if (state === 'select' || state === 'done') {
       onProcessingEnd?.(false);
+      resetSaveCounters();
     }
     onClose();
-  }, [state, onClose, onProcessingEnd]);
+  }, [state, onClose, onProcessingEnd, resetSaveCounters]);
 
   // Explicit discard — user clicked Cancel in review, intentionally discarding results
   const handleDiscard = useCallback(() => {
     onProcessingEnd?.(false);
+    resetSaveCounters();
     onClose();
-  }, [onClose, onProcessingEnd]);
+  }, [onClose, onProcessingEnd, resetSaveCounters]);
 
   // Close on Escape
   useEffect(() => {
@@ -518,15 +534,19 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
       }));
 
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
-        measurements.length > 0 ? bulkSaveMeasurements(measurements) : Promise.resolve([]),
+        measurements.length > 0 ? bulkSaveMeasurements(measurements) : Promise.resolve({ saved: [], skippedDuplicates: 0 }),
         docPayloads.length > 0 ? bulkSaveDocuments(docPayloads) : Promise.resolve([]),
         labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads) : Promise.resolve([]),
       ]);
 
-      setSavedCount(savedValues.length);
+      setSavedCount(savedValues.saved.length);
+      setSkippedDuplicates(savedValues.skippedDuplicates);
       setSavedDocCount(savedDocs.length);
       setSavedLabCount(savedLabValues.length);
-      const totalSaved = savedValues.length + savedDocs.length + savedLabValues.length;
+      // A run that was 100% duplicates still counts as "ok" — there's nothing
+      // for the user to fix. Only error if everything failed AND none were dupes.
+      const totalSaved = savedValues.saved.length + savedDocs.length + savedLabValues.length;
+      const totalCompleted = totalSaved + savedValues.skippedDuplicates;
 
       // Update screening dates for documents with screening mappings
       for (const doc of documents) {
@@ -535,7 +555,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
         }
       }
 
-      if (totalSaved > 0) {
+      if (totalCompleted > 0) {
         setState('done');
         onComplete();
       } else {
@@ -612,7 +632,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
           {state === 'review' && (
             <ReviewTable
               results={results}
-              previousMeasurements={previousMeasurements}
+              bloodTestHistory={bloodTestHistory}
               unitSystem={unitSystem}
               birthYear={birthYear}
               sex={sex}
@@ -632,8 +652,13 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
                 {savedLabCount > 0 && `${savedLabCount} additional lab value${savedLabCount !== 1 ? 's' : ''}`}
                 {savedLabCount > 0 && savedDocCount > 0 && ', '}
                 {savedDocCount > 0 && `${savedDocCount} document${savedDocCount !== 1 ? 's' : ''}`}
-                {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0 && 'No items saved'}
+                {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0 && skippedDuplicates === 0 && 'No items saved'}
               </p>
+              {skippedDuplicates > 0 && (
+                <p className="upload-done-skipped">
+                  {skippedDuplicates} value{skippedDuplicates !== 1 ? 's were' : ' was'} already saved at the same date. Close this dialog and click the existing value in the Blood Test Results table to correct it.
+                </p>
+              )}
               <button className="btn-primary upload-done-btn" onClick={handleClose}>
                 Done
               </button>

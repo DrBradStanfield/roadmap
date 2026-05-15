@@ -1081,7 +1081,7 @@ export function HealthTool() {
       {(showUploadModal || uploadActive) && authState.isLoggedIn && (
         <UploadModal
           unitSystem={unitSystem}
-          previousMeasurements={previousMeasurements}
+          bloodTestHistory={bloodTestHistory}
           onComplete={handleUploadComplete}
           onStart={handleUploadStart}
           onClose={() => setShowUploadModal(false)}

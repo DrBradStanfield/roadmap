@@ -563,9 +563,18 @@ export async function getAllMeasurements(
   return (data ?? []) as DbMeasurement[];
 }
 
-/** Insert a new measurement. Returns the created row.
- *  userId is required for the NOT NULL column; RLS verifies it matches auth.uid(). */
-export async function addMeasurement(
+export const POSTGRES_UNIQUE_VIOLATION = '23505';
+
+/**
+ * Insert a measurement and report whether it succeeded, duplicated, or errored.
+ * The bulk endpoint uses this to surface "skipped N duplicates" in the UI.
+ * Duplicate = a row with the same (user_id, metric_type, recorded_at) is
+ * already active in the DB (enforced by uniq_measurements_user_metric_active
+ * partial index in rls-policies.sql).
+ *
+ * userId is required for the NOT NULL column; RLS verifies it matches auth.uid().
+ */
+export async function addMeasurementWithStatus(
   client: SupabaseClient,
   userId: string,
   metricType: string,
@@ -573,7 +582,7 @@ export async function addMeasurement(
   recordedAt?: string,
   source?: string,
   externalId?: string,
-): Promise<DbMeasurement | null> {
+): Promise<{ status: 'inserted'; row: DbMeasurement } | { status: 'duplicate' } | { status: 'error' }> {
   const row: Record<string, unknown> = {
     user_id: userId,
     metric_type: metricType,
@@ -583,19 +592,32 @@ export async function addMeasurement(
   if (source) row.source = source;
   if (externalId) row.external_id = externalId;
 
-  const { data, error } = await client
-    .from('health_measurements')
-    .insert(row)
-    .select()
-    .single();
-
+  const { data, error } = await client.from('health_measurements').insert(row).select().single();
   if (error) {
+    if (error.code === POSTGRES_UNIQUE_VIOLATION) return { status: 'duplicate' };
     console.error('Error adding measurement:', { error: error.message, code: error.code, metricType });
-    return null;
+    return { status: 'error' };
   }
-
   logAudit(userId, 'MEASUREMENT_CREATED', 'measurement', data.id, { metricType });
-  return data as DbMeasurement;
+  return { status: 'inserted', row: data as DbMeasurement };
+}
+
+/**
+ * Lossy wrapper kept for legacy callers: collapses 'duplicate' and 'error'
+ * both to null. New code should call addMeasurementWithStatus directly so
+ * dupes vs errors can be distinguished.
+ */
+export async function addMeasurement(
+  client: SupabaseClient,
+  userId: string,
+  metricType: string,
+  value: number,
+  recordedAt?: string,
+  source?: string,
+  externalId?: string,
+): Promise<DbMeasurement | null> {
+  const result = await addMeasurementWithStatus(client, userId, metricType, value, recordedAt, source, externalId);
+  return result.status === 'inserted' ? result.row : null;
 }
 
 /**

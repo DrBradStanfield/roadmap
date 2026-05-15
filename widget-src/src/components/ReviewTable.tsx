@@ -57,7 +57,10 @@ export function isScreeningEligible(screeningType: string, userAge?: number, use
 
 interface ReviewTableProps {
   results: FileResult[];
-  previousMeasurements: ApiMeasurement[];
+  // Full active history of measurements for (metric, date) dedup. Catches
+  // re-uploads and LLM-extracted historical columns; the latest-per-metric
+  // view is too narrow.
+  bloodTestHistory: ApiMeasurement[];
   unitSystem: UnitSystem;
   birthYear?: number;
   sex?: 'male' | 'female';
@@ -112,20 +115,29 @@ function buildDatePrefix(date: FullDate): string {
   return `${date.year}-${month}`;
 }
 
-function isDuplicate(
-  metric: string,
-  date: FullDate,
-  previousMeasurements: ApiMeasurement[],
-): boolean {
-  const prefix = buildDatePrefix(date);
-  return previousMeasurements.some(
-    m => m.metricType === metric && m.recordedAt.startsWith(prefix),
-  );
+/**
+ * Build a Set indexed by `${metric}|${YYYY-MM-DD}` and `${metric}|${YYYY-MM}`
+ * so isDuplicate is O(1). The day and month entries are both populated
+ * because review dates can be day-precise or month-only.
+ */
+function buildHistoryIndex(history: ApiMeasurement[]): Set<string> {
+  const idx = new Set<string>();
+  for (const m of history) {
+    const day = m.recordedAt.slice(0, 10);   // YYYY-MM-DD
+    const month = m.recordedAt.slice(0, 7);  // YYYY-MM
+    idx.add(`${m.metricType}|${day}`);
+    idx.add(`${m.metricType}|${month}`);
+  }
+  return idx;
+}
+
+function isDuplicate(metric: string, date: FullDate, historyIndex: Set<string>): boolean {
+  return historyIndex.has(`${metric}|${buildDatePrefix(date)}`);
 }
 
 export function ReviewTable({
   results,
-  previousMeasurements,
+  bloodTestHistory,
   unitSystem,
   birthYear,
   sex,
@@ -135,6 +147,10 @@ export function ReviewTable({
   error,
 }: ReviewTableProps) {
   const userAge = birthYear ? new Date().getFullYear() - birthYear : undefined;
+  // Indexed lookup for dedup — O(1) per check vs O(N) linear scan. Matters
+  // at 200-file uploads × 24 metrics × hundreds of history rows.
+  const historyIndex = useMemo(() => buildHistoryIndex(bloodTestHistory), [bloodTestHistory]);
+
   // Per-file full date state (day/month/year)
   const [fileDates, setFileDates] = useState<Record<number, FullDate>>(() => {
     const dates: Record<number, FullDate> = {};
@@ -148,7 +164,7 @@ export function ReviewTable({
     results.forEach((r, fi) => {
       r.values.forEach((v, vi) => {
         const key = `${fi}-${vi}`;
-        const dup = isDuplicate(v.metric, parseReportDate(r.reportDate), previousMeasurements);
+        const dup = isDuplicate(v.metric, parseReportDate(r.reportDate), historyIndex);
         map[key] = !dup && v.confidence !== 'low';
       });
     });
@@ -474,7 +490,7 @@ export function ReviewTable({
                 <div className="review-rows">
                     {r.values.map((v, vi) => {
                       const key = `${fi}-${vi}`;
-                      const dup = isDuplicate(v.metric, fileDates[fi], previousMeasurements);
+                      const dup = isDuplicate(v.metric, fileDates[fi], historyIndex);
                       const metric = v.metric as MetricType;
                       const unitLabel = UNIT_DEFS[metric]
                         ? getDisplayLabel(metric, unitSystem)
