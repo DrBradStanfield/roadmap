@@ -1085,10 +1085,17 @@ CREATE INDEX IF NOT EXISTS idx_match_events_router_skipped
   WHERE router_skipped = TRUE;
 
 -- Index on classification for category-rate dashboards ("what % were GREETING
--- this week?"). Once the classifier flag is on every row is non-null, so a
--- WHERE-clause predicate would prune nothing — keep it as a plain index.
+-- this week?"). Every row is non-null now that the classifier always runs, so
+-- a WHERE-clause predicate would prune nothing — keep it as a plain index.
 CREATE INDEX IF NOT EXISTS idx_match_events_classification
   ON chat_match_events (classification, created_at DESC);
+
+-- router_version was NOT NULL in the original CREATE TABLE — fine when the
+-- router always fired. With the pre-router classifier, SKIP turns don't fire
+-- the router and we write router_version=NULL. Drop the constraint so those
+-- inserts land. Idempotent in Postgres (no-op if already nullable).
+ALTER TABLE chat_match_events
+  ALTER COLUMN router_version DROP NOT NULL;
 
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
