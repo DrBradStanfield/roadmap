@@ -125,6 +125,11 @@ export interface ApiMeasurement {
   value: number;
   recordedAt: string;
   createdAt: string;
+  // Optional fields used only by audit-mode UI; older API responses may omit.
+  source?: string;
+  externalId?: string | null;
+  status?: import('./validation').MeasurementStatus;
+  correctsId?: string | null;
 }
 
 /** API medication record shape (camelCase, as returned by API endpoints). FHIR-compatible. */

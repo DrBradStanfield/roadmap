@@ -30,6 +30,9 @@ describe('toApiMeasurement', () => {
       createdAt: '2025-01-15T10:00:01Z',
       source: 'manual',
       externalId: null,
+      // FHIR replaces fields default to 'active' / null for pre-correction rows.
+      status: 'active',
+      correctsId: null,
     });
   });
 

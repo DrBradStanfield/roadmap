@@ -154,7 +154,18 @@ export function getValidationErrors(errors: z.ZodError): Record<string, string> 
  * Valid measurement sources for the health_measurements table.
  * Tracks where the measurement came from (for Apple HealthKit deduplication, etc.)
  */
-export const MEASUREMENT_SOURCES = ['manual', 'apple_health', 'fitbit', 'lab_import'] as const;
+export const MEASUREMENT_SOURCES = [
+  'manual',
+  'apple_health',
+  'fitbit',
+  'lab_import',
+  'lab_import_edited',  // LLM-extracted then user-corrected at review time
+  'manual_correction',  // Inserted by the correct_measurement RPC
+] as const;
+
+/** FHIR-style status for the row's audit state. Mirrors the SQL CHECK constraint on health_measurements.status. */
+export const MEASUREMENT_STATUS = ['active', 'entered-in-error'] as const;
+export type MeasurementStatus = typeof MEASUREMENT_STATUS[number];
 
 /**
  * Schema for a single measurement record (used by API endpoints).
@@ -299,6 +310,20 @@ export const bulkMeasurementSchema = z.object({
 });
 
 export type BulkMeasurementRequest = z.infer<typeof bulkMeasurementSchema>;
+
+/**
+ * Post-save measurement correction. Wraps the correct_measurement() RPC.
+ * The corrected row keeps the original recorded_at; the RPC's optional
+ * new_recorded_at param is reserved for a future date-correction UI.
+ */
+export const correctMeasurementSchema = z.object({
+  correctMeasurement: z.object({
+    oldId: z.string().uuid(),
+    newValue: z.number().finite(),
+  }),
+});
+
+export type CorrectMeasurementRequest = z.infer<typeof correctMeasurementSchema>;
 
 /**
  * Schema for a flexible lab value (beyond the 13 core metrics).
