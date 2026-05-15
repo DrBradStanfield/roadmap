@@ -88,6 +88,10 @@ interface RoutingEvent {
   router_cache_hit: boolean | null;
   router_error: string | null;
   router_raw: unknown;
+  /** Pre-router classifier output (migration 2026-05-15). NULL on pre-classifier rows. */
+  classification: string | null;
+  /** True iff the classifier said SKIP AND the HONOR_SKIP flag was on. */
+  router_skipped: boolean | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -155,7 +159,7 @@ async function pullRouting(): Promise<RoutingEvent[]> {
 
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/chat_match_events?` +
-    `select=created_at,message_id,message,matched_handles,router_latency_ms,router_cache_hit,router_error,router_raw` +
+    `select=created_at,message_id,message,matched_handles,router_latency_ms,router_cache_hit,router_error,router_raw,classification,router_skipped` +
     `&created_at=gte.${since}` +
     `&order=created_at.asc`,
     {
@@ -427,6 +431,10 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
       return r && r.router_error;
     });
     const hasFallback = msgs.some(m => m.role === 'assistant' && m.is_fallback);
+    const hasRouterSkipped = msgs.some(m => {
+      const r = routingById.get(m.message_id);
+      return r && r.router_skipped === true;
+    });
 
     const turnsHtml = msgs.map(msg => {
       const ts = new Date(msg.created_at).toISOString().slice(11, 19);
@@ -443,7 +451,18 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
         const errorHtml = route.router_error
           ? `<span class="router-error">⚠ ${escapeHtml(route.router_error)}</span>`
           : '';
-        routerLine = `<div class="router-meta">→ ${handles} <span class="muted">(${route.router_latency_ms ?? '?'}ms, ${cacheStr})</span>${errorHtml}</div>`;
+        // Classifier badge appears alongside router info when the classifier ran.
+        // SKIP/ROUTE classes color-code: SKIP = orange (router was bypassed), ROUTE = blue (router fired).
+        let classifierHtml = '';
+        if (route.classification) {
+          const skipped = route.router_skipped === true;
+          const cls = skipped ? 'classifier-skip' : 'classifier-route';
+          const title = skipped
+            ? `Classifier said ${route.classification} — router was bypassed (HONOR_SKIP=true)`
+            : `Classifier said ${route.classification} — router fired as normal`;
+          classifierHtml = `<span class="classifier-badge ${cls}" title="${title}">${escapeHtml(route.classification)}${skipped ? ' · skip' : ''}</span>`;
+        }
+        routerLine = `<div class="router-meta">${classifierHtml}→ ${handles} <span class="muted">(${route.router_latency_ms ?? '?'}ms, ${cacheStr})</span>${errorHtml}</div>`;
       }
 
       let modelLine = '';
@@ -481,7 +500,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
     }).join('');
 
     conversationsHtml.push(`
-      <article class="conv" data-conv-id="${convId}" data-platform="${platform}" data-router-error="${hasRouterError ? '1' : '0'}" data-fallback="${hasFallback ? '1' : '0'}" style="--user-tint: ${userColor};">
+      <article class="conv" data-conv-id="${convId}" data-platform="${platform}" data-router-error="${hasRouterError ? '1' : '0'}" data-fallback="${hasFallback ? '1' : '0'}" data-router-skipped="${hasRouterSkipped ? '1' : '0'}" style="--user-tint: ${userColor};">
         <header class="conv-header" tabindex="0" role="button" aria-expanded="false">
           <div class="conv-header-left">
             <span class="conv-num">#${convNum}</span>
@@ -492,6 +511,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
             <span class="turn-count muted">${turnCount} turn${turnCount === 1 ? '' : 's'}</span>
             ${hasRouterError ? '<span class="router-err-badge" title="Router error in this conversation">router err</span>' : ''}
             ${hasFallback ? '<span class="fallback-badge" title="A fallback message was served in this conversation">fallback</span>' : ''}
+            ${hasRouterSkipped ? '<span class="router-skip-badge" title="The pre-router classifier short-circuited at least one turn in this conversation">router skipped</span>' : ''}
             <span class="conv-triage muted" data-conv-triage></span>
             <span class="conv-toggle">▾</span>
           </div>
@@ -594,6 +614,17 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
       padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;
       background: var(--fail); color: white; white-space: nowrap; letter-spacing: 0.3px;
     }
+    .router-skip-badge {
+      padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+      background: #fdf3e6; color: #b06a2b; white-space: nowrap;
+    }
+    .classifier-badge {
+      display: inline-block; padding: 1px 6px; margin-right: 6px;
+      border-radius: 3px; font-size: 10.5px; font-weight: 600;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.2px;
+    }
+    .classifier-skip { background: #fdf3e6; color: #b06a2b; }
+    .classifier-route { background: #eef4fc; color: var(--primary); }
     .conv-triage[data-conv-triage]:not(:empty) {
       padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
     }
@@ -769,6 +800,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
       const triageSel = document.getElementById('triage-filter');
       const routerErrChk = document.getElementById('router-err-only');
       const fallbackChk = document.getElementById('fallback-only');
+      const routerSkippedChk = document.getElementById('router-skipped-only');
 
       function applyFilters() {
         const q = searchInput.value.toLowerCase();
@@ -776,12 +808,14 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
         const triageF = triageSel.value;
         const errOnly = routerErrChk.checked;
         const fbOnly = fallbackChk.checked;
+        const skipOnly = routerSkippedChk.checked;
 
         document.querySelectorAll('.conv').forEach(conv => {
           let show = true;
           if (plat !== 'all' && conv.dataset.platform !== plat) show = false;
           if (errOnly && conv.dataset.routerError !== '1') show = false;
           if (fbOnly && conv.dataset.fallback !== '1') show = false;
+          if (skipOnly && conv.dataset.routerSkipped !== '1') show = false;
           if (q && !conv.textContent.toLowerCase().includes(q)) show = false;
           if (triageF !== 'all') {
             const turns = conv.querySelectorAll('.triage[data-msg-id]');
@@ -800,6 +834,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
       triageSel.addEventListener('change', applyFilters);
       routerErrChk.addEventListener('change', applyFilters);
       fallbackChk.addEventListener('change', applyFilters);
+      routerSkippedChk.addEventListener('change', applyFilters);
 
       // Export
       document.getElementById('export-btn').addEventListener('click', () => {
@@ -857,6 +892,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
         <span><strong>${webTurns}</strong> web user turns</span>
         <span><strong>${discordTurns}</strong> Discord user turns</span>
         ${messages.some(m => m.is_fallback) ? `<span><strong>${messages.filter(m => m.is_fallback).length}</strong> fallbacks</span>` : ''}
+        ${routing.some(r => r.router_skipped) ? `<span><strong>${routing.filter(r => r.router_skipped).length}</strong> router-skipped</span>` : ''}
       </span></p>
       <p class="triage-counter" id="counter">Reviewed: <strong>0 / ${messages.filter(m => m.role === 'assistant').length}</strong></p>
       <div class="controls">
@@ -875,6 +911,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
         </select>
         <label><input type="checkbox" id="router-err-only"> Router errors only</label>
         <label><input type="checkbox" id="fallback-only"> Fallbacks only</label>
+        <label><input type="checkbox" id="router-skipped-only"> Router-skipped only</label>
         <button type="button" class="export-btn" id="export-btn">Copy triage as markdown</button>
       </div>
     </div>

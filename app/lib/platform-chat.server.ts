@@ -14,7 +14,14 @@ import {
   loadMatchedArticlesFromHandles,
 } from './chat.server';
 import type { ChatFailureMode } from './chat.server';
-import { routeQuery, sanitizeForRouter, ROUTER_VERSION } from './chat-router.server';
+import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
+import {
+  classifyMessage,
+  isClassifierEnabled,
+  shouldFireRouter,
+  type Classification,
+  type ClassificationResult,
+} from './chat-classifier.server';
 import type { AnthropicUsage } from './anthropic.server';
 
 export interface PlatformCompletionResult {
@@ -26,16 +33,15 @@ export interface PlatformCompletionResult {
   isFallback: boolean;
   failureMode?: ChatFailureMode;
   errorDetail?: string;
-  router: {
-    handles: string[];
+  /** Router-call result. null when the classifier said SKIP (router never ran). */
+  routerResult: RouterResult | null;
+  /** Pre-router classifier result. null when PRE_ROUTER_CLASSIFIER_ENABLED is off. */
+  classifier: {
+    classification: Classification;
+    routerSkipped: boolean;
     latencyMs: number;
-    cacheHit: boolean;
-    inputTokens: number;
-    cacheReadTokens: number;
     error: string | null;
-    rawJson: string | null;
-    version: number;
-  };
+  } | null;
 }
 
 const DISCORD_PLATFORM_CONTEXT = `Platform: Discord — you are Dr Brad's AI assistant, running in Dr Brad Stanfield's Discord server.
@@ -71,8 +77,17 @@ export async function platformChatCompletion(params: {
   const sanitizedFirst = firstUserMsg ? sanitizeForRouter(firstUserMsg) : undefined;
   const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
 
-  const routerResult = await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
-  const blogArticles = loadMatchedArticlesFromHandles(routerResult.handles);
+  // Stage 1: classifier (Discord has no per-user data fetch to parallelize with).
+  const classifierResult: ClassificationResult | null = isClassifierEnabled()
+    ? await classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
+    : null;
+
+  // Stage 2: router fires only when the classifier didn't bypass it (ROUTE/ERROR → fire).
+  const routerResult: RouterResult | null = shouldFireRouter(classifierResult)
+    ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
+    : null;
+
+  const blogArticles = loadMatchedArticlesFromHandles(routerResult?.handles ?? []);
 
   const systemBlocks = buildSystemBlocks(DISCORD_PLATFORM_CONTEXT, { blogArticles });
   const conversationMessages = buildConversationMessages(history, message);
@@ -84,15 +99,14 @@ export async function platformChatCompletion(params: {
     isFallback: completion.isFallback,
     failureMode: completion.failureMode,
     errorDetail: completion.errorDetail,
-    router: {
-      handles: routerResult.handles,
-      latencyMs: routerResult.latencyMs,
-      cacheHit: routerResult.cacheHit,
-      inputTokens: routerResult.usage.inputTokens,
-      cacheReadTokens: routerResult.usage.cacheReadTokens,
-      error: routerResult.error,
-      rawJson: routerResult.rawJson,
-      version: ROUTER_VERSION,
-    },
+    routerResult,
+    classifier: classifierResult
+      ? {
+          classification: classifierResult.classification,
+          routerSkipped: classifierResult.routerSkipped,
+          latencyMs: classifierResult.latencyMs,
+          error: classifierResult.error,
+        }
+      : null,
   };
 }

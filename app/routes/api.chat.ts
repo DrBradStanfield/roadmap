@@ -24,6 +24,12 @@ import {
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION } from '../lib/chat-router.server';
+import {
+  classifyMessage,
+  isClassifierEnabled,
+  shouldFireRouter,
+  type ClassificationResult,
+} from '../lib/chat-classifier.server';
 
 // ---------------------------------------------------------------------------
 // Unified auth: handles both authenticated users and guests
@@ -283,35 +289,52 @@ export async function action({ request }: ActionFunctionArgs) {
     const sanitizedFirst = firstUserMsg ? sanitizeForRouter(firstUserMsg) : undefined;
     const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
 
-    // Assemble context + run router in parallel. Router runs alongside context/orders
-    // to reclaim ~300ms of latency — routerResult is awaited before the main LLM call.
+    // Stage 1: classifier runs in parallel with user-data + orders. This is
+    // pure latency reclamation — the classifier returns in ~100-200ms, by
+    // which time user-data is usually still loading.
     let context;
     let orderSummary = '';
-    let routerResult;
+    let classifierResult: ClassificationResult | null = null;
+
+    const classifierPromise: Promise<ClassificationResult | null> = isClassifierEnabled()
+      ? classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
+      : Promise.resolve(null);
 
     if (auth.isGuest) {
-      [context, routerResult] = await Promise.all([
+      [context, classifierResult] = await Promise.all([
         Promise.resolve(
           body.guestInputs
             ? assembleGuestChatContext(body.guestInputs)
             : { userContextJson: '{}', subscriptionPlan: 'free', messageCredits: 0, healthDocuments: [] }
         ),
-        routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent),
+        classifierPromise,
       ]);
     } else {
       let ctxResult: [Awaited<ReturnType<typeof assembleChatContext>>, string];
-      [ctxResult, routerResult] = await Promise.all([
+      [ctxResult, classifierResult] = await Promise.all([
         Promise.all([
           assembleChatContext(auth.client, auth.userId),
           auth.admin ? getCachedOrders(auth.admin, auth.customerId!) : Promise.resolve(''),
         ]) as Promise<[Awaited<ReturnType<typeof assembleChatContext>>, string]>,
-        routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent),
+        classifierPromise,
       ]);
       [context, orderSummary] = ctxResult;
     }
+
+    // Stage 2: router fires ONLY when the classifier didn't bypass it.
+    // Trade-off: +150-300ms on ROUTE turns vs the previous parallel design,
+    // since the router now waits for the classifier to return. See
+    // chat-architecture.md § Pre-router classifier for the timing analysis.
+    const routerResult = shouldFireRouter(classifierResult)
+      ? await routeQuery(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
+      : null;
+
     const tAfterContext = Date.now();
 
-    if (routerResult.error) {
+    const routerSkipped = classifierResult?.routerSkipped === true;
+    const effectiveHandles = routerResult?.handles ?? [];
+
+    if (routerResult?.error) {
       Sentry.captureMessage(`Router: ${routerResult.error}`, {
         level: 'warning',
         tags: { feature: 'chat', subsystem: 'router' },
@@ -386,8 +409,8 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
-    // Load content from router handles (router already ran in parallel with context above)
-    const blogArticles = loadMatchedArticlesFromHandles(routerResult.handles);
+    // Load content from router handles — [] when classifier said SKIP (router never ran).
+    const blogArticles = loadMatchedArticlesFromHandles(effectiveHandles);
 
     // Build system blocks + messages, call LLM
     const systemBlocks = buildSystemBlocks(context.userContextJson, { documentContent, orderSummary, blogArticles });
@@ -405,7 +428,7 @@ export async function action({ request }: ActionFunctionArgs) {
       conversationId: activeConversationId,
       messagePreview: message,
       latencyMs: tAfterLlm - tBeforeLlm,
-      matchedHandles: routerResult.handles,
+      matchedHandles: effectiveHandles,
       userId: auth.userId,
       isGuest: auth.isGuest,
     });
@@ -434,7 +457,7 @@ export async function action({ request }: ActionFunctionArgs) {
           });
           return;
         }
-        // FK on message_id now satisfied — safe to insert match event
+        // FK on message_id now satisfied — safe to insert match event.
         auth.client
           .from('chat_match_events')
           .insert({
@@ -442,15 +465,20 @@ export async function action({ request }: ActionFunctionArgs) {
             conversation_id: activeConversationId,
             user_id: auth.userId,
             message: sanitizedCurrent,
-            router_context: { first: sanitizedFirst ?? null, recent: sanitizedRecent },
-            matched_handles: routerResult.handles,
-            router_version: ROUTER_VERSION,
-            router_latency_ms: routerResult.latencyMs,
-            router_cache_hit: routerResult.cacheHit,
-            router_input_tokens: routerResult.usage.inputTokens,
-            router_cache_read_tokens: routerResult.usage.cacheReadTokens,
-            router_raw: routerResult.error ? (routerResult.rawJson?.slice(0, 500) ?? null) : null,
-            router_error: routerResult.error,
+            router_context: {
+              first: sanitizedFirst ?? null,
+              recent: sanitizedRecent,
+            },
+            matched_handles: effectiveHandles,
+            router_version: routerResult ? ROUTER_VERSION : null,
+            router_latency_ms: routerResult?.latencyMs ?? null,
+            router_cache_hit: routerResult?.cacheHit ?? null,
+            router_input_tokens: routerResult?.usage.inputTokens ?? null,
+            router_cache_read_tokens: routerResult?.usage.cacheReadTokens ?? null,
+            router_raw: routerResult?.error ? (routerResult.rawJson?.slice(0, 500) ?? null) : null,
+            router_error: routerResult?.error ?? null,
+            classification: classifierResult?.classification ?? null,
+            router_skipped: routerSkipped,
           })
           .then(({ error: matchError }: { error: { message: string } | null }) => {
             if (matchError) {
@@ -492,12 +520,17 @@ export async function action({ request }: ActionFunctionArgs) {
       cacheReadTokens: completion.usage.cacheReadTokens,
       cacheCreationTokens: completion.usage.cacheCreationTokens,
       cacheHitRatio: Math.round(100 * completion.usage.cacheReadTokens / Math.max(1, completion.usage.inputTokens)) / 100,
-      routerMs: routerResult.latencyMs,
-      routerCacheHit: routerResult.cacheHit,
-      routerInputTokens: routerResult.usage.inputTokens,
-      routerCacheReadTokens: routerResult.usage.cacheReadTokens,
-      handleCount: routerResult.handles.length,
-      routerError: routerResult.error,
+      routerMs: routerResult?.latencyMs ?? null,
+      routerCacheHit: routerResult?.cacheHit ?? null,
+      routerInputTokens: routerResult?.usage.inputTokens ?? null,
+      routerCacheReadTokens: routerResult?.usage.cacheReadTokens ?? null,
+      handleCount: routerResult?.handles.length ?? 0,
+      effectiveHandleCount: effectiveHandles.length,
+      routerError: routerResult?.error ?? null,
+      classifierMs: classifierResult?.latencyMs ?? null,
+      classification: classifierResult?.classification ?? null,
+      routerSkipped,
+      classifierError: classifierResult?.error ?? null,
       isGuest: auth.isGuest,
     }));
 

@@ -1062,6 +1062,34 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_fallback
   ON chat_messages (created_at DESC)
   WHERE is_fallback = TRUE;
 
+-- ===== chat_match_events.classification + router_skipped (2026-05-15) =====
+-- Pre-router classifier columns. A dedicated Haiku classifier decides whether
+-- the v2 router needs to fire for this turn. See app/lib/chat-classifier.server.ts
+-- and chat-architecture.md § Pre-router classifier.
+--
+-- classification: 'ROUTE' | 'GREETING' | 'PRODUCT' | 'ACCOUNT' | 'ERROR' | NULL
+--   NULL on rows from before the classifier shipped.
+-- router_skipped: TRUE iff the classifier said SKIP AND the router was not
+--   called. Default FALSE so pre-flag rows correctly report "router fired".
+
+ALTER TABLE chat_match_events
+  ADD COLUMN IF NOT EXISTS classification TEXT;
+
+ALTER TABLE chat_match_events
+  ADD COLUMN IF NOT EXISTS router_skipped BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Partial index — sparse-true assumption mirrors the fallback index.
+-- Powers "show me all turns where the router was skipped" audit queries.
+CREATE INDEX IF NOT EXISTS idx_match_events_router_skipped
+  ON chat_match_events (created_at DESC)
+  WHERE router_skipped = TRUE;
+
+-- Index on classification for category-rate dashboards ("what % were GREETING
+-- this week?"). Once the classifier flag is on every row is non-null, so a
+-- WHERE-clause predicate would prune nothing — keep it as a plain index.
+CREATE INDEX IF NOT EXISTS idx_match_events_classification
+  ON chat_match_events (classification, created_at DESC);
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

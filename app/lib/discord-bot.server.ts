@@ -19,6 +19,7 @@ import * as Sentry from '@sentry/remix';
 import { platformChatCompletion } from './platform-chat.server';
 import { reportChatFallback } from './chat.server';
 import { generateTitle } from './chat.server';
+import { ROUTER_VERSION, type RouterResult } from './chat-router.server';
 import { supabaseAdmin } from './supabase.server';
 import { createRateLimiter } from './rate-limiter';
 
@@ -276,7 +277,7 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       conversationId: conversationId ?? null,
       messagePreview: truncatedInput,
       latencyMs: tAfterLlm - tBeforeLlm,
-      matchedHandles: result.router.handles,
+      matchedHandles: result.routerResult?.handles ?? [],
       authorTag: message.author.tag,
     });
 
@@ -315,7 +316,10 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       assistantDiscordMessageIds: sentMessages.map(m => m.id),
       usage: result.usage,
       isFallback: result.isFallback,
-      router: result.router,
+      routerResult: result.routerResult,
+      classifier: result.classifier
+        ? { classification: result.classifier.classification, routerSkipped: result.classifier.routerSkipped }
+        : null,
       contextFirst: history.find(m => m.role === 'user')?.content,
       contextRecent: history.filter(m => m.role === 'user').slice(-3).map(m => m.content),
     }).catch((err) => {
@@ -524,16 +528,13 @@ interface PersistParams {
   assistantDiscordMessageIds: string[];
   usage: { inputTokens: number; outputTokens: number; cacheCreationTokens: number; cacheReadTokens: number };
   isFallback: boolean;
-  router: {
-    handles: string[];
-    latencyMs: number;
-    cacheHit: boolean;
-    inputTokens: number;
-    cacheReadTokens: number;
-    error: string | null;
-    rawJson: string | null;
-    version: number;
-  };
+  /** Router-call result. null when classifier said SKIP — router never ran. */
+  routerResult: RouterResult | null;
+  /** Pre-router classifier result. null when classifier flag is off. */
+  classifier: {
+    classification: string;
+    routerSkipped: boolean;
+  } | null;
   contextFirst?: string;
   contextRecent: string[];
 }
@@ -612,6 +613,8 @@ async function persistConversation(p: PersistParams): Promise<void> {
   }
 
   // Router event (analytics / QA). FK on message_id requires the assistant row to exist.
+  // All router_* metric columns are null on SKIP turns (router never ran).
+  const r = p.routerResult;
   const { error: evtErr } = await supabaseAdmin
     .from('chat_match_events')
     .insert({
@@ -624,14 +627,16 @@ async function persistConversation(p: PersistParams): Promise<void> {
         first: p.contextFirst ?? null,
         recent: p.contextRecent,
       },
-      matched_handles: p.router.handles,
-      router_version: p.router.version,
-      router_latency_ms: p.router.latencyMs,
-      router_cache_hit: p.router.cacheHit,
-      router_input_tokens: p.router.inputTokens,
-      router_cache_read_tokens: p.router.cacheReadTokens,
-      router_raw: p.router.error ? (p.router.rawJson?.slice(0, 500) ?? null) : null,
-      router_error: p.router.error,
+      matched_handles: r?.handles ?? [],
+      router_version: r ? ROUTER_VERSION : null,
+      router_latency_ms: r?.latencyMs ?? null,
+      router_cache_hit: r?.cacheHit ?? null,
+      router_input_tokens: r?.usage.inputTokens ?? null,
+      router_cache_read_tokens: r?.usage.cacheReadTokens ?? null,
+      router_raw: r?.error ? (r.rawJson?.slice(0, 500) ?? null) : null,
+      router_error: r?.error ?? null,
+      classification: p.classifier?.classification ?? null,
+      router_skipped: p.classifier?.routerSkipped ?? false,
     });
   if (evtErr) {
     Sentry.captureException(new Error('Discord: match-event insert failed'), {

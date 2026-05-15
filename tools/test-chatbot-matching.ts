@@ -273,7 +273,9 @@ const ALL_QUERIES: TestQuery[] = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'test-queries.json'), 'utf-8')
 );
 
-let filtered = ALL_QUERIES;
+// Classifier-only entries (test-classifier.ts) live in the same file but
+// have no `expected` handles array — exclude them from the router suite.
+let filtered = ALL_QUERIES.filter(q => Array.isArray(q.expected));
 if (categoryFilter) filtered = filtered.filter(q => q.category === categoryFilter);
 if (sourceFilter) filtered = filtered.filter(q => q.source === sourceFilter);
 

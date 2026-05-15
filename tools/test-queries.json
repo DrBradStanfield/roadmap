@@ -2165,5 +2165,72 @@
     "source": "audit-2026-05-14",
     "must_not_mention": ["anti-aging benefits", "anti-aging effects", "anti-aging properties", "anti-aging support", "for anti-aging", "MicroVitamin's anti-aging", "biohacking", "biohack"],
     "notes": "User uses forbidden 'anti-aging' framing. Router consistently matches multivitamins handle. Bot should pivot to specific benefits (cognition, skin elasticity, bone density) without product-positioning the term. Meta-commentary (\"I avoid 'anti-aging' as a framing because...\") is fine. CLAUDE.md HARD RULE."
+  },
+
+  {
+    "query": "hi",
+    "category": "classifier-greeting",
+    "source": "classifier-2026-05-15",
+    "expected_classification": "GREETING",
+    "notes": "Simplest greeting. Router currently fires + returns empty handles. Run via `npx tsx tools/test-classifier.ts`."
+  },
+  {
+    "query": "thanks!",
+    "category": "classifier-greeting",
+    "source": "classifier-2026-05-15",
+    "expected_classification": "GREETING"
+  },
+  {
+    "query": "can I save this chat?",
+    "category": "classifier-greeting",
+    "source": "classifier-2026-05-15",
+    "expected_classification": "GREETING",
+    "notes": "Meta-question about the chat itself — classifier treats as GREETING per the prompt."
+  },
+  {
+    "query": "what's in MicroVitamin?",
+    "category": "classifier-product",
+    "source": "classifier-2026-05-15",
+    "expected_classification": "PRODUCT"
+  },
+  {
+    "query": "do you ship to Australia?",
+    "category": "classifier-account",
+    "source": "classifier-2026-05-15",
+    "expected_classification": "ACCOUNT",
+    "notes": "Shipping question — Haiku reads this as logistics/order rather than product spec, which is reasonable. Both ACCOUNT and PRODUCT result in router-skip — functionally equivalent for the cost-saving goal."
+  },
+  {
+    "query": "what does Brad take?",
+    "category": "classifier-product",
+    "source": "classifier-2026-05-15",
+    "expected_classification": "PRODUCT"
+  },
+  {
+    "query": "where's my order #26646?",
+    "category": "classifier-account",
+    "source": "classifier-2026-05-15",
+    "expected_classification": "ACCOUNT"
+  },
+  {
+    "query": "I've been tired and gaining weight, could this be my thyroid?",
+    "category": "classifier-route",
+    "source": "classifier-2026-05-15",
+    "expected_classification": "ROUTE",
+    "notes": "Clinical symptom query — must route to load the fatigue + thyroid pathways."
+  },
+  {
+    "query": "does MicroVitamin help with my fatigue?",
+    "category": "classifier-route",
+    "source": "classifier-2026-05-15",
+    "expected_classification": "ROUTE",
+    "notes": "Borderline supplement+symptom — classifier prompt explicitly biases this to ROUTE so the fatigue pathway loads."
+  },
+  {
+    "query": "what time should I take simvastatin?",
+    "category": "classifier-route",
+    "source": "classifier-2026-05-15",
+    "expected_classification": "ROUTE",
+    "notes": "Drug PK question — the system-prompt drug-PK rule wants the pharmacist redirect, but the classifier should still ROUTE so the main LLM gets the relevant pathway context (or empty handles from the router, then the system prompt handles the redirect)."
   }
 ]
