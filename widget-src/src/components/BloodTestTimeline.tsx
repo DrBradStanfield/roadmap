@@ -823,21 +823,23 @@ function NumericInputCell({
   active, autoFocus, disabled, placeholder,
   onFocus, onBlur, onKeyDown = blockBadNumericKeys,
 }: NumericInputCellProps) {
-  const { error, range } = validateTypedValue(metric, value, display);
+  const { error } = validateTypedValue(metric, value, display);
   const status = !showStatusPreview || error ? null : previewStatus(metric, value, display, sex);
   return (
     <div className={`bt-cell-value ${wrapperClass}`}>
       <input
-        type="number"
+        // type="text" not "number" — number inputs strip comma decimals in
+        // European locales before parseLocalisedNumber can normalise them.
+        // validateTypedValue enforces the range JS-side.
+        type="text"
         inputMode="decimal"
+        pattern="[0-9.,]*"
         value={value}
         onChange={e => onChange(e.target.value)}
         onKeyDown={onKeyDown}
         onFocus={onFocus}
         onBlur={onBlur}
         placeholder={placeholder}
-        min={range.min}
-        max={range.max}
         aria-invalid={!!error}
         title={error ?? undefined}
         autoFocus={autoFocus}

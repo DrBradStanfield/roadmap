@@ -198,7 +198,7 @@ TARGET METRICS (use these exact keys):
 
 CRITICAL RULES:
 1. Extract ACTUAL measured result values ONLY. NEVER extract reference ranges, target values, or normal limits. Reference ranges often appear in parentheses, brackets, a "Reference" column, or after words like "Normal", "Ref", "Range".
-2. If the report shows BOTH current AND previous results (side by side or in columns), extract ONLY the most recent values.
+2. If the report shows previous/historical results (in a "Previous" column, "Last visit" column, trend graph, or any side-by-side layout), IGNORE them completely. Extract ONLY values from the current report's primary column, even if those historical columns are dated. Return at most ONE entry per metric — never duplicate a metric in the output.
 3. For the date: use the COLLECTION or SAMPLE date (when blood was drawn), NOT the report date, print date, or received date. Return as ISO format YYYY-MM-DD.
 4. For ambiguous date formats (e.g. 03/04/2026): prefer DD/MM/YYYY if the lab address or language suggests non-US origin. Prefer MM/DD/YYYY for US labs. If uncertain, set confidence to "low".
 5. For multi-page documents: the collection date may appear on the first page while results are on later pages. Correlate dates and results across all pages.
@@ -312,7 +312,7 @@ IF "lab_report":
 
   CRITICAL RULES:
   1. Extract ACTUAL measured result values ONLY. NEVER extract reference ranges, target values, or normal limits.
-  2. If both current AND previous results shown, extract ONLY the most recent values.
+  2. If the report shows previous/historical results (in a "Previous" column, "Last visit" column, trend graph, or any side-by-side layout), IGNORE them completely. Extract ONLY values from the current report's primary column, even if those historical columns are dated. Return at most ONE entry per metric — never duplicate a metric in the output.
   3. Use COLLECTION/SAMPLE date, NOT report/print date. Return as YYYY-MM-DD.
   4. For ambiguous dates (03/04/2026): prefer DD/MM/YYYY for non-US labs, MM/DD/YYYY for US.
   5. Multi-page documents: date on page 1, results on later pages — correlate them.

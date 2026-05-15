@@ -2451,6 +2451,14 @@ input[type="number"] {
   margin: 0 0 20px;
 }
 
+.upload-done-skipped {
+  font-size: 13.5px;
+  color: var(--color-text-light, #6b6b6b);
+  margin: -8px 0 20px;
+  max-width: 480px;
+  line-height: 1.45;
+}
+
 .upload-done-btn {
   padding: 10px 32px;
   font-size: 15px;
@@ -2586,11 +2594,13 @@ input[type="number"] {
 .review-confidence--low { color: var(--color-error); }
 
 .review-row-dup {
-  font-size: 11px;
-  color: var(--color-gray-light);
+  font-size: 12px;
+  color: var(--color-gray-dark);
   background: #f5f5f5;
-  padding: 2px 6px;
+  border: 1px solid var(--color-gray-border);
+  padding: 2px 7px;
   border-radius: 4px;
+  font-weight: 500;
 }
 
 .review-row-question {

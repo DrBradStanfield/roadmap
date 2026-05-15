@@ -815,29 +815,40 @@ interface BulkSaveResponse {
   success: boolean;
   data?: ApiMeasurement[];
   savedCount?: number;
+  skippedDuplicates?: number;
+  totalCount?: number;
   error?: string;
+}
+
+export interface BulkSaveResult {
+  saved: ApiMeasurement[];
+  /** How many submitted rows were already present (active) at (user, metric, recorded_at). */
+  skippedDuplicates: number;
 }
 
 /**
  * Save multiple measurements in a single request (from lab import review).
+ * Returns both the inserted rows and the count of dupes the server skipped,
+ * so the UI can surface "Saved X of Y" with an explanation for the gap.
  */
 export async function bulkSaveMeasurements(
   measurements: Array<{ metricType: string; value: number; recordedAt: string; source: string }>,
-): Promise<ApiMeasurement[]> {
+): Promise<BulkSaveResult> {
   try {
     const response = await fetch(`${PROXY_PATH}/api/measurements`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bulkMeasurements: measurements }),
     });
-    if (!response.ok) return [];
+    if (!response.ok) return { saved: [], skippedDuplicates: 0 };
 
     const data = await parseJsonResponse<BulkSaveResponse>(response);
-    return data?.success ? data.data || [] : [];
+    if (!data?.success) return { saved: [], skippedDuplicates: 0 };
+    return { saved: data.data ?? [], skippedDuplicates: data.skippedDuplicates ?? 0 };
   } catch (error) {
     console.warn('Bulk save error:', error);
     Sentry.captureException(error);
-    return [];
+    return { saved: [], skippedDuplicates: 0 };
   }
 }
 
