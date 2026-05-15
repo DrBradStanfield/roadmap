@@ -6,6 +6,10 @@
 
 **Commits**: `296d9ab`, `dee69c2`, `06aa627`
 
+> **Planned changes (May 2026):** see [`lab-upload-redesign.html`](lab-upload-redesign.html) for the active implementation spec. Triggered by a customer report (Dr Michael Schmidberger) of a wrong ApoB extraction with no available correction path. Scope summary at the end of this document; full schema diff, RPCs, and UI mockups in the spec.
+
+> **Companion overview:** [`lab-upload-overview.html`](lab-upload-overview.html) — visual architecture reference with a trace of the failure mode that prompted the redesign.
+
 ---
 
 ## Problem
@@ -419,8 +423,38 @@ See "Lp(a) Unit Conversion" section above.
 
 ## Future Extensions (v2)
 
-- **Scan report storage** (MRI, ultrasound) — same upload pipeline, different output (markdown/structured data instead of metrics)
+- **Scan report storage** (MRI, ultrasound) — same upload pipeline, different output (markdown/structured data instead of metrics) — **shipped via the unified extraction path**
 - **Apple Health import** — `source: 'apple_health'` already in schema, `externalId` for dedup
 - **Batch history upload** — extend to non-blood-test metrics (weight, BP over time)
-- **OCR confidence preview** — show rendered PDF page alongside extracted values for visual verification
+- **OCR confidence preview** — show rendered PDF page alongside extracted values for visual verification — *open question in [redesign spec](lab-upload-redesign.html) §3, Q1*
 - **Additional metrics** — as new metrics are added to the widget, add aliases to the LLM system prompt
+
+---
+
+## Planned changes (May 2026)
+
+Triggered by a customer report of a wrong ApoB extraction (`0.5 g/L` misread as `0.79`) with no in-product correction path. Full spec — schema diff, RPC code, UI mockups, implementation order — in [`lab-upload-redesign.html`](lab-upload-redesign.html). Summary of the four decisions taken:
+
+| # | Decision | Why |
+|---|---|---|
+| **D1** | Inline-edit the value at review time | Replace the read-only `<span>` value cell in `ReviewTable.tsx` with a number input. Lets the user correct LLM digit misreads at the strongest moment — looking at the source PDF and the extracted value side by side. |
+| **D2** | FHIR `entered-in-error` + `replaces` pattern for post-save correction (RPC-only enforcement) | Add `status` and `corrects_id` columns to `health_measurements`. Corrections route exclusively through the `correct_measurement` SECURITY DEFINER RPC — no user-facing UPDATE grant, no UPDATE policy. The RPC inserts a new active row (linked via `corrects_id`) and flips the prior row's status to `'entered-in-error'`. A BEFORE UPDATE trigger using `to_jsonb(NEW) - 'status'` is the final safety net: any column other than `status` cannot change, and `entered-in-error` is sticky. Pattern matches FHIR R4 `Observation` semantics and plays nicely with future EHR/Apple Health export. Chosen instead of in-place UPDATE (loses prior value) or silent delete-and-re-add (loses correction semantics). |
+| **D3** | Concurrency 5 at the LLM step | Tier 2 Anthropic ceiling (80K output tokens/min) accommodates this for the common lab-report workload. Server-side 429 retry absorbs the rare scan-heavy overflow. One-character change at [`UploadModal.tsx:313`](../widget-src/src/components/UploadModal.tsx#L313). Expected ~40–60% wall-clock reduction for 3–10 file uploads. |
+| **D4** | **No** dual-OCR / second-engine consensus | Inline edit gives the user the verification step the customer actually wanted, without doubling LLM cost or introducing a "engines disagree" UI state. |
+
+### What's NOT changing
+
+- Server-side hardcoded system prompt (prevents prompt injection)
+- HMAC auth on every endpoint
+- Never auto-save without explicit user confirmation
+- No raw PDF storage on the server
+- One LLM call per file (no cross-file batching in the prompt)
+- Claude Haiku 4.5 as the model (Sonnet fallback path remains a one-constant change if accuracy issues surface)
+
+### Open questions (not blockers)
+
+- **Q1.** Show a thumbnail of the rendered PDF page next to each review row?
+- **Q2.** Allow editing `recorded_at` as part of a post-save correction?
+- **Q3.** Audit-mode toggle in the history view to show corrected rows with strikethrough?
+
+All three are addressed with current recommendations in the spec but not yet locked in.
