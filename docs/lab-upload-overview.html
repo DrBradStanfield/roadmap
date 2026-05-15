@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lab Upload — Architecture Overview</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --ink: #1a1a1a;
+    --ink-2: #4a4a4a;
+    --ink-3: #767676;
+    --line: #e4e4e4;
+    --line-strong: #c8c8c8;
+    --brand: #0066cc;
+    --brand-soft: #e8f1fb;
+    --warn: #b54708;
+    --warn-soft: #fff4e5;
+    --bad: #b42318;
+    --bad-soft: #fbeae8;
+    --good: #027a48;
+    --good-soft: #e6f4ec;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.55;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 56px 32px 96px;
+  }
+  header.hero {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 28px;
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 600;
+  }
+  h1 {
+    font-size: 34px;
+    margin: 6px 0 12px;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  h2 {
+    font-size: 22px;
+    margin: 48px 0 16px;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-size: 16px;
+    margin: 24px 0 8px;
+    letter-spacing: -0.005em;
+  }
+  p, li { color: var(--ink-2); }
+  p.lead { color: var(--ink); font-size: 17px; max-width: 64ch; }
+  code, .mono { font-family: var(--mono); font-size: 0.88em; }
+  code {
+    background: #f0f0f0;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+  a { color: var(--brand); }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 20px 22px;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 760px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .pill-good { background: var(--good-soft); color: var(--good); }
+  .pill-warn { background: var(--warn-soft); color: var(--warn); }
+  .pill-bad { background: var(--bad-soft); color: var(--bad); }
+  .pill-brand { background: var(--brand-soft); color: var(--brand); }
+
+  /* Callout for the customer complaint */
+  .callout {
+    border-left: 3px solid var(--bad);
+    background: linear-gradient(90deg, var(--bad-soft) 0%, rgba(255,255,255,0) 60%);
+    padding: 18px 22px;
+    border-radius: 4px;
+    margin: 24px 0;
+  }
+  .callout .who {
+    font-size: 12px;
+    color: var(--ink-3);
+    margin-bottom: 4px;
+  }
+  .callout blockquote {
+    margin: 0;
+    color: var(--ink);
+    font-size: 15px;
+  }
+  .callout .ask {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin: 10px 0;
+  }
+  th, td {
+    text-align: left;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    font-weight: 600;
+    color: var(--ink);
+    background: #f5f5f5;
+    font-size: 13px;
+  }
+  td code { font-size: 12.5px; }
+
+  /* SVG containers */
+  .diagram {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 22px;
+    overflow-x: auto;
+  }
+  .diagram-caption {
+    font-size: 13px;
+    color: var(--ink-3);
+    margin-top: 8px;
+  }
+
+  /* Code blocks */
+  pre {
+    background: #0f1419;
+    color: #d6d6d6;
+    padding: 14px 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.55;
+    margin: 8px 0;
+  }
+  pre .k { color: #c792ea; }
+  pre .s { color: #c3e88d; }
+  pre .n { color: #f78c6c; }
+  pre .c { color: #6b7280; font-style: italic; }
+  pre .kv { color: #82aaff; }
+
+  /* Confidence dots — match the live UI */
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; margin-right: 6px; }
+  .dot-high { background: #16a34a; }
+  .dot-med  { background: #d97706; }
+  .dot-low  { background: #b42318; }
+
+  /* Trace box — used to walk through the customer case */
+  .trace {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .trace-step {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .trace-step:last-child { border-bottom: none; }
+  .trace-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .trace-num.bad { background: var(--bad); }
+  .trace-num.gap { background: var(--warn); }
+  .trace-step h4 { margin: 0 0 4px; font-size: 14.5px; }
+  .trace-step p { margin: 4px 0; font-size: 13.5px; }
+  .trace-step .filebadge {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+  }
+
+  /* Section dividers */
+  hr.soft {
+    border: 0;
+    border-top: 1px solid var(--line);
+    margin: 56px 0;
+  }
+
+  /* TOC */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px 22px;
+    font-size: 14px;
+  }
+  .toc ol { margin: 4px 0 0; padding-left: 22px; columns: 2; }
+  @media (max-width: 700px) { .toc ol { columns: 1; } }
+  .toc li { margin: 4px 0; }
+  .toc a { color: var(--ink); text-decoration: none; }
+  .toc a:hover { color: var(--brand); }
+
+  /* Meta strip */
+  .meta {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    color: var(--ink-3);
+    font-size: 13px;
+    margin-top: 14px;
+  }
+  .meta span strong { color: var(--ink); font-weight: 600; }
+
+  /* Highlight rows in trace where the bug bites */
+  .bug-row { background: var(--bad-soft); }
+  .gap-row { background: var(--warn-soft); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ============================================================== -->
+  <!-- HERO                                                            -->
+  <!-- ============================================================== -->
+  <header class="hero">
+    <div class="eyebrow">Architecture overview · Existing system</div>
+    <h1>Lab Upload — how it works today</h1>
+    <p class="lead">
+      Users drag a lab PDF/image/ZIP into the widget. A Claude Haiku call extracts target metrics,
+      the server resolves units to SI, and the user confirms before bulk-saving to Supabase.
+      This document maps the current pipeline against the failure path a customer recently reported,
+      to ground the upcoming redesign discussion.
+    </p>
+    <div class="meta">
+      <span><strong>Shipped:</strong> v341, March 2026 · commits <code>296d9ab</code>, <code>dee69c2</code>, <code>06aa627</code></span>
+      <span><strong>Companion doc:</strong> <a href="lab-upload.md">docs/lab-upload.md</a> (implementation detail)</span>
+      <span><strong>Status:</strong> <span class="pill pill-warn">Redesign under consideration</span></span>
+    </div>
+  </header>
+
+  <!-- ============================================================== -->
+  <!-- CUSTOMER COMPLAINT                                              -->
+  <!-- ============================================================== -->
+  <section class="callout">
+    <div class="who">Customer report — Dr. Michael J. Schmidberger (physicist)</div>
+    <blockquote>
+      "Health Roadmap parsed my Apo-B incorrectly. It parsed <strong>0.79</strong> from the PDF,
+      but the PDF states <strong>0.5 g/L</strong>. I tried to explain to the AI that this value
+      was incorrect, but the AI could not change it. Therefore it kept giving me advice centred
+      around this (very important) marker, which was completely wrong for me."
+    </blockquote>
+    <p class="ask">
+      <strong>His two asks:</strong>
+      <span class="pill pill-bad">1</span> Dual OCR with consensus — discard values when two engines disagree.
+      <span class="pill pill-bad">2</span> Let users correct values from the menu.
+    </p>
+  </section>
+
+  <!-- ============================================================== -->
+  <!-- TOC                                                             -->
+  <!-- ============================================================== -->
+  <nav class="toc" aria-label="Table of contents">
+    <strong style="font-size: 13px; color: var(--ink-3); letter-spacing: 0.04em; text-transform: uppercase;">Contents</strong>
+    <ol>
+      <li><a href="#flow">1 · End-to-end data flow</a></li>
+      <li><a href="#perf">2 · Performance: extraction pipelining</a></li>
+      <li><a href="#states">3 · Upload modal state machine</a></li>
+      <li><a href="#contract">4 · LLM extraction contract</a></li>
+      <li><a href="#units">5 · Unit resolution decision tree</a></li>
+      <li><a href="#confidence">6 · Confidence semantics</a></li>
+      <li><a href="#storage">7 · Storage map (3 tables)</a></li>
+      <li><a href="#gap">8 · The correction gap</a></li>
+      <li><a href="#trace">9 · Tracing Michael's ApoB failure</a></li>
+      <li><a href="#redesign">10 · Where his asks would intervene</a></li>
+      <li><a href="#decisions">11 · Design decisions that constrain redesign</a></li>
+    </ol>
+  </nav>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 1 — DATA FLOW                                           -->
+  <!-- ============================================================== -->
+  <h2 id="flow">1 · End-to-end data flow</h2>
+  <p>
+    Three trust zones: the browser (file parsing), the Remix backend (LLM proxy + unit resolution),
+    and Supabase (storage). Raw PDFs never leave the browser — only extracted text or page images
+    are sent to the LLM. The backend never persists the file.
+  </p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1000 360" width="100%" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, sans-serif;">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a4a4a"/>
+        </marker>
+        <marker id="arrow-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#b42318"/>
+        </marker>
+      </defs>
+
+      <!-- Zone backgrounds -->
+      <rect x="10"  y="20" width="320" height="320" rx="10" fill="#f3f7fb" stroke="#cfdcea" stroke-dasharray="3 3"/>
+      <rect x="340" y="20" width="320" height="320" rx="10" fill="#fbf6ef" stroke="#e6d8b8" stroke-dasharray="3 3"/>
+      <rect x="670" y="20" width="320" height="320" rx="10" fill="#f0f7f0" stroke="#cae0ca" stroke-dasharray="3 3"/>
+
+      <text x="170" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#3a5a78" letter-spacing="0.06em">BROWSER (widget)</text>
+      <text x="500" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#8a6515" letter-spacing="0.06em">REMIX BACKEND (Fly.io)</text>
+      <text x="830" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#2c6b2c" letter-spacing="0.06em">SUPABASE</text>
+
+      <!-- Boxes (browser) -->
+      <g font-size="12.5" fill="#1a1a1a" text-anchor="middle">
+        <rect x="40"  y="70"  width="240" height="46" rx="6" fill="#fff" stroke="#7a9bbd"/>
+        <text x="160" y="92">User drops file(s)</text>
+        <text x="160" y="106" font-size="10" fill="#767676">PDF · JPG · PNG · ZIP</text>
+
+        <rect x="40"  y="138" width="240" height="46" rx="6" fill="#fff" stroke="#7a9bbd"/>
+        <text x="160" y="160">pdf.js / JSZip extract</text>
+        <text x="160" y="174" font-size="10" fill="#767676">health-upload.js (lazy, 543KB)</text>
+
+        <rect x="40"  y="206" width="240" height="46" rx="6" fill="#fff" stroke="#7a9bbd"/>
+        <text x="160" y="228">text blocks  +  rendered images</text>
+        <text x="160" y="242" font-size="10" fill="#767676">scanned page → JPEG base64</text>
+
+        <rect x="40"  y="274" width="240" height="46" rx="6" fill="#fff" stroke="#7a9bbd"/>
+        <text x="160" y="296">Review table</text>
+        <text x="160" y="310" font-size="10" fill="#767676">read-only value · checkbox</text>
+      </g>
+
+      <!-- Boxes (backend) -->
+      <g font-size="12.5" fill="#1a1a1a" text-anchor="middle">
+        <rect x="370" y="70"  width="240" height="46" rx="6" fill="#fff" stroke="#c9a85b"/>
+        <text x="490" y="92">api.lab-import</text>
+        <text x="490" y="106" font-size="10" fill="#767676">HMAC · rate-limit 200/day</text>
+
+        <rect x="370" y="138" width="240" height="46" rx="6" fill="#fff" stroke="#c9a85b"/>
+        <text x="490" y="160">Claude Haiku 4.5</text>
+        <text x="490" y="174" font-size="10" fill="#767676">system prompt hardcoded</text>
+
+        <rect x="370" y="206" width="240" height="46" rx="6" fill="#fff" stroke="#c9a85b"/>
+        <text x="490" y="228">resolveLabValues()</text>
+        <text x="490" y="242" font-size="10" fill="#767676">unit lookup + range fallback</text>
+
+        <rect x="370" y="274" width="240" height="46" rx="6" fill="#fff" stroke="#c9a85b"/>
+        <text x="490" y="296">api.measurements (bulk)</text>
+        <text x="490" y="310" font-size="10" fill="#767676">source: 'lab_import'</text>
+      </g>
+
+      <!-- Boxes (DB) -->
+      <g font-size="12.5" fill="#1a1a1a" text-anchor="middle">
+        <rect x="700" y="138" width="260" height="46" rx="6" fill="#fff" stroke="#7eaa7e"/>
+        <text x="830" y="160">health_measurements</text>
+        <text x="830" y="174" font-size="10" fill="#767676">11 core metrics, SI values</text>
+
+        <rect x="700" y="206" width="260" height="46" rx="6" fill="#fff" stroke="#7eaa7e"/>
+        <text x="830" y="228">lab_values</text>
+        <text x="830" y="242" font-size="10" fill="#767676">extras (sodium, alt, ferritin…)</text>
+
+        <rect x="700" y="274" width="260" height="46" rx="6" fill="#fff" stroke="#7eaa7e"/>
+        <text x="830" y="296">health_documents</text>
+        <text x="830" y="310" font-size="10" fill="#767676">scans / letters as markdown</text>
+      </g>
+
+      <!-- Arrows -->
+      <line x1="160" y1="116" x2="160" y2="138" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <line x1="160" y1="184" x2="160" y2="206" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <line x1="280" y1="229" x2="370" y2="229" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+      <line x1="490" y1="116" x2="490" y2="138" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <line x1="490" y1="184" x2="490" y2="206" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <line x1="370" y1="229" x2="280" y2="229" stroke="#4a4a4a" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+      <!-- Backend -> Browser response -->
+      <text x="325" y="220" font-size="9.5" fill="#767676">extracted values</text>
+
+      <!-- Review -> bulk save -->
+      <line x1="280" y1="297" x2="370" y2="297" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <line x1="610" y1="297" x2="700" y2="231" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <line x1="610" y1="297" x2="700" y2="161" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <line x1="610" y1="297" x2="700" y2="297" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
+    </svg>
+    <div class="diagram-caption">
+      Hardcoded system prompt + server-side unit resolution mean the client never sees extraction logic.
+      The dashed return arrow carries <code>{ metric, valueSI, displayValue, displayUnit, confidence, question? }</code>.
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 2 — PERFORMANCE / PIPELINING                            -->
+  <!-- ============================================================== -->
+  <h2 id="perf">2 · Performance: extraction pipelining</h2>
+  <p>
+    Single LLM call per file. The widget runs a producer/consumer pipeline
+    (<code>processPipeline()</code> in <code>UploadModal.tsx</code>) so file extraction overlaps
+    with the in-flight LLM call. The producer extracts pages (pdf.js, JSZip, canvas);
+    the consumer sends them to the LLM.
+  </p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 980 220" width="100%" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, sans-serif;">
+      <g font-size="12">
+        <!-- Header -->
+        <text x="20" y="22" font-weight="700" fill="#1a1a1a">Current (pipelined, concurrency 1)</text>
+        <text x="20" y="40" font-size="11" fill="#767676">Extraction of file N+1 overlaps with the LLM call for file N. API busy ~100% of wall time.</text>
+
+        <!-- Time axis -->
+        <line x1="80" y1="60" x2="900" y2="60" stroke="#c8c8c8" />
+        <text x="80" y="55" font-size="10" fill="#767676">0s</text>
+        <text x="245" y="55" font-size="10" fill="#767676">5s</text>
+        <text x="410" y="55" font-size="10" fill="#767676">10s</text>
+        <text x="575" y="55" font-size="10" fill="#767676">15s</text>
+        <text x="740" y="55" font-size="10" fill="#767676">20s</text>
+        <text x="900" y="55" font-size="10" fill="#767676">25s</text>
+
+        <!-- File 1 -->
+        <text x="20" y="80" font-weight="600">File 1</text>
+        <rect x="80"  y="68" width="55"  height="18" fill="#cfdcea" stroke="#7a9bbd"/>
+        <text x="107" y="81" text-anchor="middle" font-size="10">extract</text>
+        <rect x="135" y="68" width="165" height="18" fill="#0066cc" stroke="#0066cc"/>
+        <text x="217" y="81" text-anchor="middle" font-size="10" fill="white">LLM call</text>
+
+        <!-- File 2 -->
+        <text x="20" y="103" font-weight="600">File 2</text>
+        <rect x="135" y="91" width="55"  height="18" fill="#cfdcea" stroke="#7a9bbd"/>
+        <text x="162" y="104" text-anchor="middle" font-size="10">extract</text>
+        <rect x="300" y="91" width="165" height="18" fill="#0066cc" stroke="#0066cc"/>
+        <text x="382" y="104" text-anchor="middle" font-size="10" fill="white">LLM call</text>
+
+        <!-- File 3 -->
+        <text x="20" y="126" font-weight="600">File 3</text>
+        <rect x="190" y="114" width="55" height="18" fill="#cfdcea" stroke="#7a9bbd"/>
+        <text x="217" y="127" text-anchor="middle" font-size="10">extract</text>
+        <rect x="465" y="114" width="165" height="18" fill="#0066cc" stroke="#0066cc"/>
+        <text x="547" y="127" text-anchor="middle" font-size="10" fill="white">LLM call</text>
+
+        <!-- File 4 -->
+        <text x="20" y="149" font-weight="600">File 4</text>
+        <rect x="245" y="137" width="55" height="18" fill="#cfdcea" stroke="#7a9bbd"/>
+        <text x="272" y="150" text-anchor="middle" font-size="10">extract</text>
+        <rect x="630" y="137" width="165" height="18" fill="#0066cc" stroke="#0066cc"/>
+        <text x="712" y="150" text-anchor="middle" font-size="10" fill="white">LLM call</text>
+
+        <!-- Total markers -->
+        <line x1="80"  y1="170" x2="80"  y2="180" stroke="#1a1a1a"/>
+        <line x1="795" y1="170" x2="795" y2="180" stroke="#1a1a1a"/>
+        <line x1="80"  y1="175" x2="795" y2="175" stroke="#1a1a1a"/>
+        <text x="437" y="195" text-anchor="middle" font-size="11" font-weight="600">total ≈ 25s for 4 files</text>
+      </g>
+    </svg>
+    <div class="diagram-caption">
+      Concurrency = 1 at the LLM step: <code>while (activeWorkers &lt; 1 &amp;&amp; queue.length &gt; 0)</code>
+      at <code>UploadModal.tsx:313</code>. Set in commit <code>011b906</code> (Mar 27 2026) when the
+      pipeline was rewritten to overlap extraction with the in-flight LLM call.
+    </div>
+  </div>
+
+  <h3>Why concurrency 1 today (and what unblocks more)</h3>
+  <ul style="font-size: 14px;">
+    <li><strong>Anthropic Build Tier 1 cap.</strong> 10K output tokens/min. Unified extraction emits up to ~4K output tokens per file (markdown conversion of scans/letters is the worst case). Two concurrent files = ~8K/min (safe); three = ~12K/min (429s).</li>
+    <li><strong>The pipelining trick.</strong> Because pdf.js extraction (~3–5s for scanned PDFs) and the LLM call (~5s) are roughly equal in duration, overlapping them gives the same wall-clock as concurrency 2 *if* extraction is the bottleneck. For text-heavy PDFs where extraction is fast (&lt;1s), the LLM dominates and concurrency 2 would clearly win.</li>
+    <li><strong>Server-side retry on 429.</strong> <code>callAnthropic()</code> in <code>anthropic.server.ts</code> retries twice with exponential backoff. So even at concurrency 2 on Tier 1, occasional 429s are absorbed silently (with added latency).</li>
+    <li><strong>Bumping to concurrency 2 is a one-character change</strong> (<code>&lt; 1</code> → <code>&lt; 2</code>) once Tier 2 is confirmed. No queue/UI refactor needed.</li>
+  </ul>
+
+  <h3>A separate path: Anthropic Batch API for 20+ files</h3>
+  <p style="font-size: 14px;">
+    The widget routes uploads of <code>≥ BATCH_THRESHOLD</code> files through
+    <code>processBatch()</code> → Anthropic Batch API instead of the interactive pipeline. This
+    is <strong>50% cheaper per call</strong> but <strong>async with up to 24h SLA</strong>
+    (typically minutes). Used for bulk historical imports (ZIP of a decade of lab reports),
+    not the common 1–5 file case. Polled via <code>/api/lab-import?batchId=&lt;id&gt;</code>.
+  </p>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 3 — STATE MACHINE                                       -->
+  <!-- ============================================================== -->
+  <h2 id="states">3 · Upload modal state machine</h2>
+  <p>Implemented in <code>widget-src/src/components/UploadModal.tsx</code>. Linear flow with one cancel path.</p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 1000 200" width="100%" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, sans-serif;">
+      <defs>
+        <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a4a4a"/>
+        </marker>
+      </defs>
+      <g font-size="13" text-anchor="middle">
+        <rect x="20"  y="60" width="200" height="80" rx="8" fill="#e8f1fb" stroke="#0066cc"/>
+        <text x="120" y="92" font-weight="700">1 · Select</text>
+        <text x="120" y="110" font-size="11" fill="#4a4a4a">drag-drop · file browser</text>
+        <text x="120" y="124" font-size="11" fill="#4a4a4a">max 20 files · 10MB each</text>
+
+        <rect x="260" y="60" width="200" height="80" rx="8" fill="#fff4e5" stroke="#b54708"/>
+        <text x="360" y="92" font-weight="700">2 · Processing</text>
+        <text x="360" y="110" font-size="11" fill="#4a4a4a">extract → LLM → resolve</text>
+        <text x="360" y="124" font-size="11" fill="#4a4a4a">cancellable</text>
+
+        <rect x="500" y="60" width="200" height="80" rx="8" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
+        <text x="600" y="92" font-weight="700">3 · Review</text>
+        <text x="600" y="110" font-size="11" fill="#4a4a4a">check / uncheck rows</text>
+        <text x="600" y="124" font-size="11" fill="#b42318">value is read-only ←</text>
+
+        <rect x="740" y="60" width="200" height="80" rx="8" fill="#e6f4ec" stroke="#027a48"/>
+        <text x="840" y="92" font-weight="700">4 · Done</text>
+        <text x="840" y="110" font-size="11" fill="#4a4a4a">bulk-saved</text>
+        <text x="840" y="124" font-size="11" fill="#4a4a4a">widget refreshes</text>
+
+        <line x1="220" y1="100" x2="260" y2="100" stroke="#4a4a4a" marker-end="url(#arrow2)"/>
+        <line x1="460" y1="100" x2="500" y2="100" stroke="#4a4a4a" marker-end="url(#arrow2)"/>
+        <line x1="700" y1="100" x2="740" y2="100" stroke="#4a4a4a" marker-end="url(#arrow2)"/>
+
+        <!-- cancel arrow -->
+        <path d="M 360 60 C 360 30, 200 30, 200 60" fill="none" stroke="#b54708" stroke-dasharray="3 3" marker-end="url(#arrow2)"/>
+        <text x="280" y="32" font-size="10" fill="#b54708">cancel (preserves partial results)</text>
+      </g>
+    </svg>
+    <div class="diagram-caption">
+      <strong>The redesign-relevant fact:</strong> at state 3, the value is rendered as a
+      <code>&lt;span&gt;</code>, not an input. The user can only check, uncheck, or change the date.
+      See <code>ReviewTable.tsx:428</code>.
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 3 — LLM CONTRACT                                        -->
+  <!-- ============================================================== -->
+  <h2 id="contract">4 · LLM extraction contract</h2>
+  <p>
+    The system prompt lives in <code>app/lib/anthropic.server.ts</code> (hardcoded server-side
+    so a malicious PDF can't override it). One LLM call per file. Two prompts exist:
+    <code>SYSTEM_PROMPT</code> (lab-only, legacy) and <code>UNIFIED_SYSTEM_PROMPT</code>
+    (classify + extract or convert to markdown). Both target the same 11 core metrics.
+  </p>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Target metrics (11)</h3>
+      <p style="font-size: 13.5px;">
+        <code>ldl</code> · <code>hdl</code> · <code>total_cholesterol</code> · <code>triglycerides</code> ·
+        <code>hba1c</code> · <code>creatinine</code> · <code>apob</code> · <code>psa</code> ·
+        <code>lpa</code> · <code>systolic_bp</code> · <code>diastolic_bp</code>
+      </p>
+      <p style="font-size: 13px; color: var(--ink-3);">
+        Anything outside this list goes to <code>additionalValues</code> (unified) or
+        <code>unrecognized</code> (legacy).
+      </p>
+    </div>
+    <div class="card">
+      <h3>Critical rules in the prompt</h3>
+      <ol style="margin: 0; padding-left: 18px; font-size: 13.5px;">
+        <li>Extract <strong>measured values only</strong> — never reference ranges or targets</li>
+        <li>If current + previous shown, take <strong>only the most recent</strong></li>
+        <li>Use the <strong>collection date</strong>, not the print/report date</li>
+        <li>Ambiguous dates: <code>DD/MM/YYYY</code> for non-US labs, else low confidence</li>
+        <li>Uncertain values → <code>confidence: "low"</code> + a <code>question</code> string</li>
+      </ol>
+    </div>
+  </div>
+
+  <h3>Output schema (after server-side unit resolution)</h3>
+  <pre><span class="c">// per file, returned by /api/lab-import</span>
+{
+  <span class="kv">"reportDate"</span>: <span class="s">"2024-11-21"</span>,
+  <span class="kv">"values"</span>: [
+    {
+      <span class="kv">"metric"</span>: <span class="s">"apob"</span>,
+      <span class="kv">"valueSI"</span>: <span class="n">0.79</span>,           <span class="c">// saved to DB</span>
+      <span class="kv">"displayValue"</span>: <span class="n">0.79</span>,      <span class="c">// what the LLM read</span>
+      <span class="kv">"displayUnit"</span>: <span class="s">"g/L"</span>,
+      <span class="kv">"confidence"</span>: <span class="s">"high"</span>,      <span class="c">// LLM's self-rating</span>
+      <span class="kv">"question"</span>: undefined
+    }
+  ],
+  <span class="kv">"additionalValues"</span>: [ <span class="c">/* sodium, ferritin, alt, … */</span> ],
+  <span class="kv">"unrecognized"</span>: [ <span class="s">"vitamin D: 45 ng/mL"</span> ],
+  <span class="kv">"document"</span>: <span class="k">null</span>                <span class="c">// non-null for scans, letters, etc.</span>
+}</pre>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 4 — UNIT RESOLUTION                                     -->
+  <!-- ============================================================== -->
+  <h2 id="units">5 · Unit resolution decision tree</h2>
+  <p>
+    The LLM returns a unit string like <code>"mg/dL"</code> or <code>"g/L"</code>. The backend
+    converts to SI canonical via <code>resolveUnit()</code> in <code>app/lib/anthropic.server.ts</code>.
+    The lookup table is built from <code>UNIT_DEFS</code> (auto-populated) plus a handful of
+    manual aliases.
+  </p>
+
+  <div class="diagram">
+    <svg viewBox="0 0 980 320" width="100%" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, sans-serif;">
+      <defs>
+        <marker id="arrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a4a4a"/>
+        </marker>
+      </defs>
+      <g font-size="13" text-anchor="middle">
+        <rect x="360" y="14" width="260" height="48" rx="6" fill="#e8f1fb" stroke="#0066cc"/>
+        <text x="490" y="36" font-weight="600">LLM returns { metric, value, unit }</text>
+        <text x="490" y="52" font-size="11" fill="#4a4a4a">e.g. { apob, 0.79, "g/L" }</text>
+
+        <rect x="320" y="92" width="340" height="48" rx="6" fill="#fff" stroke="#4a4a4a"/>
+        <text x="490" y="114" font-weight="600">Normalise: lower, strip spaces, µ → u</text>
+        <text x="490" y="128" font-size="11" fill="#4a4a4a">"g/L" → "g/l"</text>
+
+        <rect x="320" y="170" width="340" height="48" rx="6" fill="#fff" stroke="#4a4a4a"/>
+        <text x="490" y="192" font-weight="600">Lookup UNIT_LOOKUP[metric][normalised]</text>
+        <text x="490" y="206" font-size="11" fill="#4a4a4a">hit → use system · miss → fallback</text>
+
+        <!-- HIT branch -->
+        <rect x="40" y="250" width="320" height="60" rx="6" fill="#e6f4ec" stroke="#027a48"/>
+        <text x="200" y="274" font-weight="600">HIT — confident: true</text>
+        <text x="200" y="290" font-size="11" fill="#4a4a4a">apply SI/conventional conversion</text>
+        <text x="200" y="304" font-size="11" fill="#4a4a4a">keep LLM's confidence as-is</text>
+
+        <!-- FALLBACK branch -->
+        <rect x="620" y="250" width="320" height="60" rx="6" fill="#fff4e5" stroke="#b54708"/>
+        <text x="780" y="274" font-weight="600">MISS — range fallback</text>
+        <text x="780" y="290" font-size="11" fill="#4a4a4a">fits SI only / conv only / both / neither</text>
+        <text x="780" y="304" font-size="11" fill="#b54708">downgrade high → medium</text>
+
+        <line x1="490" y1="62" x2="490" y2="92" stroke="#4a4a4a" marker-end="url(#arrow3)"/>
+        <line x1="490" y1="140" x2="490" y2="170" stroke="#4a4a4a" marker-end="url(#arrow3)"/>
+        <line x1="400" y1="218" x2="200" y2="250" stroke="#027a48" marker-end="url(#arrow3)"/>
+        <line x1="580" y1="218" x2="780" y2="250" stroke="#b54708" marker-end="url(#arrow3)"/>
+      </g>
+    </svg>
+    <div class="diagram-caption">
+      Note: the resolver only downgrades confidence on a lookup miss. A <em>lookup hit</em>
+      always trusts the LLM's self-rating — including when the LLM misread the digit itself.
+      This is the trust seam that Michael's case sits on.
+    </div>
+  </div>
+
+  <h3>UNIT_LOOKUP for ApoB (today)</h3>
+  <table>
+    <thead><tr><th>Key</th><th>Maps to</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td><code>g/l</code></td><td>SI</td><td>auto from <code>UNIT_DEFS.apob.label.si</code></td></tr>
+      <tr><td><code>mg/dl</code></td><td>conventional</td><td>auto from <code>UNIT_DEFS.apob.label.conventional</code></td></tr>
+      <tr><td><code>mg/dl</code> (alias)</td><td>conventional</td><td>manual <code>addAlias()</code> — redundant</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size: 13.5px;">
+    ApoB SI canonical = <code>g/L</code>, validation range <code>0–3</code>. Conventional =
+    <code>mg/dL</code>, range <code>0–300</code>. So both <code>0.5 g/L</code> and
+    <code>0.79 g/L</code> (and <code>50 mg/dL</code>, <code>79 mg/dL</code>) are in range —
+    nothing here will catch a digit misread.
+  </p>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 5 — CONFIDENCE                                          -->
+  <!-- ============================================================== -->
+  <h2 id="confidence">6 · Confidence semantics — what each label means today</h2>
+  <table>
+    <thead><tr><th style="width:80px;">Level</th><th>Set when…</th><th>What the UI does with it</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="dot dot-high"></span>high</td>
+        <td>LLM self-rated "high" <em>and</em> the unit was a direct lookup hit</td>
+        <td>Row pre-checked. No <code>question</code> shown.</td>
+      </tr>
+      <tr>
+        <td><span class="dot dot-med"></span>medium</td>
+        <td>LLM rated "medium", OR LLM rated "high" but unit was inferred via range fallback</td>
+        <td>Row pre-checked. <code>question</code> string shown below row if present.</td>
+      </tr>
+      <tr>
+        <td><span class="dot dot-low"></span>low</td>
+        <td>LLM rated "low" (ambiguous date, both current+previous visible, etc.)</td>
+        <td>Row <strong>pre-unchecked</strong>. <code>question</code> string shown.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size: 13.5px; color: var(--ink-3);">
+    Confidence is <em>advisory</em>, not gating. Nothing in the pipeline cross-checks the LLM
+    against itself or against a second engine. Confidence comes entirely from the LLM's own
+    introspection, which it is not particularly good at when the input is a low-resolution
+    scanned PDF.
+  </p>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 6 — STORAGE                                             -->
+  <!-- ============================================================== -->
+  <h2 id="storage">7 · Storage map</h2>
+  <p>Three tables receive data from one upload. All writes carry <code>source: 'lab_import'</code> for future filtering.</p>
+
+  <table>
+    <thead><tr><th>Table</th><th>Receives</th><th>Schema highlights</th><th>Mutable?</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>health_measurements</code></td>
+        <td>The 11 core metrics — converted to SI canonical</td>
+        <td><code>metric_type</code>, <code>value</code> (SI), <code>recorded_at</code>, <code>source</code>, <code>external_id</code></td>
+        <td><span class="pill pill-bad">No</span> append-only (no UPDATE policy)</td>
+      </tr>
+      <tr>
+        <td><code>lab_values</code></td>
+        <td>Everything else numeric (sodium, ferritin, alt, etc.) — stored as-is</td>
+        <td><code>metric_name</code>, <code>value</code>, <code>unit</code>, <code>reference_low/high</code></td>
+        <td><span class="pill pill-bad">No</span> append-only</td>
+      </tr>
+      <tr>
+        <td><code>health_documents</code></td>
+        <td>Non-lab classifications (scans, clinic letters, discharge summaries…)</td>
+        <td><code>document_type</code>, <code>title</code>, <code>content_md</code>, <code>metadata</code> JSON</td>
+        <td><span class="pill pill-warn">Delete-only</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="font-size: 13.5px;">
+    <strong>What is <em>not</em> stored:</strong> the original PDF, the LLM response, the
+    extracted text/images, the <code>displayValue</code>/<code>displayUnit</code> pair, or the
+    confidence rating. After save, all we have is the SI value, the date, and the
+    <code>source</code> tag. There is no audit trail back to "which upload session produced this row".
+  </p>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 7 — CORRECTION GAP                                      -->
+  <!-- ============================================================== -->
+  <h2 id="gap">8 · The correction gap</h2>
+  <p>
+    Once a wrong value is saved, here is what a user can — and cannot — do today.
+  </p>
+
+  <div class="grid-2">
+    <div class="card" style="border-left: 3px solid var(--good);">
+      <h3 style="color: var(--good);">What works</h3>
+      <ul style="font-size: 13.5px;">
+        <li>Re-upload the corrected PDF — produces a new measurement at the same date. <em>But:</em> duplicate detection (same metric + same date prefix) flags it as "Already saved" and pre-unchecks it.</li>
+        <li>Type a new value into the longitudinal field and click <strong>Save</strong> — adds a new row at today's date.</li>
+        <li>Delete a single measurement from the history view (<code>DELETE /api/measurements</code> with <code>measurementId</code>).</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--bad);">
+      <h3 style="color: var(--bad);">What doesn't work</h3>
+      <ul style="font-size: 13.5px;">
+        <li><strong>No edit-extracted-value UI.</strong> The review-table value cell is a <code>&lt;span&gt;</code> (<code>ReviewTable.tsx:428</code>). User can uncheck but not type a corrected number.</li>
+        <li><strong>Chatbot is read-only against measurements.</strong> Telling it "that ApoB is wrong" can't change <code>health_measurements</code>. The system prompt has no tool to update measurements; the row stays in chat context and continues to drive advice.</li>
+        <li><strong>Append-only history.</strong> Once saved, a row can be deleted but never edited. The original wrong value can never be transformed in place.</li>
+        <li><strong>No re-OCR path.</strong> No "the LLM got this wrong, try a different model" affordance.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 8 — TRACE                                               -->
+  <!-- ============================================================== -->
+  <h2 id="trace">9 · Tracing Michael's ApoB failure through the pipeline</h2>
+  <p>
+    Reconstructing the path his <code>0.5 g/L</code> took to become a stored <code>0.79 g/L</code>.
+    Marked steps: <span class="pill pill-bad">●</span> bug occurs · <span class="pill pill-warn">●</span> intervention point missing.
+  </p>
+
+  <div class="trace">
+    <div class="trace-step">
+      <div class="trace-num">1</div>
+      <div>
+        <h4>PDF uploaded, page rendered to image</h4>
+        <p>His lab report's ApoB row reads <strong>0.5 g/L</strong>. pdf.js sees a thin text layer
+          (or none), falls back to canvas rendering at 1.5× scale, sends as JPEG base64.</p>
+        <p class="filebadge">widget-src/src/lib/pdf-extract.ts</p>
+      </div>
+    </div>
+
+    <div class="trace-step bug-row">
+      <div class="trace-num bad">2</div>
+      <div>
+        <h4>Claude Haiku 4.5 misreads the digit</h4>
+        <p>Vision pass returns <code>{ metric: "apob", value: 0.79, unit: "g/L", confidence: "high" }</code>.
+          The character "5" was misread as "79", or — more likely — Haiku picked up an adjacent value
+          (a reference-range edge, a different row, a previous result). Both rules 1 and 2 in the
+          system prompt warn against this, but the model is the only thing enforcing them.</p>
+        <p class="filebadge">app/lib/anthropic.server.ts:180–212 (SYSTEM_PROMPT) · model: claude-haiku-4-5-20251001</p>
+      </div>
+    </div>
+
+    <div class="trace-step">
+      <div class="trace-num">3</div>
+      <div>
+        <h4>Unit resolution: lookup hit</h4>
+        <p><code>norm("g/L") = "g/l"</code> → <code>UNIT_LOOKUP.apob["g/l"] = "si"</code> →
+          <code>valueSI = 0.79</code>, <code>confident: true</code>. No fallback, no confidence downgrade.</p>
+        <p class="filebadge">app/lib/anthropic.server.ts → resolveUnit() · ApoB SI range 0–3 (0.79 fits cleanly)</p>
+      </div>
+    </div>
+
+    <div class="trace-step gap-row">
+      <div class="trace-num gap">4</div>
+      <div>
+        <h4>Review table renders value as read-only text</h4>
+        <p>Row shows <code>0.79 g/L</code> · <span class="dot dot-high"></span>high · checkbox pre-checked.
+          Michael sees the wrong number on screen but has no input to fix it. He clicks Save anyway
+          (or accepts the default), since the alternative is just not saving.</p>
+        <p class="filebadge">widget-src/src/components/ReviewTable.tsx:428 — <code>&lt;span className="review-row-value"&gt;</code></p>
+      </div>
+    </div>
+
+    <div class="trace-step">
+      <div class="trace-num">5</div>
+      <div>
+        <h4>Bulk save</h4>
+        <p><code>POST /api/measurements { bulkMeasurements: [{ metricType: "apob", value: 0.79, recordedAt, source: "lab_import" }] }</code>.
+          Row inserted into <code>health_measurements</code>. No <code>displayValue</code>,
+          <code>displayUnit</code>, or confidence retained.</p>
+        <p class="filebadge">app/routes/api.measurements.ts:353–385</p>
+      </div>
+    </div>
+
+    <div class="trace-step gap-row">
+      <div class="trace-num gap">6</div>
+      <div>
+        <h4>Suggestion engine fires on 0.79 g/L</h4>
+        <p>ApoB 0.79 g/L is high; cascade suggests escalating lipid therapy. Suggestions render in
+          the widget and in any reminder email.</p>
+        <p class="filebadge">packages/health-core/src/suggestions.ts (ApoB-driven cascade)</p>
+      </div>
+    </div>
+
+    <div class="trace-step gap-row">
+      <div class="trace-num gap">7</div>
+      <div>
+        <h4>User tells the chatbot "this is wrong"</h4>
+        <p>Chat has the value in <code>latestValues.apob = 0.79</code>. It can acknowledge the
+          complaint but cannot write to <code>health_measurements</code> — there is no tool
+          for that. It also has no way to know the value came from an upload (the
+          <code>source</code> field isn't in chat context). So next turn, it keeps recommending
+          based on 0.79.</p>
+        <p class="filebadge">app/lib/chat.server.ts → assembleChatContext() · app/lib/chat-system-prompt.md</p>
+      </div>
+    </div>
+
+    <div class="trace-step">
+      <div class="trace-num">8</div>
+      <div>
+        <h4>Only escape hatch: delete + re-enter</h4>
+        <p>Michael's options are (a) delete the row from history then type 0.5 manually, or
+          (b) accept the wrong value lives in his history forever. Neither was discoverable
+          from his vantage point, so he emailed instead.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 9 — WHERE HIS ASKS LAND                                 -->
+  <!-- ============================================================== -->
+  <h2 id="redesign">10 · Where Michael's asks would intervene</h2>
+
+  <div class="grid-2">
+    <div class="card" style="border-left: 3px solid var(--brand);">
+      <h3>Ask 1 — dual OCR with consensus</h3>
+      <p style="font-size: 13.5px;">
+        Intervenes at <strong>step 2</strong> of the trace. Today's pipeline trusts a single
+        Haiku call. Possible shapes:
+      </p>
+      <ul style="font-size: 13.5px;">
+        <li><strong>Two Claude calls</strong> with different temperatures or different prompts; require value-level agreement to mark <code>confidence: high</code>.</li>
+        <li><strong>Claude + a non-LLM OCR</strong> (Tesseract or a vendor) for the numeric fields; consensus required, otherwise downgrade to <code>low</code> (pre-unchecked).</li>
+        <li><strong>Same prompt, two models</strong> — Haiku + Sonnet, or Haiku + a vision-OCR specialised model. Cheaper than Sonnet-twice; catches digit misreads of the kind Michael hit.</li>
+      </ul>
+      <p style="font-size: 13px; color: var(--ink-3); margin-top: 8px;">
+        Worth noting: today, confidence is advisory. A consensus check only helps if disagreement
+        actually <em>blocks</em> the value from being pre-checked. That's a UX call.
+      </p>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--brand);">
+      <h3>Ask 2 — let users correct values</h3>
+      <p style="font-size: 13.5px;">
+        Intervenes at <strong>steps 4 and 7</strong> of the trace. Two surfaces:
+      </p>
+      <ul style="font-size: 13.5px;">
+        <li><strong>Edit during review</strong> — turn <code>&lt;span className="review-row-value"&gt;</code> into an editable input. Cheapest change; catches the bug at the strongest moment (user is looking at the PDF and the extracted value side by side).</li>
+        <li><strong>Edit after save</strong> — currently impossible because <code>health_measurements</code> has no UPDATE RLS policy. Would require either making rows mutable (breaks the audit-trail design) or modelling a correction as <code>delete + insert</code> with a paired <code>corrects_id</code> reference.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Other intervention points worth thinking about</h3>
+  <ul style="font-size: 14px;">
+    <li><strong>Validation ranges as guard rails:</strong> ApoB &lt; 0.3 or &gt; 2.5 g/L is rare enough to warrant a "double-check this" prompt. Today, anything in the wide validation range passes silently.</li>
+    <li><strong>Cross-metric sanity:</strong> if LDL and ApoB both extracted, they should roughly correlate. A digit misread on one would show up. Not currently checked.</li>
+    <li><strong>Show the PDF alongside the value:</strong> the v2 list in <code>lab-upload.md</code> already mentions "OCR confidence preview — show rendered PDF page alongside extracted values for visual verification". This is the same idea.</li>
+    <li><strong>Chatbot write tool:</strong> a <code>correct_measurement</code> tool exposed to the bot would let "this ApoB is wrong, it's 0.5" actually update the row. Not free — opens a write surface that needs careful confirmation UX.</li>
+    <li><strong>Tag every measurement with provenance:</strong> persist <code>displayValue</code>, <code>displayUnit</code>, model name, confidence, and a hash of the source PDF page. Lets us go back and re-OCR with a better model when one ships.</li>
+  </ul>
+
+  <hr class="soft" />
+
+  <!-- ============================================================== -->
+  <!-- SECTION 11 — DESIGN DECISIONS                                   -->
+  <!-- ============================================================== -->
+  <h2 id="decisions">11 · Design decisions that constrain the redesign</h2>
+  <p>
+    Sourced from <a href="lab-upload.md">docs/lab-upload.md</a> §"Design Decisions" plus what
+    was verified live in the code. These are the load-bearing choices a redesign should
+    either preserve or knowingly overturn.
+  </p>
+
+  <table>
+    <thead><tr><th style="width: 24%;">Decision</th><th style="width: 38%;">Why it was chosen</th><th>What overturning it would cost</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Server-side system prompt</strong></td>
+        <td>Prevents prompt injection — a malicious PDF can't override extraction instructions because the content is in the user message, not the system prompt.</td>
+        <td>Security regression. Don't overturn.</td>
+      </tr>
+      <tr>
+        <td><strong>Never auto-save</strong></td>
+        <td>Health data, no exceptions. Every value passes through an explicit user confirmation step.</td>
+        <td>HIPAA + user-trust regression. Don't overturn.</td>
+      </tr>
+      <tr>
+        <td><strong>HMAC auth on every endpoint</strong></td>
+        <td>App-proxy convention. Any new endpoint (re-extract, correction) must follow the same pattern.</td>
+        <td>Security regression. Don't overturn.</td>
+      </tr>
+      <tr>
+        <td><strong>Append-only <code>health_measurements</code></strong></td>
+        <td>Mirrors the Apple Health model — measurements are facts at a moment in time. No UPDATE RLS policy. Maintains a clean audit trail.</td>
+        <td>FHIR/audit story changes. Overturning is a deliberate tradeoff worth discussing in the redesign — see "in-place vs replaces vs delete-and-re-add" below.</td>
+      </tr>
+      <tr>
+        <td><strong>Server-side unit resolution</strong></td>
+        <td>Centralises all unit logic in <code>units.ts</code> + <code>anthropic.server.ts</code>. Client receives values ready to save.</td>
+        <td>Duplicated logic, more places to drift. Preserve.</td>
+      </tr>
+      <tr>
+        <td><strong>One LLM call per file</strong> (no cross-file batching in the prompt)</td>
+        <td>Prevents cross-contamination between files from different dates/labs/patients. Simpler error handling — one file fails, others unaffected.</td>
+        <td>Save a few cents per upload, gain a tangled prompt and harder failure-mode reasoning. Preserve.</td>
+      </tr>
+      <tr>
+        <td><strong>Pipelined producer/consumer at concurrency 1</strong></td>
+        <td>Today: a deliberate match to Anthropic Build Tier 1's 10K output tokens/min cap. The pipelining trick keeps the API busy near-continuously even at concurrency 1.</td>
+        <td>If on Tier 2, raising to concurrency 2 is a one-character change (<code>&lt; 1</code> → <code>&lt; 2</code>) and gives ~40% wall-clock improvement for 3–5 file uploads.</td>
+      </tr>
+      <tr>
+        <td><strong>Claude Haiku 4.5</strong> (not Sonnet)</td>
+        <td>Structured parsing, not complex reasoning. ~$0.003–0.005 per report. Vision support for scanned pages.</td>
+        <td>Swap model ID to Sonnet for ~10× cost if accuracy issues persist after other fixes. No code changes beyond the constant.</td>
+      </tr>
+      <tr>
+        <td><strong>No raw PDF storage</strong></td>
+        <td>Privacy-first. Files never leave the browser; only extracted text/images reach the backend. Backend never persists the file.</td>
+        <td>Storing PDFs opens HIPAA scope, S3 costs, encryption-at-rest requirements. Don't overturn lightly.</td>
+      </tr>
+      <tr>
+        <td><strong>Confidence is advisory, not gating</strong></td>
+        <td>Low-confidence rows are pre-unchecked (<code>ReviewTable.tsx:144</code>) but still visible — the user can override and save them. The system never silently drops a value.</td>
+        <td>Switching to "gating" (refuse to display low-confidence values) would prevent some bad saves but force users to re-upload more often. Status quo treats the user as the final arbiter.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>The append-only question, in FHIR terms</h3>
+  <p>
+    The current design follows Apple HealthKit's "delete + re-add" pattern. FHIR's official
+    answer is different: it uses the <code>entered-in-error</code> status on the original
+    <code>Observation</code> resource, optionally with a new <code>Observation</code> that
+    references it via <code>replaces</code>. Both records remain visible in history; only
+    the corrected one is canonical. This is closer to "soft delete + replacement record"
+    than to "UPDATE in place." A redesign that needs to support post-save correction has three
+    flavours:
+  </p>
+  <ol style="font-size: 14px;">
+    <li><strong>Delete + re-enter</strong> (today). One row in DB after the fix. Loses the
+      "this used to read 0.79" audit trail. Cheap to implement.</li>
+    <li><strong>FHIR-style replacement</strong>. Mark old row <code>entered-in-error</code>,
+      insert new row with <code>corrects_id → old.id</code>. Two rows in DB, history view filters by status.
+      Needs a schema column + a small RLS-update policy on a single boolean.</li>
+    <li><strong>True in-place UPDATE</strong>. Lose the prior value entirely. Cheapest UX,
+      worst audit story. Not recommended.</li>
+  </ol>
+
+  <p style="margin-top: 32px; font-size: 12.5px; color: var(--ink-3); border-top: 1px solid var(--line); padding-top: 16px;">
+    Sources read for this document:
+    <code>docs/lab-upload.md</code>,
+    <code>app/lib/anthropic.server.ts</code>,
+    <code>app/routes/api.lab-import.ts</code>,
+    <code>app/routes/api.measurements.ts</code>,
+    <code>widget-src/src/components/UploadModal.tsx</code> (incl. <code>processPipeline()</code> at L289–389),
+    <code>widget-src/src/components/ReviewTable.tsx</code>,
+    <code>packages/health-core/src/units.ts</code>,
+    <code>app/lib/chat.server.ts</code>,
+    <code>app/lib/chat-classifier.server.ts</code>.
+  </p>
+
+</div>
+</body>
+</html>
