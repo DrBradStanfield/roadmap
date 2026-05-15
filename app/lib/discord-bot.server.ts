@@ -317,9 +317,10 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       usage: result.usage,
       isFallback: result.isFallback,
       routerResult: result.routerResult,
-      classifier: result.classifier
-        ? { classification: result.classifier.classification, routerSkipped: result.classifier.routerSkipped }
-        : null,
+      classifier: {
+        classification: result.classifier.classification,
+        routerSkipped: result.classifier.routerSkipped,
+      },
       contextFirst: history.find(m => m.role === 'user')?.content,
       contextRecent: history.filter(m => m.role === 'user').slice(-3).map(m => m.content),
     }).catch((err) => {
@@ -530,11 +531,10 @@ interface PersistParams {
   isFallback: boolean;
   /** Router-call result. null when classifier said SKIP — router never ran. */
   routerResult: RouterResult | null;
-  /** Pre-router classifier result. null when classifier flag is off. */
   classifier: {
     classification: string;
     routerSkipped: boolean;
-  } | null;
+  };
   contextFirst?: string;
   contextRecent: string[];
 }
@@ -635,8 +635,8 @@ async function persistConversation(p: PersistParams): Promise<void> {
       router_cache_read_tokens: r?.usage.cacheReadTokens ?? null,
       router_raw: r?.error ? (r.rawJson?.slice(0, 500) ?? null) : null,
       router_error: r?.error ?? null,
-      classification: p.classifier?.classification ?? null,
-      router_skipped: p.classifier?.routerSkipped ?? false,
+      classification: p.classifier.classification,
+      router_skipped: p.classifier.routerSkipped,
     });
   if (evtErr) {
     Sentry.captureException(new Error('Discord: match-event insert failed'), {

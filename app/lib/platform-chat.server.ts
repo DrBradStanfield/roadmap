@@ -17,10 +17,8 @@ import type { ChatFailureMode } from './chat.server';
 import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
 import {
   classifyMessage,
-  isClassifierEnabled,
   shouldFireRouter,
   type Classification,
-  type ClassificationResult,
 } from './chat-classifier.server';
 import type { AnthropicUsage } from './anthropic.server';
 
@@ -35,13 +33,12 @@ export interface PlatformCompletionResult {
   errorDetail?: string;
   /** Router-call result. null when the classifier said SKIP (router never ran). */
   routerResult: RouterResult | null;
-  /** Pre-router classifier result. null when PRE_ROUTER_CLASSIFIER_ENABLED is off. */
   classifier: {
     classification: Classification;
     routerSkipped: boolean;
     latencyMs: number;
     error: string | null;
-  } | null;
+  };
 }
 
 const DISCORD_PLATFORM_CONTEXT = `Platform: Discord — you are Dr Brad's AI assistant, running in Dr Brad Stanfield's Discord server.
@@ -78,9 +75,7 @@ export async function platformChatCompletion(params: {
   const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
 
   // Stage 1: classifier (Discord has no per-user data fetch to parallelize with).
-  const classifierResult: ClassificationResult | null = isClassifierEnabled()
-    ? await classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
-    : null;
+  const classifierResult = await classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
 
   // Stage 2: router fires only when the classifier didn't bypass it (ROUTE/ERROR → fire).
   const routerResult: RouterResult | null = shouldFireRouter(classifierResult)
@@ -100,13 +95,11 @@ export async function platformChatCompletion(params: {
     failureMode: completion.failureMode,
     errorDetail: completion.errorDetail,
     routerResult,
-    classifier: classifierResult
-      ? {
-          classification: classifierResult.classification,
-          routerSkipped: classifierResult.routerSkipped,
-          latencyMs: classifierResult.latencyMs,
-          error: classifierResult.error,
-        }
-      : null,
+    classifier: {
+      classification: classifierResult.classification,
+      routerSkipped: classifierResult.routerSkipped,
+      latencyMs: classifierResult.latencyMs,
+      error: classifierResult.error,
+    },
   };
 }

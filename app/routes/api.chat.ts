@@ -24,12 +24,7 @@ import {
   MAX_MESSAGE_LENGTH,
 } from '../lib/chat.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION } from '../lib/chat-router.server';
-import {
-  classifyMessage,
-  isClassifierEnabled,
-  shouldFireRouter,
-  type ClassificationResult,
-} from '../lib/chat-classifier.server';
+import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
 
 // ---------------------------------------------------------------------------
 // Unified auth: handles both authenticated users and guests
@@ -289,17 +284,14 @@ export async function action({ request }: ActionFunctionArgs) {
     const sanitizedFirst = firstUserMsg ? sanitizeForRouter(firstUserMsg) : undefined;
     const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
 
-    // Stage 1: classifier runs in parallel with user-data + orders. This is
-    // pure latency reclamation — the classifier returns in ~100-200ms, by
-    // which time user-data is usually still loading.
+    // Stage 1: classifier runs in parallel with user-data + orders. The
+    // classifier returns in ~100-200ms, by which time user-data is usually
+    // still loading — overlap is free.
     let context;
     let orderSummary = '';
-    let classifierResult: ClassificationResult | null = null;
+    const classifierPromise = classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
 
-    const classifierPromise: Promise<ClassificationResult | null> = isClassifierEnabled()
-      ? classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent)
-      : Promise.resolve(null);
-
+    let classifierResult;
     if (auth.isGuest) {
       [context, classifierResult] = await Promise.all([
         Promise.resolve(
@@ -331,7 +323,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     const tAfterContext = Date.now();
 
-    const routerSkipped = classifierResult?.routerSkipped === true;
+    const routerSkipped = classifierResult.routerSkipped;
     const effectiveHandles = routerResult?.handles ?? [];
 
     if (routerResult?.error) {
@@ -477,7 +469,7 @@ export async function action({ request }: ActionFunctionArgs) {
             router_cache_read_tokens: routerResult?.usage.cacheReadTokens ?? null,
             router_raw: routerResult?.error ? (routerResult.rawJson?.slice(0, 500) ?? null) : null,
             router_error: routerResult?.error ?? null,
-            classification: classifierResult?.classification ?? null,
+            classification: classifierResult.classification,
             router_skipped: routerSkipped,
           })
           .then(({ error: matchError }: { error: { message: string } | null }) => {
@@ -527,10 +519,10 @@ export async function action({ request }: ActionFunctionArgs) {
       handleCount: routerResult?.handles.length ?? 0,
       effectiveHandleCount: effectiveHandles.length,
       routerError: routerResult?.error ?? null,
-      classifierMs: classifierResult?.latencyMs ?? null,
-      classification: classifierResult?.classification ?? null,
+      classifierMs: classifierResult.latencyMs,
+      classification: classifierResult.classification,
       routerSkipped,
-      classifierError: classifierResult?.error ?? null,
+      classifierError: classifierResult.error,
       isGuest: auth.isGuest,
     }));
 

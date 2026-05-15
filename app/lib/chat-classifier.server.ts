@@ -86,28 +86,11 @@ const EMPTY_USAGE: AnthropicUsage = {
 
 /**
  * Single source of truth for "should the v2 router fire on this turn?"
- *
- * Returns true when:
- *  - the classifier didn't run (flag off) → preserve today's behavior
- *  - the classifier said ROUTE → real health query, retrieval needed
- *  - the classifier said ERROR → fail-safe, treat as ROUTE
- *
- * Returns false only when classifier ran and confidently said SKIP
- * (GREETING / PRODUCT / ACCOUNT).
+ * True on ROUTE (real health query) and ERROR (fail-safe — preserves today's
+ * behavior on classifier failure). False on SKIP (GREETING / PRODUCT / ACCOUNT).
  */
-export function shouldFireRouter(result: ClassificationResult | null): boolean {
-  if (!result) return true;
+export function shouldFireRouter(result: ClassificationResult): boolean {
   return result.classification === Classification.ROUTE || result.classification === Classification.ERROR;
-}
-
-// ---------------------------------------------------------------------------
-// Feature flag — single switch. When ON: classifier runs serially before the
-// router, and on a SKIP classification the router is not called at all.
-// Rollback = flip the env var off, redeploy.
-// ---------------------------------------------------------------------------
-
-export function isClassifierEnabled(): boolean {
-  return process.env.PRE_ROUTER_CLASSIFIER_ENABLED === 'true';
 }
 
 // ---------------------------------------------------------------------------
