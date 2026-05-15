@@ -62,6 +62,12 @@ const BATCH_THRESHOLD = 20; // Use batch API for 20+ files; pipeline for fewer
 const POLL_INTERVAL = 5000;
 const FAKE_TICK_INTERVAL = 500;
 const EXTRACT_TIMEOUT = 30_000;
+// Max LLM calls in flight at once. Tier 2 ceiling (80K output tokens/min)
+// comfortably absorbs 5 concurrent lab-report extractions (~500-1500 output
+// tokens each). Scan/letter markdown conversion (~4K tokens) can overflow,
+// but server-side 429 retry in callAnthropic() absorbs occasional bursts.
+// Beyond 5, pdf.js extraction becomes the wall-clock bottleneck.
+const LLM_CONCURRENCY = 5;
 
 /** Rotating status messages shown during batch processing */
 const PROGRESS_MESSAGES = [
@@ -310,7 +316,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
     }
 
     function tryStartWorker() {
-      while (activeWorkers < 1 && queue.length > 0) {
+      while (activeWorkers < LLM_CONCURRENCY && queue.length > 0) {
         if (abort.signal.aborted) break;
         activeWorkers++;
         const item = queue.shift()!;
