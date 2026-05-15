@@ -2539,6 +2539,44 @@ input[type="number"] {
   color: var(--color-gray-dark);
 }
 
+/* Inline-editable value input in the lab-upload review table. Compact so the
+   row layout doesn't reflow when switching from the old read-only span. */
+.review-row-value-input {
+  width: 80px;
+  padding: 4px 6px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--color-gray-border, #d0d0d0);
+  border-radius: 4px;
+  background: white;
+  text-align: right;
+}
+.review-row-value-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.15);
+}
+
+.review-row-unit {
+  font-size: 13px;
+  color: var(--color-gray-dark);
+  margin-left: 4px;
+}
+
+.review-row-edited-note {
+  font-size: 11px;
+  color: var(--color-gray-light);
+  font-style: italic;
+}
+
+.review-row-warning {
+  width: 100%;
+  font-size: 12px;
+  color: var(--color-warning);
+  margin: 2px 0 0 28px;
+  padding-left: 0;
+}
+
 .review-row-confidence {
   font-size: 10px;
 }
@@ -4366,6 +4404,31 @@ input[type="number"] {
 .bt-cell-pinned {
   background: var(--bt-ink-50);
   border-left-color: var(--bt-ink-200);
+}
+
+/* Clickable saved-value cell: click → in-place correction form. */
+.bt-cell-clickable {
+  /* Reset default <button> styles so it inherits .bt-cell-value layout */
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+.bt-cell-clickable:hover {
+  background: var(--bt-ink-100);
+}
+.bt-cell-clickable:focus-visible {
+  outline: 2px solid var(--color-primary, #0066cc);
+  outline-offset: -2px;
+}
+.bt-cell-clickable.bt-cell-pinned:hover {
+  background: var(--bt-ink-200);
+}
+.bt-cell-correcting {
+  background: var(--bt-ink-100);
 }
 .bt-cell-date .bt-date-day,
 .bt-cell-draft-date .bt-date-day {

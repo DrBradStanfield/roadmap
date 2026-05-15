@@ -18,6 +18,7 @@ import {
   getAllMeasurements,
   getLatestMeasurements,
   addMeasurement,
+  correctMeasurement,
   deleteMeasurement,
   toApiMeasurement,
   getProfile,
@@ -42,7 +43,7 @@ import {
 } from '../lib/supabase.server';
 import { checkAndSendWelcomeEmail, sendReportEmail, generateReportHtml, buildReportHtml, sendEmail } from '../lib/email.server';
 import type { HealthInputs, MedicationInputs, ScreeningInputs } from '../../packages/health-core/src/types';
-import { measurementSchema, profileUpdateSchema, medicationSchema, screeningSchema, supplementSchema, bulkMeasurementSchema, healthInputSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
+import { measurementSchema, profileUpdateSchema, medicationSchema, screeningSchema, supplementSchema, bulkMeasurementSchema, correctMeasurementSchema, healthInputSchema, METRIC_TYPES } from '../../packages/health-core/src/validation';
 
 // GET — Load measurements (authenticated via app proxy HMAC)
 // ?metric_type=weight&limit=50  → list measurements for one metric
@@ -83,10 +84,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json({ success: true, data: history.map(toApiSupplementHistory) });
     }
 
+    // Audit-mode flag for the history view: when true, include rows with
+    // status='entered-in-error' so the user can see their correction history.
+    // Default false. See docs/lab-upload-redesign.html §6, §8.
+    const includeCorrected = url.searchParams.get('include_corrected') === 'true';
+
     if (allHistory) {
       const limit = Math.min(parseInt(url.searchParams.get('limit') || '100') || 100, 200);
       const offset = Math.max(parseInt(url.searchParams.get('offset') || '0') || 0, 0);
-      const measurements = await getAllMeasurements(client, limit, offset);
+      const measurements = await getAllMeasurements(client, limit, offset, includeCorrected);
       return json({ success: true, data: measurements.map(toApiMeasurement) });
     }
 
@@ -95,7 +101,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         return json({ success: false, error: 'Invalid metric_type' }, { status: 400 });
       }
       const limit = Math.min(parseInt(url.searchParams.get('limit') || '50') || 50, 200);
-      const measurements = await getMeasurements(client, metricType, limit);
+      const measurements = await getMeasurements(client, metricType, limit, includeCorrected);
       return json({ success: true, data: measurements.map(toApiMeasurement) });
     }
 
@@ -382,6 +388,25 @@ export async function action({ request }: ActionFunctionArgs) {
           savedCount: saved.length,
           totalCount: bulkValidation.data.bulkMeasurements.length,
         });
+      }
+
+      // FHIR replaces: POST { correctMeasurement: { oldId, newValue } }.
+      // 404 covers all three failure modes (not found / not owned / already
+      // corrected) without leaking ownership info.
+      if (body.correctMeasurement) {
+        const correctValidation = correctMeasurementSchema.safeParse(body);
+        if (!correctValidation.success) {
+          return json(
+            { success: false, error: 'Invalid correction', details: correctValidation.error.issues },
+            { status: 400 },
+          );
+        }
+        const { oldId, newValue } = correctValidation.data.correctMeasurement;
+        const newId = await correctMeasurement(client, userId, oldId, newValue);
+        if (!newId) {
+          return json({ success: false, error: 'Measurement not found or not correctable' }, { status: 404 });
+        }
+        return json({ success: true, newId });
       }
 
       // Measurement insert — POST { metricType, value, recordedAt? }

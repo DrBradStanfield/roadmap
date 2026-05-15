@@ -55,6 +55,7 @@ import {
 import { formatShortDate } from '../lib/constants';
 import { DatePicker, InlineDatePicker, dateValueToISO, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline } from './BloodTestTimeline';
+import { parseLocalisedNumber } from '../lib/parseNumber';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -158,6 +159,8 @@ interface InputPanelProps {
   previousMeasurements: ApiMeasurement[];
   bloodTestHistory: ApiMeasurement[];
   onSaveBloodTestBatch: (date: string, values: Record<string, number>) => Promise<void>;
+  // Click-to-correct handler for saved cells in the BloodTestTimeline matrix.
+  onCorrectBloodTestValue?: (oldId: string, newValueSI: number) => Promise<boolean>;
   medications: ApiMedication[];
   onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];
@@ -185,6 +188,7 @@ export function InputPanel({
   inputs, onChange, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
   isLoggedIn, previousMeasurements, bloodTestHistory, onSaveBloodTestBatch,
+  onCorrectBloodTestValue,
   medications, onMedicationChange,
   screenings, onScreeningChange,
   supplements, onSupplementChange, onSupplementDelete,
@@ -298,8 +302,8 @@ export function InputPanel({
   };
 
   const parseAndConvert = (field: string, value: string): number | undefined => {
-    const num = parseFloat(value);
-    if (isNaN(num)) return undefined;
+    const num = parseLocalisedNumber(value);
+    if (num === undefined) return undefined;
     const metric = FIELD_METRIC_MAP[field];
     if (!metric) return num;
     return toCanonicalValue(metric, num, fieldUnit(field));
@@ -326,11 +330,6 @@ export function InputPanel({
     const metric = FIELD_METRIC_MAP[field];
     if (!metric) return { min: 0, max: 999 };
     return getDisplayRange(metric, fieldUnit(field));
-  };
-
-  const parseNumber = (value: string): number | undefined => {
-    const num = parseFloat(value);
-    return isNaN(num) ? undefined : num;
   };
 
   /** Validate on blur for identity fields (no unit conversion). Clears if out of range. */
@@ -538,8 +537,8 @@ export function InputPanel({
               updateField(field, parseAndConvert(field, raw));
               if (field === 'weightKg' && !hasAutoFocusedEmail.current && onAutoFocusEmail) {
                 if (weightFocusTimer.current) clearTimeout(weightFocusTimer.current);
-                const weightNum = parseFloat(raw);
-                if (/^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
+                const weightNum = parseLocalisedNumber(raw);
+                if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
                   const couldExtend = /^\d{2}$/.test(raw) && weightNum * 10 <= r.max;
                   if (!couldExtend) {
                     hasAutoFocusedEmail.current = true;
@@ -803,9 +802,9 @@ export function InputPanel({
                     const raw = e.target.value;
                     setRawInputs(prev => ({ ...prev, heightCm: raw }));
                     updateField('heightCm', parseAndConvert('heightCm', raw));
-                    const heightNum = parseFloat(raw);
+                    const heightNum = parseLocalisedNumber(raw);
                     const heightRange = range('heightCm');
-                    if (/^\d{3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && inputs.weightKg === undefined) {
+                    if (heightNum !== undefined && /^\d{3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && inputs.weightKg === undefined) {
                       focusById('weightKg');
                     }
                   }}
@@ -923,7 +922,7 @@ export function InputPanel({
                   id="systolicBp"
                   onWheel={blurOnWheel}
                   value={inputs.systolicBp ?? ''}
-                  onChange={(e) => updateField('systolicBp', parseNumber(e.target.value))}
+                  onChange={(e) => updateField('systolicBp', parseLocalisedNumber(e.target.value))}
                   onBlur={() => validateOnBlur('systolicBp')}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('systolicBp')}
                   min={60}
@@ -937,7 +936,7 @@ export function InputPanel({
                   id="diastolicBp"
                   onWheel={blurOnWheel}
                   value={inputs.diastolicBp ?? ''}
-                  onChange={(e) => updateField('diastolicBp', parseNumber(e.target.value))}
+                  onChange={(e) => updateField('diastolicBp', parseLocalisedNumber(e.target.value))}
                   onBlur={() => validateOnBlur('diastolicBp')}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('diastolicBp')}
                   min={40}
@@ -993,7 +992,7 @@ export function InputPanel({
         <select
           id="birthMonth"
           value={inputs.birthMonth || ''}
-          onChange={(e) => updateField('birthMonth', parseNumber(e.target.value))}
+          onChange={(e) => updateField('birthMonth', parseLocalisedNumber(e.target.value))}
         >
           <option value="">Month...</option>
           {ALL_MONTHS.map((m, i) => (
@@ -1011,7 +1010,7 @@ export function InputPanel({
             onWheel={blurOnWheel}
             value={inputs.birthYear || ''}
             onChange={(e) => {
-              const num = parseNumber(e.target.value);
+              const num = parseLocalisedNumber(e.target.value);
               if (num !== undefined && isBirthYearClearlyInvalid(num)) return;
               updateField('birthYear', num);
             }}
@@ -1032,6 +1031,7 @@ export function InputPanel({
       unitOverrides={unitOverrides}
       onToggleFieldUnit={onToggleFieldUnit}
       onSaveBatch={onSaveBloodTestBatch}
+      onCorrectValue={onCorrectBloodTestValue}
       onFieldChange={updateField}
       isSaving={isSavingLongitudinal}
       sex={inputs.sex}
@@ -1419,7 +1419,7 @@ export function InputPanel({
                   id="glp1-dose"
                   value={glp1Dose ?? ''}
                   onChange={(e) => {
-                    const newDose = parseFloat(e.target.value);
+                    const newDose = parseLocalisedNumber(e.target.value) ?? null;
                     if (weightCascadeMode) resetWeightDownstream('glp1');
                     onMedicationChange('glp1', glp1Drug, newDose, 'mg');
                   }}
@@ -1461,7 +1461,7 @@ export function InputPanel({
                   id="sglt2i-dose"
                   value={sglt2iDose ?? ''}
                   onChange={(e) => {
-                    const newDose = parseFloat(e.target.value);
+                    const newDose = parseLocalisedNumber(e.target.value) ?? null;
                     if (weightCascadeMode) resetWeightDownstream('sglt2i');
                     onMedicationChange('sglt2i', sglt2iDrug, newDose, 'mg');
                   }}
@@ -1933,8 +1933,8 @@ export function InputPanel({
                                 if (val === '') {
                                   updateField('psa', undefined);
                                 } else {
-                                  const num = parseFloat(val);
-                                  if (!isNaN(num)) updateField('psa', num);
+                                  const num = parseLocalisedNumber(val);
+                                  if (num !== undefined) updateField('psa', num);
                                 }
                               }}
                               onBlur={() => {
@@ -2196,7 +2196,7 @@ export function InputPanel({
                 placeholder="Dose"
                 value={s.doseValue ?? ''}
                 onChange={e => {
-                  const val = e.target.value ? parseFloat(e.target.value) : null;
+                  const val = e.target.value ? parseLocalisedNumber(e.target.value) ?? null : null;
                   onSupplementChange(s.supplementKey, s.supplementName, val, s.doseUnit);
                 }}
               />

@@ -599,6 +599,9 @@ export interface ExtractedValue {
   valueSI: number;
   displayValue: number;
   displayUnit: string;
+  /** Which unit system displayUnit/displayValue belong to. Optional for
+   *  back-compat with API responses predating the May 2026 redesign. */
+  displaySystem?: import('@roadmap/health-core').UnitSystem;
   confidence: 'high' | 'medium' | 'low';
   question?: string;
 }
@@ -835,6 +838,36 @@ export async function bulkSaveMeasurements(
     console.warn('Bulk save error:', error);
     Sentry.captureException(error);
     return [];
+  }
+}
+
+/**
+ * FHIR replaces: correct a saved measurement. newValueSI is in SI canonical units
+ * (caller converts from display units). Returns the new row's UUID, or null on
+ * 404 (not found / not owned / already corrected).
+ */
+export async function correctMeasurement(
+  oldId: string,
+  newValueSI: number,
+): Promise<string | null> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/measurements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        correctMeasurement: { oldId, newValue: newValueSI },
+      }),
+    });
+    if (!response.ok) {
+      if (response.status === 404) return null;
+      throw new Error(`Correction failed: ${response.status}`);
+    }
+    const data = await parseJsonResponse<{ success: boolean; newId?: string }>(response);
+    return data?.success && data.newId ? data.newId : null;
+  } catch (error) {
+    console.warn('Correct measurement error:', error);
+    Sentry.captureException(error);
+    return null;
   }
 }
 

@@ -39,6 +39,9 @@ export interface ExtractedValue {
   valueSI: number;
   displayValue: number;
   displayUnit: string;
+  /** Which unit system displayUnit/displayValue belong to. Lets the
+   *  review-time edit UI recompute valueSI client-side without a round-trip. */
+  displaySystem: UnitSystem;
   confidence: 'high' | 'medium' | 'low';
   question?: string;
 }
@@ -138,12 +141,13 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
   for (const v of rawValues) {
     if (!VALID_METRICS.includes(v.metric as MetricType)) continue;
     const metric = v.metric as MetricType;
-    const { valueSI, confident } = resolveUnit(metric, v.unit, v.value);
+    const { valueSI, system, confident } = resolveUnit(metric, v.unit, v.value);
     values.push({
       metric: v.metric,
       valueSI,
       displayValue: v.value,
       displayUnit: v.unit,
+      displaySystem: system,
       confidence: !confident && v.confidence === 'high' ? 'medium' : v.confidence,
       question: !confident
         ? (v.question || `Unit "${v.unit}" was inferred — please verify this value`)

@@ -172,6 +172,7 @@ BEGIN
     m.external_id
   FROM public.health_measurements m
   WHERE m.user_id = auth.uid()
+    AND m.status = 'active'  -- exclude entered-in-error rows
   ORDER BY m.metric_type, m.recorded_at DESC;
 END;
 $$ LANGUAGE plpgsql SET search_path = '';
@@ -223,6 +224,118 @@ CREATE POLICY "Users can delete own measurements"
 
 GRANT SELECT, UPDATE ON profiles TO authenticated;
 GRANT SELECT, INSERT, DELETE ON health_measurements TO authenticated;
+
+-- ============================================================
+-- FHIR `replaces` pattern for measurement corrections
+-- ============================================================
+-- Rows are physically immutable except for a single status transition
+-- (active -> entered-in-error). All corrections go through the
+-- correct_measurement() SECURITY DEFINER RPC; there is no user-facing
+-- UPDATE pathway. See docs/lab-upload-redesign.html for full design.
+
+ALTER TABLE health_measurements
+  ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active', 'entered-in-error'));
+
+-- ON DELETE SET NULL: if a referenced entered-in-error row is hard-deleted,
+-- the corrector's link is nulled rather than cascading. Audit mode then
+-- renders the corrector with no "replaces" arrow.
+ALTER TABLE health_measurements
+  ADD COLUMN IF NOT EXISTS corrects_id UUID
+    REFERENCES health_measurements(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_measurements_user_active
+  ON health_measurements(user_id, metric_type, recorded_at DESC)
+  WHERE status = 'active';
+
+-- No user-facing UPDATE: the RPC below is the only writer. Idempotent
+-- REVOKE makes the no-UPDATE rule self-documenting.
+REVOKE UPDATE ON health_measurements FROM authenticated;
+
+-- to_jsonb(NEW) - 'status' is schema-evolution-resilient: any column added
+-- later to health_measurements is automatically locked down.
+CREATE OR REPLACE FUNCTION enforce_measurement_correction_only()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (to_jsonb(NEW) - 'status') IS DISTINCT FROM (to_jsonb(OLD) - 'status') THEN
+    RAISE EXCEPTION 'health_measurements is append-only; only status may change (via correct_measurement RPC)';
+  END IF;
+  -- entered-in-error is sticky
+  IF OLD.status = 'entered-in-error' AND NEW.status != 'entered-in-error' THEN
+    RAISE EXCEPTION 'status cannot be reverted from entered-in-error';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SET search_path = '';
+
+DROP TRIGGER IF EXISTS trg_measurement_correction_only ON health_measurements;
+CREATE TRIGGER trg_measurement_correction_only
+  BEFORE UPDATE ON health_measurements
+  FOR EACH ROW EXECUTE FUNCTION enforce_measurement_correction_only();
+
+CREATE OR REPLACE FUNCTION validate_corrects_id_ownership()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.corrects_id IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.health_measurements
+      WHERE id = NEW.corrects_id AND user_id = NEW.user_id
+    ) THEN
+      RAISE EXCEPTION 'corrects_id must reference a row owned by the same user';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SET search_path = '';
+
+DROP TRIGGER IF EXISTS trg_validate_corrects_id ON health_measurements;
+CREATE TRIGGER trg_validate_corrects_id
+  BEFORE INSERT ON health_measurements
+  FOR EACH ROW EXECUTE FUNCTION validate_corrects_id_ownership();
+
+-- UPDATE-first lock-and-check: serialises concurrent callers via row lock.
+-- Without this, two parallel SELECT-then-UPDATE flows could both observe
+-- status='active' under MVCC and produce two active replacements.
+CREATE OR REPLACE FUNCTION correct_measurement(
+  old_measurement_id UUID,
+  new_value          NUMERIC,
+  new_recorded_at    TIMESTAMPTZ DEFAULT NULL
+) RETURNS UUID AS $$
+DECLARE
+  -- Fully qualified because SET search_path = '' below requires every
+  -- object reference (including row types) to be schema-prefixed.
+  old_row       public.health_measurements%ROWTYPE;
+  rows_affected INTEGER;
+  new_id        UUID;
+BEGIN
+  UPDATE public.health_measurements
+     SET status = 'entered-in-error'
+   WHERE id = old_measurement_id
+     AND user_id = auth.uid()
+     AND status = 'active'
+   RETURNING * INTO old_row;
+
+  GET DIAGNOSTICS rows_affected = ROW_COUNT;
+  IF rows_affected = 0 THEN
+    RAISE EXCEPTION 'Measurement not found or not correctable';
+  END IF;
+
+  INSERT INTO public.health_measurements
+    (user_id, metric_type, value, recorded_at, source, corrects_id)
+  VALUES
+    (old_row.user_id,
+     old_row.metric_type,
+     new_value,
+     COALESCE(new_recorded_at, old_row.recorded_at),
+     'manual_correction',
+     old_measurement_id)
+  RETURNING id INTO new_id;
+
+  RETURN new_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';
+
+GRANT EXECUTE ON FUNCTION correct_measurement(UUID, NUMERIC, TIMESTAMPTZ) TO authenticated;
 
 -- ===== Audit logs table =====
 -- Tracks all write operations for HIPAA compliance.
@@ -491,6 +604,7 @@ BEGIN
   SELECT DISTINCT ON (m.metric_type) m.metric_type, m.recorded_at
   FROM public.health_measurements m
   WHERE m.user_id = target_user_id
+    AND m.status = 'active'  -- reminders ignore corrected rows
   ORDER BY m.metric_type, m.recorded_at DESC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';

@@ -256,23 +256,23 @@
     <p>Strong UX win for verification (user can scan source vs extraction without leaving the
       modal), but requires keeping the rendered page image in memory through the review state.
       Adds ~200–500KB per file to in-browser memory. Recommend: yes, but with a lazy "Show source"
-      affordance per file rather than always-visible thumbnails.</p>
+      affordance per file rather than always-visible thumbnails. <strong>Still deferred —
+      not in this round.</strong></p>
   </div>
 
   <div class="open">
     <h3>Q2 · Should correcting a saved measurement also let the user change the <code>recorded_at</code> date?</h3>
-    <p>Today's review-time edit fixes wrong values; the date is captured by the date picker.
-      For post-save correction, the user might also want to fix the date (e.g. LLM picked the
-      report date not the collection date). Recommend: yes, allow date change as part of the
-      correction; the RPC signature already accommodates it.</p>
+    <p>The RPC signature already accommodates it (<code>new_recorded_at TIMESTAMPTZ DEFAULT NULL</code>).
+      Recommend: yes, allow date change as part of the correction so users can fix
+      "LLM picked the report date not the collection date" mistakes. UI shows both a value
+      input and a date picker in the correction form.</p>
   </div>
 
-  <div class="open">
-    <h3>Q3 · Audit-mode toggle in history view to show <code>entered-in-error</code> rows?</h3>
-    <p>Default: hide. Toggle: show with strikethrough + arrow to corrected row. Slight UI cost,
-      genuinely useful for power users who want to see what they've changed. Recommend: yes,
-      simple toggle in the history filter bar.</p>
-  </div>
+  <p style="font-size: 13.5px; color: var(--ink-3);">
+    All other decisions resolved (see §2 D1–D4 and the consequences note in §8). The audit-mode
+    toggle ships as a non-persisted UI state. The validation pattern matches InputPanel via
+    reuse of <code>UNIT_DEFS</code> and the existing Zod schema.
+  </p>
 
   <!-- ============================================================== -->
   <!-- 4 — SCHEMA                                                      -->
@@ -297,7 +297,11 @@
     <span class="k">CHECK</span> (status <span class="k">IN</span> (<span class="s">'active'</span>, <span class="s">'entered-in-error'</span>));
 
 <span class="k">ALTER TABLE</span> health_measurements
-  <span class="k">ADD COLUMN IF NOT EXISTS</span> corrects_id <span class="kv">UUID</span> <span class="k">REFERENCES</span> health_measurements(id);
+  <span class="k">ADD COLUMN IF NOT EXISTS</span> corrects_id <span class="kv">UUID</span> <span class="k">REFERENCES</span> health_measurements(id)
+    <span class="k">ON DELETE SET NULL</span>;
+<span class="c">-- ON DELETE SET NULL: if a referenced entered-in-error row is hard-deleted via</span>
+<span class="c">-- DELETE /api/measurements, the corrector's link is nulled instead of cascading.</span>
+<span class="c">-- Audit mode renders the corrector with no "replaces" arrow. Honest about the gap.</span>
 
 <span class="c">-- 4.2 Partial index for the common "active only" reads</span>
 <span class="k">CREATE INDEX IF NOT EXISTS</span> idx_measurements_user_active
@@ -388,26 +392,42 @@ $$ <span class="k">LANGUAGE</span> plpgsql <span class="k">SET</span> search_pat
     with an explicit <code>auth.uid()</code> check inside the function. Mirrors the pattern
     used by <code>deduct_message_credit()</code> and <code>add_message_credits()</code>.</p>
 
+  <p style="font-size: 14px;">
+    <strong>Race-condition safe:</strong> the RPC does the <code>UPDATE</code> first as an
+    atomic lock-and-check, then the <code>INSERT</code>. Two concurrent corrections on the
+    same row are serialised by Postgres row-locking. The loser sees <code>ROW_COUNT = 0</code>
+    and raises "not correctable". A naive <code>SELECT</code>-then-<code>UPDATE</code> would
+    let both calls observe <code>status = 'active'</code> under MVCC and produce two active
+    replacements — bug.
+  </p>
+
   <pre><span class="k">CREATE OR REPLACE FUNCTION</span> <span class="fn">correct_measurement</span>(
   old_measurement_id <span class="kv">UUID</span>,
   new_value          <span class="kv">NUMERIC</span>,
   new_recorded_at    <span class="kv">TIMESTAMPTZ</span> <span class="k">DEFAULT NULL</span>
 ) <span class="k">RETURNS</span> <span class="kv">UUID</span> <span class="k">AS</span> $$
 <span class="k">DECLARE</span>
-  old_row health_measurements;
-  new_id <span class="kv">UUID</span>;
+  old_row    health_measurements;
+  rows_affected <span class="kv">INTEGER</span>;
+  new_id     <span class="kv">UUID</span>;
 <span class="k">BEGIN</span>
-  <span class="k">SELECT</span> * <span class="k">INTO</span> old_row
-  <span class="k">FROM</span> public.health_measurements
-  <span class="k">WHERE</span> id = old_measurement_id
-    <span class="k">AND</span> user_id = auth.uid()
-    <span class="k">AND</span> status = <span class="s">'active'</span>;
+  <span class="c">-- 1. Atomic lock-and-check: flip status to entered-in-error</span>
+  <span class="c">--    only if (a) the row is the caller's, (b) status is still 'active'.</span>
+  <span class="c">--    Concurrent callers serialise here — the loser gets rows_affected=0.</span>
+  <span class="k">UPDATE</span> public.health_measurements
+     <span class="k">SET</span> status = <span class="s">'entered-in-error'</span>
+   <span class="k">WHERE</span> id = old_measurement_id
+     <span class="k">AND</span> user_id = auth.uid()
+     <span class="k">AND</span> status = <span class="s">'active'</span>
+   <span class="k">RETURNING</span> * <span class="k">INTO</span> old_row;
 
-  <span class="k">IF NOT FOUND THEN</span>
+  <span class="k">GET DIAGNOSTICS</span> rows_affected = ROW_COUNT;
+  <span class="k">IF</span> rows_affected = <span class="n">0</span> <span class="k">THEN</span>
     <span class="k">RAISE EXCEPTION</span> <span class="s">'Measurement not found or not correctable'</span>;
   <span class="k">END IF</span>;
 
-  <span class="c">-- Insert the corrected row, linked to the old one</span>
+  <span class="c">-- 2. Insert the corrected row, linked to the now-flagged old row.</span>
+  <span class="c">--    (Trigger validates corrects_id ownership; RLS validates user_id.)</span>
   <span class="k">INSERT INTO</span> public.health_measurements
     (user_id, metric_type, value, recorded_at, source, corrects_id)
   <span class="k">VALUES</span>
@@ -415,11 +435,6 @@ $$ <span class="k">LANGUAGE</span> plpgsql <span class="k">SET</span> search_pat
      <span class="k">COALESCE</span>(new_recorded_at, old_row.recorded_at),
      <span class="s">'manual_correction'</span>, old_measurement_id)
   <span class="k">RETURNING</span> id <span class="k">INTO</span> new_id;
-
-  <span class="c">-- Flag the prior row</span>
-  <span class="k">UPDATE</span> public.health_measurements
-    <span class="k">SET</span> status = <span class="s">'entered-in-error'</span>
-    <span class="k">WHERE</span> id = old_measurement_id;
 
   <span class="k">RETURN</span> new_id;
 <span class="k">END</span>;
@@ -430,7 +445,8 @@ $$ <span class="k">LANGUAGE</span> plpgsql <span class="k">SECURITY DEFINER SET<
   <p style="font-size: 13.5px;">
     <strong>Backend API surface:</strong> add a new branch to <code>api.measurements.ts action()</code>:
     <code>POST { correctMeasurement: { oldId, newValue, newRecordedAt? } }</code> calls the RPC
-    and logs to <code>audit_logs</code> with action <code>MEASUREMENT_CORRECTED</code>.
+    and logs to <code>audit_logs</code> with action <code>MEASUREMENT_CORRECTED</code> and
+    metadata <code>{ old_id, old_value, new_value, metric_type }</code>.
   </p>
 
   <!-- ============================================================== -->
@@ -529,11 +545,30 @@ $$ <span class="k">LANGUAGE</span> plpgsql <span class="k">SECURITY DEFINER SET<
 
   <h3>Implementation sketch</h3>
   <ul style="font-size: 14px;">
-    <li>Replace [ReviewTable.tsx:428](widget-src/src/components/ReviewTable.tsx#L428) with a controlled <code>&lt;input type="number" step="any"&gt;</code>.</li>
-    <li>State: <code>editedValues: Record&lt;string, number&gt;</code> keyed by <code>${fi}-${vi}</code>. Initial value is <code>displayValue</code> from the LLM.</li>
-    <li>On save, run the edited <code>displayValue</code> back through <code>fromCanonicalValue()</code>/<code>toCanonicalValue()</code> to compute the SI value. Existing unit-system logic in <code>units.ts</code> handles the conversion.</li>
-    <li>If edited value differs from LLM extraction: show small "edited from X" annotation, source becomes <code>'lab_import_edited'</code> instead of <code>'lab_import'</code>.</li>
-    <li>Validate against the per-metric range from <code>UNIT_DEFS</code> on blur — show a small warning if out of range, but don't block save.</li>
+    <li>Replace <a href="../widget-src/src/components/ReviewTable.tsx">ReviewTable.tsx:428</a> with a controlled
+      <code>&lt;input type="number" step="any" inputmode="decimal"&gt;</code>.</li>
+    <li>State: <code>editedValues: Record&lt;string, number&gt;</code> keyed by <code>${fi}-${vi}</code>.
+      Initial value is <code>displayValue</code> from the LLM.</li>
+    <li><strong>API contract change</strong>: the <code>ExtractedValue</code> response from
+      <code>/api/lab-import</code> gains one field, <code>displaySystem: 'si' | 'conventional'</code>.
+      The backend already resolves this internally in <code>resolveUnit()</code>; we just surface it.
+      Without this, the client can't know whether to treat the edited number as SI or conventional
+      when recomputing <code>valueSI</code>.</li>
+    <li>On save, recompute <code>valueSI = toCanonicalValue(metric, editedDisplayValue, displaySystem)</code>
+      using the existing helper in <code>packages/health-core/src/units.ts</code>.</li>
+    <li>If edited value differs from LLM extraction: show small "edited from X" annotation,
+      source becomes <code>'lab_import_edited'</code> instead of <code>'lab_import'</code>.</li>
+    <li><strong>Validation: reuse the InputPanel pattern.</strong> The existing field inputs use
+      <code>UNIT_DEFS[metric].validationRange[unitSystem]</code> and the Zod
+      <code>measurementSchema</code> from <code>packages/health-core/src/validation.ts</code>.
+      Identify the exact reusable utility during implementation; if InputPanel inlines the check,
+      extract it into a shared <code>widget-src/src/lib/validateMeasurementValue.ts</code> and call
+      from both places. The DB CHECK constraint on <code>value_range</code> remains the canonical
+      enforcement; client-side validation is soft (warn-on-blur, doesn't block save) consistent
+      with the existing "confidence is advisory" principle.</li>
+    <li><strong>Decimal separator:</strong> small <code>parseLocalisedNumber()</code> helper that
+      accepts both <code>0.5</code> and <code>0,5</code> in all locales. Tested with German,
+      French, US-English form values.</li>
   </ul>
 
   <!-- ============================================================== -->
@@ -542,7 +577,14 @@ $$ <span class="k">LANGUAGE</span> plpgsql <span class="k">SECURITY DEFINER SET<
   <h2 id="ui-history">8 · UI · history-view correction</h2>
   <p>From the history panel, the user clicks a row's "⋯" menu and picks "Correct value" or
     "Delete". Correct opens a small inline form; Delete calls the existing
-    <code>DELETE /api/measurements</code>.</p>
+    <code>DELETE /api/measurements</code> (still a hard delete — see §3 decision and the
+    consequences note below).</p>
+
+  <p style="font-size: 13.5px; color: var(--ink-3);">
+    <strong>Audit-mode toggle behaviour:</strong> defaults to off on every page load
+    (not persisted in localStorage). Defensive — users don't get unexpectedly surprised by
+    strikethrough entries when returning to the page.
+  </p>
 
   <div class="mockup">
     <div class="mockup-title">History panel — ApoB · default (active only)</div>
@@ -731,6 +773,15 @@ $$ <span class="k">LANGUAGE</span> plpgsql <span class="k">SECURITY DEFINER SET<
             <li><strong>Negative: forged corrects_id blocked.</strong> Attempt to INSERT a
               row with <code>corrects_id</code> pointing at another user's row — INSERT
               trigger should raise "corrects_id must reference a row owned by the same user".</li>
+            <li><strong>Concurrent corrections race.</strong> Fire two
+              <code>correct_measurement</code> calls on the same active row in parallel.
+              Exactly one must succeed and produce one new active row. The loser must raise
+              "not correctable". Verifies the UPDATE-first lock-and-check pattern.</li>
+            <li><strong>Hard delete breaks audit chain (expected).</strong> Correct a value,
+              then hard-DELETE the entered-in-error row via <code>DELETE /api/measurements</code>.
+              Verify the corrector's <code>corrects_id</code> is set to NULL (the
+              <code>ON DELETE SET NULL</code> FK behaviour). Audit mode renders the corrector
+              with no replaces-arrow. Accepted tradeoff of keeping DELETE as a hard pathway.</li>
           </ol>
         </td>
       </tr>

@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
 import type { HealthInputs, MedicationInputs, ScreeningInputs } from '../../packages/health-core/src/types';
 import { measurementsToInputs, medicationsToInputs, screeningsToInputs } from '../../packages/health-core/src/mappings';
+import type { MeasurementStatus } from '../../packages/health-core/src/validation';
 
 // ---------------------------------------------------------------------------
 // Environment
@@ -440,6 +441,8 @@ export interface DbMeasurement {
   created_at: string;
   source: string;
   external_id: string | null;
+  status?: string;
+  corrects_id?: string | null;
 }
 
 export interface DbProfile {
@@ -472,6 +475,9 @@ export function toApiMeasurement(m: DbMeasurement) {
     createdAt: m.created_at,
     source: m.source,
     externalId: m.external_id,
+    // DB CHECK constraint guarantees these two values; cast is safe.
+    status: ((m.status ?? 'active') as MeasurementStatus),
+    correctsId: m.corrects_id ?? null,
   };
 }
 
@@ -499,11 +505,16 @@ export async function getMeasurements(
   client: SupabaseClient,
   metricType: string,
   limit = 50,
+  includeCorrected = false,
 ): Promise<DbMeasurement[]> {
-  const { data, error } = await client
+  let query = client
     .from('health_measurements')
     .select('*')
-    .eq('metric_type', metricType)
+    .eq('metric_type', metricType);
+  if (!includeCorrected) {
+    query = query.eq('status', 'active');
+  }
+  const { data, error } = await query
     .order('recorded_at', { ascending: false })
     .limit(limit);
 
@@ -534,10 +545,13 @@ export async function getAllMeasurements(
   client: SupabaseClient,
   limit = 100,
   offset = 0,
+  includeCorrected = false,
 ): Promise<DbMeasurement[]> {
-  const { data, error } = await client
-    .from('health_measurements')
-    .select('*')
+  let query = client.from('health_measurements').select('*');
+  if (!includeCorrected) {
+    query = query.eq('status', 'active');
+  }
+  const { data, error } = await query
     .order('recorded_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -582,6 +596,36 @@ export async function addMeasurement(
 
   logAudit(userId, 'MEASUREMENT_CREATED', 'measurement', data.id, { metricType });
   return data as DbMeasurement;
+}
+
+/**
+ * FHIR replaces: insert a new active row + flip the old one to entered-in-error.
+ * The RPC enforces ownership via auth.uid(); the userId arg here is for audit
+ * logging only. Returns the new row's UUID, or null on failure (not found,
+ * not correctable, race-loser).
+ */
+export async function correctMeasurement(
+  client: SupabaseClient,
+  userId: string,
+  oldId: string,
+  newValue: number,
+): Promise<string | null> {
+  const { data, error } = await client.rpc('correct_measurement', {
+    old_measurement_id: oldId,
+    new_value: newValue,
+    new_recorded_at: null,
+  });
+
+  if (error) {
+    console.error('Error correcting measurement:', { error: error.message, code: error.code, oldId });
+    return null;
+  }
+
+  const newId = data as string | null;
+  if (!newId) return null;
+
+  logAudit(userId, 'MEASUREMENT_CORRECTED', 'measurement', newId, { oldId });
+  return newId;
 }
 
 /** Delete a measurement. RLS ensures the user owns it. */
