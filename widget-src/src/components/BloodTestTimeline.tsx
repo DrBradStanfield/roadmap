@@ -28,6 +28,7 @@ import {
 } from '@roadmap/health-core';
 import { MONTHS_SHORT } from '../lib/constants';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage';
+import { parseLocalisedNumber } from '../lib/parseNumber';
 
 // localStorage key for the matrix's typed-but-unsaved state. Persists across
 // page reloads so users don't lose work mid-edit. Cleared on successful Save.
@@ -54,8 +55,8 @@ function validateTypedValue(
 ): { error: string | null; range: { min: number; max: number } } {
   const range = getDisplayRange(metric, display);
   if (typed === '') return { error: null, range };
-  const n = parseFloat(typed);
-  if (Number.isNaN(n)) return { error: 'Enter a number', range };
+  const n = parseLocalisedNumber(typed);
+  if (n === undefined) return { error: 'Enter a number', range };
   if (n < range.min) return { error: `Min ${range.min}`, range };
   if (n > range.max) return { error: `Max ${range.max}`, range };
   return { error: null, range };
@@ -139,6 +140,9 @@ function statusOf(metric: MetricType, siValue: number, sex?: 'male' | 'female'):
 interface Batch {
   date: string; // ISO yyyy-mm-dd
   values: Partial<Record<MetricType, number>>;
+  // Last-write-wins if two rows ever share a (date, metric) — the Map upsert
+  // below keeps the most recent.
+  ids: Partial<Record<MetricType, string>>;
 }
 
 function groupByBatch(measurements: ApiMeasurement[]): Batch[] {
@@ -147,10 +151,11 @@ function groupByBatch(measurements: ApiMeasurement[]): Batch[] {
     const date = m.recordedAt.slice(0, 10);
     let b = byDate.get(date);
     if (!b) {
-      b = { date, values: {} };
+      b = { date, values: {}, ids: {} };
       byDate.set(date, b);
     }
     (b.values as Record<string, number>)[m.metricType] = m.value;
+    (b.ids as Record<string, string>)[m.metricType] = m.id;
   }
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
@@ -191,6 +196,10 @@ export interface BloodTestTimelineProps {
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
   onSaveBatch: (date: string, values: Record<string, number>) => Promise<void>;
+  // ValueCell calls this when the user submits an in-place correction.
+  // Resolves true if the parent successfully refreshed; false leaves the
+  // edit form open so the user can retry.
+  onCorrectValue?: (oldId: string, newValueSI: number) => Promise<boolean>;
   // Called on every typed-value change so the suggestions engine (which reads
   // from `inputs[field]`) sees draft values live. Pass siValue = undefined
   // to clear the field (empty input or out-of-range).
@@ -248,7 +257,7 @@ const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 
 export function BloodTestTimeline({
   bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit,
-  onSaveBatch, onFieldChange, isSaving, sex, onUploadClick, uploadDisabled, loginUrl,
+  onSaveBatch, onCorrectValue, onFieldChange, isSaving, sex, onUploadClick, uploadDisabled, loginUrl,
   hasApiResponse, flushRef,
 }: BloodTestTimelineProps) {
   const batches = useMemo(() => groupByBatch(bloodTestHistory), [bloodTestHistory]);
@@ -309,9 +318,13 @@ export function BloodTestTimeline({
   const { series, lastSi, showTrend } = trendData;
 
   // Columns: existing batches in chronological order, then the always-on draft column.
-  const columns = useMemo(
+  // Discriminated on `kind` so `c.ids` only narrows when c.kind === 'batch'.
+  const columns = useMemo<Array<
+    | { kind: 'batch'; date: string; values: Partial<Record<MetricType, number>>; ids: Partial<Record<MetricType, string>> }
+    | { kind: 'draft'; date: string; values: Partial<Record<MetricType, string>> }
+  >>(
     () => [
-      ...batches.map(b => ({ kind: 'batch' as const, date: b.date, values: b.values })),
+      ...batches.map(b => ({ kind: 'batch' as const, date: b.date, values: b.values, ids: b.ids })),
       { kind: 'draft' as const, date: draft.date, values: draft.values },
     ],
     [batches, draft],
@@ -371,8 +384,8 @@ export function BloodTestTimeline({
     if (typed === '' || error) {
       onFieldChange(row.field, undefined);
     } else {
-      const n = parseFloat(typed);
-      if (!Number.isNaN(n)) onFieldChange(row.field, toCanonicalValue(metric, n, display));
+      const n = parseLocalisedNumber(typed);
+      if (n !== undefined) onFieldChange(row.field, toCanonicalValue(metric, n, display));
     }
   };
 
@@ -400,8 +413,8 @@ export function BloodTestTimeline({
     for (const row of ROWS) {
       const typed = typedMap[row.metric];
       if (typed == null || typed === '') continue;
-      const n = parseFloat(typed);
-      if (Number.isNaN(n)) continue;
+      const n = parseLocalisedNumber(typed);
+      if (n === undefined) continue;
       const display = fieldUnit(row.field);
       out[row.metric] = toCanonicalValue(row.metric, n, display);
     }
@@ -571,12 +584,22 @@ export function BloodTestTimeline({
                       }
                       const status = statusOf(row.metric, v, sex);
                       const isPinned = colIdx === columns.length - 2;
+                      const cellId = `${c.date}.${row.metric}`;
+                      // c.kind === 'batch' here — the 'draft' branch returned above
+                      const rowId = c.kind === 'batch' ? c.ids[row.metric] : undefined;
                       return (
                         <ValueCell
-                          key={`${c.date}.${row.metric}`}
-                          shown={formatDisplayValue(row.metric, v, display)}
+                          key={cellId}
+                          metric={row.metric}
+                          display={display}
+                          sex={sex}
+                          siValue={v}
+                          rowId={rowId}
                           status={status}
                           pinned={isPinned}
+                          onActivate={() => setActiveCell(cellId)}
+                          onDeactivate={() => setActiveCell(null)}
+                          onCorrect={onCorrectValue}
                         />
                       );
                     })}
@@ -644,11 +667,188 @@ function DraftDateCell({ date, onChange }: { date: string; onChange: (date: stri
   );
 }
 
-function ValueCell({ shown, status, pinned }: { shown: string; status: Status; pinned: boolean }) {
+interface ValueCellProps {
+  metric: MetricType;
+  display: UnitSystem;
+  sex?: 'male' | 'female';
+  siValue: number;
+  rowId?: string;
+  status: Status;
+  pinned: boolean;
+  onActivate: () => void;
+  onDeactivate: () => void;
+  onCorrect?: (oldId: string, newValueSI: number) => Promise<boolean>;
+}
+
+/** Live status preview from a typed display value. Shared by DraftCell + ValueCell. */
+function previewStatus(
+  metric: MetricType, typed: string, display: UnitSystem, sex?: 'male' | 'female',
+): Status {
+  const n = parseLocalisedNumber(typed);
+  if (n === undefined) return null;
+  return statusOf(metric, toCanonicalValue(metric, n, display), sex);
+}
+
+function ValueCell({
+  metric, display, sex, siValue, rowId, status, pinned, onActivate, onDeactivate, onCorrect,
+}: ValueCellProps) {
+  // `typed === null` ⇒ read-only; otherwise the in-place edit form is open.
+  // One field replaces the old (editing, typed) pair — impossible state gone.
+  const [typed, setTyped] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const blurTimerRef = useRef<number | null>(null);
+
+  const clearBlurTimer = () => {
+    if (blurTimerRef.current != null) {
+      window.clearTimeout(blurTimerRef.current);
+      blurTimerRef.current = null;
+    }
+  };
+  useEffect(() => clearBlurTimer, []); // also fires on unmount
+
+  const initialDisplay = formatDisplayValue(metric, siValue, display);
+  const canCorrect = !!(rowId && onCorrect);
+
+  const beginEdit = () => {
+    if (!canCorrect) return;
+    // Cancel any pending blur-cancel from a previous cell — otherwise it
+    // would fire after this cell mounts and clobber our active state.
+    clearBlurTimer();
+    setTyped(initialDisplay);
+    onActivate();
+  };
+
+  const cancel = () => {
+    clearBlurTimer();
+    setTyped(null);
+    onDeactivate();
+  };
+
+  const submit = async () => {
+    if (!canCorrect || !rowId || !onCorrect || typed === null) return;
+    const { error } = validateTypedValue(metric, typed, display);
+    if (error) return;
+    const parsed = parseLocalisedNumber(typed);
+    if (parsed === undefined) return;
+    if (typed.trim() === initialDisplay.trim()) { cancel(); return; }
+    const newSi = toCanonicalValue(metric, parsed, display);
+    setSaving(true);
+    const ok = await onCorrect(rowId, newSi);
+    setSaving(false);
+    if (ok) cancel();
+    // Failure: keep the form open. Parent surfaces the error.
+  };
+
+  if (typed !== null) {
+    return (
+      <NumericInputCell
+        metric={metric}
+        display={display}
+        sex={sex}
+        value={typed}
+        onChange={setTyped}
+        wrapperClass={`bt-cell-input bt-cell-correcting${pinned ? ' bt-cell-pinned' : ''}`}
+        active
+        autoFocus
+        disabled={saving}
+        onKeyDown={e => {
+          blockBadNumericKeys(e);
+          if (e.key === 'Enter') { e.preventDefault(); void submit(); }
+          if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+        }}
+        onBlur={() => {
+          // Defer cancel so clicks on adjacent affordances can intercept
+          // before focus loss closes the form.
+          blurTimerRef.current = window.setTimeout(() => {
+            if (!saving) cancel();
+          }, 150);
+        }}
+      />
+    );
+  }
+
+  if (!canCorrect) {
+    return (
+      <div className={`bt-cell-value${pinned ? ' bt-cell-pinned' : ''}`}>
+        <span className="bt-value-num num">{initialDisplay}</span>
+        <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>
+      </div>
+    );
+  }
+
   return (
-    <div className={`bt-cell-value${pinned ? ' bt-cell-pinned' : ''}`}>
-      <span className="bt-value-num num">{shown}</span>
+    <button
+      type="button"
+      className={`bt-cell-value bt-cell-clickable${pinned ? ' bt-cell-pinned' : ''}`}
+      onClick={beginEdit}
+      title="Click to correct this value"
+    >
+      <span className="bt-value-num num">{initialDisplay}</span>
       <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>
+    </button>
+  );
+}
+
+interface NumericInputCellProps {
+  metric: MetricType;
+  display: UnitSystem;
+  value: string;
+  onChange: (v: string) => void;
+  // Visual: outer wrapper class (appended to bt-cell-value) and inner input class
+  wrapperClass: string;
+  inputClass?: string;
+  // Status tick in the footer: omit `sex` to suppress the live preview entirely.
+  // Pass sex to enable computing status from the typed value.
+  sex?: 'male' | 'female';
+  showStatusPreview?: boolean;
+  // Optional extras
+  active?: boolean;
+  autoFocus?: boolean;
+  disabled?: boolean;
+  placeholder?: string;
+  onFocus?: () => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+}
+
+/**
+ * Shared numeric input + validation + footer used by DraftCell, BackfillCell,
+ * and ValueCell's edit mode. Fixed-height footer prevents the input from
+ * shifting when the slot switches between status tick and error message.
+ */
+function NumericInputCell({
+  metric, display, value, onChange,
+  wrapperClass, inputClass = 'bt-input',
+  sex, showStatusPreview = true,
+  active, autoFocus, disabled, placeholder,
+  onFocus, onBlur, onKeyDown = blockBadNumericKeys,
+}: NumericInputCellProps) {
+  const { error, range } = validateTypedValue(metric, value, display);
+  const status = !showStatusPreview || error ? null : previewStatus(metric, value, display, sex);
+  return (
+    <div className={`bt-cell-value ${wrapperClass}`}>
+      <input
+        type="number"
+        inputMode="decimal"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        placeholder={placeholder}
+        min={range.min}
+        max={range.max}
+        aria-invalid={!!error}
+        title={error ?? undefined}
+        autoFocus={autoFocus}
+        disabled={disabled}
+        className={`${inputClass}${active ? ' bt-input-active' : ''}${error ? ' bt-input-error' : ''}`}
+      />
+      <div className="bt-cell-foot">
+        {error
+          ? <span className="bt-input-error-text">{error}</span>
+          : <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>}
+      </div>
     </div>
   );
 }
@@ -665,37 +865,19 @@ interface DraftCellProps {
 }
 
 function DraftCell({ metric, display, sex, value, active, onFocus, onBlur, onChange }: DraftCellProps) {
-  const { error, range } = validateTypedValue(metric, value, display);
-  // Live status preview: convert typed value to SI, look up status (only when valid).
-  let status: Status = null;
-  if (!error && value !== '') {
-    const n = parseFloat(value);
-    if (!Number.isNaN(n)) {
-      const si = toCanonicalValue(metric, n, display);
-      status = statusOf(metric, si, sex);
-    }
-  }
   return (
-    <div className="bt-cell-value bt-cell-input bt-cell-draft">
-      <input type="number" inputMode="decimal" value={value}
-             onChange={e => onChange(e.target.value)}
-             onKeyDown={blockBadNumericKeys}
-             onFocus={onFocus} onBlur={onBlur}
-             placeholder="—"
-             min={range.min} max={range.max}
-             aria-invalid={!!error}
-             title={error ?? undefined}
-             className={`bt-input${active ? ' bt-input-active' : ''}${error ? ' bt-input-error' : ''}`}/>
-      {/* Fixed-height footer so the input doesn't shift when the slot switches
-          between status tick and error message. */}
-      <div className="bt-cell-foot">
-        {error ? (
-          <span className="bt-input-error-text">{error}</span>
-        ) : (
-          <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>
-        )}
-      </div>
-    </div>
+    <NumericInputCell
+      metric={metric}
+      display={display}
+      sex={sex}
+      value={value}
+      onChange={onChange}
+      wrapperClass="bt-cell-input bt-cell-draft"
+      active={active}
+      placeholder="—"
+      onFocus={onFocus}
+      onBlur={onBlur}
+    />
   );
 }
 
@@ -710,25 +892,19 @@ interface BackfillCellProps {
 }
 
 function BackfillCell({ metric, display, value, active, onFocus, onBlur, onChange }: BackfillCellProps) {
-  const { error, range } = validateTypedValue(metric, value, display);
   return (
-    <div className="bt-cell-value bt-cell-backfill">
-      <input type="number" inputMode="decimal" value={value}
-             onChange={e => onChange(e.target.value)}
-             onKeyDown={blockBadNumericKeys}
-             onFocus={onFocus} onBlur={onBlur}
-             placeholder="—"
-             min={range.min} max={range.max}
-             aria-invalid={!!error}
-             title={error ?? undefined}
-             className={`bt-input bt-input-backfill${active ? ' bt-input-active' : ''}${error ? ' bt-input-error' : ''}`}/>
-      <div className="bt-cell-foot">
-        {error ? (
-          <span className="bt-input-error-text">{error}</span>
-        ) : (
-          <span className="bt-status-tick bt-status-none"/>
-        )}
-      </div>
-    </div>
+    <NumericInputCell
+      metric={metric}
+      display={display}
+      value={value}
+      onChange={onChange}
+      wrapperClass="bt-cell-backfill"
+      inputClass="bt-input bt-input-backfill"
+      active={active}
+      placeholder="—"
+      showStatusPreview={false}
+      onFocus={onFocus}
+      onBlur={onBlur}
+    />
   );
 }

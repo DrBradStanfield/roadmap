@@ -1,9 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { UnitSystem, MetricType } from '@roadmap/health-core';
-import { fromCanonicalValue, UNIT_DEFS, METRIC_LABELS } from '@roadmap/health-core';
+import {
+  toCanonicalValue,
+  UNIT_DEFS,
+  METRIC_LABELS,
+  formatDisplayValue,
+  getDisplayRange,
+  getDisplayLabel,
+} from '@roadmap/health-core';
 import { InlineDatePicker, getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiMeasurement, DocumentResult } from '../lib/api';
 import { labValueLabel } from '../lib/lab-value-labels';
+import { parseLocalisedNumber } from '../lib/parseNumber';
 
 /** Minimum age for each screening type — matches thresholds in suggestions.ts */
 const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'female' }> = {
@@ -54,7 +62,7 @@ interface ReviewTableProps {
   birthYear?: number;
   sex?: 'male' | 'female';
   onSave: (payload: {
-    values: Array<{ metric: string; valueSI: number; recordedAt: string }>;
+    values: Array<{ metric: string; valueSI: number; recordedAt: string; source?: string }>;
     documents: DocumentToSave[];
     labValues: Array<{ name: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string }>;
   }) => void;
@@ -182,6 +190,54 @@ export function ReviewTable({
     return map;
   });
 
+  // The LLM's extracted values, formatted for the user's current unit system.
+  // Derived (not stored as state) so a unit-system switch automatically
+  // re-formats — no risk of `initialDisplayValues` and `editedDisplayValues`
+  // disagreeing about which unit system they're in.
+  const initialDisplayValues = useMemo<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    results.forEach((r, fi) => {
+      r.values.forEach((v, vi) => {
+        const key = `${fi}-${vi}`;
+        const metric = v.metric as MetricType;
+        map[key] = UNIT_DEFS[metric]
+          ? formatDisplayValue(metric, v.valueSI, unitSystem)
+          : String(v.displayValue);
+      });
+    });
+    return map;
+  }, [results, unitSystem]);
+
+  const [editedDisplayValues, setEditedDisplayValues] = useState<Record<string, string>>(
+    () => ({ ...initialDisplayValues }),
+  );
+
+  // If the user switches units mid-review, snap edits back to the freshly
+  // re-formatted initial values. Loses any in-flight edits, but mid-review
+  // unit changes are rare and silently surviving them is worse (the edit
+  // string would then be in the old unit system).
+  useEffect(() => {
+    setEditedDisplayValues({ ...initialDisplayValues });
+  }, [initialDisplayValues]);
+
+  const isEdited = (key: string): boolean =>
+    editedDisplayValues[key] !== undefined &&
+    editedDisplayValues[key] !== initialDisplayValues[key];
+
+  // Soft validation reusing UNIT_DEFS ranges via getDisplayRange (same source
+  // InputPanel uses). Never blocks save — warning only.
+  const getRangeWarning = (metricStr: string, displayValueStr: string): string | null => {
+    const parsed = parseLocalisedNumber(displayValueStr);
+    if (parsed === undefined) return null;
+    const metric = metricStr as MetricType;
+    if (!UNIT_DEFS[metric]) return null;
+    const range = getDisplayRange(metric, unitSystem);
+    if (parsed < range.min || parsed > range.max) {
+      return `Outside typical range (${range.min}–${range.max} ${getDisplayLabel(metric, unitSystem)}) — double-check the source.`;
+    }
+    return null;
+  };
+
   const totalValues = useMemo(() => results.reduce((sum, r) => sum + r.values.length, 0), [results]);
   const totalAdditional = useMemo(() => results.reduce((sum, r) => sum + r.additionalValues.length, 0), [results]);
   const selectedCount = useMemo(() => Object.values(checked).filter(Boolean).length, [checked]);
@@ -219,15 +275,32 @@ export function ReviewTable({
 
   const handleSave = () => {
     // Collect core lab values
-    const selected: Array<{ metric: string; valueSI: number; recordedAt: string }> = [];
+    const selected: Array<{ metric: string; valueSI: number; recordedAt: string; source?: string }> = [];
     results.forEach((r, fi) => {
       r.values.forEach((v, vi) => {
         const key = `${fi}-${vi}`;
         if (!checked[key]) return;
+        // Recompute valueSI from the user's (possibly-edited) display value.
+        // If the user didn't touch it, this still works — the edited string
+        // is a faithful round-trip of v.valueSI through the user's unit system.
+        const editedStr = editedDisplayValues[key];
+        const parsed = parseLocalisedNumber(editedStr);
+        let valueSI = v.valueSI;
+        if (parsed !== undefined) {
+          const metric = v.metric as MetricType;
+          if (UNIT_DEFS[metric]) {
+            valueSI = toCanonicalValue(metric, parsed, unitSystem);
+          } else {
+            // Non-core metric — store as-is (shouldn't hit for the 11 metrics)
+            valueSI = parsed;
+          }
+        }
+        const edited = isEdited(key);
         selected.push({
           metric: v.metric,
-          valueSI: v.valueSI,
+          valueSI,
           recordedAt: buildRecordedAt(fileDates[fi]),
+          source: edited ? 'lab_import_edited' : undefined, // undefined → server default 'lab_import'
         });
       });
     });
@@ -274,17 +347,6 @@ export function ReviewTable({
     });
 
     onSave({ values: selected, documents, labValues: selectedLabValues });
-  };
-
-  const formatValue = (v: ExtractedValue) => {
-    const metric = v.metric as MetricType;
-    if (UNIT_DEFS[metric]) {
-      const displayVal = fromCanonicalValue(metric, v.valueSI, unitSystem);
-      const label = UNIT_DEFS[metric].label[unitSystem];
-      const dp = UNIT_DEFS[metric].decimalPlaces[unitSystem];
-      return `${displayVal.toFixed(dp)} ${label}`;
-    }
-    return `${v.displayValue} ${v.displayUnit}`;
   };
 
   return (
@@ -413,6 +475,13 @@ export function ReviewTable({
                     {r.values.map((v, vi) => {
                       const key = `${fi}-${vi}`;
                       const dup = isDuplicate(v.metric, fileDates[fi], previousMeasurements);
+                      const metric = v.metric as MetricType;
+                      const unitLabel = UNIT_DEFS[metric]
+                        ? getDisplayLabel(metric, unitSystem)
+                        : v.displayUnit;
+                      const edited = isEdited(key);
+                      const editedStr = editedDisplayValues[key] ?? '';
+                      const warning = checked[key] ? getRangeWarning(v.metric, editedStr) : null;
                       return (
                         <div key={key} className={`review-row review-row--${v.confidence}`}>
                           <label className="review-row-check">
@@ -425,13 +494,32 @@ export function ReviewTable({
                           <span className="review-row-metric">
                             {METRIC_LABELS[v.metric] || v.metric}
                           </span>
-                          <span className="review-row-value">{formatValue(v)}</span>
+                          <input
+                            // type="text" instead of "number" because some
+                            // browsers reject comma decimals (German, French)
+                            // before our parseLocalisedNumber can normalise.
+                            type="text"
+                            inputMode="decimal"
+                            className="review-row-value-input"
+                            value={editedStr}
+                            onChange={(e) => setEditedDisplayValues(prev => ({ ...prev, [key]: e.target.value }))}
+                            aria-label={`${METRIC_LABELS[v.metric] || v.metric} value`}
+                          />
+                          <span className="review-row-unit">{unitLabel}</span>
+                          {edited && (
+                            <span className="review-row-edited-note">
+                              edited from {initialDisplayValues[key]}
+                            </span>
+                          )}
                           <span className={`review-row-confidence review-confidence--${v.confidence}`}>
                             ●
                           </span>
                           {dup && <span className="review-row-dup">Already saved</span>}
                           {v.question && (
                             <p className="review-row-question">{v.question}</p>
+                          )}
+                          {warning && (
+                            <p className="review-row-warning">{warning}</p>
                           )}
                         </div>
                       );

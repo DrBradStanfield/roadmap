@@ -483,7 +483,7 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
   };
 
   const handleSave = useCallback(async ({ values: selectedValues, documents, labValues }: {
-    values: Array<{ metric: string; valueSI: number; recordedAt: string }>;
+    values: Array<{ metric: string; valueSI: number; recordedAt: string; source?: string }>;
     documents: DocumentToSave[];
     labValues: Array<{ name: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string }>;
   }) => {
@@ -494,7 +494,10 @@ export function UploadModal({ unitSystem, previousMeasurements, onComplete, onSt
         metricType: v.metric,
         value: v.valueSI,
         recordedAt: v.recordedAt,
-        source: 'lab_import' as const,
+        // Per-row source: ReviewTable tags edited rows as 'lab_import_edited'
+        // so we can distinguish LLM-extracted-then-user-corrected from
+        // pure LLM extraction in audit analytics. Falls back to 'lab_import'.
+        source: v.source ?? 'lab_import',
       }));
       const docPayloads = documents.map(d => ({
         documentType: d.documentType,

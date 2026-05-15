@@ -53,6 +53,7 @@ import {
   loadAllHistory,
   saveChangedMeasurements,
   addMeasurement,
+  correctMeasurement,
   saveMedication,
   saveScreening,
   saveSupplement,
@@ -519,8 +520,36 @@ export function HealthTool() {
     return () => clearTimeout(timeout);
   }, [inputs, hasApiResponse, authState.isLoggedIn, effectiveInputs]);
 
-  // Explicit save for longitudinal fields
-  // bloodTestDate is an ISO string (e.g., "2026-01-01T00:00:00.000Z") for blood test metrics
+  // Patches local state in place: drops the old row + appends the new one with
+  // the same date/metric, no network refetch. Suggestions recompute via the
+  // existing `effectiveInputs` derivation off `previousMeasurements`.
+  const handleCorrectBloodTestValue = useCallback(async (
+    oldId: string,
+    newValueSI: number,
+  ): Promise<boolean> => {
+    if (!authState.isLoggedIn) return false;
+    const newId = await correctMeasurement(oldId, newValueSI);
+    if (!newId) return false;
+
+    const patchList = <T extends ApiMeasurement>(rows: T[]): T[] => {
+      const old = rows.find(r => r.id === oldId);
+      if (!old) return rows;
+      const withoutOld = rows.filter(r => r.id !== oldId);
+      const replacement: T = {
+        ...old,
+        id: newId,
+        value: newValueSI,
+        source: 'manual_correction',
+        status: 'active',
+        correctsId: oldId,
+      };
+      return [...withoutOld, replacement];
+    };
+    setBloodTestHistory(patchList);
+    setPreviousMeasurements(patchList);
+    return true;
+  }, [authState.isLoggedIn]);
+
   const handleSaveLongitudinal = useCallback(async (
     bloodTestDate?: string,
     // Optional: when provided, save these metric→SI-value pairs at the given
@@ -936,6 +965,7 @@ export function HealthTool() {
     bloodTestHistory,
     onSaveBloodTestBatch: (date: string, values: Record<string, number>) =>
       handleSaveLongitudinal(date, values),
+    onCorrectBloodTestValue: handleCorrectBloodTestValue,
     medications,
     onMedicationChange: handleMedicationChange,
     screenings,
