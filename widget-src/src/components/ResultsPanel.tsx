@@ -41,7 +41,7 @@ interface ResultsPanelProps {
   results: HealthResults | null;
   isValid: boolean;
   authState?: AuthState;
-  saveStatus?: 'idle' | 'saving' | 'saved' | 'first-saved' | 'error';
+  saveStatus?: 'idle' | 'saving' | 'saved' | 'first-saved' | 'duplicates' | 'error';
   emailConfirmStatus?: 'idle' | 'sent' | 'error';
   unitSystem: UnitSystem;
   unitOverrides?: Partial<Record<MetricType, UnitSystem>>;
@@ -319,6 +319,7 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
     const statusText = saveStatus === 'saving' ? 'Saving...'
       : saveStatus === 'first-saved' ? '✓ Saved'
       : saveStatus === 'saved' ? '✓ Saved'
+      : saveStatus === 'duplicates' ? '✓ Already saved'
       : saveStatus === 'error' ? 'Failed to save'
       : 'Data synced';
     const statusClass = saveStatus === 'error' ? 'error' : saveStatus === 'saving' ? 'saving' : 'idle';

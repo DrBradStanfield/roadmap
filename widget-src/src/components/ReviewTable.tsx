@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import type { UnitSystem, MetricType } from '@roadmap/health-core';
+import type { UnitSystem, MetricType, MeasurementSource } from '@roadmap/health-core';
 import {
   toCanonicalValue,
   UNIT_DEFS,
@@ -7,11 +7,11 @@ import {
   formatDisplayValue,
   getDisplayRange,
   getDisplayLabel,
+  parseLocalisedNumber,
 } from '@roadmap/health-core';
 import { InlineDatePicker, getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiMeasurement, DocumentResult } from '../lib/api';
 import { labValueLabel } from '../lib/lab-value-labels';
-import { parseLocalisedNumber } from '../lib/parseNumber';
 
 /** Minimum age for each screening type — matches thresholds in suggestions.ts */
 const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'female' }> = {
@@ -65,7 +65,7 @@ interface ReviewTableProps {
   birthYear?: number;
   sex?: 'male' | 'female';
   onSave: (payload: {
-    values: Array<{ metric: string; valueSI: number; recordedAt: string; source?: string }>;
+    values: Array<{ metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource }>;
     documents: DocumentToSave[];
     labValues: Array<{ name: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string }>;
   }) => void;
@@ -236,6 +236,28 @@ export function ReviewTable({
     setEditedDisplayValues({ ...initialDisplayValues });
   }, [initialDisplayValues]);
 
+  // When the user edits a file's date, any row that becomes a duplicate at
+  // the new date is auto-unchecked. Otherwise the dup badge would render
+  // alongside a still-ticked checkbox, and the server would silently skip
+  // the row — confusing.
+  useEffect(() => {
+    setChecked(prev => {
+      let changed = false;
+      const next = { ...prev };
+      results.forEach((r, fi) => {
+        r.values.forEach((_v, vi) => {
+          const key = `${fi}-${vi}`;
+          if (!prev[key]) return;
+          if (isDuplicate(r.values[vi].metric, fileDates[fi], historyIndex)) {
+            next[key] = false;
+            changed = true;
+          }
+        });
+      });
+      return changed ? next : prev;
+    });
+  }, [fileDates, results, historyIndex]);
+
   const isEdited = (key: string): boolean =>
     editedDisplayValues[key] !== undefined &&
     editedDisplayValues[key] !== initialDisplayValues[key];
@@ -291,7 +313,7 @@ export function ReviewTable({
 
   const handleSave = () => {
     // Collect core lab values
-    const selected: Array<{ metric: string; valueSI: number; recordedAt: string; source?: string }> = [];
+    const selected: Array<{ metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource }> = [];
     results.forEach((r, fi) => {
       r.values.forEach((v, vi) => {
         const key = `${fi}-${vi}`;

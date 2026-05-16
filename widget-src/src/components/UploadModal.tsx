@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { UnitSystem } from '@roadmap/health-core';
+import type { UnitSystem, MeasurementSource } from '@roadmap/health-core';
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, type PageContent, type ApiMeasurement, type UploadErrorCode } from '../lib/api';
 import { ReviewTable, type FileResult, type DocumentToSave } from './ReviewTable';
 import { useIsMobile } from '../lib/useIsMobile';
@@ -69,8 +69,10 @@ const EXTRACT_TIMEOUT = 30_000;
 // comfortably absorbs 5 concurrent lab-report extractions (~500-1500 output
 // tokens each). Scan/letter markdown conversion (~4K tokens) can overflow,
 // but server-side 429 retry in callAnthropic() absorbs occasional bursts.
-// Beyond 5, pdf.js extraction becomes the wall-clock bottleneck.
 const LLM_CONCURRENCY = 5;
+// Parallel pdf.js extractors. Extraction is CPU-bound on the main thread,
+// so 3 workers keep the queue feeding 5 LLM workers without UI jank.
+const EXTRACT_CONCURRENCY = 3;
 
 /** Rotating status messages shown during batch processing */
 const PROGRESS_MESSAGES = [
@@ -103,6 +105,7 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
   const [error, setError] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
   const [skippedDuplicates, setSkippedDuplicates] = useState(0);
+  const [saveErrorCount, setSaveErrorCount] = useState(0);
   const [savedDocCount, setSavedDocCount] = useState(0);
   const [savedLabCount, setSavedLabCount] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
@@ -116,6 +119,7 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
   const resetSaveCounters = useCallback(() => {
     setSavedCount(0);
     setSkippedDuplicates(0);
+    setSaveErrorCount(0);
     setSavedDocCount(0);
     setSavedLabCount(0);
   }, []);
@@ -369,36 +373,47 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
       }
     }
 
-    // Producer: extract files and feed the queue. Worker starts as soon as first file is ready.
+    // Producer: collect all inputs, then run a pool of extractors in parallel.
+    // Sequential extraction starved LLM workers (extraction ~2s vs LLM ~5s);
+    // EXTRACT_CONCURRENCY parallel extractors keep the LLM queue full.
+    const allInputs: Array<{ fileName: string; getFile: () => Promise<File> }> = [];
     for (const entries of zipEntryLists) {
       for (const { name, entry } of entries) {
+        allInputs.push({
+          fileName: name,
+          getFile: async () => {
+            const blob = await entry.async('blob');
+            return new File([blob], name.split('/').pop() || name);
+          },
+        });
+      }
+    }
+    for (const file of otherFiles) {
+      allInputs.push({ fileName: file.name, getFile: async () => file });
+    }
+
+    let extractIndex = 0;
+    async function extractWorker() {
+      while (extractIndex < allInputs.length) {
         if (abort.signal.aborted) break;
+        const i = extractIndex++;
+        const { fileName, getFile } = allInputs[i];
         try {
-          const blob = await entry.async('blob');
-          const file = new File([blob], name.split('/').pop() || name);
+          const file = await getFile();
           const pages = await extractPages(upload, file);
           if (pages.length > 0) {
-            queue.push({ fileName: name, pages });
-            tryStartWorker(); // Start worker as soon as first item is ready
+            queue.push({ fileName, pages });
+            tryStartWorker();
           }
         } catch (err) {
-          console.warn(`Failed to extract ${name}:`, err);
+          console.warn(`Failed to extract ${fileName}:`, err);
         }
       }
     }
 
-    for (const file of otherFiles) {
-      if (abort.signal.aborted) break;
-      try {
-        const pages = await extractPages(upload, file);
-        if (pages.length > 0) {
-          queue.push({ fileName: file.name, pages });
-          tryStartWorker();
-        }
-      } catch (err) {
-        console.warn(`Failed to extract ${file.name}:`, err);
-      }
-    }
+    await Promise.all(
+      Array.from({ length: Math.min(EXTRACT_CONCURRENCY, allInputs.length) }, () => extractWorker()),
+    );
 
     feedingDone = true;
     checkDone();
@@ -499,7 +514,7 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
   };
 
   const handleSave = useCallback(async ({ values: selectedValues, documents, labValues }: {
-    values: Array<{ metric: string; valueSI: number; recordedAt: string; source?: string }>;
+    values: Array<{ metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource }>;
     documents: DocumentToSave[];
     labValues: Array<{ name: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string }>;
   }) => {
@@ -534,13 +549,14 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
       }));
 
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
-        measurements.length > 0 ? bulkSaveMeasurements(measurements) : Promise.resolve({ saved: [], skippedDuplicates: 0 }),
+        measurements.length > 0 ? bulkSaveMeasurements(measurements) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
         docPayloads.length > 0 ? bulkSaveDocuments(docPayloads) : Promise.resolve([]),
         labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads) : Promise.resolve([]),
       ]);
 
       setSavedCount(savedValues.saved.length);
       setSkippedDuplicates(savedValues.skippedDuplicates);
+      setSaveErrorCount(savedValues.errorCount);
       setSavedDocCount(savedDocs.length);
       setSavedLabCount(savedLabValues.length);
       // A run that was 100% duplicates still counts as "ok" — there's nothing
@@ -652,11 +668,17 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
                 {savedLabCount > 0 && `${savedLabCount} additional lab value${savedLabCount !== 1 ? 's' : ''}`}
                 {savedLabCount > 0 && savedDocCount > 0 && ', '}
                 {savedDocCount > 0 && `${savedDocCount} document${savedDocCount !== 1 ? 's' : ''}`}
-                {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0 && skippedDuplicates === 0 && 'No items saved'}
+                {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0
+                  && skippedDuplicates === 0 && saveErrorCount === 0 && 'No items saved'}
               </p>
               {skippedDuplicates > 0 && (
                 <p className="upload-done-skipped">
                   {skippedDuplicates} value{skippedDuplicates !== 1 ? 's were' : ' was'} already saved at the same date. Close this dialog and click the existing value in the Blood Test Results table to correct it.
+                </p>
+              )}
+              {saveErrorCount > 0 && (
+                <p className="upload-done-skipped">
+                  {saveErrorCount} value{saveErrorCount !== 1 ? 's' : ''} could not be saved due to a server error. Please try again.
                 </p>
               )}
               <button className="btn-primary upload-done-btn" onClick={handleClose}>

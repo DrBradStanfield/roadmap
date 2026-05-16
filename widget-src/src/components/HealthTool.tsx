@@ -126,7 +126,7 @@ export function HealthTool() {
   // `handleSaveLongitudinal` (legacy path) skips blood-test metrics, so without
   // this flush, typed-but-unsaved matrix values are lost when the user uploads.
   const bloodTestFlushRef = useRef<(() => Promise<void>) | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'first-saved' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'first-saved' | 'duplicates' | 'error'>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
   const isSavingLongitudinalRef = useRef(false);
@@ -523,14 +523,20 @@ export function HealthTool() {
   // Patches local state in place: drops the old row + appends the new one with
   // the same date/metric, no network refetch. Suggestions recompute via the
   // existing `effectiveInputs` derivation off `previousMeasurements`.
+  //
+  // `previousMeasurements` is intentionally a no-op when `oldId` isn't the
+  // latest for its metric (correcting a non-latest entry shouldn't shift the
+  // latest summary). For `bloodTestHistory`, a miss means local state is
+  // stale — fall back to a refetch so the corrected row appears.
   const handleCorrectBloodTestValue = useCallback(async (
     oldId: string,
     newValueSI: number,
-  ): Promise<boolean> => {
-    if (!authState.isLoggedIn) return false;
-    const newId = await correctMeasurement(oldId, newValueSI);
-    if (!newId) return false;
+  ): Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }> => {
+    if (!authState.isLoggedIn) return { ok: false, reason: 'error' };
+    const result = await correctMeasurement(oldId, newValueSI);
+    if (result.status !== 'ok') return { ok: false, reason: result.status };
 
+    const newId = result.newId;
     const patchList = <T extends ApiMeasurement>(rows: T[]): T[] => {
       const old = rows.find(r => r.id === oldId);
       if (!old) return rows;
@@ -545,9 +551,21 @@ export function HealthTool() {
       };
       return [...withoutOld, replacement];
     };
-    setBloodTestHistory(patchList);
+    // Inspect `prev` inside the updater so the stale-check sees the freshest
+    // state — not a closure-captured snapshot that may have been replaced by
+    // a concurrent refetch while the network round-trip was in flight.
+    let needsRefetch = false;
+    setBloodTestHistory(prev => {
+      needsRefetch = !prev.some(r => r.id === oldId);
+      return patchList(prev);
+    });
     setPreviousMeasurements(patchList);
-    return true;
+    if (needsRefetch) {
+      // Stale: row vanished from local history between display and click.
+      // Refetch so the corrected value appears in the matrix.
+      loadBloodTestHistory();
+    }
+    return { ok: true };
   }, [authState.isLoggedIn]);
 
   const handleSaveLongitudinal = useCallback(async (
@@ -601,28 +619,36 @@ export function HealthTool() {
       const results = await Promise.all(
         fieldsToSave.map(f => addMeasurement(f.metricType, f.value, f.recordedAt)),
       );
-      const allSaved = results.every(r => r !== null);
+      const insertedRows = results
+        .filter((r): r is { status: 'inserted'; row: ApiMeasurement } => r.status === 'inserted')
+        .map(r => r.row);
+      const hasError = results.some(r => r.status === 'error');
+      // Duplicates are treated as success: the value is already present at
+      // this timestamp. Errors are real failures and surface as 'error'.
+      const allSaved = !hasError;
 
       if (allSaved) {
-        // Update previousMeasurements with the new values
+        // Update previousMeasurements (latest-per-metric) with the new values.
+        // Only replace the existing entry when the saved row is newer —
+        // backfilling an older date must NOT clobber the latest entry, since
+        // `effectiveInputs` reads from `previousMeasurements` and would then
+        // surface stale data on the Results page.
         const newMeasurements = [...previousMeasurements];
-        for (const saved of results) {
-          if (saved) {
-            const idx = newMeasurements.findIndex(m => m.metricType === saved.metricType);
-            if (idx >= 0) {
+        for (const saved of insertedRows) {
+          const idx = newMeasurements.findIndex(m => m.metricType === saved.metricType);
+          if (idx >= 0) {
+            if (saved.recordedAt > newMeasurements[idx].recordedAt) {
               newMeasurements[idx] = saved;
-            } else {
-              newMeasurements.push(saved);
             }
+          } else {
+            newMeasurements.push(saved);
           }
         }
         setPreviousMeasurements(newMeasurements);
 
         // Append new blood-test rows to the full-history state so the timeline
         // matrix reflects the save without a reload.
-        const savedBloodTestRows = results.filter((r): r is ApiMeasurement =>
-          r !== null && bloodTestMetrics.has(r.metricType),
-        );
+        const savedBloodTestRows = insertedRows.filter(r => bloodTestMetrics.has(r.metricType));
         if (savedBloodTestRows.length > 0) {
           setBloodTestHistory(prev => [...prev, ...savedBloodTestRows]);
         }
@@ -645,7 +671,9 @@ export function HealthTool() {
           trackABConversion();
         }
         isFirstSaveRef.current = false;
-        setSaveStatus('saved');
+        // Distinguish "saved fresh" from "all dupes" — same DB end-state, but
+        // the toast wording should reflect that nothing actually changed.
+        setSaveStatus(insertedRows.length === 0 ? 'duplicates' : 'saved');
         setLastSavedAt(Date.now());
         setIsSavingLongitudinal(false);
         setTimeout(() => setSaveStatus('idle'), 2000);

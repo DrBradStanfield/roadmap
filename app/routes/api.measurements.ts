@@ -17,7 +17,6 @@ import {
   getMeasurements,
   getAllMeasurements,
   getLatestMeasurements,
-  addMeasurement,
   addMeasurementWithStatus,
   correctMeasurement,
   deleteMeasurement,
@@ -395,6 +394,7 @@ export async function action({ request }: ActionFunctionArgs) {
           data: saved.map(m => toApiMeasurement(m)),
           savedCount: saved.length,
           skippedDuplicates,
+          errorCount: errors,
           totalCount: bulkValidation.data.bulkMeasurements.length,
         });
       }
@@ -411,11 +411,17 @@ export async function action({ request }: ActionFunctionArgs) {
           );
         }
         const { oldId, newValue } = correctValidation.data.correctMeasurement;
-        const newId = await correctMeasurement(client, userId, oldId, newValue);
-        if (!newId) {
+        const result = await correctMeasurement(client, userId, oldId, newValue);
+        if (result.status === 'conflict') {
+          return json(
+            { success: false, error: 'Another value was saved at this date while you were correcting. Refresh and try again.' },
+            { status: 409 },
+          );
+        }
+        if (result.status === 'not_found') {
           return json({ success: false, error: 'Measurement not found or not correctable' }, { status: 404 });
         }
-        return json({ success: true, newId });
+        return json({ success: true, newId: result.newId });
       }
 
       // Measurement insert — POST { metricType, value, recordedAt? }

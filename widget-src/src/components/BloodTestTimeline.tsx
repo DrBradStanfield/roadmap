@@ -25,10 +25,10 @@ import {
   APOB_THRESHOLDS,
   LPA_THRESHOLDS,
   PSA_THRESHOLDS,
+  parseLocalisedNumber,
 } from '@roadmap/health-core';
 import { MONTHS_SHORT } from '../lib/constants';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage';
-import { parseLocalisedNumber } from '../lib/parseNumber';
 
 // localStorage key for the matrix's typed-but-unsaved state. Persists across
 // page reloads so users don't lose work mid-edit. Cleared on successful Save.
@@ -199,7 +199,7 @@ export interface BloodTestTimelineProps {
   // ValueCell calls this when the user submits an in-place correction.
   // Resolves true if the parent successfully refreshed; false leaves the
   // edit form open so the user can retry.
-  onCorrectValue?: (oldId: string, newValueSI: number) => Promise<boolean>;
+  onCorrectValue?: (oldId: string, newValueSI: number) => Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }>;
   // Called on every typed-value change so the suggestions engine (which reads
   // from `inputs[field]`) sees draft values live. Pass siValue = undefined
   // to clear the field (empty input or out-of-range).
@@ -677,7 +677,7 @@ interface ValueCellProps {
   pinned: boolean;
   onActivate: () => void;
   onDeactivate: () => void;
-  onCorrect?: (oldId: string, newValueSI: number) => Promise<boolean>;
+  onCorrect?: (oldId: string, newValueSI: number) => Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }>;
 }
 
 /** Live status preview from a typed display value. Shared by DraftCell + ValueCell. */
@@ -696,6 +696,7 @@ function ValueCell({
   // One field replaces the old (editing, typed) pair — impossible state gone.
   const [typed, setTyped] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const blurTimerRef = useRef<number | null>(null);
 
   const clearBlurTimer = () => {
@@ -714,6 +715,7 @@ function ValueCell({
     // Cancel any pending blur-cancel from a previous cell — otherwise it
     // would fire after this cell mounts and clobber our active state.
     clearBlurTimer();
+    setSaveError(null);
     setTyped(initialDisplay);
     onActivate();
   };
@@ -721,6 +723,7 @@ function ValueCell({
   const cancel = () => {
     clearBlurTimer();
     setTyped(null);
+    setSaveError(null);
     onDeactivate();
   };
 
@@ -733,10 +736,23 @@ function ValueCell({
     if (typed.trim() === initialDisplay.trim()) { cancel(); return; }
     const newSi = toCanonicalValue(metric, parsed, display);
     setSaving(true);
-    const ok = await onCorrect(rowId, newSi);
+    setSaveError(null);
+    const result = await onCorrect(rowId, newSi);
     setSaving(false);
-    if (ok) cancel();
-    // Failure: keep the form open. Parent surfaces the error.
+    if (result.ok) {
+      cancel();
+    } else {
+      // Keep the form open so the user can retry. Tailor the message to
+      // the failure mode so a transient conflict reads differently from a
+      // network drop.
+      setSaveError(
+        result.reason === 'conflict'
+          ? 'Another value was saved at this date. Refresh and try again.'
+          : result.reason === 'not_found'
+          ? 'This value was deleted or already updated. Refresh to see the latest.'
+          : 'Could not save. Check your connection and try again.'
+      );
+    }
   };
 
   if (typed !== null) {
@@ -746,7 +762,8 @@ function ValueCell({
         display={display}
         sex={sex}
         value={typed}
-        onChange={setTyped}
+        onChange={v => { setSaveError(null); setTyped(v); }}
+        externalError={saveError}
         wrapperClass={`bt-cell-input bt-cell-correcting${pinned ? ' bt-cell-pinned' : ''}`}
         active
         autoFocus
@@ -806,6 +823,9 @@ interface NumericInputCellProps {
   autoFocus?: boolean;
   disabled?: boolean;
   placeholder?: string;
+  // Caller-supplied error (e.g. save failure) — takes precedence over the
+  // local validation error so retry feedback is visible inline.
+  externalError?: string | null;
   onFocus?: () => void;
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
@@ -820,10 +840,11 @@ function NumericInputCell({
   metric, display, value, onChange,
   wrapperClass, inputClass = 'bt-input',
   sex, showStatusPreview = true,
-  active, autoFocus, disabled, placeholder,
+  active, autoFocus, disabled, placeholder, externalError,
   onFocus, onBlur, onKeyDown = blockBadNumericKeys,
 }: NumericInputCellProps) {
-  const { error } = validateTypedValue(metric, value, display);
+  const { error: validationError } = validateTypedValue(metric, value, display);
+  const error = externalError ?? validationError;
   const status = !showStatusPreview || error ? null : previewStatus(metric, value, display, sex);
   return (
     <div className={`bt-cell-value ${wrapperClass}`}>

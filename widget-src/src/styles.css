@@ -2453,7 +2453,7 @@ input[type="number"] {
 
 .upload-done-skipped {
   font-size: 13.5px;
-  color: var(--color-text-light, #6b6b6b);
+  color: var(--color-text-secondary);
   margin: -8px 0 20px;
   max-width: 480px;
   line-height: 1.45;
@@ -2577,7 +2577,8 @@ input[type="number"] {
   font-style: italic;
 }
 
-.review-row-warning {
+.review-row-warning,
+.review-row-question {
   width: 100%;
   font-size: 12px;
   color: var(--color-warning);
@@ -2601,14 +2602,6 @@ input[type="number"] {
   padding: 2px 7px;
   border-radius: 4px;
   font-weight: 500;
-}
-
-.review-row-question {
-  width: 100%;
-  font-size: 12px;
-  color: var(--color-warning);
-  margin: 2px 0 0 28px;
-  padding-left: 0;
 }
 
 .review-additional {

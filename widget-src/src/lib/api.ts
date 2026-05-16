@@ -1,4 +1,4 @@
-import type { HealthInputs } from '@roadmap/health-core';
+import type { HealthInputs, MeasurementSource } from '@roadmap/health-core';
 import { safeGetItem, safeSetItem } from './storage';
 import {
   measurementsToInputs,
@@ -143,28 +143,41 @@ export async function loadMeasurementHistory(
   }
 }
 
+export type AddMeasurementResult =
+  | { status: 'inserted'; row: ApiMeasurement }
+  | { status: 'duplicate' }
+  | { status: 'error' };
+
 /**
  * Add a single measurement. Value must be in SI canonical units.
+ *
+ * Returns a discriminated union so callers can distinguish a real failure
+ * from a server-side `409` "active row already exists for this metric+date"
+ * (the user should click-to-correct the existing row instead).
  */
 export async function addMeasurement(
   metricType: string,
   value: number,
   recordedAt?: string,
-): Promise<ApiMeasurement | null> {
+): Promise<AddMeasurementResult> {
   try {
     const response = await fetch(`${PROXY_PATH}/api/measurements`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ metricType, value, recordedAt }),
     });
-    if (!response.ok) return null;
+    if (response.status === 409) return { status: 'duplicate' };
+    if (!response.ok) return { status: 'error' };
 
     const result = await parseJsonResponse<SingleMeasurementResponse>(response);
-    return result?.success ? result.data || null : null;
+    if (result?.success && result.data) {
+      return { status: 'inserted', row: result.data };
+    }
+    return { status: 'error' };
   } catch (error) {
     console.warn('Error adding measurement:', error);
     Sentry.captureException(error);
-    return null;
+    return { status: 'error' };
   }
 }
 
@@ -581,7 +594,9 @@ export async function saveChangedMeasurements(
   const results = await Promise.all(
     measurementChanges.map((c) => addMeasurement(c.metricType, c.value)),
   );
-  return results.every((r) => r !== null);
+  // Duplicates are non-fatal here: the same value already exists at this
+  // timestamp, so the sync goal (value present in DB) is satisfied.
+  return results.every((r) => r.status !== 'error');
 }
 
 // ---------------------------------------------------------------------------
@@ -816,6 +831,7 @@ interface BulkSaveResponse {
   data?: ApiMeasurement[];
   savedCount?: number;
   skippedDuplicates?: number;
+  errorCount?: number;
   totalCount?: number;
   error?: string;
 }
@@ -824,43 +840,61 @@ export interface BulkSaveResult {
   saved: ApiMeasurement[];
   /** How many submitted rows were already present (active) at (user, metric, recorded_at). */
   skippedDuplicates: number;
+  /** How many submitted rows hit a server error (rare; surface in UI). */
+  errorCount: number;
 }
 
 /**
  * Save multiple measurements in a single request (from lab import review).
- * Returns both the inserted rows and the count of dupes the server skipped,
- * so the UI can surface "Saved X of Y" with an explanation for the gap.
+ * Returns the inserted rows plus dup/error counts so the UI can surface
+ * "Saved X of Y" with an honest accounting of the gap.
  */
 export async function bulkSaveMeasurements(
-  measurements: Array<{ metricType: string; value: number; recordedAt: string; source: string }>,
+  measurements: Array<{ metricType: string; value: number; recordedAt: string; source: MeasurementSource }>,
 ): Promise<BulkSaveResult> {
+  const emptyResult = (errorCount: number): BulkSaveResult => ({ saved: [], skippedDuplicates: 0, errorCount });
   try {
     const response = await fetch(`${PROXY_PATH}/api/measurements`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bulkMeasurements: measurements }),
     });
-    if (!response.ok) return { saved: [], skippedDuplicates: 0 };
+    if (!response.ok) return emptyResult(measurements.length);
 
     const data = await parseJsonResponse<BulkSaveResponse>(response);
-    if (!data?.success) return { saved: [], skippedDuplicates: 0 };
-    return { saved: data.data ?? [], skippedDuplicates: data.skippedDuplicates ?? 0 };
+    if (!data?.success) return emptyResult(measurements.length);
+    return {
+      saved: data.data ?? [],
+      skippedDuplicates: data.skippedDuplicates ?? 0,
+      errorCount: data.errorCount ?? 0,
+    };
   } catch (error) {
     console.warn('Bulk save error:', error);
     Sentry.captureException(error);
-    return { saved: [], skippedDuplicates: 0 };
+    return emptyResult(measurements.length);
   }
 }
 
+export type CorrectMeasurementResult =
+  | { status: 'ok'; newId: string }
+  | { status: 'conflict' }
+  | { status: 'not_found' }
+  | { status: 'error' };
+
 /**
  * FHIR replaces: correct a saved measurement. newValueSI is in SI canonical units
- * (caller converts from display units). Returns the new row's UUID, or null on
- * 404 (not found / not owned / already corrected).
+ * (caller converts from display units).
+ *
+ * Returns a discriminated union so the caller can show specific UX:
+ *   ok        — newId returned
+ *   conflict  — 409: another value saved at the same date during the round-trip
+ *   not_found — 404: row missing, not owned, or already corrected
+ *   error     — network / unexpected
  */
 export async function correctMeasurement(
   oldId: string,
   newValueSI: number,
-): Promise<string | null> {
+): Promise<CorrectMeasurementResult> {
   try {
     const response = await fetch(`${PROXY_PATH}/api/measurements`, {
       method: 'POST',
@@ -869,16 +903,16 @@ export async function correctMeasurement(
         correctMeasurement: { oldId, newValue: newValueSI },
       }),
     });
-    if (!response.ok) {
-      if (response.status === 404) return null;
-      throw new Error(`Correction failed: ${response.status}`);
-    }
+    if (response.status === 404) return { status: 'not_found' };
+    if (response.status === 409) return { status: 'conflict' };
+    if (!response.ok) return { status: 'error' };
     const data = await parseJsonResponse<{ success: boolean; newId?: string }>(response);
-    return data?.success && data.newId ? data.newId : null;
+    if (data?.success && data.newId) return { status: 'ok', newId: data.newId };
+    return { status: 'error' };
   } catch (error) {
     console.warn('Correct measurement error:', error);
     Sentry.captureException(error);
-    return null;
+    return { status: 'error' };
   }
 }
 

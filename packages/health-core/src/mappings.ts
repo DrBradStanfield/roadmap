@@ -126,7 +126,7 @@ export interface ApiMeasurement {
   recordedAt: string;
   createdAt: string;
   // Optional fields used only by audit-mode UI; older API responses may omit.
-  source?: string;
+  source?: import('./validation').MeasurementSource;
   externalId?: string | null;
   status?: import('./validation').MeasurementStatus;
   correctsId?: string | null;

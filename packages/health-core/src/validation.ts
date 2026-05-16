@@ -162,6 +162,7 @@ export const MEASUREMENT_SOURCES = [
   'lab_import_edited',  // LLM-extracted then user-corrected at review time
   'manual_correction',  // Inserted by the correct_measurement RPC
 ] as const;
+export type MeasurementSource = typeof MEASUREMENT_SOURCES[number];
 
 /** FHIR-style status for the row's audit state. Mirrors the SQL CHECK constraint on health_measurements.status. */
 export const MEASUREMENT_STATUS = ['active', 'entered-in-error'] as const;

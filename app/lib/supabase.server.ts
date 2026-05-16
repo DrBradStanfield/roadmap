@@ -1,8 +1,9 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
+import * as Sentry from '@sentry/remix';
 import type { HealthInputs, MedicationInputs, ScreeningInputs } from '../../packages/health-core/src/types';
 import { measurementsToInputs, medicationsToInputs, screeningsToInputs } from '../../packages/health-core/src/mappings';
-import type { MeasurementStatus } from '../../packages/health-core/src/validation';
+import { MEASUREMENT_SOURCES, type MeasurementStatus, type MeasurementSource } from '../../packages/health-core/src/validation';
 
 // ---------------------------------------------------------------------------
 // Environment
@@ -465,17 +466,35 @@ export interface DbProfile {
   message_credits: number;
 }
 
+const MEASUREMENT_SOURCE_SET: ReadonlySet<string> = new Set(MEASUREMENT_SOURCES);
+
 /** Convert a DB measurement row to the camelCase API response format. */
 export function toApiMeasurement(m: DbMeasurement) {
+  // The DB CHECK constraint should reject anything outside MEASUREMENT_SOURCES,
+  // but if drift ever lands (e.g. a manual SQL migration) we'd otherwise leak
+  // an out-of-enum string to clients. Surface that via Sentry rather than
+  // silently miscategorising.
+  let source: MeasurementSource | undefined;
+  if (m.source == null) {
+    source = undefined;
+  } else if (MEASUREMENT_SOURCE_SET.has(m.source)) {
+    source = m.source as MeasurementSource;
+  } else {
+    Sentry.captureMessage('measurement.source out of enum', {
+      level: 'warning',
+      extra: { id: m.id, source: m.source },
+    });
+    source = undefined;
+  }
   return {
     id: m.id,
     metricType: m.metric_type,
     value: Number(m.value),
     recordedAt: m.recorded_at,
     createdAt: m.created_at,
-    source: m.source,
+    source,
     externalId: m.external_id,
-    // DB CHECK constraint guarantees these two values; cast is safe.
+    // DB CHECK constraint guarantees status; cast is safe.
     status: ((m.status ?? 'active') as MeasurementStatus),
     correctsId: m.corrects_id ?? null,
   };
@@ -603,35 +622,27 @@ export async function addMeasurementWithStatus(
 }
 
 /**
- * Lossy wrapper kept for legacy callers: collapses 'duplicate' and 'error'
- * both to null. New code should call addMeasurementWithStatus directly so
- * dupes vs errors can be distinguished.
- */
-export async function addMeasurement(
-  client: SupabaseClient,
-  userId: string,
-  metricType: string,
-  value: number,
-  recordedAt?: string,
-  source?: string,
-  externalId?: string,
-): Promise<DbMeasurement | null> {
-  const result = await addMeasurementWithStatus(client, userId, metricType, value, recordedAt, source, externalId);
-  return result.status === 'inserted' ? result.row : null;
-}
-
-/**
  * FHIR replaces: insert a new active row + flip the old one to entered-in-error.
  * The RPC enforces ownership via auth.uid(); the userId arg here is for audit
- * logging only. Returns the new row's UUID, or null on failure (not found,
- * not correctable, race-loser).
+ * logging only.
+ *
+ * Returns a discriminated result so the route can distinguish:
+ *   'ok'        — corrected, newId returned
+ *   'conflict'  — another active row was inserted at the same recordedAt
+ *                  during the round-trip (RPC raised unique_violation)
+ *   'not_found' — row missing, not owned, or already corrected
  */
+export type CorrectMeasurementResult =
+  | { status: 'ok'; newId: string }
+  | { status: 'conflict' }
+  | { status: 'not_found' };
+
 export async function correctMeasurement(
   client: SupabaseClient,
   userId: string,
   oldId: string,
   newValue: number,
-): Promise<string | null> {
+): Promise<CorrectMeasurementResult> {
   const { data, error } = await client.rpc('correct_measurement', {
     old_measurement_id: oldId,
     new_value: newValue,
@@ -639,15 +650,18 @@ export async function correctMeasurement(
   });
 
   if (error) {
+    if (error.code === POSTGRES_UNIQUE_VIOLATION) {
+      return { status: 'conflict' };
+    }
     console.error('Error correcting measurement:', { error: error.message, code: error.code, oldId });
-    return null;
+    return { status: 'not_found' };
   }
 
   const newId = data as string | null;
-  if (!newId) return null;
+  if (!newId) return { status: 'not_found' };
 
   logAudit(userId, 'MEASUREMENT_CORRECTED', 'measurement', newId, { oldId });
-  return newId;
+  return { status: 'ok', newId };
 }
 
 /** Delete a measurement. RLS ensures the user owns it. */

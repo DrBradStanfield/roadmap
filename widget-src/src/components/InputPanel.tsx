@@ -51,11 +51,11 @@ import {
   isBirthYearClearlyInvalid,
   REFERENCE_HINTS,
   type SexedRefHint,
+  parseLocalisedNumber,
 } from '@roadmap/health-core';
 import { formatShortDate } from '../lib/constants';
 import { DatePicker, InlineDatePicker, dateValueToISO, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline } from './BloodTestTimeline';
-import { parseLocalisedNumber } from '../lib/parseNumber';
 
 interface FieldConfig {
   field: keyof HealthInputs;

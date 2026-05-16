@@ -85,7 +85,7 @@ describe('parseJsonResponse — HTML response from Shopify proxy', () => {
     expect(result).toEqual([]);
   });
 
-  it('addMeasurement returns null when proxy returns HTML', async () => {
+  it('addMeasurement returns error status when proxy returns HTML', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response('<!doctype html>', {
         status: 200,
@@ -94,7 +94,19 @@ describe('parseJsonResponse — HTML response from Shopify proxy', () => {
     );
 
     const result = await addMeasurement('weight', 75);
-    expect(result).toBeNull();
+    expect(result).toEqual({ status: 'error' });
+  });
+
+  it('addMeasurement returns duplicate status on 409', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ success: false, error: 'duplicate' }), {
+        status: 409,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+
+    const result = await addMeasurement('weight', 75);
+    expect(result).toEqual({ status: 'duplicate' });
   });
 
   it('handles missing content-type header as non-JSON', async () => {

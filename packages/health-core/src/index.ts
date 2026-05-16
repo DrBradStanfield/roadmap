@@ -115,7 +115,13 @@ export {
   type LabImportRequest,
   bulkMeasurementSchema,
   type BulkMeasurementRequest,
+  MEASUREMENT_SOURCES,
+  type MeasurementSource,
+  MEASUREMENT_STATUS,
+  type MeasurementStatus,
 } from './validation';
+
+export { parseLocalisedNumber } from './parseNumber';
 
 // Mappings (shared field↔metric conversions)
 export {

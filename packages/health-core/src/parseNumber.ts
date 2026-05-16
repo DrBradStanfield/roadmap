@@ -5,9 +5,6 @@
  * since European locales (German, French, Italian) use comma. Browsers'
  * built-in `<input type="number">` is inconsistent across locales, so we
  * normalise on parse rather than relying on the input element.
- *
- * Reused by ReviewTable inline edit (May 2026 redesign) and the
- * history-view correction form.
  */
 export function parseLocalisedNumber(s: string): number | undefined {
   const trimmed = s.trim();
