@@ -355,6 +355,25 @@ GRANT EXECUTE ON FUNCTION correct_measurement(UUID, NUMERIC, TIMESTAMPTZ) TO aut
 -- Multiple BP readings on the same day at different times are still allowed
 -- (different recorded_at). Lab-upload always sets recorded_at to midnight UTC
 -- of the day, so dupes within an upload share recorded_at exactly.
+
+-- One-time data cleanup so the unique index can be created on existing data.
+-- Real production data (pre-deploy) accumulated duplicates from the very bug
+-- this index now prevents. Keep the newest row of each (user, metric,
+-- recorded_at) group; flip older siblings to entered-in-error. Goes through
+-- the existing enforce_measurement_correction_only trigger cleanly because
+-- only status changes.
+WITH duplicate_groups AS (
+  SELECT id, ROW_NUMBER() OVER (
+    PARTITION BY user_id, metric_type, recorded_at
+    ORDER BY created_at DESC
+  ) AS rn
+  FROM public.health_measurements
+  WHERE status = 'active'
+)
+UPDATE public.health_measurements
+   SET status = 'entered-in-error'
+ WHERE id IN (SELECT id FROM duplicate_groups WHERE rn > 1);
+
 CREATE UNIQUE INDEX IF NOT EXISTS uniq_measurements_user_metric_active
   ON public.health_measurements(user_id, metric_type, recorded_at)
   WHERE status = 'active';
