@@ -6,6 +6,10 @@ This file provides context for Claude Code when working on this project.
 
 **Health Roadmap Tool** — a Shopify app that helps users track health metrics and receive personalized suggestions. Available as a storefront theme extension for guests and logged-in users. An app embed block handles background sync of guest localStorage data to Supabase when the user logs in.
 
+## Architecture Map
+
+See [docs/architecture.html](docs/architecture.html) — single-page visual reference for every subsystem (auth flow, data sync, widget, chatbot pipeline, lab upload, reminders, A/B testing, blog, database schema) with SVG diagrams. Open in a browser. Update only when an architectural shape changes (new subsystem, new external service, restructured flow) — not per-commit.
+
 ## Health Algorithm Reference
 
 See [health_roadmap_algorithm.md](health_roadmap_algorithm.md) — the **single source of truth** for all health calculations, clinical thresholds, medication cascades, screening logic, and suggestion rules. Clinical evidence (reasons, guideline citations, DOI references) lives in `packages/health-core/src/evidence.ts`. The user-facing `roadmap_text.html` must stay consistent with both documents. **These three files must stay in sync:**

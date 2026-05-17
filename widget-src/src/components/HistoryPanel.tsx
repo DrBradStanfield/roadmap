@@ -252,7 +252,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl }: HistoryPanelProps) {
   useEffect(() => {
     if (isLoggedIn) {
       fetchHistory(0, false);
-      loadLabValues().then(setLabVals);
+      loadLabValues().then(rows => { if (rows) setLabVals(rows); });
       loadMedicationHistory().then(setMedHistory);
     } else {
       setLoading(false);

@@ -40,6 +40,8 @@ import {
   toApiScreening,
   getReminderPreferences,
   toApiReminderPreference,
+  getHealthDocuments,
+  toApiDocument,
 } from '../lib/supabase.server';
 import { checkAndSendWelcomeEmail, sendReportEmail, generateReportHtml, buildReportHtml, sendEmail } from '../lib/email.server';
 import type { HealthInputs, MedicationInputs, ScreeningInputs } from '../../packages/health-core/src/types';
@@ -105,13 +107,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
       return json({ success: true, data: measurements.map(toApiMeasurement) });
     }
 
-    const [latest, profile, medications, screenings, reminderPrefs, supplements] = await Promise.all([
+    const [latest, profile, medications, screenings, reminderPrefs, supplements, documents] = await Promise.all([
       getLatestMeasurements(client),
       getProfile(client),
       getMedications(client),
       getScreenings(client),
       getReminderPreferences(client),
       getSupplements(client),
+      getHealthDocuments(client),
     ]);
     return json({
       success: true,
@@ -121,6 +124,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       screenings: screenings.map(toApiScreening),
       reminderPreferences: reminderPrefs.map(toApiReminderPreference),
       supplements: supplements.map(toApiSupplement),
+      documents: documents.map(toApiDocument),
     });
   } catch (error) {
     console.error('Error loading measurements:', error);

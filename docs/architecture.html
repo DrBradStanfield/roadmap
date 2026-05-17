@@ -1,0 +1,1541 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Health Roadmap — Architecture</title>
+<style>
+  :root {
+    --brand: #00a38b;
+    --brand-dark: #008f7a;
+    --primary: #0066cc;
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --heading: #111;
+    --label: #333;
+    --muted: #666;
+    --faint: #888;
+    --border: #ddd;
+    --error: #dc3545;
+    --warn: #fd7e14;
+    --ok: #16a34a;
+    --code-bg: #f5f7fa;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  nav.toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 24px 16px 24px 24px;
+    border-right: 1px solid var(--border);
+    background: var(--card);
+    font-size: 13px;
+  }
+  nav.toc h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin: 16px 0 6px;
+  }
+  nav.toc h2:first-child { margin-top: 0; }
+  nav.toc a {
+    display: block;
+    padding: 3px 0;
+    color: var(--label);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    padding-left: 8px;
+    margin-left: -8px;
+  }
+  nav.toc a:hover { color: var(--brand); border-left-color: var(--brand); }
+  main {
+    padding: 32px 48px 96px;
+    max-width: 1100px;
+  }
+  h1 {
+    font-size: 32px;
+    margin: 0 0 4px;
+    color: var(--heading);
+  }
+  h2 {
+    font-size: 22px;
+    color: var(--heading);
+    margin: 48px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--brand);
+  }
+  h3 {
+    font-size: 17px;
+    color: var(--label);
+    margin: 24px 0 8px;
+  }
+  h4 {
+    font-size: 14px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin: 16px 0 4px;
+  }
+  p { margin: 8px 0 12px; }
+  .meta {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  code, pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+  }
+  code {
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #b91c1c;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 12px 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 8px 0;
+    border: 1px solid var(--border);
+  }
+  pre code { background: none; color: var(--text); padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; background: var(--bg); }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    background: #e6f7f4;
+    color: var(--brand);
+    border: 1px solid #b2dfdb;
+  }
+  .pill.warn { background: #fff3e0; color: var(--warn); border-color: #ffe0b2; }
+  .pill.err { background: #fce4e4; color: var(--error); border-color: #f5c6cb; }
+  .pill.info { background: #e3f2fd; color: var(--primary); border-color: #bbdefb; }
+  .pill.gray { background: #f5f5f5; color: var(--muted); border-color: var(--border); }
+  .callout {
+    background: #fffbeb;
+    border-left: 4px solid #fcd34d;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 0 8px 8px 0;
+    color: #78350f;
+    font-size: 14px;
+  }
+  .callout strong { color: #92400e; }
+  .danger {
+    background: #fef2f2;
+    border-left: 4px solid var(--error);
+    color: #991b1b;
+  }
+  .danger strong { color: #b91c1c; }
+  .diagram {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 16px;
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+  .diagram svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+  .caption {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 8px;
+    font-style: italic;
+  }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .file-link { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: var(--primary); }
+  .file-link:hover { text-decoration: underline; }
+  details { margin: 8px 0; }
+  details summary { cursor: pointer; font-weight: 600; color: var(--label); padding: 6px 0; }
+  details[open] summary { color: var(--brand); }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.toc { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+    main { padding: 24px 20px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="toc">
+  <h2>Overview</h2>
+  <a href="#intro">Introduction</a>
+  <a href="#system">System diagram</a>
+  <a href="#stack">Tech stack</a>
+  <a href="#guest-vs-loggedin">Guest vs logged-in</a>
+
+  <h2>Core flows</h2>
+  <a href="#auth">Auth (HMAC → JWT → RLS)</a>
+  <a href="#data-sync">Data sync</a>
+  <a href="#widget-load">Widget two-phase load</a>
+  <a href="#progressive">Progressive disclosure</a>
+
+  <h2>Features</h2>
+  <a href="#measurements">Measurements (FHIR)</a>
+  <a href="#medications">Medications & supplements</a>
+  <a href="#lab-upload">Lab upload</a>
+  <a href="#health-docs">Health documents</a>
+  <a href="#chatbot">Chatbot</a>
+  <a href="#reminders">Reminders</a>
+  <a href="#ab-testing">A/B testing</a>
+  <a href="#blog">Blog &amp; trending</a>
+  <a href="#supplement-wiki">Supplement wiki</a>
+  <a href="#message-packs">Message packs</a>
+  <a href="#email">Email</a>
+  <a href="#discord">Discord bot</a>
+  <a href="#feedback">Feedback &amp; bots</a>
+
+  <h2>Data &amp; ops</h2>
+  <a href="#schema">Database schema</a>
+  <a href="#api">API endpoints</a>
+  <a href="#audit">Audit logging</a>
+  <a href="#deploy">Deployment</a>
+  <a href="#security">Security model</a>
+
+  <h2>Reference</h2>
+  <a href="#design-docs">Design doc index</a>
+  <a href="#gotchas">Dangerous gotchas</a>
+</nav>
+
+<main>
+
+<h1 id="intro">Health Roadmap — System Architecture</h1>
+<div class="meta">
+  Last updated 2026-05-18. Source of truth for project-wide architecture. For implementation detail, see the linked design docs in <code>/docs/</code> and the per-area files in <a href="../CLAUDE.md">CLAUDE.md</a>.
+</div>
+
+<div class="card">
+  <strong>What this is:</strong> a single visual reference for how every part of the Health Roadmap app fits together — auth, data flow, the widget, the chatbot, lab upload, reminders, A/B testing, blog, and the database schema underneath it all.
+  <br><br>
+  <strong>What it isn't:</strong> a changelog or per-commit log. It captures architectural shape, not in-progress work. Update it when you add a new subsystem or change a flow, not every PR.
+  <br><br>
+  <strong>Who it's for:</strong> Brad (when returning to a feature after months), future contributors, and AI agents that need a high-level map before grepping. CLAUDE.md remains the canonical agent-facing instructions; this page is the map that goes <em>with</em> it.
+</div>
+
+<h2 id="system">System diagram</h2>
+<p>The end-to-end picture. Everything else in this document is a zoom-in on one of these boxes or one of these arrows.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 1100 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="System overview">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#666"/>
+    </marker>
+    <marker id="arrBrand" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#00a38b"/>
+    </marker>
+  </defs>
+
+  <!-- Client/Browser cluster -->
+  <rect x="20" y="20" width="290" height="280" rx="12" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="35" y="42" font-size="13" font-weight="600" fill="#00695c">Customer's browser (Shopify storefront)</text>
+
+  <rect x="35" y="60" width="120" height="56" rx="8" fill="#ffffff" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="95" y="83" font-size="12" font-weight="600" text-anchor="middle" fill="#111">Theme + assets</text>
+  <text x="95" y="100" font-size="10" text-anchor="middle" fill="#666">Shopify CDN</text>
+
+  <rect x="170" y="60" width="125" height="56" rx="8" fill="#ffffff" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="232" y="83" font-size="12" font-weight="600" text-anchor="middle" fill="#111">Widget (React)</text>
+  <text x="232" y="100" font-size="10" text-anchor="middle" fill="#666">health-tool.js + history</text>
+
+  <rect x="35" y="130" width="120" height="50" rx="8" fill="#ffffff" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="95" y="151" font-size="12" font-weight="600" text-anchor="middle" fill="#111">sync-embed</text>
+  <text x="95" y="167" font-size="10" text-anchor="middle" fill="#666">Liquid app embed</text>
+
+  <rect x="170" y="130" width="125" height="50" rx="8" fill="#ffffff" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="232" y="151" font-size="12" font-weight="600" text-anchor="middle" fill="#111">Chat widget</text>
+  <text x="232" y="167" font-size="10" text-anchor="middle" fill="#666">ChatEmbed.tsx</text>
+
+  <rect x="35" y="195" width="260" height="44" rx="8" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="165" y="216" font-size="12" font-weight="600" text-anchor="middle" fill="#92400e">localStorage</text>
+  <text x="165" y="231" font-size="10" text-anchor="middle" fill="#92400e">guest data · cached cloud data · A/B assignment · auth flag</text>
+
+  <rect x="35" y="252" width="260" height="36" rx="8" fill="#f5f5f5" stroke="#ddd" stroke-width="1.5"/>
+  <text x="165" y="274" font-size="11" text-anchor="middle" fill="#666">Sentry browser SDK · Microsoft Clarity</text>
+
+  <!-- Shopify Edge -->
+  <rect x="350" y="20" width="220" height="200" rx="12" fill="#e3f2fd" stroke="#0066cc" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="365" y="42" font-size="13" font-weight="600" fill="#0052a3">Shopify edge</text>
+
+  <rect x="365" y="60" width="190" height="50" rx="8" fill="#ffffff" stroke="#0066cc" stroke-width="1.5"/>
+  <text x="460" y="80" font-size="12" font-weight="600" text-anchor="middle" fill="#111">App proxy</text>
+  <text x="460" y="97" font-size="10" text-anchor="middle" fill="#666">HMAC sign + forward</text>
+
+  <rect x="365" y="120" width="190" height="44" rx="8" fill="#ffffff" stroke="#0066cc" stroke-width="1.5"/>
+  <text x="460" y="139" font-size="12" font-weight="600" text-anchor="middle" fill="#111">Webhooks</text>
+  <text x="460" y="155" font-size="10" text-anchor="middle" fill="#666">orders/paid · scopes · uninstalled</text>
+
+  <rect x="365" y="174" width="190" height="36" rx="8" fill="#ffffff" stroke="#0066cc" stroke-width="1.5"/>
+  <text x="460" y="195" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Shop metafield</text>
+  <text x="460" y="207" font-size="10" text-anchor="middle" fill="#666">A/B config · trending</text>
+
+  <!-- Fly.io backend -->
+  <rect x="610" y="20" width="290" height="380" rx="12" fill="#fef5e7" stroke="#fd7e14" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="625" y="42" font-size="13" font-weight="600" fill="#9a3412">Fly.io (Remix backend)</text>
+  <text x="625" y="56" font-size="10" fill="#9a3412">app = health-tool-app · iad · 1 machine min</text>
+
+  <rect x="625" y="68" width="260" height="40" rx="8" fill="#ffffff" stroke="#fd7e14" stroke-width="1.5"/>
+  <text x="755" y="86" font-size="12" font-weight="600" text-anchor="middle" fill="#111">/api/measurements + /api/lab-* + /api/health-documents</text>
+  <text x="755" y="100" font-size="10" text-anchor="middle" fill="#666">CRUD, HMAC-verified</text>
+
+  <rect x="625" y="116" width="260" height="40" rx="8" fill="#ffffff" stroke="#fd7e14" stroke-width="1.5"/>
+  <text x="755" y="134" font-size="12" font-weight="600" text-anchor="middle" fill="#111">/api/chat (classifier → router → LLM)</text>
+  <text x="755" y="148" font-size="10" text-anchor="middle" fill="#666">3-stage Anthropic pipeline</text>
+
+  <rect x="625" y="164" width="260" height="40" rx="8" fill="#ffffff" stroke="#fd7e14" stroke-width="1.5"/>
+  <text x="755" y="183" font-size="12" font-weight="600" text-anchor="middle" fill="#111">/api/reminders · /api/ab · /api/feedback · /api/user-data</text>
+  <text x="755" y="197" font-size="10" text-anchor="middle" fill="#666">opt-outs · events · feedback · deletion</text>
+
+  <rect x="625" y="212" width="260" height="40" rx="8" fill="#ffffff" stroke="#fd7e14" stroke-width="1.5"/>
+  <text x="755" y="231" font-size="12" font-weight="600" text-anchor="middle" fill="#111">Admin app (Polaris) /app/*</text>
+  <text x="755" y="245" font-size="10" text-anchor="middle" fill="#666">A/B dashboard · chat audit</text>
+
+  <rect x="625" y="260" width="260" height="58" rx="8" fill="#ffffff" stroke="#fd7e14" stroke-width="1.5"/>
+  <text x="755" y="280" font-size="12" font-weight="600" text-anchor="middle" fill="#111">Cron loops</text>
+  <text x="755" y="296" font-size="10" text-anchor="middle" fill="#666">reminder-cron (08:00 UTC) ·</text>
+  <text x="755" y="310" font-size="10" text-anchor="middle" fill="#666">trending-cron (03:00 UTC)</text>
+
+  <rect x="625" y="324" width="260" height="40" rx="8" fill="#ffffff" stroke="#fd7e14" stroke-width="1.5"/>
+  <text x="755" y="343" font-size="12" font-weight="600" text-anchor="middle" fill="#111">Discord bot (long-lived WS)</text>
+  <text x="755" y="357" font-size="10" text-anchor="middle" fill="#666">discord.js gateway</text>
+
+  <rect x="625" y="372" width="260" height="22" rx="6" fill="#f5f5f5" stroke="#ddd"/>
+  <text x="755" y="388" font-size="10" text-anchor="middle" fill="#666">Sentry @sentry/remix · session storage (Postgres)</text>
+
+  <!-- External services -->
+  <rect x="940" y="20" width="140" height="280" rx="12" fill="#fef2f2" stroke="#dc3545" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="955" y="42" font-size="13" font-weight="600" fill="#7f1d1d">External APIs</text>
+
+  <rect x="955" y="60" width="110" height="36" rx="6" fill="#ffffff" stroke="#dc3545" stroke-width="1.2"/>
+  <text x="1010" y="82" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Anthropic</text>
+
+  <rect x="955" y="104" width="110" height="36" rx="6" fill="#ffffff" stroke="#dc3545" stroke-width="1.2"/>
+  <text x="1010" y="126" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Shopify Admin</text>
+
+  <rect x="955" y="148" width="110" height="36" rx="6" fill="#ffffff" stroke="#dc3545" stroke-width="1.2"/>
+  <text x="1010" y="170" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Resend (email)</text>
+
+  <rect x="955" y="192" width="110" height="36" rx="6" fill="#ffffff" stroke="#dc3545" stroke-width="1.2"/>
+  <text x="1010" y="214" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Klaviyo</text>
+
+  <rect x="955" y="236" width="110" height="36" rx="6" fill="#ffffff" stroke="#dc3545" stroke-width="1.2"/>
+  <text x="1010" y="258" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Discord gateway</text>
+
+  <!-- Supabase -->
+  <rect x="350" y="240" width="220" height="380" rx="12" fill="#ecfdf5" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="365" y="262" font-size="13" font-weight="600" fill="#14532d">Supabase (Postgres)</text>
+  <text x="365" y="276" font-size="10" fill="#14532d">RLS-gated, auth.uid()</text>
+
+  <rect x="365" y="290" width="190" height="20" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="460" y="304" font-size="10" font-weight="600" text-anchor="middle" fill="#111">profiles + audit_logs</text>
+
+  <rect x="365" y="314" width="190" height="20" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="460" y="328" font-size="10" font-weight="600" text-anchor="middle" fill="#111">health_measurements · lab_values</text>
+
+  <rect x="365" y="338" width="190" height="20" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="460" y="352" font-size="10" font-weight="600" text-anchor="middle" fill="#111">health_documents · screenings</text>
+
+  <rect x="365" y="362" width="190" height="20" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="460" y="376" font-size="10" font-weight="600" text-anchor="middle" fill="#111">medications + medication_history</text>
+
+  <rect x="365" y="386" width="190" height="20" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="460" y="400" font-size="10" font-weight="600" text-anchor="middle" fill="#111">supplements + supplement_history</text>
+
+  <rect x="365" y="410" width="190" height="20" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="460" y="424" font-size="10" font-weight="600" text-anchor="middle" fill="#111">reminder_preferences + reminder_log</text>
+
+  <rect x="365" y="434" width="190" height="20" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="460" y="448" font-size="10" font-weight="600" text-anchor="middle" fill="#111">chat_conversations + chat_messages</text>
+
+  <rect x="365" y="458" width="190" height="20" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="460" y="472" font-size="10" font-weight="600" text-anchor="middle" fill="#111">chat_match_events · guest_chat_sessions</text>
+
+  <rect x="365" y="482" width="190" height="20" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="460" y="496" font-size="10" font-weight="600" text-anchor="middle" fill="#111">message_credit_transactions</text>
+
+  <rect x="365" y="506" width="190" height="20" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="460" y="520" font-size="10" font-weight="600" text-anchor="middle" fill="#111">ab_tests + ab_events</text>
+
+  <rect x="365" y="530" width="190" height="20" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="460" y="544" font-size="10" font-weight="600" text-anchor="middle" fill="#111">cron_lock</text>
+
+  <rect x="365" y="558" width="190" height="50" rx="6" fill="#fef3c7" stroke="#f59e0b"/>
+  <text x="460" y="577" font-size="11" font-weight="600" text-anchor="middle" fill="#92400e">RPC: get_latest_measurements()</text>
+  <text x="460" y="594" font-size="11" font-weight="600" text-anchor="middle" fill="#92400e">RPC: correct_measurement()</text>
+
+  <!-- Bottom strip: ops -->
+  <rect x="610" y="420" width="290" height="200" rx="12" fill="#f5f5f5" stroke="#888" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="625" y="442" font-size="13" font-weight="600" fill="#444">Ops / observability</text>
+
+  <rect x="625" y="460" width="260" height="32" rx="6" fill="#ffffff" stroke="#888"/>
+  <text x="755" y="481" font-size="12" font-weight="600" text-anchor="middle" fill="#111">GitHub Actions (CI)</text>
+
+  <rect x="625" y="498" width="260" height="32" rx="6" fill="#ffffff" stroke="#888"/>
+  <text x="755" y="519" font-size="12" font-weight="600" text-anchor="middle" fill="#111">Sentry (widget + backend)</text>
+
+  <rect x="625" y="536" width="260" height="32" rx="6" fill="#ffffff" stroke="#888"/>
+  <text x="755" y="557" font-size="12" font-weight="600" text-anchor="middle" fill="#111">Microsoft Clarity</text>
+
+  <rect x="625" y="574" width="260" height="32" rx="6" fill="#ffffff" stroke="#888"/>
+  <text x="755" y="595" font-size="12" font-weight="600" text-anchor="middle" fill="#111">Sourcemaps → Sentry on deploy</text>
+
+  <!-- Arrows -->
+  <!-- Browser -> Shopify edge -->
+  <line x1="295" y1="155" x2="365" y2="80" stroke="#00a38b" stroke-width="2" marker-end="url(#arrBrand)"/>
+  <text x="305" y="115" font-size="9" fill="#00695c">HTTPS</text>
+
+  <!-- Shopify edge -> Fly -->
+  <line x1="555" y1="85" x2="625" y2="88" stroke="#666" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="565" y="78" font-size="9" fill="#666">+HMAC</text>
+
+  <!-- Fly -> Supabase -->
+  <line x1="625" y1="300" x2="565" y2="310" stroke="#666" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="572" y="293" font-size="9" fill="#666">JWT</text>
+
+  <!-- Fly -> Anthropic -->
+  <line x1="885" y1="136" x2="955" y2="80" stroke="#dc3545" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Fly -> Shopify Admin -->
+  <line x1="885" y1="180" x2="955" y2="122" stroke="#dc3545" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Fly -> Resend -->
+  <line x1="885" y1="290" x2="955" y2="166" stroke="#dc3545" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Fly -> Klaviyo -->
+  <line x1="885" y1="184" x2="955" y2="210" stroke="#dc3545" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Discord bot <-> Discord -->
+  <line x1="885" y1="344" x2="955" y2="254" stroke="#dc3545" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Webhooks Shopify -> Fly -->
+  <line x1="460" y1="164" x2="625" y2="184" stroke="#0066cc" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Browser -> Sentry (just down-right) handled inside box -->
+</svg>
+<div class="caption">Customer browser → Shopify edge (proxy + webhooks) → Fly.io Remix backend → Supabase + external APIs. Solid teal arrows are user traffic; gray are internal; red are outbound to 3rd parties.</div>
+</div>
+
+<h3>Trust boundaries</h3>
+<ul>
+  <li><strong>Customer browser</strong> — never trusted. All identity claims must be re-verified server-side.</li>
+  <li><strong>Shopify app proxy</strong> — HMAC signature is the only proof of customer identity. <code>logged_in_customer_id</code> comes from here, not from the body or headers the client controls.</li>
+  <li><strong>Fly.io backend</strong> — trusted. Holds <code>SUPABASE_SERVICE_KEY</code>, mints per-user JWTs, calls Anthropic, sends email.</li>
+  <li><strong>Supabase</strong> — enforces row-level security against <code>auth.uid()</code> in the JWT. Even if the Fly backend has a bug, RLS is a second line of defense.</li>
+</ul>
+
+<h2 id="stack">Tech stack</h2>
+<div class="grid-2">
+  <div class="card">
+    <h4>Frontend (storefront widget)</h4>
+    <ul>
+      <li>React 18 + TypeScript</li>
+      <li>Vite (two IIFE bundles: <code>health-tool.js</code>, <code>health-history.js</code>)</li>
+      <li>Embedded as Shopify theme app blocks</li>
+      <li>System font stack, no external CSS</li>
+      <li>Sentry browser SDK + ErrorBoundary</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Backend (admin app + API)</h4>
+    <ul>
+      <li>Remix 2.16 on Node 20</li>
+      <li>Shopify App Remix SDK (HMAC verification, app proxy auth, OAuth)</li>
+      <li>Supabase JS client (dual-client: service-role + per-user JWT)</li>
+      <li>Polaris (admin UI)</li>
+      <li>Sentry @sentry/remix</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Data &amp; AI</h4>
+    <ul>
+      <li>Supabase Postgres (RLS-enforced)</li>
+      <li>Zod for validation (boundary-only)</li>
+      <li>Anthropic API — Claude Haiku 4.5 (chatbot + lab extraction)</li>
+      <li>Prompt caching (~28K cached tokens per chat turn)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Hosting &amp; ops</h4>
+    <ul>
+      <li>Fly.io — <code>health-tool-app</code> · iad · shared-cpu-1x · 1GB · 1 machine min</li>
+      <li>Shopify CDN for storefront assets</li>
+      <li>GitHub Actions CI (Vitest on PR + main)</li>
+      <li>Resend for transactional email · Klaviyo for marketing</li>
+      <li>Discord.js for the cross-platform chatbot</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="guest-vs-loggedin">Guest vs logged-in</h2>
+<p>The most important architectural split. Two completely different data paths share one UI.</p>
+
+<div class="grid-2">
+  <div class="card">
+    <h3 style="margin-top:0">Guest user</h3>
+    <ul>
+      <li><strong>Storage:</strong> localStorage only. No server calls for measurements.</li>
+      <li><strong>Auth:</strong> none. Anonymous.</li>
+      <li><strong>Backend load:</strong> zero (chatbot is the one exception — guests can chat, get a scoped JWT).</li>
+      <li><strong>Limits:</strong> data lost on browser clear; no cross-device sync.</li>
+      <li><strong>UI signal:</strong> sticky "Create account to save" CTA banner in results panel.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Logged-in user</h3>
+    <ul>
+      <li><strong>Storage:</strong> Supabase via app proxy + HMAC + per-user JWT. localStorage is a cache only.</li>
+      <li><strong>Auth:</strong> Shopify customer login → <code>logged_in_customer_id</code> from HMAC-verified app proxy.</li>
+      <li><strong>Sync:</strong> guest localStorage flushes to Supabase on first authenticated page load (see <a href="#data-sync">Data sync</a>).</li>
+      <li><strong>Features unlocked:</strong> reminder emails, lab upload, health documents, chat history, supplement tracking.</li>
+      <li><strong>UI signal:</strong> "Welcome back, {firstName}" + "Save New Values" buttons appear.</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="auth">Auth flow (HMAC → JWT → RLS)</h2>
+<p>Three nested layers of verification. Each independent — a bug in one doesn't compromise the others.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 1080 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Auth flow">
+  <defs>
+    <marker id="arrA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0066cc"/>
+    </marker>
+  </defs>
+  <!-- Columns: Browser, Shopify Proxy, Remix API, Supabase -->
+  <rect x="20" y="20" width="220" height="40" rx="6" fill="#f0f9f7" stroke="#00a38b"/>
+  <text x="130" y="45" font-size="13" font-weight="600" text-anchor="middle" fill="#00695c">Customer browser</text>
+
+  <rect x="280" y="20" width="220" height="40" rx="6" fill="#e3f2fd" stroke="#0066cc"/>
+  <text x="390" y="45" font-size="13" font-weight="600" text-anchor="middle" fill="#0052a3">Shopify app proxy</text>
+
+  <rect x="540" y="20" width="220" height="40" rx="6" fill="#fef5e7" stroke="#fd7e14"/>
+  <text x="650" y="45" font-size="13" font-weight="600" text-anchor="middle" fill="#9a3412">Remix /api</text>
+
+  <rect x="800" y="20" width="220" height="40" rx="6" fill="#ecfdf5" stroke="#16a34a"/>
+  <text x="910" y="45" font-size="13" font-weight="600" text-anchor="middle" fill="#14532d">Supabase (RLS)</text>
+
+  <!-- Lifelines -->
+  <line x1="130" y1="60" x2="130" y2="340" stroke="#ccc" stroke-dasharray="3 3"/>
+  <line x1="390" y1="60" x2="390" y2="340" stroke="#ccc" stroke-dasharray="3 3"/>
+  <line x1="650" y1="60" x2="650" y2="340" stroke="#ccc" stroke-dasharray="3 3"/>
+  <line x1="910" y1="60" x2="910" y2="340" stroke="#ccc" stroke-dasharray="3 3"/>
+
+  <!-- Step 1: Browser -> Proxy -->
+  <line x1="130" y1="90" x2="385" y2="90" stroke="#0066cc" stroke-width="2" marker-end="url(#arrA)"/>
+  <text x="255" y="84" font-size="11" text-anchor="middle" fill="#0052a3">GET /apps/health-tool-1/api/measurements</text>
+  <text x="255" y="98" font-size="9" text-anchor="middle" fill="#666">Browser session cookie (Shopify customer login)</text>
+
+  <!-- Step 2: Proxy injects HMAC -->
+  <line x1="390" y1="130" x2="645" y2="130" stroke="#0066cc" stroke-width="2" marker-end="url(#arrA)"/>
+  <text x="515" y="124" font-size="11" text-anchor="middle" fill="#0052a3">Forward + ?logged_in_customer_id=… + signature=…</text>
+  <text x="515" y="138" font-size="9" text-anchor="middle" fill="#666">Shopify signs the entire query string with SHOPIFY_API_SECRET</text>
+
+  <!-- Step 3: Remix verifies HMAC -->
+  <rect x="540" y="155" width="220" height="32" rx="4" fill="#fff3e0" stroke="#fd7e14"/>
+  <text x="650" y="175" font-size="11" text-anchor="middle" fill="#9a3412">authenticate.public.appProxy()</text>
+
+  <!-- Step 4: Remix -> getOrCreateSupabaseUser -->
+  <line x1="650" y1="200" x2="650" y2="220" stroke="#666" stroke-width="2"/>
+  <rect x="540" y="220" width="220" height="40" rx="4" fill="#fff3e0" stroke="#fd7e14"/>
+  <text x="650" y="240" font-size="11" text-anchor="middle" fill="#9a3412">getOrCreateSupabaseUser()</text>
+  <text x="650" y="254" font-size="9" text-anchor="middle" fill="#666">profiles row keyed by shopify_customer_id</text>
+
+  <!-- Step 5: Mint per-user JWT -->
+  <line x1="650" y1="260" x2="650" y2="280" stroke="#666" stroke-width="2"/>
+  <rect x="540" y="280" width="220" height="32" rx="4" fill="#fff3e0" stroke="#fd7e14"/>
+  <text x="650" y="300" font-size="11" text-anchor="middle" fill="#9a3412">jwt.sign(HS256, SUPABASE_JWT_SECRET)</text>
+
+  <!-- Step 6: Remix -> Supabase with JWT -->
+  <line x1="650" y1="325" x2="905" y2="325" stroke="#16a34a" stroke-width="2" marker-end="url(#arrA)"/>
+  <text x="775" y="319" font-size="11" text-anchor="middle" fill="#14532d">supabase.from('...').select() with custom JWT</text>
+  <text x="775" y="338" font-size="9" text-anchor="middle" fill="#666">RLS gates rows by auth.uid()</text>
+</svg>
+<div class="caption">Three-step auth: Shopify session cookie → HMAC-signed proxy request → per-user Supabase JWT → RLS enforcement. Client never holds the JWT — it lives only on the server.</div>
+</div>
+
+<h3>Key files</h3>
+<ul>
+  <li><a class="file-link" href="../app/lib/supabase.server.ts">app/lib/supabase.server.ts</a> — dual-client setup, <code>getOrCreateSupabaseUser()</code>, <code>createUserClient(userId)</code></li>
+  <li><a class="file-link" href="../app/routes/api.measurements.ts">app/routes/api.measurements.ts</a> — reference for all proxy endpoints</li>
+  <li><a class="file-link" href="../app/shopify.server.ts">app/shopify.server.ts</a> — <code>authenticate.public.appProxy</code></li>
+</ul>
+
+<h3>Critical invariants</h3>
+<div class="callout danger">
+  <strong>NEVER trust client-supplied identity.</strong> The <code>logged_in_customer_id</code> must come from the HMAC-signed query string injected by Shopify, never from the body, custom headers, or a cookie the client controls. <code>authenticate.public.appProxy()</code> is the only entry point that proves customer identity.
+</div>
+<div class="callout danger">
+  <strong>NEVER expose an endpoint without HMAC verification.</strong> Every <code>/api/*</code> route under the app proxy path runs <code>authenticate.public.appProxy()</code> first, before any DB read or LLM call.
+</div>
+
+<h2 id="data-sync">Data sync (guest → logged in)</h2>
+<p>Guests accumulate measurements in localStorage. The first time they log in, that data must flush to Supabase exactly once and never duplicate on subsequent visits.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 1080 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Data sync flow">
+  <defs>
+    <marker id="arrS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#666"/>
+    </marker>
+    <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/>
+    </marker>
+  </defs>
+
+  <!-- Guest state -->
+  <rect x="20" y="20" width="240" height="120" rx="10" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="140" y="42" font-size="13" font-weight="600" text-anchor="middle" fill="#92400e">Guest (anonymous)</text>
+  <text x="140" y="64" font-size="11" text-anchor="middle" fill="#78350f">localStorage:</text>
+  <text x="140" y="80" font-size="11" text-anchor="middle" fill="#78350f">health_roadmap_data</text>
+  <text x="140" y="100" font-size="10" text-anchor="middle" fill="#78350f">measurements · profile · meds</text>
+  <text x="140" y="120" font-size="10" text-anchor="middle" fill="#78350f">flag NOT set: <tspan font-weight="600">health_roadmap_authenticated</tspan></text>
+
+  <!-- Login event -->
+  <rect x="320" y="60" width="180" height="50" rx="10" fill="#e3f2fd" stroke="#0066cc" stroke-width="1.5"/>
+  <text x="410" y="85" font-size="13" font-weight="600" text-anchor="middle" fill="#0052a3">Shopify login</text>
+  <text x="410" y="100" font-size="10" text-anchor="middle" fill="#666">browser session acquired</text>
+
+  <line x1="260" y1="80" x2="315" y2="80" stroke="#666" stroke-width="2" marker-end="url(#arrS)"/>
+
+  <!-- Sync paths -->
+  <rect x="560" y="20" width="240" height="80" rx="10" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="680" y="42" font-size="12" font-weight="600" text-anchor="middle" fill="#00695c">If on widget page</text>
+  <text x="680" y="60" font-size="10" text-anchor="middle" fill="#00695c">HealthTool.tsx handles sync</text>
+  <text x="680" y="76" font-size="10" text-anchor="middle" fill="#00695c">(sync-embed exits early)</text>
+  <text x="680" y="92" font-size="10" text-anchor="middle" fill="#00695c">checks for #health-tool-root</text>
+
+  <rect x="560" y="120" width="240" height="80" rx="10" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="680" y="142" font-size="12" font-weight="600" text-anchor="middle" fill="#00695c">If on any other page</text>
+  <text x="680" y="160" font-size="10" text-anchor="middle" fill="#00695c">sync-embed.liquid handles sync</text>
+  <text x="680" y="176" font-size="10" text-anchor="middle" fill="#00695c">runs on every storefront page</text>
+  <text x="680" y="192" font-size="10" text-anchor="middle" fill="#00695c">fires once per session</text>
+
+  <line x1="500" y1="80" x2="555" y2="60" stroke="#666" stroke-width="2" marker-end="url(#arrS)"/>
+  <line x1="500" y1="90" x2="555" y2="155" stroke="#666" stroke-width="2" marker-end="url(#arrS)"/>
+
+  <!-- Synchronous cleanup -->
+  <rect x="20" y="220" width="780" height="80" rx="10" fill="#fef2f2" stroke="#dc3545" stroke-width="1.5"/>
+  <text x="410" y="243" font-size="13" font-weight="600" text-anchor="middle" fill="#7f1d1d">syncComplete() — runs SYNCHRONOUSLY before any fetch</text>
+  <text x="410" y="263" font-size="11" text-anchor="middle" fill="#7f1d1d">1. localStorage.removeItem('health_roadmap_data')</text>
+  <text x="410" y="278" font-size="11" text-anchor="middle" fill="#7f1d1d">2. localStorage.setItem('health_roadmap_authenticated', '1')</text>
+  <text x="410" y="293" font-size="11" text-anchor="middle" fill="#7f1d1d">3. sessionStorage.setItem(SYNC_FLAG, '1')</text>
+
+  <line x1="680" y1="200" x2="410" y2="218" stroke="#666" stroke-width="2" marker-end="url(#arrS)"/>
+
+  <!-- Then async POST -->
+  <rect x="840" y="220" width="220" height="80" rx="10" fill="#ecfdf5" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="950" y="243" font-size="13" font-weight="600" text-anchor="middle" fill="#14532d">POST /api/measurements</text>
+  <text x="950" y="262" font-size="10" text-anchor="middle" fill="#14532d">best-effort, async</text>
+  <text x="950" y="278" font-size="10" text-anchor="middle" fill="#14532d">welcome email if first time</text>
+  <text x="950" y="293" font-size="10" text-anchor="middle" fill="#14532d">cloud data may not appear yet</text>
+
+  <line x1="800" y1="260" x2="835" y2="260" stroke="#16a34a" stroke-width="2" marker-end="url(#arrG)"/>
+
+  <!-- After flag set -->
+  <rect x="20" y="340" width="500" height="100" rx="10" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="270" y="362" font-size="13" font-weight="600" text-anchor="middle" fill="#00695c">Subsequent page loads (auth flag set)</text>
+  <text x="270" y="384" font-size="11" text-anchor="middle" fill="#00695c">sync-embed skips sync entirely (flag present, no data)</text>
+  <text x="270" y="402" font-size="11" text-anchor="middle" fill="#00695c">Widget reads from API (Phase 1: cache, Phase 2: server)</text>
+  <text x="270" y="420" font-size="11" text-anchor="middle" fill="#00695c">If logged out elsewhere → flag triggers auto-redirect to acquire session</text>
+
+  <rect x="560" y="340" width="500" height="100" rx="10" fill="#fef5e7" stroke="#fd7e14" stroke-width="1.5"/>
+  <text x="810" y="362" font-size="13" font-weight="600" text-anchor="middle" fill="#9a3412">Why synchronous matters</text>
+  <text x="810" y="384" font-size="11" text-anchor="middle" fill="#9a3412">If user navigates away mid-fetch, async cleanup is interrupted.</text>
+  <text x="810" y="402" font-size="11" text-anchor="middle" fill="#9a3412">Result: duplicate syncs on next page + broken auto-login.</text>
+  <text x="810" y="420" font-size="11" text-anchor="middle" fill="#9a3412">Rule: do critical localStorage writes BEFORE any fetch().</text>
+</svg>
+<div class="caption">Sync-embed and widget are mutually exclusive: only one runs per page. Critical cleanup must be synchronous because users frequently navigate away mid-request.</div>
+</div>
+
+<h3>The auto-redirect mechanism</h3>
+<p>Shopify customer accounts live on <code>shopify.com</code>, not the storefront. Once a user has logged in, their storefront session can expire while the Shopify account session stays alive. We use the <code>health_roadmap_authenticated</code> localStorage flag as the bridge: if it's set but the page has no storefront customer ID, we redirect once per browser session to re-acquire the session cookie. The flag is only ever set after we've confirmed cloud data exists, so we never redirect a "real" guest.</p>
+
+<div class="callout danger">
+  <strong>Do not modify sync-embed cleanup logic without reading the whole flow.</strong> Three localStorage operations must run synchronously and unconditionally. Putting them in <code>.then()</code> or <code>.finally()</code> breaks auto-login. See "Dangerous gotchas" below.
+</div>
+
+<h3>Files</h3>
+<ul>
+  <li><a class="file-link" href="../extensions/health-tool-widget/blocks/sync-embed.liquid">extensions/health-tool-widget/blocks/sync-embed.liquid</a></li>
+  <li><a class="file-link" href="../widget-src/src/components/HealthTool.tsx">widget-src/src/components/HealthTool.tsx</a></li>
+  <li><a class="file-link" href="../widget-src/src/lib/storage.ts">widget-src/src/lib/storage.ts</a></li>
+</ul>
+
+<h2 id="widget-load">Widget two-phase load</h2>
+<p>To eliminate jank, the widget renders in three stages: a static skeleton (no JS), localStorage cache (instant), then the authoritative API response (~100–300ms later).</p>
+
+<div class="diagram">
+<svg viewBox="0 0 1080 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Widget two-phase load">
+  <defs>
+    <marker id="arrW" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#666"/>
+    </marker>
+  </defs>
+
+  <rect x="20" y="20" width="240" height="200" rx="10" fill="#f5f5f5" stroke="#888" stroke-width="1.5"/>
+  <text x="140" y="42" font-size="13" font-weight="600" text-anchor="middle" fill="#333">0. Static skeleton</text>
+  <text x="140" y="62" font-size="10" text-anchor="middle" fill="#666">Liquid renders CSS + skeleton</text>
+  <text x="140" y="76" font-size="10" text-anchor="middle" fill="#666">app-block.liquid</text>
+  <text x="140" y="100" font-size="10" text-anchor="middle" fill="#666">Pulsing placeholder cards</text>
+  <text x="140" y="116" font-size="10" text-anchor="middle" fill="#666">Inline A/B variant assignment</text>
+  <text x="140" y="140" font-size="11" text-anchor="middle" font-weight="600" fill="#16a34a">Zero JS, zero flash</text>
+  <text x="140" y="170" font-size="10" text-anchor="middle" fill="#666">Customer data injected via</text>
+  <text x="140" y="184" font-size="10" text-anchor="middle" fill="#666">window.healthRoadmapCustomer</text>
+
+  <line x1="260" y1="120" x2="305" y2="120" stroke="#666" stroke-width="2" marker-end="url(#arrW)"/>
+
+  <rect x="310" y="20" width="240" height="200" rx="10" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.5"/>
+  <text x="430" y="42" font-size="13" font-weight="600" text-anchor="middle" fill="#92400e">1. localStorage cache</text>
+  <text x="430" y="62" font-size="10" text-anchor="middle" fill="#78350f">Bundle hydrates</text>
+  <text x="430" y="76" font-size="10" text-anchor="middle" fill="#78350f">health-tool.js IIFE</text>
+  <text x="430" y="100" font-size="10" text-anchor="middle" fill="#78350f">Reads cached measurements</text>
+  <text x="430" y="116" font-size="10" text-anchor="middle" fill="#78350f">+ profile + medications</text>
+  <text x="430" y="140" font-size="11" text-anchor="middle" font-weight="600" fill="#92400e">Instant render</text>
+  <text x="430" y="170" font-size="10" text-anchor="middle" fill="#78350f">hasApiResponse = false</text>
+  <text x="430" y="184" font-size="10" text-anchor="middle" fill="#78350f">— blocks auto-save writes</text>
+
+  <line x1="550" y1="120" x2="595" y2="120" stroke="#666" stroke-width="2" marker-end="url(#arrW)"/>
+
+  <rect x="600" y="20" width="240" height="200" rx="10" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="720" y="42" font-size="13" font-weight="600" text-anchor="middle" fill="#00695c">2. API response</text>
+  <text x="720" y="62" font-size="10" text-anchor="middle" fill="#00695c">GET /api/measurements</text>
+  <text x="720" y="76" font-size="10" text-anchor="middle" fill="#00695c">latest + profile + meds</text>
+  <text x="720" y="100" font-size="10" text-anchor="middle" fill="#00695c">Overwrites cache state</text>
+  <text x="720" y="116" font-size="10" text-anchor="middle" fill="#00695c">Updates localStorage</text>
+  <text x="720" y="140" font-size="11" text-anchor="middle" font-weight="600" fill="#00695c">hasApiResponse = true</text>
+  <text x="720" y="170" font-size="10" text-anchor="middle" fill="#00695c">Auto-save unblocked</text>
+  <text x="720" y="184" font-size="10" text-anchor="middle" fill="#00695c">Prefill fields debounce-save</text>
+
+  <line x1="840" y1="120" x2="885" y2="120" stroke="#666" stroke-width="2" marker-end="url(#arrW)"/>
+
+  <rect x="890" y="20" width="170" height="200" rx="10" fill="#ecfdf5" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="975" y="42" font-size="13" font-weight="600" text-anchor="middle" fill="#14532d">3. Interactive</text>
+  <text x="975" y="80" font-size="10" text-anchor="middle" fill="#14532d">Suggestions render</text>
+  <text x="975" y="100" font-size="10" text-anchor="middle" fill="#14532d">Stats update live</text>
+  <text x="975" y="120" font-size="10" text-anchor="middle" fill="#14532d">Longitudinal save</text>
+  <text x="975" y="140" font-size="10" text-anchor="middle" fill="#14532d">buttons appear</text>
+  <text x="975" y="170" font-size="10" text-anchor="middle" fill="#14532d">Mobile tabs swipeable</text>
+
+</svg>
+<div class="caption">Three-phase load minimises perceived latency. The <code>hasApiResponse</code> flag is the critical safety: without it, cache-based auto-saves would overwrite cloud data during the 100–300ms window before the API response arrives.</div>
+</div>
+
+<h2 id="progressive">Progressive disclosure</h2>
+<p>First-time users see fields revealed in 4 stages. Returning users with data jump straight to Stage 4. Computed by <code>computeFormStage(inputs)</code> in <a class="file-link" href="../packages/health-core/src/mappings.ts">packages/health-core/src/mappings.ts</a>.</p>
+
+<table>
+<thead><tr><th>Stage</th><th>Gate</th><th>Fields revealed</th></tr></thead>
+<tbody>
+  <tr><td>1</td><td>Always</td><td>Units, Sex, Height</td></tr>
+  <tr><td>2</td><td>Sex + Height filled</td><td>Birth Month, Birth Year</td></tr>
+  <tr><td>3</td><td>Both birth fields filled</td><td>Weight, Waist Circumference</td></tr>
+  <tr><td>4</td><td>Weight filled</td><td>Everything else: BP, blood tests, medications, supplements, screenings</td></tr>
+</tbody>
+</table>
+<p>The next field to fill gets a pulsing <code>.field-attention</code> class. On mobile, mobile tab bar visibility is also gated by <code>formStage</code>.</p>
+
+<h2 id="measurements">Measurements (FHIR Observation)</h2>
+<p>Time-series blood test &amp; vitals data follows FHIR R4 <code>Observation</code> semantics. Stored values are <strong>never mutated</strong>; corrections create new rows that supersede old ones.</p>
+
+<div class="grid-2">
+  <div class="card">
+    <h4>Storage rules</h4>
+    <ul>
+      <li>All values stored in <strong>SI canonical units</strong> (kg, mmol/L, mmol/mol IFCC, etc.).</li>
+      <li>Conversion handled in <a class="file-link" href="../packages/health-core/src/units.ts">units.ts</a>.</li>
+      <li><code>status</code> = <code>active</code> | <code>entered-in-error</code>. Only <code>active</code> rows feed results.</li>
+      <li><code>corrects_id</code> self-FK points at the row this one replaces.</li>
+      <li><code>source</code>: <code>manual</code>, <code>lab_import</code>, <code>lab_import_edited</code>, <code>manual_correction</code>, <code>apple_health</code>, <code>fitbit</code>.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Server-side invariants</h4>
+    <ul>
+      <li><code>enforce_measurement_correction_only</code> trigger blocks any UPDATE that changes more than <code>status</code>.</li>
+      <li><code>validate_corrects_id_ownership</code> trigger rejects cross-user corrections.</li>
+      <li>Partial UNIQUE index on <code>(user_id, metric_type, recorded_at) WHERE status='active'</code> — guarantees one active row per slot.</li>
+      <li>Duplicate active insert → <code>23505</code> → API returns <code>409</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Correction flow</h3>
+<ol>
+  <li>User clicks a value in <a class="file-link" href="../widget-src/src/components/BloodTestTimeline.tsx">BloodTestTimeline</a>, types new value, hits Enter.</li>
+  <li>Widget calls <code>correctMeasurement(oldId, newValueSI)</code>.</li>
+  <li><code>correct_measurement</code> SECURITY DEFINER RPC atomically:
+    <ul>
+      <li>UPDATE old row: <code>status = 'entered-in-error'</code></li>
+      <li>INSERT new row: <code>source='manual_correction'</code>, <code>corrects_id = oldId</code></li>
+    </ul>
+  </li>
+  <li>Audit log records <code>MEASUREMENT_CORRECTED</code> with <code>{oldId}</code>.</li>
+</ol>
+
+<h3>Canonical units table</h3>
+<table>
+<thead><tr><th>metric_type</th><th>Canonical (SI)</th><th>Conventional (US)</th><th>Conversion</th></tr></thead>
+<tbody>
+  <tr><td>weight</td><td>kg</td><td>lbs</td><td>× 2.20462</td></tr>
+  <tr><td>waist</td><td>cm</td><td>inches</td><td>÷ 2.54</td></tr>
+  <tr><td>hba1c</td><td>mmol/mol (IFCC)</td><td>% (NGSP)</td><td>% = mmol/mol × 0.09148 + 2.152</td></tr>
+  <tr><td>ldl, total_cholesterol, hdl</td><td>mmol/L</td><td>mg/dL</td><td>× 38.67</td></tr>
+  <tr><td>triglycerides</td><td>mmol/L</td><td>mg/dL</td><td>× 88.57</td></tr>
+  <tr><td>apob</td><td>g/L</td><td>mg/dL</td><td>× 100</td></tr>
+  <tr><td>creatinine</td><td>µmol/L</td><td>mg/dL</td><td>÷ 88.4</td></tr>
+  <tr><td>systolic_bp, diastolic_bp</td><td>mmHg</td><td>mmHg</td><td>(same)</td></tr>
+</tbody>
+</table>
+
+<h2 id="medications">Medications &amp; supplements</h2>
+<p>Both follow FHIR <code>MedicationStatement</code> shape and use the same append-only history pattern.</p>
+
+<div class="grid-2">
+  <div class="card">
+    <h4>Medications</h4>
+    <ul>
+      <li><code>medications</code> table: mutable current state, one row per <code>(user_id, medication_key)</code>.</li>
+      <li><code>medication_history</code>: immutable append-only log, FHIR <code>effective_start</code>/<code>effective_end</code> periods.</li>
+      <li>Keys: <code>statin</code>, <code>ezetimibe</code>, <code>statin_escalation</code>, <code>pcsk9i</code>, <code>bempedoic_acid</code>, <code>glp1</code>, <code>glp1_escalation</code>, <code>sglt2i</code>, <code>metformin</code>.</li>
+      <li><code>drug_name</code> stores the actual drug (e.g. <code>atorvastatin</code>) plus dose. Status values: <code>none</code>, <code>not_yet</code>, <code>not_tolerated</code> — never <code>yes</code>.</li>
+      <li><code>status</code> is auto-derived in <code>deriveMedicationStatus()</code>; immutable trigger blocks edits to history rows.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Supplements</h4>
+    <ul>
+      <li>Same shape: <code>supplements</code> (mutable) + <code>supplement_history</code> (immutable).</li>
+      <li>Logged-in users only.</li>
+      <li><strong>Brand's own products</strong> (MicroVitamin, MicroVitamin+, Sleep, Omega-3) appear as quick-add chips.</li>
+      <li>Delete = soft-delete: status set to <code>stopped</code>, history row appended.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Why the dual-table design</h3>
+<p>The mutable current table makes day-to-day reads (and the suggestion algorithm) trivial — one row per medication. The immutable history table preserves the full timeline for chart annotations (e.g. "you started atorvastatin here") and for any future EHR export that needs the FHIR period semantics. Triggers <code>trg_medication_history_immutable</code> and <code>trg_supplement_history_immutable</code> enforce that history rows can never be edited or deleted.</p>
+
+<h2 id="lab-upload">Lab upload pipeline</h2>
+<p>User uploads PDF, image, or ZIP → client extracts text/images → Anthropic Haiku extracts structured values → user reviews/edits → bulk save. Files themselves are <strong>never</strong> stored.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 1080 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Lab upload pipeline">
+  <defs>
+    <marker id="arrL" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#666"/>
+    </marker>
+  </defs>
+
+  <!-- Client extraction -->
+  <rect x="20" y="20" width="320" height="220" rx="10" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="180" y="42" font-size="13" font-weight="600" text-anchor="middle" fill="#00695c">Client-side extraction</text>
+
+  <rect x="35" y="60" width="140" height="50" rx="6" fill="#ffffff" stroke="#00a38b"/>
+  <text x="105" y="80" font-size="11" font-weight="600" text-anchor="middle" fill="#111">PDF (pdf.js)</text>
+  <text x="105" y="96" font-size="9" text-anchor="middle" fill="#666">text or canvas → JPEG</text>
+
+  <rect x="185" y="60" width="140" height="50" rx="6" fill="#ffffff" stroke="#00a38b"/>
+  <text x="255" y="80" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Image</text>
+  <text x="255" y="96" font-size="9" text-anchor="middle" fill="#666">resize to 1200px JPEG</text>
+
+  <rect x="35" y="125" width="290" height="50" rx="6" fill="#ffffff" stroke="#00a38b"/>
+  <text x="180" y="145" font-size="11" font-weight="600" text-anchor="middle" fill="#111">ZIP (JSZip, ≤200 files)</text>
+  <text x="180" y="161" font-size="9" text-anchor="middle" fill="#666">filter dotfiles/junk, sequential extraction</text>
+
+  <rect x="35" y="190" width="290" height="40" rx="6" fill="#fef5e7" stroke="#fd7e14"/>
+  <text x="180" y="208" font-size="11" font-weight="600" text-anchor="middle" fill="#9a3412">PageContent[] = text or image base64</text>
+  <text x="180" y="222" font-size="9" text-anchor="middle" fill="#9a3412">Files NEVER leave client raw</text>
+
+  <line x1="340" y1="130" x2="385" y2="130" stroke="#666" stroke-width="2" marker-end="url(#arrL)"/>
+
+  <!-- Server -->
+  <rect x="390" y="20" width="320" height="220" rx="10" fill="#fef5e7" stroke="#fd7e14" stroke-width="1.5"/>
+  <text x="550" y="42" font-size="13" font-weight="600" text-anchor="middle" fill="#9a3412">Server: /api/lab-import</text>
+
+  <rect x="405" y="60" width="290" height="40" rx="6" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="550" y="80" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Rate limit: 200 calls/day/customer</text>
+  <text x="550" y="94" font-size="9" text-anchor="middle" fill="#666">in-memory map, 24h window</text>
+
+  <rect x="405" y="110" width="290" height="40" rx="6" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="550" y="130" font-size="11" font-weight="600" text-anchor="middle" fill="#111">extractOrClassify() → Anthropic Haiku 4.5</text>
+  <text x="550" y="144" font-size="9" text-anchor="middle" fill="#666">classification + values + report date</text>
+
+  <rect x="405" y="160" width="290" height="40" rx="6" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="550" y="180" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Unit resolution → SI canonical</text>
+  <text x="550" y="194" font-size="9" text-anchor="middle" fill="#666">Zod validation, range heuristic fallback</text>
+
+  <rect x="405" y="210" width="290" height="20" rx="4" fill="#fef3c7" stroke="#f59e0b"/>
+  <text x="550" y="225" font-size="10" font-weight="600" text-anchor="middle" fill="#92400e">≥20 files → Anthropic batch API (50% cheaper)</text>
+
+  <line x1="710" y1="130" x2="755" y2="130" stroke="#666" stroke-width="2" marker-end="url(#arrL)"/>
+
+  <!-- Review -->
+  <rect x="760" y="20" width="300" height="220" rx="10" fill="#e3f2fd" stroke="#0066cc" stroke-width="1.5"/>
+  <text x="910" y="42" font-size="13" font-weight="600" text-anchor="middle" fill="#0052a3">Client: ReviewTable</text>
+
+  <rect x="775" y="60" width="270" height="40" rx="6" fill="#ffffff" stroke="#0066cc"/>
+  <text x="910" y="80" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Editable rows + confidence badges</text>
+  <text x="910" y="94" font-size="9" text-anchor="middle" fill="#666">edited rows → source='lab_import_edited'</text>
+
+  <rect x="775" y="110" width="270" height="40" rx="6" fill="#ffffff" stroke="#0066cc"/>
+  <text x="910" y="130" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Duplicate detection</text>
+  <text x="910" y="144" font-size="9" text-anchor="middle" fill="#666">match (metric, date) vs previousMeasurements</text>
+
+  <rect x="775" y="160" width="270" height="40" rx="6" fill="#ffffff" stroke="#0066cc"/>
+  <text x="910" y="180" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Screening confirmation checkboxes</text>
+  <text x="910" y="194" font-size="9" text-anchor="middle" fill="#666">prevents silent screening-date push</text>
+
+  <rect x="775" y="210" width="270" height="20" rx="4" fill="#ecfdf5" stroke="#16a34a"/>
+  <text x="910" y="225" font-size="10" font-weight="600" text-anchor="middle" fill="#14532d">Save → 3 parallel POSTs</text>
+
+  <!-- Bulk save row -->
+  <rect x="20" y="280" width="1040" height="160" rx="10" fill="#ecfdf5" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="540" y="302" font-size="13" font-weight="600" text-anchor="middle" fill="#14532d">Bulk save (3 parallel POSTs)</text>
+
+  <rect x="40" y="320" width="320" height="110" rx="6" fill="#ffffff" stroke="#16a34a"/>
+  <text x="200" y="340" font-size="12" font-weight="600" text-anchor="middle" fill="#111">/api/measurements (bulk)</text>
+  <text x="200" y="356" font-size="10" text-anchor="middle" fill="#666">11 core metrics in SI</text>
+  <text x="200" y="372" font-size="10" text-anchor="middle" fill="#666">→ health_measurements</text>
+  <text x="200" y="392" font-size="10" text-anchor="middle" fill="#666">returns {savedCount,</text>
+  <text x="200" y="406" font-size="10" text-anchor="middle" fill="#666">skippedDuplicates, errorCount}</text>
+
+  <rect x="380" y="320" width="320" height="110" rx="6" fill="#ffffff" stroke="#16a34a"/>
+  <text x="540" y="340" font-size="12" font-weight="600" text-anchor="middle" fill="#111">/api/lab-values</text>
+  <text x="540" y="356" font-size="10" text-anchor="middle" fill="#666">Flexible non-core metrics</text>
+  <text x="540" y="372" font-size="10" text-anchor="middle" fill="#666">→ lab_values</text>
+  <text x="540" y="392" font-size="10" text-anchor="middle" fill="#666">Stored as-reported (no SI)</text>
+  <text x="540" y="406" font-size="10" text-anchor="middle" fill="#666">Immutable, append-only</text>
+
+  <rect x="720" y="320" width="320" height="110" rx="6" fill="#ffffff" stroke="#16a34a"/>
+  <text x="880" y="340" font-size="12" font-weight="600" text-anchor="middle" fill="#111">/api/health-documents</text>
+  <text x="880" y="356" font-size="10" text-anchor="middle" fill="#666">Scans, letters, pathology</text>
+  <text x="880" y="372" font-size="10" text-anchor="middle" fill="#666">→ health_documents</text>
+  <text x="880" y="392" font-size="10" text-anchor="middle" fill="#666">content_md (markdown)</text>
+  <text x="880" y="406" font-size="10" text-anchor="middle" fill="#666">No raw file stored</text>
+</svg>
+<div class="caption">Three storage destinations: 11 core lab metrics → <code>health_measurements</code> (FHIR Observation, SI canonical), other flexible values → <code>lab_values</code> (as-reported), and any uploaded documents → <code>health_documents</code> (markdown only, originals discarded).</div>
+</div>
+
+<h3>Two processing paths</h3>
+<ul>
+  <li><strong>Pipeline mode (&lt;20 files):</strong> client extracts concurrently (3 at a time), feeding a queue of LLM workers (concurrency=5). Files in front of the queue extract while files in the LLM are still being processed.</li>
+  <li><strong>Batch mode (≥20 files):</strong> client extracts all sequentially, then sends one batch POST; Anthropic batch API processes in parallel server-side. ~50% cheaper.</li>
+</ul>
+
+<h3>Source field distinctions</h3>
+<ul>
+  <li><code>lab_import</code> — LLM extracted, user accepted without edit</li>
+  <li><code>lab_import_edited</code> — LLM extracted, user edited at review time</li>
+  <li><code>manual_correction</code> — post-save correction via the timeline UI</li>
+  <li><code>manual</code> — typed directly into the form</li>
+</ul>
+
+<h3>Files</h3>
+<ul>
+  <li><a class="file-link" href="../app/routes/api.lab-import.ts">app/routes/api.lab-import.ts</a></li>
+  <li><a class="file-link" href="../app/lib/anthropic.server.ts">app/lib/anthropic.server.ts</a></li>
+  <li><a class="file-link" href="../widget-src/src/components/UploadModal.tsx">widget-src/src/components/UploadModal.tsx</a></li>
+  <li><a class="file-link" href="../widget-src/src/components/ReviewTable.tsx">widget-src/src/components/ReviewTable.tsx</a></li>
+  <li><a class="file-link" href="../widget-src/src/lib/pdf-extract.ts">widget-src/src/lib/pdf-extract.ts</a></li>
+  <li><a class="file-link" href="../docs/lab-upload.md">docs/lab-upload.md</a> — full design doc</li>
+</ul>
+
+<h2 id="health-docs">Health documents</h2>
+<p>For non-lab uploads: scans, clinic letters, discharge summaries, pathology reports, vaccination records. Stored as markdown only — the canonical form for both LLM tokenization and browser rendering.</p>
+
+<ul>
+  <li>Table: <code>health_documents</code> (<code>document_type</code>, <code>title</code>, <code>document_date</code>, <code>content_md</code> ≤200KB, <code>metadata</code> JSONB, <code>source_file_name</code>)</li>
+  <li><strong>Immutable</strong>: no UPDATE policy. Delete + re-upload to fix mistakes.</li>
+  <li>NOT cached in localStorage (kept lean — loaded from API on demand).</li>
+  <li>If LLM detects a screening-relevant document (e.g. colonoscopy), the review UI requires explicit checkbox confirmation before pushing the screening date forward.</li>
+</ul>
+
+<h2 id="chatbot">Chatbot</h2>
+
+<div class="callout" style="background:#e6f7f4;border-left-color:var(--brand);color:#00695c">
+  <strong>Primary reference: <a href="chat-overview.html">chat-overview.html</a></strong> — full 7-diagram system overview lives there (symlinked from claude_business). This section covers only <em>how the chatbot fits into the rest of the Health Roadmap app</em>. For internal architecture (prompt cache layout, audit loop, knowledge-base matching, classifier internals, three-platform brain), open chat-overview.html.
+</div>
+
+<p>One-line summary: a three-stage Anthropic Haiku pipeline (classifier → router → main LLM) running on Fly.io, sharing Supabase auth + RLS with the rest of the app, available on web storefront, Discord, and (planned) YouTube.</p>
+
+<h3>How it integrates with the rest of the app</h3>
+<table>
+<thead><tr><th>Touch point</th><th>What it shares with the wider system</th></tr></thead>
+<tbody>
+  <tr><td>Web entry</td><td><code>/apps/health-tool-1/api/chat</code> — same HMAC + app-proxy auth as every other endpoint (see <a href="#auth">Auth flow</a>).</td></tr>
+  <tr><td>Auth</td><td>Reuses <code>getOrCreateSupabaseUser()</code>. Guests get a scoped JWT tied to IP via <code>guest_chat_sessions</code>; on login, <code>migrateGuestChat()</code> reassigns conversations to the real <code>user_id</code>.</td></tr>
+  <tr><td>Database</td><td><code>chat_conversations</code>, <code>chat_messages</code>, <code>chat_match_events</code>, <code>guest_chat_sessions</code>, <code>message_credit_transactions</code> (see <a href="#schema">Database schema</a>). Discord rows share these tables — <code>platform = 'shopify' | 'discord'</code>.</td></tr>
+  <tr><td>Content</td><td>Reads <code>docs/pathway/*.md</code>, <code>docs/blog/*.md</code>, <code>docs/guideline/*.md</code>, <code>docs/products.md</code> (symlinked from claude_business), <code>health_roadmap_algorithm.md</code>, <code>packages/health-core/src/evidence.ts</code>.</td></tr>
+  <tr><td>Per-user health data</td><td>Pulls latest measurements, meds, supplements via the same Supabase RLS path as the widget.</td></tr>
+  <tr><td>Shopify Admin API</td><td><code>getCustomerOrders()</code> + <code>checkSubscriptionFromTags()</code> — cached 10 min/customer.</td></tr>
+  <tr><td>Klaviyo</td><td>Guest-chat users subscribed to "Roadmap Guests" list (fire-and-forget).</td></tr>
+  <tr><td>Sentry</td><td>Shares the backend's <code>@sentry/remix</code> setup.</td></tr>
+  <tr><td>Message packs</td><td>Monetization wired through <code>webhooks.orders-paid.ts</code> + <code>message_credit_transactions</code> (UNIQUE on <code>order_id</code>). Currently disabled in the chat path; reinstating is a one-line guard before the LLM call.</td></tr>
+</tbody>
+</table>
+
+<h3>Key files</h3>
+<ul>
+  <li><a class="file-link" href="../app/routes/api.chat.ts">app/routes/api.chat.ts</a> — web entry, app-proxy authenticated</li>
+  <li><a class="file-link" href="../app/lib/platform-chat.server.ts">app/lib/platform-chat.server.ts</a> — platform-agnostic wrapper (Discord + web)</li>
+  <li><a class="file-link" href="../app/lib/discord-bot.server.ts">app/lib/discord-bot.server.ts</a> — long-lived WS connection</li>
+  <li><a class="file-link" href="chat-start-here.md">docs/chat-start-here.md</a> — start here for any chatbot work</li>
+  <li><a class="file-link" href="chat-architecture.md">docs/chat-architecture.md</a> — technical deep-dive</li>
+  <li><a class="file-link" href="chat-feature.md">docs/chat-feature.md</a> — user-facing spec</li>
+  <li><a class="file-link" href="chat-knowledge-map-v2.md">docs/chat-knowledge-map-v2.md</a> — router knowledge-map design</li>
+</ul>
+
+<h3 id="chatbot-embed">Embedded: chat-overview.html</h3>
+<p class="meta">
+  Embedded live from <a href="chat-overview.html">chat-overview.html</a> (symlinked from claude_business). Edits there appear here automatically.
+  <a href="chat-overview.html" target="_blank" rel="noopener" style="margin-left:8px">Open in new tab ↗</a>
+</p>
+<div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--card);box-shadow:var(--shadow);margin:16px 0">
+  <iframe
+    id="chat-overview-iframe"
+    src="chat-overview.html"
+    title="Chatbot system overview"
+    style="display:block;width:100%;border:0;height:7500px;background:#fff"
+    loading="lazy"
+  ></iframe>
+</div>
+<script>
+  // chat-overview.html sends its rendered height via postMessage (see script at
+  // the bottom of that file). We size the iframe to match so there are no
+  // nested scrollbars. The static height attr above is a fallback for older
+  // versions of chat-overview.html that don't post their height.
+  window.addEventListener('message', function (e) {
+    if (!e.data || e.data.type !== 'chat-overview-height') return;
+    var f = document.getElementById('chat-overview-iframe');
+    if (!f) return;
+    var h = Number(e.data.height);
+    if (!Number.isFinite(h) || h < 200) return;
+    f.style.height = (h + 24) + 'px';
+  });
+</script>
+
+<h2 id="reminders">Reminder system</h2>
+<p>Daily cron at 08:00 UTC emails users when screenings, blood tests, or medication reviews are due. HIPAA-aware (no health values in emails). Per-category opt-out + global opt-out. Distributed-lock-protected so multiple Fly machines can't double-send.</p>
+
+<table>
+<thead><tr><th>Group</th><th>Cooldown</th><th>Categories</th></tr></thead>
+<tbody>
+  <tr><td>screening</td><td>90d</td><td>colorectal, breast, cervical, lung, prostate, DEXA</td></tr>
+  <tr><td>blood_test</td><td>180d</td><td>lipids, HbA1c, creatinine</td></tr>
+  <tr><td>medication_review</td><td>365d</td><td>annual med review</td></tr>
+</tbody>
+</table>
+
+<ul>
+  <li>Batches of 50 users, concurrency limit of 5.</li>
+  <li><code>cron_lock</code> table prevents duplicate processing across machines.</li>
+  <li>Token-based unsubscribe page (no login required).</li>
+  <li>Pure logic in <a class="file-link" href="../packages/health-core/src/reminders.ts">reminders.ts</a>; orchestration in <a class="file-link" href="../app/lib/reminder-cron.server.ts">reminder-cron.server.ts</a>.</li>
+  <li>Evidence (reason, guideline tags, DOI refs) rendered inline via <code>suggestionEvidence()</code> from <a class="file-link" href="../packages/health-core/src/evidence.ts">evidence.ts</a>.</li>
+</ul>
+
+<h2 id="ab-testing">A/B testing</h2>
+<p>Metafield-driven, zero-flash variant assignment. Admin creates a test in the Polaris dashboard → Supabase row written → shop metafield <code>health_roadmap.ab_config</code> updated → storefront app-block renders all variants in HTML → inline <code>&lt;script&gt;</code> picks one from localStorage <em>before</em> first paint.</p>
+
+<div class="grid-2">
+  <div class="card">
+    <h4>Pipeline</h4>
+    <ol>
+      <li>Admin creates test in <a class="file-link" href="../app/routes/app.ab-testing.tsx">app.ab-testing.tsx</a> (Polaris).</li>
+      <li>Supabase <code>ab_tests</code> row created; metafield <code>health_roadmap.ab_config</code> written via Shopify Admin GraphQL.</li>
+      <li><a class="file-link" href="../extensions/health-tool-widget/blocks/app-block.liquid">app-block.liquid</a> reads the metafield server-side; renders all variants.</li>
+      <li>Inline script picks variant from <code>localStorage['hr_ab']</code> (or assigns randomly + writes).</li>
+      <li>Widget React calls <code>trackABImpression()</code>, then <code>trackABConversion()</code> on goal events.</li>
+      <li><a class="file-link" href="../app/routes/api.ab.ts">api.ab.ts</a> writes to <code>ab_events</code>.</li>
+      <li>Dashboard computes two-proportion z-test via <a class="file-link" href="../app/lib/ab-stats.ts">ab-stats.ts</a>.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h4>Constraints</h4>
+    <ul>
+      <li>Only one test active at a time. Activating new test pauses old.</li>
+      <li>Pausing/completing deletes metafield → storefront falls back to default text.</li>
+      <li>Targets: <code>heading</code>, <code>subheading</code>. Adding a new target requires updates in 4 places (see CLAUDE.md).</li>
+      <li>localStorage keys shared between Liquid + React: <code>hr_ab</code>, <code>hr_vid</code>, <code>hr_ab_imp_&lt;testId&gt;</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="blog">Blog &amp; trending</h2>
+<p>Blog content lives on Shopify (HTML articles, served via the storefront's theme). A daily cron at 03:00 UTC computes which articles are "trending" and writes the top 5 to a shop metafield; the theme reads the metafield and renders the trending sidebar.</p>
+
+<ul>
+  <li><strong>Sources:</strong> Shopify <code>sessions</code> dataset via ShopifyQL — current 7-day window vs prior 37-day baseline → fold-change ratio.</li>
+  <li><strong>Cron:</strong> <a class="file-link" href="../app/lib/trending-cron.server.ts">trending-cron.server.ts</a>, 60-min polling tick, fires after 03:00 UTC, guarded by <code>cron_lock</code>.</li>
+  <li><strong>Output:</strong> shop metafield <code>health_roadmap.trending_articles</code> (JSON array of <code>{handle, score}</code>).</li>
+  <li><strong>Content sync to chatbot:</strong> <code>docs/blog/*.md</code> are LLM-readable copies. New posts written by the <code>/blog-post</code> skill in claude_business. Full rebuild: <code>npx tsx scripts/build-blog-content.ts</code>.</li>
+  <li><strong>Inline CTAs:</strong> <code>&lt;div class="roadmap-embed"&gt;&lt;/div&gt;</code> markers in blog HTML split the article and inject Roadmap CTAs via Liquid.</li>
+  <li><strong>Sidebar:</strong> replaced MicroVitamin promo with email signup + Roadmap CTA; per-article copy via Shopify metafields.</li>
+</ul>
+
+<h3>Gotchas</h3>
+<div class="callout">
+  <strong>ShopifyQL <code>sessions</code> means landing-page sessions</strong>, not page views. Internally-linked articles get underweighted. Use the <code>cron_lock</code> table with a NOT NULL <code>lock_date</code> — PostgreSQL <code>NULL != $today</code> is <code>NULL</code> (falsy), and the cron silently never fires.
+</div>
+
+<h2 id="supplement-wiki">Supplement wiki</h2>
+<p>113 deeply researched reference articles on ConsumerLab-reviewed supplements. Published as Shopify blog posts (tagged "Supplements") and syndicated to <code>docs/blog/*.md</code> for the chatbot to read.</p>
+
+<ul>
+  <li>Sources synthesized: ConsumerLab (primary), Grokipedia (filtered &gt;1000 chars), NIH ODS/NCCIH (public).</li>
+  <li>Each article: 25–50KB, numbered citations, DOI/PubMed links, 100–150 word summary in frontmatter.</li>
+  <li><strong>1 agent = 1 article.</strong> Batching causes context overflow; spawn 3 in parallel, stagger.</li>
+  <li>Product mentions only if supplement is in MicroVitamin / MicroVitamin+ / Sleep.</li>
+  <li>Two distinct index rebuild scripts — see <a class="file-link" href="../docs/supplement-wiki.md">supplement-wiki.md</a>.</li>
+</ul>
+
+<h2 id="message-packs">Message packs &amp; webhooks</h2>
+<ul>
+  <li><a class="file-link" href="../app/routes/webhooks.orders-paid.ts">webhooks.orders-paid.ts</a> — credits user on purchase. Idempotent via UNIQUE(<code>order_id</code>) on <code>message_credit_transactions</code>. Returns 500 if user signup not yet present (Shopify retries).</li>
+  <li><a class="file-link" href="../app/routes/webhooks.app.scopes_update.tsx">scopes_update</a>, <a class="file-link" href="../app/routes/webhooks.app.uninstalled.tsx">uninstalled</a> — Shopify app lifecycle.</li>
+  <li><a class="file-link" href="../app/lib/message-packs.ts">message-packs.ts</a> — <code>VARIANT_CREDIT_MAP</code>, <code>buildPackUrls()</code>.</li>
+  <li>Quantity clamped 1–10 to prevent abuse.</li>
+</ul>
+
+<h2 id="email">Email system</h2>
+<div class="grid-2">
+  <div class="card">
+    <h4>Resend (transactional)</h4>
+    <ul>
+      <li>Welcome email: fire-and-forget, idempotent via <code>welcome_email_sent</code> flag. Requires <code>heightCm</code> + <code>sex</code>.</li>
+      <li>Reminder emails: from <a class="file-link" href="../app/lib/reminder-cron.server.ts">reminder-cron.server.ts</a>, consolidated per group, with inline evidence.</li>
+      <li>Token-based unsubscribe page (no login).</li>
+      <li>Env: <code>RESEND_API_KEY</code>, <code>RESEND_FROM_EMAIL</code>.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Klaviyo (marketing)</h4>
+    <ul>
+      <li><a class="file-link" href="../app/lib/klaviyo.server.ts">klaviyo.server.ts</a></li>
+      <li>Subscribes guest-chat users to "Roadmap Guests" list.</li>
+      <li>Fire-and-forget (fails silently).</li>
+      <li>Idea on file: use chatbot support flow as low-friction email capture.</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="discord">Discord bot</h2>
+<ul>
+  <li><a class="file-link" href="../app/lib/discord-bot.server.ts">discord-bot.server.ts</a></li>
+  <li>discord.js WebSocket gateway, long-lived connection from Fly machine.</li>
+  <li>Listens for mentions in Brad's server; loads thread history; runs same classifier → router → LLM pipeline.</li>
+  <li>Per-user: 10 messages/hour (24h sliding), 3s cooldown.</li>
+  <li>Concurrency cap of 3 simultaneous LLM calls, queue depth 10.</li>
+  <li>Discord max message 2000 chars — splits at 1950 to leave buffer.</li>
+  <li>Shares conversations/messages tables with the web chatbot.</li>
+</ul>
+
+<h2 id="feedback">Feedback &amp; bot detection</h2>
+<ul>
+  <li><a class="file-link" href="../app/routes/api.feedback.ts">api.feedback.ts</a> — IP rate limit 3/hr, honeypot (<code>website</code> field → silent 200), Zod validation, email to Brad.</li>
+  <li><a class="file-link" href="../app/lib/bot-detect.ts">bot-detect.ts</a> — thin wrapper over <code>isbot</code> npm package; used upstream to exclude bot traffic from analytics + chat.</li>
+</ul>
+
+<h2 id="schema">Database schema</h2>
+<p>22 tables total in <a class="file-link" href="../supabase/rls-policies.sql">supabase/rls-policies.sql</a>. Every table has RLS enabled; every policy is scoped by <code>auth.uid()</code>. The diagram below groups them by purpose.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 1080 660" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Database schema">
+  <!-- Identity -->
+  <rect x="20" y="20" width="240" height="160" rx="10" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="140" y="42" font-size="13" font-weight="600" text-anchor="middle" fill="#00695c">Identity &amp; audit</text>
+  <rect x="35" y="60" width="210" height="30" rx="4" fill="#ffffff" stroke="#00a38b"/>
+  <text x="140" y="80" font-size="11" font-weight="600" text-anchor="middle" fill="#111">profiles</text>
+  <rect x="35" y="96" width="210" height="22" rx="4" fill="#ffffff" stroke="#00a38b"/>
+  <text x="140" y="111" font-size="10" text-anchor="middle" fill="#666">auth.users (Supabase managed)</text>
+  <rect x="35" y="124" width="210" height="22" rx="4" fill="#ffffff" stroke="#00a38b"/>
+  <text x="140" y="139" font-size="10" text-anchor="middle" fill="#666">audit_logs</text>
+  <rect x="35" y="150" width="210" height="22" rx="4" fill="#ffffff" stroke="#00a38b"/>
+  <text x="140" y="165" font-size="10" text-anchor="middle" fill="#666">guest_chat_sessions</text>
+
+  <!-- Health data -->
+  <rect x="280" y="20" width="240" height="280" rx="10" fill="#e3f2fd" stroke="#0066cc" stroke-width="1.5"/>
+  <text x="400" y="42" font-size="13" font-weight="600" text-anchor="middle" fill="#0052a3">Health data (FHIR)</text>
+  <rect x="295" y="60" width="210" height="34" rx="4" fill="#ffffff" stroke="#0066cc"/>
+  <text x="400" y="78" font-size="11" font-weight="600" text-anchor="middle" fill="#111">health_measurements</text>
+  <text x="400" y="90" font-size="9" text-anchor="middle" fill="#666">Observation · status · corrects_id</text>
+  <rect x="295" y="100" width="210" height="22" rx="4" fill="#ffffff" stroke="#0066cc"/>
+  <text x="400" y="115" font-size="10" text-anchor="middle" fill="#666">lab_values (flexible, as-reported)</text>
+  <rect x="295" y="128" width="210" height="22" rx="4" fill="#ffffff" stroke="#0066cc"/>
+  <text x="400" y="143" font-size="10" text-anchor="middle" fill="#666">health_documents (markdown)</text>
+  <rect x="295" y="156" width="210" height="22" rx="4" fill="#ffffff" stroke="#0066cc"/>
+  <text x="400" y="171" font-size="10" text-anchor="middle" fill="#666">screenings</text>
+  <rect x="295" y="184" width="210" height="22" rx="4" fill="#ffffff" stroke="#0066cc"/>
+  <text x="400" y="199" font-size="10" text-anchor="middle" fill="#666">medications (mutable)</text>
+  <rect x="295" y="212" width="210" height="22" rx="4" fill="#ffffff" stroke="#0066cc"/>
+  <text x="400" y="227" font-size="10" text-anchor="middle" fill="#666">medication_history (immutable)</text>
+  <rect x="295" y="240" width="210" height="22" rx="4" fill="#ffffff" stroke="#0066cc"/>
+  <text x="400" y="255" font-size="10" text-anchor="middle" fill="#666">supplements</text>
+  <rect x="295" y="268" width="210" height="22" rx="4" fill="#ffffff" stroke="#0066cc"/>
+  <text x="400" y="283" font-size="10" text-anchor="middle" fill="#666">supplement_history</text>
+
+  <!-- Reminders -->
+  <rect x="540" y="20" width="240" height="160" rx="10" fill="#fef5e7" stroke="#fd7e14" stroke-width="1.5"/>
+  <text x="660" y="42" font-size="13" font-weight="600" text-anchor="middle" fill="#9a3412">Reminders</text>
+  <rect x="555" y="60" width="210" height="22" rx="4" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="660" y="75" font-size="10" text-anchor="middle" fill="#666">reminder_preferences</text>
+  <rect x="555" y="88" width="210" height="22" rx="4" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="660" y="103" font-size="10" text-anchor="middle" fill="#666">reminder_log (cooldowns)</text>
+  <rect x="555" y="116" width="210" height="22" rx="4" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="660" y="131" font-size="10" text-anchor="middle" fill="#666">cron_lock (distributed mutex)</text>
+
+  <!-- Chat -->
+  <rect x="800" y="20" width="240" height="240" rx="10" fill="#fef2f2" stroke="#dc3545" stroke-width="1.5"/>
+  <text x="920" y="42" font-size="13" font-weight="600" text-anchor="middle" fill="#7f1d1d">Chatbot</text>
+  <rect x="815" y="60" width="210" height="22" rx="4" fill="#ffffff" stroke="#dc3545"/>
+  <text x="920" y="75" font-size="10" text-anchor="middle" fill="#666">chat_conversations</text>
+  <rect x="815" y="88" width="210" height="22" rx="4" fill="#ffffff" stroke="#dc3545"/>
+  <text x="920" y="103" font-size="10" text-anchor="middle" fill="#666">chat_messages</text>
+  <rect x="815" y="116" width="210" height="22" rx="4" fill="#ffffff" stroke="#dc3545"/>
+  <text x="920" y="131" font-size="10" text-anchor="middle" fill="#666">chat_match_events (router log)</text>
+  <rect x="815" y="144" width="210" height="22" rx="4" fill="#ffffff" stroke="#dc3545"/>
+  <text x="920" y="159" font-size="10" text-anchor="middle" fill="#666">message_credit_transactions</text>
+
+  <!-- A/B Testing -->
+  <rect x="20" y="200" width="240" height="120" rx="10" fill="#ecfdf5" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="140" y="222" font-size="13" font-weight="600" text-anchor="middle" fill="#14532d">A/B testing</text>
+  <rect x="35" y="240" width="210" height="22" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="140" y="255" font-size="10" text-anchor="middle" fill="#666">ab_tests</text>
+  <rect x="35" y="268" width="210" height="22" rx="4" fill="#ffffff" stroke="#16a34a"/>
+  <text x="140" y="283" font-size="10" text-anchor="middle" fill="#666">ab_events</text>
+
+  <!-- RPCs / Triggers -->
+  <rect x="540" y="200" width="500" height="180" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="790" y="222" font-size="13" font-weight="600" text-anchor="middle" fill="#92400e">RPCs &amp; triggers</text>
+  <rect x="555" y="240" width="220" height="40" rx="4" fill="#ffffff" stroke="#f59e0b"/>
+  <text x="665" y="258" font-size="11" font-weight="600" text-anchor="middle" fill="#111">get_latest_measurements()</text>
+  <text x="665" y="272" font-size="9" text-anchor="middle" fill="#666">RPC, returns latest active row per metric</text>
+  <rect x="785" y="240" width="240" height="40" rx="4" fill="#ffffff" stroke="#f59e0b"/>
+  <text x="905" y="258" font-size="11" font-weight="600" text-anchor="middle" fill="#111">correct_measurement()</text>
+  <text x="905" y="272" font-size="9" text-anchor="middle" fill="#666">SECURITY DEFINER, atomic correction</text>
+  <rect x="555" y="288" width="470" height="22" rx="4" fill="#ffffff" stroke="#f59e0b"/>
+  <text x="790" y="303" font-size="10" text-anchor="middle" fill="#666">trg_measurement_correction_only · trg_validate_corrects_id</text>
+  <rect x="555" y="316" width="470" height="22" rx="4" fill="#ffffff" stroke="#f59e0b"/>
+  <text x="790" y="331" font-size="10" text-anchor="middle" fill="#666">trg_medication_history_immutable · trg_supplement_history_immutable</text>
+  <rect x="555" y="344" width="470" height="22" rx="4" fill="#ffffff" stroke="#f59e0b"/>
+  <text x="790" y="359" font-size="10" text-anchor="middle" fill="#666">on_auth_user_created (auto-creates profiles row)</text>
+
+  <!-- RLS notes -->
+  <rect x="20" y="420" width="1020" height="220" rx="10" fill="#f5f5f5" stroke="#888"/>
+  <text x="530" y="442" font-size="13" font-weight="600" text-anchor="middle" fill="#333">RLS pattern (applied to every user-data table)</text>
+  <text x="35" y="468" font-size="11" fill="#444">• ENABLE ROW LEVEL SECURITY on table</text>
+  <text x="35" y="488" font-size="11" fill="#444">• Policies for SELECT / INSERT / UPDATE / DELETE all scoped to <tspan font-family="ui-monospace,Menlo,monospace">user_id = auth.uid()</tspan></text>
+  <text x="35" y="508" font-size="11" fill="#444">• Anonymous role has NO access. Service-role key bypasses RLS — only the Fly backend holds it.</text>
+  <text x="35" y="528" font-size="11" fill="#444">• Per-user JWT minted on Fly with <tspan font-family="ui-monospace,Menlo,monospace">SUPABASE_JWT_SECRET</tspan> embeds <tspan font-family="ui-monospace,Menlo,monospace">sub = supabase_user_id</tspan>.</text>
+  <text x="35" y="548" font-size="11" fill="#444">• Immutable history tables: UPDATE/DELETE blocked by trigger raising exception.</text>
+  <text x="35" y="568" font-size="11" fill="#444">• Audit logs: SELECT scoped to user; INSERT only by service role.</text>
+  <text x="35" y="588" font-size="11" fill="#444">• Partial UNIQUE indexes (e.g. <tspan font-family="ui-monospace,Menlo,monospace">WHERE status='active'</tspan>) enforce at-most-one invariants.</text>
+  <text x="35" y="608" font-size="11" fill="#444">• Anonymisation on account deletion: <tspan font-family="ui-monospace,Menlo,monospace">user_id</tspan> set to NULL on audit_logs, then auth user deleted.</text>
+</svg>
+<div class="caption">22 tables across 5 functional clusters. All user-scoped tables use the same RLS pattern (<code>auth.uid()</code> match). Triggers + partial UNIQUE indexes enforce structural invariants the application can't be trusted to maintain.</div>
+</div>
+
+<h3>Adding a new measurement metric type</h3>
+<p>This is the trip-wire. <code>CREATE TABLE IF NOT EXISTS</code> is a no-op on existing tables, so column-level checks need explicit <code>ALTER TABLE</code> migration. Missing steps cause <strong>silent data loss</strong> (the row inserts but never appears in reads). Required checklist for any new metric or screening type:</p>
+<ol>
+  <li><code>types.ts</code> — add field to interface</li>
+  <li><code>mappings.ts</code> — add case to relevant <code>*ToInputs()</code> / <code>diffInputs*</code></li>
+  <li><code>rls-policies.sql</code> — add to BOTH <code>CREATE TABLE</code> CHECK <strong>and</strong> <code>ALTER TABLE</code> migration; run migration in Supabase</li>
+  <li><code>suggestions.ts</code> — add logic</li>
+  <li><code>InputPanel.tsx</code> — UI controls</li>
+  <li><code>HealthTool.tsx</code> — handler dispatch</li>
+  <li><code>mappings.test.ts</code> — round-trip tests</li>
+</ol>
+
+<h2 id="api">API endpoints</h2>
+<p>All routes under <code>/apps/health-tool-1/api/*</code> reach the Fly backend via the Shopify app proxy. HMAC-verified, rate-limited (60 req/min/customer in-memory).</p>
+
+<table>
+<thead><tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr></thead>
+<tbody>
+  <tr><td><code>/api/measurements</code></td><td>GET</td><td>Latest per metric + profile + meds + reminder prefs</td></tr>
+  <tr><td><code>/api/measurements?metric_type=X</code></td><td>GET</td><td>History for one metric</td></tr>
+  <tr><td><code>/api/measurements?all_history=true</code></td><td>GET</td><td>Paginated full history</td></tr>
+  <tr><td><code>/api/measurements</code></td><td>POST</td><td>Add measurement / profile / medication / supplement / correction</td></tr>
+  <tr><td><code>/api/measurements</code></td><td>DELETE</td><td>Delete measurement (owner-checked)</td></tr>
+  <tr><td><code>/api/lab-import</code></td><td>POST</td><td>LLM extraction from PDF/image content</td></tr>
+  <tr><td><code>/api/lab-values</code></td><td>POST</td><td>Save flexible non-core lab values</td></tr>
+  <tr><td><code>/api/health-documents</code></td><td>GET/POST/DELETE</td><td>Markdown document CRUD</td></tr>
+  <tr><td><code>/api/chat</code></td><td>POST</td><td>Chatbot pipeline entry</td></tr>
+  <tr><td><code>/api/reminders</code></td><td>GET/POST</td><td>Prefs + token unsubscribe page</td></tr>
+  <tr><td><code>/api/ab</code></td><td>POST</td><td>A/B impression + conversion events</td></tr>
+  <tr><td><code>/api/feedback</code></td><td>POST</td><td>Feedback form (honeypot + rate-limited)</td></tr>
+  <tr><td><code>/api/user-data</code></td><td>POST</td><td>Account deletion (rate-limited 1/hr)</td></tr>
+  <tr><td><code>/healthz</code></td><td>GET</td><td>Fly health check</td></tr>
+</tbody>
+</table>
+
+<h2 id="audit">Audit logging</h2>
+<ul>
+  <li>Every write logs to <code>audit_logs</code> via <code>logAudit()</code>.</li>
+  <li>Events include: measurement created/corrected, medication updated, supplement updated, account deleted, reminder sent.</li>
+  <li><code>user_id</code> nullable: on account deletion, logs are anonymised (user_id set to NULL) before the auth user is deleted. Audit trail survives; PII does not.</li>
+  <li>HIPAA-aligned: no health values in audit messages, just IDs and event types.</li>
+</ul>
+
+<h2 id="deploy">Deployment</h2>
+
+<div class="diagram">
+<svg viewBox="0 0 1080 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Deploy workflow">
+  <defs>
+    <marker id="arrD" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#666"/>
+    </marker>
+  </defs>
+
+  <rect x="20" y="20" width="160" height="80" rx="10" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="100" y="42" font-size="12" font-weight="600" text-anchor="middle" fill="#00695c">1. Build widget</text>
+  <text x="100" y="62" font-size="10" text-anchor="middle" fill="#00695c">npm run build:widget</text>
+  <text x="100" y="80" font-size="9" text-anchor="middle" fill="#666">Vite IIFE × 2</text>
+
+  <line x1="180" y1="60" x2="215" y2="60" stroke="#666" stroke-width="2" marker-end="url(#arrD)"/>
+
+  <rect x="220" y="20" width="180" height="80" rx="10" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="310" y="42" font-size="12" font-weight="600" text-anchor="middle" fill="#00695c">2. Upload sourcemaps</text>
+  <text x="310" y="62" font-size="10" text-anchor="middle" fill="#00695c">npm run sentry:sourcemaps</text>
+  <text x="310" y="80" font-size="9" text-anchor="middle" fill="#666">local only (token in .env)</text>
+
+  <line x1="400" y1="60" x2="435" y2="60" stroke="#666" stroke-width="2" marker-end="url(#arrD)"/>
+
+  <rect x="440" y="20" width="180" height="80" rx="10" fill="#fef5e7" stroke="#fd7e14" stroke-width="1.5"/>
+  <text x="530" y="42" font-size="12" font-weight="600" text-anchor="middle" fill="#9a3412">3. Strip .map files</text>
+  <text x="530" y="62" font-size="10" text-anchor="middle" fill="#9a3412">rm extensions/.../*.map</text>
+  <text x="530" y="80" font-size="9" text-anchor="middle" fill="#9a3412">prevents 10MB limit</text>
+
+  <line x1="620" y1="60" x2="655" y2="60" stroke="#666" stroke-width="2" marker-end="url(#arrD)"/>
+
+  <rect x="660" y="20" width="180" height="80" rx="10" fill="#e3f2fd" stroke="#0066cc" stroke-width="1.5"/>
+  <text x="750" y="42" font-size="12" font-weight="600" text-anchor="middle" fill="#0052a3">4. Shopify deploy</text>
+  <text x="750" y="62" font-size="10" text-anchor="middle" fill="#0052a3">shopify app deploy --force</text>
+  <text x="750" y="80" font-size="9" text-anchor="middle" fill="#666">extensions → Shopify CDN</text>
+
+  <line x1="840" y1="60" x2="875" y2="60" stroke="#666" stroke-width="2" marker-end="url(#arrD)"/>
+
+  <rect x="880" y="20" width="180" height="80" rx="10" fill="#fef2f2" stroke="#dc3545" stroke-width="1.5"/>
+  <text x="970" y="42" font-size="12" font-weight="600" text-anchor="middle" fill="#7f1d1d">5. Resolve symlink</text>
+  <text x="970" y="62" font-size="10" text-anchor="middle" fill="#7f1d1d">cp -L → /tmp → mv</text>
+  <text x="970" y="80" font-size="9" text-anchor="middle" fill="#7f1d1d">products.md → real file</text>
+
+  <line x1="540" y1="100" x2="540" y2="135" stroke="#666" stroke-width="2" marker-end="url(#arrD)"/>
+
+  <rect x="320" y="140" width="440" height="80" rx="10" fill="#fef2f2" stroke="#dc3545" stroke-width="1.5"/>
+  <text x="540" y="162" font-size="13" font-weight="600" text-anchor="middle" fill="#7f1d1d">6. fly deploy</text>
+  <text x="540" y="182" font-size="11" text-anchor="middle" fill="#7f1d1d">Must run from project root (Dockerfile at root)</text>
+  <text x="540" y="200" font-size="11" text-anchor="middle" fill="#7f1d1d">If suspended: fly machine start &lt;id&gt; first</text>
+
+  <line x1="540" y1="220" x2="540" y2="255" stroke="#666" stroke-width="2" marker-end="url(#arrD)"/>
+
+  <rect x="320" y="260" width="440" height="40" rx="10" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="540" y="285" font-size="12" font-weight="600" text-anchor="middle" fill="#00695c">7. git checkout docs/products.md — restore symlink</text>
+</svg>
+<div class="caption">7-step deploy. The Dropbox symlink resolution (step 5, 7) is non-obvious: Fly's remote Docker builders can't follow local symlinks, so the symlink is dereferenced to a real file before deploy and restored after.</div>
+</div>
+
+<h3>Fly.io config</h3>
+<table>
+<tbody>
+  <tr><td>App</td><td><code>health-tool-app</code></td></tr>
+  <tr><td>Region</td><td><code>iad</code> (US East)</td></tr>
+  <tr><td>VM</td><td>shared-cpu-1x, 1GB RAM</td></tr>
+  <tr><td>Min machines</td><td>1 (zero-downtime would require 2+)</td></tr>
+  <tr><td>Auto stop / start</td><td>enabled (cold start ~5–15s)</td></tr>
+  <tr><td>Health check</td><td>GET /healthz every 30s</td></tr>
+</tbody>
+</table>
+
+<h3>Environment variables</h3>
+<p>See <code>.env</code>. Required: <code>SUPABASE_URL</code>, <code>SUPABASE_ANON_KEY</code>, <code>SUPABASE_SERVICE_KEY</code>, <code>SUPABASE_JWT_SECRET</code>, <code>SESSION_DATABASE_URL</code>, <code>SENTRY_DSN</code>, <code>RESEND_API_KEY</code>, <code>RESEND_FROM_EMAIL</code>, <code>SHOPIFY_STORE_URL</code>, Shopify API key/secret, Anthropic, Klaviyo, Discord bot token, message-pack variant IDs.</p>
+
+<h2 id="security">Security model</h2>
+
+<div class="grid-2">
+  <div class="card">
+    <h4>Defense in depth</h4>
+    <ol>
+      <li>Shopify CDN handles DDoS at the edge for storefront assets.</li>
+      <li>App proxy HMAC verification rejects all unsigned requests at Remix entry.</li>
+      <li>Per-customer in-memory rate limit (60 req/min) at app layer.</li>
+      <li>Supabase RLS as backstop — even with a broken backend, no cross-user reads possible.</li>
+      <li>Triggers enforce structural invariants (immutability, correction-only updates).</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h4>Non-negotiable rules</h4>
+    <ul>
+      <li>NEVER trust client-supplied identity. Only HMAC-signed <code>logged_in_customer_id</code>.</li>
+      <li>NEVER expose unauthenticated API endpoints.</li>
+      <li>NEVER add <code>Access-Control-Allow-Origin: *</code>.</li>
+      <li>NEVER store the Supabase service key client-side. Only the Fly backend holds it.</li>
+      <li>NEVER skip HMAC verification "just for testing".</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Account deletion flow</h3>
+<p>POST <code>/api/user-data</code> with <code>{ confirmDelete: true }</code>. Rate-limited 1/hour per customer. Deletion order (each step waits for the previous to complete):</p>
+<ol>
+  <li>health_measurements</li>
+  <li>medication_history → medications</li>
+  <li>supplement_history → supplements</li>
+  <li>health_documents, lab_values, screenings</li>
+  <li>chat_messages → chat_conversations → chat_match_events</li>
+  <li>Anonymise audit_logs (user_id → NULL)</li>
+  <li>Delete profile</li>
+  <li>Delete auth user</li>
+  <li>Clear in-memory user cache (restart machine if needed)</li>
+</ol>
+
+<h2 id="design-docs">Design doc index</h2>
+<p>Deep design rationale for individual features. The architecture page above is the map; each of these is a zoom-in with full reasoning, alternatives considered, and decisions logged.</p>
+
+<table>
+<thead><tr><th>Doc</th><th>Covers</th></tr></thead>
+<tbody>
+  <tr><td><a class="file-link" href="../docs/DESIGN.md">DESIGN.md</a></td><td>Visual design system — colors, typography, spacing, component specs</td></tr>
+  <tr><td><a class="file-link" href="chat-overview.html"><strong>chat-overview.html</strong></a></td><td><strong>Chatbot system overview</strong> — 7 diagrams (prompt cache, audit loop, guest→authed state, request flow, knowledge matching, classifier, three-platform brain). <em>Primary chatbot reference. Symlinked from claude_business.</em></td></tr>
+  <tr><td><a class="file-link" href="chat-start-here.md">chat-start-here.md</a></td><td>Chatbot entry point — audit playbook, logging schema</td></tr>
+  <tr><td><a class="file-link" href="chat-architecture.md">chat-architecture.md</a></td><td>Chatbot technical deep-dive</td></tr>
+  <tr><td><a class="file-link" href="chat-feature.md">chat-feature.md</a></td><td>Chatbot user-facing spec</td></tr>
+  <tr><td><a class="file-link" href="chat-knowledge-map-v2.md">chat-knowledge-map-v2.md</a></td><td>Router knowledge-map design</td></tr>
+  <tr><td><a class="file-link" href="chat-knowledge-map-v2-changelog.md">chat-knowledge-map-v2-changelog.md</a></td><td>Knowledge-map changes</td></tr>
+  <tr><td><a class="file-link" href="../docs/lab-upload.md">lab-upload.md</a></td><td>Lab upload feature design</td></tr>
+  <tr><td><a class="file-link" href="../docs/lab-upload-overview.html">lab-upload-overview.html</a></td><td>Visual overview of lab upload pipeline</td></tr>
+  <tr><td><a class="file-link" href="../docs/health-documents.md">health-documents.md</a></td><td>Health documents feature spec</td></tr>
+  <tr><td><a class="file-link" href="../docs/medications-supplements-tracking.md">medications-supplements-tracking.md</a></td><td>Medication + supplement tracking design</td></tr>
+  <tr><td><a class="file-link" href="../docs/homepage-pivot.md">homepage-pivot.md</a></td><td>Homepage redesign rationale + A/B testing context</td></tr>
+  <tr><td><a class="file-link" href="../docs/newspaper-blog-trending.md">newspaper-blog-trending.md</a></td><td>Trending blog cron design</td></tr>
+  <tr><td><a class="file-link" href="../docs/supplement-wiki.md">supplement-wiki.md</a></td><td>Supplement reference article pipeline</td></tr>
+  <tr><td><a class="file-link" href="../docs/ab-test-results.md">ab-test-results.md</a></td><td>Historical A/B test results log</td></tr>
+  <tr><td><a class="file-link" href="../docs/about-page-copy.html">about-page-copy.html</a></td><td>About page copy reference</td></tr>
+  <tr><td><a class="file-link" href="../health_roadmap_algorithm.md">health_roadmap_algorithm.md</a></td><td><strong>Single source of truth</strong> for health calculations, thresholds, suggestion rules</td></tr>
+  <tr><td><a class="file-link" href="../roadmap_text.html">roadmap_text.html</a></td><td>User-facing explanations &amp; citations (must stay in sync with algorithm)</td></tr>
+  <tr><td><a class="file-link" href="../CLAUDE.md">CLAUDE.md</a></td><td>Project-wide instructions for AI agents</td></tr>
+</tbody>
+</table>
+
+<h3>Chatbot content tree</h3>
+<ul>
+  <li><a class="file-link" href="../docs/pathway/">docs/pathway/</a> — ~700 clinical pathways (Auckland HealthPathways-style)</li>
+  <li><a class="file-link" href="../docs/blog/">docs/blog/</a> — ~280 blog posts + supplement reference articles (chatbot-readable)</li>
+  <li><a class="file-link" href="../docs/guideline/">docs/guideline/</a> — 3 lifestyle guidelines</li>
+  <li><a class="file-link" href="../docs/products.md">docs/products.md</a> — symlink to claude_business; product catalog</li>
+</ul>
+
+<h2 id="gotchas">Dangerous gotchas (consolidated)</h2>
+<p>Things that have caused real outages, silent data loss, or hard-to-debug failures. Each violates an architectural invariant.</p>
+
+<div class="callout danger">
+  <strong>Sync-embed cleanup must be synchronous.</strong> Three localStorage operations (remove guest data, set auth flag, set session flag) must run before any <code>fetch()</code>. Moving them inside <code>.then()</code> breaks auto-login for users who navigate away mid-request.
+</div>
+<div class="callout danger">
+  <strong>Sync-embed and widget sync are mutually exclusive.</strong> Sync-embed exits early if <code>#health-tool-root</code> exists. Never run sync logic from both paths simultaneously — duplicate writes and audit log explosion.
+</div>
+<div class="callout danger">
+  <strong>CREATE TABLE IF NOT EXISTS is a no-op on existing tables.</strong> Adding a column to a CHECK constraint requires <code>ALTER TABLE</code> migration + Supabase SQL execution. Otherwise inserts succeed but reads silently fail.
+</div>
+<div class="callout danger">
+  <strong>Never DROP TABLE on Supabase.</strong> PostgREST caches OIDs. Use <code>ALTER TABLE ADD COLUMN IF NOT EXISTS</code>. If you must drop: restart the Supabase project.
+</div>
+<div class="callout danger">
+  <strong>Never <code>shopify app dev</code>.</strong> Creates a dev preview URL that overrides production. Fix: <code>npx shopify app dev clean</code>.
+</div>
+<div class="callout danger">
+  <strong>fly deploy from project root only.</strong> Dockerfile is at root; running from a subdir silently uses wrong context. Don't use <code>--app</code> flag — let it read <code>fly.toml</code>.
+</div>
+<div class="callout danger">
+  <strong>Symlink resolution before fly deploy.</strong> Fly's remote builders can't follow local symlinks. <code>docs/products.md</code> must be dereferenced to a temp file, removed, then real file moved into place. Don't use <code>cp -L file file</code> — <code>cp</code> follows the destination symlink, never replacing it.
+</div>
+<div class="callout danger">
+  <strong>cron_lock NULL pitfall.</strong> PostgreSQL <code>NULL != $today</code> evaluates to <code>NULL</code> (falsy). Seed <code>lock_date</code> with a real date, never NULL — otherwise the cron silently never fires.
+</div>
+<div class="callout danger">
+  <strong>Strip <code>.map</code> files before <code>shopify app deploy</code>.</strong> Sourcemaps push the extension over the 10MB CDN limit. <code>npx shopify app deploy --force</code> in CI/non-interactive shells.
+</div>
+<div class="callout danger">
+  <strong>In-memory user cache after deletion.</strong> If you delete a profile/auth user, restart the Fly machine to clear the cache. Otherwise stale rows haunt the next request.
+</div>
+<div class="callout danger">
+  <strong>Don't make the <code>health_roadmap_authenticated</code> flag conditional.</strong> The flag is the bridge between Shopify customer sessions (on shopify.com) and storefront sessions. Removing or delaying it breaks auto-login.
+</div>
+
+<hr>
+
+<div class="card" style="background:var(--bg)">
+  <h4>How to update this document</h4>
+  <p>Update when an architectural shape changes — new subsystem, new external service, new top-level table cluster, or a flow gets restructured. Not per-commit. Aim for the map to stay accurate at the level of "what services exist and how do they talk", even if file paths drift.</p>
+  <p>If you find yourself adding a paragraph that's specifically about <em>what changed recently</em>, that belongs in a git commit message, not here.</p>
+</div>
+
+</main>
+</div>
+</body>
+</html>

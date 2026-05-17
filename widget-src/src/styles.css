@@ -2624,23 +2624,14 @@ input[type="number"] {
   white-space: nowrap;
 }
 
-.review-unrecognized {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--color-gray-light);
-}
-
-.review-unrecognized-label {
-  margin: 0 0 4px;
-  font-style: italic;
-}
-
-.review-unrecognized-item {
-  display: inline-block;
-  background: #f5f5f5;
-  padding: 2px 8px;
+.review-date-hint {
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--color-text);
+  background: #fff8e1;
+  border-left: 3px solid #f5b400;
   border-radius: 4px;
-  margin: 2px 4px 2px 0;
 }
 
 .review-actions {
@@ -4594,5 +4585,74 @@ input[type="number"] {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* ---------------------------------------------------------------------------
+   Review Matrix — upload review modal's metric × date grid. Reuses the
+   .bt-* classes; only adds the review-specific bits (context cell, section
+   divider, low-confidence accent, editable date header).
+   --------------------------------------------------------------------------- */
+
+.review-matrix {
+  margin: 0 0 20px;
+}
+
+/* Greyed-out cell: an existing-history value, not editable from the modal.
+   Keep pointer events so the title-tooltip ("Already saved at this date")
+   still fires on hover; user-select stops accidental text selection. */
+.bt-cell-context {
+  opacity: 0.55;
+  cursor: default;
+  user-select: none;
+  background: var(--bt-ink-50);
+}
+.bt-cell-context .bt-value-num {
+  color: var(--bt-ink-500);
+}
+
+/* Empty cell — keeps row height consistent; no data. */
+.bt-cell-empty {
+  background: transparent;
+  pointer-events: none;
+}
+
+/* Editable cell carries the low-confidence accent so the user can scan
+   which extractions to double-check. */
+.bt-cell-review {
+  background: transparent;
+}
+.bt-cell-low-confidence .bt-input {
+  border-color: var(--color-warning);
+}
+
+/* Editable date header above each new (upload) column. Tight layout so
+   day-select + month/year picker both fit in the ~82px cell. */
+.bt-cell-date-editable {
+  padding: 4px 4px;
+  gap: 2px;
+}
+.bt-date-day-select {
+  font-size: 10px;
+  padding: 1px 2px;
+  border: 1px solid var(--bt-ink-200);
+  border-radius: 3px;
+  background: #fff;
+  color: var(--bt-ink-700);
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Section divider between core metrics and additional lab values. */
+.bt-section-divider {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--bt-ink-500);
+  background: var(--bt-ink-50);
+  padding: 6px 8px;
+  border-top: 1px solid var(--bt-ink-200);
+  border-bottom: 1px solid var(--bt-ink-100);
+  margin-top: 4px;
 }
 

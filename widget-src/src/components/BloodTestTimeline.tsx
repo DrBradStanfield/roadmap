@@ -12,23 +12,22 @@ import {
   fromCanonicalValue,
   formatDisplayValue,
   getDisplayLabel,
-  getDisplayRange,
   BLOOD_TEST_METRICS,
   METRIC_TO_FIELD,
   METRIC_LABELS,
   refHintFor,
-  HBA1C_THRESHOLDS,
-  LDL_THRESHOLDS,
-  TOTAL_CHOLESTEROL_THRESHOLDS,
-  HDL_THRESHOLDS,
-  TRIGLYCERIDES_THRESHOLDS,
-  APOB_THRESHOLDS,
-  LPA_THRESHOLDS,
-  PSA_THRESHOLDS,
   parseLocalisedNumber,
 } from '@roadmap/health-core';
 import { MONTHS_SHORT } from '../lib/constants';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage';
+import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
+import {
+  type Status,
+  blockBadNumericKeys,
+  validateTypedValue,
+  statusOf,
+} from '../lib/blood-test-cell';
+import { NumericInputCell } from './NumericInputCell';
 
 // localStorage key for the matrix's typed-but-unsaved state. Persists across
 // page reloads so users don't lose work mid-edit. Cleared on successful Save.
@@ -37,29 +36,6 @@ const DRAFT_STORAGE_KEY = 'health_roadmap_bt_timeline_draft';
 interface PersistedDraft {
   draft: { date: string; values: Record<string, string> };
   backfills: Record<string, Record<string, string>>;
-}
-
-// Block keys that <input type="number"> normally accepts but are invalid
-// for our metric values (no negatives, no scientific notation).
-const BLOCKED_NUMERIC_KEYS = new Set(['-', '+', 'e', 'E']);
-function blockBadNumericKeys(e: React.KeyboardEvent<HTMLInputElement>) {
-  if (BLOCKED_NUMERIC_KEYS.has(e.key)) e.preventDefault();
-}
-
-// Validate a typed display-unit value against the metric's range.
-// Returns an error message or null. Live-fires as the user types.
-function validateTypedValue(
-  metric: MetricType,
-  typed: string,
-  display: UnitSystem,
-): { error: string | null; range: { min: number; max: number } } {
-  const range = getDisplayRange(metric, display);
-  if (typed === '') return { error: null, range };
-  const n = parseLocalisedNumber(typed);
-  if (n === undefined) return { error: 'Enter a number', range };
-  if (n < range.min) return { error: `Min ${range.min}`, range };
-  if (n > range.max) return { error: `Max ${range.max}`, range };
-  return { error: null, range };
 }
 
 // PSA is omitted from the matrix — rendered separately in the men's section
@@ -81,61 +57,6 @@ const ROWS: RowConfig[] = BLOOD_TEST_METRICS
 // Reference-range labels shown under each metric's unit chip live in
 // `packages/health-core/src/reference-hints.ts` (single source of truth, also
 // used by InputPanel.tsx).
-
-type Status = 'ok' | 'warn' | 'bad' | null;
-
-// Returns null for metrics with no threshold (e.g. creatinine — kidney
-// function is judged via eGFR, not raw creatinine).
-function statusOf(metric: MetricType, siValue: number, sex?: 'male' | 'female'): Status {
-  if (siValue == null || Number.isNaN(siValue)) return null;
-  switch (metric) {
-    case 'hba1c':
-      if (siValue >= HBA1C_THRESHOLDS.diabetes) return 'bad';
-      if (siValue >= HBA1C_THRESHOLDS.prediabetes) return 'warn';
-      return 'ok';
-    case 'ldl':
-      if (siValue >= LDL_THRESHOLDS.high) return 'bad';
-      if (siValue >= LDL_THRESHOLDS.borderline) return 'warn';
-      return 'ok';
-    case 'total_cholesterol':
-      if (siValue >= TOTAL_CHOLESTEROL_THRESHOLDS.high) return 'bad';
-      if (siValue >= TOTAL_CHOLESTEROL_THRESHOLDS.borderline) return 'warn';
-      return 'ok';
-    case 'hdl': {
-      // Higher is better. lowFemale (~1.29) is the more conservative "ok" gate.
-      // Below lowMale (~1.03) = bad. Between = warn.
-      const okGate = sex === 'male' ? HDL_THRESHOLDS.lowMale : HDL_THRESHOLDS.lowFemale;
-      if (siValue >= okGate) return 'ok';
-      if (siValue >= HDL_THRESHOLDS.lowMale) return 'warn';
-      return 'bad';
-    }
-    case 'triglycerides':
-      if (siValue >= TRIGLYCERIDES_THRESHOLDS.high) return 'bad';
-      if (siValue >= TRIGLYCERIDES_THRESHOLDS.borderline) return 'warn';
-      return 'ok';
-    case 'apob':
-      if (siValue >= APOB_THRESHOLDS.high) return 'bad';
-      if (siValue >= APOB_THRESHOLDS.borderline) return 'warn';
-      return 'ok';
-    case 'lpa':
-      if (siValue >= LPA_THRESHOLDS.elevated) return 'bad';
-      if (siValue >= LPA_THRESHOLDS.normal) return 'warn';
-      return 'ok';
-    case 'psa':
-      return siValue >= PSA_THRESHOLDS.normal ? 'warn' : 'ok';
-    case 'creatinine': {
-      // No formal threshold in units.ts (eGFR is the clinical gate). Use the
-      // adult reference range as the ok ceiling, flag mild elevation as warn,
-      // significant elevation (≥30% over) as bad.
-      const max = sex === 'female' ? 90 : 110; // µmol/L
-      if (siValue >= max * 1.3) return 'bad';
-      if (siValue > max) return 'warn';
-      return 'ok';
-    }
-    default:
-      return null;
-  }
-}
 
 interface Batch {
   date: string; // ISO yyyy-mm-dd
@@ -348,29 +269,10 @@ export function BloodTestTimeline({
     return { filledCount: n, hasError: err };
   }, [draft.values, backfills, unitOverrides, unitSystem]);
 
-  // Scroll-sync state
-  const headerScrollRef = useRef<HTMLDivElement | null>(null);
-  const rowScrollsRef = useRef<Array<HTMLDivElement | null>>([]);
-  const isSyncingRef = useRef(false);
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (isSyncingRef.current) return;
-    const sl = (e.currentTarget as HTMLDivElement).scrollLeft;
-    isSyncingRef.current = true;
-    [headerScrollRef.current, ...rowScrollsRef.current].forEach(el => {
-      if (el && el !== e.currentTarget) el.scrollLeft = sl;
-    });
-    requestAnimationFrame(() => { isSyncingRef.current = false; });
-  };
-
-  // After mount or columns change, jump to far-right (newest visible).
-  useEffect(() => {
-    const targets = [headerScrollRef.current, ...rowScrollsRef.current].filter(Boolean) as HTMLDivElement[];
-    if (targets.length === 0) return;
-    const max = targets[0].scrollWidth - targets[0].clientWidth;
-    if (max <= 0) return;
-    targets.forEach(el => { el.scrollLeft = max; });
-  }, [columns.length]);
+  // Shared horizontal-scroll sync across the header + all row strips, with
+  // a jump-to-rightmost effect on column-count change. Same hook powers the
+  // matrix view in the lab-upload review modal so behaviour stays consistent.
+  const scrollSync = useMatrixScrollSync(columns.length);
 
   const setDraftValue = (metric: MetricType, typed: string) => {
     setDraft(d => ({ ...d, values: { ...d.values, [metric]: typed } }));
@@ -503,7 +405,7 @@ export function BloodTestTimeline({
         {/* Header row */}
         <div className="bt-row bt-header-row">
           <div className="bt-cell-name bt-cell-header">Metric</div>
-          <div ref={headerScrollRef} onScroll={handleScroll} className="bt-scroll-x bt-cell-strip">
+          <div ref={scrollSync.registerHeader} onScroll={scrollSync.onScroll} className="bt-scroll-x bt-cell-strip">
             <div className="bt-strip-inner">
               {columns.map((c, i) => {
                 if (c.kind === 'draft') return <DraftDateCell key="draft" date={c.date} onChange={setDraftDate}/>;
@@ -543,8 +445,8 @@ export function BloodTestTimeline({
                   })()}
                 </div>
 
-                <div ref={el => { rowScrollsRef.current[rowIdx] = el; }}
-                     onScroll={handleScroll}
+                <div ref={el => scrollSync.registerRow(rowIdx, el)}
+                     onScroll={scrollSync.onScroll}
                      className="bt-scroll-x bt-cell-strip">
                   <div className="bt-strip-inner">
                     {columns.map((c, colIdx) => {
@@ -680,15 +582,6 @@ interface ValueCellProps {
   onCorrect?: (oldId: string, newValueSI: number) => Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }>;
 }
 
-/** Live status preview from a typed display value. Shared by DraftCell + ValueCell. */
-function previewStatus(
-  metric: MetricType, typed: string, display: UnitSystem, sex?: 'male' | 'female',
-): Status {
-  const n = parseLocalisedNumber(typed);
-  if (n === undefined) return null;
-  return statusOf(metric, toCanonicalValue(metric, n, display), sex);
-}
-
 function ValueCell({
   metric, display, sex, siValue, rowId, status, pinned, onActivate, onDeactivate, onCorrect,
 }: ValueCellProps) {
@@ -808,76 +701,6 @@ function ValueCell({
       <span className="bt-value-num num">{initialDisplay}</span>
       <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>
     </button>
-  );
-}
-
-interface NumericInputCellProps {
-  metric: MetricType;
-  display: UnitSystem;
-  value: string;
-  onChange: (v: string) => void;
-  // Visual: outer wrapper class (appended to bt-cell-value) and inner input class
-  wrapperClass: string;
-  inputClass?: string;
-  // Status tick in the footer: omit `sex` to suppress the live preview entirely.
-  // Pass sex to enable computing status from the typed value.
-  sex?: 'male' | 'female';
-  showStatusPreview?: boolean;
-  // Optional extras
-  active?: boolean;
-  autoFocus?: boolean;
-  disabled?: boolean;
-  placeholder?: string;
-  // Caller-supplied error (e.g. save failure) — takes precedence over the
-  // local validation error so retry feedback is visible inline.
-  externalError?: string | null;
-  onFocus?: () => void;
-  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-}
-
-/**
- * Shared numeric input + validation + footer used by DraftCell, BackfillCell,
- * and ValueCell's edit mode. Fixed-height footer prevents the input from
- * shifting when the slot switches between status tick and error message.
- */
-function NumericInputCell({
-  metric, display, value, onChange,
-  wrapperClass, inputClass = 'bt-input',
-  sex, showStatusPreview = true,
-  active, autoFocus, disabled, placeholder, externalError,
-  onFocus, onBlur, onKeyDown = blockBadNumericKeys,
-}: NumericInputCellProps) {
-  const { error: validationError } = validateTypedValue(metric, value, display);
-  const error = externalError ?? validationError;
-  const status = !showStatusPreview || error ? null : previewStatus(metric, value, display, sex);
-  return (
-    <div className={`bt-cell-value ${wrapperClass}`}>
-      <input
-        // type="text" not "number" — number inputs strip comma decimals in
-        // European locales before parseLocalisedNumber can normalise them.
-        // validateTypedValue enforces the range JS-side.
-        type="text"
-        inputMode="decimal"
-        pattern="[0-9.,]*"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        onKeyDown={onKeyDown}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        placeholder={placeholder}
-        aria-invalid={!!error}
-        title={error ?? undefined}
-        autoFocus={autoFocus}
-        disabled={disabled}
-        className={`${inputClass}${active ? ' bt-input-active' : ''}${error ? ' bt-input-error' : ''}`}
-      />
-      <div className="bt-cell-foot">
-        {error
-          ? <span className="bt-input-error-text">{error}</span>
-          : <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>}
-      </div>
-    </div>
   );
 }
 

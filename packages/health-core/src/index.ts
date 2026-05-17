@@ -57,6 +57,8 @@ export {
   getScreeningNextDueDate,
   POST_FOLLOWUP_INTERVALS,
   SCREENING_FOLLOWUP_INFO,
+  SCREENING_MIN_AGE,
+  isScreeningEligible,
   // Supplement options
   SUPPLEMENT_OPTIONS,
   FEATURED_SUPPLEMENTS,
@@ -119,6 +121,8 @@ export {
   type MeasurementSource,
   MEASUREMENT_STATUS,
   type MeasurementStatus,
+  DOCUMENT_TYPES,
+  type DocumentType,
 } from './validation';
 
 export { parseLocalisedNumber } from './parseNumber';

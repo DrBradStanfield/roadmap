@@ -395,6 +395,37 @@ export const SCREENING_INTERVALS: Record<string, number> = {
 };
 
 /**
+ * Minimum age (and required sex) for the user to be offered a "save this
+ * screening" affordance during lab/document upload review. Permissive
+ * gate — separate from the clinical suggestion rules in `suggestions.ts`
+ * which fire recommendations based on the same+more state.
+ *
+ * DEXA gates at age 50 to allow saving a one-off male scan (e.g. doctor-
+ * ordered for non-routine reasons); the algorithm only suggests DEXA for
+ * males at 70+, but blocking save would be hostile.
+ */
+export const SCREENING_MIN_AGE: Record<string, { age: number; sex?: 'male' | 'female' }> = {
+  colorectal: { age: 35 },
+  breast:     { age: 40, sex: 'female' },
+  cervical:   { age: 25, sex: 'female' },
+  lung:       { age: 50 },
+  prostate:   { age: 45, sex: 'male' },
+  dexa:       { age: 50 },
+};
+
+export function isScreeningEligible(
+  screeningType: string,
+  userAge?: number,
+  userSex?: 'male' | 'female',
+): boolean {
+  const rule = SCREENING_MIN_AGE[screeningType];
+  if (!rule) return true;
+  if (rule.sex && userSex && rule.sex !== userSex) return false;
+  if (userAge !== undefined && userAge < rule.age) return false;
+  return true;
+}
+
+/**
  * Calculate the next-due date for a screening based on last date and method interval.
  * Shared by suggestions.ts (screeningStatus) and reminders.ts (isScreeningOverdue).
  * Returns null if inputs are invalid or missing.

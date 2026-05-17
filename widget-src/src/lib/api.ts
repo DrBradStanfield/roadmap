@@ -1,4 +1,4 @@
-import type { HealthInputs, MeasurementSource } from '@roadmap/health-core';
+import type { HealthInputs, MeasurementSource, DocumentType } from '@roadmap/health-core';
 import { safeGetItem, safeSetItem } from './storage';
 import {
   measurementsToInputs,
@@ -25,6 +25,9 @@ interface MeasurementsResponse {
   screenings?: ApiScreening[];
   supplements?: ApiSupplement[];
   reminderPreferences?: ApiReminderPreference[];
+  /** Active health documents — needed both for the home Health Documents
+   *  panel and for the upload-review dup-check. */
+  documents?: ApiDocument[];
   error?: string;
 }
 
@@ -70,6 +73,16 @@ export async function parseJsonResponse<T>(response: Response): Promise<T | null
   return response.json() as Promise<T>;
 }
 
+/** Snapshot of the user's saved data needed by the upload review modal
+ *  for dedup badges + matrix context columns. One object, not three
+ *  separate props, so call sites don't grow with each new history
+ *  dimension. */
+export interface UploadHistory {
+  bloodTests: ApiMeasurement[];
+  labValues: ApiLabValue[];
+  documents: ApiDocument[];
+}
+
 /** Result from loading latest measurements: pre-fill inputs + raw measurements for "Previous:" labels. */
 export interface LatestMeasurementsResult {
   /** Only demographic/height fields for pre-filling the form. */
@@ -84,6 +97,8 @@ export interface LatestMeasurementsResult {
   supplements: ApiSupplement[];
   /** Reminder notification preferences. */
   reminderPreferences: ApiReminderPreference[];
+  /** Active health documents — for the home panel + upload-review dup index. */
+  documents: ApiDocument[];
 }
 
 /**
@@ -113,7 +128,15 @@ export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult
       inputs.unitSystem = allInputs.unitSystem;
     }
 
-    return { inputs, previousMeasurements: result.data, medications: result.medications ?? [], screenings: result.screenings ?? [], supplements: result.supplements ?? [], reminderPreferences: result.reminderPreferences ?? [] };
+    return {
+      inputs,
+      previousMeasurements: result.data,
+      medications: result.medications ?? [],
+      screenings: result.screenings ?? [],
+      supplements: result.supplements ?? [],
+      reminderPreferences: result.reminderPreferences ?? [],
+      documents: result.documents ?? [],
+    };
   } catch (error) {
     console.warn('Error loading measurements:', error);
     Sentry.captureException(error);
@@ -621,9 +644,10 @@ export interface ExtractedValue {
   question?: string;
 }
 
-/** Document data returned by the LLM for non-lab documents */
+/** Document data returned by the LLM for non-lab documents.
+ *  Classification is validated server-side against DOCUMENT_TYPES. */
 export interface DocumentResult {
-  classification: string;
+  classification: DocumentType;
   title: string;
   documentDate: string | null;
   contentMarkdown: string;
@@ -644,7 +668,6 @@ export interface LabImportResult {
   reportDate: string | null;
   values: ExtractedValue[];
   additionalValues: AdditionalLabValue[];
-  unrecognized: string[];
   document: DocumentResult | null;
 }
 
@@ -986,13 +1009,15 @@ export async function deleteDocument(documentId: string): Promise<boolean> {
 // ---------------------------------------------------------------------------
 
 /**
- * Load lab values for the authenticated user.
+ * Load lab values for the authenticated user. Returns `null` on failure so
+ * the caller can leave the cached list intact instead of blanking it on a
+ * transient API error.
  */
 export async function loadLabValues(
   metricName?: string,
   limit = 500,
   offset = 0,
-): Promise<ApiLabValue[]> {
+): Promise<ApiLabValue[] | null> {
   try {
     const params = new URLSearchParams();
     if (metricName) params.set('metric_name', metricName);
@@ -1003,17 +1028,27 @@ export async function loadLabValues(
     const response = await fetch(
       `${PROXY_PATH}/api/lab-values${qs ? `?${qs}` : ''}`,
     );
-    if (!response.ok) return [];
+    if (!response.ok) return null;
     const data = await parseJsonResponse<{ labValues: ApiLabValue[] }>(response);
-    return data?.labValues || [];
+    return data?.labValues ?? null;
   } catch (error) {
     console.warn('Load lab values error:', error);
-    return [];
+    return null;
   }
 }
 
+export interface BulkLabValuesResult {
+  saved: ApiLabValue[];
+  /** How many rows were already present (active) at this (user, metric_name, recorded_at). */
+  skippedDuplicates: number;
+  /** How many rows hit a server error. */
+  errorCount: number;
+}
+
 /**
- * Bulk save lab values extracted from uploaded files.
+ * Bulk save lab values extracted from uploaded files. Mirrors the
+ * bulkSaveMeasurements shape so the done-screen tally can show
+ * "saved / skipped / failed" honestly across both endpoints.
  */
 export async function bulkSaveLabValues(
   values: Array<{
@@ -1025,20 +1060,31 @@ export async function bulkSaveLabValues(
     recordedAt: string;
     source?: string;
   }>,
-): Promise<ApiLabValue[]> {
+): Promise<BulkLabValuesResult> {
+  const emptyResult = (errorCount: number): BulkLabValuesResult => ({ saved: [], skippedDuplicates: 0, errorCount });
   try {
     const response = await fetch(`${PROXY_PATH}/api/lab-values`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bulkLabValues: values }),
     });
-    if (!response.ok) return [];
-    const data = await parseJsonResponse<{ success: boolean; labValues: ApiLabValue[] }>(response);
-    return data?.success ? data.labValues || [] : [];
+    if (!response.ok) return emptyResult(values.length);
+    const data = await parseJsonResponse<{
+      success: boolean;
+      labValues?: ApiLabValue[];
+      skippedDuplicates?: number;
+      errorCount?: number;
+    }>(response);
+    if (!data?.success) return emptyResult(values.length);
+    return {
+      saved: data.labValues ?? [],
+      skippedDuplicates: data.skippedDuplicates ?? 0,
+      errorCount: data.errorCount ?? 0,
+    };
   } catch (error) {
     console.warn('Bulk save lab values error:', error);
     Sentry.captureException(error);
-    return [];
+    return emptyResult(values.length);
   }
 }
 

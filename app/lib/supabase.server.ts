@@ -1590,7 +1590,10 @@ export function toApiLabValue(row: DbLabValue) {
 
 export type ApiLabValue = ReturnType<typeof toApiLabValue>;
 
-/** Get all lab values for the authenticated user, newest first. */
+/**
+ * Get active lab values for the authenticated user, newest first.
+ * `entered-in-error` rows are excluded — they exist for audit only.
+ */
 export async function getLabValues(
   client: SupabaseClient,
   metricName?: string,
@@ -1600,6 +1603,7 @@ export async function getLabValues(
   let query = client
     .from('lab_values')
     .select('*')
+    .eq('status', 'active')
     .order('recorded_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -1617,7 +1621,15 @@ export async function getLabValues(
   return (data ?? []) as DbLabValue[];
 }
 
-/** Bulk insert lab values. Returns created rows. */
+/**
+ * Bulk insert lab values. Per-row inserts (in parallel) so a single
+ * 23505 unique_violation doesn't fail the whole batch — duplicates are
+ * counted in `skippedDuplicates`. Mirrors `addMeasurementWithStatus`.
+ *
+ * Dedup is enforced by `uniq_lab_values_user_metric_active` which is
+ * `(user_id, lower(trim(metric_name)), recorded_at) WHERE status='active'`.
+ * Callers can send any casing/whitespace; the index normalises.
+ */
 export async function addLabValues(
   client: SupabaseClient,
   userId: string,
@@ -1630,34 +1642,44 @@ export async function addLabValues(
     recordedAt: string;
     source?: string;
   }>,
-): Promise<DbLabValue[]> {
-  const rows = values.map(v => ({
-    user_id: userId,
-    metric_name: v.metricName,
-    value: v.value,
-    unit: v.unit,
-    reference_low: v.referenceLow ?? null,
-    reference_high: v.referenceHigh ?? null,
-    recorded_at: v.recordedAt,
-    source: v.source || 'lab_import',
+): Promise<{ saved: DbLabValue[]; skippedDuplicates: number; errorCount: number }> {
+  const results = await Promise.all(values.map(v => {
+    const row = {
+      user_id: userId,
+      metric_name: v.metricName,
+      value: v.value,
+      unit: v.unit,
+      reference_low: v.referenceLow ?? null,
+      reference_high: v.referenceHigh ?? null,
+      recorded_at: v.recordedAt,
+      source: v.source || 'lab_import',
+    };
+    return client.from('lab_values').insert(row).select().single();
   }));
 
-  const { data, error } = await client
-    .from('lab_values')
-    .insert(rows)
-    .select();
-
-  if (error) {
-    console.error('Error inserting lab values:', error);
-    return [];
+  const saved: DbLabValue[] = [];
+  let skippedDuplicates = 0;
+  let errorCount = 0;
+  for (const r of results) {
+    if (r.error) {
+      if (r.error.code === POSTGRES_UNIQUE_VIOLATION) {
+        skippedDuplicates++;
+      } else {
+        console.error('Error inserting lab value:', { error: r.error.message, code: r.error.code });
+        errorCount++;
+      }
+      continue;
+    }
+    if (r.data) saved.push(r.data as DbLabValue);
   }
 
-  logAudit(userId, 'LAB_VALUES_CREATED', 'lab_values', undefined, {
-    count: values.length,
-    metrics: values.map(v => v.metricName),
-  });
-
-  return (data ?? []) as DbLabValue[];
+  if (saved.length > 0) {
+    logAudit(userId, 'LAB_VALUES_CREATED', 'lab_values', undefined, {
+      count: saved.length,
+      metrics: saved.map(r => r.metric_name),
+    });
+  }
+  return { saved, skippedDuplicates, errorCount };
 }
 
 /** Delete a single lab value. RLS verifies ownership. */

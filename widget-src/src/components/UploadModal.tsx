@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { UnitSystem, MeasurementSource } from '@roadmap/health-core';
-import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, type PageContent, type ApiMeasurement, type UploadErrorCode } from '../lib/api';
+import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, type PageContent, type UploadErrorCode, type UploadHistory } from '../lib/api';
 import { ReviewTable, type FileResult, type DocumentToSave } from './ReviewTable';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -25,10 +25,7 @@ type ModalState = 'select' | 'processing' | 'review' | 'done';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;
-  // Full active history of blood-test metrics for ReviewTable's pre-save dedup.
-  // Required, not optional — the prior "latest-per-metric" view was too narrow,
-  // missing dupes the LLM extracts from historical columns.
-  bloodTestHistory: ApiMeasurement[];
+  history: UploadHistory;
   onComplete: () => void;
   onStart?: () => Promise<void>;
   onClose: () => void;
@@ -100,14 +97,15 @@ interface HealthUploadAPI {
 const MAX_FILES = 200;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart, onClose, onScreeningUpdate, birthYear, sex, hidden, onProcessingStart, onProcessingEnd, onProgressUpdate }: UploadModalProps) {
+export function UploadModal({ unitSystem, history, onComplete, onStart, onClose, onScreeningUpdate, birthYear, sex, hidden, onProcessingStart, onProcessingEnd, onProgressUpdate }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState({ current: 0, total: 0, fileName: '' });
   const [results, setResults] = useState<FileResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [savedCount, setSavedCount] = useState(0);
-  const [skippedDuplicates, setSkippedDuplicates] = useState(0);
+  const [skippedMeasurements, setSkippedMeasurements] = useState(0);
+  const [skippedLabValues, setSkippedLabValues] = useState(0);
   const [saveErrorCount, setSaveErrorCount] = useState(0);
   const [savedDocCount, setSavedDocCount] = useState(0);
   const [savedLabCount, setSavedLabCount] = useState(0);
@@ -121,7 +119,8 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
   // from a clean slate rather than carrying the previous run's tally.
   const resetSaveCounters = useCallback(() => {
     setSavedCount(0);
-    setSkippedDuplicates(0);
+    setSkippedMeasurements(0);
+    setSkippedLabValues(0);
     setSaveErrorCount(0);
     setSavedDocCount(0);
     setSavedLabCount(0);
@@ -354,14 +353,13 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
               reportDate: result.reportDate,
               values: result.values,
               additionalValues: result.additionalValues || [],
-              unrecognized: result.unrecognized,
               document: result.document ?? undefined,
             });
           } else {
-            allResults.push({ fileName: item.fileName, reportDate: null, values: [], additionalValues: [], unrecognized: [], error: importError || 'Extraction failed' });
+            allResults.push({ fileName: item.fileName, reportDate: null, values: [], additionalValues: [], error: importError || 'Extraction failed' });
           }
         }).catch(() => {
-          allResults.push({ fileName: item.fileName, reportDate: null, values: [], additionalValues: [], unrecognized: [], error: 'Processing failed' });
+          allResults.push({ fileName: item.fileName, reportDate: null, values: [], additionalValues: [], error: 'Processing failed' });
         }).finally(() => {
           completedCount++;
           activeWorkers--;
@@ -494,7 +492,6 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
             reportDate: r.reportDate,
             values: r.values || [],
             additionalValues: r.additionalValues || [],
-            unrecognized: r.unrecognized || [],
             document: r.document ?? undefined,
           }));
         }
@@ -554,18 +551,19 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
         measurements.length > 0 ? bulkSaveMeasurements(measurements) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
         docPayloads.length > 0 ? bulkSaveDocuments(docPayloads) : Promise.resolve([]),
-        labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads) : Promise.resolve([]),
+        labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
       ]);
 
       setSavedCount(savedValues.saved.length);
-      setSkippedDuplicates(savedValues.skippedDuplicates);
-      setSaveErrorCount(savedValues.errorCount);
+      setSkippedMeasurements(savedValues.skippedDuplicates);
+      setSkippedLabValues(savedLabValues.skippedDuplicates);
+      setSaveErrorCount(savedValues.errorCount + savedLabValues.errorCount);
       setSavedDocCount(savedDocs.length);
-      setSavedLabCount(savedLabValues.length);
-      // A run that was 100% duplicates still counts as "ok" — there's nothing
-      // for the user to fix. Only error if everything failed AND none were dupes.
-      const totalSaved = savedValues.saved.length + savedDocs.length + savedLabValues.length;
-      const totalCompleted = totalSaved + savedValues.skippedDuplicates;
+      setSavedLabCount(savedLabValues.saved.length);
+      // 100% duplicates is still "ok" — DB already has the data. Only fail
+      // if everything errored AND nothing was a known-duplicate.
+      const totalSaved = savedValues.saved.length + savedDocs.length + savedLabValues.saved.length;
+      const totalCompleted = totalSaved + savedValues.skippedDuplicates + savedLabValues.skippedDuplicates;
 
       // Update screening dates for documents with screening mappings
       for (const doc of documents) {
@@ -654,7 +652,7 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
           {state === 'review' && (
             <ReviewTable
               results={results}
-              bloodTestHistory={bloodTestHistory}
+              history={history}
               unitSystem={unitSystem}
               birthYear={birthYear}
               sex={sex}
@@ -675,11 +673,16 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
                 {savedLabCount > 0 && savedDocCount > 0 && ', '}
                 {savedDocCount > 0 && `${savedDocCount} document${savedDocCount !== 1 ? 's' : ''}`}
                 {savedCount === 0 && savedLabCount === 0 && savedDocCount === 0
-                  && skippedDuplicates === 0 && saveErrorCount === 0 && 'No items saved'}
+                  && skippedMeasurements === 0 && skippedLabValues === 0 && saveErrorCount === 0 && 'No items saved'}
               </p>
-              {skippedDuplicates > 0 && (
+              {skippedMeasurements > 0 && (
                 <p className="upload-done-skipped">
-                  {skippedDuplicates} value{skippedDuplicates !== 1 ? 's were' : ' was'} already saved at the same date. Close this dialog and click the existing value in the Blood Test Results table to correct it.
+                  {skippedMeasurements} blood test value{skippedMeasurements !== 1 ? 's were' : ' was'} already saved at the same date. Close this dialog and click the existing value in the Blood Test Results table to correct it.
+                </p>
+              )}
+              {skippedLabValues > 0 && (
+                <p className="upload-done-skipped">
+                  {skippedLabValues} additional lab value{skippedLabValues !== 1 ? 's were' : ' was'} already saved at the same date.
                 </p>
               )}
               {saveErrorCount > 0 && (

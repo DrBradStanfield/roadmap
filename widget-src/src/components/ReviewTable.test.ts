@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isScreeningEligible } from './ReviewTable';
+import { isScreeningEligible } from '@roadmap/health-core';
 
 // ---------------------------------------------------------------------------
 // Bug: MRI scan mentioning prostate triggered screening date update for a

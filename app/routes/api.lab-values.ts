@@ -74,8 +74,15 @@ export async function action({ request }: ActionFunctionArgs) {
       );
     }
 
-    const saved = await addLabValues(auth.client, auth.userId, validation.data.bulkLabValues);
-    return json({ success: true, labValues: saved.map(toApiLabValue) });
+    const result = await addLabValues(auth.client, auth.userId, validation.data.bulkLabValues);
+    return json({
+      success: true,
+      labValues: result.saved.map(toApiLabValue),
+      savedCount: result.saved.length,
+      skippedDuplicates: result.skippedDuplicates,
+      errorCount: result.errorCount,
+      totalCount: validation.data.bulkLabValues.length,
+    });
   } catch (error) {
     console.error('Lab values error:', error);
     Sentry.captureException(error, { tags: { feature: 'lab_values' } });

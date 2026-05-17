@@ -746,7 +746,8 @@ GRANT SELECT, INSERT, DELETE ON health_documents TO authenticated;
 -- ===== Create lab_values table =====
 -- Flexible storage for ALL lab test values beyond the 13 core metrics.
 -- Stores value + unit as reported by the lab (no unit conversion).
--- Immutable: no UPDATE policy. Delete + re-upload if incorrect.
+-- metric_name is normalised on insert (lower + trim) for the dedup index;
+-- callers can store any casing/whitespace and reads return it as inserted.
 
 CREATE TABLE IF NOT EXISTS lab_values (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -758,11 +759,21 @@ CREATE TABLE IF NOT EXISTS lab_values (
   reference_high NUMERIC,
   recorded_at TIMESTAMPTZ NOT NULL,
   source TEXT NOT NULL DEFAULT 'lab_import',
+  -- FHIR R4 Observation status. Only 'active' rows feed reads; sticky forward.
+  -- Sets up future click-to-correct on additional lab values; unused for now.
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'entered-in-error')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_lab_values_user_date
   ON lab_values(user_id, recorded_at DESC);
+
+-- One active row per (user, metric_name, recorded_at). Mirrors the
+-- uniq_measurements_user_metric_active pattern. Duplicate active inserts
+-- surface as 23505 and are mapped to skippedDuplicates in the bulk save.
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_lab_values_user_metric_active
+  ON lab_values(user_id, lower(trim(metric_name)), recorded_at)
+  WHERE status = 'active';
 
 ALTER TABLE lab_values ENABLE ROW LEVEL SECURITY;
 

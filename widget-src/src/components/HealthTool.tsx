@@ -23,7 +23,7 @@ import {
   type ApiMedication,
   type ApiScreening,
 } from '@roadmap/health-core';
-import { type ApiSupplement } from '../lib/api';
+import { type ApiSupplement, type ApiLabValue } from '../lib/api';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
@@ -51,6 +51,7 @@ import {
 import {
   loadLatestMeasurements,
   loadAllHistory,
+  loadLabValues,
   saveChangedMeasurements,
   addMeasurement,
   correctMeasurement,
@@ -67,7 +68,6 @@ import {
   trackABConversion,
   type ApiReminderPreference,
   type ApiDocument,
-  getHealthDocuments,
 } from '../lib/api';
 
 // Auth state from Liquid template
@@ -116,6 +116,8 @@ export function HealthTool() {
   // Full blood-test history (all draws, all metrics) for the timeline-matrix UI.
   // Filtered subset of loadAllHistory(); refreshed after each blood-test save.
   const [bloodTestHistory, setBloodTestHistory] = useState<ApiMeasurement[]>([]);
+  const [documentHistory, setDocumentHistory] = useState<ApiDocument[]>([]);
+  const [labValueHistory, setLabValueHistory] = useState<ApiLabValue[]>([]);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
   const [screenings, setScreenings] = useState<ApiScreening[]>([]);
   const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
@@ -140,7 +142,6 @@ export function HealthTool() {
   const [chatPrefetch, setChatPrefetch] = useState<ChatPrefetchData | null>(null);
   const [uploadActive, setUploadActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0, fileName: '' });
-  const [healthDocuments, setHealthDocuments] = useState<ApiDocument[]>([]);
 
   // Clean up debounce timers on unmount to prevent stale API calls
   useEffect(() => {
@@ -176,6 +177,22 @@ export function HealthTool() {
 
   // Get auth state once on mount
   const [authState] = useState<AuthState>(() => getAuthState());
+
+  // Lazy-load additional lab values only when the upload modal opens —
+  // they're only used by the review-matrix dedup/context columns and would
+  // otherwise sit unused on every widget mount. Generation counter
+  // discards stale responses if the user opens/closes the modal fast
+  // enough to trigger overlapping fetches, OR if a post-upload refetch
+  // (handleUploadComplete) is still in flight when the modal reopens.
+  const labValuesFetchGen = useRef(0);
+  useEffect(() => {
+    if (!showUploadModal || !authState.isLoggedIn) return;
+    const myGen = ++labValuesFetchGen.current;
+    loadLabValues().then(rows => {
+      // Skip null (API error) so we don't blank cached history.
+      if (rows && myGen === labValuesFetchGen.current) setLabValueHistory(rows);
+    }).catch(() => {});
+  }, [showUploadModal, authState.isLoggedIn]);
 
   // Toggle a single field's unit override
   const handleToggleFieldUnit = useCallback((field: string) => {
@@ -300,9 +317,8 @@ export function HealthTool() {
           setScreenings(result.screenings);
           if (result.supplements) setSupplements(result.supplements);
           setReminderPreferences(result.reminderPreferences);
-          // Load health documents (fire-and-forget — non-blocking)
-          getHealthDocuments().then(docs => setHealthDocuments(docs));
-          // Load full blood-test history for the timeline-matrix UI (fire-and-forget).
+          setDocumentHistory(result.documents);
+          // Full blood-test history for the timeline-matrix UI (fire-and-forget).
           loadBloodTestHistory();
           // Cache to localStorage for instant display on next page load
           saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, result.reminderPreferences);
@@ -713,12 +729,19 @@ export function HealthTool() {
       setMedications(result.medications);
       setScreenings(result.screenings);
       setReminderPreferences(result.reminderPreferences);
+      setDocumentHistory(result.documents);
       saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, result.reminderPreferences);
     }
+    // labValues are lazy — refresh now so the next modal-open shows the
+    // values this upload just saved without an extra round-trip. Bump the
+    // gen counter so a stale post-upload fetch can't overwrite a fresh
+    // modal-open fetch that started later.
+    const myGen = ++labValuesFetchGen.current;
+    loadLabValues().then(rows => {
+      if (rows && myGen === labValuesFetchGen.current) setLabValueHistory(rows);
+    }).catch(() => {});
     // Refresh full blood-test history so the matrix reflects newly extracted lab rows.
     loadBloodTestHistory();
-    // Reload documents
-    getHealthDocuments().then(docs => setHealthDocuments(docs));
   }, []);
 
   // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel
@@ -801,7 +824,7 @@ export function HealthTool() {
     if (swiperRef.current) {
       swiperRef.current.updateAutoHeight();
     }
-  }, [formStage, supplements, healthDocuments]);
+  }, [formStage, supplements, documentHistory]);
 
   const handleReminderPreferenceChange = useCallback(async (category: string, enabled: boolean) => {
     // Optimistic update
@@ -980,6 +1003,13 @@ export function HealthTool() {
     }
   }, [authState.isLoggedIn, isMobile]);
 
+  // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
+  // HealthTool re-renders (typing, mobile-tab switches, etc.).
+  const uploadHistory = useMemo(
+    () => ({ bloodTests: bloodTestHistory, labValues: labValueHistory, documents: documentHistory }),
+    [bloodTestHistory, labValueHistory, documentHistory],
+  );
+
   const inputPanelProps = {
     inputs,
     onChange: handleInputChange,
@@ -1010,9 +1040,9 @@ export function HealthTool() {
     setShowUploadModal,
     loginUrl: authState.loginUrl,
     activeSuggestionIds,
-    healthDocuments,
+    healthDocuments: documentHistory,
     onDocumentDeleted: (docId: string) => {
-      setHealthDocuments(prev => prev.filter(d => d.id !== docId));
+      setDocumentHistory(prev => prev.filter(d => d.id !== docId));
     },
     onAutoFocusEmail: handleAutoFocusEmail,
   };
@@ -1109,7 +1139,7 @@ export function HealthTool() {
       {(showUploadModal || uploadActive) && authState.isLoggedIn && (
         <UploadModal
           unitSystem={unitSystem}
-          bloodTestHistory={bloodTestHistory}
+          history={uploadHistory}
           onComplete={handleUploadComplete}
           onStart={handleUploadStart}
           onClose={() => setShowUploadModal(false)}
