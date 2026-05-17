@@ -11,11 +11,12 @@ import {
   refHintFor,
   isScreeningEligible,
 } from '@roadmap/health-core';
-import { InlineDatePicker, getCurrentDateValue } from './DatePicker';
+import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api';
 import { labValueLabel } from '../lib/lab-value-labels';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
 import { NumericInputCell } from './NumericInputCell';
+import { DraftDateCell } from './DraftDateCell';
 import { MONTHS_SHORT } from '../lib/constants';
 
 export interface FileResult {
@@ -626,8 +627,6 @@ export function ReviewTable({
         if (!r.error && !r.document && !hasNothingForMatrix) return null;
 
         const date = fileDates[fi];
-        const maxDay = getDaysInMonth(date.month, date.year);
-        const dayOptions = Array.from({ length: maxDay }, (_, i) => i + 1);
         const docTitle = r.document ? (docTitles[fi] ?? r.document.title) : '';
         const docDateIso = r.document ? buildRecordedAt(date).slice(0, 10) : null;
         const isDocDup = r.document ? isDocDuplicate(docTitle, docDateIso, docHistoryIndex) : false;
@@ -668,22 +667,14 @@ export function ReviewTable({
 
                 <div className="review-file-date">
                   <span>Date:</span>
-                  <select
-                    value={date.day || ''}
-                    onChange={(e) => setFileDates(prev => ({ ...prev, [fi]: { ...prev[fi], day: e.target.value || null } }))}
-                    aria-label="Day"
-                    className="review-date-select"
-                  >
-                    <option value="">--</option>
-                    {dayOptions.map(d => (
-                      <option key={d} value={String(d).padStart(2, '0')}>{d}</option>
-                    ))}
-                  </select>
-                  <InlineDatePicker
-                    value={{ year: date.year, month: date.month }}
-                    onChange={(val) => setFileDates(prev => ({ ...prev, [fi]: { ...prev[fi], month: val.month, year: val.year } }))}
-                    shortMonths
-                    yearCount={11}
+                  <DraftDateCell
+                    date={`${date.year}-${date.month.padStart(2, '0')}-${(date.day ?? '01').padStart(2, '0')}`}
+                    needsDay={!date.day}
+                    ariaLabel="Document date"
+                    onChange={picked => {
+                      const [y, m, d] = picked.split('-');
+                      if (y && m && d) setFileDates(prev => ({ ...prev, [fi]: { year: y, month: m, day: d } }));
+                    }}
                   />
                 </div>
 
@@ -825,32 +816,22 @@ function MatrixColumnHeader({ col, onDateChange }: { col: MatrixColumn; onDateCh
       </div>
     );
   }
-  // New columns get day+month+year editing so users can fix LLM-misread
-  // dates AND set the day when the LLM didn't extract one. Without the
-  // day picker, month-only uploads collide with existing day-precise
-  // history at the same metric+month — two separate columns, two saves.
-  const maxDay = getDaysInMonth(col.date.month, col.date.year);
-  const dayOptions = Array.from({ length: maxDay }, (_, i) => i + 1);
+  // New columns reuse DraftDateCell — same visual + native picker as the
+  // live timeline's draft column. When the LLM didn't extract a day we
+  // pass YYYY-MM-01 as a placeholder ISO and flag `needsDay` so the cell
+  // renders "— Mon '24" instead of "1 Mon '24"; allDatesSet keeps save
+  // disabled until the user picks a real day.
+  const iso = `${col.date.year}-${col.date.month.padStart(2, '0')}-${(col.date.day ?? '01').padStart(2, '0')}`;
   return (
-    <div className="bt-cell-value bt-cell-date bt-cell-date-editable">
-      <select
-        value={col.date.day || ''}
-        onChange={(e) => onDateChange(col, { day: e.target.value || null })}
-        aria-label="Day"
-        className="bt-date-day-select"
-      >
-        <option value="">--</option>
-        {dayOptions.map(d => (
-          <option key={d} value={String(d).padStart(2, '0')}>{d}</option>
-        ))}
-      </select>
-      <InlineDatePicker
-        value={{ year: col.date.year, month: col.date.month }}
-        onChange={(val) => onDateChange(col, { month: val.month, year: val.year })}
-        shortMonths
-        yearCount={11}
-      />
-    </div>
+    <DraftDateCell
+      date={iso}
+      needsDay={!col.date.day}
+      ariaLabel="Choose column date"
+      onChange={picked => {
+        const [y, m, d] = picked.split('-');
+        if (y && m && d) onDateChange(col, { year: y, month: m, day: d });
+      }}
+    />
   );
 }
 

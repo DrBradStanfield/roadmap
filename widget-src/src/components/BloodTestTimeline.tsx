@@ -28,6 +28,7 @@ import {
   statusOf,
 } from '../lib/blood-test-cell';
 import { NumericInputCell } from './NumericInputCell';
+import { DraftDateCell } from './DraftDateCell';
 
 // localStorage key for the matrix's typed-but-unsaved state. Persists across
 // page reloads so users don't lose work mid-edit. Cleared on successful Save.
@@ -408,7 +409,7 @@ export function BloodTestTimeline({
           <div ref={scrollSync.registerHeader} onScroll={scrollSync.onScroll} className="bt-scroll-x bt-cell-strip">
             <div className="bt-strip-inner">
               {columns.map((c, i) => {
-                if (c.kind === 'draft') return <DraftDateCell key="draft" date={c.date} onChange={setDraftDate}/>;
+                if (c.kind === 'draft') return <DraftDateCell key="draft" date={c.date} onChange={setDraftDate} ariaLabel="Choose draft batch date"/>;
                 const isPinnedRecent = i === columns.length - 2;
                 return <BatchDateCell key={c.date} date={c.date} pinned={isPinnedRecent}/>;
               })}
@@ -534,38 +535,6 @@ function BatchDateCell({ date, pinned }: { date: string; pinned: boolean }) {
       <div className="bt-date-day">{day} {mon}</div>
       <div className="bt-date-year">'{yr}</div>
     </div>
-  );
-}
-
-function DraftDateCell({ date, onChange }: { date: string; onChange: (date: string) => void }) {
-  const ref = useRef<HTMLInputElement | null>(null);
-  const d = new Date(date + 'T00:00');
-  const day = d.getDate();
-  const mon = MONTH_LABELS[d.getMonth()];
-  const yr = String(d.getFullYear()).slice(-2);
-  const open = () => {
-    try { (ref.current as any)?.showPicker?.(); }
-    catch { ref.current?.click(); }
-  };
-  return (
-    <button type="button" onClick={open}
-            title="Click to change date"
-            className="bt-cell-value bt-cell-draft-date">
-      <span className="bt-date-day">{day} {mon}</span>
-      <div className="bt-draft-date-year-row">
-        <span className="bt-date-year">'{yr}</span>
-        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" aria-hidden="true" className="bt-draft-date-icon">
-          <rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
-          <line x1="2" y1="6.5" x2="14" y2="6.5" stroke="currentColor" strokeWidth="1.3"/>
-          <line x1="5" y1="2" x2="5" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-          <line x1="11" y1="2" x2="11" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-        </svg>
-      </div>
-      <input ref={ref} type="date" value={date}
-             onChange={e => onChange(e.target.value)}
-             className="bt-date-hidden-icon"
-             aria-label="Choose draft batch date"/>
-    </button>
   );
 }
 
