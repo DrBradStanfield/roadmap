@@ -765,6 +765,13 @@ CREATE TABLE IF NOT EXISTS lab_values (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- CREATE TABLE IF NOT EXISTS is a no-op on existing tables, so make sure
+-- the FHIR status column lands on tables that pre-date it. Mirrors the
+-- health_measurements pattern above.
+ALTER TABLE lab_values
+  ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active', 'entered-in-error'));
+
 CREATE INDEX IF NOT EXISTS idx_lab_values_user_date
   ON lab_values(user_id, recorded_at DESC);
 
