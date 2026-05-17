@@ -269,7 +269,10 @@ function buildMatrixModel(
         state: 'editable',
         kind: 'additional',
         fi, ai,
-        initialDisplay: `${av.value} ${av.unit}`,
+        // Number only. The unit is rendered separately as a chip on the
+        // row label (describeRow.unitLabel), and we still need parseLocalisedNumber
+        // to succeed on the cell value at save time.
+        initialDisplay: String(av.value),
         valueSI: av.value,
         displayUnit: av.unit,
       });
