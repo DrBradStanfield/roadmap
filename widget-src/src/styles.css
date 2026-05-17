@@ -4376,8 +4376,11 @@ input[type="number"] {
 }
 
 .bt-cell-value {
+  /* Explicit flex-basis stops empty-content divs (matrix .bt-cell-empty)
+     from collapsing under `min-width: auto`. width: alone with
+     flex-shrink: 0 was not enough — basis defaults to content size. */
+  flex: 0 0 var(--bt-value-w);
   width: var(--bt-value-w);
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
