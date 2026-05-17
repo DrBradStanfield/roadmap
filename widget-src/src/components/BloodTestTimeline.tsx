@@ -774,10 +774,15 @@ function ValueCell({
           if (e.key === 'Escape') { e.preventDefault(); cancel(); }
         }}
         onBlur={() => {
-          // Defer cancel so clicks on adjacent affordances can intercept
-          // before focus loss closes the form.
+          // Save on click-away when the typed value passes validation —
+          // matches the Enter key. If the value is invalid we revert
+          // rather than leaving a half-open form with no focus.
+          // 150ms defer lets clicks on adjacent affordances intercept.
           blurTimerRef.current = window.setTimeout(() => {
-            if (!saving) cancel();
+            if (saving || typed === null) return;
+            const { error } = validateTypedValue(metric, typed, display);
+            if (error) cancel();
+            else void submit();
           }, 150);
         }}
       />
