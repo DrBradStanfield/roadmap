@@ -378,6 +378,29 @@ CREATE UNIQUE INDEX IF NOT EXISTS uniq_measurements_user_metric_active
   ON public.health_measurements(user_id, metric_type, recorded_at)
   WHERE status = 'active';
 
+-- ===== FHIR documentation (psql \d shows these) =====
+
+COMMENT ON COLUMN public.health_measurements.status IS
+  'FHIR R4 Observation status. Only ''active'' rows feed the latest-per-metric view. ''entered-in-error'' rows are kept for audit but invisible to suggestions. Mutated only by the correct_measurement() RPC.';
+
+COMMENT ON COLUMN public.health_measurements.corrects_id IS
+  'FHIR replaces link: when this row is a correction, points at the entered-in-error row it replaces. NULL on original inserts. Self-FK with ON DELETE SET NULL.';
+
+COMMENT ON COLUMN public.health_measurements.source IS
+  'Provenance enum: ''manual'', ''apple_health'', ''fitbit'', ''lab_import'', ''lab_import_edited'' (LLM-extracted then user-corrected at review time), ''manual_correction'' (inserted by correct_measurement RPC). Mirrored by MEASUREMENT_SOURCES in packages/health-core/src/validation.ts.';
+
+COMMENT ON INDEX public.uniq_measurements_user_metric_active IS
+  'Partial UNIQUE index: only ''active'' rows participate. Lets us hold many historical entered-in-error rows for the same (user, metric, recorded_at) while preventing two active rows. Violation surfaces as 23505 and is mapped to HTTP 409 ("Use the correction UI to update it.") by api.measurements.ts.';
+
+COMMENT ON FUNCTION public.correct_measurement(UUID, NUMERIC, TIMESTAMPTZ) IS
+  'FHIR replaces: atomically flip the old row''s status to ''entered-in-error'' and insert a new active row with source=''manual_correction'' and corrects_id pointing at the old row. UPDATE-first-then-INSERT serialises concurrent corrections via the row lock; if a parallel INSERT wins the UNIQUE slot, this RPC catches unique_violation, rolls back the status flip, and re-raises 23505. SECURITY DEFINER + WHERE user_id = auth.uid() enforce ownership.';
+
+COMMENT ON FUNCTION public.enforce_measurement_correction_only() IS
+  'BEFORE UPDATE trigger: rejects any column change other than status. Uses (to_jsonb(NEW) - ''status'') IS DISTINCT FROM (to_jsonb(OLD) - ''status'') so the check is schema-evolution-resilient. Also makes ''entered-in-error'' sticky — reverts to ''active'' are blocked.';
+
+COMMENT ON FUNCTION public.validate_corrects_id_ownership() IS
+  'BEFORE INSERT trigger: rejects any row whose corrects_id references a row owned by a different user. Closes the cross-user FK-forge gap that RLS alone can''t catch on insert.';
+
 -- ===== Audit logs table =====
 -- Tracks all write operations for HIPAA compliance.
 -- Inserted by the service-role admin client server-side.

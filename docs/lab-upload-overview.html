@@ -269,18 +269,18 @@
   <!-- HERO                                                            -->
   <!-- ============================================================== -->
   <header class="hero">
-    <div class="eyebrow">Architecture overview · Existing system</div>
-    <h1>Lab Upload — how it works today</h1>
+    <div class="eyebrow">Architecture overview · Shipped system</div>
+    <h1>Lab Upload — how it works</h1>
     <p class="lead">
-      Users drag a lab PDF/image/ZIP into the widget. A Claude Haiku call extracts target metrics,
-      the server resolves units to SI, and the user confirms before bulk-saving to Supabase.
-      This document maps the current pipeline against the failure path a customer recently reported,
-      to ground the upcoming redesign discussion.
+      Users drag a lab PDF/image/ZIP into the widget. Claude Haiku calls extract target metrics in
+      parallel, the server resolves units to SI, the user reviews and (optionally) edits each value
+      before bulk-saving to Supabase. Saved values are correctable via a FHIR <code>replaces</code>
+      pattern — original values are preserved as <code>entered-in-error</code>, never overwritten.
     </p>
     <div class="meta">
-      <span><strong>Shipped:</strong> v341, March 2026 · commits <code>296d9ab</code>, <code>dee69c2</code>, <code>06aa627</code></span>
+      <span><strong>Shipped:</strong> v341 (March 2026, initial) · redesign May 2026 — commits <code>052ada1</code>, <code>5ab25ad</code>, <code>8f428cb</code>, <code>0f795d7</code>, <code>6a56814</code>, <code>2bce3bf</code></span>
       <span><strong>Companion doc:</strong> <a href="lab-upload.md">docs/lab-upload.md</a> (implementation detail)</span>
-      <span><strong>Status:</strong> <span class="pill pill-warn">Redesign under consideration</span></span>
+      <span><strong>Status:</strong> <span class="pill pill-good">Shipped</span></span>
     </div>
   </header>
 
@@ -288,7 +288,7 @@
   <!-- CUSTOMER COMPLAINT                                              -->
   <!-- ============================================================== -->
   <section class="callout">
-    <div class="who">Customer report — Dr. Michael J. Schmidberger (physicist)</div>
+    <div class="who">Customer report — Dr. Michael J. Schmidberger (physicist) · the failure that prompted the redesign</div>
     <blockquote>
       "Health Roadmap parsed my Apo-B incorrectly. It parsed <strong>0.79</strong> from the PDF,
       but the PDF states <strong>0.5 g/L</strong>. I tried to explain to the AI that this value
@@ -296,9 +296,9 @@
       around this (very important) marker, which was completely wrong for me."
     </blockquote>
     <p class="ask">
-      <strong>His two asks:</strong>
-      <span class="pill pill-bad">1</span> Dual OCR with consensus — discard values when two engines disagree.
-      <span class="pill pill-bad">2</span> Let users correct values from the menu.
+      <strong>Resolution shipped:</strong>
+      <span class="pill pill-good">Edit at review</span> inline-edit the value cell before save (caught the bug at the strongest moment).
+      <span class="pill pill-good">Click-to-correct</span> click any saved value to fix it (FHIR replaces — original preserved as <code>entered-in-error</code>).
     </p>
   </section>
 
@@ -309,16 +309,16 @@
     <strong style="font-size: 13px; color: var(--ink-3); letter-spacing: 0.04em; text-transform: uppercase;">Contents</strong>
     <ol>
       <li><a href="#flow">1 · End-to-end data flow</a></li>
-      <li><a href="#perf">2 · Performance: extraction pipelining</a></li>
+      <li><a href="#perf">2 · Performance: parallel extraction + LLM workers</a></li>
       <li><a href="#states">3 · Upload modal state machine</a></li>
       <li><a href="#contract">4 · LLM extraction contract</a></li>
       <li><a href="#units">5 · Unit resolution decision tree</a></li>
       <li><a href="#confidence">6 · Confidence semantics</a></li>
-      <li><a href="#storage">7 · Storage map (3 tables)</a></li>
-      <li><a href="#gap">8 · The correction gap</a></li>
-      <li><a href="#trace">9 · Tracing Michael's ApoB failure</a></li>
-      <li><a href="#redesign">10 · Where his asks would intervene</a></li>
-      <li><a href="#decisions">11 · Design decisions that constrain redesign</a></li>
+      <li><a href="#storage">7 · Storage map (FHIR Observation)</a></li>
+      <li><a href="#corrections">8 · Corrections — review-edit + click-to-correct</a></li>
+      <li><a href="#schema">9 · FHIR schema (status, corrects_id, partial UNIQUE)</a></li>
+      <li><a href="#rpc">10 · The <code>correct_measurement</code> RPC</a></li>
+      <li><a href="#decisions">11 · Design decisions (post-ship)</a></li>
     </ol>
   </nav>
 
@@ -432,20 +432,21 @@
   <!-- ============================================================== -->
   <!-- SECTION 2 — PERFORMANCE / PIPELINING                            -->
   <!-- ============================================================== -->
-  <h2 id="perf">2 · Performance: extraction pipelining</h2>
+  <h2 id="perf">2 · Performance: parallel extraction + LLM workers</h2>
   <p>
-    Single LLM call per file. The widget runs a producer/consumer pipeline
-    (<code>processPipeline()</code> in <code>UploadModal.tsx</code>) so file extraction overlaps
-    with the in-flight LLM call. The producer extracts pages (pdf.js, JSZip, canvas);
-    the consumer sends them to the LLM.
+    The widget runs a producer/consumer pipeline (<code>processPipeline()</code> in
+    <code>UploadModal.tsx</code>). <strong>3 parallel pdf.js extractors</strong> feed a queue;
+    <strong>5 LLM workers</strong> drain it. Wall-clock for a 12-file ZIP drops from
+    ~50s (concurrency 1) to ~12s (the longest-LLM-call + queue drain). Verified live in
+    Chrome DevTools: max 5 concurrent <code>/api/lab-import</code> calls in flight.
   </p>
 
   <div class="diagram">
     <svg viewBox="0 0 980 220" width="100%" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, sans-serif;">
       <g font-size="12">
         <!-- Header -->
-        <text x="20" y="22" font-weight="700" fill="#1a1a1a">Current (pipelined, concurrency 1)</text>
-        <text x="20" y="40" font-size="11" fill="#767676">Extraction of file N+1 overlaps with the LLM call for file N. API busy ~100% of wall time.</text>
+        <text x="20" y="22" font-weight="700" fill="#1a1a1a">Shipped: 3 extractors + 5 LLM workers in parallel</text>
+        <text x="20" y="40" font-size="11" fill="#767676">EXTRACT_CONCURRENCY=3, LLM_CONCURRENCY=5 in UploadModal.tsx. Extractors keep the queue feeding 5 LLM workers without UI jank.</text>
 
         <!-- Time axis -->
         <line x1="80" y1="60" x2="900" y2="60" stroke="#c8c8c8" />
@@ -492,18 +493,19 @@
       </g>
     </svg>
     <div class="diagram-caption">
-      Concurrency = 1 at the LLM step: <code>while (activeWorkers &lt; 1 &amp;&amp; queue.length &gt; 0)</code>
-      at <code>UploadModal.tsx:313</code>. Set in commit <code>011b906</code> (Mar 27 2026) when the
-      pipeline was rewritten to overlap extraction with the in-flight LLM call.
+      <code>LLM_CONCURRENCY = 5</code> + <code>EXTRACT_CONCURRENCY = 3</code> in
+      <code>UploadModal.tsx</code>. The producer is a worker pool over a shared
+      <code>extractIndex</code> (safe on single-threaded JS); the consumer is
+      <code>tryStartWorker()</code> draining the queue with up to 5 LLM calls in flight.
     </div>
   </div>
 
-  <h3>Why concurrency 1 today (and what unblocks more)</h3>
+  <h3>Why 5 + 3</h3>
   <ul style="font-size: 14px;">
-    <li><strong>Anthropic Build Tier 1 cap.</strong> 10K output tokens/min. Unified extraction emits up to ~4K output tokens per file (markdown conversion of scans/letters is the worst case). Two concurrent files = ~8K/min (safe); three = ~12K/min (429s).</li>
-    <li><strong>The pipelining trick.</strong> Because pdf.js extraction (~3–5s for scanned PDFs) and the LLM call (~5s) are roughly equal in duration, overlapping them gives the same wall-clock as concurrency 2 *if* extraction is the bottleneck. For text-heavy PDFs where extraction is fast (&lt;1s), the LLM dominates and concurrency 2 would clearly win.</li>
-    <li><strong>Server-side retry on 429.</strong> <code>callAnthropic()</code> in <code>anthropic.server.ts</code> retries twice with exponential backoff. So even at concurrency 2 on Tier 1, occasional 429s are absorbed silently (with added latency).</li>
-    <li><strong>Bumping to concurrency 2 is a one-character change</strong> (<code>&lt; 1</code> → <code>&lt; 2</code>) once Tier 2 is confirmed. No queue/UI refactor needed.</li>
+    <li><strong>Anthropic Build Tier 2 cap.</strong> 80K output tokens/min. Lab-report extraction emits ~500–1,500 output tokens per call (scan/letter markdown conversion is the worst case at ~4K). 5 concurrent calls × 1.5K avg ≈ 7.5K/min — comfortable.</li>
+    <li><strong>Extraction parallelism unblocks the pipeline.</strong> pdf.js extraction is CPU-bound on the main thread (~2–3s per file). With 1 extractor, LLM workers starve — they finish in ~5s but the next item isn't ready. 3 extractors keep the queue feeding 5 workers without UI jank.</li>
+    <li><strong>Server-side retry on 429.</strong> <code>callAnthropic()</code> in <code>anthropic.server.ts</code> retries twice with exponential backoff. Absorbs occasional bursts above the per-second cap.</li>
+    <li><strong>Verified in production:</strong> 13-call upload on 12-file ZIP showed <code>maxConcurrent = 5</code> in DevTools timing (commit <code>052ada1</code>).</li>
   </ul>
 
   <h3>A separate path: Anthropic Batch API for 20+ files</h3>
@@ -726,17 +728,17 @@
   <!-- ============================================================== -->
   <!-- SECTION 6 — STORAGE                                             -->
   <!-- ============================================================== -->
-  <h2 id="storage">7 · Storage map</h2>
-  <p>Three tables receive data from one upload. All writes carry <code>source: 'lab_import'</code> for future filtering.</p>
+  <h2 id="storage">7 · Storage map (FHIR Observation)</h2>
+  <p>Three tables receive data from one upload. <code>health_measurements</code> follows the FHIR R4 <code>Observation</code> shape: rows are immutable except for the <code>status</code> column, which is mutated only by the <code>correct_measurement</code> RPC (§10).</p>
 
   <table>
-    <thead><tr><th>Table</th><th>Receives</th><th>Schema highlights</th><th>Mutable?</th></tr></thead>
+    <thead><tr><th>Table</th><th>Receives</th><th>Schema highlights</th><th>Mutability</th></tr></thead>
     <tbody>
       <tr>
         <td><code>health_measurements</code></td>
         <td>The 11 core metrics — converted to SI canonical</td>
-        <td><code>metric_type</code>, <code>value</code> (SI), <code>recorded_at</code>, <code>source</code>, <code>external_id</code></td>
-        <td><span class="pill pill-bad">No</span> append-only (no UPDATE policy)</td>
+        <td><code>metric_type</code>, <code>value</code> (SI), <code>recorded_at</code>, <code>source</code>, <code>external_id</code>, <strong><code>status</code></strong> (<code>'active'</code> | <code>'entered-in-error'</code>), <strong><code>corrects_id</code></strong> (self-FK)</td>
+        <td><span class="pill pill-warn">Status-only via RPC</span></td>
       </tr>
       <tr>
         <td><code>lab_values</code></td>
@@ -753,48 +755,219 @@
     </tbody>
   </table>
 
+  <h3><code>source</code> enum values (<code>MEASUREMENT_SOURCES</code> in <code>validation.ts</code>)</h3>
+  <table>
+    <thead><tr><th>Value</th><th>When it's used</th></tr></thead>
+    <tbody>
+      <tr><td><code>manual</code></td><td>User typed into the form (default)</td></tr>
+      <tr><td><code>lab_import</code></td><td>LLM-extracted, not edited at review time</td></tr>
+      <tr><td><code>lab_import_edited</code></td><td>LLM-extracted then user-corrected at review time (tracks digit misreads caught early)</td></tr>
+      <tr><td><code>manual_correction</code></td><td>Inserted by the <code>correct_measurement</code> RPC (post-save correction)</td></tr>
+      <tr><td><code>apple_health</code>, <code>fitbit</code></td><td>Future HealthKit-style imports</td></tr>
+    </tbody>
+  </table>
+
+  <p style="font-size: 13.5px;">
+    <strong>Partial UNIQUE index</strong> <code>uniq_measurements_user_metric_active</code> on
+    <code>(user_id, metric_type, recorded_at) WHERE status = 'active'</code> — guarantees at most
+    one active row per slot. Historical <code>entered-in-error</code> rows coexist freely.
+    A duplicate active insert surfaces as Postgres <code>23505</code> → mapped to HTTP <code>409</code> with
+    "Use the correction UI to update it."
+  </p>
   <p style="font-size: 13.5px;">
     <strong>What is <em>not</em> stored:</strong> the original PDF, the LLM response, the
     extracted text/images, the <code>displayValue</code>/<code>displayUnit</code> pair, or the
-    confidence rating. After save, all we have is the SI value, the date, and the
-    <code>source</code> tag. There is no audit trail back to "which upload session produced this row".
+    confidence rating. After save, all we have is the SI value, the date, the
+    <code>source</code> tag, the <code>status</code>, and any <code>corrects_id</code> link.
   </p>
 
   <!-- ============================================================== -->
-  <!-- SECTION 7 — CORRECTION GAP                                      -->
+  <!-- SECTION 8 — CORRECTIONS (review-edit + click-to-correct)        -->
   <!-- ============================================================== -->
-  <h2 id="gap">8 · The correction gap</h2>
+  <h2 id="corrections">8 · Corrections — review-edit + click-to-correct</h2>
   <p>
-    Once a wrong value is saved, here is what a user can — and cannot — do today.
+    Two surfaces let the user fix a wrong value, intervening at different moments:
   </p>
 
   <div class="grid-2">
-    <div class="card" style="border-left: 3px solid var(--good);">
-      <h3 style="color: var(--good);">What works</h3>
-      <ul style="font-size: 13.5px;">
-        <li>Re-upload the corrected PDF — produces a new measurement at the same date. <em>But:</em> duplicate detection (same metric + same date prefix) flags it as "Already saved" and pre-unchecks it.</li>
-        <li>Type a new value into the longitudinal field and click <strong>Save</strong> — adds a new row at today's date.</li>
-        <li>Delete a single measurement from the history view (<code>DELETE /api/measurements</code> with <code>measurementId</code>).</li>
+    <div class="card" style="border-left: 3px solid var(--brand);">
+      <h3>① Edit at review time</h3>
+      <p style="font-size: 13.5px;">
+        In <code>ReviewTable.tsx</code>, each value cell is a numeric input (<code>type="text"</code>,
+        <code>inputMode="decimal"</code>, locale-aware so <code>0,5</code> and <code>0.5</code>
+        both parse). User types over the LLM's extraction before clicking
+        <strong>Save</strong>. An "edited from 1.5" badge renders inline so the change is visible.
+      </p>
+      <ul style="font-size: 13px; color: var(--ink-3);">
+        <li>Edited rows save with <code>source: 'lab_import_edited'</code>.</li>
+        <li>Unedited rows save with <code>source: 'lab_import'</code> (server default).</li>
+        <li>Catches the bug at the strongest moment: user is looking at the PDF and the extracted value side-by-side.</li>
       </ul>
     </div>
-    <div class="card" style="border-left: 3px solid var(--bad);">
-      <h3 style="color: var(--bad);">What doesn't work</h3>
-      <ul style="font-size: 13.5px;">
-        <li><strong>No edit-extracted-value UI.</strong> The review-table value cell is a <code>&lt;span&gt;</code> (<code>ReviewTable.tsx:428</code>). User can uncheck but not type a corrected number.</li>
-        <li><strong>Chatbot is read-only against measurements.</strong> Telling it "that ApoB is wrong" can't change <code>health_measurements</code>. The system prompt has no tool to update measurements; the row stays in chat context and continues to drive advice.</li>
-        <li><strong>Append-only history.</strong> Once saved, a row can be deleted but never edited. The original wrong value can never be transformed in place.</li>
-        <li><strong>No re-OCR path.</strong> No "the LLM got this wrong, try a different model" affordance.</li>
-      </ul>
+    <div class="card" style="border-left: 3px solid var(--brand);">
+      <h3>② Click-to-correct after save</h3>
+      <p style="font-size: 13.5px;">
+        In <code>BloodTestTimeline.tsx</code>, every saved value is a clickable button
+        (<code>bt-cell-clickable</code>, <code>title="Click to correct this value"</code>).
+        Clicking opens an inline edit form. Enter or click-away saves (if validation passes);
+        Escape discards. Behind the scenes:
+      </p>
+      <ol style="font-size: 13px;">
+        <li>Widget calls <code>correctMeasurement(oldId, newValueSI)</code> → POST <code>/api/measurements</code>.</li>
+        <li>The <code>correct_measurement</code> RPC (§10) flips the old row's <code>status</code> to <code>entered-in-error</code> AND inserts a new row with <code>source='manual_correction'</code> + <code>corrects_id=oldId</code>.</li>
+        <li>Audit log records <code>MEASUREMENT_CORRECTED</code> with <code>{oldId}</code>.</li>
+        <li>Widget optimistically patches local state — no refetch unless the row vanished mid-flight (rare).</li>
+      </ol>
     </div>
   </div>
 
+  <h3>Failure modes the UI surfaces</h3>
+  <ul style="font-size: 14px;">
+    <li><strong>409 conflict.</strong> Another value was saved at this (metric, date) during the round-trip. Server returns 409; widget shows <em>"Another value was saved at this date. Refresh and try again."</em></li>
+    <li><strong>404 not found.</strong> Row missing, not owned, or already corrected. Widget shows <em>"This value was deleted or already updated. Refresh to see the latest."</em></li>
+    <li><strong>Network error.</strong> Form stays open with <em>"Could not save. Check your connection and try again."</em> — user can retry without re-typing.</li>
+  </ul>
+
+  <h3>Re-upload behaviour (idempotent)</h3>
+  <p style="font-size: 14px;">
+    Re-uploading the same ZIP shows an <strong>"Already saved"</strong> badge on every row whose
+    <code>(metric, recorded_at)</code> matches an existing active row. The checkbox is pre-unchecked.
+    If the user force-re-checks and clicks Save, the server's partial UNIQUE index rejects the dupe
+    (Postgres <code>23505</code>) and the bulk handler reports it in <code>skippedDuplicates</code>.
+    The done screen reads: <em>"N values were already saved at the same date. Close this dialog and click
+    the existing value in the Blood Test Results table to correct it."</em>
+  </p>
+
   <!-- ============================================================== -->
-  <!-- SECTION 8 — TRACE                                               -->
+  <!-- SECTION 9 — Schema migration                                    -->
   <!-- ============================================================== -->
-  <h2 id="trace">9 · Tracing Michael's ApoB failure through the pipeline</h2>
+  <h2 id="schema">9 · FHIR schema (<code>status</code>, <code>corrects_id</code>, partial UNIQUE)</h2>
   <p>
-    Reconstructing the path his <code>0.5 g/L</code> took to become a stored <code>0.79 g/L</code>.
-    Marked steps: <span class="pill pill-bad">●</span> bug occurs · <span class="pill pill-warn">●</span> intervention point missing.
+    Three additions to <code>health_measurements</code> + two triggers + a partial UNIQUE index.
+    See <code>supabase/rls-policies.sql</code> for the canonical text (with <code>COMMENT ON</code>
+    annotations).
+  </p>
+
+  <h3>Columns</h3>
+  <table>
+    <thead><tr><th>Column</th><th>Type</th><th>Semantics</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>status</code></td>
+        <td><code>TEXT NOT NULL DEFAULT 'active' CHECK IN ('active', 'entered-in-error')</code></td>
+        <td>FHIR R4 Observation status. Only <code>active</code> rows feed reads. Sticky forward (no revert).</td>
+      </tr>
+      <tr>
+        <td><code>corrects_id</code></td>
+        <td><code>UUID REFERENCES health_measurements(id) ON DELETE SET NULL</code></td>
+        <td>Self-FK: this row replaces <code>corrects_id</code>. NULL on originals. <code>SET NULL</code> on delete so a hard-deleted old row doesn't cascade.</td>
+      </tr>
+      <tr>
+        <td colspan="3">
+          <strong>Partial UNIQUE index</strong> <code>uniq_measurements_user_metric_active</code> ON
+          <code>(user_id, metric_type, recorded_at) WHERE status = 'active'</code> — at most one active row per slot.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Defence-in-depth (4 layers)</h3>
+  <table>
+    <thead><tr><th style="width: 30%;">Layer</th><th>What it catches</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>L1 · Postgres grants</strong><br><code>REVOKE UPDATE ON health_measurements FROM authenticated</code></td>
+        <td>Users have no direct UPDATE permission via PostgREST, raw SQL, or the Supabase JS client. The RPC is the only writer.</td>
+      </tr>
+      <tr>
+        <td><strong>L2 · RPC ownership check</strong><br><code>WHERE user_id = auth.uid()</code></td>
+        <td>The <code>correct_measurement</code> RPC is <code>SECURITY DEFINER</code> but explicitly checks <code>auth.uid()</code> against the row's <code>user_id</code> in the UPDATE step. Forged <code>oldId</code> values are rejected.</td>
+      </tr>
+      <tr>
+        <td><strong>L3 · BEFORE UPDATE trigger</strong><br><code>enforce_measurement_correction_only()</code></td>
+        <td>Schema-resilient guard using <code>to_jsonb(NEW) - 'status' IS DISTINCT FROM to_jsonb(OLD) - 'status'</code>. Any column change other than <code>status</code> raises. Also blocks reverts away from <code>entered-in-error</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>L4 · BEFORE INSERT trigger</strong><br><code>validate_corrects_id_ownership()</code></td>
+        <td>Rejects any INSERT whose <code>corrects_id</code> references another user's row. Closes the cross-user FK-forge gap that RLS alone can't catch on insert.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 10 — RPC                                                -->
+  <!-- ============================================================== -->
+  <h2 id="rpc">10 · The <code>correct_measurement</code> RPC</h2>
+  <p>
+    Atomic UPDATE-first-then-INSERT, <code>SECURITY DEFINER</code> with explicit
+    <code>auth.uid()</code> ownership check.
+    <strong>Race-safe:</strong> two concurrent corrections on the same row serialise via Postgres
+    row-locking. The loser sees <code>ROW_COUNT = 0</code> and raises "not correctable". A naïve
+    SELECT-then-UPDATE would let both calls observe <code>status = 'active'</code> under MVCC and
+    produce two active replacements.
+  </p>
+
+  <pre><span class="c">CREATE OR REPLACE FUNCTION correct_measurement(
+  old_measurement_id UUID,
+  new_value          NUMERIC,
+  new_recorded_at    TIMESTAMPTZ DEFAULT NULL
+) RETURNS UUID AS $$
+DECLARE
+  old_row    public.health_measurements%ROWTYPE;
+  rows_affected INTEGER;
+  new_id     UUID;
+BEGIN
+  -- 1. Atomic lock-and-check: flip status to entered-in-error
+  --    only if (a) the row is the caller's, (b) status is still 'active'.
+  --    Concurrent callers serialise here — the loser gets rows_affected=0.
+  UPDATE public.health_measurements
+     SET status = 'entered-in-error'
+   WHERE id = old_measurement_id
+     AND user_id = auth.uid()
+     AND status = 'active'
+   RETURNING * INTO old_row;
+
+  GET DIAGNOSTICS rows_affected = ROW_COUNT;
+  IF rows_affected = 0 THEN
+    RAISE EXCEPTION 'Measurement not found or not correctable';
+  END IF;
+
+  -- 2. Insert the corrected row, linked to the now-flagged old row.
+  BEGIN
+    INSERT INTO public.health_measurements
+      (user_id, metric_type, value, recorded_at, source, corrects_id)
+    VALUES
+      (old_row.user_id, old_row.metric_type, new_value,
+       COALESCE(new_recorded_at, old_row.recorded_at),
+       'manual_correction', old_measurement_id)
+    RETURNING id INTO new_id;
+  EXCEPTION WHEN unique_violation THEN
+    -- Another active row was inserted at this (metric, recorded_at)
+    -- between our UPDATE and our INSERT. Re-raise so the route maps to 409.
+    RAISE EXCEPTION 'Conflict: another value was saved at this date while you were correcting. Refresh and try again.'
+      USING ERRCODE = '23505';
+  END;
+
+  RETURN new_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';</span></pre>
+
+  <p style="font-size: 14px;">
+    <strong>Result mapping at the API boundary</strong> (<code>api.measurements.ts</code>):
+  </p>
+  <ul style="font-size: 14px;">
+    <li><code>'ok'</code> → HTTP 200, <code>{ success: true, newId }</code> + audit log <code>MEASUREMENT_CORRECTED</code> with <code>{ oldId }</code>.</li>
+    <li><code>'conflict'</code> (23505) → HTTP 409 with <em>"Another value was saved at this date while you were correcting. Refresh and try again."</em></li>
+    <li><code>'not_found'</code> → HTTP 404 with <em>"Measurement not found or not correctable"</em> — same message regardless of which of (missing / not owned / already corrected) so we don't leak ownership.</li>
+  </ul>
+
+  <!-- ============================================================== -->
+  <!-- LEGACY: TRACE of Michael's failure (kept as historical context) -->
+  <!-- ============================================================== -->
+  <h2 id="trace" style="color: var(--ink-3);">Appendix · Tracing Michael's ApoB failure (historical)</h2>
+  <p style="font-size: 13.5px; color: var(--ink-3);">
+    Pre-redesign trace. Steps 4 and 7 (the no-edit-path gaps that prompted the work) are now
+    addressed by §8. Kept here for context on the motivating bug.
   </p>
 
   <div class="trace">
@@ -886,47 +1059,15 @@
     </div>
   </div>
 
-  <!-- ============================================================== -->
-  <!-- SECTION 9 — WHERE HIS ASKS LAND                                 -->
-  <!-- ============================================================== -->
-  <h2 id="redesign">10 · Where Michael's asks would intervene</h2>
+  <hr class="soft" />
 
-  <div class="grid-2">
-    <div class="card" style="border-left: 3px solid var(--brand);">
-      <h3>Ask 1 — dual OCR with consensus</h3>
-      <p style="font-size: 13.5px;">
-        Intervenes at <strong>step 2</strong> of the trace. Today's pipeline trusts a single
-        Haiku call. Possible shapes:
-      </p>
-      <ul style="font-size: 13.5px;">
-        <li><strong>Two Claude calls</strong> with different temperatures or different prompts; require value-level agreement to mark <code>confidence: high</code>.</li>
-        <li><strong>Claude + a non-LLM OCR</strong> (Tesseract or a vendor) for the numeric fields; consensus required, otherwise downgrade to <code>low</code> (pre-unchecked).</li>
-        <li><strong>Same prompt, two models</strong> — Haiku + Sonnet, or Haiku + a vision-OCR specialised model. Cheaper than Sonnet-twice; catches digit misreads of the kind Michael hit.</li>
-      </ul>
-      <p style="font-size: 13px; color: var(--ink-3); margin-top: 8px;">
-        Worth noting: today, confidence is advisory. A consensus check only helps if disagreement
-        actually <em>blocks</em> the value from being pre-checked. That's a UX call.
-      </p>
-    </div>
-    <div class="card" style="border-left: 3px solid var(--brand);">
-      <h3>Ask 2 — let users correct values</h3>
-      <p style="font-size: 13.5px;">
-        Intervenes at <strong>steps 4 and 7</strong> of the trace. Two surfaces:
-      </p>
-      <ul style="font-size: 13.5px;">
-        <li><strong>Edit during review</strong> — turn <code>&lt;span className="review-row-value"&gt;</code> into an editable input. Cheapest change; catches the bug at the strongest moment (user is looking at the PDF and the extracted value side by side).</li>
-        <li><strong>Edit after save</strong> — currently impossible because <code>health_measurements</code> has no UPDATE RLS policy. Would require either making rows mutable (breaks the audit-trail design) or modelling a correction as <code>delete + insert</code> with a paired <code>corrects_id</code> reference.</li>
-      </ul>
-    </div>
-  </div>
-
-  <h3>Other intervention points worth thinking about</h3>
+  <h3>Future interventions not in scope this round</h3>
   <ul style="font-size: 14px;">
-    <li><strong>Validation ranges as guard rails:</strong> ApoB &lt; 0.3 or &gt; 2.5 g/L is rare enough to warrant a "double-check this" prompt. Today, anything in the wide validation range passes silently.</li>
-    <li><strong>Cross-metric sanity:</strong> if LDL and ApoB both extracted, they should roughly correlate. A digit misread on one would show up. Not currently checked.</li>
-    <li><strong>Show the PDF alongside the value:</strong> the v2 list in <code>lab-upload.md</code> already mentions "OCR confidence preview — show rendered PDF page alongside extracted values for visual verification". This is the same idea.</li>
-    <li><strong>Chatbot write tool:</strong> a <code>correct_measurement</code> tool exposed to the bot would let "this ApoB is wrong, it's 0.5" actually update the row. Not free — opens a write surface that needs careful confirmation UX.</li>
-    <li><strong>Tag every measurement with provenance:</strong> persist <code>displayValue</code>, <code>displayUnit</code>, model name, confidence, and a hash of the source PDF page. Lets us go back and re-OCR with a better model when one ships.</li>
+    <li><strong>Dual-OCR consensus.</strong> Two Claude calls (or Claude + a vision-OCR specialist) with value-level agreement gating <code>confidence: high</code>. Rejected for this round (D4 below): meaningful cost (~2× LLM spend), questionable ROI now that the user has two correction surfaces. Revisit if production correction frequency stays high.</li>
+    <li><strong>Validation ranges as guard rails.</strong> ApoB &lt; 0.3 or &gt; 2.5 g/L is rare enough to warrant a "double-check this" prompt. The threshold helpers in <code>units.ts</code> already encode the ranges — wiring them into the review UI is small.</li>
+    <li><strong>Show the PDF page alongside the value</strong> at review time. Strongest signal for digit-misread catches.</li>
+    <li><strong>Chatbot write tool.</strong> A <code>correct_measurement</code> tool exposed to the bot would let "that ApoB is wrong, it's 0.5" actually update the row. Opens a write surface that needs careful confirmation UX.</li>
+    <li><strong>Provenance preservation.</strong> Persist <code>displayValue</code>, <code>displayUnit</code>, model name, and a hash of the source PDF page so we can re-OCR with a better model when one ships.</li>
   </ul>
 
   <hr class="soft" />
@@ -934,16 +1075,34 @@
   <!-- ============================================================== -->
   <!-- SECTION 11 — DESIGN DECISIONS                                   -->
   <!-- ============================================================== -->
-  <h2 id="decisions">11 · Design decisions that constrain the redesign</h2>
+  <h2 id="decisions">11 · Design decisions (post-ship)</h2>
   <p>
-    Sourced from <a href="lab-upload.md">docs/lab-upload.md</a> §"Design Decisions" plus what
-    was verified live in the code. These are the load-bearing choices a redesign should
-    either preserve or knowingly overturn.
+    Load-bearing choices that future work should preserve unless deliberately overturning.
   </p>
 
   <table>
-    <thead><tr><th style="width: 24%;">Decision</th><th style="width: 38%;">Why it was chosen</th><th>What overturning it would cost</th></tr></thead>
+    <thead><tr><th style="width: 24%;">Decision</th><th style="width: 38%;">Why</th><th>What overturning costs</th></tr></thead>
     <tbody>
+      <tr>
+        <td><strong>D1 · Inline-edit at review time</strong></td>
+        <td>Catches LLM digit misreads at the strongest moment — user sees the source PDF and the extracted value side-by-side. Edited rows tagged <code>lab_import_edited</code> for audit analytics.</td>
+        <td>Reintroduces the original "no way to fix wrong extractions" gap. Don't overturn.</td>
+      </tr>
+      <tr>
+        <td><strong>D2 · FHIR <code>replaces</code> for post-save corrections</strong></td>
+        <td>Append-only data with status mutation only via the <code>correct_measurement</code> RPC. Old values preserved as <code>entered-in-error</code>; new values link via <code>corrects_id</code>. Matches FHIR R4 <code>Observation</code> semantics and plays nicely with future EHR/Apple HealthKit export.</td>
+        <td>Alternative was true-UPDATE (loses prior value) or delete-and-re-add (loses correction semantics). Either weakens the audit trail.</td>
+      </tr>
+      <tr>
+        <td><strong>D3 · Concurrency 5 LLM × 3 extractors</strong></td>
+        <td>Tier 2 absorbs 5 concurrent ~1.5K-token extractions. 3 parallel pdf.js workers keep the queue feeding the LLM workers without UI jank.</td>
+        <td>Bumping further hits Anthropic Tier 2's 80K/min output cap on scan-heavy uploads. Increasing extractor count hurts main-thread responsiveness.</td>
+      </tr>
+      <tr>
+        <td><strong>D4 · No dual-OCR / second-engine consensus</strong></td>
+        <td>~2× LLM spend; ROI unclear once users have two correction surfaces. Revisit if production correction frequency stays high.</td>
+        <td>Deferred, not rejected — see "Future interventions" above.</td>
+      </tr>
       <tr>
         <td><strong>Server-side system prompt</strong></td>
         <td>Prevents prompt injection — a malicious PDF can't override extraction instructions because the content is in the user message, not the system prompt.</td>
@@ -960,24 +1119,14 @@
         <td>Security regression. Don't overturn.</td>
       </tr>
       <tr>
-        <td><strong>Append-only <code>health_measurements</code></strong></td>
-        <td>Mirrors the Apple Health model — measurements are facts at a moment in time. No UPDATE RLS policy. Maintains a clean audit trail.</td>
-        <td>FHIR/audit story changes. Overturning is a deliberate tradeoff worth discussing in the redesign — see "in-place vs replaces vs delete-and-re-add" below.</td>
-      </tr>
-      <tr>
         <td><strong>Server-side unit resolution</strong></td>
         <td>Centralises all unit logic in <code>units.ts</code> + <code>anthropic.server.ts</code>. Client receives values ready to save.</td>
         <td>Duplicated logic, more places to drift. Preserve.</td>
       </tr>
       <tr>
-        <td><strong>One LLM call per file</strong> (no cross-file batching in the prompt)</td>
+        <td><strong>One LLM call per page-list</strong> (no cross-file batching in the prompt)</td>
         <td>Prevents cross-contamination between files from different dates/labs/patients. Simpler error handling — one file fails, others unaffected.</td>
         <td>Save a few cents per upload, gain a tangled prompt and harder failure-mode reasoning. Preserve.</td>
-      </tr>
-      <tr>
-        <td><strong>Pipelined producer/consumer at concurrency 1</strong></td>
-        <td>Today: a deliberate match to Anthropic Build Tier 1's 10K output tokens/min cap. The pipelining trick keeps the API busy near-continuously even at concurrency 1.</td>
-        <td>If on Tier 2, raising to concurrency 2 is a one-character change (<code>&lt; 1</code> → <code>&lt; 2</code>) and gives ~40% wall-clock improvement for 3–5 file uploads.</td>
       </tr>
       <tr>
         <td><strong>Claude Haiku 4.5</strong> (not Sonnet)</td>
@@ -991,43 +1140,23 @@
       </tr>
       <tr>
         <td><strong>Confidence is advisory, not gating</strong></td>
-        <td>Low-confidence rows are pre-unchecked (<code>ReviewTable.tsx:144</code>) but still visible — the user can override and save them. The system never silently drops a value.</td>
+        <td>Low-confidence rows are pre-unchecked but still visible — the user can override and save them. The system never silently drops a value.</td>
         <td>Switching to "gating" (refuse to display low-confidence values) would prevent some bad saves but force users to re-upload more often. Status quo treats the user as the final arbiter.</td>
       </tr>
     </tbody>
   </table>
 
-  <h3>The append-only question, in FHIR terms</h3>
-  <p>
-    The current design follows Apple HealthKit's "delete + re-add" pattern. FHIR's official
-    answer is different: it uses the <code>entered-in-error</code> status on the original
-    <code>Observation</code> resource, optionally with a new <code>Observation</code> that
-    references it via <code>replaces</code>. Both records remain visible in history; only
-    the corrected one is canonical. This is closer to "soft delete + replacement record"
-    than to "UPDATE in place." A redesign that needs to support post-save correction has three
-    flavours:
-  </p>
-  <ol style="font-size: 14px;">
-    <li><strong>Delete + re-enter</strong> (today). One row in DB after the fix. Loses the
-      "this used to read 0.79" audit trail. Cheap to implement.</li>
-    <li><strong>FHIR-style replacement</strong>. Mark old row <code>entered-in-error</code>,
-      insert new row with <code>corrects_id → old.id</code>. Two rows in DB, history view filters by status.
-      Needs a schema column + a small RLS-update policy on a single boolean.</li>
-    <li><strong>True in-place UPDATE</strong>. Lose the prior value entirely. Cheapest UX,
-      worst audit story. Not recommended.</li>
-  </ol>
-
   <p style="margin-top: 32px; font-size: 12.5px; color: var(--ink-3); border-top: 1px solid var(--line); padding-top: 16px;">
-    Sources read for this document:
+    Canonical sources:
     <code>docs/lab-upload.md</code>,
-    <code>app/lib/anthropic.server.ts</code>,
-    <code>app/routes/api.lab-import.ts</code>,
-    <code>app/routes/api.measurements.ts</code>,
-    <code>widget-src/src/components/UploadModal.tsx</code> (incl. <code>processPipeline()</code> at L289–389),
-    <code>widget-src/src/components/ReviewTable.tsx</code>,
-    <code>packages/health-core/src/units.ts</code>,
-    <code>app/lib/chat.server.ts</code>,
-    <code>app/lib/chat-classifier.server.ts</code>.
+    <code>supabase/rls-policies.sql</code> (FHIR schema + RPC + triggers),
+    <code>app/lib/anthropic.server.ts</code> (extraction + unit resolution),
+    <code>app/lib/supabase.server.ts</code> (<code>addMeasurementWithStatus</code>, <code>correctMeasurement</code>),
+    <code>app/routes/api.measurements.ts</code> (bulk save + correction routes),
+    <code>widget-src/src/components/UploadModal.tsx</code> (pipeline + done-screen),
+    <code>widget-src/src/components/ReviewTable.tsx</code> (inline-edit at review),
+    <code>widget-src/src/components/BloodTestTimeline.tsx</code> (click-to-correct),
+    <code>packages/health-core/src/{validation,units,parseNumber}.ts</code>.
   </p>
 
 </div>

@@ -55,6 +55,35 @@ Some data files are shared with the marketing workspace at `~/Library/CloudStora
 - Use 'none', 'not_yet', 'not_tolerated' only for status (no dose data)
 - `status` auto-derived from `drug_name` by `deriveMedicationStatus()` in `supabase.server.ts`
 
+### Measurement Storage (FHIR Observation + replaces)
+
+Stored values are **never mutated**. `health_measurements` has FHIR R4 `Observation` semantics:
+
+- **`status`** (`'active' | 'entered-in-error'`) — only `active` rows feed `getLatestMeasurements()`/results. `entered-in-error` rows are kept for audit. Sticky: no revert to `active`.
+- **`corrects_id`** — when this row is a correction, points at the row it replaces (self-FK, `ON DELETE SET NULL`). NULL on original inserts.
+- **`source`** (`MEASUREMENT_SOURCES` enum in `validation.ts`):
+  - `manual` — user typed into the form
+  - `lab_import` — LLM-extracted, not edited
+  - `lab_import_edited` — LLM-extracted then user-corrected at review time
+  - `manual_correction` — inserted by the `correct_measurement` RPC
+  - `apple_health`, `fitbit` — future HealthKit-style imports
+
+**Correction flow (only path that mutates a row's status):**
+
+1. User clicks an existing value in `BloodTestTimeline`, types a new one, presses Enter or clicks away.
+2. Widget calls `correctMeasurement(oldId, newValueSI)` → POST `/api/measurements` with `{ correctMeasurement: { oldId, newValue } }`.
+3. The `correct_measurement` SECURITY DEFINER RPC atomically: UPDATE old row's status to `entered-in-error`, INSERT new row with `source='manual_correction'` + `corrects_id=oldId`.
+4. Audit log records `MEASUREMENT_CORRECTED` with `{oldId}` metadata.
+
+**Server-side invariants (see `supabase/rls-policies.sql`):**
+
+- `enforce_measurement_correction_only` BEFORE UPDATE trigger blocks any column change other than `status`. Uses `to_jsonb(NEW) - 'status' IS DISTINCT FROM to_jsonb(OLD) - 'status'` for schema-resilient diff.
+- `validate_corrects_id_ownership` BEFORE INSERT trigger rejects any row whose `corrects_id` references another user's row.
+- Partial UNIQUE index `uniq_measurements_user_metric_active` on `(user_id, metric_type, recorded_at) WHERE status='active'` — guarantees at most one active row per slot. Lets historical `entered-in-error` rows coexist.
+- A duplicate active insert hits `23505 unique_violation` → API returns `409` with "Use the correction UI to update it." The same code path during a correction race returns `409` with "Another value was saved at this date. Refresh and try again."
+
+**Bulk save endpoint** returns `{ savedCount, skippedDuplicates, errorCount, totalCount }`. Server-side `addMeasurementWithStatus()` returns `{status: 'inserted' | 'duplicate' | 'error'}` per row; bulk handler aggregates. Lab-import re-upload of unchanged data is a no-op (all-duplicate is success, not error).
+
 ## Key Directories
 
 ```

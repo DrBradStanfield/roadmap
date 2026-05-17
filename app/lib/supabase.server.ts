@@ -585,13 +585,30 @@ export async function getAllMeasurements(
 export const POSTGRES_UNIQUE_VIOLATION = '23505';
 
 /**
- * Insert a measurement and report whether it succeeded, duplicated, or errored.
- * The bulk endpoint uses this to surface "skipped N duplicates" in the UI.
- * Duplicate = a row with the same (user_id, metric_type, recorded_at) is
- * already active in the DB (enforced by uniq_measurements_user_metric_active
- * partial index in rls-policies.sql).
+ * Insert a measurement. Returns a discriminated result so callers can
+ * surface duplicates separately from real errors.
  *
- * userId is required for the NOT NULL column; RLS verifies it matches auth.uid().
+ * - `'inserted'`  — row written; audit log emitted.
+ * - `'duplicate'` — a row at this (user_id, metric_type, recorded_at) is
+ *                   already `status='active'`. Enforced by the partial
+ *                   UNIQUE index `uniq_measurements_user_metric_active`
+ *                   (see `supabase/rls-policies.sql`), surfaced via
+ *                   Postgres `23505 unique_violation` and remapped here.
+ *                   The user should click-to-correct the existing row
+ *                   rather than insert a second one.
+ * - `'error'`     — any other DB error (logged to console; caller decides
+ *                   whether to retry or 500).
+ *
+ * `userId` is required for the NOT NULL column; RLS additionally verifies
+ * it matches `auth.uid()`, so a forged userId is rejected by the policy.
+ *
+ * Default `source` is `'manual'` (DB default). For lab-import flows pass
+ * `'lab_import'` or `'lab_import_edited'` (the latter when the user
+ * edited the value at review time).
+ *
+ * The bulk endpoint counts the three outcomes and returns
+ * `{savedCount, skippedDuplicates, errorCount}` so the UploadModal done
+ * screen can show an honest accounting.
  */
 export async function addMeasurementWithStatus(
   client: SupabaseClient,
@@ -622,15 +639,38 @@ export async function addMeasurementWithStatus(
 }
 
 /**
- * FHIR replaces: insert a new active row + flip the old one to entered-in-error.
- * The RPC enforces ownership via auth.uid(); the userId arg here is for audit
- * logging only.
+ * FHIR R4 `Observation` replaces pattern: never mutate a stored value.
+ * Instead, atomically (a) flip the old row's `status` from `'active'` to
+ * `'entered-in-error'` and (b) insert a NEW active row with
+ * `source='manual_correction'` and `corrects_id=<old row's id>`. The
+ * caller-visible value points at the new row; the old value is preserved
+ * for audit. This matches the FHIR R4 semantics and plays nicely with
+ * future EHR / Apple HealthKit export.
+ *
+ * Server-side enforcement (see `supabase/rls-policies.sql`):
+ *   - `correct_measurement` is the ONLY path that can mutate a row's
+ *     status. The `enforce_measurement_correction_only` trigger blocks
+ *     every other UPDATE column-by-column and makes
+ *     `entered-in-error` sticky (no reverts).
+ *   - The RPC is `SECURITY DEFINER` with `WHERE user_id = auth.uid()` —
+ *     it enforces ownership and can't be tricked by a forged `oldId`.
+ *   - The new row hits the same partial UNIQUE index as a fresh insert;
+ *     the RPC catches `23505` and rolls back, returning `'conflict'`.
+ *
+ * `userId` here is for the audit log only — the RPC has already
+ * verified ownership internally.
  *
  * Returns a discriminated result so the route can distinguish:
- *   'ok'        — corrected, newId returned
- *   'conflict'  — another active row was inserted at the same recordedAt
- *                  during the round-trip (RPC raised unique_violation)
- *   'not_found' — row missing, not owned, or already corrected
+ *   'ok'        — corrected; old row flipped, new row inserted, audit
+ *                  log emitted with `{oldId}` metadata.
+ *   'conflict'  — another active row was inserted at the same
+ *                  (metric, recordedAt) between the user's click and
+ *                  the RPC reaching the INSERT step. The route maps
+ *                  this to HTTP 409 so the client shows
+ *                  "Refresh and try again."
+ *   'not_found' — `oldId` is missing, not owned, or already corrected.
+ *                  Mapped to HTTP 404 — same message regardless of which
+ *                  of the three so we don't leak ownership.
  */
 export type CorrectMeasurementResult =
   | { status: 'ok'; newId: string }

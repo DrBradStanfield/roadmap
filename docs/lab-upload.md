@@ -2,13 +2,11 @@
 
 **Feature**: Upload lab report PDFs, images, or ZIPs → LLM extracts blood test values → user reviews → bulk save to Supabase.
 
-**Status**: Shipped (v341, March 2026)
+**Status**: Shipped (v341 March 2026 · FHIR `replaces` redesign May 2026)
 
-**Commits**: `296d9ab`, `dee69c2`, `06aa627`
+**Commits**: `296d9ab`, `dee69c2`, `06aa627` (initial) · `052ada1`, `5ab25ad`, `8f428cb`, `0f795d7`, `6a56814`, `2bce3bf` (May 2026 redesign)
 
-> **Planned changes (May 2026):** see [`lab-upload-redesign.html`](lab-upload-redesign.html) for the active implementation spec. Triggered by a customer report (Dr Michael Schmidberger) of a wrong ApoB extraction with no available correction path. Scope summary at the end of this document; full schema diff, RPCs, and UI mockups in the spec.
-
-> **Companion overview:** [`lab-upload-overview.html`](lab-upload-overview.html) — visual architecture reference with a trace of the failure mode that prompted the redesign.
+> **Visual architecture reference:** [`lab-upload-overview.html`](lab-upload-overview.html) — pipeline diagrams, FHIR schema, RPC walkthrough, defence-in-depth tables. Start here if you're new to the system.
 
 ---
 
@@ -431,30 +429,45 @@ See "Lp(a) Unit Conversion" section above.
 
 ---
 
-## Planned changes (May 2026)
+## May 2026 redesign — shipped
 
-Triggered by a customer report of a wrong ApoB extraction (`0.5 g/L` misread as `0.79`) with no in-product correction path. Full spec — schema diff, RPC code, UI mockups, implementation order — in [`lab-upload-redesign.html`](lab-upload-redesign.html). Summary of the four decisions taken:
+Triggered by a customer report of a wrong ApoB extraction (`0.5 g/L` misread as `0.79`) with no in-product correction path. Four decisions taken; all four shipped.
 
-| # | Decision | Why |
+| # | Decision | Implementation |
 |---|---|---|
-| **D1** | Inline-edit the value at review time | Replace the read-only `<span>` value cell in `ReviewTable.tsx` with a number input. Lets the user correct LLM digit misreads at the strongest moment — looking at the source PDF and the extracted value side by side. |
-| **D2** | FHIR `entered-in-error` + `replaces` pattern for post-save correction (RPC-only enforcement) | Add `status` and `corrects_id` columns to `health_measurements`. Corrections route exclusively through the `correct_measurement` SECURITY DEFINER RPC — no user-facing UPDATE grant, no UPDATE policy. The RPC inserts a new active row (linked via `corrects_id`) and flips the prior row's status to `'entered-in-error'`. A BEFORE UPDATE trigger using `to_jsonb(NEW) - 'status'` is the final safety net: any column other than `status` cannot change, and `entered-in-error` is sticky. Pattern matches FHIR R4 `Observation` semantics and plays nicely with future EHR/Apple Health export. Chosen instead of in-place UPDATE (loses prior value) or silent delete-and-re-add (loses correction semantics). |
-| **D3** | Concurrency 5 at the LLM step | Tier 2 Anthropic ceiling (80K output tokens/min) accommodates this for the common lab-report workload. Server-side 429 retry absorbs the rare scan-heavy overflow. One-character change at [`UploadModal.tsx:313`](../widget-src/src/components/UploadModal.tsx#L313). Expected ~40–60% wall-clock reduction for 3–10 file uploads. |
-| **D4** | **No** dual-OCR / second-engine consensus | Inline edit gives the user the verification step the customer actually wanted, without doubling LLM cost or introducing a "engines disagree" UI state. |
+| **D1** | Inline-edit the value at review time | `ReviewTable.tsx` value cell is now a numeric input (`type="text"`, `inputMode="decimal"`, locale-aware so `0,5` and `0.5` both parse). Edited rows save with `source: 'lab_import_edited'`; unedited rows fall through to the server default `'lab_import'`. |
+| **D2** | FHIR `replaces` for post-save corrections | `health_measurements` gained `status` (`'active' \| 'entered-in-error'`) and `corrects_id` (self-FK). Corrections route exclusively through the `correct_measurement` `SECURITY DEFINER` RPC — no user-facing UPDATE grant, no UPDATE policy. The RPC atomically flips the old row's status and inserts a new active row with `source='manual_correction'` + `corrects_id`. A `BEFORE UPDATE` trigger using `to_jsonb(NEW) - 'status'` is the final safety net; an `entered-in-error → active` revert is blocked. Partial `UNIQUE` index `uniq_measurements_user_metric_active` enforces at most one active row per `(user, metric, recorded_at)`. |
+| **D3** | Concurrency 5 LLM × 3 extractors | `LLM_CONCURRENCY = 5` + `EXTRACT_CONCURRENCY = 3` in `UploadModal.tsx`. Wall-clock for a 12-file ZIP: ~12s (down from ~50s pre-redesign). Tier 2 cap (80K output tokens/min) absorbs 5 concurrent extractions; 3 parallel pdf.js workers keep the LLM queue fed without UI jank. |
+| **D4** | No dual-OCR / second-engine consensus | Two correction surfaces (review-time edit + click-to-correct after save) give the user the verification step the customer actually wanted, without doubling LLM cost. Revisit if production correction frequency stays high. |
 
-### What's NOT changing
+### Click-to-correct UX (`BloodTestTimeline.tsx`)
+
+Every saved blood-test value renders as a clickable button (`bt-cell-clickable`). Click → inline edit form opens with the value pre-filled. Enter or click-away saves (if validation passes); Escape discards. Failure modes surface inline:
+
+- **409 conflict** — "Another value was saved at this date. Refresh and try again." (someone else / another tab wrote between click and RPC reaching INSERT)
+- **404 not found** — "This value was deleted or already updated. Refresh to see the latest."
+- **Network error** — "Could not save. Check your connection and try again." (form stays open, user can retry)
+
+### Duplicate detection
+
+Re-uploading the same lab data shows an "Already saved" badge on every row whose `(metric, recorded_at)` matches an existing active row. Checkbox pre-unchecked. If the user force-re-checks and saves, the partial UNIQUE index rejects the dupe (`23505`); the bulk handler counts skips in `skippedDuplicates`. Done screen reads: *"N values were already saved at the same date. Close this dialog and click the existing value in the Blood Test Results table to correct it."*
+
+### What's preserved (don't overturn)
 
 - Server-side hardcoded system prompt (prevents prompt injection)
 - HMAC auth on every endpoint
 - Never auto-save without explicit user confirmation
 - No raw PDF storage on the server
-- One LLM call per file (no cross-file batching in the prompt)
-- Claude Haiku 4.5 as the model (Sonnet fallback path remains a one-constant change if accuracy issues surface)
+- One LLM call per page-list (no cross-file batching in the prompt)
+- Claude Haiku 4.5 as the model (Sonnet fallback remains a one-constant change)
+- Confidence is advisory, not gating
 
-### Open questions (not blockers)
+### Deferred (not blockers)
 
-- **Q1.** Show a thumbnail of the rendered PDF page next to each review row?
-- **Q2.** Allow editing `recorded_at` as part of a post-save correction?
-- **Q3.** Audit-mode toggle in the history view to show corrected rows with strikethrough?
+- Thumbnail of the rendered PDF page next to each review row
+- Edit `recorded_at` as part of a post-save correction
+- Audit-mode toggle in history view to show corrected rows with strikethrough
+- Dual-OCR consensus — revisit if correction frequency stays high
+- Validation-range "double-check this" prompts at review time
 
 All three are addressed with current recommendations in the spec but not yet locked in.
