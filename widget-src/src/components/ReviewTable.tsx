@@ -926,7 +926,10 @@ const MatrixCellView = memo(function MatrixCellView({
   cell, cellKey, row, unitSystem, sex, editedValue, onCellChange,
 }: MatrixCellViewProps) {
   if (cell.state === 'empty') {
-    return <div className="bt-cell-value bt-cell-empty"/>;
+    // Non-breaking space is load-bearing: the storefront theme has a global
+    // `div:empty { display: none }` rule (specificity 11, beats our .bt-cell-empty)
+    // which collapses truly-empty cells to 0 width and breaks column alignment.
+    return <div className="bt-cell-value bt-cell-empty">{' '}</div>;
   }
   if (cell.state === 'context') {
     return (
