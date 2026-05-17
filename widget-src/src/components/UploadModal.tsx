@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { UnitSystem, MeasurementSource } from '@roadmap/health-core';
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, type PageContent, type ApiMeasurement, type UploadErrorCode } from '../lib/api';
 import { ReviewTable, type FileResult, type DocumentToSave } from './ReviewTable';
@@ -41,13 +42,15 @@ interface UploadModalProps {
   onProgressUpdate?: (p: { current: number; total: number; fileName: string }) => void;
 }
 
-/** Floating indicator shown when modal is hidden during processing */
+/** Floating indicator shown when modal is hidden during processing.
+ *  Portaled to body for the same reason as the modal — position:fixed must
+ *  resolve against the viewport, not the transform'd .health-tool ancestor. */
 export function FloatingUploadIndicator({ progress, onClick }: {
   progress: { current: number; total: number; fileName: string };
   onClick: () => void;
 }) {
   const isDone = progress.current >= 100;
-  return (
+  return createPortal((
     <div className="floating-upload-indicator" onClick={onClick} role="button" tabIndex={0}>
       <div className="floating-upload-text">
         {isDone ? 'Ready for review — click to open' : 'Processing health records...'}
@@ -58,7 +61,7 @@ export function FloatingUploadIndicator({ progress, onClick }: {
         </div>
       )}
     </div>
-  );
+  ), document.body);
 }
 
 const BATCH_THRESHOLD = 20; // Use batch API for 20+ files; pipeline for fewer
@@ -582,7 +585,10 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
     }
   }, [onComplete, onScreeningUpdate]);
 
-  return (
+  // Portal to body so position:fixed resolves against the viewport — the
+  // .health-tool container has a transform/contain that would otherwise pin
+  // the modal inside the (very tall) widget root instead of the viewport.
+  return createPortal((
     <div className="upload-modal-backdrop" style={hidden ? { display: 'none' } : undefined} onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
       <div className={`upload-modal${isMobile ? ' upload-modal--mobile' : ''}`}>
         <div className="upload-modal-header">
@@ -689,5 +695,5 @@ export function UploadModal({ unitSystem, bloodTestHistory, onComplete, onStart,
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }
