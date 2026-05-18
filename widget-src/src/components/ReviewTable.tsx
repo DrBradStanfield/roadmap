@@ -4,6 +4,7 @@ import {
   toCanonicalValue,
   UNIT_DEFS,
   METRIC_LABELS,
+  METRIC_TO_FIELD,
   formatDisplayValue,
   getDisplayLabel,
   parseLocalisedNumber,
@@ -45,6 +46,13 @@ interface ReviewTableProps {
   results: FileResult[];
   history: UploadHistory;
   unitSystem: UnitSystem;
+  /** Per-metric unit override (mirrors the live blood-test panel). Used to
+   *  format core-metric cells and the unit-chip label. */
+  metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
+  /** Toggles the unit for a single field (e.g. 'ldlC'). Wired to the same
+   *  HealthTool handler the live timeline uses, so clicking the chip here
+   *  updates the timeline too. */
+  onToggleFieldUnit?: (field: string) => void;
   birthYear?: number;
   sex?: 'male' | 'female';
   onSave: (payload: {
@@ -177,11 +185,15 @@ function buildMatrixModel(
   bloodTestHistory: ApiMeasurement[],
   labValueHistory: ApiLabValue[],
   unitSystem: UnitSystem,
+  metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>,
 ): { columns: MatrixColumn[]; coreRows: CoreRow[]; additionalRows: AdditionalRow[]; cells: Map<string, MatrixCell> } {
   const cells = new Map<string, MatrixCell>();
   const columnsByKey = new Map<DateKey, MatrixColumn>();
   const coreMetricsSeen = new Set<MetricType>();
   const additionalByKey = new Map<string, AdditionalRow>();
+
+  /** Resolved display system for a core metric, honouring per-metric override. */
+  const displayFor = (metric: MetricType): UnitSystem => metricUnitOverrides?.[metric] ?? unitSystem;
 
   const addColumn = (dateKey: DateKey, date: FullDate, fileIndex: number | null) => {
     let col = columnsByKey.get(dateKey);
@@ -205,7 +217,7 @@ function buildMatrixModel(
     const metric = m.metricType as MetricType;
     coreMetricsSeen.add(metric);
     const display = UNIT_DEFS[metric]
-      ? formatDisplayValue(metric, m.value, unitSystem)
+      ? formatDisplayValue(metric, m.value, displayFor(metric))
       : String(m.value);
     cells.set(`${metric}|${dateKey}`, { state: 'context', displayValue: display });
   }
@@ -223,7 +235,8 @@ function buildMatrixModel(
         referenceHigh: lv.referenceHigh,
       });
     }
-    cells.set(`${nameKey}|${dateKey}`, { state: 'context', displayValue: `${lv.value} ${lv.unit}` });
+    // Number only. Unit is rendered as a chip on the row label (describeRow.unitLabel).
+    cells.set(`${nameKey}|${dateKey}`, { state: 'context', displayValue: String(lv.value) });
   }
 
   // 2) Overlay upload values. Context already-saved cells win — discard the
@@ -241,7 +254,7 @@ function buildMatrixModel(
       const cellKey = `${metric}|${dateKey}`;
       if (cells.has(cellKey)) return; // existing history wins
       const initialDisplay = UNIT_DEFS[metric]
-        ? formatDisplayValue(metric, v.valueSI, unitSystem)
+        ? formatDisplayValue(metric, v.valueSI, displayFor(metric))
         : String(v.displayValue);
       cells.set(cellKey, {
         state: 'editable', kind: 'core', fi, vi,
@@ -322,6 +335,8 @@ export function ReviewTable({
   results,
   history,
   unitSystem,
+  metricUnitOverrides,
+  onToggleFieldUnit,
   birthYear,
   sex,
   onSave,
@@ -395,8 +410,8 @@ export function ReviewTable({
   // `editable` cells come from this upload. Save selection = an editable
   // cell whose `editedDisplayValues` entry is non-empty (clear-to-skip).
   const matrix = useMemo(
-    () => buildMatrixModel(results, fileDates, history.bloodTests, history.labValues, unitSystem),
-    [results, fileDates, history.bloodTests, history.labValues, unitSystem],
+    () => buildMatrixModel(results, fileDates, history.bloodTests, history.labValues, unitSystem, metricUnitOverrides),
+    [results, fileDates, history.bloodTests, history.labValues, unitSystem, metricUnitOverrides],
   );
 
   // Initial display values are derived from the matrix (not from raw results)
@@ -542,8 +557,11 @@ export function ReviewTable({
       if (cell.kind === 'core') {
         const metric = results[cell.fi]?.values[cell.vi]?.metric as MetricType | undefined;
         if (!metric) continue;
+        // Honour the per-metric unit override the user toggled to via the chip:
+        // the typed value is in the display unit the user actually sees.
+        const display = metricUnitOverrides?.[metric] ?? unitSystem;
         const valueSI = UNIT_DEFS[metric]
-          ? toCanonicalValue(metric, c.parsed, unitSystem)
+          ? toCanonicalValue(metric, c.parsed, display)
           : c.parsed;
         selected.push({
           metric,
@@ -609,6 +627,8 @@ export function ReviewTable({
         <ReviewMatrix
           matrix={matrix}
           unitSystem={unitSystem}
+          metricUnitOverrides={metricUnitOverrides}
+          onToggleFieldUnit={onToggleFieldUnit}
           sex={sex}
           editedDisplayValues={editedDisplayValues}
           onCellChange={updateEditedDisplayValue}
@@ -739,6 +759,8 @@ export function ReviewTable({
 interface ReviewMatrixProps {
   matrix: ReturnType<typeof buildMatrixModel>;
   unitSystem: UnitSystem;
+  metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
+  onToggleFieldUnit?: (field: string) => void;
   sex?: 'male' | 'female';
   editedDisplayValues: Record<string, string>;
   onCellChange: (cellKey: string, value: string) => void;
@@ -746,8 +768,8 @@ interface ReviewMatrixProps {
 }
 
 function ReviewMatrix({
-  matrix, unitSystem, sex, editedDisplayValues, onCellChange,
-  onColumnDateChange,
+  matrix, unitSystem, metricUnitOverrides, onToggleFieldUnit, sex,
+  editedDisplayValues, onCellChange, onColumnDateChange,
 }: ReviewMatrixProps) {
   const scrollSync = useMatrixScrollSync(matrix.columns.length);
 
@@ -774,6 +796,8 @@ function ReviewMatrix({
             columns={matrix.columns}
             cells={matrix.cells}
             unitSystem={unitSystem}
+            metricUnitOverrides={metricUnitOverrides}
+            onToggleFieldUnit={onToggleFieldUnit}
             sex={sex}
             scrollSync={scrollSync}
             editedDisplayValues={editedDisplayValues}
@@ -792,6 +816,8 @@ function ReviewMatrix({
                 columns={matrix.columns}
                 cells={matrix.cells}
                 unitSystem={unitSystem}
+                metricUnitOverrides={metricUnitOverrides}
+                onToggleFieldUnit={onToggleFieldUnit}
                 sex={sex}
                 scrollSync={scrollSync}
                 editedDisplayValues={editedDisplayValues}
@@ -848,6 +874,8 @@ interface MatrixRowViewProps {
   columns: MatrixColumn[];
   cells: Map<string, MatrixCell>;
   unitSystem: UnitSystem;
+  metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
+  onToggleFieldUnit?: (field: string) => void;
   sex?: 'male' | 'female';
   scrollSync: ReturnType<typeof useMatrixScrollSync>;
   editedDisplayValues: Record<string, string>;
@@ -855,17 +883,24 @@ interface MatrixRowViewProps {
 }
 
 function MatrixRowView({
-  row, rowIdx, columns, cells, unitSystem, sex, scrollSync,
-  editedDisplayValues, onCellChange,
+  row, rowIdx, columns, cells, unitSystem, metricUnitOverrides, onToggleFieldUnit,
+  sex, scrollSync, editedDisplayValues, onCellChange,
 }: MatrixRowViewProps) {
   const rowKey = matrixRowKey(row);
-  const { label, unitLabel, refLabel } = describeRow(row, unitSystem, sex);
+  const rowDisplay = row.kind === 'core' ? (metricUnitOverrides?.[row.metric] ?? unitSystem) : unitSystem;
+  const { label, unitLabel, refLabel } = describeRow(row, rowDisplay, sex);
 
   return (
     <div className="bt-row">
       <div className="bt-cell-name">
         <div className="bt-name-label">{label}</div>
-        {unitLabel && <div className="bt-unit-chip">{unitLabel}</div>}
+        {unitLabel && (
+          row.kind === 'core' && onToggleFieldUnit
+            ? <button type="button" className="bt-unit-chip"
+                      title="Click to switch units"
+                      onClick={() => onToggleFieldUnit(METRIC_TO_FIELD[row.metric])}>{unitLabel}</button>
+            : <span className="bt-unit-chip bt-unit-chip--static">{unitLabel}</span>
+        )}
         {refLabel && <div className="bt-ref-label">{refLabel}</div>}
       </div>
       <div ref={el => scrollSync.registerRow(rowIdx, el)} onScroll={scrollSync.onScroll} className="bt-cell-strip">
@@ -879,7 +914,7 @@ function MatrixRowView({
                 cell={cell}
                 cellKey={cellKey}
                 row={row}
-                unitSystem={unitSystem}
+                unitSystem={rowDisplay}
                 sex={sex}
                 editedValue={editedDisplayValues[cellKey] ?? ''}
                 onCellChange={onCellChange}
@@ -895,15 +930,16 @@ function MatrixRowView({
 
 /** Row label + unit chip + reference range. Core rows pull from UNIT_DEFS /
  *  METRIC_LABELS / getDisplayLabel; additional rows use the LLM-extracted
- *  unit and (if present) a reference range. */
-function describeRow(row: MatrixRow, unitSystem: UnitSystem, sex?: 'male' | 'female'): { label: string; unitLabel: string | null; refLabel: string | null } {
+ *  unit and (if present) a reference range. Caller passes the resolved
+ *  display unit (already honours per-metric overrides). */
+function describeRow(row: MatrixRow, display: UnitSystem, sex?: 'male' | 'female'): { label: string; unitLabel: string | null; refLabel: string | null } {
   if (row.kind === 'core') {
     const label = METRIC_LABELS[row.metric] || row.metric;
-    const unitLabel = UNIT_DEFS[row.metric] ? getDisplayLabel(row.metric, unitSystem) : null;
+    const unitLabel = UNIT_DEFS[row.metric] ? getDisplayLabel(row.metric, display) : null;
     // Same reference-range hint InputPanel + BloodTestTimeline show so
     // users have the same context when reviewing as when reading the
     // live timeline.
-    const refLabel = refHintFor(row.metric, unitSystem, sex);
+    const refLabel = refHintFor(row.metric, display, sex);
     return { label, unitLabel, refLabel };
   }
   const refLabel = (row.referenceLow != null || row.referenceHigh != null)

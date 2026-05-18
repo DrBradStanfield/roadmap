@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { UnitSystem, MeasurementSource } from '@roadmap/health-core';
+import type { UnitSystem, MeasurementSource, MetricType } from '@roadmap/health-core';
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, type PageContent, type UploadErrorCode, type UploadHistory } from '../lib/api';
 import { ReviewTable, type FileResult, type DocumentToSave } from './ReviewTable';
 import { useIsMobile } from '../lib/useIsMobile';
@@ -25,6 +25,11 @@ type ModalState = 'select' | 'processing' | 'review' | 'done';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;
+  /** Per-metric unit override from the live blood-test panel. Lets the
+   *  matrix display values in the unit system the user has already
+   *  toggled to (e.g. mg/dL after clicking the LDL chip on the timeline). */
+  metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
+  onToggleFieldUnit?: (field: string) => void;
   history: UploadHistory;
   onComplete: () => void;
   onStart?: () => Promise<void>;
@@ -97,7 +102,7 @@ interface HealthUploadAPI {
 const MAX_FILES = 200;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-export function UploadModal({ unitSystem, history, onComplete, onStart, onClose, onScreeningUpdate, birthYear, sex, hidden, onProcessingStart, onProcessingEnd, onProgressUpdate }: UploadModalProps) {
+export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, birthYear, sex, hidden, onProcessingStart, onProcessingEnd, onProgressUpdate }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState({ current: 0, total: 0, fileName: '' });
@@ -654,6 +659,8 @@ export function UploadModal({ unitSystem, history, onComplete, onStart, onClose,
               results={results}
               history={history}
               unitSystem={unitSystem}
+              metricUnitOverrides={metricUnitOverrides}
+              onToggleFieldUnit={onToggleFieldUnit}
               birthYear={birthYear}
               sex={sex}
               onSave={handleSave}

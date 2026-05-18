@@ -1139,6 +1139,8 @@ export function HealthTool() {
       {(showUploadModal || uploadActive) && authState.isLoggedIn && (
         <UploadModal
           unitSystem={unitSystem}
+          metricUnitOverrides={metricUnitOverrides}
+          onToggleFieldUnit={handleToggleFieldUnit}
           history={uploadHistory}
           onComplete={handleUploadComplete}
           onStart={handleUploadStart}
