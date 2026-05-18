@@ -18,6 +18,7 @@ import { labValueLabel } from '../lib/lab-value-labels';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
+import { UnitChip } from './UnitChip';
 import { MONTHS_SHORT } from '../lib/constants';
 
 export interface FileResult {
@@ -46,12 +47,7 @@ interface ReviewTableProps {
   results: FileResult[];
   history: UploadHistory;
   unitSystem: UnitSystem;
-  /** Per-metric unit override (mirrors the live blood-test panel). Used to
-   *  format core-metric cells and the unit-chip label. */
   metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
-  /** Toggles the unit for a single field (e.g. 'ldlC'). Wired to the same
-   *  HealthTool handler the live timeline uses, so clicking the chip here
-   *  updates the timeline too. */
   onToggleFieldUnit?: (field: string) => void;
   birthYear?: number;
   sex?: 'male' | 'female';
@@ -92,9 +88,14 @@ function getDaysInMonth(month: string, year: string): number {
 
 /** Build YYYY-MM-DD or YYYY-MM-01 ISO string from FullDate state. */
 function buildRecordedAt(date: FullDate): string {
+  return `${fullDateToIso(date)}T00:00:00.000Z`;
+}
+
+/** YYYY-MM-DD, defaulting day to 01 when absent. */
+function fullDateToIso(date: FullDate): string {
   const month = date.month.padStart(2, '0');
-  const day = date.day ? date.day.padStart(2, '0') : '01';
-  return `${date.year}-${month}-${day}T00:00:00.000Z`;
+  const day = (date.day ?? '01').padStart(2, '0');
+  return `${date.year}-${month}-${day}`;
 }
 
 /** Build the most precise date prefix for duplicate matching. */
@@ -235,7 +236,6 @@ function buildMatrixModel(
         referenceHigh: lv.referenceHigh,
       });
     }
-    // Number only. Unit is rendered as a chip on the row label (describeRow.unitLabel).
     cells.set(`${nameKey}|${dateKey}`, { state: 'context', displayValue: String(lv.value) });
   }
 
@@ -245,6 +245,10 @@ function buildMatrixModel(
   results.forEach((r, fi) => {
     const fdate = fileDates[fi];
     if (!fdate) return;
+    // Only seed a column when this file contributes a lab value to the matrix.
+    // Document-only files (scan results, clinic letters) keep their own per-file
+    // card below the matrix; they shouldn't pollute the date axis with an empty column.
+    if (r.values.length === 0 && r.additionalValues.length === 0) return;
     const dateKey = buildDatePrefix(fdate);
     addColumn(dateKey, fdate, fi);
 
@@ -283,9 +287,6 @@ function buildMatrixModel(
         state: 'editable',
         kind: 'additional',
         fi, ai,
-        // Number only. The unit is rendered separately as a chip on the
-        // row label (describeRow.unitLabel), and we still need parseLocalisedNumber
-        // to succeed on the cell value at save time.
         initialDisplay: String(av.value),
         valueSI: av.value,
         displayUnit: av.unit,
@@ -428,13 +429,15 @@ export function ReviewTable({
   const [editedDisplayValues, setEditedDisplayValues] = useState<Record<string, string>>(
     () => ({ ...initialDisplayValues }),
   );
-  // Tracks which cells the user has touched. Used by the reformat effect
-  // below to distinguish "user edited this — keep their text" from "untouched —
-  // re-seed with the freshly-formatted initial value when unit system flips."
   const userEditedKeysRef = useRef<Set<string>>(new Set());
+  // Display unit at the moment of edit. Used at save time so a unit toggle
+  // *after* typing doesn't silently convert the typed value with the new
+  // unit (which would corrupt the saved SI value).
+  const userEditedDisplaysRef = useRef<Record<string, UnitSystem>>({});
 
-  const updateEditedDisplayValue = useCallback((cellKey: string, value: string) => {
+  const updateEditedDisplayValue = useCallback((cellKey: string, value: string, display?: UnitSystem) => {
     userEditedKeysRef.current.add(cellKey);
+    if (display) userEditedDisplaysRef.current[cellKey] = display;
     setEditedDisplayValues(prev => ({ ...prev, [cellKey]: value }));
   }, []);
 
@@ -452,7 +455,11 @@ export function ReviewTable({
           : initialDisplayValues[cellKey];
       }
       // Prune the touched set so it can't grow unbounded across re-uploads.
-      for (const k of touched) if (!(k in initialDisplayValues)) touched.delete(k);
+      const stampedDisplays = userEditedDisplaysRef.current;
+      for (const k of touched) if (!(k in initialDisplayValues)) {
+        touched.delete(k);
+        delete stampedDisplays[k];
+      }
       return next;
     });
   }, [initialDisplayValues]);
@@ -557,9 +564,13 @@ export function ReviewTable({
       if (cell.kind === 'core') {
         const metric = results[cell.fi]?.values[cell.vi]?.metric as MetricType | undefined;
         if (!metric) continue;
-        // Honour the per-metric unit override the user toggled to via the chip:
-        // the typed value is in the display unit the user actually sees.
-        const display = metricUnitOverrides?.[metric] ?? unitSystem;
+        // Use the display unit stamped at edit time (if any), falling back to
+        // the row's current display. Without the stamp, a toggle-after-typing
+        // converts the typed value through the wrong unit and stores a
+        // wildly-wrong SI value.
+        const display = userEditedDisplaysRef.current[c.cellKey]
+          ?? metricUnitOverrides?.[metric]
+          ?? unitSystem;
         const valueSI = UNIT_DEFS[metric]
           ? toCanonicalValue(metric, c.parsed, display)
           : c.parsed;
@@ -588,9 +599,7 @@ export function ReviewTable({
     results.forEach((r, fi) => {
       if (!r.document || !docChecked[fi]) return;
       const date = fileDates[fi];
-      const dateStr = date.year && date.month
-        ? `${date.year}-${date.month.padStart(2, '0')}${date.day ? '-' + date.day.padStart(2, '0') : '-01'}`
-        : null;
+      const dateStr = date.year && date.month ? fullDateToIso(date) : null;
 
       const screeningType = r.document.metadata?.screeningType as string | undefined;
       const screeningKey = screeningType ? `${screeningType}_last_date` : undefined;
@@ -688,7 +697,7 @@ export function ReviewTable({
                 <div className="review-file-date">
                   <span>Date:</span>
                   <DraftDateCell
-                    date={`${date.year}-${date.month.padStart(2, '0')}-${(date.day ?? '01').padStart(2, '0')}`}
+                    date={fullDateToIso(date)}
                     needsDay={!date.day}
                     ariaLabel="Document date"
                     onChange={picked => {
@@ -763,7 +772,7 @@ interface ReviewMatrixProps {
   onToggleFieldUnit?: (field: string) => void;
   sex?: 'male' | 'female';
   editedDisplayValues: Record<string, string>;
-  onCellChange: (cellKey: string, value: string) => void;
+  onCellChange: (cellKey: string, value: string, display?: UnitSystem) => void;
   onColumnDateChange: (col: MatrixColumn, update: Partial<FullDate>) => void;
 }
 
@@ -842,15 +851,11 @@ function MatrixColumnHeader({ col, onDateChange }: { col: MatrixColumn; onDateCh
       </div>
     );
   }
-  // New columns reuse DraftDateCell — same visual + native picker as the
-  // live timeline's draft column. When the LLM didn't extract a day we
-  // pass YYYY-MM-01 as a placeholder ISO and flag `needsDay` so the cell
-  // renders "— Mon '24" instead of "1 Mon '24"; allDatesSet keeps save
-  // disabled until the user picks a real day.
-  const iso = `${col.date.year}-${col.date.month.padStart(2, '0')}-${(col.date.day ?? '01').padStart(2, '0')}`;
+  // needsDay flags new columns where the LLM didn't extract a day so the
+  // user sees "— Mon 'YY" and is gated from saving until they pick one.
   return (
     <DraftDateCell
-      date={iso}
+      date={fullDateToIso(col.date)}
       needsDay={!col.date.day}
       ariaLabel="Choose column date"
       onChange={picked => {
@@ -879,7 +884,7 @@ interface MatrixRowViewProps {
   sex?: 'male' | 'female';
   scrollSync: ReturnType<typeof useMatrixScrollSync>;
   editedDisplayValues: Record<string, string>;
-  onCellChange: (cellKey: string, value: string) => void;
+  onCellChange: (cellKey: string, value: string, display?: UnitSystem) => void;
 }
 
 function MatrixRowView({
@@ -889,18 +894,15 @@ function MatrixRowView({
   const rowKey = matrixRowKey(row);
   const rowDisplay = row.kind === 'core' ? (metricUnitOverrides?.[row.metric] ?? unitSystem) : unitSystem;
   const { label, unitLabel, refLabel } = describeRow(row, rowDisplay, sex);
+  const toggleUnit = row.kind === 'core' && onToggleFieldUnit
+    ? () => onToggleFieldUnit(METRIC_TO_FIELD[row.metric])
+    : undefined;
 
   return (
     <div className="bt-row">
       <div className="bt-cell-name">
         <div className="bt-name-label">{label}</div>
-        {unitLabel && (
-          row.kind === 'core' && onToggleFieldUnit
-            ? <button type="button" className="bt-unit-chip"
-                      title="Click to switch units"
-                      onClick={() => onToggleFieldUnit(METRIC_TO_FIELD[row.metric])}>{unitLabel}</button>
-            : <span className="bt-unit-chip bt-unit-chip--static">{unitLabel}</span>
-        )}
+        {unitLabel && <UnitChip label={unitLabel} onToggle={toggleUnit}/>}
         {refLabel && <div className="bt-ref-label">{refLabel}</div>}
       </div>
       <div ref={el => scrollSync.registerRow(rowIdx, el)} onScroll={scrollSync.onScroll} className="bt-cell-strip">
@@ -955,16 +957,15 @@ interface MatrixCellViewProps {
   unitSystem: UnitSystem;
   sex?: 'male' | 'female';
   editedValue: string;
-  onCellChange: (cellKey: string, value: string) => void;
+  onCellChange: (cellKey: string, value: string, display?: UnitSystem) => void;
 }
 
 const MatrixCellView = memo(function MatrixCellView({
   cell, cellKey, row, unitSystem, sex, editedValue, onCellChange,
 }: MatrixCellViewProps) {
   if (cell.state === 'empty') {
-    // Non-breaking space is load-bearing: the storefront theme has a global
-    // `div:empty { display: none }` rule (specificity 11, beats our .bt-cell-empty)
-    // which collapses truly-empty cells to 0 width and breaks column alignment.
+    // NBSP keeps :empty from matching — the theme has a global
+    // `div:empty { display: none }` (specificity beats .bt-cell-empty).
     return <div className="bt-cell-value bt-cell-empty">{' '}</div>;
   }
   if (cell.state === 'context') {
@@ -974,11 +975,9 @@ const MatrixCellView = memo(function MatrixCellView({
       </div>
     );
   }
-  // Editable cell. For core metrics hand off to the shared NumericInputCell
-  // so we get the same validation + status tick (ok/warn/bad) the live
-  // timeline uses. Additional values have no clinical thresholds, so render
-  // a plain input with no status preview.
-  const handleChange = (v: string) => onCellChange(cellKey, v);
+  // Stamp the row's display unit so a toggle-after-typing doesn't
+  // misconvert the typed value at save time.
+  const handleChange = (v: string) => onCellChange(cellKey, v, cell.kind === 'core' ? unitSystem : undefined);
   const lowConfClass = cell.kind === 'core' && cell.confidence === 'low' ? ' bt-cell-low-confidence' : '';
 
   if (cell.kind === 'core') {

@@ -29,6 +29,7 @@ import {
 } from '../lib/blood-test-cell';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
+import { UnitChip } from './UnitChip';
 
 // localStorage key for the matrix's typed-but-unsaved state. Persists across
 // page reloads so users don't lose work mid-edit. Cleared on successful Save.
@@ -437,9 +438,7 @@ export function BloodTestTimeline({
               <div key={row.field} className={`bt-row${rowIdx === ROWS.length - 1 ? ' bt-row-last' : ''}`}>
                 <div className="bt-cell-name">
                   <div className="bt-name-label">{row.label}</div>
-                  <button type="button" className="bt-unit-chip"
-                          title="Click to switch units"
-                          onClick={() => onToggleFieldUnit(row.field)}>{unitLabel}</button>
+                  <UnitChip label={unitLabel} onToggle={() => onToggleFieldUnit(row.field)}/>
                   {(() => {
                     const ref = refHintFor(row.metric, display, sex);
                     return ref ? <div className="bt-ref-label">{ref}</div> : null;

@@ -4348,9 +4348,6 @@ input[type="number"] {
   font-family: inherit;
   line-height: 1.2;
 }
-/* Non-interactive variant for additional lab rows: same look, no pointer
-   affordance, since there's no SI/conventional toggle for LLM-extracted
-   unit strings. */
 .bt-unit-chip--static {
   cursor: default;
 }
@@ -4382,11 +4379,10 @@ input[type="number"] {
 }
 
 .bt-cell-value {
-  /* Explicit flex-basis stops empty-content divs (matrix .bt-cell-empty)
-     from collapsing under `min-width: auto`. width: alone with
-     flex-shrink: 0 was not enough — basis defaults to content size. */
+  /* flex shorthand sets an explicit basis so empty-content divs (matrix
+     .bt-cell-empty) hold their width — flex-shrink:0 alone isn't enough
+     since basis defaults to content size. */
   flex: 0 0 var(--bt-value-w);
-  width: var(--bt-value-w);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4611,14 +4607,11 @@ input[type="number"] {
   color: var(--bt-ink-500);
 }
 
-/* Empty cell — keeps row height consistent; no data. */
 .bt-cell-empty {
   background: transparent;
   pointer-events: none;
 }
 
-/* Editable cell carries the low-confidence accent so the user can scan
-   which extractions to double-check. */
 .bt-cell-review {
   background: transparent;
 }

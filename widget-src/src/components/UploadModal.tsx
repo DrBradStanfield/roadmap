@@ -25,9 +25,6 @@ type ModalState = 'select' | 'processing' | 'review' | 'done';
 
 interface UploadModalProps {
   unitSystem: UnitSystem;
-  /** Per-metric unit override from the live blood-test panel. Lets the
-   *  matrix display values in the unit system the user has already
-   *  toggled to (e.g. mg/dL after clicking the LDL chip on the timeline). */
   metricUnitOverrides?: Partial<Record<MetricType, UnitSystem>>;
   onToggleFieldUnit?: (field: string) => void;
   history: UploadHistory;
@@ -196,7 +193,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       return true;
     });
     setFiles(valid);
-    if (valid.length > 0) setError(null);
+    if (valid.length > 0) {
+      setError(null);
+      handleProcess(valid);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -204,8 +204,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     handleFileSelect(e.dataTransfer.files);
   };
 
-  const handleProcess = async () => {
-    if (files.length === 0) return;
+  const handleProcess = async (filesToProcess: File[] = files) => {
+    if (filesToProcess.length === 0) return;
 
     const quota = await checkLabImportQuota();
     if (!quota.allowed) {
@@ -226,15 +226,14 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       onProgressUpdate?.(p);
     };
 
-    // Collect file metadata for Sentry context on errors
-    const fileNames = files.map(f => f.name);
-    const fileTypes = files.map(f => f.type || 'unknown');
-    const fileCount = files.length;
+    const fileNames = filesToProcess.map(f => f.name);
+    const fileTypes = filesToProcess.map(f => f.type || 'unknown');
+    const fileCount = filesToProcess.length;
 
     try {
       const upload = await loadUploadBundle();
-      const zipFiles = files.filter(f => upload.isZip(f));
-      const otherFiles = files.filter(f => !upload.isZip(f));
+      const zipFiles = filesToProcess.filter(f => upload.isZip(f));
+      const otherFiles = filesToProcess.filter(f => !upload.isZip(f));
 
       // Count total files for progress (need to peek inside ZIPs)
       let totalFiles = otherFiles.length;
@@ -631,11 +630,6 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
                 </div>
               )}
               {error && <p className="upload-error">{error}</p>}
-              {files.length > 0 && (
-                <button className="btn-primary upload-extract-btn" onClick={handleProcess}>
-                  Process Files
-                </button>
-              )}
             </div>
           )}
 

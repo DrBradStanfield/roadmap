@@ -1,8 +1,6 @@
-// Compact date-picker cell shared by the live blood-test draft column and
-// the lab-upload review matrix's "new column" headers. Renders as a button
-// labelled "DD Mon / 'YY" + calendar icon; clicking opens the native date
-// picker via a hidden <input type="date">. Same visual language across
-// both UIs so improvements in one propagate to the other.
+// Compact date-picker cell: button labelled "DD Mon / 'YY" + calendar icon
+// that opens the native date picker. Shared by BloodTestTimeline's draft
+// column and ReviewTable's matrix-column + document-card date inputs.
 
 import { useRef } from 'react';
 import { MONTHS_SHORT } from '../lib/constants';
@@ -10,11 +8,10 @@ import { MONTHS_SHORT } from '../lib/constants';
 const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 
 export interface DraftDateCellProps {
-  /** ISO YYYY-MM-DD. When the day is unknown (e.g. LLM didn't extract it),
-   *  callers pass YYYY-MM-01 and set `needsDay` to flag the missing day. */
+  /** ISO YYYY-MM-DD. Pass YYYY-MM-01 + needsDay when the day is unknown. */
   date: string;
   onChange: (date: string) => void;
-  /** Visual cue that the day is a placeholder, not yet confirmed by the user. */
+  /** Render "—" instead of the day digit to flag a placeholder day. */
   needsDay?: boolean;
   ariaLabel?: string;
 }
