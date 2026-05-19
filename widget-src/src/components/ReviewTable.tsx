@@ -114,20 +114,21 @@ function buildDatePrefix(date: FullDate): string {
   return `${date.year}-${month}`;
 }
 
-/** Title is normalised (lower + trim) so capitalisation drift across
- *  re-uploads doesn't break the check. */
+/** Dedup on sourceFileName: stable across LLM re-extractions (titles drift,
+ *  the source filename doesn't). The user can manually re-check the box if
+ *  they want to save a same-filename second copy. */
 function buildDocHistoryIndex(history: ApiDocument[]): Set<string> {
   const idx = new Set<string>();
   for (const d of history) {
-    if (!d.documentDate) continue;
-    idx.add(`${d.title.trim().toLowerCase()}|${d.documentDate}`);
+    if (!d.sourceFileName) continue;
+    idx.add(d.sourceFileName);
   }
   return idx;
 }
 
-function isDocDuplicate(title: string, documentDate: string | null, idx: Set<string>): boolean {
-  if (!documentDate) return false;
-  return idx.has(`${title.trim().toLowerCase()}|${documentDate}`);
+function isDocDuplicate(sourceFileName: string | null, idx: Set<string>): boolean {
+  if (!sourceFileName) return false;
+  return idx.has(sourceFileName);
 }
 
 /** Lab-value name → cell key. Lower + trim for dedup, and strip `|`
@@ -381,15 +382,12 @@ export function ReviewTable({
     [results],
   );
 
-  // Per-document: whether to save this document. Default: checked for new
-  // documents, UNCHECKED for documents that already exist at the same
-  // (title, documentDate) — same UX as the measurement dup-check.
+  // Default: checked for new docs, unchecked for already-saved ones.
   const [docChecked, setDocChecked] = useState<Record<number, boolean>>(() => {
     const map: Record<number, boolean> = {};
     results.forEach((r, fi) => {
       if (!r.document) return;
-      const dup = isDocDuplicate(r.document.title, r.document.documentDate, docHistoryIndex);
-      map[fi] = !dup;
+      map[fi] = !isDocDuplicate(r.fileName, docHistoryIndex);
     });
     return map;
   });
@@ -465,26 +463,6 @@ export function ReviewTable({
       return next;
     });
   }, [initialDisplayValues]);
-
-  // Document dedup auto-uncheck (unchanged behaviour from pre-matrix).
-  // makes a doc match an existing saved doc. Never re-checks (user can
-  // manually re-tick if they want to save a same-title dup).
-  useEffect(() => {
-    setDocChecked(prev => {
-      let changed = false;
-      const next = { ...prev };
-      results.forEach((r, fi) => {
-        if (!r.document || !prev[fi]) return;
-        const title = docTitles[fi] ?? r.document.title;
-        const date = fullDateToIso(fileDates[fi]);
-        if (isDocDuplicate(title, date, docHistoryIndex)) {
-          next[fi] = false;
-          changed = true;
-        }
-      });
-      return changed ? next : prev;
-    });
-  }, [fileDates, docTitles, results, docHistoryIndex]);
 
   /** Walks the matrix cells, returns the editable ones with a non-empty
    *  edited display value — the cells that will save. Shared by both the
@@ -656,9 +634,7 @@ export function ReviewTable({
         if (!r.error && !r.document && !hasNothingForMatrix) return null;
 
         const date = fileDates[fi];
-        const docTitle = r.document ? (docTitles[fi] ?? r.document.title) : '';
-        const docDateIso = r.document ? fullDateToIso(date) : null;
-        const isDocDup = r.document ? isDocDuplicate(docTitle, docDateIso, docHistoryIndex) : false;
+        const isDocDup = r.document ? isDocDuplicate(r.fileName, docHistoryIndex) : false;
 
         return (
           <div key={fi} className="review-file-section">
