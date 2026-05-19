@@ -694,6 +694,10 @@ INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
 VALUES ('trending_cron', NULL, NULL, '1970-01-01')
 ON CONFLICT DO NOTHING;
 
+INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
+VALUES ('youtube_bot_summary', NULL, NULL, '1970-01-01')
+ON CONFLICT DO NOTHING;
+
 -- ===== Enable RLS on infrastructure tables =====
 -- These tables have no user data and no policies (= zero rows via API).
 -- cron_lock: accessed via service role (bypasses RLS)
