@@ -362,7 +362,7 @@ function getContentDir(handle: string): string {
   return 'docs/blog';
 }
 
-function loadBlogArticle(handle: string): string | null {
+export function loadBlogArticle(handle: string): string | null {
   // Validate handle to prevent path traversal
   if (!/^[a-z0-9-]+$/.test(handle)) return null;
 

@@ -38,7 +38,7 @@ const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 // ---------------------------------------------------------------------------
 
 /** Escape user-provided strings before interpolating into HTML email templates. */
-function escapeHtml(str: string): string {
+export function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

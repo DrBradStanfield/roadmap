@@ -15,7 +15,7 @@
  */
 import * as Sentry from '@sentry/remix';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
-import { sendEmail } from './email.server';
+import { sendEmail, escapeHtml } from './email.server';
 
 const CRON_INTERVAL_MS = 60 * 60_000; // hourly check
 const TARGET_HOUR_UTC = 16;           // 16:00 UTC = 4am NZST (UTC+12) / 5am NZDT (UTC+13)
@@ -131,10 +131,6 @@ async function runSummary(now: Date): Promise<void> {
 // ---------------------------------------------------------------------------
 // HTML renderer
 // ---------------------------------------------------------------------------
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 function renderSummaryHtml(params: {
   posted: YouTubeBotLogRow[];

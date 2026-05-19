@@ -14,7 +14,8 @@
  */
 import * as Sentry from '@sentry/remix';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
-import { sendEmail } from './email.server';
+import { sendEmail, escapeHtml } from './email.server';
+import { Classification } from './chat-classifier.server';
 
 const CRON_INTERVAL_MS = 60 * 60_000;
 const TARGET_HOUR_UTC = 16;           // 16:00 UTC = 4am NZST (UTC+12) / 5am NZDT (UTC+13)
@@ -125,7 +126,7 @@ async function runSummary(now: Date): Promise<void> {
     .from('chat_conversations')
     .select('id, platform, external_id, title, updated_at')
     .gte('updated_at', since)
-    .in('platform', PLATFORMS as unknown as string[]);
+    .in('platform', [...PLATFORMS]);
 
   if (convErr) throw new Error(`Chat summary: conversation query failed: ${convErr.message}`);
 
@@ -229,20 +230,16 @@ async function runSummary(now: Date): Promise<void> {
 // HTML rendering
 // ---------------------------------------------------------------------------
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
 function truncate(s: string, n: number): string {
   if (s.length <= n) return s;
   return s.slice(0, n - 1) + '…';
 }
 
 function classifyBadgeColor(c: string | null): string {
-  if (c === 'ROUTE') return '#2b5fb0';
-  if (c === 'GREETING') return '#888';
-  if (c === 'PRODUCT' || c === 'ACCOUNT') return '#a06030';
-  if (c === 'ERROR') return '#c0392b';
+  if (c === Classification.ROUTE) return '#2b5fb0';
+  if (c === Classification.GREETING) return '#888';
+  if (c === Classification.PRODUCT || c === Classification.ACCOUNT) return '#a06030';
+  if (c === Classification.ERROR) return '#c0392b';
   return '#aaa';
 }
 

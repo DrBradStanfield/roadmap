@@ -32,6 +32,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
+import { loadBlogIndex, findBlogByVideoId, type BlogIndexEntry } from '../app/lib/blog-index.server';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -96,15 +97,7 @@ const YOUTUBE_PROMPT_TEMPLATE = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/ch
 const ALGORITHM_DOC = fs.readFileSync(path.join(REPO_ROOT, 'health_roadmap_algorithm.md'), 'utf-8');
 const PRODUCTS_DOC = fs.readFileSync(path.join(REPO_ROOT, 'docs/products.md'), 'utf-8');
 
-interface BlogIndexEntry {
-  title: string;
-  handle: string;
-  type?: 'reference' | 'article' | 'guideline' | 'pathway';
-  summary?: string;
-}
-const BLOG_INDEX: BlogIndexEntry[] = JSON.parse(
-  fs.readFileSync(path.join(REPO_ROOT, 'docs/blog/index.json'), 'utf-8')
-);
+const BLOG_INDEX: BlogIndexEntry[] = loadBlogIndex();
 const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
 
 // Router index block (one line per entry, same construction as production)
@@ -119,41 +112,27 @@ const ROUTER_INDEX_BLOCK = `# KB Index\n\n${[...BLOG_INDEX]
   .join('\n')}`;
 
 // ---------------------------------------------------------------------------
-// Look up matching blog post by youtube: frontmatter
+// Look up matching blog post by youtube: frontmatter via shared blog-index
 // ---------------------------------------------------------------------------
 
 interface BlogPost {
   slug: string;
   title: string;
   body: string;
-  filepath: string;
 }
 
 function loadBlogPostForVideo(videoId: string): BlogPost {
-  const blogDir = path.join(REPO_ROOT, 'docs/blog');
-  const files = fs.readdirSync(blogDir).filter(f => f.endsWith('.md'));
-  for (const file of files) {
-    const filepath = path.join(blogDir, file);
-    const content = fs.readFileSync(filepath, 'utf-8');
-    // Match either full URL or just the ID in the youtube: line
-    if (content.includes(videoId)) {
-      // Extract title from frontmatter
-      const titleMatch = content.match(/^title:\s*"([^"]+)"/m);
-      const ytMatch = content.match(/^youtube:\s*"([^"]+)"/m);
-      // Verify it's actually the youtube: field, not just an incidental mention
-      if (ytMatch && ytMatch[1].includes(videoId)) {
-        // Strip frontmatter
-        const body = content.replace(/^---[\s\S]*?---\n\n?/, '');
-        return {
-          slug: file.replace(/\.md$/, ''),
-          title: titleMatch ? titleMatch[1] : file.replace(/\.md$/, ''),
-          body,
-          filepath,
-        };
-      }
-    }
+  const entry = findBlogByVideoId(videoId);
+  if (!entry) {
+    throw new Error(`No blog post found for video ${videoId} — no entry in docs/blog/index.json has a 'youtube:' field with this video.`);
   }
-  throw new Error(`No blog post found for video ${videoId} — looked in ${blogDir}. Make sure the .md has 'youtube:' frontmatter with this video.`);
+  const filepath = path.join(REPO_ROOT, 'docs/blog', `${entry.handle}.md`);
+  const content = fs.readFileSync(filepath, 'utf-8');
+  return {
+    slug: entry.handle,
+    title: entry.title,
+    body: content.replace(/^---[\s\S]*?---\n\n?/, ''),
+  };
 }
 
 // ---------------------------------------------------------------------------

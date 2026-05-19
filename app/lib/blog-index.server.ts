@@ -33,3 +33,17 @@ export function loadBlogIndex(): BlogIndexEntry[] {
   }
   return cached;
 }
+
+/**
+ * Find the blog post written for a given YouTube video ID. Matches against
+ * the entry's `youtube` URL field (which the /blog-post skill sets to either
+ * `https://www.youtube.com/watch?v=<id>` or `https://youtu.be/<id>`).
+ * Returns null if no entry has that video ID.
+ */
+export function findBlogByVideoId(videoId: string): BlogIndexEntry | null {
+  if (!videoId) return null;
+  for (const entry of loadBlogIndex()) {
+    if (entry.youtube?.includes(videoId)) return entry;
+  }
+  return null;
+}

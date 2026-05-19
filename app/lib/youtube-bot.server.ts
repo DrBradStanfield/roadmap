@@ -30,11 +30,13 @@ import path from 'path';
 import * as Sentry from '@sentry/remix';
 import { supabaseAdmin } from './supabase.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
-import { routeQuery, sanitizeForRouter, ROUTER_VERSION } from './chat-router.server';
+import { routeQuery, sanitizeForRouter } from './chat-router.server';
+import { findBlogByVideoId, type BlogIndexEntry } from './blog-index.server';
 import {
   buildSystemBlocks,
   buildConversationMessages,
   getChatCompletion,
+  loadBlogArticle,
   loadMatchedArticlesFromHandles,
 } from './chat.server';
 
@@ -54,7 +56,6 @@ const CLIENT_ID = process.env.YOUTUBE_BOT_CLIENT_ID;
 const CLIENT_SECRET = process.env.YOUTUBE_BOT_CLIENT_SECRET;
 const REFRESH_TOKEN = process.env.YOUTUBE_BOT_REFRESH_TOKEN;
 
-const BLOG_DIR = path.join(process.cwd(), 'docs/blog');
 const YOUTUBE_PROMPT_PATH = path.join(process.cwd(), 'app/lib/chat-youtube-prompt.md');
 
 let YOUTUBE_PROMPT_TEMPLATE = '';
@@ -161,57 +162,15 @@ async function getAccessToken(): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
-// Blog-post lookup (matches a video to its published .md by `youtube:` frontmatter)
+// Platform-context construction — substitutes the video's blog post (looked up
+// via the shared blog-index/loader the on-site chatbot already uses).
 // ---------------------------------------------------------------------------
 
-interface BlogPost {
-  slug: string;
-  title: string;
-  body: string;
-}
-
-// Cached for the process lifetime — blog files rarely change, full rebuild on deploy.
-const blogPostCache = new Map<string, BlogPost | null>();
-
-function loadBlogPostForVideo(videoId: string): BlogPost | null {
-  if (blogPostCache.has(videoId)) return blogPostCache.get(videoId)!;
-
-  let files: string[];
-  try {
-    files = fs.readdirSync(BLOG_DIR).filter(f => f.endsWith('.md'));
-  } catch {
-    blogPostCache.set(videoId, null);
-    return null;
-  }
-
-  for (const file of files) {
-    const filepath = path.join(BLOG_DIR, file);
-    let content: string;
-    try { content = fs.readFileSync(filepath, 'utf-8'); } catch { continue; }
-    if (!content.includes(videoId)) continue;
-
-    const ytMatch = content.match(/^youtube:\s*"([^"]+)"/m);
-    if (!ytMatch || !ytMatch[1].includes(videoId)) continue;
-
-    const titleMatch = content.match(/^title:\s*"([^"]+)"/m);
-    const body = content.replace(/^---[\s\S]*?---\n\n?/, '');
-    const post: BlogPost = {
-      slug: file.replace(/\.md$/, ''),
-      title: titleMatch ? titleMatch[1] : file.replace(/\.md$/, ''),
-      body,
-    };
-    blogPostCache.set(videoId, post);
-    return post;
-  }
-  blogPostCache.set(videoId, null);
-  return null;
-}
-
-function buildYouTubePlatformContext(videoId: string, blogPost: BlogPost): string {
+function buildYouTubePlatformContext(videoId: string, entry: BlogIndexEntry, body: string): string {
   return YOUTUBE_PROMPT_TEMPLATE
-    .replace('{{VIDEO_TITLE}}', blogPost.title)
+    .replace('{{VIDEO_TITLE}}', entry.title)
     .replace('{{VIDEO_URL}}', `https://youtu.be/${videoId}`)
-    .replace('{{VIDEO_CONTENT}}', blogPost.body);
+    .replace('{{VIDEO_CONTENT}}', body);
 }
 
 // ---------------------------------------------------------------------------
@@ -376,18 +335,23 @@ async function countTodayPosts(): Promise<number> {
   return count ?? 0;
 }
 
-async function countVideoPosts(videoId: string): Promise<number> {
-  if (!supabaseAdmin) return 0;
-  const { count, error } = await supabaseAdmin
+/** Single-query fetch of how many replies we've posted on each video.
+ *  Called once per tick to avoid N queries in the per-comment loop. */
+async function fetchVideoPostCounts(): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  if (!supabaseAdmin) return counts;
+  const { data, error } = await supabaseAdmin
     .from('youtube_bot_log')
-    .select('id', { count: 'exact', head: true })
-    .eq('posted', true)
-    .eq('video_id', videoId);
+    .select('video_id')
+    .eq('posted', true);
   if (error) {
     Sentry.captureException(error, { tags: { feature: 'youtube-bot' } });
-    return 0;
+    return counts;
   }
-  return count ?? 0;
+  for (const row of data ?? []) {
+    if (row.video_id) counts.set(row.video_id, (counts.get(row.video_id) ?? 0) + 1);
+  }
+  return counts;
 }
 
 async function cleanupSkippedRows(): Promise<void> {
@@ -436,7 +400,7 @@ interface PipelineOutcome {
   replyText?: string;
 }
 
-async function runPipeline(thread: YouTubeThread, blogPost: BlogPost): Promise<PipelineOutcome> {
+async function runPipeline(thread: YouTubeThread, entry: BlogIndexEntry, body: string): Promise<PipelineOutcome> {
   const sanitized = sanitizeForRouter(thread.text);
 
   const classifierResult = await classifyMessage(sanitized);
@@ -450,7 +414,7 @@ async function runPipeline(thread: YouTubeThread, blogPost: BlogPost): Promise<P
     routerHandles = routerResult.handles;
   }
 
-  const platformContext = buildYouTubePlatformContext(thread.videoId, blogPost);
+  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body);
   const blogArticles = loadMatchedArticlesFromHandles(routerHandles);
   const systemBlocks = buildSystemBlocks(platformContext, { blogArticles });
   const conversationMessages = buildConversationMessages([], thread.text);
@@ -507,16 +471,17 @@ async function tick(): Promise<void> {
 
   let postedThisTick = 0;
   let skippedThisTick = 0;
-  const startingDailyCount = await countTodayPosts();
+  const [startingDailyCount, videoPostCounts] = await Promise.all([
+    countTodayPosts(),
+    fetchVideoPostCounts(),
+  ]);
 
   for (const thread of threads) {
-    // Daily cap check
     if (startingDailyCount + postedThisTick >= DAILY_REPLY_CAP) {
       console.log(`YouTube bot: daily cap (${DAILY_REPLY_CAP}) reached, stopping tick`);
       break;
     }
 
-    // Claim the comment. If another machine already has it, skip silently.
     let claimed: boolean;
     try {
       claimed = await claimComment(thread.topLevelCommentId);
@@ -526,31 +491,32 @@ async function tick(): Promise<void> {
     }
     if (!claimed) continue;
 
-    // Code-level filters — failure leaves the row as posted=FALSE
     const filt = filterThread(thread);
     if (!filt.pass) {
       skippedThisTick++;
       continue;
     }
 
-    // Need a matching blog post
-    const blogPost = loadBlogPostForVideo(thread.videoId);
-    if (!blogPost) {
+    const blogEntry = findBlogByVideoId(thread.videoId);
+    if (!blogEntry) {
+      skippedThisTick++;
+      continue;
+    }
+    const fullContent = loadBlogArticle(blogEntry.handle);
+    if (!fullContent) {
+      skippedThisTick++;
+      continue;
+    }
+    const blogBody = fullContent.replace(/^---[\s\S]*?---\n\n?/, '');
+
+    if ((videoPostCounts.get(thread.videoId) ?? 0) >= PER_VIDEO_REPLY_CAP) {
       skippedThisTick++;
       continue;
     }
 
-    // Per-video cap
-    const videoCount = await countVideoPosts(thread.videoId);
-    if (videoCount >= PER_VIDEO_REPLY_CAP) {
-      skippedThisTick++;
-      continue;
-    }
-
-    // Run pipeline
     let outcome: PipelineOutcome;
     try {
-      outcome = await runPipeline(thread, blogPost);
+      outcome = await runPipeline(thread, blogEntry, blogBody);
     } catch (err) {
       logTickError(err);
       skippedThisTick++;
@@ -586,6 +552,7 @@ async function tick(): Promise<void> {
       routerHandles: outcome.routerHandles ?? [],
     });
 
+    videoPostCounts.set(thread.videoId, (videoPostCounts.get(thread.videoId) ?? 0) + 1);
     postedThisTick++;
   }
 
