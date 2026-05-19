@@ -106,6 +106,15 @@ interface UrlViewRow {
   views: number;
 }
 
+/** Throw if the Shopify admin GraphQL response carries top-level `errors`.
+ *  Without this, response shapes like `{ errors: [...], data: null }` slip
+ *  past userErrors checks and the cron silently no-ops. */
+function assertNoTopLevelErrors(body: any, context: string): void {
+  if (Array.isArray(body?.errors) && body.errors.length > 0) {
+    throw new Error(`${context}: top-level GraphQL errors: ${JSON.stringify(body.errors)}`);
+  }
+}
+
 async function runShopifyQL(admin: any, query: string): Promise<UrlViewRow[]> {
   const result = await admin.graphql(
     `query RunShopifyQL($query: String!) {
@@ -121,6 +130,7 @@ async function runShopifyQL(admin: any, query: string): Promise<UrlViewRow[]> {
   );
 
   const body = await result.json();
+  assertNoTopLevelErrors(body, 'runShopifyQL');
   const node = body.data?.shopifyqlQuery;
 
   if (!node) {
@@ -157,7 +167,11 @@ async function runShopifyQL(admin: any, query: string): Promise<UrlViewRow[]> {
 
 async function getShopId(admin: any): Promise<string> {
   const result = await admin.graphql(`query { shop { id } }`);
-  return (await result.json()).data.shop.id;
+  const body = await result.json();
+  assertNoTopLevelErrors(body, 'getShopId');
+  const id = body.data?.shop?.id;
+  if (!id) throw new Error(`getShopId: missing shop.id in response: ${JSON.stringify(body)}`);
+  return id;
 }
 
 async function writeTrendingMetafield(
@@ -168,8 +182,8 @@ async function writeTrendingMetafield(
   const result = await admin.graphql(
     `mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
       metafieldsSet(metafields: $metafields) {
-        metafields { id }
-        userErrors { field message }
+        metafields { id key namespace updatedAt }
+        userErrors { field message code }
       }
     }`,
     {
@@ -185,10 +199,25 @@ async function writeTrendingMetafield(
     },
   );
   const body = await result.json();
-  const userErrors = body.data?.metafieldsSet?.userErrors ?? [];
-  if (userErrors.length) {
-    throw new Error(`Metafield write failed: ${JSON.stringify(userErrors)}`);
+  assertNoTopLevelErrors(body, 'writeTrendingMetafield');
+
+  const node = body.data?.metafieldsSet;
+  if (!node) {
+    throw new Error(`Metafield write returned no data node: ${JSON.stringify(body)}`);
   }
+
+  const userErrors = node.userErrors ?? [];
+  if (userErrors.length) {
+    throw new Error(`Metafield write userErrors: ${JSON.stringify(userErrors)}`);
+  }
+
+  // Verify the mutation actually returned the written metafield — proves the
+  // write committed, not just that the request didn't error.
+  const written = node.metafields ?? [];
+  if (written.length === 0) {
+    throw new Error(`Metafield write returned empty metafields array (no row written): ${JSON.stringify(body)}`);
+  }
+  console.log(`Trending: metafield written (id=${written[0].id}, updatedAt=${written[0].updatedAt})`);
 }
 
 interface TrendingEntry {
@@ -253,18 +282,27 @@ export function computeTrending(
 
 /** Run the full algorithm and write the metafield. Exported for the manual-trigger test route. */
 export async function computeAndWriteTrending(): Promise<TrendingEntry[]> {
-  const { admin } = await unauthenticated.admin(SHOP_DOMAIN);
+  const session = await unauthenticated.admin(SHOP_DOMAIN);
+  if (!session?.admin) {
+    throw new Error(`unauthenticated.admin(${SHOP_DOMAIN}) returned no admin client`);
+  }
+  const { admin } = session;
 
   const [current7dRows, priorBaselineRows, shopId] = await Promise.all([
     runShopifyQL(admin, QUERY_LAST_7D),
     runShopifyQL(admin, QUERY_PRIOR_BASELINE),
     getShopId(admin),
   ]);
+  console.log(
+    `Trending: fetched ${current7dRows.length} 7d rows, ${priorBaselineRows.length} baseline rows, shop=${shopId}`,
+  );
 
   const blogIndex = new Map<string, BlogIndexEntry>(
     loadBlogIndex().map(entry => [entry.handle, entry]),
   );
+  console.log(`Trending: blog index loaded with ${blogIndex.size} articles`);
   const ranked = computeTrending(current7dRows, priorBaselineRows, blogIndex);
+  console.log(`Trending: ranked ${ranked.length} candidates (TOP_N=${TOP_N})`);
 
   for (const entry of ranked) {
     console.log(

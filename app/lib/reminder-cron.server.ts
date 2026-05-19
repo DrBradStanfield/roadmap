@@ -140,10 +140,23 @@ async function processWithConcurrency<T, R>(
 async function processReminders(now: Date = new Date()): Promise<number> {
   let emailsSent = 0;
   let offset = 0;
+  // Skip-reason counters — surface why 0 emails would be sent. Without this,
+  // a silent path like "every user lacks demographics" or "every send returned
+  // false" looks identical to "no one was due."
+  const skips: Record<ReminderSkipReason, number> = {
+    'no-demographics': 0,
+    'all-cooldown': 0,
+    'no-due-reminders': 0,
+    'all-filtered-out': 0,
+    'email-send-failed': 0,
+  };
+  let totalEligible = 0;
+  let errors = 0;
 
   while (true) {
     const profiles = await getEligibleReminderProfiles(BATCH_SIZE, offset);
     if (profiles.length === 0) break;
+    totalEligible += profiles.length;
 
     // Process users with controlled concurrency (CONCURRENCY_LIMIT at a time)
     const results = await processWithConcurrency(
@@ -154,9 +167,14 @@ async function processReminders(now: Date = new Date()): Promise<number> {
 
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
-      if (result.status === 'fulfilled' && result.value) {
-        emailsSent++;
+      if (result.status === 'fulfilled') {
+        if (result.value === 'sent') {
+          emailsSent++;
+        } else {
+          skips[result.value]++;
+        }
       } else if (result.status === 'rejected') {
+        errors++;
         const profile = profiles[i];
         console.error(`Reminder error for user ${profile.id}:`, result.reason);
         Sentry.captureException(result.reason, {
@@ -170,15 +188,29 @@ async function processReminders(now: Date = new Date()): Promise<number> {
     if (profiles.length < BATCH_SIZE) break;
   }
 
+  console.log(
+    `Reminder cron summary: eligible=${totalEligible}, sent=${emailsSent}, errors=${errors}, ` +
+    `skips=${JSON.stringify(skips)}`,
+  );
   return emailsSent;
 }
 
+type ReminderSkipReason =
+  | 'no-demographics'
+  | 'all-cooldown'
+  | 'no-due-reminders'
+  | 'all-filtered-out'
+  | 'email-send-failed';
+
+type ReminderResult = 'sent' | ReminderSkipReason;
+
 /**
- * Process reminders for a single user. Returns true if an email was sent.
+ * Process reminders for a single user. Returns 'sent' if an email was sent,
+ * otherwise one of the skip reasons.
  */
-async function processUserReminders(profile: DbProfile, now: Date): Promise<boolean> {
+async function processUserReminders(profile: DbProfile, now: Date): Promise<ReminderResult> {
   // Need sex and birth_year to compute age-based eligibility
-  if (!profile.sex || !profile.birth_year) return false;
+  if (!profile.sex || !profile.birth_year) return 'no-demographics';
 
   const sex = decodeSex(profile.sex);
   const age = calculateAge(profile.birth_year, profile.birth_month ?? undefined);
@@ -191,7 +223,7 @@ async function processUserReminders(profile: DbProfile, now: Date): Promise<bool
   ]);
 
   // If all groups are on cooldown, skip this user
-  if (screeningCooldown && bloodTestCooldown && medReviewCooldown) return false;
+  if (screeningCooldown && bloodTestCooldown && medReviewCooldown) return 'all-cooldown';
 
   // Fetch user data
   const [screeningsDb, medicationsDb, measurementDates, preferencesDb] = await Promise.all([
@@ -222,7 +254,7 @@ async function processUserReminders(profile: DbProfile, now: Date): Promise<bool
     now,
   );
 
-  if (allReminders.length === 0) return false;
+  if (allReminders.length === 0) return 'no-due-reminders';
 
   // Filter by user preferences
   const disabledCategories = new Set<ReminderCategory>(
@@ -243,7 +275,7 @@ async function processUserReminders(profile: DbProfile, now: Date): Promise<bool
     reminders = reminders.filter(r => r.group !== 'medication_review');
   }
 
-  if (reminders.length === 0) return false;
+  if (reminders.length === 0) return 'all-filtered-out';
 
   // Get unsubscribe token for preferences URL
   const token = await getOrCreateUnsubscribeToken(profile.id);
@@ -260,7 +292,7 @@ async function processUserReminders(profile: DbProfile, now: Date): Promise<bool
   );
 
   const sent = await sendReminderEmail(profile.email, html, preferencesUrl);
-  if (!sent) return false;
+  if (!sent) return 'email-send-failed';
 
   // Log sent reminders per group (for cooldown tracking)
   // If this fails, the cooldown won't be recorded and the next cron run could
@@ -287,7 +319,7 @@ async function processUserReminders(profile: DbProfile, now: Date): Promise<bool
   }
 
   console.log(`Reminder email sent to ${profile.email} (${reminders.length} reminders)`);
-  return true;
+  return 'sent';
 }
 
 // Auto-start on module import

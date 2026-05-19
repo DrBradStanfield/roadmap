@@ -599,7 +599,14 @@ export async function sendReminderEmail(
   preferencesUrl: string,
 ): Promise<boolean> {
   if (!resend) {
-    console.log('Resend not configured, skipping reminder email');
+    // Production silent-fail trap: if RESEND_API_KEY is somehow unset on Fly,
+    // every reminder send returns false and zero reminders go out without a
+    // single Sentry event. Capture a warning so this becomes visible.
+    console.warn('sendReminderEmail: Resend client not configured (RESEND_API_KEY missing)');
+    Sentry.captureMessage('sendReminderEmail: Resend not configured', {
+      level: 'warning',
+      tags: { feature: 'reminder_email' },
+    });
     return false;
   }
 
