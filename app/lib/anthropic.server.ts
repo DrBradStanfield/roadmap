@@ -454,6 +454,29 @@ export async function extractOrClassify(
     }
   }
 
+  // Up to 2 retries (3 attempts total) with backoff for transient failures —
+  // Anthropic 5xx, network blips, AbortSignal timeouts, occasional schema-
+  // validation drift. Each attempt already does an inner prefill-retry on
+  // JSON shape errors, so a clean attempt is at most 2 LLM calls.
+  const MAX_ATTEMPTS = 3;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    try {
+      return await extractOrClassifyOnce(apiKey, content);
+    } catch (err) {
+      lastError = err;
+      if (attempt < MAX_ATTEMPTS - 1) {
+        await new Promise(r => setTimeout(r, attempt === 0 ? 1000 : 3000));
+      }
+    }
+  }
+  throw lastError;
+}
+
+async function extractOrClassifyOnce(
+  apiKey: string,
+  content: Array<Record<string, unknown>>,
+): Promise<UnifiedExtractionResult> {
   const body = {
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 8192, // Higher limit for markdown conversion
@@ -467,7 +490,7 @@ export async function extractOrClassify(
   try {
     parsed = unifiedResultSchema.parse(JSON.parse(extractJsonObject(responseText)));
   } catch {
-    // Retry once with prefilled assistant turn to force JSON
+    // Prefill `{` to coerce malformed responses into valid JSON shape.
     const retryBody = {
       ...body,
       messages: [
