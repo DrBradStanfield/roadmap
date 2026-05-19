@@ -2629,9 +2629,16 @@ input[type="number"] {
 .review-actions {
   display: flex;
   gap: 12px;
-  margin-top: 20px;
-  padding-top: 16px;
+  /* Stick to the modal's scrollable bottom — long matrices push the action
+     bar offscreen otherwise. Negative side margins cancel the .upload-modal-body
+     padding so the bar spans the full modal width. */
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  margin: 20px -20px -20px;
+  padding: 16px 20px;
   border-top: 1px solid var(--color-gray-border);
+  z-index: 2;
 }
 
 .review-save-btn {
