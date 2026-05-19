@@ -132,7 +132,15 @@ Stored values are **never mutated**. `health_measurements` has FHIR R4 `Observat
 - `components/ResultsPanel.tsx` — Results display with unit formatting
 - `components/MobileTabBar.tsx` — Mobile tab bar (exports `TabId`, `Tab` types)
 - `components/HistoryPanel.tsx` — Health history page (charts, filter, pagination)
-- `components/DatePicker.tsx` — Reusable month/year date picker
+- `components/BloodTestTimeline.tsx` — Live metric×date matrix on the main widget. FHIR-correct values via click-to-edit on saved cells.
+- `components/ReviewTable.tsx` — Lab-upload review modal's metric×date matrix. Mirrors BloodTestTimeline's visual + cell logic. Dedups documents on `sourceFileName`, lab values on `(metric, date)`.
+- `components/UploadModal.tsx` — File picker → LLM extraction → ReviewTable. Auto-processes on file select (no manual button). Sticky save/cancel bar at the modal bottom.
+- `components/NumericInputCell.tsx` — Shared input cell (matrix + draft column). Validates against metric range, renders status tick (ok/warn/bad).
+- `components/UnitChip.tsx` — Pill rendered next to a row's metric label. `<button>` when `onToggle` is given (core rows), `<span>` otherwise (additional rows).
+- `components/DraftDateCell.tsx` — Compact "DD Mon / 'YY" button + native date picker. Used by the timeline draft column + the review-matrix column headers + document-card date inputs.
+- `components/DatePicker.tsx` — Reusable month/year date picker (legacy; matrix uses DraftDateCell instead).
+- `lib/blood-test-cell.ts` — Pure helpers shared by the live timeline + review matrix: `validateTypedValue`, `statusOf`, `previewStatus`, `blockBadNumericKeys`.
+- `lib/useMatrixScrollSync.ts` — Horizontal-scroll sync across rows so dragging row 3 also moves the date header + every other row. Both matrix consumers register their rows/header.
 - `lib/useIsMobile.ts` — `useIsMobile(breakpoint)` hook
 - `lib/storage.ts` — localStorage helpers (guest data + logged-in user cache)
 - `lib/api.ts` — Measurement API client (app proxy, `apiCall()` error wrapper)
@@ -210,6 +218,8 @@ git checkout docs/products.md
 - `medication_history` — Immutable, append-only log of medication changes (FHIR MedicationStatement pattern). Tracks effective_start/effective_end periods, change_type (started/stopped/dose_changed/switched/initial). Auto-recorded on every medication save.
 - `supplements` — Mutable supplement records (supplement_key, supplement_name, dose_value, dose_unit, status, started_at), UNIQUE per (user_id, supplement_key). Logged-in users only.
 - `supplement_history` — Immutable, append-only log of supplement changes. Same pattern as medication_history.
+- `lab_values` — Free-form lab results beyond the 13 core metrics (sodium, ALT, MCV, etc.). FHIR Observation shape: `status` (`active` | `entered-in-error`), `source` (`lab_import` | `lab_import_edited` | `manual` | `manual_correction`), dedup via partial UNIQUE index `(user_id, lower(trim(metric_name)), recorded_at) WHERE status='active'`. Stored value+unit as reported by the lab — no SI conversion (units aren't canonical across labs).
+- `health_documents` — Scan results, clinic letters, discharge summaries, pathology reports, vaccination records. Stored markdown content + metadata. Dedup in the review modal is by `sourceFileName` (stable) rather than title+date (LLM-generated, drifts between extractions).
 - `reminder_preferences` — Per-category opt-out. Categories: `screening_colorectal`, `screening_breast`, `screening_cervical`, `screening_lung`, `screening_prostate`, `screening_dexa`, `blood_test_lipids`, `blood_test_hba1c`, `blood_test_creatinine`, `medication_review`
 - `reminder_log` — Cooldown enforcement. Groups: `screening` (90d), `blood_test` (180d), `medication_review` (365d)
 - `audit_logs` — HIPAA audit trail (user_id nullable for anonymization after deletion)
@@ -395,6 +405,10 @@ Backend: Initialized in `app/entry.server.tsx`.
 - **NEVER make sync-embed cleanup async or conditional.** In `sync-embed.liquid`, the `syncComplete()` function MUST run `localStorage.removeItem(STORAGE_KEY)`, `localStorage.setItem('health_roadmap_authenticated', '1')`, and `sessionStorage.setItem(SYNC_FLAG, '1')` **synchronously and unconditionally** before any `fetch()` calls. If these are moved into `.then()`, `.finally()`, or callbacks, users who navigate away before the async call completes will have broken auto-login and duplicate syncs. The pattern is: do all critical synchronous work first, then fire best-effort async work (like email sends).
 - **NEVER modify `health_roadmap_authenticated` flag logic** without understanding the full auto-redirect flow. This flag is set by sync-embed and the widget after confirming cloud data exists. It's read by `sync-embed.liquid` (logged-out branch) to clear stale data, and by the storefront to trigger session-acquisition redirects. Removing or delaying this flag breaks auto-login.
 - **Sync-embed and widget sync are mutually exclusive.** `sync-embed.liquid` exits early if `document.getElementById('health-tool-root')` exists (line 18). On widget pages, the widget handles sync directly. On all other pages, sync-embed handles it. Never add sync logic that runs in both places simultaneously.
+- **`CREATE TABLE IF NOT EXISTS` is a no-op on existing tables — easy to ship a column the production DB doesn't have.** If you add a column to a `CREATE TABLE IF NOT EXISTS` for a table that already exists in production, the column is silently NOT added. Symptom: PostgREST/Supabase JS returns the row but the column is undefined; or a `.eq('new_col', ...)` filter errors with `42703 column does not exist`. Fix: always pair `CREATE TABLE` additions with a matching `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. This bit us on `lab_values.status` after the FHIR redesign — the column was in the CREATE TABLE statement but never landed in prod.
+- **Storefront theme has a global `div:empty { display: none }` rule.** Specificity 11 (tag + pseudo) beats single-class selectors. Symptom: any truly-empty `<div/>` inside the matrix collapses to 0 width, breaking column alignment because the row strip ends up narrower than the header strip. Fix: render a non-breaking space inside (`<div>{' '}</div>`) so `:empty` doesn't match. See `MatrixCellView` empty-cell branch.
+- **LLM-generated text is not stable across re-extractions — don't dedup on it.** Re-running the same PDF through the LLM produces slightly different document titles each run ("Ultrasound Renal / Urinary Tract" → "Ultrasound Urinary Tract Report"). A `(title, date)` dedup key misses 6 of 7 documents on re-upload. Always dedup on stable identifiers: `sourceFileName` for documents, `(metric_name, recorded_at)` for lab values (the LLM IS deterministic on metric keys via the `TARGET METRICS` list in the system prompt).
+- **Lab-import is auto-retried server-side (1s + 3s backoff, up to 2 retries).** `extractOrClassify` in `app/lib/anthropic.server.ts` wraps the LLM call. Transient 5xx / timeouts / occasional schema-validation drift self-heal silently before the user sees "Extraction failed". Each attempt also does an inner prefill-retry on malformed JSON, so worst-case per file is 6 LLM calls. Cost impact is bounded — the file must fail before any extra call fires.
 
 ## Scalability & DDoS
 
