@@ -18,7 +18,7 @@ import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
 import { sendEmail } from './email.server';
 
 const CRON_INTERVAL_MS = 60 * 60_000; // hourly check
-const TARGET_HOUR_UTC = 9;            // 9:00 UTC = ~21:00 NZT — runs after the reminder cron at 8:00 UTC
+const TARGET_HOUR_UTC = 16;           // 16:00 UTC = 4am NZST (UTC+12) / 5am NZDT (UTC+13)
 const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 const RECIPIENT = process.env.YOUTUBE_BOT_SUMMARY_EMAIL || 'brad@drstanfield.com';
 

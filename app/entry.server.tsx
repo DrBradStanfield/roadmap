@@ -13,6 +13,7 @@ import { stopTrendingCron } from './lib/trending-cron.server';
 import { stopDiscordBot } from './lib/discord-bot.server';
 import { stopYouTubeBot } from './lib/youtube-bot.server';
 import { stopYouTubeBotSummaryCron } from './lib/youtube-bot-summary-cron.server';
+import { stopChatSummaryCron } from './lib/chat-summary-cron.server';
 import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl } from '../packages/health-core/src/sentry-scrub';
 
 Sentry.init({
@@ -103,6 +104,7 @@ process.on('SIGTERM', () => {
   stopDiscordBot();
   stopYouTubeBot();
   stopYouTubeBotSummaryCron();
+  stopChatSummaryCron();
   setTimeout(() => {
     console.log('Graceful shutdown complete');
     process.exit(0);
