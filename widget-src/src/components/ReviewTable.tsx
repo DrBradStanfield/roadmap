@@ -98,6 +98,13 @@ function fullDateToIso(date: FullDate): string {
   return `${date.year}-${month}-${day}`;
 }
 
+/** Inverse of fullDateToIso. Returns null on malformed input. */
+function parseIsoToFullDate(iso: string): FullDate | null {
+  const [year, month, day] = iso.split('-');
+  if (!year || !month || !day) return null;
+  return { year, month, day };
+}
+
 /** Build the most precise date prefix for duplicate matching. */
 function buildDatePrefix(date: FullDate): string {
   const month = date.month.padStart(2, '0');
@@ -429,15 +436,15 @@ export function ReviewTable({
   const [editedDisplayValues, setEditedDisplayValues] = useState<Record<string, string>>(
     () => ({ ...initialDisplayValues }),
   );
-  const userEditedKeysRef = useRef<Set<string>>(new Set());
-  // Display unit at the moment of edit. Used at save time so a unit toggle
-  // *after* typing doesn't silently convert the typed value with the new
-  // unit (which would corrupt the saved SI value).
-  const userEditedDisplaysRef = useRef<Record<string, UnitSystem>>({});
+  // Per-cell edit metadata. Membership = "user touched this cell" (drives
+  // the touched-stays-on-toggle behaviour below). `display` is the row's
+  // display unit at the moment of edit, read at save time so a unit toggle
+  // *after* typing doesn't misconvert the typed value into the wrong SI.
+  const touchedRef = useRef<Map<string, { display?: UnitSystem }>>(new Map());
 
   const updateEditedDisplayValue = useCallback((cellKey: string, value: string, display?: UnitSystem) => {
-    userEditedKeysRef.current.add(cellKey);
-    if (display) userEditedDisplaysRef.current[cellKey] = display;
+    const existing = touchedRef.current.get(cellKey);
+    touchedRef.current.set(cellKey, { display: display ?? existing?.display });
     setEditedDisplayValues(prev => ({ ...prev, [cellKey]: value }));
   }, []);
 
@@ -448,18 +455,13 @@ export function ReviewTable({
   useEffect(() => {
     setEditedDisplayValues(prev => {
       const next: Record<string, string> = {};
-      const touched = userEditedKeysRef.current;
+      const touched = touchedRef.current;
       for (const cellKey of Object.keys(initialDisplayValues)) {
         next[cellKey] = touched.has(cellKey) && prev[cellKey] !== undefined
           ? prev[cellKey]
           : initialDisplayValues[cellKey];
       }
-      // Prune the touched set so it can't grow unbounded across re-uploads.
-      const stampedDisplays = userEditedDisplaysRef.current;
-      for (const k of touched) if (!(k in initialDisplayValues)) {
-        touched.delete(k);
-        delete stampedDisplays[k];
-      }
+      for (const k of touched.keys()) if (!(k in initialDisplayValues)) touched.delete(k);
       return next;
     });
   }, [initialDisplayValues]);
@@ -474,7 +476,7 @@ export function ReviewTable({
       results.forEach((r, fi) => {
         if (!r.document || !prev[fi]) return;
         const title = docTitles[fi] ?? r.document.title;
-        const date = buildRecordedAt(fileDates[fi]).slice(0, 10); // YYYY-MM-DD
+        const date = fullDateToIso(fileDates[fi]);
         if (isDocDuplicate(title, date, docHistoryIndex)) {
           next[fi] = false;
           changed = true;
@@ -564,11 +566,9 @@ export function ReviewTable({
       if (cell.kind === 'core') {
         const metric = results[cell.fi]?.values[cell.vi]?.metric as MetricType | undefined;
         if (!metric) continue;
-        // Use the display unit stamped at edit time (if any), falling back to
-        // the row's current display. Without the stamp, a toggle-after-typing
-        // converts the typed value through the wrong unit and stores a
-        // wildly-wrong SI value.
-        const display = userEditedDisplaysRef.current[c.cellKey]
+        // Use the display unit stamped at edit time; without this, a
+        // toggle-after-typing converts the typed value through the wrong unit.
+        const display = touchedRef.current.get(c.cellKey)?.display
           ?? metricUnitOverrides?.[metric]
           ?? unitSystem;
         const valueSI = UNIT_DEFS[metric]
@@ -657,7 +657,7 @@ export function ReviewTable({
 
         const date = fileDates[fi];
         const docTitle = r.document ? (docTitles[fi] ?? r.document.title) : '';
-        const docDateIso = r.document ? buildRecordedAt(date).slice(0, 10) : null;
+        const docDateIso = r.document ? fullDateToIso(date) : null;
         const isDocDup = r.document ? isDocDuplicate(docTitle, docDateIso, docHistoryIndex) : false;
 
         return (
@@ -701,8 +701,8 @@ export function ReviewTable({
                     needsDay={!date.day}
                     ariaLabel="Document date"
                     onChange={picked => {
-                      const [y, m, d] = picked.split('-');
-                      if (y && m && d) setFileDates(prev => ({ ...prev, [fi]: { year: y, month: m, day: d } }));
+                      const parsed = parseIsoToFullDate(picked);
+                      if (parsed) setFileDates(prev => ({ ...prev, [fi]: parsed }));
                     }}
                   />
                 </div>
@@ -859,8 +859,8 @@ function MatrixColumnHeader({ col, onDateChange }: { col: MatrixColumn; onDateCh
       needsDay={!col.date.day}
       ariaLabel="Choose column date"
       onChange={picked => {
-        const [y, m, d] = picked.split('-');
-        if (y && m && d) onDateChange(col, { year: y, month: m, day: d });
+        const parsed = parseIsoToFullDate(picked);
+        if (parsed) onDateChange(col, parsed);
       }}
     />
   );
@@ -975,12 +975,13 @@ const MatrixCellView = memo(function MatrixCellView({
       </div>
     );
   }
+  const isCore = cell.kind === 'core';
   // Stamp the row's display unit so a toggle-after-typing doesn't
   // misconvert the typed value at save time.
-  const handleChange = (v: string) => onCellChange(cellKey, v, cell.kind === 'core' ? unitSystem : undefined);
-  const lowConfClass = cell.kind === 'core' && cell.confidence === 'low' ? ' bt-cell-low-confidence' : '';
+  const handleChange = (v: string) => onCellChange(cellKey, v, isCore ? unitSystem : undefined);
+  const lowConfClass = isCore && cell.confidence === 'low' ? ' bt-cell-low-confidence' : '';
 
-  if (cell.kind === 'core') {
+  if (isCore) {
     return (
       <NumericInputCell
         metric={matrixRowKey(row) as MetricType}

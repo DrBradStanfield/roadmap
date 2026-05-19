@@ -1,6 +1,5 @@
-// Compact date-picker cell: button labelled "DD Mon / 'YY" + calendar icon
-// that opens the native date picker. Shared by BloodTestTimeline's draft
-// column and ReviewTable's matrix-column + document-card date inputs.
+// Compact "DD Mon / 'YY" button + calendar icon that opens the native date
+// picker.
 
 import { useRef } from 'react';
 import { MONTHS_SHORT } from '../lib/constants';

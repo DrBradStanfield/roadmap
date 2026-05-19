@@ -1,8 +1,4 @@
-// Tiny pill rendered next to a row's metric label showing the unit. When
-// `onToggle` is provided the chip is a button that switches units (used on
-// core rows in both the live timeline and the lab-upload matrix). Without
-// `onToggle` it falls back to a static span so additional-row chips don't
-// look clickable.
+// Unit pill: <button> when `onToggle` is given, <span> otherwise.
 
 export function UnitChip({ label, onToggle }: { label: string; onToggle?: () => void }) {
   if (!onToggle) {

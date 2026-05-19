@@ -195,7 +195,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     setFiles(valid);
     if (valid.length > 0) {
       setError(null);
-      handleProcess(valid);
+      void handleProcess(valid);
     }
   };
 
@@ -204,8 +204,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     handleFileSelect(e.dataTransfer.files);
   };
 
-  const handleProcess = async (filesToProcess: File[] = files) => {
-    if (filesToProcess.length === 0) return;
+  const handleProcess = async (filesToProcess: File[]) => {
+    // Guard rapid re-select / drag-then-click: only the first selection
+    // starts processing; subsequent calls before that finishes are dropped.
+    if (state !== 'select' || filesToProcess.length === 0) return;
 
     const quota = await checkLabImportQuota();
     if (!quota.allowed) {
