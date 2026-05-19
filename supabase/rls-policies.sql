@@ -1293,6 +1293,58 @@ CREATE INDEX IF NOT EXISTS idx_match_events_classification
 ALTER TABLE chat_match_events
   ALTER COLUMN router_version DROP NOT NULL;
 
+-- ===== youtube_bot_log (YouTube comment auto-poster, 2026-05-20) =====
+-- One table holds both: (a) posted replies — full audit data, kept forever;
+-- (b) skipped comments — just the comment_id for dedup, last 200 only.
+--
+-- Race-safe via UNIQUE on youtube_comment_id: the bot INSERTs a claim row
+-- (posted=FALSE) before running the LLM pipeline; if another Fly machine
+-- already claimed the same comment, the insert silently fails (ON CONFLICT
+-- DO NOTHING) and the second machine skips. After pipeline:
+--   - POSTED → UPDATE the row with posted=TRUE + full audit data
+--   - SKIPPED / FILTERED → row stays as posted=FALSE
+-- See app/lib/youtube-bot.server.ts.
+
+CREATE TABLE IF NOT EXISTS youtube_bot_log (
+  id                  BIGSERIAL PRIMARY KEY,
+  youtube_comment_id  TEXT NOT NULL UNIQUE,
+  posted              BOOLEAN NOT NULL,
+  user_channel        TEXT,
+  user_comment        TEXT,
+  video_id            TEXT,
+  reply_text          TEXT,
+  posted_youtube_id   TEXT,
+  classification      TEXT,
+  router_handles      TEXT[],
+  posted_at           TIMESTAMPTZ,
+  processed_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_yt_bot_log_dedup  ON youtube_bot_log (youtube_comment_id);
+CREATE INDEX IF NOT EXISTS idx_yt_bot_log_posted ON youtube_bot_log (posted_at DESC) WHERE posted = TRUE;
+
+ALTER TABLE youtube_bot_log ENABLE ROW LEVEL SECURITY;
+-- (No policies; service role bypasses RLS. No user-facing reads.)
+
+-- Cleanup function: keep all posted rows forever; keep only last 200 unposted
+-- rows (dedup memory only). Called at the end of each cron tick.
+CREATE OR REPLACE FUNCTION youtube_bot_cleanup_skipped()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  DELETE FROM youtube_bot_log
+  WHERE posted = FALSE
+    AND id NOT IN (
+      SELECT id FROM youtube_bot_log
+      WHERE posted = FALSE
+      ORDER BY id DESC
+      LIMIT 200
+    );
+END;
+$$;
+
 -- ===== Force PostgREST to reload schema cache =====
 -- After table changes, PostgREST may hold stale OIDs. This nudges it to refresh.
 -- NOTE: This is not always reliable — if saves break after schema changes,

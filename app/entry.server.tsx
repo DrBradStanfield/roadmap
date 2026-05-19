@@ -11,6 +11,7 @@ import * as Sentry from "@sentry/remix";
 import { stopReminderCron } from './lib/reminder-cron.server';
 import { stopTrendingCron } from './lib/trending-cron.server';
 import { stopDiscordBot } from './lib/discord-bot.server';
+import { stopYouTubeBot } from './lib/youtube-bot.server';
 import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl } from '../packages/health-core/src/sentry-scrub';
 
 Sentry.init({
@@ -99,6 +100,7 @@ process.on('SIGTERM', () => {
   stopReminderCron();
   stopTrendingCron();
   stopDiscordBot();
+  stopYouTubeBot();
   setTimeout(() => {
     console.log('Graceful shutdown complete');
     process.exit(0);
