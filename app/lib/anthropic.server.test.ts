@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { stripCodeFences, extractJsonObject, resolveLabValues, resolveUnit } from './anthropic.server';
+import { stripCodeFences, extractJsonObject, resolveLabValues, resolveUnit, parseUnifiedResult } from './anthropic.server';
 
 // ---------------------------------------------------------------------------
 // Bug: LLM wraps JSON response in markdown code fences (```json ... ```)
@@ -159,5 +159,85 @@ describe('resolveUnit edge cases', () => {
     expect(result.system).toBe('si');
     expect(result.valueSI).toBe(95);
     expect(result.confident).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bug: ZodError POST /api/lab-import on additionalValues[N].value with
+// "Expected number, received string". The LLM sometimes returns string
+// values for non-numeric lab results ("<5", "trace", "POS"). The schema
+// then rejected the entire response, causing all 3 retry attempts to
+// fail the same way and the user saw "Extraction failed".
+//
+// Fix: numeric strings get coerced; non-numeric strings filtered out.
+// ---------------------------------------------------------------------------
+
+describe('parseUnifiedResult — tolerates string-typed numeric values', () => {
+  const base = {
+    classification: 'lab_report' as const,
+    reportDate: '2026-01-01',
+    values: [],
+    additionalValues: [],
+    document: null,
+  };
+
+  it('coerces numeric strings in additionalValues to numbers', () => {
+    const result = parseUnifiedResult({
+      ...base,
+      additionalValues: [
+        { name: 'sodium', value: '141', unit: 'mmol/L' },
+        { name: 'potassium', value: 4.5, unit: 'mmol/L' },
+      ],
+    });
+    expect(result.additionalValues).toHaveLength(2);
+    expect(result.additionalValues[0]).toMatchObject({ name: 'sodium', value: 141 });
+    expect(result.additionalValues[1]).toMatchObject({ name: 'potassium', value: 4.5 });
+  });
+
+  it('drops non-numeric string values (<5, trace, POS) instead of throwing', () => {
+    const result = parseUnifiedResult({
+      ...base,
+      additionalValues: [
+        { name: 'sodium', value: 141, unit: 'mmol/L' },
+        { name: 'troponin', value: '<5', unit: 'ng/L' },
+        { name: 'urine_protein', value: 'trace', unit: '' },
+        { name: 'urine_blood', value: 'POS', unit: '' },
+        { name: 'potassium', value: 4.5, unit: 'mmol/L' },
+      ],
+    });
+    expect(result.additionalValues).toHaveLength(2);
+    expect(result.additionalValues.map(v => v.name)).toEqual(['sodium', 'potassium']);
+  });
+
+  it('coerces european thousand-separator strings ("1,234")', () => {
+    const result = parseUnifiedResult({
+      ...base,
+      additionalValues: [
+        { name: 'platelets', value: '1,234', unit: 'x 10e9/L' },
+      ],
+    });
+    expect(result.additionalValues[0].value).toBe(1234);
+  });
+
+  it('applies the same coercion to core values[] entries', () => {
+    const result = parseUnifiedResult({
+      ...base,
+      values: [
+        { metric: 'ldl', value: '2.5', unit: 'mmol/L', confidence: 'high' as const },
+        { metric: 'hdl', value: '<0.5', unit: 'mmol/L', confidence: 'low' as const },
+      ],
+    });
+    expect(result.values).toHaveLength(1);
+    expect(result.values[0]).toMatchObject({ metric: 'ldl', value: 2.5 });
+  });
+
+  it('numeric values pass through unchanged', () => {
+    const result = parseUnifiedResult({
+      ...base,
+      values: [{ metric: 'ldl', value: 2.5, unit: 'mmol/L', confidence: 'high' as const }],
+      additionalValues: [{ name: 'sodium', value: 141, unit: 'mmol/L' }],
+    });
+    expect(result.values[0].value).toBe(2.5);
+    expect(result.additionalValues[0].value).toBe(141);
   });
 });

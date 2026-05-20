@@ -157,15 +157,15 @@ export function resolveLabValues(rawValues: Array<{ metric: string; value: numbe
   return values;
 }
 
-/** Build a UnifiedExtractionResult from a parsed unified response. */
-function toUnifiedResult(parsed: z.infer<typeof unifiedResultSchema>): UnifiedExtractionResult {
+/** Build a UnifiedExtractionResult from a parsed-and-filtered unified response. */
+function toUnifiedResult(parsed: ReturnType<typeof parseUnifiedResult>): UnifiedExtractionResult {
   const isLab = parsed.classification === 'lab_report';
   const values = isLab ? resolveLabValues(parsed.values) : [];
   return {
     classification: parsed.classification,
     reportDate: parsed.reportDate,
     values,
-    additionalValues: isLab ? (parsed.additionalValues || []).filter(v => v.name.length > 0) : [],
+    additionalValues: isLab ? parsed.additionalValues.filter(v => v.name.length > 0) : [],
     unrecognized: parsed.unrecognized || [],
     document: parsed.document ? {
       classification: parsed.classification,
@@ -374,19 +374,41 @@ RESPONSE FORMAT (strict JSON, no markdown wrapping):
 }`;
 
 /** Zod schema for the unified LLM response */
+/**
+ * Lab values frequently encode non-numeric measurements as strings:
+ *   "<5"       (below detection limit)
+ *   ">2000"    (above range)
+ *   "trace", "POS", "Not detected"
+ *   "1,234"    (european thousands separator)
+ *
+ * The LLM sometimes mirrors those strings into the `value` field even
+ * though the prompt asks for numbers. Coerce numeric-looking strings to
+ * numbers, leave true non-numerics as null so the post-parse filter can
+ * drop the row (rather than throwing on the whole batch).
+ */
+const numericValue = z.preprocess(v => {
+  if (typeof v === 'number') return v;
+  if (typeof v !== 'string') return v;
+  // Strip european thousand separators, then parse. parseFloat returns NaN
+  // for "<5", "trace", etc. — we surface that as null to drop the row.
+  const cleaned = v.replace(/,/g, '');
+  const n = parseFloat(cleaned);
+  return Number.isFinite(n) ? n : null;
+}, z.number().nullable());
+
 const unifiedResultSchema = z.object({
   classification: z.enum(DOCUMENT_CLASSIFICATIONS),
   reportDate: z.string().nullable(),
   values: z.array(z.object({
     metric: z.string(),
-    value: z.number(),
+    value: numericValue,
     unit: z.string(),
     confidence: z.enum(['high', 'medium', 'low']),
     question: z.string().optional(),
   })).default([]),
   additionalValues: z.array(z.object({
     name: z.string().default(''),
-    value: z.number(),
+    value: numericValue,
     unit: z.string().default(''),
     referenceLow: z.number().nullable().optional(),
     referenceHigh: z.number().nullable().optional(),
@@ -399,6 +421,17 @@ const unifiedResultSchema = z.object({
     metadata: z.record(z.unknown()).default({}),
   }).nullable().default(null),
 });
+
+/** Exposed for testing. Wraps schema parse + drops rows whose value field
+ *  couldn't be coerced to a finite number (the schema marks those null). */
+export function parseUnifiedResult(raw: unknown) {
+  const parsed = unifiedResultSchema.parse(raw);
+  return {
+    ...parsed,
+    values: parsed.values.filter(v => v.value !== null) as Array<typeof parsed.values[number] & { value: number }>,
+    additionalValues: parsed.additionalValues.filter(v => v.value !== null) as Array<typeof parsed.additionalValues[number] & { value: number }>,
+  };
+}
 
 export interface DocumentResult {
   classification: string;
@@ -486,9 +519,9 @@ async function extractOrClassifyOnce(
 
   let responseText = await callAnthropic(apiKey, body);
 
-  let parsed: z.infer<typeof unifiedResultSchema>;
+  let parsed: ReturnType<typeof parseUnifiedResult>;
   try {
-    parsed = unifiedResultSchema.parse(JSON.parse(extractJsonObject(responseText)));
+    parsed = parseUnifiedResult(JSON.parse(extractJsonObject(responseText)));
   } catch {
     // Prefill `{` to coerce malformed responses into valid JSON shape.
     const retryBody = {
@@ -499,7 +532,7 @@ async function extractOrClassifyOnce(
       ],
     };
     responseText = await callAnthropic(apiKey, retryBody);
-    parsed = unifiedResultSchema.parse(JSON.parse(extractJsonObject('{' + responseText)));
+    parsed = parseUnifiedResult(JSON.parse(extractJsonObject('{' + responseText)));
   }
 
   return toUnifiedResult(parsed);
@@ -750,7 +783,7 @@ export async function pollBatch(
         const textBlock = entry.result.message?.content?.find((b: any) => b.type === 'text');
         if (textBlock?.text) {
           try {
-            const parsed = unifiedResultSchema.parse(JSON.parse(extractJsonObject(textBlock.text)));
+            const parsed = parseUnifiedResult(JSON.parse(extractJsonObject(textBlock.text)));
             resultMap.set(index, toUnifiedResult(parsed));
             continue;
           } catch {
