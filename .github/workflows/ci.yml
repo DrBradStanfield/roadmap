@@ -16,10 +16,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm audit --production --audit-level=high
-      - run: npm test
-      - run: npm run build
-      - run: npm run build:widget
 
       # Blog index drift check — ensures docs/blog/index.json is derivable from
       # .md frontmatter via scripts/rebuild-blog-index.ts. Catches:
@@ -28,6 +24,7 @@ jobs:
       #   - Hand-edits to index.json with fields missing from .md frontmatter
       #     (would be silently dropped on next rebuild)
       # See docs/chat-architecture.md → Source of truth: .md frontmatter
+      # Placed BEFORE `npm audit` so dependency vuln noise can't mask drift bugs.
       - name: Verify blog index is in sync with .md frontmatter
         run: |
           if [ ! -f scripts/rebuild-blog-index.ts ]; then
@@ -42,3 +39,8 @@ jobs:
             exit 1
           fi
           echo "✓ Blog index is in sync with .md frontmatter"
+
+      - run: npm audit --production --audit-level=high
+      - run: npm test
+      - run: npm run build
+      - run: npm run build:widget
