@@ -199,9 +199,27 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     const { pages } = validation.data;
-    const result = await extractOrClassify(pages);
-
-    return json({ success: true, data: result, remaining });
+    const start = Date.now();
+    try {
+      const result = await extractOrClassify(pages);
+      return json({ success: true, data: result, remaining });
+    } catch (error) {
+      console.error('Lab import error:', error);
+      // Capture file shape so the next AbortError/ZodError points at the
+      // input that tripped it. The pages payload itself can be tens of MB
+      // (base64 images), so summarise rather than sending it whole.
+      Sentry.captureException(error, {
+        tags: { feature: 'lab_import', errorName: (error as Error)?.name ?? 'unknown' },
+        extra: {
+          pageCount: pages.length,
+          pageTypes: pages.map(p => p.type),
+          textBytes: pages.filter(p => p.type === 'text').reduce((n, p) => n + (p.content?.length ?? 0), 0),
+          imageBytes: pages.filter(p => p.type === 'image').reduce((n, p) => n + (p.content?.length ?? 0), 0),
+          elapsedMs: Date.now() - start,
+        },
+      });
+      return json({ success: false, error: 'Failed to process request' }, { status: 500 });
+    }
   } catch (error) {
     console.error('Lab import error:', error);
     Sentry.captureException(error, { tags: { feature: 'lab_import' } });

@@ -549,9 +549,12 @@ export interface AnthropicUsage {
   cacheReadTokens: number;
 }
 
-/** Shared fetch + error handling. Returns text content + usage metrics. */
+/** Shared fetch + error handling. Returns text content + usage metrics.
+ *  Default timeout is 120s — image PDFs with 8K-token output budgets on
+ *  Haiku-4.5 can legitimately need ~90s; 60s was firing AbortError on
+ *  reasonable requests. The retry wrapper still caps the absolute ceiling. */
 async function fetchAnthropicRaw(
-  apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000,
+  apiKey: string, body: Record<string, unknown>, timeoutMs = 120_000,
 ): Promise<{ content: string; usage: AnthropicUsage }> {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
