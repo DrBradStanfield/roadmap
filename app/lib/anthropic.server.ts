@@ -487,23 +487,16 @@ export async function extractOrClassify(
     }
   }
 
-  // Up to 2 retries (3 attempts total) with backoff for transient failures —
-  // Anthropic 5xx, network blips, AbortSignal timeouts, occasional schema-
-  // validation drift. Each attempt already does an inner prefill-retry on
-  // JSON shape errors, so a clean attempt is at most 2 LLM calls.
-  const MAX_ATTEMPTS = 3;
-  let lastError: unknown;
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    try {
-      return await extractOrClassifyOnce(apiKey, content);
-    } catch (err) {
-      lastError = err;
-      if (attempt < MAX_ATTEMPTS - 1) {
-        await new Promise(r => setTimeout(r, attempt === 0 ? 1000 : 3000));
-      }
-    }
+  // One retry (2 attempts total) with 1s backoff. Transient blips
+  // (Anthropic 5xx, network, occasional schema drift) self-heal; persistent
+  // failures bubble up quickly so the user can re-upload and the Sentry
+  // telemetry tells us what broke.
+  try {
+    return await extractOrClassifyOnce(apiKey, content);
+  } catch {
+    await new Promise(r => setTimeout(r, 1000));
+    return await extractOrClassifyOnce(apiKey, content);
   }
-  throw lastError;
 }
 
 async function extractOrClassifyOnce(
@@ -549,12 +542,9 @@ export interface AnthropicUsage {
   cacheReadTokens: number;
 }
 
-/** Shared fetch + error handling. Returns text content + usage metrics.
- *  Default timeout is 120s — image PDFs with 8K-token output budgets on
- *  Haiku-4.5 can legitimately need ~90s; 60s was firing AbortError on
- *  reasonable requests. The retry wrapper still caps the absolute ceiling. */
+/** Shared fetch + error handling. Returns text content + usage metrics. */
 async function fetchAnthropicRaw(
-  apiKey: string, body: Record<string, unknown>, timeoutMs = 120_000,
+  apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000,
 ): Promise<{ content: string; usage: AnthropicUsage }> {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
