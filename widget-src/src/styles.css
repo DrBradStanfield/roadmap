@@ -4503,10 +4503,10 @@ input[type="number"] {
   background: transparent;
   opacity: 0.85;
 }
-/* Fixed-height slot so swapping a tick (~3px) for an error message (~12px)
-   doesn't shift the input above. The whole cell stays visually anchored. */
+/* Min-height slot so swapping a tick for an error message doesn't shift the
+   input above. Min (not fixed) so a wrapped error message can extend down. */
 .bt-cell-foot {
-  height: 14px;
+  min-height: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4562,10 +4562,14 @@ input[type="number"] {
   border-bottom: 1.5px solid var(--bt-bad);
 }
 .bt-input-error-text {
-  font-size: 9px;
+  /* 9px was unreadable — users mistook validation rejections for "save didn't
+     work". Bump to 11px and let it wrap so the unit-bearing message
+     (e.g. "Max 22.6 mmol/L") stays visible inside the 14px cell foot. */
+  font-size: 11px;
+  line-height: 1.1;
   color: var(--bt-bad);
   font-weight: 600;
-  white-space: nowrap;
+  text-align: center;
   margin-top: 2px;
 }
 

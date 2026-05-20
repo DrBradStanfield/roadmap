@@ -5,6 +5,7 @@
 import {
   parseLocalisedNumber,
   toCanonicalValue,
+  getDisplayLabel,
   getDisplayRange,
   HBA1C_THRESHOLDS,
   LDL_THRESHOLDS,
@@ -40,8 +41,12 @@ export function validateTypedValue(
   if (typed === '') return { error: null, range };
   const n = parseLocalisedNumber(typed);
   if (n === undefined) return { error: 'Enter a number', range };
-  if (n < range.min) return { error: `Min ${range.min}`, range };
-  if (n > range.max) return { error: `Max ${range.max}`, range };
+  // Include the display unit in min/max errors so a user who typed (e.g.)
+  // a mg/dL number into an mmol/L field can see the unit mismatch instead
+  // of a bare "Max 22.6".
+  const unit = getDisplayLabel(metric, display);
+  if (n < range.min) return { error: `Min ${range.min} ${unit}`, range };
+  if (n > range.max) return { error: `Max ${range.max} ${unit}`, range };
   return { error: null, range };
 }
 
