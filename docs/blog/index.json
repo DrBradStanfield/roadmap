@@ -1,5 +1,35 @@
 [
   {
+    "title": "New Study Says I Was Wrong About Omega-3?",
+    "handle": "new-study-says-i-was-wrong-about-omega-3",
+    "url": "https://drstanfield.com/blogs/articles/new-study-says-i-was-wrong-about-omega-3",
+    "tags": [
+      "Supplements",
+      "Research",
+      "General Health"
+    ],
+    "keywords": [
+      "alzheimer",
+      "b-vitamins",
+      "brain health",
+      "cognitive",
+      "dementia",
+      "dha",
+      "epa",
+      "fish oil",
+      "folate",
+      "folic acid",
+      "omega-3",
+      "tmg",
+      "vitamin b12",
+      "vitamin b6"
+    ],
+    "product": "microvitamin",
+    "publishedAt": "2026-05-20T12:00:00Z",
+    "youtube": "https://www.youtube.com/watch?v=gAjyBJl1OF8",
+    "summary": "Dr Brad's omega-3 post: a new ADNI study found faster cognitive decline in omega-3 users, but it didn't measure oxidation (the bottle) or B-vitamin status (the co-factor). Brad still takes omega-3 with B-vitamins and TMG. Covers VITACOG, DHA peroxidation, Albert NZ fish oil, ADNI biomarkers."
+  },
+  {
     "title": "What's Causing Colon Cancer to Rise So Fast?",
     "handle": "whats-causing-colon-cancer-to-rise-so-fast",
     "url": "https://drstanfield.com/blogs/articles/whats-causing-colon-cancer-to-rise-so-fast",
@@ -22,6 +52,28 @@
     "publishedAt": "2026-05-17T17:05:00Z",
     "youtube": "https://www.youtube.com/watch?v=cFF5KV5hFsU",
     "summary": "Dr Brad's early-onset colon cancer post: three research teams point at different suspects — picloram herbicide (OR 1.77), childhood E. coli colibactin (21% of CRC), and ultra-processed food (45% higher adenoma risk). Covers FIT screening from 45, fibre, activity, symptoms not to ignore."
+  },
+  {
+    "title": "We Were Wrong About Aspirin (New Evidence)",
+    "handle": "we-were-wrong-about-aspirin-new-evidence",
+    "url": "https://drstanfield.com/blogs/articles/we-were-wrong-about-aspirin-new-evidence",
+    "tags": [
+      "Research",
+      "Preventative Care",
+      "General Health"
+    ],
+    "keywords": [
+      "aspirin",
+      "cancer",
+      "cardiovascular",
+      "colon cancer",
+      "heart attack",
+      "inflammation",
+      "stroke"
+    ],
+    "publishedAt": "2026-05-15T03:00:00Z",
+    "youtube": "https://www.youtube.com/watch?v=ulIkmIh7qL4",
+    "summary": "Dr Brad's aspirin post: daily low-dose aspirin for primary cancer prevention is no longer supported and may increase cancer mortality in older adults. Covers ASPREE 2026 follow-up (HR 1.15 cancer death), Cochrane 2026, Rothwell 2010, CAPP2 Lynch syndrome exception, and TXA2/T-cell mechanism — secondary prevention after heart attack/stroke is unchanged."
   },
   {
     "title": "99% of Heart Attacks Had This Prior Warning",
