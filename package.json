@@ -16,7 +16,8 @@
     "shopify": "shopify",
     "vite": "vite",
     "test": "npm run test --workspace=@roadmap/health-core",
-    "test:watch": "npm run test --workspace=@roadmap/health-core -- --watch"
+    "test:watch": "npm run test --workspace=@roadmap/health-core -- --watch",
+    "rebuild-index": "npx tsx scripts/rebuild-blog-index.ts"
   },
   "type": "module",
   "engines": {

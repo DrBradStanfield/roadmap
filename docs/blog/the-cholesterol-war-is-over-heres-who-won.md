@@ -5,6 +5,7 @@ youtube: "https://youtu.be/d0bytrCdnbA"
 publishedAt: "2026-04-23T12:00:00Z"
 tags: ["Research", "Preventative Care"]
 keywords: ["cholesterol", "ldl", "hdl", "cardiovascular", "heart attack", "stroke", "atherosclerosis", "statin", "ezetimibe", "pcsk9", "diabetes", "triglycerides", "blood pressure"]
+product: "microvitamin-plus"
 summary: "Dr Brad's cholesterol target post: LDL below 55 mg/dL is now evidence-backed as superior to the old 70 target (Ez-PAVE RCT, 33% fewer events). Covers PCSK9 inhibitors, ezetimibe underuse, FOURIER, VESALIUS-CV, PESA subclinical atherosclerosis data, and ACC 2026 findings."
 ---
 

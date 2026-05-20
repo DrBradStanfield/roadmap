@@ -24,10 +24,37 @@
       "vitamin b12",
       "vitamin b6"
     ],
-    "product": "microvitamin",
     "publishedAt": "2026-05-20T12:00:00Z",
     "youtube": "https://www.youtube.com/watch?v=gAjyBJl1OF8",
+    "product": "microvitamin",
     "summary": "Dr Brad's omega-3 post: a new ADNI study found faster cognitive decline in omega-3 users, but it didn't measure oxidation (the bottle) or B-vitamin status (the co-factor). Brad still takes omega-3 with B-vitamins and TMG. Covers VITACOG, DHA peroxidation, Albert NZ fish oil, ADNI biomarkers."
+  },
+  {
+    "title": "The Truth About Seed Oil Toxicity",
+    "handle": "the-truth-about-seed-oil-toxicity",
+    "url": "https://drstanfield.com/blogs/articles/the-truth-about-seed-oil-toxicity",
+    "tags": [
+      "Diet",
+      "Research",
+      "General Health"
+    ],
+    "keywords": [
+      "cardiovascular",
+      "cholesterol",
+      "dha",
+      "epa",
+      "fish oil",
+      "heart attack",
+      "inflammation",
+      "ldl",
+      "mediterranean diet",
+      "olive oil",
+      "omega-3",
+      "seed oil"
+    ],
+    "publishedAt": "2026-05-18T12:00:00Z",
+    "youtube": "https://www.youtube.com/watch?v=XJ_uyV-ER_g",
+    "summary": "Dr Brad's seed oil post: meta-analyses of RCTs show linoleic acid doesn't raise inflammation markers and replacing saturated fat with PUFA cuts heart disease 17%. Covers omega-6 vs omega-3 ratio, oxidation during home cooking vs repeated fast-food frying, trans-fat history of margarine, and CRP subgroup signal at extreme intakes."
   },
   {
     "title": "What's Causing Colon Cancer to Rise So Fast?",
@@ -72,8 +99,37 @@
       "stroke"
     ],
     "publishedAt": "2026-05-15T03:00:00Z",
-    "youtube": "https://www.youtube.com/watch?v=ulIkmIh7qL4",
+    "youtube": "https://youtu.be/ulIkmIh7qL4",
     "summary": "Dr Brad's aspirin post: daily low-dose aspirin for primary cancer prevention is no longer supported and may increase cancer mortality in older adults. Covers ASPREE 2026 follow-up (HR 1.15 cancer death), Cochrane 2026, Rothwell 2010, CAPP2 Lynch syndrome exception, and TXA2/T-cell mechanism — secondary prevention after heart attack/stroke is unchanged."
+  },
+  {
+    "title": "The 30-Year Statin Panic Is Finally Over",
+    "handle": "the-30-year-statin-panic-is-finally-over",
+    "url": "https://drstanfield.com/blogs/articles/the-30-year-statin-panic-is-finally-over",
+    "tags": [
+      "Research",
+      "Preventative Care",
+      "General Health"
+    ],
+    "keywords": [
+      "atherosclerosis",
+      "cardiovascular",
+      "cholesterol",
+      "cognitive",
+      "dementia",
+      "diabetes",
+      "ezetimibe",
+      "fiber",
+      "heart attack",
+      "ldl",
+      "mediterranean diet",
+      "psyllium",
+      "statin",
+      "stroke"
+    ],
+    "publishedAt": "2026-05-08T12:00:00Z",
+    "youtube": "https://youtu.be/ovWVNxSiJSE",
+    "summary": "Dr Brad's statin post: SAMSON trial showed 90% of statin side effects come from the nocebo effect, not the drug. Covers Akira Endo's discovery, low-dose statin + ezetimibe combo, new 2026 ACC/AHA LDL <55 mg/dL target, dietary portfolio, muscle myth, dementia and diabetes risks."
   },
   {
     "title": "99% of Heart Attacks Had This Prior Warning",
@@ -102,6 +158,60 @@
     "publishedAt": "2026-05-08T02:05:49Z",
     "youtube": "https://youtu.be/XwrjGB0nq1s",
     "summary": "Dr Brad's heart attack risk post: a 9.3M-person study found >99% of people who had a first heart attack had at least one nonoptimal risk factor (BP ≥120/80, total cholesterol ≥200, fasting glucose ≥100, or any smoking history) before the event. The 'SMuRF-less' phenomenon was a measurement artefact. Brad recommends optimal targets (BP <120/80, LDL <55) plus ApoB testing now that JAMA cost-effectiveness is established and 2026 ACC/AHA guideline includes it."
+  },
+  {
+    "title": "Lizard Venom Regrows 'Irreplaceable' Cartilage",
+    "handle": "lizard-venom-regrows-irreplaceable-cartilage",
+    "url": "https://drstanfield.com/blogs/articles/lizard-venom-regrows-irreplaceable-cartilage",
+    "tags": [
+      "Research",
+      "General Health"
+    ],
+    "keywords": [
+      "cardiovascular",
+      "diabetes",
+      "glp-1",
+      "heart attack",
+      "hyaluronic acid",
+      "inflammation",
+      "kidney",
+      "obesity",
+      "osteoarthritis",
+      "peptide",
+      "stroke",
+      "weight loss"
+    ],
+    "publishedAt": "2026-04-29T12:00:00Z",
+    "youtube": "https://www.youtube.com/watch?v=JM1he4pHzpw",
+    "summary": "Dr Brad's GLP-1/cartilage post: a 2026 Cell Metabolism study found semaglutide grew cartilage 17% in obese knee osteoarthritis patients, independent of weight loss. Covers Gila monster venom origin, AMPK-PFKFB3 mechanism, pair-fed mouse experiment."
+  },
+  {
+    "title": "The Cholesterol War Is Over (Here's Who Won)",
+    "handle": "the-cholesterol-war-is-over-heres-who-won",
+    "url": "https://drstanfield.com/blogs/articles/the-cholesterol-war-is-over-heres-who-won",
+    "tags": [
+      "Research",
+      "Preventative Care"
+    ],
+    "keywords": [
+      "cholesterol",
+      "ldl",
+      "hdl",
+      "cardiovascular",
+      "heart attack",
+      "stroke",
+      "atherosclerosis",
+      "statin",
+      "ezetimibe",
+      "pcsk9",
+      "diabetes",
+      "triglycerides",
+      "blood pressure"
+    ],
+    "publishedAt": "2026-04-23T12:00:00Z",
+    "youtube": "https://youtu.be/d0bytrCdnbA",
+    "product": "microvitamin-plus",
+    "summary": "Dr Brad's cholesterol target post: LDL below 55 mg/dL is now evidence-backed as superior to the old 70 target (Ez-PAVE RCT, 33% fewer events). Covers PCSK9 inhibitors, ezetimibe underuse, FOURIER, VESALIUS-CV, PESA subclinical atherosclerosis data, and ACC 2026 findings."
   },
   {
     "title": "This $2 Remedy Beats Every Cold Medicine",
@@ -260,6 +370,7 @@
     ],
     "publishedAt": "2026-03-25T16:55:45Z",
     "youtube": "https://www.youtube.com/watch?v=ZZKdBM7D-3k",
+    "product": "microvitamin-plus",
     "summary": "Dr Brad's hyaluronic acid post: oral HA supplements improve skin hydration, reduce wrinkles, and work indirectly via gut microbiome — not direct absorption. Covers 60-120mg dosing, low vs high molecular weight, skin aging, collagen, dry skin."
   },
   {
@@ -312,6 +423,7 @@
     ],
     "publishedAt": "2026-03-18T06:09:58Z",
     "youtube": "https://www.youtube.com/watch?v=k6OWC6f1Jtk",
+    "product": "sleep",
     "summary": "Dr Brad's melatonin heart health post: a flawed observational study raised alarm but a 63-RCT meta-analysis shows melatonin reduces blood pressure, LDL, and inflammation. Covers sleep, heart disease, dosing (0.3-1mg), timing, and product quality."
   },
   {
@@ -1072,6 +1184,7 @@
     ],
     "publishedAt": "2025-11-23T19:52:54Z",
     "youtube": "https://www.youtube.com/watch?v=L_WgUlPNYHo",
+    "product": "sleep",
     "summary": "Dr Brad’s melatonin post: the 89% heart failure headline is misleading — the observational study has major flaws and RCT data suggests melatonin may benefit heart health. Covers insomnia, sleep aid safety, dosage (0.3mg vs high-dose), circadian rhythm."
   },
   {
@@ -1156,6 +1269,7 @@
     ],
     "publishedAt": "2025-11-19T03:51:25Z",
     "type": "reference",
+    "product": "microvitamin",
     "summary": "Reference on vitamin A: vision, immune function, skin health, bone density. Forms: retinol/retinyl palmitate (animal sources), beta-carotene (plant). Toxicity risk from high preformed vitamin A; safe in pregnancy only below UL. Always discuss with your doctor."
   },
   {
@@ -1423,6 +1537,7 @@
     ],
     "publishedAt": "2025-10-16T20:05:51Z",
     "youtube": "https://www.youtube.com/watch?v=3qtUBN3b6sA",
+    "product": "microvitamin",
     "summary": "Dr Brad’s vitamin D post: the telomere study headline is overblown — 140 base pairs is within measurement error and didn’t improve heart attack or cancer outcomes in VITAL. Covers vitamin D dose (600-1000 IU), routine blood testing, bone density risk at high doses, telomere aging."
   },
   {
@@ -1526,6 +1641,7 @@
     ],
     "publishedAt": "2025-10-05T20:31:48Z",
     "youtube": "https://www.youtube.com/watch?v=HQeIhuROnpM",
+    "product": "microvitamin",
     "summary": "Dr Brad's top 5 supplement picks for healthy aging: psyllium husk (fibre, LDL, blood sugar), multivitamin/mineral (cognition, magnesium), omega-3 ~1g/day (heart, brain), creatine (muscle, memory in older adults), TMG (homocysteine, Alzheimer's risk). Bonus: melatonin 300mcg."
   },
   {
@@ -1563,6 +1679,7 @@
     ],
     "publishedAt": "2025-10-04T20:21:25Z",
     "type": "reference",
+    "product": "microvitamin",
     "summary": "Reference on SAMe: depression, joint pain (osteoarthritis), liver health, fibromyalgia. Enteric-coated tosylate form; dosing 800-1,600 mg/day. Avoid in bipolar disorder; caution with antidepressants. Always discuss with your doctor."
   },
   {
@@ -1585,6 +1702,7 @@
     ],
     "publishedAt": "2025-10-03T23:28:30Z",
     "youtube": "https://www.youtube.com/watch?v=v6paAVTSevY",
+    "product": "sleep",
     "summary": "Dr Brad’s magnesium bisglycinate post: supports sleep quality and recommends it as part of a broader sleep strategy. Covers 250mg elemental dose, insomnia severity index results, magnesium deficiency, and glycine synergy for poor sleep."
   },
   {
@@ -1833,6 +1951,7 @@
     ],
     "publishedAt": "2025-09-07T21:16:10Z",
     "youtube": "https://www.youtube.com/watch?v=PvzE-1f5dW4",
+    "product": "sleep",
     "summary": "Dr Brad’s skincare routine post: sunscreen, tretinoin or adapalene, diet/exercise/sleep are the evidence-based core. Covers collagen peptides, hyaluronic acid, mineral sunscreen, red light therapy, laser, IPL, and Botox for wrinkles and skin aging."
   },
   {
@@ -1891,6 +2010,7 @@
     ],
     "publishedAt": "2025-08-27T21:15:34Z",
     "youtube": "https://www.youtube.com/watch?v=U8uPzDdG77c",
+    "product": "microvitamin-plus",
     "summary": "“Dr Brad's collagen peptides post: evidence likely supports benefits for skin hydration, elasticity, and wrinkles despite a 2025 meta-analysis claiming otherwise. Covers statistical pooling flaws, industry bias concerns, mechanism via fibroblasts, and Brad's personal decision to continue taking collagen.”"
   },
   {
@@ -1919,6 +2039,7 @@
     ],
     "publishedAt": "2025-08-20T02:05:05Z",
     "youtube": "https://www.youtube.com/watch?v=YHaqsps24tk",
+    "product": "sleep",
     "summary": "Dr Brad's glycine post: 3g glycine before bed improves sleep quality and reduces next-day fatigue without disrupting sleep architecture. Covers dosage, melatonin 300mcg, magnesium, morning light, and exercise for sleep."
   },
   {
@@ -2047,6 +2168,7 @@
     ],
     "publishedAt": "2025-07-30T20:38:06Z",
     "youtube": "https://www.youtube.com/watch?v=iuWUL0_t5B0",
+    "product": "microvitamin-plus",
     "summary": "Dr Brad’s supplement stack post: he takes only omega-3 (~1g), MicroVitamin multivitamin, and a sleep supplement (melatonin 300mcg, magnesium glycinate, glycine). Covers dementia risk, atrial fibrillation, B vitamin-omega-3 synergy, vitamin D dosing, creatine, collagen, psyllium, taurine."
   },
   {
@@ -2295,6 +2417,7 @@
     ],
     "publishedAt": "2025-07-03T02:07:16Z",
     "youtube": "https://www.youtube.com/watch?v=EbDxVr9-MYo",
+    "product": "microvitamin",
     "summary": "Dr Brad’s bone loss post: resistance and impact exercise are the primary tools to prevent osteoporosis after 40; D3, K2, and magnesium support bone health; calcium supplements have mixed evidence. Covers DEXA screening, fracture risk, postmenopausal bone loss, bisphosphonates."
   },
   {
@@ -2326,6 +2449,7 @@
     ],
     "publishedAt": "2025-07-01T18:11:29Z",
     "youtube": "https://www.youtube.com/watch?v=oL6CtBcfcDo",
+    "product": "microvitamin",
     "summary": "Dr Brad’s magnesium post: favor glycinate or taurate forms; avoid oxide (poorly absorbed). Blood tests miss deficiency. RDA 420mg men/320mg women; 126mg supplement tops up diet. Best RCT evidence is for sleep in older adults."
   },
   {
@@ -2474,6 +2598,7 @@
     ],
     "publishedAt": "2025-06-11T22:02:52Z",
     "youtube": "https://www.youtube.com/watch?v=Ueb3lUhaT2o",
+    "product": "microvitamin-plus",
     "summary": "Dr Brad's collagen peptides post: bovine collagen reduced eye wrinkles 25% and improved hydration 26% in 8 weeks; collagen source matters less than processing. Covers collagen vs protein, hyaluronic acid, sunscreen for skin aging."
   },
   {
@@ -2626,6 +2751,7 @@
     ],
     "publishedAt": "2025-05-27T22:11:28Z",
     "youtube": "https://www.youtube.com/watch?v=elK5Nq8oT3c",
+    "product": "sleep",
     "summary": "Dr Brad’s glycine post: he takes 3g/day for sleep quality (falls asleep faster, less groggy) with a strong safety profile. Covers metabolic health, blood sugar, inflammation, heart attack risk, longevity in mice, and brain function."
   },
   {
@@ -2987,6 +3113,7 @@
     ],
     "publishedAt": "2025-05-15T23:18:01Z",
     "youtube": "https://www.youtube.com/watch?v=INeQLAdDkEE",
+    "product": "microvitamin",
     "summary": "Dr Brad’s harmful supplements post: calcium raises heart attack risk via artery calcification; iron, vitamin E, vitamin A, and resveratrol lack proven benefit and may harm. Covers blood vessel health, osteoporosis, antioxidants, longevity."
   },
   {
@@ -3440,6 +3567,7 @@
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
     "type": "reference",
+    "product": "microvitamin",
     "summary": "Reference on calcium: bone health, fracture prevention, osteoporosis. Postmenopausal women, older adults, vegans, and pregnant women most at risk of deficiency. Forms include carbonate and citrate (citrate preferred for PPI users). Typical supplemental doses 500-1,200 mg/day; high doses may raise cardiovascular and kidney stone risk. Always discuss with your doctor."
   },
   {
@@ -4863,6 +4991,7 @@
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
     "type": "reference",
+    "product": "sleep",
     "summary": "Reference on L-tryptophan and 5-HTP: sleep, mood, depression, anxiety, migraine, fibromyalgia. Serotonin precursors. L-tryptophan 250mg-1g; 5-HTP 50-300mg at bedtime. Do not combine with SSRIs or MAOIs. Always discuss with your doctor."
   },
   {
@@ -5530,6 +5659,7 @@
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
     "type": "reference",
+    "product": "sleep",
     "summary": "Reference on menopause supplements: hot flashes, night sweats, bone loss. Soy isoflavones (50-120 mg/day), red clover, black cohosh, progesterone cream. Liver risk (black cohosh); soy: thyroid, breast cancer risk. Always discuss with your doctor."
   },
   {
@@ -5593,6 +5723,7 @@
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
     "type": "reference",
+    "product": "microvitamin",
     "summary": "Reference on phosphatidylserine (PS): memory, cognitive decline, stress, cortisol reduction. Older adults with memory concerns; athletes managing exercise stress. Soy/sunflower forms (100-300 mg/day); PS-DHA conjugate shows more promise. Caution with blood thinners. Always discuss with your doctor."
   },
   {
@@ -6339,6 +6470,7 @@
     ],
     "publishedAt": "2025-03-26T19:59:34Z",
     "youtube": "https://www.youtube.com/watch?v=7gyOZrfPWX8",
+    "product": "microvitamin-plus",
     "summary": "Dr Brad’s creatine post: recommends 5g daily creatine monohydrate for muscle, cognition, and healthy aging. Covers memory benefits in older adults and women, osteosarcopenia, cardiovascular markers, hair loss and kidney safety myths, loading phase myth."
   },
   {
@@ -7049,6 +7181,7 @@
     ],
     "publishedAt": "2025-01-07T00:05:20Z",
     "youtube": "https://www.youtube.com/watch?v=FayRla5_BrQ",
+    "product": "microvitamin",
     "summary": "Dr Brad's blood pressure exercise post: isometric exercises, especially wall squats, are the most effective exercise type for lowering blood pressure. Covers hypertension, wall squat technique, exercise snacks, SPRINT trial, and why a 5-10 mmHg drop matters."
   },
   {
@@ -7106,6 +7239,7 @@
     ],
     "publishedAt": "2024-12-31T00:13:37Z",
     "youtube": "https://www.youtube.com/watch?v=IAXYVyiYZKQ",
+    "product": "microvitamin-plus",
     "summary": "Dr Brad's skin tightening post: hyaluronic acid and collagen peptides are the only supplements with evidence for reducing wrinkles and improving skin elasticity. Covers sunscreen (zinc oxide), safe vs harmful UV filters, aging skin, photoaging, skin tightening."
   },
   {
@@ -7227,6 +7361,7 @@
     ],
     "publishedAt": "2024-12-17T01:24:10Z",
     "youtube": "https://www.youtube.com/watch?v=SxCwmm6BI8I",
+    "product": "microvitamin-plus",
     "summary": "Dr Brad's skin aging reversal post: 8 strategies — mineral sunscreen, ceramide moisturizer, hyaluronic acid supplements, collagen peptides (10-15g), retinoids (tretinoin/adapalene), AHA/BHA exfoliants, exercise, diet. Covers wrinkles and photoaging."
   },
   {
@@ -7326,6 +7461,7 @@
     ],
     "publishedAt": "2024-12-02T04:33:38Z",
     "youtube": "https://www.youtube.com/watch?v=3HtDE-7IOHQ",
+    "product": "sleep",
     "summary": "Dr Brad's magnesium forms post: prefers magnesium taurate (combined magnesium + taurine benefits); glycinate is a good alternative. Covers citrate, oxide, l-threonate, taurate, malate, orotate — absorption, sleep, blood pressure, diabetes."
   },
   {
@@ -7415,6 +7551,7 @@
     ],
     "publishedAt": "2024-11-19T03:13:05Z",
     "youtube": "https://www.youtube.com/watch?v=uwnXLsAL9wM",
+    "product": "sleep",
     "summary": "Dr Brad's supplement stack post: creatine 5g, protein 1.6g/kg, TMG 500mg, multivitamin, omega-3 1g, psyllium husk, collagen 10-15g, hyaluronic acid 200mg, melatonin 300mcg, glycine+NAC for glutathione. Covers muscle, brain, heart, skin, sleep."
   },
   {
@@ -30599,115 +30736,5 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for zoledronic acid (Aclasta) infusion for osteoporosis: who qualifies, contraindications, pre-procedure workup, infusion technique, post-procedure follow-up, and when to seek specialist input. Always discuss with your doctor."
-  },
-  {
-    "title": "The Cholesterol War Is Over (Here's Who Won)",
-    "handle": "the-cholesterol-war-is-over-heres-who-won",
-    "url": "https://drstanfield.com/blogs/articles/the-cholesterol-war-is-over-heres-who-won",
-    "youtube": "https://youtu.be/d0bytrCdnbA",
-    "tags": [
-      "Research",
-      "Preventative Care"
-    ],
-    "keywords": [
-      "cholesterol",
-      "ldl",
-      "hdl",
-      "cardiovascular",
-      "heart attack",
-      "stroke",
-      "atherosclerosis",
-      "statin",
-      "ezetimibe",
-      "pcsk9",
-      "diabetes",
-      "triglycerides",
-      "blood pressure"
-    ],
-    "product": "microvitamin-plus",
-    "publishedAt": "2026-04-23T12:00:00Z",
-    "summary": "Dr Brad's cholesterol target post: LDL below 55 mg/dL is now evidence-backed as superior to the old 70 target (Ez-PAVE RCT, 33% fewer events). Covers PCSK9 inhibitors, ezetimibe underuse, FOURIER, VESALIUS-CV, PESA subclinical atherosclerosis data, and ACC 2026 findings."
-  },
-  {
-    "title": "Lizard Venom Regrows 'Irreplaceable' Cartilage",
-    "handle": "lizard-venom-regrows-irreplaceable-cartilage",
-    "url": "https://drstanfield.com/blogs/articles/lizard-venom-regrows-irreplaceable-cartilage",
-    "youtube": "https://www.youtube.com/watch?v=JM1he4pHzpw",
-    "tags": [
-      "Research",
-      "General Health"
-    ],
-    "keywords": [
-      "cardiovascular",
-      "diabetes",
-      "glp-1",
-      "heart attack",
-      "hyaluronic acid",
-      "inflammation",
-      "kidney",
-      "obesity",
-      "osteoarthritis",
-      "peptide",
-      "stroke",
-      "weight loss"
-    ],
-    "publishedAt": "2026-04-29T12:00:00Z",
-    "summary": "Dr Brad's GLP-1/cartilage post: a 2026 Cell Metabolism study found semaglutide grew cartilage 17% in obese knee osteoarthritis patients, independent of weight loss. Covers Gila monster venom origin, AMPK-PFKFB3 mechanism, pair-fed mouse experiment."
-  },
-  {
-    "title": "The 30-Year Statin Panic Is Finally Over",
-    "handle": "the-30-year-statin-panic-is-finally-over",
-    "url": "https://drstanfield.com/blogs/articles/the-30-year-statin-panic-is-finally-over",
-    "youtube": "https://youtu.be/ovWVNxSiJSE",
-    "tags": [
-      "Research",
-      "Preventative Care",
-      "General Health"
-    ],
-    "keywords": [
-      "atherosclerosis",
-      "cardiovascular",
-      "cholesterol",
-      "cognitive",
-      "dementia",
-      "diabetes",
-      "ezetimibe",
-      "fiber",
-      "heart attack",
-      "ldl",
-      "mediterranean diet",
-      "psyllium",
-      "statin",
-      "stroke"
-    ],
-    "publishedAt": "2026-05-08T12:00:00Z",
-    "summary": "Dr Brad's statin post: SAMSON trial showed 90% of statin side effects come from the nocebo effect, not the drug. Covers Akira Endo's discovery, low-dose statin + ezetimibe combo, new 2026 ACC/AHA LDL <55 mg/dL target, dietary portfolio, muscle myth, dementia and diabetes risks."
-  },
-  {
-    "title": "The Truth About Seed Oil Toxicity",
-    "handle": "the-truth-about-seed-oil-toxicity",
-    "url": "https://drstanfield.com/blogs/articles/the-truth-about-seed-oil-toxicity",
-    "youtube": "https://www.youtube.com/watch?v=XJ_uyV-ER_g",
-    "tags": [
-      "Diet",
-      "Research",
-      "General Health"
-    ],
-    "keywords": [
-      "cardiovascular",
-      "cholesterol",
-      "dha",
-      "epa",
-      "fish oil",
-      "heart attack",
-      "inflammation",
-      "ldl",
-      "mediterranean diet",
-      "olive oil",
-      "omega-3",
-      "seed oil"
-    ],
-    "publishedAt": "2026-05-18T12:00:00Z",
-    "summary": "Dr Brad's seed oil post: meta-analyses of RCTs show linoleic acid doesn't raise inflammation markers and replacing saturated fat with PUFA cuts heart disease 17%. Covers omega-6 vs omega-3 ratio, oxidation during home cooking vs repeated fast-food frying, trans-fat history of margarine, and CRP subgroup signal at extreme intakes."
   }
 ]
