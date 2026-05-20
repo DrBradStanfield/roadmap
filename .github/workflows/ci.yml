@@ -20,3 +20,25 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run build:widget
+
+      # Blog index drift check — ensures docs/blog/index.json is derivable from
+      # .md frontmatter via scripts/rebuild-blog-index.ts. Catches:
+      #   - Accidental deletion of the rebuild script itself (April 2026 incident)
+      #   - Orphaned .md files with no index entry (May 2026 aspirin orphan)
+      #   - Hand-edits to index.json with fields missing from .md frontmatter
+      #     (would be silently dropped on next rebuild)
+      # See docs/chat-architecture.md → Source of truth: .md frontmatter
+      - name: Verify blog index is in sync with .md frontmatter
+        run: |
+          if [ ! -f scripts/rebuild-blog-index.ts ]; then
+            echo "::error::scripts/rebuild-blog-index.ts is missing. Despite having no imports, this script is load-bearing: it is the bulk-rebuild path for docs/blog/index.json and the only way to detect orphaned .md files. See docs/chat-architecture.md → 'Source of truth: .md frontmatter' → History before recommending deletion."
+            exit 1
+          fi
+          npm run rebuild-index
+          if ! git diff --quiet docs/blog/index.json; then
+            echo "::error::docs/blog/index.json is out of sync with .md frontmatter. Run 'npm run rebuild-index' locally and commit the regenerated file."
+            git diff --stat docs/blog/index.json
+            git diff docs/blog/index.json | head -80
+            exit 1
+          fi
+          echo "✓ Blog index is in sync with .md frontmatter"
