@@ -1648,15 +1648,7 @@ input[type="number"] {
   cursor: not-allowed;
 }
 
-/* Button Variants */
-.save-longitudinal-btn {
-  width: 100%;
-  padding: 12px 20px;
-  font-size: 15px;
-  margin-top: 8px;
-}
-
-/* Inline save button next to longitudinal inputs */
+/* longitudinal inputs flex row (auto-save on blur/Enter — no inline button) */
 .longitudinal-input-row {
   display: flex;
   gap: 8px;
@@ -1766,12 +1758,6 @@ input[type="number"] {
   font-size: 14px;
   color: var(--color-gray-medium);
   font-weight: 500;
-}
-
-.save-inline-btn {
-  padding: 8px 14px;
-  font-size: 13px;
-  white-space: nowrap;
 }
 
 /* Save button in account status area */
@@ -2156,10 +2142,6 @@ input[type="number"] {
 
 .med-step-enter {
   animation: step-enter 0.25s ease-out;
-}
-
-.save-inline-btn {
-  animation: step-enter 0.2s ease-out;
 }
 
 /* Progressive disclosure: smooth reveal of new form stages.
@@ -4285,9 +4267,16 @@ input[type="number"] {
   font-weight: 600;
   border-radius: 8px;
 }
-.bt-save-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
+/* Auto-save status text shown where the bt-save-btn used to live. */
+.bt-saving-indicator {
+  font-size: 12px;
+  color: var(--bt-ink-500);
+  font-weight: 500;
+}
+.bt-save-error {
+  font-size: 12px;
+  color: var(--bt-bad);
+  font-weight: 600;
 }
 .bt-timeline-divider {
   height: 1px;

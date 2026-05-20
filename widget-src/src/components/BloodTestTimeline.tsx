@@ -21,6 +21,7 @@ import {
 import { MONTHS_SHORT } from '../lib/constants';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
+import { useDebouncedSave } from '../lib/useDebouncedSave';
 import {
   type Status,
   blockBadNumericKeys,
@@ -367,6 +368,22 @@ export function BloodTestTimeline({
     return () => { if (flushRef) flushRef.current = null; };
   }, [flushRef]);
 
+  // Auto-save on blur / Enter for draft + backfill cells. 500ms debounce
+  // so tab-between-cells doesn't fire mid-edit; the existing handleSave
+  // already batches every dirty cell into one onSaveBatch per date.
+  const matrixDebounce = useDebouncedSave(500);
+  const scheduleMatrixSave = () => {
+    if (filledCount === 0 || isSaving || hasError || saveDisabledByLoad) return;
+    matrixDebounce.schedule(() => { void handleSaveRef.current(); });
+  };
+  const flushMatrixSave = () => {
+    if (filledCount === 0 || isSaving || hasError || saveDisabledByLoad) {
+      matrixDebounce.cancel();
+      return;
+    }
+    matrixDebounce.flush();
+  };
+
   return (
     <div className="bt-timeline">
       <div className="bt-timeline-header">
@@ -388,17 +405,12 @@ export function BloodTestTimeline({
             <button type="button" className="btn-primary upload-lab-btn"
                     onClick={onUploadClick}>Upload your lab results</button>
           ) : null}
-          <button
-            type="button"
-            className="btn-primary bt-save-btn"
-            onClick={handleSave}
-            disabled={filledCount === 0 || isSaving || hasError || saveDisabledByLoad}
-            title={
-              saveDisabledByLoad ? 'Loading data…'
-              : hasError ? 'Fix invalid values before saving'
-              : undefined
-            }
-          >{isSaving ? 'Saving…' : filledCount > 0 ? `Save (${filledCount})` : 'Save'}</button>
+          {isSaving && (
+            <span className="bt-saving-indicator" aria-live="polite">Saving…</span>
+          )}
+          {hasError && !isSaving && (
+            <span className="bt-save-error" aria-live="polite">Fix invalid values</span>
+          )}
         </div>
       </div>
       <div className="bt-timeline-divider"/>
@@ -462,7 +474,8 @@ export function BloodTestTimeline({
                             value={typed}
                             active={activeCell === cellId}
                             onFocus={() => setActiveCell(cellId)}
-                            onBlur={() => setActiveCell(null)}
+                            onBlur={() => { setActiveCell(null); scheduleMatrixSave(); }}
+                            onEnter={flushMatrixSave}
                             onChange={v => setDraftValue(row.metric, v)}
                           />
                         );
@@ -479,7 +492,8 @@ export function BloodTestTimeline({
                             value={typed}
                             active={activeCell === cellId}
                             onFocus={() => setActiveCell(cellId)}
-                            onBlur={() => setActiveCell(null)}
+                            onBlur={() => { setActiveCell(null); scheduleMatrixSave(); }}
+                            onEnter={flushMatrixSave}
                             onChange={v => setBackfillValue(c.date, row.metric, v)}
                           />
                         );
@@ -680,10 +694,11 @@ interface DraftCellProps {
   active: boolean;
   onFocus: () => void;
   onBlur: () => void;
+  onEnter: () => void;
   onChange: (v: string) => void;
 }
 
-function DraftCell({ metric, display, sex, value, active, onFocus, onBlur, onChange }: DraftCellProps) {
+function DraftCell({ metric, display, sex, value, active, onFocus, onBlur, onEnter, onChange }: DraftCellProps) {
   return (
     <NumericInputCell
       metric={metric}
@@ -696,6 +711,10 @@ function DraftCell({ metric, display, sex, value, active, onFocus, onBlur, onCha
       placeholder="—"
       onFocus={onFocus}
       onBlur={onBlur}
+      onKeyDown={e => {
+        blockBadNumericKeys(e);
+        if (e.key === 'Enter') { e.preventDefault(); onEnter(); }
+      }}
     />
   );
 }
@@ -707,10 +726,11 @@ interface BackfillCellProps {
   active: boolean;
   onFocus: () => void;
   onBlur: () => void;
+  onEnter: () => void;
   onChange: (v: string) => void;
 }
 
-function BackfillCell({ metric, display, value, active, onFocus, onBlur, onChange }: BackfillCellProps) {
+function BackfillCell({ metric, display, value, active, onFocus, onBlur, onEnter, onChange }: BackfillCellProps) {
   return (
     <NumericInputCell
       metric={metric}
@@ -724,6 +744,10 @@ function BackfillCell({ metric, display, value, active, onFocus, onBlur, onChang
       showStatusPreview={false}
       onFocus={onFocus}
       onBlur={onBlur}
+      onKeyDown={e => {
+        blockBadNumericKeys(e);
+        if (e.key === 'Enter') { e.preventDefault(); onEnter(); }
+      }}
     />
   );
 }

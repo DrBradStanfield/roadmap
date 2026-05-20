@@ -11,7 +11,6 @@ import {
   getDisplayRange,
   UNIT_DEFS,
   FIELD_METRIC_MAP,
-  LONGITUDINAL_FIELDS,
   medicationsToInputs,
   screeningsToInputs,
   type ApiMeasurement,
@@ -168,7 +167,13 @@ interface InputPanelProps {
   supplements: ApiSupplement[];
   onSupplementChange: (key: string, name: string, doseValue: number | null, doseUnit: string | null, status?: string, startedAt?: string) => void;
   onSupplementDelete: (key: string) => void;
-  onSaveLongitudinal: (bloodTestDate?: string) => void;
+  /** Debounced auto-save: call on every input blur. Batches rapid blurs
+   *  (e.g. systolic→diastolic tab) into one save 500ms after the last blur.
+   *  Date arg only used by PSA (which has its own date picker). */
+  scheduleLongitudinalSave: (bloodTestDate?: string) => void;
+  /** Flush the debounced save immediately. Call on Enter so the user gets
+   *  a save without waiting for the 500ms tail. */
+  flushLongitudinalSave: () => void;
   isSavingLongitudinal: boolean;
   hasApiResponse: boolean;
   // Forwarded to BloodTestTimeline so the parent (HealthTool) can flush
@@ -192,7 +197,8 @@ export function InputPanel({
   medications, onMedicationChange,
   screenings, onScreeningChange,
   supplements, onSupplementChange, onSupplementDelete,
-  onSaveLongitudinal, isSavingLongitudinal, hasApiResponse,
+  scheduleLongitudinalSave, flushLongitudinalSave,
+  isSavingLongitudinal, hasApiResponse,
   bloodTestFlushRef,
   formStage,
   lastSavedAt,
@@ -363,13 +369,6 @@ export function InputPanel({
   };
 
   // Blood-test fields are committed via BloodTestTimeline's own Save button,
-  // so the global "Save New Values" button only cares about non-blood-test
-  // dirty values (weight, waist, BP).
-  const hasLongitudinalValues = LONGITUDINAL_FIELDS.some(f => {
-    if (inputs[f] === undefined) return false;
-    return !BLOOD_TEST_FIELDS.some(cfg => cfg.field === f);
-  });
-
   /** Check if a field has a previous saved measurement. */
   const hasPreviousValue = (field: string): boolean => {
     const metric = FIELD_METRIC_MAP[field];
@@ -552,23 +551,22 @@ export function InputPanel({
                 }
               }
             }}
-            onBlur={() => setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; })}
+            onBlur={() => {
+              setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
+              if (isLoggedIn && hasApiResponse) scheduleLongitudinalSave();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (isLoggedIn && hasApiResponse) flushLongitudinalSave();
+              }
+            }}
             placeholder={isExpandedWithData ? '' : getPreviousPlaceholder(field)}
             step={step ? (fieldUnit(field) === 'si' ? step.si : step.conv) : undefined}
             min={r.min}
             max={r.max}
             className={errors[field] ? 'error' : ''}
           />
-          {isLoggedIn && hasApiResponse && inputs[field] !== undefined && (
-            <button
-              className="btn-primary save-inline-btn"
-              onClick={() => onSaveLongitudinal(isBloodTest ? dateValueToISO(bloodTestDate) : undefined)}
-              disabled={isSavingLongitudinal}
-              title="Save new values"
-            >
-              {isSavingLongitudinal ? '...' : 'Save'}
-            </button>
-          )}
         </div>
         {errors[field] && (
           <span className="error-message">{errors[field]}</span>
@@ -708,8 +706,6 @@ export function InputPanel({
       </div>
     );
   };
-
-  const hasBpValue = inputs.systolicBp !== undefined || inputs.diastolicBp !== undefined;
 
   // ── Section render functions (shared closure state, not separate components) ──
 
@@ -923,7 +919,16 @@ export function InputPanel({
                   onWheel={blurOnWheel}
                   value={inputs.systolicBp ?? ''}
                   onChange={(e) => updateField('systolicBp', parseLocalisedNumber(e.target.value))}
-                  onBlur={() => validateOnBlur('systolicBp')}
+                  onBlur={() => {
+                    validateOnBlur('systolicBp');
+                    if (isLoggedIn && hasApiResponse) scheduleLongitudinalSave();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (isLoggedIn && hasApiResponse) flushLongitudinalSave();
+                    }
+                  }}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('systolicBp')}
                   min={60}
                   max={250}
@@ -937,23 +942,22 @@ export function InputPanel({
                   onWheel={blurOnWheel}
                   value={inputs.diastolicBp ?? ''}
                   onChange={(e) => updateField('diastolicBp', parseLocalisedNumber(e.target.value))}
-                  onBlur={() => validateOnBlur('diastolicBp')}
+                  onBlur={() => {
+                    validateOnBlur('diastolicBp');
+                    if (isLoggedIn && hasApiResponse) scheduleLongitudinalSave();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (isLoggedIn && hasApiResponse) flushLongitudinalSave();
+                    }
+                  }}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('diastolicBp')}
                   min={40}
                   max={150}
                   className={errors.diastolicBp ? 'error' : ''}
                 />
               </div>
-              {isLoggedIn && hasApiResponse && hasBpValue && (
-                <button
-                  className="btn-primary save-inline-btn"
-                  onClick={() => onSaveLongitudinal()}
-                  disabled={isSavingLongitudinal}
-                  title="Save new values"
-                >
-                  {isSavingLongitudinal ? '...' : 'Save'}
-                </button>
-              )}
             </div>
             {errors.systolicBp && (
               <span className="error-message">{errors.systolicBp}</span>
@@ -1940,6 +1944,19 @@ export function InputPanel({
                               onBlur={() => {
                                 setRawInputs(prev => { const next = { ...prev }; delete next.psa; return next; });
                                 validateOnBlur('psa');
+                                if (isLoggedIn && hasApiResponse && inputs.psa !== undefined) {
+                                  scheduleLongitudinalSave(dateValueToISO(psaDate));
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (isLoggedIn && hasApiResponse && inputs.psa !== undefined) {
+                                    // Re-schedule with the latest date, then flush.
+                                    scheduleLongitudinalSave(dateValueToISO(psaDate));
+                                    flushLongitudinalSave();
+                                  }
+                                }
                               }}
                               placeholder=""
                               step="0.1"
@@ -1947,17 +1964,14 @@ export function InputPanel({
                               max="100"
                               className={errors.psa ? 'error' : ''}
                             />
-                            <InlineDatePicker value={psaDate} onChange={setPsaDate} />
-                            {isLoggedIn && hasApiResponse && inputs.psa !== undefined && (
-                              <button
-                                className="btn-primary save-inline-btn"
-                                onClick={() => onSaveLongitudinal(dateValueToISO(psaDate))}
-                                disabled={isSavingLongitudinal}
-                                title="Save PSA value"
-                              >
-                                {isSavingLongitudinal ? '...' : 'Save'}
-                              </button>
-                            )}
+                            <InlineDatePicker value={psaDate} onChange={(d) => {
+                              setPsaDate(d);
+                              // If a value is already typed, re-schedule with the new date so
+                              // changing the date after typing still saves at the right time.
+                              if (isLoggedIn && hasApiResponse && inputs.psa !== undefined) {
+                                scheduleLongitudinalSave(dateValueToISO(d));
+                              }
+                            }} />
                           </div>
                           {errors.psa && <span className="field-error">{errors.psa}</span>}
                           <div className="field-meta">
@@ -2266,20 +2280,9 @@ export function InputPanel({
     );
   };
 
-  const renderSaveButton = () => {
-    if (!isLoggedIn || !hasLongitudinalValues) return null;
-    // Blood-test values are handled by BloodTestTimeline's own Save button;
-    // they never appear in `inputs`, so this button covers weight/waist/BP only.
-    return (
-      <button
-        className="btn-primary save-longitudinal-btn"
-        onClick={() => onSaveLongitudinal(dateValueToISO(bloodTestDate))}
-        disabled={isSavingLongitudinal}
-      >
-        {isSavingLongitudinal ? 'Saving...' : 'Save New Values'}
-      </button>
-    );
-  };
+  // Save buttons removed — all longitudinal inputs auto-save on blur/Enter
+  // via scheduleLongitudinalSave / flushLongitudinalSave (see useDebouncedSave
+  // wrapped around handleSaveLongitudinal in HealthTool).
 
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
   const inputHeaderMeta = useMemo(() => {
@@ -2323,7 +2326,6 @@ export function InputPanel({
       {healthDocuments && healthDocuments.length > 0 && (
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}
-      {renderSaveButton()}
     </div>
   );
 }

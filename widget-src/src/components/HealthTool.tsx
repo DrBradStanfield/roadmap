@@ -31,6 +31,7 @@ import { ChatEmbed } from './ChatEmbed';
 import { listConversations, loadConversation, getGuestSessionToken, clearGuestSessionToken, type ChatMessage } from '../lib/chat-api';
 import { UploadModal, FloatingUploadIndicator } from './UploadModal';
 import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
+import { useDebouncedSave } from '../lib/useDebouncedSave';
 import { MobileTabBar, type TabId } from './MobileTabBar';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
@@ -703,6 +704,34 @@ export function HealthTool() {
     }
   }, [authState.isLoggedIn, inputs, previousMeasurements]);
 
+  // Auto-save on blur / Enter for InputPanel longitudinal fields. The
+  // 500ms debounce batches systolic→diastolic tab transitions into one
+  // save; Enter flushes immediately. Date arg only set by PSA (which has
+  // its own date picker); weight/waist/BP omit and use today.
+  const longitudinalDebounce = useDebouncedSave(500);
+  const scheduleLongitudinalSave = useCallback((bloodTestDate?: string) => {
+    longitudinalDebounce.schedule(() => { void handleSaveLongitudinal(bloodTestDate); });
+  }, [handleSaveLongitudinal, longitudinalDebounce]);
+  const flushLongitudinalSave = useCallback(() => {
+    longitudinalDebounce.flush();
+  }, [longitudinalDebounce]);
+
+  // Tab-close safety net: flush any pending debounced saves before the
+  // page unloads so a "typed then closed" edit doesn't get lost.
+  useEffect(() => {
+    if (!authState.isLoggedIn) return;
+    const onUnload = () => {
+      longitudinalDebounce.flush();
+      bloodTestFlushRef.current?.();
+    };
+    window.addEventListener('beforeunload', onUnload);
+    window.addEventListener('pagehide', onUnload);
+    return () => {
+      window.removeEventListener('beforeunload', onUnload);
+      window.removeEventListener('pagehide', onUnload);
+    };
+  }, [authState.isLoggedIn, longitudinalDebounce]);
+
   // Save any unsaved longitudinal values (weight, BP, etc.) then refresh from API.
   // Called when the upload modal opens — ensures typed-but-unsaved values persist.
   const handleUploadStart = useCallback(async () => {
@@ -1031,7 +1060,8 @@ export function HealthTool() {
     supplements,
     onSupplementChange: handleSupplementChange,
     onSupplementDelete: handleSupplementDelete,
-    onSaveLongitudinal: handleSaveLongitudinal,
+    scheduleLongitudinalSave,
+    flushLongitudinalSave,
     isSavingLongitudinal,
     hasApiResponse,
     bloodTestFlushRef,
