@@ -534,12 +534,20 @@ async function fetchAnthropicRaw(
   // 429 is a signal something structural is wrong (account tier too low, a
   // runaway caller, or an Anthropic outage). Don't retry silently — surface
   // the error so the deeper issue gets fixed.
+  //
+  // 503 (Service Unavailable) and 529 (Overloaded) are transient capacity
+  // signals from Anthropic, not bugs. We still throw so callers can fall
+  // back / skip / retry, but we don't fire a Sentry alert each time —
+  // capacity spikes can flood Sentry with thousands of duplicate alerts.
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => 'Unknown error');
     const err = new Error(`Anthropic API error (status ${response.status})`);
     console.error(err.message, errorText);
-    Sentry.captureException(err, { extra: { status: response.status, errorText } });
+    const isTransientCapacityError = response.status === 529 || response.status === 503;
+    if (!isTransientCapacityError) {
+      Sentry.captureException(err, { extra: { status: response.status, errorText } });
+    }
     throw err;
   }
 

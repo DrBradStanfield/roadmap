@@ -284,6 +284,25 @@ async function claimComment(commentId: string): Promise<boolean> {
   return !!data;
 }
 
+/** Release the claim row when the pipeline failed before producing a decision
+ *  (e.g. transient Anthropic 529 / network blip). Next tick will see the
+ *  comment as unseen again and retry. Only deletes UNposted rows — never
+ *  removes a successful post. */
+async function unclaimComment(commentId: string): Promise<void> {
+  if (!supabaseAdmin) return;
+  const { error } = await supabaseAdmin
+    .from('youtube_bot_log')
+    .delete()
+    .eq('youtube_comment_id', commentId)
+    .eq('posted', false);
+  if (error) {
+    Sentry.captureException(error, {
+      tags: { feature: 'youtube-bot', subsystem: 'unclaim' },
+      extra: { commentId },
+    });
+  }
+}
+
 interface MarkPostedParams {
   commentId: string;
   videoId: string;
@@ -518,12 +537,22 @@ async function tick(): Promise<void> {
     try {
       outcome = await runPipeline(thread, blogEntry, blogBody);
     } catch (err) {
+      // Unhandled pipeline exception. Likely transient (Anthropic 529 / timeout) —
+      // un-claim so the next tick can retry. Persistent failures will be visible
+      // via Sentry on the underlying call.
       logTickError(err);
+      await unclaimComment(thread.topLevelCommentId);
       skippedThisTick++;
       continue;
     }
 
     if (!outcome.posted) {
+      // Main-LLM failure (fallback path inside getChatCompletion) is transient —
+      // un-claim so the next tick can retry once Anthropic recovers. Genuine
+      // SKIP_NO_REPLY / GREETING / blog-missing cases leave the claim intact so
+      // we don't waste LLM tokens re-evaluating the same comment.
+      const isTransient = outcome.skipReason?.startsWith('main-LLM failure');
+      if (isTransient) await unclaimComment(thread.topLevelCommentId);
       skippedThisTick++;
       continue;
     }
