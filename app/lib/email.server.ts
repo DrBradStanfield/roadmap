@@ -47,15 +47,25 @@ export function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;');
 }
 
-/** Send an email via Resend. Throws if Resend is not configured. */
+/**
+ * Send an email via Resend. Throws on configuration miss OR on Resend API errors.
+ *
+ * The Resend Node SDK returns `{ data, error }` for API failures (suppression,
+ * payload too large, rate limit, invalid recipient) — it does NOT throw. Without
+ * inspecting `error`, those failures are silent and the caller treats them as
+ * success. Surface them so callers / Sentry actually see them.
+ */
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
   if (!resend) throw new Error('Email service not configured');
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
     to,
     subject,
     html,
   });
+  if (error) {
+    throw new Error(`Resend rejected email to ${to}: ${error.name ?? 'unknown'} — ${error.message ?? JSON.stringify(error)}`);
+  }
 }
 
 /**
@@ -611,7 +621,7 @@ export async function sendReminderEmail(
   }
 
   try {
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
       to,
       subject: 'Health Reminders',
@@ -621,6 +631,9 @@ export async function sendReminderEmail(
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
     });
+    if (error) {
+      throw new Error(`Resend rejected reminder to ${to}: ${error.name ?? 'unknown'} — ${error.message ?? JSON.stringify(error)}`);
+    }
     return true;
   } catch (error) {
     console.error('Error sending reminder email:', error);
@@ -653,13 +666,16 @@ export async function sendFeedbackEmail(
     const customerLine = customerId ? `Customer ID: ${customerId}` : 'Guest user';
     const timestamp = new Date().toISOString();
 
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: `Health Roadmap Feedback <${RESEND_FROM_EMAIL}>`,
       to: FEEDBACK_EMAIL,
       subject: 'Health Roadmap Feedback',
       replyTo: userEmail,
       text: `${customerLine}\nTime: ${timestamp}\nFrom: ${userEmail}\n\n${message}`,
     });
+    if (error) {
+      throw new Error(`Resend rejected feedback email: ${error.name ?? 'unknown'} — ${error.message ?? JSON.stringify(error)}`);
+    }
     return true;
   } catch (error) {
     console.error('Error sending feedback email:', error);

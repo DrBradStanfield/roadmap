@@ -113,6 +113,15 @@ interface Turn {
   matchedHandles: string[];
 }
 
+/**
+ * Run the chat summary once for the current moment.
+ * Exposed so the admin debug route can manually trigger the same path the
+ * cron runs nightly.
+ */
+export async function runChatSummaryOnce(): Promise<void> {
+  return runSummary(new Date());
+}
+
 async function runSummary(now: Date): Promise<void> {
   if (!supabaseAdmin) {
     console.warn('Chat summary: supabaseAdmin not configured');
