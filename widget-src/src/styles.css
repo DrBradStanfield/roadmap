@@ -261,12 +261,6 @@ input[type="number"] {
   overflow-y: auto;
 }
 
-/* Match .email-capture's 16px bottom margin so the gap below the stats
-   grid mirrors the gap below the email-capture card above it. */
-.quick-stats {
-  margin-bottom: 16px;
-}
-
 /* Input Panel */
 .health-input-panel {
   display: flex;
