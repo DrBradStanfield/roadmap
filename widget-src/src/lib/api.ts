@@ -190,7 +190,19 @@ export async function addMeasurement(
       body: JSON.stringify({ metricType, value, recordedAt }),
     });
     if (response.status === 409) return { status: 'duplicate' };
-    if (!response.ok) return { status: 'error' };
+    if (!response.ok) {
+      // Surface silent 4xx/5xx — the matrix's auto-save clears the draft on
+      // any non-success, so an invisible 400 (e.g. malformed `recordedAt`)
+      // looks like "value disappeared" to the user. Capture the response
+      // body so the failing payload is in Sentry without leaking PHI.
+      let body: string | undefined;
+      try { body = (await response.clone().text()).slice(0, 500); } catch {}
+      Sentry.captureMessage('addMeasurement non-ok response', {
+        level: 'error',
+        extra: { status: response.status, body, metricType, hasRecordedAt: recordedAt != null },
+      });
+      return { status: 'error' };
+    }
 
     const result = await parseJsonResponse<SingleMeasurementResponse>(response);
     if (result?.success && result.data) {

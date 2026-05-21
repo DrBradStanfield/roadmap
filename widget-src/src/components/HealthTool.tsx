@@ -32,6 +32,7 @@ import { listConversations, loadConversation, getGuestSessionToken, clearGuestSe
 import { UploadModal, FloatingUploadIndicator } from './UploadModal';
 import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
+import { ensureIsoDatetime } from '../lib/recordedAt';
 import { MobileTabBar, type TabId } from './MobileTabBar';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
@@ -608,9 +609,12 @@ export function HealthTool() {
 
       if (explicitMeasurements) {
         // Caller supplied a batch directly (bloodTestDate + metric→SI map).
+        // BloodTestTimeline passes the batch date as `yyyy-mm-dd`; the server
+        // schema validates `recordedAt` as a full ISO datetime, so widen.
+        const recordedAtIso = ensureIsoDatetime(bloodTestDate);
         for (const [metricType, value] of Object.entries(explicitMeasurements)) {
           if (value === undefined || value === null || Number.isNaN(value)) continue;
-          fieldsToSave.push({ metricType, value, recordedAt: bloodTestDate });
+          fieldsToSave.push({ metricType, value, recordedAt: recordedAtIso });
         }
       } else {
         // Legacy path: read from current form `inputs`. Skip blood-test
