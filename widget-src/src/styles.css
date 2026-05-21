@@ -221,15 +221,7 @@ input[type="number"] {
   .swiper-slide .health-tool-right {
     position: static;
     max-height: none;
-  }
-
-  .swiper-slide .results-card {
     overflow-y: visible;
-    background: transparent;
-    border-radius: 0;
-    box-shadow: none;
-    padding: 0;
-    margin: 0;
   }
 
 
@@ -266,23 +258,7 @@ input[type="number"] {
   position: sticky;
   top: 24px;
   max-height: calc(100vh - 48px);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-/* Mirrors .chat-embed so the suggestions column has a matching card.
-   The column header sits outside this card (on the page background),
-   matching the chat side's structure. */
-.results-card {
-  flex: 1;
-  min-height: 0;
-  margin: 0 0 12px;
   overflow-y: auto;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  padding: 12px;
 }
 
 /* Match .email-capture's 16px bottom margin so the gap below the stats
