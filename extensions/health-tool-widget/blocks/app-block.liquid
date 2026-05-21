@@ -7,7 +7,10 @@
 {{ 'health-tool.css' | asset_url | stylesheet_tag }}
 <style>
   #upCartStickyButton, #PBarNextFrameWrapper { display: none !important; }
-  html, body { overflow-x: hidden; }
+  /* `clip` (not `hidden`) so body doesn't become a scroll container — `hidden`
+     silently breaks `position: sticky` on descendants. Older browsers (Safari ≤15)
+     fall back to `hidden`; modern browsers (Chrome 90+/FF 81+/Safari 16+) get `clip`. */
+  html, body { overflow-x: hidden; overflow-x: clip; }
 </style>
 
 {% unless customer %}

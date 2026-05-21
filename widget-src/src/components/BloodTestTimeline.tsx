@@ -119,6 +119,11 @@ export interface BloodTestTimelineProps {
   unitSystem: UnitSystem;
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
+  // Guests have no cloud account; typed values persist via localStorage
+  // (draft state + inputs mirror saved by HealthTool's guest debounce). The
+  // matrix skips its save→clear cycle in that case to avoid wiping the user's
+  // typed values when the cloud save no-ops.
+  isLoggedIn: boolean;
   onSaveBatch: (date: string, values: Record<string, number>) => Promise<void>;
   // ValueCell calls this when the user submits an in-place correction.
   // Resolves true if the parent successfully refreshed; false leaves the
@@ -180,7 +185,7 @@ function loadPersisted(): { draft: DraftRow; backfills: BackfillMap } | null {
 const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 
 export function BloodTestTimeline({
-  bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit,
+  bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit, isLoggedIn,
   onSaveBatch, onCorrectValue, onFieldChange, isSaving, sex, onUploadClick, uploadDisabled, loginUrl,
   hasApiResponse, flushRef,
 }: BloodTestTimelineProps) {
@@ -340,6 +345,11 @@ export function BloodTestTimeline({
 
   const handleSave = async () => {
     if (filledCount === 0 || isSaving || hasError || saveDisabledByLoad) return;
+    // Guests have no remote save target — onSaveBatch resolves as a no-op via
+    // handleSaveLongitudinal's `!authState.isLoggedIn` early return. Without
+    // this guard we'd then clear draft + inputs mirror, wiping the user's
+    // typed values from both the matrix and localStorage.
+    if (!isLoggedIn) return;
 
     // Commit each affected batch (backfill date or draft date) sequentially.
     // Concurrent calls would be short-circuited by handleSaveLongitudinal's

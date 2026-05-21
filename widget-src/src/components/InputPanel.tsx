@@ -1036,6 +1036,7 @@ export function InputPanel({
       unitSystem={unitSystem}
       unitOverrides={unitOverrides}
       onToggleFieldUnit={onToggleFieldUnit}
+      isLoggedIn={isLoggedIn}
       onSaveBatch={onSaveBloodTestBatch}
       onCorrectValue={onCorrectBloodTestValue}
       onFieldChange={updateField}
@@ -2290,6 +2291,11 @@ export function InputPanel({
           <div className={`prefill-fields-wrapper${collapseAnimating && !prefillExpanded ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
             <div>{renderBirthInfo()}</div>
           </div>
+        )}
+        {formStage === 2 && (
+          <p className="field-hint-attention field-hint-attention--centered">
+            Fill in the above — then more fields will appear.
+          </p>
         )}
       </div>
 
