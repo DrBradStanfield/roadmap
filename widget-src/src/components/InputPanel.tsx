@@ -55,6 +55,7 @@ import {
 import { formatShortDate } from '../lib/constants';
 import { DatePicker, InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline } from './BloodTestTimeline';
+import { CommitTickButton } from './CommitTickButton';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -573,17 +574,7 @@ export function InputPanel({
             className={errors[field] ? 'error' : ''}
           />
           {autoSaveGate && inputs[field] !== undefined && (
-            <button
-              type="button"
-              className="commit-tick-inline"
-              aria-label={`Save ${field}`}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={flushLongitudinalSave}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-                <path d="M3 7.5 L6 10.5 L11 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            <CommitTickButton ariaLabel={`Save ${field}`} onClick={flushLongitudinalSave}/>
           )}
         </div>
         {errors[field] && (
@@ -966,17 +957,7 @@ export function InputPanel({
                   className={errors.diastolicBp ? 'error' : ''}
                 />
                 {autoSaveGate && (inputs.systolicBp !== undefined || inputs.diastolicBp !== undefined) && (
-                  <button
-                    type="button"
-                    className="commit-tick-inline"
-                    aria-label="Save blood pressure"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={flushLongitudinalSave}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-                      <path d="M3 7.5 L6 10.5 L11 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
+                  <CommitTickButton ariaLabel="Save blood pressure" onClick={flushLongitudinalSave}/>
                 )}
               </div>
             </div>
@@ -1976,17 +1957,7 @@ export function InputPanel({
                             />
                             <InlineDatePicker value={psaDate} onChange={setPsaDate} />
                             {autoSaveGate && inputs.psa !== undefined && (
-                              <button
-                                type="button"
-                                className="commit-tick-inline"
-                                aria-label="Save PSA"
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={flushLongitudinalSave}
-                              >
-                                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-                                  <path d="M3 7.5 L6 10.5 L11 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                              </button>
+                              <CommitTickButton ariaLabel="Save PSA" onClick={flushLongitudinalSave}/>
                             )}
                           </div>
                           {errors.psa && <span className="field-error">{errors.psa}</span>}

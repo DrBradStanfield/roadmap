@@ -69,4 +69,38 @@ describe('createDebouncedSave', () => {
     vi.advanceTimersByTime(500);
     expect(save).toHaveBeenCalledTimes(1);
   });
+
+  // commit() exists because the mobile ✓ tick (which uses
+  // onMouseDown.preventDefault to keep the soft keypad up) means the input
+  // never blurs, so nothing is queued for flush() to fire. commit() runs the
+  // passed fn unconditionally and cancels anything pending.
+
+  it('commit() runs the passed fn immediately', () => {
+    const d = createDebouncedSave(500);
+    const fn = vi.fn();
+    d.commit(fn);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('commit() supersedes a pending scheduled fn — only the committed one runs', () => {
+    const d = createDebouncedSave(500);
+    const scheduled = vi.fn();
+    const committed = vi.fn();
+    d.schedule(scheduled);
+    d.commit(committed);
+    expect(committed).toHaveBeenCalledTimes(1);
+    expect(scheduled).not.toHaveBeenCalled();
+    // And the scheduled timer is gone — no rogue late fire.
+    vi.advanceTimersByTime(1000);
+    expect(scheduled).not.toHaveBeenCalled();
+    expect(committed).toHaveBeenCalledTimes(1);
+  });
+
+  it('commit() does not re-fire if nothing further is scheduled', () => {
+    const d = createDebouncedSave(500);
+    const fn = vi.fn();
+    d.commit(fn);
+    vi.advanceTimersByTime(2000);
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
 });

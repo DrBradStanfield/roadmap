@@ -29,6 +29,7 @@ import {
   statusOf,
 } from '../lib/blood-test-cell';
 import { NumericInputCell } from './NumericInputCell';
+import { CommitTickButton } from './CommitTickButton';
 import { DraftDateCell } from './DraftDateCell';
 import { UnitChip } from './UnitChip';
 
@@ -343,25 +344,24 @@ export function BloodTestTimeline({
     const draftSi = toSiMap(draft.values);
     if (Object.keys(draftSi).length > 0) tasks.push({ date: draft.date, values: draftSi });
 
-    // For each task date, split per-metric into:
-    //   corrections — an active row already exists at this date; route through
-    //     correctMeasurement (FHIR-correct, no 409 conflict)
-    //   newInserts  — no active row at this date; route through onSaveBatch as
-    //     a single batched POST
-    // Without this split a draft-cell save at a date that already has a saved
-    // value silently 409s and the matrix clears the draft → user sees "value
-    // disappeared". This is the FHIR-correct semantic and matches the
-    // click-to-edit auto-save path that ValueCell already uses.
+    // Same-(date, metric) rows route through correctMeasurement to honour FHIR
+    // (replaces semantic + entered-in-error on old row), avoiding the silent
+    // 409-cleared-draft that the partial unique index would otherwise produce.
+    // Index history once instead of `bloodTestHistory.find(...)` per metric
+    // per task: O(N+M) over O(N×M).
+    const activeRowByDateMetric = new Map<string, ApiMeasurement>();
+    for (const m of bloodTestHistory) {
+      if ((m.status ?? 'active') !== 'active') continue;
+      const key = `${m.recordedAt.slice(0, 10)}|${m.metricType}`;
+      if (!activeRowByDateMetric.has(key)) activeRowByDateMetric.set(key, m);
+    }
+
     let anySaveFailed = false;
     for (const t of tasks) {
       const corrections: Array<{ id: string; value: number }> = [];
       const newInserts: Record<string, number> = {};
       for (const [metric, value] of Object.entries(t.values)) {
-        const existing = bloodTestHistory.find(m =>
-          m.metricType === metric &&
-          m.recordedAt.slice(0, 10) === t.date &&
-          (m.status ?? 'active') === 'active',
-        );
+        const existing = activeRowByDateMetric.get(`${t.date}|${metric}`);
         if (existing && onCorrectValue) {
           corrections.push({ id: existing.id, value });
         } else {
@@ -417,11 +417,7 @@ export function BloodTestTimeline({
       matrixDebounce.cancel();
       return;
     }
-    // Schedule + flush so the mobile ✓ tick (which preserves input focus via
-    // onMouseDown.preventDefault, to keep the soft keypad up) still commits.
-    // Without re-scheduling, flush() of an empty queue is a no-op.
-    matrixDebounce.schedule(() => { void handleSaveRef.current(); });
-    matrixDebounce.flush();
+    matrixDebounce.commit(() => { void handleSaveRef.current(); });
   };
 
   return (
@@ -451,22 +447,8 @@ export function BloodTestTimeline({
           {hasError && !isSaving && (
             <span className="bt-save-error" aria-live="polite">Fix invalid values</span>
           )}
-          {/* Mobile-only commit tick (visible when there are unsaved typed
-              cells). Desktop relies on auto-save-on-blur so the tick is
-              hidden; on mobile the keypad has no Enter/Done and tapping
-              outside is fiddly, so an explicit ✓ is the reliable commit
-              affordance. Wires to the same flushMatrixSave used by Enter. */}
           {filledCount > 0 && !isSaving && !hasError && (
-            <button
-              type="button"
-              className="bt-commit-tick"
-              aria-label="Save typed values"
-              onClick={flushMatrixSave}
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-                <path d="M3 7.5 L6 10.5 L11 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+            <CommitTickButton variant="matrix" ariaLabel="Save typed values" onClick={flushMatrixSave}/>
           )}
         </div>
       </div>

@@ -4278,29 +4278,14 @@ input[type="number"] {
   font-weight: 600;
 }
 
-/* Mobile-only commit tick — visible on touch devices when a typed value is
-   waiting to be saved. Desktop relies on auto-save-on-blur (clicking outside
-   any input flushes the debounce), but mobile keypads have no Enter/Done so
-   an explicit tap target is needed. Apple Health uses the same pattern. */
+/* Mobile-only commit tick — touch devices have no reliable Enter/Done on
+   numeric keypads, so an explicit tap target is needed. */
 .bt-commit-tick,
 .commit-tick-inline {
   display: none;
 }
 @media (hover: none) and (pointer: coarse) {
-  .bt-commit-tick {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: none;
-    background: var(--color-brand);
-    color: #fff;
-    cursor: pointer;
-    padding: 0;
-    margin-left: 8px;
-  }
+  .bt-commit-tick,
   .commit-tick-inline {
     display: inline-flex;
     align-items: center;
@@ -4314,12 +4299,10 @@ input[type="number"] {
     cursor: pointer;
     padding: 0;
     margin-left: 8px;
-    flex-shrink: 0;
   }
+  .commit-tick-inline { flex-shrink: 0; }
   .bt-commit-tick:active,
-  .commit-tick-inline:active {
-    transform: scale(0.92);
-  }
+  .commit-tick-inline:active { transform: scale(0.92); }
 }
 .bt-timeline-divider {
   height: 1px;

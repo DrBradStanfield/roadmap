@@ -724,12 +724,7 @@ export function HealthTool() {
     longitudinalDebounce.schedule(() => { void handleSaveLongitudinalRef.current(); });
   }, [longitudinalDebounce]);
   const flushLongitudinalSave = useCallback(() => {
-    // Schedule + flush so the mobile ✓ tick (which preserves input focus via
-    // onMouseDown.preventDefault, to keep the keypad up) still commits. Without
-    // re-scheduling, flush() of an empty queue is a no-op — and the tick is
-    // tapped *before* the input has blurred, so nothing is queued yet.
-    longitudinalDebounce.schedule(() => { void handleSaveLongitudinalRef.current(); });
-    longitudinalDebounce.flush();
+    longitudinalDebounce.commit(() => { void handleSaveLongitudinalRef.current(); });
   }, [longitudinalDebounce]);
 
   // Tab-close safety net: flush any pending debounced saves before the
