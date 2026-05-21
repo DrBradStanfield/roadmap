@@ -819,97 +819,99 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
         </div>
       </section>
 
-      {/* Suggestions */}
-      <section className="suggestions-section">
-        {urgentSuggestions.length > 0 && (
-          <div className="suggestions-group">
-            <h4 className="suggestions-group-title urgent">Requires Attention</h4>
-            {renderGroupedSuggestions(urgentSuggestions, highlightedIds, fadingOutIds)}
+      <div className="results-card">
+        {/* Suggestions */}
+        <section className="suggestions-section">
+          {urgentSuggestions.length > 0 && (
+            <div className="suggestions-group">
+              <h4 className="suggestions-group-title urgent">Requires Attention</h4>
+              {renderGroupedSuggestions(urgentSuggestions, highlightedIds, fadingOutIds)}
+            </div>
+          )}
+
+          {attentionSuggestions.length > 0 && (
+            <div className="suggestions-group">
+              <h4 className="suggestions-group-title attention">Next Steps</h4>
+              {renderGroupedSuggestions(attentionSuggestions, highlightedIds, fadingOutIds)}
+            </div>
+          )}
+
+          {infoSuggestions.length > 0 && (
+            <div className="suggestions-group">
+              <h4 className="suggestions-group-title info">Foundation</h4>
+              {renderGroupedSuggestions(infoSuggestions, highlightedIds, fadingOutIds)}
+            </div>
+          )}
+
+          {skinSuggestions.length > 0 && (
+            <div className="suggestions-group skin-group">
+              <h4 className="suggestions-group-title skin">Skin Health</h4>
+              {skinSuggestions.map((s) => (
+                <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} />
+              ))}
+            </div>
+          )}
+
+          {supplementSuggestions.length > 0 && (
+            <div className="suggestions-group supplements-group">
+              <h4 className="suggestions-group-title supplements">Supplements</h4>
+              {supplementSuggestions.map((s) => (
+                <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Health Records — documents from uploads */}
+
+        {/* Report Actions (bottom) — logged-in users only */}
+        {authState?.isLoggedIn && (
+          <div className="report-actions no-print">
+            <button type="button" className="action-btn" onClick={handlePrint} disabled={printStatus === 'loading'}>
+              {printStatus === 'loading' ? 'Loading...' : printStatus === 'error' ? 'Failed' : 'Print Report'}
+            </button>
+            <button type="button" className="action-btn" onClick={handleEmailReport} disabled={emailStatus === 'sending'}>
+              {emailStatus === 'sending' ? 'Sending...' : emailStatus === 'sent' ? 'Sent!' : emailStatus === 'error' ? 'Failed' : 'Email Report'}
+            </button>
           </div>
         )}
 
-        {attentionSuggestions.length > 0 && (
-          <div className="suggestions-group">
-            <h4 className="suggestions-group-title attention">Next Steps</h4>
-            {renderGroupedSuggestions(attentionSuggestions, highlightedIds, fadingOutIds)}
-          </div>
-        )}
-
-        {infoSuggestions.length > 0 && (
-          <div className="suggestions-group">
-            <h4 className="suggestions-group-title info">Foundation</h4>
-            {renderGroupedSuggestions(infoSuggestions, highlightedIds, fadingOutIds)}
-          </div>
-        )}
-
-        {skinSuggestions.length > 0 && (
-          <div className="suggestions-group skin-group">
-            <h4 className="suggestions-group-title skin">Skin Health</h4>
-            {skinSuggestions.map((s) => (
-              <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} />
-            ))}
-          </div>
-        )}
-
-        {supplementSuggestions.length > 0 && (
-          <div className="suggestions-group supplements-group">
-            <h4 className="suggestions-group-title supplements">Supplements</h4>
-            {supplementSuggestions.map((s) => (
-              <SuggestionCard key={s.id} suggestion={s} highlighted={highlightedIds.has(s.id)} fadingOut={fadingOutIds.has(s.id)} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Health Records — documents from uploads */}
-
-      {/* Report Actions (bottom) — logged-in users only */}
-      {authState?.isLoggedIn && (
-        <div className="report-actions no-print">
-          <button type="button" className="action-btn" onClick={handlePrint} disabled={printStatus === 'loading'}>
-            {printStatus === 'loading' ? 'Loading...' : printStatus === 'error' ? 'Failed' : 'Print Report'}
-          </button>
-          <button type="button" className="action-btn" onClick={handleEmailReport} disabled={emailStatus === 'sending'}>
-            {emailStatus === 'sending' ? 'Sending...' : emailStatus === 'sent' ? 'Sent!' : emailStatus === 'error' ? 'Failed' : 'Email Report'}
-          </button>
+        {/* Disclaimer */}
+        <div className="health-disclaimer">
+          <strong>Disclaimer:</strong> This tool is for educational purposes only
+          and is not a substitute for professional medical advice. Always consult
+          with your healthcare provider before making any health decisions.
+          Suggestions are based on general guidelines and may not apply to your
+          individual situation.
         </div>
-      )}
 
-      {/* Disclaimer */}
-      <div className="health-disclaimer">
-        <strong>Disclaimer:</strong> This tool is for educational purposes only
-        and is not a substitute for professional medical advice. Always consult
-        with your healthcare provider before making any health decisions.
-        Suggestions are based on general guidelines and may not apply to your
-        individual situation.
+        {/* Reminder Settings — logged-in users only */}
+        {authState?.isLoggedIn && onReminderPreferenceChange && (
+          <ReminderSettings
+            preferences={reminderPreferences ?? []}
+            onPreferenceChange={onReminderPreferenceChange}
+            onGlobalOptout={onGlobalReminderOptout}
+            sex={sex}
+            age={results?.age}
+          />
+        )}
+
+        {guestReportData && <GuestEmailCapture hook={guestEmailHook} loginUrl={authState?.loginUrl} />}
+
+        <FeedbackForm />
+
+        {authState?.isLoggedIn && onDeleteData && (
+          <div className="delete-data-section">
+            <button
+              className="delete-data-link"
+              onClick={onDeleteData}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete All My Data'}
+            </button>
+          </div>
+        )}
       </div>
-
-      {/* Reminder Settings — logged-in users only */}
-      {authState?.isLoggedIn && onReminderPreferenceChange && (
-        <ReminderSettings
-          preferences={reminderPreferences ?? []}
-          onPreferenceChange={onReminderPreferenceChange}
-          onGlobalOptout={onGlobalReminderOptout}
-          sex={sex}
-          age={results?.age}
-        />
-      )}
-
-      {guestReportData && <GuestEmailCapture hook={guestEmailHook} loginUrl={authState?.loginUrl} />}
-
-      <FeedbackForm />
-
-      {authState?.isLoggedIn && onDeleteData && (
-        <div className="delete-data-section">
-          <button
-            className="delete-data-link"
-            onClick={onDeleteData}
-            disabled={isDeleting}
-          >
-            {isDeleting ? 'Deleting...' : 'Delete All My Data'}
-          </button>
-        </div>
-      )}
     </div>
   );
 }

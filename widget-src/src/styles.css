@@ -221,10 +221,15 @@ input[type="number"] {
   .swiper-slide .health-tool-right {
     position: static;
     max-height: none;
+  }
+
+  .swiper-slide .results-card {
     overflow-y: visible;
     background: transparent;
-    padding: 0;
+    border-radius: 0;
     box-shadow: none;
+    padding: 0;
+    margin: 0;
   }
 
 
@@ -260,8 +265,30 @@ input[type="number"] {
 .health-tool-right {
   position: sticky;
   top: 24px;
-  max-height: calc(100vh * 1.5);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Mirrors .chat-embed so the suggestions column has a matching card.
+   The column header sits outside this card (on the page background),
+   matching the chat side's structure. */
+.results-card {
+  flex: 1;
+  min-height: 0;
+  margin: 0 0 12px;
   overflow-y: auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 12px;
+}
+
+/* Match .email-capture's 16px bottom margin so the gap below the stats
+   grid mirrors the gap below the email-capture card above it. */
+.quick-stats {
+  margin-bottom: 16px;
 }
 
 /* Input Panel */
@@ -487,6 +514,13 @@ input[type="number"] {
 .field-hint-attention--centered {
   margin-top: 0;
   text-align: center;
+}
+/* Stage-2 helper sits right under the birth-info wrapper which has no
+   bottom padding, so it needs explicit breathing room. The stage-1
+   helper sits under .sex-height-row whose input fields already provide
+   visual whitespace, so it's left at margin-top: 0. */
+.prefill-fields-wrapper + .field-hint-attention--centered {
+  margin-top: 20px;
 }
 
 .sex-height-row {
@@ -4371,9 +4405,12 @@ input[type="number"] {
      cells. Container height is content-determined so nothing is clipped. */
   overflow-y: hidden;
   scrollbar-width: none;
-  /* Pair with `noSwipingClass="bt-timeline-scroll"` on the parent Swiper
-     so horizontal pans scroll the matrix instead of changing tabs. */
-  touch-action: pan-x;
+  /* `pan-x` scrolls the matrix horizontally; `pan-y` lets vertical
+     gestures bubble through to the page so users can scroll the page
+     down even when the touch starts on the matrix. Swiper's
+     `noSwipingClass="bt-timeline-scroll"` blocks tab swipes here
+     independently of touch-action. */
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
 }
 .bt-timeline-scroll::-webkit-scrollbar { display: none; }
