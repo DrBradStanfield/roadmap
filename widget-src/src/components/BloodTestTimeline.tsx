@@ -417,6 +417,10 @@ export function BloodTestTimeline({
       matrixDebounce.cancel();
       return;
     }
+    // Schedule + flush so the mobile ✓ tick (which preserves input focus via
+    // onMouseDown.preventDefault, to keep the soft keypad up) still commits.
+    // Without re-scheduling, flush() of an empty queue is a no-op.
+    matrixDebounce.schedule(() => { void handleSaveRef.current(); });
     matrixDebounce.flush();
   };
 
@@ -446,6 +450,23 @@ export function BloodTestTimeline({
           )}
           {hasError && !isSaving && (
             <span className="bt-save-error" aria-live="polite">Fix invalid values</span>
+          )}
+          {/* Mobile-only commit tick (visible when there are unsaved typed
+              cells). Desktop relies on auto-save-on-blur so the tick is
+              hidden; on mobile the keypad has no Enter/Done and tapping
+              outside is fiddly, so an explicit ✓ is the reliable commit
+              affordance. Wires to the same flushMatrixSave used by Enter. */}
+          {filledCount > 0 && !isSaving && !hasError && (
+            <button
+              type="button"
+              className="bt-commit-tick"
+              aria-label="Save typed values"
+              onClick={flushMatrixSave}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                <path d="M3 7.5 L6 10.5 L11 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           )}
         </div>
       </div>

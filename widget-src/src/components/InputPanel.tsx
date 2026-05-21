@@ -572,6 +572,19 @@ export function InputPanel({
             max={r.max}
             className={errors[field] ? 'error' : ''}
           />
+          {autoSaveGate && inputs[field] !== undefined && (
+            <button
+              type="button"
+              className="commit-tick-inline"
+              aria-label={`Save ${field}`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={flushLongitudinalSave}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                <path d="M3 7.5 L6 10.5 L11 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          )}
         </div>
         {errors[field] && (
           <span className="error-message">{errors[field]}</span>
@@ -952,6 +965,19 @@ export function InputPanel({
                   max={150}
                   className={errors.diastolicBp ? 'error' : ''}
                 />
+                {autoSaveGate && (inputs.systolicBp !== undefined || inputs.diastolicBp !== undefined) && (
+                  <button
+                    type="button"
+                    className="commit-tick-inline"
+                    aria-label="Save blood pressure"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={flushLongitudinalSave}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                      <path d="M3 7.5 L6 10.5 L11 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
             {errors.systolicBp && (
@@ -1949,6 +1975,19 @@ export function InputPanel({
                               className={errors.psa ? 'error' : ''}
                             />
                             <InlineDatePicker value={psaDate} onChange={setPsaDate} />
+                            {autoSaveGate && inputs.psa !== undefined && (
+                              <button
+                                type="button"
+                                className="commit-tick-inline"
+                                aria-label="Save PSA"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={flushLongitudinalSave}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                                  <path d="M3 7.5 L6 10.5 L11 4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </button>
+                            )}
                           </div>
                           {errors.psa && <span className="field-error">{errors.psa}</span>}
                           <div className="field-meta">
