@@ -217,6 +217,20 @@ async function writeTrendingMetafield(
   if (written.length === 0) {
     throw new Error(`Metafield write returned empty metafields array (no row written): ${JSON.stringify(body)}`);
   }
+
+  // Stale-updatedAt check: catches the silent-failure mode where Shopify
+  // returns the *existing* metafield record (with old updatedAt) instead of
+  // committing the new value. Seen on 2026-05-21 — the setInterval-driven
+  // cron acquired the lock, "succeeded", but the metafield's updatedAt
+  // didn't advance. The manual route-driven trigger doesn't reproduce it.
+  const writtenAt = new Date(written[0].updatedAt).getTime();
+  const ageMs = Date.now() - writtenAt;
+  if (ageMs > 60_000 || Number.isNaN(writtenAt)) {
+    throw new Error(
+      `Metafield write returned stale updatedAt (${written[0].updatedAt}, ${Math.round(ageMs / 1000)}s old) — ` +
+      `Shopify echoed the existing record instead of committing. Full response: ${JSON.stringify(body)}`,
+    );
+  }
   console.log(`Trending: metafield written (id=${written[0].id}, updatedAt=${written[0].updatedAt})`);
 }
 
