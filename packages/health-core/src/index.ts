@@ -81,6 +81,7 @@ export {
   getBMICategory,
   getEgfrStatus,
   getLpaStatus,
+  getHba1cStatus,
   getLipidStatus,
   getProteinRate,
   calculateHealthResults,

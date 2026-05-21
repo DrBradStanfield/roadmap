@@ -45,6 +45,7 @@ export interface HealthResults {
   ldlC?: number;              // mmol/L (passthrough from inputs)
   eGFR?: number;              // mL/min/1.73m² (CKD-EPI 2021)
   lpa?: number;               // nmol/L (passthrough from inputs)
+  hba1c?: number;             // mmol/mol IFCC (passthrough from inputs)
   age?: number;
   suggestions: Suggestion[];
 }

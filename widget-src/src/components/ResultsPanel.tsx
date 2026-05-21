@@ -15,6 +15,7 @@ import {
   type ReminderCategory,
   getEgfrStatus,
   getLpaStatus,
+  getHba1cStatus,
   getLipidStatus,
   getProteinRate,
   STAT_CARD_EVIDENCE,
@@ -87,7 +88,9 @@ const statusClassMap: Record<string, string> = {
   'Low Normal': 'status-info', 'Borderline': 'status-info', 'Overweight': 'status-info',
   'Mildly Decreased': 'status-attention', 'High': 'status-attention', 'Elevated': 'status-attention',
   'Moderately Decreased': 'status-attention', 'Underweight': 'status-attention',
+  'Prediabetic': 'status-attention',
   'Very High': 'status-urgent', 'Severely Decreased': 'status-urgent', 'Kidney Failure': 'status-urgent',
+  'Diabetic': 'status-urgent',
 };
 
 function StatCard({ label, value, status, evidence }: {
@@ -815,6 +818,11 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
           {results.lpa !== undefined && (() => {
             const s = getLpaStatus(results.lpa);
             return <StatCard label="Lp(a)" value={<>{Math.round(results.lpa)} nmol/L</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['lpa']} />;
+          })()}
+
+          {results.hba1c !== undefined && (() => {
+            const s = getHba1cStatus(results.hba1c);
+            return <StatCard label="HbA1c" value={<>{formatDisplayValue('hba1c', results.hba1c, usFor('hba1c'))} {getDisplayLabel('hba1c', usFor('hba1c'))}</>} status={{ label: s, className: statusClassMap[s] || '' }} evidence={STAT_CARD_EVIDENCE['hba1c']} />;
           })()}
         </div>
       </section>

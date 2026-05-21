@@ -1,6 +1,6 @@
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
 import type { UnitSystem, MetricType } from './units';
-import { EGFR_THRESHOLDS, LPA_THRESHOLDS } from './units';
+import { EGFR_THRESHOLDS, LPA_THRESHOLDS, HBA1C_THRESHOLDS } from './units';
 import { generateSuggestions } from './suggestions';
 
 /**
@@ -122,6 +122,16 @@ export function getLpaStatus(lpa: number): string {
 }
 
 /**
+ * Get HbA1c status label. Inputs in mmol/mol (IFCC, canonical).
+ * Normal (<5.7% / <38.8 mmol/mol), Prediabetic (5.7-6.4%), Diabetic (≥6.5%).
+ */
+export function getHba1cStatus(hba1c: number): string {
+  if (hba1c >= HBA1C_THRESHOLDS.diabetes) return 'Diabetic';
+  if (hba1c >= HBA1C_THRESHOLDS.prediabetes) return 'Prediabetic';
+  return 'Normal';
+}
+
+/**
  * Get lipid status label from a value and its thresholds.
  * Works for ApoB (2-tier), Non-HDL, LDL, triglycerides (3-tier with veryHigh).
  */
@@ -190,6 +200,9 @@ export function calculateHealthResults(inputs: HealthInputs, unitSystem?: UnitSy
   }
   if (inputs.lpa !== undefined) {
     results.lpa = inputs.lpa;
+  }
+  if (inputs.hba1c !== undefined) {
+    results.hba1c = inputs.hba1c;
   }
 
   // Calculate age if birth year is provided (default to January if month not set)
