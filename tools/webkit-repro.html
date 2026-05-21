@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { margin: 0; font-family: -apple-system, sans-serif; }
+  .scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid red;
+    width: 100vw;
+  }
+  .scroll-inner {
+    /* Set explicit width via calc + CSS var so child rows have a known
+       containing block instead of max-content. */
+    width: calc(124px + 7 * 91px + 63px);
+    min-width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .row {
+    display: flex;
+    width: 100%;
+    border-bottom: 1px solid #ddd;
+    min-height: 56px;
+    align-items: stretch;
+  }
+  .name {
+    position: sticky; left: 0;
+    background: #fff;
+    width: 124px; flex-shrink: 0;
+    padding: 8px;
+    z-index: 2;
+    transform: translateZ(0);
+  }
+  .name-no-transform {
+    position: sticky; left: 0;
+    background: #fff;
+    width: 124px; flex-shrink: 0;
+    padding: 8px;
+    z-index: 2;
+  }
+  .val {
+    flex: 0 0 82px;
+    min-width: 0;
+    border-left: 1px solid #eee;
+    padding: 6px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .trend {
+    flex: 0 0 54px;
+    padding: 6px 4px;
+    border-left: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  input { width: 90%; min-width: 0; font-size: 16px; border: 0; text-align: center; }
+</style>
+</head>
+<body>
+<div class="scroll" id="scroll">
+ <div class="scroll-inner">
+  <div class="row" id="r-header">
+    <div class="name">METRIC</div>
+    <div class="val">A</div><div class="val">B</div><div class="val">C</div>
+    <div class="val">D</div><div class="val">E</div><div class="val">F</div>
+    <div class="val">G</div>
+    <div class="trend">TREND</div>
+  </div>
+  <div class="row" id="r-with-data">
+    <div class="name">LDL</div>
+    <div class="val">2.4</div><div class="val">2.1</div><div class="val">1.9</div>
+    <div class="val">1.7</div><div class="val">1.6</div><div class="val">1.5</div>
+    <div class="val"><input placeholder="—" inputmode="decimal" size="1"></div>
+    <div class="trend">
+      <svg width="44" height="18" style="display:block">
+        <path d="M2,12 L8,9 L15,7 L22,5 L29,4 L36,3 L42,2" fill="none" stroke="#2b3036" stroke-width="1.5"/>
+      </svg>
+    </div>
+  </div>
+  <div class="row" id="r-empty">
+    <div class="name-no-transform">ApoB (empty)</div>
+    <div class="val"><input placeholder="—" inputmode="decimal" size="1"></div>
+    <div class="val"><input placeholder="—" inputmode="decimal" size="1"></div>
+    <div class="val"><input placeholder="—" inputmode="decimal" size="1"></div>
+    <div class="val"><input placeholder="—" inputmode="decimal" size="1"></div>
+    <div class="val"><input placeholder="—" inputmode="decimal" size="1"></div>
+    <div class="val"><input placeholder="—" inputmode="decimal" size="1"></div>
+    <div class="val"><input placeholder="—" inputmode="decimal" size="1"></div>
+    <div class="trend">
+      <svg width="44" height="18" style="display:block">
+        <line x1="0" y1="9" x2="44" y2="9" stroke="#d7dbdf" stroke-dasharray="2 3" stroke-width="1"/>
+      </svg>
+    </div>
+  </div>
+ </div>
+</div>
+</body>
+</html>

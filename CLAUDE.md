@@ -388,6 +388,11 @@ Backend: Initialized in `app/entry.server.tsx`.
 - **If an approach is failing, stop and re-plan** rather than pushing through.
 - **Self-improving docs**: When you discover a new gotcha, repeated mistake, or useful pattern during work, proactively suggest adding it to CLAUDE.md (if project-wide) or memory (if preference/workflow). This makes our docs compound over time.
 - **Verify beyond tests**: For non-test-covered changes (UI layout, CSS, deploy, Liquid templates), verify via Chrome DevTools MCP (screenshot, click, evaluate JS in the open browser tab)
+- **Verify widget layouts on BOTH desktop AND iOS WebKit**. Chrome DevTools mobile emulation uses Blink — it does NOT reproduce iOS Safari / iOS Chrome bugs (Chrome iOS is a WebKit shell). Use Playwright WebKit (`playwright` is already installed; run `npx playwright install webkit` once) for headless mobile-WebKit testing. See [tools/webkit-verify.mjs](tools/webkit-verify.mjs) as the reference script — emulates iPhone 13, navigates to the live page, seeds localStorage, reports DOM measurements + screenshots. Real iOS WebKit quirks that have bitten us:
+  - `box-sizing: content-box` is the default for flex children even when the page sets `border-box` globally → same CSS var renders different widths in Blink vs WebKit
+  - `<input type="text">` has an intrinsic min-content of ~280px (default `size=20`) that inflates `width: max-content` calculations
+  - `position: sticky` on a flex child of a `width: max-content` parent lags arbitrarily — works in Blink, fails in WebKit
+  When Brad reports "broken on my iPhone", write a focused WebKit repro (see [tools/webkit-repro.html](tools/webkit-repro.html) for the pattern) before guessing fixes.
 - Rebuild widget after changes: `npm run build:widget`
 - Two IIFE bundles: `health-tool.js` and `health-history.js` (Vite IIFE doesn't support multiple inputs per config).
 

@@ -62,6 +62,11 @@ export function NumericInputCell({
         type="text"
         inputMode="decimal"
         pattern="[0-9.,]*"
+        // `size={1}` shrinks the input's intrinsic min-content on iOS
+        // WebKit (default `size=20` ≈ 280px) so flex-basis dominates.
+        // Without it, an all-empty row balloons in `width: max-content`
+        // calculations and stretches the matrix scroll width.
+        size={1}
         value={value}
         onChange={e => onChange(e.target.value)}
         onKeyDown={onKeyDown}

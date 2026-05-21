@@ -1124,6 +1124,8 @@ export function HealthTool() {
           <Swiper
             autoHeight
             touchStartPreventDefault={false}
+            noSwiping
+            noSwipingClass="bt-timeline-scroll"
             onSwiper={(s) => { swiperRef.current = s; }}
             onSlideChange={(s) => {
               const tabs: TabId[] = ['input', 'plan', 'chat'];

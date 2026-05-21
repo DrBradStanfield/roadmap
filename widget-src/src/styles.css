@@ -4250,6 +4250,21 @@ input[type="number"] {
   justify-content: space-between;
   gap: 8px;
 }
+@media (max-width: 768px) {
+  /* Mobile var values are sized so each cell's `box-sizing: border-box`
+     layout width matches what the pre-border-box (content-box) layout
+     rendered: name 140 = 124 base + 16 padding, value 91 = 82 + 8 + 1
+     border, trend 63 = 54 + 8 + 1. Keeps the visual sizing the user
+     signed off on while still satisfying the precise inner-width calc. */
+  .bt-timeline {
+    --bt-name-w: 140px;
+    --bt-value-w: 91px;
+    --bt-trend-w: 63px;
+  }
+  .bt-timeline-header {
+    padding: 0 0 10px;
+  }
+}
 .bt-timeline-title {
   font-size: 16px;
   font-weight: 600;
@@ -4315,7 +4330,12 @@ input[type="number"] {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 0 var(--bt-h-pad) var(--bt-h-pad);
+  padding: 0 14px;
+}
+/* Placed AFTER the base rule above so source-order beats it on mobile —
+   otherwise the desktop `padding: 0 14px` clobbers the mobile override. */
+@media (max-width: 768px) {
+  .bt-timeline-body { padding: 0; }
 }
 
 /* Row layout — flex with sticky-left name and sticky-right trend cells, scrollable middle */
@@ -4332,6 +4352,94 @@ input[type="number"] {
   position: sticky;
   top: 0;
   z-index: 3;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   BloodTestTimeline single-scroller layout. Native horizontal scroll moves
+   all rows together; sticky-left name cells and sticky-right trend cells
+   stay anchored. All rules scoped to `.bt-timeline-scroll` so the upload
+   ReviewTable (also uses `.bt-timeline`, but the per-row .bt-cell-strip
+   layout, not this wrapper) is unaffected.
+   ──────────────────────────────────────────────────────────────────────── */
+.bt-timeline-scroll {
+  overflow-x: auto;
+  /* `overflow-y: hidden` is iOS-Safari critical: with `overflow-x: auto`
+     it stops a competing vertical scroll context that mis-renders sticky
+     cells. Container height is content-determined so nothing is clipped. */
+  overflow-y: hidden;
+  scrollbar-width: none;
+  /* Pair with `noSwipingClass="bt-timeline-scroll"` on the parent Swiper
+     so horizontal pans scroll the matrix instead of changing tabs. */
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+}
+.bt-timeline-scroll::-webkit-scrollbar { display: none; }
+
+/* Explicit pixel width on the inner wrapper (column count comes in as
+   `--bt-col-count` inline via React). With `width: max-content` here,
+   WebKit's `position: sticky` on a flex child lags arbitrarily — the
+   sticky cell scrolls away with the data. A concrete width lets rows
+   use `width: 100%`, and sticky anchors correctly. */
+.bt-timeline-scroll-inner {
+  width: calc(var(--bt-name-w) + var(--bt-col-count) * var(--bt-value-w) + var(--bt-trend-w));
+  min-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.bt-timeline-scroll .bt-row {
+  width: 100%;
+}
+/* Force border-box so each cell's layout width equals its `--bt-*` var
+   in both Blink and iOS WebKit — iOS UA stylesheet otherwise applies
+   content-box to these flex cells, making cells 9px wider than the var
+   and throwing off the inner-width calc above. */
+.bt-timeline-scroll .bt-cell-name,
+.bt-timeline-scroll .bt-cell-value,
+.bt-timeline-scroll .bt-cell-trend {
+  box-sizing: border-box;
+}
+
+.bt-row-filler { flex: 1 0 0; min-width: 0; }
+
+/* Sticky name column — anchors to the left of the scroll viewport.
+   `transform: translateZ(0)` forces a GPU compositing layer; without it
+   iOS Safari ≤17 occasionally renders sticky cells at the wrong y. */
+.bt-timeline-scroll .bt-cell-name {
+  position: sticky;
+  left: 0;
+  background: #fff;
+  z-index: 2;
+  transform: translateZ(0);
+}
+/* Sticky trend column — anchors to the right on desktop. On mobile we
+   drop the stickiness (see media query below) so the trend column scrolls
+   with the data, which works better at narrow viewports where the data
+   area would otherwise be uncomfortably small. */
+.bt-timeline-scroll .bt-cell-trend {
+  position: sticky;
+  right: 0;
+  background: #fff;
+  z-index: 2;
+  transform: translateZ(0);
+}
+/* Header sticky-top + its sticky-left/right cells must paint above the
+   body's sticky cells so they don't peek through at the intersections. */
+.bt-timeline-scroll .bt-header-row {
+  z-index: 4;
+}
+.bt-timeline-scroll .bt-header-row .bt-cell-name,
+.bt-timeline-scroll .bt-header-row .bt-cell-trend {
+  background: var(--bt-ink-50);
+  z-index: 5;
+}
+
+@media (max-width: 768px) {
+  /* Trend column scrolls with the data on mobile — more comfortable
+     reading at narrow widths than carving out a permanent right gutter. */
+  .bt-timeline-scroll .bt-cell-trend {
+    position: static;
+    transform: none;
+  }
 }
 
 .bt-cell-name {
@@ -4388,6 +4496,12 @@ input[type="number"] {
   /* Hide horizontal scrollbars — scroll is gesture/wheel only, no visible bar.
      Firefox: scrollbar-width: none; WebKit: ::-webkit-scrollbar display:none. */
   scrollbar-width: none;
+  /* Reserve a uniform gutter so header + body strips have identical scrollable
+     width — without this, sub-pixel differences shifted columns out of line. */
+  scrollbar-gutter: stable;
+  /* Pair with the `noSwipingClass="bt-cell-strip"` on the parent Swiper so
+     horizontal pans scroll the matrix instead of changing tabs. */
+  touch-action: pan-x;
 }
 .bt-cell-strip::-webkit-scrollbar { display: none; }
 .bt-strip-inner {
@@ -4405,6 +4519,14 @@ input[type="number"] {
      .bt-cell-empty) hold their width — flex-shrink:0 alone isn't enough
      since basis defaults to content size. */
   flex: 0 0 var(--bt-value-w);
+  /* `min-width: 0` is critical: without it, iOS WebKit treats the
+     intrinsic min-content of an empty <input type="text"> (~20-char
+     default `size` ≈ 280px) as the cell's lower bound, ballooning empty
+     cells past their flex-basis. With one all-empty row (ApoB) sharing a
+     scroller with rows of buttons, the empty row stretches to ~3× the
+     others' width and forces the single scroll context to take on its
+     width — visible as huge empty space on the right of every row. */
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4421,8 +4543,14 @@ input[type="number"] {
 
 /* Clickable saved-value cell: click → in-place correction form. */
 .bt-cell-clickable {
-  /* Reset default <button> styles so it inherits .bt-cell-value layout */
-  border: none;
+  /* Reset default <button> top/right/bottom borders. `border-left` is left
+     untouched so the 1px left divider inherited from .bt-cell-value stays —
+     otherwise clickable cells render 1px narrower than non-clickable ones
+     and rows with different mixes of clickable/backfill cells get different
+     scroll widths, which breaks column alignment after sync. */
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
   background: transparent;
   font: inherit;
   color: inherit;
@@ -4543,6 +4671,10 @@ input[type="number"] {
 
 .bt-input {
   width: 90%;
+  /* Pair with `.bt-cell-value { min-width: 0 }`; on iOS WebKit an
+     unconstrained <input>'s intrinsic min-content otherwise overrides
+     the cell's flex-basis. */
+  min-width: 0;
   border: none;
   background: transparent;
   border-bottom: 1px solid transparent;
@@ -4554,6 +4686,12 @@ input[type="number"] {
   outline: none;
   font-family: inherit;
   font-variant-numeric: tabular-nums;
+}
+/* Mobile font-size ≥ 16px stops iOS WebKit from auto-zooming the viewport
+   when a numeric input is focused. The auto-zoom otherwise visually
+   "breaks" the matrix layout the instant the user taps a cell. */
+@media (max-width: 768px) {
+  .bt-input { font-size: 16px; }
 }
 /* Explicitly clear focus styling (a global rule elsewhere in styles.css
    adds a green halo box-shadow to inputs on focus). The active-cell brand
@@ -4601,7 +4739,10 @@ input[type="number"] {
 }
 .bt-header-row .bt-cell-trend {
   border-left: 1px solid var(--bt-ink-200);
-  padding: 8px 6px;
+  /* Padding must match the body `.bt-cell-trend` so the trend column has the
+     same outer width in the header and rows — otherwise the flex `bt-cell-strip`
+     resolves to a different width per row and the matrix columns misalign by
+     a few px. */
 }
 
 .bt-rows {

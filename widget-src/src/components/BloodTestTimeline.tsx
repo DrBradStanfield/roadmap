@@ -20,7 +20,6 @@ import {
 } from '@roadmap/health-core';
 import { MONTHS_SHORT } from '../lib/constants';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage';
-import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 import {
   type Status,
@@ -273,10 +272,20 @@ export function BloodTestTimeline({
     return { filledCount: n, hasError: err };
   }, [draft.values, backfills, unitOverrides, unitSystem]);
 
-  // Shared horizontal-scroll sync across the header + all row strips, with
-  // a jump-to-rightmost effect on column-count change. Same hook powers the
-  // matrix view in the lab-upload review modal so behaviour stays consistent.
-  const scrollSync = useMatrixScrollSync(columns.length);
+  // Single scroll container for the whole matrix. Native horizontal scroll
+  // moves all rows in lockstep — sticky name + trend cells stay in place.
+  // One-time scroll-to-rightmost on mount so the draft column is visible.
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const didInitScrollRef = useRef(false);
+  useEffect(() => {
+    if (didInitScrollRef.current) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    if (max <= 0) return;
+    el.scrollLeft = max;
+    didInitScrollRef.current = true;
+  }, [columns.length]);
 
   const setDraftValue = (metric: MetricType, typed: string) => {
     setDraft(d => ({ ...d, values: { ...d.values, [metric]: typed } }));
@@ -455,24 +464,24 @@ export function BloodTestTimeline({
       <div className="bt-timeline-divider"/>
 
       <div className="bt-timeline-body">
-        {/* Header row */}
-        <div className="bt-row bt-header-row">
-          <div className="bt-cell-name bt-cell-header">Metric</div>
-          <div ref={scrollSync.registerHeader} onScroll={scrollSync.onScroll} className="bt-scroll-x bt-cell-strip">
-            <div className="bt-strip-inner">
-              {columns.map((c, i) => {
-                if (c.kind === 'draft') return <DraftDateCell key="draft" date={c.date} onChange={setDraftDate} ariaLabel="Choose draft batch date"/>;
-                const isPinnedRecent = i === columns.length - 2;
-                return <BatchDateCell key={c.date} date={c.date} pinned={isPinnedRecent}/>;
-              })}
-              <div className="bt-strip-spacer"/>
-            </div>
+        <div ref={scrollRef} className="bt-timeline-scroll">
+          {/* Pixel-width wrapper so rows can use `width: 100%` instead of
+              `width: max-content` — the latter breaks `position: sticky`
+              on iOS WebKit. CSS calc consumes `--bt-col-count`. */}
+          <div className="bt-timeline-scroll-inner" style={{ '--bt-col-count': columns.length } as React.CSSProperties}>
+          {/* Header row */}
+          <div className="bt-row bt-header-row">
+            <div className="bt-cell-name bt-cell-header">Metric</div>
+            {columns.map((c, i) => {
+              if (c.kind === 'draft') return <DraftDateCell key="draft" date={c.date} onChange={setDraftDate} ariaLabel="Choose draft batch date"/>;
+              const isPinnedRecent = i === columns.length - 2;
+              return <BatchDateCell key={c.date} date={c.date} pinned={isPinnedRecent}/>;
+            })}
+            <div className="bt-row-filler"/>
+            {showTrend && <div className="bt-cell-trend bt-cell-header">Trend</div>}
           </div>
-          {showTrend && <div className="bt-cell-trend bt-cell-header">Trend</div>}
-        </div>
 
-        {/* Body — vertical stack of metric rows */}
-        <div className="bt-rows">
+          {/* Body — metric rows */}
           {ROWS.map((row, rowIdx) => {
             const display = fieldUnit(row.field);
             const unitLabel = getDisplayLabel(row.metric, display);
@@ -495,73 +504,65 @@ export function BloodTestTimeline({
                     return ref ? <div className="bt-ref-label">{ref}</div> : null;
                   })()}
                 </div>
-
-                <div ref={el => scrollSync.registerRow(rowIdx, el)}
-                     onScroll={scrollSync.onScroll}
-                     className="bt-scroll-x bt-cell-strip">
-                  <div className="bt-strip-inner">
-                    {columns.map((c, colIdx) => {
-                      if (c.kind === 'draft') {
-                        const typed = draft.values[row.metric] ?? '';
-                        const cellId = `draft.${row.metric}`;
-                        return (
-                          <DraftCell
-                            key={cellId}
-                            metric={row.metric}
-                            display={display}
-                            sex={sex}
-                            value={typed}
-                            active={activeCell === cellId}
-                            onFocus={() => setActiveCell(cellId)}
-                            onBlur={() => { setActiveCell(null); scheduleMatrixSave(); }}
-                            onEnter={flushMatrixSave}
-                            onChange={v => setDraftValue(row.metric, v)}
-                          />
-                        );
-                      }
-                      const v = c.values[row.metric];
-                      if (v == null) {
-                        const cellId = `${c.date}.${row.metric}`;
-                        const typed = backfills[c.date]?.[row.metric] ?? '';
-                        return (
-                          <BackfillCell
-                            key={cellId}
-                            metric={row.metric}
-                            display={display}
-                            value={typed}
-                            active={activeCell === cellId}
-                            onFocus={() => setActiveCell(cellId)}
-                            onBlur={() => { setActiveCell(null); scheduleMatrixSave(); }}
-                            onEnter={flushMatrixSave}
-                            onChange={v => setBackfillValue(c.date, row.metric, v)}
-                          />
-                        );
-                      }
-                      const status = statusOf(row.metric, v, sex);
-                      const isPinned = colIdx === columns.length - 2;
-                      const cellId = `${c.date}.${row.metric}`;
-                      // c.kind === 'batch' here — the 'draft' branch returned above
-                      const rowId = c.kind === 'batch' ? c.ids[row.metric] : undefined;
-                      return (
-                        <ValueCell
-                          key={cellId}
-                          metric={row.metric}
-                          display={display}
-                          sex={sex}
-                          siValue={v}
-                          rowId={rowId}
-                          status={status}
-                          pinned={isPinned}
-                          onActivate={() => setActiveCell(cellId)}
-                          onDeactivate={() => setActiveCell(null)}
-                          onCorrect={onCorrectValue}
-                        />
-                      );
-                    })}
-                    <div className="bt-strip-spacer"/>
-                  </div>
-                </div>
-
+                {columns.map((c, colIdx) => {
+                  if (c.kind === 'draft') {
+                    const typed = draft.values[row.metric] ?? '';
+                    const cellId = `draft.${row.metric}`;
+                    return (
+                      <DraftCell
+                        key={cellId}
+                        metric={row.metric}
+                        display={display}
+                        sex={sex}
+                        value={typed}
+                        active={activeCell === cellId}
+                        onFocus={() => setActiveCell(cellId)}
+                        onBlur={() => { setActiveCell(null); scheduleMatrixSave(); }}
+                        onEnter={flushMatrixSave}
+                        onChange={v => setDraftValue(row.metric, v)}
+                      />
+                    );
+                  }
+                  const v = c.values[row.metric];
+                  if (v == null) {
+                    const cellId = `${c.date}.${row.metric}`;
+                    const typed = backfills[c.date]?.[row.metric] ?? '';
+                    return (
+                      <BackfillCell
+                        key={cellId}
+                        metric={row.metric}
+                        display={display}
+                        value={typed}
+                        active={activeCell === cellId}
+                        onFocus={() => setActiveCell(cellId)}
+                        onBlur={() => { setActiveCell(null); scheduleMatrixSave(); }}
+                        onEnter={flushMatrixSave}
+                        onChange={v => setBackfillValue(c.date, row.metric, v)}
+                      />
+                    );
+                  }
+                  const status = statusOf(row.metric, v, sex);
+                  const isPinned = colIdx === columns.length - 2;
+                  const cellId = `${c.date}.${row.metric}`;
+                  // c.kind === 'batch' here — the 'draft' branch returned above
+                  const rowId = c.kind === 'batch' ? c.ids[row.metric] : undefined;
+                  return (
+                    <ValueCell
+                      key={cellId}
+                      metric={row.metric}
+                      display={display}
+                      sex={sex}
+                      siValue={v}
+                      rowId={rowId}
+                      status={status}
+                      pinned={isPinned}
+                      onActivate={() => setActiveCell(cellId)}
+                      onDeactivate={() => setActiveCell(null)}
+                      onCorrect={onCorrectValue}
+                    />
+                  );
+                })}
+                <div className="bt-row-filler"/>
                 {showTrend && (
                   <div className="bt-cell-trend">
                     <Sparkline points={sparkPoints}/>
@@ -571,6 +572,7 @@ export function BloodTestTimeline({
               </div>
             );
           })}
+          </div>
         </div>
       </div>
     </div>
