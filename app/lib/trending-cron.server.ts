@@ -19,9 +19,36 @@ import { tryAcquireCronLock } from './supabase.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000;
-const TARGET_HOUR_UTC = 3;
+// 3am New Zealand time. The cron uses Pacific/Auckland via Intl so the hour
+// and day boundary both follow NZ wall-clock — DST transitions are handled
+// transparently and the lock_date matches NZ midnight (not UTC midnight),
+// avoiding a same-UTC-day clash between a late-afternoon catch-up run and
+// the next morning's 3am run.
+const TARGET_HOUR_NZ = 3;
+const NZ_TIMEZONE = 'Pacific/Auckland';
 const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 const SHOP_DOMAIN = process.env.SHOPIFY_SHOP_DOMAIN || 'microvitamin.myshopify.com';
+
+/** Current NZ-local hour (0-23) and date (YYYY-MM-DD) at `now`. */
+function nzNowParts(now: Date): { hour: number; dateStr: string } {
+  // en-CA gives YYYY-MM-DD numeric parts, en-NZ gives the same digits but is
+  // more brittle to locale changes — stay on en-CA.
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: NZ_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: false,
+  }).formatToParts(now);
+  const get = (type: string) => parts.find(p => p.type === type)!.value;
+  // Intl can emit hour '24' at midnight in some locales; normalise to 0.
+  const hourRaw = parseInt(get('hour'), 10);
+  return {
+    hour: hourRaw === 24 ? 0 : hourRaw,
+    dateStr: `${get('year')}-${get('month')}-${get('day')}`,
+  };
+}
 
 // Articles younger than this are dropped — they don't have a clean baseline
 // window. Must be >= the leading edge of QUERY_PRIOR_BASELINE (-45d), otherwise
@@ -61,17 +88,18 @@ export function startTrendingCron(): void {
     return;
   }
 
-  console.log(`Trending cron started (will run on first tick ≥ ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_ID})`);
+  console.log(`Trending cron started (will run on first tick ≥ ${TARGET_HOUR_NZ}:00 NZ daily, machine: ${MACHINE_ID})`);
 
   cronIntervalId = setInterval(async () => {
     const now = new Date();
-    // Run on the first tick at or after the target hour each day. Using `<`
-    // instead of `!==` makes the cron resilient to deploys: if a restart
-    // shifts the setInterval offset past the target hour, the next tick
-    // still fires today via the lock guard, rather than waiting 24 hours.
-    if (now.getUTCHours() < TARGET_HOUR_UTC) return;
+    const { hour: nzHour, dateStr: todayStr } = nzNowParts(now);
+    // Run on the first tick at or after 3am NZ each day. Using `<` instead of
+    // `!==` makes the cron resilient to deploys: if a restart shifts the
+    // setInterval offset past the target hour, the next tick still fires
+    // today via the lock guard, rather than waiting 24 hours. todayStr is
+    // NZ-local date so the day boundary matches NZ midnight.
+    if (nzHour < TARGET_HOUR_NZ) return;
 
-    const todayStr = now.toISOString().slice(0, 10);
     if (lastRunDate === todayStr) return;
 
     const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'trending_cron');

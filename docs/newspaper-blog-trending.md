@@ -5,12 +5,12 @@ A surge-detection trending sidebar on the blog index, rendered in a newspaper-st
 ## Quick links
 
 - Live blog: `https://drstanfield.com/blogs/articles`
-- Daily cron: 3:00 UTC, writes to `health_roadmap.trending_articles` shop metafield
+- Daily cron: 3:00 NZ (Pacific/Auckland), writes to `health_roadmap.trending_articles` shop metafield
 
 ## Architecture
 
 ```
-┌──────────────────────┐  daily 3:00 UTC   ┌────────────────────────┐  metafieldsSet  ┌────────────────────────┐
+┌──────────────────────┐  daily 3:00 NZ    ┌────────────────────────┐  metafieldsSet  ┌────────────────────────┐
 │ trending-cron        │ ──────────────── ▶│ Shopify Admin GraphQL  │ ─────────────── ▶│ Shop metafield         │
 │ .server.ts (Fly.io)  │                   │ shopifyqlQuery (2025-10)│                  │ health_roadmap         │
 └──────────────────────┘                   │ FROM sessions          │                  │ .trending_articles     │
@@ -44,8 +44,8 @@ Where `baseline_weekly_sessions = prior_baseline_sessions / BASELINE_WINDOW_DAYS
 | `MIN_BASELINE_WEEKLY_VIEWS` | 12 | Floor: prevent tiny-baseline articles from inflating the ratio (bumped from 10 to compensate for the shorter 37-day baseline) |
 | `BASELINE_WINDOW_DAYS` | 37 | Window length used as denominator (must match query SINCE/UNTIL) |
 | `TOP_N` | 5 | How many entries to write to the metafield |
-| `TARGET_HOUR_UTC` | 3 | Earliest UTC hour the cron is eligible to run each day (offset from reminder cron at 8) |
-| `CRON_INTERVAL_MS` | 60 min | Interval check; first tick at or after TARGET_HOUR_UTC that hasn't run today acquires the lock |
+| `TARGET_HOUR_NZ` | 3 | Earliest NZ-local hour (Pacific/Auckland, DST-aware) the cron is eligible to run each day |
+| `CRON_INTERVAL_MS` | 60 min | Interval check; first tick at or after TARGET_HOUR_NZ that hasn't run today (NZ-local date) acquires the lock |
 
 **Pure function:** `computeTrending(current7dRows, priorBaselineRows, blogIndex, now)` — testable without network.
 
@@ -56,7 +56,7 @@ Where `baseline_weekly_sessions = prior_baseline_sessions / BASELINE_WINDOW_DAYS
 Mirrors the reminder cron skeleton:
 
 1. `setInterval` fires every 60 min (auto-started on module import via `startTrendingCron()`).
-2. If UTC hour < TARGET_HOUR_UTC, return (too early in the day). Using `<` instead of `!==` means any tick after the target hour can run today's cron if it hasn't run yet — resilient to deploys that shift the `setInterval` offset past the target hour.
+2. If NZ-local hour (Pacific/Auckland, DST-aware via Intl) < TARGET_HOUR_NZ, return (too early in the NZ day). Using `<` instead of `!==` means any tick after 3am NZ can run today's cron if it hasn't run yet — resilient to deploys that shift the `setInterval` offset past the target hour. The lock_date is also NZ-local (not UTC), so the day boundary matches NZ midnight.
 3. Local fast-path guard: skip if `lastRunDate === todayStr`.
 4. **Distributed lock** via Supabase `cron_lock` table — `tryAcquireCronLock(machineId, todayStr, 'trending_cron')`. Only one Fly.io machine processes per day even though multiple machines run the interval. The lock is the source of truth for "did today's cron run"; `lastRunDate` is a local fast-path optimization.
 5. On lock acquisition: query Shopify Admin, compute, write metafield.
