@@ -2216,7 +2216,10 @@ input[type="number"] {
   display: none;
   position: absolute;
   top: 100%;
-  left: 0;
+  /* Anchor on the right so the tooltip grows leftward into the card
+     instead of overflowing the card's right edge (which is clipped by
+     `.section-card--bt { overflow: hidden }`). */
+  right: 0;
   z-index: 20;
   background: #fff;
   border: 1px solid var(--color-gray-border);
