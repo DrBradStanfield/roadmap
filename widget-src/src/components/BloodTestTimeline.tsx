@@ -343,7 +343,43 @@ export function BloodTestTimeline({
     const draftSi = toSiMap(draft.values);
     if (Object.keys(draftSi).length > 0) tasks.push({ date: draft.date, values: draftSi });
 
-    for (const t of tasks) await onSaveBatch(t.date, t.values);
+    // For each task date, split per-metric into:
+    //   corrections — an active row already exists at this date; route through
+    //     correctMeasurement (FHIR-correct, no 409 conflict)
+    //   newInserts  — no active row at this date; route through onSaveBatch as
+    //     a single batched POST
+    // Without this split a draft-cell save at a date that already has a saved
+    // value silently 409s and the matrix clears the draft → user sees "value
+    // disappeared". This is the FHIR-correct semantic and matches the
+    // click-to-edit auto-save path that ValueCell already uses.
+    let anySaveFailed = false;
+    for (const t of tasks) {
+      const corrections: Array<{ id: string; value: number }> = [];
+      const newInserts: Record<string, number> = {};
+      for (const [metric, value] of Object.entries(t.values)) {
+        const existing = bloodTestHistory.find(m =>
+          m.metricType === metric &&
+          m.recordedAt.slice(0, 10) === t.date &&
+          (m.status ?? 'active') === 'active',
+        );
+        if (existing && onCorrectValue) {
+          corrections.push({ id: existing.id, value });
+        } else {
+          newInserts[metric] = value;
+        }
+      }
+      if (corrections.length > 0 && onCorrectValue) {
+        const results = await Promise.all(corrections.map(c => onCorrectValue(c.id, c.value)));
+        if (results.some(r => !r.ok)) anySaveFailed = true;
+      }
+      if (Object.keys(newInserts).length > 0) {
+        await onSaveBatch(t.date, newInserts);
+      }
+    }
+
+    // Preserve the user's typed draft if any save failed so they can retry
+    // (otherwise the matrix clears and the typed value is lost).
+    if (anySaveFailed) return;
 
     // Clear `inputs` mirror for blood-test fields that were saved, so the
     // legacy global "Save New Values" button doesn't pick them up again.
