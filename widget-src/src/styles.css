@@ -785,7 +785,7 @@ input[type="number"] {
 
 .stat-value {
   display: block;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--color-text-heading);
 }
