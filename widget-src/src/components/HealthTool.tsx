@@ -706,12 +706,19 @@ export function HealthTool() {
 
   // Auto-save on blur / Enter for InputPanel longitudinal fields. The
   // 500ms debounce batches systolic→diastolic tab transitions into one
-  // save; Enter flushes immediately. Date arg only set by PSA (which has
-  // its own date picker); weight/waist/BP omit and use today.
+  // save; Enter flushes immediately.
+  //
+  // The ref mirror is load-bearing: the debounced closure must read the
+  // latest `handleSaveLongitudinal` at fire-time, not at schedule-time.
+  // Without it, systolic blur captures `inputs={sys:118}`, the save runs,
+  // CLEARS inputs.systolicBp, then diastolic blur captures already-cleared
+  // inputs and saves only diastolic — two POSTs instead of one batched.
+  const handleSaveLongitudinalRef = useRef(handleSaveLongitudinal);
+  handleSaveLongitudinalRef.current = handleSaveLongitudinal;
   const longitudinalDebounce = useDebouncedSave(500);
-  const scheduleLongitudinalSave = useCallback((bloodTestDate?: string) => {
-    longitudinalDebounce.schedule(() => { void handleSaveLongitudinal(bloodTestDate); });
-  }, [handleSaveLongitudinal, longitudinalDebounce]);
+  const scheduleLongitudinalSave = useCallback(() => {
+    longitudinalDebounce.schedule(() => { void handleSaveLongitudinalRef.current(); });
+  }, [longitudinalDebounce]);
   const flushLongitudinalSave = useCallback(() => {
     longitudinalDebounce.flush();
   }, [longitudinalDebounce]);

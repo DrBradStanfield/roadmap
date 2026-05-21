@@ -53,7 +53,7 @@ import {
   parseLocalisedNumber,
 } from '@roadmap/health-core';
 import { formatShortDate } from '../lib/constants';
-import { DatePicker, InlineDatePicker, dateValueToISO, getCurrentDateValue, type DateValue } from './DatePicker';
+import { DatePicker, InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline } from './BloodTestTimeline';
 
 interface FieldConfig {
@@ -168,9 +168,8 @@ interface InputPanelProps {
   onSupplementChange: (key: string, name: string, doseValue: number | null, doseUnit: string | null, status?: string, startedAt?: string) => void;
   onSupplementDelete: (key: string) => void;
   /** Debounced auto-save: call on every input blur. Batches rapid blurs
-   *  (e.g. systolic→diastolic tab) into one save 500ms after the last blur.
-   *  Date arg only used by PSA (which has its own date picker). */
-  scheduleLongitudinalSave: (bloodTestDate?: string) => void;
+   *  (e.g. systolic→diastolic tab) into one save 500ms after the last blur. */
+  scheduleLongitudinalSave: () => void;
   /** Flush the debounced save immediately. Call on Enter so the user gets
    *  a save without waiting for the 500ms tail. */
   flushLongitudinalSave: () => void;
@@ -234,6 +233,17 @@ export function InputPanel({
 
   /** Prevent scroll wheel from changing number input values. */
   const blurOnWheel = (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur();
+
+  // Shared blur/Enter auto-save handlers for every longitudinal input. Each
+  // site does its own pre-work (validateOnBlur, raw-input cleanup) inline,
+  // then calls autoSave.onBlur(); onKeyDown is uniform.
+  const autoSaveGate = isLoggedIn && hasApiResponse;
+  const autoSaveOnBlur = () => { if (autoSaveGate) scheduleLongitudinalSave(); };
+  const autoSaveOnEnterKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (autoSaveGate) flushLongitudinalSave();
+  };
 
   /** Get effective unit system for a field (override or global default). */
   const fieldUnit = (field: string): UnitSystem => unitOverrides[field] ?? unitSystem;
@@ -553,14 +563,9 @@ export function InputPanel({
             }}
             onBlur={() => {
               setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
-              if (isLoggedIn && hasApiResponse) scheduleLongitudinalSave();
+              autoSaveOnBlur();
             }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                if (isLoggedIn && hasApiResponse) flushLongitudinalSave();
-              }
-            }}
+            onKeyDown={autoSaveOnEnterKey}
             placeholder={isExpandedWithData ? '' : getPreviousPlaceholder(field)}
             step={step ? (fieldUnit(field) === 'si' ? step.si : step.conv) : undefined}
             min={r.min}
@@ -921,14 +926,9 @@ export function InputPanel({
                   onChange={(e) => updateField('systolicBp', parseLocalisedNumber(e.target.value))}
                   onBlur={() => {
                     validateOnBlur('systolicBp');
-                    if (isLoggedIn && hasApiResponse) scheduleLongitudinalSave();
+                    autoSaveOnBlur();
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (isLoggedIn && hasApiResponse) flushLongitudinalSave();
-                    }
-                  }}
+                  onKeyDown={autoSaveOnEnterKey}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('systolicBp')}
                   min={60}
                   max={250}
@@ -944,14 +944,9 @@ export function InputPanel({
                   onChange={(e) => updateField('diastolicBp', parseLocalisedNumber(e.target.value))}
                   onBlur={() => {
                     validateOnBlur('diastolicBp');
-                    if (isLoggedIn && hasApiResponse) scheduleLongitudinalSave();
+                    autoSaveOnBlur();
                   }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (isLoggedIn && hasApiResponse) flushLongitudinalSave();
-                    }
-                  }}
+                  onKeyDown={autoSaveOnEnterKey}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('diastolicBp')}
                   min={40}
                   max={150}
@@ -1944,34 +1939,16 @@ export function InputPanel({
                               onBlur={() => {
                                 setRawInputs(prev => { const next = { ...prev }; delete next.psa; return next; });
                                 validateOnBlur('psa');
-                                if (isLoggedIn && hasApiResponse && inputs.psa !== undefined) {
-                                  scheduleLongitudinalSave(dateValueToISO(psaDate));
-                                }
+                                autoSaveOnBlur();
                               }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  if (isLoggedIn && hasApiResponse && inputs.psa !== undefined) {
-                                    // Re-schedule with the latest date, then flush.
-                                    scheduleLongitudinalSave(dateValueToISO(psaDate));
-                                    flushLongitudinalSave();
-                                  }
-                                }
-                              }}
+                              onKeyDown={autoSaveOnEnterKey}
                               placeholder=""
                               step="0.1"
                               min="0"
                               max="100"
                               className={errors.psa ? 'error' : ''}
                             />
-                            <InlineDatePicker value={psaDate} onChange={(d) => {
-                              setPsaDate(d);
-                              // If a value is already typed, re-schedule with the new date so
-                              // changing the date after typing still saves at the right time.
-                              if (isLoggedIn && hasApiResponse && inputs.psa !== undefined) {
-                                scheduleLongitudinalSave(dateValueToISO(d));
-                              }
-                            }} />
+                            <InlineDatePicker value={psaDate} onChange={setPsaDate} />
                           </div>
                           {errors.psa && <span className="field-error">{errors.psa}</span>}
                           <div className="field-meta">
@@ -2279,10 +2256,6 @@ export function InputPanel({
       </div>
     );
   };
-
-  // Save buttons removed — all longitudinal inputs auto-save on blur/Enter
-  // via scheduleLongitudinalSave / flushLongitudinalSave (see useDebouncedSave
-  // wrapped around handleSaveLongitudinal in HealthTool).
 
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
   const inputHeaderMeta = useMemo(() => {
