@@ -260,6 +260,58 @@ async function writeTrendingMetafield(
     );
   }
   console.log(`Trending: metafield written (id=${written[0].id}, updatedAt=${written[0].updatedAt})`);
+
+  // TEMP diagnostic: ALWAYS capture the metafieldsSet response shape to
+  // Sentry so we can compare cron-path vs route-path responses and see
+  // whether Shopify is genuinely committing or returning a fresh-looking
+  // updatedAt without persisting. Remove once trending cron is confirmed
+  // working end-to-end via a natural setInterval tick.
+  Sentry.captureMessage('trending_cron: metafieldsSet response', {
+    level: 'info',
+    tags: { feature: 'trending_cron', diagnostic: 'write_response' },
+    extra: {
+      shopId,
+      entriesCount: entries.length,
+      firstEntryHandle: entries[0]?.handle,
+      response: body,
+      ageMs,
+      writtenAtIso: written[0].updatedAt,
+      now: new Date().toISOString(),
+    },
+  });
+
+  // TEMP diagnostic: immediately read back the metafield to verify Shopify
+  // actually persisted the write (vs returning fresh-looking response while
+  // not committing). If the readback's `value` doesn't match what we wrote,
+  // Shopify is lying about success and we've found the silent failure mode.
+  const expectedValue = JSON.stringify(entries);
+  try {
+    const readBack = await admin.graphql(
+      `query { shop { metafield(namespace: "${METAFIELD_NAMESPACE}", key: "${METAFIELD_KEY}") { value updatedAt } } }`,
+    );
+    const readBody = await readBack.json();
+    const readValue = readBody.data?.shop?.metafield?.value;
+    const readUpdatedAt = readBody.data?.shop?.metafield?.updatedAt;
+    const matches = readValue === expectedValue;
+    Sentry.captureMessage(
+      matches ? 'trending_cron: post-write readback matches' : 'trending_cron: post-write readback MISMATCH',
+      {
+        level: matches ? 'info' : 'error',
+        tags: { feature: 'trending_cron', diagnostic: 'post_write_readback' },
+        extra: {
+          expectedValue,
+          readValue,
+          readUpdatedAt,
+          mutationUpdatedAt: written[0].updatedAt,
+          matches,
+        },
+      },
+    );
+  } catch (readErr) {
+    Sentry.captureException(readErr, {
+      tags: { feature: 'trending_cron', diagnostic: 'post_write_readback' },
+    });
+  }
 }
 
 interface TrendingEntry {
