@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Starting Info — Port Implementation Notes</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 880px; margin: 32px auto; padding: 0 16px 80px; color: #2b3036; line-height: 1.55; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .sub { color: #5b6670; font-size: 13px; margin: 0 0 28px; }
+  h2 { font-size: 16px; margin: 28px 0 8px; padding-top: 16px; border-top: 1px solid #eceef0; }
+  h3 { font-size: 14px; margin: 18px 0 6px; color: #2b3036; }
+  p, li { font-size: 14px; }
+  code { background: #f6f7f8; padding: 1px 5px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', 'JetBrains Mono', ui-monospace, monospace; }
+  pre { background: #f6f7f8; padding: 12px; border-radius: 6px; font-size: 12.5px; overflow-x: auto; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; margin-right: 6px; }
+  .tag-decision { background: #e6f5f2; color: #00a38b; }
+  .tag-change { background: #f6edd9; color: #c58b2a; }
+  .tag-tradeoff { background: #f6e4e4; color: #c65454; }
+  .tag-fyi { background: #eceef0; color: #5b6670; }
+  ul { padding-left: 22px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #eceef0; vertical-align: top; }
+  th { color: #5b6670; font-weight: 600; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>Starting Info → Vitals Port — Implementation Notes</h1>
+<p class="sub">Running log of decisions, deviations, and tradeoffs while porting the prototype at <code>prototype/starting-info-redesign/</code> into the live widget. Read top-to-bottom.</p>
+
+<h2>0 · Scope</h2>
+<ul>
+  <li>Replaces the inline Weight / Waist / Blood Pressure inputs inside <code>renderVitals()</code> in <code>InputPanel.tsx</code> with a per-metric matrix (the prototype's V6 design).</li>
+  <li>Header (<code>renderProfile()</code> with "Starting Info" + Units + demographics summary) is <strong>unchanged</strong> — the prototype already mirrors it.</li>
+  <li>Birth Month / Birth Year (<code>renderBirthInfo()</code>) stays as-is below the vitals card.</li>
+  <li>Blood Test Results card (<code>renderBloodTests()</code>) untouched.</li>
+</ul>
+
+<h2>1 · Files touched</h2>
+<table>
+  <tr><th>File</th><th>Why</th></tr>
+  <tr><td><code>widget-src/src/components/StartingInfoVitals.tsx</code></td><td><span class="tag tag-decision">NEW</span> the matrix component itself</td></tr>
+  <tr><td><code>widget-src/src/components/BloodTestTimeline.tsx</code></td><td><span class="tag tag-change">EDIT</span> export <code>Sparkline</code> so it can be imported</td></tr>
+  <tr><td><code>widget-src/src/components/InputPanel.tsx</code></td><td><span class="tag tag-change">EDIT</span> swap <code>renderVitals()</code> body for <code>&lt;StartingInfoVitals/&gt;</code>; thread new props</td></tr>
+  <tr><td><code>widget-src/src/components/HealthTool.tsx</code></td><td><span class="tag tag-change">EDIT</span> load vitals history; pass it down</td></tr>
+</table>
+
+<h2>2 · Reuse / what's new</h2>
+
+<h3>2a — Direct reuse (no new code)</h3>
+<ul>
+  <li><strong>All <code>.bt-*</code> CSS classes</strong> — live <code>styles.css</code> already has them. Prototype's inline CSS block is dropped.</li>
+  <li><strong><code>Sparkline</code></strong> from <code>BloodTestTimeline.tsx</code> — exported so <code>StartingInfoVitals</code> can <code>import</code> it. Identical visual to the matrix (area fill + 1.5px line + dashed-empty state).</li>
+  <li><strong><code>NumericInputCell</code></strong> — used for the draft value input. Carries the iOS WebKit fixes (<code>size={1}</code>, etc.) and the validation / status preview / error-message footer.</li>
+  <li><strong><code>statusOf</code> / <code>previewStatus</code> / <code>blockBadNumericKeys</code> / <code>validateTypedValue</code></strong> from <code>lib/blood-test-cell.ts</code> — registered with new vitals metrics (see §3).</li>
+  <li><strong><code>handleSaveLongitudinal(bloodTestDate, explicitMeasurements)</code></strong> — already accepts an arbitrary metric→SI map. The vitals matrix Save just calls <code>onSaveBloodTestBatch(date, { weight: 80 })</code> (same path the blood-test matrix uses).</li>
+  <li><strong>Live <code>renderProfile()</code> + <code>renderBirthInfo()</code></strong> — unchanged. The Starting Info header + demographics summary live there already; the new component is purely the per-metric rows that replace the current vitals fields below.</li>
+</ul>
+
+<h3>2b — Genuinely new (couldn't avoid)</h3>
+<ul>
+  <li><strong><code>StartingInfoVitals</code></strong> + a small internal <code>VitalsRow</code>. Live's <code>BloodTestTimeline</code> assumes <em>one shared scroll context</em> and shared dates across rows. Vitals has per-metric dates, so each row is its own self-contained mini-matrix with its own <code>.bt-cell-strip</code> scroller + scroll-to-rightmost effect.</li>
+  <li><strong>Combined date+value draft cell</strong>. Live splits <code>DraftDateCell</code> (header, date-only) from <code>DraftCell</code> (body, value-only) because the matrix's column-header is shared. Vitals needs both date and value in the same cell. Implementation composes the same JSX/CSS pattern (day on line 1, year+icon button on line 2, hidden <code>&lt;input type="date"&gt;</code>, <code>showPicker()</code>) but doesn't reuse <code>DraftDateCell</code> as a black box.</li>
+</ul>
+
+<h2>3 · Decisions made on the fly (not in spec)</h2>
+
+<h3>3a — Vitals status thresholds live inside <code>StartingInfoVitals.tsx</code>, not <code>lib/blood-test-cell.ts</code></h3>
+<p><span class="tag tag-decision">DECISION</span> The shared <code>statusOf(metric, siValue, sex?)</code> can't classify weight / waist / BP without extra user context (height for IBW + WHtR, age for the BP &lt;120 vs &lt;130 cutoff). Rather than widen the signature for two callers, the per-metric thresholds live as local helpers inside <code>StartingInfoVitals.tsx</code>:</p>
+<ul>
+  <li><strong>Weight</strong> → <code>calculateIBW(heightCm, sex)</code> from <code>health-core/calculations.ts</code>; ok = within IBW − 5 to + 2 kg, warn up to + 5 kg, bad otherwise.</li>
+  <li><strong>Waist</strong> → WHtR cutoff at <code>0.5 × heightCm</code> (AACE / NICE); ok at or below, warn up to + 8 cm, bad above.</li>
+  <li><strong>BP</strong> → target = &lt;120/80 (age &lt; 65), &lt;130/80 (≥ 65); ok below target, warn within target+10/+5, bad above. Mirrors the live <code>getBpTargetText()</code> in <code>InputPanel.tsx:692</code>.</li>
+</ul>
+<p>If we ever ship a fourth consumer that wants the same vitals status, extract to <code>health-core</code> at that point.</p>
+
+<h3>3b — Reuse <code>NumericInputCell</code> for the draft inputs, with <code>showStatusPreview={false}</code></h3>
+<p><span class="tag tag-decision">DECISION</span> The shared input cell handles iOS WebKit fixes (<code>size={1}</code>), validation, range errors, and the fixed-height footer slot. But its built-in status preview calls <code>previewStatus()</code> from <code>blood-test-cell.ts</code>, which returns null for vitals metrics. Two options:</p>
+<ol>
+  <li>Extend <code>previewStatus</code> to know about vitals (and pass height/age in).</li>
+  <li>Disable the input cell's preview and render the status tick from the vitals row itself.</li>
+</ol>
+<p>Chose (2) — keeps <code>blood-test-cell.ts</code> tightly scoped to blood-test metrics and avoids growing its API. The vitals row computes <code>previewStatus</code> locally and renders the tick in the <code>.bt-cell-foot</code> slot after the input.</p>
+
+<h3>3c — New <code>vitalsHistory</code> state in <code>HealthTool</code>, populated by the same fetch as <code>bloodTestHistory</code></h3>
+<p><span class="tag tag-decision">DECISION</span> The matrix needs full history (5+ readings per metric) to be meaningful. <code>previousMeasurements</code> is only latest-per-metric, so that won't do. <code>loadAllHistory(200)</code> already fetches every measurement; <code>bloodTestHistory</code> just filters that result. Added a parallel <code>vitalsHistory</code> filtered to <code>weight | waist | systolic_bp | diastolic_bp</code>. No additional API call.</p>
+
+<h3>3d — BP is two rows in the DB but one cell in the UI</h3>
+<p><span class="tag tag-decision">DECISION</span> The DB stores systolic + diastolic as separate <code>health_measurements</code> rows sharing a <code>recorded_at</code>. The matrix pairs them by date in a <code>useMemo</code> that walks <code>vitalsHistory</code>, groups by ISO date, and yields <code>{ date, sys, dia }</code> triples for the BP row only. Save sends both metrics in one <code>onSaveBloodTestBatch(date, { systolic_bp, diastolic_bp })</code> call.</p>
+
+<h2>4 · Tradeoffs</h2>
+
+<h3>4a — Each row owns its own scroll container (no scroll-lockstep)</h3>
+<p><span class="tag tag-tradeoff">TRADEOFF</span> Live blood-test matrix has one big scroll element; all rows scroll together because they share dates. Vitals rows have independent dates, so one scroll-per-row is correct. Cost: 3× the scroll containers, 3× the scroll-to-rightmost effects. Benefit: rows render correctly when each metric has different date counts (the common case).</p>
+
+<h3>4b — Save UX is per-row (one Save button per metric) + auto-save on blur/Enter</h3>
+<p><span class="tag tag-tradeoff">TRADEOFF</span> Live matrix uses a single <code>CommitTickButton</code> at the top that commits all drafts at once (because the date is shared). Per-row save matches the per-row data model — you save Weight independent of BP. The downside: three buttons can clutter the card if all three drafts are filled. Mitigated by only showing the button when that specific metric's draft is valid.</p>
+<p><span class="tag tag-change">ADDED</span> Auto-commit on blur (and Enter) for each row, mirroring the blood-test panel. Behaviour:</p>
+<ul>
+  <li>Simple metrics (weight, waist): blurring the value input with a valid value triggers <code>commit()</code> → save + clear.</li>
+  <li>BP: blur on either sys or dia triggers <code>commit()</code>, but <code>commit()</code> bails when <code>valid</code> is false. So sys-blur-with-empty-dia is a no-op; dia-blur with both filled saves both metrics in one batch.</li>
+  <li>Re-entry guard via the <code>saving</code> state — two concurrent blurs (e.g. mouse-down outside the row blurs both BP inputs at once) won't fire two requests.</li>
+  <li>The Save button stays for explicit confirmation — clicking it goes through the same <code>commit()</code>.</li>
+</ul>
+
+<h3>3e — Mirror typed draft values to <code>inputs[field]</code> via new <code>onFieldChange</code> prop</h3>
+<p><span class="tag tag-decision">DECISION</span> Two reasons we need a callback into the parent's <code>inputs</code> state:</p>
+<ol>
+  <li><strong>Live suggestions.</strong> The suggestions engine reads from <code>effectiveInputs</code> (current form + previousMeasurements fallback). Without mirroring, typing a new weight in the draft cell doesn't update suggestions until Save.</li>
+  <li><strong>Guest persistence.</strong> Guest users' cloud save is a no-op (<code>handleSaveLongitudinal</code> early-returns when not logged in). The legacy inline weight/waist/BP inputs persisted via the parent's localStorage auto-save on <code>inputs</code> change. To preserve that path, the matrix calls <code>onFieldChange(field, siValue)</code> on every keystroke. Same approach <code>BloodTestTimeline</code> uses (see <code>InputPanel.tsx:960</code> — <code>onFieldChange={updateField}</code>).</li>
+</ol>
+<p>The Save button is still rendered (and disabled-via-omission for guests by <code>isLoggedIn &amp;&amp; valid</code>) — for logged-in users it commits a measurement with the chosen date.</p>
+
+<h3>3f — Use <code>.bt-value-num</code> (not <code>.bt-cell-value-num</code>) for the saved-value text</h3>
+<p><span class="tag tag-fyi">FYI</span> Picked the wrong class name on the first pass. The live blood-test matrix uses <code>.bt-value-num</code> (defined at <code>styles.css:4645</code>); my new CSS adds only the BP-modifier <code>.bt-value-num--bp</code> for the smaller "128/80" font-size.</p>
+
+<h2>5 · Things changed from the prototype</h2>
+
+<h3>5a — Inline CSS dropped; uses <code>styles.css</code> directly</h3>
+<p>Prototype had its own <code>&lt;style&gt;</code> block mirroring the bt-* classes. The live widget already has them, so the component renders unstyled JSX and inherits all bt-* styles. New rules added at the end of <code>styles.css</code>: <code>.bt-vitals-card</code>, <code>.bt-vitals-row</code>, <code>.bt-vitals-save</code>, <code>.bt-vitals-date-btn</code>, <code>.bt-vitals-date-icon</code>, <code>.bt-vitals-bp-inputs</code>, <code>.bt-vitals-bp-sep</code>, <code>.bt-value-num--bp</code>.</p>
+
+<h3>5b — Header (<code>renderProfile()</code>) stays where it lives</h3>
+<p>Prototype's <code>LiveStartingInfoHeader</code> was a one-off mirror of <code>renderProfile()</code>. In the live port, the header keeps rendering from <code>InputPanel.tsx</code>'s existing <code>renderProfile()</code> (above the matrix component). No duplication.</p>
+
+<h3>5c — Birth Info (<code>renderBirthInfo()</code>) still renders below the vitals card</h3>
+<p>The prototype showed the demographics summary inline; in the live widget Birth Month / Birth Year are still a separate group below the vitals matrix (the existing collapse-animated <code>prefill-fields-wrapper</code>). Untouched.</p>
+
+<h3>5d — Reference-label units follow the user's display preference</h3>
+<p>Prototype hardcoded the labels (<code>Target: 80.5 kg</code>). The port uses <code>formatDisplayValue(metric, si, unitSystem)</code> + <code>getDisplayLabel</code> so US users see <code>Target: 178 lbs</code> instead. Same source-of-truth functions the rest of the widget uses.</p>
+
+<h2>5.4 · /simplify cleanup pass</h2>
+<p>Ran the review skill after the port; applied three mechanical fixes:</p>
+<ul>
+  <li><strong>Extracted <code>useScrollToRightOnMount&lt;T&gt;(deps)</code></strong> to <code>widget-src/src/lib/useScrollToRightOnMount.ts</code>. Replaced the inline version in <code>BloodTestTimeline.tsx</code> (saved 9 lines, single source of truth) and removed the duplicate from <code>StartingInfoVitals.tsx</code>.</li>
+  <li><strong>Extracted <code>&lt;DateButton&gt;</code></strong> inside <code>StartingInfoVitals.tsx</code> — the SVG + hidden-input + <code>showPicker()</code> boilerplate was duplicated across <code>SimpleDraftCell</code> and <code>BpDraftCell</code> (~30 lines).</li>
+  <li><strong>Wrapped the three <code>group*</code> calls in <code>useMemo</code></strong> on <code>vitalsHistory</code> so typing in the draft doesn't refilter+resort the entire history array on every keystroke.</li>
+</ul>
+<p>Skipped: <code>SIMPLE_METRICS.metric</code> field consolidation (type safety vs. <code>as MetricType</code> casts), dropping the <code>saving</code> state (still needed for button disabled state + "Saving…" label), and the dead-code cleanup in <code>InputPanel.tsx</code> (deferred to a separate mechanical PR — see §5.5).</p>
+
+<h2>5.5 · Dead code left behind (intentional)</h2>
+<p><span class="tag tag-fyi">FYI</span> The old <code>renderVitals()</code> implementation pulled in: <code>BASIC_LONGITUDINAL_FIELDS</code>, <code>renderLongitudinalField</code>, <code>renderCollapsedField</code>, <code>renderCollapsedBp</code>, <code>getBpPreviousData</code>, <code>getBpTargetText</code>, <code>hasBpPreviousData</code>, <code>expandedVitals</code> / <code>setExpandedVitals</code>, <code>bpExpanded</code> / <code>setBpExpanded</code>. They're now <strong>dead</strong> (only one caller, removed) but I left them in place — removing 100+ lines across the file is a separate, mechanical cleanup that's easier to review in isolation. The bundle is ~4 KB larger than it needs to be until that cleanup lands.</p>
+
+<h2>5.6 · Bug found during QA + fix</h2>
+<p><span class="tag tag-tradeoff">FIX</span> First deploy (<code>-704</code>) rendered the matrix with cells sized to content (~91px) instead of the intended 116px name + 82px value + 54px trend columns. Cause: the live <code>.bt-cell-name</code> uses <code>width: var(--bt-name-w)</code>, and the same CSS variables (defined on <code>.bt-timeline</code>) weren't in scope because my <code>StartingInfoVitals</code> wrapper used only <code>.bt-vitals-card</code>. With <code>var(--bt-name-w)</code> unresolved, browsers ignore the width property → cells fall back to <code>flex-shrink: 0</code> content sizing. Fix in <code>-705</code>: add <code>bt-timeline</code> to the wrapper class so the matrix-wide CSS variables (cell widths, ink colors, row min-height) cascade in. Two-character JSX change; no logic touched.</p>
+
+<h2>6 · Verification plan</h2>
+<ul>
+  <li>Build the widget (<code>npm run build:widget</code>), don't deploy. Brad will check first.</li>
+  <li>Run <code>npx vitest run</code> on widget-src tests (any new health-core threshold logic).</li>
+  <li>Visual check via Chrome MCP + Playwright WebKit at desktop + iPhone 13 viewports.</li>
+  <li>Guest path: matrix renders with empty draft column only; Save creates a measurement in localStorage.</li>
+  <li>Logged-in path: matrix renders with historical readings, Save writes to Supabase, suggestions update.</li>
+</ul>
+
+</body>
+</html>

@@ -55,6 +55,7 @@ import {
 import { formatShortDate } from '../lib/constants';
 import { DatePicker, InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline } from './BloodTestTimeline';
+import { StartingInfoVitals } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
 
 interface FieldConfig {
@@ -158,6 +159,9 @@ interface InputPanelProps {
   isLoggedIn: boolean;
   previousMeasurements: ApiMeasurement[];
   bloodTestHistory: ApiMeasurement[];
+  /** Full vitals history (weight / waist / sys-BP / dia-BP). Same source
+   *  as bloodTestHistory — just a different filter. */
+  vitalsHistory: ApiMeasurement[];
   onSaveBloodTestBatch: (date: string, values: Record<string, number>) => Promise<void>;
   // Click-to-correct handler for saved cells in the BloodTestTimeline matrix.
   onCorrectBloodTestValue?: (oldId: string, newValueSI: number) => Promise<boolean>;
@@ -192,7 +196,7 @@ interface InputPanelProps {
 export function InputPanel({
   inputs, onChange, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
-  isLoggedIn, previousMeasurements, bloodTestHistory, onSaveBloodTestBatch,
+  isLoggedIn, previousMeasurements, bloodTestHistory, vitalsHistory, onSaveBloodTestBatch,
   onCorrectBloodTestValue,
   medications, onMedicationChange,
   screenings, onScreeningChange,
@@ -215,6 +219,28 @@ export function InputPanel({
   // Expand/collapse state for display-first longitudinal fields.
   // (Blood tests have their own matrix UI in BloodTestTimeline; no expand state here.)
   const [expandedVitals, setExpandedVitals] = useState<Set<string>>(new Set());
+  // Latched synchronously at mount from raw localStorage. Avoids the
+  // flash of the legacy form before async data hydrates. localStorage
+  // holds both guest inputs AND the cached `previousMeasurements` for
+  // logged-in users (HealthTool's load writes both), so a single check
+  // covers both auth states. First-time-ever users (no localStorage
+  // entry at all) get 'legacy'; everyone returning gets 'matrix'.
+  const [vitalsViewMode] = useState<'legacy' | 'matrix'>(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('health_roadmap_data') || '{}');
+      const i = raw.inputs ?? {};
+      const hasInputs = i.weightKg !== undefined
+        || i.waistCm !== undefined
+        || i.systolicBp !== undefined
+        || i.diastolicBp !== undefined;
+      const VITAL_TYPES = new Set(['weight', 'waist', 'systolic_bp', 'diastolic_bp']);
+      const hasMeasurements = (raw.previousMeasurements ?? [])
+        .some((r: { metricType?: string }) => r.metricType && VITAL_TYPES.has(r.metricType));
+      return (hasInputs || hasMeasurements) ? 'matrix' : 'legacy';
+    } catch {
+      return 'legacy';
+    }
+  });
   const [bpExpanded, setBpExpanded] = useState(false);
   const focusFieldRef = useRef<string | null>(null);
 
@@ -886,7 +912,28 @@ export function InputPanel({
     </>
   );
 
-  const renderVitals = () => {
+  const renderVitalsMatrix = () => (
+    <section className="health-section">
+      <StartingInfoVitals
+        inputs={inputs}
+        vitalsHistory={vitalsHistory}
+        unitSystem={unitSystem}
+        isLoggedIn={isLoggedIn}
+        onSave={onSaveBloodTestBatch}
+        onFieldChange={updateField}
+        formStage={formStage}
+        onAutoFocusEmail={onAutoFocusEmail}
+        unitOverrides={unitOverrides}
+        onToggleFieldUnit={onToggleFieldUnit}
+      />
+    </section>
+  );
+
+  // Legacy inline weight / waist / BP fields — kept for first-time users.
+  // The matrix above shows historical context + a draft column, which is
+  // overkill (and visually noisy) for someone entering their very first
+  // measurement. Returning users with any saved vitals get the matrix.
+  const renderVitalsLegacy = () => {
     const bpData = getBpPreviousData();
     const bpLabel = bpData ? `${bpData.sysVal}/${bpData.diaVal} mmHg · ${formatShortDate(bpData.latestDate)}` : null;
     return (
@@ -902,9 +949,7 @@ export function InputPanel({
         })}
 
         {hasBpPreviousData && !bpExpanded && bpData ? (
-          <div>
-            {renderCollapsedBp(bpData)}
-          </div>
+          <div>{renderCollapsedBp(bpData)}</div>
         ) : (
           <div className="health-field">
             <label>Blood Pressure (mmHg)
@@ -928,10 +973,7 @@ export function InputPanel({
                   onWheel={blurOnWheel}
                   value={inputs.systolicBp ?? ''}
                   onChange={(e) => updateField('systolicBp', parseLocalisedNumber(e.target.value))}
-                  onBlur={() => {
-                    validateOnBlur('systolicBp');
-                    autoSaveOnBlur();
-                  }}
+                  onBlur={() => { validateOnBlur('systolicBp'); autoSaveOnBlur(); }}
                   onKeyDown={autoSaveOnEnterKey}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('systolicBp')}
                   min={60}
@@ -946,10 +988,7 @@ export function InputPanel({
                   onWheel={blurOnWheel}
                   value={inputs.diastolicBp ?? ''}
                   onChange={(e) => updateField('diastolicBp', parseLocalisedNumber(e.target.value))}
-                  onBlur={() => {
-                    validateOnBlur('diastolicBp');
-                    autoSaveOnBlur();
-                  }}
+                  onBlur={() => { validateOnBlur('diastolicBp'); autoSaveOnBlur(); }}
                   onKeyDown={autoSaveOnEnterKey}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('diastolicBp')}
                   min={40}
@@ -961,21 +1000,14 @@ export function InputPanel({
                 )}
               </div>
             </div>
-            {errors.systolicBp && (
-              <span className="error-message">{errors.systolicBp}</span>
-            )}
-            {errors.diastolicBp && (
-              <span className="error-message">{errors.diastolicBp}</span>
-            )}
+            {errors.systolicBp && <span className="error-message">{errors.systolicBp}</span>}
+            {errors.diastolicBp && <span className="error-message">{errors.diastolicBp}</span>}
             <div className="field-meta">
               <span className="field-hint">{getBpTargetText()}</span>
               {!bpExpanded && bpLabel && (
-                <a
-                  className="previous-value"
-                  href={`/pages/health-history?metric=systolic_bp`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >{bpLabel}</a>
+                <a className="previous-value"
+                   href={`/pages/health-history?metric=systolic_bp`}
+                   target="_blank" rel="noopener noreferrer">{bpLabel}</a>
               )}
             </div>
           </div>
@@ -983,6 +1015,9 @@ export function InputPanel({
       </section>
     );
   };
+
+  const renderVitals = () =>
+    vitalsViewMode === 'matrix' ? renderVitalsMatrix() : renderVitalsLegacy();
 
   const renderBirthInfo = () => (
     <div className="health-field-group">

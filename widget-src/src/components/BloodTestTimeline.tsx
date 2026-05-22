@@ -21,6 +21,7 @@ import {
 import { MONTHS_SHORT } from '../lib/constants';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
+import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import {
   type Status,
   blockBadNumericKeys,
@@ -84,7 +85,7 @@ function groupByBatch(measurements: ApiMeasurement[]): Batch[] {
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
-function Sparkline({ points, width = 44, height = 18 }: { points: number[]; width?: number; height?: number }) {
+export function Sparkline({ points, width = 44, height = 18 }: { points: number[]; width?: number; height?: number }) {
   if (points.length < 2) {
     return (
       <svg width={width} height={height} style={{ display: 'block' }}>
@@ -279,18 +280,9 @@ export function BloodTestTimeline({
 
   // Single scroll container for the whole matrix. Native horizontal scroll
   // moves all rows in lockstep — sticky name + trend cells stay in place.
-  // One-time scroll-to-rightmost on mount so the draft column is visible.
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const didInitScrollRef = useRef(false);
-  useEffect(() => {
-    if (didInitScrollRef.current) return;
-    const el = scrollRef.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    if (max <= 0) return;
-    el.scrollLeft = max;
-    didInitScrollRef.current = true;
-  }, [columns.length]);
+  // Draft column visible by default (matrix scrolls to its rightmost edge
+  // on first mount).
+  const scrollRef = useScrollToRightOnMount<HTMLDivElement>([columns.length]);
 
   const setDraftValue = (metric: MetricType, typed: string) => {
     setDraft(d => ({ ...d, values: { ...d.values, [metric]: typed } }));

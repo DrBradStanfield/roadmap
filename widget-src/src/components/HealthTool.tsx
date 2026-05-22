@@ -118,6 +118,10 @@ export function HealthTool() {
   // Full blood-test history (all draws, all metrics) for the timeline-matrix UI.
   // Filtered subset of loadAllHistory(); refreshed after each blood-test save.
   const [bloodTestHistory, setBloodTestHistory] = useState<ApiMeasurement[]>([]);
+  // Full history of vitals (weight / waist / sys-BP / dia-BP) for the
+  // StartingInfoVitals matrix. Same fetch as bloodTestHistory; just a
+  // different filter on the same loadAllHistory() result.
+  const [vitalsHistory, setVitalsHistory] = useState<ApiMeasurement[]>([]);
   const [documentHistory, setDocumentHistory] = useState<ApiDocument[]>([]);
   const [labValueHistory, setLabValueHistory] = useState<ApiLabValue[]>([]);
   const [medications, setMedications] = useState<ApiMedication[]>([]);
@@ -228,6 +232,12 @@ export function HealthTool() {
     loadAllHistory(200).then(rows => {
       const bloodTestSet = new Set(BLOOD_TEST_METRICS);
       setBloodTestHistory(rows.filter(r => bloodTestSet.has(r.metricType)));
+      setVitalsHistory(rows.filter(r =>
+        r.metricType === 'weight' ||
+        r.metricType === 'waist' ||
+        r.metricType === 'systolic_bp' ||
+        r.metricType === 'diastolic_bp'
+      ));
     });
   };
 
@@ -674,6 +684,18 @@ export function HealthTool() {
           setBloodTestHistory(prev => [...prev, ...savedBloodTestRows]);
         }
 
+        // Same pattern for vitals — keeps the StartingInfoVitals matrix
+        // in sync after a per-metric save without refetching.
+        const savedVitalsRows = insertedRows.filter(r =>
+          r.metricType === 'weight' ||
+          r.metricType === 'waist' ||
+          r.metricType === 'systolic_bp' ||
+          r.metricType === 'diastolic_bp'
+        );
+        if (savedVitalsRows.length > 0) {
+          setVitalsHistory(prev => [...prev, ...savedVitalsRows]);
+        }
+
         // Clear longitudinal input fields (legacy path only — when caller
         // supplied explicit values, the form `inputs` weren't used so leave them).
         if (!explicitMeasurements) {
@@ -1061,6 +1083,7 @@ export function HealthTool() {
     isLoggedIn: authState.isLoggedIn,
     previousMeasurements,
     bloodTestHistory,
+    vitalsHistory,
     onSaveBloodTestBatch: (date: string, values: Record<string, number>) =>
       handleSaveLongitudinal(date, values),
     onCorrectBloodTestValue: handleCorrectBloodTestValue,
@@ -1125,7 +1148,7 @@ export function HealthTool() {
             autoHeight
             touchStartPreventDefault={false}
             noSwiping
-            noSwipingClass="bt-timeline-scroll"
+            noSwipingSelector=".bt-cell-strip, .bt-timeline-scroll"
             onSwiper={(s) => { swiperRef.current = s; }}
             onSlideChange={(s) => {
               const tabs: TabId[] = ['input', 'plan', 'chat'];

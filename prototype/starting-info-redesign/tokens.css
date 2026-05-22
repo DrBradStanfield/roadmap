@@ -1,0 +1,64 @@
+/* Shared design tokens across all 4 variations */
+:root {
+  /* Brand (from widget) */
+  --brand: #00a38b;
+  --brand-hover: #008f7a;
+  --brand-soft: #e6f5f2;
+  --brand-tint: rgba(0, 163, 139, 0.08);
+
+  /* Neutrals — warm-neutral grays */
+  --ink-900: #111417;
+  --ink-700: #2b3036;
+  --ink-500: #5b6670;
+  --ink-400: #7b858e;
+  --ink-300: #a9b0b6;
+  --ink-200: #d7dbdf;
+  --ink-100: #eceef0;
+  --ink-50:  #f6f7f8;
+  --paper:   #ffffff;
+  --bg:      #fafaf8;
+
+  /* Status (desaturated, muted) */
+  --ok:       #2f9e75;
+  --ok-soft:  #e4f3ec;
+  --warn:     #c58b2a;
+  --warn-soft:#f6edd9;
+  --bad:      #c65454;
+  --bad-soft: #f6e4e4;
+
+  /* Typography */
+  --ff-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+  --ff-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, 'Menlo', monospace;
+
+  /* Radius */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+
+  /* Shadow (used sparingly) */
+  --shadow-1: 0 1px 2px rgba(10, 20, 30, 0.04), 0 1px 1px rgba(10, 20, 30, 0.03);
+  --shadow-2: 0 4px 16px rgba(10, 20, 30, 0.06), 0 1px 3px rgba(10, 20, 30, 0.04);
+  --shadow-pop: 0 16px 48px rgba(10, 20, 30, 0.12);
+}
+
+* { box-sizing: border-box; }
+
+.bt-root {
+  font-family: var(--ff-sans);
+  color: var(--ink-900);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.bt-root button { font-family: inherit; }
+.bt-root input { font-family: inherit; }
+
+.num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; }
+.mono { font-family: var(--ff-mono); }
+
+/* Generic scrollbar trim for artboards */
+.bt-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+.bt-scroll::-webkit-scrollbar-thumb { background: var(--ink-200); border-radius: 3px; }
+.bt-scroll::-webkit-scrollbar-track { background: transparent; }
