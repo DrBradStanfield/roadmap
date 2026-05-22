@@ -374,22 +374,67 @@ export function computeTrending(
   return candidates.slice(0, TOP_N);
 }
 
+/** Reject after `timeoutMs` if `promise` hasn't settled, with an attached label. */
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+    promise.then(
+      (v) => { clearTimeout(t); resolve(v); },
+      (e) => { clearTimeout(t); reject(e); },
+    );
+  });
+}
+
 /** Run the full algorithm and write the metafield. Exported for the manual-trigger test route. */
 export async function computeAndWriteTrending(): Promise<TrendingEntry[]> {
-  const session = await unauthenticated.admin(SHOP_DOMAIN);
+  // TEMP diagnostic: capture a Sentry breadcrumb at every step so even a
+  // hanging await leaves a trail. The cron at 2026-05-22 02:27 UTC acquired
+  // the lock, advanced lock_date, but produced zero downstream events — no
+  // diagnostic captures, no errors, nothing. Best hypothesis: one of the
+  // awaits is hanging silently (Promise neither resolves nor rejects). The
+  // timeouts below force a rejection so Sentry's outer catch fires.
+  Sentry.captureMessage('trending_cron: computeAndWriteTrending start', {
+    level: 'info',
+    tags: { feature: 'trending_cron', diagnostic: 'fn_start' },
+  });
+
+  const session = await withTimeout(
+    unauthenticated.admin(SHOP_DOMAIN),
+    15_000,
+    'unauthenticated.admin',
+  );
+  Sentry.captureMessage('trending_cron: unauthenticated.admin resolved', {
+    level: 'info',
+    tags: { feature: 'trending_cron', diagnostic: 'admin_resolved' },
+    extra: { hasSession: !!session, hasAdmin: !!session?.admin },
+  });
+
   if (!session?.admin) {
     throw new Error(`unauthenticated.admin(${SHOP_DOMAIN}) returned no admin client`);
   }
   const { admin } = session;
 
-  const [current7dRows, priorBaselineRows, shopId] = await Promise.all([
-    runShopifyQL(admin, QUERY_LAST_7D),
-    runShopifyQL(admin, QUERY_PRIOR_BASELINE),
-    getShopId(admin),
-  ]);
+  const [current7dRows, priorBaselineRows, shopId] = await withTimeout(
+    Promise.all([
+      runShopifyQL(admin, QUERY_LAST_7D),
+      runShopifyQL(admin, QUERY_PRIOR_BASELINE),
+      getShopId(admin),
+    ]),
+    30_000,
+    'shopifyQL+getShopId',
+  );
   console.log(
     `Trending: fetched ${current7dRows.length} 7d rows, ${priorBaselineRows.length} baseline rows, shop=${shopId}`,
   );
+  Sentry.captureMessage('trending_cron: shopifyQL+getShopId resolved', {
+    level: 'info',
+    tags: { feature: 'trending_cron', diagnostic: 'queries_resolved' },
+    extra: {
+      current7dCount: current7dRows.length,
+      priorBaselineCount: priorBaselineRows.length,
+      shopId,
+    },
+  });
 
   const blogIndex = new Map<string, BlogIndexEntry>(
     loadBlogIndex().map(entry => [entry.handle, entry]),
@@ -406,7 +451,12 @@ export async function computeAndWriteTrending(): Promise<TrendingEntry[]> {
   }
 
   const payload = ranked.map(e => ({ handle: e.handle, score: Number(e.score.toFixed(2)) }));
-  await writeTrendingMetafield(admin, shopId, payload);
+  Sentry.captureMessage('trending_cron: about to writeTrendingMetafield', {
+    level: 'info',
+    tags: { feature: 'trending_cron', diagnostic: 'pre_write' },
+    extra: { rankedCount: ranked.length, payloadCount: payload.length },
+  });
+  await withTimeout(writeTrendingMetafield(admin, shopId, payload), 30_000, 'writeTrendingMetafield');
 
   return ranked;
 }
