@@ -16,6 +16,7 @@
 import * as Sentry from '@sentry/remix';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
 import { sendEmail, escapeHtml } from './email.server';
+import { withTimeout } from './cron-helpers.server';
 
 const CRON_INTERVAL_MS = 60 * 60_000; // hourly check
 const TARGET_HOUR_UTC = 16;           // 16:00 UTC = 4am NZST (UTC+12) / 5am NZDT (UTC+13)
@@ -38,24 +39,55 @@ export function startYouTubeBotSummaryCron(): void {
   console.log(`YouTube bot summary cron started (fires daily ≥ ${TARGET_HOUR_UTC}:00 UTC to ${RECIPIENT}, machine: ${MACHINE_ID})`);
 
   cronIntervalId = setInterval(async () => {
-    const now = new Date();
-    if (now.getUTCHours() < TARGET_HOUR_UTC) return;
-
-    const todayStr = now.toISOString().slice(0, 10);
-    if (lastRunDate === todayStr) return;
-
-    const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'youtube_bot_summary');
-    if (!acquired) {
-      lastRunDate = todayStr;
-      return;
-    }
-    lastRunDate = todayStr;
-
+    // TEMP diagnostic: mirror trending-cron's setInterval instrumentation. Several
+    // recent firings advanced the cron_lock but produced zero downstream events —
+    // no email, no Sentry alert. Outer try/catch + step breadcrumbs surface
+    // exactly where the callback stalls.
     try {
-      await runSummary(now);
-    } catch (err) {
-      console.error('YouTube bot summary cron error:', err);
-      Sentry.captureException(err, { tags: { feature: 'youtube-bot-summary' } });
+      const now = new Date();
+      if (now.getUTCHours() < TARGET_HOUR_UTC) return;
+
+      const todayStr = now.toISOString().slice(0, 10);
+      if (lastRunDate === todayStr) return;
+
+      Sentry.captureMessage('youtube_bot_summary: callback entered, about to acquire lock', {
+        level: 'info',
+        tags: { feature: 'youtube-bot-summary', diagnostic: 'cb_pre_lock' },
+        extra: { todayStr, machineId: MACHINE_ID },
+      });
+
+      const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'youtube_bot_summary');
+
+      Sentry.captureMessage('youtube_bot_summary: tryAcquireCronLock returned', {
+        level: 'info',
+        tags: { feature: 'youtube-bot-summary', diagnostic: 'cb_post_lock' },
+        extra: { acquired, todayStr },
+      });
+
+      if (!acquired) {
+        lastRunDate = todayStr;
+        return;
+      }
+      lastRunDate = todayStr;
+
+      Sentry.captureMessage('youtube_bot_summary: about to call runSummary', {
+        level: 'info',
+        tags: { feature: 'youtube-bot-summary', diagnostic: 'cb_pre_runSummary' },
+      });
+
+      try {
+        await runSummary(now);
+        Sentry.captureMessage('youtube_bot_summary: runSummary completed', {
+          level: 'info',
+          tags: { feature: 'youtube-bot-summary', diagnostic: 'cb_post_runSummary' },
+        });
+      } catch (err) {
+        console.error('YouTube bot summary cron error:', err);
+        Sentry.captureException(err, { tags: { feature: 'youtube-bot-summary' } });
+      }
+    } catch (outerErr) {
+      console.error('YouTube bot summary cron OUTER error:', outerErr);
+      Sentry.captureException(outerErr, { tags: { feature: 'youtube-bot-summary', diagnostic: 'outer_catch' } });
     }
   }, CRON_INTERVAL_MS);
 }
@@ -101,13 +133,22 @@ async function runSummary(now: Date): Promise<void> {
 
   const since = new Date(now.getTime() - 24 * 60 * 60_000).toISOString();
 
+  Sentry.captureMessage('youtube_bot_summary: runSummary entered, about to query posted rows', {
+    level: 'info',
+    tags: { feature: 'youtube-bot-summary', diagnostic: 'runSummary_pre_query' },
+  });
+
   // Posted replies in the last 24h
-  const { data: postedRows, error: postedErr } = await supabaseAdmin
-    .from('youtube_bot_log')
-    .select('youtube_comment_id, user_channel, user_comment, video_id, reply_text, posted_youtube_id, classification, router_handles, posted_at')
-    .eq('posted', true)
-    .gte('posted_at', since)
-    .order('posted_at', { ascending: false });
+  const { data: postedRows, error: postedErr } = await withTimeout(
+    supabaseAdmin
+      .from('youtube_bot_log')
+      .select('youtube_comment_id, user_channel, user_comment, video_id, reply_text, posted_youtube_id, classification, router_handles, posted_at')
+      .eq('posted', true)
+      .gte('posted_at', since)
+      .order('posted_at', { ascending: false }),
+    30_000,
+    'youtube_bot_summary: posted_query',
+  );
 
   if (postedErr) {
     throw new Error(`YouTube bot summary query failed: ${postedErr.message}`);
@@ -115,13 +156,29 @@ async function runSummary(now: Date): Promise<void> {
 
   const posted = (postedRows ?? []) as YouTubeBotLogRow[];
 
+  Sentry.captureMessage('youtube_bot_summary: posted query returned', {
+    level: 'info',
+    tags: { feature: 'youtube-bot-summary', diagnostic: 'runSummary_post_posted_query' },
+    extra: { postedCount: posted.length },
+  });
+
   // Skipped (unposted) count — last 24h by processed_at, where the row was claimed but no post made.
   // Capped at 200 by the cleanup, so this is best-effort.
-  const { count: skippedCount } = await supabaseAdmin
-    .from('youtube_bot_log')
-    .select('id', { count: 'exact', head: true })
-    .eq('posted', false)
-    .gte('processed_at', since);
+  const { count: skippedCount } = await withTimeout(
+    supabaseAdmin
+      .from('youtube_bot_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('posted', false)
+      .gte('processed_at', since),
+    30_000,
+    'youtube_bot_summary: skipped_query',
+  );
+
+  Sentry.captureMessage('youtube_bot_summary: skipped query returned', {
+    level: 'info',
+    tags: { feature: 'youtube-bot-summary', diagnostic: 'runSummary_post_skipped_query' },
+    extra: { skippedCount: skippedCount ?? 0 },
+  });
 
   const subject = posted.length > 0
     ? `YouTube bot — ${posted.length} replies in last 24h`
@@ -133,8 +190,25 @@ async function runSummary(now: Date): Promise<void> {
     dayLabel: now.toISOString().slice(0, 10),
   });
 
-  await sendEmail(RECIPIENT, subject, html);
-  console.log(`YouTube bot summary sent to ${RECIPIENT}: ${posted.length} posted, ${skippedCount ?? 0} skipped`);
+  Sentry.captureMessage('youtube_bot_summary: about to call sendEmail', {
+    level: 'info',
+    tags: { feature: 'youtube-bot-summary', diagnostic: 'runSummary_pre_sendEmail' },
+    extra: { htmlBytes: html.length, postedCount: posted.length, skippedCount: skippedCount ?? 0 },
+  });
+
+  const { id } = await withTimeout(
+    sendEmail(RECIPIENT, subject, html),
+    30_000,
+    'youtube_bot_summary: sendEmail',
+  );
+
+  Sentry.captureMessage('youtube_bot_summary: sendEmail returned', {
+    level: 'info',
+    tags: { feature: 'youtube-bot-summary', diagnostic: 'runSummary_post_sendEmail' },
+    extra: { resendId: id },
+  });
+
+  console.log(`YouTube bot summary sent to ${RECIPIENT}: ${posted.length} posted, ${skippedCount ?? 0} skipped (resend id ${id})`);
 }
 
 // ---------------------------------------------------------------------------

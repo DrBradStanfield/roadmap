@@ -17,6 +17,7 @@ import * as Sentry from '@sentry/remix';
 import { unauthenticated } from '../shopify.server';
 import { tryAcquireCronLock } from './supabase.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
+import { withTimeout } from './cron-helpers.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000;
 // 3am New Zealand time. The cron uses Pacific/Auckland via Intl so the hour
@@ -394,17 +395,6 @@ export function computeTrending(
 
   candidates.sort((a, b) => b.score - a.score);
   return candidates.slice(0, TOP_N);
-}
-
-/** Reject after `timeoutMs` if `promise` hasn't settled, with an attached label. */
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
-    promise.then(
-      (v) => { clearTimeout(t); resolve(v); },
-      (e) => { clearTimeout(t); reject(e); },
-    );
-  });
 }
 
 /** Run the full algorithm and write the metafield. Exported for the manual-trigger test route. */

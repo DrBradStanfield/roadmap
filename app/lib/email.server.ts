@@ -55,9 +55,9 @@ export function escapeHtml(str: string): string {
  * inspecting `error`, those failures are silent and the caller treats them as
  * success. Surface them so callers / Sentry actually see them.
  */
-export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+export async function sendEmail(to: string, subject: string, html: string): Promise<{ id: string }> {
   if (!resend) throw new Error('Email service not configured');
-  const { error } = await resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
     to,
     subject,
@@ -66,6 +66,10 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
   if (error) {
     throw new Error(`Resend rejected email to ${to}: ${error.name ?? 'unknown'} — ${error.message ?? JSON.stringify(error)}`);
   }
+  if (!data?.id) {
+    throw new Error(`Resend returned no error and no id for email to ${to} — unexpected SDK response shape`);
+  }
+  return { id: data.id };
 }
 
 /**
