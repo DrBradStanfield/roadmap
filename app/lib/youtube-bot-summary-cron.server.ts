@@ -1,9 +1,10 @@
 /**
  * YouTube bot daily summary email.
  *
- * Once per day at TARGET_HOUR_UTC, queries youtube_bot_log for posted replies
- * in the trailing 24h, renders an HTML email of every comment + bot response,
- * and sends it via Resend so Brad can audit the bot's behaviour each morning.
+ * Once per day at TARGET_HOUR_NZ (2am NZ, DST-aware), queries youtube_bot_log
+ * for posted replies in the trailing 24h, renders an HTML email of every
+ * comment + bot response, and sends it via Resend so Brad can audit the
+ * bot's behaviour each morning.
  *
  * Mirrors reminder-cron.server.ts / trending-cron.server.ts: setInterval at
  * hourly cadence, distributed lock via cron_lock so only one Fly machine sends
@@ -16,10 +17,10 @@
 import * as Sentry from '@sentry/remix';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
 import { sendEmail, escapeHtml } from './email.server';
-import { withTimeout } from './cron-helpers.server';
+import { withTimeout, nzNowParts } from './cron-helpers.server';
 
 const CRON_INTERVAL_MS = 60 * 60_000; // hourly check
-const TARGET_HOUR_UTC = 16;           // 16:00 UTC = 4am NZST (UTC+12) / 5am NZDT (UTC+13)
+const TARGET_HOUR_NZ = 2;
 const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 const RECIPIENT = process.env.YOUTUBE_BOT_SUMMARY_EMAIL || 'brad@drstanfield.com';
 
@@ -36,14 +37,14 @@ export function startYouTubeBotSummaryCron(): void {
     return;
   }
 
-  console.log(`YouTube bot summary cron started (fires daily ≥ ${TARGET_HOUR_UTC}:00 UTC to ${RECIPIENT}, machine: ${MACHINE_ID})`);
+  console.log(`YouTube bot summary cron started (fires daily ≥ ${TARGET_HOUR_NZ}:00 NZ to ${RECIPIENT}, machine: ${MACHINE_ID})`);
 
   cronIntervalId = setInterval(async () => {
     try {
       const now = new Date();
-      if (now.getUTCHours() < TARGET_HOUR_UTC) return;
+      const { hour: nzHour, dateStr: todayStr } = nzNowParts(now);
+      if (nzHour < TARGET_HOUR_NZ) return;
 
-      const todayStr = now.toISOString().slice(0, 10);
       if (lastRunDate === todayStr) return;
 
       const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'youtube_bot_summary');

@@ -1,7 +1,7 @@
 /**
  * Daily chat activity summary email (web + Discord combined).
  *
- * Fires once per day at TARGET_HOUR_UTC (16:00 UTC = 4am NZST), queries
+ * Fires once per day at TARGET_HOUR_NZ (2am NZ, DST-aware), queries
  * chat_conversations + chat_messages + chat_match_events for activity in
  * the trailing 24h, renders an HTML email grouped by platform showing
  * every user turn + bot reply with classifier output and router handles.
@@ -16,10 +16,10 @@ import * as Sentry from '@sentry/remix';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
 import { sendEmail, escapeHtml } from './email.server';
 import { Classification } from './chat-classifier.server';
-import { withTimeout } from './cron-helpers.server';
+import { withTimeout, nzNowParts } from './cron-helpers.server';
 
 const CRON_INTERVAL_MS = 60 * 60_000;
-const TARGET_HOUR_UTC = 16;           // 16:00 UTC = 4am NZST (UTC+12) / 5am NZDT (UTC+13)
+const TARGET_HOUR_NZ = 2;
 const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 const RECIPIENT = process.env.CHAT_SUMMARY_EMAIL || 'brad@drstanfield.com';
 
@@ -39,14 +39,14 @@ export function startChatSummaryCron(): void {
     return;
   }
 
-  console.log(`Chat summary cron started (fires daily ≥ ${TARGET_HOUR_UTC}:00 UTC to ${RECIPIENT}, machine: ${MACHINE_ID})`);
+  console.log(`Chat summary cron started (fires daily ≥ ${TARGET_HOUR_NZ}:00 NZ to ${RECIPIENT}, machine: ${MACHINE_ID})`);
 
   cronIntervalId = setInterval(async () => {
     try {
       const now = new Date();
-      if (now.getUTCHours() < TARGET_HOUR_UTC) return;
+      const { hour: nzHour, dateStr: todayStr } = nzNowParts(now);
+      if (nzHour < TARGET_HOUR_NZ) return;
 
-      const todayStr = now.toISOString().slice(0, 10);
       if (lastRunDate === todayStr) return;
 
       const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'chat_summary');

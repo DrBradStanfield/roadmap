@@ -17,39 +17,14 @@ import * as Sentry from '@sentry/remix';
 import { unauthenticated } from '../shopify.server';
 import { tryAcquireCronLock } from './supabase.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
-import { withTimeout } from './cron-helpers.server';
+import { withTimeout, nzNowParts } from './cron-helpers.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000;
-// 3am New Zealand time. The cron uses Pacific/Auckland via Intl so the hour
-// and day boundary both follow NZ wall-clock — DST transitions are handled
-// transparently and the lock_date matches NZ midnight (not UTC midnight),
-// avoiding a same-UTC-day clash between a late-afternoon catch-up run and
-// the next morning's 3am run.
+// 3am NZ. DST-aware via nzNowParts (Pacific/Auckland through Intl) and
+// lock_date is NZ-local so the day boundary matches NZ midnight, not UTC.
 const TARGET_HOUR_NZ = 3;
-const NZ_TIMEZONE = 'Pacific/Auckland';
 const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 const SHOP_DOMAIN = process.env.SHOPIFY_SHOP_DOMAIN || 'microvitamin.myshopify.com';
-
-/** Current NZ-local hour (0-23) and date (YYYY-MM-DD) at `now`. */
-function nzNowParts(now: Date): { hour: number; dateStr: string } {
-  // en-CA gives YYYY-MM-DD numeric parts, en-NZ gives the same digits but is
-  // more brittle to locale changes — stay on en-CA.
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: NZ_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    hour12: false,
-  }).formatToParts(now);
-  const get = (type: string) => parts.find(p => p.type === type)!.value;
-  // Intl can emit hour '24' at midnight in some locales; normalise to 0.
-  const hourRaw = parseInt(get('hour'), 10);
-  return {
-    hour: hourRaw === 24 ? 0 : hourRaw,
-    dateStr: `${get('year')}-${get('month')}-${get('day')}`,
-  };
-}
 
 // Articles younger than this are dropped — they don't have a clean baseline
 // window. Must be >= the leading edge of QUERY_PRIOR_BASELINE (-45d), otherwise
