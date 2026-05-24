@@ -1910,7 +1910,19 @@ export async function tryAcquireCronLock(
   // start with lock_date = NULL, and `NULL != $today` evaluates to NULL in SQL
   // (treated as false) — so a bare `.neq` would never match unseeded locks and
   // the cron would fail silently.
-  const { data, error } = await supabaseAdmin
+  // Attempt to acquire the lock. PostgreSQL row-level locking serializes
+  // concurrent UPDATEs to the same row, so this is the atomic CAS — only
+  // one machine's UPDATE can match the `lock_date != today` predicate per
+  // day.
+  //
+  // We do NOT use `.select()` here. PostgREST evaluates the WHERE filter
+  // against the UPDATED row when returning representation. Because our
+  // filter (`lock_date.neq.today`) excludes rows that have today's date,
+  // and our UPDATE sets `lock_date = today`, the returned set is empty
+  // even when the UPDATE committed. That bug silently broke the trending
+  // and reminder crons for weeks — both acquired the lock at the DB level
+  // but the function returned false, short-circuiting the cron callback.
+  const updateRes = await supabaseAdmin
     .from('cron_lock')
     .update({
       locked_by: machineId,
@@ -1918,24 +1930,35 @@ export async function tryAcquireCronLock(
       lock_date: today,
     })
     .eq('lock_name', lockName)
-    .or(`lock_date.is.null,lock_date.neq.${today}`)
-    .select();
+    .or(`lock_date.is.null,lock_date.neq.${today}`);
 
-  if (error) {
-    console.error(`Error acquiring cron lock (${lockName}):`, error);
-    // TEMP diagnostic: surface the Supabase error so the cron callback knows
-    // why acquired=false even though the UPDATE may have committed.
+  if (updateRes.error) {
+    console.error(`Error acquiring cron lock (${lockName}):`, updateRes.error);
     try {
       const Sentry = await import('@sentry/remix');
-      Sentry.captureException(error, {
+      Sentry.captureException(updateRes.error, {
         tags: { feature: lockName, diagnostic: 'lock_error' },
-        extra: { machineId, today, lockName, errorBody: error },
+        extra: { machineId, today, lockName, errorBody: updateRes.error },
       });
     } catch { /* don't let Sentry import failure break the cron */ }
     return false;
   }
 
-  return (data?.length ?? 0) > 0;
+  // Read back the row to determine who owns the lock for today. If this
+  // machine's id + today's date are reflected, we won the CAS.
+  const { data: verify, error: verifyErr } = await supabaseAdmin
+    .from('cron_lock')
+    .select('locked_by, lock_date')
+    .eq('lock_name', lockName)
+    .limit(1)
+    .maybeSingle();
+
+  if (verifyErr || !verify) {
+    console.error(`Could not verify cron lock state (${lockName}):`, verifyErr);
+    return false;
+  }
+
+  return verify.locked_by === machineId && verify.lock_date === today;
 }
 
 // ---------------------------------------------------------------------------
