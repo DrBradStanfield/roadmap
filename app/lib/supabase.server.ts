@@ -1923,6 +1923,15 @@ export async function tryAcquireCronLock(
 
   if (error) {
     console.error(`Error acquiring cron lock (${lockName}):`, error);
+    // TEMP diagnostic: surface the Supabase error so the cron callback knows
+    // why acquired=false even though the UPDATE may have committed.
+    try {
+      const Sentry = await import('@sentry/remix');
+      Sentry.captureException(error, {
+        tags: { feature: lockName, diagnostic: 'lock_error' },
+        extra: { machineId, today, lockName, errorBody: error },
+      });
+    } catch { /* don't let Sentry import failure break the cron */ }
     return false;
   }
 

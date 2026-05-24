@@ -91,27 +91,49 @@ export function startTrendingCron(): void {
   console.log(`Trending cron started (will run on first tick ≥ ${TARGET_HOUR_NZ}:00 NZ daily, machine: ${MACHINE_ID})`);
 
   cronIntervalId = setInterval(async () => {
-    const now = new Date();
-    const { hour: nzHour, dateStr: todayStr } = nzNowParts(now);
-    // Run on the first tick at or after 3am NZ each day. Using `<` instead of
-    // `!==` makes the cron resilient to deploys: if a restart shifts the
-    // setInterval offset past the target hour, the next tick still fires
-    // today via the lock guard, rather than waiting 24 hours. todayStr is
-    // NZ-local date so the day boundary matches NZ midnight.
-    if (nzHour < TARGET_HOUR_NZ) return;
-
-    if (lastRunDate === todayStr) return;
-
-    const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'trending_cron');
-    if (!acquired) {
-      lastRunDate = todayStr;
-      return;
-    }
-
-    lastRunDate = todayStr;
-
     try {
+      const now = new Date();
+      const { hour: nzHour, dateStr: todayStr } = nzNowParts(now);
+      // Run on the first tick at or after 3am NZ each day. Using `<` instead of
+      // `!==` makes the cron resilient to deploys: if a restart shifts the
+      // setInterval offset past the target hour, the next tick still fires
+      // today via the lock guard, rather than waiting 24 hours. todayStr is
+      // NZ-local date so the day boundary matches NZ midnight.
+      if (nzHour < TARGET_HOUR_NZ) return;
+
+      if (lastRunDate === todayStr) return;
+
+      // TEMP diagnostic: capture every step of the cron callback so we can
+      // see WHERE it stalls. fn_start (the first line of
+      // computeAndWriteTrending) has never fired from a cron run, even though
+      // lock_date advances — so something between acquired=true and the
+      // function call is dropping execution.
+      Sentry.captureMessage('trending_cron: callback entered, about to acquire lock', {
+        level: 'info',
+        tags: { feature: 'trending_cron', diagnostic: 'cb_pre_lock' },
+        extra: { nzHour, todayStr, machineId: MACHINE_ID },
+      });
+
+      const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'trending_cron');
+
+      Sentry.captureMessage('trending_cron: tryAcquireCronLock returned', {
+        level: 'info',
+        tags: { feature: 'trending_cron', diagnostic: 'cb_post_lock' },
+        extra: { acquired, todayStr },
+      });
+
+      if (!acquired) {
+        lastRunDate = todayStr;
+        return;
+      }
+
+      lastRunDate = todayStr;
+
       console.log(`Trending cron: starting daily processing (machine: ${MACHINE_ID})`);
+      Sentry.captureMessage('trending_cron: about to call computeAndWriteTrending', {
+        level: 'info',
+        tags: { feature: 'trending_cron', diagnostic: 'cb_pre_compute' },
+      });
       const ranked = await computeAndWriteTrending();
       console.log(`Trending cron: completed, wrote ${ranked.length} entries`);
     } catch (error) {
