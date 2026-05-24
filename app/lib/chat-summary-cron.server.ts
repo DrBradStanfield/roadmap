@@ -42,10 +42,6 @@ export function startChatSummaryCron(): void {
   console.log(`Chat summary cron started (fires daily ≥ ${TARGET_HOUR_UTC}:00 UTC to ${RECIPIENT}, machine: ${MACHINE_ID})`);
 
   cronIntervalId = setInterval(async () => {
-    // TEMP diagnostic: mirror trending-cron's setInterval instrumentation. Several
-    // recent firings advanced the cron_lock but produced zero downstream events —
-    // no email, no Sentry alert. Outer try/catch + step breadcrumbs surface
-    // exactly where the callback stalls.
     try {
       const now = new Date();
       if (now.getUTCHours() < TARGET_HOUR_UTC) return;
@@ -53,44 +49,17 @@ export function startChatSummaryCron(): void {
       const todayStr = now.toISOString().slice(0, 10);
       if (lastRunDate === todayStr) return;
 
-      Sentry.captureMessage('chat_summary: callback entered, about to acquire lock', {
-        level: 'info',
-        tags: { feature: 'chat-summary', diagnostic: 'cb_pre_lock' },
-        extra: { todayStr, machineId: MACHINE_ID },
-      });
-
       const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'chat_summary');
-
-      Sentry.captureMessage('chat_summary: tryAcquireCronLock returned', {
-        level: 'info',
-        tags: { feature: 'chat-summary', diagnostic: 'cb_post_lock' },
-        extra: { acquired, todayStr },
-      });
-
       if (!acquired) {
         lastRunDate = todayStr;
         return;
       }
       lastRunDate = todayStr;
 
-      Sentry.captureMessage('chat_summary: about to call runSummary', {
-        level: 'info',
-        tags: { feature: 'chat-summary', diagnostic: 'cb_pre_runSummary' },
-      });
-
-      try {
-        await runSummary(now);
-        Sentry.captureMessage('chat_summary: runSummary completed', {
-          level: 'info',
-          tags: { feature: 'chat-summary', diagnostic: 'cb_post_runSummary' },
-        });
-      } catch (err) {
-        console.error('Chat summary cron error:', err);
-        Sentry.captureException(err, { tags: { feature: 'chat-summary' } });
-      }
-    } catch (outerErr) {
-      console.error('Chat summary cron OUTER error:', outerErr);
-      Sentry.captureException(outerErr, { tags: { feature: 'chat-summary', diagnostic: 'outer_catch' } });
+      await runSummary(now);
+    } catch (err) {
+      console.error('Chat summary cron error:', err);
+      Sentry.captureException(err, { tags: { feature: 'chat-summary' } });
     }
   }, CRON_INTERVAL_MS);
 }
@@ -162,11 +131,6 @@ async function runSummary(now: Date): Promise<void> {
 
   const since = new Date(now.getTime() - 24 * 60 * 60_000).toISOString();
 
-  Sentry.captureMessage('chat_summary: runSummary entered, about to query conversations', {
-    level: 'info',
-    tags: { feature: 'chat-summary', diagnostic: 'runSummary_pre_query' },
-  });
-
   // Conversations active in the last 24h on tracked platforms
   const { data: convRows, error: convErr } = await withTimeout(
     supabaseAdmin
@@ -182,28 +146,12 @@ async function runSummary(now: Date): Promise<void> {
 
   const conversations = (convRows ?? []) as Conversation[];
 
-  Sentry.captureMessage('chat_summary: conv query returned', {
-    level: 'info',
-    tags: { feature: 'chat-summary', diagnostic: 'runSummary_post_conv_query' },
-    extra: { conversationCount: conversations.length },
-  });
-
   if (conversations.length === 0) {
-    Sentry.captureMessage('chat_summary: empty path, about to send empty-state email', {
-      level: 'info',
-      tags: { feature: 'chat-summary', diagnostic: 'runSummary_pre_sendEmail' },
-      extra: { htmlBytes: 0, path: 'empty' },
-    });
     const { id } = await withTimeout(
       sendEmail(RECIPIENT, 'Daily chat summary — no activity in last 24h', renderEmptyHtml(now)),
       30_000,
       'chat_summary: sendEmail (empty)',
     );
-    Sentry.captureMessage('chat_summary: empty-state email sent', {
-      level: 'info',
-      tags: { feature: 'chat-summary', diagnostic: 'runSummary_post_sendEmail' },
-      extra: { resendId: id, path: 'empty' },
-    });
     console.log(`Chat summary sent to ${RECIPIENT}: 0 conversations, 0 turns (resend id ${id})`);
     return;
   }
@@ -227,12 +175,6 @@ async function runSummary(now: Date): Promise<void> {
   if (msgErr) throw new Error(`Chat summary: message query failed: ${msgErr.message}`);
 
   const messages = (msgRows ?? []) as Message[];
-
-  Sentry.captureMessage('chat_summary: msg query returned', {
-    level: 'info',
-    tags: { feature: 'chat-summary', diagnostic: 'runSummary_post_msg_query' },
-    extra: { messageCount: messages.length },
-  });
 
   // Match events for the assistant messages (classifier output + router handles)
   const assistantIds = messages.filter(m => m.role === 'assistant').map(m => m.id);
@@ -307,23 +249,11 @@ async function runSummary(now: Date): Promise<void> {
     dayLabel: now.toISOString().slice(0, 10),
   });
 
-  Sentry.captureMessage('chat_summary: about to call sendEmail', {
-    level: 'info',
-    tags: { feature: 'chat-summary', diagnostic: 'runSummary_pre_sendEmail' },
-    extra: { htmlBytes: html.length, webTurns: webTurns.length, discordTurns: discordTurns.length, path: 'normal' },
-  });
-
   const { id } = await withTimeout(
     sendEmail(RECIPIENT, subject, html),
     30_000,
     'chat_summary: sendEmail',
   );
-
-  Sentry.captureMessage('chat_summary: sendEmail returned', {
-    level: 'info',
-    tags: { feature: 'chat-summary', diagnostic: 'runSummary_post_sendEmail' },
-    extra: { resendId: id, path: 'normal' },
-  });
 
   console.log(`Chat summary sent to ${RECIPIENT}: ${webTurns.length} web + ${discordTurns.length} Discord turns, ${fallbackCount} fallbacks (resend id ${id})`);
 }

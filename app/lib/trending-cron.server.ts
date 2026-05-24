@@ -11,7 +11,7 @@
  * to render a "Trending" sidebar.
  *
  * Mirrors the architecture of reminder-cron.server.ts: setInterval at hourly
- * cadence, processes only at TARGET_HOUR_UTC, distributed lock via Supabase.
+ * cadence, processes on first tick ≥ TARGET_HOUR_NZ, distributed lock via Supabase.
  */
 import * as Sentry from '@sentry/remix';
 import { unauthenticated } from '../shopify.server';
@@ -104,25 +104,7 @@ export function startTrendingCron(): void {
 
       if (lastRunDate === todayStr) return;
 
-      // TEMP diagnostic: capture every step of the cron callback so we can
-      // see WHERE it stalls. fn_start (the first line of
-      // computeAndWriteTrending) has never fired from a cron run, even though
-      // lock_date advances — so something between acquired=true and the
-      // function call is dropping execution.
-      Sentry.captureMessage('trending_cron: callback entered, about to acquire lock', {
-        level: 'info',
-        tags: { feature: 'trending_cron', diagnostic: 'cb_pre_lock' },
-        extra: { nzHour, todayStr, machineId: MACHINE_ID },
-      });
-
       const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'trending_cron');
-
-      Sentry.captureMessage('trending_cron: tryAcquireCronLock returned', {
-        level: 'info',
-        tags: { feature: 'trending_cron', diagnostic: 'cb_post_lock' },
-        extra: { acquired, todayStr },
-      });
-
       if (!acquired) {
         lastRunDate = todayStr;
         return;
@@ -131,10 +113,6 @@ export function startTrendingCron(): void {
       lastRunDate = todayStr;
 
       console.log(`Trending cron: starting daily processing (machine: ${MACHINE_ID})`);
-      Sentry.captureMessage('trending_cron: about to call computeAndWriteTrending', {
-        level: 'info',
-        tags: { feature: 'trending_cron', diagnostic: 'cb_pre_compute' },
-      });
       const ranked = await computeAndWriteTrending();
       console.log(`Trending cron: completed, wrote ${ranked.length} entries`);
     } catch (error) {
@@ -283,58 +261,6 @@ async function writeTrendingMetafield(
     );
   }
   console.log(`Trending: metafield written (id=${written[0].id}, updatedAt=${written[0].updatedAt})`);
-
-  // TEMP diagnostic: ALWAYS capture the metafieldsSet response shape to
-  // Sentry so we can compare cron-path vs route-path responses and see
-  // whether Shopify is genuinely committing or returning a fresh-looking
-  // updatedAt without persisting. Remove once trending cron is confirmed
-  // working end-to-end via a natural setInterval tick.
-  Sentry.captureMessage('trending_cron: metafieldsSet response', {
-    level: 'info',
-    tags: { feature: 'trending_cron', diagnostic: 'write_response' },
-    extra: {
-      shopId,
-      entriesCount: entries.length,
-      firstEntryHandle: entries[0]?.handle,
-      response: body,
-      ageMs,
-      writtenAtIso: written[0].updatedAt,
-      now: new Date().toISOString(),
-    },
-  });
-
-  // TEMP diagnostic: immediately read back the metafield to verify Shopify
-  // actually persisted the write (vs returning fresh-looking response while
-  // not committing). If the readback's `value` doesn't match what we wrote,
-  // Shopify is lying about success and we've found the silent failure mode.
-  const expectedValue = JSON.stringify(entries);
-  try {
-    const readBack = await admin.graphql(
-      `query { shop { metafield(namespace: "${METAFIELD_NAMESPACE}", key: "${METAFIELD_KEY}") { value updatedAt } } }`,
-    );
-    const readBody = await readBack.json();
-    const readValue = readBody.data?.shop?.metafield?.value;
-    const readUpdatedAt = readBody.data?.shop?.metafield?.updatedAt;
-    const matches = readValue === expectedValue;
-    Sentry.captureMessage(
-      matches ? 'trending_cron: post-write readback matches' : 'trending_cron: post-write readback MISMATCH',
-      {
-        level: matches ? 'info' : 'error',
-        tags: { feature: 'trending_cron', diagnostic: 'post_write_readback' },
-        extra: {
-          expectedValue,
-          readValue,
-          readUpdatedAt,
-          mutationUpdatedAt: written[0].updatedAt,
-          matches,
-        },
-      },
-    );
-  } catch (readErr) {
-    Sentry.captureException(readErr, {
-      tags: { feature: 'trending_cron', diagnostic: 'post_write_readback' },
-    });
-  }
 }
 
 interface TrendingEntry {
@@ -399,28 +325,11 @@ export function computeTrending(
 
 /** Run the full algorithm and write the metafield. Exported for the manual-trigger test route. */
 export async function computeAndWriteTrending(): Promise<TrendingEntry[]> {
-  // TEMP diagnostic: capture a Sentry breadcrumb at every step so even a
-  // hanging await leaves a trail. The cron at 2026-05-22 02:27 UTC acquired
-  // the lock, advanced lock_date, but produced zero downstream events — no
-  // diagnostic captures, no errors, nothing. Best hypothesis: one of the
-  // awaits is hanging silently (Promise neither resolves nor rejects). The
-  // timeouts below force a rejection so Sentry's outer catch fires.
-  Sentry.captureMessage('trending_cron: computeAndWriteTrending start', {
-    level: 'info',
-    tags: { feature: 'trending_cron', diagnostic: 'fn_start' },
-  });
-
   const session = await withTimeout(
     unauthenticated.admin(SHOP_DOMAIN),
     15_000,
     'unauthenticated.admin',
   );
-  Sentry.captureMessage('trending_cron: unauthenticated.admin resolved', {
-    level: 'info',
-    tags: { feature: 'trending_cron', diagnostic: 'admin_resolved' },
-    extra: { hasSession: !!session, hasAdmin: !!session?.admin },
-  });
-
   if (!session?.admin) {
     throw new Error(`unauthenticated.admin(${SHOP_DOMAIN}) returned no admin client`);
   }
@@ -438,20 +347,10 @@ export async function computeAndWriteTrending(): Promise<TrendingEntry[]> {
   console.log(
     `Trending: fetched ${current7dRows.length} 7d rows, ${priorBaselineRows.length} baseline rows, shop=${shopId}`,
   );
-  Sentry.captureMessage('trending_cron: shopifyQL+getShopId resolved', {
-    level: 'info',
-    tags: { feature: 'trending_cron', diagnostic: 'queries_resolved' },
-    extra: {
-      current7dCount: current7dRows.length,
-      priorBaselineCount: priorBaselineRows.length,
-      shopId,
-    },
-  });
 
   const blogIndex = new Map<string, BlogIndexEntry>(
     loadBlogIndex().map(entry => [entry.handle, entry]),
   );
-  console.log(`Trending: blog index loaded with ${blogIndex.size} articles`);
   const ranked = computeTrending(current7dRows, priorBaselineRows, blogIndex);
   console.log(`Trending: ranked ${ranked.length} candidates (TOP_N=${TOP_N})`);
 
@@ -463,11 +362,6 @@ export async function computeAndWriteTrending(): Promise<TrendingEntry[]> {
   }
 
   const payload = ranked.map(e => ({ handle: e.handle, score: Number(e.score.toFixed(2)) }));
-  Sentry.captureMessage('trending_cron: about to writeTrendingMetafield', {
-    level: 'info',
-    tags: { feature: 'trending_cron', diagnostic: 'pre_write' },
-    extra: { rankedCount: ranked.length, payloadCount: payload.length },
-  });
   await withTimeout(writeTrendingMetafield(admin, shopId, payload), 30_000, 'writeTrendingMetafield');
 
   return ranked;

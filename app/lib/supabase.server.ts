@@ -1934,13 +1934,10 @@ export async function tryAcquireCronLock(
 
   if (updateRes.error) {
     console.error(`Error acquiring cron lock (${lockName}):`, updateRes.error);
-    try {
-      const Sentry = await import('@sentry/remix');
-      Sentry.captureException(updateRes.error, {
-        tags: { feature: lockName, diagnostic: 'lock_error' },
-        extra: { machineId, today, lockName, errorBody: updateRes.error },
-      });
-    } catch { /* don't let Sentry import failure break the cron */ }
+    Sentry.captureException(updateRes.error, {
+      tags: { feature: lockName },
+      extra: { machineId, today, lockName },
+    });
     return false;
   }
 
@@ -1950,11 +1947,16 @@ export async function tryAcquireCronLock(
     .from('cron_lock')
     .select('locked_by, lock_date')
     .eq('lock_name', lockName)
-    .limit(1)
     .maybeSingle();
 
   if (verifyErr || !verify) {
     console.error(`Could not verify cron lock state (${lockName}):`, verifyErr);
+    if (verifyErr) {
+      Sentry.captureException(verifyErr, {
+        tags: { feature: lockName },
+        extra: { machineId, today, lockName },
+      });
+    }
     return false;
   }
 
