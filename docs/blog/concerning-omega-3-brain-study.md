@@ -1,6 +1,6 @@
 ---
-title: "New Study Says I Was Wrong About Omega-3?"
-url: "https://drstanfield.com/blogs/articles/new-study-says-i-was-wrong-about-omega-3"
+title: "Concerning Omega-3 Brain Study"
+url: "https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study"
 youtube: "https://www.youtube.com/watch?v=gAjyBJl1OF8"
 publishedAt: "2026-05-20T12:00:00Z"
 tags: ["Supplements", "Research", "General Health"]

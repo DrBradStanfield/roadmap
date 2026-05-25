@@ -1,8 +1,27 @@
 [
   {
-    "title": "New Study Says I Was Wrong About Omega-3?",
-    "handle": "new-study-says-i-was-wrong-about-omega-3",
-    "url": "https://drstanfield.com/blogs/articles/new-study-says-i-was-wrong-about-omega-3",
+    "title": "This Vaccine is Quietly Doing Something to Your Heart",
+    "handle": "this-vaccine-is-quietly-doing-something-to-your-heart",
+    "url": "https://drstanfield.com/blogs/articles/this-vaccine-is-quietly-doing-something-to-your-heart",
+    "tags": [
+      "Preventative Care",
+      "Research"
+    ],
+    "keywords": [
+      "cardiovascular",
+      "dementia",
+      "heart attack",
+      "inflammation",
+      "stroke"
+    ],
+    "publishedAt": "2026-05-24T20:05:09Z",
+    "youtube": "https://www.youtube.com/watch?v=Ad7UqDA85F4",
+    "summary": "Dr Brad's shingles-vaccine-and-heart post: 1.27M Korean cohort + Wales natural experiment suggest the shingles vaccine lowers cardiovascular and dementia risk, but healthy-user bias inflates observational numbers. Covers Shingrix vs Zostavax, off-label evidence, CDC recommendations for adults 50+, and the practical case for getting Shingrix when eligible."
+  },
+  {
+    "title": "Concerning Omega-3 Brain Study",
+    "handle": "concerning-omega-3-brain-study",
+    "url": "https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study",
     "tags": [
       "Supplements",
       "Research",
