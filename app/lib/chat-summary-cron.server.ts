@@ -262,11 +262,6 @@ async function runSummary(now: Date): Promise<void> {
 // HTML rendering
 // ---------------------------------------------------------------------------
 
-function truncate(s: string, n: number): string {
-  if (s.length <= n) return s;
-  return s.slice(0, n - 1) + '…';
-}
-
 function classifyBadgeColor(c: string | null): string {
   if (c === Classification.ROUTE) return '#2b5fb0';
   if (c === Classification.GREETING) return '#888';
@@ -292,7 +287,7 @@ function renderTurnRow(turn: Turn, idx: number): string {
     ? `<div style="font-size:11px;color:#666;margin-top:6px;">router handles: ${turn.matchedHandles.map(h => `<code style="background:#eef4fc;padding:1px 5px;border-radius:3px;font-size:11px;">${escapeHtml(h)}</code>`).join(' ')}</div>`
     : '';
   const assistant = turn.assistantContent
-    ? `<div style="margin-top:4px;padding:8px 12px;background:#e9f4ec;border-left:3px solid #2f7a4d;border-radius:0 6px 6px 0;font-size:13px;color:#1a1a1a;white-space:pre-wrap;">${escapeHtml(truncate(turn.assistantContent, 1200))}</div>`
+    ? `<div style="margin-top:4px;padding:8px 12px;background:#e9f4ec;border-left:3px solid #2f7a4d;border-radius:0 6px 6px 0;font-size:13px;color:#1a1a1a;white-space:pre-wrap;">${escapeHtml(turn.assistantContent)}</div>`
     : `<div style="margin-top:4px;padding:8px 12px;background:#f7f7f7;border-radius:6px;font-size:13px;color:#888;font-style:italic;">(no assistant reply yet)</div>`;
 
   return `
@@ -301,7 +296,7 @@ function renderTurnRow(turn: Turn, idx: number): string {
         <div style="color:#999;font-size:12px;font-family:ui-monospace,monospace;">#${idx + 1} · ${escapeHtml(ts)} ${classBadge}${skippedBadge}${fallbackBadge}</div>
         ${turn.conversationTitle ? `<div style="margin-top:4px;font-size:12px;color:#888;">conv: ${escapeHtml(turn.conversationTitle)}</div>` : ''}
         <div style="margin-top:8px;font-size:12px;color:#888;">User:</div>
-        <div style="margin-top:2px;padding:8px 12px;background:#f7f7f7;border-radius:6px;font-size:13px;color:#1a1a1a;white-space:pre-wrap;">${escapeHtml(truncate(turn.userContent, 600))}</div>
+        <div style="margin-top:2px;padding:8px 12px;background:#f7f7f7;border-radius:6px;font-size:13px;color:#1a1a1a;white-space:pre-wrap;">${escapeHtml(turn.userContent)}</div>
         <div style="margin-top:8px;font-size:12px;color:#888;">Bot:</div>
         ${assistant}
         ${handles}

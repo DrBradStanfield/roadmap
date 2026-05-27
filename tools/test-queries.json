@@ -2232,5 +2232,20 @@
     "source": "classifier-2026-05-15",
     "expected_classification": "ROUTE",
     "notes": "Drug PK question — the system-prompt drug-PK rule wants the pharmacist redirect, but the classifier should still ROUTE so the main LLM gets the relevant pathway context (or empty handles from the router, then the system prompt handles the redirect)."
+  },
+  {
+    "query": "I notice that there is a small amount of D3 in the ingredients. Given the latest research, is there any plans to increase the D3 and k2 dosage?",
+    "expected": ["microvitamin"],
+    "category": "products",
+    "source": "production-2026-05-27",
+    "notes": "F1 (2026-05-27 audit) — bot conflated Vitamin D UL (4,000 IU) with the RDA. Real RDA is 600 IU (19-70y) / 800 IU (70+). 4,000 IU is the Tolerable Upper Intake Level. Must reference correct RDA values OR omit the % framing entirely.",
+    "must_not_mention": ["RDA (4,000 IU)", "approximately 25% of the RDA", "25% of the RDA (4,000 IU)"]
+  },
+  {
+    "query": "Is lithium orotate safe for kidneys at supplement doses long-term?",
+    "category": "supplements",
+    "source": "production-2026-05-27",
+    "notes": "F3 (2026-05-27 audit) — bot cited 'Grokipedia' (xAI's AI-generated wiki) as a kidney-safety source. Wikis / AI-wikis / Reddit are never acceptable citation sources.",
+    "must_not_mention": ["Grokipedia", "grokipedia.com", "Wikipedia citation", "reddit"]
   }
 ]
