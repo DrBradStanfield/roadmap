@@ -269,14 +269,51 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // History pre-load: for existing conversations load now so router gets context.
     // For new conversations (no conversationId yet) history is empty by definition.
-    let history: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+    let history: Array<{ role: 'user' | 'assistant'; content: string; created_at: string }> = [];
     if (conversationId) {
       const { data: historyRows } = await auth.client
         .from('chat_messages')
-        .select('role, content')
+        .select('role, content, created_at')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
-      history = (historyRows ?? []) as Array<{ role: 'user' | 'assistant'; content: string }>;
+      history = (historyRows ?? []) as Array<{ role: 'user' | 'assistant'; content: string; created_at: string }>;
+    }
+
+    // Dedup: if the previous user message in this conversation is byte-identical
+    // to the new one AND the matching assistant reply was issued within the dedup
+    // window, re-serve the previous reply without re-running classifier/router/LLM.
+    // Prevents wasted token spend when users double-send (browser hiccup, accidental
+    // resend, or repeating themselves verbatim). User-facing UX is unchanged: the
+    // frontend shows the same reply again. No extra rows are written, so on refresh
+    // the conversation looks like a single turn rather than two duplicates.
+    const DEDUP_WINDOW_MS = 60_000;
+    const lastMsg = history[history.length - 1];
+    const prevUserMsg = history[history.length - 2];
+    if (
+      conversationId &&
+      lastMsg?.role === 'assistant' &&
+      prevUserMsg?.role === 'user' &&
+      prevUserMsg.content === message &&
+      Date.now() - new Date(lastMsg.created_at).getTime() < DEDUP_WINDOW_MS
+    ) {
+      Sentry.captureMessage('chat: duplicate user message detected, re-serving previous reply', {
+        level: 'info',
+        tags: { feature: 'chat', diagnostic: 'dedup' },
+        extra: {
+          conversationId,
+          isGuest: auth.isGuest,
+          userId: auth.userId,
+          ageMs: Date.now() - new Date(lastMsg.created_at).getTime(),
+          messageLength: message.length,
+        },
+      });
+      return json({
+        success: true,
+        conversationId,
+        messageId: null,
+        content: lastMsg.content,
+        ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
+      });
     }
 
     const firstUserMsg = history.find(m => m.role === 'user')?.content;
