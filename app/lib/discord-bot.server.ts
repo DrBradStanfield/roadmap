@@ -17,6 +17,7 @@ import {
 } from 'discord.js';
 import * as Sentry from '@sentry/remix';
 import { platformChatCompletion } from './platform-chat.server';
+import { findDuplicateReply } from './chat-dedup.server';
 import { reportChatFallback } from './chat.server';
 import { generateTitle } from './chat.server';
 import { ROUTER_VERSION, type RouterResult } from './chat-router.server';
@@ -254,12 +255,55 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       }
     } catch { /* best-effort typing indicator */ }
 
-    let { conversationId, history } = await loadConversationForReply(message, authorId);
-    if (!conversationId && message.channel.isThread()) {
-      history = await loadThreadHistory(message, clientUserId);
+    const truncatedInput = strippedContent.slice(0, DISCORD_MAX_MESSAGE_CHARS);
+
+    const dbResult = await loadConversationForReply(message, authorId);
+    const conversationId = dbResult.conversationId;
+
+    // Dedup check (shared with web — app/lib/chat-dedup.server.ts). Only when we have
+    // DB-backed conversation history with timestamps + is_fallback flag. Re-serves the
+    // previous bot reply via Discord without re-running classifier/router/main LLM.
+    if (conversationId) {
+      const dup = findDuplicateReply(dbResult.history, truncatedInput);
+      if (dup) {
+        Sentry.captureMessage('chat: duplicate user message detected, re-serving previous reply', {
+          level: 'info',
+          tags: { feature: 'chat', platform: PLATFORM_DISCORD, diagnostic: 'dedup' },
+          extra: {
+            conversationId,
+            authorDiscordId: authorId,
+            ageMs: dup.ageMs,
+            messageLength: truncatedInput.length,
+          },
+        });
+        if (typingInterval) {
+          clearInterval(typingInterval);
+          typingInterval = null;
+        }
+        const dupChunks = splitForDiscord(dup.content, DISCORD_SPLIT_CHARS);
+        let dupFirst = true;
+        for (const chunk of dupChunks) {
+          try {
+            if (dupFirst) {
+              await message.reply({ content: `<@${message.author.id}> ${chunk}`, allowedMentions: { repliedUser: false, users: [message.author.id] } });
+            } else if (message.channel.isTextBased() && 'send' in message.channel) {
+              await message.channel.send({ content: chunk, allowedMentions: { parse: [] } });
+            }
+          } catch (sendErr) {
+            console.error('Discord: dedup re-send failed:', sendErr);
+          }
+          dupFirst = false;
+        }
+        return;
+      }
     }
 
-    const truncatedInput = strippedContent.slice(0, DISCORD_MAX_MESSAGE_CHARS);
+    // Narrow history to what the LLM call needs (role+content). When there's no
+    // DB-backed reply chain but the message is in a thread, fall back to Discord-API
+    // thread history (no dedup possible there — no is_fallback / created_at).
+    const history: Array<{ role: 'user' | 'assistant'; content: string }> = conversationId
+      ? dbResult.history.map(h => ({ role: h.role, content: h.content }))
+      : (message.channel.isThread() ? await loadThreadHistory(message, clientUserId) : []);
 
     const tBeforeLlm = Date.now();
     const result = await platformChatCompletion({
@@ -400,7 +444,7 @@ async function loadConversationForReply(
   authorDiscordId: string,
 ): Promise<{
   conversationId: string | null;
-  history: Array<{ role: 'user' | 'assistant'; content: string }>;
+  history: Array<{ role: 'user' | 'assistant'; content: string; created_at: string; is_fallback: boolean | null }>;
 }> {
   if (!supabaseAdmin) return { conversationId: null, history: [] };
 
@@ -421,6 +465,8 @@ async function loadConversationForReply(
 
   // Fetch conversation metadata and message history in parallel — neither
   // depends on the other, both only need refMsg.conversation_id from above.
+  // created_at + is_fallback are needed for the shared content-based dedup check
+  // (chat-dedup.server.ts findDuplicateReply); downstream LLM code only uses role+content.
   const conversationId = refMsg.conversation_id;
   const [convResult, histResult] = await Promise.all([
     supabaseAdmin
@@ -430,7 +476,7 @@ async function loadConversationForReply(
       .maybeSingle(),
     supabaseAdmin
       .from('chat_messages')
-      .select('role, content, created_at')
+      .select('role, content, created_at, is_fallback')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
       .limit(HISTORY_MSG_LIMIT),
@@ -450,7 +496,12 @@ async function loadConversationForReply(
 
   const history = histResult.data
     .filter(r => r.role === 'user' || r.role === 'assistant')
-    .map(r => ({ role: r.role as 'user' | 'assistant', content: r.content as string }));
+    .map(r => ({
+      role: r.role as 'user' | 'assistant',
+      content: r.content as string,
+      created_at: r.created_at as string,
+      is_fallback: r.is_fallback as boolean | null,
+    }));
 
   return { conversationId, history };
 }

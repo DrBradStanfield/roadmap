@@ -25,6 +25,7 @@ import {
 } from '../lib/chat.server';
 import { routeQuery, sanitizeForRouter, ROUTER_VERSION } from '../lib/chat-router.server';
 import { classifyMessage, shouldFireRouter } from '../lib/chat-classifier.server';
+import { findDuplicateReply } from '../lib/chat-dedup.server';
 
 // ---------------------------------------------------------------------------
 // Unified auth: handles both authenticated users and guests
@@ -269,51 +270,42 @@ export async function action({ request }: ActionFunctionArgs) {
 
     // History pre-load: for existing conversations load now so router gets context.
     // For new conversations (no conversationId yet) history is empty by definition.
-    let history: Array<{ role: 'user' | 'assistant'; content: string; created_at: string }> = [];
+    // is_fallback is needed for the dedup check below; created_at for the time window.
+    let history: Array<{ role: 'user' | 'assistant'; content: string; created_at: string; is_fallback: boolean | null }> = [];
     if (conversationId) {
       const { data: historyRows } = await auth.client
         .from('chat_messages')
-        .select('role, content, created_at')
+        .select('role, content, created_at, is_fallback')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
-      history = (historyRows ?? []) as Array<{ role: 'user' | 'assistant'; content: string; created_at: string }>;
+      history = (historyRows ?? []) as Array<{ role: 'user' | 'assistant'; content: string; created_at: string; is_fallback: boolean | null }>;
     }
 
-    // Dedup: if the previous user message in this conversation is byte-identical
-    // to the new one AND the matching assistant reply was issued within the dedup
-    // window, re-serve the previous reply without re-running classifier/router/LLM.
-    // Prevents wasted token spend when users double-send (browser hiccup, accidental
-    // resend, or repeating themselves verbatim). User-facing UX is unchanged: the
-    // frontend shows the same reply again. No extra rows are written, so on refresh
-    // the conversation looks like a single turn rather than two duplicates.
-    const DEDUP_WINDOW_MS = 60_000;
-    const lastMsg = history[history.length - 1];
-    const prevUserMsg = history[history.length - 2];
-    if (
-      conversationId &&
-      lastMsg?.role === 'assistant' &&
-      prevUserMsg?.role === 'user' &&
-      prevUserMsg.content === message &&
-      Date.now() - new Date(lastMsg.created_at).getTime() < DEDUP_WINDOW_MS
-    ) {
-      Sentry.captureMessage('chat: duplicate user message detected, re-serving previous reply', {
-        level: 'info',
-        tags: { feature: 'chat', diagnostic: 'dedup' },
-        extra: {
+    // Dedup: re-serve the previous reply if the user just double-sent the same
+    // message. See app/lib/chat-dedup.server.ts and chat-architecture.md §
+    // Consecutive-duplicate dedup. Shared with the Discord handler.
+    if (conversationId) {
+      const dup = findDuplicateReply(history, message);
+      if (dup) {
+        Sentry.captureMessage('chat: duplicate user message detected, re-serving previous reply', {
+          level: 'info',
+          tags: { feature: 'chat', platform: 'shopify', diagnostic: 'dedup' },
+          extra: {
+            conversationId,
+            isGuest: auth.isGuest,
+            userId: auth.userId,
+            ageMs: dup.ageMs,
+            messageLength: message.length,
+          },
+        });
+        return json({
+          success: true,
           conversationId,
-          isGuest: auth.isGuest,
-          userId: auth.userId,
-          ageMs: Date.now() - new Date(lastMsg.created_at).getTime(),
-          messageLength: message.length,
-        },
-      });
-      return json({
-        success: true,
-        conversationId,
-        messageId: null,
-        content: lastMsg.content,
-        ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
-      });
+          messageId: null,
+          content: dup.content,
+          ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
+        });
+      }
     }
 
     const firstUserMsg = history.find(m => m.role === 'user')?.content;
