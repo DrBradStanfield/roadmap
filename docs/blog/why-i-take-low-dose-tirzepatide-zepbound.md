@@ -1,6 +1,6 @@
 ---
-title: "The Low-Dose Peptide I Take"
-url: "https://drstanfield.com/blogs/articles/the-low-dose-peptide-i-take"
+title: "Why I Take Low-Dose Tirzepatide (Zepbound)"
+url: "https://drstanfield.com/blogs/articles/why-i-take-low-dose-tirzepatide-zepbound"
 youtube: "https://youtu.be/yKPaVhpomks"
 publishedAt: "2026-05-28T00:34:28Z"
 tags: ["Research", "Preventative Care", "Supplements"]
