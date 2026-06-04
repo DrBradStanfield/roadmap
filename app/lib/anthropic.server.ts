@@ -13,6 +13,7 @@ import { z } from 'zod';
 import * as Sentry from '@sentry/remix';
 import { toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from '../../packages/health-core/src/units';
 import { DOCUMENT_TYPES } from '../../packages/health-core/src/validation';
+import { sleep } from './cron-helpers.server';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -487,14 +488,16 @@ export async function extractOrClassify(
     }
   }
 
-  // One retry (2 attempts total) with 1s backoff. Transient blips
-  // (Anthropic 5xx, network, occasional schema drift) self-heal; persistent
-  // failures bubble up quickly so the user can re-upload and the Sentry
-  // telemetry tells us what broke.
+  // One retry (2 attempts total) with 1s backoff. Catches schema-drift
+  // failures (the LLM returned 200 but the JSON didn't match our shape) and
+  // anything that bubbles up from fetchAnthropicRaw despite its own retry.
+  // Transient API failures (5xx, network) are mostly absorbed by the inner
+  // retry in fetchAnthropicRaw; worst-case compound here is ~3s of backoff
+  // on a persistent capacity event, acceptable for an async upload path.
   try {
     return await extractOrClassifyOnce(apiKey, content);
   } catch {
-    await new Promise(r => setTimeout(r, 1000));
+    await sleep(1000);
     return await extractOrClassifyOnce(apiKey, content);
   }
 }
@@ -567,16 +570,29 @@ export interface AnthropicUsage {
  * persist past the retry, because persistent 502/504 often indicates a real
  * issue with the request path rather than just capacity.
  */
+const RETRY_MAX_ATTEMPTS = 2;
+const RETRY_DELAY_MS = 1000;
+const RETRYABLE_STATUSES = new Set([502, 503, 504, 529]);
+const TRANSIENT_CAPACITY_STATUSES = new Set([503, 529]); // silenced from Sentry on final failure
+
+/**
+ * Network/timeout errors thrown by Node's fetch(): TypeError "fetch failed"
+ * on connection-level failures, DOMException name=TimeoutError when
+ * AbortSignal.timeout fires, AbortError if the signal was manually aborted.
+ * Errors our own code throws after `response.ok` ("Anthropic API error",
+ * "No text in Anthropic response") are NOT in scope — those are status-coded
+ * via the inner retry path or won't fix themselves.
+ */
+function isNetworkOrTimeoutError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  if (err.name === 'TimeoutError' || err.name === 'AbortError') return true;
+  return err instanceof TypeError && err.message === 'fetch failed';
+}
+
 async function fetchAnthropicRaw(
   apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000,
 ): Promise<{ content: string; usage: AnthropicUsage }> {
-  const MAX_ATTEMPTS = 2;
-  const RETRY_DELAY_MS = 1000;
-  const RETRYABLE_STATUSES = new Set([502, 503, 504, 529]);
-  const TRANSIENT_CAPACITY_STATUSES = new Set([503, 529]); // silenced from Sentry on final failure
-
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const isFinalAttempt = attempt === MAX_ATTEMPTS;
+  for (let attempt = 1; attempt <= RETRY_MAX_ATTEMPTS; attempt++) {
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -591,18 +607,16 @@ async function fetchAnthropicRaw(
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
-        const isRetryableStatus = RETRYABLE_STATUSES.has(response.status);
 
-        if (isRetryableStatus && !isFinalAttempt) {
-          console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${MAX_ATTEMPTS}, retrying after ${RETRY_DELAY_MS}ms`);
-          await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+        if (RETRYABLE_STATUSES.has(response.status) && attempt < RETRY_MAX_ATTEMPTS) {
+          console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${RETRY_MAX_ATTEMPTS}, retrying after ${RETRY_DELAY_MS}ms`);
+          await sleep(RETRY_DELAY_MS);
           continue;
         }
 
         const err = new Error(`Anthropic API error (status ${response.status})`);
         console.error(err.message, errorText);
-        const isTransientCapacity = TRANSIENT_CAPACITY_STATUSES.has(response.status);
-        if (!isTransientCapacity) {
+        if (!TRANSIENT_CAPACITY_STATUSES.has(response.status)) {
           Sentry.captureException(err, { extra: { status: response.status, errorText, attempt } });
         }
         throw err;
@@ -622,30 +636,20 @@ async function fetchAnthropicRaw(
         },
       };
     } catch (err) {
-      // fetch() throws on network failures (Node TypeError "fetch failed") and
-      // on AbortSignal.timeout firing (DOMException with name TimeoutError, or
-      // AbortError if the signal was manually aborted). Retry those once.
-      // Errors thrown by our own code above ("Anthropic API error...", "No text
-      // in Anthropic response") fall through and re-throw — the HTTP error path
-      // already retried inside the try block, and "No text" won't fix itself.
-      const isNetworkOrTimeoutError =
-        err instanceof Error &&
-        (err.name === 'TimeoutError' ||
-         err.name === 'AbortError' ||
-         (err instanceof TypeError && err.message === 'fetch failed'));
-
-      if (isNetworkOrTimeoutError && !isFinalAttempt) {
-        console.warn(`Anthropic API ${err.name} on attempt ${attempt}/${MAX_ATTEMPTS}: ${err.message} — retrying after ${RETRY_DELAY_MS}ms`);
-        await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+      if (isNetworkOrTimeoutError(err) && attempt < RETRY_MAX_ATTEMPTS) {
+        const e = err as Error;
+        console.warn(`Anthropic API ${e.name} on attempt ${attempt}/${RETRY_MAX_ATTEMPTS}: ${e.message} — retrying after ${RETRY_DELAY_MS}ms`);
+        await sleep(RETRY_DELAY_MS);
         continue;
       }
-
       throw err;
     }
   }
 
-  // Unreachable — the loop above either returns or throws. Present for type-narrowing.
-  throw new Error('fetchAnthropicRaw: retry loop exited without resolution');
+  // Unreachable — the loop body always returns, continues, or throws on the
+  // final attempt. TypeScript requires an exit; this satisfies it without an
+  // error path that can actually execute.
+  throw new Error('fetchAnthropicRaw: retry loop exited unexpectedly');
 }
 
 /** Text-only wrapper — existing callers unchanged. */

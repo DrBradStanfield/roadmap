@@ -18,6 +18,7 @@ import {
 import * as Sentry from '@sentry/remix';
 import { platformChatCompletion } from './platform-chat.server';
 import { findDuplicateReply } from './chat-dedup.server';
+import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
 import { generateTitle } from './chat.server';
 import { ROUTER_VERSION, type RouterResult } from './chat-router.server';
@@ -386,10 +387,6 @@ async function handleMessage(message: GuildMessage): Promise<void> {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 async function safeReply(message: GuildMessage, text: string): Promise<void> {
   try {

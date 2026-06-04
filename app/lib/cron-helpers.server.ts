@@ -1,3 +1,8 @@
+/** Resolve after `ms` milliseconds. Used for retry backoff, polling intervals, etc. */
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 /**
  * Reject after `timeoutMs` if `promise` hasn't settled, with an attached label.
  *
