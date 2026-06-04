@@ -259,14 +259,13 @@ Results use `effectiveInputs` (current form + fallback to previous measurements)
 
 ### Progressive Disclosure
 
-First-time users see fields revealed in 4 stages. Returning users with data see full form immediately. `computeFormStage(inputs)` in `mappings.ts` returns 1–4.
+First-time users see fields revealed in 3 stages. Returning users with data see full form immediately. `computeFormStage(inputs)` in `mappings.ts` returns 1–3.
 
 | Stage | Gate | Fields shown |
 |-------|------|-------------|
 | 1 | Always | Units, Sex, Height |
-| 2 | Sex + Height filled | Birth Month, Birth Year |
-| 3 | Birth Month + Birth filled | Weight, Waist Circumference |
-| 4 | Weight filled | Everything (BP, Blood Tests, Medications, Screening) |
+| 2 | Sex + Height filled | Weight, Waist, Blood Pressure, Birth Month (Birth Year is sub-gated by Birth Month being filled) |
+| 3 | Weight filled | Blood Tests, Medications, Screening, Bone Density, Supplements (logged-in) |
 
 Pulsing `.field-attention` CSS class highlights the next field to fill. On mobile, tab visibility gated by `formStage`.
 
