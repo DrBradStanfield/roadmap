@@ -542,54 +542,110 @@ export interface AnthropicUsage {
   cacheReadTokens: number;
 }
 
-/** Shared fetch + error handling. Returns text content + usage metrics. */
+/**
+ * Shared fetch + error handling. Returns text content + usage metrics.
+ *
+ * Retry policy: one retry with 1s backoff on transient infrastructure errors
+ * (HTTP 502, 503, 504, 529, plus network/timeout failures from fetch()). These
+ * cost nothing on Anthropic's side (the request didn't execute end-to-end), and
+ * a single-tick capacity blip routinely clears in the next second. Without this
+ * retry, a single Anthropic overload during a customer's chat turn produced a
+ * fallback ("Sorry — I'm having trouble responding") that the customer saw as
+ * a broken bot — see chat-knowledge-map-v2-changelog 2026-06-05 entry for the
+ * precedent (a customer asked the same question twice in 30s and got fallback
+ * both times during a brief 01:50 UTC June 4 outage). Real persistent errors
+ * (auth, 4xx validation, malformed responses, 429 structural rate-limit) throw
+ * immediately so the chat handler returns the fallback without compounding
+ * latency.
+ *
+ * 429 is treated as structural (account tier too low, runaway caller, or a real
+ * outage requiring intervention) — not retried, surfaced via Sentry.
+ *
+ * 503 and 529 are transient capacity signals — retried, and (if both attempts
+ * fail) the final throw is silenced from Sentry to avoid flooding alerts during
+ * capacity spikes. Other 5xx (502, 504) are retried but Sentry-alerted if they
+ * persist past the retry, because persistent 502/504 often indicates a real
+ * issue with the request path rather than just capacity.
+ */
 async function fetchAnthropicRaw(
   apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000,
 ): Promise<{ content: string; usage: AnthropicUsage }> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(timeoutMs),
-  });
+  const MAX_ATTEMPTS = 2;
+  const RETRY_DELAY_MS = 1000;
+  const RETRYABLE_STATUSES = new Set([502, 503, 504, 529]);
+  const TRANSIENT_CAPACITY_STATUSES = new Set([503, 529]); // silenced from Sentry on final failure
 
-  // 429 is a signal something structural is wrong (account tier too low, a
-  // runaway caller, or an Anthropic outage). Don't retry silently — surface
-  // the error so the deeper issue gets fixed.
-  //
-  // 503 (Service Unavailable) and 529 (Overloaded) are transient capacity
-  // signals from Anthropic, not bugs. We still throw so callers can fall
-  // back / skip / retry, but we don't fire a Sentry alert each time —
-  // capacity spikes can flood Sentry with thousands of duplicate alerts.
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const isFinalAttempt = attempt === MAX_ATTEMPTS;
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => 'Unknown error');
-    const err = new Error(`Anthropic API error (status ${response.status})`);
-    console.error(err.message, errorText);
-    const isTransientCapacityError = response.status === 529 || response.status === 503;
-    if (!isTransientCapacityError) {
-      Sentry.captureException(err, { extra: { status: response.status, errorText } });
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        const isRetryableStatus = RETRYABLE_STATUSES.has(response.status);
+
+        if (isRetryableStatus && !isFinalAttempt) {
+          console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${MAX_ATTEMPTS}, retrying after ${RETRY_DELAY_MS}ms`);
+          await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+          continue;
+        }
+
+        const err = new Error(`Anthropic API error (status ${response.status})`);
+        console.error(err.message, errorText);
+        const isTransientCapacity = TRANSIENT_CAPACITY_STATUSES.has(response.status);
+        if (!isTransientCapacity) {
+          Sentry.captureException(err, { extra: { status: response.status, errorText, attempt } });
+        }
+        throw err;
+      }
+
+      const data = await response.json();
+      const textBlock = (data.content as Array<{ type: string; text?: string }>)?.find(b => b.type === 'text');
+      if (!textBlock?.text) throw new Error('No text in Anthropic response');
+
+      return {
+        content: textBlock.text,
+        usage: {
+          inputTokens: data.usage?.input_tokens ?? 0,
+          outputTokens: data.usage?.output_tokens ?? 0,
+          cacheCreationTokens: data.usage?.cache_creation_input_tokens ?? 0,
+          cacheReadTokens: data.usage?.cache_read_input_tokens ?? 0,
+        },
+      };
+    } catch (err) {
+      // fetch() throws on network failures (Node TypeError "fetch failed") and
+      // on AbortSignal.timeout firing (DOMException with name TimeoutError, or
+      // AbortError if the signal was manually aborted). Retry those once.
+      // Errors thrown by our own code above ("Anthropic API error...", "No text
+      // in Anthropic response") fall through and re-throw — the HTTP error path
+      // already retried inside the try block, and "No text" won't fix itself.
+      const isNetworkOrTimeoutError =
+        err instanceof Error &&
+        (err.name === 'TimeoutError' ||
+         err.name === 'AbortError' ||
+         (err instanceof TypeError && err.message === 'fetch failed'));
+
+      if (isNetworkOrTimeoutError && !isFinalAttempt) {
+        console.warn(`Anthropic API ${err.name} on attempt ${attempt}/${MAX_ATTEMPTS}: ${err.message} — retrying after ${RETRY_DELAY_MS}ms`);
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+        continue;
+      }
+
+      throw err;
     }
-    throw err;
   }
 
-  const data = await response.json();
-  const textBlock = (data.content as Array<{ type: string; text?: string }>)?.find(b => b.type === 'text');
-  if (!textBlock?.text) throw new Error('No text in Anthropic response');
-
-  return {
-    content: textBlock.text,
-    usage: {
-      inputTokens: data.usage?.input_tokens ?? 0,
-      outputTokens: data.usage?.output_tokens ?? 0,
-      cacheCreationTokens: data.usage?.cache_creation_input_tokens ?? 0,
-      cacheReadTokens: data.usage?.cache_read_input_tokens ?? 0,
-    },
-  };
+  // Unreachable — the loop above either returns or throws. Present for type-narrowing.
+  throw new Error('fetchAnthropicRaw: retry loop exited without resolution');
 }
 
 /** Text-only wrapper — existing callers unchanged. */
