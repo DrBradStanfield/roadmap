@@ -1,5 +1,24 @@
 [
   {
+    "title": "The Grad Student Who Broke Microplastics Research",
+    "handle": "the-grad-student-who-broke-microplastics-research",
+    "url": "https://drstanfield.com/blogs/articles/the-grad-student-who-broke-microplastics-research",
+    "tags": [
+      "Research",
+      "General Health"
+    ],
+    "keywords": [
+      "blood pressure",
+      "cardiovascular",
+      "kidney",
+      "obesity",
+      "prostate"
+    ],
+    "publishedAt": "2026-06-02T16:06:13Z",
+    "youtube": "https://youtu.be/pNPvWsmxwno",
+    "summary": "Dr Brad's microplastics post: three methodology problems (suspect math, glove contamination, fat mistaken for plastic) mean credit-card-per-week and plastic-in-brain headlines are not reliable. The chemicals with real evidence behind them are BPA, phthalates, and PFAS — measured in urine, linked to cardiovascular mortality, reproductive problems, and cancer."
+  },
+  {
     "title": "Why I Take Low-Dose Tirzepatide (Zepbound)",
     "handle": "why-i-take-low-dose-tirzepatide-zepbound",
     "url": "https://drstanfield.com/blogs/articles/why-i-take-low-dose-tirzepatide-zepbound",
@@ -62,7 +81,7 @@
       "stroke"
     ],
     "publishedAt": "2026-05-24T20:05:09Z",
-    "youtube": "https://www.youtube.com/watch?v=Ad7UqDA85F4",
+    "youtube": "https://youtu.be/Ad7UqDA85F4",
     "summary": "Dr Brad's shingles-vaccine-and-heart post: 1.27M Korean cohort + Wales natural experiment suggest the shingles vaccine lowers cardiovascular and dementia risk, but healthy-user bias inflates observational numbers. Covers Shingrix vs Zostavax, off-label evidence, CDC recommendations for adults 50+, and the practical case for getting Shingrix when eligible."
   },
   {
@@ -1152,7 +1171,7 @@
     ],
     "publishedAt": "2025-12-10T00:17:45Z",
     "youtube": "https://www.youtube.com/watch?v=H8zUZOIZ7oY",
-    "summary": "Dr Brad’s omega-3 post: fish oil likely protects heart health but dose matters. 4g/day cut major cardiovascular events by 43% in dialysis patients; Brad takes 1g/day to avoid atrial fibrillation risk seen at higher doses. Covers EPA, DHA, heart attack, stroke, kidney failure."
+    "summary": "Dr Brad's omega-3 post: fish oil likely protects heart health but dose matters. 4g/day cut major cardiovascular events by 43% in dialysis patients; Brad takes 1g/day to avoid atrial fibrillation risk seen at higher doses. Covers EPA, DHA, heart attack, stroke, kidney failure, and the major CV trials — VITAL (28% MI reduction at 1g/day), STRENGTH (null at 4g/day), and REDUCE-IT (Vascepa / icosapent ethyl) framing."
   },
   {
     "title": "This Vitamin D Study Forced Me to Change My View",
@@ -5290,7 +5309,7 @@
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
     "type": "reference",
-    "summary": "Reference on omega-3 (fish oil): heart health, triglyceride reduction, brain and cognitive benefits, EPA vs DHA distinction, oily fish vs supplement dosing, and safety. Covers who benefits most — cardiovascular disease, high triglycerides, brain health. Always discuss with your doctor."
+    "summary": "Reference on omega-3 (fish oil): heart health, triglyceride reduction, brain and cognitive benefits, EPA vs DHA distinction, oily fish vs supplement dosing, and safety. Covers the major cardiovascular trials in detail — VITAL (28% MI reduction, NEJM 2018), REDUCE-IT (Vascepa / icosapent ethyl, 25% MACE reduction with mineral-oil placebo controversy), STRENGTH (null with corn-oil placebo), ASCEND, JELIS — plus dose-response, AF risk at high doses, and who benefits most (CVD, high triglycerides, low fish intake). Always discuss with your doctor."
   },
   {
     "title": "Weight Loss Supplements: Benefits, Evidence, and Safety",
@@ -8609,7 +8628,7 @@
     ],
     "publishedAt": "2024-07-11T21:04:17Z",
     "youtube": "https://www.youtube.com/watch?v=q71tHoHeXZo",
-    "summary": "Dr Brad's omega-3 post: supplements at ~1g/day are still worth taking despite a 2024 UK Biobank study showing 133% higher atrial fibrillation risk. Covers EPA, DHA, ALA, fish oil, heart disease, AF risk, megadosing concerns, VITAL and STRENGTH trials."
+    "summary": "Dr Brad's omega-3 post: supplements at ~1g/day are still worth taking despite a 2024 UK Biobank study showing 133% higher atrial fibrillation risk. Covers EPA, DHA, ALA, fish oil, heart disease, AF risk, megadosing concerns, and the major trials — VITAL (28% MI reduction at 1g/day), STRENGTH (null at 4g/day with AF signal), REDUCE-IT (Vascepa / icosapent ethyl, 25% CVD reduction with the mineral-oil placebo controversy)."
   },
   {
     "title": "Which Mistakes Do Most People Make with Magnesium?",
@@ -30802,24 +30821,5 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for zoledronic acid (Aclasta) infusion for osteoporosis: who qualifies, contraindications, pre-procedure workup, infusion technique, post-procedure follow-up, and when to seek specialist input. Always discuss with your doctor."
-  },
-  {
-    "title": "The Grad Student Who Broke Microplastics Research",
-    "handle": "the-grad-student-who-broke-microplastics-research",
-    "url": "https://drstanfield.com/blogs/articles/the-grad-student-who-broke-microplastics-research",
-    "tags": [
-      "Research",
-      "General Health"
-    ],
-    "keywords": [
-      "blood pressure",
-      "cardiovascular",
-      "kidney",
-      "obesity",
-      "prostate"
-    ],
-    "publishedAt": "2026-06-02T16:06:13Z",
-    "youtube": "https://youtu.be/pNPvWsmxwno",
-    "summary": "Dr Brad's microplastics post: three methodology problems (suspect math, glove contamination, fat mistaken for plastic) mean credit-card-per-week and plastic-in-brain headlines are not reliable. The chemicals with real evidence behind them are BPA, phthalates, and PFAS — measured in urine, linked to cardiovascular mortality, reproductive problems, and cancer."
   }
 ]

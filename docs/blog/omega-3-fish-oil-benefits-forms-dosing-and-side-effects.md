@@ -5,7 +5,7 @@ publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["omega-3", "fish oil", "epa", "dha", "cardiovascular", "triglycerides", "inflammation", "brain health", "heart attack", "stroke", "cholesterol", "ldl", "hdl", "blood pressure", "depression", "anxiety", "cognitive", "alzheimer", "dementia", "diabetes", "insulin resistance", "arthritis", "dry eye", "cancer", "pregnancy", "sleep", "migraine", "aging", "longevity", "muscle", "krill oil", "algal oil", "dpa"]
-summary: "Reference on omega-3 (fish oil): heart health, triglyceride reduction, brain and cognitive benefits, EPA vs DHA distinction, oily fish vs supplement dosing, and safety. Covers who benefits most — cardiovascular disease, high triglycerides, brain health. Always discuss with your doctor."
+summary: "Reference on omega-3 (fish oil): heart health, triglyceride reduction, brain and cognitive benefits, EPA vs DHA distinction, oily fish vs supplement dosing, and safety. Covers the major cardiovascular trials in detail — VITAL (28% MI reduction, NEJM 2018), REDUCE-IT (Vascepa / icosapent ethyl, 25% MACE reduction with mineral-oil placebo controversy), STRENGTH (null with corn-oil placebo), ASCEND, JELIS — plus dose-response, AF risk at high doses, and who benefits most (CVD, high triglycerides, low fish intake). Always discuss with your doctor."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/omega-3-fish-oil-benefits-forms-dosing-and-side-effects](https://drstanfield.com/blogs/articles/omega-3-fish-oil-benefits-forms-dosing-and-side-effects)*

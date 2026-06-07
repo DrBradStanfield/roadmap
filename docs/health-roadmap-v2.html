@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Health Roadmap v2 — Direction &amp; Architecture Decision Record</title>
+<style>
+  :root {
+    --brand: #00a38b;
+    --brand-dark: #008f7a;
+    --primary: #0066cc;
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --heading: #111;
+    --label: #333;
+    --muted: #666;
+    --faint: #888;
+    --border: #ddd;
+    --error: #dc3545;
+    --warn: #fd7e14;
+    --ok: #16a34a;
+    --code-bg: #f5f7fa;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+  }
+  .layout { display: grid; grid-template-columns: 270px 1fr; max-width: 1400px; margin: 0 auto; }
+  nav.toc {
+    position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto;
+    padding: 24px 16px 24px 24px; border-right: 1px solid var(--border); background: var(--card); font-size: 13px;
+  }
+  nav.toc h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 16px 0 6px; }
+  nav.toc h2:first-child { margin-top: 0; }
+  nav.toc a { display: block; padding: 3px 0 3px 8px; margin-left: -8px; color: var(--label); text-decoration: none; border-left: 2px solid transparent; }
+  nav.toc a:hover { color: var(--brand); border-left-color: var(--brand); }
+  main { padding: 32px 48px 96px; max-width: 1100px; }
+  h1 { font-size: 32px; margin: 0 0 4px; color: var(--heading); }
+  h2 { font-size: 22px; color: var(--heading); margin: 52px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--brand); }
+  h3 { font-size: 17px; color: var(--label); margin: 26px 0 8px; }
+  h4 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin: 16px 0 4px; }
+  p { margin: 8px 0 12px; }
+  ul, ol { margin: 8px 0 12px; padding-left: 22px; }
+  li { margin: 4px 0; }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .card { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); padding: 20px 24px; margin: 16px 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; color: #b91c1c; }
+  pre { background: var(--code-bg); padding: 12px 14px; border-radius: 8px; overflow-x: auto; margin: 8px 0; border: 1px solid var(--border); }
+  pre code { background: none; color: var(--text); padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; background: var(--bg); }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; background: #e6f7f4; color: var(--brand); border: 1px solid #b2dfdb; }
+  .pill.warn { background: #fff3e0; color: var(--warn); border-color: #ffe0b2; }
+  .pill.err { background: #fce4e4; color: var(--error); border-color: #f5c6cb; }
+  .pill.info { background: #e3f2fd; color: var(--primary); border-color: #bbdefb; }
+  .pill.ok { background: #e7f7ec; color: var(--ok); border-color: #b7e4c7; }
+  .callout { border-radius: 10px; padding: 14px 18px; margin: 16px 0; border-left: 4px solid var(--brand); background: #f0faf8; }
+  .callout.decision { border-left-color: var(--ok); background: #f0fbf4; }
+  .callout.reject { border-left-color: var(--error); background: #fdf2f3; }
+  .callout.why { border-left-color: var(--primary); background: #f1f7fe; }
+  .callout.warn { border-left-color: var(--warn); background: #fff8f0; }
+  .callout h4 { margin-top: 0; color: var(--label); }
+  .lede { font-size: 18px; color: var(--label); line-height: 1.5; }
+  .tag { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--code-bg); color: var(--muted); }
+  figure { margin: 18px 0; }
+  figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; text-align: center; }
+  .svg-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; overflow-x: auto; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  .free { color: var(--ok); font-weight: 600; }
+  .paid { color: var(--warn); font-weight: 600; }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.toc { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+    main { padding: 24px 20px 64px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc">
+  <h2>Health Roadmap v2</h2>
+  <a href="#tldr">TL;DR — the decision</a>
+  <a href="#philosophy">1. Philosophy &amp; goals</a>
+  <a href="#reframe">2. The strategic reframe</a>
+  <a href="#product">3. Interpretation is the product</a>
+  <a href="#architecture">4. The v2 architecture</a>
+  <a href="#frontdoors">5. Two equal front doors</a>
+  <a href="#data">6. Data: user-owned cloud</a>
+  <a href="#privacy">7. Privacy model</a>
+  <a href="#engine">8. The recommendations engine</a>
+  <a href="#history">9. History &amp; past advice</a>
+  <a href="#reminders">10. Reminders (the cron)</a>
+  <a href="#resilience">11. Resilience tiers</a>
+  <a href="#layers">12. Two-layer separation</a>
+  <a href="#money">13. Monetization</a>
+  <a href="#tokens">14. Token refresh</a>
+  <a href="#migration">15. What changes</a>
+  <a href="#rejected">16. Rejected paths &amp; why</a>
+  <a href="#open">17. Open questions / next</a>
+</nav>
+<main>
+  <h1>Health Roadmap v2 — Direction &amp; Architecture Decision Record</h1>
+  <p class="meta">
+    Status: <span class="pill ok">Agreed direction · pre-implementation</span> &nbsp;·&nbsp;
+    Date: 2026-06-08 &nbsp;·&nbsp; Owner: Dr Brad Stanfield &nbsp;·&nbsp;
+    Supersedes: the current Supabase/Fly app-proxy architecture (<code>~/Documents/roadmap/docs/architecture.html</code>)
+  </p>
+
+  <p class="lede">
+    Health Roadmap is changing direction entirely. It moves from a server-backed app that stores users'
+    health data in Brad's database, to a <strong>local-first, open-source app where each user's health data
+    lives in their own cloud</strong> (Google Drive, Dropbox, or self-hosted) — and Brad can neither see nor
+    store it. This document records that decision, why it was made, what gets built, and the paths we
+    deliberately rejected.
+  </p>
+
+  <!-- ============================================================ -->
+  <h2 id="tldr">TL;DR — the decision</h2>
+  <div class="callout decision">
+    <h4>The one-paragraph version</h4>
+    <p>
+      A <strong>free, open-source, client-side app</strong> — usable two equal ways: through
+      <strong>drstanfield.com</strong> (Shopify) <em>or</em> <strong>self-hosted / GitHub Pages</strong>.
+      Health data lives in the <strong>user's own Google Drive / Dropbox / self-host</strong> as plain,
+      open-format files; Brad stores and sees nothing. Recommendations, history, and calendar reminders run
+      entirely in the browser and keep working even if Brad disappears. A <strong>thin, separate commercial
+      server</strong> powers an optional paid tier (specific email reminders, lab-PDF extraction, chatbot) and
+      never touches health data. The old server-side data layer (Supabase / HMAC auth / Supabase Auth) is
+      <strong>gutted</strong>.
+    </p>
+  </div>
+
+  <div class="grid-3">
+    <div class="card"><h4>Open</h4><p>Code public on GitHub. Self-hosting is a first-class option, not a footnote.</p></div>
+    <div class="card"><h4>Private</h4><p>Brad is never the data custodian. Data sits in the user's own cloud.</p></div>
+    <div class="card"><h4>Durable</h4><p>Core works after Brad goes dark. Data is never trapped.</p></div>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="philosophy">1. Philosophy &amp; goals</h2>
+  <p>The architecture is downstream of Brad's health philosophy. Every choice traces back to these:</p>
+  <ul>
+    <li><strong>"Be healthy so you can live"</strong> — not the reverse. The tool must <em>not</em> demand daily
+      attention or make people track everything. Aim for ~95% of the benefit for ~5–10% of the effort.</li>
+    <li><strong>Intermittent by design</strong> — meaningful use is roughly every 2–3 months, paced by blood-test
+      and screening intervals. This is a feature, not a bug (and it shapes monetization — see
+      <a href="#money">§13</a>).</li>
+    <li><strong>Put the user in charge of their health</strong> — input your data, get the high-leverage things
+      to do. Doctor disclaimers are a legal backstop, not the intended workflow.</li>
+    <li><strong>Maximum privacy at the heart</strong> — the user owns and controls their data; big companies and
+      LLMs don't get it; Brad doesn't get it.</li>
+    <li><strong>Three goals at once</strong> — mission (help everyone, free), funnel (trust → brand + supplements),
+      and revenue (a tier that pays for itself). These are reconciled, not traded off.</li>
+  </ul>
+  <div class="callout warn">
+    <h4>The avatar: a 70-year-old, non-technical grandma</h4>
+    <p>Every design decision is stress-tested against her. She will never run a server, use a terminal, or
+      safely store a 24-word recovery phrase. If a choice fails the grandma test, it loses — even if it's more
+      "pure". This single constraint kills several otherwise-attractive options (see <a href="#rejected">§16</a>).</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="reframe">2. The strategic reframe</h2>
+  <p>The starting question was "open-source like PewDiePie, or closed/revenue like Ed Lawrence?" That framing
+    was a trap — it fused <strong>three independent decisions</strong> into one false binary:</p>
+  <table>
+    <thead><tr><th>Decision</th><th>The false binary</th><th>The real answer</th></tr></thead>
+    <tbody>
+      <tr><td>Licensing</td><td>open vs closed</td><td><strong>Open source</strong> (mission + trust with a skeptical audience)</td></tr>
+      <tr><td>Architecture</td><td>local "no server" vs cloud</td><td><strong>Local-first, user-owned cloud</strong> (no Brad server in the data path)</td></tr>
+      <tr><td>Money</td><td>free vs paid</td><td><strong>Free app, paid service</strong> — not feature-freemium (see <a href="#money">§13</a>)</td></tr>
+    </tbody>
+  </table>
+  <p>Neither reference model fits, and for symmetric reasons:</p>
+  <ul>
+    <li><strong>Ed Lawrence's model works <em>because</em> of daily, per-task use</strong> — the opposite of "don't
+      let health rule your life". Bolting a use-it-constantly business onto a use-it-rarely tool is a contradiction.</li>
+    <li><strong>PewDiePie's model serves technical privacy-maximalists</strong> who self-host their own server —
+      the opposite of the grandma avatar. (His app doesn't escape the server; it makes the <em>user</em> the
+      server operator.)</li>
+  </ul>
+  <p>Both creators monetize a <em>tool</em> as the product. Brad already has a product business (supplements +
+    brand). So the app's highest-value role is a <strong>trust/funnel asset</strong> with an optional paid
+    service — not a standalone SaaS fighting Function Health ($2.5B) and Superpower ($300M) on capital.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="product">3. Interpretation is the product; storage is a tombstone</h2>
+  <div class="callout why">
+    <h4>The single most important lesson from the PHR landscape</h4>
+    <p><strong>Google Health</strong> (shut 2012) and <strong>Microsoft HealthVault</strong> (shut 2019) had
+      unlimited money and distribution and still died — because they were <em>passive vaults</em>: storage with
+      no interpretation, no behavior loop, no reason to come back. Self-hosted open-source PHRs (e.g. Fasten
+      Health) stay tiny because they're storage for hobbyists. <strong>The product is the recommendation
+      engine, not the database.</strong></p>
+  </div>
+  <p>Implications baked into v2:</p>
+  <ul>
+    <li>The recommendations engine is the moat and stays <strong class="free">free</strong> (mission + funnel).</li>
+    <li>The reminder/recall loop is what turns intermittent use into retention — and fixes the "empty vault"
+      abandonment problem the big PHRs never solved.</li>
+    <li>Brad's edge is being a <em>practising GP who won't overclaim</em>, vs functional-medicine players who do.</li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h2 id="architecture">4. The v2 architecture</h2>
+  <figure>
+    <div class="svg-wrap">
+      <svg viewBox="0 0 920 470" width="100%" role="img" aria-label="Health Roadmap v2 architecture diagram">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L8,3 L0,6 z" fill="#00a38b"/>
+          </marker>
+          <marker id="arrowGray" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L8,3 L0,6 z" fill="#999"/>
+          </marker>
+        </defs>
+
+        <!-- Front doors -->
+        <text x="150" y="28" text-anchor="middle" font-size="12" fill="#666" font-weight="600" letter-spacing="0.5">TWO EQUAL FRONT DOORS</text>
+        <rect x="30" y="42" width="240" height="48" rx="8" fill="#e6f7f4" stroke="#00a38b"/>
+        <text x="150" y="63" text-anchor="middle" font-size="13" fill="#111" font-weight="600">drstanfield.com (Shopify)</text>
+        <text x="150" y="80" text-anchor="middle" font-size="11" fill="#666">theme-extension widget</text>
+        <rect x="30" y="100" width="240" height="48" rx="8" fill="#e6f7f4" stroke="#00a38b"/>
+        <text x="150" y="121" text-anchor="middle" font-size="13" fill="#111" font-weight="600">Self-host / GitHub Pages</text>
+        <text x="150" y="138" text-anchor="middle" font-size="11" fill="#666">run it yourself, max control</text>
+
+        <!-- The app -->
+        <rect x="350" y="58" width="220" height="120" rx="10" fill="#ffffff" stroke="#00a38b" stroke-width="2"/>
+        <text x="460" y="84" text-anchor="middle" font-size="14" fill="#111" font-weight="700">The App (browser / PWA)</text>
+        <text x="460" y="106" text-anchor="middle" font-size="11.5" fill="#333">• recommendations engine</text>
+        <text x="460" y="124" text-anchor="middle" font-size="11.5" fill="#333">• history + past advice</text>
+        <text x="460" y="142" text-anchor="middle" font-size="11.5" fill="#333">• unit conversion, validation</text>
+        <text x="460" y="160" text-anchor="middle" font-size="11.5" fill="#333">• calendar reminders</text>
+
+        <!-- arrows front doors -> app -->
+        <line x1="270" y1="66" x2="350" y2="90" stroke="#00a38b" stroke-width="1.6" marker-end="url(#arrow)"/>
+        <line x1="270" y1="124" x2="350" y2="140" stroke="#00a38b" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+        <!-- user cloud -->
+        <rect x="650" y="44" width="240" height="148" rx="10" fill="#f0faf8" stroke="#00a38b" stroke-width="2"/>
+        <text x="770" y="70" text-anchor="middle" font-size="14" fill="#111" font-weight="700">User's own cloud</text>
+        <text x="770" y="92" text-anchor="middle" font-size="11.5" fill="#333">Google Drive / Dropbox / self-host</text>
+        <text x="770" y="118" text-anchor="middle" font-size="11.5" fill="#111" font-weight="600">health-data.json (plain files)</text>
+        <text x="770" y="140" text-anchor="middle" font-size="11.5" fill="#333">measurements, meds, history,</text>
+        <text x="770" y="156" text-anchor="middle" font-size="11.5" fill="#333">past recommendations</text>
+        <text x="770" y="180" text-anchor="middle" font-size="10.5" fill="#16a34a" font-weight="600">Brad: ✗ no access · ✗ no storage</text>
+
+        <!-- app <-> cloud -->
+        <line x1="570" y1="118" x2="650" y2="118" stroke="#00a38b" stroke-width="2" marker-end="url(#arrow)"/>
+        <line x1="650" y1="132" x2="570" y2="132" stroke="#00a38b" stroke-width="2" marker-end="url(#arrow)"/>
+        <text x="610" y="108" text-anchor="middle" font-size="10" fill="#008f7a" font-weight="600">client-side</text>
+        <text x="610" y="150" text-anchor="middle" font-size="10" fill="#008f7a" font-weight="600">OAuth (PKCE)</text>
+
+        <!-- thin commercial server -->
+        <rect x="300" y="300" width="320" height="120" rx="10" fill="#fff8f0" stroke="#fd7e14" stroke-width="1.6" stroke-dasharray="6 4"/>
+        <text x="460" y="326" text-anchor="middle" font-size="13" fill="#111" font-weight="700">Brad's thin commercial server</text>
+        <text x="460" y="344" text-anchor="middle" font-size="11" fill="#666">optional · paid tier · degrades gracefully</text>
+        <text x="460" y="368" text-anchor="middle" font-size="11.5" fill="#333">• specific email reminders (schedule only)</text>
+        <text x="460" y="386" text-anchor="middle" font-size="11.5" fill="#333">• lab-PDF extraction (Claude API)</text>
+        <text x="460" y="404" text-anchor="middle" font-size="11.5" fill="#333">• chatbot (Claude API)</text>
+
+        <!-- app -> server (push reminders / call extras) -->
+        <line x1="460" y1="178" x2="460" y2="300" stroke="#fd7e14" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#arrowGray)"/>
+        <text x="468" y="245" font-size="10" fill="#b45309">pushes reminder schedule +</text>
+        <text x="468" y="259" font-size="10" fill="#b45309">calls Claude extras (no health values)</text>
+
+        <!-- server has no access to cloud -->
+        <line x1="620" y1="350" x2="760" y2="195" stroke="#dc3545" stroke-width="1.3" stroke-dasharray="3 4"/>
+        <text x="715" y="290" text-anchor="middle" font-size="11" fill="#dc3545" font-weight="700">✗ cannot read user cloud</text>
+      </svg>
+    </div>
+    <figcaption>The data path (app ↔ user's cloud) never touches Brad's infrastructure. The commercial server is optional and health-data-blind.</figcaption>
+  </figure>
+
+  <!-- ============================================================ -->
+  <h2 id="frontdoors">5. Two equal front doors</h2>
+  <p>Both are first-class from day one — self-hosting is a <strong>genuine alternative</strong>, presented to
+    demonstrate that the user is truly in control, not a hidden escape hatch.</p>
+  <div class="grid-2">
+    <div class="card">
+      <h3>A · drstanfield.com</h3>
+      <p>The app runs as a Shopify <strong>theme-extension widget</strong> (static JS/CSS on Shopify's CDN). Easiest
+        path for the mainstream user / grandma. Discoverable next to the products and brand.</p>
+    </div>
+    <div class="card">
+      <h3>B · Self-host / GitHub Pages</h3>
+      <p>The same open-source app, hosted by the user — on <strong>GitHub Pages</strong> (free static hosting
+        straight from the public repo) or their own machine. For the privacy-maximalist / PewDiePie crowd. Proves
+        the project isn't a walled garden.</p>
+    </div>
+  </div>
+  <p>Either door loads the same client-side app, which talks directly to the user's chosen cloud. The choice of
+    front door does not change where data lives or who can see it (no one but the user).</p>
+
+  <!-- ============================================================ -->
+  <h2 id="data">6. Data: the user-owned cloud</h2>
+  <ul>
+    <li><strong>Storage targets (user picks one):</strong> Google Drive, Dropbox, or self-host. Chosen during the
+      same step as "turn on sync". <span class="tag">iCloud Drive is NOT viable on web — no third-party API. The
+      web app / PWA serves Apple devices too via the same Drive/Dropbox sync; no separate native Apple app.</span></li>
+    <li><strong>Access:</strong> the browser does <strong>client-side OAuth (PKCE)</strong> directly with
+      Google/Dropbox. No Brad server in the loop. The user's cloud account <em>is</em> their identity — Shopify
+      login becomes irrelevant to the data layer.</li>
+    <li><strong>Scope:</strong> Google's <code>drive.file</code> scope means the app can only touch files it
+      created — it literally cannot see the rest of the user's Drive.</li>
+    <li><strong>Format:</strong> plain, open-format files (e.g. JSON). Today's schema (profile + append-only
+      measurements + meds/supplements + history + lab values) serialises cleanly to one file (or a few).</li>
+    <li><strong>Gutted:</strong> Supabase, the HMAC app-proxy auth, Supabase Auth user creation, JWT minting —
+      all deleted from the core data path.</li>
+  </ul>
+  <div class="callout why">
+    <h4>Why plain files (not an app-locked database)</h4>
+    <p>Open-format files are openable by any tool, forever — the Obsidian "your data outlives the app" principle.
+      It also makes the self-host / "start-here" viewer trivial and guarantees data is never trapped.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="privacy">7. Privacy model</h2>
+  <table>
+    <thead><tr><th>Actor</th><th>Can read health data?</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Brad / the app maker</td><td><span class="pill ok">No</span></td><td>Never custodian. No database, no server in the data path.</td></tr>
+      <tr><td>Google / Dropbox</td><td><span class="pill warn">Technically yes</span></td><td>Their storage is encrypted <em>at rest with their keys</em> — not end-to-end. They can read files in their own users' accounts.</td></tr>
+      <tr><td>Self-host user</td><td><span class="pill ok">Only them</span></td><td>The maximum-privacy path: nobody but the user.</td></tr>
+    </tbody>
+  </table>
+  <div class="callout decision">
+    <h4>Decision: NO client-side encryption in the default version</h4>
+    <p>Encryption was considered and rejected for the default tier. Rationale: it reintroduces the
+      <strong>key-recovery landmine</strong> (forgotten key = years of health history gone forever) — the single
+      worst failure mode for the grandma avatar. Plain files are also more portable. Users who want
+      provider-proof privacy choose the <strong>self-hosted</strong> version. (An optional encryption toggle could
+      be added later for the privacy-conscious-but-not-technical user; not now.)</p>
+  </div>
+  <div class="callout warn">
+    <h4>Honest positioning — do NOT oversell</h4>
+    <p>The default version must <strong>not</strong> be marketed as "maximum privacy" or "encrypted" — Google/Dropbox
+      can technically read it, and the skeptical audience will check. The true, strong, on-brand claim is:</p>
+    <p style="margin:8px 0 0"><em>"Your health data lives in the cloud account you already use and already trust —
+      not on our servers. We never see it. We never store it. Want it locked down even from Google or Dropbox?
+      Run the self-hosted version."</em></p>
+    <p style="margin:8px 0 0"><strong>Reality check:</strong> realistically &lt;1% will self-host, so for ~99% of
+      users the honest privacy story is "Brad is blind; the user's chosen cloud technically isn't". Accept this
+      with eyes open.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="engine">8. The recommendations engine</h2>
+  <p>Already client-side today (<code>packages/health-core</code> runs in the browser) — no change needed in
+    principle. <code>calculateHealthResults()</code> generates suggestions + attaches evidence entirely in the
+    browser. The server never regenerates them. This is exactly what makes the local-first move feasible: the
+    valuable part already runs where the data now lives. Stays <strong class="free">free</strong>.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="history">9. History &amp; past advice</h2>
+  <ul>
+    <li><strong>User-facing history is preserved and improved.</strong> The full append-only record lives in the
+      user's cloud file, so trends over time work naturally — and are visible only to the user.</li>
+    <li><strong>Past recommendations are snapshotted</strong> into the file each session, so the user can see
+      "what was I advised 6 months ago", not just raw numbers.</li>
+    <li><strong>The HIPAA tamper-proof audit-log table goes away</strong> — it existed because Brad was the
+      custodian. He no longer is, so that compliance artifact (and its burden) is shed. The user's append-only
+      file <em>is</em> their record.</li>
+  </ul>
+
+  <!-- ============================================================ -->
+  <h2 id="reminders">10. Reminders — how the cron works without reading the data</h2>
+  <p>The key realisation: <strong>the cron never reads the user's cloud.</strong> There is no cron <em>inside</em>
+    Google Drive/Dropbox (they're dumb storage). Instead, the browser pre-computes reminders; the server only
+    schedules and sends them.</p>
+  <figure>
+    <div class="svg-wrap">
+      <svg viewBox="0 0 900 250" width="100%" role="img" aria-label="Reminder flow diagram">
+        <defs>
+          <marker id="arr2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L8,3 L0,6 z" fill="#0066cc"/>
+          </marker>
+        </defs>
+        <rect x="20" y="70" width="200" height="100" rx="10" fill="#ffffff" stroke="#00a38b" stroke-width="2"/>
+        <text x="120" y="95" text-anchor="middle" font-size="12.5" font-weight="700" fill="#111">1 · Browser</text>
+        <text x="120" y="116" text-anchor="middle" font-size="11" fill="#333">reads data from</text>
+        <text x="120" y="131" text-anchor="middle" font-size="11" fill="#333">user's cloud, computes</text>
+        <text x="120" y="146" text-anchor="middle" font-size="11" fill="#333">"colonoscopy due 2031"</text>
+
+        <rect x="350" y="70" width="200" height="100" rx="10" fill="#fff8f0" stroke="#fd7e14" stroke-width="1.8"/>
+        <text x="450" y="95" text-anchor="middle" font-size="12.5" font-weight="700" fill="#111">2 · Reminder table</text>
+        <text x="450" y="116" text-anchor="middle" font-size="11" fill="#333">stores one "postcard":</text>
+        <text x="450" y="132" text-anchor="middle" font-size="10.5" fill="#111">{ email, 2031-03-01,</text>
+        <text x="450" y="147" text-anchor="middle" font-size="10.5" fill="#111">"due 5-yearly colonoscopy" }</text>
+
+        <rect x="680" y="70" width="200" height="100" rx="10" fill="#fff8f0" stroke="#fd7e14" stroke-width="1.8"/>
+        <text x="780" y="95" text-anchor="middle" font-size="12.5" font-weight="700" fill="#111">3 · Daily cron</text>
+        <text x="780" y="116" text-anchor="middle" font-size="11" fill="#333">"anything due today?"</text>
+        <text x="780" y="131" text-anchor="middle" font-size="11" fill="#333">→ sends the email</text>
+        <text x="780" y="146" text-anchor="middle" font-size="11" fill="#333">→ marks sent</text>
+
+        <line x1="220" y1="120" x2="350" y2="120" stroke="#0066cc" stroke-width="1.8" marker-end="url(#arr2)"/>
+        <text x="285" y="110" text-anchor="middle" font-size="10" fill="#0066cc">POST schedule</text>
+        <line x1="550" y1="120" x2="680" y2="120" stroke="#0066cc" stroke-width="1.8" marker-end="url(#arr2)"/>
+
+        <text x="450" y="30" text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">No health VALUES ever stored — only a pre-addressed, pre-written reminder schedule</text>
+        <text x="450" y="210" text-anchor="middle" font-size="11" fill="#666">Every visit re-computes &amp; refreshes the schedule. Server never reads the user's cloud.</text>
+        <text x="450" y="228" text-anchor="middle" font-size="11" fill="#666">If Brad goes dark: cron stops, emails cease, data &amp; core app untouched.</text>
+      </svg>
+    </div>
+    <figcaption>Reminders are specific and individualised ("you're due your 5-yearly colonoscopy") because the browser computes them; the server is a dumb scheduler.</figcaption>
+  </figure>
+  <div class="callout warn">
+    <h4>The honest cost</h4>
+    <p>Because reminders are specific, the <em>message text</em> on the server is health-adjacent ("this person
+      needs a colonoscopy"). No measurements, no values — but it is a schedule of what each person tracks. This is
+      a deliberate, minimal exception to "store nothing", justified because reminder emails are a critical function
+      while Brad is online.</p>
+  </div>
+  <p><strong>Free alternative:</strong> <span class="free">calendar injection</span> — the app writes the reminder
+    straight into the user's own Google/Apple calendar. Zero metadata, go-dark-proof, no server. Offered to free
+    users; specific <span class="paid">email</span> reminders are the paid version.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="resilience">11. Resilience tiers</h2>
+  <table>
+    <thead><tr><th>Tier</th><th>What</th><th>Works when…</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill ok">Core</span></td><td>Input → recommendations → save to your cloud → history → calendar reminders</td><td><strong>Always</strong> — pure client-side + user's cloud. Survives Brad going dark.</td></tr>
+      <tr><td><span class="pill warn">Enhanced</span></td><td>Specific email reminders, lab-PDF auto-extraction, chatbot</td><td>While Brad's thin server is up. Degrades gracefully (manual entry, no chat) — never breaks the core.</td></tr>
+      <tr><td><span class="pill info">Independent</span></td><td>Self-host / GitHub Pages build + the user's cloud</td><td>Even if Shopify itself is gone. A genuine front door (<a href="#frontdoors">§5</a>), not just a fallback.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============================================================ -->
+  <h2 id="layers">12. Two-layer separation</h2>
+  <p>A clean organising principle for the rebuild:</p>
+  <div class="grid-2">
+    <div class="card">
+      <h3><span class="free">Open-source core</span></h3>
+      <p>Client-side app + the user's own cloud. What gets published and what works if Brad goes dark.
+        Calculations, recommendations, history, calendar reminders, cloud adapters (Drive / Dropbox / self-host).</p>
+    </div>
+    <div class="card">
+      <h3><span class="paid">Brad's commercial layer</span></h3>
+      <p>Separate, server-backed, <em>not</em> part of the distributable app, never holds health values: the thin
+        Claude-extras server, the reminder-email service, and <strong>A/B testing</strong> (bolt-on for Brad's own
+        Shopify optimisation).</p>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="money">13. Monetization <span class="pill info">provisional</span></h2>
+  <div class="callout why">
+    <h4>The principle that fell out of the architecture</h4>
+    <p><strong>Charge for what costs <em>you</em> to run. Keep the health advice free.</strong> The technical
+      free/paid line draws itself at "does this need Brad's server?"</p>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <h3 class="free">Free (client-side, costs Brad nothing)</h3>
+      <ul>
+        <li>The app + recommendations (mission + funnel)</li>
+        <li>Storage in the user's own cloud</li>
+        <li>History + past advice</li>
+        <li>Calendar-injection reminders (go-dark-proof)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 class="paid">Paid annual (needs Brad's server)</h3>
+      <ul>
+        <li>Specific, individualised <strong>email reminders</strong></li>
+        <li>Lab-PDF auto-extraction (Claude)</li>
+        <li>Chatbot (Claude)</li>
+      </ul>
+    </div>
+  </div>
+  <ul>
+    <li><strong>Bill annually, not monthly</strong> — matches the 2–3-month cadence; people pay yearly for things
+      used a few times a year. Monthly billing on an intermittent tool guarantees churn.</li>
+    <li>Not feature-freemium gating medical advice — that would wound mission + funnel + trust. The line is
+      "infrastructure cost", which is honest and on-brand.</li>
+    <li>Free users aren't health-disadvantaged: they still get reminded (calendar), just not by email.</li>
+    <li><strong>Supplement funnel</strong> stays evidence-led + disclosed: recommend the <em>action</em> first,
+      products only as one way to act, always with alternatives (food, competitors) shown. Protects the
+      unbiased-GP moat.</li>
+  </ul>
+  <p class="meta">Exact price (≈$30–60/yr range floated) and whether some extras are free is still open — see <a href="#open">§17</a>.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="tokens">14. Token refresh (handled without a server)</h2>
+  <p>Client-side OAuth tokens expire. We solve refresh in the browser so Brad never holds a key that could read
+    the data (which keeps him genuinely blind <em>and</em> is automatically go-dark-proof):</p>
+  <ul>
+    <li><strong>Dropbox:</strong> client-side PKCE refresh tokens. Clean, no server.</li>
+    <li><strong>Google:</strong> the browser silently re-issues access tokens while the user is logged into Google
+      (almost always true on their own device); worst case an occasional "reconnect" click. Never data-losing.</li>
+  </ul>
+  <p>Deliberately <strong>not</strong> server-assisted — a server holding refresh tokens would be a "Brad can peek"
+    vector. This behaves identically online or dark.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="migration">15. What changes</h2>
+  <table>
+    <thead><tr><th>Area</th><th>Today</th><th>v2</th></tr></thead>
+    <tbody>
+      <tr><td>Health data store</td><td>Brad's Supabase (Postgres)</td><td><strong>User's own Google Drive / Dropbox / self-host</strong></td></tr>
+      <tr><td>Auth / identity</td><td>Shopify HMAC → Supabase Auth user</td><td><strong>User's cloud account (client-side OAuth)</strong>; Shopify login irrelevant to data</td></tr>
+      <tr><td>App delivery</td><td>Shopify theme extension + Fly app proxy</td><td>Shopify theme extension <em>or</em> self-host / GitHub Pages</td></tr>
+      <tr><td>Recommendations</td><td>Client-side</td><td>Client-side (unchanged) — <span class="free">free</span></td></tr>
+      <tr><td>Reminders</td><td>Server cron reads Supabase → email</td><td>Browser pre-computes → thin server schedules+sends; or calendar injection</td></tr>
+      <tr><td>Lab-PDF extraction</td><td>Server (Claude API)</td><td>Thin server (Claude) — <span class="paid">paid</span>, degrades to manual</td></tr>
+      <tr><td>Chatbot</td><td>Server (Claude API)</td><td>Thin server (Claude) — <span class="paid">paid</span></td></tr>
+      <tr><td>A/B testing</td><td>Supabase tables + Polaris admin</td><td>Separate bolt-on, Brad's side only</td></tr>
+      <tr><td>HIPAA audit log</td><td>Server-side table</td><td>Gone (Brad no longer custodian)</td></tr>
+      <tr><td>Compliance burden</td><td>High (data custodian)</td><td><strong>Largely shed</strong></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ============================================================ -->
+  <h2 id="rejected">16. Rejected paths &amp; why <span class="pill err">don't relitigate</span></h2>
+  <div class="callout reject"><h4>Ed Lawrence "sell a daily-use SaaS" model</h4><p>Requires constant use; contradicts "don't let health rule your life". The tool is intermittent by design.</p></div>
+  <div class="callout reject"><h4>PewDiePie "self-hosted server" as the <em>default</em></h4><p>Makes the user the server operator — fine as an option (§5 door B), fatal as the mainstream path for grandma.</p></div>
+  <div class="callout reject"><h4>Keep data in Brad's Supabase</h4><p>Makes Brad the custodian (privacy + HIPAA burden) and breaks "works if I go dark". The whole pivot is to remove this.</p></div>
+  <div class="callout reject"><h4>Client-side end-to-end encryption in the default tier</h4><p>Key-recovery landmine: forgotten key = years of health history lost. Fails the grandma test. Self-host is the privacy-maximalist answer instead.</p></div>
+  <div class="callout reject"><h4>"No server at all / pure P2P" sync</h4><p>Multi-device sync needs <em>something</em> always-on. Pure P2P only syncs when both devices are online + reachable — bad default UX. The user's own cloud <em>is</em> the always-on relay.</p></div>
+  <div class="callout reject"><h4>CloudKit as the backbone</h4><p>Apple-native only; doesn't serve a web-first app. Deferred to a later native-Apple phase as a polish layer.</p></div>
+  <div class="callout reject"><h4>iCloud Drive as a web sync target</h4><p>No third-party web/Android API. Only Dropbox + Google Drive are viable on web.</p></div>
+  <div class="callout reject"><h4>Gating the recommendations behind a paywall</h4><p>Would wound mission + funnel + trust. Charge for infrastructure (server services), never for the advice.</p></div>
+
+  <!-- ============================================================ -->
+  <h2 id="open">17. Open questions &amp; next steps</h2>
+  <h3>Still open</h3>
+  <ul>
+    <li><strong>Pricing</strong> — exact annual figure; which extras (if any) are free vs paid.</li>
+    <li><strong>Native Apple apps (later phase)</strong> — would unlock CloudKit (free, invisible, platform-managed
+      recovery + iCloud sync). Android stays on the web/PWA.</li>
+    <li><strong>Cloud target at launch</strong> — build Google Drive + Dropbox + self-host together, or sequence
+      one first?</li>
+    <li><strong>Data file schema</strong> — finalise the JSON shape (single file vs a few; how append-only history
+      + meds/supplement changelogs flatten).</li>
+  </ul>
+  <h3>Recommended next step</h3>
+  <p>Turn this into an <strong>implementation plan</strong>: the file schema, the cloud-adapter interface, the
+    OAuth flows, what code is deleted from the current repo, and a build sequence. (No code yet — plan first.)</p>
+
+  <hr>
+  <p class="meta">This document is the agreed direction as of 2026-06-08. Companion: current-state architecture at
+    <code>~/Documents/roadmap/docs/architecture.html</code>. When implementation begins, keep this in sync or supersede it.</p>
+</main>
+</div>
+</body>
+</html>

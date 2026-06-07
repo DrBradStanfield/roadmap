@@ -5,7 +5,7 @@ youtube: "https://www.youtube.com/watch?v=q71tHoHeXZo"
 publishedAt: "2024-07-11T21:04:17Z"
 tags: ["Research"]
 keywords: ["ala","alzheimer","breast cancer","cardiovascular","cholesterol","dementia","dha","epa","fish oil","heart attack","inflammation","omega-3","stroke"]
-summary: "Dr Brad's omega-3 post: supplements at ~1g/day are still worth taking despite a 2024 UK Biobank study showing 133% higher atrial fibrillation risk. Covers EPA, DHA, ALA, fish oil, heart disease, AF risk, megadosing concerns, VITAL and STRENGTH trials."
+summary: "Dr Brad's omega-3 post: supplements at ~1g/day are still worth taking despite a 2024 UK Biobank study showing 133% higher atrial fibrillation risk. Covers EPA, DHA, ALA, fish oil, heart disease, AF risk, megadosing concerns, and the major trials — VITAL (28% MI reduction at 1g/day), STRENGTH (null at 4g/day with AF signal), REDUCE-IT (Vascepa / icosapent ethyl, 25% CVD reduction with the mineral-oil placebo controversy)."
 ---
 
 If you've paid much attention to health and supplements over the years, chances are you're pretty familiar with Omega-3s. They're commonly advertised in everything from supplements to salmon, and for ages, they've been one of the least controversial nutrients. Omega-3s are good for you, right?
