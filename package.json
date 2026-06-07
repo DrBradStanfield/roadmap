@@ -1,6 +1,7 @@
 {
   "name": "health-tool",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "build": "remix vite:build",
     "build:widget": "cd widget-src && npm run build",
