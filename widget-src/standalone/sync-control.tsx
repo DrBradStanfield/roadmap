@@ -38,12 +38,15 @@ export function SyncControl({ backend }: { backend: Backend }) {
     location.reload();
   };
 
+  // Layout note: the action (button/link) sits on the same row as the status
+  // heading; the detail span has flex-basis:100% so it wraps to its own row
+  // below — so DOM order is status, action, detail.
   if (backend === 'dropbox') {
     return (
       <div className="hr-sync hr-sync-dropbox">
         <span className="hr-sync-status">✓ Synced to your Dropbox</span>
-        <span className="hr-sync-detail">Your data lives only in your own Dropbox — in the app's own folder, never on our servers.</span>
         <button className="hr-sync-link" onClick={() => void disconnect()}>Use this device only</button>
+        <span className="hr-sync-detail">Your data lives only in your own Dropbox — in the app's own folder, never on our servers.</span>
       </div>
     );
   }
@@ -51,8 +54,8 @@ export function SyncControl({ backend }: { backend: Backend }) {
   return (
     <div className="hr-sync hr-sync-local">
       <span className="hr-sync-status">Saved on this device</span>
-      <span className="hr-sync-detail">Your data is only in this browser. Connect a cloud to sync across your phone and computer.</span>
       <button className="hr-sync-btn" onClick={connect}>Connect Dropbox</button>
+      <span className="hr-sync-detail">Your data is only in this browser. Connect a cloud to sync across your phone and computer.</span>
     </div>
   );
 }

@@ -16,13 +16,13 @@
       .hr-hero-text { flex: 1; }
       .hr-hero-text h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; color: #1c2b33; }
       .hr-hero-text p { font-size: 15px; line-height: 1.55; color: #5a6b73; margin: 0; }
+      /* Plain cutout, exactly as on drstanfield.com — no circle crop, no shadow. */
       .hr-hero-img {
-        width: 160px; height: 160px; object-fit: cover; border-radius: 50%;
-        flex: 0 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+        width: 240px; height: auto; flex: 0 0 auto;
       }
       @media (max-width: 700px) {
         .hr-hero { flex-direction: column-reverse; text-align: center; gap: 16px; }
-        .hr-hero-img { width: 120px; height: 120px; }
+        .hr-hero-img { width: 180px; }
       }
 
       /* Sync control (rendered inside the plan panel, where "Data synced" was). */
