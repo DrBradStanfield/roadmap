@@ -61,18 +61,17 @@ async function main() {
   const { adapter, backend } = await resolveBackend();
   await initRoadmapStore(adapter);
 
-  const syncEl = document.getElementById('hr-sync-control');
-  if (syncEl) createRoot(syncEl).render(<SyncControl backend={backend} />);
-
   const container = document.getElementById('health-tool-root');
   if (!container) {
     console.warn('Health tool mount point not found');
     return;
   }
+  // The sync control renders inside the plan panel (where the Shopify "Data
+  // synced" line was) via the syncControl prop — not as a separate top banner.
   createRoot(container).render(
     <React.StrictMode>
       <ErrorBoundary>
-        <HealthTool />
+        <HealthTool syncControl={<SyncControl backend={backend} />} />
       </ErrorBoundary>
     </React.StrictMode>,
   );

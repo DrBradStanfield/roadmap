@@ -5,7 +5,7 @@
  *
  * SCOPING (HARD requirement): this must be registered as a Dropbox **"App
  * folder"** app, NOT "Full Dropbox". That confines every path below to a
- * dedicated `/Apps/Health Roadmap` folder — the app physically cannot read the
+ * dedicated `/Apps/Health Roadmap by Dr Brad` folder — the app physically cannot read the
  * rest of the user's Dropbox. All paths here are therefore app-folder-relative.
  *
  * Required Dropbox app console settings:

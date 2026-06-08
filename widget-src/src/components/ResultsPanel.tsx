@@ -62,6 +62,9 @@ interface ResultsPanelProps {
     screenings?: Record<string, unknown>[];
   };
   formStage?: number;
+  /** Standalone-only: replaces the Shopify AccountStatus block with the
+   *  local-first sync control. undefined on the live widget (AccountStatus shows). */
+  syncControl?: React.ReactNode;
 }
 
 function getBmiStatus(bmiCategory: string, waistToHeightRatio?: number): { label: string; className: string } {
@@ -586,7 +589,7 @@ function ReminderSettings({
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, guestReportData, formStage }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, guestReportData, formStage, syncControl }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -696,7 +699,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
     return (
       <div className="health-results-panel">
         <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={null} muted />
-        <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />
+        {syncControl ?? <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />}
         <div className="plan-empty-preview">
           <p className="plan-empty-intro">
             <strong>Here's what your plan will look like.</strong> Real suggestions appear once you fill in your details.

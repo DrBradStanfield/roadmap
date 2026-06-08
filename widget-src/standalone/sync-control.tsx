@@ -42,7 +42,7 @@ export function SyncControl({ backend }: { backend: Backend }) {
     return (
       <div className="hr-sync hr-sync-dropbox">
         <span className="hr-sync-status">✓ Synced to your Dropbox</span>
-        <span className="hr-sync-detail">Your data lives in your own <code>Apps/Dr&nbsp;Brad</code> folder — not on our servers.</span>
+        <span className="hr-sync-detail">Your data lives only in your own Dropbox — in the app's own folder, never on our servers.</span>
         <button className="hr-sync-link" onClick={() => void disconnect()}>Use this device only</button>
       </div>
     );

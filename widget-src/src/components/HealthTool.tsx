@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   calculateHealthResults,
@@ -98,7 +98,7 @@ function getAuthState(): AuthState {
   return { isLoggedIn, loginUrl, accountUrl, redirectFailed };
 }
 
-export function HealthTool() {
+export function HealthTool({ syncControl }: { syncControl?: ReactNode } = {}) {
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(() => {
     // Pre-load prefill fields from localStorage so InputPanel's first render
     // correctly detects returning users (for Basic Information collapse).
@@ -1113,6 +1113,7 @@ export function HealthTool() {
 
   const resultsPanelProps = {
     results,
+    syncControl,
     isValid,
     authState,
     saveStatus,
