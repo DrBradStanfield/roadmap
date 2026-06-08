@@ -1556,18 +1556,27 @@ describe('generateSuggestions', () => {
 
     it('uses 1-year interval after completed cervical follow-up', () => {
       const { inputs, results } = createTestData({ sex: 'female', birthYear: 1990, birthMonth: 1 }, { age: 36 });
+      // Time-relative so the test never rots: a follow-up completed 6 months ago
+      // means the next cervical screen (12-month post-follow-up interval) is due
+      // ~6 months out — comfortably in the future, so priority is 'info'.
+      const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const now = new Date();
+      const ym = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const followupDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+      const nextDue = new Date(followupDate.getFullYear(), followupDate.getMonth() + 12);
+      const nextDueLabel = `${MONTHS[nextDue.getMonth()]} ${nextDue.getFullYear()}`;
       const scr: ScreeningInputs = {
         cervicalMethod: 'hpv_every_5yr',
-        cervicalLastDate: '2025-01',
+        cervicalLastDate: ym(new Date(now.getFullYear(), now.getMonth() - 18, 1)),
         cervicalResult: 'abnormal',
         cervicalFollowupStatus: 'completed',
-        cervicalFollowupDate: '2025-06',
+        cervicalFollowupDate: ym(followupDate),
       };
       const suggestions = generateSuggestions(inputs, results, 'si', undefined, scr);
       const followup = suggestions.find(s => s.id === 'screening-cervical-followup');
       expect(followup).toBeDefined();
       expect(followup?.priority).toBe('info');
-      expect(followup?.description).toContain('Jun 2026');
+      expect(followup?.description).toContain(nextDueLabel);
     });
 
     it('falls back to normal logic when cervical result is normal', () => {
