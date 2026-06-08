@@ -770,7 +770,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
     <div className="health-results-panel">
       <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} />
       {/* Account Status */}
-      <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />
+      {syncControl ?? <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />}
       {guestReportData && <GuestEmailCapture hook={guestEmailHook} loginUrl={authState?.loginUrl} formStage={formStage} />}
 
       {/* Quick Stats */}
