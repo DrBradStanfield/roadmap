@@ -14,12 +14,7 @@
  * The merge is what makes concurrent multi-device edits safe; the version
  * precondition is what makes a lost-update impossible.
  */
-import {
-  createEmptyFile,
-  mergeFiles,
-  migrateFile,
-  type RoadmapFile,
-} from '@roadmap/health-core';
+import { mergeFiles, migrateFile, type RoadmapFile } from '@roadmap/health-core';
 import {
   ConflictError,
   StorageError,
@@ -100,9 +95,4 @@ export class SyncManager {
       throw new StorageError('Verify-after-write failed: the written revision is older than expected.');
     }
   }
-}
-
-/** Helper for an empty starting file on this device. */
-export function newEmptyFile(deviceId: string, now: string = new Date().toISOString()): RoadmapFile {
-  return createEmptyFile({ deviceId, now });
 }

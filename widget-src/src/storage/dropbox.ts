@@ -25,6 +25,7 @@ import {
   type StorageAdapter,
   type WriteResult,
 } from './adapter';
+import { safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
 const FILE_PATH = '/health-roadmap.json';
@@ -50,20 +51,17 @@ interface DropboxTokens {
 }
 
 function loadTokens(): DropboxTokens | null {
+  const raw = safeGetItem(TOKEN_KEY);
+  if (!raw) return null;
   try {
-    const raw = localStorage.getItem(TOKEN_KEY);
-    return raw ? (JSON.parse(raw) as DropboxTokens) : null;
+    return JSON.parse(raw) as DropboxTokens;
   } catch {
-    return null;
+    return null; // corrupt token blob — treat as not connected
   }
 }
 
 function saveTokens(tokens: DropboxTokens): void {
-  try {
-    localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
-  } catch {
-    /* best effort */
-  }
+  safeSetItem(TOKEN_KEY, JSON.stringify(tokens));
 }
 
 export class DropboxAdapter implements StorageAdapter {
@@ -161,11 +159,7 @@ export class DropboxAdapter implements StorageAdapter {
 
   async disconnect(): Promise<void> {
     this.tokens = null;
-    try {
-      localStorage.removeItem(TOKEN_KEY);
-    } catch {
-      /* ignore */
-    }
+    safeRemoveItem(TOKEN_KEY);
   }
 
   // --- file ops -------------------------------------------------------------

@@ -11,7 +11,10 @@ export {
   type ReadResult,
   type WriteResult,
 } from './adapter';
-export { SyncManager, newEmptyFile, type SaveResult } from './sync-manager';
+export { SyncManager, type SaveResult } from './sync-manager';
+// Thrown by SyncManager (via migrate) when the cloud file is from a newer app
+// version — surfaced here so UI can show "update the app", not a generic error.
+export { SchemaTooNewError } from '@roadmap/health-core';
 export { MemoryAdapter, MemoryCloud } from './memory-adapter';
 export { DropboxAdapter, type DropboxConfig } from './dropbox';
 export { getDeviceId } from './device-id';

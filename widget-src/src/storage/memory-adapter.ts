@@ -22,9 +22,6 @@ export class MemoryCloud {
   fileJson: string | null = null;
   version = 0;
   docs = new Map<string, Blob>();
-  /** Rotation: previous file revisions (newest last), for the H5 "never overwrite blind" guard. */
-  history: string[] = [];
-  maxHistory = 5;
 }
 
 export class MemoryAdapter implements StorageAdapter {
@@ -56,11 +53,6 @@ export class MemoryAdapter implements StorageAdapter {
     const current = this.cloud.fileJson == null ? null : String(this.cloud.version);
     if (expectedVersion !== current) {
       throw new ConflictError(`expected version ${expectedVersion}, but remote is ${current}`);
-    }
-    // Rotation before overwrite (H5).
-    if (this.cloud.fileJson != null) {
-      this.cloud.history.push(this.cloud.fileJson);
-      if (this.cloud.history.length > this.cloud.maxHistory) this.cloud.history.shift();
     }
     this.cloud.fileJson = JSON.stringify(file);
     this.cloud.version += 1;

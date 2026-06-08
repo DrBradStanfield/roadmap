@@ -5,21 +5,15 @@
  * localStorage is wiped, a new device id is minted; that's fine (merge stays
  * correct, it's only a tie-break).
  */
+import { safeGetItem, safeSetItem } from '../lib/storage';
+
 const DEVICE_ID_KEY = 'health_roadmap_device_id';
 
 export function getDeviceId(): string {
-  try {
-    const existing = localStorage.getItem(DEVICE_ID_KEY);
-    if (existing) return existing;
-  } catch {
-    /* sandboxed iframe — fall through to an ephemeral id */
-  }
+  const existing = safeGetItem(DEVICE_ID_KEY);
+  if (existing) return existing;
   const id = `dev_${shortRandom()}`;
-  try {
-    localStorage.setItem(DEVICE_ID_KEY, id);
-  } catch {
-    /* best effort */
-  }
+  safeSetItem(DEVICE_ID_KEY, id);
   return id;
 }
 
