@@ -5,6 +5,7 @@
   "scripts": {
     "build": "remix vite:build",
     "build:widget": "cd widget-src && npm run build",
+    "build:pages": "cd widget-src && vite build --config vite.config.standalone.ts",
     "dev": "shopify app dev",
     "dev:widget": "cd widget-src && npm run dev",
     "config:link": "shopify app config link",

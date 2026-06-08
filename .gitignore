@@ -3,6 +3,7 @@ node_modules/
 .env.local
 .env.*.local
 dist/
+dist-pages/
 build/
 .cache/
 *.log

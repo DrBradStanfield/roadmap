@@ -1,0 +1,50 @@
+name: Deploy GitHub Pages
+
+# Front door B (implementation plan §5.4 / §10): the standalone static build is
+# the primary dev + test surface for v2. Builds widget-src/dist-pages and
+# publishes it to https://drbradstanfield.github.io/roadmap/.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'widget-src/**'
+      - 'packages/health-core/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; let an in-progress run finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build:pages
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: widget-src/dist-pages
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -215,3 +215,25 @@ export {
   scrubUrl,
   scrubBreadcrumbData,
 } from './sentry-scrub';
+
+// Local-first storage spine (v2) — the RoadmapFile schema + merge/migrate logic.
+// Browser-coupled cloud adapters live in widget-src/src/storage/, not here.
+export {
+  CURRENT_SCHEMA_VERSION,
+  createEmptyFile,
+  stableStringify,
+  type RoadmapFile,
+  type RoadmapFileMeta,
+  type RoadmapProfile,
+  type FileMeasurement,
+  type FileLabValue,
+  type FileMedication,
+  type FileSupplement,
+  type FileScreenings,
+  type FileReminderPreference,
+  type FileDocument,
+  type RecommendationSnapshot,
+  type SyncStamp,
+} from './roadmap-file';
+export { mergeFiles, type MergeOptions } from './merge';
+export { migrateFile, SchemaTooNewError } from './migrate';
