@@ -16,6 +16,7 @@ export { SyncManager, type SaveResult } from './sync-manager';
 // version — surfaced here so UI can show "update the app", not a generic error.
 export { SchemaTooNewError } from '@roadmap/health-core';
 export { MemoryAdapter, MemoryCloud } from './memory-adapter';
+export { LocalStorageAdapter } from './local-storage-adapter';
 export { DropboxAdapter, type DropboxConfig } from './dropbox';
 export { getDeviceId } from './device-id';
 export { runStorageSelfTest, type SelfTestResult } from './self-test';

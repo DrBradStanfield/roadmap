@@ -10,7 +10,13 @@
  */
 import type { RoadmapFile } from '@roadmap/health-core';
 
-export type StorageBackendId = 'google-drive' | 'dropbox' | 'github' | 'self-host' | 'memory';
+export type StorageBackendId =
+  | 'google-drive'
+  | 'dropbox'
+  | 'github'
+  | 'self-host'
+  | 'local' // no-sync, single-device tier (localStorage) — the "guest" tier
+  | 'memory'; // test/demo only
 
 /**
  * Thrown by `write()` when the remote file changed since the `expectedVersion`
