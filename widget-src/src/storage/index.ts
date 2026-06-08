@@ -12,6 +12,19 @@ export {
   type WriteResult,
 } from './adapter';
 export { SyncManager, type SaveResult } from './sync-manager';
+export {
+  RoadmapStore,
+  type LatestMeasurementsResult,
+  type AddMeasurementResult,
+  type CorrectMeasurementResult,
+  type BulkSaveResult,
+  type BulkLabValuesResult,
+  type ApiReminderPreference,
+  type ApiSupplement,
+  type ApiDocument,
+  type ApiLabValue,
+  type ApiMedicationHistory,
+} from './roadmap-store';
 // Thrown by SyncManager (via migrate) when the cloud file is from a newer app
 // version — surfaced here so UI can show "update the app", not a generic error.
 export { SchemaTooNewError } from '@roadmap/health-core';

@@ -117,11 +117,13 @@ export interface FileDocument {
   title: string;
   type: DocumentType;
   date: string | null;      // YYYY-MM-DD
-  fileRef: string;          // path relative to the folder, e.g. 'documents/doc_1.pdf'
-  contentHash: string;      // 'sha256-...' — names the blob + detects corruption
-  mimeType: string;
+  fileRef: string;          // path relative to the folder, e.g. 'documents/doc_1.pdf' ('' if text-only)
+  contentHash: string;      // 'sha256-...' — names the blob + detects corruption ('' if text-only)
+  mimeType: string;         // '' if text-only
   extractedText: string;    // kept so history/chatbot search survives without Supabase
   addedAt: string;          // ISO
+  metadata?: Record<string, unknown>; // LLM extraction metadata (was DB `metadata`)
+  sourceFileName?: string | null;     // original upload filename (was DB `source_file_name`)
 }
 
 /** A point-in-time snapshot of "what was I advised" (decision record §9). */
