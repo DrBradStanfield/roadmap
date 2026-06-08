@@ -8,6 +8,7 @@
  */
 import { CURRENT_SCHEMA_VERSION } from '@roadmap/health-core';
 import { runStorageSelfTest, type SelfTestResult } from '../src/storage';
+import { initDropboxTest } from './dropbox-test';
 
 const runBtn = document.getElementById('run') as HTMLButtonElement;
 const summaryEl = document.getElementById('summary') as HTMLDivElement;
@@ -66,3 +67,10 @@ metaEl.innerHTML = `Schema version <code>${CURRENT_SCHEMA_VERSION}</code> · bui
 
 runBtn.addEventListener('click', run);
 void run();
+
+// Live Dropbox round-trip (real cloud adapter).
+void initDropboxTest({
+  status: document.getElementById('dbx-status') as HTMLElement,
+  actions: document.getElementById('dbx-actions') as HTMLElement,
+  result: document.getElementById('dbx-result') as HTMLElement,
+});

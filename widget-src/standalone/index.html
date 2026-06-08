@@ -75,6 +75,17 @@
         <div id="results"></div>
       </div>
 
+      <div class="card">
+        <h2>Dropbox live sync test</h2>
+        <p class="sub" style="margin-top:0">
+          Connects to your own Dropbox (App-folder scoped — only <code>/Apps/Dr&nbsp;Brad/</code>) and
+          round-trips a record through the real adapter: write → read back → verify. Proves real cloud sync.
+        </p>
+        <div id="dbx-status" class="sub" style="margin-top:4px"></div>
+        <div id="dbx-actions" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap"></div>
+        <div id="dbx-result" class="rdetail" style="margin-top:12px; white-space:pre-wrap"></div>
+      </div>
+
       <div class="meta" id="meta"></div>
     </div>
     <script type="module" src="./main.ts"></script>
