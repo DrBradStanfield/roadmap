@@ -82,4 +82,14 @@ export interface StorageAdapter {
    * the atomic commit point and orphan blobs are harmless.
    */
   writeDocument(ref: string, bytes: Blob, contentHash: string): Promise<void>;
+
+  /**
+   * OPTIONAL synchronous last-ditch write, used only on tab-close /
+   * visibilitychange where an async chain may not finish (esp. mobile). Only
+   * backends whose write is genuinely synchronous (localStorage) implement it;
+   * cloud backends omit it (network can't be sync) and fall back to a
+   * best-effort async flush. No version check — it's the emergency
+   * last-write-on-this-device path.
+   */
+  writeSync?(file: RoadmapFile): void;
 }

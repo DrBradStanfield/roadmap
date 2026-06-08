@@ -70,6 +70,17 @@ export class LocalStorageAdapter implements StorageAdapter {
     return { version: next };
   }
 
+  /** Synchronous emergency write (tab-close) — see StorageAdapter.writeSync. */
+  writeSync(file: RoadmapFile): void {
+    const next = String((Number(safeGetItem(VERSION_KEY)) || 0) + 1);
+    try {
+      localStorage.setItem(FILE_KEY, JSON.stringify(file));
+      safeSetItem(VERSION_KEY, next);
+    } catch {
+      /* best effort on unload — nothing more we can do */
+    }
+  }
+
   async readDocument(ref: string): Promise<Blob> {
     const dataUrl = safeGetItem(DOC_PREFIX + ref);
     if (dataUrl == null) throw new StorageError(`document not found: ${ref}`);

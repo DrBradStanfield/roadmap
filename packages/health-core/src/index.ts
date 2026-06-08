@@ -236,5 +236,5 @@ export {
   type RecommendationSnapshot,
   type SyncStamp,
 } from './roadmap-file';
-export { mergeFiles, type MergeOptions } from './merge';
+export { mergeFiles, dayOf, type MergeOptions } from './merge';
 export { migrateFile, SchemaTooNewError } from './migrate';

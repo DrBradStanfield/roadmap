@@ -53,7 +53,7 @@ interface SlottableRow {
 }
 
 /** Normalise an ISO timestamp to its calendar day — the slot granularity. */
-function dayOf(iso: string): string {
+export function dayOf(iso: string): string {
   return iso.slice(0, 10);
 }
 

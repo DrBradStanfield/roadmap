@@ -37,14 +37,14 @@ export async function initRoadmapStore(adapter: StorageAdapter): Promise<void> {
   store = await RoadmapStore.create(adapter);
 }
 
-/** Flush pending writes (call on beforeunload / before navigation). */
+/** Flush pending writes (call before navigation). */
 export async function flushRoadmapStore(): Promise<void> {
   await store?.flush();
 }
 
-/** Which backend is connected, or null if not initialised. */
-export function getRoadmapBackendId(): string | null {
-  return store?.backendId ?? null;
+/** Synchronous last-ditch flush for tab-close / visibilitychange (mobile-safe). */
+export function flushRoadmapStoreSync(): void {
+  store?.flushSync();
 }
 
 // --- reads ---

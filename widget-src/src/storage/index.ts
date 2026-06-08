@@ -12,19 +12,9 @@ export {
   type WriteResult,
 } from './adapter';
 export { SyncManager, type SaveResult } from './sync-manager';
-export {
-  RoadmapStore,
-  type LatestMeasurementsResult,
-  type AddMeasurementResult,
-  type CorrectMeasurementResult,
-  type BulkSaveResult,
-  type BulkLabValuesResult,
-  type ApiReminderPreference,
-  type ApiSupplement,
-  type ApiDocument,
-  type ApiLabValue,
-  type ApiMedicationHistory,
-} from './roadmap-store';
+// RoadmapStore + its Api* types are imported directly from './roadmap-store' by
+// the data shim (lib/roadmap-data.ts) — not re-exported here to avoid a second
+// canonical copy of the Api* type names (api.ts owns those).
 // Thrown by SyncManager (via migrate) when the cloud file is from a newer app
 // version — surfaced here so UI can show "update the app", not a generic error.
 export { SchemaTooNewError } from '@roadmap/health-core';

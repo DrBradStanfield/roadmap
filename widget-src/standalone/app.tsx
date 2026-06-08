@@ -12,7 +12,7 @@ import { createRoot } from 'react-dom/client';
 import { HealthTool } from '../src/components/HealthTool';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initSentry } from '../src/lib/sentry';
-import { initRoadmapStore, flushRoadmapStore } from '../src/lib/roadmap-data';
+import { initRoadmapStore, flushRoadmapStoreSync } from '../src/lib/roadmap-data';
 import { LocalStorageAdapter } from '../src/storage';
 
 async function main() {
@@ -33,9 +33,15 @@ async function main() {
     </React.StrictMode>,
   );
 
-  // Persist any debounced writes before the tab closes.
+  // Persist any debounced writes before the tab goes away. visibilitychange
+  // (hidden) is the reliable signal on mobile, where beforeunload often doesn't
+  // fire; beforeunload covers desktop tab-close. Both are best-effort flushes on
+  // top of the in-session debounce.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushRoadmapStoreSync();
+  });
   window.addEventListener('beforeunload', () => {
-    void flushRoadmapStore();
+    flushRoadmapStoreSync();
   });
 }
 

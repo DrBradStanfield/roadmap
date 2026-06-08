@@ -21,6 +21,8 @@
  */
 import {
   createMeasurement,
+  dayOf,
+  diffInputsToMeasurements,
   encodeSex,
   encodeUnitSystem,
   measurementsToInputs,
@@ -132,9 +134,6 @@ function snakeToCamel(key: string): string {
 }
 const NUMERIC_SCREENING_KEYS = new Set(['lung_pack_years', 'prostate_psa_value']);
 
-function dayOf(iso: string): string {
-  return iso.slice(0, 10);
-}
 function newId(): string {
   return crypto.randomUUID();
 }
@@ -149,7 +148,12 @@ export class RoadmapStore {
   private dirtyDuringPersist = false;
   private readonly deviceId: string;
 
-  private constructor(private readonly sync: SyncManager, file: RoadmapFile, deviceId: string) {
+  private constructor(
+    private readonly sync: SyncManager,
+    private readonly adapter: StorageAdapter,
+    file: RoadmapFile,
+    deviceId: string,
+  ) {
     this.file = file;
     this.deviceId = deviceId;
   }
@@ -159,7 +163,7 @@ export class RoadmapStore {
     const deviceId = getDeviceId();
     const sync = new SyncManager(adapter, deviceId);
     const file = await sync.load();
-    return new RoadmapStore(sync, file, deviceId);
+    return new RoadmapStore(sync, adapter, file, deviceId);
   }
 
   get backendId() {
@@ -202,19 +206,11 @@ export class RoadmapStore {
   }
 
   loadMedicationHistory(): ApiMedicationHistory[] {
-    // Lightweight annotations from the append-only snapshots (see header note).
-    return this.file.medicationHistory.map((m) => ({
-      id: m.id,
-      medicationKey: m.medicationKey,
-      drugName: m.drugName,
-      doseValue: m.doseValue,
-      doseUnit: m.doseUnit,
-      status: 'active',
-      effectiveStart: m.updatedAt,
-      effectiveEnd: null,
-      changeType: 'changed',
-      source: 'manual',
-    }));
+    // Phase 1: no medication-change chart annotations. The chart reads
+    // `changeType` (started/changed/stopped), which the append-only log doesn't
+    // record at write time — fabricating it mislabels stops. Proper med-history
+    // (changeType recorded on each change) is a later phase. Empty = no pins.
+    return [];
   }
 
   loadLabValues(): ApiLabValue[] {
@@ -275,17 +271,9 @@ export class RoadmapStore {
 
   saveChangedMeasurements(current: Partial<HealthInputs>, previous: Partial<HealthInputs>): boolean {
     this.applyProfileChanges(current, previous);
-    const fieldToMetric: Array<[keyof HealthInputs, string]> = [
-      ['weightKg', 'weight'], ['waistCm', 'waist'], ['hba1c', 'hba1c'], ['ldlC', 'ldl'],
-      ['totalCholesterol', 'total_cholesterol'], ['hdlC', 'hdl'], ['triglycerides', 'triglycerides'],
-      ['systolicBp', 'systolic_bp'], ['diastolicBp', 'diastolic_bp'], ['apoB', 'apob'],
-      ['creatinine', 'creatinine'], ['psa', 'psa'], ['lpa', 'lpa'],
-    ];
-    for (const [field, metric] of fieldToMetric) {
-      const cur = current[field];
-      if (cur !== undefined && cur !== previous[field]) {
-        this.addMeasurement(metric, cur as number);
-      }
+    // diffInputsToMeasurements (health-core) owns the field→metric map + change detection.
+    for (const { metricType, value } of diffInputsToMeasurements(current, previous)) {
+      this.addMeasurement(metricType, value);
     }
     return true;
   }
@@ -294,10 +282,6 @@ export class RoadmapStore {
     this.upsertByKey(this.file.medications, 'medicationKey', medicationKey, () => ({
       id: newId(), medicationKey, drugName, doseValue, doseUnit,
     }), (existing) => { existing.drugName = drugName; existing.doseValue = doseValue; existing.doseUnit = doseUnit; });
-    // append a snapshot for chart annotations
-    this.file.medicationHistory.push({
-      id: newId(), medicationKey, drugName, doseValue, doseUnit, updatedAt: new Date().toISOString(),
-    });
     this.touch();
     return true;
   }
@@ -345,11 +329,12 @@ export class RoadmapStore {
   bulkSaveMeasurements(measurements: Array<{ metricType: string; value: number; recordedAt: string; source: MeasurementSource }>): BulkSaveResult {
     const saved: ApiMeasurement[] = [];
     let skippedDuplicates = 0;
+    // One Set of taken (metric, day) slots → O(N+M), and intra-batch dedup too.
+    const taken = new Set(activeOnly(this.file.measurements).map((m) => `${m.metricType}@${dayOf(m.recordedAt)}`));
     for (const m of measurements) {
-      const exists = activeOnly(this.file.measurements).some(
-        (x) => x.metricType === m.metricType && dayOf(x.recordedAt) === dayOf(m.recordedAt),
-      );
-      if (exists) { skippedDuplicates++; continue; }
+      const slot = `${m.metricType}@${dayOf(m.recordedAt)}`;
+      if (taken.has(slot)) { skippedDuplicates++; continue; }
+      taken.add(slot);
       const row = createMeasurement({
         id: newId(), metricType: m.metricType, value: m.value,
         recordedAt: m.recordedAt, createdAt: new Date().toISOString(), source: m.source,
@@ -364,11 +349,11 @@ export class RoadmapStore {
   bulkSaveLabValues(values: Array<{ metricName: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string; source?: string }>): BulkLabValuesResult {
     const saved: ApiLabValue[] = [];
     let skippedDuplicates = 0;
+    const taken = new Set(activeOnly(this.file.labValues).map((l) => `${l.metricName}@${dayOf(l.recordedAt)}`));
     for (const v of values) {
-      const exists = activeOnly(this.file.labValues).some(
-        (x) => x.metricName === v.metricName && dayOf(x.recordedAt) === dayOf(v.recordedAt),
-      );
-      if (exists) { skippedDuplicates++; continue; }
+      const slot = `${v.metricName}@${dayOf(v.recordedAt)}`;
+      if (taken.has(slot)) { skippedDuplicates++; continue; }
+      taken.add(slot);
       const row: FileLabValue = {
         id: newId(), metricName: v.metricName, value: v.value, unit: v.unit,
         referenceLow: v.referenceLow ?? null, referenceHigh: v.referenceHigh ?? null,
@@ -419,13 +404,28 @@ export class RoadmapStore {
     }
   }
 
-  /** Force-persist any pending changes (call on beforeunload / before navigation). */
+  /** Force-persist any pending changes (call before navigation). */
   async flush(): Promise<void> {
     if (this.persistTimer) {
       clearTimeout(this.persistTimer);
       this.persistTimer = null;
     }
     await this.persist();
+  }
+
+  /**
+   * Synchronous last-ditch persist for tab-close / visibilitychange, where an
+   * async flush may not finish (esp. mobile). Uses the adapter's synchronous
+   * write when available (local tier); cloud backends fall back to a best-effort
+   * async flush (network can't be synchronous).
+   */
+  flushSync(): void {
+    if (this.persistTimer) {
+      clearTimeout(this.persistTimer);
+      this.persistTimer = null;
+    }
+    if (this.adapter.writeSync) this.adapter.writeSync(this.file);
+    else void this.persist();
   }
 
   // =================================================================== private
