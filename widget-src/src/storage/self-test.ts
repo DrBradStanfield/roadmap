@@ -10,6 +10,7 @@
  */
 import {
   createEmptyFile,
+  createMeasurement,
   type FileMeasurement,
   type FileMedication,
   type RoadmapFile,
@@ -32,17 +33,7 @@ function tick(): string {
 }
 
 function measurement(id: string, metricType: string, value: number, day: string): FileMeasurement {
-  return {
-    id,
-    metricType,
-    value,
-    recordedAt: day,
-    createdAt: `${day}T08:00:00Z`,
-    source: 'manual',
-    status: 'active',
-    correctsId: null,
-    externalId: null,
-  };
+  return createMeasurement({ id, metricType, value, recordedAt: day, createdAt: `${day}T08:00:00Z` });
 }
 
 function emptyFor(deviceId: string): RoadmapFile {

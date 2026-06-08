@@ -221,6 +221,7 @@ export {
 export {
   CURRENT_SCHEMA_VERSION,
   createEmptyFile,
+  createMeasurement,
   stableStringify,
   type RoadmapFile,
   type RoadmapFileMeta,

@@ -172,6 +172,25 @@ export function createEmptyFile(opts: { deviceId: string; now: string }): Roadma
 }
 
 /**
+ * Build a FileMeasurement row with the standard defaults (manual/active/no
+ * correction). Callers supply the identifying fields; the audit defaults are
+ * filled in. Used by the app's save path and the dev/test harnesses so the
+ * row shape lives in one place.
+ */
+export function createMeasurement(
+  fields: Pick<FileMeasurement, 'id' | 'metricType' | 'value' | 'recordedAt' | 'createdAt'> &
+    Partial<Pick<FileMeasurement, 'source' | 'status' | 'correctsId' | 'externalId'>>,
+): FileMeasurement {
+  return {
+    source: 'manual',
+    status: 'active',
+    correctsId: null,
+    externalId: null,
+    ...fields,
+  };
+}
+
+/**
  * Deterministic JSON stringify (object keys sorted recursively). Used as the
  * final, content-based tiebreak in merge so two devices converge identically.
  */

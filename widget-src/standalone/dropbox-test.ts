@@ -8,7 +8,7 @@
  * The app key is a PKCE client id — public by design (it appears in the OAuth
  * URL the user sees), so it is safe in this public repo.
  */
-import { type FileMeasurement } from '@roadmap/health-core';
+import { createMeasurement, type FileMeasurement } from '@roadmap/health-core';
 import { DropboxAdapter, getDeviceId, StorageError, SyncManager } from '../src/storage';
 
 const DROPBOX_APP_KEY = 'xf96vqvjotm5xhx';
@@ -67,17 +67,13 @@ export async function initDropboxTest(els: Els): Promise<void> {
       const sync = new SyncManager(adapter, getDeviceId());
       const before = await sync.load();
       const beforeActive = countActive(before.measurements);
-      const measurement: FileMeasurement = {
+      const measurement = createMeasurement({
         id: `dbx_test_${before.meta.lamport + 1}`,
         metricType: 'ldl',
         value: 2.1,
         recordedAt: new Date().toISOString().slice(0, 10),
         createdAt: new Date().toISOString(),
-        source: 'manual',
-        status: 'active',
-        correctsId: null,
-        externalId: null,
-      };
+      });
       before.measurements.push(measurement);
       const saved = await sync.save(before);
       const reloaded = await sync.load();

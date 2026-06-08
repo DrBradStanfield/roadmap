@@ -50,9 +50,14 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   async write(file: RoadmapFile, expectedVersion: string | null): Promise<WriteResult> {
+    // `?? '0'` is defensive: localStorage is externally mutable, so tolerate a
+    // present file with a missing version key (treat it as version 0).
     const current = safeGetItem(FILE_KEY) == null ? null : safeGetItem(VERSION_KEY) ?? '0';
     if (expectedVersion !== current) {
-      // Another tab wrote in between — let SyncManager re-read & re-merge.
+      // Best-effort multi-tab guard: catches a tab that wrote in between, on its
+      // next save. This is NOT a true cross-tab compare-and-swap (localStorage
+      // has none) — full cross-tab coordination (storage events) is deferred;
+      // this is the single-device tier. SyncManager re-reads & re-merges.
       throw new ConflictError(`expected version ${expectedVersion}, but local is ${current}`);
     }
     const next = String((Number(current) || 0) + 1);
