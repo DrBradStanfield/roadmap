@@ -1,7 +1,13 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import { z } from 'zod';
 import { createRateLimiter } from '../lib/rate-limiter';
-import { getClientIp } from '../lib/route-helpers.server';
+
+/** First hop of x-forwarded-for (Fly sets it). Local copy — importing
+ *  route-helpers.server would drag in the Shopify session stack, and this
+ *  route is deliberately decoupled from all of that. */
+function getClientIp(request: Request): string {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+}
 
 /**
  * Stateless Google OAuth token exchange for the local-first Drive backend
