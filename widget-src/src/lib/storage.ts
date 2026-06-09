@@ -174,6 +174,22 @@ export function safeRemoveItem(key: string): void {
   try { localStorage.removeItem(key); } catch {}
 }
 
+/** Read + JSON-parse a localStorage value; null if absent or corrupt. */
+export function getJson<T>(key: string): T | null {
+  const raw = safeGetItem(key);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+/** JSON-stringify + write a localStorage value. */
+export function setJson(key: string, value: unknown): void {
+  safeSetItem(key, JSON.stringify(value));
+}
+
 
 /** Assemble guest health inputs from localStorage for chat context. Returns null if no data. */
 export function loadGuestInputs(): Record<string, unknown> | null {

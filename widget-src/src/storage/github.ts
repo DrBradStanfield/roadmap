@@ -23,12 +23,12 @@ import {
   type StorageAdapter,
   type WriteResult,
 } from './adapter';
-import { safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { getJson, setJson, safeRemoveItem } from '../lib/storage';
+import { bytesToBase64, base64ToBytes } from '../lib/base64';
 
 const CONFIG_KEY = 'health_roadmap_github';
 const FILE_PATH = 'health-roadmap.json';
 const API = 'https://api.github.com';
-const CHUNK = 0x8000; // 32 KB — keep String.fromCharCode arg lists small
 
 export interface GitHubConfig {
   /** Fine-grained PAT, scoped to one repo, Contents read+write. Stored locally only. */
@@ -38,30 +38,7 @@ export interface GitHubConfig {
 }
 
 function loadConfig(): GitHubConfig | null {
-  const raw = safeGetItem(CONFIG_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as GitHubConfig;
-  } catch {
-    return null; // corrupt — treat as not connected
-  }
-}
-
-/** UTF-8 → base64 (the Contents API takes base64), chunked to avoid overflow. */
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-  }
-  return btoa(binary);
-}
-
-/** base64 (possibly newline-wrapped, as GitHub returns) → bytes. */
-function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
-  const binary = atob(b64.replace(/\n/g, ''));
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  return bytes;
+  return getJson<GitHubConfig>(CONFIG_KEY);
 }
 
 export class GitHubAdapter implements StorageAdapter {
@@ -98,7 +75,7 @@ export class GitHubAdapter implements StorageAdapter {
     if (!res.ok) {
       throw new StorageError(`GitHub connect failed (${res.status}): ${await res.text()}`);
     }
-    safeSetItem(CONFIG_KEY, JSON.stringify(this.config));
+    setJson(CONFIG_KEY, this.config);
   }
 
   async disconnect(): Promise<void> {
@@ -155,20 +132,21 @@ export class GitHubAdapter implements StorageAdapter {
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
-    // Contents API needs the existing sha to overwrite; fetch it if present.
-    let sha: string | undefined;
-    const head = await fetch(this.contentsUrl(ref), { headers: this.headers() });
-    if (head.ok) sha = ((await head.json()) as { sha?: string }).sha;
-    const body: Record<string, unknown> = {
-      message: `Update ${ref}`,
-      content: bytesToBase64(new Uint8Array(await bytes.arrayBuffer())),
-    };
-    if (sha) body.sha = sha;
-    const res = await fetch(this.contentsUrl(ref), {
-      method: 'PUT',
-      headers: this.headers(),
-      body: JSON.stringify(body),
-    });
+    const content = bytesToBase64(new Uint8Array(await bytes.arrayBuffer()));
+    const put = (sha?: string): Promise<Response> =>
+      fetch(this.contentsUrl(ref), {
+        method: 'PUT',
+        headers: this.headers(),
+        body: JSON.stringify(sha ? { message: `Update ${ref}`, content, sha } : { message: `Update ${ref}`, content }),
+      });
+    // Documents use write-once ids, so the create usually succeeds without a
+    // sha; only on an overwrite conflict do we fetch the sha and retry once.
+    let res = await put();
+    if (res.status === 409 || res.status === 422) {
+      const head = await fetch(this.contentsUrl(ref), { headers: this.headers() });
+      const sha = head.ok ? ((await head.json()) as { sha?: string }).sha : undefined;
+      res = await put(sha);
+    }
     if (!res.ok) throw new StorageError(`GitHub document write failed (${res.status}): ${ref}`);
   }
 

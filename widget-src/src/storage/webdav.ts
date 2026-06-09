@@ -24,7 +24,8 @@ import {
   type StorageAdapter,
   type WriteResult,
 } from './adapter';
-import { safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
+import { getJson, setJson, safeRemoveItem } from '../lib/storage';
+import { bytesToBase64 } from '../lib/base64';
 
 const CONFIG_KEY = 'health_roadmap_selfhost';
 const FILE = 'health-roadmap.json';
@@ -37,21 +38,12 @@ export interface WebDavConfig {
 }
 
 function loadConfig(): WebDavConfig | null {
-  const raw = safeGetItem(CONFIG_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as WebDavConfig;
-  } catch {
-    return null;
-  }
+  return getJson<WebDavConfig>(CONFIG_KEY);
 }
 
 /** UTF-8-safe Basic credential (handles non-ASCII passwords). */
 function basicAuth(username: string, password: string): string {
-  const bytes = new TextEncoder().encode(`${username}:${password}`);
-  let binary = '';
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return `Basic ${btoa(binary)}`;
+  return `Basic ${bytesToBase64(new TextEncoder().encode(`${username}:${password}`))}`;
 }
 
 export class WebDavAdapter implements StorageAdapter {
@@ -82,7 +74,7 @@ export class WebDavAdapter implements StorageAdapter {
     if (!res.ok && res.status !== 207) {
       throw new StorageError(`Self-host connect failed (${res.status}). Check the URL and the server's CORS settings.`);
     }
-    safeSetItem(CONFIG_KEY, JSON.stringify(this.config));
+    setJson(CONFIG_KEY, this.config);
   }
 
   async disconnect(): Promise<void> {
