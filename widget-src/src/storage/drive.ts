@@ -46,7 +46,9 @@ const PKCE_KEY = 'health_roadmap_gdrive_pkce';
 const AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const FILE_NAME = 'health-roadmap.json';
 /** Everything the app creates lives in this folder (parity with Dropbox's app folder). */
-const FOLDER_NAME = 'Health Roadmap by Dr Brad';
+const FOLDER_NAME = 'Health Plan by Dr Brad';
+/** Pre-rename folder name (brand moved off "roadmap", 2026-06-10) — found folders are renamed in place. */
+const LEGACY_FOLDER_NAME = 'Health Roadmap by Dr Brad';
 const FOLDER_MIME = 'application/vnd.google-apps.folder';
 const DRIVE = 'https://www.googleapis.com/drive/v3';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
@@ -353,12 +355,23 @@ export class GoogleDriveAdapter implements StorageAdapter {
   /** Find-or-create the app folder; records its id (the "folder done" marker). */
   private async ensureFolderId(): Promise<string> {
     if (this.stored?.folderId) return this.stored.folderId;
-    const q = encodeURIComponent(`name='${FOLDER_NAME}' and mimeType='${FOLDER_MIME}' and trashed=false`);
-    const found = await fetch(`${DRIVE}/files?q=${q}&fields=files(id)&pageSize=1`, {
+    const q = encodeURIComponent(
+      `(name='${FOLDER_NAME}' or name='${LEGACY_FOLDER_NAME}') and mimeType='${FOLDER_MIME}' and trashed=false`,
+    );
+    const found = await fetch(`${DRIVE}/files?q=${q}&fields=files(id,name)&pageSize=1`, {
       headers: await this.authHeaders(),
     });
     if (!found.ok) throw new StorageError(`Google Drive folder lookup failed (${found.status})`);
-    let id = ((await found.json()) as { files?: Array<{ id: string }> }).files?.[0]?.id;
+    const hit = ((await found.json()) as { files?: Array<{ id: string; name: string }> }).files?.[0];
+    let id = hit?.id;
+    if (hit && hit.name !== FOLDER_NAME) {
+      // Legacy-named folder — rename in place (cosmetic; ignore failures).
+      await fetch(`${DRIVE}/files/${hit.id}`, {
+        method: 'PATCH',
+        headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: FOLDER_NAME }),
+      }).catch(() => undefined);
+    }
     if (!id) {
       const created = await fetch(`${DRIVE}/files?fields=id`, {
         method: 'POST',

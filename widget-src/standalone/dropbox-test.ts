@@ -84,7 +84,7 @@ export async function initDropboxTest(els: Els): Promise<void> {
         `dropbox rev: ${saved.version}`,
         `active measurements: ${beforeActive} → ${countActive(reloaded.measurements)}`,
         `schema v${reloaded.schemaVersion} · lamport ${reloaded.meta.lamport}`,
-        'file: /Apps/Health Roadmap by Dr Brad/health-roadmap.json',
+        'file: /Apps/Health Plan by Dr Brad/health-roadmap.json',
       ].join('\n');
     } catch (error) {
       const message = error instanceof StorageError ? error.message : (error as Error).message;
