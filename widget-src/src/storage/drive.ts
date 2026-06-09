@@ -32,6 +32,7 @@ export interface GoogleDriveConfig {
 }
 
 const CONFIG_KEY = 'health_roadmap_gdrive';
+const TOKEN_KEY = 'health_roadmap_gdrive_token'; // sessionStorage: survives reloads, dies with the tab
 const FILE_NAME = 'health-roadmap.json';
 const DRIVE = 'https://www.googleapis.com/drive/v3';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
@@ -106,10 +107,30 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   constructor(private readonly config: GoogleDriveConfig) {
     this.stored = getJson<Stored>(CONFIG_KEY);
+    // Google grants no refresh token, so cache the ~1h access token in
+    // sessionStorage — otherwise every reload would need a popup, which the
+    // browser blocks at page load (no user gesture).
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(TOKEN_KEY) || 'null') as {
+        token: string;
+        expiry: number;
+      } | null;
+      if (cached) {
+        this.token = cached.token;
+        this.tokenExpiry = cached.expiry;
+      }
+    } catch {
+      /* ignore corrupt cache */
+    }
   }
 
   isConnected(): boolean {
     return this.stored?.connected === true;
+  }
+
+  /** True if the cached access token is still usable (no popup needed). */
+  hasValidToken(): boolean {
+    return !!this.token && Date.now() < this.tokenExpiry - 60_000;
   }
 
   /** Interactive connect: GIS consent popup + an access token, then persist. */
@@ -120,16 +141,15 @@ export class GoogleDriveAdapter implements StorageAdapter {
     setJson(CONFIG_KEY, this.stored);
   }
 
-  /** Silent re-grant on reload (no popup); throws if interaction would be needed. */
-  async reconnect(): Promise<void> {
-    if (!this.isConnected()) throw new StorageError('Google Drive is not connected.');
-    await this.acquireToken(false);
-  }
-
   async disconnect(): Promise<void> {
     this.stored = null;
     this.token = null;
     safeRemoveItem(CONFIG_KEY);
+    try {
+      sessionStorage.removeItem(TOKEN_KEY);
+    } catch {
+      /* ignore */
+    }
   }
 
   // --- file ops -------------------------------------------------------------
@@ -263,6 +283,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
               }
               this.token = r.access_token;
               this.tokenExpiry = Date.now() + (r.expires_in ?? 3600) * 1000;
+              try {
+                sessionStorage.setItem(TOKEN_KEY, JSON.stringify({ token: this.token, expiry: this.tokenExpiry }));
+              } catch {
+                /* session cache unavailable — popup will be needed after reload */
+              }
               resolve(r.access_token);
             },
             error_callback: () => reject(new StorageError('Google Drive sign-in was cancelled or blocked.')),

@@ -27,7 +27,16 @@ import { googleDriveConfig } from './google-config';
 import { SyncControl } from './sync-control';
 import { migrateLocalInto, BACKEND_KEY, type Backend } from './connect';
 
-async function resolveBackend(): Promise<{ adapter: StorageAdapter; backend: Backend }> {
+interface ResolvedBackend {
+  adapter: StorageAdapter;
+  backend: Backend;
+  /** Google Drive is the remembered backend but its ~1h token is gone — the
+   * session runs on-device until the user clicks Reconnect (popups need a
+   * user gesture, so we can't re-auth at page load). */
+  reconnect?: 'google-drive';
+}
+
+async function resolveBackend(): Promise<ResolvedBackend> {
   // Returning from a Dropbox OAuth redirect?
   let resumed: DropboxAdapter | null = null;
   try {
@@ -56,12 +65,12 @@ async function resolveBackend(): Promise<{ adapter: StorageAdapter; backend: Bac
   } else if (remembered === 'google-drive') {
     const gd = new GoogleDriveAdapter(googleDriveConfig());
     if (gd.isConnected()) {
-      try {
-        await gd.reconnect(); // silent token re-grant; throws on Safari/ITP / expired session
-        return { adapter: gd, backend: 'google-drive' };
-      } catch {
-        /* silent re-grant blocked → fall through to local; the user re-connects */
-      }
+      // Same-tab reload within ~1h: the sessionStorage token still works.
+      if (gd.hasValidToken()) return { adapter: gd, backend: 'google-drive' };
+      // Token gone (new tab / expired). A popup can't open at page load, so run
+      // this session on-device and offer a Reconnect button. KEEP the remembered
+      // choice — local edits merge up on reconnect (finishFormConnect migrates).
+      return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect: 'google-drive' };
     }
   }
   if (remembered) localStorage.removeItem(BACKEND_KEY); // creds gone → fall back, will re-prompt
@@ -71,7 +80,7 @@ async function resolveBackend(): Promise<{ adapter: StorageAdapter; backend: Bac
 
 async function main() {
   initSentry();
-  const { adapter, backend } = await resolveBackend();
+  const { adapter, backend, reconnect } = await resolveBackend();
   await initRoadmapStore(adapter);
 
   const container = document.getElementById('health-tool-root');
@@ -84,7 +93,7 @@ async function main() {
   createRoot(container).render(
     <React.StrictMode>
       <ErrorBoundary>
-        <HealthTool syncControl={<SyncControl backend={backend} />} />
+        <HealthTool syncControl={<SyncControl backend={backend} reconnect={reconnect} />} />
       </ErrorBoundary>
     </React.StrictMode>,
   );

@@ -46,7 +46,7 @@ function adapterFor(backend: Backend): StorageAdapter | null {
   }
 }
 
-export function SyncControl({ backend }: { backend: Backend }) {
+export function SyncControl({ backend, reconnect }: { backend: Backend; reconnect?: 'google-drive' }) {
   const [openForm, setOpenForm] = useState<'github' | 'webdav' | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +90,36 @@ export function SyncControl({ backend }: { backend: Backend }) {
         <span className="hr-sync-status">✓ Synced to {LABELS[backend]}</span>
         <button className="hr-sync-link" onClick={() => void disconnect()}>Use this device only</button>
         <span className="hr-sync-detail">Your data lives only in {LABELS[backend]} — never on our servers.</span>
+      </div>
+    );
+  }
+
+  // Forget the pending Google Drive connection (no copy-down needed — this
+  // session is already running on the device copy; the Drive file stays put).
+  const forgetDrive = async (): Promise<void> => {
+    await new GoogleDriveAdapter(googleDriveConfig()).disconnect();
+    localStorage.removeItem(BACKEND_KEY);
+    location.reload();
+  };
+
+  // Google Drive is remembered but its short-lived token is gone (new tab /
+  // >1h). Re-auth needs a user click (browsers block popups at page load).
+  if (reconnect === 'google-drive') {
+    return (
+      <div className="hr-sync hr-sync-local">
+        <span className="hr-sync-status">Google Drive — signed out</span>
+        <button className="hr-sync-btn" disabled={busy}
+          onClick={() => void submit(new GoogleDriveAdapter(googleDriveConfig()), 'google-drive')}>
+          {busy ? 'Reconnecting…' : 'Reconnect Google Drive'}
+        </button>
+        <span className="hr-sync-detail">
+          Your data is safe in your Google Drive. Sign in again to keep syncing — anything you change
+          meanwhile is saved on this device and merges when you reconnect.
+        </span>
+        <div className="hr-sync-more">
+          <button type="button" className="hr-sync-link" onClick={() => void forgetDrive()}>Use this device only</button>
+        </div>
+        {error && <span className="hr-sync-error">{error}</span>}
       </div>
     );
   }
