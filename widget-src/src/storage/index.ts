@@ -21,5 +21,6 @@ export { SchemaTooNewError } from '@roadmap/health-core';
 export { MemoryAdapter, MemoryCloud } from './memory-adapter';
 export { LocalStorageAdapter } from './local-storage-adapter';
 export { DropboxAdapter, type DropboxConfig } from './dropbox';
+export { GitHubAdapter, type GitHubConfig } from './github';
 export { getDeviceId } from './device-id';
 export { runStorageSelfTest, type SelfTestResult } from './self-test';
