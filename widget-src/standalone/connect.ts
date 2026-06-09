@@ -9,7 +9,7 @@ import { migrateFile } from '@roadmap/health-core';
 import { LocalStorageAdapter, SyncManager, getDeviceId, type StorageAdapter } from '../src/storage';
 
 /** Which backend the app is currently using (a UI-level subset of StorageBackendId). */
-export type Backend = 'dropbox' | 'github' | 'self-host' | 'local';
+export type Backend = 'dropbox' | 'google-drive' | 'github' | 'self-host' | 'local';
 
 export const BACKEND_KEY = 'health_roadmap_backend';
 

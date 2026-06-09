@@ -11,6 +11,7 @@
 import React, { useState } from 'react';
 import {
   DropboxAdapter,
+  GoogleDriveAdapter,
   GitHubAdapter,
   WebDavAdapter,
   LocalStorageAdapter,
@@ -19,10 +20,12 @@ import {
   type StorageAdapter,
 } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
+import { googleDriveConfig } from './google-config';
 import { BACKEND_KEY, finishFormConnect, type Backend } from './connect';
 
 const LABELS: Record<Exclude<Backend, 'local'>, string> = {
   dropbox: 'Dropbox',
+  'google-drive': 'Google Drive',
   github: 'GitHub',
   'self-host': 'your own server',
 };
@@ -32,6 +35,8 @@ function adapterFor(backend: Backend): StorageAdapter | null {
   switch (backend) {
     case 'dropbox':
       return new DropboxAdapter(dropboxConfig());
+    case 'google-drive':
+      return new GoogleDriveAdapter(googleDriveConfig());
     case 'github':
       return new GitHubAdapter();
     case 'self-host':
@@ -100,6 +105,10 @@ export function SyncControl({ backend }: { backend: Backend }) {
           <button type="button" className="hr-sync-link" onClick={() => setOpenForm('github')}>More ways to sync ▾</button>
         ) : (
           <div className="hr-sync-forms">
+            <button className="hr-sync-btn" disabled={busy}
+              onClick={() => void submit(new GoogleDriveAdapter(googleDriveConfig()), 'google-drive')}>
+              {busy ? 'Connecting…' : 'Connect Google Drive'}
+            </button>
             <div className="hr-sync-tabs">
               <button type="button" className={openForm === 'github' ? 'on' : ''} onClick={() => { setOpenForm('github'); setError(null); }}>GitHub</button>
               <button type="button" className={openForm === 'webdav' ? 'on' : ''} onClick={() => { setOpenForm('webdav'); setError(null); }}>Self-host (WebDAV)</button>

@@ -16,12 +16,14 @@ import { initSentry } from '../src/lib/sentry';
 import { initRoadmapStore, flushRoadmapStoreSync } from '../src/lib/roadmap-data';
 import {
   DropboxAdapter,
+  GoogleDriveAdapter,
   GitHubAdapter,
   WebDavAdapter,
   LocalStorageAdapter,
   type StorageAdapter,
 } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
+import { googleDriveConfig } from './google-config';
 import { SyncControl } from './sync-control';
 import { migrateLocalInto, BACKEND_KEY, type Backend } from './connect';
 
@@ -51,6 +53,16 @@ async function resolveBackend(): Promise<{ adapter: StorageAdapter; backend: Bac
   } else if (remembered === 'self-host') {
     const wd = new WebDavAdapter();
     if (wd.isConnected()) return { adapter: wd, backend: 'self-host' };
+  } else if (remembered === 'google-drive') {
+    const gd = new GoogleDriveAdapter(googleDriveConfig());
+    if (gd.isConnected()) {
+      try {
+        await gd.reconnect(); // silent token re-grant; throws on Safari/ITP / expired session
+        return { adapter: gd, backend: 'google-drive' };
+      } catch {
+        /* silent re-grant blocked → fall through to local; the user re-connects */
+      }
+    }
   }
   if (remembered) localStorage.removeItem(BACKEND_KEY); // creds gone → fall back, will re-prompt
 

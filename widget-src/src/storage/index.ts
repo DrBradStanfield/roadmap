@@ -23,5 +23,6 @@ export { LocalStorageAdapter } from './local-storage-adapter';
 export { DropboxAdapter, type DropboxConfig } from './dropbox';
 export { GitHubAdapter, type GitHubConfig } from './github';
 export { WebDavAdapter, type WebDavConfig } from './webdav';
+export { GoogleDriveAdapter, type GoogleDriveConfig } from './drive';
 export { getDeviceId } from './device-id';
 export { runStorageSelfTest, type SelfTestResult } from './self-test';
