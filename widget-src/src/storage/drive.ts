@@ -45,12 +45,17 @@ const TOKENS_KEY = 'health_roadmap_gdrive_tokens';
 const PKCE_KEY = 'health_roadmap_gdrive_pkce';
 const AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const FILE_NAME = 'health-roadmap.json';
+/** Everything the app creates lives in this folder (parity with Dropbox's app folder). */
+const FOLDER_NAME = 'Health Roadmap by Dr Brad';
+const FOLDER_MIME = 'application/vnd.google-apps.folder';
 const DRIVE = 'https://www.googleapis.com/drive/v3';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 
 /** Presence of this object IS the "connected" flag. */
 interface Stored {
   fileId?: string;
+  /** Recorded once the app folder exists & the record file lives inside it. */
+  folderId?: string;
 }
 
 interface DriveTokens {
@@ -261,6 +266,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const fileId = this.stored?.fileId ?? (await this.findFileId());
     if (!fileId) return { file: null, version: null };
     this.rememberFileId(fileId);
+    await this.ensureInFolderOnce(fileId); // one-time: adopt pre-folder files into the app folder
     const res = await fetch(`${DRIVE}/files/${fileId}?alt=media`, { headers: await this.authHeaders() });
     if (res.status === 404) return { file: null, version: null };
     if (!res.ok) throw new StorageError(`Google Drive read failed (${res.status}): ${await res.text()}`);
@@ -340,15 +346,61 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   private rememberFileId(fileId: string): void {
     if (this.stored?.fileId === fileId) return;
-    this.stored = { fileId };
+    this.stored = { ...(this.stored ?? {}), fileId };
     setJson(CONFIG_KEY, this.stored);
   }
 
-  /** Create a new Drive file (metadata + content in one multipart POST). */
+  /** Find-or-create the app folder; records its id (the "folder done" marker). */
+  private async ensureFolderId(): Promise<string> {
+    if (this.stored?.folderId) return this.stored.folderId;
+    const q = encodeURIComponent(`name='${FOLDER_NAME}' and mimeType='${FOLDER_MIME}' and trashed=false`);
+    const found = await fetch(`${DRIVE}/files?q=${q}&fields=files(id)&pageSize=1`, {
+      headers: await this.authHeaders(),
+    });
+    if (!found.ok) throw new StorageError(`Google Drive folder lookup failed (${found.status})`);
+    let id = ((await found.json()) as { files?: Array<{ id: string }> }).files?.[0]?.id;
+    if (!id) {
+      const created = await fetch(`${DRIVE}/files?fields=id`, {
+        method: 'POST',
+        headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: FOLDER_NAME, mimeType: FOLDER_MIME }),
+      });
+      if (!created.ok) throw new StorageError(`Google Drive folder create failed (${created.status})`);
+      id = ((await created.json()) as { id: string }).id;
+    }
+    this.stored = { ...(this.stored ?? {}), folderId: id };
+    setJson(CONFIG_KEY, this.stored);
+    return id;
+  }
+
+  /**
+   * One-time migration: files created before the app folder existed (at the
+   * Drive root) are moved into it. No-op once folderId is recorded; cosmetic,
+   * so failures never block sync.
+   */
+  private async ensureInFolderOnce(fileId: string): Promise<void> {
+    if (this.stored?.folderId) return;
+    try {
+      const folderId = await this.ensureFolderId();
+      const meta = await fetch(`${DRIVE}/files/${fileId}?fields=parents`, { headers: await this.authHeaders() });
+      if (!meta.ok) return;
+      const parents = ((await meta.json()) as { parents?: string[] }).parents ?? [];
+      if (parents.includes(folderId)) return;
+      await fetch(`${DRIVE}/files/${fileId}?addParents=${folderId}&removeParents=${parents.join(',')}`, {
+        method: 'PATCH',
+        headers: await this.authHeaders(),
+      });
+    } catch {
+      /* cosmetic — never block sync on the move */
+    }
+  }
+
+  /** Create a new Drive file inside the app folder (metadata + content, one multipart POST). */
   private async createMultipart(name: string, contentType: string, content: Blob | string): Promise<Response> {
+    const metadata = { name, parents: [await this.ensureFolderId()] };
     const boundary = 'rm_boundary_health_roadmap';
     const body = new Blob([
-      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name })}\r\n--${boundary}\r\nContent-Type: ${contentType}\r\n\r\n`,
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: ${contentType}\r\n\r\n`,
       content,
       `\r\n--${boundary}--`,
     ]);
