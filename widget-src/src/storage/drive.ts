@@ -1,21 +1,25 @@
 /**
- * Google Drive storage adapter — the consumer cloud backend (impl plan §4.1).
+ * Google Drive storage adapter — the consumer cloud backend (impl plan §4.1,
+ * decision record §14).
  *
- * Auth: the Google Identity Services (GIS) TOKEN model — a popup that returns a
- * short-lived (~1h) access token and NO refresh token (browser-only; Safari/ITP
- * may force a re-consent on reload). This differs from Dropbox (genuine
- * client-side refresh) and from the pasted-credential backends. The GIS script is
- * loaded in standalone/index.html.
+ * AUTH (hybrid — Brad's call, 2026-06-10):
+ *  - PRIMARY: authorization-code flow via a full-page redirect (same UX as
+ *    Dropbox). The code/refresh exchange happens on Brad's STATELESS endpoint
+ *    (api.google-token.ts) because Google only grants refresh tokens when the
+ *    client secret is presented — and a secret can never ship in browser JS.
+ *    The endpoint stores nothing; the refresh token lives HERE, in the user's
+ *    browser (same posture as Dropbox's). Result: connect once, stay connected.
+ *  - FALLBACK: if the endpoint is unreachable (server down / gone dark), a GIS
+ *    popup on a user gesture mints a ~1 h access token and sync continues
+ *    serverless (connectViaPopup, used by the Reconnect button).
  *
- * SCOPING: drive.file — the app sees ONLY files it created itself, never the rest
- * of the user's Drive. The record lives as a Drive file named
- * `health-roadmap.json`; its fileId is discovered by name (drive.file makes only
- * the app's own files visible to the query).
+ * SCOPING: drive.file — the app sees ONLY files it created (including raw lab
+ * documents later), never the rest of the user's Drive. The record lives as a
+ * Drive file named `health-roadmap.json`, discovered by name.
  *
- * CONCURRENCY: Drive v3 has no clean conditional write (no ETag/sha/rev
- * equivalent), so writes are last-write-wins. The SyncManager's read-merge-write
- * makes that safe in practice (each write merges the latest read); the file
- * `version` field is surfaced as the version token for change detection.
+ * CONCURRENCY: Drive v3 has no conditional write (no ETag/sha/rev), so writes
+ * are last-write-wins; the SyncManager's read-merge-write makes that safe. The
+ * file `version` field is surfaced for change detection.
  */
 import type { RoadmapFile } from '@roadmap/health-core';
 import {
@@ -25,14 +29,21 @@ import {
   type WriteResult,
 } from './adapter';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
+import { deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
 export interface GoogleDriveConfig {
   clientId: string;
   scope: string;
+  /** Must exactly match a redirect URI registered on the Google OAuth client. */
+  redirectUri: string;
+  /** Brad's stateless token-exchange endpoint (api.google-token.ts). */
+  exchangeUrl: string;
 }
 
 const CONFIG_KEY = 'health_roadmap_gdrive';
-const TOKEN_KEY = 'health_roadmap_gdrive_token'; // sessionStorage: survives reloads, dies with the tab
+const TOKENS_KEY = 'health_roadmap_gdrive_tokens';
+const PKCE_KEY = 'health_roadmap_gdrive_pkce';
+const AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const FILE_NAME = 'health-roadmap.json';
 const DRIVE = 'https://www.googleapis.com/drive/v3';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
@@ -42,7 +53,22 @@ interface Stored {
   fileId?: string;
 }
 
-// --- GIS (Google Identity Services) token client typing + loader -------------
+interface DriveTokens {
+  accessToken: string;
+  /** Absent when the token came from the GIS popup fallback. */
+  refreshToken?: string;
+  expiresAt: number; // epoch ms
+}
+
+/** Thrown when no token can be acquired without user interaction. */
+export class DriveReauthNeeded extends StorageError {
+  constructor(message = 'Google Drive needs to be reconnected.') {
+    super(message);
+    this.name = 'DriveReauthNeeded';
+  }
+}
+
+// --- GIS (Google Identity Services) popup fallback ---------------------------
 
 interface TokenResponse {
   access_token?: string;
@@ -68,12 +94,10 @@ function gis(): Gis | undefined {
   return (window as unknown as { google?: Gis }).google;
 }
 
-/** Wait for the GIS script (loaded async in index.html) to become ready. */
+/** Lazily inject + await the GIS script — loaded only when the fallback runs. */
 function loadGis(): Promise<void> {
   if (gis()?.accounts?.oauth2) return Promise.resolve();
   return new Promise((resolve, reject) => {
-    // Inject the GIS script lazily — only when a user actually connects Drive,
-    // so Google's script never loads for non-Drive users (privacy + no dep cost).
     if (!document.querySelector('script[src*="gsi/client"]')) {
       const s = document.createElement('script');
       s.src = 'https://accounts.google.com/gsi/client';
@@ -102,51 +126,154 @@ export class GoogleDriveAdapter implements StorageAdapter {
   readonly id = 'google-drive' as const;
   readonly label = 'Google Drive';
   private stored: Stored | null;
-  private token: string | null = null;
-  private tokenExpiry = 0;
+  private tokens: DriveTokens | null;
 
   constructor(private readonly config: GoogleDriveConfig) {
     this.stored = getJson<Stored>(CONFIG_KEY);
-    // Google grants no refresh token, so cache the ~1h access token in
-    // sessionStorage — otherwise every reload would need a popup, which the
-    // browser blocks at page load (no user gesture).
-    try {
-      const cached = JSON.parse(sessionStorage.getItem(TOKEN_KEY) || 'null') as {
-        token: string;
-        expiry: number;
-      } | null;
-      if (cached) {
-        this.token = cached.token;
-        this.tokenExpiry = cached.expiry;
-      }
-    } catch {
-      /* ignore corrupt cache */
-    }
+    this.tokens = getJson<DriveTokens>(TOKENS_KEY);
   }
 
   isConnected(): boolean {
     return this.stored?.connected === true;
   }
 
-  /** True if the cached access token is still usable (no popup needed). */
+  /** True if the cached access token is still usable as-is. */
   hasValidToken(): boolean {
-    return !!this.token && Date.now() < this.tokenExpiry - 60_000;
+    return !!this.tokens?.accessToken && Date.now() < this.tokens.expiresAt - 60_000;
   }
 
-  /** Interactive connect: GIS consent popup + an access token, then persist. */
+  /**
+   * PRIMARY connect: full-page redirect to Google (PKCE). Never resolves in
+   * this page load — the flow completes via `completeRedirect()` on return.
+   * access_type=offline + prompt=consent ⇒ Google issues a refresh token.
+   */
   async connect(): Promise<void> {
-    await this.acquireToken(true);
-    const fileId = await this.findFileId(); // discover an existing record; ok if none yet
-    this.stored = { connected: true, fileId };
-    setJson(CONFIG_KEY, this.stored);
+    const verifier = generateCodeVerifier();
+    const challenge = await deriveCodeChallenge(verifier);
+    const state = generateState();
+    try {
+      sessionStorage.setItem(PKCE_KEY, JSON.stringify({ verifier, state }));
+    } catch {
+      throw new StorageError('Cannot start Google sign-in: session storage is blocked.');
+    }
+    const url = new URL(AUTHORIZE_URL);
+    url.searchParams.set('client_id', this.config.clientId);
+    url.searchParams.set('redirect_uri', this.config.redirectUri);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('scope', this.config.scope);
+    url.searchParams.set('access_type', 'offline');
+    url.searchParams.set('prompt', 'consent');
+    url.searchParams.set('code_challenge', challenge);
+    url.searchParams.set('code_challenge_method', 'S256');
+    url.searchParams.set('state', state);
+    window.location.assign(url.toString());
+    return new Promise<void>(() => {
+      /* navigation in progress */
+    });
+  }
+
+  /**
+   * Call once on page load. If the URL carries an OAuth code from OUR flow
+   * (matched via this adapter's own PKCE session entry), exchanges it on the
+   * stateless endpoint and returns a connected adapter; otherwise null.
+   */
+  static async completeRedirect(config: GoogleDriveConfig): Promise<GoogleDriveAdapter | null> {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+    if (!code) return null;
+
+    let stored: { verifier: string; state: string } | null = null;
+    try {
+      stored = JSON.parse(sessionStorage.getItem(PKCE_KEY) || 'null');
+    } catch {
+      stored = null;
+    }
+    if (!stored) return null; // not our flow (e.g. a Dropbox return)
+    if (stored.state !== state) {
+      throw new StorageError('Google sign-in failed: state mismatch (possible CSRF) — please retry.');
+    }
+
+    const res = await fetch(config.exchangeUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grantType: 'code',
+        code,
+        codeVerifier: stored.verifier,
+        redirectUri: config.redirectUri,
+      }),
+    });
+    if (!res.ok) {
+      throw new StorageError(`Google Drive connect failed (${res.status}): ${await res.text()}`);
+    }
+    const json = (await res.json()) as { accessToken: string; refreshToken?: string; expiresIn: number };
+    setJson(TOKENS_KEY, {
+      accessToken: json.accessToken,
+      refreshToken: json.refreshToken,
+      expiresAt: Date.now() + (json.expiresIn ?? 3600) * 1000,
+    } satisfies DriveTokens);
+    setJson(CONFIG_KEY, { connected: true } satisfies Stored);
+    try {
+      sessionStorage.removeItem(PKCE_KEY);
+    } catch {
+      /* ignore */
+    }
+    // Strip ?code/&state so a refresh doesn't re-trigger.
+    window.history.replaceState({}, '', config.redirectUri);
+    return new GoogleDriveAdapter(config);
+  }
+
+  /**
+   * FALLBACK connect/reconnect: GIS popup (~1 h token, no refresh token).
+   * Needs a user gesture; works even with the exchange endpoint down.
+   */
+  async connectViaPopup(): Promise<void> {
+    const token = await this.acquireViaGis();
+    this.saveTokens({ accessToken: token.accessToken, expiresAt: token.expiresAt });
+    setJson(CONFIG_KEY, { ...(this.stored ?? {}), connected: true } as Stored);
+    this.stored = getJson<Stored>(CONFIG_KEY);
+  }
+
+  /**
+   * Refresh the access token through the stateless endpoint. Returns true on
+   * success; false if a popup re-grant is needed instead (endpoint unreachable,
+   * or the refresh token was revoked — which also clears it).
+   */
+  async tryServerRefresh(): Promise<boolean> {
+    if (!this.tokens?.refreshToken) return false;
+    let res: Response;
+    try {
+      res = await fetch(this.config.exchangeUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grantType: 'refresh', refreshToken: this.tokens.refreshToken }),
+      });
+    } catch {
+      return false; // network/server down → caller falls back to the popup path
+    }
+    if (res.status === 400 || res.status === 401) {
+      // Refresh token revoked/expired — drop it so we stop retrying.
+      this.saveTokens({ accessToken: '', expiresAt: 0 });
+      return false;
+    }
+    if (!res.ok) return false;
+    const json = (await res.json()) as { accessToken: string; expiresIn: number };
+    this.saveTokens({
+      accessToken: json.accessToken,
+      refreshToken: this.tokens.refreshToken, // refresh grants don't re-issue it
+      expiresAt: Date.now() + (json.expiresIn ?? 3600) * 1000,
+    });
+    return true;
   }
 
   async disconnect(): Promise<void> {
     this.stored = null;
-    this.token = null;
+    this.tokens = null;
     safeRemoveItem(CONFIG_KEY);
+    safeRemoveItem(TOKENS_KEY);
     try {
-      sessionStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem('health_roadmap_gdrive_token'); // legacy cache
     } catch {
       /* ignore */
     }
@@ -237,6 +364,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   // --- helpers --------------------------------------------------------------
 
+  private saveTokens(tokens: DriveTokens): void {
+    this.tokens = tokens;
+    setJson(TOKENS_KEY, tokens);
+  }
+
   private rememberFileId(fileId: string): void {
     if (this.stored?.fileId === fileId) return;
     this.stored = { connected: true, fileId };
@@ -262,17 +394,18 @@ export class GoogleDriveAdapter implements StorageAdapter {
     return { Authorization: `Bearer ${await this.getToken()}` };
   }
 
-  /** Cached token, or a silent (no-popup) re-grant if expired. */
+  /** Valid cached token → server refresh → otherwise interaction is needed. */
   private async getToken(): Promise<string> {
-    if (this.token && Date.now() < this.tokenExpiry - 60_000) return this.token;
-    return this.acquireToken(false);
+    if (this.hasValidToken()) return this.tokens!.accessToken;
+    if (await this.tryServerRefresh()) return this.tokens!.accessToken;
+    throw new DriveReauthNeeded();
   }
 
-  /** Acquire an access token via GIS. interactive=true allows the consent popup. */
-  private acquireToken(interactive: boolean): Promise<string> {
+  /** GIS popup token grant (requires a user gesture). */
+  private acquireViaGis(): Promise<{ accessToken: string; expiresAt: number }> {
     return loadGis().then(
       () =>
-        new Promise<string>((resolve, reject) => {
+        new Promise((resolve, reject) => {
           const client = gis()!.accounts.oauth2.initTokenClient({
             client_id: this.config.clientId,
             scope: this.config.scope,
@@ -281,18 +414,14 @@ export class GoogleDriveAdapter implements StorageAdapter {
                 reject(new StorageError(`Google Drive authorization failed${r.error ? `: ${r.error}` : ''}.`));
                 return;
               }
-              this.token = r.access_token;
-              this.tokenExpiry = Date.now() + (r.expires_in ?? 3600) * 1000;
-              try {
-                sessionStorage.setItem(TOKEN_KEY, JSON.stringify({ token: this.token, expiry: this.tokenExpiry }));
-              } catch {
-                /* session cache unavailable — popup will be needed after reload */
-              }
-              resolve(r.access_token);
+              resolve({
+                accessToken: r.access_token,
+                expiresAt: Date.now() + (r.expires_in ?? 3600) * 1000,
+              });
             },
             error_callback: () => reject(new StorageError('Google Drive sign-in was cancelled or blocked.')),
           });
-          client.requestAccessToken({ prompt: interactive ? '' : 'none' });
+          client.requestAccessToken({ prompt: '' });
         }),
     );
   }

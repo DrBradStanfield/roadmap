@@ -50,6 +50,20 @@ async function resolveBackend(): Promise<ResolvedBackend> {
     return { adapter: resumed, backend: 'dropbox' };
   }
 
+  // Returning from a Google Drive OAuth redirect? (Each completeRedirect only
+  // claims a ?code that its own PKCE session entry initiated.)
+  let gdResumed: GoogleDriveAdapter | null = null;
+  try {
+    gdResumed = await GoogleDriveAdapter.completeRedirect(googleDriveConfig());
+  } catch (error) {
+    console.warn('Google Drive connect failed', error);
+  }
+  if (gdResumed) {
+    await migrateLocalInto(gdResumed);
+    localStorage.setItem(BACKEND_KEY, 'google-drive');
+    return { adapter: gdResumed, backend: 'google-drive' };
+  }
+
   // Remembered choice. The credential/token lives in each adapter's own storage,
   // so a bare `new Adapter()` reconnects if it's still there.
   const remembered = localStorage.getItem(BACKEND_KEY) as Backend | null;
@@ -65,11 +79,14 @@ async function resolveBackend(): Promise<ResolvedBackend> {
   } else if (remembered === 'google-drive') {
     const gd = new GoogleDriveAdapter(googleDriveConfig());
     if (gd.isConnected()) {
-      // Same-tab reload within ~1h: the sessionStorage token still works.
-      if (gd.hasValidToken()) return { adapter: gd, backend: 'google-drive' };
-      // Token gone (new tab / expired). A popup can't open at page load, so run
-      // this session on-device and offer a Reconnect button. KEEP the remembered
-      // choice — local edits merge up on reconnect (finishFormConnect migrates).
+      // Valid cached token, or a silent refresh through the stateless endpoint
+      // (a fetch — fine at page load, unlike a popup).
+      if (gd.hasValidToken() || (await gd.tryServerRefresh())) {
+        return { adapter: gd, backend: 'google-drive' };
+      }
+      // Endpoint unreachable or refresh token revoked. A popup can't open at
+      // page load, so run this session on-device and offer Reconnect. KEEP the
+      // remembered choice — local edits merge up on reconnect.
       return { adapter: new LocalStorageAdapter(), backend: 'local', reconnect: 'google-drive' };
     }
   }

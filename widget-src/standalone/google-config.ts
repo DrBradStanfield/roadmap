@@ -15,6 +15,25 @@ export const GOOGLE_DRIVE_CLIENT_ID =
  */
 export const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
-export function googleDriveConfig(): { clientId: string; scope: string } {
-  return { clientId: GOOGLE_DRIVE_CLIENT_ID, scope: GOOGLE_DRIVE_SCOPE };
+/**
+ * Brad's stateless token-exchange endpoint (decision record §14) — the only
+ * party that can hold the Google client secret. It stores nothing; the refresh
+ * token lives in the user's browser. If unreachable, the adapter falls back to
+ * the GIS popup path, so this is a soft dependency.
+ */
+export const GOOGLE_EXCHANGE_URL = 'https://health-tool-app.fly.dev/api/google-token';
+
+export function googleDriveConfig(): {
+  clientId: string;
+  scope: string;
+  redirectUri: string;
+  exchangeUrl: string;
+} {
+  return {
+    clientId: GOOGLE_DRIVE_CLIENT_ID,
+    scope: GOOGLE_DRIVE_SCOPE,
+    // Same convention as Dropbox: this page, origin + path, no query/hash.
+    redirectUri: location.origin + location.pathname,
+    exchangeUrl: GOOGLE_EXCHANGE_URL,
+  };
 }

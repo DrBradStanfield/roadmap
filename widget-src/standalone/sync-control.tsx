@@ -21,7 +21,7 @@ import {
 } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
-import { BACKEND_KEY, finishFormConnect, type Backend } from './connect';
+import { BACKEND_KEY, finishFormConnect, migrateLocalInto, type Backend } from './connect';
 
 const LABELS: Record<Exclude<Backend, 'local'>, string> = {
   dropbox: 'Dropbox',
@@ -102,14 +102,31 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
     location.reload();
   };
 
+  // Reconnect via the GIS popup FALLBACK (~1 h token) — works even with the
+  // exchange endpoint down; needs this click's user gesture. Local edits made
+  // while signed out merge up before the reload.
+  const reconnectDrive = async (): Promise<void> => {
+    setBusy(true);
+    setError(null);
+    try {
+      const gd = new GoogleDriveAdapter(googleDriveConfig());
+      await gd.connectViaPopup();
+      await migrateLocalInto(gd);
+      localStorage.setItem(BACKEND_KEY, 'google-drive');
+      location.reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Reconnect failed.');
+      setBusy(false);
+    }
+  };
+
   // Google Drive is remembered but its short-lived token is gone (new tab /
   // >1h). Re-auth needs a user click (browsers block popups at page load).
   if (reconnect === 'google-drive') {
     return (
       <div className="hr-sync hr-sync-local">
         <span className="hr-sync-status">Google Drive — signed out</span>
-        <button className="hr-sync-btn" disabled={busy}
-          onClick={() => void submit(new GoogleDriveAdapter(googleDriveConfig()), 'google-drive')}>
+        <button className="hr-sync-btn" disabled={busy} onClick={() => void reconnectDrive()}>
           {busy ? 'Reconnecting…' : 'Reconnect Google Drive'}
         </button>
         <span className="hr-sync-detail">
@@ -135,9 +152,10 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
           <button type="button" className="hr-sync-link" onClick={() => setOpenForm('github')}>More ways to sync ▾</button>
         ) : (
           <div className="hr-sync-forms">
+            {/* Code-flow redirect (like Dropbox) — completes in app.tsx on return. */}
             <button className="hr-sync-btn" disabled={busy}
-              onClick={() => void submit(new GoogleDriveAdapter(googleDriveConfig()), 'google-drive')}>
-              {busy ? 'Connecting…' : 'Connect Google Drive'}
+              onClick={() => void new GoogleDriveAdapter(googleDriveConfig()).connect()}>
+              Connect Google Drive
             </button>
             <div className="hr-sync-tabs">
               <button type="button" className={openForm === 'github' ? 'on' : ''} onClick={() => { setOpenForm('github'); setError(null); }}>GitHub</button>

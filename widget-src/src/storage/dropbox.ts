@@ -122,7 +122,8 @@ export class DropboxAdapter implements StorageAdapter {
     } catch {
       stored = null;
     }
-    if (!stored || stored.state !== state) {
+    if (!stored) return null; // not our flow (e.g. a Google Drive return)
+    if (stored.state !== state) {
       throw new StorageError('Dropbox sign-in failed: state mismatch (possible CSRF) — please retry.');
     }
 
