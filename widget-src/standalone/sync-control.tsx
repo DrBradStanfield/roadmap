@@ -57,16 +57,26 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
     void new DropboxAdapter(dropboxConfig()).connect(); // navigates to Dropbox OAuth
   };
 
-  const submit = async (adapter: StorageAdapter, id: Backend): Promise<void> => {
+  const connectDrive = (): void => {
+    // Code-flow redirect (like Dropbox) — completes in app.tsx on return.
+    void new GoogleDriveAdapter(googleDriveConfig()).connect();
+  };
+
+  /** Shared busy/error scaffold — on success the page reloads, so we only
+   *  reach the catch on failure. */
+  const run = async (fn: () => Promise<void>): Promise<void> => {
     setBusy(true);
     setError(null);
     try {
-      await finishFormConnect(adapter, id); // validates → migrates → reloads
+      await fn();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Connection failed.');
-      setBusy(false); // on success the page reloads, so we only reach here on failure
+      setBusy(false);
     }
   };
+
+  const submit = (adapter: StorageAdapter, id: Backend): Promise<void> =>
+    run(() => finishFormConnect(adapter, id)); // validates → migrates → reloads
 
   const disconnect = async (): Promise<void> => {
     try {
@@ -105,20 +115,14 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
   // Reconnect via the GIS popup FALLBACK (~1 h token) — works even with the
   // exchange endpoint down; needs this click's user gesture. Local edits made
   // while signed out merge up before the reload.
-  const reconnectDrive = async (): Promise<void> => {
-    setBusy(true);
-    setError(null);
-    try {
+  const reconnectDrive = (): Promise<void> =>
+    run(async () => {
       const gd = new GoogleDriveAdapter(googleDriveConfig());
       await gd.connectViaPopup();
       await migrateLocalInto(gd);
       localStorage.setItem(BACKEND_KEY, 'google-drive');
       location.reload();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Reconnect failed.');
-      setBusy(false);
-    }
-  };
+    });
 
   // Google Drive is remembered but its short-lived token is gone (new tab /
   // >1h). Re-auth needs a user click (browsers block popups at page load).
@@ -152,9 +156,7 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
           <button type="button" className="hr-sync-link" onClick={() => setOpenForm('github')}>More ways to sync ▾</button>
         ) : (
           <div className="hr-sync-forms">
-            {/* Code-flow redirect (like Dropbox) — completes in app.tsx on return. */}
-            <button className="hr-sync-btn" disabled={busy}
-              onClick={() => void new GoogleDriveAdapter(googleDriveConfig()).connect()}>
+            <button className="hr-sync-btn" disabled={busy} onClick={connectDrive}>
               Connect Google Drive
             </button>
             <div className="hr-sync-tabs">

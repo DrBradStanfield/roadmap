@@ -25,8 +25,8 @@ import {
   type StorageAdapter,
   type WriteResult,
 } from './adapter';
-import { safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
-import { deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
+import { getJson, setJson, safeRemoveItem } from '../lib/storage';
+import { claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
 const FILE_PATH = '/health-roadmap.json';
 const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
@@ -51,17 +51,11 @@ interface DropboxTokens {
 }
 
 function loadTokens(): DropboxTokens | null {
-  const raw = safeGetItem(TOKEN_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as DropboxTokens;
-  } catch {
-    return null; // corrupt token blob — treat as not connected
-  }
+  return getJson<DropboxTokens>(TOKEN_KEY);
 }
 
 function saveTokens(tokens: DropboxTokens): void {
-  safeSetItem(TOKEN_KEY, JSON.stringify(tokens));
+  setJson(TOKEN_KEY, tokens);
 }
 
 export class DropboxAdapter implements StorageAdapter {
@@ -111,28 +105,15 @@ export class DropboxAdapter implements StorageAdapter {
    * returns null (not a return from Dropbox).
    */
   static async completeRedirect(config: DropboxConfig): Promise<DropboxAdapter | null> {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const state = params.get('state');
-    if (!code) return null;
-
-    let stored: { verifier: string; state: string } | null = null;
-    try {
-      stored = JSON.parse(sessionStorage.getItem(PKCE_KEY) || 'null');
-    } catch {
-      stored = null;
-    }
-    if (!stored) return null; // not our flow (e.g. a Google Drive return)
-    if (stored.state !== state) {
-      throw new StorageError('Dropbox sign-in failed: state mismatch (possible CSRF) — please retry.');
-    }
+    const claimed = claimRedirectCode(PKCE_KEY); // null when the ?code isn't ours
+    if (!claimed) return null;
 
     const body = new URLSearchParams({
-      code,
+      code: claimed.code,
       grant_type: 'authorization_code',
       client_id: config.clientId,
       redirect_uri: config.redirectUri,
-      code_verifier: stored.verifier,
+      code_verifier: claimed.verifier,
     });
     const res = await fetch(TOKEN_URL, {
       method: 'POST',
@@ -148,11 +129,6 @@ export class DropboxAdapter implements StorageAdapter {
       refreshToken: json.refresh_token,
       expiresAt: Date.now() + json.expires_in * 1000,
     });
-    try {
-      sessionStorage.removeItem(PKCE_KEY);
-    } catch {
-      /* ignore */
-    }
     // Strip ?code/&state from the URL so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
     return new DropboxAdapter(config);

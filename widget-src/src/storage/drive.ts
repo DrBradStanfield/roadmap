@@ -29,7 +29,7 @@ import {
   type WriteResult,
 } from './adapter';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
-import { deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
+import { claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
 export interface GoogleDriveConfig {
   clientId: string;
@@ -48,8 +48,8 @@ const FILE_NAME = 'health-roadmap.json';
 const DRIVE = 'https://www.googleapis.com/drive/v3';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 
+/** Presence of this object IS the "connected" flag. */
 interface Stored {
-  connected: true;
   fileId?: string;
 }
 
@@ -60,12 +60,8 @@ interface DriveTokens {
   expiresAt: number; // epoch ms
 }
 
-/** Thrown when no token can be acquired without user interaction. */
-export class DriveReauthNeeded extends StorageError {
-  constructor(message = 'Google Drive needs to be reconnected.') {
-    super(message);
-    this.name = 'DriveReauthNeeded';
-  }
+function expiry(expiresIn?: number): number {
+  return Date.now() + (expiresIn ?? 3600) * 1000;
 }
 
 // --- GIS (Google Identity Services) popup fallback ---------------------------
@@ -134,7 +130,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   }
 
   isConnected(): boolean {
-    return this.stored?.connected === true;
+    return this.stored !== null;
   }
 
   /** True if the cached access token is still usable as-is. */
@@ -178,29 +174,16 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * stateless endpoint and returns a connected adapter; otherwise null.
    */
   static async completeRedirect(config: GoogleDriveConfig): Promise<GoogleDriveAdapter | null> {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const state = params.get('state');
-    if (!code) return null;
-
-    let stored: { verifier: string; state: string } | null = null;
-    try {
-      stored = JSON.parse(sessionStorage.getItem(PKCE_KEY) || 'null');
-    } catch {
-      stored = null;
-    }
-    if (!stored) return null; // not our flow (e.g. a Dropbox return)
-    if (stored.state !== state) {
-      throw new StorageError('Google sign-in failed: state mismatch (possible CSRF) — please retry.');
-    }
+    const claimed = claimRedirectCode(PKCE_KEY); // null when the ?code isn't ours
+    if (!claimed) return null;
 
     const res = await fetch(config.exchangeUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         grantType: 'code',
-        code,
-        codeVerifier: stored.verifier,
+        code: claimed.code,
+        codeVerifier: claimed.verifier,
         redirectUri: config.redirectUri,
       }),
     });
@@ -211,14 +194,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
     setJson(TOKENS_KEY, {
       accessToken: json.accessToken,
       refreshToken: json.refreshToken,
-      expiresAt: Date.now() + (json.expiresIn ?? 3600) * 1000,
+      expiresAt: expiry(json.expiresIn),
     } satisfies DriveTokens);
-    setJson(CONFIG_KEY, { connected: true } satisfies Stored);
-    try {
-      sessionStorage.removeItem(PKCE_KEY);
-    } catch {
-      /* ignore */
-    }
+    setJson(CONFIG_KEY, {} satisfies Stored);
     // Strip ?code/&state so a refresh doesn't re-trigger.
     window.history.replaceState({}, '', config.redirectUri);
     return new GoogleDriveAdapter(config);
@@ -231,8 +209,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
   async connectViaPopup(): Promise<void> {
     const token = await this.acquireViaGis();
     this.saveTokens({ accessToken: token.accessToken, expiresAt: token.expiresAt });
-    setJson(CONFIG_KEY, { ...(this.stored ?? {}), connected: true } as Stored);
-    this.stored = getJson<Stored>(CONFIG_KEY);
+    this.stored = this.stored ?? {};
+    setJson(CONFIG_KEY, this.stored);
   }
 
   /**
@@ -248,13 +226,15 @@ export class GoogleDriveAdapter implements StorageAdapter {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ grantType: 'refresh', refreshToken: this.tokens.refreshToken }),
+        // This runs at page load before first render — a black-holing server
+        // must fail fast into the on-device + Reconnect fallback, not hang.
+        signal: AbortSignal.timeout(5000),
       });
     } catch {
-      return false; // network/server down → caller falls back to the popup path
+      return false; // network/server down/timeout → caller falls back to the popup path
     }
     if (res.status === 400 || res.status === 401) {
-      // Refresh token revoked/expired — drop it so we stop retrying.
-      this.saveTokens({ accessToken: '', expiresAt: 0 });
+      this.clearTokens(); // refresh token revoked/expired — stop retrying
       return false;
     }
     if (!res.ok) return false;
@@ -262,21 +242,15 @@ export class GoogleDriveAdapter implements StorageAdapter {
     this.saveTokens({
       accessToken: json.accessToken,
       refreshToken: this.tokens.refreshToken, // refresh grants don't re-issue it
-      expiresAt: Date.now() + (json.expiresIn ?? 3600) * 1000,
+      expiresAt: expiry(json.expiresIn),
     });
     return true;
   }
 
   async disconnect(): Promise<void> {
     this.stored = null;
-    this.tokens = null;
     safeRemoveItem(CONFIG_KEY);
-    safeRemoveItem(TOKENS_KEY);
-    try {
-      sessionStorage.removeItem('health_roadmap_gdrive_token'); // legacy cache
-    } catch {
-      /* ignore */
-    }
+    this.clearTokens();
   }
 
   // --- file ops -------------------------------------------------------------
@@ -295,7 +269,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
     } catch (error) {
       throw new StorageError('Google Drive read failed: file is not valid JSON (possible corruption).', error);
     }
-    return { file, version: await this.fileVersion(fileId) };
+    // version: null is honest — Drive has no conditional write, so write()
+    // ignores expectedVersion (LWW; the SyncManager merges first). Fetching the
+    // file's `version` field here cost an extra round trip per read (reads run
+    // on every load and twice per save) for a value nothing consumed.
+    return { file, version: null };
   }
 
   async write(file: RoadmapFile, _expectedVersion: string | null): Promise<WriteResult> {
@@ -313,16 +291,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       return { version: String(((await res.json()) as { version?: string }).version ?? '') };
     }
     // First write — create the file (multipart: metadata + content).
-    const boundary = 'rm_boundary_health_roadmap';
-    const multipart =
-      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
-      `${JSON.stringify({ name: FILE_NAME })}\r\n` +
-      `--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--`;
-    const res = await fetch(`${UPLOAD}/files?uploadType=multipart&fields=id,version`, {
-      method: 'POST',
-      headers: { ...(await this.authHeaders()), 'Content-Type': `multipart/related; boundary=${boundary}` },
-      body: multipart,
-    });
+    const res = await this.createMultipart(FILE_NAME, 'application/json', body);
     if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`);
     const json = (await res.json()) as { id?: string; version?: string };
     if (!json.id) throw new StorageError('Google Drive create returned no file id.');
@@ -351,14 +320,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       if (!res.ok) throw new StorageError(`Google Drive document write failed (${res.status}): ${ref}`);
       return;
     }
-    const boundary = 'rm_boundary_doc';
-    const head = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name })}\r\n--${boundary}\r\nContent-Type: ${type}\r\n\r\n`;
-    const multipart = new Blob([head, bytes, `\r\n--${boundary}--`]);
-    const res = await fetch(`${UPLOAD}/files?uploadType=multipart`, {
-      method: 'POST',
-      headers: { ...(await this.authHeaders()), 'Content-Type': `multipart/related; boundary=${boundary}` },
-      body: multipart,
-    });
+    const res = await this.createMultipart(name, type, bytes);
     if (!res.ok) throw new StorageError(`Google Drive document create failed (${res.status}): ${ref}`);
   }
 
@@ -369,10 +331,30 @@ export class GoogleDriveAdapter implements StorageAdapter {
     setJson(TOKENS_KEY, tokens);
   }
 
+  private clearTokens(): void {
+    this.tokens = null;
+    safeRemoveItem(TOKENS_KEY);
+  }
+
   private rememberFileId(fileId: string): void {
     if (this.stored?.fileId === fileId) return;
-    this.stored = { connected: true, fileId };
+    this.stored = { fileId };
     setJson(CONFIG_KEY, this.stored);
+  }
+
+  /** Create a new Drive file (metadata + content in one multipart POST). */
+  private async createMultipart(name: string, contentType: string, content: Blob | string): Promise<Response> {
+    const boundary = 'rm_boundary_health_roadmap';
+    const body = new Blob([
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name })}\r\n--${boundary}\r\nContent-Type: ${contentType}\r\n\r\n`,
+      content,
+      `\r\n--${boundary}--`,
+    ]);
+    return fetch(`${UPLOAD}/files?uploadType=multipart&fields=id,version`, {
+      method: 'POST',
+      headers: { ...(await this.authHeaders()), 'Content-Type': `multipart/related; boundary=${boundary}` },
+      body,
+    });
   }
 
   private async findFileId(name = FILE_NAME): Promise<string | undefined> {
@@ -384,12 +366,6 @@ export class GoogleDriveAdapter implements StorageAdapter {
     return ((await res.json()) as { files?: Array<{ id: string }> }).files?.[0]?.id;
   }
 
-  private async fileVersion(fileId: string): Promise<string | null> {
-    const res = await fetch(`${DRIVE}/files/${fileId}?fields=version`, { headers: await this.authHeaders() });
-    if (!res.ok) return null;
-    return String(((await res.json()) as { version?: string }).version ?? '') || null;
-  }
-
   private async authHeaders(): Promise<Record<string, string>> {
     return { Authorization: `Bearer ${await this.getToken()}` };
   }
@@ -398,7 +374,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   private async getToken(): Promise<string> {
     if (this.hasValidToken()) return this.tokens!.accessToken;
     if (await this.tryServerRefresh()) return this.tokens!.accessToken;
-    throw new DriveReauthNeeded();
+    throw new StorageError('Google Drive needs to be reconnected.');
   }
 
   /** GIS popup token grant (requires a user gesture). */
@@ -414,10 +390,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
                 reject(new StorageError(`Google Drive authorization failed${r.error ? `: ${r.error}` : ''}.`));
                 return;
               }
-              resolve({
-                accessToken: r.access_token,
-                expiresAt: Date.now() + (r.expires_in ?? 3600) * 1000,
-              });
+              resolve({ accessToken: r.access_token, expiresAt: expiry(r.expires_in) });
             },
             error_callback: () => reject(new StorageError('Google Drive sign-in was cancelled or blocked.')),
           });

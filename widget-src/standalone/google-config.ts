@@ -23,12 +23,7 @@ export const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
  */
 export const GOOGLE_EXCHANGE_URL = 'https://health-tool-app.fly.dev/api/google-token';
 
-export function googleDriveConfig(): {
-  clientId: string;
-  scope: string;
-  redirectUri: string;
-  exchangeUrl: string;
-} {
+export function googleDriveConfig(): import('../src/storage').GoogleDriveConfig {
   return {
     clientId: GOOGLE_DRIVE_CLIENT_ID,
     scope: GOOGLE_DRIVE_SCOPE,
