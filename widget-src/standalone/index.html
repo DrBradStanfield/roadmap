@@ -44,23 +44,62 @@
         font-size: 12.5px; text-decoration: underline; cursor: pointer; padding: 4px;
       }
       .hr-sync-btn:disabled { opacity: 0.5; cursor: default; }
-      /* "More ways to sync" picker (GitHub / self-host forms). */
       .hr-sync-more { flex-basis: 100%; margin-top: 2px; }
       .hr-sync-more .hr-sync-link { margin-left: 0; }
-      .hr-sync-forms { margin-top: 8px; }
-      .hr-sync-tabs { display: flex; gap: 10px; margin-bottom: 8px; }
-      .hr-sync-tabs button {
-        background: none; border: 0; border-bottom: 2px solid transparent;
-        color: #5a6b73; font-size: 13px; padding: 4px 2px; cursor: pointer;
-      }
-      .hr-sync-tabs button.on { color: #1c2b33; border-bottom-color: #00a38b; font-weight: 600; }
-      .hr-sync-form { display: flex; flex-direction: column; gap: 7px; max-width: 440px; }
+      .hr-sync-form { display: flex; flex-direction: column; gap: 7px; }
       .hr-sync-form input {
         padding: 8px 10px; border: 1px solid #cdd9dd; border-radius: 7px; font-size: 13px;
       }
       .hr-sync-form .hr-sync-btn { margin-left: 0; align-self: flex-start; }
-      .hr-sync-forms > .hr-sync-btn { margin: 0 0 10px; }
       .hr-sync-error { flex-basis: 100%; color: #b91c1c; font-size: 12.5px; margin-top: 6px; }
+
+      /* "Where should your health plan live?" lightbox. */
+      .hr-modal-overlay {
+        position: fixed; inset: 0; background: rgba(28, 43, 51, 0.45); z-index: 1000;
+        display: flex; align-items: center; justify-content: center; padding: 16px;
+      }
+      .hr-modal {
+        position: relative; background: #fff; border-radius: 14px; max-width: 520px; width: 100%;
+        max-height: 90vh; overflow-y: auto; padding: 24px 24px 20px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.22);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #1c2b33;
+      }
+      .hr-modal h2 { font-size: 19px; margin: 0 32px 6px 0; }
+      .hr-modal-sub { font-size: 13.5px; color: #5a6b73; margin: 0 0 14px; }
+      .hr-modal-close {
+        position: absolute; top: 10px; right: 12px; background: none; border: 0;
+        font-size: 24px; line-height: 1; color: #5a6b73; cursor: pointer; padding: 4px;
+      }
+      .hr-modal-back {
+        background: none; border: 0; color: #00897b; font-size: 13px; cursor: pointer;
+        padding: 0; margin-bottom: 10px;
+      }
+      .hr-opt {
+        display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+        background: #fff; border: 1px solid #cdd9dd; border-radius: 10px;
+        padding: 12px 14px; margin-bottom: 8px; cursor: pointer;
+      }
+      .hr-opt:hover { border-color: #00a38b; background: #f7fcfb; }
+      .hr-opt:disabled { opacity: 0.55; cursor: default; }
+      .hr-opt-logo { flex: 0 0 auto; width: 24px; height: 24px; }
+      .hr-opt-logo svg { width: 24px; height: 24px; display: block; }
+      .hr-opt-text { display: flex; flex-direction: column; gap: 2px; }
+      .hr-opt-name { font-size: 14.5px; font-weight: 600; }
+      .hr-opt-blurb { font-size: 12.5px; color: #5a6b73; }
+      .hr-opt-connected {
+        margin-left: 8px; font-size: 11px; font-weight: 700; color: #0a7a5f;
+        background: #e6f6f1; border-radius: 10px; padding: 2px 8px; vertical-align: 1px;
+      }
+      .hr-opt-divider {
+        font-size: 11.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+        color: #8aa0a9; margin: 12px 0 8px;
+      }
+      .hr-opt-local { border-style: dashed; }
+      @media (max-width: 600px) {
+        .hr-modal-overlay { padding: 0; align-items: stretch; }
+        .hr-modal { max-width: none; border-radius: 0; max-height: none; }
+      }
     </style>
   </head>
   <body>

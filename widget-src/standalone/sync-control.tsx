@@ -1,27 +1,20 @@
 /**
- * Connect-a-cloud control for the standalone build (Phase 2). Shows the real
- * sync status (replacing HealthTool's Shopify account indicator) and lets the
- * user move between the on-device tier and a cloud backend:
- *   - Dropbox — one-click OAuth (redirect; completed in app.tsx on return)
- *   - GitHub — pasted fine-grained PAT (one repo)
- *   - Self-host — a WebDAV server the user controls
- * GitHub + self-host validate their pasted credentials in place via
- * finishFormConnect (connect.ts), which lifts on-device data up and reloads.
+ * Sync status control (rendered inside the plan panel). Shows where the data
+ * lives and opens the BackendPickerModal to choose/switch — switching copies
+ * the current cloud down to this device first, so nothing is ever stranded.
+ *
+ * The Drive "signed out" state keeps its own inline Reconnect button (GIS popup
+ * fallback — one click, no modal).
+ *
+ * Phase 5 (website): after the "Get Your Personalized Plan" email step, fire
+ * `window.dispatchEvent(new Event('hr:open-backend-picker'))` to auto-open the
+ * picker once — the listener below already handles it.
  */
-import React, { useState } from 'react';
-import {
-  DropboxAdapter,
-  GoogleDriveAdapter,
-  GitHubAdapter,
-  WebDavAdapter,
-  LocalStorageAdapter,
-  SyncManager,
-  getDeviceId,
-  type StorageAdapter,
-} from '../src/storage';
-import { dropboxConfig } from './dropbox-config';
+import React, { useEffect, useState } from 'react';
+import { GoogleDriveAdapter } from '../src/storage';
 import { googleDriveConfig } from './google-config';
-import { BACKEND_KEY, finishFormConnect, migrateLocalInto, type Backend } from './connect';
+import { BACKEND_KEY, migrateLocalInto, type Backend } from './connect';
+import { BackendPickerModal } from './backend-picker';
 
 const LABELS: Record<Exclude<Backend, 'local'>, string> = {
   dropbox: 'Dropbox',
@@ -30,86 +23,26 @@ const LABELS: Record<Exclude<Backend, 'local'>, string> = {
   'self-host': 'your own server',
 };
 
-/** The adapter for a currently-connected backend (used for the disconnect read-down). */
-function adapterFor(backend: Backend): StorageAdapter | null {
-  switch (backend) {
-    case 'dropbox':
-      return new DropboxAdapter(dropboxConfig());
-    case 'google-drive':
-      return new GoogleDriveAdapter(googleDriveConfig());
-    case 'github':
-      return new GitHubAdapter();
-    case 'self-host':
-      return new WebDavAdapter();
-    default:
-      return null;
-  }
-}
-
 export function SyncControl({ backend, reconnect }: { backend: Backend; reconnect?: 'google-drive' }) {
-  const [openForm, setOpenForm] = useState<'github' | 'webdav' | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [gh, setGh] = useState({ token: '', owner: '', repo: '' });
-  const [wd, setWd] = useState({ url: '', username: '', password: '' });
 
-  const connectDropbox = (): void => {
-    void new DropboxAdapter(dropboxConfig()).connect(); // navigates to Dropbox OAuth
-  };
+  useEffect(() => {
+    const open = () => setPickerOpen(true);
+    window.addEventListener('hr:open-backend-picker', open);
+    return () => window.removeEventListener('hr:open-backend-picker', open);
+  }, []);
 
-  const connectDrive = (): void => {
-    // Code-flow redirect (like Dropbox) — completes in app.tsx on return.
-    void new GoogleDriveAdapter(googleDriveConfig()).connect();
-  };
-
-  /** Shared busy/error scaffold — on success the page reloads, so we only
-   *  reach the catch on failure. */
   const run = async (fn: () => Promise<void>): Promise<void> => {
     setBusy(true);
     setError(null);
     try {
-      await fn();
+      await fn(); // success ends in a reload
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Connection failed.');
       setBusy(false);
     }
-  };
-
-  const submit = (adapter: StorageAdapter, id: Backend): Promise<void> =>
-    run(() => finishFormConnect(adapter, id)); // validates → migrates → reloads
-
-  const disconnect = async (): Promise<void> => {
-    try {
-      const adapter = adapterFor(backend);
-      if (adapter) {
-        // Copy the latest cloud data down to this device so nothing appears lost.
-        const { file } = await adapter.read();
-        if (file) await new SyncManager(new LocalStorageAdapter(), getDeviceId()).save(file);
-        await adapter.disconnect();
-      }
-    } catch (e) {
-      console.warn('Disconnect failed', e);
-    }
-    localStorage.removeItem(BACKEND_KEY);
-    location.reload();
-  };
-
-  if (backend !== 'local') {
-    return (
-      <div className="hr-sync hr-sync-dropbox">
-        <span className="hr-sync-status">✓ Synced to {LABELS[backend]}</span>
-        <button className="hr-sync-link" onClick={() => void disconnect()}>Use this device only</button>
-        <span className="hr-sync-detail">Your data lives only in {LABELS[backend]} — never on our servers.</span>
-      </div>
-    );
-  }
-
-  // Forget the pending Google Drive connection (no copy-down needed — this
-  // session is already running on the device copy; the Drive file stays put).
-  const forgetDrive = async (): Promise<void> => {
-    await new GoogleDriveAdapter(googleDriveConfig()).disconnect();
-    localStorage.removeItem(BACKEND_KEY);
-    location.reload();
   };
 
   // Reconnect via the GIS popup FALLBACK (~1 h token) — works even with the
@@ -124,8 +57,21 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
       location.reload();
     });
 
-  // Google Drive is remembered but its short-lived token is gone (new tab /
-  // >1h). Re-auth needs a user click (browsers block popups at page load).
+  // Forget the pending Google Drive connection (no copy-down needed — this
+  // session already runs on the device copy; the Drive file stays put).
+  const forgetDrive = (): Promise<void> =>
+    run(async () => {
+      await new GoogleDriveAdapter(googleDriveConfig()).disconnect();
+      localStorage.removeItem(BACKEND_KEY);
+      location.reload();
+    });
+
+  const picker = pickerOpen && (
+    <BackendPickerModal current={backend} onClose={() => setPickerOpen(false)} />
+  );
+
+  // Google Drive remembered but its short-lived token is gone (endpoint down /
+  // revoked). Re-auth needs a user click (browsers block popups at page load).
   if (reconnect === 'google-drive') {
     return (
       <div className="hr-sync hr-sync-local">
@@ -141,6 +87,18 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
           <button type="button" className="hr-sync-link" onClick={() => void forgetDrive()}>Use this device only</button>
         </div>
         {error && <span className="hr-sync-error">{error}</span>}
+        {picker}
+      </div>
+    );
+  }
+
+  if (backend !== 'local') {
+    return (
+      <div className="hr-sync hr-sync-dropbox">
+        <span className="hr-sync-status">✓ Synced to {LABELS[backend]}</span>
+        <button className="hr-sync-link" onClick={() => setPickerOpen(true)}>Change</button>
+        <span className="hr-sync-detail">Your data lives only in {LABELS[backend]} — never on our servers.</span>
+        {picker}
       </div>
     );
   }
@@ -148,49 +106,9 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
   return (
     <div className="hr-sync hr-sync-local">
       <span className="hr-sync-status">Saved on this device</span>
-      <button className="hr-sync-btn" onClick={connectDropbox} disabled={busy}>Connect Dropbox</button>
-      <span className="hr-sync-detail">Your data is only in this browser. Connect a cloud to sync across your phone and computer.</span>
-
-      <div className="hr-sync-more">
-        {openForm === null ? (
-          <button type="button" className="hr-sync-link" onClick={() => setOpenForm('github')}>More ways to sync ▾</button>
-        ) : (
-          <div className="hr-sync-forms">
-            <button className="hr-sync-btn" disabled={busy} onClick={connectDrive}>
-              Connect Google Drive
-            </button>
-            <div className="hr-sync-tabs">
-              <button type="button" className={openForm === 'github' ? 'on' : ''} onClick={() => { setOpenForm('github'); setError(null); }}>GitHub</button>
-              <button type="button" className={openForm === 'webdav' ? 'on' : ''} onClick={() => { setOpenForm('webdav'); setError(null); }}>Self-host (WebDAV)</button>
-            </div>
-
-            {openForm === 'github' && (
-              <div className="hr-sync-form">
-                <input type="password" placeholder="Fine-grained token (one repo, Contents read+write)" value={gh.token} onChange={(e) => setGh({ ...gh, token: e.target.value })} />
-                <input placeholder="Owner (your GitHub user or org)" value={gh.owner} onChange={(e) => setGh({ ...gh, owner: e.target.value })} />
-                <input placeholder="Repository name" value={gh.repo} onChange={(e) => setGh({ ...gh, repo: e.target.value })} />
-                <button className="hr-sync-btn" disabled={busy || !gh.token || !gh.owner || !gh.repo}
-                  onClick={() => void submit(new GitHubAdapter({ token: gh.token.trim(), owner: gh.owner.trim(), repo: gh.repo.trim() }), 'github')}>
-                  {busy ? 'Connecting…' : 'Connect GitHub'}
-                </button>
-              </div>
-            )}
-
-            {openForm === 'webdav' && (
-              <div className="hr-sync-form">
-                <input placeholder="WebDAV folder URL (https://…)" value={wd.url} onChange={(e) => setWd({ ...wd, url: e.target.value })} />
-                <input placeholder="Username" value={wd.username} onChange={(e) => setWd({ ...wd, username: e.target.value })} />
-                <input type="password" placeholder="Password / app password" value={wd.password} onChange={(e) => setWd({ ...wd, password: e.target.value })} />
-                <button className="hr-sync-btn" disabled={busy || !wd.url || !wd.username}
-                  onClick={() => void submit(new WebDavAdapter({ url: wd.url.trim(), username: wd.username.trim(), password: wd.password }), 'self-host')}>
-                  {busy ? 'Connecting…' : 'Connect'}
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-        {error && <span className="hr-sync-error">{error}</span>}
-      </div>
+      <button className="hr-sync-btn" onClick={() => setPickerOpen(true)}>Choose where to save</button>
+      <span className="hr-sync-detail">Your data is only in this browser. Save it to your own cloud to sync across your phone and computer.</span>
+      {picker}
     </div>
   );
 }
