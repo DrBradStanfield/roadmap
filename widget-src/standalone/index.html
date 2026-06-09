@@ -43,6 +43,23 @@
         margin-left: auto; background: none; border: 0; color: #5a6b73;
         font-size: 12.5px; text-decoration: underline; cursor: pointer; padding: 4px;
       }
+      .hr-sync-btn:disabled { opacity: 0.5; cursor: default; }
+      /* "More ways to sync" picker (GitHub / self-host forms). */
+      .hr-sync-more { flex-basis: 100%; margin-top: 2px; }
+      .hr-sync-more .hr-sync-link { margin-left: 0; }
+      .hr-sync-forms { margin-top: 8px; }
+      .hr-sync-tabs { display: flex; gap: 10px; margin-bottom: 8px; }
+      .hr-sync-tabs button {
+        background: none; border: 0; border-bottom: 2px solid transparent;
+        color: #5a6b73; font-size: 13px; padding: 4px 2px; cursor: pointer;
+      }
+      .hr-sync-tabs button.on { color: #1c2b33; border-bottom-color: #00a38b; font-weight: 600; }
+      .hr-sync-form { display: flex; flex-direction: column; gap: 7px; max-width: 440px; }
+      .hr-sync-form input {
+        padding: 8px 10px; border: 1px solid #cdd9dd; border-radius: 7px; font-size: 13px;
+      }
+      .hr-sync-form .hr-sync-btn { margin-left: 0; align-self: flex-start; }
+      .hr-sync-error { flex-basis: 100%; color: #b91c1c; font-size: 12.5px; margin-top: 6px; }
     </style>
   </head>
   <body>

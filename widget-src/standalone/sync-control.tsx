@@ -1,52 +1,90 @@
 /**
- * Phase 2 connect-a-cloud control for the standalone build. Shows the real
- * sync status (replacing HealthTool's Shopify "Logged in · Data synced"
- * indicator, which is hidden on standalone) and lets the user move between the
- * on-device tier and Dropbox.
- *
- * Connect: redirects to Dropbox OAuth; on return, app.tsx lifts the on-device
- * data into Dropbox (migrateLocalInto) so nothing is lost. Disconnect: copies
- * the Dropbox data back down to this device first, then drops the connection.
- *
- * More backends (Google Drive, GitHub, self-host) slot in here as they land.
+ * Connect-a-cloud control for the standalone build (Phase 2). Shows the real
+ * sync status (replacing HealthTool's Shopify account indicator) and lets the
+ * user move between the on-device tier and a cloud backend:
+ *   - Dropbox — one-click OAuth (redirect; completed in app.tsx on return)
+ *   - GitHub — pasted fine-grained PAT (one repo)
+ *   - Self-host — a WebDAV server the user controls
+ * GitHub + self-host validate their pasted credentials in place via
+ * finishFormConnect (connect.ts), which lifts on-device data up and reloads.
  */
-import React from 'react';
-import { DropboxAdapter, LocalStorageAdapter, SyncManager, getDeviceId } from '../src/storage';
+import React, { useState } from 'react';
+import {
+  DropboxAdapter,
+  GitHubAdapter,
+  WebDavAdapter,
+  LocalStorageAdapter,
+  SyncManager,
+  getDeviceId,
+  type StorageAdapter,
+} from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
+import { BACKEND_KEY, finishFormConnect, type Backend } from './connect';
 
-export type Backend = 'dropbox' | 'local';
-export const BACKEND_KEY = 'health_roadmap_backend';
+const LABELS: Record<Exclude<Backend, 'local'>, string> = {
+  dropbox: 'Dropbox',
+  github: 'GitHub',
+  'self-host': 'your own server',
+};
+
+/** The adapter for a currently-connected backend (used for the disconnect read-down). */
+function adapterFor(backend: Backend): StorageAdapter | null {
+  switch (backend) {
+    case 'dropbox':
+      return new DropboxAdapter(dropboxConfig());
+    case 'github':
+      return new GitHubAdapter();
+    case 'self-host':
+      return new WebDavAdapter();
+    default:
+      return null;
+  }
+}
 
 export function SyncControl({ backend }: { backend: Backend }) {
-  const connect = (): void => {
+  const [openForm, setOpenForm] = useState<'github' | 'webdav' | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [gh, setGh] = useState({ token: '', owner: '', repo: '' });
+  const [wd, setWd] = useState({ url: '', username: '', password: '' });
+
+  const connectDropbox = (): void => {
     void new DropboxAdapter(dropboxConfig()).connect(); // navigates to Dropbox OAuth
+  };
+
+  const submit = async (adapter: StorageAdapter, id: Backend): Promise<void> => {
+    setBusy(true);
+    setError(null);
+    try {
+      await finishFormConnect(adapter, id); // validates → migrates → reloads
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Connection failed.');
+      setBusy(false); // on success the page reloads, so we only reach here on failure
+    }
   };
 
   const disconnect = async (): Promise<void> => {
     try {
-      // Copy the latest Dropbox data down to this device so nothing appears lost.
-      const dbx = new DropboxAdapter(dropboxConfig());
-      const { file } = await dbx.read();
-      if (file) {
-        await new SyncManager(new LocalStorageAdapter(), getDeviceId()).save(file);
+      const adapter = adapterFor(backend);
+      if (adapter) {
+        // Copy the latest cloud data down to this device so nothing appears lost.
+        const { file } = await adapter.read();
+        if (file) await new SyncManager(new LocalStorageAdapter(), getDeviceId()).save(file);
+        await adapter.disconnect();
       }
-      await dbx.disconnect();
-    } catch (error) {
-      console.warn('Dropbox disconnect failed', error);
+    } catch (e) {
+      console.warn('Disconnect failed', e);
     }
     localStorage.removeItem(BACKEND_KEY);
     location.reload();
   };
 
-  // Layout note: the action (button/link) sits on the same row as the status
-  // heading; the detail span has flex-basis:100% so it wraps to its own row
-  // below — so DOM order is status, action, detail.
-  if (backend === 'dropbox') {
+  if (backend !== 'local') {
     return (
       <div className="hr-sync hr-sync-dropbox">
-        <span className="hr-sync-status">✓ Synced to your Dropbox</span>
+        <span className="hr-sync-status">✓ Synced to {LABELS[backend]}</span>
         <button className="hr-sync-link" onClick={() => void disconnect()}>Use this device only</button>
-        <span className="hr-sync-detail">Your data lives only in your own Dropbox — in the app's own folder, never on our servers.</span>
+        <span className="hr-sync-detail">Your data lives only in {LABELS[backend]} — never on our servers.</span>
       </div>
     );
   }
@@ -54,8 +92,46 @@ export function SyncControl({ backend }: { backend: Backend }) {
   return (
     <div className="hr-sync hr-sync-local">
       <span className="hr-sync-status">Saved on this device</span>
-      <button className="hr-sync-btn" onClick={connect}>Connect Dropbox</button>
+      <button className="hr-sync-btn" onClick={connectDropbox} disabled={busy}>Connect Dropbox</button>
       <span className="hr-sync-detail">Your data is only in this browser. Connect a cloud to sync across your phone and computer.</span>
+
+      <div className="hr-sync-more">
+        {openForm === null ? (
+          <button type="button" className="hr-sync-link" onClick={() => setOpenForm('github')}>More ways to sync ▾</button>
+        ) : (
+          <div className="hr-sync-forms">
+            <div className="hr-sync-tabs">
+              <button type="button" className={openForm === 'github' ? 'on' : ''} onClick={() => { setOpenForm('github'); setError(null); }}>GitHub</button>
+              <button type="button" className={openForm === 'webdav' ? 'on' : ''} onClick={() => { setOpenForm('webdav'); setError(null); }}>Self-host (WebDAV)</button>
+            </div>
+
+            {openForm === 'github' && (
+              <div className="hr-sync-form">
+                <input type="password" placeholder="Fine-grained token (one repo, Contents read+write)" value={gh.token} onChange={(e) => setGh({ ...gh, token: e.target.value })} />
+                <input placeholder="Owner (your GitHub user or org)" value={gh.owner} onChange={(e) => setGh({ ...gh, owner: e.target.value })} />
+                <input placeholder="Repository name" value={gh.repo} onChange={(e) => setGh({ ...gh, repo: e.target.value })} />
+                <button className="hr-sync-btn" disabled={busy || !gh.token || !gh.owner || !gh.repo}
+                  onClick={() => void submit(new GitHubAdapter({ token: gh.token.trim(), owner: gh.owner.trim(), repo: gh.repo.trim() }), 'github')}>
+                  {busy ? 'Connecting…' : 'Connect GitHub'}
+                </button>
+              </div>
+            )}
+
+            {openForm === 'webdav' && (
+              <div className="hr-sync-form">
+                <input placeholder="WebDAV folder URL (https://…)" value={wd.url} onChange={(e) => setWd({ ...wd, url: e.target.value })} />
+                <input placeholder="Username" value={wd.username} onChange={(e) => setWd({ ...wd, username: e.target.value })} />
+                <input type="password" placeholder="Password / app password" value={wd.password} onChange={(e) => setWd({ ...wd, password: e.target.value })} />
+                <button className="hr-sync-btn" disabled={busy || !wd.url || !wd.username}
+                  onClick={() => void submit(new WebDavAdapter({ url: wd.url.trim(), username: wd.username.trim(), password: wd.password }), 'self-host')}>
+                  {busy ? 'Connecting…' : 'Connect'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {error && <span className="hr-sync-error">{error}</span>}
+      </div>
     </div>
   );
 }
