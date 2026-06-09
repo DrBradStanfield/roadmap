@@ -177,9 +177,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const claimed = claimRedirectCode(PKCE_KEY); // null when the ?code isn't ours
     if (!claimed) return null;
 
+    // No Content-Type header: a string body defaults to text/plain, keeping the
+    // POST a CORS "simple request" (no preflight — remix-serve can't answer
+    // OPTIONS). The endpoint parses JSON regardless of content type.
     const res = await fetch(config.exchangeUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         grantType: 'code',
         code: claimed.code,
@@ -224,7 +226,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     try {
       res = await fetch(this.config.exchangeUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // No Content-Type: keep it a CORS simple request (no preflight).
         body: JSON.stringify({ grantType: 'refresh', refreshToken: this.tokens.refreshToken }),
         // This runs at page load before first render — a black-holing server
         // must fail fast into the on-device + Reconnect fallback, not hang.

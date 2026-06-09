@@ -89,7 +89,16 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: 'Google Drive exchange is not configured' }, { status: 503, headers });
   }
 
-  const parsed = bodySchema.safeParse(await request.json().catch(() => null));
+  // Parse the body as JSON regardless of Content-Type: clients send text/plain
+  // so the POST stays a CORS "simple request" — remix-serve answers OPTIONS
+  // with 405 before route handlers run, so a preflight would always fail.
+  let body: unknown = null;
+  try {
+    body = JSON.parse(await request.text());
+  } catch {
+    body = null;
+  }
+  const parsed = bodySchema.safeParse(body);
   if (!parsed.success) return json({ error: 'Invalid input' }, { status: 400, headers });
 
   const params = new URLSearchParams({ client_id: clientId, client_secret: clientSecret });
