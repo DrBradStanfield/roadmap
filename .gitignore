@@ -4,6 +4,7 @@ node_modules/
 .env.*.local
 dist/
 dist-pages/
+_site/
 build/
 .cache/
 *.log

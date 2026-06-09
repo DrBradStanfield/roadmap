@@ -1,12 +1,20 @@
 name: Deploy GitHub Pages
 
 # Front door B (implementation plan §5.4 / §10): the standalone static build is
-# the primary dev + test surface for v2. Builds widget-src/dist-pages and
-# publishes it to https://drbradstanfield.github.io/roadmap/.
+# the primary dev + test surface for v2.
+#
+#   main → https://drbradstanfield.github.io/roadmap/        (prod / "front door B")
+#   dev  → https://drbradstanfield.github.io/roadmap/dev/    (staging preview)
+#
+# GitHub Pages serves a single artifact per repo, so every run rebuilds BOTH
+# branches into one site (main at the root, dev under /dev/). A push to either
+# branch refreshes the whole site — the prod root is always the latest `main`,
+# never stale. The dev build is best-effort: if `dev` is broken it is simply
+# omitted, so it can never block the prod deploy.
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'widget-src/**'
       - 'packages/health-core/**'
@@ -28,16 +36,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need both origin/main and origin/dev
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npm run build:pages
+
+      # Prod: main → site root. Always built, regardless of which branch
+      # triggered the run, so the root is never left pointing at stale code.
+      - name: Build main → /
+        run: |
+          git checkout --detach origin/main
+          npm ci
+          VITE_BASE=/roadmap/ npm run build:pages
+          mkdir -p _site && cp -r widget-src/dist-pages/. _site/
+
+      # Staging: dev → /dev/. Best-effort — reuses main's node_modules (dev
+      # rarely diverges in deps); a failed dev build warns and is skipped so it
+      # cannot block the prod deploy above.
+      - name: Build dev → /dev/ (best-effort)
+        run: |
+          if git show-ref --verify --quiet refs/remotes/origin/dev; then
+            git checkout --detach origin/dev
+            if VITE_BASE=/roadmap/dev/ npm run build:pages; then
+              mkdir -p _site/dev && cp -r widget-src/dist-pages/. _site/dev/
+              echo "dev subsite built → /roadmap/dev/"
+            else
+              echo "::warning::dev build failed — publishing prod only"
+            fi
+          else
+            echo "no dev branch yet — publishing prod only"
+          fi
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: widget-src/dist-pages
+          path: _site
 
   deploy:
     needs: build

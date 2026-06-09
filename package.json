@@ -8,6 +8,7 @@
     "build:pages": "cd widget-src && vite build --config vite.config.standalone.ts",
     "dev": "shopify app dev",
     "dev:widget": "cd widget-src && npm run dev",
+    "dev:pages": "cd widget-src && vite --config vite.config.standalone.ts",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
     "deploy": "shopify app deploy",

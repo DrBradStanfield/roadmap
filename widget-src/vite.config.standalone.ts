@@ -37,12 +37,18 @@ function redirectApiToLocalFirst(): Plugin {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   base: process.env.VITE_BASE ?? '/roadmap/',
   root: resolve(__dirname, 'standalone'),
   plugins: [redirectApiToLocalFirst(), react()],
+  // Local dev server (`npm run dev:pages`) for rapid iteration with HMR. Port is
+  // pinned + strict so the Dropbox OAuth redirect URI stays stable at
+  // http://localhost:5173/roadmap/ — register that in the Dropbox app's list.
+  server: { port: 5173, strictPort: true },
   define: {
-    'process.env.NODE_ENV': JSON.stringify('production'),
+    // 'production' for the static build; 'development' under `vite` serve so
+    // React Fast Refresh and dev warnings work while iterating locally.
+    'process.env.NODE_ENV': JSON.stringify(command === 'serve' ? 'development' : 'production'),
     'import.meta.env.VITE_GIT_HASH': JSON.stringify(gitHash),
   },
   resolve: {
@@ -61,4 +67,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
