@@ -797,7 +797,7 @@ interface BatchCreateResponse {
   error?: string;
 }
 
-interface BatchPollResponse {
+export interface BatchPollResponse {
   status: 'processing' | 'ended';
   completed: number;
   total: number;
