@@ -252,8 +252,11 @@ export function HealthTool({ syncControl }: { syncControl?: ReactNode } = {}) {
   useEffect(() => {
     async function loadData() {
       if (authState.isLoggedIn) {
-        // Migrate guest chat if token exists (sync-embed handles this on non-widget pages)
-        const guestToken = getGuestSessionToken();
+        // Migrate guest chat if token exists (sync-embed handles this on non-widget pages).
+        // NEVER on local-first builds: there "logged in" is storage UX only and the guest
+        // session IS the chat identity — clearing it here orphaned the user's conversations
+        // on every page load, and the migrate POST hit the data API as an unauthed 401.
+        const guestToken = LOCAL_FIRST ? null : getGuestSessionToken();
         if (guestToken) {
           clearGuestSessionToken();
           setChatPrefetch(null); // clear stale guest prefetch so authenticated chat loads fresh
@@ -406,8 +409,13 @@ export function HealthTool({ syncControl }: { syncControl?: ReactNode } = {}) {
             // handleSaveLongitudinal won't double-fire.
             trackABConversion();
 
-            // Trigger welcome email only if profile saved (needs height + sex)
-            if (profileSaved) {
+            // Trigger welcome email only if profile saved (needs height + sex).
+            // Skip on local-first builds: there is no DB-backed account to email —
+            // email is a typed opt-in at the reminders flow (decision record §10) —
+            // and the POST would just 401 against the data API.
+            if (LOCAL_FIRST) {
+              // no-op: leave emailConfirmStatus idle
+            } else if (profileSaved) {
               sendWelcomeEmail().then(result => {
                 if (!result.success) {
                   setEmailConfirmStatus('error');
