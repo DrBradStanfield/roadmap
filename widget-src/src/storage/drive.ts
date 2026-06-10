@@ -21,7 +21,7 @@
  * are last-write-wins; the SyncManager's read-merge-write makes that safe. The
  * file `version` field is surfaced for change detection.
  */
-import type { RoadmapFile } from '@roadmap/health-core';
+import { splitDocumentRef, type RoadmapFile } from '@roadmap/health-core';
 import {
   StorageError,
   type ReadResult,
@@ -124,15 +124,6 @@ function loadGis(): Promise<void> {
       }
     }, 50);
   });
-}
-
-/**
- * Split a document ref like 'Lab results/2024-05-10 Lipid panel.pdf' into the
- * Drive subfolder + file name. Folderless refs live directly in the app folder.
- */
-function splitRef(ref: string): { folder: string | null; name: string } {
-  const i = ref.indexOf('/');
-  return i === -1 ? { folder: null, name: ref } : { folder: ref.slice(0, i), name: ref.slice(i + 1) };
 }
 
 export class GoogleDriveAdapter implements StorageAdapter {
@@ -347,7 +338,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   }
 
   async readDocument(ref: string): Promise<Blob> {
-    const { folder, name } = splitRef(ref);
+    const { folder, name } = splitDocumentRef(ref);
     const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
     const id = await this.findFileId(name, parentId);
     if (!id) throw new StorageError(`Google Drive document not found: ${ref}`);
@@ -357,7 +348,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
-    const { folder, name } = splitRef(ref);
+    const { folder, name } = splitDocumentRef(ref);
     const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
     const id = await this.findFileId(name, parentId);
     const type = bytes.type || 'application/octet-stream';

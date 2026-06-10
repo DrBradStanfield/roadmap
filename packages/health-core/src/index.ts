@@ -253,4 +253,5 @@ export {
   DOCUMENT_FOLDERS,
   extensionOf,
   sanitizeTitle,
+  splitDocumentRef,
 } from './document-path';

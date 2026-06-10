@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { UnitSystem, MeasurementSource, MetricType } from '@roadmap/health-core';
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, type PageContent, type UploadErrorCode, type UploadHistory } from '../lib/api';
 import { ReviewTable, type FileResult, type DocumentToSave } from './ReviewTable';
+import { synthesizeLabArchiveEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
 
@@ -275,7 +276,12 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         }
         const allResults = await processBatch(upload, allFileObjects, abort, updateProgress);
         if (abort.signal.aborted) return;
-        const batchBlobs = new Map<string, Blob>(allFileObjects.map((f) => [f.fileName, f.file as Blob]));
+        // Originals are only kept when the backend can archive them — off-cloud,
+        // skip the blob bookkeeping entirely (the bytes would be stripped anyway).
+        const keepBlobs = getDocumentArchiveMode() === 'cloud';
+        const batchBlobs = keepBlobs
+          ? new Map<string, Blob>(allFileObjects.map((f) => [f.fileName, f.file as Blob]))
+          : new Map<string, Blob>();
         setResults(allResults.map((r) => ({ ...r, file: batchBlobs.get(r.fileName) })));
         setState('review');
         return;
@@ -284,11 +290,14 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       // Pipeline path (<20 files): producer extracts, consumer sends to LLM.
       // Keep the original bytes by name so the save step can archive them in
       // the user's cloud (v2) — ZIP members are re-read (cheap, in-memory).
+      // Off-cloud the bytes would be stripped at save, so skip the work.
       const fileBlobs = new Map<string, Blob>();
-      for (const entries of zipEntryLists) {
-        for (const { name, entry } of entries) fileBlobs.set(name, await entry.async('blob'));
+      if (getDocumentArchiveMode() === 'cloud') {
+        for (const entries of zipEntryLists) {
+          for (const { name, entry } of entries) fileBlobs.set(name, await entry.async('blob'));
+        }
+        for (const file of otherFiles) fileBlobs.set(file.name, file);
       }
-      for (const file of otherFiles) fileBlobs.set(file.name, file);
       const allResults = await processPipeline(upload, zipEntryLists, otherFiles, totalFiles, abort, updateProgress, unitSystem);
       if (abort.signal.aborted) return;
       setResults(allResults.map((r) => ({ ...r, file: fileBlobs.get(r.fileName) })));
@@ -548,36 +557,18 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         // pure LLM extraction in audit analytics. Falls back to 'lab_import'.
         source: v.source ?? 'lab_import',
       }));
-      const keepOriginals = getDocumentArchiveMode() === 'cloud';
-      const blobFor = (name: string | null) => (keepOriginals ? results.find(r => r.fileName === name)?.file : undefined);
-      const docPayloads = documents.map(d => ({
+      // Blobs travel INSIDE the payload (attached at processing time, and only
+      // when the backend can archive them) — no name-keyed re-join here.
+      const docPayloads: ArchiveDocPayload[] = documents.map(d => ({
         documentType: d.documentType,
         title: d.title,
         documentDate: d.documentDate,
         contentMd: d.contentMd,
         metadata: d.metadata,
         sourceFileName: d.sourceFileName,
-        file: blobFor(d.sourceFileName),
+        file: d.file,
       }));
-      // Value-bearing lab files produce no DocumentResult in the pipeline, but
-      // their ORIGINALS belong in the user's archive too ('Lab results' folder
-      // — the whole point of Brad's organised-files design). Synthesize a
-      // document entry per successfully-processed lab file.
-      const coveredFiles = new Set(documents.map(d => d.sourceFileName));
-      for (const r of results) {
-        if (!keepOriginals) break;
-        if (r.error || r.document || coveredFiles.has(r.fileName) || !r.file) continue;
-        if (r.values.length === 0 && r.additionalValues.length === 0) continue;
-        docPayloads.push({
-          documentType: 'pathology_report',
-          title: 'Blood test results',
-          documentDate: r.reportDate,
-          contentMd: '',
-          metadata: {},
-          sourceFileName: r.fileName,
-          file: r.file,
-        });
-      }
+      docPayloads.push(...synthesizeLabArchiveEntries(results, new Set(documents.map(d => d.sourceFileName))));
       const labValuePayloads = labValues.map(lv => ({
         metricName: lv.name,
         value: lv.value,

@@ -2,6 +2,7 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-r
 import * as Sentry from '@sentry/remix';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
 import { extractOrClassify, createBatch, pollBatch } from '../lib/anthropic.server';
+import { createQuotaCounter } from '../lib/rate-limiter';
 import { ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 
 /**
@@ -22,52 +23,31 @@ import { ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } fro
 
 const PER_IP_DAILY_LIMIT = 60;
 const MACHINE_DAILY_CAP = Number(process.env.AI_DAILY_FILE_CAP || 500);
-const WINDOW_MS = 24 * 60 * 60_000;
+const DAY_MS = 24 * 60 * 60_000;
 
-const ipCounts = new Map<string, { count: number; resetAt: number }>();
+// Per-IP daily file quota — same shared counter machinery the sibling
+// local-first routes use (rate-limiter.ts), weighted by file count.
+const ipQuota = createQuotaCounter(PER_IP_DAILY_LIMIT, DAY_MS, 30 * 60_000);
 let machineDay = '';
 let machineCount = 0;
 
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of ipCounts) {
-    if (now > entry.resetAt) ipCounts.delete(key);
-  }
-}, 30 * 60_000);
-
-/** Consume `count` files against both limits; false = refuse. */
-function consumeQuota(ip: string, count: number): { allowed: boolean; remaining: number } {
+/** Consume `count` files against the per-IP quota AND the machine $-cap. */
+function consumeQuota(ip: string, count: number): boolean {
   const today = new Date().toISOString().slice(0, 10);
   if (machineDay !== today) {
     machineDay = today;
     machineCount = 0;
   }
-  if (machineCount + count > MACHINE_DAILY_CAP) return { allowed: false, remaining: 0 };
-
-  const now = Date.now();
-  let entry = ipCounts.get(ip);
-  if (!entry || now > entry.resetAt) {
-    entry = { count: 0, resetAt: now + WINDOW_MS };
-    ipCounts.set(ip, entry);
-  }
-  if (entry.count + count > PER_IP_DAILY_LIMIT) {
-    return { allowed: false, remaining: Math.max(0, PER_IP_DAILY_LIMIT - entry.count) };
-  }
-  entry.count += count;
+  if (machineCount + count > MACHINE_DAILY_CAP) return false;
+  if (!ipQuota.take(ip, count)) return false;
   machineCount += count;
-  return { allowed: true, remaining: PER_IP_DAILY_LIMIT - entry.count };
-}
-
-function remainingFor(ip: string): number {
-  const entry = ipCounts.get(ip);
-  if (!entry || Date.now() > entry.resetAt) return PER_IP_DAILY_LIMIT;
-  return Math.max(0, PER_IP_DAILY_LIMIT - entry.count);
+  return true;
 }
 
 // Batch poll state — per-machine, like v1 (a poll landing on the other Fly
 // machine returns 404 and the client falls back; same accepted risk as v1).
 const MAX_ACTIVE_BATCHES = 200;
-const activeBatches = new Map<string, { ip: string; totalFiles: number; createdAt: number }>();
+const activeBatches = new Map<string, { totalFiles: number; createdAt: number }>();
 setInterval(() => {
   const cutoff = Date.now() - 60 * 60_000;
   for (const [id, b] of activeBatches) if (b.createdAt < cutoff) activeBatches.delete(id);
@@ -99,7 +79,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
   }
 
-  return json({ allowed: remainingFor(ip) > 0, remaining: remainingFor(ip) }, { headers });
+  const remaining = ipQuota.remaining(ip);
+  return json({ allowed: remaining > 0, remaining }, { headers });
 }
 
 /** POST: single-file extraction or batch creation (text/plain simple request). */
@@ -126,8 +107,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const batchValidation = batchImportRequestSchema.safeParse(body);
     if (batchValidation.success) {
       const { files } = batchValidation.data;
-      const limit = consumeQuota(ip, files.length);
-      if (!limit.allowed) {
+      if (!consumeQuota(ip, files.length)) {
         return json(
           { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
           { status: 429, headers },
@@ -137,7 +117,7 @@ export async function action({ request }: ActionFunctionArgs) {
         return json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429, headers });
       }
       const { batchId } = await createBatch(files);
-      activeBatches.set(batchId, { ip, totalFiles: files.length, createdAt: Date.now() });
+      activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now() });
       return json({ success: true, batchId, totalFiles: files.length }, { headers });
     }
 
@@ -146,8 +126,7 @@ export async function action({ request }: ActionFunctionArgs) {
     if (!validation.success) {
       return json({ success: false, error: 'Invalid request' }, { status: 400, headers });
     }
-    const limit = consumeQuota(ip, 1);
-    if (!limit.allowed) {
+    if (!consumeQuota(ip, 1)) {
       return json(
         { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
         { status: 429, headers },
@@ -157,7 +136,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const { pages } = validation.data;
     try {
       const result = await extractOrClassify(pages);
-      return json({ success: true, data: result, remaining: limit.remaining }, { headers });
+      return json({ success: true, data: result, remaining: ipQuota.remaining(ip) }, { headers });
     } catch (error) {
       console.error('Lab import error (v2):', error);
       Sentry.captureException(error, {

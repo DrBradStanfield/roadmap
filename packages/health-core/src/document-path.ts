@@ -49,6 +49,17 @@ export function extensionOf(sourceFileName: string | null | undefined): string {
 }
 
 /**
+ * Decompose a fileRef built by buildDocumentRef. Compose + decompose live in
+ * this one module so the "<folder>/<name>" contract has a single home (the
+ * Drive adapter maps the folder to a real Drive subfolder; the path-native
+ * backends use the string verbatim).
+ */
+export function splitDocumentRef(ref: string): { folder: string | null; name: string } {
+  const i = ref.indexOf('/');
+  return i === -1 ? { folder: null, name: ref } : { folder: ref.slice(0, i), name: ref.slice(i + 1) };
+}
+
+/**
  * Build the fileRef for an upload: `<folder>/<YYYY-MM-DD> <title><ext>`.
  *
  * - `date`: the DOCUMENT's own date (AI-extracted, user-corrected in review);

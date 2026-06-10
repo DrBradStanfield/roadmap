@@ -19,3 +19,39 @@ export function createRateLimiter(max: number, windowMs: number, cleanupMs: numb
     return entry.count <= max;
   };
 }
+
+/**
+ * Weighted per-key quota over a sliding window (e.g. "N files per IP per
+ * day"). Same Map+sweep machinery as createRateLimiter, but consumption has a
+ * weight and callers can read the remainder without consuming.
+ */
+export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: number) {
+  const map = new Map<string, { count: number; resetAt: number }>();
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of map) {
+      if (now > entry.resetAt) map.delete(key);
+    }
+  }, cleanupMs);
+  const live = (key: string) => {
+    const entry = map.get(key);
+    return entry && Date.now() <= entry.resetAt ? entry : null;
+  };
+  return {
+    /** Consume `n` units; false (and nothing consumed) when it would exceed the limit. */
+    take(key: string, n: number): boolean {
+      let entry = live(key);
+      if (!entry) {
+        entry = { count: 0, resetAt: Date.now() + windowMs };
+        map.set(key, entry);
+      }
+      if (entry.count + n > limit) return false;
+      entry.count += n;
+      return true;
+    },
+    remaining(key: string): number {
+      const entry = live(key);
+      return Math.max(0, limit - (entry?.count ?? 0));
+    },
+  };
+}

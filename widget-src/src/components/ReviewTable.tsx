@@ -43,6 +43,8 @@ export interface DocumentToSave {
   sourceFileName: string | null;
   /** If this maps to a screening type, the key to update (e.g. "colorectal_last_date") */
   screeningUpdate?: { key: string; date: string };
+  /** The original bytes, carried inside the payload (no name-keyed re-join). */
+  file?: Blob;
 }
 
 interface ReviewTableProps {
@@ -594,6 +596,7 @@ export function ReviewTable({
         screeningUpdate: screeningKey && screeningChecked[fi] && dateStr
           ? { key: screeningKey, date: dateStr }
           : undefined,
+        file: r.file,
       });
     });
 

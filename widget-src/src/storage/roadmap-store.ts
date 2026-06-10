@@ -198,7 +198,7 @@ export class RoadmapStore {
         reminderCategory: p.category,
         enabled: p.enabled,
       })),
-      documents: this.file.documents.filter((d) => !d.deleted).map(toApiDocument),
+      documents: this.liveDocuments().map(toApiDocument),
     };
   }
 
@@ -223,7 +223,12 @@ export class RoadmapStore {
   }
 
   getHealthDocuments(): ApiDocument[] {
-    return this.file.documents.filter((d) => !d.deleted).map(toApiDocument);
+    return this.liveDocuments().map(toApiDocument);
+  }
+
+  /** Non-tombstoned documents — the ONE place the deleted-filter invariant lives. */
+  private liveDocuments(): FileDocument[] {
+    return this.file.documents.filter((d) => !d.deleted);
   }
 
   // ================================================================= mutations
@@ -393,8 +398,8 @@ export class RoadmapStore {
       this.file.documents.filter((d) => !d.deleted && d.contentHash).map((d) => d.contentHash),
     );
     for (const d of documents) {
-      if (d.file) {
-        const hash = await sha256Blob(d.file);
+      const hash = d.file ? await sha256Blob(d.file) : null;
+      if (hash) {
         if (existingHashes.has(hash)) continue; // identical original already archived
         existingHashes.add(hash);
       }
@@ -412,10 +417,9 @@ export class RoadmapStore {
           existingRefs,
         });
         try {
-          const hash = await sha256Blob(d.file); // cheap re-digest; keeps the paths independent
-          await this.adapter.writeDocument(ref, d.file, hash);
+          await this.adapter.writeDocument(ref, d.file);
           doc.fileRef = ref;
-          doc.contentHash = hash;
+          doc.contentHash = hash!;
           doc.mimeType = d.file.type || '';
           existingRefs.add(ref);
         } catch (error) {

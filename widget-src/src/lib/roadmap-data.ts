@@ -23,6 +23,7 @@ import type {
 } from '@roadmap/health-core';
 import { RoadmapStore } from '../storage/roadmap-store';
 import type { StorageAdapter } from '../storage/adapter';
+import { parseJsonResponse } from './api';
 import type {
   AddMeasurementResult,
   ApiDocument,
@@ -69,7 +70,7 @@ export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaini
   try {
     const response = await fetch(LAB_IMPORT_V2_URL);
     if (!response.ok) return { allowed: false, remaining: 0 };
-    return (await response.json()) as { allowed: boolean; remaining: number };
+    return (await parseJsonResponse<{ allowed: boolean; remaining: number }>(response)) ?? { allowed: true, remaining: 0 };
   } catch {
     return { allowed: true, remaining: 0 }; // optimistic — the POST enforces
   }
@@ -89,8 +90,8 @@ export async function labImport(
       return { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
     }
     if (!response.ok) return { result: null, error: 'Extraction failed', errorCode: 'server_error' };
-    const data = (await response.json()) as { success: boolean; data?: LabImportResult; remaining?: number; error?: string };
-    if (!data.success || !data.data) return { result: null, error: data.error || 'Extraction failed', errorCode: 'server_error' };
+    const data = await parseJsonResponse<{ success: boolean; data?: LabImportResult; remaining?: number; error?: string }>(response);
+    if (!data?.success || !data.data) return { result: null, error: data?.error || 'Extraction failed', errorCode: 'server_error' };
     return { result: data.data, remaining: data.remaining };
   } catch (error) {
     console.warn('Lab import error:', error);
@@ -110,8 +111,8 @@ export async function labImportBatch(
       return { batchId: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
     }
     if (!response.ok) return { batchId: null, error: 'Failed to start batch processing', errorCode: 'server_error' };
-    const data = (await response.json()) as { success: boolean; batchId?: string; error?: string };
-    if (!data.success || !data.batchId) return { batchId: null, error: data.error || 'Batch creation failed', errorCode: 'server_error' };
+    const data = await parseJsonResponse<{ success: boolean; batchId?: string; error?: string }>(response);
+    if (!data?.success || !data.batchId) return { batchId: null, error: data?.error || 'Batch creation failed', errorCode: 'server_error' };
     return { batchId: data.batchId };
   } catch (error) {
     console.warn('Batch import error:', error);
@@ -126,7 +127,7 @@ export async function pollBatchStatus(batchId: string): Promise<BatchPollRespons
       return { status: 'ended', completed: 0, total: 0, error: 'Batch not found — server may have restarted.', errorCode: 'server_restart' };
     }
     if (!response.ok) return { status: 'processing', completed: 0, total: 0 };
-    return ((await response.json()) as BatchPollResponse) ?? { status: 'processing', completed: 0, total: 0 };
+    return (await parseJsonResponse<BatchPollResponse>(response)) ?? { status: 'processing', completed: 0, total: 0 };
   } catch {
     return { status: 'processing', completed: 0, total: 0 };
   }

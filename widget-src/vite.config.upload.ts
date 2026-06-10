@@ -27,7 +27,9 @@ export default defineConfig({
       },
     },
     cssCodeSplit: false,
-    sourcemap: 'hidden',
+    // Shopify build keeps hidden maps (Sentry); the Pages build must not
+    // publish a 2.9 MB public map alongside the bundle.
+    sourcemap: process.env.PAGES_BUILD ? false : 'hidden',
   },
   resolve: {
     alias: {

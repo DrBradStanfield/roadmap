@@ -81,7 +81,7 @@ export interface StorageAdapter {
    * then commit the `documents[]` reference via `write()` — so the JSON write is
    * the atomic commit point and orphan blobs are harmless.
    */
-  writeDocument(ref: string, bytes: Blob, contentHash: string): Promise<void>;
+  writeDocument(ref: string, bytes: Blob): Promise<void>;
 
   /**
    * OPTIONAL synchronous last-ditch write, used only on tab-close /

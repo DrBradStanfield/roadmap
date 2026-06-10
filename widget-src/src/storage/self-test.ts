@@ -73,8 +73,8 @@ class ConflictOnceAdapter implements StorageAdapter {
   readDocument(ref: string) {
     return this.inner.readDocument(ref);
   }
-  writeDocument(ref: string, bytes: Blob, hash: string) {
-    return this.inner.writeDocument(ref, bytes, hash);
+  writeDocument(ref: string, bytes: Blob) {
+    return this.inner.writeDocument(ref, bytes);
   }
 }
 
