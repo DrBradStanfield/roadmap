@@ -1140,13 +1140,34 @@ export function HealthTool({ syncControl }: { syncControl?: ReactNode } = {}) {
     formStage,
   };
 
+  // Dated blood-test + vitals time series for the chat context (local-first
+  // only — see chatSectionProps). Keyed by metricType, chronological, SI values,
+  // capped at 24 points/metric to bound the prompt.
+  const chatMeasurementHistory = useMemo(() => {
+    if (!LOCAL_FIRST) return undefined;
+    const out: Record<string, Array<{ date: string; value: number }>> = {};
+    for (const r of [...bloodTestHistory, ...vitalsHistory]) {
+      const date = (r.recordedAt || '').slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+      (out[r.metricType] ??= []).push({ date, value: r.value });
+    }
+    for (const k of Object.keys(out)) {
+      out[k].sort((a, b) => (a.date < b.date ? -1 : 1));
+      if (out[k].length > 24) out[k] = out[k].slice(-24);
+    }
+    return Object.keys(out).length > 0 ? out : undefined;
+  }, [bloodTestHistory, vitalsHistory]);
+
   const chatSectionProps = {
     isLoggedIn: authState.isLoggedIn,
     // Send the plan as chat context whenever the data is client-side: true
     // guests, AND all local-first builds (where "logged in" only means local
-    // storage, never a DB-backed account the server could read).
+    // storage, never a DB-backed account the server could read). Local-first
+    // also ships the dated blood-test/vitals history (measurementHistory) so
+    // the chat answers "most recent X" from the time series, not the ambiguous
+    // single snapshot field.
     guestInputs: (!authState.isLoggedIn || LOCAL_FIRST)
-      ? { ...effectiveInputs, unitSystem, medications, screenings }
+      ? { ...effectiveInputs, unitSystem, medications, screenings, ...(chatMeasurementHistory ? { measurementHistory: chatMeasurementHistory } : {}) }
       : null,
     prefetchedData: chatPrefetch,
   };
