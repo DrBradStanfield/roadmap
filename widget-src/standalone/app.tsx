@@ -8,6 +8,7 @@
  * initialises the store, and renders the connect-a-cloud control inside the plan.
  */
 import '../src/styles.css';
+import './standalone.css';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { HealthTool } from '../src/components/HealthTool';
