@@ -386,7 +386,18 @@ export class RoadmapStore {
   ): Promise<ApiDocument[]> {
     const out: FileDocument[] = [];
     const existingRefs = new Set(this.file.documents.map((d) => d.fileRef).filter(Boolean));
+    // Content-hash dedup: re-uploading a file the archive already holds (live,
+    // not tombstoned) must not create a second entry or a " (2)" blob. The
+    // review step dedups extracted VALUES but knows nothing about originals.
+    const existingHashes = new Set(
+      this.file.documents.filter((d) => !d.deleted && d.contentHash).map((d) => d.contentHash),
+    );
     for (const d of documents) {
+      if (d.file) {
+        const hash = await sha256Blob(d.file);
+        if (existingHashes.has(hash)) continue; // identical original already archived
+        existingHashes.add(hash);
+      }
       const doc: FileDocument = {
         id: newId(), title: d.title, type: d.documentType as DocumentType, date: d.documentDate,
         fileRef: '', contentHash: '', mimeType: '', extractedText: d.contentMd,
@@ -401,7 +412,7 @@ export class RoadmapStore {
           existingRefs,
         });
         try {
-          const hash = await sha256Blob(d.file);
+          const hash = await sha256Blob(d.file); // cheap re-digest; keeps the paths independent
           await this.adapter.writeDocument(ref, d.file, hash);
           doc.fileRef = ref;
           doc.contentHash = hash;
