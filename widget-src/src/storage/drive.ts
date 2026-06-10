@@ -350,17 +350,13 @@ export class GoogleDriveAdapter implements StorageAdapter {
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
     const { folder, name } = splitDocumentRef(ref);
     const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
-    const id = await this.findFileId(name, parentId);
     const type = bytes.type || 'application/octet-stream';
-    if (id) {
-      const res = await fetch(`${UPLOAD}/files/${id}?uploadType=media`, {
-        method: 'PATCH',
-        headers: { ...(await this.authHeaders()), 'Content-Type': type },
-        body: bytes,
-      });
-      if (!res.ok) throw new StorageError(`Google Drive document write failed (${res.status}): ${ref}`);
-      return;
-    }
+    // Create directly — no pre-write existence lookup (it halved every upload's
+    // round trips for a case that can't happen: refs are unique by construction,
+    // collision-suffixed against the file's refs + content-hash deduped). The
+    // one exception — retrying after an interrupted save left an orphan blob —
+    // produces a same-named duplicate with identical bytes, which Drive allows
+    // and readDocument resolves by name; accepted orphan semantics (§5.3).
     const res = await this.createMultipart(name, type, bytes, parentId);
     if (!res.ok) throw new StorageError(`Google Drive document create failed (${res.status}): ${ref}`);
   }

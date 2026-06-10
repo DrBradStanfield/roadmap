@@ -21,6 +21,7 @@
  */
 import {
   buildDocumentRef,
+  splitDocumentRef,
   computeReminderSchedule,
   createMeasurement,
   dayOf,
@@ -397,6 +398,10 @@ export class RoadmapStore {
     const existingHashes = new Set(
       this.file.documents.filter((d) => !d.deleted && d.contentHash).map((d) => d.contentHash),
     );
+
+    // Phase 1 (serial, order-dependent): dedup by hash, assign collision-safe
+    // refs, build the metadata rows.
+    const writes: Array<{ doc: FileDocument; ref: string; file: Blob; hash: string }> = [];
     for (const d of documents) {
       const hash = d.file ? await sha256Blob(d.file) : null;
       if (hash) {
@@ -416,21 +421,48 @@ export class RoadmapStore {
           sourceFileName: d.sourceFileName,
           existingRefs,
         });
-        try {
-          await this.adapter.writeDocument(ref, d.file);
-          doc.fileRef = ref;
-          doc.contentHash = hash!;
-          doc.mimeType = d.file.type || '';
-          existingRefs.add(ref);
-        } catch (error) {
-          console.warn(`Document file not stored (${ref})`, error);
-          Sentry.captureException(error, {
-            tags: { area: 'cloud-sync', op: 'write-document', backend: this.adapter.id },
-          });
-        }
+        existingRefs.add(ref);
+        writes.push({ doc, ref, file: d.file, hash: hash! });
       }
       out.push(doc);
     }
+
+    // Phase 2: blob uploads, 3 at a time — serial writes made a 20-file batch
+    // ~40 sequential round trips (20-40s on a slow link). The FIRST write into
+    // each folder still runs alone (concurrent find-or-create of the same new
+    // folder would create duplicates); the rest pool. A failed write degrades
+    // to metadata-only, as before.
+    const writeOne = async (w: { doc: FileDocument; ref: string; file: Blob; hash: string }) => {
+      try {
+        await this.adapter.writeDocument(w.ref, w.file);
+        w.doc.fileRef = w.ref;
+        w.doc.contentHash = w.hash;
+        w.doc.mimeType = w.file.type || '';
+      } catch (error) {
+        console.warn(`Document file not stored (${w.ref})`, error);
+        Sentry.captureException(error, {
+          tags: { area: 'cloud-sync', op: 'write-document', backend: this.adapter.id },
+        });
+      }
+    };
+    const seenFolders = new Set<string>();
+    const pooled: typeof writes = [];
+    for (const w of writes) {
+      const folder = splitDocumentRef(w.ref).folder ?? '';
+      if (seenFolders.has(folder)) {
+        pooled.push(w);
+      } else {
+        seenFolders.add(folder);
+        await writeOne(w); // folder-creating write runs alone
+      }
+    }
+    let next = 0;
+    await Promise.all(
+      Array.from({ length: Math.min(3, pooled.length) }, async () => {
+        while (next < pooled.length) await writeOne(pooled[next++]);
+      }),
+    );
+
     this.file.documents.push(...out);
     this.touch();
     return out.map(toApiDocument);

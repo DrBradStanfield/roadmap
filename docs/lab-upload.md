@@ -521,7 +521,11 @@ The client overrides live in `widget-src/src/lib/roadmap-data.ts` (the standalon
 - **Prompt caching is NOT applicable**: both system prompts are ~600–1,000 tokens, below Haiku 4.5's 4,096-token minimum cacheable prefix; the per-call cost is dominated by the unique document content anyway
 - Future-proofing note: the JSON-retry uses an assistant prefill (`'{'`), which 4.6+ models reject (400). If the model is ever bumped past Haiku 4.5, replace the prefill+extractJsonObject machinery with structured outputs (`output_config.format` with a json_schema) — guaranteed-valid JSON, no retry needed
 
-### 4. Known scale items (documented, deferred)
+### 4. Save-path performance (shipped June 2026 — was the deferred scale item)
 
-- Blob uploads to the user's cloud run serially in `bulkSaveDocuments` (~2 RTTs/file on Drive incl. a create-time existence check that's almost never needed). Fine for typical 1–5 file uploads; a 3–4-way pool + skipping the existence check pays off for 20+ file batches on slow links
-- Per-IP/per-machine quotas are in-memory (reset on deploy; ×2 with two machines)
+Approved by Brad ahead of the website launch, where multi-file uploads on slow connections are the expected worst case:
+
+- **Parallel blob uploads** — `bulkSaveDocuments` now writes originals to the user's cloud **3 at a time** instead of serially. Why: serial writes made a 20-file batch ~40 sequential round trips (20–40 s on a slow link); a 3-way pool cuts save time ~3× while staying gentle on provider rate limits. Mechanics: refs/hashes/dedup are still computed serially first (order-dependent collision suffixing), and the FIRST write into each folder runs alone (two concurrent find-or-creates of the same new Drive folder would create duplicate folders); only the remainder pools. A failed write still degrades to metadata-only.
+- **No pre-write existence check on Drive creates** — `writeDocument` previously did a lookup GET before every create, half its round trips, for a case that can't happen: refs are unique by construction (collision-suffixed against the file's refs + content-hash dedup means an already-archived file never reaches the write). The one exception — retrying after an interrupted save left an orphan blob — now produces a same-named duplicate with identical bytes, which Drive permits and `readDocument` resolves by name; accepted orphan semantics (§5.3 commit order already treats orphans as harmless).
+
+Remaining (acceptable): per-IP/per-machine extraction quotas are in-memory (reset on deploy; ×2 with two Fly machines).
