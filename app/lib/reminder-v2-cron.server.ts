@@ -99,7 +99,7 @@ async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promis
 
   const unsubscribeUrl = `${APP_BASE_URL}/reminders-v2/unsubscribe?token=${encodeURIComponent(optin.token)}`;
   const html = buildReminderV2EmailHtml(due, unsubscribeUrl);
-  const sent = await sendReminderEmail(optin.email, html, unsubscribeUrl);
+  const sent = await sendReminderEmail(optin.email, html, unsubscribeUrl, "Dr Brad's Health Reminder");
   if (!sent) return 'email-send-failed';
 
   // Record per-category send dates. If this write fails the next run would

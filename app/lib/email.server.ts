@@ -612,6 +612,7 @@ export async function sendReminderEmail(
   to: string,
   html: string,
   preferencesUrl: string,
+  subject = 'Health Reminders', // v1 default; v2 passes its own (Brad, 2026-06-10)
 ): Promise<boolean> {
   if (!resend) {
     // Production silent-fail trap: if RESEND_API_KEY is somehow unset on Fly,
@@ -629,7 +630,7 @@ export async function sendReminderEmail(
     const { error } = await resend.emails.send({
       from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
       to,
-      subject: 'Health Reminders',
+      subject,
       html,
       headers: {
         'List-Unsubscribe': `<${preferencesUrl}>`,
@@ -1010,7 +1011,7 @@ export function buildReminderV2EmailHtml(
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
 
     <div style="background:#2563eb;padding:32px 24px;text-align:center;">
-      <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:600;">Health Reminders</h1>
+      <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:600;">Dr Brad's Health Reminder</h1>
     </div>
 
     <div style="padding:24px;">
