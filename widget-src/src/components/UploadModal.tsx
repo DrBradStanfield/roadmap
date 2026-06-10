@@ -621,7 +621,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     } finally {
       setIsSaving(false);
     }
-  }, [onComplete, onScreeningUpdate]);
+  }, [onComplete, onScreeningUpdate, results]);
 
   // Portal to body so position:fixed resolves against the viewport — the
   // .health-tool container has a transform/contain that would otherwise pin
