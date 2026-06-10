@@ -61,18 +61,19 @@
       .hr-reminders .hr-sync-status { font-size: 12.5px; }
       .hr-reminders .hr-sync-detail { flex-basis: auto; }
 
-      /* "Where should your health plan live?" lightbox. */
-      .hr-modal-overlay {
-        position: fixed; inset: 0; background: rgba(28, 43, 51, 0.45); z-index: 1000;
-        display: flex; align-items: center; justify-content: center; padding: 16px;
-      }
+      /* "Where should your health plan live?" lightbox — a native <dialog>,
+         so focus trap / Escape / top-layer come from the platform. */
       .hr-modal {
-        position: relative; background: #fff; border-radius: 14px; max-width: 520px; width: 100%;
-        max-height: 90vh; overflow-y: auto; padding: 24px 24px 20px;
+        border: 0; padding: 0; background: #fff; border-radius: 14px;
+        max-width: 520px; width: calc(100% - 32px);
+        max-height: 90vh; overflow-y: auto;
         box-shadow: 0 12px 40px rgba(0,0,0,0.22);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         color: #1c2b33;
       }
+      .hr-modal::backdrop { background: rgba(28, 43, 51, 0.45); }
+      .hr-modal--wide { max-width: 960px; }
+      .hr-modal-inner { position: relative; padding: 24px 24px 20px; }
       .hr-modal h2 { font-size: 19px; margin: 0 32px 6px 0; }
       .hr-modal-sub { font-size: 13.5px; color: #5a6b73; margin: 0 0 14px; }
       .hr-modal-close {
@@ -105,8 +106,7 @@
       }
       .hr-opt-local { border-style: dashed; }
       @media (max-width: 600px) {
-        .hr-modal-overlay { padding: 0; align-items: stretch; }
-        .hr-modal { max-width: none; border-radius: 0; max-height: none; }
+        .hr-modal { max-width: none; width: 100vw; border-radius: 0; max-height: 100dvh; height: 100dvh; margin: 0; }
       }
     </style>
   </head>

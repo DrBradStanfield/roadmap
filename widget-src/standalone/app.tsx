@@ -26,6 +26,7 @@ import {
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import { SyncControl } from './sync-control';
+import { HistoryLightboxHost } from './history-lightbox';
 import { migrateLocalInto, BACKEND_KEY, type Backend } from './connect';
 
 interface ResolvedBackend {
@@ -114,6 +115,7 @@ async function main() {
     <React.StrictMode>
       <ErrorBoundary>
         <HealthTool syncControl={<SyncControl backend={backend} reconnect={reconnect} />} />
+        <HistoryLightboxHost />
       </ErrorBoundary>
     </React.StrictMode>,
   );

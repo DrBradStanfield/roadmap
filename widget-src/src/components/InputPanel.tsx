@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { ColumnHeader } from './ColumnHeader';
 import { DocumentLightbox } from './DocumentLightbox';
-import { DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument, type ApiSupplement } from '../lib/api';
+import { DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument, type ApiSupplement, HISTORY_PAGE_PATH, openHistoryLightbox,
+} from '../lib/api';
 import type { HealthInputs, ScreeningInputs } from '@roadmap/health-core';
 import {
   type UnitSystem,
@@ -616,7 +617,8 @@ export function InputPanel({
             {!isExpandedWithData && previousLabel && (
               <a
                 className="previous-value"
-                href={`/pages/health-history?metric=${FIELD_METRIC_MAP[field]}`}
+                href={`${HISTORY_PAGE_PATH}?metric=${FIELD_METRIC_MAP[field]}`}
+                onClick={(e) => { if (openHistoryLightbox(FIELD_METRIC_MAP[field])) e.preventDefault(); }}
                 target="_blank"
                 rel="noopener noreferrer"
               >{previousLabel}</a>
@@ -662,7 +664,8 @@ export function InputPanel({
         <div className="collapsed-field-row">
           <a
             className="collapsed-field-label"
-            href={`/pages/health-history?metric=${metric}`}
+            href={`${HISTORY_PAGE_PATH}?metric=${metric}`}
+            onClick={(e) => { if (openHistoryLightbox(metric)) e.preventDefault(); }}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -725,7 +728,8 @@ export function InputPanel({
         <div className="collapsed-field-row">
           <a
             className="collapsed-field-label"
-            href="/pages/health-history?metric=systolic_bp"
+            href={`${HISTORY_PAGE_PATH}?metric=systolic_bp`}
+            onClick={(e) => { if (openHistoryLightbox('systolic_bp')) e.preventDefault(); }}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -773,7 +777,15 @@ export function InputPanel({
 
         <div className={`prefill-summary-wrapper${collapsed && !prefillExpanded ? ' visible' : ''}`}>
           <p className="prefill-summary" onClick={() => setPrefillExpanded(true)}>
-            {inputs.sex === 'male' ? 'Male' : 'Female'} · {formatHeightDisplay(inputs.heightCm!, unitSystem)} tall{inputs.birthYear && inputs.birthMonth ? ` · Born ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][inputs.birthMonth - 1]} ${inputs.birthYear} (Age ${calculateAge(inputs.birthYear, inputs.birthMonth)})` : ''}
+            {[
+              inputs.sex === 'male' ? 'Male' : inputs.sex === 'female' ? 'Female' : null,
+              inputs.heightCm != null && !Number.isNaN(Number(inputs.heightCm))
+                ? `${formatHeightDisplay(Number(inputs.heightCm), unitSystem)} tall`
+                : null,
+              inputs.birthYear && inputs.birthMonth
+                ? `Born ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][inputs.birthMonth - 1]} ${inputs.birthYear} (Age ${calculateAge(inputs.birthYear, inputs.birthMonth)})`
+                : null,
+            ].filter(Boolean).join(' · ')}
           </p>
         </div>
 
@@ -1006,7 +1018,8 @@ export function InputPanel({
               <span className="field-hint">{getBpTargetText()}</span>
               {!bpExpanded && bpLabel && (
                 <a className="previous-value"
-                   href={`/pages/health-history?metric=systolic_bp`}
+                   href={`${HISTORY_PAGE_PATH}?metric=systolic_bp`}
+            onClick={(e) => { if (openHistoryLightbox('systolic_bp')) e.preventDefault(); }}
                    target="_blank" rel="noopener noreferrer">{bpLabel}</a>
               )}
             </div>
@@ -2002,7 +2015,8 @@ export function InputPanel({
                             {psaPreviousLabel && (
                               <a
                                 className="previous-value"
-                                href="/pages/health-history?metric=psa"
+                                href={`${HISTORY_PAGE_PATH}?metric=psa`}
+                                onClick={(e) => { if (openHistoryLightbox('psa')) e.preventDefault(); }}
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >{psaPreviousLabel}</a>

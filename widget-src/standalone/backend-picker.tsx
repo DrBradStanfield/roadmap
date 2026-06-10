@@ -11,8 +11,8 @@
  *    "Get Your Personalized Plan" email step by firing
  *    `window.dispatchEvent(new Event('hr:open-backend-picker'))` — the listener
  *    already lives in SyncControl.
- *  - Pre-Phase-5 TODO: convert to native <dialog>/showModal() for a real focus
- *    trap before the modal auto-opens on the public website.
+ *  - Native <dialog>/showModal(): real focus trap + Escape + top-layer for
+ *    free (converted pre-Phase-5, before the modal auto-opens on the website).
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -103,25 +103,20 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
   const { busy, error, setError, run } = useBusyRun();
   const [gh, setGh] = useState({ token: '', owner: '', repo: '' });
   const [wd, setWd] = useState({ url: '', username: '', password: '' });
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
   useEffect(() => {
-    const restoreFocus = document.activeElement as HTMLElement | null;
-    dialogRef.current?.focus();
+    // showModal() = top-layer + REAL focus trap + native Escape (the 'cancel'
+    // event below) + focus restore on close — all free from the platform.
+    dialogRef.current?.showModal();
     // Lock background scrolling while the modal is open (the page scrolls on
     // <html>, so the lock must go there; body alone doesn't stop it in Chrome).
     const prevOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current();
-    };
-    window.addEventListener('keydown', onKey);
     return () => {
-      window.removeEventListener('keydown', onKey);
       document.documentElement.style.overflow = prevOverflow;
-      restoreFocus?.focus?.();
     };
   }, []);
 
@@ -170,16 +165,16 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
   // which re-anchor position:fixed to themselves — the modal would render
   // mid-page and scroll with it. Escaping to body keeps it viewport-centered.
   return createPortal(
-    <div className="hr-modal-overlay" onClick={onClose}>
-      <div
-        className="hr-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Choose where to save your data"
-        tabIndex={-1}
-        ref={dialogRef}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <dialog
+      className="hr-modal"
+      aria-label="Choose where to save your data"
+      ref={dialogRef}
+      onCancel={(e) => { e.preventDefault(); onCloseRef.current(); }}
+      onClick={(e) => { if (e.target === e.currentTarget) onCloseRef.current(); }}
+    >
+      {/* Padding lives on the inner div so a ::backdrop click (which targets
+          the dialog element itself) is distinguishable from a content click. */}
+      <div className="hr-modal-inner">
         <button className="hr-modal-close" aria-label="Close" onClick={onClose}>×</button>
 
         {step === 'list' && (
@@ -249,7 +244,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
 
         {error && <span className="hr-sync-error">{error}</span>}
       </div>
-    </div>,
+    </dialog>,
     document.body,
   );
 }

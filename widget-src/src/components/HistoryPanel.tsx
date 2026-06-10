@@ -218,9 +218,11 @@ function TimeSeriesChart({
 interface HistoryPanelProps {
   isLoggedIn: boolean;
   loginUrl?: string;
+  /** Pre-select one metric (lightbox embedding). Falls back to ?metric= (the Shopify page). */
+  initialMetric?: string;
 }
 
-export function HistoryPanel({ isLoggedIn, loginUrl }: HistoryPanelProps) {
+export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPanelProps) {
   const [measurements, setMeasurements] = useState<ApiMeasurement[]>([]);
   const [labVals, setLabVals] = useState<ApiLabValue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -263,7 +265,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl }: HistoryPanelProps) {
   useEffect(() => {
     if (initialized || (measurements.length === 0 && labVals.length === 0)) return;
     const params = new URLSearchParams(window.location.search);
-    const metricParam = params.get('metric');
+    const metricParam = initialMetric ?? params.get('metric');
     const allTypes = [...new Set(measurements.map((m) => m.metricType))];
 
     if (metricParam && allTypes.includes(metricParam)) {
@@ -277,7 +279,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl }: HistoryPanelProps) {
     setSelectedLabMetrics(new Set(allLabMetrics));
 
     setInitialized(true);
-  }, [measurements, labVals, initialized]);
+  }, [measurements, labVals, initialized, initialMetric]);
 
   const handleLoadMore = () => {
     const newOffset = offset + PAGE_SIZE;

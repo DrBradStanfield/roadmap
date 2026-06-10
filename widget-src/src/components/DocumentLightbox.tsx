@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { deleteDocument, DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument } from '../lib/api';
+import { deleteDocument, readDocumentFile, DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument } from '../lib/api';
 import { renderMarkdown } from '../lib/markdown';
 import { useIsMobile } from '../lib/useIsMobile';
 
@@ -12,6 +12,8 @@ interface DocumentLightboxProps {
 export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isOpening, setIsOpening] = useState(false);
+  const [openError, setOpenError] = useState<string | null>(null);
   const isMobile = useIsMobile(768);
 
   // Close on Escape
@@ -28,6 +30,23 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
       return `<pre style="white-space:pre-wrap">${doc.contentMd.replace(/</g, '&lt;')}</pre>`;
     }
   }, [doc.contentMd]);
+
+  // View the archived original (v2 local-first only — fileRef is absent on v1).
+  const handleViewOriginal = async () => {
+    if (!doc.fileRef || isOpening) return;
+    setIsOpening(true);
+    setOpenError(null);
+    const blob = await readDocumentFile(doc.fileRef);
+    setIsOpening(false);
+    if (!blob) {
+      setOpenError('Could not load the original file from your cloud storage.');
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank', 'noopener');
+    // Give the new tab time to take ownership of the blob before revoking.
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  };
 
   const handleDelete = async () => {
     if (!confirmDelete) {
@@ -70,6 +89,12 @@ export function DocumentLightbox({ doc, onClose, onDeleted }: DocumentLightboxPr
         />
 
         <div className="doc-lightbox-footer">
+          {doc.fileRef && (
+            <button className="doc-view-original-btn" onClick={handleViewOriginal} disabled={isOpening}>
+              {isOpening ? 'Opening…' : 'View original file'}
+            </button>
+          )}
+          {openError && <span className="doc-view-original-error">{openError}</span>}
           <button
             className={`doc-delete-btn${confirmDelete ? ' doc-delete-btn--confirm' : ''}`}
             onClick={handleDelete}

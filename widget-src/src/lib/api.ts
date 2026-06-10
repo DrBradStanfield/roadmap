@@ -706,6 +706,29 @@ export interface ApiDocument {
   metadata: Record<string, unknown>;
   sourceFileName: string | null;
   createdAt: string;
+  /** Path of the archived original in the user's own cloud (v2 local-first only). */
+  fileRef?: string | null;
+}
+
+/** Where the full history page lives on the website. */
+export const HISTORY_PAGE_PATH = '/pages/health-history';
+
+/**
+ * Open the history view in a lightbox instead of navigating. Returns true if
+ * handled. False here (the Shopify widget navigates to the history page); the
+ * standalone shim overrides it — /pages/health-history doesn't exist off-site
+ * (Brad's call 2026-06-11: lightbox, not a separate page).
+ */
+export function openHistoryLightbox(_metric: string | null): boolean {
+  return false;
+}
+
+/**
+ * Read an archived original document file. v1 (Shopify) stores no originals —
+ * always null here; the standalone shim overrides with the cloud-store read.
+ */
+export async function readDocumentFile(_fileRef: string): Promise<Blob | null> {
+  return null;
 }
 
 /** Human-readable labels for document types. Shared across components. */

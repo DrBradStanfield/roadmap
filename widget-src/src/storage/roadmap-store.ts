@@ -679,5 +679,6 @@ function toApiDocument(d: FileDocument): ApiDocument {
     metadata: d.metadata ?? {},
     sourceFileName: d.sourceFileName ?? null,
     createdAt: d.addedAt,
+    fileRef: d.fileRef || null,
   };
 }

@@ -245,6 +245,23 @@ export function getByokChatInputs():
   };
 }
 
+/** Standalone: history opens as a lightbox (host listens in standalone/app.tsx). */
+export function openHistoryLightbox(metric: string | null): boolean {
+  window.dispatchEvent(new CustomEvent('hr:open-history', { detail: { metric } }));
+  return true;
+}
+
+/** Read an archived original from the user's own cloud (null off-cloud/missing). */
+export async function readDocumentFile(fileRef: string): Promise<Blob | null> {
+  if (!store) return null;
+  try {
+    return await store.readDocumentFile(fileRef);
+  } catch (error) {
+    console.warn('readDocumentFile failed', error);
+    return null;
+  }
+}
+
 export async function deleteUserData(): Promise<{ success: boolean; error?: string }> {
   return store ? store.deleteUserData() : { success: false, error: 'Data store not initialised' };
 }
