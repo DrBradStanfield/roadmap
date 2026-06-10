@@ -200,6 +200,27 @@ export function mergeFiles(
   remote: RoadmapFile,
   opts: MergeOptions,
 ): RoadmapFile {
+  // "Delete All My Data" gate: a higher eraseEpoch wins WHOLESALE. The union
+  // semantics below deliberately never lose data — which is exactly wrong for
+  // deletion: without this gate, any other copy would resurrect the erased
+  // records on its next sync. The losing side's content predates the erase,
+  // so discarding it is the intended outcome on every device.
+  const localEpoch = local.meta.eraseEpoch ?? 0;
+  const remoteEpoch = remote.meta.eraseEpoch ?? 0;
+  if (localEpoch !== remoteEpoch) {
+    const winner = localEpoch > remoteEpoch ? local : remote;
+    return {
+      ...winner,
+      meta: {
+        ...winner.meta,
+        updatedAt: opts.now,
+        lastDeviceId: opts.deviceId,
+        lamport: Math.max(local.meta.lamport, remote.meta.lamport) + 1,
+        eraseEpoch: Math.max(localEpoch, remoteEpoch),
+      },
+    };
+  }
+
   return {
     // Spread both first so unknown/future top-level fields are preserved at
     // runtime (H7). Known fields below overwrite these.
@@ -213,6 +234,7 @@ export function mergeFiles(
       updatedAt: opts.now,
       lastDeviceId: opts.deviceId,
       lamport: Math.max(local.meta.lamport, remote.meta.lamport) + 1,
+      eraseEpoch: localEpoch, // equal on both sides in this branch
     },
 
     profile: pickNewer<RoadmapProfile>(local.profile, remote.profile),

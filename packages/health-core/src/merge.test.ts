@@ -346,3 +346,67 @@ describe('mergeFiles — determinism, symmetry & convergence', () => {
     expect(merged.futureField).toEqual({ hello: 'world' });
   });
 });
+
+describe('mergeFiles — eraseEpoch ("Delete All My Data")', () => {
+  it('a higher local epoch wins wholesale — the other side cannot resurrect data', () => {
+    const erased = emptyFile();
+    erased.meta.eraseEpoch = 1;
+    const stale = emptyFile();
+    stale.measurements = [measurement({ id: 'm1', metricType: 'weight', value: 95 })];
+    const merged = mergeFiles(erased, stale, OPTS);
+    expect(merged.measurements).toEqual([]);
+    expect(merged.meta.eraseEpoch).toBe(1);
+  });
+
+  it('a higher remote epoch wins wholesale (symmetric)', () => {
+    const stale = emptyFile();
+    stale.measurements = [measurement({ id: 'm1', metricType: 'weight', value: 95 })];
+    const erased = emptyFile();
+    erased.meta.eraseEpoch = 2;
+    const merged = mergeFiles(stale, erased, OPTS);
+    expect(merged.measurements).toEqual([]);
+    expect(merged.meta.eraseEpoch).toBe(2);
+  });
+
+  it('data entered AFTER an erase survives a merge against a pre-erase copy', () => {
+    const postErase = emptyFile();
+    postErase.meta.eraseEpoch = 1;
+    postErase.measurements = [measurement({ id: 'new1', metricType: 'weight', value: 80 })];
+    const preErase = emptyFile(); // epoch absent → 0
+    preErase.measurements = [measurement({ id: 'old1', metricType: 'weight', value: 95 })];
+    const merged = mergeFiles(postErase, preErase, OPTS);
+    expect(merged.measurements.map((m) => m.id)).toEqual(['new1']);
+    expect(merged.meta.eraseEpoch).toBe(1);
+  });
+
+  it('equal epochs merge normally (union semantics intact)', () => {
+    const a = emptyFile();
+    a.meta.eraseEpoch = 1;
+    a.measurements = [measurement({ id: 'a1', metricType: 'weight', value: 80, recordedAt: '2026-05-01' })];
+    const b = emptyFile();
+    b.meta.eraseEpoch = 1;
+    b.measurements = [measurement({ id: 'b1', metricType: 'ldl', value: 2.2, recordedAt: '2026-05-02' })];
+    const merged = mergeFiles(a, b, OPTS);
+    expect(activeMeasurements(merged).length).toBe(2);
+    expect(merged.meta.eraseEpoch).toBe(1);
+  });
+
+  it('absent epochs read as 0 and merge normally (back-compat)', () => {
+    const a = emptyFile();
+    a.measurements = [measurement({ id: 'a1', metricType: 'weight', value: 80 })];
+    const merged = mergeFiles(a, emptyFile(), OPTS);
+    expect(activeMeasurements(merged).length).toBe(1);
+    expect(merged.meta.eraseEpoch).toBe(0);
+  });
+
+  it('erase-epoch winner is bumped by lamport like any merge', () => {
+    const erased = emptyFile();
+    erased.meta.eraseEpoch = 1;
+    erased.meta.lamport = 3;
+    const stale = emptyFile();
+    stale.meta.lamport = 9;
+    const merged = mergeFiles(erased, stale, OPTS);
+    expect(merged.meta.lamport).toBe(10);
+    expect(merged.meta.lastDeviceId).toBe('dev_merge');
+  });
+});

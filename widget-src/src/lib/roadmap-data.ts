@@ -135,7 +135,8 @@ function clonePlanPanel(): HTMLElement | null {
   const panel = document.querySelector('.health-results-panel');
   if (!panel) return null;
   const clone = panel.cloneNode(true) as HTMLElement;
-  clone.querySelectorAll('.no-print, button, input, select, textarea').forEach((el) => el.remove());
+  // Strip interactive chrome + the sync-status box (meaningless on paper/email).
+  clone.querySelectorAll('.no-print, .hr-sync, button, input, select, textarea').forEach((el) => el.remove());
   return clone;
 }
 
@@ -166,7 +167,10 @@ export async function sendReportEmail(): Promise<{ success: boolean; error?: str
   // so attach off-screen for the read.
   clone.style.cssText = 'position:absolute;left:-99999px;top:0';
   document.body.appendChild(clone);
-  const text = clone.innerText.replace(/\n{3,}/g, '\n\n').trim();
+  const text = clone.innerText
+    .replace(/^\s*\d+\s*\n/, '') // the panel's step-number marker ("2")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
   clone.remove();
   if (!text) return { success: false, error: 'Your plan is still loading — try again in a moment.' };
   const body =

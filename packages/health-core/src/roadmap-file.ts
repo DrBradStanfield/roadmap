@@ -41,6 +41,13 @@ export interface RoadmapFileMeta {
   updatedAt: string;      // ISO — last write to the file
   lastDeviceId: string;   // device that produced this revision
   lamport: number;        // file-level logical clock (monotonic per device)
+  /**
+   * "Delete All My Data" counter. A file with a HIGHER epoch wins a merge
+   * WHOLESALE — without it, the merge's never-lose-data union semantics would
+   * resurrect deleted records from any other copy. Optional: absent
+   * (pre-epoch files) reads as 0.
+   */
+  eraseEpoch?: number;
 }
 
 /** Demographics + preferences (was the `profiles` row + a localStorage override). */

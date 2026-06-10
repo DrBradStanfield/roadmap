@@ -395,7 +395,12 @@ export class RoadmapStore {
   }
 
   async deleteUserData(): Promise<{ success: boolean; error?: string }> {
+    // Bump the erase epoch so the empty file BEATS the merge — persist goes
+    // through read-merge-write, whose never-lose-data semantics would otherwise
+    // resurrect every record from the stored copy (and any other device's).
+    const eraseEpoch = (this.file.meta.eraseEpoch ?? 0) + 1;
     this.file = migrateFile(null, { deviceId: this.deviceId, now: new Date().toISOString() });
+    this.file.meta.eraseEpoch = eraseEpoch;
     try {
       await this.flush();
       return { success: true };
