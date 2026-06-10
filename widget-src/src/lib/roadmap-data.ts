@@ -14,14 +14,15 @@
  * Off Shopify their proxy calls 404 and return their built-in fallbacks (a
  * graceful no-op); the real website AI path is Phase 4.
  */
-import type {
-  ApiMeasurement,
-  ApiMedication,
-  ApiScreening,
-  FileReminderOptIn,
-  HealthInputs,
-  MeasurementSource,
-  ReminderScheduleItem,
+import {
+  buildMeasurementHistory,
+  type ApiMeasurement,
+  type ApiMedication,
+  type ApiScreening,
+  type FileReminderOptIn,
+  type HealthInputs,
+  type MeasurementSource,
+  type ReminderScheduleItem,
 } from '@roadmap/health-core';
 import { RoadmapStore } from '../storage/roadmap-store';
 import type { StorageAdapter } from '../storage/adapter';
@@ -159,18 +160,22 @@ export async function deleteLabValue(labValueId: string): Promise<boolean> {
 /**
  * Data snapshot for the BYOK chat's system-prompt context (byok-chat.ts).
  * Mirrors the website chat's guest-context shape: prefill inputs + the raw
- * medication/screening rows (byok-chat converts them with health-core).
+ * medication/screening rows (byok-chat converts them with health-core) + the
+ * dated blood-test/vitals time series (chronological per metric, capped —
+ * same shape the storefront build sends as guestInputs.measurementHistory).
  */
 export function getByokChatInputs():
   | (Record<string, unknown> & { medications: ApiMedication[]; screenings: ApiScreening[] })
   | null {
   if (!store) return null;
   const latest = store.loadLatestMeasurements();
+  const measurementHistory = buildMeasurementHistory(store.loadAllHistory());
   return {
     ...latest.inputs,
     unitSystem: latest.inputs.unitSystem ?? 'si',
     medications: latest.medications,
     screenings: latest.screenings,
+    ...(Object.keys(measurementHistory).length > 0 ? { measurementHistory } : {}),
   };
 }
 

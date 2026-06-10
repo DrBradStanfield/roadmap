@@ -12,7 +12,8 @@ import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import type { HealthInputs } from '../../packages/health-core/src/types';
 import { calculateHealthResults } from '../../packages/health-core/src/calculations';
 import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
-import { LONGITUDINAL_FIELDS, METRIC_TO_FIELD } from '../../packages/health-core/src/mappings';
+import { LONGITUDINAL_FIELDS } from '../../packages/health-core/src/mappings';
+import { latestFromHistory } from '../../packages/health-core/src/measurement-history';
 import { healthInputSchema } from '../../packages/health-core/src/validation';
 import { loadHealthData } from './supabase.server';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
@@ -266,9 +267,8 @@ export function assembleGuestChatContext(guestInputs: unknown): ChatContext | nu
   const measurementHistory = sanitizeMeasurementHistory((guestInputs as Record<string, unknown>)?.measurementHistory);
   const hasHistory = Object.keys(measurementHistory).length > 0;
   if (hasHistory) {
-    for (const [metric, series] of Object.entries(measurementHistory)) {
-      const field = METRIC_TO_FIELD[metric];
-      if (field && series.length > 0) latestValues[field] = `${series[series.length - 1].value}`;
+    for (const [field, value] of Object.entries(latestFromHistory(measurementHistory))) {
+      latestValues[field] = `${value}`;
     }
   }
 

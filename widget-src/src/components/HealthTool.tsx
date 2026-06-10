@@ -13,6 +13,7 @@ import {
   FIELD_TO_METRIC,
   medicationsToInputs,
   screeningsToInputs,
+  buildMeasurementHistory,
   computeFormStage,
   resolveEmailConfirmStatus,
   FIELD_METRIC_MAP,
@@ -1145,16 +1146,7 @@ export function HealthTool({ syncControl }: { syncControl?: ReactNode } = {}) {
   // capped at 24 points/metric to bound the prompt.
   const chatMeasurementHistory = useMemo(() => {
     if (!LOCAL_FIRST) return undefined;
-    const out: Record<string, Array<{ date: string; value: number }>> = {};
-    for (const r of [...bloodTestHistory, ...vitalsHistory]) {
-      const date = (r.recordedAt || '').slice(0, 10);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-      (out[r.metricType] ??= []).push({ date, value: r.value });
-    }
-    for (const k of Object.keys(out)) {
-      out[k].sort((a, b) => (a.date < b.date ? -1 : 1));
-      if (out[k].length > 24) out[k] = out[k].slice(-24);
-    }
+    const out = buildMeasurementHistory([...bloodTestHistory, ...vitalsHistory]);
     return Object.keys(out).length > 0 ? out : undefined;
   }, [bloodTestHistory, vitalsHistory]);
 

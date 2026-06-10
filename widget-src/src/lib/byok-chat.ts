@@ -22,7 +22,9 @@ import {
   calculateHealthResults,
   medicationsToInputs,
   screeningsToInputs,
+  latestFromHistory,
   type HealthInputs,
+  type MeasurementHistoryMap,
   type UnitSystem,
 } from '@roadmap/health-core';
 import { getByokChatInputs } from './roadmap-data';
@@ -175,10 +177,20 @@ function buildUserContextJson(): string | null {
   const medications = medicationsToInputs(raw.medications ?? []);
   const screenings = screeningsToInputs(raw.screenings ?? []);
   const results = calculateHealthResults(inputs, unitSystem, medications, screenings);
+
+  // Dated per-metric time series (chronological; LAST entry = most recent).
+  // Mirrors the website chat: suggestions come from the snapshot, but the
+  // REPORTED values are overridden with each series' newest dated reading —
+  // the dated series is the source of truth for "most recent X".
+  const history = raw.measurementHistory as MeasurementHistoryMap | undefined;
+  const hasHistory = !!history && Object.keys(history).length > 0;
+  const contextInputs = hasHistory ? { ...inputs, ...latestFromHistory(history) } : inputs;
+
   return JSON.stringify(
     {
       profile: { sex: inputs.sex, age: results.age, heightCm: inputs.heightCm, unitSystem },
-      inputs,
+      inputs: contextInputs,
+      ...(hasHistory ? { measurementHistory: history } : {}),
       medications,
       screenings,
       currentSuggestions: results.suggestions.map((s) => ({

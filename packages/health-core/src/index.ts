@@ -255,3 +255,12 @@ export {
   sanitizeTitle,
   splitDocumentRef,
 } from './document-path';
+
+// v2 chat context — dated measurement history shared by all chat surfaces
+export {
+  buildMeasurementHistory,
+  latestFromHistory,
+  HISTORY_CAP_PER_METRIC,
+  type DatedMeasurement,
+  type MeasurementHistoryMap,
+} from './measurement-history';
