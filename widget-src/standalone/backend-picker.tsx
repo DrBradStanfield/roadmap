@@ -101,16 +101,17 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
 
   useEffect(() => {
     dialogRef.current?.focus();
-    // Lock background scrolling while the modal is open.
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    // Lock background scrolling while the modal is open (the page scrolls on
+    // <html>, so the lock must go there; body alone doesn't stop it in Chrome).
+    const prevOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
+      document.documentElement.style.overflow = prevOverflow;
     };
   }, [onClose]);
 
