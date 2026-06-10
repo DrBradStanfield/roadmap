@@ -6,8 +6,13 @@
  *          Brad's server, and save the returned capability token in the
  *          user's OWN cloud file (it follows them across devices).
  * Re-push: on every app load (and tab-hide), recompute the schedule and
- *          update the server IF it changed — so the server's copy tracks the
- *          user's data without the server ever seeing that data.
+ *          push it — so the server's copy tracks the user's data without the
+ *          server ever seeing that data. Deliberately UNCONDITIONAL (no
+ *          changed-since-last-push dedup): the push doubles as the token
+ *          validity probe, and the 404 path below is the ONLY way the app
+ *          learns about an email-link unsubscribe. A dedup cache made that
+ *          discovery unreachable (found in the 2026-06-10 e2e test) — the
+ *          cost of always pushing is one idempotent ~200-byte POST per visit.
  * Cancel:  POST cancel (row deleted server-side), flip the file's opt-in to
  *          'cancelled' (a status flip, not a delete, so the LWW merge carries
  *          the cancel to every device).
@@ -28,8 +33,6 @@ import { googleDriveConfig } from './google-config';
 import type { Backend } from './connect';
 
 const REMINDERS_API_URL = 'https://health-tool-app.fly.dev/api/reminders-v2';
-/** Last schedule JSON this device successfully pushed — skip no-op updates. */
-const PUSHED_KEY = 'health_roadmap_reminders_pushed';
 
 /** Reminders need a provider-verified email — §10 scopes them to these three. */
 export type ReminderBackend = 'google-drive' | 'dropbox' | 'github';
@@ -79,7 +82,6 @@ export async function optInToReminders(backend: Backend): Promise<string> {
   }
   const { token, email } = (await res.json()) as { token: string; email: string };
   setReminderOptIn({ status: 'active', token, email, provider: backend });
-  localStorage.setItem(PUSHED_KEY, JSON.stringify(schedule));
   await flushRoadmapStore(); // the token must reach the cloud file
   return email;
 }
@@ -91,30 +93,27 @@ export async function cancelReminders(): Promise<void> {
   const res = await post({ op: 'cancel', token: optIn.token });
   if (!res.ok) throw new Error(`Could not turn reminders off (${res.status}). Please retry.`);
   setReminderOptIn({ ...optIn, status: 'cancelled' });
-  localStorage.removeItem(PUSHED_KEY);
   await flushRoadmapStore();
 }
 
 /**
- * Push the current schedule to the server if it changed since this device
- * last pushed. Fire-and-forget (reminders are never allowed to break the
- * core app). A 404 means the user unsubscribed from an email link — clear
- * the stale opt-in so the UI offers reminders again.
+ * Push the current schedule to the server. Fire-and-forget (reminders are
+ * never allowed to break the core app). A 404 means the user unsubscribed
+ * from an email link — flip the stale opt-in to cancelled so the UI offers
+ * reminders again (and the cancel syncs to their other devices).
  */
-export async function pushReminderScheduleIfChanged(keepalive = false): Promise<void> {
+export async function pushReminderSchedule(keepalive = false): Promise<void> {
   const optIn = getReminderOptIn();
   if (optIn?.status !== 'active') return;
-  const schedule = computeCurrentReminderSchedule();
-  const key = JSON.stringify(schedule);
-  if (localStorage.getItem(PUSHED_KEY) === key) return;
   try {
-    const res = await post({ op: 'update', token: optIn.token, schedule }, keepalive);
+    const res = await post(
+      { op: 'update', token: optIn.token, schedule: computeCurrentReminderSchedule() },
+      keepalive,
+    );
     if (res.status === 404) {
       setReminderOptIn({ ...optIn, status: 'cancelled' });
-      localStorage.removeItem(PUSHED_KEY);
-      return;
+      window.dispatchEvent(new Event('hr:reminders-changed'));
     }
-    if (res.ok) localStorage.setItem(PUSHED_KEY, key);
   } catch (error) {
     console.warn('Reminder schedule push failed (will retry next visit)', error);
     Sentry.captureException(error, { tags: { area: 'reminders', op: 'push-schedule' } });

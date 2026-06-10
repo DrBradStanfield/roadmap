@@ -14,7 +14,7 @@ import { HealthTool } from '../src/components/HealthTool';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initSentry, Sentry } from '../src/lib/sentry';
 import { initRoadmapStore, flushRoadmapStoreSync } from '../src/lib/roadmap-data';
-import { pushReminderScheduleIfChanged } from './reminders';
+import { pushReminderSchedule } from './reminders';
 import {
   DropboxAdapter,
   GoogleDriveAdapter,
@@ -124,8 +124,8 @@ async function main() {
     if (document.visibilityState === 'hidden') {
       flushRoadmapStoreSync();
       // Session-end snapshot of the reminder schedule (keepalive survives the
-      // tab going away). No-op unless opted in AND the schedule changed.
-      void pushReminderScheduleIfChanged(true);
+      // tab going away). No-op unless opted in.
+      void pushReminderSchedule(true);
     }
   });
   window.addEventListener('beforeunload', () => {
@@ -133,8 +133,9 @@ async function main() {
   });
 
   // Keep the server's reminder schedule tracking the user's data (§10): one
-  // conditional push per visit. Fire-and-forget — never blocks the app.
-  void pushReminderScheduleIfChanged();
+  // push per visit — it also discovers email-link unsubscribes (404 → the
+  // stale opt-in is cleared). Fire-and-forget — never blocks the app.
+  void pushReminderSchedule();
 }
 
 void main();

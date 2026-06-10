@@ -8,7 +8,7 @@
  * vouches for the email, so nobody can point reminders at someone else's
  * inbox. The capability token lives in the user's cloud file.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getReminderOptIn } from '../src/lib/roadmap-data';
 import { cancelReminders, optInToReminders, remindersSupported } from './reminders';
 import type { Backend } from './connect';
@@ -20,6 +20,14 @@ export function RemindersControl({ backend }: { backend: Backend }) {
   const [error, setError] = useState<string | null>(null);
   // The opt-in lives in the user's file; local state just re-renders on change.
   const [, setVersion] = useState(0);
+
+  // The load-time schedule push clears a stale opt-in when the user
+  // unsubscribed from an email link (404) — re-render when that happens.
+  useEffect(() => {
+    const onChange = () => setVersion((v) => v + 1);
+    window.addEventListener('hr:reminders-changed', onChange);
+    return () => window.removeEventListener('hr:reminders-changed', onChange);
+  }, []);
 
   if (!remindersSupported(backend)) return null;
   const optIn = getReminderOptIn();
