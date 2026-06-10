@@ -1,13 +1,7 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import { z } from 'zod';
 import { createRateLimiter } from '../lib/rate-limiter';
-
-/** First hop of x-forwarded-for (Fly sets it). Local copy — importing
- *  route-helpers.server would drag in the Shopify session stack, and this
- *  route is deliberately decoupled from all of that. */
-function getClientIp(request: Request): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-}
+import { ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 
 /**
  * Stateless Google OAuth token exchange for the local-first Drive backend
@@ -27,15 +21,6 @@ function getClientIp(request: Request): string {
  * returns tokens for an auth code/refresh token the caller already possesses.
  */
 
-// Least-privilege (Brad's call, 2026-06-10): NO localhost — a malicious page or
-// dev server running on a user's own machine must not be able to drive this
-// endpoint. OAuth-flow testing happens on the GitHub Pages prod/dev surfaces
-// (both under the github.io origin); localhost dev covers non-OAuth work only.
-const ALLOWED_ORIGINS = new Set([
-  'https://drbradstanfield.github.io',
-  'https://drstanfield.com',
-]);
-
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 // Generous: a real user exchanges ~once an hour; connects are rare.
@@ -53,18 +38,6 @@ const bodySchema = z.union([
     refreshToken: z.string().min(1).max(2048),
   }),
 ]);
-
-function corsHeaders(request: Request): Record<string, string> {
-  const origin = request.headers.get('Origin') ?? '';
-  if (!ALLOWED_ORIGINS.has(origin)) return { Vary: 'Origin' };
-  return {
-    'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Max-Age': '86400',
-    Vary: 'Origin',
-  };
-}
 
 export async function loader({ request }: LoaderFunctionArgs) {
   return json({ error: 'POST only' }, { status: 405, headers: corsHeaders(request) });
@@ -95,16 +68,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: 'Google Drive exchange is not configured' }, { status: 503, headers });
   }
 
-  // Parse the body as JSON regardless of Content-Type: clients send text/plain
-  // so the POST stays a CORS "simple request" — remix-serve answers OPTIONS
-  // with 405 before route handlers run, so a preflight would always fail.
-  let body: unknown = null;
-  try {
-    body = JSON.parse(await request.text());
-  } catch {
-    body = null;
-  }
-  const parsed = bodySchema.safeParse(body);
+  const parsed = bodySchema.safeParse(await parseSimpleRequestJson(request));
   if (!parsed.success) return json({ error: 'Invalid input' }, { status: 400, headers });
 
   const params = new URLSearchParams({ client_id: clientId, client_secret: clientSecret });

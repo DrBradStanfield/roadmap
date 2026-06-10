@@ -38,12 +38,8 @@ export function RemindersControl({ backend }: { backend: Backend }) {
     }
   };
 
-  const turnOn = wrap(async () => {
-    await optInToReminders(backend);
-  });
-  const turnOff = wrap(async () => {
-    await cancelReminders();
-  });
+  const turnOn = wrap(() => optInToReminders(backend).then(() => undefined));
+  const turnOff = wrap(() => cancelReminders());
 
   return (
     <div className="hr-reminders">

@@ -20,15 +20,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const sent = await processV2Reminders(startedAt.slice(0, 10));
     return json({
-      ok: true,
+      ok: true as const,
       sent,
       startedAt,
       completedAt: new Date().toISOString(),
     });
   } catch (error) {
     return json({
-      ok: false,
-      sent: 0,
+      ok: false as const,
       startedAt,
       completedAt: new Date().toISOString(),
       errorMessage: error instanceof Error ? error.message : String(error),
@@ -53,9 +52,7 @@ export default function RemindersV2Test() {
                 </Banner>
               ) : (
                 <Banner tone="critical" title="v2 reminder run threw an error">
-                  <Text as="p" variant="bodyMd">
-                    {'errorMessage' in data ? String(data.errorMessage) : 'Unknown error'}
-                  </Text>
+                  <Text as="p" variant="bodyMd">{data.errorMessage}</Text>
                 </Banner>
               )}
             </BlockStack>

@@ -47,17 +47,14 @@ async function post(body: unknown, keepalive = false): Promise<Response> {
 }
 
 /** Provider proof for the opt-in (§10). Needs a user gesture (Google popup path). */
-async function proofFor(backend: Backend): Promise<Record<string, string>> {
+async function proofFor(backend: ReminderBackend): Promise<{ idToken: string } | { accessToken: string }> {
   if (backend === 'google-drive') {
     return new GoogleDriveAdapter(googleDriveConfig()).getReminderProof();
   }
   if (backend === 'dropbox') {
     return { accessToken: await new DropboxAdapter(dropboxConfig()).getReminderProofToken() };
   }
-  if (backend === 'github') {
-    return { accessToken: new GitHubAdapter().getReminderProofToken() };
-  }
-  throw new Error('Reminders need a connected cloud account.');
+  return { accessToken: new GitHubAdapter().getReminderProofToken() };
 }
 
 /**
@@ -69,15 +66,16 @@ export async function optInToReminders(backend: Backend): Promise<string> {
   const schedule = computeCurrentReminderSchedule();
   const proof = await proofFor(backend);
   const res = await post({ op: 'optin', provider: backend, ...proof, schedule });
-  if (res.status === 401 && backend === 'github') {
-    throw new Error(
-      "GitHub couldn't confirm your email — your token needs the account permission " +
-        '"Email addresses (read-only)". Add it to the token (or create a new one) and retry.',
-    );
-  }
   if (!res.ok) {
-    const { error } = (await res.json().catch(() => ({ error: '' }))) as { error?: string };
-    throw new Error(error || `Could not set up reminders (${res.status}).`);
+    const body = (await res.json().catch(() => ({}))) as { error?: string; reason?: string };
+    // The server says WHY verification failed — map its reason to user copy.
+    if (body.reason === 'github-email-permission') {
+      throw new Error(
+        "GitHub couldn't confirm your email — your token needs the account permission " +
+          '"Email addresses (read-only)". Add it to the token (or create a new one) and retry.',
+      );
+    }
+    throw new Error(body.error || `Could not set up reminders (${res.status}).`);
   }
   const { token, email } = (await res.json()) as { token: string; email: string };
   setReminderOptIn({ status: 'active', token, email, provider: backend });

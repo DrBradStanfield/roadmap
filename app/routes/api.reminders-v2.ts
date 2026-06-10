@@ -1,6 +1,7 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
 import { z } from 'zod';
 import { createRateLimiter } from '../lib/rate-limiter';
+import { ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 import {
   deleteByToken,
   scheduleSchema,
@@ -27,15 +28,6 @@ import {
  * preflights), rate-limited, stateless beyond the §10-minimum opt-in row.
  */
 
-const ALLOWED_ORIGINS = new Set([
-  'https://drbradstanfield.github.io',
-  'https://drstanfield.com',
-]);
-
-function getClientIp(request: Request): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-}
-
 // Opt-ins and schedule pushes are rare per user; this mostly slows abuse.
 const allowRequest = createRateLimiter(20, 60_000, 10 * 60_000);
 
@@ -58,18 +50,6 @@ const bodySchema = z.union([
   }),
 ]);
 
-function corsHeaders(request: Request): Record<string, string> {
-  const origin = request.headers.get('Origin') ?? '';
-  if (!ALLOWED_ORIGINS.has(origin)) return { Vary: 'Origin' };
-  return {
-    'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Max-Age': '86400',
-    Vary: 'Origin',
-  };
-}
-
 export async function loader({ request }: LoaderFunctionArgs) {
   return json({ error: 'POST only' }, { status: 405, headers: corsHeaders(request) });
 }
@@ -88,14 +68,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return json({ error: 'Too many requests' }, { status: 429, headers });
   }
 
-  // text/plain body parsed as JSON — CORS simple-request protocol (see header).
-  let body: unknown = null;
-  try {
-    body = JSON.parse(await request.text());
-  } catch {
-    body = null;
-  }
-  const parsed = bodySchema.safeParse(body);
+  const parsed = bodySchema.safeParse(await parseSimpleRequestJson(request));
   if (!parsed.success) return json({ error: 'Invalid input' }, { status: 400, headers });
   const input = parsed.data;
 
@@ -108,13 +81,18 @@ export async function action({ request }: ActionFunctionArgs) {
     }
     if (!proof) return json({ error: 'Missing provider proof' }, { status: 400, headers });
 
-    const email = await verifyProviderEmail(proof);
-    if (!email) {
-      return json({ error: 'Could not verify your email with the provider' }, { status: 401, headers });
+    const verified = await verifyProviderEmail(proof);
+    if ('reason' in verified) {
+      // The server knows WHY (e.g. the GitHub PAT lacks the email permission);
+      // pass the machine-readable reason so the client never has to guess.
+      return json(
+        { error: 'Could not verify your email with the provider', reason: verified.reason },
+        { status: 401, headers },
+      );
     }
 
-    const token = await upsertOptin(email, input.provider, input.schedule);
-    return json({ token, email }, { headers });
+    const token = await upsertOptin(verified.email, input.provider, input.schedule);
+    return json({ token, email: verified.email }, { headers });
   }
 
   if (input.op === 'update') {

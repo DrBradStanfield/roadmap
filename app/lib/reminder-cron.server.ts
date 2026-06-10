@@ -115,8 +115,9 @@ export function stopReminderCron(): void {
 // Concurrency helper
 // ---------------------------------------------------------------------------
 
-/** Process items in chunks of `limit`, using Promise.allSettled per chunk. */
-async function processWithConcurrency<T, R>(
+/** Process items in chunks of `limit`, using Promise.allSettled per chunk.
+ *  Exported for the v2 reminder cron — pure helper, no v1 behavior involved. */
+export async function processWithConcurrency<T, R>(
   items: T[],
   fn: (item: T) => Promise<R>,
   limit: number,

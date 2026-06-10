@@ -134,6 +134,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
   readonly label = 'Google Drive';
   private stored: Stored | null;
   private tokens: DriveTokens | null;
+  /** Signed ID token from the most recent server refresh (openid grants only) —
+   *  consumed by getReminderProof; never persisted. */
+  private lastIdToken: string | null = null;
   /** At-most-once-per-session guard for the cosmetic folder migration. */
   private folderCheckDone = false;
 
@@ -253,7 +256,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
       return false;
     }
     if (!res.ok) return false;
-    const json = (await res.json()) as { accessToken: string; expiresIn: number };
+    const json = (await res.json()) as { accessToken: string; expiresIn: number; idToken?: string };
+    this.lastIdToken = json.idToken ?? null;
     this.saveTokens({
       accessToken: json.accessToken,
       refreshToken: this.tokens.refreshToken, // refresh grants don't re-issue it
@@ -277,26 +281,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * userinfo read. Needs a user gesture — call from the opt-in click.
    */
   async getReminderProof(): Promise<{ idToken: string } | { accessToken: string }> {
-    if (this.tokens?.refreshToken) {
-      try {
-        const res = await fetch(this.config.exchangeUrl, {
-          method: 'POST',
-          // No Content-Type: CORS simple request (no preflight).
-          body: JSON.stringify({ grantType: 'refresh', refreshToken: this.tokens.refreshToken }),
-          signal: AbortSignal.timeout(5000),
-        });
-        if (res.ok) {
-          const json = (await res.json()) as { accessToken: string; expiresIn: number; idToken?: string };
-          this.saveTokens({
-            accessToken: json.accessToken,
-            refreshToken: this.tokens.refreshToken,
-            expiresAt: expiry(json.expiresIn),
-          });
-          if (json.idToken) return { idToken: json.idToken };
-        }
-      } catch {
-        /* fall through to the popup path */
-      }
+    // Reuses the one token-refresh implementation (incl. its revoked-token
+    // handling); the refresh grant returns a fresh signed ID token when the
+    // original grant included openid.
+    if (await this.tryServerRefresh()) {
+      if (this.lastIdToken) return { idToken: this.lastIdToken };
     }
     const token = await this.acquireViaGis();
     this.saveTokens({ ...this.tokens, accessToken: token.accessToken, expiresAt: token.expiresAt });

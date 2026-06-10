@@ -80,24 +80,30 @@ export type ProviderProof =
   | { provider: 'dropbox'; accessToken: string }
   | { provider: 'github'; accessToken: string };
 
+export type VerifyResult =
+  | { email: string }
+  | { reason: 'github-email-permission' | 'unverified' };
+
 /**
- * Resolve the PROVIDER-VERIFIED email for an opt-in proof, or null if the
- * proof is invalid / the address is unverified. Any provider credential seen
- * here lives in memory for this one call and is never stored or logged.
+ * Resolve the PROVIDER-VERIFIED email for an opt-in proof. On failure the
+ * result carries a machine-readable reason (the route forwards it; the client
+ * maps reason → copy — the server knows why, so the client never guesses).
+ * Any provider credential seen here lives in memory for this one call and is
+ * never stored or logged.
  */
-export async function verifyProviderEmail(proof: ProviderProof): Promise<string | null> {
+export async function verifyProviderEmail(proof: ProviderProof): Promise<VerifyResult> {
   try {
     if (proof.provider === 'google-drive' && 'idToken' in proof) {
       // Google validates the signature; we check the token was minted for OUR app.
       const res = await fetch(
         `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(proof.idToken)}`,
       );
-      if (!res.ok) return null;
+      if (!res.ok) return { reason: 'unverified' };
       const claims = (await res.json()) as Record<string, string>;
       const ourClientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
-      if (!ourClientId || claims.aud !== ourClientId) return null;
-      if (claims.email_verified !== 'true' || !claims.email) return null;
-      return claims.email.toLowerCase();
+      if (!ourClientId || claims.aud !== ourClientId) return { reason: 'unverified' };
+      if (claims.email_verified !== 'true' || !claims.email) return { reason: 'unverified' };
+      return { email: claims.email.toLowerCase() };
     }
 
     if (proof.provider === 'google-drive') {
@@ -106,10 +112,10 @@ export async function verifyProviderEmail(proof: ProviderProof): Promise<string 
       const res = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
         headers: { Authorization: `Bearer ${proof.accessToken}` },
       });
-      if (!res.ok) return null;
+      if (!res.ok) return { reason: 'unverified' };
       const info = (await res.json()) as { email?: string; email_verified?: boolean };
-      if (!info.email || info.email_verified !== true) return null;
-      return info.email.toLowerCase();
+      if (!info.email || info.email_verified !== true) return { reason: 'unverified' };
+      return { email: info.email.toLowerCase() };
     }
 
     if (proof.provider === 'dropbox') {
@@ -117,10 +123,10 @@ export async function verifyProviderEmail(proof: ProviderProof): Promise<string 
         method: 'POST',
         headers: { Authorization: `Bearer ${proof.accessToken}` },
       });
-      if (!res.ok) return null;
+      if (!res.ok) return { reason: 'unverified' };
       const account = (await res.json()) as { email?: string; email_verified?: boolean };
-      if (!account.email || account.email_verified !== true) return null;
-      return account.email.toLowerCase();
+      if (!account.email || account.email_verified !== true) return { reason: 'unverified' };
+      return { email: account.email.toLowerCase() };
     }
 
     // github
@@ -131,12 +137,13 @@ export async function verifyProviderEmail(proof: ProviderProof): Promise<string 
         'User-Agent': 'health-plan-reminders',
       },
     });
-    if (!res.ok) return null; // 403 = PAT lacks "Email addresses: read"
+    if (res.status === 403 || res.status === 404) return { reason: 'github-email-permission' };
+    if (!res.ok) return { reason: 'unverified' };
     const emails = (await res.json()) as Array<{ email: string; primary: boolean; verified: boolean }>;
     const primary = emails.find((e) => e.primary && e.verified) ?? emails.find((e) => e.verified);
-    return primary ? primary.email.toLowerCase() : null;
+    return primary ? { email: primary.email.toLowerCase() } : { reason: 'unverified' };
   } catch {
-    return null;
+    return { reason: 'unverified' };
   }
 }
 

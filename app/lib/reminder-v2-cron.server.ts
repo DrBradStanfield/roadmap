@@ -17,6 +17,7 @@ import * as Sentry from '@sentry/remix';
 import { GROUP_COOLDOWNS, getCategoryGroup, type ReminderCategory } from '../../packages/health-core/src/reminders';
 import { buildReminderV2EmailHtml, sendReminderEmail } from './email.server';
 import { tryAcquireCronLock } from './supabase.server';
+import { processWithConcurrency } from './reminder-cron.server';
 import { getOptinsBatch, recordSent, type ReminderV2Optin } from './reminder-v2.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000; // hourly tick
@@ -133,21 +134,22 @@ export async function processV2Reminders(todayStr: string): Promise<number> {
     if (batch.length === 0) break;
     total += batch.length;
 
-    for (let i = 0; i < batch.length; i += CONCURRENCY_LIMIT) {
-      const chunk = batch.slice(i, i + CONCURRENCY_LIMIT);
-      const results = await Promise.allSettled(chunk.map((o) => processOneOptin(o, todayStr)));
-      for (let j = 0; j < results.length; j++) {
-        const r = results[j];
-        if (r.status === 'fulfilled') {
-          if (r.value === 'sent') sent++;
-          else skips[r.value]++;
-        } else {
-          errors++;
-          Sentry.captureException(r.reason, {
-            tags: { feature: 'reminder_v2_cron' },
-            extra: { optinId: chunk[j].id },
-          });
-        }
+    const results = await processWithConcurrency(
+      batch,
+      (o) => processOneOptin(o, todayStr),
+      CONCURRENCY_LIMIT,
+    );
+    for (let j = 0; j < results.length; j++) {
+      const r = results[j];
+      if (r.status === 'fulfilled') {
+        if (r.value === 'sent') sent++;
+        else skips[r.value]++;
+      } else {
+        errors++;
+        Sentry.captureException(r.reason, {
+          tags: { feature: 'reminder_v2_cron' },
+          extra: { optinId: batch[j].id },
+        });
       }
     }
 

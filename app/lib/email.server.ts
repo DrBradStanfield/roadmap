@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { PAGES_APP_URL } from './local-first-route.server';
 import * as Sentry from '@sentry/remix';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { subscribeToKlaviyo } from './klaviyo.server';
@@ -980,22 +981,15 @@ function suggestionGroup(title: string, color: string, items: Suggestion[]): str
 // v2 reminder email builder (local-first §10 — label + due date is ALL we know)
 // ---------------------------------------------------------------------------
 
-import type { StoredScheduleItem } from './reminder-v2.server';
-
-/**
- * Where the email's CTA sends the user to manage their plan. GitHub Pages is
- * the only public front door until Phase 5; switch to the drstanfield.com
- * page at the Shopify port.
- */
-const REMINDER_V2_APP_URL = 'https://drbradstanfield.github.io/roadmap/';
-
 /**
  * Build HTML for a v2 reminder email. No name (the server doesn't store one),
  * no values, no reasoning — just which items are due. Personalisation comes
  * from the item labels the user's own browser computed ("Colonoscopy").
+ * Takes a structural item type so this shared template layer doesn't depend
+ * on the reminders domain module.
  */
 export function buildReminderV2EmailHtml(
-  dueItems: StoredScheduleItem[],
+  dueItems: Array<{ label: string; dueAt: string }>,
   unsubscribeUrl: string,
 ): string {
   const items = dueItems
@@ -1028,7 +1022,7 @@ export function buildReminderV2EmailHtml(
       ${items}
 
       <div style="text-align:center;margin:32px 0;">
-        <a href="${REMINDER_V2_APP_URL}"
+        <a href="${PAGES_APP_URL}"
            style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:16px;font-weight:600;">
           Open Your Health Plan
         </a>

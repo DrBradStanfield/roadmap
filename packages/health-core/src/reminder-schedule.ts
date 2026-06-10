@@ -16,9 +16,14 @@
  * Privacy invariant: `label` + `dueAt` are EVERYTHING the server learns about
  * the user's health. Labels name the procedure ("Colonoscopy") — personalised
  * and specific is the point — but never carry results, values, or reasoning.
+ *
+ * TODO (convergence, once v2 is proven in prod): re-express v1's
+ * computeDueReminders as computeNextDueDates(...).filter(dueAt <= today) so
+ * the eligibility rules live ONCE — the v1-parity test is the gate for that
+ * refactor. Until then any guideline change must be applied to BOTH files.
  */
 import type { ScreeningInputs } from './types';
-import { POST_FOLLOWUP_INTERVALS, getScreeningNextDueDate } from './types';
+import { getPostFollowupDueDate, getScreeningNextDueDate } from './types';
 import type {
   MeasurementDates,
   MedicationRecord,
@@ -26,7 +31,13 @@ import type {
   ReminderGroup,
   ReminderProfile,
 } from './reminders';
-import { getCategoryGroup } from './reminders';
+import {
+  BLOOD_TEST_STALE_MONTHS,
+  LIPID_METRICS,
+  MEDICATION_REVIEW_STALE_MONTHS,
+  getCategoryGroup,
+  isActiveMedication,
+} from './reminders';
 import type { RoadmapFile } from './roadmap-file';
 
 // ===== Types =====
@@ -52,22 +63,6 @@ function addMonths(dateStr: string, months: number): Date {
   const date = new Date(dateStr);
   date.setMonth(date.getMonth() + months);
   return date;
-}
-
-/** Post-follow-up repeat date (abnormal result + completed follow-up), or null. */
-function postFollowupDue(
-  type: string,
-  method: string | undefined,
-  result: string | undefined,
-  followupStatus: string | undefined,
-  followupDate: string | undefined,
-): Date | null {
-  if (result !== 'abnormal' || followupStatus !== 'completed' || !followupDate) return null;
-  const methodKey = method ? `${type}_${method}` : `${type}_other`;
-  const months = POST_FOLLOWUP_INTERVALS[methodKey] ?? POST_FOLLOWUP_INTERVALS[`${type}_other`] ?? 12;
-  const [year, month] = followupDate.split('-').map(Number);
-  if (!year || !month) return null;
-  return new Date(year, month - 1 + months);
 }
 
 /** Earliest non-null date — matches v1's "overdue if EITHER candidate has passed". */
@@ -96,7 +91,7 @@ function screeningSchedule(
     const label = s.colorectalMethod === 'colonoscopy_10yr' ? 'Colonoscopy' : 'Colorectal screening';
     push('screening_colorectal', label, earliest(
       getScreeningNextDueDate(s.colorectalLastDate, s.colorectalMethod),
-      postFollowupDue('colorectal', s.colorectalMethod, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalFollowupDate),
+      getPostFollowupDueDate('colorectal', s.colorectalMethod, s.colorectalResult, s.colorectalFollowupStatus, s.colorectalFollowupDate),
     ));
   }
 
@@ -104,7 +99,7 @@ function screeningSchedule(
   if (sex === 'female' && age >= 40 && s.breastFrequency && s.breastFrequency !== 'not_yet_started') {
     push('screening_breast', 'Mammogram', earliest(
       getScreeningNextDueDate(s.breastLastDate, s.breastFrequency),
-      postFollowupDue('breast', s.breastFrequency, s.breastResult, s.breastFollowupStatus, s.breastFollowupDate),
+      getPostFollowupDueDate('breast', s.breastFrequency, s.breastResult, s.breastFollowupStatus, s.breastFollowupDate),
     ));
   }
 
@@ -112,7 +107,7 @@ function screeningSchedule(
   if (sex === 'female' && age >= 25 && age <= 65 && s.cervicalMethod && s.cervicalMethod !== 'not_yet_started') {
     push('screening_cervical', 'Cervical screening', earliest(
       getScreeningNextDueDate(s.cervicalLastDate, s.cervicalMethod),
-      postFollowupDue('cervical', s.cervicalMethod, s.cervicalResult, s.cervicalFollowupStatus, s.cervicalFollowupDate),
+      getPostFollowupDueDate('cervical', s.cervicalMethod, s.cervicalResult, s.cervicalFollowupStatus, s.cervicalFollowupDate),
     ));
   }
 
@@ -125,7 +120,7 @@ function screeningSchedule(
   ) {
     push('screening_lung', 'Lung screening (low-dose CT)', earliest(
       getScreeningNextDueDate(s.lungLastDate, s.lungScreening),
-      postFollowupDue('lung', s.lungScreening, s.lungResult, s.lungFollowupStatus, s.lungFollowupDate),
+      getPostFollowupDueDate('lung', s.lungScreening, s.lungResult, s.lungFollowupStatus, s.lungFollowupDate),
     ));
   }
 
@@ -144,7 +139,7 @@ function screeningSchedule(
     if (s.dexaResult === 'osteoporosis') {
       const hasCompletedFollowup = s.dexaFollowupStatus === 'completed' && s.dexaFollowupDate;
       due = hasCompletedFollowup
-        ? postFollowupDue('dexa', 'dexa_scan', 'abnormal', s.dexaFollowupStatus, s.dexaFollowupDate)
+        ? getPostFollowupDueDate('dexa', 'dexa_scan', 'abnormal', s.dexaFollowupStatus, s.dexaFollowupDate)
         : getScreeningNextDueDate(s.dexaLastDate, 'dexa_scan');
     } else {
       due = getScreeningNextDueDate(s.dexaLastDate, s.dexaResult === 'osteopenia' ? 'dexa_osteopenia' : 'dexa_normal');
@@ -152,12 +147,6 @@ function screeningSchedule(
     push('screening_dexa', 'DEXA bone density scan', due);
   }
 }
-
-const BLOOD_TEST_REPEAT_MONTHS = 12;
-const MEDICATION_REVIEW_MONTHS = 12;
-
-// Lipid metric types that count as "lipids" (mirrors v1)
-const LIPID_METRICS = ['ldl', 'total_cholesterol', 'hdl', 'triglycerides', 'apob'];
 
 function bloodTestSchedule(measurementDates: MeasurementDates, items: ReminderScheduleItem[]): void {
   const tests: Array<{ category: ReminderCategory; label: string; lastDate: string | undefined }> = [
@@ -175,15 +164,13 @@ function bloodTestSchedule(measurementDates: MeasurementDates, items: ReminderSc
       category: t.category,
       group: 'blood_test',
       label: t.label,
-      dueAt: toYmd(addMonths(t.lastDate, BLOOD_TEST_REPEAT_MONTHS)),
+      dueAt: toYmd(addMonths(t.lastDate, BLOOD_TEST_STALE_MONTHS)),
     });
   }
 }
 
 function medicationSchedule(medications: MedicationRecord[], items: ReminderScheduleItem[]): void {
-  const active = medications.filter(
-    (m) => m.drugName && !['none', 'not_yet', 'not_tolerated', 'no'].includes(m.drugName),
-  );
+  const active = medications.filter(isActiveMedication);
   if (active.length === 0) return;
   // Review is due 12 months after the LEAST recently updated active medication
   const oldest = active.map((m) => m.updatedAt).sort()[0];
@@ -191,7 +178,7 @@ function medicationSchedule(medications: MedicationRecord[], items: ReminderSche
     category: 'medication_review',
     group: 'medication_review',
     label: 'Medication review',
-    dueAt: toYmd(addMonths(oldest, MEDICATION_REVIEW_MONTHS)),
+    dueAt: toYmd(addMonths(oldest, MEDICATION_REVIEW_STALE_MONTHS)),
   });
 }
 
