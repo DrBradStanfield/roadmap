@@ -63,12 +63,23 @@ async function proofFor(backend: ReminderBackend): Promise<{ idToken: string } |
 /**
  * Turn reminders on. Returns the provider-verified email they'll go to.
  * Call from a click handler (the Google fallback path opens a popup).
+ *
+ * marketingEmail: the OPTIONAL typed marketing opt-in (§10 — email capture is
+ * a typed step at the reminders flow, never harvested at cloud-connect). It
+ * transits Brad's server straight to Klaviyo and is never stored in the
+ * reminder row; reminders themselves always go to the provider-verified email.
  */
-export async function optInToReminders(backend: Backend): Promise<string> {
+export async function optInToReminders(backend: Backend, marketingEmail?: string): Promise<string> {
   if (!remindersSupported(backend)) throw new Error('Reminders need a connected cloud account.');
   const schedule = computeCurrentReminderSchedule();
   const proof = await proofFor(backend);
-  const res = await post({ op: 'optin', provider: backend, ...proof, schedule });
+  const res = await post({
+    op: 'optin',
+    provider: backend,
+    ...proof,
+    schedule,
+    ...(marketingEmail ? { marketingEmail } : {}),
+  });
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string; reason?: string };
     // The server says WHY verification failed — map its reason to user copy.

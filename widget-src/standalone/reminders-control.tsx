@@ -7,17 +7,27 @@
  * Opt-in uses the SAME cloud account that stores the data — the provider
  * vouches for the email, so nobody can point reminders at someone else's
  * inbox. The capability token lives in the user's cloud file.
+ *
+ * Turning on opens a small inline step that also offers Dr Brad's email list
+ * as an OPT-IN with a TYPED email (§10: no harvesting at cloud-connect — the
+ * deliberate act of typing + ticking is the consent). The typed address goes
+ * to Klaviyo only; the reminder row never stores it.
  */
 import React, { useEffect, useState } from 'react';
 import { getReminderOptIn } from '../src/lib/roadmap-data';
 import { cancelReminders, optInToReminders, remindersSupported } from './reminders';
 import type { Backend } from './connect';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function RemindersControl({ backend }: { backend: Backend }) {
   // Not useBusyRun: that scaffold leaves busy=true on success (its flows end
   // in a reload). This toggle stays on the page, so busy must reset.
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [wantsUpdates, setWantsUpdates] = useState(false);
+  const [typedEmail, setTypedEmail] = useState('');
   // The opt-in lives in the user's file; local state just re-renders on change.
   const [, setVersion] = useState(0);
 
@@ -46,7 +56,16 @@ export function RemindersControl({ backend }: { backend: Backend }) {
     }
   };
 
-  const turnOn = wrap(() => optInToReminders(backend).then(() => undefined));
+  const turnOn = wrap(async () => {
+    const marketingEmail = wantsUpdates ? typedEmail.trim() : undefined;
+    if (wantsUpdates && !EMAIL_RE.test(marketingEmail!)) {
+      throw new Error('That email doesn’t look right — please check it (or untick the box).');
+    }
+    await optInToReminders(backend, marketingEmail);
+    setConfirming(false);
+    setWantsUpdates(false);
+    setTypedEmail('');
+  });
   const turnOff = wrap(() => cancelReminders());
 
   return (
@@ -58,11 +77,46 @@ export function RemindersControl({ backend }: { backend: Backend }) {
             {busy ? 'Turning off…' : 'Turn off'}
           </button>
         </>
+      ) : confirming ? (
+        <div className="hr-sync-form">
+          <span className="hr-sync-detail">
+            Reminders go to the email on your connected cloud account.
+          </span>
+          <label className="hr-sync-detail">
+            <input
+              type="checkbox"
+              checked={wantsUpdates}
+              onChange={(e) => setWantsUpdates(e.target.checked)}
+            />{' '}
+            Also send me Dr Brad’s evidence-based health emails (unsubscribe anytime)
+          </label>
+          {wantsUpdates && (
+            <input
+              type="email"
+              placeholder="Type your email for Dr Brad’s emails"
+              aria-label="Email for Dr Brad’s health emails"
+              value={typedEmail}
+              onChange={(e) => setTypedEmail(e.target.value)}
+            />
+          )}
+          <span>
+            <button className="hr-sync-link" disabled={busy} onClick={() => void turnOn()}>
+              {busy ? 'Setting up…' : 'Turn on reminders'}
+            </button>{' '}
+            <button
+              className="hr-sync-link"
+              disabled={busy}
+              onClick={() => { setConfirming(false); setError(null); }}
+            >
+              Cancel
+            </button>
+          </span>
+        </div>
       ) : (
         <>
           <span className="hr-sync-detail">Get an email when a check-up or blood test comes due.</span>
-          <button className="hr-sync-link" disabled={busy} onClick={() => void turnOn()}>
-            {busy ? 'Setting up…' : 'Turn on email reminders'}
+          <button className="hr-sync-link" disabled={busy} onClick={() => setConfirming(true)}>
+            Turn on email reminders
           </button>
         </>
       )}

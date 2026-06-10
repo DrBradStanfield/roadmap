@@ -10,6 +10,7 @@ import {
   verifyProviderEmail,
   type ProviderProof,
 } from '../lib/reminder-v2.server';
+import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 
 /**
  * v2 email reminders API (decision record §10). Three ops, all POST:
@@ -38,6 +39,10 @@ const bodySchema = z.union([
     idToken: z.string().min(1).max(4096).optional(),
     accessToken: z.string().min(1).max(4096).optional(),
     schedule: scheduleSchema,
+    // Optional TYPED marketing opt-in (§10: a deliberate typed step at the
+    // reminders flow, never harvested from the provider). Transits straight
+    // to Klaviyo; never stored in the reminder row.
+    marketingEmail: z.string().email().max(320).optional(),
   }),
   z.object({
     op: z.literal('update'),
@@ -92,6 +97,8 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     const token = await upsertOptin(verified.email, input.provider, input.schedule);
+    // Fire-and-forget — Klaviyo must never block or fail the reminders opt-in.
+    if (input.marketingEmail) void subscribeToKlaviyo({ email: input.marketingEmail });
     return json({ token, email: verified.email }, { headers });
   }
 
