@@ -258,3 +258,13 @@ export async function sendReportEmail(): Promise<{ success: boolean; error?: str
   window.location.href = `mailto:?subject=${encodeURIComponent('My health plan')}&body=${encodeURIComponent(body)}`;
   return { success: true };
 }
+
+/**
+ * Welcome email is a server/account feature — local-first has no DB-backed
+ * account to email (email is a typed opt-in at the reminders flow, §10).
+ * No-op success so the shared guest-sync path in HealthTool neither POSTs
+ * to the data API (it 401s) nor flags an email error.
+ */
+export async function sendWelcomeEmail(): Promise<{ success: boolean }> {
+  return { success: true };
+}

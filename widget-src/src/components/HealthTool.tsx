@@ -410,12 +410,9 @@ export function HealthTool({ syncControl }: { syncControl?: ReactNode } = {}) {
             trackABConversion();
 
             // Trigger welcome email only if profile saved (needs height + sex).
-            // Skip on local-first builds: there is no DB-backed account to email —
-            // email is a typed opt-in at the reminders flow (decision record §10) —
-            // and the POST would just 401 against the data API.
-            if (LOCAL_FIRST) {
-              // no-op: leave emailConfirmStatus idle
-            } else if (profileSaved) {
+            // On local-first builds the roadmap-data shim no-ops this (no
+            // DB-backed account; email is a typed opt-in at the reminders flow).
+            if (profileSaved) {
               sendWelcomeEmail().then(result => {
                 if (!result.success) {
                   setEmailConfirmStatus('error');
