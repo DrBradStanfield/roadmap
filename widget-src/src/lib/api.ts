@@ -971,6 +971,17 @@ export async function getHealthDocuments(): Promise<ApiDocument[]> {
 }
 
 /**
+ * How uploaded ORIGINALS are kept. The Shopify/v1 build keeps extracted text
+ * only (no prompt, no archive); the local-first build overrides this:
+ * 'cloud' = originals are archived in the user's cloud folders;
+ * 'device-only' = no durable home — the upload UI shows the connect-first
+ * prompt (decision record: encourage, don't block).
+ */
+export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' {
+  return 'no-prompt';
+}
+
+/**
  * Save documents extracted from uploaded files.
  */
 export async function bulkSaveDocuments(

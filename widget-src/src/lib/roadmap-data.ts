@@ -53,6 +53,15 @@ export function flushRoadmapStoreSync(): void {
   store?.flushSync();
 }
 
+// --- document archive (§lab-uploads) ---
+export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' {
+  // On the device-only tier originals get no durable home — localStorage blobs
+  // would also dangle after a backend switch (migrateLocalInto moves only the
+  // JSON), so the upload UI prompts to connect first and the save path strips
+  // the bytes if the user chooses to continue anyway.
+  return store && store.backendId !== 'local' ? 'cloud' : 'device-only';
+}
+
 // --- email reminders (§10) — used by the standalone RemindersControl ---
 export function getReminderOptIn(): FileReminderOptIn | undefined {
   return store?.getReminderOptIn();

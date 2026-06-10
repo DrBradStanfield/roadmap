@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { UnitSystem, MeasurementSource, MetricType } from '@roadmap/health-core';
-import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, type PageContent, type UploadErrorCode, type UploadHistory } from '../lib/api';
+import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, type PageContent, type UploadErrorCode, type UploadHistory } from '../lib/api';
 import { ReviewTable, type FileResult, type DocumentToSave } from './ReviewTable';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -102,6 +102,10 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, birthYear, sex, hidden, onProcessingStart, onProcessingEnd, onProgressUpdate }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
   const [files, setFiles] = useState<File[]>([]);
+  // Connect-first gate (decision record: encourage, don't block). 'device-only'
+  // + not skipped → show the connect panel instead of the dropzone.
+  const archiveMode = getDocumentArchiveMode();
+  const [skipArchive, setSkipArchive] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0, fileName: '' });
   const [results, setResults] = useState<FileResult[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -544,7 +548,8 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         // pure LLM extraction in audit analytics. Falls back to 'lab_import'.
         source: v.source ?? 'lab_import',
       }));
-      const blobFor = (name: string | null) => results.find(r => r.fileName === name)?.file;
+      const keepOriginals = getDocumentArchiveMode() === 'cloud';
+      const blobFor = (name: string | null) => (keepOriginals ? results.find(r => r.fileName === name)?.file : undefined);
       const docPayloads = documents.map(d => ({
         documentType: d.documentType,
         title: d.title,
@@ -560,6 +565,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       // document entry per successfully-processed lab file.
       const coveredFiles = new Set(documents.map(d => d.sourceFileName));
       for (const r of results) {
+        if (!keepOriginals) break;
         if (r.error || r.document || coveredFiles.has(r.fileName) || !r.file) continue;
         if (r.values.length === 0 && r.additionalValues.length === 0) continue;
         docPayloads.push({
@@ -629,7 +635,30 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         </div>
 
         <div className="upload-modal-body">
-          {state === 'select' && (
+          {state === 'select' && archiveMode === 'device-only' && !skipArchive && (
+            <div className="upload-select upload-connect-first">
+              <h3 className="upload-connect-title">Keep your original documents</h3>
+              <p className="upload-connect-text">
+                Connect your cloud so the files themselves are saved — organised into
+                Lab&nbsp;results / Clinic&nbsp;letters / Scans — in <strong>your</strong> Google
+                Drive or Dropbox. Dr&nbsp;Brad's servers never store them.
+              </p>
+              <button
+                type="button"
+                className="upload-btn-primary"
+                onClick={() => {
+                  onClose();
+                  window.dispatchEvent(new Event('hr:open-backend-picker'));
+                }}
+              >
+                Choose where to save
+              </button>
+              <button type="button" className="upload-connect-skip" onClick={() => setSkipArchive(true)}>
+                Continue without keeping my files ›
+              </button>
+            </div>
+          )}
+          {state === 'select' && (archiveMode !== 'device-only' || skipArchive) && (
             <div className="upload-select">
               <div
                 className="upload-dropzone"

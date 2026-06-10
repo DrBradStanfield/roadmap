@@ -2309,6 +2309,47 @@ input[type="number"] {
   padding: 20px;
 }
 
+/* Connect-first panel (device-only tier): encourage cloud connect before
+   the file picker so originals get a durable, organised home. */
+.upload-connect-first {
+  text-align: center;
+  padding: 28px 24px;
+  border: 2px dashed var(--color-gray-border);
+  border-radius: 12px;
+}
+.upload-connect-title {
+  margin: 0 0 8px;
+  font-size: 17px;
+}
+.upload-connect-text {
+  margin: 0 auto 18px;
+  max-width: 420px;
+  color: var(--color-gray-medium);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.upload-btn-primary {
+  background: var(--color-brand);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.upload-btn-primary:hover { filter: brightness(1.05); }
+.upload-connect-skip {
+  display: block;
+  margin: 14px auto 0;
+  background: none;
+  border: none;
+  color: var(--color-gray-medium);
+  font-size: 12.5px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* Drop zone */
 .upload-dropzone {
   border: 2px dashed var(--color-gray-border);
