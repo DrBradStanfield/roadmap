@@ -26,6 +26,7 @@ import {
   type UnitSystem,
 } from '@roadmap/health-core';
 import { getByokChatInputs } from './roadmap-data';
+import { safeGetItem, safeSetItem, safeRemoveItem, getJson, setJson } from './storage';
 
 // ---------------------------------------------------------------------------
 // Types — byte-compatible with chat-api.ts (chat-sync + the chat components
@@ -77,7 +78,7 @@ export function clearGuestSessionToken(): void { /* noop */ }
 const KEY_STORAGE = 'hr_anthropic_key';
 
 export function getAnthropicKey(): string | null {
-  try { return localStorage.getItem(KEY_STORAGE); } catch { return null; }
+  return safeGetItem(KEY_STORAGE);
 }
 
 /** Chat gate — see chat-api.ts for the contract. Always present on standalone. */
@@ -96,11 +97,12 @@ export function getChatGate(): ChatGate | null {
       if (!trimmed.startsWith('sk-ant-')) {
         return 'That doesn’t look like an Anthropic API key (they start with "sk-ant-").';
       }
-      try { localStorage.setItem(KEY_STORAGE, trimmed); } catch { return 'Could not save the key on this device.'; }
-      return null;
+      safeSetItem(KEY_STORAGE, trimmed);
+      // safeSetItem swallows quota/sandbox errors — verify the write stuck.
+      return getAnthropicKey() === trimmed ? null : 'Could not save the key on this device.';
     },
     clearKey(): void {
-      try { localStorage.removeItem(KEY_STORAGE); } catch { /* noop */ }
+      safeRemoveItem(KEY_STORAGE);
     },
   };
 }
@@ -117,18 +119,12 @@ interface StoredConversation extends ChatConversation {
 }
 
 function readConvs(): StoredConversation[] {
-  try {
-    const raw = localStorage.getItem(CONVS_STORAGE);
-    return raw ? (JSON.parse(raw) as StoredConversation[]) : [];
-  } catch {
-    return [];
-  }
+  return getJson<StoredConversation[]>(CONVS_STORAGE) ?? [];
 }
 
 function writeConvs(convs: StoredConversation[]): void {
-  try {
-    localStorage.setItem(CONVS_STORAGE, JSON.stringify(convs.slice(0, MAX_CONVERSATIONS)));
-  } catch { /* quota — chat history is best-effort */ }
+  // setJson swallows quota errors — chat history is best-effort.
+  setJson(CONVS_STORAGE, convs.slice(0, MAX_CONVERSATIONS));
 }
 
 export async function listConversations(): Promise<ChatListResult | null> {

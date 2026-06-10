@@ -468,6 +468,10 @@ export async function action({ request }: ActionFunctionArgs) {
         output_tokens: completion.usage.outputTokens,
         model: CHAT_MODEL,
         is_fallback: completion.isFallback,
+        // Persist the fallback cause so the daily audit email is self-diagnosing
+        // (previously only sent to Sentry via reportChatFallback). Null on success.
+        failure_mode: completion.failureMode ?? null,
+        error_detail: completion.errorDetail?.slice(0, 500) ?? null,
       })
       .then(({ error: msgError }: { error: { message: string } | null }) => {
         if (msgError) {
