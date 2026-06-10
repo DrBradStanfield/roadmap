@@ -2,7 +2,7 @@
 
 **Feature**: Upload lab report PDFs, images, or ZIPs → LLM extracts blood test values → user reviews → bulk save to Supabase.
 
-**Status**: Shipped (v341 March 2026 · FHIR `replaces` redesign May 2026)
+**Status**: Shipped (v341 March 2026 · FHIR `replaces` redesign May 2026 · **v2 local-first extension June 2026 — see the "v2: Local-first lab uploads" section below**)
 
 **Commits**: `296d9ab`, `dee69c2`, `06aa627` (initial) · `052ada1`, `5ab25ad`, `8f428cb`, `0f795d7`, `6a56814`, `2bce3bf` (May 2026 redesign)
 
@@ -471,3 +471,57 @@ Re-uploading the same lab data shows an "Already saved" badge on every row whose
 - Validation-range "double-check this" prompts at review time
 
 All three are addressed with current recommendations in the spec but not yet locked in.
+
+
+---
+
+## v2: Local-first lab uploads (June 2026)
+
+The local-first re-architecture (see `claude_business/docs/health-roadmap-v2.html` + `health-roadmap-v2-implementation.html` for the full decision record and build log) extends this feature in four ways. The v1 Shopify path above is UNCHANGED and still serves the live widget; everything below is additive for the standalone (GitHub Pages, later drstanfield.com-v2) build.
+
+### 1. Originals are KEPT — archived in the user's own cloud
+
+v1 discarded the raw file after extraction. v2 writes the original into the user's own cloud storage (Drive / Dropbox / GitHub / WebDAV), organised by the AI's classification:
+
+| AI classification | Folder (inside 'Health Plan by Dr Brad') |
+|---|---|
+| `pathology_report` (incl. plain blood-test PDFs — these get a synthesized document entry; v1 created no document for them) | `Lab results/` |
+| `scan_result` | `Scans/` |
+| `clinic_letter`, `discharge_summary` | `Clinic letters/` |
+| `vaccination_record`, `other` | `Other documents/` |
+
+File names are `YYYY-MM-DD Title.ext` (the DOCUMENT's own date, AI-extracted and user-correctable in review) — ISO-8601 date-first so alphabetical sorting IS chronological in every cloud UI. Collisions get a " (2)" suffix.
+
+Key mechanics (all in `widget-src/`):
+- `packages/health-core/src/document-path.ts` — `buildDocumentRef`/`splitDocumentRef`/`DOCUMENT_FOLDERS` (the path contract has one home)
+- `RoadmapStore.bulkSaveDocuments` writes the blob FIRST, then commits the `documents[]` ref via the JSON write (§5.3 order: an interrupted save leaves a harmless orphan blob, never a dangling ref); sha256 `contentHash` per file
+- **Content-hash dedup**: re-uploading an already-archived original is a no-op (the review step dedups extracted VALUES; the store dedups ORIGINALS)
+- **Tombstone deletes**: documents merge by union-by-id across devices, so a hard delete would resurrect from the cloud copy. `FileDocument.deleted` is a monotonic tombstone (merge ORs it; reads filter it)
+- Blob writes fail gracefully (GitHub's ~1 MB Contents cap, storage quota): the extracted values + metadata are still saved, only the original is skipped
+- Connect-first UX: device-only users see "Keep your original documents" (opens the backend picker) with an honest "Continue without keeping my files" skip; off-cloud, blobs are never even decompressed
+
+### 2. Cross-origin extraction endpoint (no Shopify session)
+
+`app/routes/api.lab-import-v2.ts` serves the standalone front door — same `extractOrClassify`/`createBatch`/`pollBatch` pipeline as `api.lab-import.ts`, but:
+- No Shopify app-proxy auth (no accounts on the standalone surface)
+- CORS allow-list via the shared `app/lib/local-first-route.server.ts` (github.io + drstanfield.com; **localhost is never an approved origin — hard rule**)
+- text/plain "simple request" body protocol (remix-serve 405s preflights)
+- Per-IP daily file quota (60/day, weighted by file count, built on `rate-limiter.ts`'s `createQuotaCounter`)
+- HARD per-machine daily file cap as the $-guardrail (`AI_DAILY_FILE_CAP`, default 500/day/machine; global ≈ cap × machine count, resets on deploy — accepted approximation until a shared counter earns its DDL)
+- §7 posture unchanged: extracted text/images transit, results return, nothing stored
+- Phase 5 plan: restrict to drstanfield.com via the app-proxy HMAC (cryptographic front-door check)
+
+The client overrides live in `widget-src/src/lib/roadmap-data.ts` (the standalone build's api.ts shadow). The `health-upload.js` extraction bundle now also builds into the Pages site (`PAGES_BUILD=1`, no public sourcemap) — it was previously a Shopify theme asset only.
+
+### 3. Anthropic integration notes (verified June 2026)
+
+- Model: `claude-haiku-4-5-20251001` — right tier for high-volume extraction
+- Pipeline mode (<20 files): client extracts (pdf.js/JSZip/image-resize, EXTRACT_CONCURRENCY=3) feeding LLM_CONCURRENCY=5 concurrent single-file calls — extraction runs ahead of the LLM so the queue stays full
+- Batch mode (≥20 files): Anthropic **Message Batches API** (50% cheaper; poll-based; per-machine poll state — a poll landing on the other Fly machine 404s and the client falls back, accepted risk)
+- **Prompt caching is NOT applicable**: both system prompts are ~600–1,000 tokens, below Haiku 4.5's 4,096-token minimum cacheable prefix; the per-call cost is dominated by the unique document content anyway
+- Future-proofing note: the JSON-retry uses an assistant prefill (`'{'`), which 4.6+ models reject (400). If the model is ever bumped past Haiku 4.5, replace the prefill+extractJsonObject machinery with structured outputs (`output_config.format` with a json_schema) — guaranteed-valid JSON, no retry needed
+
+### 4. Known scale items (documented, deferred)
+
+- Blob uploads to the user's cloud run serially in `bulkSaveDocuments` (~2 RTTs/file on Drive incl. a create-time existence check that's almost never needed). Fine for typical 1–5 file uploads; a 3–4-way pool + skipping the existence check pays off for 20+ file batches on slow links
+- Per-IP/per-machine quotas are in-memory (reset on deploy; ×2 with two machines)
