@@ -15,10 +15,9 @@
  */
 import React, { useEffect, useState } from 'react';
 import { getReminderOptIn } from '../src/lib/roadmap-data';
+import { EMAIL_REGEX } from '../src/lib/email';
 import { cancelReminders, optInToReminders, remindersSupported } from './reminders';
 import type { Backend } from './connect';
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function RemindersControl({ backend }: { backend: Backend }) {
   // Not useBusyRun: that scaffold leaves busy=true on success (its flows end
@@ -56,15 +55,19 @@ export function RemindersControl({ backend }: { backend: Backend }) {
     }
   };
 
-  const turnOn = wrap(async () => {
-    const marketingEmail = wantsUpdates ? typedEmail.trim() : undefined;
-    if (wantsUpdates && !EMAIL_RE.test(marketingEmail!)) {
-      throw new Error('That email doesn’t look right — please check it (or untick the box).');
-    }
-    await optInToReminders(backend, marketingEmail);
+  const resetStep = () => {
     setConfirming(false);
     setWantsUpdates(false);
     setTypedEmail('');
+  };
+
+  const turnOn = wrap(async () => {
+    const marketingEmail = wantsUpdates ? typedEmail.trim() : undefined;
+    if (marketingEmail !== undefined && !EMAIL_REGEX.test(marketingEmail)) {
+      throw new Error('That email doesn’t look right — please check it (or untick the box).');
+    }
+    await optInToReminders(backend, marketingEmail);
+    resetStep();
   });
   const turnOff = wrap(() => cancelReminders());
 
@@ -106,7 +109,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
             <button
               className="hr-sync-link"
               disabled={busy}
-              onClick={() => { setConfirming(false); setError(null); }}
+              onClick={() => { resetStep(); setError(null); }}
             >
               Cancel
             </button>

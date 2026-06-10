@@ -24,6 +24,7 @@ import {
   getBmiEvidence,
 } from '@roadmap/health-core';
 import { type ApiReminderPreference, sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments } from '../lib/api';
+import { EMAIL_REGEX } from '../lib/email';
 import { ColumnHeader } from './ColumnHeader';
 import { FeedbackForm } from './FeedbackForm';
 // @ts-ignore — JSON import for blog post cards
@@ -378,8 +379,6 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
 }
 
 type GuestEmailState = 'idle' | 'sending' | 'prompt-account' | 'blog-posts';
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const DEFAULT_EMAIL_HELPER = 'Get your personalized plan emailed to you, with detailed explanations and clinical references for every suggestion.';
 
