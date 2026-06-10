@@ -79,7 +79,7 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
       <div className="hr-sync hr-sync-cloud">
         <span className="hr-sync-status">✓ Synced to {LABELS[backend]}</span>
         <button className="hr-sync-link" onClick={() => setPickerOpen(true)}>Change</button>
-        <span className="hr-sync-detail">Your data lives only in {LABELS[backend]} — never on our servers.</span>
+        <span className="hr-sync-detail">Your health data lives only in {LABELS[backend]} — never on Dr Brad's servers.</span>
       </div>
     );
   } else {
@@ -87,7 +87,7 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
       <div className="hr-sync hr-sync-local">
         <span className="hr-sync-status">Saved on this device</span>
         <button className="hr-sync-btn" onClick={() => setPickerOpen(true)}>Choose where to save</button>
-        <span className="hr-sync-detail">Your data is only in this browser. Save it to your own cloud to sync across your phone and computer.</span>
+        <span className="hr-sync-detail">Your health data is only in this browser. Save it to your own cloud to sync across your phone and computer.</span>
       </div>
     );
   }

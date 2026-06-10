@@ -186,7 +186,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
           <>
             <h2>Where should your health plan live?</h2>
             <p className="hr-modal-sub">
-              Your data saves to a place <strong>you</strong> control — never to our servers.
+              Your health data saves to a place <strong>you</strong> control — never to Dr Brad's servers.
             </p>
             {OPTIONS.map((o, i) => (
               <React.Fragment key={o.id}>
