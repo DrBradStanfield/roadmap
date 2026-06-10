@@ -216,7 +216,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
 
     const quota = await checkLabImportQuota();
     if (!quota.allowed) {
-      setError('Daily upload limit reached. You can upload more tomorrow.');
+      setError(quota.message ?? 'Daily upload limit reached. You can upload more tomorrow.');
       return;
     }
 

@@ -19,6 +19,8 @@ const SHIM = resolve(__dirname, 'src/lib/roadmap-data.ts');
 const REAL_API = /\/widget-src\/src\/lib\/api\.ts$/;
 const BYOK_CHAT = resolve(__dirname, 'src/lib/byok-chat.ts');
 const REAL_CHAT_API = /\/widget-src\/src\/lib\/chat-api\.ts$/;
+const BYOK_UPLOAD = resolve(__dirname, 'src/lib/byok-upload.ts');
+const REAL_UPLOAD_API = /\/widget-src\/src\/lib\/upload-api\.ts$/;
 
 /**
  * Redirect every import that resolves to `src/lib/api.ts` to the local-first
@@ -31,14 +33,16 @@ function redirectApiToLocalFirst(): Plugin {
     name: 'redirect-api-to-local-first',
     enforce: 'pre',
     async resolveId(source, importer, options) {
-      if (!importer || importer.includes('/lib/roadmap-data')) return null;
+      if (!importer) return null;
       const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
-      if (resolved && REAL_API.test(resolved.id)) return SHIM;
+      if (!resolved) return null;
+      if (REAL_API.test(resolved.id) && !importer.includes('/lib/roadmap-data')) return SHIM;
       // Same swap for the chat transport: chat-api.ts (Shopify proxy) →
       // byok-chat.ts (direct browser → Anthropic with the user's own key).
-      if (resolved && REAL_CHAT_API.test(resolved.id) && !importer.includes('/lib/byok-chat')) {
-        return BYOK_CHAT;
-      }
+      if (REAL_CHAT_API.test(resolved.id) && !importer.includes('/lib/byok-chat')) return BYOK_CHAT;
+      // And the upload transport: upload-api.ts (Brad's Fly endpoint) →
+      // byok-upload.ts (user's own key). The Shopify v2 build keeps upload-api.
+      if (REAL_UPLOAD_API.test(resolved.id) && !importer.includes('/lib/byok-upload')) return BYOK_UPLOAD;
       return null;
     },
   };

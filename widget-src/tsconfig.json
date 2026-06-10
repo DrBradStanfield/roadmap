@@ -16,7 +16,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@roadmap/health-core": ["../packages/health-core/src"]
+      "@roadmap/health-core": ["../packages/health-core/src"],
+      "@roadmap/health-core/*": ["../packages/health-core/src/*"]
     }
   },
   "include": ["src"]

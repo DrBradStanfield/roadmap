@@ -19,6 +19,17 @@ export const ALLOWED_ORIGINS = new Set([
 ]);
 
 /**
+ * AI endpoints (lab extraction, future chat) — drstanfield.com ONLY.
+ * Phase 5 decision (Brad, 2026-06-11): Brad pays per Claude call, so the
+ * Brad-funded AI path is reserved for the storefront page; the GitHub Pages /
+ * self-host build runs uploads + chat with the USER's own Anthropic key
+ * (byok-upload.ts / byok-chat.ts) and never calls these routes. The non-AI
+ * plumbing (google-token, reminders-v2) stays on ALLOWED_ORIGINS — Drive
+ * connect and email reminders work from every front door.
+ */
+export const AI_ALLOWED_ORIGINS = new Set(['https://drstanfield.com']);
+
+/**
  * The public standalone app (GitHub Pages is the only public front door until
  * Phase 5 — switch to the drstanfield.com page at the Shopify port). Used for
  * email CTAs and anywhere the server must name the app's URL.
@@ -30,9 +41,9 @@ export function getClientIp(request: Request): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 }
 
-export function corsHeaders(request: Request): Record<string, string> {
+export function corsHeaders(request: Request, origins: Set<string> = ALLOWED_ORIGINS): Record<string, string> {
   const origin = request.headers.get('Origin') ?? '';
-  if (!ALLOWED_ORIGINS.has(origin)) return { Vary: 'Origin' };
+  if (!origins.has(origin)) return { Vary: 'Origin' };
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',

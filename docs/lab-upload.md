@@ -500,18 +500,23 @@ Key mechanics (all in `widget-src/`):
 - Blob writes fail gracefully (GitHub's ~1 MB Contents cap, storage quota): the extracted values + metadata are still saved, only the original is skipped
 - Connect-first UX: device-only users see "Keep your original documents" (opens the backend picker) with an honest "Continue without keeping my files" skip; off-cloud, blobs are never even decompressed
 
-### 2. Cross-origin extraction endpoint (no Shopify session)
+### 2. Cross-origin extraction endpoint (no Shopify session) — drstanfield.com ONLY since Phase 5
 
-`app/routes/api.lab-import-v2.ts` serves the standalone front door — same `extractOrClassify`/`createBatch`/`pollBatch` pipeline as `api.lab-import.ts`, but:
+`app/routes/api.lab-import-v2.ts` serves the drstanfield.com v2 page — same `extractOrClassify`/`createBatch`/`pollBatch` pipeline as `api.lab-import.ts`, but:
 - No Shopify app-proxy auth (no accounts on the standalone surface)
-- CORS allow-list via the shared `app/lib/local-first-route.server.ts` (github.io + drstanfield.com; **localhost is never an approved origin — hard rule**)
+- CORS allow-list `AI_ALLOWED_ORIGINS` in `app/lib/local-first-route.server.ts` — **drstanfield.com ONLY** (Phase 5, 2026-06-11). The non-AI routes (google-token, reminders-v2) stay on the wider `ALLOWED_ORIGINS` (github.io + drstanfield.com) so Drive connect and reminders work from every front door. **localhost is never an approved origin — hard rule**
 - text/plain "simple request" body protocol (remix-serve 405s preflights)
 - Per-IP daily file quota (60/day, weighted by file count, built on `rate-limiter.ts`'s `createQuotaCounter`)
 - HARD per-machine daily file cap as the $-guardrail (`AI_DAILY_FILE_CAP`, default 500/day/machine; global ≈ cap × machine count, resets on deploy — accepted approximation until a shared counter earns its DDL)
 - §7 posture unchanged: extracted text/images transit, results return, nothing stored
-- Phase 5 plan: restrict to drstanfield.com via the app-proxy HMAC (cryptographic front-door check)
+- Remaining Phase 5 hardening option: app-proxy HMAC (cryptographic front-door check) on top of the Origin check
 
-The client overrides live in `widget-src/src/lib/roadmap-data.ts` (the standalone build's api.ts shadow). The `health-upload.js` extraction bundle now also builds into the Pages site (`PAGES_BUILD=1`, no public sourcemap) — it was previously a Shopify theme asset only.
+**Upload transport is a build-time module swap** (June 2026, same mechanism as `api.ts → roadmap-data.ts`):
+- `widget-src/src/lib/upload-api.ts` — server transport (POSTs to this endpoint). Used by the **Shopify v2 build** (`vite.config.shopify-v2.ts`): Brad pays, capped.
+- `widget-src/src/lib/byok-upload.ts` — **BYOK transport** for the GitHub Pages / self-host build (`vite.config.standalone.ts` redirects upload-api → byok-upload): the browser calls api.anthropic.com directly with the user's own key (`hr_anthropic_key`, shared with the BYOK chat). No key connected → the upload modal shows a "connect your key" message via `checkLabImportQuota().message`. "Batches" are a client-side queue of direct calls (concurrency 2) behind the same `labImportBatch`/`pollBatchStatus` interface — the user is present and pays for themselves, so the Anthropic Batch API's 50% discount isn't worth the async complexity.
+- The extraction prompt + response schema + unit resolution moved to **`packages/health-core/src/lab-extraction.ts`**, imported by BOTH `app/lib/anthropic.server.ts` and `byok-upload.ts` — single source, the two transports can never drift. This ships the prompt in the public Pages bundle: Brad accepted that 2026-06-10 (mechanical value extraction, not clinical IP — the algorithm doc never leaves the server).
+
+The `health-upload.js` extraction bundle (pdf.js/JSZip — transport-independent) builds into the Pages site (`PAGES_BUILD=1`, no public sourcemap) — it was previously a Shopify theme asset only.
 
 ### 3. Anthropic integration notes (verified June 2026)
 

@@ -759,7 +759,9 @@ interface LabImportResponse {
  * Preflight check: returns remaining quota without consuming a request.
  * Call before starting file processing to avoid wasted client-side work.
  */
-export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaining: number }> {
+/** `message` (optional) overrides the modal's default quota-exceeded copy —
+ *  the BYOK transport uses it for its "connect your key" gate. */
+export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaining: number; message?: string }> {
   try {
     const response = await fetch(`${PROXY_PATH}/api/lab-import`);
     if (!response.ok) return { allowed: false, remaining: 0 };

@@ -25,20 +25,15 @@ import type {
 } from '@roadmap/health-core';
 import { RoadmapStore } from '../storage/roadmap-store';
 import type { StorageAdapter } from '../storage/adapter';
-import { parseJsonResponse } from './api';
 import type {
   AddMeasurementResult,
   ApiDocument,
   ApiLabValue,
   ApiMedicationHistory,
-  BatchPollResponse,
   BulkLabValuesResult,
   BulkSaveResult,
   CorrectMeasurementResult,
-  LabImportResult,
   LatestMeasurementsResult,
-  PageContent,
-  UploadErrorCode,
 } from './api';
 
 export * from './api';
@@ -60,80 +55,14 @@ export function flushRoadmapStoreSync(): void {
   store?.flushSync();
 }
 
-// --- AI lab extraction (Phase 4 thin server) ---
-// Off Shopify there is no app proxy, so extraction goes cross-origin to the
-// stateless Fly endpoint (api.lab-import-v2): same Claude pipeline, §7
-// transit-never-store, text/plain simple-request protocol, per-IP + per-day
-// caps server-side. These shadow the api.ts versions (which POST to the
-// Shopify proxy path and would 404 here).
-const LAB_IMPORT_V2_URL = 'https://health-tool-app.fly.dev/api/lab-import-v2';
-
-export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaining: number }> {
-  try {
-    const response = await fetch(LAB_IMPORT_V2_URL);
-    if (!response.ok) return { allowed: false, remaining: 0 };
-    return (await parseJsonResponse<{ allowed: boolean; remaining: number }>(response)) ?? { allowed: true, remaining: 0 };
-  } catch {
-    return { allowed: true, remaining: 0 }; // optimistic — the POST enforces
-  }
-}
-
-export async function labImport(
-  pages: PageContent[],
-  unitSystem: 'si' | 'conventional',
-): Promise<{ result: LabImportResult | null; remaining?: number; error?: string; errorCode?: UploadErrorCode }> {
-  try {
-    const response = await fetch(LAB_IMPORT_V2_URL, {
-      method: 'POST',
-      // No Content-Type: CORS simple request (no preflight on remix-serve).
-      body: JSON.stringify({ pages, unitSystem }),
-    });
-    if (response.status === 429) {
-      return { result: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
-    }
-    if (!response.ok) return { result: null, error: 'Extraction failed', errorCode: 'server_error' };
-    const data = await parseJsonResponse<{ success: boolean; data?: LabImportResult; remaining?: number; error?: string }>(response);
-    if (!data?.success || !data.data) return { result: null, error: data?.error || 'Extraction failed', errorCode: 'server_error' };
-    return { result: data.data, remaining: data.remaining };
-  } catch (error) {
-    console.warn('Lab import error:', error);
-    return { result: null, error: 'Network error', errorCode: 'network' };
-  }
-}
-
-export async function labImportBatch(
-  files: Array<{ fileName: string; pages: PageContent[] }>,
-): Promise<{ batchId: string | null; error?: string; errorCode?: UploadErrorCode }> {
-  try {
-    const response = await fetch(LAB_IMPORT_V2_URL, {
-      method: 'POST',
-      body: JSON.stringify({ batch: true, files }),
-    });
-    if (response.status === 429) {
-      return { batchId: null, error: 'Daily upload limit reached. You can upload more tomorrow.', errorCode: 'rate_limit' };
-    }
-    if (!response.ok) return { batchId: null, error: 'Failed to start batch processing', errorCode: 'server_error' };
-    const data = await parseJsonResponse<{ success: boolean; batchId?: string; error?: string }>(response);
-    if (!data?.success || !data.batchId) return { batchId: null, error: data?.error || 'Batch creation failed', errorCode: 'server_error' };
-    return { batchId: data.batchId };
-  } catch (error) {
-    console.warn('Batch import error:', error);
-    return { batchId: null, error: 'Network error', errorCode: 'network' };
-  }
-}
-
-export async function pollBatchStatus(batchId: string): Promise<BatchPollResponse> {
-  try {
-    const response = await fetch(`${LAB_IMPORT_V2_URL}?batchId=${encodeURIComponent(batchId)}`);
-    if (response.status === 404) {
-      return { status: 'ended', completed: 0, total: 0, error: 'Batch not found — server may have restarted.', errorCode: 'server_restart' };
-    }
-    if (!response.ok) return { status: 'processing', completed: 0, total: 0 };
-    return (await parseJsonResponse<BatchPollResponse>(response)) ?? { status: 'processing', completed: 0, total: 0 };
-  } catch {
-    return { status: 'processing', completed: 0, total: 0 };
-  }
-}
+// --- AI lab extraction (Phase 4/5 transports) ---
+// The upload transport lives in upload-api.ts (cross-origin to Brad's Fly
+// endpoint — what the drstanfield.com v2 page uses). The Pages/self-host
+// build swaps it for byok-upload.ts (user's own Anthropic key, browser
+// direct) via vite.config.standalone.ts. The explicit re-export shadows the
+// api.ts versions inherited from `export *` (which POST to the Shopify proxy
+// path and would 404 here).
+export { checkLabImportQuota, labImport, labImportBatch, pollBatchStatus } from './upload-api';
 
 // --- document archive (§lab-uploads) ---
 export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' {

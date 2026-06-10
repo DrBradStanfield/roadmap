@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/remix';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
 import { extractOrClassify, createBatch, pollBatch } from '../lib/anthropic.server';
 import { createQuotaCounter } from '../lib/rate-limiter';
-import { ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { AI_ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
 
 /**
  * Cross-origin lab extraction for the LOCAL-FIRST front door (Phase 4 "thin
@@ -17,8 +17,10 @@ import { ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } fro
  *    the true global cap ≈ cap × machine count and resets on deploy — an
  *    accepted approximation until a shared counter is worth its DDL. Tune via
  *    AI_DAILY_FILE_CAP (default 500/day/machine ≈ low tens of $ worst case).
- *  - the CORS allow-list (never localhost) + Phase 5 plan: drstanfield.com
- *    only via the app-proxy HMAC (decision record §10 threat model).
+ *  - the CORS allow-list (never localhost) — AI_ALLOWED_ORIGINS, i.e.
+ *    drstanfield.com ONLY since Phase 5 (2026-06-11): the Pages/self-host
+ *    build extracts with the user's own key (byok-upload.ts) and never calls
+ *    this route. (Decision record §10 threat model.)
  */
 
 const PER_IP_DAILY_LIMIT = 60;
@@ -55,9 +57,9 @@ setInterval(() => {
 
 /** GET: quota preflight (?quota) or batch poll (?batchId=...). */
 export async function loader({ request }: LoaderFunctionArgs) {
-  const headers = corsHeaders(request);
+  const headers = corsHeaders(request, AI_ALLOWED_ORIGINS);
   const origin = request.headers.get('Origin');
-  if (!origin || !ALLOWED_ORIGINS.has(origin)) {
+  if (!origin || !AI_ALLOWED_ORIGINS.has(origin)) {
     return json({ error: 'Origin not allowed' }, { status: 403, headers });
   }
   const ip = getClientIp(request);
@@ -85,12 +87,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 /** POST: single-file extraction or batch creation (text/plain simple request). */
 export async function action({ request }: ActionFunctionArgs) {
-  const headers = corsHeaders(request);
+  const headers = corsHeaders(request, AI_ALLOWED_ORIGINS);
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
   if (request.method !== 'POST') return json({ success: false, error: 'POST only' }, { status: 405, headers });
 
   const origin = request.headers.get('Origin');
-  if (!origin || !ALLOWED_ORIGINS.has(origin)) {
+  if (!origin || !AI_ALLOWED_ORIGINS.has(origin)) {
     return json({ success: false, error: 'Origin not allowed' }, { status: 403, headers });
   }
   const ip = getClientIp(request);
