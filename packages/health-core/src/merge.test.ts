@@ -441,3 +441,29 @@ describe('reminderOptIn (optional singleton)', () => {
     expect(mergeFiles(emptyFile(), emptyFile(), OPTS).reminderOptIn).toBeUndefined();
   });
 });
+
+describe('document tombstones', () => {
+  const doc = (id: string, deleted?: boolean) => ({
+    id, title: 't', type: 'other' as const, date: null, fileRef: '', contentHash: '',
+    mimeType: '', extractedText: '', addedAt: '2026-06-10T00:00:00Z', ...(deleted ? { deleted: true } : {}),
+  });
+
+  it('a delete seen by one side is never undone by the other', () => {
+    const a = emptyFile();
+    a.documents = [doc('d1', true)];
+    const b = emptyFile();
+    b.documents = [doc('d1')];
+    expect(mergeFiles(a, b, OPTS).documents[0].deleted).toBe(true);
+    expect(mergeFiles(b, a, OPTS).documents[0].deleted).toBe(true);
+  });
+
+  it('undeleted rows still union normally', () => {
+    const a = emptyFile();
+    a.documents = [doc('d1')];
+    const b = emptyFile();
+    b.documents = [doc('d2')];
+    const merged = mergeFiles(a, b, OPTS);
+    expect(merged.documents.map(d => d.id)).toEqual(['d1', 'd2']);
+    expect(merged.documents.some(d => d.deleted)).toBe(false);
+  });
+});

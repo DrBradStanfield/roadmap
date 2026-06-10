@@ -198,7 +198,7 @@ export class RoadmapStore {
         reminderCategory: p.category,
         enabled: p.enabled,
       })),
-      documents: this.file.documents.map(toApiDocument),
+      documents: this.file.documents.filter((d) => !d.deleted).map(toApiDocument),
     };
   }
 
@@ -223,7 +223,7 @@ export class RoadmapStore {
   }
 
   getHealthDocuments(): ApiDocument[] {
-    return this.file.documents.map(toApiDocument);
+    return this.file.documents.filter((d) => !d.deleted).map(toApiDocument);
   }
 
   // ================================================================= mutations
@@ -427,9 +427,12 @@ export class RoadmapStore {
   }
 
   deleteDocument(documentId: string): boolean {
-    const i = this.file.documents.findIndex((d) => d.id === documentId);
-    if (i === -1) return false;
-    this.file.documents.splice(i, 1);
+    const doc = this.file.documents.find((d) => d.id === documentId);
+    if (!doc || doc.deleted) return false;
+    // Tombstone, never splice — a hard-removed row resurrects from any other
+    // copy via the union merge. The blob (if any) stays put as a harmless
+    // orphan in the user's own cloud; they can remove it there if they wish.
+    doc.deleted = true;
     this.touch();
     return true;
   }

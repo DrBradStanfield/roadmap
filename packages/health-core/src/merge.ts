@@ -165,6 +165,22 @@ function unionById<T extends { id: string }>(local: T[], remote: T[]): T[] {
   return [...map.values()].sort((a, b) => cmpStr(a.id, b.id));
 }
 
+/**
+ * Documents union: like unionById, but the `deleted` tombstone is MONOTONIC —
+ * if either side has deleted a row, the merged row is deleted (mirrors the
+ * measurements' active→entered-in-error flip; without this, a delete would
+ * resurrect from any copy that hadn't seen it).
+ */
+function mergeDocuments(local: FileDocument[], remote: FileDocument[]): FileDocument[] {
+  const map = new Map<string, FileDocument>();
+  for (const row of [...remote, ...local]) {
+    const existing = map.get(row.id);
+    if (!existing) map.set(row.id, { ...row });
+    else if (row.deleted && !existing.deleted) existing.deleted = true;
+  }
+  return [...map.values()].sort((a, b) => cmpStr(a.id, b.id));
+}
+
 /** Dedup recommendation snapshots by date; on collision keep the richer one. */
 function mergeSnapshots(
   local: RecommendationSnapshot[],
@@ -280,7 +296,7 @@ export function mergeFiles(
 
     medicationHistory: unionById<FileMedication>(local.medicationHistory, remote.medicationHistory),
     supplementHistory: unionById<FileSupplement>(local.supplementHistory, remote.supplementHistory),
-    documents: unionById<FileDocument>(local.documents, remote.documents),
+    documents: mergeDocuments(local.documents, remote.documents),
 
     recommendationSnapshots: mergeSnapshots(
       local.recommendationSnapshots,

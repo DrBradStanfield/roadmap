@@ -147,6 +147,12 @@ export interface FileDocument {
   addedAt: string;          // ISO
   metadata?: Record<string, unknown>; // LLM extraction metadata (was DB `metadata`)
   sourceFileName?: string | null;     // original upload filename (was DB `source_file_name`)
+  /**
+   * Tombstone — a hard-removed row would RESURRECT from any other copy via the
+   * union merge, so deletion flips this instead (kept forever; reads filter it;
+   * merge ORs it so a delete seen by one device is never undone by another).
+   */
+  deleted?: boolean;
 }
 
 /** A point-in-time snapshot of "what was I advised" (decision record §9). */
