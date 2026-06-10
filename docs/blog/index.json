@@ -3,7 +3,6 @@
     "title": "Did One Tiny Tweak Just Solve Heart Disease?",
     "handle": "did-one-tiny-tweak-just-solve-heart-disease",
     "url": "https://drstanfield.com/blogs/articles/did-one-tiny-tweak-just-solve-heart-disease",
-    "youtube": "https://youtu.be/tvef5PqDHc0",
     "tags": [
       "Research",
       "Preventative Care"
@@ -19,6 +18,7 @@
       "statin"
     ],
     "publishedAt": "2026-06-08T00:00:00Z",
+    "youtube": "https://youtu.be/tvef5PqDHc0",
     "summary": "Dr Brad's VERVE-102 post: a one-time gene-editing infusion lowered LDL cholesterol by 62% in a 35-patient phase 1 trial on top of maximum-tolerated statins. Covers PCSK9 discovery, base editing vs CRISPR cutting, and the 2024 setback that nearly ended the program."
   },
   {
