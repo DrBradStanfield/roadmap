@@ -46,6 +46,7 @@ import {
 import { getDeviceId } from './device-id';
 import { SyncManager } from './sync-manager';
 import type { StorageAdapter } from './adapter';
+import { Sentry } from '../lib/sentry';
 
 // --- App-facing shapes (moved here from api.ts; the data ones come from health-core) ---
 
@@ -415,7 +416,9 @@ export class RoadmapStore {
       clearTimeout(this.persistTimer);
       this.persistTimer = null;
     }
-    await this.persist();
+    if (!(await this.persist())) {
+      throw new Error('Cloud sync failed — your latest changes are still on this device.');
+    }
   }
 
   /**
@@ -502,10 +505,11 @@ export class RoadmapStore {
   }
 
   /** Serialized read-merge-write. Re-runs if mutations land during the await. */
-  private async persist(): Promise<void> {
+  /** @returns false when the save failed (already reported to Sentry). */
+  private async persist(): Promise<boolean> {
     if (this.persisting) {
       this.dirtyDuringPersist = true;
-      return;
+      return true; // the in-flight loop will pick the changes up
     }
     this.persisting = true;
     try {
@@ -519,6 +523,20 @@ export class RoadmapStore {
           now: new Date().toISOString(),
         });
       } while (this.dirtyDuringPersist);
+      return true;
+    } catch (error) {
+      // The background cloud save failed — the user's changes are still in
+      // memory (a later mutation reschedules), but this MUST be observable:
+      // unreported, it's silent data-at-risk. Most persist() call sites are
+      // fire-and-forget (`void this.persist()`), so without this catch it
+      // became an unhandled rejection that Sentry's noise filters dropped.
+      // Returning false (not rethrowing) keeps those sites from re-creating
+      // the unhandled rejection; awaited callers (flush) check the result.
+      console.warn('Cloud sync failed', error);
+      Sentry.captureException(error, {
+        tags: { area: 'cloud-sync', op: 'persist', backend: this.adapter.id },
+      });
+      return false;
     } finally {
       this.persisting = false;
     }

@@ -19,6 +19,7 @@ import {
 } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
+import { Sentry } from '../src/lib/sentry';
 
 /** Which backend the app is currently using (a UI-level subset of StorageBackendId). */
 export type Backend = 'dropbox' | 'google-drive' | 'github' | 'self-host' | 'local';
@@ -99,5 +100,6 @@ export async function copyDownToDevice(backend: Backend): Promise<void> {
     if (file) await new SyncManager(new LocalStorageAdapter(), getDeviceId()).save(file);
   } catch (error) {
     console.warn('Copy-down before switch failed', error);
+    Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-down', backend } });
   }
 }

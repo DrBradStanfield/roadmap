@@ -12,7 +12,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { HealthTool } from '../src/components/HealthTool';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { initSentry } from '../src/lib/sentry';
+import { initSentry, Sentry } from '../src/lib/sentry';
 import { initRoadmapStore, flushRoadmapStoreSync } from '../src/lib/roadmap-data';
 import {
   DropboxAdapter,
@@ -43,6 +43,7 @@ async function resolveBackend(): Promise<ResolvedBackend> {
     resumed = await DropboxAdapter.completeRedirect(dropboxConfig());
   } catch (error) {
     console.warn('Dropbox connect failed', error);
+    Sentry.captureException(error, { tags: { area: 'cloud-connect', backend: 'dropbox' } });
   }
   if (resumed) {
     await migrateLocalInto(resumed);
@@ -57,6 +58,7 @@ async function resolveBackend(): Promise<ResolvedBackend> {
     gdResumed = await GoogleDriveAdapter.completeRedirect(googleDriveConfig());
   } catch (error) {
     console.warn('Google Drive connect failed', error);
+    Sentry.captureException(error, { tags: { area: 'cloud-connect', backend: 'google-drive' } });
   }
   if (gdResumed) {
     await migrateLocalInto(gdResumed);

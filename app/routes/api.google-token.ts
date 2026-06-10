@@ -27,10 +27,13 @@ function getClientIp(request: Request): string {
  * returns tokens for an auth code/refresh token the caller already possesses.
  */
 
+// Least-privilege (Brad's call, 2026-06-10): NO localhost — a malicious page or
+// dev server running on a user's own machine must not be able to drive this
+// endpoint. OAuth-flow testing happens on the GitHub Pages prod/dev surfaces
+// (both under the github.io origin); localhost dev covers non-OAuth work only.
 const ALLOWED_ORIGINS = new Set([
   'https://drbradstanfield.github.io',
   'https://drstanfield.com',
-  'http://localhost:5173',
 ]);
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';

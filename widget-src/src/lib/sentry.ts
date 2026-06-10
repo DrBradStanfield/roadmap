@@ -94,7 +94,11 @@ export function initSentry() {
   Sentry.init({
     dsn: SENTRY_DSN,
     release: typeof __SENTRY_RELEASE__ !== 'undefined' ? __SENTRY_RELEASE__ : undefined,
-    environment: window.location.hostname.includes('localhost') ? 'development' : 'production',
+    environment: window.location.hostname.includes('localhost')
+      ? 'development'
+      : window.location.hostname === 'drbradstanfield.github.io'
+        ? 'standalone' // the GitHub Pages front door — separable from the website in Sentry
+        : 'production',
     // Only send 20% of transactions for performance monitoring
     tracesSampleRate: 0.2,
     // Don't send in development
@@ -129,10 +133,15 @@ export function initSentry() {
       /\.raty\b/,
     ],
     allowUrls: [
-      // Only capture errors originating from our own widget bundles
+      // Only capture errors originating from our own widget bundles…
       /health-tool\.js/,
       /health-history\.js/,
       /health-site-chat\.js/,
+      // …or the standalone (GitHub Pages) build's hashed bundles. Pinned to OUR
+      // origin: a re-hosted copy of the bundle produces stack URLs that don't
+      // match, so its errors are dropped (anti-spam). Without this entry, ALL
+      // standalone errors were silently filtered out.
+      /https:\/\/drbradstanfield\.github\.io\/roadmap\/assets\//,
     ],
     beforeSend: scrubEvent,
     beforeBreadcrumb: scrubBreadcrumb,
