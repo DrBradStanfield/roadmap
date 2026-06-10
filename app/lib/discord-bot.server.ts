@@ -361,8 +361,6 @@ async function handleMessage(message: GuildMessage): Promise<void> {
       assistantDiscordMessageIds: sentMessages.map(m => m.id),
       usage: result.usage,
       isFallback: result.isFallback,
-      failureMode: result.failureMode,
-      errorDetail: result.errorDetail,
       routerResult: result.routerResult,
       classifier: {
         classification: result.classifier.classification,
@@ -579,9 +577,6 @@ interface PersistParams {
   assistantDiscordMessageIds: string[];
   usage: { inputTokens: number; outputTokens: number; cacheCreationTokens: number; cacheReadTokens: number };
   isFallback: boolean;
-  /** Fallback cause + raw error, mirrored to chat_messages for the audit email. */
-  failureMode?: string;
-  errorDetail?: string;
   /** Router-call result. null when classifier said SKIP — router never ran. */
   routerResult: RouterResult | null;
   classifier: {
@@ -656,8 +651,6 @@ async function persistConversation(p: PersistParams): Promise<void> {
       model: CHAT_MODEL_TAG,
       discord_message_id: firstSentId,
       is_fallback: p.isFallback,
-      failure_mode: p.failureMode ?? null,
-      error_detail: p.errorDetail?.slice(0, 500) ?? null,
     });
   if (asstErr) {
     Sentry.captureException(new Error('Discord: failed to save assistant message'), {

@@ -77,12 +77,6 @@ interface Message {
   /** True when the LLM call failed and we substituted the user-facing fallback message.
    *  Column is NOT NULL DEFAULT FALSE (migration 2026-05-15), so SELECT always returns a boolean. */
   is_fallback: boolean;
-  /** Fallback cause: 'api-error' (call threw — 5xx/timeout/network/no-text) or
-   *  'empty-response' (200 with whitespace-only content). Null on success and on
-   *  rows from before the 2026-06-11 column-add. */
-  failure_mode: string | null;
-  /** Raw error string (truncated 500 chars) for api-error fallbacks. Null otherwise. */
-  error_detail: string | null;
 }
 
 interface RoutingEvent {
@@ -111,7 +105,7 @@ async function pullMessages(): Promise<Message[]> {
   // from before the 2026-05-15 column-add migration.
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/chat_messages?` +
-    `select=id,created_at,role,content,model,input_tokens,output_tokens,discord_message_id,is_fallback,failure_mode,error_detail,` +
+    `select=id,created_at,role,content,model,input_tokens,output_tokens,discord_message_id,is_fallback,` +
     `chat_conversations!inner(id,platform,external_id)` +
     `&created_at=gte.${since}` +
     `&order=created_at.asc`,
@@ -139,8 +133,6 @@ async function pullMessages(): Promise<Message[]> {
     // PostgREST returns null for rows inserted before the column existed (if any
     // slipped in pre-migration). Coerced to false in the map below.
     is_fallback: boolean | null;
-    failure_mode: string | null;
-    error_detail: string | null;
     user_id: string;
     chat_conversations: { id: string; platform: string; external_id: string | null };
   }>;
@@ -159,8 +151,6 @@ async function pullMessages(): Promise<Message[]> {
     output_tokens: r.output_tokens,
     discord_message_id: r.discord_message_id,
     is_fallback: r.is_fallback ?? false,
-    failure_mode: r.failure_mode ?? null,
-    error_detail: r.error_detail ?? null,
   }));
 }
 
@@ -243,12 +233,6 @@ function renderConversations(messages: Message[], routing: RoutingEvent[]): stri
         : msg.content;
 
       lines.push(`### ${ts} — ${role}`);
-
-      // Show the fallback cause so the reason is visible without Sentry.
-      if (isFallback && (msg.failure_mode || msg.error_detail)) {
-        lines.push(`*⚠️ ${msg.failure_mode ?? 'unknown'}${msg.error_detail ? `: ${msg.error_detail}` : ''}*`);
-        lines.push(``);
-      }
 
       // Show routing for user messages
       if (msg.role === 'user') {
