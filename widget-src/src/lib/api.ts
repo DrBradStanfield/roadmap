@@ -981,13 +981,17 @@ export async function bulkSaveDocuments(
     contentMd: string;
     metadata: Record<string, unknown>;
     sourceFileName: string | null;
+    /** Original bytes — used by the local-first build (user's cloud archive);
+     *  ignored here (v1 keeps extracted text only). */
+    file?: Blob;
   }>,
 ): Promise<ApiDocument[]> {
   try {
+    const bulkDocuments = documents.map(({ file: _file, ...d }) => d);
     const response = await fetch(`${PROXY_PATH}/api/health-documents`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bulkDocuments: documents }),
+      body: JSON.stringify({ bulkDocuments }),
     });
     if (!response.ok) return [];
     const data = await parseJsonResponse<{ success: boolean; documents: ApiDocument[] }>(response);

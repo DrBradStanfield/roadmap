@@ -246,3 +246,11 @@ export {
   computeNextDueDates,
   type ReminderScheduleItem,
 } from './reminder-schedule';
+
+// v2 document paths — the organised-archive scheme (folders + date-first names)
+export {
+  buildDocumentRef,
+  DOCUMENT_FOLDERS,
+  extensionOf,
+  sanitizeTitle,
+} from './document-path';

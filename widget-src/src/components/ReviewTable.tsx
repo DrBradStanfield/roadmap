@@ -29,6 +29,8 @@ export interface FileResult {
   error?: string;
   /** Present for non-lab documents (scan results, clinic letters, etc.) */
   document?: DocumentResult;
+  /** The original uploaded bytes — saved into the user's cloud archive (v2). */
+  file?: Blob;
 }
 
 /** Document to be saved, assembled from review state */

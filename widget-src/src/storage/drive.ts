@@ -62,6 +62,8 @@ interface Stored {
   /** The folder's last-known display name — self-heals renames (brand changes)
    *  even when folderId is cached. */
   folderName?: string;
+  /** Document subfolder ids (e.g. 'Lab results' → id), cached per device. */
+  subfolders?: Record<string, string>;
 }
 
 interface DriveTokens {
@@ -124,9 +126,13 @@ function loadGis(): Promise<void> {
   });
 }
 
-/** Drive file name for an uploaded document ref like 'documents/doc_1.pdf'. */
-function docName(ref: string): string {
-  return `roadmap-${ref.replace(/\//g, '-')}`;
+/**
+ * Split a document ref like 'Lab results/2024-05-10 Lipid panel.pdf' into the
+ * Drive subfolder + file name. Folderless refs live directly in the app folder.
+ */
+function splitRef(ref: string): { folder: string | null; name: string } {
+  const i = ref.indexOf('/');
+  return i === -1 ? { folder: null, name: ref } : { folder: ref.slice(0, i), name: ref.slice(i + 1) };
 }
 
 export class GoogleDriveAdapter implements StorageAdapter {
@@ -341,7 +347,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
   }
 
   async readDocument(ref: string): Promise<Blob> {
-    const id = await this.findFileId(docName(ref));
+    const { folder, name } = splitRef(ref);
+    const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
+    const id = await this.findFileId(name, parentId);
     if (!id) throw new StorageError(`Google Drive document not found: ${ref}`);
     const res = await fetch(`${DRIVE}/files/${id}?alt=media`, { headers: await this.authHeaders() });
     if (!res.ok) throw new StorageError(`Google Drive document read failed (${res.status}): ${ref}`);
@@ -349,8 +357,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
-    const name = docName(ref);
-    const id = await this.findFileId(name);
+    const { folder, name } = splitRef(ref);
+    const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
+    const id = await this.findFileId(name, parentId);
     const type = bytes.type || 'application/octet-stream';
     if (id) {
       const res = await fetch(`${UPLOAD}/files/${id}?uploadType=media`, {
@@ -361,7 +370,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
       if (!res.ok) throw new StorageError(`Google Drive document write failed (${res.status}): ${ref}`);
       return;
     }
-    const res = await this.createMultipart(name, type, bytes);
+    const res = await this.createMultipart(name, type, bytes, parentId);
     if (!res.ok) throw new StorageError(`Google Drive document create failed (${res.status}): ${ref}`);
   }
 
@@ -437,6 +446,41 @@ export class GoogleDriveAdapter implements StorageAdapter {
   }
 
   /**
+   * Find-or-create a document subfolder (e.g. 'Lab results') inside the app
+   * folder; the id is cached per device. The organised-archive folders —
+   * Dropbox/GitHub/WebDAV get these natively from the ref path; Drive needs
+   * real folder objects.
+   */
+  private async ensureSubfolderId(folderName: string): Promise<string> {
+    const cached = this.stored?.subfolders?.[folderName];
+    if (cached) return cached;
+    const parentId = await this.ensureFolderId();
+    const q = encodeURIComponent(
+      `name='${folderName.replace(/'/g, "\\'")}' and mimeType='${FOLDER_MIME}' and '${parentId}' in parents and trashed=false`,
+    );
+    const found = await fetch(`${DRIVE}/files?q=${q}&fields=files(id)&pageSize=1`, {
+      headers: await this.authHeaders(),
+    });
+    if (!found.ok) throw new StorageError(`Google Drive subfolder lookup failed (${found.status})`);
+    let id = ((await found.json()) as { files?: Array<{ id: string }> }).files?.[0]?.id;
+    if (!id) {
+      const created = await fetch(`${DRIVE}/files?fields=id`, {
+        method: 'POST',
+        headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: folderName, mimeType: FOLDER_MIME, parents: [parentId] }),
+      });
+      if (!created.ok) throw new StorageError(`Google Drive subfolder create failed (${created.status})`);
+      id = ((await created.json()) as { id: string }).id;
+    }
+    this.stored = {
+      ...(this.stored ?? {}),
+      subfolders: { ...(this.stored?.subfolders ?? {}), [folderName]: id },
+    };
+    setJson(CONFIG_KEY, this.stored);
+    return id;
+  }
+
+  /**
    * One-time migration: files created before the app folder existed (at the
    * Drive root) are moved into it. No-op once folderId is recorded; cosmetic,
    * so failures never block sync and retry at most once per session.
@@ -460,8 +504,13 @@ export class GoogleDriveAdapter implements StorageAdapter {
   }
 
   /** Create a new Drive file inside the app folder (metadata + content, one multipart POST). */
-  private async createMultipart(name: string, contentType: string, content: Blob | string): Promise<Response> {
-    const metadata = { name, parents: [await this.ensureFolderId()] };
+  private async createMultipart(
+    name: string,
+    contentType: string,
+    content: Blob | string,
+    parentId?: string,
+  ): Promise<Response> {
+    const metadata = { name, parents: [parentId ?? (await this.ensureFolderId())] };
     const boundary = 'rm_boundary_health_roadmap';
     const body = new Blob([
       `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: ${contentType}\r\n\r\n`,
@@ -475,8 +524,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
     });
   }
 
-  private async findFileId(name = FILE_NAME): Promise<string | undefined> {
-    const q = encodeURIComponent(`name='${name}' and trashed=false`);
+  private async findFileId(name = FILE_NAME, parentId?: string): Promise<string | undefined> {
+    const safe = name.replace(/'/g, "\\'");
+    const q = encodeURIComponent(
+      `name='${safe}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
+    );
     const res = await fetch(`${DRIVE}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`, {
       headers: await this.authHeaders(),
     });

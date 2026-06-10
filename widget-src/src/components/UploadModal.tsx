@@ -271,15 +271,23 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         }
         const allResults = await processBatch(upload, allFileObjects, abort, updateProgress);
         if (abort.signal.aborted) return;
-        setResults(allResults);
+        const batchBlobs = new Map<string, Blob>(allFileObjects.map((f) => [f.fileName, f.file as Blob]));
+        setResults(allResults.map((r) => ({ ...r, file: batchBlobs.get(r.fileName) })));
         setState('review');
         return;
       }
 
-      // Pipeline path (<20 files): producer extracts, consumer sends to LLM
+      // Pipeline path (<20 files): producer extracts, consumer sends to LLM.
+      // Keep the original bytes by name so the save step can archive them in
+      // the user's cloud (v2) — ZIP members are re-read (cheap, in-memory).
+      const fileBlobs = new Map<string, Blob>();
+      for (const entries of zipEntryLists) {
+        for (const { name, entry } of entries) fileBlobs.set(name, await entry.async('blob'));
+      }
+      for (const file of otherFiles) fileBlobs.set(file.name, file);
       const allResults = await processPipeline(upload, zipEntryLists, otherFiles, totalFiles, abort, updateProgress, unitSystem);
       if (abort.signal.aborted) return;
-      setResults(allResults);
+      setResults(allResults.map((r) => ({ ...r, file: fileBlobs.get(r.fileName) })));
       setState('review');
     } catch (err) {
       if (!abort.signal.aborted) {
@@ -536,6 +544,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         // pure LLM extraction in audit analytics. Falls back to 'lab_import'.
         source: v.source ?? 'lab_import',
       }));
+      const blobFor = (name: string | null) => results.find(r => r.fileName === name)?.file;
       const docPayloads = documents.map(d => ({
         documentType: d.documentType,
         title: d.title,
@@ -543,7 +552,26 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         contentMd: d.contentMd,
         metadata: d.metadata,
         sourceFileName: d.sourceFileName,
+        file: blobFor(d.sourceFileName),
       }));
+      // Value-bearing lab files produce no DocumentResult in the pipeline, but
+      // their ORIGINALS belong in the user's archive too ('Lab results' folder
+      // — the whole point of Brad's organised-files design). Synthesize a
+      // document entry per successfully-processed lab file.
+      const coveredFiles = new Set(documents.map(d => d.sourceFileName));
+      for (const r of results) {
+        if (r.error || r.document || coveredFiles.has(r.fileName) || !r.file) continue;
+        if (r.values.length === 0 && r.additionalValues.length === 0) continue;
+        docPayloads.push({
+          documentType: 'pathology_report',
+          title: 'Blood test results',
+          documentDate: r.reportDate,
+          contentMd: '',
+          metadata: {},
+          sourceFileName: r.fileName,
+          file: r.file,
+        });
+      }
       const labValuePayloads = labValues.map(lv => ({
         metricName: lv.name,
         value: lv.value,

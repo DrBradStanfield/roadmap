@@ -20,6 +20,7 @@
  *  - Medication-history chart annotations are derived from lightweight snapshots.
  */
 import {
+  buildDocumentRef,
   computeReminderSchedule,
   createMeasurement,
   dayOf,
@@ -371,15 +372,58 @@ export class RoadmapStore {
     return { saved, skippedDuplicates, errorCount: 0 };
   }
 
-  bulkSaveDocuments(documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null }>): ApiDocument[] {
-    const out: FileDocument[] = documents.map((d) => ({
-      id: newId(), title: d.title, type: d.documentType as DocumentType, date: d.documentDate,
-      fileRef: '', contentHash: '', mimeType: '', extractedText: d.contentMd,
-      addedAt: new Date().toISOString(), metadata: d.metadata, sourceFileName: d.sourceFileName,
-    }));
+  /**
+   * Save reviewed documents. When the payload carries the original bytes, the
+   * blob is written to the user's cloud FIRST (organised path from
+   * buildDocumentRef: 'Lab results/2024-05-10 Lipid panel.pdf'), THEN the
+   * documents[] reference commits via the JSON write — §5.3's order, so an
+   * interrupted save leaves a harmless orphan blob, never a dangling ref.
+   * A failed blob write (e.g. GitHub's ~1 MB cap, localStorage quota) degrades
+   * to metadata-only: the extracted values are never lost with the file.
+   */
+  async bulkSaveDocuments(
+    documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,
+  ): Promise<ApiDocument[]> {
+    const out: FileDocument[] = [];
+    const existingRefs = new Set(this.file.documents.map((d) => d.fileRef).filter(Boolean));
+    for (const d of documents) {
+      const doc: FileDocument = {
+        id: newId(), title: d.title, type: d.documentType as DocumentType, date: d.documentDate,
+        fileRef: '', contentHash: '', mimeType: '', extractedText: d.contentMd,
+        addedAt: new Date().toISOString(), metadata: d.metadata, sourceFileName: d.sourceFileName,
+      };
+      if (d.file) {
+        const ref = buildDocumentRef({
+          type: doc.type,
+          title: doc.title,
+          date: doc.date ?? new Date().toISOString().slice(0, 10),
+          sourceFileName: d.sourceFileName,
+          existingRefs,
+        });
+        try {
+          const hash = await sha256Blob(d.file);
+          await this.adapter.writeDocument(ref, d.file, hash);
+          doc.fileRef = ref;
+          doc.contentHash = hash;
+          doc.mimeType = d.file.type || '';
+          existingRefs.add(ref);
+        } catch (error) {
+          console.warn(`Document file not stored (${ref})`, error);
+          Sentry.captureException(error, {
+            tags: { area: 'cloud-sync', op: 'write-document', backend: this.adapter.id },
+          });
+        }
+      }
+      out.push(doc);
+    }
     this.file.documents.push(...out);
     this.touch();
     return out.map(toApiDocument);
+  }
+
+  /** Read a stored document's bytes back (viewer). */
+  async readDocumentFile(fileRef: string): Promise<Blob> {
+    return this.adapter.readDocument(fileRef);
   }
 
   deleteDocument(documentId: string): boolean {
@@ -566,6 +610,13 @@ export class RoadmapStore {
       this.persisting = false;
     }
   }
+}
+
+/** 'sha256-<hex>' content fingerprint — names the blob + detects corruption. */
+async function sha256Blob(blob: Blob): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+  const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `sha256-${hex}`;
 }
 
 function toApiDocument(d: FileDocument): ApiDocument {

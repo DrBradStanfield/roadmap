@@ -126,7 +126,7 @@ export async function bulkSaveLabValues(
   return store ? store.bulkSaveLabValues(values) : { saved: [], skippedDuplicates: 0, errorCount: values.length };
 }
 export async function bulkSaveDocuments(
-  documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null }>,
+  documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,
 ): Promise<ApiDocument[]> {
   return store ? store.bulkSaveDocuments(documents) : [];
 }
