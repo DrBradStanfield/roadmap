@@ -59,6 +59,9 @@ interface Stored {
   /** Recorded once the app folder exists; also serves as the "migration
    *  attempted" marker — the root→folder move runs at most once. */
   folderId?: string;
+  /** The folder's last-known display name — self-heals renames (brand changes)
+   *  even when folderId is cached. */
+  folderName?: string;
 }
 
 interface DriveTokens {
@@ -358,7 +361,10 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   /** Find-or-create the app folder; records its id (the "folder done" marker). */
   private async ensureFolderId(): Promise<string> {
-    if (this.stored?.folderId) return this.stored.folderId;
+    if (this.stored?.folderId) {
+      void this.ensureFolderName(this.stored.folderId); // self-heal renames; never blocks
+      return this.stored.folderId;
+    }
     const q = encodeURIComponent(
       `(name='${FOLDER_NAME}' or name='${LEGACY_FOLDER_NAME}') and mimeType='${FOLDER_MIME}' and trashed=false`,
     );
@@ -368,14 +374,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     if (!found.ok) throw new StorageError(`Google Drive folder lookup failed (${found.status})`);
     const hit = ((await found.json()) as { files?: Array<{ id: string; name: string }> }).files?.[0];
     let id = hit?.id;
-    if (hit && hit.name !== FOLDER_NAME) {
-      // Legacy-named folder — rename in place (cosmetic; ignore failures).
-      await fetch(`${DRIVE}/files/${hit.id}`, {
-        method: 'PATCH',
-        headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: FOLDER_NAME }),
-      }).catch(() => undefined);
-    }
+    if (id) void this.ensureFolderName(id, hit!.name);
     if (!id) {
       const created = await fetch(`${DRIVE}/files?fields=id`, {
         method: 'POST',
@@ -384,10 +383,33 @@ export class GoogleDriveAdapter implements StorageAdapter {
       });
       if (!created.ok) throw new StorageError(`Google Drive folder create failed (${created.status})`);
       id = ((await created.json()) as { id: string }).id;
+      this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME }; // fresh create = current name
     }
     this.stored = { ...(this.stored ?? {}), folderId: id };
     setJson(CONFIG_KEY, this.stored);
     return id;
+  }
+
+  /**
+   * Self-heal the folder's display name after a brand rename — covers folders
+   * whose id was cached before the rename (the find/create paths can't see
+   * them). At most one PATCH per device per rename; cosmetic, never blocks.
+   */
+  private async ensureFolderName(folderId: string, knownName?: string): Promise<void> {
+    if (this.stored?.folderName === FOLDER_NAME) return;
+    try {
+      if (knownName !== FOLDER_NAME) {
+        await fetch(`${DRIVE}/files/${folderId}`, {
+          method: 'PATCH',
+          headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: FOLDER_NAME }),
+        });
+      }
+      this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME };
+      setJson(CONFIG_KEY, this.stored);
+    } catch {
+      /* cosmetic — retried next session */
+    }
   }
 
   /**
