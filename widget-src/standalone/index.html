@@ -126,7 +126,10 @@
     <!-- data-logged-in=true: standalone has no Shopify login; the local-first store
          IS the data layer, so we take the has-data path. The real sync status is
          injected into the plan panel via the syncControl prop (see app.tsx). -->
-    <div id="health-tool-root" data-logged-in="true"></div>
+    <!-- data-upload-url: the lazy extraction bundle (pdf.js + JSZip), built
+         into dist-pages alongside the app — relative so /roadmap/ and /roadmap/dev/
+         both resolve their own copy. -->
+    <div id="health-tool-root" data-logged-in="true" data-upload-url="./health-upload.js"></div>
     <script type="module" src="./app.tsx"></script>
   </body>
 </html>
