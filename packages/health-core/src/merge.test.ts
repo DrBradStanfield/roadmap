@@ -410,3 +410,34 @@ describe('mergeFiles — eraseEpoch ("Delete All My Data")', () => {
     expect(merged.meta.lastDeviceId).toBe('dev_merge');
   });
 });
+
+describe('reminderOptIn (optional singleton)', () => {
+  const sub = (lamport: number, status: 'active' | 'cancelled') => ({
+    status,
+    token: `tok_${lamport}`,
+    email: 'user@example.com',
+    provider: 'google-drive' as const,
+    updatedAt: '2026-06-10T00:00:00Z',
+    lamport,
+  });
+
+  it('present beats absent in both directions', () => {
+    const withSub = emptyFile();
+    withSub.reminderOptIn = sub(1, 'active');
+    expect(mergeFiles(withSub, emptyFile(), OPTS).reminderOptIn?.token).toBe('tok_1');
+    expect(mergeFiles(emptyFile(), withSub, OPTS).reminderOptIn?.token).toBe('tok_1');
+  });
+
+  it('a cancel on one device wins over an older active on another (LWW)', () => {
+    const cancelled = emptyFile();
+    cancelled.reminderOptIn = sub(5, 'cancelled');
+    const active = emptyFile();
+    active.reminderOptIn = sub(2, 'active');
+    expect(mergeFiles(active, cancelled, OPTS).reminderOptIn?.status).toBe('cancelled');
+    expect(mergeFiles(cancelled, active, OPTS).reminderOptIn?.status).toBe('cancelled');
+  });
+
+  it('absent on both sides stays absent', () => {
+    expect(mergeFiles(emptyFile(), emptyFile(), OPTS).reminderOptIn).toBeUndefined();
+  });
+});

@@ -975,3 +975,81 @@ function suggestionGroup(title: string, color: string, items: Suggestion[]): str
     </div>
   `;
 }
+
+// ---------------------------------------------------------------------------
+// v2 reminder email builder (local-first §10 — label + due date is ALL we know)
+// ---------------------------------------------------------------------------
+
+import type { StoredScheduleItem } from './reminder-v2.server';
+
+/**
+ * Where the email's CTA sends the user to manage their plan. GitHub Pages is
+ * the only public front door until Phase 5; switch to the drstanfield.com
+ * page at the Shopify port.
+ */
+const REMINDER_V2_APP_URL = 'https://drbradstanfield.github.io/roadmap/';
+
+/**
+ * Build HTML for a v2 reminder email. No name (the server doesn't store one),
+ * no values, no reasoning — just which items are due. Personalisation comes
+ * from the item labels the user's own browser computed ("Colonoscopy").
+ */
+export function buildReminderV2EmailHtml(
+  dueItems: StoredScheduleItem[],
+  unsubscribeUrl: string,
+): string {
+  const items = dueItems
+    .map((item) =>
+      reminderItem(
+        `${escapeHtml(item.label)} — due ${formatReminderDate(item.dueAt)}`,
+        'Please book this with your doctor.',
+        '#f0ad4e',
+      ),
+    )
+    .join('');
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;">A health item on your plan is due</div>
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;">
+
+    <div style="background:#2563eb;padding:32px 24px;text-align:center;">
+      <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:600;">Health Reminders</h1>
+    </div>
+
+    <div style="padding:24px;">
+      <p style="color:#333;font-size:16px;line-height:1.5;margin:0 0 20px;">Hello,</p>
+      <p style="color:#333;font-size:16px;line-height:1.5;margin:0 0 24px;">
+        When you set up your health plan, you asked to be reminded when these items came due:
+      </p>
+
+      ${items}
+
+      <div style="text-align:center;margin:32px 0;">
+        <a href="${REMINDER_V2_APP_URL}"
+           style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:6px;font-size:16px;font-weight:600;">
+          Open Your Health Plan
+        </a>
+      </div>
+
+      <div style="background:#f8f9fa;border-radius:6px;padding:16px;margin:24px 0 0;">
+        <p style="color:#666;font-size:13px;line-height:1.5;margin:0;">
+          <strong>Disclaimer:</strong> This tool provides educational information only. It is not medical advice and should not be used to diagnose or treat health conditions. Always consult your healthcare provider before making changes to your health regimen.
+        </p>
+      </div>
+    </div>
+
+    <div style="padding:16px 24px;text-align:center;border-top:1px solid #eee;">
+      <p style="color:#999;font-size:12px;margin:0 0 4px;">
+        Your health data lives only in your own cloud storage — these reminders are the only thing on Dr Brad's server.
+      </p>
+      <p style="color:#999;font-size:12px;margin:0;">
+        <a href="${unsubscribeUrl}" style="color:#999;text-decoration:underline;">Unsubscribe</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}

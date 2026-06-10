@@ -56,6 +56,17 @@ export class GitHubAdapter implements StorageAdapter {
   }
 
   /**
+   * The stored PAT, for the reminders opt-in (§10): the server uses it for ONE
+   * in-memory /user/emails read, then discards it. Requires the fine-grained
+   * token to ALSO have the account permission "Email addresses: read-only" —
+   * the opt-in UI explains this when GitHub refuses.
+   */
+  getReminderProofToken(): string {
+    if (!this.config?.token) throw new StorageError('GitHub is not connected.');
+    return this.config.token;
+  }
+
+  /**
    * Validate the pasted token + repo against the repo endpoint, then persist.
    * No redirect — the credential is user-supplied, not OAuth.
    */

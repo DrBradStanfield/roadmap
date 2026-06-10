@@ -118,6 +118,22 @@ export interface FileReminderPreference extends SyncStamp {
   enabled: boolean;
 }
 
+/**
+ * The user's email-reminder opt-in (§10 of the decision record).
+ * The capability token lives HERE — in the user's own cloud file — so it
+ * follows them across devices; the server also stores it to power the unsubscribe link. Cancellation
+ * flips `status` rather than deleting the object, so last-write-wins merge
+ * propagates the cancel to every device (an absent field can't win a merge).
+ */
+export interface FileReminderOptIn extends SyncStamp {
+  status: 'active' | 'cancelled';
+  /** Opaque server-issued capability token — manages ONLY the reminder schedule. */
+  token: string;
+  /** Provider-verified destination address (display + change-detection only). */
+  email: string;
+  provider: 'google-drive' | 'dropbox' | 'github';
+}
+
 /** Metadata for an uploaded document; the bytes live next to the JSON in `documents/`. */
 export interface FileDocument {
   id: string;
@@ -154,6 +170,8 @@ export interface RoadmapFile {
   documents: FileDocument[];                // metadata; bytes in documents/
   reminderPreferences: FileReminderPreference[]; // current state, keyed by category
   recommendationSnapshots: RecommendationSnapshot[];
+  /** Email-reminder opt-in (optional — absent until the user opts in). */
+  reminderOptIn?: FileReminderOptIn;
 }
 
 /** Create a brand-new, empty record for a first-time user. */

@@ -14,6 +14,7 @@ import { HealthTool } from '../src/components/HealthTool';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initSentry, Sentry } from '../src/lib/sentry';
 import { initRoadmapStore, flushRoadmapStoreSync } from '../src/lib/roadmap-data';
+import { pushReminderScheduleIfChanged } from './reminders';
 import {
   DropboxAdapter,
   GoogleDriveAdapter,
@@ -120,11 +121,20 @@ async function main() {
   // Persist before the tab goes away — visibilitychange(hidden) is the reliable
   // mobile signal; beforeunload covers desktop. Both call the synchronous flush.
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') flushRoadmapStoreSync();
+    if (document.visibilityState === 'hidden') {
+      flushRoadmapStoreSync();
+      // Session-end snapshot of the reminder schedule (keepalive survives the
+      // tab going away). No-op unless opted in AND the schedule changed.
+      void pushReminderScheduleIfChanged(true);
+    }
   });
   window.addEventListener('beforeunload', () => {
     flushRoadmapStoreSync();
   });
+
+  // Keep the server's reminder schedule tracking the user's data (§10): one
+  // conditional push per visit. Fire-and-forget — never blocks the app.
+  void pushReminderScheduleIfChanged();
 }
 
 void main();

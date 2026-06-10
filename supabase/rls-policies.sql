@@ -1358,3 +1358,29 @@ $$;
 -- NOTE: This is not always reliable — if saves break after schema changes,
 -- restart the Supabase project (Settings > General > Restart project).
 NOTIFY pgrst, 'reload schema';
+
+-- ===== v2 email reminders (local-first decision record §10) =====
+-- The ONLY health-adjacent data the v2 server stores: a provider-verified
+-- email + due-item labels/dates + the capability token. No user_id (v2 has no
+-- accounts), no values, no results, no reasoning. The token is stored RAW
+-- because the daily cron must embed it in the unsubscribe link it emails; §10
+-- accepts the leak risk (the token can only touch the reminder schedule).
+CREATE TABLE IF NOT EXISTS reminder_optin_v2 (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL UNIQUE,  -- normalised to lowercase in code; one subscription per address
+  provider TEXT NOT NULL CHECK (provider IN ('google-drive', 'dropbox', 'github')),
+  token TEXT NOT NULL UNIQUE,
+  schedule JSONB NOT NULL DEFAULT '[]'::jsonb,   -- [{category, label, dueAt}]
+  last_sent JSONB NOT NULL DEFAULT '{}'::jsonb,  -- {category: 'YYYY-MM-DD'} re-send cooldowns
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- A repeat opt-in upserts on email (replaces the old row with a fresh token).
+
+-- Service-role only (no policies = zero rows via the anon/authenticated API).
+ALTER TABLE reminder_optin_v2 ENABLE ROW LEVEL SECURITY;
+
+INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
+VALUES ('reminder_v2_cron', NULL, NULL, '1970-01-01')
+ON CONFLICT DO NOTHING;

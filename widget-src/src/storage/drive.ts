@@ -268,6 +268,41 @@ export class GoogleDriveAdapter implements StorageAdapter {
     this.clearTokens();
   }
 
+  /**
+   * Proof of the account's verified email for the reminders opt-in (§10).
+   * PREFERRED: a signed ID token from a refresh grant — Google's signature
+   * vouches for the email and no Drive-capable token ever leaves the browser.
+   * FALLBACK (popup sessions, or pre-email-scope grants that return no ID
+   * token): a fresh GIS popup token, which the server uses for ONE in-memory
+   * userinfo read. Needs a user gesture — call from the opt-in click.
+   */
+  async getReminderProof(): Promise<{ idToken: string } | { accessToken: string }> {
+    if (this.tokens?.refreshToken) {
+      try {
+        const res = await fetch(this.config.exchangeUrl, {
+          method: 'POST',
+          // No Content-Type: CORS simple request (no preflight).
+          body: JSON.stringify({ grantType: 'refresh', refreshToken: this.tokens.refreshToken }),
+          signal: AbortSignal.timeout(5000),
+        });
+        if (res.ok) {
+          const json = (await res.json()) as { accessToken: string; expiresIn: number; idToken?: string };
+          this.saveTokens({
+            accessToken: json.accessToken,
+            refreshToken: this.tokens.refreshToken,
+            expiresAt: expiry(json.expiresIn),
+          });
+          if (json.idToken) return { idToken: json.idToken };
+        }
+      } catch {
+        /* fall through to the popup path */
+      }
+    }
+    const token = await this.acquireViaGis();
+    this.saveTokens({ ...this.tokens, accessToken: token.accessToken, expiresAt: token.expiresAt });
+    return { accessToken: token.accessToken };
+  }
+
   // --- file ops -------------------------------------------------------------
 
   async read(): Promise<ReadResult> {

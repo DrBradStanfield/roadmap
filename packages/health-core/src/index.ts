@@ -232,9 +232,17 @@ export {
   type FileSupplement,
   type FileScreenings,
   type FileReminderPreference,
+  type FileReminderOptIn,
   type FileDocument,
   type RecommendationSnapshot,
   type SyncStamp,
 } from './roadmap-file';
 export { mergeFiles, dayOf, type MergeOptions } from './merge';
 export { migrateFile, SchemaTooNewError } from './migrate';
+
+// v2 reminder schedule (client-computed; the server is a dumb scheduler — §10)
+export {
+  computeReminderSchedule,
+  computeNextDueDates,
+  type ReminderScheduleItem,
+} from './reminder-schedule';

@@ -29,6 +29,7 @@ import {
   type FileMedication,
   type FileSupplement,
   type FileReminderPreference,
+  type FileReminderOptIn,
   type FileDocument,
   type RoadmapProfile,
   type FileScreenings,
@@ -191,6 +192,16 @@ function pickNewer<T extends SyncStamp>(local: T, remote: T): T {
   return stampIsNewer(local, remote) ? local : remote;
 }
 
+/** pickNewer for OPTIONAL singletons: present always beats absent. */
+function pickNewerOptional<T extends SyncStamp>(
+  local: T | undefined,
+  remote: T | undefined,
+): T | undefined {
+  if (!local) return remote;
+  if (!remote) return local;
+  return pickNewer(local, remote);
+}
+
 /**
  * Merge `remote` (just read from the cloud) into `local` (this device's working
  * copy), producing the file to write back. Deterministic and symmetric.
@@ -239,6 +250,10 @@ export function mergeFiles(
 
     profile: pickNewer<RoadmapProfile>(local.profile, remote.profile),
     screenings: pickNewer<FileScreenings>(local.screenings, remote.screenings),
+    reminderOptIn: pickNewerOptional<FileReminderOptIn>(
+      local.reminderOptIn,
+      remote.reminderOptIn,
+    ),
 
     measurements: mergeSlotted<FileMeasurement>(
       local.measurements,

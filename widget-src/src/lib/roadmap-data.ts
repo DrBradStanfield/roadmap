@@ -14,7 +14,13 @@
  * Off Shopify their proxy calls 404 and return their built-in fallbacks (a
  * graceful no-op); the real website AI path is Phase 4.
  */
-import type { ApiMeasurement, HealthInputs, MeasurementSource } from '@roadmap/health-core';
+import type {
+  ApiMeasurement,
+  FileReminderOptIn,
+  HealthInputs,
+  MeasurementSource,
+  ReminderScheduleItem,
+} from '@roadmap/health-core';
 import { RoadmapStore } from '../storage/roadmap-store';
 import type { StorageAdapter } from '../storage/adapter';
 import type {
@@ -45,6 +51,17 @@ export async function flushRoadmapStore(): Promise<void> {
 /** Synchronous last-ditch flush for tab-close / visibilitychange (mobile-safe). */
 export function flushRoadmapStoreSync(): void {
   store?.flushSync();
+}
+
+// --- email reminders (§10) — used by the standalone RemindersControl ---
+export function getReminderOptIn(): FileReminderOptIn | undefined {
+  return store?.getReminderOptIn();
+}
+export function setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>): void {
+  store?.setReminderOptIn(fields);
+}
+export function computeCurrentReminderSchedule(): ReminderScheduleItem[] {
+  return store?.computeReminderScheduleNow() ?? [];
 }
 
 // --- reads ---

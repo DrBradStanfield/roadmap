@@ -15,6 +15,7 @@ import { GoogleDriveAdapter } from '../src/storage';
 import { googleDriveConfig } from './google-config';
 import { BACKEND_KEY, migrateLocalInto, useBusyRun, type Backend } from './connect';
 import { BackendPickerModal } from './backend-picker';
+import { RemindersControl } from './reminders-control';
 
 const LABELS: Record<Exclude<Backend, 'local'>, string> = {
   dropbox: 'Dropbox',
@@ -80,6 +81,7 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
         <span className="hr-sync-status">✓ Synced to {LABELS[backend]}</span>
         <button className="hr-sync-link" onClick={() => setPickerOpen(true)}>Change</button>
         <span className="hr-sync-detail">Your health data lives only in {LABELS[backend]} — never on Dr Brad's servers.</span>
+        <RemindersControl backend={backend} />
       </div>
     );
   } else {

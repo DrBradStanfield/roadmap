@@ -140,6 +140,10 @@ export async function action({ request }: ActionFunctionArgs) {
       accessToken: payload.access_token,
       refreshToken: payload.refresh_token, // present on code exchange only
       expiresIn: payload.expires_in,
+      // Signed ID token (present when the grant includes openid). The browser
+      // forwards it to the reminders opt-in as proof of the verified email —
+      // this endpoint still stores nothing.
+      idToken: payload.id_token,
     },
     { headers },
   );

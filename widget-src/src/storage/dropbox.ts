@@ -222,6 +222,15 @@ export class DropboxAdapter implements StorageAdapter {
 
   // --- auth helpers ---------------------------------------------------------
 
+  /**
+   * A current access token for the reminders opt-in (§10): the server uses it
+   * for ONE in-memory get_current_account read of the verified email, then
+   * discards it. Never stored server-side.
+   */
+  getReminderProofToken(): Promise<string> {
+    return this.accessToken();
+  }
+
   private async accessToken(): Promise<string> {
     if (!this.tokens) throw new StorageError('Dropbox is not connected.');
     // Refresh a minute before expiry.

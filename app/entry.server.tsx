@@ -9,6 +9,7 @@ import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
 import * as Sentry from "@sentry/remix";
 import { stopReminderCron } from './lib/reminder-cron.server';
+import { stopReminderV2Cron } from './lib/reminder-v2-cron.server';
 import { stopTrendingCron } from './lib/trending-cron.server';
 import { stopDiscordBot } from './lib/discord-bot.server';
 import { stopYouTubeBot } from './lib/youtube-bot.server';
@@ -100,6 +101,7 @@ Sentry.init({
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully...');
   stopReminderCron();
+  stopReminderV2Cron();
   stopTrendingCron();
   stopDiscordBot();
   stopYouTubeBot();

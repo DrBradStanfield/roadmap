@@ -20,6 +20,7 @@
  *  - Medication-history chart annotations are derived from lightweight snapshots.
  */
 import {
+  computeReminderSchedule,
   createMeasurement,
   dayOf,
   diffInputsToMeasurements,
@@ -37,9 +38,11 @@ import {
   type DocumentType,
   type FileDocument,
   type FileLabValue,
+  type FileReminderOptIn,
   type FileSupplement,
   type HealthInputs,
   type MeasurementSource,
+  type ReminderScheduleItem,
   type RoadmapFile,
   type ScreeningInputs,
 } from '@roadmap/health-core';
@@ -393,6 +396,28 @@ export class RoadmapStore {
     row.status = 'entered-in-error';
     this.touch();
     return true;
+  }
+
+  // ============================================================ reminders (§10)
+
+  getReminderOptIn(): FileReminderOptIn | undefined {
+    return this.file.reminderOptIn;
+  }
+
+  /** Set/replace the opt-in singleton (status flips included), stamped + persisted. */
+  setReminderOptIn(fields: Omit<FileReminderOptIn, 'updatedAt' | 'lamport'>): void {
+    const prev = this.file.reminderOptIn;
+    this.file.reminderOptIn = {
+      ...fields,
+      updatedAt: new Date().toISOString(),
+      lamport: (prev?.lamport ?? 0) + 1,
+    };
+    this.touch();
+  }
+
+  /** The client-computed forward schedule that gets pushed to the server (§10). */
+  computeReminderScheduleNow(): ReminderScheduleItem[] {
+    return computeReminderSchedule(this.file, new Date());
   }
 
   async deleteUserData(): Promise<{ success: boolean; error?: string }> {

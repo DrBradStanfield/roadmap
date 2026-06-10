@@ -1889,7 +1889,7 @@ export async function getLatestMeasurementDatesAdmin(
 /** Names of seeded `cron_lock` rows. New crons must add their lock name here AND
  *  seed a row in supabase/rls-policies.sql — typo on either side silently disables
  *  the cron (UPDATE matches zero rows → returns false → cron never runs). */
-export type CronLockName = 'reminder_cron' | 'trending_cron' | 'youtube_bot_summary' | 'chat_summary';
+export type CronLockName = 'reminder_cron' | 'reminder_v2_cron' | 'trending_cron' | 'youtube_bot_summary' | 'chat_summary';
 
 /** Attempt to acquire the cron lock for today. Returns true if this machine
  *  should run the cron. Uses an atomic UPDATE with WHERE clause to prevent
