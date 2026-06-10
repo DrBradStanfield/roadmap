@@ -121,7 +121,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
         </button>
         <ChatHeaderTitle subtitle="Answers cite your plan & the guidelines above" />
         {!inline && (
-          <button className="chat-close-btn" onClick={() => { setIsExpanded(false); onClose?.(); }}>✕</button>
+          <button className="chat-close-btn" aria-label="Close chat" onClick={() => { setIsExpanded(false); onClose?.(); }}>✕</button>
         )}
       </div>
 

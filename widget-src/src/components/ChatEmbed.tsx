@@ -109,7 +109,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted }: ChatEmbedProps) {
       <div className={`chat-embed-drawer ${drawerOpen ? 'chat-embed-drawer--open' : ''}`}>
         <div className="chat-embed-drawer-header">
           <span className="chat-embed-drawer-title">Conversations</span>
-          <button className="chat-close-btn" onClick={() => setDrawerOpen(false)}>✕</button>
+          <button className="chat-close-btn" aria-label="Close conversations" onClick={() => setDrawerOpen(false)}>✕</button>
         </div>
         {threadList}
       </div>
