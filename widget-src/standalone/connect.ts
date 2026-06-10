@@ -5,6 +5,7 @@
  * (sync-control.tsx), so it lives here to avoid a circular import between those
  * two modules.
  */
+import { useState } from 'react';
 import { migrateFile } from '@roadmap/health-core';
 import {
   DropboxAdapter,
@@ -47,6 +48,26 @@ export async function finishFormConnect(adapter: StorageAdapter, backend: Backen
   await migrateLocalInto(adapter);
   localStorage.setItem(BACKEND_KEY, backend);
   location.reload();
+}
+
+/**
+ * Shared busy/error scaffold for connect-flow buttons (picker + sync control).
+ * Success is expected to end in a navigation or reload, so busy stays true.
+ */
+export function useBusyRun() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const run = async (fn: () => Promise<void>): Promise<void> => {
+    setBusy(true);
+    setError(null);
+    try {
+      await fn();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Connection failed.');
+      setBusy(false);
+    }
+  };
+  return { busy, error, setError, run };
 }
 
 /** The adapter for a connected cloud backend (null for the on-device tier). */

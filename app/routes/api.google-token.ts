@@ -69,6 +69,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const headers = corsHeaders(request);
+  // Defense-in-depth: unreachable under remix-serve (it 405s OPTIONS before
+  // route handlers run — see the body-parse comment) but kept in case the
+  // server stack ever changes.
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
   if (request.method !== 'POST') return json({ error: 'POST only' }, { status: 405, headers });
 

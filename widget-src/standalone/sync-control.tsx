@@ -13,7 +13,7 @@
 import React, { useEffect, useState } from 'react';
 import { GoogleDriveAdapter } from '../src/storage';
 import { googleDriveConfig } from './google-config';
-import { BACKEND_KEY, migrateLocalInto, type Backend } from './connect';
+import { BACKEND_KEY, migrateLocalInto, useBusyRun, type Backend } from './connect';
 import { BackendPickerModal } from './backend-picker';
 
 const LABELS: Record<Exclude<Backend, 'local'>, string> = {
@@ -25,25 +25,13 @@ const LABELS: Record<Exclude<Backend, 'local'>, string> = {
 
 export function SyncControl({ backend, reconnect }: { backend: Backend; reconnect?: 'google-drive' }) {
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { busy, error, run } = useBusyRun();
 
   useEffect(() => {
     const open = () => setPickerOpen(true);
     window.addEventListener('hr:open-backend-picker', open);
     return () => window.removeEventListener('hr:open-backend-picker', open);
   }, []);
-
-  const run = async (fn: () => Promise<void>): Promise<void> => {
-    setBusy(true);
-    setError(null);
-    try {
-      await fn(); // success ends in a reload
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Connection failed.');
-      setBusy(false);
-    }
-  };
 
   // Reconnect via the GIS popup FALLBACK (~1 h token) — works even with the
   // exchange endpoint down; needs this click's user gesture. Local edits made
@@ -66,14 +54,11 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
       location.reload();
     });
 
-  const picker = pickerOpen && (
-    <BackendPickerModal current={backend} onClose={() => setPickerOpen(false)} />
-  );
-
-  // Google Drive remembered but its short-lived token is gone (endpoint down /
-  // revoked). Re-auth needs a user click (browsers block popups at page load).
+  let content: React.ReactNode;
   if (reconnect === 'google-drive') {
-    return (
+    // Google Drive remembered but its short-lived token is gone (endpoint down /
+    // revoked). Re-auth needs a user click (browsers block popups at page load).
+    content = (
       <div className="hr-sync hr-sync-local">
         <span className="hr-sync-status">Google Drive — signed out</span>
         <button className="hr-sync-btn" disabled={busy} onClick={() => void reconnectDrive()}>
@@ -87,28 +72,30 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
           <button type="button" className="hr-sync-link" onClick={() => void forgetDrive()}>Use this device only</button>
         </div>
         {error && <span className="hr-sync-error">{error}</span>}
-        {picker}
       </div>
     );
-  }
-
-  if (backend !== 'local') {
-    return (
-      <div className="hr-sync hr-sync-dropbox">
+  } else if (backend !== 'local') {
+    content = (
+      <div className="hr-sync hr-sync-cloud">
         <span className="hr-sync-status">✓ Synced to {LABELS[backend]}</span>
         <button className="hr-sync-link" onClick={() => setPickerOpen(true)}>Change</button>
         <span className="hr-sync-detail">Your data lives only in {LABELS[backend]} — never on our servers.</span>
-        {picker}
+      </div>
+    );
+  } else {
+    content = (
+      <div className="hr-sync hr-sync-local">
+        <span className="hr-sync-status">Saved on this device</span>
+        <button className="hr-sync-btn" onClick={() => setPickerOpen(true)}>Choose where to save</button>
+        <span className="hr-sync-detail">Your data is only in this browser. Save it to your own cloud to sync across your phone and computer.</span>
       </div>
     );
   }
 
   return (
-    <div className="hr-sync hr-sync-local">
-      <span className="hr-sync-status">Saved on this device</span>
-      <button className="hr-sync-btn" onClick={() => setPickerOpen(true)}>Choose where to save</button>
-      <span className="hr-sync-detail">Your data is only in this browser. Save it to your own cloud to sync across your phone and computer.</span>
-      {picker}
-    </div>
+    <>
+      {content}
+      {pickerOpen && <BackendPickerModal current={backend} onClose={() => setPickerOpen(false)} />}
+    </>
   );
 }

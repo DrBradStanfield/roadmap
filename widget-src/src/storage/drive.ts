@@ -56,7 +56,8 @@ const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 /** Presence of this object IS the "connected" flag. */
 interface Stored {
   fileId?: string;
-  /** Recorded once the app folder exists & the record file lives inside it. */
+  /** Recorded once the app folder exists; also serves as the "migration
+   *  attempted" marker — the root→folder move runs at most once. */
   folderId?: string;
 }
 
@@ -130,6 +131,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
   readonly label = 'Google Drive';
   private stored: Stored | null;
   private tokens: DriveTokens | null;
+  /** At-most-once-per-session guard for the cosmetic folder migration. */
+  private folderCheckDone = false;
 
   constructor(private readonly config: GoogleDriveConfig) {
     this.stored = getJson<Stored>(CONFIG_KEY);
@@ -268,7 +271,8 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const fileId = this.stored?.fileId ?? (await this.findFileId());
     if (!fileId) return { file: null, version: null };
     this.rememberFileId(fileId);
-    await this.ensureInFolderOnce(fileId); // one-time: adopt pre-folder files into the app folder
+    // Cosmetic, never blocks the read: adopt pre-folder files into the app folder.
+    void this.ensureInFolderOnce(fileId);
     const res = await fetch(`${DRIVE}/files/${fileId}?alt=media`, { headers: await this.authHeaders() });
     if (res.status === 404) return { file: null, version: null };
     if (!res.ok) throw new StorageError(`Google Drive read failed (${res.status}): ${await res.text()}`);
@@ -389,10 +393,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
   /**
    * One-time migration: files created before the app folder existed (at the
    * Drive root) are moved into it. No-op once folderId is recorded; cosmetic,
-   * so failures never block sync.
+   * so failures never block sync and retry at most once per session.
    */
   private async ensureInFolderOnce(fileId: string): Promise<void> {
-    if (this.stored?.folderId) return;
+    if (this.folderCheckDone || this.stored?.folderId) return;
+    this.folderCheckDone = true;
     try {
       const folderId = await this.ensureFolderId();
       const meta = await fetch(`${DRIVE}/files/${fileId}?fields=parents`, { headers: await this.authHeaders() });

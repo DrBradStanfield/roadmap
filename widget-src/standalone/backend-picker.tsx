@@ -5,21 +5,21 @@
  *    Dropbox, then Advanced: GitHub, self-host. "Just this browser" last as the
  *    explicit no-wall escape hatch.
  *  - Switching while connected copies the current cloud's data down to this
- *    device first (copyDownToDevice), then the new connect lifts it up — data
- *    is never stranded.
+ *    device first and drops the old connection's tokens (prepareSwitch), then
+ *    the new connect lifts the data up — never stranded, nothing left behind.
  *  - On the website (Phase 5), this modal auto-opens once after the
  *    "Get Your Personalized Plan" email step by firing
  *    `window.dispatchEvent(new Event('hr:open-backend-picker'))` — the listener
  *    already lives in SyncControl.
+ *  - Pre-Phase-5 TODO: convert to native <dialog>/showModal() for a real focus
+ *    trap before the modal auto-opens on the public website.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { DropboxAdapter, GoogleDriveAdapter, GitHubAdapter, WebDavAdapter } from '../src/storage';
-import { dropboxConfig } from './dropbox-config';
-import { googleDriveConfig } from './google-config';
-import { BACKEND_KEY, copyDownToDevice, finishFormConnect, type Backend } from './connect';
+import { GitHubAdapter, WebDavAdapter } from '../src/storage';
+import { adapterFor, BACKEND_KEY, copyDownToDevice, finishFormConnect, useBusyRun, type Backend } from './connect';
 
-/* Minimal brand marks (Brad OK'd logos). 20px viewBoxes, inline so no asset fetches. */
+/* Minimal brand marks (Brad OK'd logos). Inline so no asset fetches. */
 const LOGOS: Record<string, React.ReactNode> = {
   'google-drive': (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -64,6 +64,7 @@ interface Option {
   name: string;
   blurb: string;
   advanced?: boolean;
+  local?: boolean;
 }
 
 const OPTIONS: Option[] = [
@@ -89,46 +90,46 @@ const OPTIONS: Option[] = [
     blurb: 'Any WebDAV server you run (Nextcloud, ownCloud, …).',
     advanced: true,
   },
+  {
+    id: 'local',
+    name: 'Just this browser',
+    blurb: 'No account needed. Data stays on this device only.',
+    local: true,
+  },
 ];
 
 export function BackendPickerModal({ current, onClose }: { current: Backend; onClose: () => void }) {
   const [step, setStep] = useState<'list' | 'github' | 'self-host'>('list');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { busy, error, setError, run } = useBusyRun();
   const [gh, setGh] = useState({ token: '', owner: '', repo: '' });
   const [wd, setWd] = useState({ url: '', username: '', password: '' });
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
+    const restoreFocus = document.activeElement as HTMLElement | null;
     dialogRef.current?.focus();
     // Lock background scrolling while the modal is open (the page scrolls on
     // <html>, so the lock must go there; body alone doesn't stop it in Chrome).
     const prevOverflow = document.documentElement.style.overflow;
     document.documentElement.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
     window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('keydown', onKey);
       document.documentElement.style.overflow = prevOverflow;
+      restoreFocus?.focus?.();
     };
-  }, [onClose]);
+  }, []);
 
-  const run = async (fn: () => Promise<void>): Promise<void> => {
-    setBusy(true);
-    setError(null);
-    try {
-      await fn(); // success ends in a navigation or reload
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Connection failed.');
-      setBusy(false);
-    }
-  };
-
-  /** Cloud-to-anything switches copy the current cloud down to this device first. */
+  /** Leaving a connected cloud: copy its data down, then drop its tokens. */
   const prepareSwitch = async (): Promise<void> => {
-    if (current !== 'local') await copyDownToDevice(current);
+    if (current === 'local') return;
+    await copyDownToDevice(current);
+    await adapterFor(current)?.disconnect();
   };
 
   const choose = (id: Backend): void => {
@@ -137,25 +138,20 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
       onClose();
       return;
     }
-    if (id === 'google-drive' || id === 'dropbox') {
-      void run(async () => {
-        await prepareSwitch();
-        // Full-page OAuth redirect — never resolves; completes in app.tsx on return.
-        if (id === 'google-drive') await new GoogleDriveAdapter(googleDriveConfig()).connect();
-        else await new DropboxAdapter(dropboxConfig()).connect();
-      });
-      return;
-    }
     if (id === 'github' || id === 'self-host') {
       setError(null);
       setStep(id);
       return;
     }
-    // 'local' — keep data on this device only.
     void run(async () => {
       await prepareSwitch();
-      localStorage.removeItem(BACKEND_KEY);
-      location.reload();
+      if (id === 'local') {
+        localStorage.removeItem(BACKEND_KEY);
+        location.reload();
+        return;
+      }
+      // Full-page OAuth redirect — never resolves; completes in app.tsx on return.
+      await adapterFor(id)!.connect();
     });
   };
 
@@ -192,41 +188,27 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
             <p className="hr-modal-sub">
               Your data saves to a place <strong>you</strong> control — never to our servers.
             </p>
-            {OPTIONS.filter((o) => !o.advanced).map((o) => (
-              <button key={o.id} className="hr-opt" disabled={busy} onClick={() => choose(o.id)}>
-                <span className="hr-opt-logo">{LOGOS[o.id]}</span>
-                <span className="hr-opt-text">
-                  <span className="hr-opt-name">
-                    {o.name}
-                    {current === o.id && <span className="hr-opt-connected">✓ Connected</span>}
+            {OPTIONS.map((o, i) => (
+              <React.Fragment key={o.id}>
+                {o.advanced && !OPTIONS[i - 1]?.advanced && <div className="hr-opt-divider">Advanced</div>}
+                <button
+                  className={`hr-opt${o.local ? ' hr-opt-local' : ''}`}
+                  disabled={busy}
+                  onClick={() => choose(o.id)}
+                >
+                  <span className="hr-opt-logo">{LOGOS[o.id]}</span>
+                  <span className="hr-opt-text">
+                    <span className="hr-opt-name">
+                      {o.name}
+                      {current === o.id && (
+                        <span className="hr-opt-connected">✓ {o.local ? 'Current' : 'Connected'}</span>
+                      )}
+                    </span>
+                    <span className="hr-opt-blurb">{o.blurb}</span>
                   </span>
-                  <span className="hr-opt-blurb">{o.blurb}</span>
-                </span>
-              </button>
+                </button>
+              </React.Fragment>
             ))}
-            <div className="hr-opt-divider">Advanced</div>
-            {OPTIONS.filter((o) => o.advanced).map((o) => (
-              <button key={o.id} className="hr-opt" disabled={busy} onClick={() => choose(o.id)}>
-                <span className="hr-opt-logo">{LOGOS[o.id]}</span>
-                <span className="hr-opt-text">
-                  <span className="hr-opt-name">
-                    {o.name}
-                    {current === o.id && <span className="hr-opt-connected">✓ Connected</span>}
-                  </span>
-                  <span className="hr-opt-blurb">{o.blurb}</span>
-                </span>
-              </button>
-            ))}
-            <button className="hr-opt hr-opt-local" disabled={busy} onClick={() => choose('local')}>
-              <span className="hr-opt-logo">{LOGOS.local}</span>
-              <span className="hr-opt-text">
-                <span className="hr-opt-name">
-                  Just this browser
-                  {current === 'local' && <span className="hr-opt-connected">✓ Current</span>}
-                </span>
-                <span className="hr-opt-blurb">No account needed. Data stays on this device only.</span>
-              </span>
-            </button>
           </>
         )}
 
