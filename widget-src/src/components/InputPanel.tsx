@@ -3,6 +3,11 @@ import { ColumnHeader } from './ColumnHeader';
 import { DocumentLightbox } from './DocumentLightbox';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument, type ApiSupplement, HISTORY_PAGE_PATH, openHistoryLightbox,
 } from '../lib/api';
+
+/** Intercept a history link: lightbox on the standalone, normal nav on Shopify. */
+const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
+  if (openHistoryLightbox(metric)) e.preventDefault();
+};
 import type { HealthInputs, ScreeningInputs } from '@roadmap/health-core';
 import {
   type UnitSystem,
@@ -618,7 +623,7 @@ export function InputPanel({
               <a
                 className="previous-value"
                 href={`${HISTORY_PAGE_PATH}?metric=${FIELD_METRIC_MAP[field]}`}
-                onClick={(e) => { if (openHistoryLightbox(FIELD_METRIC_MAP[field])) e.preventDefault(); }}
+                onClick={interceptHistory(FIELD_METRIC_MAP[field])}
                 target="_blank"
                 rel="noopener noreferrer"
               >{previousLabel}</a>
@@ -665,7 +670,7 @@ export function InputPanel({
           <a
             className="collapsed-field-label"
             href={`${HISTORY_PAGE_PATH}?metric=${metric}`}
-            onClick={(e) => { if (openHistoryLightbox(metric)) e.preventDefault(); }}
+            onClick={interceptHistory(metric)}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -729,7 +734,7 @@ export function InputPanel({
           <a
             className="collapsed-field-label"
             href={`${HISTORY_PAGE_PATH}?metric=systolic_bp`}
-            onClick={(e) => { if (openHistoryLightbox('systolic_bp')) e.preventDefault(); }}
+            onClick={interceptHistory('systolic_bp')}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -1019,7 +1024,7 @@ export function InputPanel({
               {!bpExpanded && bpLabel && (
                 <a className="previous-value"
                    href={`${HISTORY_PAGE_PATH}?metric=systolic_bp`}
-            onClick={(e) => { if (openHistoryLightbox('systolic_bp')) e.preventDefault(); }}
+            onClick={interceptHistory('systolic_bp')}
                    target="_blank" rel="noopener noreferrer">{bpLabel}</a>
               )}
             </div>
@@ -2016,7 +2021,7 @@ export function InputPanel({
                               <a
                                 className="previous-value"
                                 href={`${HISTORY_PAGE_PATH}?metric=psa`}
-                                onClick={(e) => { if (openHistoryLightbox('psa')) e.preventDefault(); }}
+                                onClick={interceptHistory('psa')}
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >{psaPreviousLabel}</a>

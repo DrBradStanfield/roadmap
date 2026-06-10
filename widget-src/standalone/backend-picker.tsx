@@ -14,10 +14,11 @@
  *  - Native <dialog>/showModal(): real focus trap + Escape + top-layer for
  *    free (converted pre-Phase-5, before the modal auto-opens on the website).
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GitHubAdapter, WebDavAdapter } from '../src/storage';
 import { adapterFor, BACKEND_KEY, copyDownToDevice, finishFormConnect, useBusyRun, type Backend } from './connect';
+import { useModalDialog } from './use-dialog';
 
 /* Minimal brand marks (Brad OK'd logos). Inline so no asset fetches. */
 const LOGOS: Record<string, React.ReactNode> = {
@@ -103,22 +104,9 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
   const { busy, error, setError, run } = useBusyRun();
   const [gh, setGh] = useState({ token: '', owner: '', repo: '' });
   const [wd, setWd] = useState({ url: '', username: '', password: '' });
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const dialogRef = useModalDialog();
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
-
-  useEffect(() => {
-    // showModal() = top-layer + REAL focus trap + native Escape (the 'cancel'
-    // event below) + focus restore on close — all free from the platform.
-    dialogRef.current?.showModal();
-    // Lock background scrolling while the modal is open (the page scrolls on
-    // <html>, so the lock must go there; body alone doesn't stop it in Chrome).
-    const prevOverflow = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
-    return () => {
-      document.documentElement.style.overflow = prevOverflow;
-    };
-  }, []);
 
   /** Leaving a connected cloud: copy its data down, then drop its tokens. */
   const prepareSwitch = async (): Promise<void> => {

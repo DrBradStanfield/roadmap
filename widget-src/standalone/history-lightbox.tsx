@@ -3,40 +3,41 @@
  * fire `hr:open-history` via the shim's openHistoryLightbox override (Brad's
  * call 2026-06-11: lightbox, not a separate page — /pages/health-history
  * doesn't exist off-Shopify). Native <dialog> like the backend picker.
+ *
+ * The host (this tiny listener) mounts eagerly; HistoryPanel — which drags the
+ * chart library with it — lazy-loads on first open so the main bundle stays
+ * light.
  */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { HistoryPanel } from '../src/components/HistoryPanel';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { useModalDialog } from './use-dialog';
+
+const HistoryPanel = React.lazy(() =>
+  import('../src/components/HistoryPanel').then((m) => ({ default: m.HistoryPanel })),
+);
 
 export function HistoryLightboxHost() {
-  const [openMetric, setOpenMetric] = useState<string | null | undefined>(undefined);
+  const [isOpen, setIsOpen] = useState(false);
+  const [metric, setMetric] = useState<string | null>(null);
 
   useEffect(() => {
     const onOpen = (e: Event) => {
-      setOpenMetric((e as CustomEvent<{ metric: string | null }>).detail?.metric ?? null);
+      setMetric((e as CustomEvent<{ metric: string | null }>).detail?.metric ?? null);
+      setIsOpen(true);
     };
     window.addEventListener('hr:open-history', onOpen);
     return () => window.removeEventListener('hr:open-history', onOpen);
   }, []);
 
-  if (openMetric === undefined) return null;
-  return <HistoryDialog metric={openMetric} onClose={() => setOpenMetric(undefined)} />;
+  if (!isOpen) return null;
+  return <HistoryDialog metric={metric} onClose={() => setIsOpen(false)} />;
 }
 
 function HistoryDialog({ metric, onClose }: { metric: string | null; onClose: () => void }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const dialogRef = useModalDialog();
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
-
-  useEffect(() => {
-    dialogRef.current?.showModal();
-    const prevOverflow = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = 'hidden';
-    return () => {
-      document.documentElement.style.overflow = prevOverflow;
-    };
-  }, []);
 
   return createPortal(
     <dialog
@@ -49,7 +50,9 @@ function HistoryDialog({ metric, onClose }: { metric: string | null; onClose: ()
       <div className="hr-modal-inner">
         <button className="hr-modal-close" aria-label="Close" onClick={onClose}>×</button>
         <ErrorBoundary>
-          <HistoryPanel isLoggedIn initialMetric={metric ?? undefined} />
+          <Suspense fallback={<p style={{ padding: 24 }}>Loading your history…</p>}>
+            <HistoryPanel isLoggedIn initialMetric={metric ?? undefined} />
+          </Suspense>
         </ErrorBoundary>
       </div>
     </dialog>,
