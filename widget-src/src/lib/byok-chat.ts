@@ -27,6 +27,7 @@ import {
 } from '@roadmap/health-core';
 import { getByokChatInputs } from './roadmap-data';
 import { safeGetItem, safeSetItem, safeRemoveItem, getJson, setJson } from './storage';
+import { ByokAnthropicError, callAnthropicDirect } from './byok-anthropic';
 
 // ---------------------------------------------------------------------------
 // Types — byte-compatible with chat-api.ts (chat-sync + the chat components
@@ -210,70 +211,39 @@ export async function sendMessage(
     ? `${SYSTEM_PROMPT}\n\nUser data:\n${contextJson}`
     : `${SYSTEM_PROMPT}\n\nUser data: none entered yet — encourage them to fill in the form for tailored answers.`;
 
+  let content: string;
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: CHAT_MODEL,
-        max_tokens: 1024,
-        system,
-        messages: [
-          ...history.map((m) => ({ role: m.role, content: m.content })),
-          { role: 'user', content: message },
-        ],
-      }),
+    content = await callAnthropicDirect(apiKey, {
+      model: CHAT_MODEL,
+      max_tokens: 1024,
+      system,
+      messages: [
+        ...history.map((m) => ({ role: m.role, content: m.content })),
+        { role: 'user', content: message },
+      ],
     });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        return { result: null, error: { error: 'Anthropic rejected your API key. Disconnect it (link below the chat box) and reconnect with a valid key.' } };
-      }
-      if (response.status === 429) {
-        return { result: null, error: { error: 'Your Anthropic account is rate-limited right now — wait a minute and try again.' } };
-      }
-      if (response.status === 400) {
-        const body = await response.json().catch(() => null);
-        const detail = body?.error?.message;
-        // Most common 400 on fresh keys: no credit balance on the account.
-        return { result: null, error: { error: detail ? `Anthropic error: ${detail}` : 'Anthropic rejected the request.' } };
-      }
-      return { result: null, error: { error: `Anthropic error (${response.status}). Try again shortly.` } };
-    }
-
-    const data = await response.json();
-    const content: string = (data?.content ?? [])
-      .filter((b: { type: string }) => b.type === 'text')
-      .map((b: { text: string }) => b.text)
-      .join('')
-      .trim();
-    if (!content) return { result: null, error: { error: 'Empty response from Anthropic. Try again.' } };
-
-    // Persist locally
-    const now = new Date().toISOString();
-    const userMsg: ChatMessage = { id: `u-${Date.now()}`, role: 'user', content: message, createdAt: now };
-    const assistantMsg: ChatMessage = { id: `a-${Date.now()}`, role: 'assistant', content, createdAt: now };
-    let conv = existing;
-    if (!conv) {
-      conv = { id: `conv-${Date.now()}`, title: message.slice(0, 80), createdAt: now, updatedAt: now, messages: [] };
-      convs.unshift(conv);
-    }
-    conv.messages.push(userMsg, assistantMsg);
-    conv.updatedAt = now;
-    convs.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-    writeConvs(convs);
-
-    return {
-      result: { conversationId: conv.id, messageId: assistantMsg.id, content, isGuest: false },
-      error: null,
-    };
   } catch (error) {
+    if (error instanceof ByokAnthropicError) return { result: null, error: { error: error.message } };
     console.warn('BYOK chat error:', error);
     return { result: null, error: { error: 'Network error reaching Anthropic. Check your connection.' } };
   }
+
+  // Persist locally (writeConvs swallows storage errors — history is best-effort).
+  const now = new Date().toISOString();
+  const userMsg: ChatMessage = { id: `u-${Date.now()}`, role: 'user', content: message, createdAt: now };
+  const assistantMsg: ChatMessage = { id: `a-${Date.now()}`, role: 'assistant', content, createdAt: now };
+  let conv = existing;
+  if (!conv) {
+    conv = { id: `conv-${Date.now()}`, title: message.slice(0, 80), createdAt: now, updatedAt: now, messages: [] };
+    convs.unshift(conv);
+  }
+  conv.messages.push(userMsg, assistantMsg);
+  conv.updatedAt = now;
+  convs.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+  writeConvs(convs);
+
+  return {
+    result: { conversationId: conv.id, messageId: assistantMsg.id, content, isGuest: false },
+    error: null,
+  };
 }

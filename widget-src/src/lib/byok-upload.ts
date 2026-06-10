@@ -28,10 +28,17 @@ import {
   toUnifiedResult,
 } from '@roadmap/health-core/lab-extraction';
 import { getAnthropicKey } from './byok-chat';
+import { ByokAnthropicError, callAnthropicDirect, type ByokErrorCode } from './byok-anthropic';
 import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode } from './api';
 
 const NO_KEY_MESSAGE =
   'Connect your Anthropic API key (in the "Ask about your plan" panel) to process documents on this page.';
+
+/** An empty 'other' result — what a failed extraction degrades to (mirrors the
+ *  server's pollBatch per-file fallback so the review UI behaves identically). */
+const EMPTY_RESULT: LabImportResult = {
+  classification: 'other', reportDate: null, values: [], additionalValues: [], document: null,
+};
 
 export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaining: number; message?: string }> {
   if (!getAnthropicKey()) return { allowed: false, remaining: 0, message: NO_KEY_MESSAGE };
@@ -39,11 +46,15 @@ export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaini
   return { allowed: true, remaining: Number.MAX_SAFE_INTEGER };
 }
 
-class ByokUploadError extends Error {
-  constructor(message: string, readonly errorCode: UploadErrorCode) {
-    super(message);
-  }
-}
+/** Map the shared transport's error code → the upload modal's UploadErrorCode. */
+const UPLOAD_ERROR_CODE: Record<ByokErrorCode, UploadErrorCode> = {
+  network: 'network',
+  rate_limit: 'rate_limit',
+  unauthorized: 'server_error',
+  bad_request: 'server_error',
+  empty: 'server_error',
+  server_error: 'server_error',
+};
 
 /** One direct extraction call; retries once with a `{` prefill on bad JSON
  *  (same recovery as the server's extractOrClassifyOnce). */
@@ -72,57 +83,12 @@ async function extractDirect(apiKey: string, pages: PageContent[]): Promise<LabI
 }
 
 function toResult(responseText: string): LabImportResult {
-  const unified = toUnifiedResult(parseUnifiedResult(JSON.parse(extractJsonObject(responseText))));
-  // Structurally identical; document.classification narrows string → DocumentType,
-  // which the zod enum in parseUnifiedResult already guarantees.
-  return unified as LabImportResult;
-}
-
-async function callAnthropicDirect(apiKey: string, body: Record<string, unknown>): Promise<string> {
-  let response: Response;
-  try {
-    response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    throw new ByokUploadError('Network error reaching Anthropic. Check your connection.', 'network');
-  }
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      throw new ByokUploadError(
-        'Anthropic rejected your API key. Disconnect it (link below the chat box) and reconnect with a valid key.',
-        'server_error',
-      );
-    }
-    if (response.status === 429) {
-      throw new ByokUploadError(
-        'Your Anthropic account is rate-limited right now — wait a minute and try again.',
-        'rate_limit',
-      );
-    }
-    if (response.status === 400) {
-      const errBody = await response.json().catch(() => null);
-      const detail = errBody?.error?.message;
-      throw new ByokUploadError(detail ? `Anthropic error: ${detail}` : 'Anthropic rejected the request.', 'server_error');
-    }
-    throw new ByokUploadError(`Anthropic error (${response.status}). Try again shortly.`, 'server_error');
-  }
-
-  const data = await response.json();
-  const text = (data?.content ?? [])
-    .filter((b: { type: string }) => b.type === 'text')
-    .map((b: { text: string }) => b.text)
-    .join('');
-  if (!text) throw new ByokUploadError('Empty response from Anthropic. Try again.', 'server_error');
-  return text;
+  // toUnifiedResult returns UnifiedExtractionResult; LabImportResult is the same
+  // shape minus `unrecognized` (which the review UI doesn't consume) and with
+  // document.classification typed DocumentType instead of string. The widening
+  // cast is safe because the review UI reads document.classification as a plain
+  // string; the extra `unrecognized` field is harmless if present.
+  return toUnifiedResult(parseUnifiedResult(JSON.parse(extractJsonObject(responseText)))) as LabImportResult;
 }
 
 export async function labImport(
@@ -134,8 +100,8 @@ export async function labImport(
   try {
     return { result: await extractDirect(apiKey, pages) };
   } catch (error) {
-    if (error instanceof ByokUploadError) {
-      return { result: null, error: error.message, errorCode: error.errorCode };
+    if (error instanceof ByokAnthropicError) {
+      return { result: null, error: error.message, errorCode: UPLOAD_ERROR_CODE[error.code] };
     }
     console.warn('BYOK extraction error:', error);
     return { result: null, error: 'Could not read this document. Try again.', errorCode: 'server_error' };
@@ -187,7 +153,7 @@ async function runBatch(
         // Per-file failure → empty 'other' result, matching the server batch
         // path (pollBatch in anthropic.server.ts) so review UI behaves the same.
         console.warn(`BYOK batch: ${file.fileName} failed:`, error);
-        result = { classification: 'other', reportDate: null, values: [], additionalValues: [], document: null };
+        result = EMPTY_RESULT;
       }
       results[index] = { ...result, fileName: file.fileName };
       batch.completed += 1;
