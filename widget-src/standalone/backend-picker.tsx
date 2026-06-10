@@ -13,6 +13,7 @@
  *    already lives in SyncControl.
  */
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { DropboxAdapter, GoogleDriveAdapter, GitHubAdapter, WebDavAdapter } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
@@ -100,11 +101,17 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
 
   useEffect(() => {
     dialogRef.current?.focus();
+    // Lock background scrolling while the modal is open.
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
   }, [onClose]);
 
   const run = async (fn: () => Promise<void>): Promise<void> => {
@@ -162,7 +169,10 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
     });
   };
 
-  return (
+  // Portal to <body>: the widget's panels sit inside transformed ancestors,
+  // which re-anchor position:fixed to themselves — the modal would render
+  // mid-page and scroll with it. Escaping to body keeps it viewport-centered.
+  return createPortal(
     <div className="hr-modal-overlay" onClick={onClose}>
       <div
         className="hr-modal"
@@ -256,6 +266,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
 
         {error && <span className="hr-sync-error">{error}</span>}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
