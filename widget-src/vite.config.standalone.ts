@@ -61,6 +61,12 @@ export default defineConfig(({ command }) => ({
     // React Fast Refresh and dev warnings work while iterating locally.
     'process.env.NODE_ENV': JSON.stringify(command === 'serve' ? 'development' : 'production'),
     'import.meta.env.VITE_GIT_HASH': JSON.stringify(gitHash),
+    // Marks every local-first build: the user's plan lives client-side, so the
+    // chat must send it as context rather than expecting it in our DB. The Pages
+    // build's BYOK chat ignores it (it reads context locally); only the Shopify
+    // v2 server-chat path acts on it. Kept here too so HealthTool's gating is
+    // identical across both local-first builds.
+    'import.meta.env.VITE_LOCAL_FIRST': JSON.stringify('true'),
   },
   resolve: {
     alias: {

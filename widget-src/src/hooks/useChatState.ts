@@ -223,10 +223,13 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       ts: Date.now(),
     });
 
+    // HealthTool already decides when guestInputs is populated (true guests +
+    // every local-first build). Pass it straight through; in the production
+    // widget it's null for logged-in users, so the server uses DB context.
     const { result, error: sendError } = await sendMessage(
       trimmed,
       currentConvId,
-      !isLoggedIn ? guestInputs : null,
+      guestInputs ?? null,
     );
 
     if (sendError) {

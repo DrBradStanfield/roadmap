@@ -5,6 +5,11 @@
 import * as Sentry from '@sentry/react';
 import { PROXY_PATH, parseJsonResponse } from './api';
 
+// Set by the Shopify v2 vite build (undefined → false in the production widget).
+// When true, the user's plan is client-side, so sendMessage tells the server to
+// trust the client-supplied context instead of looking for a DB record.
+const LOCAL_FIRST = import.meta.env.VITE_LOCAL_FIRST === 'true';
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -83,10 +88,20 @@ export function clearGuestSessionToken(): void {
 // API functions
 // ---------------------------------------------------------------------------
 
+/** Query-string fragments shared by the GET endpoints: the guest session token
+ *  (if any) and the local-first flag (forces the server's guest path). */
+function chatQueryParts(): string[] {
+  const parts: string[] = [];
+  const sessionToken = getGuestSessionToken();
+  if (sessionToken) parts.push(`sessionToken=${encodeURIComponent(sessionToken)}`);
+  if (LOCAL_FIRST) parts.push('localFirst=1');
+  return parts;
+}
+
 export async function listConversations(): Promise<ChatListResult | null> {
   try {
-    const sessionToken = getGuestSessionToken();
-    const params = sessionToken ? `?sessionToken=${encodeURIComponent(sessionToken)}` : '';
+    const qs = chatQueryParts();
+    const params = qs.length ? `?${qs.join('&')}` : '';
     const response = await fetch(`${PROXY_PATH}/api/chat${params}`);
     if (!response.ok) {
       Sentry.captureMessage('Chat listConversations failed', {
@@ -116,8 +131,7 @@ export async function listConversations(): Promise<ChatListResult | null> {
 
 export async function loadConversation(conversationId: string): Promise<ChatMessage[]> {
   try {
-    const sessionToken = getGuestSessionToken();
-    const params = `conversationId=${encodeURIComponent(conversationId)}${sessionToken ? '&sessionToken=' + encodeURIComponent(sessionToken) : ''}`;
+    const params = [`conversationId=${encodeURIComponent(conversationId)}`, ...chatQueryParts()].join('&');
     const response = await fetch(
       `${PROXY_PATH}/api/chat?${params}`,
     );
@@ -157,6 +171,10 @@ export async function sendMessage(
         conversationId: conversationId || undefined,
         ...(sessionToken ? { sessionToken } : {}),
         ...(guestInputs ? { guestInputs } : {}),
+        // Local-first builds: the plan lives client-side, so tell the server to
+        // use the client-supplied context even if the visitor happens to be a
+        // logged-in Shopify customer (no DB record to read). Brad still pays.
+        ...(LOCAL_FIRST ? { localFirst: true } : {}),
       }),
     });
 
@@ -218,6 +236,7 @@ export async function deleteConversation(conversationId: string): Promise<boolea
       body: JSON.stringify({
         conversationId,
         ...(sessionToken ? { sessionToken } : {}),
+        ...(LOCAL_FIRST ? { localFirst: true } : {}),
       }),
     });
     if (!response.ok) {

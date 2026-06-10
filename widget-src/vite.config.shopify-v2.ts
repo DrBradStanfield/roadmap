@@ -21,9 +21,17 @@ try {
 
 const SHIM = resolve(__dirname, 'src/lib/roadmap-data.ts');
 const REAL_API = /\/widget-src\/src\/lib\/api\.ts$/;
-const BYOK_CHAT = resolve(__dirname, 'src/lib/byok-chat.ts');
-const REAL_CHAT_API = /\/widget-src\/src\/lib\/chat-api\.ts$/;
 
+// NOTE: unlike the Pages/self-host build, the Shopify v2 build does NOT swap
+// the AI transports for BYOK. This page runs on drstanfield.com, where the
+// store's app proxy (/apps/health-tool-1 → Fly) is live: chat goes through
+// Brad's server (chat-api → app proxy → chat.server.ts, Brad pays) and uploads
+// go through upload-api → the Fly lab-import endpoint. Storefront = Brad pays
+// for AI; only the storage layer swaps to local-first (api.ts → roadmap-data).
+// VITE_LOCAL_FIRST=true tells the chat plumbing the user's plan lives client-
+// side (their cloud, not our DB), so the client always sends it as chat context
+// even though the app flags itself "logged in" for storage. See HealthTool +
+// chat-api sendMessage + api.chat.ts (treatAsGuest).
 function redirectApiToLocalFirst(): Plugin {
   return {
     name: 'redirect-api-to-local-first',
@@ -32,9 +40,6 @@ function redirectApiToLocalFirst(): Plugin {
       if (!importer || importer.includes('/lib/roadmap-data')) return null;
       const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
       if (resolved && REAL_API.test(resolved.id)) return SHIM;
-      if (resolved && REAL_CHAT_API.test(resolved.id) && !importer.includes('/lib/byok-chat')) {
-        return BYOK_CHAT;
-      }
       return null;
     },
   };
@@ -45,6 +50,7 @@ export default defineConfig({
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
     'import.meta.env.VITE_GIT_HASH': JSON.stringify(gitHash),
+    'import.meta.env.VITE_LOCAL_FIRST': JSON.stringify('true'),
   },
   resolve: {
     alias: {

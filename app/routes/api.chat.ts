@@ -40,10 +40,20 @@ interface AuthResult {
   sessionToken?: string;
 }
 
-async function getAuthOrGuest(request: Request, sessionToken?: string | null): Promise<AuthResult> {
+async function getAuthOrGuest(
+  request: Request,
+  sessionToken?: string | null,
+  // Local-first clients (Health Plan v2 on drstanfield.com): the user's plan
+  // lives in THEIR cloud, never our DB, so even a logged-in Shopify customer has
+  // no server-side health record to read. Force the guest path — context comes
+  // from the client-supplied `guestInputs`, conversations store under the guest
+  // session — while still verifying the app-proxy HMAC via getAuthenticatedUser.
+  // Brad pays either way; this only changes WHERE the context comes from.
+  forceGuest = false,
+): Promise<AuthResult> {
   // Try authenticated user first (also verifies HMAC internally)
   const auth = await getAuthenticatedUser(request);
-  if (auth) {
+  if (auth && !forceGuest) {
     return { ...auth, isGuest: false };
   }
 
@@ -129,7 +139,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     let auth: AuthResult;
     try {
-      auth = await getAuthOrGuest(request, sessionToken);
+      auth = await getAuthOrGuest(request, sessionToken, url.searchParams.get('localFirst') === '1');
     } catch (err) {
       if (err instanceof GuestRateLimitError) {
         return json({ success: false, error: 'rate_limited' }, { status: 429 });
@@ -226,7 +236,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     let auth: AuthResult;
     try {
-      auth = await getAuthOrGuest(request, body.sessionToken);
+      auth = await getAuthOrGuest(request, body.sessionToken, body.localFirst === true);
     } catch (err) {
       if (err instanceof GuestRateLimitError) {
         return json({ success: false, error: 'rate_limited' }, { status: 429 });
@@ -468,6 +478,10 @@ export async function action({ request }: ActionFunctionArgs) {
         output_tokens: completion.usage.outputTokens,
         model: CHAT_MODEL,
         is_fallback: completion.isFallback,
+        // Persist the fallback cause so the daily audit email is self-diagnosing
+        // (previously only sent to Sentry via reportChatFallback). Null on success.
+        failure_mode: completion.failureMode ?? null,
+        error_detail: completion.errorDetail?.slice(0, 500) ?? null,
       })
       .then(({ error: msgError }: { error: { message: string } | null }) => {
         if (msgError) {

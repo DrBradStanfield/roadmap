@@ -72,6 +72,12 @@ import {
   type ApiDocument,
 } from '../lib/api';
 
+// Local-first builds (Pages + Shopify v2) flag themselves "logged in" for
+// storage UX, but the user's plan lives client-side (their cloud), not in our
+// DB. So the chat must always send the plan as context. Set at build time by
+// the v2 vite configs; undefined in the production widget build (→ false).
+const LOCAL_FIRST = import.meta.env.VITE_LOCAL_FIRST === 'true';
+
 // Auth state from Liquid template
 interface AuthState {
   isLoggedIn: boolean;
@@ -1136,7 +1142,12 @@ export function HealthTool({ syncControl }: { syncControl?: ReactNode } = {}) {
 
   const chatSectionProps = {
     isLoggedIn: authState.isLoggedIn,
-    guestInputs: !authState.isLoggedIn ? { ...effectiveInputs, unitSystem, medications, screenings } : null,
+    // Send the plan as chat context whenever the data is client-side: true
+    // guests, AND all local-first builds (where "logged in" only means local
+    // storage, never a DB-backed account the server could read).
+    guestInputs: (!authState.isLoggedIn || LOCAL_FIRST)
+      ? { ...effectiveInputs, unitSystem, medications, screenings }
+      : null,
     prefetchedData: chatPrefetch,
   };
 
