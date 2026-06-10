@@ -1,1 +1,0 @@
-implement <SPEC> and while you do, keep updating the inplementation html file with decisions you had to make weren't in the spec, things you had to change, tradeoffs you had to make or anything else I should know

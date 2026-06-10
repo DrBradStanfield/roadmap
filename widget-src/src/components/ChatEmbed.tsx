@@ -5,8 +5,10 @@
  * Conversations load lazily via IntersectionObserver — fires only when the
  * panel scrolls into view, giving the health widget priority on page load.
  */
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
+import { getChatGate } from '../lib/chat-api';
 import { useChatState, THINKING_MESSAGES, MAX_CHARS } from '../hooks/useChatState';
+import { ChatKeyGate } from './ChatKeyGate';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatThreadList } from './ChatThreadList';
 import { ColumnHeader } from './ColumnHeader';
@@ -19,6 +21,9 @@ interface ChatEmbedProps {
 }
 
 export function ChatEmbed({ isLoggedIn, guestInputs, muted }: ChatEmbedProps) {
+  // BYOK gate (standalone build only — null on the Shopify widget).
+  const [, refreshGate] = useReducer((x: number) => x + 1, 0);
+  const gate = getChatGate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   const { state, actions, refs } = useChatState({
@@ -121,6 +126,10 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted }: ChatEmbedProps) {
           <ChatHeaderTitle subtitle={muted ? "Ask anything about preventative care" : "Answers cite your plan & the guidelines above"} />
         </div>
 
+        {gate?.needsKey ? (
+          <ChatKeyGate gate={gate} onConnected={refreshGate} />
+        ) : (
+        <>
         <div
           className="chat-messages chat-embed-messages"
           ref={messagesContainerRef}
@@ -176,9 +185,20 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted }: ChatEmbedProps) {
           </div>
           <div className="chat-input-meta">
             <span className="chat-doctor-note">Always discuss with your doctor</span>
+            {gate && (
+              <button
+                type="button"
+                className="chat-key-disconnect"
+                onClick={() => { gate.clearKey(); refreshGate(); }}
+              >
+                Disconnect AI key
+              </button>
+            )}
             <span className="chat-char-count">{state.inputText.length}/{MAX_CHARS}</span>
           </div>
         </div>
+        </>
+        )}
       </div>
       </div>
     </div>

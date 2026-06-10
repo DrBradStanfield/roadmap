@@ -17,6 +17,8 @@ try {
 
 const SHIM = resolve(__dirname, 'src/lib/roadmap-data.ts');
 const REAL_API = /\/widget-src\/src\/lib\/api\.ts$/;
+const BYOK_CHAT = resolve(__dirname, 'src/lib/byok-chat.ts');
+const REAL_CHAT_API = /\/widget-src\/src\/lib\/chat-api\.ts$/;
 
 /**
  * Redirect every import that resolves to `src/lib/api.ts` to the local-first
@@ -32,6 +34,11 @@ function redirectApiToLocalFirst(): Plugin {
       if (!importer || importer.includes('/lib/roadmap-data')) return null;
       const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
       if (resolved && REAL_API.test(resolved.id)) return SHIM;
+      // Same swap for the chat transport: chat-api.ts (Shopify proxy) →
+      // byok-chat.ts (direct browser → Anthropic with the user's own key).
+      if (resolved && REAL_CHAT_API.test(resolved.id) && !importer.includes('/lib/byok-chat')) {
+        return BYOK_CHAT;
+      }
       return null;
     },
   };

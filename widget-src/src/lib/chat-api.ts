@@ -42,6 +42,26 @@ export interface ChatError {
 }
 
 // ---------------------------------------------------------------------------
+// Chat gate — BYOK hook point
+// ---------------------------------------------------------------------------
+
+/**
+ * On the standalone build this module is swapped for byok-chat.ts (vite
+ * resolveId redirect), whose gate asks for the user's own Anthropic API key.
+ * On the Shopify widget there is no gate — chat is served by Brad's server.
+ */
+export interface ChatGate {
+  needsKey: boolean;
+  /** Returns an error message, or null on success. */
+  saveKey(key: string): string | null;
+  clearKey(): void;
+}
+
+export function getChatGate(): ChatGate | null {
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Guest session token (localStorage)
 // ---------------------------------------------------------------------------
 

@@ -7,8 +7,10 @@
  *
  * All API calls are lazy — nothing fires until the user clicks the bubble.
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useReducer } from 'react';
 import { FeedbackForm } from './FeedbackForm';
+import { getChatGate } from '../lib/chat-api';
+import { ChatKeyGate } from './ChatKeyGate';
 import { useChatState, THINKING_MESSAGES, MAX_CHARS } from '../hooks/useChatState';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatThreadList } from './ChatThreadList';
@@ -32,6 +34,9 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   const [showFeedback, setShowFeedback] = useState(false);
   const [showThreads, setShowThreads] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  // BYOK gate (standalone build only — null on the Shopify widget).
+  const [, refreshGate] = useReducer((x: number) => x + 1, 0);
+  const gate = getChatGate();
 
   const closeThreadsPanel = useCallback(() => setShowThreads(false), []);
   const { state, actions, refs } = useChatState({
@@ -132,7 +137,10 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
           />
         )}
 
-        {!showThreads && (
+        {!showThreads && gate?.needsKey && (
+          <ChatKeyGate gate={gate} onConnected={refreshGate} />
+        )}
+        {!showThreads && !gate?.needsKey && (
           <div className="chat-messages" ref={messagesContainerRef} onScroll={handleMessagesScroll}>
             {state.messages.length === 0 && !state.isLoading && (
               <div className="chat-empty">
@@ -164,7 +172,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
         )}
       </div>
 
-      {!showThreads && (
+      {!showThreads && !gate?.needsKey && (
         <div className="chat-input-bar">
           {state.isOffline && <div className="chat-offline">You're offline</div>}
           <div className="chat-input-shell">
@@ -187,6 +195,15 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
           </div>
           <div className="chat-input-meta">
             <span className="chat-doctor-note">Always discuss with your doctor</span>
+            {gate && (
+              <button
+                type="button"
+                className="chat-key-disconnect"
+                onClick={() => { gate.clearKey(); refreshGate(); }}
+              >
+                Disconnect AI key
+              </button>
+            )}
             <span className="chat-char-count">{state.inputText.length}/{MAX_CHARS}</span>
           </div>
         </div>

@@ -16,6 +16,8 @@
  */
 import type {
   ApiMeasurement,
+  ApiMedication,
+  ApiScreening,
   FileReminderOptIn,
   HealthInputs,
   MeasurementSource,
@@ -225,6 +227,24 @@ export async function deleteDocument(documentId: string): Promise<boolean> {
 export async function deleteLabValue(labValueId: string): Promise<boolean> {
   return store ? store.deleteLabValue(labValueId) : false;
 }
+/**
+ * Data snapshot for the BYOK chat's system-prompt context (byok-chat.ts).
+ * Mirrors the website chat's guest-context shape: prefill inputs + the raw
+ * medication/screening rows (byok-chat converts them with health-core).
+ */
+export function getByokChatInputs():
+  | (Record<string, unknown> & { medications: ApiMedication[]; screenings: ApiScreening[] })
+  | null {
+  if (!store) return null;
+  const latest = store.loadLatestMeasurements();
+  return {
+    ...latest.inputs,
+    unitSystem: latest.inputs.unitSystem ?? 'si',
+    medications: latest.medications,
+    screenings: latest.screenings,
+  };
+}
+
 export async function deleteUserData(): Promise<{ success: boolean; error?: string }> {
   return store ? store.deleteUserData() : { success: false, error: 'Data store not initialised' };
 }
