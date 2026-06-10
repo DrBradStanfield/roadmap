@@ -292,7 +292,7 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
         ts: Date.now(),
       });
     }
-  }, [inputText, isLoading, isOffline, instanceId, isLoggedIn, guestInputs]);
+  }, [inputText, isLoading, isOffline, instanceId, guestInputs]);
 
   const handleDelete = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();

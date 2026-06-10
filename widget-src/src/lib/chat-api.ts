@@ -98,6 +98,18 @@ function chatQueryParts(): string[] {
   return parts;
 }
 
+/** Body fields shared by the POST/DELETE endpoints — the JSON twin of
+ *  chatQueryParts(). localFirst tells the server to use the client-supplied
+ *  context even if the visitor happens to be a logged-in Shopify customer
+ *  (local-first builds have no DB record to read). Brad still pays. */
+function chatBodyParts(): Record<string, unknown> {
+  const sessionToken = getGuestSessionToken();
+  return {
+    ...(sessionToken ? { sessionToken } : {}),
+    ...(LOCAL_FIRST ? { localFirst: true } : {}),
+  };
+}
+
 export async function listConversations(): Promise<ChatListResult | null> {
   try {
     const qs = chatQueryParts();
@@ -162,19 +174,14 @@ export async function sendMessage(
   guestInputs?: Record<string, unknown> | null,
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
   try {
-    const sessionToken = getGuestSessionToken();
     const response = await fetch(`${PROXY_PATH}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message,
         conversationId: conversationId || undefined,
-        ...(sessionToken ? { sessionToken } : {}),
         ...(guestInputs ? { guestInputs } : {}),
-        // Local-first builds: the plan lives client-side, so tell the server to
-        // use the client-supplied context even if the visitor happens to be a
-        // logged-in Shopify customer (no DB record to read). Brad still pays.
-        ...(LOCAL_FIRST ? { localFirst: true } : {}),
+        ...chatBodyParts(),
       }),
     });
 
@@ -229,14 +236,12 @@ export async function sendMessage(
 
 export async function deleteConversation(conversationId: string): Promise<boolean> {
   try {
-    const sessionToken = getGuestSessionToken();
     const response = await fetch(`${PROXY_PATH}/api/chat`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         conversationId,
-        ...(sessionToken ? { sessionToken } : {}),
-        ...(LOCAL_FIRST ? { localFirst: true } : {}),
+        ...chatBodyParts(),
       }),
     });
     if (!response.ok) {
