@@ -7,10 +7,9 @@ import { PROXY_PATH, parseJsonResponse } from './api';
 import { getChatHistory } from './chat-history-access';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
 
-// Set by the Shopify v2 vite build (undefined → false in the production widget).
-// When true, the user's plan is client-side, so sendMessage tells the server to
-// trust the client-supplied context instead of looking for a DB record.
-const LOCAL_FIRST = import.meta.env.VITE_LOCAL_FIRST === 'true';
+// On local-first builds sendMessage tells the server to trust the
+// client-supplied context instead of looking for a DB record.
+import { LOCAL_FIRST } from './build-flags';
 
 // ---------------------------------------------------------------------------
 // Types

@@ -199,6 +199,24 @@ interface InputPanelProps {
   onAutoFocusEmail?: () => void;
 }
 
+/**
+ * Auto-advance focus once a typed value is complete: fires immediately, or
+ * after a short wait when the current digits could still extend to another
+ * valid value (weight "25" might become "250"; inches "1" might become "11").
+ * Owns the timer: each call cancels the previous pending advance, and unmount
+ * cleans up. The field-specific "could this extend?" predicate stays at the
+ * call site.
+ */
+function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) => void {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  return ({ ambiguous, advance }) => {
+    if (timer.current) clearTimeout(timer.current);
+    if (ambiguous) timer.current = setTimeout(advance, 800);
+    else advance();
+  };
+}
+
 export function InputPanel({
   inputs, onChange, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
@@ -218,8 +236,10 @@ export function InputPanel({
   const [prefillExpanded, setPrefillExpanded] = useState(false);
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   const hasAutoFocusedEmail = useRef(false);
-  const weightFocusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const heightFocusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // One auto-advance instance per TARGET, so a new keystroke on any source
+  // field cancels a pending advance to that target.
+  const advanceToWeight = useAutoAdvance();
+  const advanceToEmail = useAutoAdvance();
   const focusById = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus());
   const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
 
@@ -579,19 +599,15 @@ export function InputPanel({
               }
               updateField(field, parseAndConvert(field, raw));
               if (field === 'weightKg' && !hasAutoFocusedEmail.current && onAutoFocusEmail) {
-                if (weightFocusTimer.current) clearTimeout(weightFocusTimer.current);
                 const weightNum = parseLocalisedNumber(raw);
                 if (weightNum !== undefined && /^\d{2,3}$/.test(raw) && weightNum >= r.min && weightNum <= r.max) {
-                  const couldExtend = /^\d{2}$/.test(raw) && weightNum * 10 <= r.max;
-                  if (!couldExtend) {
-                    hasAutoFocusedEmail.current = true;
-                    requestAnimationFrame(() => onAutoFocusEmail());
-                  } else {
-                    weightFocusTimer.current = setTimeout(() => {
+                  advanceToEmail({
+                    ambiguous: /^\d{2}$/.test(raw) && weightNum * 10 <= r.max,
+                    advance: () => {
                       hasAutoFocusedEmail.current = true;
-                      onAutoFocusEmail();
-                    }, 800);
-                  }
+                      requestAnimationFrame(() => onAutoFocusEmail());
+                    },
+                  });
                 }
               }
             }}
@@ -853,12 +869,12 @@ export function InputPanel({
                     updateField('heightCm', parseAndConvert('heightCm', raw));
                     const heightNum = parseLocalisedNumber(raw);
                     const heightRange = range('heightCm');
-                    // Plausible height → move on to weight. No valid 2-digit cm
-                    // height can extend to a valid 3-digit one (min 50 → ×10 is
-                    // always past max 250), so focusing immediately never
-                    // steals the caret mid-typing.
+                    // Plausible height → move on to weight.
                     if (heightNum !== undefined && /^\d{2,3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && inputs.weightKg === undefined) {
-                      focusById('weightKg');
+                      advanceToWeight({
+                        ambiguous: /^\d{2}$/.test(raw) && heightNum * 10 <= heightRange.max,
+                        advance: () => focusById('weightKg'),
+                      });
                     }
                   }}
                   onBlur={() => setRawInputs(prev => { const next = { ...prev }; delete next['heightCm']; return next; })}
@@ -912,13 +928,11 @@ export function InputPanel({
                       }
                       // Height complete → move on to weight (mirrors the cm
                       // path). A lone '1' might still become 10/11 — wait it out.
-                      if (heightFocusTimer.current) clearTimeout(heightFocusTimer.current);
                       if (heightFeet !== '' && val !== '' && inches <= 11 && inputs.weightKg === undefined) {
-                        if (val === '1') {
-                          heightFocusTimer.current = setTimeout(() => focusById('weightKg'), 800);
-                        } else {
-                          focusById('weightKg');
-                        }
+                        advanceToWeight({
+                          ambiguous: val === '1',
+                          advance: () => focusById('weightKg'),
+                        });
                       }
                     }}
                     placeholder=""

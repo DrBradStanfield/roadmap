@@ -480,19 +480,10 @@ export function diffProfileFields(
  * Checks from stage 3 downward so returning users with data skip to full form.
  */
 export function computeFormStage(inputs: Partial<HealthInputs>): 1 | 2 | 3 {
-  const weight = UNIT_DEFS.weight.validationRange.si;
-  const height = UNIT_DEFS.height.validationRange.si;
-  if (inputs.weightKg !== undefined && inputs.weightKg >= weight.min && inputs.weightKg <= weight.max) {
-    return 3;
-  }
-  if (
-    inputs.sex !== undefined &&
-    inputs.heightCm !== undefined &&
-    inputs.heightCm >= height.min &&
-    inputs.heightCm <= height.max
-  ) {
-    return 2;
-  }
+  const plausible = (v: number | undefined, r: { min: number; max: number }) =>
+    v !== undefined && v >= r.min && v <= r.max;
+  if (plausible(inputs.weightKg, UNIT_DEFS.weight.validationRange.si)) return 3;
+  if (inputs.sex !== undefined && plausible(inputs.heightCm, UNIT_DEFS.height.validationRange.si)) return 2;
   return 1;
 }
 

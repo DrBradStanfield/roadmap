@@ -71,17 +71,7 @@ import {
   type ApiReminderPreference,
   type ApiDocument,
 } from '../lib/api';
-
-// Local-first builds (Pages + Shopify v2) flag themselves "logged in" for
-// storage UX, but the user's plan lives client-side (their cloud), not in our
-// DB. So the chat must always send the plan as context. Set at build time by
-// the v2 vite configs; undefined in the production widget build (→ false).
-const LOCAL_FIRST = import.meta.env.VITE_LOCAL_FIRST === 'true';
-
-// The drstanfield.com local-first build ONLY (never Pages/self-host): gates
-// features that go through Brad's server via the Shopify app proxy, like the
-// guest report email. Undefined in the production widget AND the Pages build.
-const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';
+import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
 
 // Auth state from Liquid template
 interface AuthState {
@@ -1062,18 +1052,20 @@ export function HealthTool({ syncControl }: { syncControl?: (ctx: { hasData: boo
     }
   }, [authState.isLoggedIn]);
 
+  // The guest email capture exists for true guests AND on the Shopify v2
+  // surface (where "logged in" is storage UX only). Never on Pages (no Brad
+  // server) and never for production logged-in customers.
+  const emailCaptureActive = !authState.isLoggedIn || SHOPIFY_SURFACE;
+
   const handleAutoFocusEmail = useCallback(() => {
-    // Email capture exists for true guests AND on the Shopify v2 surface
-    // (where "logged in" is storage UX only — see guestReportData). The Pages
-    // build has no email box, so the early return stands there.
-    if (authState.isLoggedIn && !SHOPIFY_SURFACE) return;
+    if (!emailCaptureActive) return;
     if (isMobile) {
       setActiveTab('plan');
       setTimeout(() => document.getElementById('guestEmail')?.focus(), 400);
     } else {
       document.getElementById('guestEmail')?.focus();
     }
-  }, [authState.isLoggedIn, isMobile]);
+  }, [emailCaptureActive, isMobile]);
 
   // Memoised so the UploadModal's matrix doesn't rebuild on unrelated
   // HealthTool re-renders (typing, mobile-tab switches, etc.).
@@ -1140,13 +1132,9 @@ export function HealthTool({ syncControl }: { syncControl?: (ctx: { hasData: boo
     onReminderPreferenceChange: handleReminderPreferenceChange,
     onGlobalReminderOptout: handleGlobalReminderOptout,
     sex: inputs.sex,
-    // Guest report email: true guests (production), plus the Shopify v2
-    // surface (its "logged in" is storage UX only and the proxy path works
-    // same-origin). NOT the Pages build — no Brad server there.
-    guestReportData:
-      !authState.isLoggedIn || SHOPIFY_SURFACE
-        ? { inputs: effectiveInputs, medications, screenings }
-        : undefined,
+    guestReportData: emailCaptureActive
+      ? { inputs: effectiveInputs, medications, screenings }
+      : undefined,
     formStage,
   };
 

@@ -25,6 +25,7 @@ import {
 } from '@roadmap/health-core';
 import { type ApiReminderPreference, sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments } from '../lib/api';
 import { EMAIL_REGEX } from '../lib/email';
+import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ColumnHeader } from './ColumnHeader';
 import { FeedbackForm } from './FeedbackForm';
 // @ts-ignore — JSON import for blog post cards
@@ -383,14 +384,6 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
 type GuestEmailState = 'idle' | 'sending' | 'prompt-account' | 'blog-posts';
 
 const DEFAULT_EMAIL_HELPER = 'Get your personalized plan emailed to you, with detailed explanations and clinical references for every suggestion.';
-
-// Local-first builds have no accounts — after the report email, the "keep your
-// data" follow-up is the backend picker (save to your own cloud), not a
-// Shopify account link. Set by the v2 vite configs; false on the live widget.
-const LOCAL_FIRST = import.meta.env.VITE_LOCAL_FIRST === 'true';
-
-// The drstanfield.com v2 surface only (never Pages) — see HealthTool.tsx.
-const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';
 
 // On local-first the capture button DELIVERS the plan (opens the save-as-PDF
 // window immediately); the emailed copy is the bonus. Copy reflects that
