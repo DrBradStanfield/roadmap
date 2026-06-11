@@ -332,11 +332,13 @@ export async function action({ request }: ActionFunctionArgs) {
 
     let classifierResult;
     if (auth.isGuest) {
+      // `?? empty`: guestInputs that fail schema validation (an EMPTY form —
+      // v2 invites chat before any data entry — or a malformed payload) get the
+      // no-data context instead of nulling out and 500ing downstream.
+      const emptyGuestContext = { userContextJson: '{}', subscriptionPlan: 'free', messageCredits: 0, healthDocuments: [] };
       [context, classifierResult] = await Promise.all([
         Promise.resolve(
-          body.guestInputs
-            ? assembleGuestChatContext(body.guestInputs)
-            : { userContextJson: '{}', subscriptionPlan: 'free', messageCredits: 0, healthDocuments: [] }
+          (body.guestInputs ? assembleGuestChatContext(body.guestInputs) : null) ?? emptyGuestContext
         ),
         classifierPromise,
       ]);
