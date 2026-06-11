@@ -4,6 +4,8 @@
  */
 import * as Sentry from '@sentry/react';
 import { PROXY_PATH, parseJsonResponse } from './api';
+import { getChatHistory } from './chat-history-access';
+import type { ChatHistoryStore } from '../storage/chat-history-store';
 
 // Set by the Shopify v2 vite build (undefined → false in the production widget).
 // When true, the user's plan is client-side, so sendMessage tells the server to
@@ -133,7 +135,34 @@ function chatBodyParts(): Record<string, unknown> {
   };
 }
 
+/**
+ * Cloud chat-history store on local-first builds (Phase 6): conversations live
+ * in the user's OWN cloud (chat-history.json), not Brad's DB. Null on the
+ * production widget (the registry is never populated there) and when the
+ * store isn't ready/failed — callers fall back to the server CRUD path.
+ */
+async function cloudHistory(): Promise<ChatHistoryStore | null> {
+  if (!LOCAL_FIRST) return null;
+  try {
+    return await getChatHistory();
+  } catch {
+    return null;
+  }
+}
+
 export async function listConversations(): Promise<ChatListResult | null> {
+  const store = await cloudHistory();
+  if (store) {
+    return {
+      conversations: store.listConversations().map((c) => ({
+        id: c.id,
+        title: c.title,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+      })),
+      isGuest: false,
+    };
+  }
   try {
     const qs = chatQueryParts();
     const params = qs.length ? `?${qs.join('&')}` : '';
@@ -165,6 +194,8 @@ export async function listConversations(): Promise<ChatListResult | null> {
 }
 
 export async function loadConversation(conversationId: string): Promise<ChatMessage[]> {
+  const store = await cloudHistory();
+  if (store) return store.getMessages(conversationId);
   try {
     const params = [`conversationId=${encodeURIComponent(conversationId)}`, ...chatQueryParts()].join('&');
     const response = await fetch(
@@ -237,6 +268,25 @@ export async function sendMessage(
       };
     }
 
+    // Local-first: mirror the exchange into the user's cloud history file,
+    // keyed by the server's canonical conversation id. Fire-and-forget —
+    // history must never block or fail the chat itself.
+    void cloudHistory()
+      .then((store) => {
+        if (!store) return;
+        const now = new Date().toISOString();
+        return store.appendMessages({
+          conversationId: data.conversationId,
+          ...(conversationId ? {} : { title: message.slice(0, 80) }),
+          now,
+          messages: [
+            { id: `u-${Date.now()}`, role: 'user', content: message, createdAt: now },
+            { id: data.messageId ?? `a-${Date.now()}`, role: 'assistant', content: data.content, createdAt: now },
+          ],
+        });
+      })
+      .catch(() => {});
+
     return {
       result: {
         conversationId: data.conversationId,
@@ -258,6 +308,22 @@ export async function sendMessage(
 }
 
 export async function deleteConversation(conversationId: string): Promise<boolean> {
+  const store = await cloudHistory();
+  if (store) {
+    try {
+      await store.deleteConversation(conversationId); // tombstone in the user's cloud
+    } catch {
+      return false;
+    }
+    // Best-effort server delete too: the server's copy exists for training
+    // (anonymized), but honouring the user's delete there is the polite default.
+    void deleteServerConversation(conversationId);
+    return true;
+  }
+  return deleteServerConversation(conversationId);
+}
+
+async function deleteServerConversation(conversationId: string): Promise<boolean> {
   try {
     const response = await fetch(`${PROXY_PATH}/api/chat`, {
       method: 'DELETE',

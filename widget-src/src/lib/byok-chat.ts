@@ -27,7 +27,9 @@ import {
   type UnitSystem,
 } from '@roadmap/health-core';
 import { getByokChatInputs } from './roadmap-data';
-import { safeGetItem, safeSetItem, safeRemoveItem, getJson, setJson } from './storage';
+import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
+import { getChatHistory } from './chat-history-access';
+import type { ChatHistoryStore } from '../storage/chat-history-store';
 import { ByokAnthropicError, callAnthropicDirect } from './byok-anthropic';
 
 // ---------------------------------------------------------------------------
@@ -111,39 +113,48 @@ export function getChatGate(): ChatGate | null {
 }
 
 // ---------------------------------------------------------------------------
-// Conversation store (localStorage, this device only)
+// Conversation store — the user's own cloud (chat-history.json, Phase 6)
 // ---------------------------------------------------------------------------
+// History persists through the shared ChatHistoryStore over whichever backend
+// the user connected; the device-only tier syncs the same file through the
+// localStorage adapter. History is best-effort everywhere: if the store isn't
+// ready (boot race) or its cloud read failed, chat still answers — it just
+// doesn't remember.
 
-const CONVS_STORAGE = 'hr_chat_conversations_v2';
-const MAX_CONVERSATIONS = 50;
-
-interface StoredConversation extends ChatConversation {
-  messages: ChatMessage[];
-}
-
-function readConvs(): StoredConversation[] {
-  return getJson<StoredConversation[]>(CONVS_STORAGE) ?? [];
-}
-
-function writeConvs(convs: StoredConversation[]): void {
-  // setJson swallows quota errors — chat history is best-effort.
-  setJson(CONVS_STORAGE, convs.slice(0, MAX_CONVERSATIONS));
+async function chatStore(): Promise<ChatHistoryStore | null> {
+  try {
+    return await getChatHistory();
+  } catch {
+    return null;
+  }
 }
 
 export async function listConversations(): Promise<ChatListResult | null> {
+  const store = await chatStore();
   return {
-    conversations: readConvs().map(({ messages: _m, ...c }) => c),
+    conversations: (store?.listConversations() ?? []).map((c) => ({
+      id: c.id,
+      title: c.title,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    })),
     isGuest: false,
   };
 }
 
 export async function loadConversation(conversationId: string): Promise<ChatMessage[]> {
-  return readConvs().find((c) => c.id === conversationId)?.messages ?? [];
+  return (await chatStore())?.getMessages(conversationId) ?? [];
 }
 
 export async function deleteConversation(conversationId: string): Promise<boolean> {
-  writeConvs(readConvs().filter((c) => c.id !== conversationId));
-  return true;
+  const store = await chatStore();
+  if (!store) return false;
+  try {
+    await store.deleteConversation(conversationId);
+    return true;
+  } catch {
+    return false; // cloud write failed — the list will still show it
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -214,9 +225,10 @@ export async function sendMessage(
     return { result: null, error: { error: 'Connect your Anthropic API key to use chat.' } };
   }
 
-  const convs = readConvs();
-  const existing = conversationId ? convs.find((c) => c.id === conversationId) : undefined;
-  const history = (existing?.messages ?? []).slice(-MAX_HISTORY_MESSAGES);
+  const store = await chatStore();
+  const history = (conversationId ? store?.getMessages(conversationId) ?? [] : []).slice(
+    -MAX_HISTORY_MESSAGES,
+  );
 
   const contextJson = buildUserContextJson();
   const system = contextJson
@@ -240,22 +252,22 @@ export async function sendMessage(
     return { result: null, error: { error: 'Network error reaching Anthropic. Check your connection.' } };
   }
 
-  // Persist locally (writeConvs swallows storage errors — history is best-effort).
+  // Persist to the user's cloud — fire-and-forget, history is best-effort.
   const now = new Date().toISOString();
   const userMsg: ChatMessage = { id: `u-${Date.now()}`, role: 'user', content: message, createdAt: now };
   const assistantMsg: ChatMessage = { id: `a-${Date.now()}`, role: 'assistant', content, createdAt: now };
-  let conv = existing;
-  if (!conv) {
-    conv = { id: `conv-${Date.now()}`, title: message.slice(0, 80), createdAt: now, updatedAt: now, messages: [] };
-    convs.unshift(conv);
-  }
-  conv.messages.push(userMsg, assistantMsg);
-  conv.updatedAt = now;
-  convs.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  writeConvs(convs);
+  const convId = conversationId ?? `conv-${Date.now()}`;
+  void store
+    ?.appendMessages({
+      conversationId: convId,
+      ...(conversationId ? {} : { title: message.slice(0, 80) }),
+      now,
+      messages: [userMsg, assistantMsg],
+    })
+    .catch(() => {});
 
   return {
-    result: { conversationId: conv.id, messageId: assistantMsg.id, content, isGuest: false },
+    result: { conversationId: convId, messageId: assistantMsg.id, content, isGuest: false },
     error: null,
   };
 }
