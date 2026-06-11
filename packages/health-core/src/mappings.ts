@@ -9,7 +9,7 @@
  */
 import type { HealthInputs } from './types';
 import { encodeSex, decodeSex, encodeUnitSystem, decodeUnitSystem } from './types';
-import type { MetricType } from './units';
+import { UNIT_DEFS, type MetricType } from './units';
 
 /**
  * Maps HealthInputs field names to metric_type values for storage in the
@@ -470,14 +470,29 @@ export function diffProfileFields(
  * Compute the progressive disclosure stage (1–3) based on which inputs are filled.
  *
  * Stage 1: Always (units, sex, height shown)
- * Stage 2: sex AND heightCm filled (weight, waist, BP, birth month/year shown)
- * Stage 3: weightKg filled (blood tests, medications, screening shown)
+ * Stage 2: sex AND a plausible heightCm (weight, waist, BP, birth month/year shown)
+ * Stage 3: a plausible weightKg (blood tests, medications, screening shown)
+ *
+ * "Plausible" = inside the canonical SI validation range (UNIT_DEFS in
+ * units.ts) — a half-typed "1" of "180" must NOT open the next stage; the
+ * gate opens only once the value could be a real measurement.
  *
  * Checks from stage 3 downward so returning users with data skip to full form.
  */
 export function computeFormStage(inputs: Partial<HealthInputs>): 1 | 2 | 3 {
-  if (inputs.weightKg !== undefined) return 3;
-  if (inputs.sex !== undefined && inputs.heightCm !== undefined) return 2;
+  const weight = UNIT_DEFS.weight.validationRange.si;
+  const height = UNIT_DEFS.height.validationRange.si;
+  if (inputs.weightKg !== undefined && inputs.weightKg >= weight.min && inputs.weightKg <= weight.max) {
+    return 3;
+  }
+  if (
+    inputs.sex !== undefined &&
+    inputs.heightCm !== undefined &&
+    inputs.heightCm >= height.min &&
+    inputs.heightCm <= height.max
+  ) {
+    return 2;
+  }
   return 1;
 }
 

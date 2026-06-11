@@ -219,6 +219,7 @@ export function InputPanel({
   const [rawInputs, setRawInputs] = useState<Record<string, string>>({});
   const hasAutoFocusedEmail = useRef(false);
   const weightFocusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const heightFocusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const focusById = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus());
   const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
 
@@ -852,7 +853,11 @@ export function InputPanel({
                     updateField('heightCm', parseAndConvert('heightCm', raw));
                     const heightNum = parseLocalisedNumber(raw);
                     const heightRange = range('heightCm');
-                    if (heightNum !== undefined && /^\d{3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && inputs.weightKg === undefined) {
+                    // Plausible height → move on to weight. No valid 2-digit cm
+                    // height can extend to a valid 3-digit one (min 50 → ×10 is
+                    // always past max 250), so focusing immediately never
+                    // steals the caret mid-typing.
+                    if (heightNum !== undefined && /^\d{2,3}$/.test(raw) && heightNum >= heightRange.min && heightNum <= heightRange.max && inputs.weightKg === undefined) {
                       focusById('weightKg');
                     }
                   }}
@@ -904,6 +909,16 @@ export function InputPanel({
                         updateField('heightCm', feetInchesToCm(feet, inches));
                       } else {
                         updateField('heightCm', undefined);
+                      }
+                      // Height complete → move on to weight (mirrors the cm
+                      // path). A lone '1' might still become 10/11 — wait it out.
+                      if (heightFocusTimer.current) clearTimeout(heightFocusTimer.current);
+                      if (heightFeet !== '' && val !== '' && inches <= 11 && inputs.weightKg === undefined) {
+                        if (val === '1') {
+                          heightFocusTimer.current = setTimeout(() => focusById('weightKg'), 800);
+                        } else {
+                          focusById('weightKg');
+                        }
                       }
                     }}
                     placeholder=""

@@ -336,24 +336,32 @@ input[type="number"] {
 }
 
 /* Animated collapse: summary fade-in */
-.prefill-summary-wrapper {
+/* Scoped under .health-tool: on /pages/test the PRODUCTION site-chat bundle
+   (health-site-chat.css — an old, byte-stable copy of this file until Phase 7)
+   also loads, and its stale same-specificity rules would win by document
+   order. The extra ancestor keeps the v2 rules in charge. */
+.health-tool .prefill-summary-wrapper {
   display: grid;
   grid-template-rows: 0fr;
   opacity: 0;
-  transition: grid-template-rows 0.3s ease, opacity 0.3s ease;
+  /* Spacing lives HERE (on .visible), not on the child: child margins leak
+     past the 0fr track and nudged the form 8px on first sex/height entry. */
+  margin: 0;
+  transition: grid-template-rows 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
 }
-.prefill-summary-wrapper > * {
+.health-tool .prefill-summary-wrapper > * {
   overflow: hidden;
 }
-.prefill-summary-wrapper.visible {
+.health-tool .prefill-summary-wrapper.visible {
   grid-template-rows: 1fr;
   opacity: 1;
+  margin: -8px 0 16px;
 }
 
-.prefill-summary {
+.health-tool .prefill-summary {
   font-size: 14px;
   color: var(--color-gray-medium);
-  margin: -8px 0 16px;
+  margin: 0;
   cursor: pointer;
 }
 

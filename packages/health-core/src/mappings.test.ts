@@ -634,6 +634,22 @@ describe('computeFormStage', () => {
   it('returns 3 even if intermediate fields missing (short-circuit)', () => {
     expect(computeFormStage({ weightKg: 70 })).toBe(3);
   });
+
+  it('does NOT advance on half-typed (implausible) height — "1" of "180"', () => {
+    expect(computeFormStage({ sex: 'male', heightCm: 1 })).toBe(1);
+    expect(computeFormStage({ sex: 'male', heightCm: 18 })).toBe(1);
+    expect(computeFormStage({ sex: 'male', heightCm: 180 })).toBe(2);
+  });
+
+  it('does NOT advance on half-typed (implausible) weight — "7" of "75"', () => {
+    expect(computeFormStage({ sex: 'male', heightCm: 180, weightKg: 7 })).toBe(2);
+    expect(computeFormStage({ sex: 'male', heightCm: 180, weightKg: 75 })).toBe(3);
+  });
+
+  it('treats out-of-range values as not entered (height > 250, weight > 300)', () => {
+    expect(computeFormStage({ sex: 'male', heightCm: 1800 })).toBe(1);
+    expect(computeFormStage({ sex: 'male', heightCm: 180, weightKg: 750 })).toBe(2);
+  });
 });
 
 describe('resolveEmailConfirmStatus', () => {

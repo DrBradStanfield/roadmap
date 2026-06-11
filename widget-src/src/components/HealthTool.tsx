@@ -1063,7 +1063,10 @@ export function HealthTool({ syncControl }: { syncControl?: (ctx: { hasData: boo
   }, [authState.isLoggedIn]);
 
   const handleAutoFocusEmail = useCallback(() => {
-    if (authState.isLoggedIn) return;
+    // Email capture exists for true guests AND on the Shopify v2 surface
+    // (where "logged in" is storage UX only — see guestReportData). The Pages
+    // build has no email box, so the early return stands there.
+    if (authState.isLoggedIn && !SHOPIFY_SURFACE) return;
     if (isMobile) {
       setActiveTab('plan');
       setTimeout(() => document.getElementById('guestEmail')?.focus(), 400);
