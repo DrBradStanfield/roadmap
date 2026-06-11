@@ -201,6 +201,31 @@ fly deploy
 git checkout docs/products.md
 ```
 
+### Local-first (v2) builds & build flags
+
+Three widget builds from the same source; behaviour differences come from vite
+`define` flags + module swaps (`resolveId` redirects), never runtime sniffing:
+
+| Build | Command | `VITE_LOCAL_FIRST` | `VITE_SHOPIFY_SURFACE` | Module swaps |
+|---|---|---|---|---|
+| Production widget | `npm run build:widget` | undefined (false) | undefined (false) | none |
+| Shopify v2 (drstanfield.com/pages/test) | `npm run build:shopify-v2` | `'true'` | `'true'` | `api.ts → roadmap-data.ts` |
+| GitHub Pages / self-host | `npm run build:pages` | `'true'` | undefined (false) | `api.ts → roadmap-data.ts`, `chat-api.ts → byok-chat.ts`, `upload-api.ts → byok-upload.ts` |
+
+- **`VITE_LOCAL_FIRST`** — marks every local-first build: the user's plan lives
+  client-side (their cloud), so chat sends it as context, legacy login-sync
+  server calls are neutralized, etc.
+- **`VITE_SHOPIFY_SURFACE`** — marks the drstanfield.com v2 build ONLY (never
+  Pages): gates features that need Brad's server via the Shopify app proxy.
+  Currently: the guest report email section ("Get your personalized plan
+  emailed to you…" / `GuestEmailCapture` via `guestReportData` in
+  HealthTool.tsx). The Pages build has no Brad server, so the section must
+  never render there; the production widget gets it through the normal
+  `!isLoggedIn` guest path instead. Declared in `widget-src/src/vite-env.d.ts`;
+  defined in `vite.config.shopify-v2.ts`.
+- Shopify v2 deploys with `shopify app deploy -c dev --force` (dev app,
+  `extensions-dev/*` only). NEVER bare `shopify app deploy` until Phase 7.
+
 **Important deploy notes:**
 - **Symlink resolution before deploy**: `docs/products.md` is a symlink to the claude_business Dropbox folder. Fly.io's remote builders can't follow local symlinks. The deploy command dereferences the symlink to a temp file, removes the symlink, then moves the real file into place. `git checkout` restores the symlink after deploy. **Do NOT use `cp -L file file`** — `cp` follows destination symlinks, so the symlink is never replaced.
 - `fly deploy` must be run from the **project root** (`/roadmap/`), not a subdirectory. The Dockerfile is at root level. Do NOT use `--app` flag — Fly reads `fly.toml` from the current directory.
