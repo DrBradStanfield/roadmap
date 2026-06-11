@@ -17,7 +17,6 @@
  *
  * Brad supplies the app key (client id) via DropboxConfig; there is no secret.
  */
-import type { RoadmapFile } from '@roadmap/health-core';
 import {
   ConflictError,
   StorageError,
@@ -28,7 +27,6 @@ import {
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
-const FILE_PATH = '/health-roadmap.json';
 const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
 const PKCE_KEY = 'health_roadmap_dropbox_pkce';
 
@@ -141,38 +139,38 @@ export class DropboxAdapter implements StorageAdapter {
 
   // --- file ops -------------------------------------------------------------
 
-  async read(): Promise<ReadResult> {
+  async read(fileName: string): Promise<ReadResult> {
     const res = await fetch(DOWNLOAD_URL, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${await this.accessToken()}`,
-        'Dropbox-API-Arg': JSON.stringify({ path: FILE_PATH }),
+        'Dropbox-API-Arg': JSON.stringify({ path: `/${fileName}` }),
       },
     });
     if (res.status === 409) {
       // path/not_found — no file yet.
-      return { file: null, version: null };
+      return { body: null, version: null };
     }
     if (!res.ok) {
       throw new StorageError(`Dropbox read failed (${res.status}): ${await res.text()}`);
     }
     const meta = this.parseApiResult(res);
     const text = await res.text();
-    let file: RoadmapFile | null;
+    let body: unknown;
     try {
-      file = text ? (JSON.parse(text) as RoadmapFile) : null;
+      body = text ? (JSON.parse(text) as unknown) : null;
     } catch (error) {
       throw new StorageError('Dropbox read failed: file is not valid JSON (possible corruption).', error);
     }
-    return { file, version: (meta?.rev as string) ?? null };
+    return { body, version: (meta?.rev as string) ?? null };
   }
 
-  async write(file: RoadmapFile, expectedVersion: string | null): Promise<WriteResult> {
+  async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
     const mode =
       expectedVersion == null
         ? { '.tag': 'add' } // first create — conflicts if a file already exists
         : { '.tag': 'update', update: expectedVersion }; // conditional on rev
-    const arg = { path: FILE_PATH, mode, autorename: false, mute: true };
+    const arg = { path: `/${fileName}`, mode, autorename: false, mute: true };
     const res = await fetch(UPLOAD_URL, {
       method: 'POST',
       headers: {
@@ -180,7 +178,7 @@ export class DropboxAdapter implements StorageAdapter {
         'Content-Type': 'application/octet-stream',
         'Dropbox-API-Arg': JSON.stringify(arg),
       },
-      body: JSON.stringify(file),
+      body: JSON.stringify(body),
     });
     if (res.status === 409) {
       // A write conflict (rev mismatch or add-over-existing) — surface for retry.

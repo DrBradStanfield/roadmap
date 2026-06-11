@@ -6,16 +6,15 @@
  * read+write — repo-scoped by construction. This is an advanced, dev-audience
  * tier, not the grandma flow.
  *
- * Storage: the record file is `health-roadmap.json` on the repo's default
- * branch; the file `sha` is the optimistic-concurrency version token. Uploaded
- * documents live under `documents/`.
+ * Storage: record files (`health-roadmap.json`, `chat-history.json`, …) live on
+ * the repo's default branch; each file's `sha` is its optimistic-concurrency
+ * version token. Uploaded documents live under `documents/`.
  *
  * LIMIT: the GitHub Contents API caps a file at ~1 MB. Fine for the JSON record;
  * a large lab-PDF upload could exceed it (the read returns empty content). The
  * dev/privacy audience can live with that; the Git Data blob API would lift the
  * cap later if needed. See the implementation build log.
  */
-import type { RoadmapFile } from '@roadmap/health-core';
 import {
   ConflictError,
   StorageError,
@@ -27,7 +26,6 @@ import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { bytesToBase64, base64ToBytes } from '../lib/base64';
 
 const CONFIG_KEY = 'health_roadmap_github';
-const FILE_PATH = 'health-roadmap.json';
 const API = 'https://api.github.com';
 
 export interface GitHubConfig {
@@ -96,32 +94,32 @@ export class GitHubAdapter implements StorageAdapter {
 
   // --- file ops -------------------------------------------------------------
 
-  async read(): Promise<ReadResult> {
-    const res = await fetch(this.contentsUrl(FILE_PATH), { headers: this.headers() });
-    if (res.status === 404) return { file: null, version: null };
+  async read(fileName: string): Promise<ReadResult> {
+    const res = await fetch(this.contentsUrl(fileName), { headers: this.headers() });
+    if (res.status === 404) return { body: null, version: null };
     if (!res.ok) throw new StorageError(`GitHub read failed (${res.status}): ${await res.text()}`);
     const json = (await res.json()) as { content?: string; sha: string };
-    let file: RoadmapFile | null = null;
+    let body: unknown = null;
     if (json.content) {
       try {
-        file = JSON.parse(new TextDecoder().decode(base64ToBytes(json.content))) as RoadmapFile;
+        body = JSON.parse(new TextDecoder().decode(base64ToBytes(json.content))) as unknown;
       } catch (error) {
         throw new StorageError('GitHub read failed: file is not valid JSON (possible corruption).', error);
       }
     }
-    return { file, version: json.sha ?? null };
+    return { body, version: json.sha ?? null };
   }
 
-  async write(file: RoadmapFile, expectedVersion: string | null): Promise<WriteResult> {
-    const body: Record<string, unknown> = {
-      message: `Update ${FILE_PATH}`,
-      content: bytesToBase64(new TextEncoder().encode(JSON.stringify(file))),
+  async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
+    const payload: Record<string, unknown> = {
+      message: `Update ${fileName}`,
+      content: bytesToBase64(new TextEncoder().encode(JSON.stringify(body))),
     };
-    if (expectedVersion) body.sha = expectedVersion; // omitted on first create
-    const res = await fetch(this.contentsUrl(FILE_PATH), {
+    if (expectedVersion) payload.sha = expectedVersion; // omitted on first create
+    const res = await fetch(this.contentsUrl(fileName), {
       method: 'PUT',
       headers: this.headers(),
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     });
     // 409 (sha out of date) / 422 (sha mismatch, or "already exists" on create) → conflict.
     if (res.status === 409 || res.status === 422) {

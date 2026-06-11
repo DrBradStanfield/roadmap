@@ -49,7 +49,7 @@ import {
   type ScreeningInputs,
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
-import { SyncManager } from './sync-manager';
+import { ROADMAP_DOC, SyncManager } from './sync-manager';
 import type { StorageAdapter } from './adapter';
 import { Sentry } from '../lib/sentry';
 
@@ -167,7 +167,7 @@ export class RoadmapStore {
   /** Load the user's record from the given backend and return a ready store. */
   static async create(adapter: StorageAdapter): Promise<RoadmapStore> {
     const deviceId = getDeviceId();
-    const sync = new SyncManager(adapter, deviceId);
+    const sync = new SyncManager(adapter, deviceId, ROADMAP_DOC);
     const file = await sync.load();
     return new RoadmapStore(sync, adapter, file, deviceId);
   }
@@ -551,7 +551,7 @@ export class RoadmapStore {
       clearTimeout(this.persistTimer);
       this.persistTimer = null;
     }
-    if (this.adapter.writeSync) this.adapter.writeSync(this.file);
+    if (this.adapter.writeSync) this.adapter.writeSync(ROADMAP_DOC.fileName, this.file);
     else void this.persist();
   }
 

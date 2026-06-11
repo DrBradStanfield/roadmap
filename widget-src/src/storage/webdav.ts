@@ -16,7 +16,6 @@
  *     writes degrade to last-write-wins — see the implementation build log.
  * iOS note: WebDAV is the only self-host path on iOS (no File System Access API).
  */
-import type { RoadmapFile } from '@roadmap/health-core';
 import {
   ConflictError,
   StorageError,
@@ -28,7 +27,6 @@ import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { bytesToBase64 } from '../lib/base64';
 
 const CONFIG_KEY = 'health_roadmap_selfhost';
-const FILE = 'health-roadmap.json';
 
 export interface WebDavConfig {
   /** Base WebDAV directory URL the app confines itself to (trailing slash optional). */
@@ -84,27 +82,27 @@ export class WebDavAdapter implements StorageAdapter {
 
   // --- file ops -------------------------------------------------------------
 
-  async read(): Promise<ReadResult> {
-    const res = await fetch(this.urlFor(FILE), { headers: this.authHeaders() });
-    if (res.status === 404) return { file: null, version: null };
+  async read(fileName: string): Promise<ReadResult> {
+    const res = await fetch(this.urlFor(fileName), { headers: this.authHeaders() });
+    if (res.status === 404) return { body: null, version: null };
     if (!res.ok) throw new StorageError(`Self-host read failed (${res.status}): ${await res.text()}`);
     const etag = res.headers.get('etag');
     const text = await res.text();
-    let file: RoadmapFile | null;
+    let body: unknown;
     try {
-      file = text ? (JSON.parse(text) as RoadmapFile) : null;
+      body = text ? (JSON.parse(text) as unknown) : null;
     } catch (error) {
       throw new StorageError('Self-host read failed: file is not valid JSON (possible corruption).', error);
     }
-    return { file, version: etag };
+    return { body, version: etag };
   }
 
-  async write(file: RoadmapFile, expectedVersion: string | null): Promise<WriteResult> {
+  async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
     const headers: Record<string, string> = { ...this.authHeaders(), 'Content-Type': 'application/json' };
     // Conditional update when we have an ETag; otherwise an unconditional PUT
     // (genuine first create, or a server that doesn't return ETags → LWW).
     if (expectedVersion) headers['If-Match'] = expectedVersion;
-    const res = await fetch(this.urlFor(FILE), { method: 'PUT', headers, body: JSON.stringify(file) });
+    const res = await fetch(this.urlFor(fileName), { method: 'PUT', headers, body: JSON.stringify(body) });
     if (res.status === 412) {
       throw new ConflictError('Self-host write conflict: the file changed since last read.');
     }
@@ -114,7 +112,7 @@ export class WebDavAdapter implements StorageAdapter {
     let etag = res.headers.get('etag');
     if (!etag) {
       try {
-        const head = await fetch(this.urlFor(FILE), { method: 'HEAD', headers: this.authHeaders() });
+        const head = await fetch(this.urlFor(fileName), { method: 'HEAD', headers: this.authHeaders() });
         etag = head.headers.get('etag');
       } catch {
         /* HEAD unsupported/blocked — degrade to LWW */

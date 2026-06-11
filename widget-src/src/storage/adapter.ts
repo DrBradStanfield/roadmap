@@ -7,8 +7,18 @@
  *
  * HARD requirement (§4.1): each adapter is folder/repo-scoped — it can only ever
  * touch the app's own `Health Roadmap` data, never the rest of the user's cloud.
+ *
+ * Adapters are SCHEMA-AGNOSTIC: JSON record files are addressed by name
+ * (`health-roadmap.json`, `chat-history.json`, …) and bodies are opaque JSON.
+ * Schema knowledge (migrate/merge/validate) lives in the SyncManager's
+ * DocumentSpec, not here.
  */
-import type { RoadmapFile } from '@roadmap/health-core';
+
+/** The user's primary record file — the original (and default) sync target. */
+export const ROADMAP_FILE_NAME = 'health-roadmap.json';
+
+/** Per-conversation chat history synced across the user's devices (Phase 6). */
+export const CHAT_HISTORY_FILE_NAME = 'chat-history.json';
 
 export type StorageBackendId =
   | 'google-drive'
@@ -39,14 +49,14 @@ export class StorageError extends Error {
 }
 
 /**
- * Result of reading the file. `file` is the JSON-parsed object cast to
- * RoadmapFile WITHOUT normalisation — the SyncManager runs it through
- * `migrateFile()` to fill defaults + gate the schema version. `version` is the
- * backend's change token (Dropbox `rev`, Drive `headRevisionId`, GitHub `sha`,
- * mtime/ETag) — opaque to everything above the adapter.
+ * Result of reading a record file. `body` is the JSON-parsed object WITHOUT
+ * normalisation — the SyncManager runs it through the document's `migrate()`
+ * to fill defaults + gate the schema version. `version` is the backend's
+ * change token for THAT file (Dropbox `rev`, GitHub `sha`, WebDAV ETag,
+ * localStorage counter) — opaque to everything above the adapter.
  */
 export interface ReadResult {
-  file: RoadmapFile | null;
+  body: unknown;
   version: string | null;
 }
 
@@ -63,15 +73,15 @@ export interface StorageAdapter {
   isConnected(): boolean;
   disconnect(): Promise<void>;
 
-  /** Read the record file. Returns {file:null, version:null} if it doesn't exist yet. */
-  read(): Promise<ReadResult>;
+  /** Read the named record file. Returns {body:null, version:null} if it doesn't exist yet. */
+  read(fileName: string): Promise<ReadResult>;
 
   /**
-   * Write the record file with an optimistic-concurrency precondition.
+   * Write the named record file with an optimistic-concurrency precondition.
    * @param expectedVersion the `version` from the read this write is based on,
    *   or null for a first-ever create. Throws ConflictError if the remote moved.
    */
-  write(file: RoadmapFile, expectedVersion: string | null): Promise<WriteResult>;
+  write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult>;
 
   /** Read an uploaded document blob (e.g. 'documents/doc_1.pdf'). */
   readDocument(ref: string): Promise<Blob>;
@@ -91,5 +101,5 @@ export interface StorageAdapter {
    * best-effort async flush. No version check — it's the emergency
    * last-write-on-this-device path.
    */
-  writeSync?(file: RoadmapFile): void;
+  writeSync?(fileName: string, body: object): void;
 }

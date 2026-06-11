@@ -15,14 +15,15 @@
  *
  * SCOPING: drive.file — the app sees ONLY files it created (including raw lab
  * documents later), never the rest of the user's Drive. The record lives as a
- * Drive file named `health-roadmap.json`, discovered by name.
+ * Drive files discovered by name (`health-roadmap.json`, `chat-history.json`, …).
  *
  * CONCURRENCY: Drive v3 has no conditional write (no ETag/sha/rev), so writes
  * are last-write-wins; the SyncManager's read-merge-write makes that safe. The
  * file `version` field is surfaced for change detection.
  */
-import { splitDocumentRef, type RoadmapFile } from '@roadmap/health-core';
+import { splitDocumentRef } from '@roadmap/health-core';
 import {
+  ROADMAP_FILE_NAME,
   StorageError,
   type ReadResult,
   type StorageAdapter,
@@ -44,7 +45,6 @@ const CONFIG_KEY = 'health_roadmap_gdrive';
 const TOKENS_KEY = 'health_roadmap_gdrive_tokens';
 const PKCE_KEY = 'health_roadmap_gdrive_pkce';
 const AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-const FILE_NAME = 'health-roadmap.json';
 /** Everything the app creates lives in this folder (parity with Dropbox's app folder). */
 const FOLDER_NAME = 'Health Plan by Dr Brad';
 /** Pre-rename folder name (brand moved off "roadmap", 2026-06-10) — found folders are renamed in place. */
@@ -55,7 +55,10 @@ const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 
 /** Presence of this object IS the "connected" flag. */
 interface Stored {
+  /** Cached Drive id of the roadmap record file (legacy slot — predates named files). */
   fileId?: string;
+  /** Cached Drive ids of other named record files (e.g. 'chat-history.json' → id). */
+  fileIds?: Record<string, string>;
   /** Recorded once the app folder exists; also serves as the "migration
    *  attempted" marker — the root→folder move runs at most once. */
   folderId?: string;
@@ -291,19 +294,19 @@ export class GoogleDriveAdapter implements StorageAdapter {
 
   // --- file ops -------------------------------------------------------------
 
-  async read(): Promise<ReadResult> {
-    const fileId = this.stored?.fileId ?? (await this.findFileId());
-    if (!fileId) return { file: null, version: null };
-    this.rememberFileId(fileId);
+  async read(fileName: string): Promise<ReadResult> {
+    const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
+    if (!fileId) return { body: null, version: null };
+    this.rememberFileId(fileName, fileId);
     // Cosmetic, never blocks the read: adopt pre-folder files into the app folder.
     void this.ensureInFolderOnce(fileId);
     const res = await fetch(`${DRIVE}/files/${fileId}?alt=media`, { headers: await this.authHeaders() });
-    if (res.status === 404) return { file: null, version: null };
+    if (res.status === 404) return { body: null, version: null };
     if (!res.ok) throw new StorageError(`Google Drive read failed (${res.status}): ${await res.text()}`);
     const text = await res.text();
-    let file: RoadmapFile | null;
+    let body: unknown;
     try {
-      file = text ? (JSON.parse(text) as RoadmapFile) : null;
+      body = text ? (JSON.parse(text) as unknown) : null;
     } catch (error) {
       throw new StorageError('Google Drive read failed: file is not valid JSON (possible corruption).', error);
     }
@@ -311,30 +314,30 @@ export class GoogleDriveAdapter implements StorageAdapter {
     // ignores expectedVersion (LWW; the SyncManager merges first). Fetching the
     // file's `version` field here cost an extra round trip per read (reads run
     // on every load and twice per save) for a value nothing consumed.
-    return { file, version: null };
+    return { body, version: null };
   }
 
-  async write(file: RoadmapFile, _expectedVersion: string | null): Promise<WriteResult> {
+  async write(fileName: string, body: object, _expectedVersion: string | null): Promise<WriteResult> {
     // Drive has no conditional write → last-write-wins (the SyncManager merges first).
-    const body = JSON.stringify(file);
-    const fileId = this.stored?.fileId ?? (await this.findFileId());
+    const json = JSON.stringify(body);
+    const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
     if (fileId) {
       const res = await fetch(`${UPLOAD}/files/${fileId}?uploadType=media&fields=id,version`, {
         method: 'PATCH',
         headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
-        body,
+        body: json,
       });
       if (!res.ok) throw new StorageError(`Google Drive write failed (${res.status}): ${await res.text()}`);
-      this.rememberFileId(fileId);
+      this.rememberFileId(fileName, fileId);
       return { version: String(((await res.json()) as { version?: string }).version ?? '') };
     }
     // First write — create the file (multipart: metadata + content).
-    const res = await this.createMultipart(FILE_NAME, 'application/json', body);
+    const res = await this.createMultipart(fileName, 'application/json', json);
     if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`);
-    const json = (await res.json()) as { id?: string; version?: string };
-    if (!json.id) throw new StorageError('Google Drive create returned no file id.');
-    this.rememberFileId(json.id);
-    return { version: String(json.version ?? '') };
+    const created = (await res.json()) as { id?: string; version?: string };
+    if (!created.id) throw new StorageError('Google Drive create returned no file id.');
+    this.rememberFileId(fileName, created.id);
+    return { version: String(created.version ?? '') };
   }
 
   async readDocument(ref: string): Promise<Blob> {
@@ -373,9 +376,18 @@ export class GoogleDriveAdapter implements StorageAdapter {
     safeRemoveItem(TOKENS_KEY);
   }
 
-  private rememberFileId(fileId: string): void {
-    if (this.stored?.fileId === fileId) return;
-    this.stored = { ...(this.stored ?? {}), fileId };
+  /** The roadmap file uses the original `fileId` slot (back-compat with stored
+   *  configs that predate named files); other names live in `fileIds`. */
+  private cachedFileId(fileName: string): string | undefined {
+    return fileName === ROADMAP_FILE_NAME ? this.stored?.fileId : this.stored?.fileIds?.[fileName];
+  }
+
+  private rememberFileId(fileName: string, fileId: string): void {
+    if (this.cachedFileId(fileName) === fileId) return;
+    this.stored =
+      fileName === ROADMAP_FILE_NAME
+        ? { ...(this.stored ?? {}), fileId }
+        : { ...(this.stored ?? {}), fileIds: { ...(this.stored?.fileIds ?? {}), [fileName]: fileId } };
     setJson(CONFIG_KEY, this.stored);
   }
 
@@ -511,7 +523,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     });
   }
 
-  private async findFileId(name = FILE_NAME, parentId?: string): Promise<string | undefined> {
+  private async findFileId(name: string, parentId?: string): Promise<string | undefined> {
     const safe = name.replace(/'/g, "\\'");
     const q = encodeURIComponent(
       `name='${safe}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,

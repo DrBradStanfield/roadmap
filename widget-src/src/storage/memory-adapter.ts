@@ -1,14 +1,14 @@
 /**
  * An in-memory StorageAdapter that faithfully models optimistic concurrency
- * (a version token that bumps on every write; a ConflictError when the caller's
- * expectedVersion is stale). Two adapters pointing at the SAME `MemoryCloud`
- * simulate two devices syncing through one cloud file — which is exactly the
- * Phase-0 acceptance scenario ("two simulated devices converge with no dup/loss").
+ * (a per-file version token that bumps on every write; a ConflictError when the
+ * caller's expectedVersion is stale). Two adapters pointing at the SAME
+ * `MemoryCloud` simulate two devices syncing through one cloud — which is
+ * exactly the Phase-0 acceptance scenario ("two simulated devices converge with
+ * no dup/loss").
  *
  * Used by the GitHub Pages storage self-test and (later) by unit tests. It is
  * NOT shipped as a user-selectable backend.
  */
-import type { RoadmapFile } from '@roadmap/health-core';
 import {
   ConflictError,
   type ReadResult,
@@ -18,9 +18,8 @@ import {
 
 /** The shared "cloud" — one per simulated user, shared by their devices. */
 export class MemoryCloud {
-  /** Serialized RoadmapFile, or null if no file yet. */
-  fileJson: string | null = null;
-  version = 0;
+  /** Serialized record files, keyed by file name. */
+  files = new Map<string, { json: string; version: number }>();
   docs = new Map<string, Blob>();
 }
 
@@ -41,22 +40,21 @@ export class MemoryAdapter implements StorageAdapter {
     this.connected = false;
   }
 
-  async read(): Promise<ReadResult> {
-    if (this.cloud.fileJson == null) return { file: null, version: null };
-    return {
-      file: JSON.parse(this.cloud.fileJson) as RoadmapFile,
-      version: String(this.cloud.version),
-    };
+  async read(fileName: string): Promise<ReadResult> {
+    const entry = this.cloud.files.get(fileName);
+    if (entry == null) return { body: null, version: null };
+    return { body: JSON.parse(entry.json) as unknown, version: String(entry.version) };
   }
 
-  async write(file: RoadmapFile, expectedVersion: string | null): Promise<WriteResult> {
-    const current = this.cloud.fileJson == null ? null : String(this.cloud.version);
+  async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
+    const entry = this.cloud.files.get(fileName);
+    const current = entry == null ? null : String(entry.version);
     if (expectedVersion !== current) {
       throw new ConflictError(`expected version ${expectedVersion}, but remote is ${current}`);
     }
-    this.cloud.fileJson = JSON.stringify(file);
-    this.cloud.version += 1;
-    return { version: String(this.cloud.version) };
+    const version = (entry?.version ?? 0) + 1;
+    this.cloud.files.set(fileName, { json: JSON.stringify(body), version });
+    return { version: String(version) };
   }
 
   async readDocument(ref: string): Promise<Blob> {
