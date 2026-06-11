@@ -15,13 +15,12 @@
  * precondition is what makes a lost-update impossible.
  *
  * Schema knowledge is injected as a DocumentSpec, so the SAME loop syncs both
- * `health-roadmap.json` (ROADMAP_DOC) and `chat-history.json` — one SyncManager
- * instance per document, both over the same adapter.
+ * `health-roadmap.json` (ROADMAP_DOC, defined beside its store) and
+ * `chat-history.json` (CHAT_HISTORY_DOC) — one SyncManager instance per
+ * document, both over the same adapter.
  */
-import { mergeFiles, migrateFile, type RoadmapFile } from '@roadmap/health-core';
 import {
   ConflictError,
-  ROADMAP_FILE_NAME,
   StorageError,
   type StorageAdapter,
   type StorageBackendId,
@@ -48,14 +47,11 @@ export interface DocumentSpec<T extends SyncedFile> {
   fileName: string;
   migrate(raw: unknown, ctx: SyncContext): T;
   merge(local: T, base: T, ctx: SyncContext): T;
+  /** Set false to skip the verify-after-write re-read (H5). Default true —
+   *  right for health-record data; best-effort documents (chat history) can
+   *  drop it and save a full-file transfer per save. */
+  verify?: boolean;
 }
-
-/** The primary record file — the original SyncManager behaviour. */
-export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
-  fileName: ROADMAP_FILE_NAME,
-  migrate: (raw, ctx) => migrateFile(raw as RoadmapFile | null, ctx),
-  merge: (local, base, ctx) => mergeFiles(local, base, ctx),
-};
 
 export interface SaveResult<T> {
   file: T;
@@ -64,7 +60,7 @@ export interface SaveResult<T> {
   attempts: number;
 }
 
-export class SyncManager<T extends SyncedFile = RoadmapFile> {
+export class SyncManager<T extends SyncedFile> {
   constructor(
     private readonly adapter: StorageAdapter,
     private readonly deviceId: string,
@@ -99,7 +95,7 @@ export class SyncManager<T extends SyncedFile = RoadmapFile> {
       const merged = this.doc.merge(local, base, this.ctx());
       try {
         const { version: newVersion } = await this.adapter.write(this.doc.fileName, merged, version);
-        await this.verifyAfterWrite(merged);
+        if (this.doc.verify !== false) await this.verifyAfterWrite(merged);
         return { file: merged, version: newVersion, attempts: attempt };
       } catch (error) {
         lastError = error;

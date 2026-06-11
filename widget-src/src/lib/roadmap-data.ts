@@ -27,7 +27,7 @@ import {
 } from '@roadmap/health-core';
 import { RoadmapStore } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
-import { setChatHistory } from './chat-history-access';
+import { setChatHistoryFactory } from './chat-history-access';
 import type { StorageAdapter } from '../storage/adapter';
 import type {
   AddMeasurementResult,
@@ -47,13 +47,9 @@ let store: RoadmapStore | null = null;
 /** Initialise the data layer with a backend. Call once before rendering the app. */
 export async function initRoadmapStore(adapter: StorageAdapter): Promise<void> {
   store = await RoadmapStore.create(adapter);
-  // Chat history (chat-history.json) loads in the background over the SAME
-  // adapter — never blocks app boot. Consumers get the promise via the
-  // chat-history-access registry; failure is best-effort (chat still works,
-  // history just doesn't persist), hence the swallow.
-  const chatHistory = ChatHistoryStore.create(adapter);
-  chatHistory.catch(() => {});
-  setChatHistory(chatHistory);
+  // Chat history (chat-history.json) syncs over the SAME adapter, created
+  // lazily on first chat use (see chat-history-access.ts for the policy).
+  setChatHistoryFactory(() => ChatHistoryStore.create(adapter));
 }
 
 /** Flush pending writes (call before navigation). */

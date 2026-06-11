@@ -59,7 +59,7 @@ export function dayOf(iso: string): string {
 }
 
 /** Stable string comparison (-1 | 0 | 1). */
-function cmpStr(a: string, b: string): number {
+export function cmpStr(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 

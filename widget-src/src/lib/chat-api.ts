@@ -137,31 +137,20 @@ function chatBodyParts(): Record<string, unknown> {
 
 /**
  * Cloud chat-history store on local-first builds (Phase 6): conversations live
- * in the user's OWN cloud (chat-history.json), not Brad's DB. Null on the
- * production widget (the registry is never populated there) and when the
- * store isn't ready/failed — callers fall back to the server CRUD path.
+ * in the user's OWN cloud (chat-history.json), not Brad's DB. Resolves null
+ * when there's no store (never rejects — see chat-history-access.ts), and
+ * callers fall back to the server CRUD path. The LOCAL_FIRST check is
+ * redundant defense — the registry is only ever populated on local-first
+ * builds — kept as a one-line belt against future registry callers.
  */
-async function cloudHistory(): Promise<ChatHistoryStore | null> {
-  if (!LOCAL_FIRST) return null;
-  try {
-    return await getChatHistory();
-  } catch {
-    return null;
-  }
+function cloudHistory(): Promise<ChatHistoryStore | null> {
+  return LOCAL_FIRST ? getChatHistory() : Promise.resolve(null);
 }
 
 export async function listConversations(): Promise<ChatListResult | null> {
   const store = await cloudHistory();
   if (store) {
-    return {
-      conversations: store.listConversations().map((c) => ({
-        id: c.id,
-        title: c.title,
-        createdAt: c.createdAt,
-        updatedAt: c.updatedAt,
-      })),
-      isGuest: false,
-    };
+    return { conversations: store.listConversations(), isGuest: false };
   }
   try {
     const qs = chatQueryParts();
@@ -272,19 +261,15 @@ export async function sendMessage(
     // keyed by the server's canonical conversation id. Fire-and-forget —
     // history must never block or fail the chat itself.
     void cloudHistory()
-      .then((store) => {
-        if (!store) return;
-        const now = new Date().toISOString();
-        return store.appendMessages({
+      .then((store) =>
+        store?.recordExchange({
           conversationId: data.conversationId,
-          ...(conversationId ? {} : { title: message.slice(0, 80) }),
-          now,
-          messages: [
-            { id: `u-${Date.now()}`, role: 'user', content: message, createdAt: now },
-            { id: data.messageId ?? `a-${Date.now()}`, role: 'assistant', content: data.content, createdAt: now },
-          ],
-        });
-      })
+          isNew: !conversationId,
+          userText: message,
+          assistantText: data.content,
+          assistantMessageId: data.messageId,
+        }),
+      )
       .catch(() => {});
 
     return {

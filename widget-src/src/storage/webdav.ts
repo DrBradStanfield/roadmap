@@ -90,7 +90,7 @@ export class WebDavAdapter implements StorageAdapter {
     const text = await res.text();
     let body: unknown;
     try {
-      body = text ? (JSON.parse(text) as unknown) : null;
+      body = text ? (JSON.parse(text)) : null;
     } catch (error) {
       throw new StorageError('Self-host read failed: file is not valid JSON (possible corruption).', error);
     }

@@ -42,8 +42,8 @@ export class LocalStorageAdapter implements StorageAdapter {
     return true;
   }
   async disconnect(): Promise<void> {
-    safeRemoveItem(FILE_KEY);
-    safeRemoveItem(`${FILE_KEY}_rev`);
+    safeRemoveItem(fileKey(ROADMAP_FILE_NAME));
+    safeRemoveItem(versionKey(ROADMAP_FILE_NAME));
     // Named record files (chat-history.json, …) live under the prefix.
     try {
       for (const key of Object.keys(localStorage)) {
@@ -59,7 +59,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     if (raw == null) return { body: null, version: null };
     let body: unknown;
     try {
-      body = JSON.parse(raw) as unknown;
+      body = JSON.parse(raw);
     } catch (error) {
       throw new StorageError('Local data is corrupt and could not be read.', error);
     }

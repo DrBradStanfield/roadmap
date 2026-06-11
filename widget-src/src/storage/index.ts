@@ -6,21 +6,12 @@
 export {
   ConflictError,
   StorageError,
-  ROADMAP_FILE_NAME,
-  CHAT_HISTORY_FILE_NAME,
   type StorageAdapter,
   type StorageBackendId,
   type ReadResult,
   type WriteResult,
 } from './adapter';
-export {
-  SyncManager,
-  ROADMAP_DOC,
-  type DocumentSpec,
-  type SaveResult,
-  type SyncContext,
-  type SyncedFile,
-} from './sync-manager';
+export { SyncManager, type SaveResult } from './sync-manager';
 // RoadmapStore + its Api* types are imported directly from './roadmap-store' by
 // the data shim (lib/roadmap-data.ts) — not re-exported here to avoid a second
 // canonical copy of the Api* type names (api.ts owns those).

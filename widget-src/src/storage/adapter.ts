@@ -14,11 +14,10 @@
  * DocumentSpec, not here.
  */
 
-/** The user's primary record file — the original (and default) sync target. */
+/** The user's primary record file. Lives here (not with its DocumentSpec)
+ *  because adapters need it for legacy-slot/key back-compat mapping. Other
+ *  document names are schema facts and live in their DocumentSpec. */
 export const ROADMAP_FILE_NAME = 'health-roadmap.json';
-
-/** Per-conversation chat history synced across the user's devices (Phase 6). */
-export const CHAT_HISTORY_FILE_NAME = 'chat-history.json';
 
 export type StorageBackendId =
   | 'google-drive'

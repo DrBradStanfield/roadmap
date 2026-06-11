@@ -15,19 +15,32 @@
 import {
   CHAT_HISTORY_MAX_CONVERSATIONS,
   mergeChatHistoryFiles,
+  mergeMessages,
   migrateChatHistoryFile,
   type ChatFileConversation,
   type ChatFileMessage,
   type ChatHistoryFile,
 } from '@roadmap/health-core';
-import { CHAT_HISTORY_FILE_NAME, type StorageAdapter } from './adapter';
+import type { StorageAdapter } from './adapter';
 import { getDeviceId } from './device-id';
 import { SyncManager, type DocumentSpec } from './sync-manager';
 
-export const CHAT_HISTORY_DOC: DocumentSpec<ChatHistoryFile> = {
-  fileName: CHAT_HISTORY_FILE_NAME,
+/** What the conversation list shows — everything but the message bodies. */
+export interface ChatConversationSummary {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+const CHAT_HISTORY_DOC: DocumentSpec<ChatHistoryFile> = {
+  fileName: 'chat-history.json',
   migrate: migrateChatHistoryFile,
   merge: mergeChatHistoryFiles,
+  // History is best-effort at every call site — skip the verify-after-write
+  // re-read (H5 protects health-record integrity; here it would spend a full
+  // file transfer per exchange guarding data whose loss is already tolerated).
+  verify: false,
 };
 
 export class ChatHistoryStore {
@@ -42,11 +55,14 @@ export class ChatHistoryStore {
     return new ChatHistoryStore(sync, await sync.load());
   }
 
-  /** Live (non-deleted) conversations, newest first. */
-  listConversations(): ChatFileConversation[] {
-    return this.file.conversations
-      .filter((c) => !c.deleted)
-      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0));
+  /** Live (non-deleted) conversation summaries, newest first. */
+  listConversations(): ChatConversationSummary[] {
+    return this.liveConversations().map(({ id, title, createdAt, updatedAt }) => ({
+      id,
+      title,
+      createdAt,
+      updatedAt,
+    }));
   }
 
   getMessages(conversationId: string): ChatFileMessage[] {
@@ -55,31 +71,43 @@ export class ChatHistoryStore {
   }
 
   /**
-   * Append messages to a conversation (creating it if needed), stamp
-   * updatedAt, enforce the conversation cap, and persist to the cloud.
-   * `title` is applied when creating, or when a non-empty one is supplied
-   * (e.g. the server retitled the conversation).
+   * Persist one chat exchange (the shared tail of both transports): mints the
+   * message ids and timestamps, applies the title rule (first user message,
+   * truncated, only when the conversation is new), creates the conversation if
+   * needed, enforces the cap, and saves to the cloud.
    */
-  async appendMessages(opts: {
+  async recordExchange(opts: {
     conversationId: string;
-    title?: string;
-    now: string;
-    messages: ChatFileMessage[];
+    /** True when this exchange started the conversation (sets the title). */
+    isNew: boolean;
+    userText: string;
+    assistantText: string;
+    /** Server-issued assistant message id, when there is one. */
+    assistantMessageId?: string | null;
   }): Promise<void> {
+    const now = new Date().toISOString();
+    const messages: ChatFileMessage[] = [
+      { id: `u-${Date.now()}`, role: 'user', content: opts.userText, createdAt: now },
+      {
+        id: opts.assistantMessageId ?? `a-${Date.now()}`,
+        role: 'assistant',
+        content: opts.assistantText,
+        createdAt: now,
+      },
+    ];
+
     const existing = this.file.conversations.find((c) => c.id === opts.conversationId);
     if (existing?.deleted) return; // tombstoned on another device — don't resurrect
     if (existing) {
-      const seen = new Set(existing.messages.map((m) => m.id));
-      existing.messages = [...existing.messages, ...opts.messages.filter((m) => !seen.has(m.id))];
-      existing.updatedAt = opts.now;
-      if (opts.title) existing.title = opts.title;
+      existing.messages = mergeMessages(existing.messages, messages);
+      existing.updatedAt = now;
     } else {
       this.file.conversations.push({
         id: opts.conversationId,
-        title: opts.title || 'Chat',
-        createdAt: opts.now,
-        updatedAt: opts.now,
-        messages: [...opts.messages],
+        title: opts.isNew ? opts.userText.slice(0, 80) : 'Chat',
+        createdAt: now,
+        updatedAt: now,
+        messages,
       });
       this.enforceCap();
     }
@@ -95,11 +123,16 @@ export class ChatHistoryStore {
     await this.persist();
   }
 
+  private liveConversations(): ChatFileConversation[] {
+    return this.file.conversations
+      .filter((c) => !c.deleted)
+      .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0));
+  }
+
   /** Tombstone the oldest live conversations beyond the cap (a plain slice
    *  would just resurrect on the next cloud merge — tombstones converge). */
   private enforceCap(): void {
-    const live = this.listConversations();
-    for (const conv of live.slice(CHAT_HISTORY_MAX_CONVERSATIONS)) {
+    for (const conv of this.liveConversations().slice(CHAT_HISTORY_MAX_CONVERSATIONS)) {
       conv.deleted = true;
       conv.messages = [];
     }

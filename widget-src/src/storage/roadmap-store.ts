@@ -49,9 +49,17 @@ import {
   type ScreeningInputs,
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
-import { ROADMAP_DOC, SyncManager } from './sync-manager';
-import type { StorageAdapter } from './adapter';
+import { SyncManager, type DocumentSpec } from './sync-manager';
+import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
 import { Sentry } from '../lib/sentry';
+
+/** The primary record file's DocumentSpec — schema knowledge lives beside the
+ *  store that owns it (chat-history-store.ts holds CHAT_HISTORY_DOC likewise). */
+export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
+  fileName: ROADMAP_FILE_NAME,
+  migrate: (raw, ctx) => migrateFile(raw as RoadmapFile | null, ctx),
+  merge: (local, base, ctx) => mergeFiles(local, base, ctx),
+};
 
 // --- App-facing shapes (moved here from api.ts; the data ones come from health-core) ---
 
@@ -155,7 +163,7 @@ export class RoadmapStore {
   private readonly deviceId: string;
 
   private constructor(
-    private readonly sync: SyncManager,
+    private readonly sync: SyncManager<RoadmapFile>,
     private readonly adapter: StorageAdapter,
     file: RoadmapFile,
     deviceId: string,

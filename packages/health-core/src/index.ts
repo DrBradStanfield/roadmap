@@ -272,6 +272,7 @@ export {
   createEmptyChatHistoryFile,
   migrateChatHistoryFile,
   mergeChatHistoryFiles,
+  mergeMessages,
   type ChatFileConversation,
   type ChatFileMessage,
   type ChatHistoryFile,

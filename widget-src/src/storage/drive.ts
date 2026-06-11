@@ -55,9 +55,10 @@ const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 
 /** Presence of this object IS the "connected" flag. */
 interface Stored {
-  /** Cached Drive id of the roadmap record file (legacy slot — predates named files). */
+  /** LEGACY single-file slot (pre-named-files) — folded into `fileIds` at
+   *  construction; kept only so old stored configs still parse. */
   fileId?: string;
-  /** Cached Drive ids of other named record files (e.g. 'chat-history.json' → id). */
+  /** Cached Drive ids of the record files, keyed by file name. */
   fileIds?: Record<string, string>;
   /** Recorded once the app folder exists; also serves as the "migration
    *  attempted" marker — the root→folder move runs at most once. */
@@ -143,6 +144,15 @@ export class GoogleDriveAdapter implements StorageAdapter {
   constructor(private readonly config: GoogleDriveConfig) {
     this.stored = getJson<Stored>(CONFIG_KEY);
     this.tokens = getJson<DriveTokens>(TOKENS_KEY);
+    // One-time normalization: fold the legacy single-file `fileId` slot into
+    // the per-name map so every cache access is a uniform map read.
+    if (this.stored?.fileId && !this.stored.fileIds?.[ROADMAP_FILE_NAME]) {
+      this.stored = {
+        ...this.stored,
+        fileIds: { ...(this.stored.fileIds ?? {}), [ROADMAP_FILE_NAME]: this.stored.fileId },
+      };
+      setJson(CONFIG_KEY, this.stored);
+    }
   }
 
   isConnected(): boolean {
@@ -306,7 +316,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const text = await res.text();
     let body: unknown;
     try {
-      body = text ? (JSON.parse(text) as unknown) : null;
+      body = text ? (JSON.parse(text)) : null;
     } catch (error) {
       throw new StorageError('Google Drive read failed: file is not valid JSON (possible corruption).', error);
     }
@@ -376,18 +386,16 @@ export class GoogleDriveAdapter implements StorageAdapter {
     safeRemoveItem(TOKENS_KEY);
   }
 
-  /** The roadmap file uses the original `fileId` slot (back-compat with stored
-   *  configs that predate named files); other names live in `fileIds`. */
   private cachedFileId(fileName: string): string | undefined {
-    return fileName === ROADMAP_FILE_NAME ? this.stored?.fileId : this.stored?.fileIds?.[fileName];
+    return this.stored?.fileIds?.[fileName];
   }
 
   private rememberFileId(fileName: string, fileId: string): void {
     if (this.cachedFileId(fileName) === fileId) return;
-    this.stored =
-      fileName === ROADMAP_FILE_NAME
-        ? { ...(this.stored ?? {}), fileId }
-        : { ...(this.stored ?? {}), fileIds: { ...(this.stored?.fileIds ?? {}), [fileName]: fileId } };
+    this.stored = {
+      ...(this.stored ?? {}),
+      fileIds: { ...(this.stored?.fileIds ?? {}), [fileName]: fileId },
+    };
     setJson(CONFIG_KEY, this.stored);
   }
 

@@ -16,7 +16,8 @@
  * Forward-compat follows migrate.ts H7: unknown fields are preserved on
  * round-trip; a file written by a NEWER schema refuses to migrate.
  */
-import { SchemaTooNewError } from './migrate';
+import { asArray, isObject, SchemaTooNewError } from './migrate';
+import { cmpStr } from './merge';
 
 export const CHAT_HISTORY_SCHEMA_VERSION = 1;
 
@@ -66,10 +67,6 @@ export function createEmptyChatHistoryFile(opts: { deviceId: string; now: string
   };
 }
 
-function isObject(v: unknown): v is Record<string, unknown> {
-  return !!v && typeof v === 'object' && !Array.isArray(v);
-}
-
 /**
  * Normalise raw parsed JSON into a complete ChatHistoryFile (the untrusted
  * cloud-read boundary — same contract as migrate.ts `migrateFile`).
@@ -87,39 +84,35 @@ export function migrateChatHistoryFile(
     throw new SchemaTooNewError(version, CHAT_HISTORY_SCHEMA_VERSION);
   }
 
-  const base = createEmptyChatHistoryFile(opts);
   const rawMeta = isObject(raw.meta) ? raw.meta : {};
-  const conversations = Array.isArray(raw.conversations)
-    ? (raw.conversations as unknown[]).filter(isObject).map((c) => ({
-        ...c,
-        id: typeof c.id === 'string' ? c.id : '',
-        title: typeof c.title === 'string' ? c.title : '',
-        createdAt: typeof c.createdAt === 'string' ? c.createdAt : opts.now,
-        updatedAt: typeof c.updatedAt === 'string' ? c.updatedAt : opts.now,
-        messages: Array.isArray(c.messages) ? (c.messages as ChatFileMessage[]) : [],
-      }))
-    : [];
+  const conversations: ChatFileConversation[] = asArray<unknown>(raw.conversations)
+    .filter((c): c is Record<string, unknown> => isObject(c) && typeof c.id === 'string')
+    .map((c) => ({
+      ...c,
+      id: c.id as string,
+      title: typeof c.title === 'string' ? c.title : '',
+      createdAt: typeof c.createdAt === 'string' ? c.createdAt : opts.now,
+      updatedAt: typeof c.updatedAt === 'string' ? c.updatedAt : opts.now,
+      messages: asArray<ChatFileMessage>(c.messages),
+    }));
 
   return {
     // Spread raw FIRST so unknown top-level fields survive a round-trip (H7).
     ...(raw as Record<string, unknown>),
     schemaVersion: CHAT_HISTORY_SCHEMA_VERSION,
     meta: {
-      createdAt: typeof rawMeta.createdAt === 'string' ? rawMeta.createdAt : base.meta.createdAt,
-      updatedAt: typeof rawMeta.updatedAt === 'string' ? rawMeta.updatedAt : base.meta.updatedAt,
-      lastDeviceId:
-        typeof rawMeta.lastDeviceId === 'string' ? rawMeta.lastDeviceId : base.meta.lastDeviceId,
-      lamport: typeof rawMeta.lamport === 'number' ? rawMeta.lamport : base.meta.lamport,
+      createdAt: typeof rawMeta.createdAt === 'string' ? rawMeta.createdAt : opts.now,
+      updatedAt: typeof rawMeta.updatedAt === 'string' ? rawMeta.updatedAt : opts.now,
+      lastDeviceId: typeof rawMeta.lastDeviceId === 'string' ? rawMeta.lastDeviceId : opts.deviceId,
+      lamport: typeof rawMeta.lamport === 'number' ? rawMeta.lamport : 0,
     },
-    conversations: conversations.filter((c) => c.id !== '') as ChatFileConversation[],
+    conversations,
   } as ChatHistoryFile;
 }
 
-function cmpStr(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-function mergeMessages(a: ChatFileMessage[], b: ChatFileMessage[]): ChatFileMessage[] {
+/** Union messages by id, ordered by createdAt (then id, for stability).
+ *  Shared by the merge below and ChatHistoryStore's local append. */
+export function mergeMessages(a: ChatFileMessage[], b: ChatFileMessage[]): ChatFileMessage[] {
   const map = new Map<string, ChatFileMessage>();
   for (const m of [...a, ...b]) {
     if (!map.has(m.id)) map.set(m.id, m);
@@ -136,12 +129,9 @@ function mergeConversation(
   const newer = a.updatedAt >= b.updatedAt ? a : b;
   const deleted = a.deleted === true || b.deleted === true;
   return {
-    // Preserve unknown per-conversation fields from the newer side (H7).
+    // Newer side wins title/updatedAt and unknown per-conversation fields (H7).
     ...newer,
-    id: a.id,
-    title: newer.title,
     createdAt: a.createdAt <= b.createdAt ? a.createdAt : b.createdAt,
-    updatedAt: newer.updatedAt,
     ...(deleted ? { deleted: true } : {}),
     // Tombstones stay cheap: a deleted conversation carries no messages.
     messages: deleted ? [] : mergeMessages(a.messages, b.messages),

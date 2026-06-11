@@ -43,7 +43,7 @@ export class MemoryAdapter implements StorageAdapter {
   async read(fileName: string): Promise<ReadResult> {
     const entry = this.cloud.files.get(fileName);
     if (entry == null) return { body: null, version: null };
-    return { body: JSON.parse(entry.json) as unknown, version: String(entry.version) };
+    return { body: JSON.parse(entry.json), version: String(entry.version) };
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {

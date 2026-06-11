@@ -32,11 +32,12 @@ export class SchemaTooNewError extends Error {
   }
 }
 
-function isObject(v: unknown): v is Record<string, unknown> {
+/** Guard for the untrusted-JSON boundary — shared by every synced-file migrate. */
+export function isObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
 }
 
-function asArray<T>(v: unknown): T[] {
+export function asArray<T>(v: unknown): T[] {
   return Array.isArray(v) ? (v as T[]) : [];
 }
 

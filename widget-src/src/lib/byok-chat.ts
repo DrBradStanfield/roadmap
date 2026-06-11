@@ -29,7 +29,6 @@ import {
 import { getByokChatInputs } from './roadmap-data';
 import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import { getChatHistory } from './chat-history-access';
-import type { ChatHistoryStore } from '../storage/chat-history-store';
 import { ByokAnthropicError, callAnthropicDirect } from './byok-anthropic';
 
 // ---------------------------------------------------------------------------
@@ -117,37 +116,23 @@ export function getChatGate(): ChatGate | null {
 // ---------------------------------------------------------------------------
 // History persists through the shared ChatHistoryStore over whichever backend
 // the user connected; the device-only tier syncs the same file through the
-// localStorage adapter. History is best-effort everywhere: if the store isn't
-// ready (boot race) or its cloud read failed, chat still answers — it just
-// doesn't remember.
-
-async function chatStore(): Promise<ChatHistoryStore | null> {
-  try {
-    return await getChatHistory();
-  } catch {
-    return null;
-  }
-}
+// localStorage adapter. getChatHistory() never rejects (best-effort by
+// construction — see chat-history-access.ts): if the store isn't available,
+// chat still answers, it just doesn't remember.
 
 export async function listConversations(): Promise<ChatListResult | null> {
-  const store = await chatStore();
   return {
-    conversations: (store?.listConversations() ?? []).map((c) => ({
-      id: c.id,
-      title: c.title,
-      createdAt: c.createdAt,
-      updatedAt: c.updatedAt,
-    })),
+    conversations: (await getChatHistory())?.listConversations() ?? [],
     isGuest: false,
   };
 }
 
 export async function loadConversation(conversationId: string): Promise<ChatMessage[]> {
-  return (await chatStore())?.getMessages(conversationId) ?? [];
+  return (await getChatHistory())?.getMessages(conversationId) ?? [];
 }
 
 export async function deleteConversation(conversationId: string): Promise<boolean> {
-  const store = await chatStore();
+  const store = await getChatHistory();
   if (!store) return false;
   try {
     await store.deleteConversation(conversationId);
@@ -225,8 +210,11 @@ export async function sendMessage(
     return { result: null, error: { error: 'Connect your Anthropic API key to use chat.' } };
   }
 
-  const store = await chatStore();
-  const history = (conversationId ? store?.getMessages(conversationId) ?? [] : []).slice(
+  // Don't stall the answer on the store: only conversation FOLLOW-UPS need it
+  // (for history); new conversations use it solely for the fire-and-forget
+  // persist below.
+  const storePromise = getChatHistory();
+  const history = (conversationId ? (await storePromise)?.getMessages(conversationId) ?? [] : []).slice(
     -MAX_HISTORY_MESSAGES,
   );
 
@@ -253,21 +241,22 @@ export async function sendMessage(
   }
 
   // Persist to the user's cloud — fire-and-forget, history is best-effort.
-  const now = new Date().toISOString();
-  const userMsg: ChatMessage = { id: `u-${Date.now()}`, role: 'user', content: message, createdAt: now };
-  const assistantMsg: ChatMessage = { id: `a-${Date.now()}`, role: 'assistant', content, createdAt: now };
   const convId = conversationId ?? `conv-${Date.now()}`;
-  void store
-    ?.appendMessages({
-      conversationId: convId,
-      ...(conversationId ? {} : { title: message.slice(0, 80) }),
-      now,
-      messages: [userMsg, assistantMsg],
-    })
+  const assistantId = `a-${Date.now()}`;
+  void storePromise
+    .then((store) =>
+      store?.recordExchange({
+        conversationId: convId,
+        isNew: !conversationId,
+        userText: message,
+        assistantText: content,
+        assistantMessageId: assistantId,
+      }),
+    )
     .catch(() => {});
 
   return {
-    result: { conversationId: convId, messageId: assistantMsg.id, content, isGuest: false },
+    result: { conversationId: convId, messageId: assistantId, content, isGuest: false },
     error: null,
   };
 }
