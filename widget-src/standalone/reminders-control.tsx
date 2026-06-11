@@ -75,7 +75,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
     <div className="hr-reminders">
       {active ? (
         <>
-          <span className="hr-sync-status">✓ Email reminders on → {optIn!.email}</span>
+          <span className="hr-sync-status">✓ Email health reminders on → {optIn!.email}</span>
           <button className="hr-sync-link" disabled={busy} onClick={() => void turnOff()}>
             {busy ? 'Turning off…' : 'Turn off'}
           </button>
@@ -119,7 +119,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
         <>
           <span className="hr-sync-detail">Get an email when a check-up or blood test comes due.</span>
           <button className="hr-sync-link" disabled={busy} onClick={() => setConfirming(true)}>
-            Turn on email reminders
+            Turn on email health reminders
           </button>
         </>
       )}

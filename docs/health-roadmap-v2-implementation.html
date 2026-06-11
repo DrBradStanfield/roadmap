@@ -151,6 +151,33 @@
   <h2 id="log">Build log — decisions, deviations &amp; tradeoffs</h2>
   <p><span class="pill ok">decision</span> = a choice within the spec's intent · <span class="pill warn">deviation</span> = differs from what the spec literally said · <span class="pill info">tradeoff</span> = a cost accepted.</p>
 
+  <h3>Returning-user "Starting Info" collapse on refresh + reminders label (2026-06-12, Brad) · SHIPPED dev-26 + e2e verified</h3>
+
+  <div class="logentry">
+    <div class="hdr"><span class="pill ok">bugfix</span><strong>Local-first wasn't collapsing the prefill section for returning users — the mount-time returning-user check read the wrong source.</strong></div>
+    <div class="body">
+      <ul>
+        <li><strong>Root cause:</strong> InputPanel decides "returning user → collapse Starting Info" from
+          <code>prefillComplete</code> captured in a <code>useRef</code> on FIRST render. HealthTool seeded its initial
+          <code>inputs</code> from <code>loadFromLocalStorage()</code> (the LEGACY <code>health_roadmap_data</code> key),
+          which is empty in local-first — the real prefill arrives via the async <code>loadLatestMeasurements()</code>
+          AFTER mount. So the check captured false and the section never collapsed (it does in production, which seeds
+          prefill from localStorage synchronously).</li>
+        <li><span class="pill ok">fix</span> New synchronous <code>getInitialInputsSync()</code> (shim reads the
+          already-initialised RoadmapStore — <code>app.tsx</code> awaits <code>initRoadmapStore</code> before render;
+          <code>api.ts</code> ships a <code>{}</code> stub). HealthTool's <code>inputs</code> initialiser returns it when
+          <code>LOCAL_FIRST</code>, so the prefill is present on first render. No spurious save: the existing load effect
+          sets <code>previousInputsRef</code> + <code>hasApiResponse</code>, and the seeded values match.</li>
+        <li><strong>e2e (dev-26, clean context):</strong> fill sex/height/weight/birth → reload → store persisted the full
+          prefill and Starting Info collapsed to "Male · 175 cm tall · Born May 1985 (Age 41)" with the fields hidden +
+          chevron (matches production). NOTE: the store persists on a debounce/unload, so mid-session localStorage looks
+          empty until the reload flush — not a bug.</li>
+        <li><span class="pill ok">copy</span> Reminders label: "Email reminders on" → "Email health reminders on"
+          (+ the turn-on button), in <code>reminders-control.tsx</code>.</li>
+      </ul>
+    </div>
+  </div>
+
   <h3>Capture is one-time: persisted flag → "Save as PDF" in the plan header (2026-06-12, Brad) · SHIPPED dev-25 + e2e verified</h3>
 
   <div class="logentry">

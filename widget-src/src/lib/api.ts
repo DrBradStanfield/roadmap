@@ -567,6 +567,15 @@ export async function sendGuestReport(
 }
 
 /**
+ * Synchronous prefill seed — local-first only (the shim overrides it from the
+ * RoadmapStore). The production widget seeds inputs from localStorage instead,
+ * so this returns nothing.
+ */
+export function getInitialInputsSync(): Partial<HealthInputs> {
+  return {};
+}
+
+/**
  * Lead-capture flag — local-first only. The production widget has no
  * client-side store, so these are no-ops (the email box always shows; the
  * roadmap-data.ts shim overrides them with the real RoadmapStore-backed flag).

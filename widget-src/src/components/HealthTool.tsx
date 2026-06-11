@@ -53,6 +53,7 @@ import {
 } from '../lib/storage';
 import {
   loadLatestMeasurements,
+  getInitialInputsSync,
   loadAllHistory,
   loadLabValues,
   saveChangedMeasurements,
@@ -101,6 +102,11 @@ function getAuthState(): AuthState {
 
 export function HealthTool({ syncControl }: { syncControl?: (ctx: { hasData: boolean }) => ReactNode } = {}) {
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(() => {
+    // Local-first: the RoadmapStore is initialised before render (app.tsx), so
+    // read the saved prefill synchronously here. This lets InputPanel's first
+    // render detect a returning user and collapse "Starting Info" on refresh
+    // (the legacy localStorage seed below is empty in local-first).
+    if (LOCAL_FIRST) return getInitialInputsSync();
     // Pre-load prefill fields from localStorage so InputPanel's first render
     // correctly detects returning users (for Basic Information collapse).
     if (!getAuthState().isLoggedIn && hasAuthenticatedFlag()) return {};

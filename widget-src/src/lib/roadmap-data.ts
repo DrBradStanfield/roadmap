@@ -81,6 +81,16 @@ export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' 
   return store && store.backendId !== 'local' ? 'cloud' : 'device-only';
 }
 
+// --- synchronous prefill seed for HealthTool's initial inputs state ---
+// The store is initialised before render (app.tsx awaits initRoadmapStore), so
+// InputPanel's FIRST render can see the saved prefill (sex/height/birth) and
+// detect a returning user → collapse "Starting Info" on refresh (matches prod).
+// Without this the prefill only arrives via the async load AFTER mount, so the
+// returning-user check captured false and the section never collapsed.
+export function getInitialInputsSync(): Partial<HealthInputs> {
+  return store ? store.loadLatestMeasurements().inputs : {};
+}
+
 // --- lead capture (Shopify surface) — overrides api.ts's no-op stubs ---
 export function getReportEmailCaptured(): boolean {
   return store?.getReportEmailCaptured() ?? false;
