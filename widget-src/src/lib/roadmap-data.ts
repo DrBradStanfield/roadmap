@@ -16,6 +16,7 @@
  */
 import {
   buildMeasurementHistory,
+  type MeasurementHistoryMap,
   type ApiMeasurement,
   type ApiMedication,
   type ApiScreening,
@@ -165,7 +166,11 @@ export async function deleteLabValue(labValueId: string): Promise<boolean> {
  * same shape the storefront build sends as guestInputs.measurementHistory).
  */
 export function getByokChatInputs():
-  | (Record<string, unknown> & { medications: ApiMedication[]; screenings: ApiScreening[] })
+  | (Record<string, unknown> & {
+      medications: ApiMedication[];
+      screenings: ApiScreening[];
+      measurementHistory?: MeasurementHistoryMap;
+    })
   | null {
   if (!store) return null;
   const latest = store.loadLatestMeasurements();

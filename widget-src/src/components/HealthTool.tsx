@@ -29,7 +29,7 @@ import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
 import { ChatEmbed } from './ChatEmbed';
-import { listConversations, loadConversation, getGuestSessionToken, clearGuestSessionToken, type ChatMessage } from '../lib/chat-api';
+import { listConversations, loadConversation, migrateGuestChatOnLogin, type ChatMessage } from '../lib/chat-api';
 import { UploadModal, FloatingUploadIndicator } from './UploadModal';
 import { useIsMobile, useIsWideDesktop } from '../lib/useIsMobile';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
@@ -66,7 +66,6 @@ import {
   saveReminderPreference,
   setGlobalReminderOptout,
   sendWelcomeEmail,
-  PROXY_PATH,
   trackABImpression,
   trackABConversion,
   type ApiReminderPreference,
@@ -252,19 +251,10 @@ export function HealthTool({ syncControl }: { syncControl?: ReactNode } = {}) {
   useEffect(() => {
     async function loadData() {
       if (authState.isLoggedIn) {
-        // Migrate guest chat if token exists (sync-embed handles this on non-widget pages).
-        // NEVER on local-first builds: there "logged in" is storage UX only and the guest
-        // session IS the chat identity — clearing it here orphaned the user's conversations
-        // on every page load, and the migrate POST hit the data API as an unauthed 401.
-        const guestToken = LOCAL_FIRST ? null : getGuestSessionToken();
-        if (guestToken) {
-          clearGuestSessionToken();
+        // Hand any guest chat history to the customer record. chat-api owns the
+        // local-first rule (no-op there: the guest session IS the chat identity).
+        if (migrateGuestChatOnLogin()) {
           setChatPrefetch(null); // clear stale guest prefetch so authenticated chat loads fresh
-          fetch(`${PROXY_PATH}/api/measurements`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ migrateGuestChat: guestToken }),
-          }).catch(() => {});
         }
 
         // Phase 1: show cached data instantly
@@ -1148,7 +1138,7 @@ export function HealthTool({ syncControl }: { syncControl?: ReactNode } = {}) {
 
   // Dated blood-test + vitals time series for the chat context (local-first
   // only — see chatSectionProps). Keyed by metricType, chronological, SI values,
-  // capped at 24 points/metric to bound the prompt.
+  // capped at HISTORY_CAP_PER_METRIC points/metric to bound the prompt.
   const chatMeasurementHistory = useMemo(() => {
     if (!LOCAL_FIRST) return undefined;
     const out = buildMeasurementHistory([...bloodTestHistory, ...vitalsHistory]);

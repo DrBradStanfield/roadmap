@@ -28,7 +28,8 @@ export type MeasurementHistoryMap = Record<string, DatedMeasurement[]>;
 /** Newest points kept per metric — bounds the chat payload + prompt size. */
 export const HISTORY_CAP_PER_METRIC = 24;
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+/** What counts as a valid dated point — shared with the server-side sanitizer. */
+export const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Group raw measurement records into the chat-context history map: keyed by

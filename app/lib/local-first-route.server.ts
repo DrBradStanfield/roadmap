@@ -51,6 +51,12 @@ export function verifyAppProxySignature(request: Request, nowSeconds = Date.now(
   const signature = url.searchParams.get('signature');
   if (!signature || !/^[0-9a-f]{64}$/.test(signature)) return false;
 
+  // Freshness first: stale/garbage timestamps are rejected before paying for
+  // the HMAC. The timestamp is itself signed, so check order can't widen the
+  // accept set.
+  const ts = Number(url.searchParams.get('timestamp') || 0);
+  if (!(Math.abs(nowSeconds - ts) < PROXY_TIMESTAMP_WINDOW_SECONDS)) return false;
+
   const params = new Map<string, string[]>();
   for (const [k, v] of url.searchParams) {
     if (k === 'signature') continue;
@@ -63,10 +69,7 @@ export function verifyAppProxySignature(request: Request, nowSeconds = Date.now(
     .map((k) => `${k}=${params.get(k)!.join(',')}`)
     .join('');
   const digest = crypto.createHmac('sha256', secret).update(message).digest('hex');
-  if (!crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature))) return false;
-
-  const ts = Number(url.searchParams.get('timestamp') || 0);
-  return Math.abs(nowSeconds - ts) < PROXY_TIMESTAMP_WINDOW_SECONDS;
+  return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
 }
 
 /**
@@ -81,9 +84,9 @@ export function getClientIp(request: Request): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 }
 
-export function corsHeaders(request: Request, origins: Set<string> = ALLOWED_ORIGINS): Record<string, string> {
+export function corsHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get('Origin') ?? '';
-  if (!origins.has(origin)) return { Vary: 'Origin' };
+  if (!ALLOWED_ORIGINS.has(origin)) return { Vary: 'Origin' };
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',

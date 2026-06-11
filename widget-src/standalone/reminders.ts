@@ -78,7 +78,7 @@ export async function optInToReminders(backend: Backend, marketingEmail?: string
     provider: backend,
     ...proof,
     schedule,
-    ...(marketingEmail ? { marketingEmail } : {}),
+    marketingEmail, // optional — JSON.stringify drops it when undefined
   });
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string; reason?: string };

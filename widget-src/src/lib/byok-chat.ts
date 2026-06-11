@@ -24,7 +24,6 @@ import {
   screeningsToInputs,
   latestFromHistory,
   type HealthInputs,
-  type MeasurementHistoryMap,
   type UnitSystem,
 } from '@roadmap/health-core';
 import { getByokChatInputs } from './roadmap-data';
@@ -73,6 +72,7 @@ export interface ChatError {
 export function getGuestSessionToken(): string | null { return null; }
 export function setGuestSessionToken(_token: string): void { /* noop */ }
 export function clearGuestSessionToken(): void { /* noop */ }
+export function migrateGuestChatOnLogin(): boolean { return false; }
 
 // ---------------------------------------------------------------------------
 // API key (this device only)
@@ -182,7 +182,7 @@ function buildUserContextJson(): string | null {
   // Mirrors the website chat: suggestions come from the snapshot, but the
   // REPORTED values are overridden with each series' newest dated reading —
   // the dated series is the source of truth for "most recent X".
-  const history = raw.measurementHistory as MeasurementHistoryMap | undefined;
+  const history = raw.measurementHistory;
   const hasHistory = !!history && Object.keys(history).length > 0;
   const contextInputs = hasHistory ? { ...inputs, ...latestFromHistory(history) } : inputs;
 

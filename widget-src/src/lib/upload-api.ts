@@ -37,7 +37,8 @@ export async function labImport(
   try {
     const response = await fetch(LAB_IMPORT_V2_URL, {
       method: 'POST',
-      // No Content-Type: CORS simple request (no preflight on remix-serve).
+      // No Content-Type header — the route parses JSON regardless of it
+      // (parseSimpleRequestJson). Same-origin via the app proxy; no CORS here.
       body: JSON.stringify({ pages, unitSystem }),
     });
     if (response.status === 429) {

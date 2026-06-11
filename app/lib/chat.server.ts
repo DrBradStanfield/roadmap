@@ -13,7 +13,12 @@ import type { HealthInputs } from '../../packages/health-core/src/types';
 import { calculateHealthResults } from '../../packages/health-core/src/calculations';
 import { SUGGESTION_EVIDENCE } from '../../packages/health-core/src/evidence';
 import { LONGITUDINAL_FIELDS } from '../../packages/health-core/src/mappings';
-import { latestFromHistory } from '../../packages/health-core/src/measurement-history';
+import {
+  latestFromHistory,
+  HISTORY_CAP_PER_METRIC,
+  ISO_DATE,
+  type MeasurementHistoryMap,
+} from '../../packages/health-core/src/measurement-history';
 import { healthInputSchema } from '../../packages/health-core/src/validation';
 import { loadHealthData } from './supabase.server';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
@@ -305,21 +310,22 @@ export function assembleGuestChatContext(guestInputs: unknown): ChatContext | nu
 /**
  * Validate client-supplied dated measurement history: an object mapping metric
  * key → chronological array of {date: YYYY-MM-DD, value: number}. Hard caps
- * (24 points/metric, 400 total) bound the payload + prompt size; anything
- * malformed is dropped, so a crafted object can't inject prose into the prompt.
+ * (HISTORY_CAP_PER_METRIC points/metric, 400 total) bound the payload + prompt
+ * size; anything malformed is dropped, so a crafted object can't inject prose
+ * into the prompt.
  */
-function sanitizeMeasurementHistory(obj: unknown): Record<string, Array<{ date: string; value: number }>> {
+function sanitizeMeasurementHistory(obj: unknown): MeasurementHistoryMap {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return {};
-  const out: Record<string, Array<{ date: string; value: number }>> = {};
+  const out: MeasurementHistoryMap = {};
   let total = 0;
   for (const [metric, series] of Object.entries(obj as Record<string, unknown>)) {
     if (metric.length > 40 || !Array.isArray(series)) continue;
     const clean: Array<{ date: string; value: number }> = [];
     for (const entry of series) {
-      if (clean.length >= 24 || total >= 400) break;
+      if (clean.length >= HISTORY_CAP_PER_METRIC || total >= 400) break;
       const date = (entry as { date?: unknown })?.date;
       const value = (entry as { value?: unknown })?.value;
-      if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date) && typeof value === 'number' && Number.isFinite(value)) {
+      if (typeof date === 'string' && ISO_DATE.test(date) && typeof value === 'number' && Number.isFinite(value)) {
         clean.push({ date, value });
         total++;
       }
