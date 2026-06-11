@@ -78,6 +78,11 @@ import {
 // the v2 vite configs; undefined in the production widget build (→ false).
 const LOCAL_FIRST = import.meta.env.VITE_LOCAL_FIRST === 'true';
 
+// The drstanfield.com local-first build ONLY (never Pages/self-host): gates
+// features that go through Brad's server via the Shopify app proxy, like the
+// guest report email. Undefined in the production widget AND the Pages build.
+const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';
+
 // Auth state from Liquid template
 interface AuthState {
   isLoggedIn: boolean;
@@ -104,7 +109,7 @@ function getAuthState(): AuthState {
   return { isLoggedIn, loginUrl, accountUrl, redirectFailed };
 }
 
-export function HealthTool({ syncControl }: { syncControl?: ReactNode } = {}) {
+export function HealthTool({ syncControl }: { syncControl?: (ctx: { hasData: boolean }) => ReactNode } = {}) {
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(() => {
     // Pre-load prefill fields from localStorage so InputPanel's first render
     // correctly detects returning users (for Basic Information collapse).
@@ -1132,7 +1137,13 @@ export function HealthTool({ syncControl }: { syncControl?: ReactNode } = {}) {
     onReminderPreferenceChange: handleReminderPreferenceChange,
     onGlobalReminderOptout: handleGlobalReminderOptout,
     sex: inputs.sex,
-    guestReportData: !authState.isLoggedIn ? { inputs: effectiveInputs, medications, screenings } : undefined,
+    // Guest report email: true guests (production), plus the Shopify v2
+    // surface (its "logged in" is storage UX only and the proxy path works
+    // same-origin). NOT the Pages build — no Brad server there.
+    guestReportData:
+      !authState.isLoggedIn || SHOPIFY_SURFACE
+        ? { inputs: effectiveInputs, medications, screenings }
+        : undefined,
     formStage,
   };
 

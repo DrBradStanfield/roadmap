@@ -24,7 +24,14 @@ const LABELS: Record<Exclude<Backend, 'local'>, string> = {
   'self-host': 'your own server',
 };
 
-export function SyncControl({ backend, reconnect }: { backend: Backend; reconnect?: 'google-drive' }) {
+export function SyncControl({ backend, reconnect, hasData = true }: {
+  backend: Backend;
+  reconnect?: 'google-drive';
+  /** False while the user hasn't entered any data yet — the device-tier
+   *  "choose where to save" pitch stays hidden (nothing to save; Brad,
+   *  2026-06-11). Cloud/reconnect states always show — data is at stake. */
+  hasData?: boolean;
+}) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const { busy, error, run } = useBusyRun();
 
@@ -84,6 +91,10 @@ export function SyncControl({ backend, reconnect }: { backend: Backend; reconnec
         <RemindersControl backend={backend} />
       </div>
     );
+  } else if (!hasData) {
+    // Brand-new user, nothing entered yet — no storage pitch (the picker stays
+    // reachable via the hr:open-backend-picker event, e.g. the email step).
+    content = null;
   } else {
     content = (
       <div className="hr-sync hr-sync-local">

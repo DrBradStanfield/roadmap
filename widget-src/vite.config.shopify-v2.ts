@@ -51,6 +51,11 @@ export default defineConfig({
     'process.env.NODE_ENV': JSON.stringify('production'),
     'import.meta.env.VITE_GIT_HASH': JSON.stringify(gitHash),
     'import.meta.env.VITE_LOCAL_FIRST': JSON.stringify('true'),
+    // Distinguishes the drstanfield.com (Shopify) local-first surface from the
+    // Pages/self-host one: Shopify-only features (guest report email through
+    // the app proxy — Brad's server) gate on this. The Pages build never
+    // defines it, so those features stay off there.
+    'import.meta.env.VITE_SHOPIFY_SURFACE': JSON.stringify('true'),
   },
   resolve: {
     alias: {

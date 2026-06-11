@@ -115,7 +115,7 @@ async function main() {
   createRoot(container).render(
     <React.StrictMode>
       <ErrorBoundary>
-        <HealthTool syncControl={<SyncControl backend={backend} reconnect={reconnect} />} />
+        <HealthTool syncControl={({ hasData }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} />} />
         <HistoryLightboxHost />
       </ErrorBoundary>
     </React.StrictMode>,

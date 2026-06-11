@@ -64,8 +64,10 @@ interface ResultsPanelProps {
   };
   formStage?: number;
   /** Standalone-only: replaces the Shopify AccountStatus block with the
-   *  local-first sync control. undefined on the live widget (AccountStatus shows). */
-  syncControl?: React.ReactNode;
+   *  local-first sync control. undefined on the live widget (AccountStatus
+   *  shows). Render-prop: receives whether the user has entered real data,
+   *  so the "choose where to save" pitch can stay hidden for brand-new users. */
+  syncControl?: (ctx: { hasData: boolean }) => React.ReactNode;
 }
 
 function getBmiStatus(bmiCategory: string, waistToHeightRatio?: number): { label: string; className: string } {
@@ -382,6 +384,11 @@ type GuestEmailState = 'idle' | 'sending' | 'prompt-account' | 'blog-posts';
 
 const DEFAULT_EMAIL_HELPER = 'Get your personalized plan emailed to you, with detailed explanations and clinical references for every suggestion.';
 
+// Local-first builds have no accounts — after the report email, the "keep your
+// data" follow-up is the backend picker (save to your own cloud), not a
+// Shopify account link. Set by the v2 vite configs; false on the live widget.
+const LOCAL_FIRST = import.meta.env.VITE_LOCAL_FIRST === 'true';
+
 function getEmailHelperText(): string {
   const assignments = getABAssignments();
   for (const [testId, variantId] of Object.entries(assignments)) {
@@ -453,7 +460,22 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
         </div>
         <div className="email-capture-account-prompt">
           <p>Want to save your data and track changes over time?</p>
-          <a href={loginUrl || '/account/login'} className="btn-primary email-capture-account-btn">Create Free Account</a>
+          {LOCAL_FIRST ? (
+            // No accounts on local-first — the follow-up is the backend picker
+            // (SyncControl listens for this event; see sync-control.tsx).
+            <button
+              type="button"
+              className="btn-primary email-capture-account-btn"
+              onClick={() => {
+                window.dispatchEvent(new Event('hr:open-backend-picker'));
+                setState('blog-posts');
+              }}
+            >
+              Save It To Your Own Cloud
+            </button>
+          ) : (
+            <a href={loginUrl || '/account/login'} className="btn-primary email-capture-account-btn">Create Free Account</a>
+          )}
           <button type="button" className="email-capture-dismiss" onClick={() => setState('blog-posts')}>Maybe later</button>
         </div>
       </div>
@@ -698,7 +720,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
     return (
       <div className="health-results-panel">
         <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={null} muted />
-        {syncControl ?? <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />}
+        {syncControl ? syncControl({ hasData: false }) : <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />}
         <div className="plan-empty-preview">
           <p className="plan-empty-intro">
             <strong>Here's what your plan will look like.</strong> Real suggestions appear once you fill in your details.
@@ -769,7 +791,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
     <div className="health-results-panel">
       <ColumnHeader step={2} title="Your plan to discuss with your doctor" meta={planHeaderMeta} />
       {/* Account Status */}
-      {syncControl ?? <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />}
+      {syncControl ? syncControl({ hasData: true }) : <AccountStatus authState={authState} saveStatus={saveStatus} emailConfirmStatus={emailConfirmStatus} hasUnsavedLongitudinal={hasUnsavedLongitudinal} onSaveLongitudinal={onSaveLongitudinal} isSavingLongitudinal={isSavingLongitudinal} redirectFailed={redirectFailed} />}
       {guestReportData && <GuestEmailCapture hook={guestEmailHook} loginUrl={authState?.loginUrl} formStage={formStage} />}
 
       {/* Quick Stats */}
