@@ -1,20 +1,24 @@
 /**
  * SERVER-TRANSPORT lab extraction for the v2 builds — the upload functions
- * that POST cross-origin to Brad's stateless Fly endpoint (api.lab-import-v2):
- * same Claude pipeline as the Shopify proxy path, §7 transit-never-store,
- * text/plain simple-request protocol, per-IP + per-day caps server-side.
+ * that POST to Brad's stateless extraction endpoint (api.lab-import-v2):
+ * same Claude pipeline as the v1 proxy path, §7 transit-never-store,
+ * per-IP + per-day caps server-side.
+ *
+ * Phase-5 hardening (2026-06-11): calls go THROUGH the Shopify app proxy
+ * (relative path, same-origin on drstanfield.com) so every request carries
+ * Shopify's un-forgeable signature — the server accepts nothing else. This
+ * replaced the cross-origin direct-to-Fly URL + Origin allow-list.
  *
  * Transport selection is a BUILD-TIME module swap (same mechanism as
  * api.ts → roadmap-data.ts):
- *  - Shopify v2 build (drstanfield.com page): uses THIS module — Brad pays,
- *    the endpoint's allow-list admits only https://drstanfield.com.
+ *  - Shopify v2 build (drstanfield.com page): uses THIS module — Brad pays.
  *  - Pages/self-host build: vite.config.standalone.ts redirects this module
  *    → byok-upload.ts (the user's own Anthropic key, browser-direct).
  */
-import { parseJsonResponse } from './api';
+import { parseJsonResponse, PROXY_PATH } from './api';
 import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode } from './api';
 
-const LAB_IMPORT_V2_URL = 'https://health-tool-app.fly.dev/api/lab-import-v2';
+const LAB_IMPORT_V2_URL = `${PROXY_PATH}/api/lab-import-v2`;
 
 export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaining: number; message?: string }> {
   try {

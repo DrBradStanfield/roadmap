@@ -3,13 +3,21 @@ import * as Sentry from '@sentry/remix';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
 import { extractOrClassify, createBatch, pollBatch } from '../lib/anthropic.server';
 import { createQuotaCounter } from '../lib/rate-limiter';
-import { AI_ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
+import { getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
 
 /**
- * Cross-origin lab extraction for the LOCAL-FIRST front door (Phase 4 "thin
- * server AI"). Same Claude pipeline as api.lab-import.ts, but no Shopify
- * session and no accounts — the §7 posture: extracted text/images transit,
- * results return, nothing is stored.
+ * Lab extraction for the LOCAL-FIRST storefront page (Phase 4 "thin server
+ * AI"). Same Claude pipeline as api.lab-import.ts, but no Shopify session
+ * and no accounts — the §7 posture: extracted text/images transit, results
+ * return, nothing is stored.
+ *
+ * Access (Phase-5 hardening, 2026-06-11): requests come ONLY through the
+ * Shopify app proxy (/apps/health-tool-1/api/lab-import-v2) and must carry a
+ * valid proxy signature — supersedes the old cross-origin AI_ALLOWED_ORIGINS
+ * check (an Origin header is forgeable; Shopify's HMAC is not). Same-origin
+ * via the proxy, so no CORS machinery at all. The Pages/self-host build
+ * extracts with the user's own key (byok-upload.ts) and never calls this
+ * route. (Decision record §10 threat model.)
  *
  * Cost control (no identity to meter per-user):
  *  - per-IP daily file limit (anti-abuse, mirrors v1's per-customer limit)
@@ -17,10 +25,6 @@ import { AI_ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } 
  *    the true global cap ≈ cap × machine count and resets on deploy — an
  *    accepted approximation until a shared counter is worth its DDL. Tune via
  *    AI_DAILY_FILE_CAP (default 500/day/machine ≈ low tens of $ worst case).
- *  - the CORS allow-list (never localhost) — AI_ALLOWED_ORIGINS, i.e.
- *    drstanfield.com ONLY since Phase 5 (2026-06-11): the Pages/self-host
- *    build extracts with the user's own key (byok-upload.ts) and never calls
- *    this route. (Decision record §10 threat model.)
  */
 
 const PER_IP_DAILY_LIMIT = 60;
@@ -57,10 +61,8 @@ setInterval(() => {
 
 /** GET: quota preflight (?quota) or batch poll (?batchId=...). */
 export async function loader({ request }: LoaderFunctionArgs) {
-  const headers = corsHeaders(request, AI_ALLOWED_ORIGINS);
-  const origin = request.headers.get('Origin');
-  if (!origin || !AI_ALLOWED_ORIGINS.has(origin)) {
-    return json({ error: 'Origin not allowed' }, { status: 403, headers });
+  if (!verifyAppProxySignature(request)) {
+    return json({ error: 'Forbidden' }, { status: 403 });
   }
   const ip = getClientIp(request);
   const url = new URL(request.url);
@@ -68,39 +70,34 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   if (batchId) {
     const batch = activeBatches.get(batchId);
-    if (!batch) return json({ error: 'Batch not found' }, { status: 404, headers });
+    if (!batch) return json({ error: 'Batch not found' }, { status: 404 });
     try {
       const result = await pollBatch(batchId);
       return json(
         { status: result.status, results: result.results, completed: result.completed, total: result.total },
-        { headers },
       );
     } catch (error) {
       console.error('Batch poll error (v2):', error);
-      return json({ status: 'processing', completed: 0, total: batch.totalFiles }, { headers });
+      return json({ status: 'processing', completed: 0, total: batch.totalFiles });
     }
   }
 
   const remaining = ipQuota.remaining(ip);
-  return json({ allowed: remaining > 0, remaining }, { headers });
+  return json({ allowed: remaining > 0, remaining });
 }
 
-/** POST: single-file extraction or batch creation (text/plain simple request). */
+/** POST: single-file extraction or batch creation. */
 export async function action({ request }: ActionFunctionArgs) {
-  const headers = corsHeaders(request, AI_ALLOWED_ORIGINS);
-  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
-  if (request.method !== 'POST') return json({ success: false, error: 'POST only' }, { status: 405, headers });
-
-  const origin = request.headers.get('Origin');
-  if (!origin || !AI_ALLOWED_ORIGINS.has(origin)) {
-    return json({ success: false, error: 'Origin not allowed' }, { status: 403, headers });
+  if (request.method !== 'POST') return json({ success: false, error: 'POST only' }, { status: 405 });
+  if (!verifyAppProxySignature(request)) {
+    return json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
   const ip = getClientIp(request);
 
   try {
     const contentLength = Number(request.headers.get('content-length') || 0);
     if (contentLength > 200 * 1024 * 1024) {
-      return json({ success: false, error: 'Request too large' }, { status: 413, headers });
+      return json({ success: false, error: 'Request too large' }, { status: 413 });
     }
 
     const body = await parseSimpleRequestJson(request);
@@ -112,44 +109,44 @@ export async function action({ request }: ActionFunctionArgs) {
       if (!consumeQuota(ip, files.length)) {
         return json(
           { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
-          { status: 429, headers },
+          { status: 429 },
         );
       }
       if (activeBatches.size >= MAX_ACTIVE_BATCHES) {
-        return json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429, headers });
+        return json({ success: false, error: 'Server busy. Please try again later.' }, { status: 429 });
       }
       const { batchId } = await createBatch(files);
       activeBatches.set(batchId, { totalFiles: files.length, createdAt: Date.now() });
-      return json({ success: true, batchId, totalFiles: files.length }, { headers });
+      return json({ success: true, batchId, totalFiles: files.length });
     }
 
     // --- Single file mode ---
     const validation = labImportRequestSchema.safeParse(body);
     if (!validation.success) {
-      return json({ success: false, error: 'Invalid request' }, { status: 400, headers });
+      return json({ success: false, error: 'Invalid request' }, { status: 400 });
     }
     if (!consumeQuota(ip, 1)) {
       return json(
         { success: false, error: 'Daily upload limit reached. You can upload more tomorrow.' },
-        { status: 429, headers },
+        { status: 429 },
       );
     }
 
     const { pages } = validation.data;
     try {
       const result = await extractOrClassify(pages);
-      return json({ success: true, data: result, remaining: ipQuota.remaining(ip) }, { headers });
+      return json({ success: true, data: result, remaining: ipQuota.remaining(ip) });
     } catch (error) {
       console.error('Lab import error (v2):', error);
       Sentry.captureException(error, {
         tags: { feature: 'lab_import_v2', errorName: (error as Error)?.name ?? 'unknown' },
         extra: { pageCount: pages.length, pageTypes: pages.map((p) => p.type) },
       });
-      return json({ success: false, error: 'Failed to process request' }, { status: 500, headers });
+      return json({ success: false, error: 'Failed to process request' }, { status: 500 });
     }
   } catch (error) {
     console.error('Lab import error (v2):', error);
     Sentry.captureException(error, { tags: { feature: 'lab_import_v2' } });
-    return json({ success: false, error: 'Failed to process request' }, { status: 500, headers });
+    return json({ success: false, error: 'Failed to process request' }, { status: 500 });
   }
 }
