@@ -264,3 +264,16 @@ export {
   type DatedMeasurement,
   type MeasurementHistoryMap,
 } from './measurement-history';
+
+// chat-history.json — chat conversations synced to the user's own cloud (Phase 6)
+export {
+  CHAT_HISTORY_SCHEMA_VERSION,
+  CHAT_HISTORY_MAX_CONVERSATIONS,
+  createEmptyChatHistoryFile,
+  migrateChatHistoryFile,
+  mergeChatHistoryFiles,
+  type ChatFileConversation,
+  type ChatFileMessage,
+  type ChatHistoryFile,
+  type ChatHistoryFileMeta,
+} from './chat-history';
