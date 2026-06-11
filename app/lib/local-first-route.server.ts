@@ -1,10 +1,13 @@
 /**
- * Shared plumbing for the LOCAL-FIRST public routes (api.google-token,
- * api.reminders-v2, future Phase-4 AI endpoints): the cross-origin allow-list,
- * CORS headers, client IP, and the text/plain simple-request body parse.
+ * Shared plumbing for the LOCAL-FIRST public routes: the cross-origin
+ * allow-list + CORS headers (api.google-token, api.reminders-v2 — called
+ * cross-origin from github.io), the app-proxy signature check (the AI
+ * lab-import endpoint — called same-origin through the Shopify proxy), client
+ * IP, and the text/plain simple-request body parse.
  *
- * Deliberately ZERO dependencies — unlike route-helpers.server.ts this never
- * drags in the Shopify session stack, so these routes stay decoupled from it.
+ * Deliberately ZERO *application* dependencies — unlike route-helpers.server.ts
+ * this never drags in the Shopify session stack, so these routes stay decoupled
+ * from it. Node built-ins (node:crypto for the HMAC verify) are fine.
  *
  * HARD RULE (Brad, 2026-06-10): localhost is NEVER an approved origin — not
  * here, not in the Google OAuth client, not in Dropbox redirect URIs, not in
@@ -20,6 +23,9 @@ export const ALLOWED_ORIGINS = new Set([
 
 import crypto from 'node:crypto';
 
+/** Proxied requests older than this are rejected as replay (Shopify standard). */
+const PROXY_TIMESTAMP_WINDOW_SECONDS = 10 * 60;
+
 /**
  * AI endpoints (lab extraction) — app-proxy HMAC ONLY since the Phase-5
  * hardening (2026-06-11; supersedes the drstanfield.com Origin allow-list,
@@ -33,11 +39,10 @@ import crypto from 'node:crypto';
  * email reminders work cross-origin from every front door.
  *
  * Standalone verifier — deliberately NOT authenticate.public.appProxy, which
- * would drag the Shopify session stack into this zero-dep module. Shopify
- * signs proxied requests by sorting the query params (minus `signature`),
- * joining the `key=value` pairs with no separator (multi-values
- * comma-joined), and HMAC-SHA256ing with the app secret. A ±10-minute
- * timestamp window bounds replay.
+ * would drag the Shopify session stack into this module. Shopify signs
+ * proxied requests by sorting the query params (minus `signature`), joining
+ * the `key=value` pairs with no separator (multi-values comma-joined), and
+ * HMAC-SHA256ing with the app secret.
  */
 export function verifyAppProxySignature(request: Request, nowSeconds = Date.now() / 1000): boolean {
   const secret = process.env.SHOPIFY_API_SECRET;
@@ -61,7 +66,7 @@ export function verifyAppProxySignature(request: Request, nowSeconds = Date.now(
   if (!crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature))) return false;
 
   const ts = Number(url.searchParams.get('timestamp') || 0);
-  return Math.abs(nowSeconds - ts) < 600;
+  return Math.abs(nowSeconds - ts) < PROXY_TIMESTAMP_WINDOW_SECONDS;
 }
 
 /**
