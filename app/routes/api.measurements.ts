@@ -134,6 +134,37 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 // ---------------------------------------------------------------------------
+// Klaviyo capture (local-first v2) — the "Get Your Personalized Plan" button.
+// The ONLY thing that crosses to the server is the email address: subscribe it
+// to the Klaviyo guest list and nothing else. NO health data, NO Resend, NO
+// report build (the PDF is generated client-side in the browser). Kept separate
+// from handleGuestReport (the legacy production path, torn down at Phase 7).
+// ---------------------------------------------------------------------------
+const klaviyoCaptureSchema = z.object({ email: z.string().email().max(254) });
+
+async function handleKlaviyoCapture(data: unknown) {
+  try {
+    const parsed = klaviyoCaptureSchema.safeParse(data);
+    if (!parsed.success) {
+      return json({ success: false, error: 'Invalid request data' }, { status: 400 });
+    }
+    const { email } = parsed.data;
+    if (!checkGuestReportLimit(email.toLowerCase())) {
+      return json({ success: false, error: 'Email limit reached. Try again tomorrow.' }, { status: 429 });
+    }
+    // Email-only subscribe — no `properties`, so subscribeToKlaviyo skips the
+    // profile-properties step entirely. Fire-and-forget so a Klaviyo hiccup
+    // never blocks the user's plan.
+    subscribeToKlaviyo({ email }).catch(() => {});
+    return json({ success: true });
+  } catch (error) {
+    console.error('Klaviyo capture error:', error);
+    Sentry.captureException(error, { tags: { feature: 'klaviyo_capture' } });
+    return json({ success: false, error: 'Failed to capture email' }, { status: 500 });
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Guest report — stateless email-only flow (no Supabase, no auth required)
 // ---------------------------------------------------------------------------
 
@@ -185,6 +216,11 @@ export async function action({ request }: ActionFunctionArgs) {
   const { admin } = await authenticate.public.appProxy(request);
 
   const body = await request.json();
+
+  // Local-first v2: email-only Klaviyo capture (no health data, no Resend).
+  if (body.klaviyoCapture) {
+    return handleKlaviyoCapture(body.klaviyoCapture);
+  }
 
   // Guest report — no auth required (checked before customerId gate)
   if (body.guestReport) {

@@ -456,7 +456,10 @@ function useGuestEmailCapture(guestReportData: GuestReportData): GuestEmailHook 
 
     if (result.success) {
       trackABConversion();
-      setState('prompt-account');
+      // Local-first: the PDF window already opened (the delivery) and the
+      // cloud-save pitch lives on the SyncControl banner — skip the redundant
+      // account-prompt screen and go straight to the post-action articles.
+      setState(LOCAL_FIRST ? 'blog-posts' : 'prompt-account');
     } else {
       setEmailError(result.error || 'Failed to send. Please try again.');
       setState('idle');
@@ -474,33 +477,16 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
   const { email, setEmail, emailError, setEmailError, state, setState, helperText, handleSubmit } = hook;
 
   if (state === 'prompt-account') {
+    // Production widget only — local-first routes success straight to
+    // 'blog-posts' (no accounts; the cloud pitch lives on the SyncControl banner).
     return (
       <div className="email-capture no-print">
         <div className="email-capture-success">
-          <strong>
-            {LOCAL_FIRST
-              ? 'Your plan is ready to save as a PDF — we’ve also emailed a copy to your inbox.'
-              : 'Check your inbox! Your personalized health plan has been sent.'}
-          </strong>
+          <strong>Check your inbox! Your personalized health plan has been sent.</strong>
         </div>
         <div className="email-capture-account-prompt">
           <p>Want to save your data and track changes over time?</p>
-          {LOCAL_FIRST ? (
-            // No accounts on local-first — the follow-up is the backend picker
-            // (SyncControl listens for this event; see sync-control.tsx).
-            <button
-              type="button"
-              className="btn-primary email-capture-account-btn"
-              onClick={() => {
-                window.dispatchEvent(new Event('hr:open-backend-picker'));
-                setState('blog-posts');
-              }}
-            >
-              Save It To Your Own Cloud
-            </button>
-          ) : (
-            <a href={loginUrl || '/account/login'} className="btn-primary email-capture-account-btn">Create Free Account</a>
-          )}
+          <a href={loginUrl || '/account/login'} className="btn-primary email-capture-account-btn">Create Free Account</a>
           <button type="button" className="email-capture-dismiss" onClick={() => setState('blog-posts')}>Maybe later</button>
         </div>
       </div>

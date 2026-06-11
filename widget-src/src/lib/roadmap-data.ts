@@ -28,6 +28,7 @@ import {
 import { RoadmapStore } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { setChatHistoryFactory } from './chat-history-access';
+import { PROXY_PATH, parseJsonResponse } from './api';
 import type { StorageAdapter } from '../storage/adapter';
 import type {
   AddMeasurementResult,
@@ -251,6 +252,34 @@ export async function getReportHtml(): Promise<{ success: boolean; html?: string
  *  ResultsPanel imports it unconditionally (production resolves api.ts's). */
 export async function sendReportEmail(): Promise<{ success: boolean; error?: string }> {
   return { success: false, error: 'Not available in this version.' };
+}
+
+/**
+ * "Get Your Personalized Plan" on the local-first builds. Overrides api.ts's
+ * sendGuestReport (which POSTs the full health inputs to the server and triggers
+ * a Resend report email). Here the ONLY thing sent to the server is the email
+ * address, for an email-only Klaviyo subscribe — NO health data, NO Resend. The
+ * PDF is generated entirely client-side (getReportHtml) by the caller before
+ * this runs. The `inputs`/`medications`/`screenings` args are accepted for
+ * signature-compatibility with the caller but deliberately ignored.
+ *
+ * Shopify v2 surface only: the email section is gated to VITE_SHOPIFY_SURFACE,
+ * so this never fires on Pages (no Brad server there).
+ */
+export async function sendGuestReport(
+  email: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`${PROXY_PATH}/api/measurements`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ klaviyoCapture: { email } }),
+    });
+    const result = await parseJsonResponse<{ success: boolean; error?: string }>(response);
+    return result ?? { success: false, error: 'Network error' };
+  } catch {
+    return { success: false, error: 'Network error' };
+  }
 }
 
 /**

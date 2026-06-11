@@ -100,7 +100,7 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
       <div className="hr-sync hr-sync-local">
         <span className="hr-sync-status">Saved on this device only</span>
         <button className="hr-sync-btn" onClick={() => setPickerOpen(true)}>Save to your cloud</button>
-        <span className="hr-sync-detail">Connect your own Google Drive or Dropbox so your plan is backed up and on all your devices — we never store your health data.</span>
+        <span className="hr-sync-detail">Connect your own Google Drive or Dropbox so your plan is backed up and you can track changes over time — Dr Brad never stores your health data.</span>
       </div>
     );
   }

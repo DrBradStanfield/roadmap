@@ -59,6 +59,7 @@ import {
   parseLocalisedNumber,
 } from '@roadmap/health-core';
 import { formatShortDate } from '../lib/constants';
+import { LOCAL_FIRST } from '../lib/build-flags';
 import { DatePicker, InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline } from './BloodTestTimeline';
 import { StartingInfoVitals } from './StartingInfoVitals';
@@ -2353,6 +2354,10 @@ export function InputPanel({
 
   // ── Render all sections with progressive disclosure (both mobile and desktop) ──
   const inputHeaderMeta = useMemo(() => {
+    // Local-first has no accounts and auto-saves to the device/cloud — the
+    // "New account" / "Last saved ·…" status line is meaningless here (Brad,
+    // 2026-06-12). The production widget keeps it.
+    if (LOCAL_FIRST) return '';
     if (!isLoggedIn) return '';
     const mostRecentMeasurementAt = previousMeasurements.reduce<number>((max, m) => {
       const t = m.recordedAt ? new Date(m.recordedAt).getTime() : 0;
