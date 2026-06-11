@@ -81,6 +81,14 @@ export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' 
   return store && store.backendId !== 'local' ? 'cloud' : 'device-only';
 }
 
+// --- lead capture (Shopify surface) — overrides api.ts's no-op stubs ---
+export function getReportEmailCaptured(): boolean {
+  return store?.getReportEmailCaptured() ?? false;
+}
+export function markReportEmailCaptured(): void {
+  store?.markReportEmailCaptured();
+}
+
 // --- email reminders (§10) — used by the standalone RemindersControl ---
 export function getReminderOptIn(): FileReminderOptIn | undefined {
   return store?.getReminderOptIn();

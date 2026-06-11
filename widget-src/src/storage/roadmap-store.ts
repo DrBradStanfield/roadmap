@@ -502,6 +502,21 @@ export class RoadmapStore {
 
   // ============================================================ reminders (§10)
 
+  /** Has the user completed the Shopify-surface email-capture step? */
+  getReportEmailCaptured(): boolean {
+    return this.file.profile.reportEmailCaptured ?? false;
+  }
+
+  /** Mark the email-capture step done (monotonic, stamped + persisted). */
+  markReportEmailCaptured(): void {
+    const p = this.file.profile;
+    if (p.reportEmailCaptured) return; // idempotent — only ever set true
+    p.reportEmailCaptured = true;
+    p.updatedAt = new Date().toISOString();
+    p.lamport = (p.lamport ?? 0) + 1;
+    this.touch();
+  }
+
   getReminderOptIn(): FileReminderOptIn | undefined {
     return this.file.reminderOptIn;
   }

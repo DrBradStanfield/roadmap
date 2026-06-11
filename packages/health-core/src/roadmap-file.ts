@@ -59,6 +59,13 @@ export interface RoadmapProfile extends SyncStamp {
   unitSystem?: 'si' | 'conventional';
   /** Per-metric display-unit overrides (was localStorage-only `health_roadmap_unit_overrides`). */
   unitOverrides?: Record<string, 'si' | 'conventional'>;
+  /**
+   * Shopify-surface lead step: true once the user has submitted their email at
+   * "Get Your Personalized Plan" (→ Klaviyo). Monotonic (only ever set true).
+   * When set, the widget hides the email-capture box and shows a "Save as PDF"
+   * button instead, so returning users aren't re-asked for their email.
+   */
+  reportEmailCaptured?: boolean;
 }
 
 /** One immutable measurement row (mirrors a `health_measurements` row, camelCase). */

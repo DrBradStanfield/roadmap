@@ -151,7 +151,36 @@
   <h2 id="log">Build log — decisions, deviations &amp; tradeoffs</h2>
   <p><span class="pill ok">decision</span> = a choice within the spec's intent · <span class="pill warn">deviation</span> = differs from what the spec literally said · <span class="pill info">tradeoff</span> = a cost accepted.</p>
 
-  <h3>"Get Your Personalized Plan" = Klaviyo email-only + client PDF (2026-06-12, Brad) — NO Resend, NO health data to the server · BUILT, not yet deployed</h3>
+  <h3>Capture is one-time: persisted flag → "Save as PDF" in the plan header (2026-06-12, Brad) · SHIPPED dev-25 + e2e verified</h3>
+
+  <div class="logentry">
+    <div class="hdr"><span class="pill ok">decision</span><strong>Once a user submits their email, never ask again — persist a flag in their own cloud and swap the email box for a "Save as PDF" button.</strong></div>
+    <div class="body">
+      <ul>
+        <li><span class="pill ok">decision</span> New monotonic <code>profile.reportEmailCaptured</code> boolean on the
+          RoadmapFile (the user's OWN cloud / localStorage — NOT Brad's server). Store getter/setter
+          (<code>getReportEmailCaptured</code> / <code>markReportEmailCaptured</code>, stamped + persisted like any profile
+          write); shim exports them; <code>api.ts</code> ships no-op stubs so the production widget compiles (feature off
+          there). Survives the load→migrate (spread) and merge (whole-profile LWW) round-trips.</li>
+        <li><span class="pill ok">decision</span> On successful capture: <code>markReportEmailCaptured()</code> +
+          state <code>'captured'</code>. The email box renders nothing; the post-capture "Latest articles" screen is
+          gone (Brad — "nothing extra"). On return, the hook initialises straight to <code>'captured'</code> from the
+          persisted flag, so no email box ever reappears.</li>
+        <li><span class="pill ok">decision (Brad)</span> The ungated "Save as PDF" button renders INLINE in the
+          "Your plan to discuss with your doctor" column header (<code>planHeaderMeta</code>, the same slot the logged-in
+          print button uses), not in the capture body. Reuses <code>handlePrint</code> (getReportHtml + openPrintWindow).</li>
+        <li><span class="pill info">merge caveat</span> The flag rides the whole-profile last-write-wins merge; a
+          concurrent cross-device profile edit at the exact capture moment could drop it (monotonic + low-stakes — worst
+          case the box reappears once and Klaviyo dedups the re-submit).</li>
+        <li><strong>e2e (dev-25, fresh context):</strong> submit → payload <code>{ klaviyoCapture: { email } }</code>,
+          PDF window opens, email box replaced; reload (fresh page, shared storage) → <code>reportEmailCaptured:true</code>
+          persisted, "Save as PDF" button in the plan header, no email box, no articles; button re-opens the PDF. Unit
+          test <code>roadmap-store.test.ts</code> covers the persist→reload round-trip. Test Klaviyo profiles deleted via API.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>"Get Your Personalized Plan" = Klaviyo email-only + client PDF (2026-06-12, Brad) — NO Resend, NO health data to the server · SHIPPED (Fly + dev-25) + e2e verified</h3>
 
   <div class="logentry">
     <div class="hdr"><span class="pill ok">decision</span><strong>The v2 capture button does exactly two things: email address → Klaviyo, and a client-built PDF. Nothing else leaves the browser.</strong></div>

@@ -23,7 +23,7 @@ import {
   getProteinEvidence,
   getBmiEvidence,
 } from '@roadmap/health-core';
-import { type ApiReminderPreference, sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments } from '../lib/api';
+import { type ApiReminderPreference, sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments, getReportEmailCaptured, markReportEmailCaptured } from '../lib/api';
 import { EMAIL_REGEX } from '../lib/email';
 import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ColumnHeader } from './ColumnHeader';
@@ -381,7 +381,7 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
   return null; // Guest email capture is rendered separately via GuestEmailCapture
 }
 
-type GuestEmailState = 'idle' | 'sending' | 'prompt-account' | 'blog-posts';
+type GuestEmailState = 'idle' | 'sending' | 'prompt-account' | 'blog-posts' | 'captured';
 
 const DEFAULT_EMAIL_HELPER = 'Get your personalized plan emailed to you, with detailed explanations and clinical references for every suggestion.';
 
@@ -426,7 +426,11 @@ interface GuestEmailHook {
 function useGuestEmailCapture(guestReportData: GuestReportData): GuestEmailHook {
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
-  const [state, setState] = useState<GuestEmailState>('idle');
+  // Returning local-first users who already captured: skip the email box and
+  // land straight on the "Save as PDF" view (the flag lives in their own cloud).
+  const [state, setState] = useState<GuestEmailState>(
+    () => (LOCAL_FIRST && getReportEmailCaptured() ? 'captured' : 'idle'),
+  );
   const helperText = useMemo(() => (LOCAL_FIRST ? LOCAL_FIRST_EMAIL_HELPER : getEmailHelperText()), []);
 
   const handleSubmit = async () => {
@@ -456,10 +460,15 @@ function useGuestEmailCapture(guestReportData: GuestReportData): GuestEmailHook 
 
     if (result.success) {
       trackABConversion();
-      // Local-first: the PDF window already opened (the delivery) and the
-      // cloud-save pitch lives on the SyncControl banner — skip the redundant
-      // account-prompt screen and go straight to the post-action articles.
-      setState(LOCAL_FIRST ? 'blog-posts' : 'prompt-account');
+      // Local-first: the PDF window already opened (the delivery). Persist the
+      // captured flag to the user's own cloud and switch to the "Save as PDF"
+      // view — no email box on return, nothing extra (no articles screen).
+      if (LOCAL_FIRST) {
+        markReportEmailCaptured();
+        setState('captured');
+      } else {
+        setState('prompt-account');
+      }
     } else {
       setEmailError(result.error || 'Failed to send. Please try again.');
       setState('idle');
@@ -475,6 +484,13 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
   formStage?: number;
 }) {
   const { email, setEmail, emailError, setEmailError, state, setState, helperText, handleSubmit } = hook;
+
+  if (state === 'captured') {
+    // Already captured (this submit, or a prior visit via the persisted flag):
+    // the email box is gone and nothing renders here. The ungated "Save as PDF"
+    // button lives inline in the "Your plan…" header (planHeaderMeta) instead.
+    return null;
+  }
 
   if (state === 'prompt-account') {
     // Production widget only — local-first routes success straight to
@@ -798,6 +814,12 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
         </button>
       )}
     </>
+  ) : (SHOPIFY_SURFACE && guestEmailHook.state === 'captured') ? (
+    // Shopify v2, post-capture: the email box is gone; the ungated Save-as-PDF
+    // lives inline in this header (Brad). handlePrint = getReportHtml + print.
+    <button type="button" className="action-btn-small no-print" onClick={handlePrint} disabled={printStatus === 'loading'} title="Save your plan as a PDF">
+      {printLabel}
+    </button>
   ) : null;
 
   return (

@@ -567,6 +567,18 @@ export async function sendGuestReport(
 }
 
 /**
+ * Lead-capture flag — local-first only. The production widget has no
+ * client-side store, so these are no-ops (the email box always shows; the
+ * roadmap-data.ts shim overrides them with the real RoadmapStore-backed flag).
+ */
+export function getReportEmailCaptured(): boolean {
+  return false;
+}
+export function markReportEmailCaptured(): void {
+  /* no-op in the production build */
+}
+
+/**
  * Get the health report as HTML (for printing).
  */
 export async function getReportHtml(): Promise<{ success: boolean; html?: string; error?: string }> {
