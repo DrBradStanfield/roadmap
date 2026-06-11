@@ -75,11 +75,12 @@
     "@shopify/plugin-cloudflare"
   ],
   "resolutions": {
-    "minimatch": "9.0.5",
+    "minimatch": "9.0.9",
     "vite": "^6.2.2"
   },
   "overrides": {
-    "minimatch": "9.0.5",
+    "minimatch": "9.0.9",
+    "tar": "^7.5.11",
     "vite": "^6.2.2"
   },
   "author": "bradstanfield"

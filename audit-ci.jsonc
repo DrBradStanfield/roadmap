@@ -1,0 +1,17 @@
+{
+  // CI dependency-audit gate (replaces `npm audit --production --audit-level=high`).
+  // Fails on NEW high/critical advisories in production deps; known-stuck advisories
+  // with no non-breaking fix are allowlisted below WITH their exit plan. Don't add
+  // to the allowlist without a documented reason + removal trigger.
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  "high": true,
+  "skip-dev": true,
+  "allowlist": [
+    // turbo-stream <3.0.0 — React Router DoS via reflected user input in
+    // single-fetch. Baked into Remix 2.x (@remix-run/* + @shopify/shopify-app-remix);
+    // the only fix is the React Router 7 migration, scheduled for Phase 7 of the
+    // local-first rebuild when the server shrinks (decision: Brad, 2026-06-11).
+    // REMOVE this entry as part of the RR7 migration.
+    "GHSA-rxv8-25v2-qmq8"
+  ]
+}

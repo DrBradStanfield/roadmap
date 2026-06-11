@@ -40,7 +40,11 @@ jobs:
           fi
           echo "✓ Blog index is in sync with .md frontmatter"
 
-      - run: npm audit --production --audit-level=high
+      # Dependency audit via audit-ci so unfixable advisories can be allowlisted
+      # individually (see audit-ci.jsonc for the documented exceptions — currently
+      # only the Remix-2.x turbo-stream DoS, removed at the Phase-7 RR7 migration).
+      # The gate still fails on any NEW high/critical advisory in production deps.
+      - run: npx audit-ci@^7 --config audit-ci.jsonc
       - run: npm test
       - run: npm run build
       - run: npm run build:widget
