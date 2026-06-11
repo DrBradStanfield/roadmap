@@ -389,6 +389,25 @@ const DEFAULT_EMAIL_HELPER = 'Get your personalized plan emailed to you, with de
 // Shopify account link. Set by the v2 vite configs; false on the live widget.
 const LOCAL_FIRST = import.meta.env.VITE_LOCAL_FIRST === 'true';
 
+// The drstanfield.com v2 surface only (never Pages) — see HealthTool.tsx.
+const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';
+
+// On local-first the capture button DELIVERS the plan (opens the save-as-PDF
+// window immediately); the emailed copy is the bonus. Copy reflects that
+// (Brad, 2026-06-11) — no A/B helper variants on v2.
+const LOCAL_FIRST_EMAIL_HELPER = 'Get your personalized plan, with detailed explanations and clinical references for every suggestion.';
+
+/** Open the print/save-as-PDF window for a built report (shared by the Print
+ *  button and, on local-first, the email-capture button). */
+function openPrintWindow(html: string): boolean {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return false;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.print();
+  return true;
+}
+
 function getEmailHelperText(): string {
   const assignments = getABAssignments();
   for (const [testId, variantId] of Object.entries(assignments)) {
@@ -415,7 +434,7 @@ function useGuestEmailCapture(guestReportData: GuestReportData): GuestEmailHook 
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
   const [state, setState] = useState<GuestEmailState>('idle');
-  const helperText = useMemo(() => getEmailHelperText(), []);
+  const helperText = useMemo(() => (LOCAL_FIRST ? LOCAL_FIRST_EMAIL_HELPER : getEmailHelperText()), []);
 
   const handleSubmit = async () => {
     const trimmed = email.trim();
@@ -425,6 +444,15 @@ function useGuestEmailCapture(guestReportData: GuestReportData): GuestEmailHook 
     }
     setEmailError('');
     setState('sending');
+
+    // Local-first: the button DELIVERS the plan — open the save-as-PDF window
+    // FIRST (it builds client-side, so this stays inside the click's user
+    // activation; opening after the network await would trip popup blockers),
+    // then send the emailed copy in the background.
+    if (LOCAL_FIRST) {
+      const report = await getReportHtml();
+      if (report.success && report.html) openPrintWindow(report.html);
+    }
 
     const result = await sendGuestReport(
       trimmed,
@@ -456,7 +484,11 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
     return (
       <div className="email-capture no-print">
         <div className="email-capture-success">
-          <strong>Check your inbox! Your personalized health plan has been sent.</strong>
+          <strong>
+            {LOCAL_FIRST
+              ? 'Your plan is ready to save as a PDF — we’ve also emailed a copy to your inbox.'
+              : 'Check your inbox! Your personalized health plan has been sent.'}
+          </strong>
         </div>
         <div className="email-capture-account-prompt">
           <p>Want to save your data and track changes over time?</p>
@@ -644,12 +676,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
     }
     const result = await getReportHtml();
     if (result.success && result.html) {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(result.html);
-        printWindow.document.close();
-        printWindow.print();
-      }
+      openPrintWindow(result.html);
       setPrintStatus('idle');
     } else {
       setPrintStatus('error');
@@ -774,16 +801,23 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
     : 'Email';
   const printLabel = printStatus === 'loading' ? 'Loading...'
     : printStatus === 'error' ? 'Failed'
+    : LOCAL_FIRST ? 'Save as PDF'
     : 'Print';
 
-  const planHeaderMeta = authState?.isLoggedIn ? (
+  // Report actions: on the Shopify v2 surface the email-capture button IS the
+  // PDF path (gated behind the email — Brad), so no standalone buttons. Pages
+  // keeps an ungated Save-as-PDF; the mailto "Email Report" is gone on both v2
+  // surfaces (degraded plain-text self-compose — the capture email is better).
+  const planHeaderMeta = authState?.isLoggedIn && !SHOPIFY_SURFACE ? (
     <>
-      <button type="button" className="action-btn-small no-print" onClick={handlePrint} disabled={printStatus === 'loading'} title="Print report">
+      <button type="button" className="action-btn-small no-print" onClick={handlePrint} disabled={printStatus === 'loading'} title={LOCAL_FIRST ? 'Save your plan as a PDF' : 'Print report'}>
         {printLabel}
       </button>
-      <button type="button" className="action-btn-small no-print" onClick={handleEmailReport} disabled={emailStatus === 'sending'} title="Email report to yourself">
-        {emailLabel}
-      </button>
+      {!LOCAL_FIRST && (
+        <button type="button" className="action-btn-small no-print" onClick={handleEmailReport} disabled={emailStatus === 'sending'} title="Email report to yourself">
+          {emailLabel}
+        </button>
+      )}
     </>
   ) : null;
 
@@ -895,15 +929,18 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
 
       {/* Health Records — documents from uploads */}
 
-      {/* Report Actions (bottom) — logged-in users only */}
-      {authState?.isLoggedIn && (
+      {/* Report Actions (bottom) — logged-in users only. Hidden on the Shopify
+          v2 surface (the email-capture button is the PDF path there). */}
+      {authState?.isLoggedIn && !SHOPIFY_SURFACE && (
         <div className="report-actions no-print">
           <button type="button" className="action-btn" onClick={handlePrint} disabled={printStatus === 'loading'}>
-            {printStatus === 'loading' ? 'Loading...' : printStatus === 'error' ? 'Failed' : 'Print Report'}
+            {printStatus === 'loading' ? 'Loading...' : printStatus === 'error' ? 'Failed' : LOCAL_FIRST ? 'Save as PDF' : 'Print Report'}
           </button>
-          <button type="button" className="action-btn" onClick={handleEmailReport} disabled={emailStatus === 'sending'}>
-            {emailStatus === 'sending' ? 'Sending...' : emailStatus === 'sent' ? 'Sent!' : emailStatus === 'error' ? 'Failed' : 'Email Report'}
-          </button>
+          {!LOCAL_FIRST && (
+            <button type="button" className="action-btn" onClick={handleEmailReport} disabled={emailStatus === 'sending'}>
+              {emailStatus === 'sending' ? 'Sending...' : emailStatus === 'sent' ? 'Sent!' : emailStatus === 'error' ? 'Failed' : 'Email Report'}
+            </button>
+          )}
         </div>
       )}
 
