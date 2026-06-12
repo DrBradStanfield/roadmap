@@ -12,6 +12,14 @@
     // the only fix is the React Router 7 migration, scheduled for Phase 7 of the
     // local-first rebuild when the server shrinks (decision: Brad, 2026-06-11).
     // REMOVE this entry as part of the RR7 migration.
-    "GHSA-rxv8-25v2-qmq8"
+    "GHSA-rxv8-25v2-qmq8",
+    // esbuild >=0.17 <0.28.1 — RCE via NPM_CONFIG_REGISTRY in esbuild's DENO
+    // installer (published 2026-06-12, broke CI the same day with no repo change).
+    // Not applicable: this repo never installs esbuild via Deno; the npm install
+    // path is unaffected. Nested copies under @remix-run/dev (^0.17), vite (^0.25),
+    // and tsup (^0.27) cannot be bumped to 0.28.1 without breaking upstream semver
+    // pins. REMOVE this entry once @remix-run/dev, vite, and tsup all resolve
+    // esbuild >=0.28.1 (or at the RR7 migration, whichever comes first).
+    "GHSA-gv7w-rqvm-qjhr"
   ]
 }
