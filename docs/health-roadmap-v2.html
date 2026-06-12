@@ -118,7 +118,7 @@
 <main>
   <h1>Health Roadmap v2 — Direction &amp; Architecture Decision Record</h1>
   <p class="meta">
-    Status: <span class="pill ok">LIVE IN PRODUCTION 2026-06-12 — /pages/roadmap serves v2 (health-roadmap-726). Old-infrastructure teardown + dev-app removal done 2026-06-12. Remaining: delete old per-user Supabase data (keep anonymized chat) + v1 reminder-cron follow-up</span> &nbsp;·&nbsp;
+    Status: <span class="pill ok">LIVE IN PRODUCTION 2026-06-12 — /pages/roadmap serves v2 (health-roadmap-727). Old-infrastructure teardown DONE + deployed 2026-06-12; v1 reminder cron retired in code. Data purge DECIDED (keep ALL chat, anonymized) — script prepared (supabase/data-purge-2026-06.sql), execution pending in a fresh thread</span> &nbsp;·&nbsp;
     Date: 2026-06-08 &nbsp;·&nbsp; Updated: 2026-06-12 &nbsp;·&nbsp; Owner: Dr Brad Stanfield &nbsp;·&nbsp;
     Supersedes: the current Supabase/Fly app-proxy architecture (<code>~/Documents/roadmap/docs/architecture.html</code>)
   </p>
@@ -855,8 +855,28 @@
       removed from <code>supabase.server.ts</code> (&minus;720 lines), plus the dead route-helpers and the legacy
       <code>sync-embed.liquid</code> theme block. <strong>Thin-server survivors:</strong> chatbot, lab-import-v2
       (HMAC), reminders-v2, google-token (Drive OAuth), A/B, feedback, klaviyo-capture, the crons, and the admin app.
-      <strong>Still pending:</strong> delete the old per-user data from Supabase (keep anonymized chat) and a
-      follow-up on the v1 reminder cron.</p>
+      The teardown is <strong>deployed</strong> (Fly + Shopify <code>health-roadmap-727</code>) and e2e verified:
+      v2 loads, no dead-route calls, chat works, the cloud picker opens with Drive/Dropbox/GitHub.</p>
+    <p><strong>v1 reminder cron RETIRED in code (2026-06-12)</strong> — removed along with
+      <code>cleanupGuestProfiles</code> (which used to delete guest profiles and cascade-delete chat);
+      <code>reminders-v2</code> is the surviving cron. This stops legacy v1 reminder emails to users who never
+      migrated.</p>
+    <p><strong>Data purge — DECIDED 2026-06-12; script prepared (<code>supabase/data-purge-2026-06.sql</code>),
+      execution PENDING in a fresh thread:</strong></p>
+    <ul>
+      <li><strong>KEEP ALL chat history</strong> (<code>chat_conversations</code>, <code>chat_messages</code>,
+        <code>chat_match_events</code>, <code>guest_chat_sessions</code>) — anonymized (identity columns / IPs
+        scrubbed), nothing deleted. Brad was explicit: keep all chat data.</li>
+      <li><strong>SCRUB profiles into pseudonymous anchors</strong> — kept as FK anchors for chat; demographics
+        nulled, synthetic email, Shopify customer id dropped.</li>
+      <li><strong>DELETE the per-user health tables</strong> — measurements, medications, supplements, screenings,
+        lab_values, documents, reminder_preferences/log, message_credit_transactions; anonymize
+        <code>audit_logs</code>.</li>
+      <li><strong>LEAVE <code>auth.users</code> untouched</strong> — note: it still contains plaintext emails +
+        password hashes (can be scrubbed later).</li>
+      <li><strong>Execution order (fresh thread):</strong> deploy the v1-cron retirement FIRST → <code>pg_dump</code>
+        backup → run the purge SQL.</li>
+    </ul>
   </div>
 
   <!-- ============================================================ -->
@@ -929,8 +949,11 @@
       page + GitHub Pages, then the live block was swapped: the production app's <code>app-block.liquid</code> now
       loads <code>health-plan-v2.js</code> (version <code>health-roadmap-726</code>) on <code>/pages/roadmap</code>.
       Rollback = the old <code>health-tool.js</code> kept in the extension assets + revert the
-      <code>app-block.liquid</code> change. The dead server routes/code were torn down the same day (see §15);
-      deleting the old per-user Supabase data (chat history kept, anonymized) is the remaining step.</li>
+      <code>app-block.liquid</code> change. The dead server routes/code were torn down and deployed the same day
+      (see §15, live as <code>health-roadmap-727</code>), and the v1 reminder cron was retired in code; the data
+      purge is decided + scripted (<code>supabase/data-purge-2026-06.sql</code> — keep ALL chat anonymized, scrub
+      profiles to pseudonymous anchors, delete the per-user health tables) with execution pending in a fresh thread
+      (deploy cron retirement → pg_dump backup → run the purge SQL).</li>
   </ul>
 
   <!-- ============================================================ -->

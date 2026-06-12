@@ -100,7 +100,7 @@
 <main>
   <h1>Health Roadmap v2 — Implementation &amp; Build Log</h1>
   <p class="meta">
-    Status: <span class="pill ok">PRODUCTION CUTOVER DONE 2026-06-12 — /pages/roadmap now serves v2 (health-roadmap-726). Old-infrastructure teardown + dev-app removal done 2026-06-12 (dead routes + report/welcome email + per-user CRUD deleted; ONE Shopify app). Remaining Phase 7: delete old per-user Supabase data (keep anonymized chat) + v1 reminder-cron follow-up</span> &nbsp;·&nbsp;
+    Status: <span class="pill ok">PRODUCTION CUTOVER DONE 2026-06-12 — /pages/roadmap serves v2 (health-roadmap-727). Teardown done (deployed + e2e verified); v1 reminder cron retired in code; data purge prepared (supabase/data-purge-2026-06.sql), pending execution in fresh thread</span> &nbsp;·&nbsp;
     Updated: 2026-06-12 &nbsp;·&nbsp; Live: <a href="https://drbradstanfield.github.io/roadmap/">drbradstanfield.github.io/roadmap/</a> (app) · <a href="https://drbradstanfield.github.io/roadmap/test.html">test.html</a> (storage harness)
     &nbsp;·&nbsp; Repo: <code>DrBradStanfield/roadmap</code> (<code>main</code>)
   </p>
@@ -144,12 +144,46 @@
       <tr><td>4 — AI features (free, website)</td><td>Lab-extract + chat through Brad's server behind the Shopify proxy (rate-limit + daily $ cap); BYO-key path for self-host</td><td><span class="pill ok">DONE — lab uploads e2e verified 2026-06-10; BYOK chat + uploads on Pages 2026-06-11; both chats carry dated history (e2e verified live both surfaces 2026-06-11)</span></td></tr>
       <tr><td>5 — Shopify embedding</td><td>Dev app + v2 theme-extension bundle on a hidden test page</td><td><span class="pill ok">DONE 2026-06-11 — dev app live on drstanfield.com/pages/test, server chat (Brad pays) verified</span></td></tr>
       <tr><td>6 — Chat history to user's cloud + anonymized training capture</td><td><span class="pill warn">REFRAMED 2026-06-11</span> No data migration (start fresh). Persist chat history to the user's cloud (sync) + keep anonymized chat in Supabase for training (storefront server chat only).</td><td><span class="pill ok">DONE 2026-06-11 — chat-history.json over the generalized SyncManager; e2e verified live on BOTH surfaces; /simplify'd. NOTE: <code>start-here.html</code> offline viewer NOT built (wasn't in the locked decisions — flag if still wanted)</span></td></tr>
-      <tr><td>7 — Cutover + teardown</td><td>Secret-scan + rotate (hard gate); swap live block; DELETE all old per-user Supabase data (keep anonymized chat).</td><td><span class="pill warn">In progress — secret-scan + tmp/ purge, block swap, server teardown + dev-app removal all done 2026-06-12; remaining: delete old per-user Supabase data + v1 reminder-cron follow-up</span></td></tr>
+      <tr><td>7 — Cutover + teardown</td><td>Secret-scan + rotate (hard gate); swap live block; DELETE all old per-user Supabase data (keep anonymized chat).</td><td><span class="pill warn">Nearly done — secret-scan + tmp/ purge, block swap, server teardown (deployed, health-roadmap-727) + dev-app removal + v1-cron retirement (in code) all done 2026-06-12; data purge decided + scripted (keep ALL chat, anonymized); remaining: execute the purge in a fresh thread (deploy cron retirement → pg_dump backup → run supabase/data-purge-2026-06.sql)</span></td></tr>
     </tbody>
   </table>
 
   <h2 id="log">Build log — decisions, deviations &amp; tradeoffs</h2>
   <p><span class="pill ok">decision</span> = a choice within the spec's intent · <span class="pill warn">deviation</span> = differs from what the spec literally said · <span class="pill info">tradeoff</span> = a cost accepted.</p>
+
+  <h3>v1-cron retirement + data-purge plan (2026-06-12, Brad) · teardown deployed + e2e verified; purge scripted, execution pending</h3>
+
+  <div class="logentry">
+    <div class="hdr"><span class="pill ok">shipped + decided</span><strong>Teardown live on Fly + Shopify (health-roadmap-727); v1 reminder cron retired in code; data purge decided (keep ALL chat, anonymized) and scripted — execution in a fresh thread</strong></div>
+    <div class="body">
+      <ul>
+        <li><span class="pill ok">teardown deployed</span> The old-infrastructure teardown (entry below) is live on
+          Fly + Shopify (<code>health-roadmap-727</code>) and e2e verified: v2 loads, no dead-route calls, chat works,
+          the cloud picker opens with Drive/Dropbox/GitHub.</li>
+        <li><span class="pill ok">v1 cron retired in code</span> The v1 reminder cron is removed — along with
+          <code>cleanupGuestProfiles</code>, which used to delete guest profiles and cascade-delete their chat.
+          <code>reminders-v2</code> is the surviving cron. This stops legacy v1 reminder emails to users who never
+          migrated.</li>
+        <li><span class="pill ok">data purge DECIDED</span> Script prepared at
+          <code>supabase/data-purge-2026-06.sql</code>; execution PENDING in a fresh thread:
+          <ul>
+            <li><strong>KEEP ALL chat history</strong> (<code>chat_conversations</code>, <code>chat_messages</code>,
+              <code>chat_match_events</code>, <code>guest_chat_sessions</code>) — anonymized (identity columns / IPs
+              scrubbed), nothing deleted. Brad was explicit: keep all chat data.</li>
+            <li><strong>SCRUB profiles into pseudonymous anchors</strong> — kept as FK anchors for chat; demographics
+              nulled, synthetic email, Shopify customer id dropped.</li>
+            <li><strong>DELETE the per-user health tables</strong> — measurements, medications, supplements,
+              screenings, lab_values, documents, reminder_preferences/log, message_credit_transactions; anonymize
+              <code>audit_logs</code>.</li>
+            <li><strong>LEAVE <code>auth.users</code> untouched</strong> — NOTE: it still contains plaintext emails +
+              password hashes (can be scrubbed later).</li>
+          </ul>
+        </li>
+        <li><span class="pill info">execution order (fresh thread)</span> 1) deploy the v1-cron retirement FIRST →
+          2) <code>pg_dump</code> backup → 3) run the purge SQL.</li>
+      </ul>
+    </div>
+  </div>
 
   <h3>Old-infrastructure teardown + dev-app removal (2026-06-12, Brad) · dead server data layer deleted; ONE Shopify app</h3>
 

@@ -17,7 +17,6 @@ import * as Sentry from '@sentry/remix';
 import { GROUP_COOLDOWNS, getCategoryGroup, type ReminderCategory } from '../../packages/health-core/src/reminders';
 import { buildReminderV2EmailHtml, sendReminderEmail } from './email.server';
 import { tryAcquireCronLock } from './supabase.server';
-import { processWithConcurrency } from './reminder-cron.server';
 import { getOptinsBatch, recordSent, type ReminderV2Optin } from './reminder-v2.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000; // hourly tick
@@ -29,6 +28,22 @@ const APP_BASE_URL = process.env.SHOPIFY_APP_URL || 'https://health-tool-app.fly
 
 let lastRunDate: string | null = null;
 let cronIntervalId: ReturnType<typeof setInterval> | null = null;
+
+/** Process items in chunks of `limit`, using Promise.allSettled per chunk.
+ *  (Moved here from the retired v1 reminder cron — pure helper.) */
+async function processWithConcurrency<T, R>(
+  items: T[],
+  fn: (item: T) => Promise<R>,
+  limit: number,
+): Promise<PromiseSettledResult<R>[]> {
+  const results: PromiseSettledResult<R>[] = [];
+  for (let i = 0; i < items.length; i += limit) {
+    const chunk = items.slice(i, i + limit);
+    const chunkResults = await Promise.allSettled(chunk.map(fn));
+    results.push(...chunkResults);
+  }
+  return results;
+}
 
 export function startReminderV2Cron(): void {
   if (process.env.NODE_ENV === 'development') {

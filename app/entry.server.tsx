@@ -8,7 +8,6 @@ import {
 import { isbot } from "isbot";
 import { addDocumentResponseHeaders } from "./shopify.server";
 import * as Sentry from "@sentry/remix";
-import { stopReminderCron } from './lib/reminder-cron.server';
 import { stopReminderV2Cron } from './lib/reminder-v2-cron.server';
 import { stopTrendingCron } from './lib/trending-cron.server';
 import { stopDiscordBot } from './lib/discord-bot.server';
@@ -100,7 +99,6 @@ Sentry.init({
 // Graceful shutdown: stop the cron job and allow in-flight requests to drain
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully...');
-  stopReminderCron();
   stopReminderV2Cron();
   stopTrendingCron();
   stopDiscordBot();
