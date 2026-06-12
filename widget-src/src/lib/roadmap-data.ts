@@ -114,9 +114,6 @@ export function computeCurrentReminderSchedule(): ReminderScheduleItem[] {
 export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult | null> {
   return store ? store.loadLatestMeasurements() : null;
 }
-export async function loadMeasurementHistory(metricType: string): Promise<ApiMeasurement[]> {
-  return store ? store.loadMeasurementHistory(metricType) : [];
-}
 export async function loadAllHistory(): Promise<ApiMeasurement[]> {
   return store ? store.loadAllHistory() : [];
 }
@@ -126,16 +123,10 @@ export async function loadMedicationHistory(): Promise<ApiMedicationHistory[]> {
 export async function loadLabValues(): Promise<ApiLabValue[] | null> {
   return store ? store.loadLabValues() : null;
 }
-export async function getHealthDocuments(): Promise<ApiDocument[]> {
-  return store ? store.getHealthDocuments() : [];
-}
 
 // --- writes ---
 export async function addMeasurement(metricType: string, value: number, recordedAt?: string): Promise<AddMeasurementResult> {
   return store ? store.addMeasurement(metricType, value, recordedAt) : { status: 'error' };
-}
-export async function deleteMeasurement(measurementId: string): Promise<boolean> {
-  return store ? store.deleteMeasurement(measurementId) : false;
 }
 export async function correctMeasurement(oldId: string, newValueSI: number): Promise<CorrectMeasurementResult> {
   return store ? store.correctMeasurement(oldId, newValueSI) : { status: 'error' };

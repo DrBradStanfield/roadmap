@@ -215,10 +215,6 @@ export class RoadmapStore {
     return activeOnly(this.file.measurements) as ApiMeasurement[];
   }
 
-  loadMeasurementHistory(metricType: string): ApiMeasurement[] {
-    return activeOnly(this.file.measurements).filter((m) => m.metricType === metricType) as ApiMeasurement[];
-  }
-
   loadMedicationHistory(): ApiMedicationHistory[] {
     // Phase 1: no medication-change chart annotations. The chart reads
     // `changeType` (started/changed/stopped), which the append-only log doesn't
@@ -229,10 +225,6 @@ export class RoadmapStore {
 
   loadLabValues(): ApiLabValue[] {
     return activeOnly(this.file.labValues) as ApiLabValue[];
-  }
-
-  getHealthDocuments(): ApiDocument[] {
-    return this.liveDocuments().map(toApiDocument);
   }
 
   /** Non-tombstoned documents — the ONE place the deleted-filter invariant lives. */
@@ -260,14 +252,6 @@ export class RoadmapStore {
     this.file.measurements.push(row);
     this.touch();
     return { status: 'inserted', row: row as ApiMeasurement };
-  }
-
-  deleteMeasurement(measurementId: string): boolean {
-    const row = this.file.measurements.find((m) => m.id === measurementId);
-    if (!row) return false;
-    row.status = 'entered-in-error'; // append-only: flip, never hard-delete
-    this.touch();
-    return true;
   }
 
   correctMeasurement(oldId: string, newValueSI: number): CorrectMeasurementResult {

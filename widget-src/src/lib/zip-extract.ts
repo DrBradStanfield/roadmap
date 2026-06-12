@@ -3,22 +3,10 @@
  * Bundled in health-upload.js (separate IIFE).
  */
 import JSZip from 'jszip';
-import type { PageContent } from './pdf-extract';
 
 const MAX_FILES = 200;
 const JUNK_PATTERNS = ['__macosx/', '.ds_store', 'thumbs.db'];
 const SUPPORTED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png'];
-
-export interface ExtractedFile {
-  fileName: string;
-  pages: PageContent[];
-}
-
-export interface ZipProgress {
-  current: number;
-  total: number;
-  fileName: string;
-}
 
 /** ZIP entry enumeration — filters junk, dotfiles, unsupported extensions. */
 export async function getZipEntries(file: File): Promise<Array<{ name: string; entry: JSZip.JSZipObject }>> {

@@ -7,7 +7,7 @@ vi.mock('./sentry', () => ({
   },
 }));
 
-import { loadLatestMeasurements, loadMeasurementHistory, addMeasurement } from './api';
+import { loadLatestMeasurements, addMeasurement } from './api';
 import { Sentry } from './sentry';
 
 describe('parseJsonResponse — HTML response from Shopify proxy', () => {
@@ -71,18 +71,6 @@ describe('parseJsonResponse — HTML response from Shopify proxy', () => {
     const result = await loadLatestMeasurements();
     expect(result).not.toBeNull();
     expect(result?.previousMeasurements).toHaveLength(1);
-  });
-
-  it('loadMeasurementHistory returns empty array when proxy returns HTML', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('<!doctype html>', {
-        status: 200,
-        headers: { 'Content-Type': 'text/html' },
-      }),
-    );
-
-    const result = await loadMeasurementHistory('weight');
-    expect(result).toEqual([]);
   });
 
   it('addMeasurement returns error status when proxy returns HTML', async () => {

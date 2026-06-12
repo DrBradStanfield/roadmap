@@ -144,28 +144,6 @@ export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult
   }
 }
 
-/**
- * Load measurement history for a specific metric type.
- */
-export async function loadMeasurementHistory(
-  metricType: string,
-  limit = 50,
-): Promise<ApiMeasurement[]> {
-  try {
-    const response = await fetch(
-      `${PROXY_PATH}/api/measurements?metric_type=${metricType}&limit=${limit}`,
-    );
-    if (!response.ok) return [];
-
-    const result = await parseJsonResponse<MeasurementsResponse>(response);
-    return result?.success ? result.data || [] : [];
-  } catch (error) {
-    console.warn('Error loading history:', error);
-    Sentry.captureException(error);
-    return [];
-  }
-}
-
 export type AddMeasurementResult =
   | { status: 'inserted'; row: ApiMeasurement }
   | { status: 'duplicate' }
@@ -213,27 +191,6 @@ export async function addMeasurement(
     console.warn('Error adding measurement:', error);
     Sentry.captureException(error);
     return { status: 'error' };
-  }
-}
-
-/**
- * Delete a measurement by ID.
- */
-export async function deleteMeasurement(measurementId: string): Promise<boolean> {
-  try {
-    const response = await fetch(`${PROXY_PATH}/api/measurements`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ measurementId }),
-    });
-    if (!response.ok) return false;
-
-    const result = await parseJsonResponse<{ success: boolean }>(response);
-    return result?.success ?? false;
-  } catch (error) {
-    console.warn('Error deleting measurement:', error);
-    Sentry.captureException(error);
-    return false;
   }
 }
 
@@ -1002,21 +959,6 @@ export async function correctMeasurement(
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch all health documents for the current user.
- */
-export async function getHealthDocuments(): Promise<ApiDocument[]> {
-  try {
-    const response = await fetch(`${PROXY_PATH}/api/health-documents`);
-    if (!response.ok) return [];
-    const data = await parseJsonResponse<{ documents: ApiDocument[] }>(response);
-    return data?.documents || [];
-  } catch (error) {
-    console.warn('Failed to fetch health documents:', error);
-    return [];
-  }
-}
-
-/**
  * How uploaded ORIGINALS are kept. The Shopify/v1 build keeps extracted text
  * only (no prompt, no archive); the local-first build overrides this:
  * 'cloud' = originals are archived in the user's cloud folders;
@@ -1212,12 +1154,6 @@ export function getABAssignments(): Record<string, string> {
     if (raw.t && raw.v) return { [raw.t]: raw.v };
   } catch { /* no assignment */ }
   return {};
-}
-
-export function getABAssignment(): { testId: string; variantId: string } | null {
-  const all = getABAssignments();
-  const entry = Object.entries(all)[0];
-  return entry ? { testId: entry[0], variantId: entry[1] } : null;
 }
 
 function trackABEvent(eventType: 'impression' | 'conversion'): void {

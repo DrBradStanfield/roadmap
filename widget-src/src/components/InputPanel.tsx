@@ -32,7 +32,6 @@ import {
   canIncreaseDose,
   shouldSuggestSwitch,
   isOnMaxPotency,
-  LIPID_TREATMENT_TARGETS,
   LIPID_DIET_ADVICE,
   resolveBestLipidMarker,
   calculateAge,
@@ -54,13 +53,11 @@ import {
   SCREENING_FOLLOWUP_INFO,
   validateInputValue,
   isBirthYearClearlyInvalid,
-  REFERENCE_HINTS,
-  type SexedRefHint,
   parseLocalisedNumber,
 } from '@roadmap/health-core';
-import { formatShortDate } from '../lib/constants';
+import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { LOCAL_FIRST } from '../lib/build-flags';
-import { DatePicker, InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
+import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline } from './BloodTestTimeline';
 import { StartingInfoVitals } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
@@ -91,21 +88,6 @@ function formatRelativeTime(ts: number): string {
   return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-const ALL_MONTHS = [
-  { value: '01', label: 'January' },
-  { value: '02', label: 'February' },
-  { value: '03', label: 'March' },
-  { value: '04', label: 'April' },
-  { value: '05', label: 'May' },
-  { value: '06', label: 'June' },
-  { value: '07', label: 'July' },
-  { value: '08', label: 'August' },
-  { value: '09', label: 'September' },
-  { value: '10', label: 'October' },
-  { value: '11', label: 'November' },
-  { value: '12', label: 'December' },
-];
-
 /** Look up a screening value by its snake_case DB key. */
 function scrVal(scr: ScreeningInputs, dbKey: string): string | number | undefined {
   const camelKey = dbKey.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -117,43 +99,6 @@ function scrStr(scr: ScreeningInputs, dbKey: string): string | undefined {
 function scrNum(scr: ScreeningInputs, dbKey: string): number | undefined {
   return scrVal(scr, dbKey) as number | undefined;
 }
-
-// Hint table lives in `packages/health-core/src/reference-hints.ts` so the
-// matrix UI and the legacy form labels stay in lockstep. Local config below
-// keeps only UI-specific bits (display name, numeric step). Hints are merged
-// from REFERENCE_HINTS at module-load time.
-interface BloodTestFieldBase {
-  field: keyof HealthInputs;
-  name: string;
-  metric: string;
-  step?: { si: string; conv: string };
-}
-
-const BLOOD_TEST_FIELDS_BASE: BloodTestFieldBase[] = [
-  { field: 'hba1c',            name: 'HbA1c',             metric: 'hba1c',             step: { si: '1',    conv: '0.1' } },
-  { field: 'creatinine',       name: 'Creatinine',        metric: 'creatinine',        step: { si: '1',    conv: '0.01' } },
-  { field: 'apoB',             name: 'ApoB',              metric: 'apob',              step: { si: '0.01', conv: '1' } },
-  { field: 'ldlC',             name: 'LDL Cholesterol',   metric: 'ldl',               step: { si: '0.1',  conv: '1' } },
-  { field: 'totalCholesterol', name: 'Total Cholesterol', metric: 'total_cholesterol', step: { si: '0.1',  conv: '1' } },
-  { field: 'hdlC',             name: 'HDL Cholesterol',   metric: 'hdl',               step: { si: '0.1',  conv: '1' } },
-  { field: 'triglycerides',    name: 'Triglycerides',     metric: 'triglycerides',     step: { si: '0.1',  conv: '1' } },
-  { field: 'lpa',              name: 'Lp(a)',             metric: 'lpa',               step: { si: '1',    conv: '1' } },
-];
-
-function refHintToFieldHint(rh: { si: string; conv: string }): { si: string; conv: string } {
-  return { si: rh.si, conv: rh.conv };
-}
-
-const BLOOD_TEST_FIELDS: FieldConfig[] = BLOOD_TEST_FIELDS_BASE.map(({ field, name, metric, step }) => {
-  const ref: SexedRefHint | undefined = (REFERENCE_HINTS as Record<string, SexedRefHint | undefined>)[metric];
-  const out: FieldConfig = { field, name, step };
-  if (ref) {
-    out.hint = refHintToFieldHint(ref);
-    if (ref.male) out.hintMale = refHintToFieldHint(ref.male);
-    if (ref.female) out.hintFemale = refHintToFieldHint(ref.female);
-  }
-  return out;
-});
 
 interface InputPanelProps {
   inputs: Partial<HealthInputs>;
@@ -359,10 +304,7 @@ export function InputPanel({
     }
   }, [inputs.heightCm, unitSystem]);
 
-  // Blood test date picker state (defaults to current month/year)
-  const [bloodTestDate, setBloodTestDate] = useState<DateValue>(getCurrentDateValue);
-
-  // PSA date picker state (separate from blood test date, for prostate section)
+  // PSA date picker state (for prostate section)
   const [psaDate, setPsaDate] = useState<DateValue>(getCurrentDateValue);
 
   const updateField = <K extends keyof HealthInputs>(
@@ -389,12 +331,6 @@ export function InputPanel({
     const dp = UNIT_DEFS[metric].decimalPlaces[fu];
     const rounded = parseFloat(display.toFixed(dp));
     return String(rounded);
-  };
-
-  const fieldLabel = (field: string, name: string): string => {
-    const metric = FIELD_METRIC_MAP[field];
-    if (!metric) return name;
-    return `${name} (${getDisplayLabel(metric, fieldUnit(field))})`;
   };
 
   const range = (field: string): { min: number; max: number } => {
@@ -487,11 +423,11 @@ export function InputPanel({
 
     const availableMonths = futureOnly
       ? (displayYear === String(currentYear)
-        ? ALL_MONTHS.filter(m => parseInt(m.value, 10) >= currentMonth)
-        : ALL_MONTHS)
+        ? MONTHS_FULL.filter(m => parseInt(m.value, 10) >= currentMonth)
+        : MONTHS_FULL)
       : (displayYear === String(currentYear)
-        ? ALL_MONTHS.filter(m => parseInt(m.value, 10) <= currentMonth)
-        : ALL_MONTHS);
+        ? MONTHS_FULL.filter(m => parseInt(m.value, 10) <= currentMonth)
+        : MONTHS_FULL);
 
     const handleDateChange = (newYear: string, newMonth: string) => {
       let adjustedMonth = newMonth;
@@ -555,15 +491,14 @@ export function InputPanel({
       : (inputs.sex === 'female' && hintFemale) ? hintFemale : hint;
   };
 
-  const renderLongitudinalField = (config: FieldConfig, isBloodTest = false) => {
+  const renderLongitudinalField = (config: FieldConfig) => {
     const { field, name, step } = config;
     const effectiveHint = resolveHint(config);
     const r = range(field);
     const previousLabel = getPreviousLabel(field);
     const needsAttention = field === 'weightKg' && formStage === 2 && inputs.weightKg === undefined;
     // In expanded mode with previous data, show "Previous:" reference instead of placeholder
-    // Blood tests no longer use this render path (they use BloodTestTimeline);
-    // the `isBloodTest` arg is retained for the legacy signature but always falsy here.
+    // (blood tests no longer use this render path — they use BloodTestTimeline).
     const isExpandedWithData = isLoggedIn && hasPreviousValue(field) && expandedVitals.has(field);
     return (
       <div className={`health-field${needsAttention ? ' field-attention' : ''}`} key={field}>
@@ -1084,7 +1019,7 @@ export function InputPanel({
           onChange={(e) => updateField('birthMonth', parseLocalisedNumber(e.target.value))}
         >
           <option value="">Month...</option>
-          {ALL_MONTHS.map((m, i) => (
+          {MONTHS_FULL.map((m, i) => (
             <option key={i + 1} value={i + 1}>{m.label}</option>
           ))}
         </select>

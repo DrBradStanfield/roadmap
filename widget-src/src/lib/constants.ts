@@ -67,13 +67,3 @@ export function formatShortDate(date: string | Date): string {
     year: 'numeric',
   });
 }
-
-/**
- * Clinical threshold constants for UI display
- */
-export const CLINICAL_THRESHOLDS = {
-  PSA_NORMAL: 4.0, // ng/mL
-  BP_TARGET_STANDARD: { systolic: 130, diastolic: 80 },
-  BP_TARGET_OPTIMAL: { systolic: 120, diastolic: 80 },
-  EZETIMIBE_DOSE: 10, // mg
-} as const;
