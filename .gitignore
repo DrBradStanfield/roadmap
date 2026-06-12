@@ -19,3 +19,6 @@ fly.toml
 docs/wiki/research/
 docs/supplement-wiki.md
 docs/knowledge-map/
+
+# Local test artifacts / scratch — never commit (purged from history 2026-06-12)
+tmp/
