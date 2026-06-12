@@ -7,6 +7,7 @@
     "build:widget": "cd widget-src && npm run build",
     "build:pages": "cd widget-src && vite build --config vite.config.standalone.ts && PAGES_BUILD=1 vite build --config vite.config.upload.ts --outDir dist-pages",
     "build:shopify-v2": "cd widget-src && vite build --config vite.config.shopify-v2.ts && PAGES_BUILD=1 vite build --config vite.config.upload.ts --outDir ../extensions-dev/health-plan-v2/assets",
+    "build:shopify-prod": "npm run build:shopify-v2 && cp extensions-dev/health-plan-v2/assets/health-plan-v2.js extensions-dev/health-plan-v2/assets/health-plan-v2.css extensions-dev/health-plan-v2/assets/health-plan-v2-HistoryPanel.js extensions-dev/health-plan-v2/assets/health-upload.js extensions/health-tool-widget/assets/",
     "dev": "shopify app dev",
     "dev:widget": "cd widget-src && npm run dev",
     "dev:pages": "cd widget-src && vite --config vite.config.standalone.ts",
