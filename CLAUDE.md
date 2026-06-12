@@ -206,11 +206,19 @@ git checkout docs/products.md
 Three widget builds from the same source; behaviour differences come from vite
 `define` flags + module swaps (`resolveId` redirects), never runtime sniffing:
 
+**PRODUCTION CUTOVER DONE (2026-06-12):** `/pages/roadmap` now serves the v2
+local-first build (prod version `health-roadmap-726`). The production app's
+`extensions/health-tool-widget/app-block.liquid` was swapped to load
+`health-plan-v2.js`; build it with **`npm run build:shopify-prod`** (= build:shopify-v2
++ copy the v2 assets into `extensions/health-tool-widget/assets`). The legacy
+`build:widget` output (`health-tool.js`) is kept in assets for rollback only.
+
 | Build | Command | `VITE_LOCAL_FIRST` | `VITE_SHOPIFY_SURFACE` | Module swaps |
 |---|---|---|---|---|
-| Production widget | `npm run build:widget` | undefined (false) | undefined (false) | none |
-| Shopify v2 (drstanfield.com/pages/test) | `npm run build:shopify-v2` | `'true'` | `'true'` | `api.ts → roadmap-data.ts` |
+| Production v2 (drstanfield.com/pages/roadmap) | `npm run build:shopify-prod` | `'true'` | `'true'` | `api.ts → roadmap-data.ts` |
+| Shopify v2 dev (drstanfield.com/pages/test) | `npm run build:shopify-v2` | `'true'` | `'true'` | `api.ts → roadmap-data.ts` |
 | GitHub Pages / self-host | `npm run build:pages` | `'true'` | undefined (false) | `api.ts → roadmap-data.ts`, `chat-api.ts → byok-chat.ts`, `upload-api.ts → byok-upload.ts` |
+| Legacy widget (rollback only) | `npm run build:widget` | undefined (false) | undefined (false) | none |
 
 - **`VITE_LOCAL_FIRST`** — marks every local-first build: the user's plan lives
   client-side (their cloud), so chat sends it as context, legacy login-sync
@@ -223,8 +231,18 @@ Three widget builds from the same source; behaviour differences come from vite
   never render there; the production widget gets it through the normal
   `!isLoggedIn` guest path instead. Declared in `widget-src/src/vite-env.d.ts`;
   defined in `vite.config.shopify-v2.ts`.
-- Shopify v2 deploys with `shopify app deploy -c dev --force` (dev app,
-  `extensions-dev/*` only). NEVER bare `shopify app deploy` until Phase 7.
+- **Two Shopify apps, two configs.** PRODUCTION = `shopify.app.toml` ("Health
+  Roadmap", client_id `94c365…`, extensions `extensions/*`, embedded on
+  `/pages/roadmap`). DEV = `shopify.app.dev.toml` ("Health Roadmap (Dev)",
+  `899d91…`, `extension_directories = [ "extensions-dev/*" ]`, embedded on
+  `/pages/test`). `shopify app deploy` targets the **currently-active config**,
+  which is whatever the last `shopify app config use` set (it drifts!). So:
+  - Dev: `shopify app config use shopify.app.dev.toml` (or `-c dev`) → `shopify app deploy --force`.
+  - **Production: `shopify app config use shopify.app.toml` → `npm run build:shopify-prod`
+    → `rm -f extensions/health-tool-widget/assets/*.map` → `shopify app deploy --force`.**
+    Verify the success banner reads `health-roadmap-<N>` (prod), NOT
+    `health-roadmap-dev-<N>` (that's the dev app — wrong target).
+  No products.md symlink dance for Shopify deploys (that's Fly-only).
 
 **Important deploy notes:**
 - **Symlink resolution before deploy**: `docs/products.md` is a symlink to the claude_business Dropbox folder. Fly.io's remote builders can't follow local symlinks. The deploy command dereferences the symlink to a temp file, removes the symlink, then moves the real file into place. `git checkout` restores the symlink after deploy. **Do NOT use `cp -L file file`** — `cp` follows destination symlinks, so the symlink is never replaced.

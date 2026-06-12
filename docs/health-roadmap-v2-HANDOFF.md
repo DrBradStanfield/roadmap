@@ -81,10 +81,13 @@ Key recent roadmap commits: `ec68a85` `53b38e2` `76b1e91` `3eccab5` `3cb822b`
    zero Shopify REST ✓. Real cost = Polaris React → Polaris web components on the
    `app.*` admin routes. Afterwards REMOVE the `GHSA-rxv8-25v2-qmq8` entry from
    `audit-ci.jsonc`.
-3. **Swap the live `/pages/roadmap` block to the v2 build** — keep the old block
-   as rollback. **DO NOT run the live swap without Brad's explicit go.** This also
-   ends the production-bundle byte-stability rule and the `.health-tool` CSS
-   double-bundle gotcha (below).
+3. ~~**Swap the live `/pages/roadmap` block to the v2 build**~~ **DONE 2026-06-12.**
+   `/pages/roadmap` serves v2 (prod version `health-roadmap-726`). The production
+   `extensions/health-tool-widget/app-block.liquid` was swapped to load
+   `health-plan-v2.js`; build with `npm run build:shopify-prod`, deploy via
+   `shopify app config use shopify.app.toml` + bare `shopify app deploy --force`.
+   Old `health-tool.js` kept in assets for rollback. The byte-stability rule is
+   retired. tmp/ secret-scan remediation also done (history purged + force-pushed).
 4. **DELETE all old per-user Supabase data** (profiles, health_measurements,
    medications + history, supplements + history, screenings, lab_values,
    health_documents, reminder_preferences, reminder_log). **KEEP**

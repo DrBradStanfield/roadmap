@@ -100,7 +100,7 @@
 <main>
   <h1>Health Roadmap v2 — Implementation &amp; Build Log</h1>
   <p class="meta">
-    Status: <span class="pill ok">Phases 0–6 done (chat history → user's cloud, e2e both surfaces) · CI green · Phase 7 (cutover + teardown) next</span> &nbsp;·&nbsp;
+    Status: <span class="pill ok">PRODUCTION CUTOVER DONE 2026-06-12 — /pages/roadmap now serves v2 (health-roadmap-726). Remaining Phase 7: delete old Supabase per-user data + tear down dead server routes</span> &nbsp;·&nbsp;
     Updated: 2026-06-11 &nbsp;·&nbsp; Live: <a href="https://drbradstanfield.github.io/roadmap/">drbradstanfield.github.io/roadmap/</a> (app) · <a href="https://drbradstanfield.github.io/roadmap/test.html">test.html</a> (storage harness)
     &nbsp;·&nbsp; Repo: <code>DrBradStanfield/roadmap</code> (<code>main</code>)
   </p>
@@ -150,6 +150,43 @@
 
   <h2 id="log">Build log — decisions, deviations &amp; tradeoffs</h2>
   <p><span class="pill ok">decision</span> = a choice within the spec's intent · <span class="pill warn">deviation</span> = differs from what the spec literally said · <span class="pill info">tradeoff</span> = a cost accepted.</p>
+
+  <h3>PRODUCTION CUTOVER + secret-scan remediation (2026-06-12, Brad) · /pages/roadmap LIVE on v2</h3>
+
+  <div class="logentry">
+    <div class="hdr"><span class="pill ok">shipped + verified live</span><strong>/pages/roadmap now serves the v2 local-first widget (prod version health-roadmap-726)</strong></div>
+    <div class="body">
+      <ul>
+        <li><span class="pill warn">secret-scan hard gate (done first)</span> gitleaks over all 529 commits found NO
+          high-value API keys (.env never committed; .env.example/README are placeholders). The 87 findings were expired
+          Shopify customer session JWTs + public CDN <code>?key=</code> params + the public Dropbox app-key — nothing to
+          rotate. BUT a committed <code>tmp/</code> dir (61 files) on the PUBLIC repo held real user chat-audit data
+          (~70 sessions, 5 emails) + 2 lab PDFs. Purged from ALL history with <code>git filter-repo --path tmp/
+          --invert-paths</code>, gitignored, force-pushed (<code>c6fa6b1…ac5c663</code>). Backup bundle at
+          <code>~/roadmap-backup-pre-tmp-purge.bundle</code>. Caveat: GitHub may cache old commits / forks may retain.</li>
+        <li><span class="pill ok">cutover mechanism</span> The production app (<code>shopify.app.toml</code>, "Health
+          Roadmap", 94c365) owns <code>extensions/health-tool-widget</code>; its <code>app-block</code> is what
+          /pages/roadmap embeds. Built the v2 bundle into that extension's assets and swapped
+          <code>app-block.liquid</code>'s body to the v2 hero + local-first root + <code>health-plan-v2.js</code> (SAME
+          block handle, so the page embed stayed valid — no theme-editor change). New <code>build:shopify-prod</code>
+          script = build:shopify-v2 + copy the 4 v2 assets into the prod extension. Deployed via
+          <code>shopify app config use shopify.app.toml</code> then bare <code>shopify app deploy --force</code>.</li>
+        <li><span class="pill warn">deploy gotcha</span> bare <code>shopify app deploy</code> targets the
+          CURRENTLY-ACTIVE config, which had drifted to the DEV app (a bare deploy first went to health-roadmap-dev-27 by
+          mistake). Must <code>shopify app config use shopify.app.toml</code> to target production. The old
+          "NEVER bare deploy" CLAUDE.md note is retired — the prod config is now the cutover target.</li>
+        <li><span class="pill ok">e2e verified live on /pages/roadmap</span> loads health-roadmap-726/health-plan-v2.js
+          (not the old health-tool.js); "Saved on this device only" banner + new copy; no "Last saved" line; plan renders;
+          <strong>server chat answers correctly through the production app proxy</strong> (ApoB question). Returning-user
+          collapse verified: full prefill → reload → "Male · 182 cm tall · Born Mar 1988 (Age 38)" collapsed summary.</li>
+        <li><span class="pill ok">rollback</span> old <code>health-tool.js</code> kept in the prod extension assets;
+          revert the <code>app-block.liquid</code> commit + redeploy to restore the legacy widget.</li>
+        <li><span class="pill ok">/simplify</span> follow-up (health-roadmap-726): <code>getInitialInputsSync</code> now
+          reads prefill straight off the profile (<code>RoadmapStore.getPrefillInputs()</code>) instead of the full
+          measurements pipeline; <code>sendGuestReport</code> override signature made honest.</li>
+      </ul>
+    </div>
+  </div>
 
   <h3>Returning-user "Starting Info" collapse on refresh + reminders label (2026-06-12, Brad) · SHIPPED dev-26 + e2e verified</h3>
 
