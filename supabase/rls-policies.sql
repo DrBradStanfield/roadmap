@@ -1,6 +1,15 @@
 -- Supabase RLS Policies for Health Roadmap Tool
 -- Run this in the Supabase SQL Editor (Dashboard > SQL Editor)
 --
+-- SAFE TO PASTE-RUN IN FULL, ANY TIME. Every statement is idempotent:
+--   - Tables/indexes/columns use CREATE ... IF NOT EXISTS / ADD COLUMN IF NOT EXISTS
+--   - Policies and triggers are each preceded by DROP ... IF EXISTS
+--   - Constraints use DROP CONSTRAINT IF EXISTS (or a DO-block existence check)
+--   - Functions use CREATE OR REPLACE
+-- Re-running the whole file is a no-op on already-applied objects and only
+-- applies what's missing. This is the canonical way to apply schema changes:
+-- edit this file, paste the whole thing into the SQL Editor, run.
+--
 -- RLS is enforced at the database level. The app uses:
 --   - Service key (supabaseAdmin) for user creation and profile lookups only
 --   - Anon key + custom JWT (createUserClient) for all data queries
@@ -832,6 +841,19 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   model TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Columns added after the original CREATE (CREATE IF NOT EXISTS is a no-op on
+-- existing tables, so new columns must be added via ALTER). Applied directly to
+-- the live DB; these idempotent statements keep this file in sync.
+--  - is_fallback (2026-05-15): true when the LLM call failed/empty and the
+--    user-facing fallback message was substituted.
+--  - failure_mode / error_detail (2026-06-11): the *cause* of a fallback, so the
+--    daily audit email is self-diagnosing instead of requiring a Sentry lookup.
+--    failure_mode ∈ {'api-error','empty-response'}; error_detail is the raw error
+--    (truncated to 500 chars in the app before insert). Both NULL on success.
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS is_fallback BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS failure_mode TEXT;
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS error_detail TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_chat_conversations_user_updated
   ON chat_conversations (user_id, updated_at DESC);
