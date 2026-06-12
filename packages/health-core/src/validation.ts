@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UNIT_DEFS, UnitSystem, MetricType } from './units';
+import { UNIT_DEFS, UnitSystem } from './units';
 import { FIELD_METRIC_MAP } from './mappings';
 
 /**
@@ -217,11 +217,6 @@ export const MEDICATION_KEYS = [
 ] as const;
 
 /**
- * Valid statin drug names.
- */
-export const STATIN_DRUG_NAMES = ['atorvastatin', 'pitavastatin', 'pravastatin', 'rosuvastatin', 'simvastatin', 'none', 'not_tolerated'] as const;
-
-/**
  * Schema for validating a medication upsert request (FHIR-compatible).
  */
 export const medicationSchema = z.object({
@@ -244,8 +239,6 @@ export const supplementSchema = z.object({
   status: z.enum(['active', 'stopped']).optional(),
   startedAt: z.string().optional(),
 });
-
-export type ValidatedSupplement = z.infer<typeof supplementSchema>;
 
 /**
  * Valid screening keys for the screenings table.
@@ -303,51 +296,12 @@ export const batchImportRequestSchema = z.object({
   })).min(1).max(200),
 });
 
-export type BatchImportRequest = z.infer<typeof batchImportRequestSchema>;
-
 /** Bulk measurement save — array variant of measurementSchema */
 export const bulkMeasurementSchema = z.object({
   bulkMeasurements: z.array(measurementSchema).min(1).max(50),
 });
 
 export type BulkMeasurementRequest = z.infer<typeof bulkMeasurementSchema>;
-
-/**
- * Post-save measurement correction. Wraps the correct_measurement() RPC.
- * The corrected row keeps the original recorded_at; the RPC's optional
- * new_recorded_at param is reserved for a future date-correction UI.
- */
-export const correctMeasurementSchema = z.object({
-  correctMeasurement: z.object({
-    oldId: z.string().uuid(),
-    newValue: z.number().finite(),
-  }),
-});
-
-export type CorrectMeasurementRequest = z.infer<typeof correctMeasurementSchema>;
-
-/**
- * Schema for a flexible lab value (beyond the 13 core metrics).
- * Stored with original value + unit from the lab report (no SI conversion).
- */
-export const labValueSchema = z.object({
-  metricName: z.string().min(1).max(100),
-  value: z.number().finite(),
-  unit: z.string().max(50),
-  referenceLow: z.number().nullable().optional(),
-  referenceHigh: z.number().nullable().optional(),
-  recordedAt: z.string().datetime(),
-  source: z.enum(MEASUREMENT_SOURCES).optional(),
-});
-
-export type ValidatedLabValue = z.infer<typeof labValueSchema>;
-
-/** Bulk lab value save */
-export const bulkLabValueSchema = z.object({
-  bulkLabValues: z.array(labValueSchema).min(1).max(200),
-});
-
-export type BulkLabValueRequest = z.infer<typeof bulkLabValueSchema>;
 
 // ---------------------------------------------------------------------------
 // Health document schemas
@@ -359,25 +313,6 @@ export const DOCUMENT_TYPES = [
 ] as const;
 
 export type DocumentType = typeof DOCUMENT_TYPES[number];
-
-/** Schema for saving a health document */
-export const healthDocumentSchema = z.object({
-  documentType: z.enum(DOCUMENT_TYPES),
-  title: z.string().min(1).max(500),
-  documentDate: z.string().nullable(), // YYYY-MM-DD or null
-  contentMd: z.string().min(1).max(200_000), // ~200KB text max
-  metadata: z.record(z.unknown()).default({}),
-  sourceFileName: z.string().max(500).nullable().default(null),
-});
-
-export type HealthDocumentInput = z.infer<typeof healthDocumentSchema>;
-
-/** Bulk document save */
-export const bulkHealthDocumentSchema = z.object({
-  bulkDocuments: z.array(healthDocumentSchema).min(1).max(20),
-});
-
-export type BulkHealthDocumentRequest = z.infer<typeof bulkHealthDocumentSchema>;
 
 // ---------------------------------------------------------------------------
 // Client-side input validation (identity fields only — no unit conversion)

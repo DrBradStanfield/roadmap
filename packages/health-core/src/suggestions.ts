@@ -1,6 +1,6 @@
 import type { HealthInputs, HealthResults, Suggestion, MedicationInputs, ScreeningInputs } from './types';
 import { SUGGESTION_EVIDENCE } from './evidence';
-import { SCREENING_INTERVALS, POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, STATIN_DRUGS, canIncreaseDose, shouldSuggestSwitch, isOnMaxPotency, canIncreaseGlp1Dose, shouldSuggestGlp1Switch, isOnMaxGlp1Potency, getScreeningNextDueDate } from './types';
+import { POST_FOLLOWUP_INTERVALS, SCREENING_FOLLOWUP_INFO, STATIN_DRUGS, canIncreaseDose, shouldSuggestSwitch, canIncreaseGlp1Dose, shouldSuggestGlp1Switch, getScreeningNextDueDate } from './types';
 import {
   type UnitSystem,
   type MetricType,
@@ -717,7 +717,6 @@ export function generateSuggestions(
         // Step 3: Escalate statin
         const canIncrease = onStatin && canIncreaseDose(statin.drug, statin.dose);
         const shouldSwitch = onStatin && shouldSuggestSwitch(statin.drug, statin.dose);
-        const atMaxPotency = onStatin && isOnMaxPotency(statin.drug, statin.dose);
 
         // Step 3: Escalate statin (only if tolerated, can escalate, and not yet tried)
         let escalationHandled = false;
@@ -768,13 +767,6 @@ export function generateSuggestions(
       const nextDue = getScreeningNextDueDate(lastDate, method);
       if (!nextDue) return 'unknown';
       return new Date() > nextDue ? 'overdue' : 'upcoming';
-    }
-
-    function formatYYYYMM(yyyymm: string): string {
-      const [y, m] = yyyymm.split('-').map(Number);
-      if (!y || !m) return yyyymm;
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      return `${months[m - 1]} ${y}`;
     }
 
     function nextDueStr(lastDate: string, method: string): string {

@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@sentry/react": "^10.38.0",
-    "@sentry/remix": "^10.38.0",
     "chart.js": "^4.5.1",
     "chartjs-adapter-date-fns": "^3.0.0",
     "chartjs-plugin-annotation": "^3.1.0",

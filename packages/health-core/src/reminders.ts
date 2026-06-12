@@ -5,7 +5,7 @@
  * screening dates, blood test dates, and medication status.
  * No database dependencies — designed for unit testing.
  */
-import type { ScreeningInputs, MedicationInputs } from './types';
+import type { ScreeningInputs } from './types';
 import { getPostFollowupDueDate, getScreeningNextDueDate } from './types';
 
 // ===== Types =====
