@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
 import * as Sentry from '@sentry/remix';
-import type { HealthInputs, MedicationInputs, ScreeningInputs } from '../../packages/health-core/src/types';
+import type { HealthInputs } from '../../packages/health-core/src/types';
 import { measurementsToInputs, medicationsToInputs, screeningsToInputs } from '../../packages/health-core/src/mappings';
 import { MEASUREMENT_SOURCES, type MeasurementStatus, type MeasurementSource } from '../../packages/health-core/src/validation';
 
@@ -446,8 +446,6 @@ export async function getLatestMeasurements(
   return (data ?? []) as DbMeasurement[];
 }
 
-export const POSTGRES_UNIQUE_VIOLATION = '23505';
-
 // ---------------------------------------------------------------------------
 // Profile CRUD — demographics stored as columns on the profiles table.
 // RLS enforces auth.uid() on every query.
@@ -607,220 +605,6 @@ export async function getHealthDocuments(
   return (data ?? []) as DbHealthDocument[];
 }
 
-/** Add a health document. Returns the created document or null on error. */
-export async function addHealthDocument(
-  client: SupabaseClient,
-  userId: string,
-  doc: {
-    documentType: string;
-    title: string;
-    documentDate: string | null;
-    contentMd: string;
-    metadata: Record<string, unknown>;
-    sourceFileName: string | null;
-  },
-): Promise<DbHealthDocument | null> {
-  const { data, error } = await client
-    .from('health_documents')
-    .insert({
-      user_id: userId,
-      document_type: doc.documentType,
-      title: doc.title,
-      document_date: doc.documentDate,
-      content_md: doc.contentMd,
-      metadata: doc.metadata,
-      source_file_name: doc.sourceFileName,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error('Error adding health document:', error);
-    return null;
-  }
-
-  logAudit(userId, 'DOCUMENT_CREATED', 'health_document', data.id, {
-    documentType: doc.documentType,
-    title: doc.title,
-  });
-
-  return data as DbHealthDocument;
-}
-
-/** Delete a health document. RLS verifies ownership. */
-export async function deleteHealthDocument(
-  client: SupabaseClient,
-  userId: string,
-  documentId: string,
-): Promise<boolean> {
-  const { data, error } = await client
-    .from('health_documents')
-    .delete()
-    .eq('id', documentId)
-    .select('id');
-
-  if (error) {
-    console.error('Error deleting health document:', error);
-    return false;
-  }
-
-  if (data && data.length > 0) {
-    logAudit(userId, 'DOCUMENT_DELETED', 'health_document', documentId);
-  }
-
-  return (data?.length ?? 0) > 0;
-}
-
-// ---------------------------------------------------------------------------
-// Lab Values (flexible storage for all non-core metrics)
-// ---------------------------------------------------------------------------
-
-interface DbLabValue {
-  id: string;
-  user_id: string;
-  metric_name: string;
-  value: number;
-  unit: string;
-  reference_low: number | null;
-  reference_high: number | null;
-  recorded_at: string;
-  source: string;
-  created_at: string;
-}
-
-/** Convert DB lab value row to camelCase API format. */
-export function toApiLabValue(row: DbLabValue) {
-  return {
-    id: row.id,
-    metricName: row.metric_name,
-    value: row.value,
-    unit: row.unit,
-    referenceLow: row.reference_low,
-    referenceHigh: row.reference_high,
-    recordedAt: row.recorded_at,
-    source: row.source,
-    createdAt: row.created_at,
-  };
-}
-
-export type ApiLabValue = ReturnType<typeof toApiLabValue>;
-
-/**
- * Get active lab values for the authenticated user, newest first.
- * `entered-in-error` rows are excluded — they exist for audit only.
- */
-export async function getLabValues(
-  client: SupabaseClient,
-  metricName?: string,
-  limit = 500,
-  offset = 0,
-): Promise<DbLabValue[]> {
-  let query = client
-    .from('lab_values')
-    .select('*')
-    .eq('status', 'active')
-    .order('recorded_at', { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  if (metricName) {
-    query = query.eq('metric_name', metricName);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error fetching lab values:', error);
-    return [];
-  }
-
-  return (data ?? []) as DbLabValue[];
-}
-
-/**
- * Bulk insert lab values. Per-row inserts (in parallel) so a single
- * 23505 unique_violation doesn't fail the whole batch — duplicates are
- * counted in `skippedDuplicates`.
- *
- * Dedup is enforced by `uniq_lab_values_user_metric_active` which is
- * `(user_id, lower(trim(metric_name)), recorded_at) WHERE status='active'`.
- * Callers can send any casing/whitespace; the index normalises.
- */
-export async function addLabValues(
-  client: SupabaseClient,
-  userId: string,
-  values: Array<{
-    metricName: string;
-    value: number;
-    unit: string;
-    referenceLow?: number | null;
-    referenceHigh?: number | null;
-    recordedAt: string;
-    source?: string;
-  }>,
-): Promise<{ saved: DbLabValue[]; skippedDuplicates: number; errorCount: number }> {
-  const results = await Promise.all(values.map(v => {
-    const row = {
-      user_id: userId,
-      metric_name: v.metricName,
-      value: v.value,
-      unit: v.unit,
-      reference_low: v.referenceLow ?? null,
-      reference_high: v.referenceHigh ?? null,
-      recorded_at: v.recordedAt,
-      source: v.source || 'lab_import',
-    };
-    return client.from('lab_values').insert(row).select().single();
-  }));
-
-  const saved: DbLabValue[] = [];
-  let skippedDuplicates = 0;
-  let errorCount = 0;
-  for (const r of results) {
-    if (r.error) {
-      if (r.error.code === POSTGRES_UNIQUE_VIOLATION) {
-        skippedDuplicates++;
-      } else {
-        console.error('Error inserting lab value:', { error: r.error.message, code: r.error.code });
-        errorCount++;
-      }
-      continue;
-    }
-    if (r.data) saved.push(r.data as DbLabValue);
-  }
-
-  if (saved.length > 0) {
-    logAudit(userId, 'LAB_VALUES_CREATED', 'lab_values', undefined, {
-      count: saved.length,
-      metrics: saved.map(r => r.metric_name),
-    });
-  }
-  return { saved, skippedDuplicates, errorCount };
-}
-
-/** Delete a single lab value. RLS verifies ownership. */
-export async function deleteLabValue(
-  client: SupabaseClient,
-  userId: string,
-  labValueId: string,
-): Promise<boolean> {
-  const { data, error } = await client
-    .from('lab_values')
-    .delete()
-    .eq('id', labValueId)
-    .select('id');
-
-  if (error) {
-    console.error('Error deleting lab value:', error);
-    return false;
-  }
-
-  if (data && data.length > 0) {
-    logAudit(userId, 'LAB_VALUE_DELETED', 'lab_values', labValueId);
-  }
-
-  return (data?.length ?? 0) > 0;
-}
-
 /** Names of seeded `cron_lock` rows. New crons must add their lock name here AND
  *  seed a row in supabase/rls-policies.sql — typo on either side silently disables
  *  the cron (UPDATE matches zero rows → returns false → cron never runs). */
@@ -900,7 +684,7 @@ export async function tryAcquireCronLock(
 
 // ---------------------------------------------------------------------------
 // Shared health data loading — parallel fetch + conversion to health-core format.
-// Used by email.server.ts (welcome/reminder emails) and chat.server.ts (LLM context).
+// Used by chat.server.ts (LLM context).
 // ---------------------------------------------------------------------------
 
 export async function loadHealthData(client: SupabaseClient) {
@@ -919,81 +703,6 @@ export async function loadHealthData(client: SupabaseClient) {
   const medInputs = medicationsToInputs(medications.map(toApiMedication));
   const screenInputs = screeningsToInputs(screenings.map(toApiScreening));
   return { profile, inputs, medInputs, screenInputs, healthDocuments };
-}
-
-// ---------------------------------------------------------------------------
-// Account data deletion — deletes all user data and anonymizes audit logs.
-// Uses supabaseAdmin (service role) to ensure complete cleanup.
-// ---------------------------------------------------------------------------
-
-export async function deleteAllUserData(userId: string): Promise<{ measurementsDeleted: number }> {
-  if (!supabaseAdmin) {
-    throw new Error('Supabase admin client not configured');
-  }
-
-  // Safeguard: the Discord bot profile is shared across all Discord conversations.
-  // Deleting it would wipe the entire Discord chat history in one request.
-  const discordBotProfileId = process.env.DISCORD_BOT_PROFILE_ID;
-  if (discordBotProfileId && userId === discordBotProfileId) {
-    throw new Error('Refusing to delete shared Discord bot profile');
-  }
-
-  // 1. Log the deletion before removing data
-  logAudit(userId, 'USER_DATA_DELETED', 'user', userId);
-
-  // 2. Count and delete all measurements
-  const { data: measurements } = await supabaseAdmin
-    .from('health_measurements')
-    .select('id')
-    .eq('user_id', userId);
-  const measurementsDeleted = measurements?.length ?? 0;
-
-  if (measurementsDeleted > 0) {
-    const { error: delError } = await supabaseAdmin
-      .from('health_measurements')
-      .delete()
-      .eq('user_id', userId);
-    if (delError) {
-      throw new Error(`Failed to delete measurements: ${delError.message}`);
-    }
-  }
-
-  // Delete dependent tables — log errors but continue (partial deletion > no deletion)
-  for (const table of ['chat_messages', 'chat_conversations', 'message_credit_transactions', 'medication_history', 'medications', 'supplement_history', 'supplements', 'screenings', 'reminder_preferences', 'health_documents', 'lab_values', 'reminder_log'] as const) {
-    const { error } = await supabaseAdmin.from(table).delete().eq('user_id', userId);
-    if (error) console.error(`Failed to delete ${table} for ${userId}:`, error.message);
-  }
-
-  // 4. Anonymize audit logs
-  await supabaseAdmin
-    .from('audit_logs')
-    .update({ user_id: null })
-    .eq('user_id', userId);
-
-  // 5. Delete profile row
-  const { error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .delete()
-    .eq('id', userId);
-  if (profileError) {
-    throw new Error(`Failed to delete profile: ${profileError.message}`);
-  }
-
-  // 6. Delete Supabase Auth user
-  const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-  if (authError) {
-    throw new Error(`Failed to delete auth user: ${authError.message}`);
-  }
-
-  // 7. Clear from in-memory cache
-  for (const [key, entry] of userIdCache) {
-    if (entry.userId === userId) {
-      userIdCache.delete(key);
-      break;
-    }
-  }
-
-  return { measurementsDeleted };
 }
 
 // ---------------------------------------------------------------------------
