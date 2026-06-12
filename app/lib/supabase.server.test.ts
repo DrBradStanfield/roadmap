@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  toApiMeasurement, toApiProfile, toApiMedication, toApiScreening, deriveMedicationStatus,
+  toApiMeasurement, toApiProfile, toApiMedication, toApiScreening,
   aggregateABCounts,
   type DbMeasurement, type DbProfile, type DbMedication, type DbScreening,
   type ABCountRow,
@@ -281,33 +281,6 @@ describe('toApiScreening', () => {
     expect(result).not.toHaveProperty('userId');
     expect(result).not.toHaveProperty('created_at');
     expect(result).not.toHaveProperty('createdAt');
-  });
-});
-
-describe('deriveMedicationStatus', () => {
-  it('derives not-taken from none', () => {
-    expect(deriveMedicationStatus('none')).toBe('not-taken');
-  });
-
-  it('derives stopped from not_tolerated', () => {
-    expect(deriveMedicationStatus('not_tolerated')).toBe('stopped');
-  });
-
-  it('derives intended from not_yet', () => {
-    expect(deriveMedicationStatus('not_yet')).toBe('intended');
-  });
-
-  it('derives active from actual drug names', () => {
-    expect(deriveMedicationStatus('atorvastatin')).toBe('active');
-    expect(deriveMedicationStatus('rosuvastatin')).toBe('active');
-    expect(deriveMedicationStatus('ezetimibe')).toBe('active');
-    expect(deriveMedicationStatus('tirzepatide')).toBe('active');
-    expect(deriveMedicationStatus('empagliflozin')).toBe('active');
-    expect(deriveMedicationStatus('ir_500')).toBe('active');
-  });
-
-  it('derives active from yes (legacy compat)', () => {
-    expect(deriveMedicationStatus('yes')).toBe('active');
   });
 });
 

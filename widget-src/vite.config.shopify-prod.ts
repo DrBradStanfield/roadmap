@@ -3,15 +3,15 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { execSync } from 'child_process';
 
-// Phase 5: the v2 LOCAL-FIRST app built for the Shopify DEV theme extension
-// (extensions-dev/health-plan-v2). Same standalone entry + api→shim redirect
-// as the Pages build — only the packaging differs:
+// The LOCAL-FIRST production Shopify widget, built straight into the
+// production theme extension (extensions/health-tool-widget/assets). Same
+// standalone entry + api→shim redirect as the Pages build — only the
+// packaging differs:
 //  - ES module with FIXED file names (Shopify asset_url can't follow vite
 //    content hashes). The lazy HistoryPanel chunk resolves relative to the
 //    importing module's CDN URL, so code-splitting still works.
 //  - No sourcemaps to the public theme (matches the Pages posture).
-// Deploys ONLY with `shopify app deploy -c dev` (the prod config doesn't list
-// extensions-dev/) — the live widget cannot pick this up by accident.
+// Deploys with `npx shopify app deploy --force` (production app).
 let gitHash = 'dev';
 try {
   gitHash = execSync('git rev-parse --short HEAD').toString().trim();
@@ -63,7 +63,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: resolve(__dirname, '../extensions-dev/health-plan-v2/assets'),
+    outDir: resolve(__dirname, '../extensions/health-tool-widget/assets'),
     emptyOutDir: false, // assets dir also holds the upload bundle
     sourcemap: false,
     rollupOptions: {

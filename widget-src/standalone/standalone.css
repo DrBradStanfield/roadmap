@@ -1,6 +1,6 @@
 /* Standalone chrome: hero, sync control, picker + history lightboxes.
-   Shared by the Pages build (index.html) and the Shopify dev block
-   (extensions-dev/health-plan-v2) via the app.tsx import. */
+   Shared by the Pages build (index.html) and the production Shopify block
+   (extensions/health-tool-widget) via the app.tsx import. */
 /* Hero header — mirrors the drstanfield.com/pages/roadmap page header. */
 .hr-hero {
   max-width: 1100px; margin: 24px auto 8px; padding: 0 16px;

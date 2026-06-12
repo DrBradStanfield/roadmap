@@ -6,7 +6,6 @@
 import * as Sentry from '@sentry/remix';
 import { authenticate } from '../shopify.server';
 import { getOrCreateSupabaseUser, createUserClient } from './supabase.server';
-import { subscribeToKlaviyo } from './klaviyo.server';
 
 /** Extract client IP from x-forwarded-for header (Shopify app proxy always sets this). */
 export function getClientIp(request: Request): string {
@@ -191,49 +190,3 @@ export async function checkSubscriptionFromTags(
   }
 }
 
-/**
- * Tag a Shopify customer with "roadmap-user" for Klaviyo audience sync.
- * Fire-and-forget — never throws. tagsAdd is idempotent (no-op if tag exists).
- */
-export async function tagShopifyCustomer(admin: any, customerId: string): Promise<void> {
-  try {
-    const response = await admin.graphql(`
-      mutation addTags($id: ID!, $tags: [String!]!) {
-        tagsAdd(id: $id, tags: $tags) {
-          node { id }
-          userErrors { message }
-        }
-      }
-    `, {
-      variables: {
-        id: `gid://shopify/Customer/${customerId}`,
-        tags: ['roadmap-user'],
-      },
-    });
-    const result = await response.json();
-    const userErrors = result?.data?.tagsAdd?.userErrors;
-    if (userErrors?.length) {
-      console.warn('Shopify tagsAdd userErrors:', userErrors);
-    }
-  } catch (error) {
-    console.error('Shopify customer tagging error:', error);
-    Sentry.captureException(error, { tags: { feature: 'shopify_customer_tag' } });
-  }
-}
-
-/**
- * Ensure a logged-in customer is on the Klaviyo list — safety net for users
- * whose welcome email predated the Klaviyo wiring (welcome_email_sent=true so
- * email.server.ts won't re-fire the subscribe). Klaviyo bulk subscribe is
- * idempotent, so calling on every measurement save is safe.
- *
- * Fire-and-forget — never throws.
- */
-export async function ensureKlaviyoSubscribed(email: string): Promise<void> {
-  try {
-    await subscribeToKlaviyo({ email });
-  } catch (error) {
-    console.error('Klaviyo safety-net subscribe error:', error);
-    Sentry.captureException(error, { tags: { feature: 'klaviyo_safety_net' } });
-  }
-}

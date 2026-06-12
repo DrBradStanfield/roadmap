@@ -118,7 +118,7 @@
 <main>
   <h1>Health Roadmap v2 — Direction &amp; Architecture Decision Record</h1>
   <p class="meta">
-    Status: <span class="pill ok">LIVE IN PRODUCTION 2026-06-12 — /pages/roadmap serves v2 (health-roadmap-726). Remaining: delete old Supabase per-user data + tear down dead server routes</span> &nbsp;·&nbsp;
+    Status: <span class="pill ok">LIVE IN PRODUCTION 2026-06-12 — /pages/roadmap serves v2 (health-roadmap-726). Old-infrastructure teardown + dev-app removal done 2026-06-12. Remaining: delete old per-user Supabase data (keep anonymized chat) + v1 reminder-cron follow-up</span> &nbsp;·&nbsp;
     Date: 2026-06-08 &nbsp;·&nbsp; Updated: 2026-06-12 &nbsp;·&nbsp; Owner: Dr Brad Stanfield &nbsp;·&nbsp;
     Supersedes: the current Supabase/Fly app-proxy architecture (<code>~/Documents/roadmap/docs/architecture.html</code>)
   </p>
@@ -298,9 +298,12 @@
     demonstrate that the user is truly in control, not a hidden escape hatch.</p>
   <div class="grid-2">
     <div class="card">
-      <h3>A · drstanfield.com</h3>
+      <h3>A · drstanfield.com <span class="pill ok">live on v2 since 2026-06-12</span></h3>
       <p>The app runs as a Shopify <strong>theme-extension widget</strong> (static JS/CSS on Shopify's CDN). Easiest
         path for the mainstream user / grandma. Discoverable next to the products and brand.</p>
+      <p><code>/pages/roadmap</code> serves the v2 local-first widget: the production app's
+        <code>app-block.liquid</code> loads <code>health-plan-v2.js</code> (app version <code>health-roadmap-726</code>).
+        The old <code>health-tool.js</code> stays in the extension assets for rollback only.</p>
     </div>
     <div class="card">
       <h3>B · Self-host / GitHub Pages</h3>
@@ -842,6 +845,19 @@
       <tr><td>Compliance burden</td><td>High (data custodian)</td><td><strong>Largely shed</strong></td></tr>
     </tbody>
   </table>
+  <div class="callout decision">
+    <h4>Status 2026-06-12: the "v2" column IS production — the old server data layer is deleted</h4>
+    <p><code>/pages/roadmap</code> serves the v2 local-first widget (version <code>health-roadmap-726</code>), and the
+      dead Supabase-backed per-user data layer was torn down the same day: routes <code>api.user-data</code>,
+      <code>api.health-documents</code>, <code>api.lab-values</code> and <code>api.lab-import</code> deleted;
+      <code>api.measurements.ts</code> gutted to only the email-only Klaviyo-capture endpoint; the report/welcome
+      email code removed from <code>email.server.ts</code> (1050&rarr;361 lines); ~20 dead per-user CRUD functions
+      removed from <code>supabase.server.ts</code> (&minus;720 lines), plus the dead route-helpers and the legacy
+      <code>sync-embed.liquid</code> theme block. <strong>Thin-server survivors:</strong> chatbot, lab-import-v2
+      (HMAC), reminders-v2, google-token (Drive OAuth), A/B, feedback, klaviyo-capture, the crons, and the admin app.
+      <strong>Still pending:</strong> delete the old per-user data from Supabase (keep anonymized chat) and a
+      follow-up on the v1 reminder cron.</p>
+  </div>
 
   <!-- ============================================================ -->
   <h2 id="rejected">16. Rejected paths &amp; why <span class="pill err">don't relitigate</span></h2>
@@ -874,13 +890,19 @@
     OAuth flows, what code is deleted from the current repo, and a build sequence. (No code yet — plan first.)</p>
 
   <!-- ============================================================ -->
-  <h2 id="dev">18. Development, testing &amp; cutover</h2>
+  <h2 id="dev">18. Development, testing &amp; cutover <span class="pill ok">cutover done 2026-06-12</span></h2>
   <p>The live app on drstanfield.com must not break while v2 is built. Strategy: <strong>build the free core on
     GitHub Pages FIRST</strong> — that's the primary dev + testing surface (how every change is verified) — then port
-    to Shopify, then migrate, then cut over only once proven.</p>
+    to Shopify, then migrate, then cut over only once proven. <strong>Outcome:</strong> this played out as planned —
+    the cutover landed 2026-06-12 and the temporary dev app was deleted afterwards. The bullets below are kept as the
+    record, with outcomes marked; the dev flow that remains after cutover is in <a href="#pipeline">§19</a>.</p>
   <ul>
-    <li><strong>Separate Shopify app</strong> — a distinct dev app with its own theme extension, with its widget on a
-      <strong>hidden / unpublished test page</strong>. The live <code>health-tool</code> app and block stay 100% untouched.</li>
+    <li><strong>Separate Shopify app <span class="pill warn">retired 2026-06-12 — deleted after cutover</span></strong>
+      — a distinct dev app with its own theme extension, with its widget on a <strong>hidden / unpublished test
+      page</strong> (<code>/pages/test</code>), carried the Shopify port and testing phases while the live app and
+      block stayed 100% untouched. With v2 now live on the production app, the dev app
+      (<code>shopify.app.dev.toml</code>) and its <code>/pages/test</code> surface are deleted — there is
+      <strong>ONE Shopify app</strong> again (the production "Health Roadmap" app).</li>
     <li><strong>GitHub Pages = primary dev/test surface (build here first)</strong> — deploy the v2 build to GitHub
       Pages from day one and verify every change there. It's both the dev/preview environment AND the real
       "self-host" front door (<a href="#frontdoors">§5</a>) — the real thing, not scaffolding. The <strong>Shopify
@@ -903,16 +925,20 @@
           single-file design.</li>
       </ul>
       This removes the project's biggest risk (lossless export/parity) entirely.</li>
-    <li><strong>Cutover &amp; rollback</strong> — only when v2 is proven on the test page + GitHub Pages do we swap the
-      live block to v2. Rollback = re-point to the old block. After cutover the old per-user data is deleted (chat
-      history kept, anonymized); no warm read-only window is needed since nothing migrates.</li>
+    <li><strong>Cutover &amp; rollback <span class="pill ok">DONE 2026-06-12</span></strong> — v2 was proven on the test
+      page + GitHub Pages, then the live block was swapped: the production app's <code>app-block.liquid</code> now
+      loads <code>health-plan-v2.js</code> (version <code>health-roadmap-726</code>) on <code>/pages/roadmap</code>.
+      Rollback = the old <code>health-tool.js</code> kept in the extension assets + revert the
+      <code>app-block.liquid</code> change. The dead server routes/code were torn down the same day (see §15);
+      deleting the old per-user Supabase data (chat history kept, anonymized) is the remaining step.</li>
   </ul>
 
   <!-- ============================================================ -->
-  <h2 id="pipeline">19. The dev/CI pipeline <span class="pill ok">built 2026-06-08</span></h2>
-  <p>§18 sets the strategy (build the free core on GitHub Pages first, keep the live app untouched). This section
-    records the concrete four-stage pipeline that gives a clean path from a code edit to the live Shopify widget —
-    with a deliberate gate so nothing reaches the live widget by accident.</p>
+  <h2 id="pipeline">19. The dev/CI pipeline <span class="pill ok">built 2026-06-08 · simplified 2026-06-12 (dev app retired)</span></h2>
+  <p>§18 set the build-out strategy. Since the 2026-06-12 cutover the pipeline is <strong>three stages with a single
+    Shopify app</strong> — the production "Health Roadmap" app; the separate dev app and its <code>/pages/test</code>
+    surface are deleted: <strong>localhost &rarr; GitHub Pages &rarr; Shopify production</strong>, with the same
+    deliberate gate so nothing reaches the live widget by accident.</p>
   <figure>
     <div class="svg-wrap">
       <svg viewBox="0 0 920 200" width="100%" role="img" aria-label="Dev to production pipeline diagram">
@@ -924,52 +950,45 @@
             <path d="M0,0 L8,3 L0,6 z" fill="#fd7e14"/>
           </marker>
         </defs>
-        <rect x="14" y="70" width="190" height="76" rx="10" fill="#ffffff" stroke="#00a38b" stroke-width="2"/>
-        <text x="109" y="94" text-anchor="middle" font-size="12.5" font-weight="700" fill="#111">1 · localhost</text>
-        <text x="109" y="113" text-anchor="middle" font-size="10.5" fill="#333">npm run dev:pages</text>
-        <text x="109" y="128" text-anchor="middle" font-size="10.5" fill="#333">Vite HMR · :5173</text>
+        <rect x="40" y="70" width="240" height="76" rx="10" fill="#ffffff" stroke="#00a38b" stroke-width="2"/>
+        <text x="160" y="94" text-anchor="middle" font-size="12.5" font-weight="700" fill="#111">1 · localhost</text>
+        <text x="160" y="113" text-anchor="middle" font-size="10.5" fill="#333">npm run dev:pages</text>
+        <text x="160" y="128" text-anchor="middle" font-size="10.5" fill="#333">Vite HMR · :5173</text>
 
-        <rect x="246" y="70" width="190" height="76" rx="10" fill="#f0faf8" stroke="#00a38b" stroke-width="2"/>
-        <text x="341" y="94" text-anchor="middle" font-size="12.5" font-weight="700" fill="#111">2 · dev preview</text>
-        <text x="341" y="113" text-anchor="middle" font-size="10.5" fill="#333">push <tspan font-family="ui-monospace,Menlo,monospace">dev</tspan> branch</text>
-        <text x="341" y="128" text-anchor="middle" font-size="10.5" fill="#333">Pages /roadmap/dev/</text>
+        <rect x="340" y="70" width="240" height="76" rx="10" fill="#f0faf8" stroke="#00a38b" stroke-width="2"/>
+        <text x="460" y="94" text-anchor="middle" font-size="12.5" font-weight="700" fill="#111">2 · GitHub Pages</text>
+        <text x="460" y="113" text-anchor="middle" font-size="10.5" fill="#333">npm run build:pages · push <tspan font-family="ui-monospace,Menlo,monospace">main</tspan></text>
+        <text x="460" y="128" text-anchor="middle" font-size="10.5" fill="#333">Actions → /roadmap/ (auto)</text>
 
-        <rect x="478" y="70" width="190" height="76" rx="10" fill="#fff8f0" stroke="#fd7e14" stroke-width="1.8" stroke-dasharray="6 4"/>
-        <text x="573" y="94" text-anchor="middle" font-size="12.5" font-weight="700" fill="#111">3 · Shopify dev app</text>
-        <text x="573" y="113" text-anchor="middle" font-size="10.5" fill="#333">separate app, live store</text>
-        <text x="573" y="128" text-anchor="middle" font-size="10.5" fill="#666">hidden test page</text>
+        <rect x="640" y="70" width="250" height="76" rx="10" fill="#e6f7f4" stroke="#00a38b" stroke-width="2"/>
+        <text x="765" y="90" text-anchor="middle" font-size="12.5" font-weight="700" fill="#111">3 · Shopify PRODUCTION</text>
+        <text x="765" y="108" text-anchor="middle" font-size="10.5" fill="#333">npm run build:shopify-prod</text>
+        <text x="765" y="122" text-anchor="middle" font-size="10.5" fill="#b45309">+ explicit shopify app deploy --force</text>
+        <text x="765" y="138" text-anchor="middle" font-size="10.5" fill="#333">→ /pages/roadmap</text>
 
-        <rect x="710" y="70" width="196" height="76" rx="10" fill="#e6f7f4" stroke="#00a38b" stroke-width="2"/>
-        <text x="808" y="90" text-anchor="middle" font-size="12.5" font-weight="700" fill="#111">4 · production</text>
-        <text x="808" y="108" text-anchor="middle" font-size="10.5" fill="#333">merge → <tspan font-family="ui-monospace,Menlo,monospace">main</tspan></text>
-        <text x="808" y="122" text-anchor="middle" font-size="10.5" fill="#333">Pages /roadmap/ (auto)</text>
-        <text x="808" y="138" text-anchor="middle" font-size="10.5" fill="#b45309">+ explicit shopify app deploy</text>
+        <line x1="280" y1="108" x2="340" y2="108" stroke="#00a38b" stroke-width="1.8" marker-end="url(#arrP)"/>
+        <line x1="580" y1="108" x2="640" y2="108" stroke="#fd7e14" stroke-width="1.8" marker-end="url(#arrPgate)"/>
 
-        <line x1="204" y1="108" x2="246" y2="108" stroke="#00a38b" stroke-width="1.8" marker-end="url(#arrP)"/>
-        <line x1="436" y1="108" x2="478" y2="108" stroke="#00a38b" stroke-width="1.8" marker-end="url(#arrP)"/>
-        <line x1="668" y1="108" x2="710" y2="108" stroke="#fd7e14" stroke-width="1.8" marker-end="url(#arrPgate)"/>
-
-        <text x="460" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">localhost → dev preview → Shopify dev app → production</text>
-        <text x="460" y="180" text-anchor="middle" font-size="11" fill="#b45309" font-weight="600">Gate: merging to main does NOT touch the live widget — that needs an explicit shopify app deploy to the PROD app.</text>
+        <text x="460" y="28" text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">localhost → GitHub Pages → Shopify production (ONE app)</text>
+        <text x="460" y="180" text-anchor="middle" font-size="11" fill="#b45309" font-weight="600">Gate: pushing to main auto-deploys Pages only — the live widget needs an explicit build:shopify-prod + shopify app deploy --force.</text>
       </svg>
     </div>
-    <figcaption>Four stages. The first three are fully isolated from the live widget; the live widget only changes on an explicit <code>shopify app deploy</code> to the prod app.</figcaption>
+    <figcaption>Three stages, one Shopify app (the dev app is gone). The first two never touch the live widget; the live widget only changes on an explicit <code>shopify app deploy</code> of the production app.</figcaption>
   </figure>
 
-  <h3>The four stages</h3>
+  <h3>The three stages</h3>
   <ol>
-    <li><strong>localhost</strong> — <code>npm run dev:pages</code> runs a Vite dev server with HMR / Fast Refresh at
-      <code>http://localhost:5173/roadmap/</code>. The rapid-iteration surface for <strong>non-OAuth work only</strong>
-      (UI, the on-device tier, merge logic) — see the hard rule below.</li>
-    <li><strong>dev-branch GitHub Pages preview</strong> — the <code>dev</code> branch deploys to
-      <code>drbradstanfield.github.io/roadmap/dev/</code> while prod (<code>main</code>) stays at
-      <code>/roadmap/</code>. The real-URL + mobile testing surface before anything touches Shopify.</li>
-    <li><strong>Shopify dev app</strong> — a <em>separate</em> Shopify app (its own extension + client_id) installed on
-      the <em>existing</em> store, with the widget embedded on a hidden test page (e.g. <code>/pages/roadmap-test</code>,
-      noindex). Deploying to it (<code>shopify app deploy --config dev</code>) targets that app alone and never touches
-      the live widget. <span class="pill warn">pending setup</span>.</li>
-    <li><strong>production</strong> — merging <code>dev</code> → <code>main</code> auto-deploys the prod GitHub Pages
-      site; the live Shopify widget changes only on an explicit <code>shopify app deploy</code> to the prod app.</li>
+    <li><strong>localhost</strong> — <code>npm run dev:pages</code> runs the Pages build on a Vite dev server with
+      HMR / Fast Refresh at <code>http://localhost:5173/roadmap/</code>. The rapid-iteration surface for
+      <strong>non-OAuth work only</strong> (UI, the on-device tier, merge logic) — see the hard rule below.</li>
+    <li><strong>GitHub Pages</strong> — <code>npm run build:pages</code>; pushing <code>main</code> triggers the
+      Actions workflow that deploys to <code>drbradstanfield.github.io/roadmap</code>. The real-URL + mobile +
+      OAuth-flow testing surface — and the real self-host front door (<a href="#frontdoors">§5</a>), not scaffolding.
+      (A <code>dev</code>-branch push still previews at <code>/roadmap/dev/</code> — callout below.)</li>
+    <li><strong>Shopify PRODUCTION</strong> — <code>npm run build:shopify-prod</code> (builds the v2 bundle into the
+      production extension's assets) → explicit <code>shopify app deploy --force</code> → live on
+      <code>/pages/roadmap</code>. There is only one Shopify app now (production "Health Roadmap"); the live widget
+      changes only on this explicit deploy.</li>
   </ol>
 
   <div class="callout decision">
@@ -983,24 +1002,24 @@
   </div>
 
   <div class="callout decision">
-    <h4>Decision: a separate dev app installed on the existing store + a hidden test page — NOT a separate dev store</h4>
-    <p>The isolation comes from the dev app being a <em>distinct app</em> (its own extension + client_id), so
-      <code>shopify app deploy --config dev</code> targets it alone and structurally cannot touch the live widget — not
-      from a separate store. Installing it on the <em>existing</em> store and embedding the widget on a hidden test page
-      (noindex) lets us test against the real theme + store, which a clean-room dev store wouldn't replicate. The dev app
-      uses a different app-proxy subpath (or none — the local-first core doesn't need it), so it can't collide with
-      prod's <code>health-tool-1</code>; the live <code>/pages/roadmap</code> keeps the prod app's block.
-      <strong>Safety rule: always <code>--config dev</code>; never a bare <code>shopify app deploy</code></strong>
-      (that targets the prod app).</p>
+    <h4>SUPERSEDED 2026-06-12: the separate dev app served the build-out, then was deleted</h4>
+    <p>During the Shopify port and pre-cutover testing, a separate dev app (its own extension + client_id,
+      <code>shopify.app.dev.toml</code>, deployed with <code>shopify app deploy -c dev</code>) put the v2 widget on a
+      hidden <code>/pages/test</code> page so the live widget was structurally untouchable. That isolation job is
+      finished: with v2 live on the production app, <strong>the dev app and <code>/pages/test</code> are deleted</strong>.
+      There is ONE Shopify app (the production "Health Roadmap" app), and the old safety rule "always
+      <code>--config dev</code>, never a bare <code>shopify app deploy</code>" is retired — the production app IS the
+      deploy target now (ensure the active config is <code>shopify.app.toml</code> before deploying).</p>
   </div>
 
   <div class="callout why">
     <h4>The promotion flow (note the deliberate gate)</h4>
-    <p>Iterate on localhost → push to <code>dev</code> (auto-deploys to <code>/roadmap/dev/</code> for real-URL + mobile
-      testing) → push to the Shopify dev app for in-Shopify testing → merge <code>dev</code> into <code>main</code>
-      (auto-deploys prod GitHub Pages) → explicit <code>shopify app deploy</code> to the prod Shopify app.
-      <strong>Merging to main does NOT touch the live Shopify widget</strong> — that always needs the explicit deploy,
-      so prod GitHub Pages and the live widget move independently and nothing reaches the live widget by accident.</p>
+    <p>Iterate on localhost (<code>npm run dev:pages</code>) → push <code>main</code> (Actions auto-deploys GitHub
+      Pages at <code>/roadmap/</code> — real-URL, mobile + OAuth testing) → when proven,
+      <code>npm run build:shopify-prod</code> + explicit <code>shopify app deploy --force</code> to the production app
+      (<code>/pages/roadmap</code>). <strong>Pushing to main does NOT touch the live Shopify widget</strong> — that
+      always needs the explicit deploy, so GitHub Pages and the live widget move independently and nothing reaches the
+      live widget by accident.</p>
   </div>
 
   <div class="callout decision">

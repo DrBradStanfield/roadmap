@@ -13,7 +13,6 @@ build/
 .claude/
 .mcp.json
 shopify.app.toml
-shopify.app.dev.toml
 fly.toml
 *.js.map
 docs/wiki/research/

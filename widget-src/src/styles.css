@@ -336,7 +336,7 @@ input[type="number"] {
 }
 
 /* Animated collapse: summary fade-in */
-/* Scoped under .health-tool: on /pages/test the PRODUCTION site-chat bundle
+/* Scoped under .health-tool: on the storefront the site-chat bundle
    (health-site-chat.css — an old, byte-stable copy of this file until Phase 7)
    also loads, and its stale same-specificity rules would win by document
    order. The extra ancestor keeps the v2 rules in charge. */

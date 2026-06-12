@@ -100,8 +100,8 @@
 <main>
   <h1>Health Roadmap v2 — Implementation &amp; Build Log</h1>
   <p class="meta">
-    Status: <span class="pill ok">PRODUCTION CUTOVER DONE 2026-06-12 — /pages/roadmap now serves v2 (health-roadmap-726). Remaining Phase 7: delete old Supabase per-user data + tear down dead server routes</span> &nbsp;·&nbsp;
-    Updated: 2026-06-11 &nbsp;·&nbsp; Live: <a href="https://drbradstanfield.github.io/roadmap/">drbradstanfield.github.io/roadmap/</a> (app) · <a href="https://drbradstanfield.github.io/roadmap/test.html">test.html</a> (storage harness)
+    Status: <span class="pill ok">PRODUCTION CUTOVER DONE 2026-06-12 — /pages/roadmap now serves v2 (health-roadmap-726). Old-infrastructure teardown + dev-app removal done 2026-06-12 (dead routes + report/welcome email + per-user CRUD deleted; ONE Shopify app). Remaining Phase 7: delete old per-user Supabase data (keep anonymized chat) + v1 reminder-cron follow-up</span> &nbsp;·&nbsp;
+    Updated: 2026-06-12 &nbsp;·&nbsp; Live: <a href="https://drbradstanfield.github.io/roadmap/">drbradstanfield.github.io/roadmap/</a> (app) · <a href="https://drbradstanfield.github.io/roadmap/test.html">test.html</a> (storage harness)
     &nbsp;·&nbsp; Repo: <code>DrBradStanfield/roadmap</code> (<code>main</code>)
   </p>
 
@@ -144,12 +144,40 @@
       <tr><td>4 — AI features (free, website)</td><td>Lab-extract + chat through Brad's server behind the Shopify proxy (rate-limit + daily $ cap); BYO-key path for self-host</td><td><span class="pill ok">DONE — lab uploads e2e verified 2026-06-10; BYOK chat + uploads on Pages 2026-06-11; both chats carry dated history (e2e verified live both surfaces 2026-06-11)</span></td></tr>
       <tr><td>5 — Shopify embedding</td><td>Dev app + v2 theme-extension bundle on a hidden test page</td><td><span class="pill ok">DONE 2026-06-11 — dev app live on drstanfield.com/pages/test, server chat (Brad pays) verified</span></td></tr>
       <tr><td>6 — Chat history to user's cloud + anonymized training capture</td><td><span class="pill warn">REFRAMED 2026-06-11</span> No data migration (start fresh). Persist chat history to the user's cloud (sync) + keep anonymized chat in Supabase for training (storefront server chat only).</td><td><span class="pill ok">DONE 2026-06-11 — chat-history.json over the generalized SyncManager; e2e verified live on BOTH surfaces; /simplify'd. NOTE: <code>start-here.html</code> offline viewer NOT built (wasn't in the locked decisions — flag if still wanted)</span></td></tr>
-      <tr><td>7 — Cutover + teardown</td><td>Secret-scan + rotate (hard gate); swap live block; DELETE all old per-user Supabase data (keep anonymized chat).</td><td><span class="pill muted">Pending</span></td></tr>
+      <tr><td>7 — Cutover + teardown</td><td>Secret-scan + rotate (hard gate); swap live block; DELETE all old per-user Supabase data (keep anonymized chat).</td><td><span class="pill warn">In progress — secret-scan + tmp/ purge, block swap, server teardown + dev-app removal all done 2026-06-12; remaining: delete old per-user Supabase data + v1 reminder-cron follow-up</span></td></tr>
     </tbody>
   </table>
 
   <h2 id="log">Build log — decisions, deviations &amp; tradeoffs</h2>
   <p><span class="pill ok">decision</span> = a choice within the spec's intent · <span class="pill warn">deviation</span> = differs from what the spec literally said · <span class="pill info">tradeoff</span> = a cost accepted.</p>
+
+  <h3>Old-infrastructure teardown + dev-app removal (2026-06-12, Brad) · dead server data layer deleted; ONE Shopify app</h3>
+
+  <div class="logentry">
+    <div class="hdr"><span class="pill ok">shipped</span><strong>The dead Supabase-backed per-user data layer is gone from the server, and the separate Shopify dev app + /pages/test are removed — dev flow is now localhost → GitHub Pages → production</strong></div>
+    <div class="body">
+      <ul>
+        <li><span class="pill ok">routes deleted</span> <code>api.user-data</code>, <code>api.health-documents</code>,
+          <code>api.lab-values</code>, <code>api.lab-import</code>. <code>api.measurements.ts</code> gutted to ONLY the
+          email-only Klaviyo-capture survivor (<code>handleKlaviyoCapture</code>).</li>
+        <li><span class="pill ok">code deleted</span> The report/welcome email code is out of <code>email.server.ts</code>
+          (1050&rarr;361 lines — the staged Resend cleanup below is now executed); ~20 dead per-user CRUD functions out of
+          <code>supabase.server.ts</code> (&minus;720 lines); the dead route-helpers; and the legacy
+          <code>sync-embed.liquid</code> theme block.</li>
+        <li><span class="pill ok">thin-server survivors</span> chatbot, lab-import-v2 (HMAC), reminders-v2, google-token
+          (Drive OAuth), A/B, feedback, klaviyo-capture, the crons, and the admin app.</li>
+        <li><span class="pill ok">dev-app removal</span> The separate Shopify dev app (<code>shopify.app.dev.toml</code>)
+          and its <code>/pages/test</code> surface are deleted — ONE Shopify app remains (production "Health Roadmap").
+          The dev/test flow is now: (a) <strong>localhost</strong> — <code>npm run dev:pages</code> (the Pages build) →
+          (b) <strong>GitHub Pages</strong> — <code>npm run build:pages</code>; push <code>main</code> → Actions deploys
+          to <code>drbradstanfield.github.io/roadmap</code> → (c) <strong>Shopify PRODUCTION</strong> —
+          <code>npm run build:shopify-prod</code> → <code>shopify app deploy --force</code> → <code>/pages/roadmap</code>.
+          The old "always <code>-c dev</code>, never bare deploy" rule is retired with the dev app.</li>
+        <li><span class="pill warn">still pending</span> Delete the old per-user data from Supabase (keep anonymized
+          chat), and a follow-up on the v1 reminder cron.</li>
+      </ul>
+    </div>
+  </div>
 
   <h3>PRODUCTION CUTOVER + secret-scan remediation (2026-06-12, Brad) · /pages/roadmap LIVE on v2</h3>
 
@@ -372,7 +400,7 @@
           it opens the client-built print/save-as-PDF window immediately, then sends the emailed copy + Klaviyo
           subscribe in the background. Helper copy drops "emailed to you". The standalone Print/Email buttons are hidden
           there — the capture IS the PDF path (Brad's email gate, expressed as one flow instead of a lock).</li>
-        <li><span class="pill warn">deviation / ordering constraint:</strong> the PDF window MUST open before the network
+        <li><span class="pill warn">deviation / ordering constraint</span> the PDF window MUST open before the network
           await — popup blockers kill <code>window.open</code> once the click's user activation expires. Client-side
           report build makes this free.</li>
         <li><span class="pill ok">decision</span> mailto "Email Report" REMOVED on both v2 surfaces (degraded plain-text
@@ -1711,9 +1739,15 @@
   <h3>Move → Brad's server folder (same repo, deploys separately)</h3>
   <p>Routes: <code>api.chat.ts</code>, <code>api.lab-import.ts</code>, <code>api.ab.ts</code>, order/feedback webhooks, A/B admin pages. Lib: <code>anthropic.server.*</code>, <code>chat*.server.*</code>, bot servers, <code>email.server.*</code>, <code>klaviyo.server.ts</code>, cron servers, <code>Dockerfile</code>, <code>fly.toml</code>. (Embedded admin still needs <code>shopifyApp()</code> + Postgres sessions.)</p>
 
-  <h2 id="devenv">Dev environment &amp; CI pipeline <span class="pill ok">built · verified live</span></h2>
+  <h2 id="devenv">Dev environment &amp; CI pipeline <span class="pill ok">built · verified live</span> <span class="pill warn">stage 3 superseded 2026-06-12</span></h2>
   <p>A four-stage path from a code edit to the live Shopify widget, with a deliberate gate so the live widget only
     changes on an explicit deploy. Decision rationale is in the decision record §19; this is the file-level detail.</p>
+  <p class="meta"><span class="pill warn">SUPERSEDED 2026-06-12</span> The "Shopify dev app" stage is gone — the dev app
+    (<code>shopify.app.dev.toml</code>) and <code>/pages/test</code> are deleted after the cutover (see the teardown log
+    entry at the top). The current flow is localhost (<code>npm run dev:pages</code>) → GitHub Pages
+    (<code>npm run build:pages</code>; push <code>main</code> → Actions → <code>drbradstanfield.github.io/roadmap</code>)
+    → Shopify PRODUCTION (<code>npm run build:shopify-prod</code> → <code>shopify app deploy --force</code> →
+    <code>/pages/roadmap</code>). One Shopify app. The table below is kept as the build-era record.</p>
   <table>
     <thead><tr><th>Stage</th><th>How</th><th>URL / target</th><th>Touches live widget?</th></tr></thead>
     <tbody>

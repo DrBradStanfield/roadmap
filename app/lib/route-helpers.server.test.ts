@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { getCustomerId, isValidUuid, tagShopifyCustomer } from './route-helpers.server';
+import { describe, it, expect } from 'vitest';
+import { getCustomerId, isValidUuid } from './route-helpers.server';
 
 describe('getCustomerId', () => {
   function makeRequest(params: string): Request {
@@ -57,34 +57,3 @@ describe('isValidUuid', () => {
   });
 });
 
-describe('tagShopifyCustomer', () => {
-  function mockAdmin(response: any) {
-    return {
-      graphql: vi.fn().mockResolvedValue({
-        json: () => Promise.resolve(response),
-      }),
-    };
-  }
-
-  it('calls tagsAdd with correct mutation and variables', async () => {
-    const admin = mockAdmin({ data: { tagsAdd: { node: { id: 'gid://shopify/Customer/123' }, userErrors: [] } } });
-    await tagShopifyCustomer(admin, '123');
-    expect(admin.graphql).toHaveBeenCalledOnce();
-    const [mutation, options] = admin.graphql.mock.calls[0];
-    expect(mutation).toContain('tagsAdd');
-    expect(options.variables).toEqual({
-      id: 'gid://shopify/Customer/123',
-      tags: ['roadmap-user'],
-    });
-  });
-
-  it('does not throw on Shopify API error', async () => {
-    const admin = { graphql: vi.fn().mockRejectedValue(new Error('Network error')) };
-    await expect(tagShopifyCustomer(admin, '123')).resolves.toBeUndefined();
-  });
-
-  it('does not throw on userErrors', async () => {
-    const admin = mockAdmin({ data: { tagsAdd: { node: null, userErrors: [{ message: 'Access denied' }] } } });
-    await expect(tagShopifyCustomer(admin, '123')).resolves.toBeUndefined();
-  });
-});
