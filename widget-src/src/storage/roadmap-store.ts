@@ -502,6 +502,24 @@ export class RoadmapStore {
 
   // ============================================================ reminders (§10)
 
+  /**
+   * Profile-only prefill (sex / height / birth / units) for HealthTool's initial
+   * inputs seed (returning-user "Starting Info" collapse). Reads the profile
+   * directly — these are all profile demographics, so there's no need to run the
+   * full measurements→inputs pipeline (loadLatestMeasurements) just to drop 95%
+   * of its output.
+   */
+  getPrefillInputs(): Partial<HealthInputs> {
+    const p = this.file.profile;
+    const out: Partial<HealthInputs> = {};
+    for (const field of PREFILL_FIELDS) {
+      const v = (p as Record<string, unknown>)[field];
+      if (v !== undefined) (out as Record<string, unknown>)[field] = v;
+    }
+    if (p.unitSystem !== undefined) out.unitSystem = p.unitSystem;
+    return out;
+  }
+
   /** Has the user completed the Shopify-surface email-capture step? */
   getReportEmailCaptured(): boolean {
     return this.file.profile.reportEmailCaptured ?? false;

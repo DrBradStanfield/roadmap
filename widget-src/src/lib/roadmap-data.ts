@@ -88,7 +88,7 @@ export function getDocumentArchiveMode(): 'no-prompt' | 'cloud' | 'device-only' 
 // Without this the prefill only arrives via the async load AFTER mount, so the
 // returning-user check captured false and the section never collapsed.
 export function getInitialInputsSync(): Partial<HealthInputs> {
-  return store ? store.loadLatestMeasurements().inputs : {};
+  return store ? store.getPrefillInputs() : {};
 }
 
 // --- lead capture (Shopify surface) — overrides api.ts's no-op stubs ---
@@ -286,6 +286,9 @@ export async function sendReportEmail(): Promise<{ success: boolean; error?: str
  */
 export async function sendGuestReport(
   email: string,
+  _inputs?: Record<string, unknown>,
+  _medications?: Record<string, unknown>,
+  _screenings?: Record<string, unknown>,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const response = await fetch(`${PROXY_PATH}/api/measurements`, {
