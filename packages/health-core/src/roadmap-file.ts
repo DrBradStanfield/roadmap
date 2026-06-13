@@ -96,6 +96,14 @@ export interface FileLabValue {
   correctsId: string | null;
 }
 
+/**
+ * How a medication/supplement history row differs from the state before it
+ * (mirrors v1's `medication_history.change_type`). Recorded at WRITE time —
+ * deriving it at read time from id-union-merged rows would mislabel under
+ * cross-device clock skew.
+ */
+export type HistoryChangeType = 'started' | 'stopped' | 'dose_changed' | 'switched';
+
 /** Current state of one medication slot (keyed by medicationKey). FHIR-compatible. */
 export interface FileMedication extends SyncStamp {
   id: string;
@@ -103,6 +111,8 @@ export interface FileMedication extends SyncStamp {
   drugName: string;         // e.g. 'atorvastatin', 'yes', 'not_yet'
   doseValue: number | null;
   doseUnit: string | null;
+  /** Only on `medicationHistory` rows (appended per change); absent on current-state rows. */
+  changeType?: HistoryChangeType;
 }
 
 /** Current state of one supplement (keyed by supplementKey). */
@@ -114,6 +124,8 @@ export interface FileSupplement extends SyncStamp {
   doseUnit: string | null;
   status: 'active' | 'stopped';
   startedAt: string;
+  /** Only on `supplementHistory` rows (appended per change); absent on current-state rows. */
+  changeType?: HistoryChangeType;
 }
 
 /** Flat screening workflow object (the `screenings` table flattened) + sync stamp. */

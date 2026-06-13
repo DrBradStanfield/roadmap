@@ -236,8 +236,10 @@ export {
   type FileDocument,
   type RecommendationSnapshot,
   type SyncStamp,
+  type HistoryChangeType,
 } from './roadmap-file';
 export { mergeFiles, dayOf, type MergeOptions } from './merge';
+export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError } from './migrate';
 
 // v2 reminder schedule (client-computed; the server is a dumb scheduler — §10)

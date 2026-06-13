@@ -22,6 +22,8 @@
 import {
   buildDocumentRef,
   splitDocumentRef,
+  classifyMedicationChange,
+  classifySupplementChange,
   computeReminderSchedule,
   createMeasurement,
   dayOf,
@@ -282,14 +284,30 @@ export class RoadmapStore {
   }
 
   saveMedication(medicationKey: string, drugName: string, doseValue: number | null = null, doseUnit: string | null = null): boolean {
+    // Classify against the current record BEFORE the upsert mutates it; a
+    // non-null result appends one append-only history row (never edited or
+    // deleted — merges across devices by id union). Identical re-saves and
+    // non-taking ↔ non-taking flips classify null, so no duplicate rows.
+    const prev = this.file.medications.find((m) => m.medicationKey === medicationKey);
+    const changeType = classifyMedicationChange(prev, { drugName, doseValue, doseUnit });
     this.upsertByKey(this.file.medications, 'medicationKey', medicationKey, () => ({
       id: newId(), medicationKey, drugName, doseValue, doseUnit,
     }), (existing) => { existing.drugName = drugName; existing.doseValue = doseValue; existing.doseUnit = doseUnit; });
-    this.touch();
+    if (changeType) {
+      this.file.medicationHistory.push({
+        id: newId(), medicationKey, drugName, doseValue, doseUnit,
+        changeType, updatedAt: new Date().toISOString(),
+      });
+    }
+    this.touch(); // one persist covers state + history — atomic file write
     return true;
   }
 
   saveSupplement(supplementKey: string, supplementName: string, doseValue: number | null = null, doseUnit: string | null = null, status = 'active', startedAt?: string): boolean {
+    const prev = this.file.supplements.find((s) => s.supplementKey === supplementKey);
+    const changeType = classifySupplementChange(prev, {
+      supplementName, doseValue, doseUnit, status: status as FileSupplement['status'],
+    });
     this.upsertByKey(this.file.supplements, 'supplementKey', supplementKey, () => ({
       id: newId(), supplementKey, supplementName, doseValue, doseUnit,
       status: status as FileSupplement['status'], startedAt: startedAt ?? new Date().toISOString(),
@@ -297,13 +315,24 @@ export class RoadmapStore {
       existing.supplementName = supplementName; existing.doseValue = doseValue;
       existing.doseUnit = doseUnit; existing.status = status as FileSupplement['status'];
     });
-    this.touch();
+    if (changeType) {
+      this.file.supplementHistory.push({
+        id: newId(), supplementKey, supplementName, doseValue, doseUnit,
+        status: status as FileSupplement['status'],
+        startedAt: prev?.startedAt ?? startedAt ?? new Date().toISOString(),
+        changeType, updatedAt: new Date().toISOString(),
+      });
+    }
+    this.touch(); // one persist covers state + history — atomic file write
     return true;
   }
 
   deleteSupplementApi(supplementKey: string): boolean {
+    // Soft-stop through the save path so the flip is lamport-stamped (survives
+    // last-write-wins merge against another device's copy) AND records the
+    // 'stopped' history row. Re-deleting an already-stopped row appends nothing.
     const s = this.file.supplements.find((x) => x.supplementKey === supplementKey);
-    if (s) { s.status = 'stopped'; this.touch(); }
+    if (s) this.saveSupplement(s.supplementKey, s.supplementName, s.doseValue, s.doseUnit, 'stopped', s.startedAt);
     return true;
   }
 
