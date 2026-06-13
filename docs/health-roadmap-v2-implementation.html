@@ -151,6 +151,107 @@
   <h2 id="log">Build log — decisions, deviations &amp; tradeoffs</h2>
   <p><span class="pill ok">decision</span> = a choice within the spec's intent · <span class="pill warn">deviation</span> = differs from what the spec literally said · <span class="pill info">tradeoff</span> = a cost accepted.</p>
 
+  <h3>Codebase-reduction pass + full production E2E + med/supp history writer (2026-06-13, Brad) · −1,200 source lines deployed (health-roadmap-728); every architecture-v2 feature E2E-verified; history writer built</h3>
+
+  <div class="logentry">
+    <div class="hdr"><span class="pill ok">shipped</span><strong>Orchestrated dead-code removal (4 mapping + 3 execution agents), zero behavior change, verified through the 3-tier ladder (localhost → GitHub Pages → production), then a full-feature production E2E with Brad's real health.zip</strong></div>
+    <div class="body">
+      <ul>
+        <li><span class="pill ok">removed (grep-proven 0 callers)</span> <code>supabase.server.ts</code> v1 health-data leftovers
+          (−291: addHealthDocument, deleteHealthDocument, the lab-values cluster, deleteAllUserData); widget dead code
+          (−277: api.ts deleteMeasurement / loadMeasurementHistory / getHealthDocuments / getABAssignment + their
+          roadmap-data/roadmap-store chains, the never-rendered <code>DatePicker</code> twin of InlineDatePicker,
+          InputPanel's dead BLOOD_TEST_FIELDS chain, CLINICAL_THRESHOLDS); health-core v1 payload schemas
+          (−244 incl. the dead lab-value-validation test file); deps <code>turndown</code>/<code>@types/turndown</code>,
+          widget-manifest <code>@sentry/remix</code>; orphans dev_notes.md, webkit-debug.mjs, backfill-klaviyo.ts.
+          Net <strong>−1,212 source lines</strong> (25 insertions). InputPanel's <code>ALL_MONTHS</code> deduped into the
+          byte-identical <code>MONTHS_FULL</code> — the only de-dup; no new abstractions.</li>
+        <li><span class="pill ok">decision</span> Scope narrowed mid-run per Brad: chatbot, Discord/YouTube harnesses, all
+          crons, email/reminders code, and the trending/blog pipeline are READ-ONLY in cleanup passes — proven-dead code
+          there (buildReminderEmailHtml ~130 lines, the v1 reminder compute cluster ~450 lines, CLASSIFIER_VERSION,
+          EXEMPT_CUSTOMERS) is flagged, not deleted.</li>
+        <li><span class="pill warn">deviation</span> The goal doc suggested assessing legacy-rollback-widget removal; kept
+          instead (Brad's call pending). Honest finding: rollback is partly illusory — health-tool.js's server CRUD
+          endpoints no longer exist, so a rollback would 404 for all logged-in writes. ~600–700 more api.ts lines become
+          deletable when the rollback bundle is retired.</li>
+        <li><span class="pill info">tradeoff</span> CI went red mid-run on esbuild advisory GHSA-gv7w-rqvm-qjhr —
+          published 2h before the push (exogenous, not caused by the changes). RCE is in esbuild's <em>Deno</em> installer
+          (unused here); nested copies under @remix-run/dev / vite / tsup can't reach the patched 0.28.1. Allowlisted in
+          audit-ci.jsonc with a documented exit plan (cleared by the RR7 migration, below).</li>
+        <li><span class="pill ok">E2E verified on production (728)</span> Lab upload with health.zip: 13 files unpacked
+          client-side → 24 core + 55 additional values + 7 documents extracted → review matrix → saved → timeline.
+          FHIR semantics checked in the actual store file: correction flips old row to entered-in-error + new
+          manual_correction row with correctsId; empty-historical-cell entry is a plain insert. Range validation
+          ("Max 12.9 mmol/L" + aria-invalid), unit chips, global SI↔US toggle (file stays SI), statin cascade
+          (atorvastatin → dose select → FHIR storage → on-treatment ezetimibe step), supplement quick-add chips,
+          screening age-gating, reload persistence + first-paint collapse, chat answering from plan context (Lp(a) 223),
+          chat-history.json persistence, email capture (payload inspected: <code>{klaviyoCapture:{email}}</code> only,
+          59 bytes, zero health fields; PDF print window first; capture-gated "Save as PDF" appears after), Dropbox
+          PKCE launch (S256 + offline + correct redirect), Drive verified via Brad's live main-profile connection
+          (✓ Synced + reminders on → brad@drstanfield.com), GitHub/WebDAV panes, Delete All My Data (eraseEpoch 0→1,
+          survives reload). <strong>Zero regressions; zero widget console errors.</strong></li>
+        <li><span class="pill info">testing gotchas (for next time)</span> Three false alarms were harness artifacts, not
+          bugs: the theme's Klaviyo popup is a modal <code>&lt;dialog&gt;</code> that makes the page inert (close it before
+          clicking the widget); "Save as PDF" is capture-gated by design; "lost" birth data was a test script that never
+          set it (lamport counters proved no loss).</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="logentry">
+    <div class="hdr"><span class="pill ok">built</span><strong>Medication/supplement history writer — the v2 client-side append-only change log (Brad: "track over time, never delete")</strong></div>
+    <div class="body">
+      <ul>
+        <li><span class="pill ok">what</span> E2E found <code>medicationHistory</code>/<code>supplementHistory</code> existed
+          in the file schema + merge logic but nothing ever wrote to them (v1 logged server-side; the v2 writer was never
+          built). Now every med/supp save runs a pure classifier (<code>packages/health-core/src/history-change.ts</code>)
+          against the previous record and appends started / stopped / dose_changed / switched rows in the same atomic
+          file write — riding the SyncManager loop, merging across devices by id union. 17 classifier + 5 store tests,
+          failing-first.</li>
+        <li><span class="pill warn">deviation — schema touch</span> The existing row shape genuinely lacked a change-type
+          field, so an <em>optional</em> <code>changeType?</code> was added to FileMedication/FileSupplement — backward
+          compatible, no schemaVersion bump (recording at write time beats deriving at read time, which mislabels under
+          device clock skew).</li>
+        <li><span class="pill ok">decision</span> v1's <code>'initial'</code> change type dropped: first save of a
+          non-taking status (statin = not_yet) records nothing; transitions among none/not_yet/not_tolerated record
+          nothing; identical re-saves are idempotent. Only real start/stop/dose/switch events make rows.</li>
+        <li><span class="pill ok">bonus fix</span> <code>deleteSupplementApi</code> now routes through
+          <code>saveSupplement(..., 'stopped')</code> — the old direct status mutation never bumped lamport/updatedAt, so
+          a soft-stop could lose LWW merge to a stale active copy from another device.</li>
+        <li><span class="pill info">deferred</span> <code>loadMedicationHistory()</code> (chart annotations) still returns
+          [] — its consumer expects effectiveStart/effectiveEnd ranges needing a mapping decision; the data is now being
+          captured so the read path can be enabled later.</li>
+        <li><span class="pill info">nuance found in Tier-1 testing</span> Metformin encodes dose in the drugName variant
+          (<code>ir_500</code> → <code>ir_1000</code>), so a metformin dose bump records as <code>switched</code> rather
+          than <code>dose_changed</code> — the transition is still fully captured (old name → new name); true
+          <code>dose_changed</code> fires where dose is a separate field (statins etc.). Accepted as-is rather than
+          special-casing metformin's encoding in the classifier.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="logentry">
+    <div class="hdr"><span class="pill ok">decided</span><strong>Auth-flag doc/code drift resolved: the DOC was wrong, the code stays — plus the RR7 migration review says GO</strong></div>
+    <div class="body">
+      <ul>
+        <li><span class="pill ok">auth flag</span> <code>health_roadmap_authenticated</code> is NOT dead v1 code: v2 still
+          sets it (write-only on v2 surfaces where data-logged-in is hardcoded true), the legacy rollback bundle's
+          branches are load-bearing, and <code>history-block.liquid</code> on the LIVE <code>/pages/health-history</code>
+          page still reads it for a once-per-session redirect — the last surviving v1 auto-redirect machinery. Zero code
+          deleted; architecture-v2.html + CLAUDE.md corrected to match reality ("still live — don't delete as dead v1 code").</li>
+        <li><span class="pill info">RR7 review (report only)</span> GO, now, independent of the data purge. Surface: 27
+          files import @remix-run/*, ~99 <code>json()</code> sites (removed in RR7), 7 Polaris routes (~940 lines).
+          Verified: zero Shopify REST (<code>removeRest:true</code>, GraphQL only), embedded ✓. Riskiest item =
+          shopify-api 11→13 jump under @shopify/shopify-app-react-router (all storefront APIs ride appProxy auth) —
+          de-risk by rehearsing on a dev app. Polaris→web-components is NOT the gating cost (defer via a
+          PolarisAppProvider shim). Effort ~2.5–3 days for the security exit. Pin <code>react-router@^7.17</code>
+          (≥7.14.2 mandatory — second vendored turbo-stream CVE GHSA-49rj-9fvp-4h2h). Afterwards BOTH audit-ci
+          allowlist entries (turbo-stream + esbuild) can be removed, the latter by also dropping the top-level
+          <code>esbuild</code> dep (only satisfied going-away peers).</li>
+      </ul>
+    </div>
+  </div>
+
   <h3>v1-cron retirement + data-purge plan (2026-06-12, Brad) · teardown deployed + e2e verified; purge scripted, execution pending</h3>
 
   <div class="logentry">
