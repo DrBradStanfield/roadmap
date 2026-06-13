@@ -1,8 +1,8 @@
 # Lab Report Upload — Design Document
 
-**Feature**: Upload lab report PDFs, images, or ZIPs → LLM extracts blood test values → user reviews → bulk save to Supabase.
+**Feature**: Upload lab report PDFs, images, or ZIPs → LLM extracts blood test values → user reviews → bulk save (to the user's **own cloud** on the live local-first build; Supabase on the legacy v1 widget).
 
-**Status**: Shipped (v341 March 2026 · FHIR `replaces` redesign May 2026 · **v2 local-first extension June 2026 — see the "v2: Local-first lab uploads" section below**)
+**Status**: Shipped (v341 March 2026 · FHIR `replaces` redesign May 2026 · **v2 local-first extension June 2026**). **Production cutover done 2026-06-12** — `/pages/roadmap` now serves the v2 local-first build (`health-roadmap-727`); the v1 Supabase path described in the first part of this doc is **rollback-only**. The current architecture map is [`architecture-v2.html`](architecture-v2.html); the live behaviour is the **"v2: Local-first lab uploads"** section below.
 
 **Commits**: `296d9ab`, `dee69c2`, `06aa627` (initial) · `052ada1`, `5ab25ad`, `8f428cb`, `0f795d7`, `6a56814`, `2bce3bf` (May 2026 redesign)
 
@@ -477,7 +477,7 @@ All three are addressed with current recommendations in the spec but not yet loc
 
 ## v2: Local-first lab uploads (June 2026)
 
-The local-first re-architecture (see `claude_business/docs/health-roadmap-v2.html` + `health-roadmap-v2-implementation.html` for the full decision record and build log) extends this feature in four ways. The v1 Shopify path above is UNCHANGED and still serves the live widget; everything below is additive for the standalone (GitHub Pages, later drstanfield.com-v2) build.
+The local-first re-architecture (see `health-roadmap-v2.html` + `health-roadmap-v2-implementation.html` for the full decision record and build log, and `architecture-v2.html` for the current architecture map) extends this feature in four ways. **As of the 2026-06-12 production cutover, the local-first build below IS the live widget on `/pages/roadmap`** — the v1 Supabase path described earlier in this doc is kept only as a rollback asset (`health-tool.js`). The extraction/review/FHIR-correction *pipeline* is unchanged; what changed is where originals + values are stored (the user's own cloud, not Supabase) and how the extraction endpoint is authenticated (app-proxy HMAC, not an Origin allow-list).
 
 ### 1. Originals are KEPT — archived in the user's own cloud
 
@@ -500,19 +500,17 @@ Key mechanics (all in `widget-src/`):
 - Blob writes fail gracefully (GitHub's ~1 MB Contents cap, storage quota): the extracted values + metadata are still saved, only the original is skipped
 - Connect-first UX: device-only users see "Keep your original documents" (opens the backend picker) with an honest "Continue without keeping my files" skip; off-cloud, blobs are never even decompressed
 
-### 2. Cross-origin extraction endpoint (no Shopify session) — drstanfield.com ONLY since Phase 5
+### 2. Server extraction endpoint (drstanfield.com only) — app-proxy HMAC since Phase 5
 
-`app/routes/api.lab-import-v2.ts` serves the drstanfield.com v2 page — same `extractOrClassify`/`createBatch`/`pollBatch` pipeline as `api.lab-import.ts`, but:
-- No Shopify app-proxy auth (no accounts on the standalone surface)
-- CORS allow-list `AI_ALLOWED_ORIGINS` in `app/lib/local-first-route.server.ts` — **drstanfield.com ONLY** (Phase 5, 2026-06-11). The non-AI routes (google-token, reminders-v2) stay on the wider `ALLOWED_ORIGINS` (github.io + drstanfield.com) so Drive connect and reminders work from every front door. **localhost is never an approved origin — hard rule**
-- text/plain "simple request" body protocol (remix-serve 405s preflights)
+`app/routes/api.lab-import-v2.ts` serves the drstanfield.com v2 page. (The v1 `app/routes/api.lab-import.ts` was **deleted** in the 2026-06-12 teardown; the shared extraction pipeline now lives in `app/lib/anthropic.server.ts` + `packages/health-core/src/lab-extraction.ts`.) Auth/transport:
+- **App-proxy HMAC, not an Origin allow-list.** Phase 5 (2026-06-11) hardened this endpoint: it is reached **through the Shopify app proxy** at `/apps/health-tool-1/api/lab-import-v2` and must carry a valid proxy signature, verified by `verifyAppProxySignature()` in `app/lib/local-first-route.server.ts` (sorts the query params minus `signature`, HMAC-SHA256s with the app secret, ±10-min replay window, stale-timestamp rejected before the crypto). This **supersedes** the old forgeable `AI_ALLOWED_ORIGINS` Origin check — an `Origin` header can be faked, Shopify's HMAC can't. Same-origin via the proxy, so the AI endpoint needs no CORS machinery at all.
+- The non-AI cross-origin routes (`api.google-token`, `api.reminders-v2`, called from github.io) keep the `ALLOWED_ORIGINS` allow-list + `text/plain` simple-request CORS in `local-first-route.server.ts`. **localhost is never an approved origin — hard rule.**
 - Per-IP daily file quota (60/day, weighted by file count, built on `rate-limiter.ts`'s `createQuotaCounter`)
 - HARD per-machine daily file cap as the $-guardrail (`AI_DAILY_FILE_CAP`, default 500/day/machine; global ≈ cap × machine count, resets on deploy — accepted approximation until a shared counter earns its DDL)
 - §7 posture unchanged: extracted text/images transit, results return, nothing stored
-- Remaining Phase 5 hardening option: app-proxy HMAC (cryptographic front-door check) on top of the Origin check
 
 **Upload transport is a build-time module swap** (June 2026, same mechanism as `api.ts → roadmap-data.ts`):
-- `widget-src/src/lib/upload-api.ts` — server transport (POSTs to this endpoint). Used by the **Shopify v2 build** (`vite.config.shopify-v2.ts`): Brad pays, capped.
+- `widget-src/src/lib/upload-api.ts` — server transport; POSTs to `${PROXY_PATH}/api/lab-import-v2` (the app proxy). Used by the **Shopify production v2 build** (`vite.config.shopify-prod.ts`, the live `/pages/roadmap` widget): Brad pays, capped.
 - `widget-src/src/lib/byok-upload.ts` — **BYOK transport** for the GitHub Pages / self-host build (`vite.config.standalone.ts` redirects upload-api → byok-upload): the browser calls api.anthropic.com directly with the user's own key (`hr_anthropic_key`, shared with the BYOK chat). No key connected → the upload modal shows a "connect your key" message via `checkLabImportQuota().message`. "Batches" are a client-side queue of direct calls (concurrency 2) behind the same `labImportBatch`/`pollBatchStatus` interface — the user is present and pays for themselves, so the Anthropic Batch API's 50% discount isn't worth the async complexity.
 - The extraction prompt + response schema + unit resolution moved to **`packages/health-core/src/lab-extraction.ts`**, imported by BOTH `app/lib/anthropic.server.ts` and `byok-upload.ts` — single source, the two transports can never drift. This ships the prompt in the public Pages bundle: Brad accepted that 2026-06-10 (mechanical value extraction, not clinical IP — the algorithm doc never leaves the server).
 

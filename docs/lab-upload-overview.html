@@ -269,12 +269,12 @@
   <!-- HERO                                                            -->
   <!-- ============================================================== -->
   <header class="hero">
-    <div class="eyebrow">Architecture overview · Shipped system</div>
+    <div class="eyebrow">Architecture overview · Extraction pipeline (v1 storage path shown)</div>
     <h1>Lab Upload — how it works</h1>
     <p class="lead">
       Users drag a lab PDF/image/ZIP into the widget. Claude Haiku calls extract target metrics in
       parallel, the server resolves units to SI, the user reviews and (optionally) edits each value
-      before bulk-saving to Supabase. Saved values are correctable via a FHIR <code>replaces</code>
+      before bulk-saving. Saved values are correctable via a FHIR <code>replaces</code>
       pattern — original values are preserved as <code>entered-in-error</code>, never overwritten.
     </p>
     <div class="meta">
@@ -283,6 +283,26 @@
       <span><strong>Status:</strong> <span class="pill pill-good">Shipped</span></span>
     </div>
   </header>
+
+  <!-- ============================================================== -->
+  <!-- v2 STATUS BANNER (added 2026-06-13)                             -->
+  <!-- ============================================================== -->
+  <section style="border:1px solid #c8c8c8;border-left:5px solid #0066cc;background:#e8f1fb;border-radius:10px;padding:18px 22px;margin:0 0 36px;">
+    <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#0052a3;font-weight:700;margin-bottom:6px;">Read this first · v2 local-first is now live</div>
+    <p style="color:#1a1a1a;margin:6px 0;">
+      The diagrams below depict the original <strong>v1 path, where extracted values were saved to Brad's Supabase</strong>. That is no longer how the live tool works. Since the
+      <strong>2026-06-12 production cutover</strong>, <code>/pages/roadmap</code> serves the v2 <strong>local-first</strong> build (<code>health-roadmap-727</code>), and the Supabase widget is kept only as a rollback asset.
+    </p>
+    <p style="color:#1a1a1a;margin:6px 0;"><strong>What changed (the extraction/review/FHIR-correction pipeline itself is unchanged):</strong></p>
+    <ul style="margin:6px 0 4px;">
+      <li><strong>Storage</strong> — extracted values <em>and</em> the original files are written to the <strong>user's own cloud</strong> (Google Drive / Dropbox / GitHub / self-host) as plain JSON + archived documents, not Supabase. Corrections use the same <code>entered-in-error</code> + <code>correctsId</code> shape, now applied <em>in the file</em> (not the <code>correct_measurement</code> RPC).</li>
+      <li><strong>Endpoint</strong> — extraction goes to <code>app/routes/api.lab-import-v2.ts</code> via the Shopify app proxy (<code>/apps/health-tool-1/api/lab-import-v2</code>), authenticated by an <strong>app-proxy HMAC signature</strong> (<code>verifyAppProxySignature()</code>), not the old <code>api.lab-import.ts</code> (deleted) or an <code>AI_ALLOWED_ORIGINS</code> Origin allow-list (superseded).</li>
+      <li><strong>BYOK option</strong> — the GitHub Pages / self-host build runs extraction <strong>browser → Anthropic direct</strong> with the user's own key (<code>byok-upload.ts</code>); no Brad server in the path.</li>
+    </ul>
+    <p style="color:#1a1a1a;margin:8px 0 0;">
+      Current architecture map: <a href="architecture-v2.html">architecture-v2.html</a> · live behaviour detail: the <strong>"v2: Local-first lab uploads"</strong> section of <a href="lab-upload.md">lab-upload.md</a>.
+    </p>
+  </section>
 
   <!-- ============================================================== -->
   <!-- CUSTOMER COMPLAINT                                              -->

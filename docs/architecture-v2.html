@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Health Roadmap — Architecture (v2, local-first)</title>
+<style>
+  :root {
+    --brand: #00a38b;
+    --brand-dark: #008f7a;
+    --primary: #0066cc;
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --heading: #111;
+    --label: #333;
+    --muted: #666;
+    --faint: #888;
+    --border: #ddd;
+    --error: #dc3545;
+    --warn: #fd7e14;
+    --ok: #16a34a;
+    --code-bg: #f5f7fa;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+    font-size: 16px;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  nav.toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 24px 16px 24px 24px;
+    border-right: 1px solid var(--border);
+    background: var(--card);
+    font-size: 13px;
+  }
+  nav.toc h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin: 16px 0 6px;
+  }
+  nav.toc h2:first-child { margin-top: 0; }
+  nav.toc a {
+    display: block;
+    padding: 3px 0;
+    color: var(--label);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    padding-left: 8px;
+    margin-left: -8px;
+  }
+  nav.toc a:hover { color: var(--brand); border-left-color: var(--brand); }
+  main {
+    padding: 32px 48px 96px;
+    max-width: 1100px;
+  }
+  h1 {
+    font-size: 32px;
+    margin: 0 0 4px;
+    color: var(--heading);
+  }
+  h2 {
+    font-size: 22px;
+    color: var(--heading);
+    margin: 48px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--brand);
+  }
+  h3 {
+    font-size: 17px;
+    color: var(--label);
+    margin: 24px 0 8px;
+  }
+  h4 {
+    font-size: 14px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin: 16px 0 4px;
+  }
+  p { margin: 8px 0 12px; }
+  .meta {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  code, pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+  }
+  code {
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #b91c1c;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 12px 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 8px 0;
+    border: 1px solid var(--border);
+  }
+  pre code { background: none; color: var(--text); padding: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; background: var(--bg); }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    background: #e6f7f4;
+    color: var(--brand);
+    border: 1px solid #b2dfdb;
+  }
+  .pill.warn { background: #fff3e0; color: var(--warn); border-color: #ffe0b2; }
+  .pill.err { background: #fce4e4; color: var(--error); border-color: #f5c6cb; }
+  .pill.info { background: #e3f2fd; color: var(--primary); border-color: #bbdefb; }
+  .pill.gray { background: #f5f5f5; color: var(--muted); border-color: var(--border); }
+  .callout {
+    background: #fffbeb;
+    border-left: 4px solid #fcd34d;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 0 8px 8px 0;
+    color: #78350f;
+    font-size: 14px;
+  }
+  .callout strong { color: #92400e; }
+  .danger {
+    background: #fef2f2;
+    border-left: 4px solid var(--error);
+    color: #991b1b;
+  }
+  .danger strong { color: #b91c1c; }
+  .good {
+    background: #f0fdf4;
+    border-left: 4px solid var(--ok);
+    color: #166534;
+  }
+  .good strong { color: #15803d; }
+  .diagram {
+    background: var(--card);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 16px;
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+  .diagram svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+  .caption {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 8px;
+    font-style: italic;
+  }
+  ul, ol { padding-left: 22px; }
+  li { margin: 4px 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .file-link { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; color: var(--primary); }
+  .file-link:hover { text-decoration: underline; }
+  details { margin: 8px 0; }
+  details summary { cursor: pointer; font-weight: 600; color: var(--label); padding: 6px 0; }
+  details[open] summary { color: var(--brand); }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.toc { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+    main { padding: 24px 20px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="toc">
+  <h2>Overview</h2>
+  <a href="#intro">Introduction</a>
+  <a href="#big-idea">The big idea</a>
+  <a href="#system">System diagram</a>
+  <a href="#front-doors">Front doors × storage</a>
+  <a href="#stack">Tech stack</a>
+
+  <h2>Client architecture</h2>
+  <a href="#builds">Builds &amp; flags</a>
+  <a href="#module-swap">Module-swap mechanism</a>
+  <a href="#storage">Local-first storage spine</a>
+  <a href="#merge">Merge &amp; conflict model</a>
+  <a href="#backends">Cloud backends</a>
+  <a href="#identity">Identity / auth</a>
+
+  <h2>Privacy &amp; data path</h2>
+  <a href="#data-path">The data path</a>
+  <a href="#thin-server">Brad's thin server</a>
+  <a href="#positioning">Honest positioning</a>
+
+  <h2>Features</h2>
+  <a href="#chatbot">Chatbot (server vs BYOK)</a>
+  <a href="#lab-upload">Lab upload</a>
+  <a href="#reminders">Reminders v2</a>
+  <a href="#lead-capture">Lead capture (Klaviyo)</a>
+  <a href="#ab-blog-bots">A/B · blog · bots</a>
+
+  <h2>Server &amp; data</h2>
+  <a href="#api">API endpoints</a>
+  <a href="#crons">Crons</a>
+  <a href="#supabase">Supabase today + purge</a>
+
+  <h2>Ops</h2>
+  <a href="#pipeline">Dev → prod pipeline</a>
+  <a href="#deploy">Deployment</a>
+  <a href="#security">Security model</a>
+
+  <h2>Reference</h2>
+  <a href="#migration">v1 → v2 teardown</a>
+  <a href="#rejected">Rejected paths</a>
+  <a href="#gotchas">Dangerous gotchas</a>
+</nav>
+
+<main>
+
+<h1 id="intro">Health Roadmap — Architecture (v2, local-first)</h1>
+<div class="meta">
+  Last updated 2026-06-13. <span class="pill">Live in production</span> — <code>/pages/roadmap</code> serves the v2 local-first build (<code>health-roadmap-727</code>). This page is the current source of truth for architecture. The legacy v1 (Supabase-backed) shape is preserved at <a href="architecture.html">architecture.html</a> for historical reference; the migration that produced v2 is logged in <a href="health-roadmap-v2.html">health-roadmap-v2.html</a> (decision record) and <a href="health-roadmap-v2-implementation.html">health-roadmap-v2-implementation.html</a> (build log).
+</div>
+
+<div class="card">
+  <strong>What changed in one sentence:</strong> the user's health data moved out of Brad's Supabase and into the <em>user's own cloud</em> (Google Drive / Dropbox / GitHub / self-host) as plain JSON files — Brad now stores no health data and can't read the user's cloud.
+  <br><br>
+  <strong>What this document is:</strong> a single visual map of how the v2 app fits together — the three build flavours, the local-first storage spine, the merge engine, the cloud backends, the thin server that survives, and the data path that deliberately never touches Brad's infrastructure.
+  <br><br>
+  <strong>What it isn't:</strong> a changelog or a decision record. It captures architectural <em>shape</em> as it exists in code today. For <em>why</em> each decision was made, see <a href="health-roadmap-v2.html">health-roadmap-v2.html</a>; for agent-facing build/deploy instructions, see <a href="../CLAUDE.md">CLAUDE.md</a>.
+</div>
+
+<div class="callout">
+  <strong>Accuracy note.</strong> This map was reconciled against the actual code at HEAD, not just the older design docs. Where the two diverged, code wins — those corrections are called out inline (e.g. the Pages build config is <code>vite.config.standalone.ts</code>, not a "pages" config; the Shopify build swaps <em>only</em> the storage module; crons self-start on import).
+</div>
+
+<h2 id="big-idea">The big idea: local-first, user-owned cloud</h2>
+<p>v1 was a custodial app: Brad's Fly backend held a per-user JWT, wrote every measurement to Brad's Supabase, and RLS gated the rows. v2 inverts that. The valuable part of the product — <code>calculateHealthResults()</code> and the suggestion engine in <a class="file-link" href="../packages/health-core/">packages/health-core</a> — already ran entirely client-side. So the data can too.</p>
+
+<div class="grid-3">
+  <div class="card">
+    <h4>Interpretation is the product</h4>
+    Google Health and Microsoft HealthVault died as passive vaults. The recommendation engine — not the database — is the product. The engine stays free and client-side; the reminder loop fixes the empty-vault abandonment problem.
+  </div>
+  <div class="card">
+    <h4>Brad is not the custodian</h4>
+    Removing Brad as data holder sheds the privacy and HIPAA-custody burden, and preserves the guarantee that the app <em>works even if Brad goes dark</em>. The data path never reaches Brad's servers.
+  </div>
+  <div class="card">
+    <h4>The grandma test</h4>
+    Every choice is stress-tested against a 70-year-old non-technical user who will never run a server, use a terminal, or store a recovery phrase. This is why there is <em>no client-side encryption by default</em> (a forgotten key = lost history forever) and why Dropbox is the recommended backend.
+  </div>
+</div>
+
+<h2 id="system">System diagram</h2>
+<p>The end-to-end v2 picture. The thick teal path — browser ↔ the user's own cloud — is the entire data layer, and it never crosses into Brad's infrastructure. Brad's thin server (orange) is optional and only handles things that genuinely need a server: AI calls he pays for, and the reminder scheduler.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 1100 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="v2 system overview">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#666"/></marker>
+    <marker id="arrBrand" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#00a38b"/></marker>
+    <marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#dc3545"/></marker>
+  </defs>
+
+  <!-- Two front doors -->
+  <rect x="20" y="20" width="250" height="190" rx="12" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="35" y="42" font-size="13" font-weight="600" fill="#00695c">Two equal front doors (delivery)</text>
+  <rect x="35" y="56" width="220" height="58" rx="8" fill="#ffffff" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="145" y="78" font-size="12" font-weight="600" text-anchor="middle" fill="#111">drstanfield.com /pages/roadmap</text>
+  <text x="145" y="95" font-size="10" text-anchor="middle" fill="#666">Shopify theme extension</text>
+  <text x="145" y="107" font-size="10" text-anchor="middle" fill="#666">health-plan-v2.js (LOCAL_FIRST + SHOPIFY_SURFACE)</text>
+  <rect x="35" y="124" width="220" height="58" rx="8" fill="#ffffff" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="145" y="146" font-size="12" font-weight="600" text-anchor="middle" fill="#111">GitHub Pages / self-host</text>
+  <text x="145" y="163" font-size="10" text-anchor="middle" fill="#666">standalone build (LOCAL_FIRST only)</text>
+  <text x="145" y="175" font-size="10" text-anchor="middle" fill="#666">BYOK chat + upload</text>
+
+  <!-- The App -->
+  <rect x="320" y="40" width="240" height="250" rx="12" fill="#ffffff" stroke="#00a38b" stroke-width="2"/>
+  <text x="440" y="64" font-size="14" font-weight="700" text-anchor="middle" fill="#00695c">The App (browser / PWA)</text>
+  <rect x="335" y="78" width="210" height="40" rx="6" fill="#f0f9f7" stroke="#00a38b"/>
+  <text x="440" y="95" font-size="11" font-weight="600" text-anchor="middle" fill="#111">health-core: results + suggestions</text>
+  <text x="440" y="109" font-size="10" text-anchor="middle" fill="#666">+ reminders + merge (pure)</text>
+  <rect x="335" y="126" width="210" height="36" rx="6" fill="#f0f9f7" stroke="#00a38b"/>
+  <text x="440" y="148" font-size="11" font-weight="600" text-anchor="middle" fill="#111">RoadmapStore (data layer)</text>
+  <rect x="335" y="170" width="210" height="36" rx="6" fill="#f0f9f7" stroke="#00a38b"/>
+  <text x="440" y="192" font-size="11" font-weight="600" text-anchor="middle" fill="#111">SyncManager (read-merge-write)</text>
+  <rect x="335" y="214" width="210" height="62" rx="6" fill="#f0f9f7" stroke="#00a38b"/>
+  <text x="440" y="234" font-size="11" font-weight="600" text-anchor="middle" fill="#111">StorageAdapter (one per backend)</text>
+  <text x="440" y="250" font-size="10" text-anchor="middle" fill="#666">Drive · Dropbox · GitHub · WebDAV</text>
+  <text x="440" y="264" font-size="10" text-anchor="middle" fill="#666">LocalStorage (no-sync tier)</text>
+
+  <line x1="270" y1="120" x2="315" y2="140" stroke="#00a38b" stroke-width="2.5" marker-end="url(#arrBrand)"/>
+  <line x1="270" y1="150" x2="315" y2="175" stroke="#00a38b" stroke-width="2.5" marker-end="url(#arrBrand)"/>
+
+  <!-- User's own cloud -->
+  <rect x="620" y="40" width="240" height="180" rx="12" fill="#ecfdf5" stroke="#16a34a" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="740" y="64" font-size="13" font-weight="700" text-anchor="middle" fill="#14532d">User's own cloud</text>
+  <text x="740" y="80" font-size="10" text-anchor="middle" fill="#14532d">Google Drive · Dropbox · GitHub · self-host</text>
+  <rect x="635" y="92" width="210" height="34" rx="6" fill="#ffffff" stroke="#16a34a"/>
+  <text x="740" y="113" font-size="11" font-weight="600" text-anchor="middle" fill="#111">health-roadmap.json</text>
+  <rect x="635" y="132" width="210" height="30" rx="6" fill="#ffffff" stroke="#16a34a"/>
+  <text x="740" y="151" font-size="11" font-weight="600" text-anchor="middle" fill="#111">documents/ (lab PDFs, scans)</text>
+  <rect x="635" y="168" width="210" height="30" rx="6" fill="#ffffff" stroke="#16a34a"/>
+  <text x="740" y="187" font-size="11" font-weight="600" text-anchor="middle" fill="#111">chat-history.json</text>
+
+  <line x1="560" y1="180" x2="615" y2="150" stroke="#00a38b" stroke-width="3" marker-end="url(#arrBrand)" marker-start="url(#arrBrand)"/>
+  <text x="588" y="140" font-size="10" font-weight="700" fill="#00695c" text-anchor="middle">OAuth</text>
+  <text x="588" y="200" font-size="10" font-weight="700" fill="#00695c" text-anchor="middle">(PKCE, client-side)</text>
+
+  <!-- Brad's thin server -->
+  <rect x="320" y="330" width="540" height="180" rx="12" fill="#fef5e7" stroke="#fd7e14" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="335" y="354" font-size="13" font-weight="600" fill="#9a3412">Brad's thin server — Fly.io (Remix) · optional · free · degrades gracefully</text>
+  <rect x="335" y="366" width="160" height="44" rx="6" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="415" y="385" font-size="11" font-weight="600" text-anchor="middle" fill="#111">/api/chat</text>
+  <text x="415" y="399" font-size="9" text-anchor="middle" fill="#666">classifier→router→LLM</text>
+  <rect x="505" y="366" width="160" height="44" rx="6" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="585" y="385" font-size="11" font-weight="600" text-anchor="middle" fill="#111">/api/lab-import-v2</text>
+  <text x="585" y="399" font-size="9" text-anchor="middle" fill="#666">extract, never store</text>
+  <rect x="675" y="366" width="170" height="44" rx="6" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="760" y="385" font-size="11" font-weight="600" text-anchor="middle" fill="#111">/api/reminders-v2</text>
+  <text x="760" y="399" font-size="9" text-anchor="middle" fill="#666">dumb scheduler</text>
+  <rect x="335" y="418" width="160" height="40" rx="6" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="415" y="437" font-size="11" font-weight="600" text-anchor="middle" fill="#111">/api/google-token</text>
+  <text x="415" y="450" font-size="9" text-anchor="middle" fill="#666">stateless exchange</text>
+  <rect x="505" y="418" width="160" height="40" rx="6" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="585" y="437" font-size="11" font-weight="600" text-anchor="middle" fill="#111">/api/measurements</text>
+  <text x="585" y="450" font-size="9" text-anchor="middle" fill="#666">Klaviyo capture only</text>
+  <rect x="675" y="418" width="170" height="40" rx="6" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="760" y="437" font-size="11" font-weight="600" text-anchor="middle" fill="#111">/api/ab · /api/feedback</text>
+  <text x="760" y="450" font-size="9" text-anchor="middle" fill="#666">events · feedback</text>
+  <rect x="335" y="466" width="510" height="34" rx="6" fill="#f5f5f5" stroke="#bbb"/>
+  <text x="590" y="487" font-size="10" text-anchor="middle" fill="#555">Crons (reminder-v2 · trending · chat-summary · youtube-bot) · Discord bot (WS) · Admin app (Polaris)</text>
+
+  <line x1="440" y1="290" x2="440" y2="328" stroke="#fd7e14" stroke-width="2" stroke-dasharray="5 3" marker-end="url(#arr)"/>
+  <text x="455" y="312" font-size="9" fill="#9a3412">AI + schedule (transits, never stored)</text>
+
+  <!-- cannot read cloud -->
+  <line x1="740" y1="328" x2="740" y2="222" stroke="#dc3545" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#arrRed)"/>
+  <text x="752" y="280" font-size="10" font-weight="600" fill="#b91c1c">✗ cannot read user cloud</text>
+
+  <!-- External -->
+  <rect x="900" y="330" width="180" height="180" rx="12" fill="#fef2f2" stroke="#dc3545" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="915" y="354" font-size="13" font-weight="600" fill="#7f1d1d">External APIs</text>
+  <rect x="915" y="368" width="150" height="28" rx="6" fill="#ffffff" stroke="#dc3545"/><text x="990" y="386" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Anthropic (Claude)</text>
+  <rect x="915" y="402" width="150" height="28" rx="6" fill="#ffffff" stroke="#dc3545"/><text x="990" y="420" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Resend (email)</text>
+  <rect x="915" y="436" width="150" height="28" rx="6" fill="#ffffff" stroke="#dc3545"/><text x="990" y="454" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Klaviyo</text>
+  <rect x="915" y="470" width="150" height="28" rx="6" fill="#ffffff" stroke="#dc3545"/><text x="990" y="488" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Shopify · Discord · Supabase</text>
+  <line x1="860" y1="430" x2="900" y2="430" stroke="#dc3545" stroke-width="1.5" marker-end="url(#arrRed)"/>
+
+  <!-- BYOK direct -->
+  <line x1="560" y1="250" x2="905" y2="360" stroke="#dc3545" stroke-width="1.4" stroke-dasharray="3 3" marker-end="url(#arrRed)"/>
+  <text x="700" y="300" font-size="9" font-weight="600" fill="#b91c1c">BYOK: browser → Anthropic direct (Pages only)</text>
+</svg>
+<div class="caption">Thick teal = the data path (app ↔ user's cloud), all client-side, never touching Brad. Orange dashed = optional thin-server AI + scheduling (content transits, is never stored). Red = the server explicitly cannot read the user's cloud; on the Pages build, AI calls go browser→Anthropic direct with the user's own key.</div>
+</div>
+
+<h3>Trust boundaries (v2)</h3>
+<ul>
+  <li><strong>Browser</strong> — holds the powerful cloud OAuth token and (on Pages) the user's Anthropic key. Both live in <code>localStorage</code>/<code>sessionStorage</code> on the device only and are never synced or sent to Brad.</li>
+  <li><strong>User's cloud</strong> — the system of record. Folder-scoped access (the app can only touch files it created). Brad has no credential for it.</li>
+  <li><strong>Brad's thin server</strong> — trusted but deliberately starved of health data. It sees AI request content in-memory (never stored) and a reminder's <em>due date + label + verified email + capability token</em> — never the values or reasoning behind them.</li>
+  <li><strong>Supabase</strong> — now holds only anonymized chat history (for training) and A/B events. RLS is deny-all; the service-role key lives in Fly secrets. No health tables remain populated.</li>
+</ul>
+
+<h2 id="front-doors">Front doors × storage (two independent choices)</h2>
+<p>The single most clarifying idea in v2: <strong>where the app is served</strong> and <strong>where the data is stored</strong> are orthogonal. The same React app, built two ways, pairs with any of five storage backends.</p>
+<div class="grid-2">
+  <div class="card">
+    <h3 style="margin-top:0">Delivery (front door)</h3>
+    <ul>
+      <li><strong>drstanfield.com</strong> — Shopify theme extension on <code>/pages/roadmap</code>. The mainstream door; AI runs on Brad's server (free to the user).</li>
+      <li><strong>GitHub Pages / self-host</strong> — the same app, statically hosted. The "works if Brad goes dark" door; AI is bring-your-own-key. Also the primary dev/test surface.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Storage (where the file lives)</h3>
+    <ul>
+      <li><strong>Dropbox</strong> — recommended default (true refresh token, App-folder scope).</li>
+      <li><strong>Google Drive</strong> — <code>drive.file</code> scope; needs the token-exchange endpoint.</li>
+      <li><strong>GitHub</strong> — fine-grained PAT, one repo (advanced/dev).</li>
+      <li><strong>Self-host</strong> — WebDAV + Basic auth (the only provider-proof option on iOS).</li>
+      <li><strong>This browser only</strong> — <code>localStorage</code>, no sync (guest tier).</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="stack">Tech stack</h2>
+<div class="grid-2">
+  <div class="card">
+    <h4>Client (the app)</h4>
+    <ul>
+      <li>React 18 + TypeScript, Vite</li>
+      <li>Two v2 entry points: <code>standalone/app.tsx</code> (local-first widget)</li>
+      <li>Shared logic in <code>@roadmap/health-core</code> (the only workspace CI tests)</li>
+      <li>Storage adapters talk to Drive/Dropbox/GitHub/WebDAV via fetch + PKCE</li>
+      <li>Sentry browser SDK + ErrorBoundary</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Server (thin, optional)</h4>
+    <ul>
+      <li>Remix on Node 20, Fly.io <code>health-tool-app</code> (iad, 1 machine min)</li>
+      <li>Shopify App Remix SDK — app proxy + HMAC for the AI endpoints</li>
+      <li>Anthropic (Claude Haiku 4.5) for chat + lab extraction</li>
+      <li>Supabase (chat history + A/B only), Resend (reminders + ops digests), Klaviyo (email list)</li>
+      <li>discord.js gateway; Polaris admin app</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="builds">Builds &amp; flags</h2>
+<p>One source tree produces three bundles. Behaviour differences come entirely from two compile-time flags plus Vite module swaps — <strong>never runtime sniffing</strong>. The flags are declared in one place, <a class="file-link" href="../widget-src/src/lib/build-flags.ts">widget-src/src/lib/build-flags.ts</a>, and injected by each config's <code>define</code>.</p>
+
+<pre><code>// build-flags.ts — the one place these are defined
+export const LOCAL_FIRST    = import.meta.env.VITE_LOCAL_FIRST === 'true';
+export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';</code></pre>
+
+<table>
+  <thead><tr><th>Build</th><th>Command (root <code>package.json</code>)</th><th>Vite config</th><th>Flags</th><th>Output</th><th>Module swaps</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Shopify prod v2</strong><br><span class="pill">live</span></td>
+      <td><code>npm run build:shopify-prod</code></td>
+      <td><a class="file-link" href="../widget-src/vite.config.shopify-prod.ts">vite.config.shopify-prod.ts</a> (+ upload build)</td>
+      <td><code>LOCAL_FIRST</code> + <code>SHOPIFY_SURFACE</code></td>
+      <td><code>health-plan-v2.js</code> + lazy <code>…-HistoryPanel.js</code> + <code>.css</code> → extension assets</td>
+      <td><strong>only</strong> <code>api.ts → roadmap-data.ts</code></td>
+    </tr>
+    <tr>
+      <td><strong>GitHub Pages / self-host</strong></td>
+      <td><code>npm run build:pages</code></td>
+      <td><a class="file-link" href="../widget-src/vite.config.standalone.ts">vite.config.standalone.ts</a> (+ upload build)</td>
+      <td><code>LOCAL_FIRST</code> only</td>
+      <td><code>dist-pages/</code>, base <code>/roadmap/</code>, sourcemaps on</td>
+      <td><code>api.ts→roadmap-data.ts</code>, <code>chat-api.ts→byok-chat.ts</code>, <code>upload-api.ts→byok-upload.ts</code></td>
+    </tr>
+    <tr>
+      <td><strong>Legacy v1</strong> <span class="pill gray">rollback only</span></td>
+      <td><code>npm run build:widget</code></td>
+      <td><a class="file-link" href="../widget-src/vite.config.ts">vite.config.ts</a> + history/site-chat/chatbot/upload</td>
+      <td>none (undefined → false)</td>
+      <td><code>health-tool.js</code>, <code>health-history.js</code>, …</td>
+      <td>none</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  <strong>Two corrections vs the older docs.</strong> (1) There is no <code>vite.config.pages.ts</code> — the Pages config is <code>vite.config.standalone.ts</code>, and <code>build:pages</code>/<code>build:shopify-prod</code> live in the <em>root</em> <code>package.json</code>, not <code>widget-src/</code>. (2) The Shopify prod build swaps <strong>only the storage module</strong>; its chat and upload still go through Brad's server (<code>chat-api.ts</code> / <code>upload-api.ts</code> → app proxy). The three-swap set is the <em>Pages</em> build, where AI is BYOK.
+</div>
+<div class="callout">
+  <strong>Flag semantics.</strong> <code>LOCAL_FIRST</code> is true on both v2 builds: the plan lives client-side, "logged in" is just storage UX, chat sends the plan as context, and legacy login-sync server calls are neutralized by the shim. <code>SHOPIFY_SURFACE</code> is true <em>only</em> on drstanfield.com: it gates features that need Brad's server (the guest report-email/Klaviyo capture). The legacy v1 build sees both as false, so <code>api.ts</code>'s no-op stubs keep it byte-stable.
+</div>
+
+<h2 id="module-swap">The module-swap mechanism</h2>
+<p>The whole local-first transformation rides on a Vite <code>resolveId</code> redirect: when any module imports <code>./api</code>, the build rewrites it to <code>./roadmap-data</code>. The replacement keeps an <em>identical export surface</em>, so the ~40 call sites in <code>HealthTool.tsx</code> never changed.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 1040 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Module swap">
+  <defs><marker id="ms" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#666"/></marker></defs>
+  <rect x="20" y="120" width="180" height="60" rx="8" fill="#f0f9f7" stroke="#00a38b"/>
+  <text x="110" y="146" font-size="12" font-weight="600" text-anchor="middle" fill="#111">Components import</text>
+  <text x="110" y="164" font-size="12" text-anchor="middle" fill="#b91c1c">./api</text>
+
+  <rect x="300" y="60" width="220" height="70" rx="8" fill="#fff" stroke="#bbb"/>
+  <text x="410" y="86" font-size="12" font-weight="600" text-anchor="middle" fill="#111">v1 build: resolves to api.ts</text>
+  <text x="410" y="104" font-size="10" text-anchor="middle" fill="#666">app-proxy fetches (or no-op stubs)</text>
+  <text x="410" y="119" font-size="10" text-anchor="middle" fill="#666">Supabase-backed CRUD</text>
+
+  <rect x="300" y="170" width="220" height="80" rx="8" fill="#ecfdf5" stroke="#16a34a"/>
+  <text x="410" y="194" font-size="12" font-weight="600" text-anchor="middle" fill="#111">v2 build: resolveId → roadmap-data.ts</text>
+  <text x="410" y="212" font-size="10" text-anchor="middle" fill="#444">export * from './api'</text>
+  <text x="410" y="227" font-size="10" text-anchor="middle" fill="#444">then shadow with RoadmapStore versions</text>
+  <text x="410" y="242" font-size="10" text-anchor="middle" fill="#444">+ sendGuestReport → {klaviyoCapture}</text>
+
+  <rect x="600" y="170" width="200" height="80" rx="8" fill="#f0f9f7" stroke="#00a38b"/>
+  <text x="700" y="196" font-size="12" font-weight="600" text-anchor="middle" fill="#111">RoadmapStore</text>
+  <text x="700" y="214" font-size="10" text-anchor="middle" fill="#666">SyncManager + RoadmapFile</text>
+  <text x="700" y="229" font-size="10" text-anchor="middle" fill="#666">reuses mappings.ts</text>
+
+  <rect x="840" y="60" width="190" height="70" rx="8" fill="#fef2f2" stroke="#dc3545"/>
+  <text x="935" y="84" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Pages build also swaps</text>
+  <text x="935" y="101" font-size="10" text-anchor="middle" fill="#666">chat-api → byok-chat</text>
+  <text x="935" y="116" font-size="10" text-anchor="middle" fill="#666">upload-api → byok-upload</text>
+
+  <line x1="200" y1="150" x2="296" y2="95" stroke="#666" stroke-width="1.6" marker-end="url(#ms)"/>
+  <text x="240" y="118" font-size="9" fill="#666">v1</text>
+  <line x1="200" y1="155" x2="296" y2="205" stroke="#16a34a" stroke-width="2" marker-end="url(#ms)"/>
+  <text x="240" y="190" font-size="9" font-weight="600" fill="#16a34a">v2</text>
+  <line x1="520" y1="210" x2="596" y2="210" stroke="#666" stroke-width="1.6" marker-end="url(#ms)"/>
+</svg>
+<div class="caption">A local export of the same name shadows the <code>export *</code> re-export, so the shim overrides exactly the functions it needs (reads, writes, lifecycle, lead-capture) and inherits the rest. The Pages build adds two more swaps for the BYOK AI transports.</div>
+</div>
+
+<p><strong>What the shim (<a class="file-link" href="../widget-src/src/lib/roadmap-data.ts">roadmap-data.ts</a>) overrides:</strong> lifecycle (<code>initRoadmapStore</code>, <code>flushRoadmapStore[Sync]</code>); all reads (<code>loadLatestMeasurements</code>, <code>loadAllHistory</code>, <code>loadLabValues</code>, <code>getHealthDocuments</code>, …) and writes (<code>addMeasurement</code>, <code>correctMeasurement</code>, <code>saveMedication</code>, <code>saveScreening</code>, <code>bulkSaveLabValues</code>, <code>deleteUserData</code>, …) against the file; reminders (<code>getReminderOptIn</code>, <code>computeCurrentReminderSchedule</code>); lead capture (<code>getReportEmailCaptured</code>, <code>markReportEmailCaptured</code>); and the report actions — <code>getReportHtml</code> (client-side print) and <code>sendGuestReport(email,…)</code>, which POSTs <strong>only</strong> <code>{klaviyoCapture:{email}}</code> and ignores the health-data arguments. <code>sendWelcomeEmail</code> is a no-op; the mailto "Email Report" path is stubbed.</p>
+
+<h2 id="storage">Local-first storage spine</h2>
+<p>Three layers: a pure data model + merge engine in <code>health-core</code> (so CI exercises the correctness-critical code), a browser I/O shell in <code>widget-src/src/storage/</code>, and one store the UI talks to.</p>
+
+<div class="grid-2">
+  <div class="card">
+    <h4>Pure (health-core)</h4>
+    <ul>
+      <li><a class="file-link" href="../packages/health-core/src/roadmap-file.ts">roadmap-file.ts</a> — the <code>RoadmapFile</code> schema + <code>createEmptyFile</code>, <code>stableStringify</code></li>
+      <li><code>merge.ts</code> — <code>mergeFiles()</code>: deterministic, symmetric, conflict-free</li>
+      <li><code>migrate.ts</code> — <code>migrateFile()</code> + <code>SchemaTooNewError</code> (normalise untrusted reads; forward-compat gate)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Shell (widget-src/storage)</h4>
+    <ul>
+      <li><a class="file-link" href="../widget-src/src/storage/sync-manager.ts">sync-manager.ts</a> — the read-merge-write-verify loop, per named file</li>
+      <li><code>adapter.ts</code> + <code>dropbox.ts</code> / <code>drive.ts</code> / <code>github.ts</code> / <code>webdav.ts</code> / <code>local-storage-adapter.ts</code> / <code>memory-adapter.ts</code></li>
+      <li><code>pkce.ts</code>, <code>device-id.ts</code>, <code>chat-history-store.ts</code>, <code>self-test.ts</code></li>
+    </ul>
+  </div>
+</div>
+
+<h3>The <code>RoadmapFile</code></h3>
+<p>One JSON file per user. Append-only arrays are never mutated; corrections add a row and flip the prior one to <code>entered-in-error</code> with a <code>correctsId</code> (the same FHIR <code>Observation</code> semantics v1 enforced in Postgres, now enforced in the file). Singletons (profile, screenings) carry a per-record logical clock.</p>
+<pre><code>{
+  schemaVersion: 1,
+  meta:    { createdAt, updatedAt, lastDeviceId, lamport, eraseEpoch },
+  profile: { sex, birthYear, birthMonth, heightCm, unitSystem, unitOverrides,
+             reportEmailCaptured?,        // monotonic Shopify-surface lead flag
+             updatedAt, lamport },
+  measurements:  [...],   medications/medicationHistory,
+  supplements/supplementHistory,  screenings,  labValues: [...],
+  documents:     [ { id, title, type, date, fileRef, contentHash, extractedText, … } ],
+  reminderPreferences, reminderOptIn?,  recommendationSnapshots: [...]
+}</code></pre>
+<ul>
+  <li><strong><code>meta.lamport</code></strong> — file-level logical clock, bumped to <code>max+1</code> on every write.</li>
+  <li><strong><code>meta.eraseEpoch</code></strong> — added after a real bug: "Delete All My Data" silently failed because the never-lose-data merge union resurrected deleted rows. A higher <code>eraseEpoch</code> now wins <code>mergeFiles</code> wholesale. <code>RoadmapStore.deleteUserData()</code> bumps it.</li>
+  <li><strong><code>profile.reportEmailCaptured</code></strong> — set once when a user submits their email for the PDF; survives load→migrate (object spread) and merge (whole-profile LWW). See <a href="#lead-capture">lead capture</a>.</li>
+</ul>
+
+<h3>The store + sync</h3>
+<p><a class="file-link" href="../widget-src/src/storage/roadmap-store.ts">RoadmapStore</a> mirrors the old <code>api.ts</code> surface so the UI is oblivious to the swap, and adds local-first specifics: <code>getPrefillInputs()</code> (synchronous profile seed so a returning user's "Starting Info" renders collapsed on first paint), <code>getReportEmailCaptured()/markReportEmailCaptured()</code>, <code>getReminderOptIn/setReminderOptIn/computeReminderScheduleNow</code>, and <code>flush()/flushSync()</code>. <code>app.tsx</code> awaits <code>initRoadmapStore</code> before render.</p>
+<p>The <a class="file-link" href="../widget-src/src/storage/sync-manager.ts">SyncManager</a> runs one optimistic-concurrency loop per named document — <code>health-roadmap.json</code> and <code>chat-history.json</code> ride the same loop via injected <code>DocumentSpec</code>s (filename + migrate + merge). After every write it re-reads and confirms the file parses and <code>lamport</code> hasn't regressed — catching half-writes and corruption at the cost of one extra read per save (invisible on an app used a few times a year).</p>
+
+<h2 id="merge">Merge &amp; conflict model</h2>
+<p>Two devices editing the same cloud file must converge without losing data and without a CRDT library. The model is append-dominant, so the merge is simple and deterministic:</p>
+<ul>
+  <li><strong>Measurements &amp; lab values</strong> — slot-keyed by <code>(metric, day)</code>; at most one <code>active</code> row per slot; <code>entered-in-error</code> is monotonic (never reverts).</li>
+  <li><strong>Current-state singletons</strong> (profile, screenings, reminder prefs) — per-key last-write-wins by logical clock. <strong>Wall-clock is only a tiebreak</strong>, so two devices with skewed clocks still converge.</li>
+  <li><strong>Logs</strong> (medication/supplement history) — unioned. <strong>Snapshots</strong> — deduped. <strong><code>eraseEpoch</code></strong> — highest wins the whole file.</li>
+</ul>
+
+<div class="diagram">
+<svg viewBox="0 0 980 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Read-merge-write loop">
+  <defs><marker id="rm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/></marker></defs>
+  <rect x="20" y="100" width="130" height="50" rx="8" fill="#f0f9f7" stroke="#00a38b"/><text x="85" y="130" font-size="12" font-weight="600" text-anchor="middle" fill="#111">local edit</text>
+  <rect x="190" y="100" width="130" height="50" rx="8" fill="#ecfdf5" stroke="#16a34a"/><text x="255" y="124" font-size="12" font-weight="600" text-anchor="middle" fill="#111">READ remote</text><text x="255" y="140" font-size="9" text-anchor="middle" fill="#666">+ version token</text>
+  <rect x="360" y="100" width="130" height="50" rx="8" fill="#ecfdf5" stroke="#16a34a"/><text x="425" y="124" font-size="12" font-weight="600" text-anchor="middle" fill="#111">MERGE</text><text x="425" y="140" font-size="9" text-anchor="middle" fill="#666">mergeFiles()</text>
+  <rect x="530" y="100" width="130" height="50" rx="8" fill="#ecfdf5" stroke="#16a34a"/><text x="595" y="124" font-size="12" font-weight="600" text-anchor="middle" fill="#111">WRITE</text><text x="595" y="140" font-size="9" text-anchor="middle" fill="#666">if-match version</text>
+  <rect x="700" y="100" width="130" height="50" rx="8" fill="#ecfdf5" stroke="#16a34a"/><text x="765" y="124" font-size="12" font-weight="600" text-anchor="middle" fill="#111">VERIFY</text><text x="765" y="140" font-size="9" text-anchor="middle" fill="#666">re-read, parse</text>
+  <rect x="860" y="100" width="100" height="50" rx="8" fill="#f0fdf4" stroke="#16a34a"/><text x="910" y="130" font-size="12" font-weight="600" text-anchor="middle" fill="#111">done</text>
+  <line x1="150" y1="125" x2="186" y2="125" stroke="#16a34a" stroke-width="2" marker-end="url(#rm)"/>
+  <line x1="320" y1="125" x2="356" y2="125" stroke="#16a34a" stroke-width="2" marker-end="url(#rm)"/>
+  <line x1="490" y1="125" x2="526" y2="125" stroke="#16a34a" stroke-width="2" marker-end="url(#rm)"/>
+  <line x1="660" y1="125" x2="696" y2="125" stroke="#16a34a" stroke-width="2" marker-end="url(#rm)"/>
+  <line x1="830" y1="125" x2="856" y2="125" stroke="#16a34a" stroke-width="2" marker-end="url(#rm)"/>
+  <path d="M595 100 C595 50, 255 50, 255 98" fill="none" stroke="#dc3545" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#rm)"/>
+  <text x="425" y="44" font-size="10" font-weight="600" fill="#b91c1c" text-anchor="middle">ConflictError (stale version) → retry from READ</text>
+</svg>
+<div class="caption">Every write merges against the freshest read. Backends with conditional writes (Dropbox <code>rev</code>, GitHub <code>sha</code>, WebDAV ETag) raise a <code>ConflictError</code> on a stale token and the loop retries. Google Drive has no conditional write, so it degrades to last-write-wins — made safe because the loop always merges the latest read first.</div>
+</div>
+
+<h2 id="backends">Cloud backends</h2>
+<table>
+  <thead><tr><th>Backend</th><th>Auth</th><th>Scope</th><th>Conflict token</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Dropbox</strong> <span class="pill">default</span></td><td>OAuth PKCE, real refresh token (pure client-side)</td><td>App folder (<code>/Apps/Health Roadmap…</code>)</td><td><code>rev</code></td><td>Recommended — refreshes without a server.</td></tr>
+    <tr><td><strong>Google Drive</strong></td><td>Code-flow + refresh via <a class="file-link" href="../app/routes/api.google-token.ts">/api/google-token</a> (stateless); GIS popup fallback</td><td><code>drive.file</code> (only files it created)</td><td>none → LWW</td><td>Exchange endpoint is the only place the client secret lives; it stores nothing. OAuth app must be <em>published</em> or refresh tokens die in 7 days.</td></tr>
+    <tr><td><strong>GitHub</strong></td><td>User-pasted fine-grained PAT</td><td>One repo, Contents r/w (+ Email read for reminders)</td><td>blob/commit <code>sha</code></td><td>Token endpoints aren't CORS-enabled, so PKCE is impossible — dev/advanced tier. ~1 MB document cap.</td></tr>
+    <tr><td><strong>Self-host</strong></td><td>WebDAV + Basic auth</td><td>Whatever the user's server exposes</td><td>ETag / <code>If-Match</code></td><td>Needs server CORS. The only provider-proof path on iOS. A server with no ETags degrades to LWW.</td></tr>
+    <tr><td><strong>This browser</strong></td><td>none</td><td><code>localStorage</code></td><td>version counter</td><td>Key <code>health_roadmap_file_v2</code>; documents as data-URLs (~5 MB cap). The guest tier — the full app runs end-to-end with no cloud through the same SyncManager path.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="identity">Identity / auth</h2>
+<p>v1's three-layer auth (Shopify HMAC → per-user JWT → Supabase RLS) is gone from the data path. In v2, <strong>identity is the cloud account</strong>: the browser does client-side OAuth (PKCE) directly with Google/Dropbox; no Brad server is in the loop, and Shopify login is irrelevant to where data lives. The cloud token never leaves the device.</p>
+<p>The server-side HMAC app-proxy verification still exists, but only as an <em>anti-abuse front door</em> on the AI endpoints (chat, lab-import-v2) and the Klaviyo capture — see <a href="#security">Security model</a>. It is no longer how the app knows who you are.</p>
+
+<h2 id="data-path">The data path never touches Brad</h2>
+<div class="good callout">
+  <strong>The core invariant.</strong> Reads and writes of health data flow only between the browser and the user's chosen cloud. No measurement, lab value, medication, or document ever transits Brad's server. The only things that reach Fly are: AI request <em>content</em> (in-memory, never stored) and a reminder's <em>due date + label + verified email + capability token</em>.
+</div>
+<p>This is what makes the "works if Brad goes dark" guarantee real. If Fly is down: the app still loads (Pages build is static; the Shopify build is served by Shopify's CDN), still computes results, still reads/writes the user's cloud. Only the optional extras — server-side chat, server lab extraction, reminder scheduling — pause, and on the Pages build even chat and upload keep working via BYOK.</p>
+
+<h2 id="thin-server">Brad's thin server — what it does and doesn't</h2>
+<div class="grid-2">
+  <div class="card">
+    <h4 style="color:var(--ok)">Does</h4>
+    <ul>
+      <li><strong>Chat</strong> for the storefront (free; shoppers won't paste API keys)</li>
+      <li><strong>Lab PDF extraction</strong> for the storefront (extracted text transits; never stored)</li>
+      <li><strong>Reminder scheduling</strong> — stores only verified email + due item + date + capability token</li>
+      <li><strong>Google token exchange</strong> (stateless), <strong>Klaviyo capture</strong>, <strong>A/B events</strong>, <strong>feedback</strong></li>
+      <li>Ops crons + the Discord/YouTube bots + the Polaris admin app</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4 style="color:var(--error)">Doesn't</h4>
+    <ul>
+      <li>Store any health values, history, or reasoning</li>
+      <li>Hold any credential for the user's cloud</li>
+      <li>Mint per-user identity or gate features behind a paid tier (there is none)</li>
+      <li>Keep a read path for emails — no list, lookup, or search endpoint exists</li>
+      <li>Persist AI request content beyond the request</li>
+    </ul>
+  </div>
+</div>
+
+<h2 id="positioning">Honest positioning</h2>
+<div class="callout">
+  The approved claim is <em>"Your health data lives in the cloud account you already use and trust — not on our servers."</em> It is deliberately <strong>not</strong> marketed as "encrypted" or "maximum privacy": there is no client-side encryption by default (a forgotten key is the worst failure mode for the grandma avatar), so Google/Dropbox can technically read the file. Self-host is the provider-proof path for the &lt;1% who want it. Data minimisation, not de-clinicalisation: a reminder still says "your 5-yearly colonoscopy is due" — being specific is the point — but the server never keeps <em>why</em>.
+</div>
+
+<h2 id="chatbot">Chatbot — server-proxied vs BYOK</h2>
+<p>The same chat UI, two transports chosen at build time. The Shopify build keeps <code>chat-api.ts</code> (app proxy → Brad's server, Brad pays). The Pages build swaps in <code>byok-chat.ts</code> (browser → Anthropic direct, user pays). Both send the user's plan as context — the data still comes from the local file, not a server lookup.</p>
+<div class="grid-2">
+  <div class="card">
+    <h4>Server pipeline (storefront)</h4>
+    <ul>
+      <li><a class="file-link" href="../app/lib/chat-classifier.server.ts">chat-classifier.server.ts</a> — short-circuits ~59% of turns past the router</li>
+      <li><a class="file-link" href="../app/lib/chat-router.server.ts">chat-router.server.ts</a> — LLM retrieval over the ~991-entry blog index (prompt-cached), returns 0–3 content handles</li>
+      <li><a class="file-link" href="../app/lib/chat.server.ts">chat.server.ts</a> — context assembly, system blocks, <code>getChatCompletion</code>, titles</li>
+      <li><a class="file-link" href="../app/lib/platform-chat.server.ts">platform-chat.server.ts</a> — reuses the pipeline for Discord + YouTube</li>
+      <li>Client: <a class="file-link" href="../widget-src/src/lib/chat-api.ts">chat-api.ts</a> sends the <code>LOCAL_FIRST</code> flag so the server treats the user as a guest-with-context</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>BYOK path (Pages)</h4>
+    <ul>
+      <li><a class="file-link" href="../widget-src/src/lib/byok-chat.ts">byok-chat.ts</a> — direct to <code>api.anthropic.com</code>, compact prompt grounded in the user's own data (the server's full system prompt + algorithm doc + KB routing are held-back IP and never shipped to a public bundle)</li>
+      <li><a class="file-link" href="../widget-src/src/lib/byok-anthropic.ts">byok-anthropic.ts</a> — shared browser→Anthropic transport</li>
+      <li>Key <code>hr_anthropic_key</code> in <code>localStorage</code>, this device only, never synced</li>
+    </ul>
+  </div>
+</div>
+<p class="meta">Training capture: <em>only</em> the storefront server chat is written to Supabase (anonymized). The BYOK/self-host chat is browser→Anthropic and is never sent to Brad.</p>
+
+<h2 id="lab-upload">Lab upload</h2>
+<p>PDF text/image extraction is client-side (the <code>health-upload.js</code> pdf.js + JSZip bundle, loaded on demand). Only the extracted <em>text</em> goes to an LLM. The extraction prompt lives in <a class="file-link" href="../packages/health-core/src/lab-extraction.ts">health-core/lab-extraction.ts</a> and is imported by <em>both</em> the server route and the BYOK path so the two transports can't drift.</p>
+<ul>
+  <li><strong>Storefront</strong> — <a class="file-link" href="../app/routes/api.lab-import-v2.ts">/api/lab-import-v2</a>, behind the app-proxy HMAC, per-IP + hard per-machine daily caps, nothing stored.</li>
+  <li><strong>Pages</strong> — <a class="file-link" href="../widget-src/src/lib/byok-upload.ts">byok-upload.ts</a>, browser → Anthropic with the user's key, a client-side queue (concurrency 2) in place of the Batch API.</li>
+  <li><strong>The files themselves</strong> are kept and organised in the user's own cloud (v1 discarded them): AI classifies each into Lab results / Scans / Clinic letters / Other documents, named <code>YYYY-MM-DD Title.ext</code> so alphabetical sort is chronological. Content-hash dedup; nothing overwritten.</li>
+</ul>
+
+<h2 id="reminders">Reminders v2</h2>
+<p>Email-only, free, and website/server-only (no calendar/.ics, and it doesn't run on raw self-host, which has no provider-verified identity). The client computes forward due dates and pushes them; the server is a dumb scheduler holding no health data.</p>
+
+<div class="diagram">
+<svg viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Reminder setup">
+  <defs><marker id="rs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0066cc"/></marker></defs>
+  <rect x="20" y="20" width="200" height="34" rx="6" fill="#f0f9f7" stroke="#00a38b"/><text x="120" y="42" font-size="12" font-weight="600" text-anchor="middle" fill="#00695c">Your browser</text>
+  <rect x="350" y="20" width="200" height="34" rx="6" fill="#ecfdf5" stroke="#16a34a"/><text x="450" y="42" font-size="12" font-weight="600" text-anchor="middle" fill="#14532d">Your cloud provider</text>
+  <rect x="680" y="20" width="200" height="34" rx="6" fill="#fef5e7" stroke="#fd7e14"/><text x="780" y="42" font-size="12" font-weight="600" text-anchor="middle" fill="#9a3412">Brad's server</text>
+  <line x1="120" y1="54" x2="120" y2="290" stroke="#ccc" stroke-dasharray="3 3"/>
+  <line x1="450" y1="54" x2="450" y2="290" stroke="#ccc" stroke-dasharray="3 3"/>
+  <line x1="780" y1="54" x2="780" y2="290" stroke="#ccc" stroke-dasharray="3 3"/>
+  <line x1="120" y1="80" x2="775" y2="80" stroke="#0066cc" stroke-width="1.8" marker-end="url(#rs)"/>
+  <text x="450" y="74" font-size="10" text-anchor="middle" fill="#0052a3">"Remind me" + proof of who I am (provider token / ID token)</text>
+  <line x1="780" y1="110" x2="455" y2="110" stroke="#16a34a" stroke-width="1.8" marker-end="url(#rs)"/>
+  <text x="600" y="104" font-size="10" text-anchor="middle" fill="#14532d">server asks the cloud: who owns this account?</text>
+  <line x1="450" y1="140" x2="775" y2="140" stroke="#16a34a" stroke-width="1.8" marker-end="url(#rs)"/>
+  <text x="600" y="134" font-size="10" text-anchor="middle" fill="#14532d">verified email ✓ (cloud token then discarded)</text>
+  <rect x="660" y="155" width="240" height="34" rx="5" fill="#fff3e0" stroke="#fd7e14"/><text x="780" y="176" font-size="10" text-anchor="middle" fill="#9a3412">store: email + item label + due date + capability token</text>
+  <line x1="775" y1="210" x2="125" y2="210" stroke="#0066cc" stroke-width="1.8" marker-end="url(#rs)"/>
+  <text x="450" y="204" font-size="10" text-anchor="middle" fill="#0052a3">capability token (256-bit, opaque) returned</text>
+  <line x1="120" y1="245" x2="445" y2="245" stroke="#16a34a" stroke-width="1.8" marker-end="url(#rs)"/>
+  <text x="285" y="239" font-size="10" text-anchor="middle" fill="#14532d">saved in your own cloud file (follows you across devices)</text>
+  <line x1="120" y1="275" x2="775" y2="275" stroke="#0066cc" stroke-width="1.8" marker-end="url(#rs)"/>
+  <text x="450" y="269" font-size="10" text-anchor="middle" fill="#0052a3">push schedule: [Colonoscopy · 2031] + capability token</text>
+</svg>
+<div class="caption">The email is <em>provider-verified</em>, never client-typed — the only address anyone can target is their own. Two tokens, never interchanged: the powerful cloud token stays on the device; a per-subscription capability token (stored raw, because the unsubscribe link must carry it) controls only the reminder schedule. A daily cron emails what's due; one-click unsubscribe (RFC 8058) deletes the row.</div>
+</div>
+<p class="meta">Route <a class="file-link" href="../app/routes/api.reminders-v2.ts">api.reminders-v2.ts</a>; cron <a class="file-link" href="../app/lib/reminder-v2-cron.server.ts">reminder-v2-cron.server.ts</a> (lock <code>reminder_v2_cron</code>); table <code>reminder_optin_v2</code>. Group cooldowns: screening 90 d / blood test 180 d / medication review 365 d. The vocabulary is "opt-in", never "subscription" (which means paid products in this business).</p>
+
+<h2 id="lead-capture">Lead capture — Klaviyo + client-side PDF</h2>
+<p>The "Get Your Personalized Plan" button does <strong>exactly two things</strong>: (1) the email address goes to Klaviyo, (2) a PDF is built client-side. No health data reaches any server; there is no Resend report email.</p>
+<ul>
+  <li><strong>Client</strong> — the shim's <code>sendGuestReport(email,…)</code> POSTs only <code>{klaviyoCapture:{email}}</code>; the PDF (<code>getReportHtml</code> → print window) is built first, inside the click's user activation. Gated to <code>SHOPIFY_SURFACE</code> — never fires on Pages.</li>
+  <li><strong>Server</strong> — <a class="file-link" href="../app/routes/api.measurements.ts">api.measurements.ts</a> is gutted to a single survivor, <code>handleKlaviyoCapture</code>: validates <code>{email}</code> only, rate-limited 5/day/email, calls <code>subscribeToKlaviyo</code> (email-only, no profile properties), stores nothing.</li>
+  <li><strong>One-time flag</strong> — on capture, <code>markReportEmailCaptured()</code> sets <code>profile.reportEmailCaptured</code> in the user's own file. On return, the email box never reappears; instead an inline <strong>"Save as PDF"</strong> button renders in the "Your plan to discuss with your doctor" header (the same slot the logged-in print button used). The flag rides whole-profile LWW — a concurrent cross-device edit at the exact capture moment could drop it, but it's monotonic and low-stakes (the box reappears once; Klaviyo dedups).</li>
+</ul>
+
+<h2 id="ab-blog-bots">A/B testing · blog/trending · bots</h2>
+<div class="grid-3">
+  <div class="card">
+    <h4>A/B testing</h4>
+    Unchanged from v1, server-side. <a class="file-link" href="../app/routes/app.ab-testing.tsx">app.ab-testing.tsx</a> dashboard, <a class="file-link" href="../app/routes/api.ab.ts">api.ab.ts</a> events, <code>ab-stats.ts</code> significance. One active test at a time, delivered via shop metafield, rendered in <code>app-block.liquid</code>.
+  </div>
+  <div class="card">
+    <h4>Blog / trending</h4>
+    The chat knowledge base is <code>docs/blog/</code> + <code>docs/guideline/</code> + <code>docs/pathway/</code>, indexed by <code>scripts/rebuild-blog-index.ts</code> into <code>index.json</code>. <a class="file-link" href="../app/lib/trending-cron.server.ts">trending-cron</a> writes trending articles to a metafield. The "supplement wiki" is <code>type:"reference"</code> articles with a +5 ranking boost in <code>chat.server.ts</code> — content, not infrastructure.
+  </div>
+  <div class="card">
+    <h4>Discord / YouTube</h4>
+    <a class="file-link" href="../app/lib/discord-bot.server.ts">discord-bot.server.ts</a> runs a gateway WebSocket; <a class="file-link" href="../app/lib/youtube-bot.server.ts">youtube-bot.server.ts</a> auto-replies to comments. Both reuse the chat pipeline via <code>platform-chat.server.ts</code> (shared prompt cache).
+  </div>
+</div>
+
+<h2 id="api">API endpoints (surviving)</h2>
+<table>
+  <thead><tr><th>Route</th><th>Purpose</th><th>Auth</th></tr></thead>
+  <tbody>
+    <tr><td><a class="file-link" href="../app/routes/api.chat.ts">api.chat.ts</a></td><td>Chat CRUD + LLM pipeline; guest-with-context for local-first</td><td>App proxy (+ guest)</td></tr>
+    <tr><td><a class="file-link" href="../app/routes/api.lab-import-v2.ts">api.lab-import-v2.ts</a></td><td>Stateless Claude lab extraction; nothing stored</td><td>App-proxy HMAC signature</td></tr>
+    <tr><td><a class="file-link" href="../app/routes/api.reminders-v2.ts">api.reminders-v2.ts</a></td><td>Reminder opt-in / update / cancel; provider-verified email + capability token</td><td>Provider proof</td></tr>
+    <tr><td><a class="file-link" href="../app/routes/api.google-token.ts">api.google-token.ts</a></td><td>Stateless Google OAuth code/refresh exchange (Drive)</td><td>CORS allow-list + rate limit</td></tr>
+    <tr><td><a class="file-link" href="../app/routes/api.measurements.ts">api.measurements.ts</a></td><td><strong>Klaviyo capture only</strong> (all v1 CRUD torn down)</td><td>App proxy + 5/day/email</td></tr>
+    <tr><td><a class="file-link" href="../app/routes/api.ab.ts">api.ab.ts</a></td><td>A/B impression/conversion events</td><td>App proxy, rate-limited</td></tr>
+    <tr><td><a class="file-link" href="../app/routes/api.feedback.ts">api.feedback.ts</a></td><td>Feedback form → email (Resend)</td><td>3/hr per-IP</td></tr>
+    <tr><td><a class="file-link" href="../app/routes/healthz.ts">healthz.ts</a></td><td>Fly health check</td><td>none</td></tr>
+  </tbody>
+</table>
+<p class="meta"><strong>Deleted in the teardown:</strong> <code>api.user-data</code>, <code>api.lab-import</code> (v1), <code>api.lab-values</code>, <code>api.health-documents</code>, <code>api.reminders</code> (v1), plus the earlier <code>api.customer-measurements</code> / <code>api.customer-health-profile</code> / <code>api.health-profile</code>. The admin app (<code>app.*.tsx</code>), webhooks, and auth routes remain.</p>
+
+<h2 id="crons">Crons</h2>
+<p>Each worker <strong>auto-starts on module import</strong> at the bottom of its own file; <a class="file-link" href="../app/entry.server.tsx">entry.server.tsx</a> imports the <code>stop*</code> functions (which triggers the start) and wires them to SIGTERM. There is no central registry.</p>
+<ul>
+  <li><a class="file-link" href="../app/lib/reminder-v2-cron.server.ts">reminder-v2-cron.server.ts</a> — daily; emails due reminders from <code>reminder_optin_v2</code></li>
+  <li><a class="file-link" href="../app/lib/trending-cron.server.ts">trending-cron.server.ts</a> — daily; trending articles → shop metafield</li>
+  <li><a class="file-link" href="../app/lib/chat-summary-cron.server.ts">chat-summary-cron.server.ts</a> — daily chat-activity digest to Brad</li>
+  <li><a class="file-link" href="../app/lib/youtube-bot.server.ts">youtube-bot.server.ts</a> (+ summary cron) — 30-min comment auto-replier</li>
+  <li><a class="file-link" href="../app/lib/discord-bot.server.ts">discord-bot.server.ts</a> — gateway WebSocket (gated on token + <code>FLY_APP_NAME</code>)</li>
+</ul>
+<div class="callout">
+  <strong>The v1 reminder cron is gone.</strong> <code>reminder-cron.server.ts</code> and its <code>cleanupGuestProfiles()</code> were retired (commit <code>e97fa24</code>) — that cleanup used to cascade-delete guest profiles <em>and their chat</em>, which would have destroyed the chat history the business decided to keep. It was deployed before the data purge for exactly that reason.
+</div>
+
+<h2 id="supabase">Supabase today + the 2026-06 purge</h2>
+<p>Supabase survives, but only as a chat-history + A/B store. All per-user health data is gone.</p>
+<div class="grid-2">
+  <div class="card">
+    <h4 style="color:var(--ok)">Kept (anonymized)</h4>
+    <ul>
+      <li><code>chat_conversations</code>, <code>chat_messages</code>, <code>chat_match_events</code>, <code>guest_chat_sessions</code> — every row kept, identity/IP/error fields scrubbed, pseudonymous session token preserved so a user's turns stay linked. For training.</li>
+      <li><code>profiles</code> — kept as pseudonymous FK anchors (demographics nulled, synthetic <code>anon-…@deleted.invalid</code> email).</li>
+      <li><code>ab_tests</code>, <code>ab_events</code> — untouched.</li>
+      <li><code>audit_logs</code> — kept, <code>user_id</code> nulled.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4 style="color:var(--error)">Deleted</h4>
+    <ul>
+      <li>All 11 per-user health tables: <code>health_measurements</code>, <code>lab_values</code>, <code>health_documents</code>, <code>medications</code>(+history), <code>supplements</code>(+history), <code>screenings</code>, <code>reminder_preferences</code>, <code>reminder_log</code>, <code>message_credit_transactions</code> — emptied.</li>
+      <li><code>auth.users</code> / <code>auth.identities</code> — rows kept (chat FKs reference the id), but emails scrubbed to <code>anon-…@deleted.invalid</code>. Only the Discord bot row keeps a real address.</li>
+    </ul>
+  </div>
+</div>
+<p class="meta">Executed 2026-06-12/13 via <a class="file-link" href="../supabase/data-purge-2026-06.sql">supabase/data-purge-2026-06.sql</a> in one verified transaction (back up → assert KEEP tables unchanged + health tables zero → commit). Verified afterward: 155 conversations / 540 messages preserved, all 11 health tables at 0, production chat answers end-to-end. The HIPAA audit-log table exists as a stub but its custodial purpose is gone — the user's own append-only file is now their record.</p>
+
+<h2 id="pipeline">Dev → production pipeline</h2>
+<p>One Shopify app now (the separate dev app and <code>/pages/test</code> were deleted). The promotion ladder is three tiers; pushing <code>main</code> auto-deploys Pages only — the live widget never changes without an explicit deploy.</p>
+<div class="diagram">
+<svg viewBox="0 0 980 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dev to prod pipeline">
+  <defs>
+    <marker id="pp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/></marker>
+    <marker id="pg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#fd7e14"/></marker>
+  </defs>
+  <rect x="20" y="45" width="270" height="60" rx="10" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="155" y="70" font-size="13" font-weight="700" text-anchor="middle" fill="#00695c">1 · localhost</text>
+  <text x="155" y="90" font-size="11" text-anchor="middle" fill="#666">npm run dev:pages · Vite HMR :5173</text>
+  <rect x="350" y="45" width="270" height="60" rx="10" fill="#ecfdf5" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="485" y="70" font-size="13" font-weight="700" text-anchor="middle" fill="#14532d">2 · GitHub Pages</text>
+  <text x="485" y="90" font-size="11" text-anchor="middle" fill="#666">build:pages · push main → Actions → /roadmap/</text>
+  <rect x="690" y="45" width="270" height="60" rx="10" fill="#fef5e7" stroke="#fd7e14" stroke-width="1.5"/>
+  <text x="825" y="70" font-size="13" font-weight="700" text-anchor="middle" fill="#9a3412">3 · Shopify PRODUCTION</text>
+  <text x="825" y="90" font-size="11" text-anchor="middle" fill="#666">build:shopify-prod + deploy --force → /pages/roadmap</text>
+  <line x1="290" y1="75" x2="346" y2="75" stroke="#16a34a" stroke-width="2.5" marker-end="url(#pp)"/>
+  <line x1="620" y1="75" x2="686" y2="75" stroke="#fd7e14" stroke-width="2.5" marker-end="url(#pg)"/>
+  <text x="653" y="38" font-size="10" font-weight="600" text-anchor="middle" fill="#9a3412">explicit gate</text>
+</svg>
+<div class="caption">localhost is for non-OAuth work only — it is <strong>never</strong> an approved OAuth origin (hard rule). OAuth flows are tested on the github.io surface. The Shopify deploy needs <code>shopify app config use shopify.app.toml</code> first (the active config drifts), and the success banner must read <code>health-roadmap-&lt;N&gt;</code>.</div>
+</div>
+
+<h2 id="deploy">Deployment</h2>
+<ul>
+  <li><strong>Pages:</strong> <code>npm run build:pages</code> → commit + push <code>main</code> → GitHub Actions publishes <code>drbradstanfield.github.io/roadmap</code>. (A <code>dev</code> branch builds to a <code>/dev/</code> subpath, best-effort.)</li>
+  <li><strong>Shopify widget:</strong> <code>shopify app config use shopify.app.toml</code> → <code>npm run build:shopify-prod</code> → strip <code>*.map</code> → <code>npx shopify app deploy --force</code>. Verify the banner is <code>health-roadmap-&lt;N&gt;</code> (prod), not <code>-dev-&lt;N&gt;</code>.</li>
+  <li><strong>Backend:</strong> from repo root, dereference the <code>docs/products.md</code> symlink (Fly's builders can't follow it), <code>fly deploy</code>, then <code>git checkout docs/products.md</code> to restore the symlink.</li>
+</ul>
+<p>Rollback: the legacy <code>health-tool.js</code> still ships in the extension assets; reverting the <code>app-block.liquid</code> commit and redeploying restores the v1 widget.</p>
+
+<h2 id="security">Security model</h2>
+<ul>
+  <li><strong>AI endpoints behind HMAC.</strong> <code>/api/chat</code> and <code>/api/lab-import-v2</code> verify the Shopify app-proxy signature (<code>verifyAppProxySignature()</code>, ±10-min replay window, stale-timestamp rejected before crypto) — a cryptographic front-door check curl can't fake. This superseded the forgeable Origin allow-list.</li>
+  <li><strong>Confidentiality is the absence of a read path,</strong> not the allow-list. No endpoint returns anyone's email; no list, lookup, or search exists. The Origin/CORS allow-list is anti-abuse only — and <strong>localhost is never on it</strong> (hard rule: a rogue local page must not be able to drive OAuth or server endpoints).</li>
+  <li><strong>Rate limits + a hard daily $ cap</strong> bound AI abuse cost; per-IP limits + a 10-min block on the opt-in endpoint.</li>
+  <li><strong>Two tokens, never interchanged</strong> (reminders): the cloud token stays on the device; the capability token controls only reminder dates.</li>
+  <li><strong>BYOK key hygiene:</strong> the user's Anthropic key is <code>localStorage</code>-only, never synced; strict CSP and no <code>innerHTML</code> of untrusted content; users are advised to use a spend-limited key.</li>
+  <li><strong>Supabase</strong> RLS is deny-all; the service-role key lives only in Fly secrets. Secrets are env-only and gitleaks-scanned in CI.</li>
+</ul>
+
+<h2 id="migration">v1 → v2 teardown (what was removed)</h2>
+<details>
+  <summary>Routes &amp; server code</summary>
+  <ul>
+    <li>Deleted routes: <code>api.user-data</code>, <code>api.lab-import</code>, <code>api.lab-values</code>, <code>api.health-documents</code>, <code>api.reminders</code>.</li>
+    <li><code>api.measurements.ts</code> gutted to Klaviyo-capture only.</li>
+    <li><code>email.server.ts</code> 1050 → 361 lines (report + welcome email builders deleted; reminder/feedback/ops survivors kept).</li>
+    <li><code>supabase.server.ts</code> −720 lines of dead per-user CRUD.</li>
+    <li>v1 <code>reminder-cron.server.ts</code> + <code>cleanupGuestProfiles</code> retired.</li>
+  </ul>
+</details>
+<details>
+  <summary>Client &amp; Shopify</summary>
+  <ul>
+    <li><code>sync-embed.liquid</code> deleted (its background guest→Supabase sync is meaningless when there's no Supabase health store).</li>
+    <li>The separate dev Shopify app (<code>shopify.app.dev.toml</code>, <code>899d91…</code>) and <code>extensions-dev/</code> deleted; <code>/pages/test</code> removed.</li>
+    <li>Legacy <code>health-tool.js</code> / <code>health-history.js</code> remain buildable as rollback assets, but their backend is gone — treat them as a frozen zombie, not live code.</li>
+  </ul>
+</details>
+<details>
+  <summary>Data</summary>
+  <ul>
+    <li>No user migration: existing users re-enter into their own cloud (removed the project's biggest risk — lossless export/parity).</li>
+    <li>The 2026-06 purge emptied all health tables and anonymized chat + auth emails (see <a href="#supabase">above</a>).</li>
+  </ul>
+</details>
+
+<h2 id="rejected">Rejected paths (don't relitigate)</h2>
+<ul>
+  <li><strong>Keep data in Brad's Supabase</strong> — the custodianship + HIPAA burden is the whole thing the pivot removes.</li>
+  <li><strong>Client-side E2E encryption by default</strong> — the key-recovery landmine (forgotten key = lost history) fails the grandma test. Self-host is the provider-proof path instead.</li>
+  <li><strong>A daily-use SaaS</strong> — contradicts intermittent-by-design (~95% of benefit for ~5–10% of effort, meaningful use every 2–3 months).</li>
+  <li><strong>Self-hosted server as the default</strong> — makes the user the operator; fine as door B, fatal as door A.</li>
+  <li><strong>OpenRouter-style AI aggregators</strong> — a third party in the data path with users' lab PII.</li>
+  <li><strong>CloudKit / iCloud as the sync backend</strong> — Apple-only; would fragment data into two incompatible stores. (A future HealthKit iOS app would still sync via Drive/Dropbox.)</li>
+  <li><strong>A paid feature tier</strong> — economics ride on supplements + the email list; never paywall the health advice.</li>
+</ul>
+
+<h2 id="gotchas">Dangerous gotchas (v2)</h2>
+<div class="callout danger"><strong>Build behaviour belongs in the module swap, not component conditionals.</strong> Keep export surfaces identical across the three builds so shared components compile everywhere and the legacy bundle stays byte-stable. The only exception is an inline fetch the shim can't see (e.g. <code>migrateGuestChat</code>), which gets a <code>LOCAL_FIRST</code>/<code>SHOPIFY_SURFACE</code> component gate.</div>
+<div class="callout danger"><strong>The Shopify config drifts.</strong> A bare <code>shopify app deploy</code> targets whatever config was last <code>config use</code>'d — a bare deploy once shipped to the dev app by mistake. Always <code>shopify app config use shopify.app.toml</code> first and verify the <code>health-roadmap-&lt;N&gt;</code> banner.</div>
+<div class="callout danger"><strong>Crons self-start on import.</strong> Importing any <code>*-cron.server.ts</code> (even to call its <code>stop*</code>) starts it. Don't import a cron module from a non-server context.</div>
+<div class="callout"><strong>CSS scoping while the legacy bundle still ships.</strong> Any changed shared selector must be scoped under <code>.health-tool</code>, or the stale <code>health-site-chat.css</code> can win by document order.</div>
+<div class="callout"><strong><code>docs/products.md</code> must stay a symlink (git mode 120000).</strong> The Fly deploy dereferences it for the Docker context and restores it with <code>git checkout</code>; if that restore is skipped, the next <code>git add</code> bakes the 680-line file into the repo and the chatbot's product context silently drifts.</div>
+<div class="callout"><strong>Google Drive refresh tokens need a <em>published</em> OAuth app.</strong> In Testing mode they expire after 7 days — prefer Dropbox as the default for exactly this reason.</div>
+
+<hr>
+<p class="meta">For the reasoning behind any decision here, see <a href="health-roadmap-v2.html">health-roadmap-v2.html</a> (decision record) and <a href="health-roadmap-v2-implementation.html">health-roadmap-v2-implementation.html</a> (build log). For agent-facing build/deploy instructions and the full gotcha list, see <a href="../CLAUDE.md">CLAUDE.md</a>.</p>
+
+</main>
+</div>
+</body>
+</html>
