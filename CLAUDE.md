@@ -96,7 +96,7 @@ Stored values are **never mutated**. `health_measurements` has FHIR R4 `Observat
 /widget-src/src/               # React widget source
 /widget-src/src/lib/           # Widget utilities (api.ts, storage.ts, constants.ts)
 /extensions/health-tool-widget/assets/  # Built widget JS/CSS
-/extensions/health-tool-widget/blocks/  # Liquid blocks (app-block + sync-embed)
+/extensions/health-tool-widget/blocks/  # Liquid blocks (app-block, history-block, chat embeds)
 /app/                          # Remix admin app + API routes
 /app/lib/                      # Server utilities (supabase.server.ts, email.server.ts)
 /app/routes/                   # API endpoints
@@ -147,8 +147,7 @@ Stored values are **never mutated**. `health_measurements` has FHIR R4 `Observat
 
 **Shopify Extensions (`extensions/health-tool-widget/blocks/`):**
 - `app-block.liquid` — Passes customer data to widget; static HTML skeleton with pulse animation
-- `sync-embed.liquid` — Background localStorage→Supabase sync on every storefront page
-- `history-block.liquid` — Theme block for health history page
+- `history-block.liquid` — Theme block for the legacy health history page (still live on `/pages/health-history`; also carries the last surviving `health_roadmap_authenticated` auto-redirect)
 
 **Infrastructure:**
 - `supabase/rls-policies.sql` — Schema, RLS policies, auth trigger, `get_latest_measurements()` RPC
@@ -372,9 +371,9 @@ Missing any step causes **silent data loss**:
 
 **Account deletion**: Requires `{ confirmDelete: true }`, rate-limited 1/hour. Deletes measurements → medication_history → medications → supplement_history → supplements → anonymizes audit logs → deletes profile → deletes auth user → clears cache.
 
-**Data sync**: Dual-sync design — `sync-embed.liquid` handles non-widget pages, `HealthTool.tsx` handles widget page. Both check for meaningful cloud data before syncing, both set `health_roadmap_authenticated` localStorage flag for auto-redirect. **See Dangerous Gotchas for invariants that must not be broken.**
+**Data sync** (v1 legacy): `sync-embed.liquid` was deleted in the v2 teardown. The widget-side sync path in `HealthTool.tsx` survives in shared source but only executes meaningfully in the legacy rollback bundle (`build:widget`); the v2 builds route around it (`LOCAL_FIRST` + hardcoded `data-logged-in="true"`).
 
-**Auto-redirect**: Shopify customer accounts live on `shopify.com`, not the storefront. If `health_roadmap_authenticated` flag exists but no storefront session, redirects once per browser session to acquire session. Flag only set after confirming cloud data exists.
+**Auto-redirect** (mostly removed): the only surviving redirect is `history-block.liquid` on the still-live `/pages/health-history` page — a logged-out visitor with the `health_roadmap_authenticated` localStorage flag is redirected once per session to `/account`. The v2 widget still *sets* that flag whenever the data layer reports saved data (`setAuthenticatedFlag()` in `HealthTool.tsx`); on v2 surfaces the flag is otherwise write-only, but it remains load-bearing for the legacy bundle.
 
 ## A/B Testing
 
@@ -449,9 +448,8 @@ Backend: Initialized in `app/entry.server.tsx`.
 - **Customer account extension** is link-only (`extensions/health-roadmap-link/`). Full extension was removed due to cross-origin localStorage barrier.
 - `automatically_update_urls_on_dev` is `false` to protect production URLs.
 - **Shopify Dashboard is read-only** — all config via `shopify.app.toml` + `npx shopify app deploy --force`.
-- **NEVER make sync-embed cleanup async or conditional.** In `sync-embed.liquid`, the `syncComplete()` function MUST run `localStorage.removeItem(STORAGE_KEY)`, `localStorage.setItem('health_roadmap_authenticated', '1')`, and `sessionStorage.setItem(SYNC_FLAG, '1')` **synchronously and unconditionally** before any `fetch()` calls. If these are moved into `.then()`, `.finally()`, or callbacks, users who navigate away before the async call completes will have broken auto-login and duplicate syncs. The pattern is: do all critical synchronous work first, then fire best-effort async work (like email sends).
-- **NEVER modify `health_roadmap_authenticated` flag logic** without understanding the full auto-redirect flow. This flag is set by sync-embed and the widget after confirming cloud data exists. It's read by `sync-embed.liquid` (logged-out branch) to clear stale data, and by the storefront to trigger session-acquisition redirects. Removing or delaying this flag breaks auto-login.
-- **Sync-embed and widget sync are mutually exclusive.** `sync-embed.liquid` exits early if `document.getElementById('health-tool-root')` exists (line 18). On widget pages, the widget handles sync directly. On all other pages, sync-embed handles it. Never add sync logic that runs in both places simultaneously.
+- **`sync-embed.liquid` is gone (v2 teardown)** — its sync-cleanup and sync-embed/widget mutual-exclusivity invariants are retired. Production rollback (reverting `app-block.liquid` to load `health-tool.js`) does NOT restore it; if it is ever resurrected, recover its invariants from git history (`git log -- extensions/health-tool-widget/blocks/sync-embed.liquid`).
+- **The `health_roadmap_authenticated` localStorage flag is still live — don't delete it as "dead v1 code".** `HealthTool.tsx` (shared source, all builds) sets it via `setAuthenticatedFlag()` whenever the data layer reports saved data. On v2 surfaces it's write-only (`data-logged-in="true"` is hardcoded, so the reading branches — `redirectFailed`, the guest stale-cache clear — can't fire), but it is load-bearing in the legacy rollback bundle AND is read by `history-block.liquid` on the live `/pages/health-history` page, which redirects a flagged logged-out visitor to `/account` once per session.
 - **`CREATE TABLE IF NOT EXISTS` is a no-op on existing tables — easy to ship a column the production DB doesn't have.** If you add a column to a `CREATE TABLE IF NOT EXISTS` for a table that already exists in production, the column is silently NOT added. Symptom: PostgREST/Supabase JS returns the row but the column is undefined; or a `.eq('new_col', ...)` filter errors with `42703 column does not exist`. Fix: always pair `CREATE TABLE` additions with a matching `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. This bit us on `lab_values.status` after the FHIR redesign — the column was in the CREATE TABLE statement but never landed in prod.
 - **Storefront theme has a global `div:empty { display: none }` rule.** Specificity 11 (tag + pseudo) beats single-class selectors. Symptom: any truly-empty `<div/>` inside the matrix collapses to 0 width, breaking column alignment because the row strip ends up narrower than the header strip. Fix: render a non-breaking space inside (`<div>{' '}</div>`) so `:empty` doesn't match. See `MatrixCellView` empty-cell branch.
 - **LLM-generated text is not stable across re-extractions — don't dedup on it.** Re-running the same PDF through the LLM produces slightly different document titles each run ("Ultrasound Renal / Urinary Tract" → "Ultrasound Urinary Tract Report"). A `(title, date)` dedup key misses 6 of 7 documents on re-upload. Always dedup on stable identifiers: `sourceFileName` for documents, `(metric_name, recorded_at)` for lab values (the LLM IS deterministic on metric keys via the `TARGET METRICS` list in the system prompt).

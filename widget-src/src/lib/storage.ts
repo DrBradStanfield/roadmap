@@ -105,9 +105,12 @@ export function clearLocalStorage(): void {
 }
 
 /**
- * Set the authenticated flag so the auto-redirect knows to re-establish
- * the storefront session on direct navigation. Only called when the API
- * confirms the user has cloud data — never from Liquid templates.
+ * Set the authenticated flag. Only called when the data layer confirms the
+ * user has saved data — never from Liquid templates. Remaining readers:
+ * the legacy rollback bundle (redirect-failed UI + guest stale-cache clear
+ * in HealthTool) and history-block.liquid on /pages/health-history, which
+ * still auto-redirects a flagged logged-out visitor to /account. On the v2
+ * surfaces this flag is write-only (data-logged-in="true" is hardcoded).
  */
 export function setAuthenticatedFlag(): void {
   try { localStorage.setItem('health_roadmap_authenticated', '1'); } catch {}
