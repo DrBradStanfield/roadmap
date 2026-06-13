@@ -1,5 +1,20 @@
 [
   {
+    "title": "They Finally Cracked the Gene Behind 1 in 5 Cancers",
+    "handle": "they-finally-cracked-the-gene-behind-1-in-5-cancers",
+    "url": "https://drstanfield.com/blogs/articles/they-finally-cracked-the-gene-behind-1-in-5-cancers",
+    "tags": [
+      "Research",
+      "General Health"
+    ],
+    "keywords": [
+      "lung cancer"
+    ],
+    "publishedAt": "2026-06-10T12:00:00Z",
+    "youtube": "https://www.youtube.com/watch?v=d4qhykJ9PMs",
+    "summary": "Dr Brad's pancreatic cancer breakthrough post: daraxonrasib roughly doubled survival (13.2 vs 6.6 months) by finally drugging KRAS, the 'undruggable' gene behind ~1 in 5 cancers. Covers G12C vs G12D, the cyclophilin-A mechanism, and early combination trials."
+  },
+  {
     "title": "Did One Tiny Tweak Just Solve Heart Disease?",
     "handle": "did-one-tiny-tweak-just-solve-heart-disease",
     "url": "https://drstanfield.com/blogs/articles/did-one-tiny-tweak-just-solve-heart-disease",
@@ -30843,20 +30858,5 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for zoledronic acid (Aclasta) infusion for osteoporosis: who qualifies, contraindications, pre-procedure workup, infusion technique, post-procedure follow-up, and when to seek specialist input. Always discuss with your doctor."
-  },
-  {
-    "title": "They Finally Cracked the Gene Behind 1 in 5 Cancers",
-    "handle": "they-finally-cracked-the-gene-behind-1-in-5-cancers",
-    "url": "https://drstanfield.com/blogs/articles/they-finally-cracked-the-gene-behind-1-in-5-cancers",
-    "tags": [
-      "Research",
-      "General Health"
-    ],
-    "keywords": [
-      "lung cancer"
-    ],
-    "publishedAt": "2026-06-10T12:00:00Z",
-    "youtube": "https://www.youtube.com/watch?v=d4qhykJ9PMs",
-    "summary": "Dr Brad's pancreatic cancer breakthrough post: daraxonrasib roughly doubled survival (13.2 vs 6.6 months) by finally drugging KRAS, the 'undruggable' gene behind ~1 in 5 cancers. Covers G12C vs G12D, the cyclophilin-A mechanism, and early combination trials."
   }
 ]
