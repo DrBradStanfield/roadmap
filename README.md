@@ -105,11 +105,9 @@ fly secrets set SUPABASE_JWT_SECRET=your-jwt-secret
 
 1. **Install the app** on your Shopify store and accept the required permissions (`write_app_proxy`, `read_customers`)
 2. **Enable the "Health Data Sync" app embed** — In the Theme Editor, go to **App Embeds** and toggle on **"Health Data Sync"**. This runs silently on every storefront page and syncs guest localStorage data to Supabase when the user logs in.
-3. **Add the "Health Roadmap Tool" block** to the homepage — In the Theme Editor, navigate to the homepage, click **Add block**, and select **"Health Roadmap Tool"**
-4. **Create a Health History page** — Online Store > Pages > Add page (e.g. title "Health History", URL handle `health-history` → `/pages/health-history`)
-5. **Add the "Health History" block** to the History page — In the Theme Editor, navigate to the History page, click **Add block**, and select **"Health History"**
-6. **Configure customer account extensions** — The "Health Roadmap Link" extension auto-deploys to the customer account profile page and order history page after app install. Go to **Settings > Customer accounts**, customize the customer account pages, and set the `roadmap_url` setting to your store's homepage URL (e.g. `https://yourdomain.com`)
-7. **Verify** — Test guest mode (no login), logged-in mode, guest→logged-in data sync (enter data as guest, log in, confirm it appears), history page, and customer account links
+3. **Add the "Health Roadmap Tool" block** to the homepage — In the Theme Editor, navigate to the homepage, click **Add block**, and select **"Health Roadmap Tool"**. The health-history view is built into this widget (it opens as a lightbox); there is no separate history page to create.
+4. **Configure customer account extensions** — The "Health Roadmap Link" extension auto-deploys to the customer account profile page and order history page after app install. Go to **Settings > Customer accounts**, customize the customer account pages, and set the `roadmap_url` setting to your store's homepage URL (e.g. `https://yourdomain.com`)
+5. **Verify** — Test guest mode (no login), logged-in mode, guest→logged-in data sync (enter data as guest, log in, confirm it appears), the in-widget history lightbox, and customer account links
 
 ## Architecture
 

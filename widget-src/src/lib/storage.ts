@@ -106,11 +106,14 @@ export function clearLocalStorage(): void {
 
 /**
  * Set the authenticated flag. Only called when the data layer confirms the
- * user has saved data — never from Liquid templates. Remaining readers:
- * the legacy rollback bundle (redirect-failed UI + guest stale-cache clear
- * in HealthTool) and history-block.liquid on /pages/health-history, which
- * still auto-redirects a flagged logged-out visitor to /account. On the v2
- * surfaces this flag is write-only (data-logged-in="true" is hardcoded).
+ * user has saved data — never from Liquid templates. Sole remaining reader:
+ * the legacy rollback bundle (health-tool.js), where it drives the
+ * redirect-failed UI + guest stale-cache clear in HealthTool. On the v2
+ * surfaces this flag is write-only — `data-logged-in="true"` is hardcoded,
+ * so every reading branch is short-circuited (LOCAL_FIRST early-return) or
+ * unreachable (the !isLoggedIn branches never run). The old
+ * history-block.liquid reader was removed when /pages/health-history was
+ * deleted (2026-06-14).
  */
 export function setAuthenticatedFlag(): void {
   try { localStorage.setItem('health_roadmap_authenticated', '1'); } catch {}

@@ -96,7 +96,7 @@ Stored values are **never mutated**. `health_measurements` has FHIR R4 `Observat
 /widget-src/src/               # React widget source
 /widget-src/src/lib/           # Widget utilities (api.ts, storage.ts, constants.ts)
 /extensions/health-tool-widget/assets/  # Built widget JS/CSS
-/extensions/health-tool-widget/blocks/  # Liquid blocks (app-block, history-block, chat embeds)
+/extensions/health-tool-widget/blocks/  # Liquid blocks (app-block, chat embeds)
 /app/                          # Remix admin app + API routes
 /app/lib/                      # Server utilities (supabase.server.ts, email.server.ts)
 /app/routes/                   # API endpoints
@@ -147,7 +147,6 @@ Stored values are **never mutated**. `health_measurements` has FHIR R4 `Observat
 
 **Shopify Extensions (`extensions/health-tool-widget/blocks/`):**
 - `app-block.liquid` — Passes customer data to widget; static HTML skeleton with pulse animation
-- `history-block.liquid` — Theme block for the legacy health history page (still live on `/pages/health-history`; also carries the last surviving `health_roadmap_authenticated` auto-redirect)
 
 **Infrastructure:**
 - `supabase/rls-policies.sql` — Schema, RLS policies, auth trigger, `get_latest_measurements()` RPC
@@ -373,7 +372,7 @@ Missing any step causes **silent data loss**:
 
 **Data sync** (v1 legacy): `sync-embed.liquid` was deleted in the v2 teardown. The widget-side sync path in `HealthTool.tsx` survives in shared source but only executes meaningfully in the legacy rollback bundle (`build:widget`); the v2 builds route around it (`LOCAL_FIRST` + hardcoded `data-logged-in="true"`).
 
-**Auto-redirect** (mostly removed): the only surviving redirect is `history-block.liquid` on the still-live `/pages/health-history` page — a logged-out visitor with the `health_roadmap_authenticated` localStorage flag is redirected once per session to `/account`. The v2 widget still *sets* that flag whenever the data layer reports saved data (`setAuthenticatedFlag()` in `HealthTool.tsx`); on v2 surfaces the flag is otherwise write-only, but it remains load-bearing for the legacy bundle.
+**Auto-redirect** (removed from production): there is no longer any live auto-redirect. The last one lived in `history-block.liquid` on `/pages/health-history`, both of which were deleted on 2026-06-14 (the page on Shopify; the block from this repo). The v2 widget still *sets* the `health_roadmap_authenticated` flag whenever the data layer reports saved data (`setAuthenticatedFlag()` in `HealthTool.tsx`), but on the v2 surfaces the flag is now purely write-only — nothing reads it. It remains load-bearing only in the legacy rollback bundle (`health-tool.js`).
 
 ## A/B Testing
 
@@ -435,7 +434,7 @@ Backend: Initialized in `app/entry.server.tsx`.
   - `position: sticky` on a flex child of a `width: max-content` parent lags arbitrarily — works in Blink, fails in WebKit
   When Brad reports "broken on my iPhone", write a focused WebKit repro (see [tools/webkit-repro.html](tools/webkit-repro.html) for the pattern) before guessing fixes.
 - Rebuild widget after changes: `npm run build:widget`
-- Two IIFE bundles: `health-tool.js` and `health-history.js` (Vite IIFE doesn't support multiple inputs per config).
+- Legacy rollback build is a single IIFE bundle: `health-tool.js` (`vite.config.ts`, entry `src/index.tsx`). The old `health-history.js` standalone history-page bundle was removed on 2026-06-14 when `/pages/health-history` was deleted; the in-widget history view is now a lazy chunk of the v2 build (`HistoryPanel` via `openHistoryLightbox`, opened by `HistoryLightboxHost` in `standalone/app.tsx` — the shared entry for BOTH the Shopify-prod and Pages builds, so the lightbox works on both; verified live on prod 2026-06-14). **Rollback caveat:** the legacy `health-tool.js` bundle has no lightbox host — it falls back to navigating to `HISTORY_PAGE_PATH` (`/pages/health-history`), which now 404s. A full rollback would also need that page + `history-block.liquid` recreated, or its history links break silently.
 
 ## Dangerous Gotchas
 
@@ -449,7 +448,7 @@ Backend: Initialized in `app/entry.server.tsx`.
 - `automatically_update_urls_on_dev` is `false` to protect production URLs.
 - **Shopify Dashboard is read-only** — all config via `shopify.app.toml` + `npx shopify app deploy --force`.
 - **`sync-embed.liquid` is gone (v2 teardown)** — its sync-cleanup and sync-embed/widget mutual-exclusivity invariants are retired. Production rollback (reverting `app-block.liquid` to load `health-tool.js`) does NOT restore it; if it is ever resurrected, recover its invariants from git history (`git log -- extensions/health-tool-widget/blocks/sync-embed.liquid`).
-- **The `health_roadmap_authenticated` localStorage flag is still live — don't delete it as "dead v1 code".** `HealthTool.tsx` (shared source, all builds) sets it via `setAuthenticatedFlag()` whenever the data layer reports saved data. On v2 surfaces it's write-only (`data-logged-in="true"` is hardcoded, so the reading branches — `redirectFailed`, the guest stale-cache clear — can't fire), but it is load-bearing in the legacy rollback bundle AND is read by `history-block.liquid` on the live `/pages/health-history` page, which redirects a flagged logged-out visitor to `/account` once per session.
+- **The `health_roadmap_authenticated` localStorage flag is load-bearing ONLY for the legacy rollback bundle — don't delete it as "dead v1 code", but don't assume any v2 reader exists either.** `HealthTool.tsx` (shared source, all builds) sets it via `setAuthenticatedFlag()` whenever the data layer reports saved data. On the v2 surfaces it is purely write-only: `data-logged-in="true"` is hardcoded so `isLoggedIn` is always true, which makes every reading branch unreachable (`redirectFailed` and the guest stale-cache clear both require `!isLoggedIn`), and the line-112 prefill read sits behind the `if (LOCAL_FIRST) return` early-return. Its only live reader is the legacy rollback bundle (`health-tool.js`, `LOCAL_FIRST` undefined, real Shopify `data-logged-in`). The former `history-block.liquid` reader on `/pages/health-history` was removed on 2026-06-14 when that page was deleted from production.
 - **`CREATE TABLE IF NOT EXISTS` is a no-op on existing tables — easy to ship a column the production DB doesn't have.** If you add a column to a `CREATE TABLE IF NOT EXISTS` for a table that already exists in production, the column is silently NOT added. Symptom: PostgREST/Supabase JS returns the row but the column is undefined; or a `.eq('new_col', ...)` filter errors with `42703 column does not exist`. Fix: always pair `CREATE TABLE` additions with a matching `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. This bit us on `lab_values.status` after the FHIR redesign — the column was in the CREATE TABLE statement but never landed in prod.
 - **Storefront theme has a global `div:empty { display: none }` rule.** Specificity 11 (tag + pseudo) beats single-class selectors. Symptom: any truly-empty `<div/>` inside the matrix collapses to 0 width, breaking column alignment because the row strip ends up narrower than the header strip. Fix: render a non-breaking space inside (`<div>{' '}</div>`) so `:empty` doesn't match. See `MatrixCellView` empty-cell branch.
 - **LLM-generated text is not stable across re-extractions — don't dedup on it.** Re-running the same PDF through the LLM produces slightly different document titles each run ("Ultrasound Renal / Urinary Tract" → "Ultrasound Urinary Tract Report"). A `(title, date)` dedup key misses 6 of 7 documents on re-upload. Always dedup on stable identifiers: `sourceFileName` for documents, `(metric_name, recorded_at)` for lab values (the LLM IS deterministic on metric keys via the `TARGET METRICS` list in the system prompt).

@@ -6,7 +6,7 @@ import { execSync } from 'child_process';
 const gitHash = execSync('git rev-parse --short HEAD').toString().trim();
 const release = `health-tool-widget@${gitHash}`;
 
-// Main health tool widget. History page built via vite.config.history.ts.
+// Main health tool widget (legacy rollback IIFE bundle: health-tool.js).
 export default defineConfig({
   plugins: [react()],
   define: {

@@ -151,6 +151,44 @@
   <h2 id="log">Build log — decisions, deviations &amp; tradeoffs</h2>
   <p><span class="pill ok">decision</span> = a choice within the spec's intent · <span class="pill warn">deviation</span> = differs from what the spec literally said · <span class="pill info">tradeoff</span> = a cost accepted.</p>
 
+  <h3>Standalone history-page bundle removed + auth-flag cleanup (2026-06-14, Brad) · /pages/health-history deleted on Shopify → dead in-repo bundle removed; flag kept (legacy-load-bearing)</h3>
+
+  <div class="logentry">
+    <div class="hdr"><span class="pill ok">decided</span><strong>Brad deleted the /pages/health-history page on Shopify (confirmed HTTP 404). An Opus agent removed the now-dead standalone history-page bundle; the auth flag was KEPT because it is load-bearing in the legacy rollback bundle.</strong></div>
+    <div class="body">
+      <ul>
+        <li><span class="pill ok">removed (grep-proven dead)</span> <code>widget-src/src/history.tsx</code>,
+          <code>widget-src/vite.config.history.ts</code>, <code>extensions/health-tool-widget/blocks/history-block.liquid</code>,
+          and the built <code>health-history.js</code>/<code>.css</code> assets — the standalone bundle that ONLY served the
+          now-deleted <code>/pages/health-history</code>. Confirmed first that <code>health-history.js</code> is NOT part of
+          the legacy <code>health-tool.js</code> rollback bundle (separate IIFE config) and that
+          <code>history-block.liquid</code> was its only consumer. Dropped the history build step from
+          <code>widget-src/package.json</code> and the dead <code>/health-history\.js/</code> Sentry allowUrl.</li>
+        <li><span class="pill warn">deviation — kept what looked dead</span> The <code>health_roadmap_authenticated</code>
+          flag and <code>HISTORY_PAGE_PATH</code> were NOT removed. On the v2 surfaces the flag is write-only
+          (<code>data-logged-in="true"</code> hardcoded → every reading branch unreachable), but the legacy rollback bundle
+          (<code>health-tool.js</code>) still reads it. Per the hard constraint (don't touch the rollback bundle — its
+          removal is a separate pending decision), all flag machinery stays; only stale comments/docs naming
+          <code>history-block.liquid</code> as a live reader were corrected. <code>HistoryPanel</code> (the v2 lazy
+          lightbox chunk) is untouched and alive.</li>
+        <li><span class="pill info">tradeoff documented</span> Rollback caveat added to CLAUDE.md: a future rollback to
+          <code>health-tool.js</code> would also need <code>/pages/health-history</code> + <code>history-block.liquid</code>
+          recreated, or its history links silently 404 (the legacy bundle has no lightbox host and navigates to
+          <code>HISTORY_PAGE_PATH</code>).</li>
+        <li><span class="pill ok">/simplify (4-agent pass)</span> reuse / simplification / efficiency = <strong>all clean</strong>
+          (removal-only diff, no new logic). Altitude raised two doc points: (1) the rollback-runbook gap → applied as the
+          caveat above; (2) a claim that the history lightbox doesn't open on the live Shopify widget — <strong>verified
+          FALSE</strong>: the Shopify-prod entry IS <code>standalone/app.tsx</code> (which mounts
+          <code>HistoryLightboxHost</code>), and dispatching <code>hr:open-history</code> on production 729 rendered the
+          history chart. Skipped as a false positive (wrong build-topology premise). The "History" button next to the chat
+          panel is the chat-conversations toggle, a separate (also-working) affordance.</li>
+        <li><span class="pill ok">verification</span> widget vitest (no new failures vs the pre-existing markdown "renders
+          tables"), <code>build:widget</code> (legacy rollback still green), <code>build:shopify-prod</code>,
+          <code>build:pages</code> all clean. Ladder: localhost → Pages → production.</li>
+      </ul>
+    </div>
+  </div>
+
   <h3>Codebase-reduction pass + full production E2E + med/supp history writer (2026-06-13, Brad) · −1,200 source lines deployed (health-roadmap-728); every architecture-v2 feature E2E-verified; history writer built</h3>
 
   <div class="logentry">

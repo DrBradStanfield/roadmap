@@ -135,7 +135,6 @@ export function initSentry() {
     allowUrls: [
       // Only capture errors originating from our own widget bundles…
       /health-tool\.js/,
-      /health-history\.js/,
       /health-site-chat\.js/,
       // …or the standalone (GitHub Pages) build's hashed bundles. Pinned to OUR
       // origin: a re-hosted copy of the bundle produces stack URLs that don't

@@ -688,14 +688,21 @@ export interface ApiDocument {
   fileRef?: string | null;
 }
 
-/** Where the full history page lives on the website. */
+/**
+ * Legacy href target for full-history links in the legacy rollback bundle
+ * (health-tool.js). NOTE: the /pages/health-history page was deleted from
+ * production on 2026-06-14, so this link only resolves if that page is
+ * recreated alongside a legacy rollback. On every live (v2/local-first)
+ * surface the click is intercepted by openHistoryLightbox() (roadmap-data.ts
+ * override) and this constant is never navigated to.
+ */
 export const HISTORY_PAGE_PATH = '/pages/health-history';
 
 /**
  * Open the history view in a lightbox instead of navigating. Returns true if
- * handled. False here (the Shopify widget navigates to the history page); the
- * standalone shim overrides it — /pages/health-history doesn't exist off-site
- * (Brad's call 2026-06-11: lightbox, not a separate page).
+ * handled. False here (legacy rollback bundle only — it falls back to the
+ * HISTORY_PAGE_PATH href); the standalone/local-first shim overrides it to
+ * open the lightbox (Brad's call 2026-06-11: lightbox, not a separate page).
  */
 export function openHistoryLightbox(_metric: string | null): boolean {
   return false;

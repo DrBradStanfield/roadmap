@@ -493,9 +493,9 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
     <tr>
       <td><strong>Legacy v1</strong> <span class="pill gray">rollback only</span></td>
       <td><code>npm run build:widget</code></td>
-      <td><a class="file-link" href="../widget-src/vite.config.ts">vite.config.ts</a> + history/site-chat/chatbot/upload</td>
+      <td><a class="file-link" href="../widget-src/vite.config.ts">vite.config.ts</a> + site-chat/chatbot/upload</td>
       <td>none (undefined → false)</td>
-      <td><code>health-tool.js</code>, <code>health-history.js</code>, …</td>
+      <td><code>health-tool.js</code>, …</td>
       <td>none</td>
     </tr>
   </tbody>
@@ -867,9 +867,9 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 <details>
   <summary>Client &amp; Shopify</summary>
   <ul>
-    <li><code>sync-embed.liquid</code> deleted (its background guest→Supabase sync is meaningless when there's no Supabase health store). Its companion <code>health_roadmap_authenticated</code> localStorage flag was <strong>not</strong> removed: <code>HealthTool.tsx</code> (shared source, all three builds) still <em>sets</em> it whenever the data layer reports saved data (<code>setAuthenticatedFlag()</code> after <code>loadLatestMeasurements()</code>). On the v2 surfaces the flag is write-only — <code>data-logged-in="true"</code> is hardcoded, so the flag-reading branches (<code>redirectFailed</code>, stale-cache clearing) can't fire — but it stays load-bearing for the legacy rollback bundle and is still read by the live legacy history page (next bullet).</li>
+    <li><code>sync-embed.liquid</code> deleted (its background guest→Supabase sync is meaningless when there's no Supabase health store). Its companion <code>health_roadmap_authenticated</code> localStorage flag was <strong>not</strong> removed: <code>HealthTool.tsx</code> (shared source, all three builds) still <em>sets</em> it whenever the data layer reports saved data (<code>setAuthenticatedFlag()</code> after <code>loadLatestMeasurements()</code>). On the v2 surfaces the flag is now purely write-only — <code>data-logged-in="true"</code> is hardcoded, so the flag-reading branches (<code>redirectFailed</code>, stale-cache clearing) can't fire, and the line-112 prefill read is behind the <code>LOCAL_FIRST</code> early-return. Its only remaining reader is the legacy rollback bundle. The former <code>history-block.liquid</code> reader was removed on 2026-06-14 (next bullet).</li>
     <li>The separate dev Shopify app (<code>shopify.app.dev.toml</code>, <code>899d91…</code>) and <code>extensions-dev/</code> deleted; <code>/pages/test</code> removed.</li>
-    <li>Legacy <code>health-tool.js</code> remains buildable as a rollback asset, but its backend is gone — a frozen zombie, not live code. <code>health-history.js</code> is <strong>not</strong> fully frozen: <code>/pages/health-history</code> still mounts <code>history-block.liquid</code>, which loads it and carries the last surviving piece of v1 auto-redirect machinery — a logged-out visitor with the <code>health_roadmap_authenticated</code> flag is redirected once per session to <code>/account</code>. Since the v2 widget sets that flag for any user with data, a v2 guest who navigates to the legacy history page hits that redirect.</li>
+    <li>Legacy <code>health-tool.js</code> remains buildable as a rollback asset, but its backend is gone — a frozen zombie, not live code. The standalone <code>health-history.js</code> bundle and its <code>history-block.liquid</code> mount were <strong>deleted</strong> on 2026-06-14 when Brad removed the <code>/pages/health-history</code> page from Shopify production — that page was the last live consumer of the <code>health_roadmap_authenticated</code> auto-redirect, so the redirect path is now unreachable in production. The in-widget history view survives as a lazy chunk of the v2 build (<code>HistoryPanel</code> opened via <code>openHistoryLightbox</code>), independent of the deleted page bundle.</li>
   </ul>
 </details>
 <details>
