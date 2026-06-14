@@ -64,6 +64,8 @@ export interface Suggestion {
   priority: 'info' | 'attention' | 'urgent';
   title: string;
   description: string;
+  /** Optional ingredient list rendered as bullets (e.g. supplement profiles). */
+  ingredients?: string[];
   link?: string;
   reason?: string;
   guidelines?: string[];
@@ -548,11 +550,15 @@ export interface SupplementOption {
 }
 
 export const SUPPLEMENT_OPTIONS: SupplementOption[] = [
-  // Featured
-  { key: 'microvitamin', name: 'MicroVitamin', category: 'featured', defaultDose: 5, defaultUnit: 'capsules' },
-  { key: 'microvitamin_plus', name: 'MicroVitamin+', category: 'featured', defaultDose: 1, defaultUnit: 'scoop' },
-  { key: 'sleep', name: 'Sleep', category: 'featured', defaultDose: 4, defaultUnit: 'capsules' },
+  // Featured — generic, evidence-based profiles (no product names/links).
+  // NOTE: keys are kept stable to avoid orphaning previously-tracked data in
+  // users' local-first RoadmapFiles. Only the display labels changed:
+  //   microvitamin -> Micronutrient base, sleep -> Sleep support.
+  { key: 'microvitamin', name: 'Micronutrient base', category: 'featured', defaultDose: 1, defaultUnit: 'serving' },
+  { key: 'creatine', name: 'Creatine', category: 'featured', defaultDose: 5, defaultUnit: 'g' },
+  { key: 'collagen', name: 'Collagen peptides', category: 'featured', defaultDose: 10, defaultUnit: 'g' },
   { key: 'omega3', name: 'Omega-3 (EPA/DHA)', category: 'featured', defaultUnit: 'mg' },
+  { key: 'sleep', name: 'Sleep support', category: 'featured', defaultDose: 1, defaultUnit: 'serving' },
   // Cardiovascular
   { key: 'coq10', name: 'CoQ10', category: 'cardiovascular', defaultUnit: 'mg' },
   { key: 'plant_sterols', name: 'Plant sterols', category: 'cardiovascular', defaultUnit: 'mg' },
@@ -574,8 +580,6 @@ export const SUPPLEMENT_OPTIONS: SupplementOption[] = [
   { key: 'zinc', name: 'Zinc', category: 'general', defaultUnit: 'mg' },
   { key: 'b_complex', name: 'B-complex', category: 'general' },
   { key: 'probiotics', name: 'Probiotics', category: 'general' },
-  { key: 'creatine', name: 'Creatine', category: 'general', defaultUnit: 'g' },
-  { key: 'collagen', name: 'Collagen', category: 'general', defaultUnit: 'g' },
 ];
 
 export const FEATURED_SUPPLEMENTS = SUPPLEMENT_OPTIONS.filter(s => s.category === 'featured');

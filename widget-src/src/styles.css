@@ -896,6 +896,19 @@ input[type="number"] {
   border-left-color: #00A38B;
 }
 
+.suggestion-ingredients {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+  color: var(--color-text-secondary);
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.suggestion-ingredients li {
+  margin: 2px 0;
+}
+
 .supplement-card .suggestion-title a {
   color: #00A38B;
 }

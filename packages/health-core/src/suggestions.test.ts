@@ -2093,25 +2093,51 @@ describe('generateSuggestions', () => {
   });
 
   describe('Supplement suggestions', () => {
-    it('always includes three supplement suggestions', () => {
+    it('always includes five generic supplement profiles', () => {
       const { inputs, results } = createTestData();
       const suggestions = generateSuggestions(inputs, results);
 
       const supplements = suggestions.filter(s => s.category === 'supplements');
-      expect(supplements).toHaveLength(3);
+      expect(supplements).toHaveLength(5);
       expect(supplements.map(s => s.id)).toEqual([
-        'supplement-microvitamin',
+        'supplement-micronutrient-base',
+        'supplement-creatine',
+        'supplement-collagen',
         'supplement-omega3',
         'supplement-sleep',
       ]);
     });
 
-    it('all supplement suggestions have links', () => {
+    it('no supplement suggestion has a commerce link (compliance)', () => {
       const { inputs, results } = createTestData();
       const suggestions = generateSuggestions(inputs, results);
 
       const supplements = suggestions.filter(s => s.category === 'supplements');
-      expect(supplements.every(s => s.link)).toBe(true);
+      expect(supplements.every(s => s.link === undefined)).toBe(true);
+    });
+
+    it('no supplement suggestion names a branded product (compliance)', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+
+      const supplements = suggestions.filter(s => s.category === 'supplements');
+      const text = supplements
+        .map(s => `${s.title} ${s.description} ${(s.ingredients ?? []).join(' ')}`)
+        .join(' ')
+        .toLowerCase();
+      expect(text).not.toContain('microvitamin');
+      expect(text).not.toContain('dr brad');
+      expect(text).not.toContain('drstanfield');
+    });
+
+    it('grouped profiles expose ingredient lists', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+
+      const base = suggestions.find(s => s.id === 'supplement-micronutrient-base');
+      const sleep = suggestions.find(s => s.id === 'supplement-sleep');
+      expect(base?.ingredients).toContain('Magnesium taurate');
+      expect(sleep?.ingredients).toContain('Low-dose melatonin');
     });
 
     it('supplement suggestions have info priority', () => {

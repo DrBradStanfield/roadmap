@@ -659,11 +659,17 @@ Source: `suggestions.ts`
 
 ### Supplements (always shown)
 
-| ID | Title | Link | Notes |
-|----|-------|------|-------|
-| `supplement-microvitamin` | MicroVitamin+ | drstanfield.com | COSMOS trial (Baker 2023) |
-| `supplement-omega3` | Omega-3 | Amazon | CV benefits (Bernasconi 2021) + cognitive synergy with B-complex (Jernerén 2015, Oulhaj 2016) |
-| `supplement-sleep` | Sleep by Dr Brad | drstanfield.com | Low-dose melatonin (Low 2020) |
+Generic, evidence-based ingredient profiles only — **no product names, no commerce
+links** (compliance: listing generic ingredients is protected health information;
+naming/linking a branded product is advertising a therapeutic good).
+
+| ID | Title | Ingredients / notes | Evidence |
+|----|-------|---------------------|----------|
+| `supplement-micronutrient-base` | Micronutrient base | Methylated B-complex; vitamin D3 + K2; magnesium taurate; trace minerals (glycinate); lutein + zeaxanthin; TMG; lycopene | COSMOS trial (Baker 2023) |
+| `supplement-creatine` | Creatine | Creatine monohydrate, 3–5 g/day | Strength/lean mass (Kreider 2017); cognition (Avgerinos 2018) |
+| `supplement-collagen` | Collagen peptides | Hydrolyzed collagen peptides, 10–15 g/day | Skin hydration/elasticity meta-analysis (Pu 2023) |
+| `supplement-omega3` | Omega-3 | EPA/DHA | CV benefits (Bernasconi 2021) + cognitive synergy with B-complex (Jernerén 2015, Oulhaj 2016) |
+| `supplement-sleep` | Sleep support | Low-dose melatonin; glycine; magnesium glycinate | Melatonin (Low 2020) |
 
 ---
 

@@ -1047,30 +1047,56 @@ export function generateSuggestions(
   }
 
   // === Supplement suggestions (always shown) ===
+  // Generic, evidence-based ingredient profiles — no product names, no links.
   suggestions.push(
     {
-      id: 'supplement-microvitamin',
+      id: 'supplement-micronutrient-base',
       category: 'supplements',
       priority: 'info',
-      title: 'MicroVitamin+',
-      description: 'Daily all-in-one to support mental function, skin elasticity, exercise performance, and gut health.',
-      link: 'https://drstanfield.com/products/microvitamin-plus',
+      title: 'Micronutrient base',
+      description: 'A daily foundation of well-absorbed micronutrients to help fill common dietary gaps and support general health.',
+      ingredients: [
+        'Methylated B-complex',
+        'Vitamin D3 with K2',
+        'Magnesium taurate',
+        'Trace minerals in glycinate form',
+        'Lutein and zeaxanthin',
+        'TMG (trimethylglycine)',
+        'Lycopene',
+      ],
+    },
+    {
+      id: 'supplement-creatine',
+      category: 'supplements',
+      priority: 'info',
+      title: 'Creatine',
+      description: 'Creatine monohydrate supports muscle strength and power, and may benefit cognition. A typical maintenance dose is 3–5 g daily.',
+    },
+    {
+      id: 'supplement-collagen',
+      category: 'supplements',
+      priority: 'info',
+      title: 'Collagen peptides',
+      description: 'Hydrolyzed collagen peptides (10–15 g daily) can support skin hydration and elasticity.',
     },
     {
       id: 'supplement-omega3',
       category: 'supplements',
       priority: 'info',
       title: 'Omega-3',
-      description: 'Essential fatty acids for cardiovascular and brain health.',
-      link: 'https://amzn.to/4kgwthG',
+      description: 'Essential EPA/DHA fatty acids for cardiovascular and brain health.',
     },
     {
       id: 'supplement-sleep',
       category: 'supplements',
       priority: 'info',
-      title: 'Sleep by Dr Brad',
-      description: 'Support for quality sleep and recovery.',
-      link: 'https://drstanfield.com/products/sleep',
+      title: 'Sleep support',
+      description: 'Ingredients that may support quality sleep and recovery as part of good sleep hygiene.',
+      ingredients: [
+        'Low-dose melatonin',
+        'Glycine',
+        'Magnesium glycinate',
+      ],
     },
   );
 

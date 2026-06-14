@@ -222,6 +222,13 @@ function SuggestionCard({ suggestion, highlighted, fadingOut }: { suggestion: Su
           )}
         </h4>
         <p className="suggestion-desc">{suggestion.description}</p>
+        {suggestion.ingredients && suggestion.ingredients.length > 0 && (
+          <ul className="suggestion-ingredients">
+            {suggestion.ingredients.map(ing => (
+              <li key={ing}>{ing}</li>
+            ))}
+          </ul>
+        )}
       </div>
       {hasEvidence && <SuggestionEvidence suggestion={suggestion} open={evidenceOpen} onToggle={toggleEvidence!} />}
     </div>

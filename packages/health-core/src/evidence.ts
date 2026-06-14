@@ -493,11 +493,28 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
 
   // ── Supplements ────────────────────────────────────────────
 
-  'supplement-microvitamin': {
+  'supplement-micronutrient-base': {
     reason: 'A comprehensive daily supplement can help fill nutritional gaps. A COSMOS trial sub-study found that daily multivitamin use improved cognitive function in older adults, suggesting broad micronutrient support may benefit brain health alongside physical health.',
     guidelines: [],
     references: [
       { label: 'Baker 2023 – Multivitamin & cognitive function: COSMOS trial (Alzheimers Dement)', url: 'https://doi.org/10.1002/alz.12767' },
+    ],
+  },
+
+  'supplement-creatine': {
+    reason: 'Creatine monohydrate is one of the most well-studied supplements. A meta-analysis found it significantly increases muscle strength and lean mass when combined with resistance training, and emerging evidence suggests cognitive benefits, particularly under conditions of stress or sleep deprivation.',
+    guidelines: [],
+    references: [
+      { label: 'Kreider 2017 – ISSN position stand: creatine safety & efficacy (J Int Soc Sports Nutr)', url: 'https://doi.org/10.1186/s12970-017-0173-z' },
+      { label: 'Avgerinos 2018 – Creatine & cognition: systematic review (Exp Gerontol)', url: 'https://doi.org/10.1016/j.exger.2018.04.013' },
+    ],
+  },
+
+  'supplement-collagen': {
+    reason: 'A 2023 meta-analysis combining 26 randomised controlled trials confirmed that oral collagen peptide supplementation significantly improves skin hydration and elasticity compared with placebo, with effects observed at doses of 10–15 g daily.',
+    guidelines: [],
+    references: [
+      { label: 'Pu 2023 – Collagen peptides & skin: meta-analysis of 26 RCTs (Nutrients)', url: 'https://doi.org/10.3390/nu15092080' },
     ],
   },
 
