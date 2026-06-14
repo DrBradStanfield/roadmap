@@ -1,6 +1,6 @@
 ---
-title: "They Finally Cracked the Gene Behind 1 in 5 Cancers"
-url: "https://drstanfield.com/blogs/articles/they-finally-cracked-the-gene-behind-1-in-5-cancers"
+title: "I've Never Seen Anything Like This in Cancer Research"
+url: "https://drstanfield.com/blogs/articles/ive-never-seen-anything-like-this-in-cancer-research"
 youtube: "https://www.youtube.com/watch?v=d4qhykJ9PMs"
 publishedAt: "2026-06-10T12:00:00Z"
 tags: ["Research", "General Health"]
