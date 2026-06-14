@@ -3,7 +3,6 @@ import { data, useLoaderData } from "react-router";
 
 import { authenticate } from "../shopify.server";
 import { getDashboardStats } from "../lib/supabase.server";
-import { METRIC_LABELS } from "../../packages/health-core/src/mappings";
 
 function formatRelativeDate(dateStr: string): string {
   const now = Date.now();
@@ -21,9 +20,10 @@ function formatRelativeDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
-function pct(n: number, total: number): number {
-  if (total === 0) return 0;
-  return Math.round((n / total) * 100);
+function platformLabel(p: string): string {
+  if (p === "discord") return "Discord";
+  if (p === "shopify") return "Website";
+  return p.charAt(0).toUpperCase() + p.slice(1);
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -54,79 +54,153 @@ export default function Index() {
     );
   }
 
-  const { profileCompleteness: pc } = stats;
+  const { chat, reminders, ab } = stats;
 
   return (
     <s-page heading="Health Roadmap">
       <s-stack gap="large">
-        {/* KPI Cards */}
+        <s-banner tone="info">
+          <s-text>
+            Local-first app: no health data is stored on the server. These
+            analytics cover the server touchpoints that remain — the chatbot,
+            email reminders, Klaviyo captures, and A/B tests. Counts marked
+            "(30d)" cover the last 30 days.
+          </s-text>
+        </s-banner>
+
+        {/* Headline KPIs */}
         <s-grid gridTemplateColumns="repeat(5, 1fr)" gap="base">
-          <KpiCard title="Total Users" value={stats.totalUsers} />
-          <KpiCard title="Active Users (30d)" value={stats.activeUsers30d} />
-          <KpiCard title="Measurements Saved" value={stats.totalMeasurements} />
-          <KpiCard title="Welcome Emails Sent" value={stats.welcomeEmailsSent} />
-          <KpiCard title="Reminder Emails Sent" value={stats.remindersSent} />
+          <KpiCard title="Chat Messages (30d)" value={stats.chatMessages30d} />
+          <KpiCard title="Active Chatters (30d)" value={stats.activeChatters30d} />
+          <KpiCard title="Reminder Opt-ins" value={stats.reminderOptins} />
+          <KpiCard title="Klaviyo Captures (30d)" value={stats.klaviyoCaptures30d} />
+          <KpiCard title="A/B Impressions" value={stats.abImpressions} />
         </s-grid>
 
         <s-grid gridTemplateColumns="2fr 1fr" gap="large">
-          {/* Metric Popularity */}
-          <s-section heading="Metric Popularity">
-            {stats.metricBreakdown.length > 0 ? (
-              <s-table>
-                <s-table-header-row>
-                  <s-table-header>Metric</s-table-header>
-                  <s-table-header format="numeric">Entries</s-table-header>
-                  <s-table-header format="numeric">Users</s-table-header>
-                </s-table-header-row>
-                <s-table-body>
-                  {stats.metricBreakdown.map((m) => (
-                    <s-table-row key={m.metricType}>
-                      <s-table-cell>{METRIC_LABELS[m.metricType] || m.metricType}</s-table-cell>
-                      <s-table-cell>{m.entries.toLocaleString()}</s-table-cell>
-                      <s-table-cell>{m.users.toLocaleString()}</s-table-cell>
-                    </s-table-row>
-                  ))}
-                </s-table-body>
-              </s-table>
-            ) : (
-              <s-text color="subdued">No measurements recorded yet.</s-text>
-            )}
+          {/* Chatbot usage */}
+          <s-section heading="Chatbot Usage">
+            <s-table>
+              <s-table-header-row>
+                <s-table-header listSlot="primary">Metric</s-table-header>
+                <s-table-header format="numeric">Value</s-table-header>
+              </s-table-header-row>
+              <s-table-body>
+                <StatRow label="Total conversations" value={chat.totalConversations.toLocaleString()} />
+                <StatRow label="Website conversations" value={chat.shopifyConversations.toLocaleString()} />
+                <StatRow label="Discord conversations" value={chat.discordConversations.toLocaleString()} />
+                <StatRow label="User messages (30d)" value={chat.userMessages30d.toLocaleString()} />
+                <StatRow
+                  label="Fallback replies (30d)"
+                  value={`${chat.fallbacks30d.toLocaleString()} (${Math.round(chat.fallbackRate30d * 100)}%)`}
+                />
+              </s-table-body>
+            </s-table>
+            {chat.fallbackRate30d > 0.1 ? (
+              <s-text tone="caution">
+                Fallback rate above 10% — check the chat audit email for failure
+                causes.
+              </s-text>
+            ) : null}
           </s-section>
 
-          {/* Profile Completeness + Recent Signups */}
           <s-stack gap="large">
-            <s-section heading="Profile Completeness">
+            {/* Email reminders (v2) */}
+            <s-section heading="Email Reminders">
               <s-stack gap="base">
-                <CompletionRow label="Height" count={pc.withHeight} total={pc.total} />
-                <CompletionRow label="Sex" count={pc.withSex} total={pc.total} />
-                <CompletionRow label="Birth Year" count={pc.withBirthYear} total={pc.total} />
-                <CompletionRow
-                  label="Tracking Medications"
-                  count={stats.medicationUsers}
-                  total={pc.total}
-                />
+                <s-stack direction="inline" justifyContent="space-between">
+                  <s-text>Active opt-ins</s-text>
+                  <s-text>{reminders.activeOptins.toLocaleString()}</s-text>
+                </s-stack>
+                <s-stack direction="inline" justifyContent="space-between">
+                  <s-text>Received ≥1 email</s-text>
+                  <s-text color="subdued">{reminders.withSends.toLocaleString()}</s-text>
+                </s-stack>
+                <s-stack direction="inline" justifyContent="space-between">
+                  <s-text>Due within 7 days</s-text>
+                  <s-text color="subdued">{reminders.dueSoon.toLocaleString()}</s-text>
+                </s-stack>
+                {reminders.byProvider.length > 0 ? (
+                  <s-stack gap="small-100">
+                    <s-text color="subdued">By cloud provider</s-text>
+                    {reminders.byProvider.map((p) => (
+                      <s-stack key={p.provider} direction="inline" justifyContent="space-between">
+                        <s-text>{p.provider}</s-text>
+                        <s-text color="subdued">{p.count.toLocaleString()}</s-text>
+                      </s-stack>
+                    ))}
+                  </s-stack>
+                ) : null}
               </s-stack>
             </s-section>
 
-            <s-section heading="Recent Signups">
-              {stats.recentSignups.length > 0 ? (
-                <s-stack gap="small">
-                  {stats.recentSignups.map((s, i) => (
-                    <s-stack key={i} direction="inline" justifyContent="space-between">
-                      <s-text>
-                        {s.firstName || s.lastName
-                          ? [s.firstName, s.lastName].filter(Boolean).join(" ")
-                          : "Anonymous"}
-                      </s-text>
-                      <s-text color="subdued">{formatRelativeDate(s.createdAt)}</s-text>
-                    </s-stack>
-                  ))}
+            {/* Email capture */}
+            <s-section heading="Email Capture (Klaviyo)">
+              <s-stack gap="base">
+                <s-stack direction="inline" justifyContent="space-between">
+                  <s-text>Captures (30d)</s-text>
+                  <s-text>{stats.klaviyoCaptures30d.toLocaleString()}</s-text>
                 </s-stack>
-              ) : (
-                <s-text color="subdued">No users yet.</s-text>
-              )}
+                <s-stack direction="inline" justifyContent="space-between">
+                  <s-text>Captures (all time)</s-text>
+                  <s-text color="subdued">{stats.klaviyoCapturesTotal.toLocaleString()}</s-text>
+                </s-stack>
+              </s-stack>
             </s-section>
           </s-stack>
+        </s-grid>
+
+        <s-grid gridTemplateColumns="2fr 1fr" gap="large">
+          {/* A/B testing headline */}
+          <s-section heading="A/B Testing">
+            {ab.activeTestName ? (
+              <s-stack gap="base">
+                <s-stack direction="inline" gap="small">
+                  <s-text>Active test:</s-text>
+                  <s-badge tone="success">{ab.activeTestName}</s-badge>
+                </s-stack>
+                <s-stack direction="inline" justifyContent="space-between">
+                  <s-text>Impressions</s-text>
+                  <s-text>{ab.impressions.toLocaleString()}</s-text>
+                </s-stack>
+                <s-stack direction="inline" justifyContent="space-between">
+                  <s-text>Conversions</s-text>
+                  <s-text color="subdued">
+                    {ab.conversions.toLocaleString()}
+                    {ab.impressions > 0
+                      ? ` (${Math.round((ab.conversions / ab.impressions) * 100)}%)`
+                      : ""}
+                  </s-text>
+                </s-stack>
+                <s-button href="/app/ab-testing" variant="secondary">
+                  View full A/B dashboard
+                </s-button>
+              </s-stack>
+            ) : (
+              <s-stack gap="base">
+                <s-text color="subdued">No active test.</s-text>
+                <s-button href="/app/ab-testing" variant="secondary">
+                  Manage A/B tests
+                </s-button>
+              </s-stack>
+            )}
+          </s-section>
+
+          {/* Recent chat activity (no content — platform + time only) */}
+          <s-section heading="Recent Chat Activity">
+            {stats.recentChats.length > 0 ? (
+              <s-stack gap="small">
+                {stats.recentChats.map((c, i) => (
+                  <s-stack key={i} direction="inline" justifyContent="space-between">
+                    <s-text>{platformLabel(c.platform)}</s-text>
+                    <s-text color="subdued">{formatRelativeDate(c.createdAt)}</s-text>
+                  </s-stack>
+                ))}
+              </s-stack>
+            ) : (
+              <s-text color="subdued">No conversations yet.</s-text>
+            )}
+          </s-section>
         </s-grid>
       </s-stack>
     </s-page>
@@ -144,41 +218,11 @@ function KpiCard({ title, value }: { title: string; value: number }) {
   );
 }
 
-function CompletionRow({
-  label,
-  count,
-  total,
-}: {
-  label: string;
-  count: number;
-  total: number;
-}) {
-  const percentage = pct(count, total);
+function StatRow({ label, value }: { label: string; value: string }) {
   return (
-    <s-stack gap="small-100">
-      <s-stack direction="inline" justifyContent="space-between">
-        <s-text>{label}</s-text>
-        <s-text color="subdued">
-          {percentage}% ({count}/{total})
-        </s-text>
-      </s-stack>
-      {/* Polaris web components have no ProgressBar; inline-styled fallback bar. */}
-      <div
-        style={{
-          height: 8,
-          borderRadius: 4,
-          background: "var(--s-color-bg-surface-secondary, #e3e3e3)",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            width: `${percentage}%`,
-            height: "100%",
-            background: "var(--s-color-bg-fill-brand, #303030)",
-          }}
-        />
-      </div>
-    </s-stack>
+    <s-table-row>
+      <s-table-cell>{label}</s-table-cell>
+      <s-table-cell>{value}</s-table-cell>
+    </s-table-row>
   );
 }

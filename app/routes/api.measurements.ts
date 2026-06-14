@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/react-router';
 import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
+import { logAudit } from '../lib/supabase.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 
 const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000); // 5/day per email
@@ -34,6 +35,10 @@ async function handleKlaviyoCapture(data: unknown) {
     // profile-properties step entirely. Fire-and-forget so a Klaviyo hiccup
     // never blocks the user's plan.
     subscribeToKlaviyo({ email }).catch(() => {});
+    // Count-only audit event so the admin dashboard can report capture volume.
+    // No email/PII stored here — the address already went to Klaviyo above;
+    // this row is just a timestamped tally (user_id null — guest, no account).
+    logAudit(null, 'KLAVIYO_CAPTURE', 'email');
     return Response.json({ success: true });
   } catch (error) {
     console.error('Klaviyo capture error:', error);

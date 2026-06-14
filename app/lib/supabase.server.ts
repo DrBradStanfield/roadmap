@@ -83,7 +83,7 @@ function cacheUserId(shopifyCustomerId: string, userId: string): void {
 // ---------------------------------------------------------------------------
 
 export function logAudit(
-  userId: string,
+  userId: string | null,
   action: string,
   resourceType: string,
   resourceId?: string,
@@ -774,35 +774,118 @@ export async function getUserIdByCustomerId(shopifyCustomerId: string): Promise<
 
 // ---------------------------------------------------------------------------
 // Dashboard analytics — aggregate stats for the Shopify admin dashboard.
+//
+// v2 (local-first) reality: Brad's server stores NO per-user health data. The
+// old health-data metrics (measurements, medications, profile demographics,
+// welcome emails) are gone — those tables are empty/purged and their write
+// paths were deleted at the 2026-06-12 cutover. This dashboard now reports
+// ONLY the server touchpoints that still exist in v2:
+//   - Chatbot usage (chat_messages / chat_conversations — Shopify + Discord)
+//   - v2 email reminders (reminder_optin_v2 — opt-ins, providers, sends)
+//   - Klaviyo email captures (audit_logs 'KLAVIYO_CAPTURE' events)
+//   - A/B testing headline (ab_events)
+//
+// All windows are explicit (e.g. "30d") so a number is never silently capped.
 // Uses supabaseAdmin (service role) because these are cross-user aggregates.
+// No health values are read or surfaced — counts only.
 // ---------------------------------------------------------------------------
 
-export interface DashboardStats {
-  totalUsers: number;
-  activeUsers30d: number;
-  totalMeasurements: number;
-  remindersSent: number;
-  welcomeEmailsSent: number;
-  metricBreakdown: { metricType: string; entries: number; users: number }[];
-  profileCompleteness: {
-    total: number;
-    withHeight: number;
-    withSex: number;
-    withBirthYear: number;
-  };
-  medicationUsers: number;
-  recentSignups: { firstName: string | null; lastName: string | null; createdAt: string }[];
+export const DASHBOARD_WINDOW_DAYS = 30;
+
+export interface ChatStats {
+  totalConversations: number;
+  shopifyConversations: number;
+  discordConversations: number;
+  userMessages30d: number;   // role='user' in the last 30 days
+  fallbacks30d: number;      // is_fallback messages in the last 30 days (LLM failures)
+  fallbackRate30d: number;   // fallbacks / assistant messages, 0..1
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export interface ReminderStats {
+  activeOptins: number;
+  byProvider: { provider: string; count: number }[];
+  withSends: number;   // opt-ins that have received ≥1 reminder email
+  dueSoon: number;     // opt-ins with a schedule item due within 7 days
+}
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyExclusion(query: any, column: string, ids: string[]): any {
-  if (ids.length === 0) return query;
-  // Validate all IDs are UUIDs to prevent injection via string interpolation
-  const safeIds = ids.filter(id => UUID_RE.test(id));
-  if (safeIds.length === 0) return query;
-  return query.not(column, 'in', `(${safeIds.join(',')})`);
+export interface DashboardStats {
+  // Headline KPIs
+  chatMessages30d: number;
+  activeChatters30d: number;
+  reminderOptins: number;
+  klaviyoCaptures30d: number;
+  abImpressions: number;
+  // Sections
+  chat: ChatStats;
+  reminders: ReminderStats;
+  klaviyoCapturesTotal: number;
+  ab: { activeTestName: string | null; impressions: number; conversions: number };
+  recentChats: { platform: string; createdAt: string }[];
+}
+
+// --- Pure aggregation helpers (unit-tested; DB rows in, plain numbers out) ---
+
+export interface ChatMessageRow {
+  role: string;
+  is_fallback: boolean | null;
+  created_at: string;
+  user_id: string;
+}
+
+export function aggregateChatMessages(
+  rows: ChatMessageRow[] | null,
+): { userMessages: number; activeChatters: number; fallbacks: number; fallbackRate: number } {
+  let userMessages = 0;
+  let assistantMessages = 0;
+  let fallbacks = 0;
+  const chatters = new Set<string>();
+  for (const r of rows || []) {
+    if (r.role === 'user') {
+      userMessages++;
+      chatters.add(r.user_id);
+    } else if (r.role === 'assistant') {
+      assistantMessages++;
+      if (r.is_fallback) fallbacks++;
+    }
+  }
+  return {
+    userMessages,
+    activeChatters: chatters.size,
+    fallbacks,
+    fallbackRate: assistantMessages > 0 ? fallbacks / assistantMessages : 0,
+  };
+}
+
+export interface ReminderOptinRow {
+  provider: string | null;
+  last_sent: Record<string, string> | null;
+  schedule: { dueAt: string }[] | null;
+}
+
+export function aggregateReminderOptins(
+  rows: ReminderOptinRow[] | null,
+  todayStr: string,
+): Omit<ReminderStats, 'activeOptins'> {
+  const dueCutoff = new Date(`${todayStr}T00:00:00Z`);
+  dueCutoff.setUTCDate(dueCutoff.getUTCDate() + 7);
+  const dueCutoffStr = dueCutoff.toISOString().slice(0, 10);
+
+  const providerCounts = new Map<string, number>();
+  let withSends = 0;
+  let dueSoon = 0;
+  for (const r of rows || []) {
+    const provider = r.provider || 'unknown';
+    providerCounts.set(provider, (providerCounts.get(provider) ?? 0) + 1);
+    if (r.last_sent && Object.keys(r.last_sent).length > 0) withSends++;
+    if ((r.schedule || []).some((item) => item.dueAt <= dueCutoffStr)) dueSoon++;
+  }
+  return {
+    byProvider: Array.from(providerCounts.entries())
+      .map(([provider, count]) => ({ provider, count }))
+      .sort((a, b) => b.count - a.count),
+    withSends,
+    dueSoon,
+  };
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -810,129 +893,100 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     throw new Error('Supabase admin client not configured');
   }
 
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-
-  // Look up user_ids for excluded dashboard emails (test accounts)
-  const excludedEmails = (process.env.EXCLUDED_DASHBOARD_EMAILS || '')
-    .split(',')
-    .map(e => e.trim())
-    .filter(Boolean);
-  let excludedUserIds: string[] = [];
-  if (excludedEmails.length > 0) {
-    const { data } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .in('email', excludedEmails);
-    excludedUserIds = (data ?? []).map((r: { id: string }) => r.id);
-  }
+  const windowStart = new Date(
+    Date.now() - DASHBOARD_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   const [
-    profilesRes,
-    activeUsersRes,
-    measurementsCountRes,
-    remindersRes,
-    metricBreakdownRes,
-    profileStatsRes,
-    medicationUsersRes,
-    recentSignupsRes,
-    welcomeEmailsRes,
+    convTotalRes,
+    convDiscordRes,
+    chatMsgRes,
+    klaviyo30Res,
+    klaviyoTotalRes,
+    optinRes,
+    recentChatRes,
+    activeTests,
   ] = await Promise.all([
-    // Total users (exclude ghost guest profiles)
-    applyExclusion(
-      supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }).eq('is_guest', false),
-      'id', excludedUserIds,
-    ),
-    // Active users (last 30 days)
-    applyExclusion(
-      supabaseAdmin.from('health_measurements')
-        .select('user_id')
-        .gte('created_at', thirtyDaysAgo),
-      'user_id', excludedUserIds,
-    ),
-    // Total measurements
-    applyExclusion(
-      supabaseAdmin.from('health_measurements').select('*', { count: 'exact', head: true }),
-      'user_id', excludedUserIds,
-    ),
-    // Reminder emails sent
-    applyExclusion(
-      supabaseAdmin.from('reminder_log').select('*', { count: 'exact', head: true }),
-      'user_id', excludedUserIds,
-    ),
-    // Metric breakdown: group by metric_type
-    applyExclusion(
-      supabaseAdmin.from('health_measurements').select('metric_type, user_id'),
-      'user_id', excludedUserIds,
-    ),
-    // Profile completeness
-    applyExclusion(
-      supabaseAdmin.from('profiles').select('height, sex, birth_year'),
-      'id', excludedUserIds,
-    ),
-    // Medication users
-    applyExclusion(
-      supabaseAdmin.from('medications').select('user_id').eq('status', 'active'),
-      'user_id', excludedUserIds,
-    ),
-    // Recent signups
-    applyExclusion(
-      supabaseAdmin.from('profiles')
-        .select('first_name, last_name, created_at')
-        .order('created_at', { ascending: false })
-        .limit(10),
-      'id', excludedUserIds,
-    ),
-    // Welcome emails sent
-    applyExclusion(
-      supabaseAdmin.from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('welcome_email_sent', true),
-      'id', excludedUserIds,
-    ),
+    // Chat conversations — total + Discord split (Shopify = total − Discord).
+    supabaseAdmin.from('chat_conversations').select('*', { count: 'exact', head: true }),
+    supabaseAdmin
+      .from('chat_conversations')
+      .select('*', { count: 'exact', head: true })
+      .eq('platform', 'discord'),
+    // Chat messages in the window (role/fallback/chatter aggregation in JS).
+    supabaseAdmin
+      .from('chat_messages')
+      .select('role, is_fallback, created_at, user_id')
+      .gte('created_at', windowStart),
+    // Klaviyo email captures — count-only audit events (no email stored here).
+    supabaseAdmin
+      .from('audit_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('action', 'KLAVIYO_CAPTURE')
+      .gte('created_at', windowStart),
+    supabaseAdmin
+      .from('audit_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('action', 'KLAVIYO_CAPTURE'),
+    // v2 reminder opt-ins (provider, last_sent, schedule aggregated in JS).
+    supabaseAdmin.from('reminder_optin_v2').select('provider, last_sent, schedule'),
+    // Recent chat activity — platform + timestamp only, NO content (PHI-safe).
+    supabaseAdmin
+      .from('chat_conversations')
+      .select('platform, created_at')
+      .order('created_at', { ascending: false })
+      .limit(8),
+    // A/B headline: the currently-active test, if any (only one is ever active).
+    getActiveABTests(),
   ]);
+  const activeTest = activeTests[0] ?? null;
 
-  // Compute active users (distinct user_ids)
-  const activeUserIds = new Set(
-    (activeUsersRes.data ?? []).map((r: { user_id: string }) => r.user_id),
+  const chatAgg = aggregateChatMessages(chatMsgRes.data as ChatMessageRow[] | null);
+  const reminderAgg = aggregateReminderOptins(
+    optinRes.data as ReminderOptinRow[] | null,
+    todayStr,
   );
+  const activeOptins = optinRes.data?.length ?? 0;
 
-  // Compute metric breakdown
-  const metricMap = new Map<string, { entries: number; users: Set<string> }>();
-  for (const row of metricBreakdownRes.data ?? []) {
-    const entry = metricMap.get(row.metric_type) ?? { entries: 0, users: new Set<string>() };
-    entry.entries++;
-    entry.users.add(row.user_id);
-    metricMap.set(row.metric_type, entry);
+  // A/B headline numbers for the active test (or zeros if none).
+  let abImpressions = 0;
+  let abConversions = 0;
+  let activeTestName: string | null = null;
+  if (activeTest) {
+    activeTestName = activeTest.name;
+    const { data: counts } = await supabaseAdmin.rpc('get_ab_test_counts', {
+      p_test_id: activeTest.id,
+    });
+    for (const row of (counts ?? []) as ABCountRow[]) {
+      if (row.event_type === 'impression') abImpressions += Number(row.count);
+      else if (row.event_type === 'conversion') abConversions += Number(row.count);
+    }
   }
-  const metricBreakdown = Array.from(metricMap.entries())
-    .map(([metricType, { entries, users }]) => ({ metricType, entries, users: users.size }))
-    .sort((a, b) => b.entries - a.entries);
 
-  // Profile completeness
-  const profiles = profileStatsRes.data ?? [];
-  const total = profiles.length;
-  const withHeight = profiles.filter((p: { height: number | null }) => p.height != null).length;
-  const withSex = profiles.filter((p: { sex: number | null }) => p.sex != null).length;
-  const withBirthYear = profiles.filter((p: { birth_year: number | null }) => p.birth_year != null).length;
-
-  // Medication users (distinct)
-  const medUserIds = new Set(
-    (medicationUsersRes.data ?? []).map((r: { user_id: string }) => r.user_id),
-  );
+  const totalConversations = convTotalRes.count ?? 0;
+  const discordConversations = convDiscordRes.count ?? 0;
 
   return {
-    totalUsers: profilesRes.count ?? 0,
-    activeUsers30d: activeUserIds.size,
-    totalMeasurements: measurementsCountRes.count ?? 0,
-    remindersSent: remindersRes.count ?? 0,
-    welcomeEmailsSent: welcomeEmailsRes.count ?? 0,
-    metricBreakdown,
-    profileCompleteness: { total, withHeight, withSex, withBirthYear },
-    medicationUsers: medUserIds.size,
-    recentSignups: (recentSignupsRes.data ?? []).map(
-      (r: { first_name: string | null; last_name: string | null; created_at: string }) => ({
-        firstName: r.first_name,
-        lastName: r.last_name,
+    chatMessages30d: chatAgg.userMessages,
+    activeChatters30d: chatAgg.activeChatters,
+    reminderOptins: activeOptins,
+    klaviyoCaptures30d: klaviyo30Res.count ?? 0,
+    abImpressions,
+    chat: {
+      totalConversations,
+      shopifyConversations: Math.max(0, totalConversations - discordConversations),
+      discordConversations,
+      userMessages30d: chatAgg.userMessages,
+      fallbacks30d: chatAgg.fallbacks,
+      fallbackRate30d: chatAgg.fallbackRate,
+    },
+    reminders: { activeOptins, ...reminderAgg },
+    klaviyoCapturesTotal: klaviyoTotalRes.count ?? 0,
+    ab: { activeTestName, impressions: abImpressions, conversions: abConversions },
+    recentChats: (recentChatRes.data ?? []).map(
+      (r: { platform: string | null; created_at: string }) => ({
+        platform: r.platform || 'shopify',
         createdAt: r.created_at,
       }),
     ),
