@@ -21,3 +21,26 @@ docs/knowledge-map/
 
 # Local test artifacts / scratch — never commit (purged from history 2026-06-12)
 tmp/
+
+# One-off / scratch scripts — never commit (e.g. _purge-run.mjs, _purge-backup.mjs)
+_*.mjs
+_*.ts
+_*.js
+
+# Backups & data dumps — never commit (these can hold real user health data / PII)
+*.bundle
+*backup*
+roadmap-supabase-backup*
+*.dump
+*.sql.gz
+*.pgdump
+exports/
+dumps/
+
+# Local cloud/local-first data stores — never commit (real user data lives in the
+# user's own cloud or localStorage, never in this repo)
+health-roadmap.json
+health_roadmap_file*
+
+# Sourcemaps — stripped before Shopify deploy; never tracked
+*.map
