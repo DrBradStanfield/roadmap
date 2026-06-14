@@ -339,7 +339,14 @@ export class RoadmapStore {
   saveScreening(screeningKey: string, value: string): boolean {
     const field = snakeToCamel(screeningKey) as keyof ScreeningInputs;
     const parsed = NUMERIC_SCREENING_KEYS.has(screeningKey) ? parseFloat(value) : value;
-    (this.file.screenings as unknown as Record<string, unknown>)[field] = parsed;
+    const s = this.file.screenings;
+    (s as unknown as Record<string, unknown>)[field] = parsed;
+    // Stamp the sync clock so this edit wins last-write-wins against the cloud
+    // copy on the next merge. screenings is an LWW singleton (merge.ts: pickNewer
+    // by lamport); without the bump it stays lamport:0 like the empty remote and
+    // pickNewer can discard the local change — the change silently never persists.
+    s.updatedAt = new Date().toISOString();
+    s.lamport = (s.lamport ?? 0) + 1;
     this.touch();
     return true;
   }

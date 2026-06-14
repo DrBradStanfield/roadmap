@@ -135,3 +135,63 @@ describe('RoadmapStore — supplement history (append-only change log)', () => {
     ]);
   });
 });
+
+describe('RoadmapStore — screening current state (LWW singleton)', () => {
+  it('persists a screening across a flush → reload round-trip', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+
+    store.saveScreening('colorectal_method', 'colonoscopy');
+    store.saveScreening('prostate_psa_value', '1.2'); // numeric key → parsed to a number
+    await store.flush();
+
+    // A fresh store over the SAME cloud = the user returning / a second device.
+    const reloaded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const rows = reloaded.loadLatestMeasurements().screenings;
+    const byKey = Object.fromEntries(rows.map((r) => [r.screeningKey, r.value]));
+    expect(byKey.colorectal_method).toBe('colonoscopy');
+    expect(byKey.prostate_psa_value).toBe('1.2');
+  });
+
+  it('stamps the sync clock so the change wins merge against an empty remote', async () => {
+    // The data-loss bug: saveScreening mutated file.screenings but never bumped
+    // lamport/updatedAt, so it stayed lamport:0 like the fresh remote and
+    // pickNewer could discard it on the next merge. Two devices, one cloud:
+    // device A's screening must NOT be lost when it syncs against device B's
+    // empty (but already-flushed, so version-ahead) copy.
+    const cloud = new MemoryCloud();
+
+    // Device B initialises the cloud file first (empty screenings, lamport:0).
+    const deviceB = await RoadmapStore.create(new MemoryAdapter(cloud));
+    await deviceB.flush();
+
+    // Device A picks a screening, then syncs into the existing cloud file.
+    const deviceA = await RoadmapStore.create(new MemoryAdapter(cloud));
+    deviceA.saveScreening('colorectal_method', 'fit');
+    await deviceA.flush();
+
+    const cloudFile = readCloudFile(cloud);
+    expect((cloudFile.screenings as unknown as Record<string, unknown>).colorectalMethod).toBe('fit');
+    expect(cloudFile.screenings.lamport).toBeGreaterThan(0);
+
+    // Device B re-reads the cloud — it must see device A's pick, not its own empty copy.
+    const deviceBReloaded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const rows = deviceBReloaded.loadLatestMeasurements().screenings;
+    expect(rows.find((r) => r.screeningKey === 'colorectal_method')?.value).toBe('fit');
+  });
+
+  it('last write wins for repeated edits to the same screening key', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+
+    store.saveScreening('colorectal_method', 'fit');
+    store.saveScreening('colorectal_method', 'colonoscopy');
+    await store.flush();
+
+    const reloaded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const rows = reloaded.loadLatestMeasurements().screenings;
+    const matches = rows.filter((r) => r.screeningKey === 'colorectal_method');
+    expect(matches).toHaveLength(1); // singleton — no duplicate rows
+    expect(matches[0].value).toBe('colonoscopy');
+  });
+});
