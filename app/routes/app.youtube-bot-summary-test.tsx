@@ -1,6 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { data, useLoaderData } from "react-router";
-import { Page, Layout, Card, BlockStack, Text, Banner } from "@shopify/polaris";
 
 import { authenticate } from "../shopify.server";
 import { runYouTubeBotSummaryOnce } from "../lib/youtube-bot-summary-cron.server";
@@ -30,31 +29,27 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function YouTubeBotSummaryTest() {
   const data = useLoaderData<typeof loader>();
   return (
-    <Page title="YouTube bot summary — manual trigger">
-      <Layout>
-        <Layout.Section>
-          <Card>
-            <BlockStack gap="400">
-              {data.ok ? (
-                <Banner tone="success" title="YouTube bot summary sent successfully">
-                  <Text as="p" variant="bodyMd">
-                    Started: {data.startedAt} · Completed: {data.completedAt}
-                  </Text>
-                </Banner>
-              ) : (
-                <Banner tone="critical" title="YouTube bot summary threw an error">
-                  <Text as="p" variant="bodyMd">
-                    {'errorMessage' in data ? String(data.errorMessage) : 'Unknown error'}
-                  </Text>
-                </Banner>
-              )}
-              <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 12 }}>
-                {JSON.stringify(data, null, 2)}
-              </pre>
-            </BlockStack>
-          </Card>
-        </Layout.Section>
-      </Layout>
-    </Page>
+    <s-page heading="YouTube bot summary — manual trigger">
+      <s-section>
+        <s-stack gap="base">
+          {data.ok ? (
+            <s-banner tone="success" heading="YouTube bot summary sent successfully">
+              <s-paragraph>
+                Started: {data.startedAt} · Completed: {data.completedAt}
+              </s-paragraph>
+            </s-banner>
+          ) : (
+            <s-banner tone="critical" heading="YouTube bot summary threw an error">
+              <s-paragraph>
+                {'errorMessage' in data ? String(data.errorMessage) : 'Unknown error'}
+              </s-paragraph>
+            </s-banner>
+          )}
+          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 12 }}>
+            {JSON.stringify(data, null, 2)}
+          </pre>
+        </s-stack>
+      </s-section>
+    </s-page>
   );
 }

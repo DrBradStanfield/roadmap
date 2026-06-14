@@ -1,16 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { data, useLoaderData } from "react-router";
-import {
-  Page,
-  Layout,
-  Text,
-  Card,
-  BlockStack,
-  InlineGrid,
-  DataTable,
-  InlineStack,
-  ProgressBar,
-} from "@shopify/polaris";
 
 import { authenticate } from "../shopify.server";
 import { getDashboardStats } from "../lib/supabase.server";
@@ -57,138 +46,101 @@ export default function Index() {
 
   if (error || !stats) {
     return (
-      <Page title="Health Roadmap">
-        <Card>
-          <Text as="p" variant="bodyMd" tone="critical">
-            {error || "Failed to load dashboard."}
-          </Text>
-        </Card>
-      </Page>
+      <s-page heading="Health Roadmap">
+        <s-section>
+          <s-text tone="critical">{error || "Failed to load dashboard."}</s-text>
+        </s-section>
+      </s-page>
     );
   }
 
   const { profileCompleteness: pc } = stats;
 
   return (
-    <Page title="Health Roadmap">
-      <BlockStack gap="500">
+    <s-page heading="Health Roadmap">
+      <s-stack gap="large">
         {/* KPI Cards */}
-        <InlineGrid columns={5} gap="400">
+        <s-grid gridTemplateColumns="repeat(5, 1fr)" gap="base">
           <KpiCard title="Total Users" value={stats.totalUsers} />
           <KpiCard title="Active Users (30d)" value={stats.activeUsers30d} />
           <KpiCard title="Measurements Saved" value={stats.totalMeasurements} />
           <KpiCard title="Welcome Emails Sent" value={stats.welcomeEmailsSent} />
           <KpiCard title="Reminder Emails Sent" value={stats.remindersSent} />
-        </InlineGrid>
+        </s-grid>
 
-        <Layout>
+        <s-grid gridTemplateColumns="2fr 1fr" gap="large">
           {/* Metric Popularity */}
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="400">
-                <Text as="h2" variant="headingMd">
-                  Metric Popularity
-                </Text>
-                {stats.metricBreakdown.length > 0 ? (
-                  <DataTable
-                    columnContentTypes={["text", "numeric", "numeric"]}
-                    headings={["Metric", "Entries", "Users"]}
-                    rows={stats.metricBreakdown.map((m) => [
-                      METRIC_LABELS[m.metricType] || m.metricType,
-                      m.entries.toLocaleString(),
-                      m.users.toLocaleString(),
-                    ])}
-                  />
-                ) : (
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    No measurements recorded yet.
-                  </Text>
-                )}
-              </BlockStack>
-            </Card>
-          </Layout.Section>
+          <s-section heading="Metric Popularity">
+            {stats.metricBreakdown.length > 0 ? (
+              <s-table>
+                <s-table-header-row>
+                  <s-table-header>Metric</s-table-header>
+                  <s-table-header format="numeric">Entries</s-table-header>
+                  <s-table-header format="numeric">Users</s-table-header>
+                </s-table-header-row>
+                <s-table-body>
+                  {stats.metricBreakdown.map((m) => (
+                    <s-table-row key={m.metricType}>
+                      <s-table-cell>{METRIC_LABELS[m.metricType] || m.metricType}</s-table-cell>
+                      <s-table-cell>{m.entries.toLocaleString()}</s-table-cell>
+                      <s-table-cell>{m.users.toLocaleString()}</s-table-cell>
+                    </s-table-row>
+                  ))}
+                </s-table-body>
+              </s-table>
+            ) : (
+              <s-text color="subdued">No measurements recorded yet.</s-text>
+            )}
+          </s-section>
 
-          {/* Profile Completeness */}
-          <Layout.Section variant="oneThird">
-            <BlockStack gap="500">
-              <Card>
-                <BlockStack gap="400">
-                  <Text as="h2" variant="headingMd">
-                    Profile Completeness
-                  </Text>
-                  <CompletionRow
-                    label="Height"
-                    count={pc.withHeight}
-                    total={pc.total}
-                  />
-                  <CompletionRow
-                    label="Sex"
-                    count={pc.withSex}
-                    total={pc.total}
-                  />
-                  <CompletionRow
-                    label="Birth Year"
-                    count={pc.withBirthYear}
-                    total={pc.total}
-                  />
-                  <CompletionRow
-                    label="Tracking Medications"
-                    count={stats.medicationUsers}
-                    total={pc.total}
-                  />
-                </BlockStack>
-              </Card>
+          {/* Profile Completeness + Recent Signups */}
+          <s-stack gap="large">
+            <s-section heading="Profile Completeness">
+              <s-stack gap="base">
+                <CompletionRow label="Height" count={pc.withHeight} total={pc.total} />
+                <CompletionRow label="Sex" count={pc.withSex} total={pc.total} />
+                <CompletionRow label="Birth Year" count={pc.withBirthYear} total={pc.total} />
+                <CompletionRow
+                  label="Tracking Medications"
+                  count={stats.medicationUsers}
+                  total={pc.total}
+                />
+              </s-stack>
+            </s-section>
 
-              {/* Recent Signups */}
-              <Card>
-                <BlockStack gap="400">
-                  <Text as="h2" variant="headingMd">
-                    Recent Signups
-                  </Text>
-                  {stats.recentSignups.length > 0 ? (
-                    <BlockStack gap="200">
-                      {stats.recentSignups.map((s, i) => (
-                        <InlineStack key={i} align="space-between">
-                          <Text as="span" variant="bodyMd">
-                            {s.firstName || s.lastName
-                              ? [s.firstName, s.lastName]
-                                  .filter(Boolean)
-                                  .join(" ")
-                              : "Anonymous"}
-                          </Text>
-                          <Text as="span" variant="bodyMd" tone="subdued">
-                            {formatRelativeDate(s.createdAt)}
-                          </Text>
-                        </InlineStack>
-                      ))}
-                    </BlockStack>
-                  ) : (
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      No users yet.
-                    </Text>
-                  )}
-                </BlockStack>
-              </Card>
-            </BlockStack>
-          </Layout.Section>
-        </Layout>
-      </BlockStack>
-    </Page>
+            <s-section heading="Recent Signups">
+              {stats.recentSignups.length > 0 ? (
+                <s-stack gap="small">
+                  {stats.recentSignups.map((s, i) => (
+                    <s-stack key={i} direction="inline" justifyContent="space-between">
+                      <s-text>
+                        {s.firstName || s.lastName
+                          ? [s.firstName, s.lastName].filter(Boolean).join(" ")
+                          : "Anonymous"}
+                      </s-text>
+                      <s-text color="subdued">{formatRelativeDate(s.createdAt)}</s-text>
+                    </s-stack>
+                  ))}
+                </s-stack>
+              ) : (
+                <s-text color="subdued">No users yet.</s-text>
+              )}
+            </s-section>
+          </s-stack>
+        </s-grid>
+      </s-stack>
+    </s-page>
   );
 }
 
 function KpiCard({ title, value }: { title: string; value: number }) {
   return (
-    <Card>
-      <BlockStack gap="200">
-        <Text as="p" variant="bodyMd" tone="subdued">
-          {title}
-        </Text>
-        <Text as="p" variant="headingXl">
-          {value.toLocaleString()}
-        </Text>
-      </BlockStack>
-    </Card>
+    <s-section>
+      <s-stack gap="small">
+        <s-text color="subdued">{title}</s-text>
+        <s-heading>{value.toLocaleString()}</s-heading>
+      </s-stack>
+    </s-section>
   );
 }
 
@@ -203,16 +155,30 @@ function CompletionRow({
 }) {
   const percentage = pct(count, total);
   return (
-    <BlockStack gap="100">
-      <InlineStack align="space-between">
-        <Text as="span" variant="bodyMd">
-          {label}
-        </Text>
-        <Text as="span" variant="bodyMd" tone="subdued">
+    <s-stack gap="small-100">
+      <s-stack direction="inline" justifyContent="space-between">
+        <s-text>{label}</s-text>
+        <s-text color="subdued">
           {percentage}% ({count}/{total})
-        </Text>
-      </InlineStack>
-      <ProgressBar progress={percentage} size="small" />
-    </BlockStack>
+        </s-text>
+      </s-stack>
+      {/* Polaris web components have no ProgressBar; inline-styled fallback bar. */}
+      <div
+        style={{
+          height: 8,
+          borderRadius: 4,
+          background: "var(--s-color-bg-surface-secondary, #e3e3e3)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            width: `${percentage}%`,
+            height: "100%",
+            background: "var(--s-color-bg-fill-brand, #303030)",
+          }}
+        />
+      </div>
+    </s-stack>
   );
 }

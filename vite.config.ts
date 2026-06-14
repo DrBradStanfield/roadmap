@@ -70,6 +70,6 @@ export default defineConfig((config) => ({
     assetsInlineLimit: 0,
   },
   optimizeDeps: {
-    include: ["@shopify/app-bridge-react", "@shopify/polaris"],
+    include: ["@shopify/app-bridge-react"],
   },
 }) satisfies UserConfig);

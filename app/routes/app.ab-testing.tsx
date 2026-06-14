@@ -2,19 +2,6 @@ import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { data, useLoaderData, useSubmit, useNavigation } from "react-router";
 import { useState } from "react";
 import { z } from "zod";
-import {
-  Page,
-  Card,
-  Text,
-  BlockStack,
-  InlineStack,
-  Button,
-  TextField,
-  Badge,
-  Banner,
-  Divider,
-  Box,
-} from "@shopify/polaris";
 
 import { authenticate } from "../shopify.server";
 import {
@@ -242,71 +229,103 @@ function TestResultsCard({ test, results, onAction, isSubmitting }: {
   }
 
   return (
-    <Card>
-      <BlockStack gap="400">
-        <InlineStack align="space-between">
-          <InlineStack gap="200" blockAlign="center">
-            <Text as="h2" variant="headingMd">{test.name}</Text>
-            <Badge>{test.target}</Badge>
-            <Badge tone={statusTone(test.status)}>{test.status}</Badge>
-          </InlineStack>
-          <InlineStack gap="200">
+    <s-section>
+      <s-stack gap="base">
+        <s-stack direction="inline" justifyContent="space-between">
+          <s-stack direction="inline" gap="small" alignItems="center">
+            <s-heading>{test.name}</s-heading>
+            <s-badge>{test.target}</s-badge>
+            <s-badge tone={statusTone(test.status)}>{test.status}</s-badge>
+          </s-stack>
+          <s-stack direction="inline" gap="small">
             {test.status === 'active' && (
               <>
-                <Button size="slim" onClick={() => onAction(test.id, 'pause')} disabled={isSubmitting}>Pause</Button>
-                <Button size="slim" onClick={() => onAction(test.id, 'complete')} disabled={isSubmitting}>Complete</Button>
+                <s-button onClick={() => onAction(test.id, 'pause')} disabled={isSubmitting}>Pause</s-button>
+                <s-button onClick={() => onAction(test.id, 'complete')} disabled={isSubmitting}>Complete</s-button>
               </>
             )}
             {test.status === 'draft' && (
-              <Button size="slim" onClick={() => onAction(test.id, 'activate')} disabled={isSubmitting}>Activate</Button>
+              <s-button onClick={() => onAction(test.id, 'activate')} disabled={isSubmitting}>Activate</s-button>
             )}
             {test.status === 'paused' && (
-              <Button size="slim" onClick={() => onAction(test.id, 'activate')} disabled={isSubmitting}>Resume</Button>
+              <s-button onClick={() => onAction(test.id, 'activate')} disabled={isSubmitting}>Resume</s-button>
             )}
-          </InlineStack>
-        </InlineStack>
+          </s-stack>
+        </s-stack>
 
         {/* Variant details + results */}
         {test.variants.map((variant) => {
           const vr = results?.variantResults.find(r => r.variantId === variant.id);
           const rate = vr && vr.impressions > 0 ? ((vr.conversions / vr.impressions) * 100).toFixed(2) : '0.00';
           return (
-            <Box key={variant.id} padding="300" background="bg-surface-secondary" borderRadius="200">
-              <BlockStack gap="200">
-                <InlineStack align="space-between">
-                  <Text as="h3" variant="headingSm">Variant {variant.id.toUpperCase()}</Text>
-                  {vr && <Badge>{rate}% conversion</Badge>}
-                </InlineStack>
-                <Text as="p" variant="bodySm" tone="subdued">
+            <s-box key={variant.id} padding="base" background="subdued" borderRadius="base">
+              <s-stack gap="small">
+                <s-stack direction="inline" justifyContent="space-between">
+                  <s-heading>Variant {variant.id.toUpperCase()}</s-heading>
+                  {vr && <s-badge>{rate}% conversion</s-badge>}
+                </s-stack>
+                <s-text color="subdued">
                   &ldquo;{variant.value}&rdquo;
-                </Text>
+                </s-text>
                 {vr && (
-                  <InlineStack gap="400">
-                    <Text as="span" variant="bodySm">{vr.impressions} impressions</Text>
-                    <Text as="span" variant="bodySm">{vr.conversions} conversions</Text>
-                  </InlineStack>
+                  <s-stack direction="inline" gap="base">
+                    <s-text>{vr.impressions} impressions</s-text>
+                    <s-text>{vr.conversions} conversions</s-text>
+                  </s-stack>
                 )}
-              </BlockStack>
-            </Box>
+              </s-stack>
+            </s-box>
           );
         })}
 
         {significance && (
-          <Banner tone={significance.pValue <= 0.05 ? 'success' : 'info'} title={significance.confidence}>
-            <p>
+          <s-banner tone={significance.pValue <= 0.05 ? 'success' : 'info'} heading={significance.confidence}>
+            <s-paragraph>
               p-value: {significance.pValue.toFixed(4)}
               {significance.relativeImprovement !== 0 && (
                 <> · Variant B is {significance.relativeImprovement > 0 ? '+' : ''}{significance.relativeImprovement.toFixed(1)}% vs A</>
               )}
-            </p>
-          </Banner>
+            </s-paragraph>
+          </s-banner>
         )}
 
-        <Text as="span" variant="bodySm" tone="subdued">
+        <s-text color="subdued">
           Created {new Date(test.created_at).toLocaleDateString()}
-        </Text>
-      </BlockStack>
-    </Card>
+        </s-text>
+      </s-stack>
+    </s-section>
+  );
+}
+
+/**
+ * A variant value input. Headings get a single-line `s-text-field`; longer
+ * targets (subheading / email helper) get a 2-row `s-text-area` — mirroring the
+ * original `multiline={2}` Polaris TextField behavior.
+ */
+function VariantField({ label, value, onChange, multiline }: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  multiline: boolean;
+}) {
+  if (multiline) {
+    return (
+      <s-text-area
+        label={label}
+        value={value}
+        rows={2}
+        onChange={(e) => onChange(e.currentTarget.value)}
+        autocomplete="off"
+      />
+    );
+  }
+  return (
+    <s-text-field
+      label={label}
+      value={value}
+      onChange={(e) => onChange(e.currentTarget.value)}
+      autocomplete="off"
+    />
   );
 }
 
@@ -324,11 +343,11 @@ export default function ABTesting() {
 
   if (error) {
     return (
-      <Page title="A/B Tests">
-        <Card>
-          <Text as="p" variant="bodyMd" tone="critical">{error}</Text>
-        </Card>
-      </Page>
+      <s-page heading="A/B Tests">
+        <s-section>
+          <s-text tone="critical">{error}</s-text>
+        </s-section>
+      </s-page>
     );
   }
 
@@ -360,37 +379,52 @@ export default function ABTesting() {
   };
 
   return (
-    <Page title="A/B Tests">
-      <BlockStack gap="500">
+    <s-page heading="A/B Tests">
+      <s-stack gap="large">
         {/* Create New Test */}
-        <Card>
-          <BlockStack gap="400">
-            <InlineStack align="space-between">
-              <Text as="h2" variant="headingMd">Create Test</Text>
-              <Button variant="primary" onClick={() => setShowCreate(!showCreate)}>
+        <s-section>
+          <s-stack gap="base">
+            <s-stack direction="inline" justifyContent="space-between">
+              <s-heading>Create Test</s-heading>
+              <s-button variant="primary" onClick={() => setShowCreate(!showCreate)}>
                 {showCreate ? 'Cancel' : 'New Test'}
-              </Button>
-            </InlineStack>
+              </s-button>
+            </s-stack>
 
             {showCreate && (
-              <BlockStack gap="300">
-                <Divider />
-                <TextField label="Test Name" value={testName} onChange={setTestName} autoComplete="off" />
-                <InlineStack gap="200" blockAlign="center" wrap>
-                  <Text as="span" variant="bodySm">Element to test:</Text>
-                  <Button size="slim" variant={testTarget === 'heading' ? 'primary' : undefined} onClick={() => setTestTarget('heading')}>Heading</Button>
-                  <Button size="slim" variant={testTarget === 'subheading' ? 'primary' : undefined} onClick={() => setTestTarget('subheading')}>Subheading</Button>
-                  <Button size="slim" variant={testTarget === 'email-guest-helper' ? 'primary' : undefined} onClick={() => setTestTarget('email-guest-helper')}>Email Helper</Button>
-                </InlineStack>
-                <TextField label={`Variant A ${targetLabel}`} value={variantAValue} onChange={setVariantAValue} autoComplete="off" multiline={testTarget !== 'heading' ? 2 : undefined} />
-                <TextField label={`Variant B ${targetLabel}`} value={variantBValue} onChange={setVariantBValue} autoComplete="off" multiline={testTarget !== 'heading' ? 2 : undefined} />
-                <Button variant="primary" onClick={handleCreate} disabled={!testName || !variantAValue || !variantBValue || isSubmitting}>
+              <s-stack gap="base">
+                <s-divider />
+                <s-text-field
+                  label="Test Name"
+                  value={testName}
+                  onChange={(e) => setTestName(e.currentTarget.value)}
+                  autocomplete="off"
+                />
+                <s-stack direction="inline" gap="small" alignItems="center">
+                  <s-text>Element to test:</s-text>
+                  <s-button variant={testTarget === 'heading' ? 'primary' : undefined} onClick={() => setTestTarget('heading')}>Heading</s-button>
+                  <s-button variant={testTarget === 'subheading' ? 'primary' : undefined} onClick={() => setTestTarget('subheading')}>Subheading</s-button>
+                  <s-button variant={testTarget === 'email-guest-helper' ? 'primary' : undefined} onClick={() => setTestTarget('email-guest-helper')}>Email Helper</s-button>
+                </s-stack>
+                <VariantField
+                  label={`Variant A ${targetLabel}`}
+                  value={variantAValue}
+                  onChange={setVariantAValue}
+                  multiline={testTarget !== 'heading'}
+                />
+                <VariantField
+                  label={`Variant B ${targetLabel}`}
+                  value={variantBValue}
+                  onChange={setVariantBValue}
+                  multiline={testTarget !== 'heading'}
+                />
+                <s-button variant="primary" onClick={handleCreate} disabled={!testName || !variantAValue || !variantBValue || isSubmitting}>
                   Create Test
-                </Button>
-              </BlockStack>
+                </s-button>
+              </s-stack>
             )}
-          </BlockStack>
-        </Card>
+          </s-stack>
+        </s-section>
 
         {/* All tests with results */}
         {tests.map((test: ABTest) => (
@@ -404,11 +438,11 @@ export default function ABTesting() {
         ))}
 
         {tests.length === 0 && (
-          <Card>
-            <Text as="p" variant="bodySm" tone="subdued">No tests yet. Create one above.</Text>
-          </Card>
+          <s-section>
+            <s-text color="subdued">No tests yet. Create one above.</s-text>
+          </s-section>
         )}
-      </BlockStack>
-    </Page>
+      </s-stack>
+    </s-page>
   );
 }

@@ -17,6 +17,6 @@
     "moduleResolution": "Bundler",
     "target": "ES2022",
     "baseUrl": ".",
-    "types": ["node"]
+    "types": ["node", "@shopify/app-bridge-ui-types"]
   }
 }

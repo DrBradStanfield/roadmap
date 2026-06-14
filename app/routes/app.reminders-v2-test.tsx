@@ -1,6 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { data, useLoaderData } from "react-router";
-import { Page, Layout, Card, BlockStack, Text, Banner } from "@shopify/polaris";
 
 import { authenticate } from "../shopify.server";
 import { processV2Reminders } from "../lib/reminder-v2-cron.server";
@@ -37,27 +36,23 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function RemindersV2Test() {
   const data = useLoaderData<typeof loader>();
   return (
-    <Page title="v2 reminders — manual cron trigger">
-      <Layout>
-        <Layout.Section>
-          <Card>
-            <BlockStack gap="400">
-              {data.ok ? (
-                <Banner tone="success" title={`Run complete — ${data.sent} email(s) sent`}>
-                  <Text as="p" variant="bodyMd">
-                    Started: {data.startedAt} · Completed: {data.completedAt}. Skip-reason
-                    breakdown is in the Fly logs (search "Reminder v2 cron summary").
-                  </Text>
-                </Banner>
-              ) : (
-                <Banner tone="critical" title="v2 reminder run threw an error">
-                  <Text as="p" variant="bodyMd">{data.errorMessage}</Text>
-                </Banner>
-              )}
-            </BlockStack>
-          </Card>
-        </Layout.Section>
-      </Layout>
-    </Page>
+    <s-page heading="v2 reminders — manual cron trigger">
+      <s-section>
+        <s-stack gap="base">
+          {data.ok ? (
+            <s-banner tone="success" heading={`Run complete — ${data.sent} email(s) sent`}>
+              <s-paragraph>
+                Started: {data.startedAt} · Completed: {data.completedAt}. Skip-reason
+                breakdown is in the Fly logs (search "Reminder v2 cron summary").
+              </s-paragraph>
+            </s-banner>
+          ) : (
+            <s-banner tone="critical" heading="v2 reminder run threw an error">
+              <s-paragraph>{data.errorMessage}</s-paragraph>
+            </s-banner>
+          )}
+        </s-stack>
+      </s-section>
+    </s-page>
   );
 }

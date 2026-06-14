@@ -1,28 +1,15 @@
 import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, useActionData, useLoaderData } from "react-router";
-import {
-  AppProvider as PolarisAppProvider,
-  Button,
-  Card,
-  FormLayout,
-  Page,
-  Text,
-  TextField,
-} from "@shopify/polaris";
-import polarisTranslations from "@shopify/polaris/locales/en.json";
-import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 
 import { login } from "../../shopify.server";
 
 import { loginErrorMessage } from "./error.server";
 
-export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
-
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const errors = loginErrorMessage(await login(request));
 
-  return { errors, polarisTranslations };
+  return { errors };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -33,6 +20,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   };
 };
 
+// This route renders OUTSIDE the embedded Shopify admin (the merchant isn't
+// authenticated yet), so App Bridge — and therefore the Polaris web components
+// (`s-*`) — is unavailable here. Rather than re-introduce the Polaris React
+// dependency for a single standalone form, this uses plain semantic HTML with
+// inline styles. It's a minimal shop-domain entry form.
 export default function Auth() {
   const loaderData = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
@@ -40,29 +32,47 @@ export default function Auth() {
   const { errors } = actionData || loaderData;
 
   return (
-    <PolarisAppProvider i18n={loaderData.polarisTranslations}>
-      <Page>
-        <Card>
-          <Form method="post">
-            <FormLayout>
-              <Text variant="headingMd" as="h2">
-                Log in
-              </Text>
-              <TextField
-                type="text"
-                name="shop"
-                label="Shop domain"
-                helpText="example.myshopify.com"
-                value={shop}
-                onChange={setShop}
-                autoComplete="on"
-                error={errors.shop}
-              />
-              <Button submit>Log in</Button>
-            </FormLayout>
-          </Form>
-        </Card>
-      </Page>
-    </PolarisAppProvider>
+    <main style={{ maxWidth: 400, margin: "64px auto", padding: "0 16px", fontFamily: "Inter, system-ui, sans-serif" }}>
+      <Form method="post">
+        <div style={{ border: "1px solid #e1e3e5", borderRadius: 12, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Log in</h2>
+          <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ fontSize: 14 }}>Shop domain</span>
+            <input
+              type="text"
+              name="shop"
+              value={shop}
+              onChange={(e) => setShop(e.currentTarget.value)}
+              autoComplete="on"
+              style={{
+                padding: "8px 12px",
+                fontSize: 14,
+                borderRadius: 8,
+                border: `1px solid ${errors.shop ? "#d72c0d" : "#8a8a8a"}`,
+              }}
+            />
+            <span style={{ fontSize: 12, color: errors.shop ? "#d72c0d" : "#6d7175" }}>
+              {errors.shop || "example.myshopify.com"}
+            </span>
+          </label>
+          <button
+            type="submit"
+            style={{
+              padding: "8px 16px",
+              fontSize: 14,
+              fontWeight: 500,
+              color: "#fff",
+              background: "#303030",
+              border: "none",
+              borderRadius: 8,
+              cursor: "pointer",
+              alignSelf: "flex-start",
+            }}
+          >
+            Log in
+          </button>
+        </div>
+      </Form>
+    </main>
   );
 }
