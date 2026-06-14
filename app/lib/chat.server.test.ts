@@ -25,6 +25,21 @@ describe('buildConversationMessages', () => {
     expect(result[2].content).toBe('Is that high?');
   });
 
+  it('strips extra DB columns so only role + content reach the LLM', () => {
+    // Production multi-turn guest path: history rows come straight from
+    // chat_messages and carry created_at + is_fallback. The Anthropic Messages
+    // API strict-validates message objects and 400s on unexpected keys, which
+    // surfaces as the "having trouble responding" fallback on every 2nd+ turn.
+    const history = [
+      { role: 'user' as const, content: 'What is my LDL?', created_at: '2026-06-13T00:00:00Z', is_fallback: false },
+      { role: 'assistant' as const, content: 'Your LDL is 3.2 mmol/L.', created_at: '2026-06-13T00:00:01Z', is_fallback: false },
+    ];
+    const result = buildConversationMessages(history, 'Is that high?');
+    for (const msg of result) {
+      expect(Object.keys(msg).sort()).toEqual(['content', 'role']);
+    }
+  });
+
   it('keeps first user message when truncating for token budget', () => {
     // Create a history that exceeds 8000 token budget (~32000 chars)
     const history: Array<{ role: 'user' | 'assistant'; content: string }> = [];

@@ -534,24 +534,31 @@ export function buildConversationMessages(
 ): Array<{ role: 'user' | 'assistant'; content: string }> {
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
 
+  // History rows come straight from chat_messages and carry extra columns
+  // (created_at, is_fallback). The Anthropic Messages API strict-validates
+  // message objects and 400s on unexpected keys, so reduce every row to the
+  // two API-valid fields before it enters the outgoing messages array.
+  const toApiMessage = (m: { role: 'user' | 'assistant'; content: string }) =>
+    ({ role: m.role, content: m.content });
+
   if (history.length > 0) {
     // Always keep the first user message for topic context
     let budget = HISTORY_TOKEN_BUDGET;
     const firstMsg = history[0];
     if (firstMsg.role === 'user') {
       const tokens = estimateTokens(firstMsg.content);
-      messages.push(firstMsg);
+      messages.push(toApiMessage(firstMsg));
       budget -= tokens;
     }
 
     // Add most recent messages that fit within budget (from newest to oldest)
     const remaining = firstMsg.role === 'user' ? history.slice(1) : history;
-    const recentMessages: typeof history = [];
+    const recentMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
 
     for (let i = remaining.length - 1; i >= 0; i--) {
       const tokens = estimateTokens(remaining[i].content);
       if (budget - tokens < 0) break;
-      recentMessages.unshift(remaining[i]);
+      recentMessages.unshift(toApiMessage(remaining[i]));
       budget -= tokens;
     }
 
