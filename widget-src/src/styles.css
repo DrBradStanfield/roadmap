@@ -2123,21 +2123,113 @@ input[type="number"] {
   cursor: not-allowed;
 }
 
-/* Skeleton Loading */
-.skeleton-block {
-  background: #e0e0e0;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
+/* ─── Loading skeleton ───────────────────────────────────────────────
+   Rendered as the static children of #health-tool-root (in app-block.liquid
+   on prod, index.html on Pages) so it paints before the JS module loads.
+   React's createRoot().render() replaces these children on mount. The block
+   sizes mirror the real widget's above-the-fold layout (a column header + a
+   tall "Your information" card on the left, a results card on the right) so
+   mounting causes near-zero layout shift. Shimmer = a moving gradient sweep. */
+.hr-skeleton {
+  /* Reserve the same outer box the mounted .health-tool will occupy: same
+     full-bleed width strategy (so the inner grid resolves to identical column
+     widths — no horizontal jump), 24px top/bottom padding, same bg strip. */
+  width: min(100vw, 1600px);
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 24px 0;
+  background: #f8f9fa;
+}
+.hr-skeleton-content {
+  display: grid;
+  grid-template-columns: 5fr 6fr;
+  gap: 32px;
+  align-items: start;
+}
+.hr-skeleton-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+/* Column header placeholder (matches .hr-col-header: 20px tall + 12px margin). */
+.hr-skel-colhead {
+  height: 20px;
+  width: 160px;
+  margin: 0 4px 8px;
+}
+/* Card placeholder (matches .section-card: white frame, 12px radius, 24px pad). */
+.hr-skel-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+.hr-skel-card + .hr-skel-card { margin-top: -4px; }
+/* Generic shimmer line/block inside a card. */
+.hr-skel-line {
+  height: 14px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+}
+.hr-skel-line:last-child { margin-bottom: 0; }
+.hr-skel-line--title { height: 20px; width: 45%; margin-bottom: 22px; }
+.hr-skel-line--input { height: 42px; border-radius: 8px; margin-bottom: 18px; }
+.hr-skel-line--short { width: 35%; }
+.hr-skel-line--med { width: 65%; }
+
+/* The shimmer itself: a muted base with a brighter band swept across by
+   animating background-position. One definition reused by every block. */
+.hr-skel-colhead,
+.hr-skel-line {
+  background-color: #e7eaec;
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  background-position: -150% 0;
+  animation: hr-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes hr-shimmer {
+  to { background-position: 150% 0; }
 }
 
-.skeleton-block:last-child {
-  margin-bottom: 0;
+/* ≥1200px: 3-column (input / results / chat), matching .health-tool-content. */
+@media (min-width: 1200px) {
+  .hr-skeleton-content { grid-template-columns: 1fr 1fr 0.95fr; }
+}
+/* Mobile-only tab-bar strip (shown only inside the ≤768px block below). */
+.hr-skel-tabbar { display: none; }
+/* ≤768px: single column + a tab-bar strip, matching the mobile widget. */
+@media (max-width: 768px) {
+  .hr-skeleton { padding: 0 0 16px; }
+  .hr-skeleton-content {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0 10px;
+  }
+  .hr-skeleton-col:not(:first-child) { display: none; }
+  .hr-skel-colhead { display: none; }
+  .hr-skel-tabbar {
+    display: block;
+    height: 43px;
+    margin: 0 -10px 16px;
+    border-bottom: 1px solid var(--color-gray-border);
+  }
 }
 
-@keyframes skeleton-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+/* Accessibility: no motion → a static muted block, no sweep. */
+@media (prefers-reduced-motion: reduce) {
+  .hr-skel-colhead,
+  .hr-skel-line {
+    background-image: none;
+    animation: none;
+  }
 }
 
 /* Card entrance animation */

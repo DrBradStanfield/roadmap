@@ -26,7 +26,46 @@
     <!-- data-upload-url: the lazy extraction bundle (pdf.js + JSZip), built
          into dist-pages alongside the app — relative so /roadmap/ and /roadmap/dev/
          both resolve their own copy. -->
-    <div id="health-tool-root" data-logged-in="true" data-upload-url="./health-upload.js"></div>
+    <!-- Loading skeleton: paints before app.tsx loads so the widget box is
+         reserved at ~its real above-the-fold size (near-zero layout shift).
+         React replaces these children on mount. Shimmer styles ship in the
+         bundled styles.css (.hr-skeleton*). -->
+    <div id="health-tool-root" data-logged-in="true" data-upload-url="./health-upload.js">
+      <div class="hr-skeleton" aria-hidden="true">
+        <div class="hr-skel-tabbar">&nbsp;</div>
+        <div class="hr-skeleton-content">
+          <div class="hr-skeleton-col">
+            <div class="hr-skel-colhead">&nbsp;</div>
+            <div class="hr-skel-card">
+              <div class="hr-skel-line hr-skel-line--title">&nbsp;</div>
+              <div class="hr-skel-line hr-skel-line--input">&nbsp;</div>
+              <div class="hr-skel-line hr-skel-line--input">&nbsp;</div>
+              <div class="hr-skel-line hr-skel-line--input">&nbsp;</div>
+              <div class="hr-skel-line hr-skel-line--input">&nbsp;</div>
+              <div class="hr-skel-line hr-skel-line--input">&nbsp;</div>
+              <div class="hr-skel-line hr-skel-line--med">&nbsp;</div>
+            </div>
+          </div>
+          <div class="hr-skeleton-col">
+            <div class="hr-skel-colhead">&nbsp;</div>
+            <div class="hr-skel-card">
+              <div class="hr-skel-line hr-skel-line--title">&nbsp;</div>
+              <div class="hr-skel-line">&nbsp;</div>
+              <div class="hr-skel-line hr-skel-line--med">&nbsp;</div>
+              <div class="hr-skel-line hr-skel-line--short">&nbsp;</div>
+            </div>
+          </div>
+          <div class="hr-skeleton-col">
+            <div class="hr-skel-colhead">&nbsp;</div>
+            <div class="hr-skel-card">
+              <div class="hr-skel-line hr-skel-line--title">&nbsp;</div>
+              <div class="hr-skel-line">&nbsp;</div>
+              <div class="hr-skel-line hr-skel-line--med">&nbsp;</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="./app.tsx"></script>
   </body>
 </html>

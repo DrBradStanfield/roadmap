@@ -28,11 +28,51 @@
 
 <!-- data-logged-in=true: the local-first store IS the data layer (no Shopify
      login in v2); sync status renders inside the plan panel via syncControl. -->
+<!-- Loading skeleton: paints before health-plan-v2.js loads so the widget box
+     is reserved at ~its real above-the-fold size (near-zero layout shift). React
+     replaces these children on mount. Shimmer styles live in health-plan-v2.css
+     (.hr-skeleton*). NBSP inside each block dodges the storefront's
+     `div:empty { display:none }` rule. -->
 <div
   id="health-tool-root"
   data-logged-in="true"
   data-upload-url="{{ 'health-upload.js' | asset_url }}"
-></div>
+>
+  <div class="hr-skeleton" aria-hidden="true">
+    <div class="hr-skel-tabbar">&nbsp;</div>
+    <div class="hr-skeleton-content">
+      <div class="hr-skeleton-col">
+        <div class="hr-skel-colhead">&nbsp;</div>
+        <div class="hr-skel-card">
+          <div class="hr-skel-line hr-skel-line--title">&nbsp;</div>
+          <div class="hr-skel-line hr-skel-line--input">&nbsp;</div>
+          <div class="hr-skel-line hr-skel-line--input">&nbsp;</div>
+          <div class="hr-skel-line hr-skel-line--input">&nbsp;</div>
+          <div class="hr-skel-line hr-skel-line--input">&nbsp;</div>
+          <div class="hr-skel-line hr-skel-line--input">&nbsp;</div>
+          <div class="hr-skel-line hr-skel-line--med">&nbsp;</div>
+        </div>
+      </div>
+      <div class="hr-skeleton-col">
+        <div class="hr-skel-colhead">&nbsp;</div>
+        <div class="hr-skel-card">
+          <div class="hr-skel-line hr-skel-line--title">&nbsp;</div>
+          <div class="hr-skel-line">&nbsp;</div>
+          <div class="hr-skel-line hr-skel-line--med">&nbsp;</div>
+          <div class="hr-skel-line hr-skel-line--short">&nbsp;</div>
+        </div>
+      </div>
+      <div class="hr-skeleton-col">
+        <div class="hr-skel-colhead">&nbsp;</div>
+        <div class="hr-skel-card">
+          <div class="hr-skel-line hr-skel-line--title">&nbsp;</div>
+          <div class="hr-skel-line">&nbsp;</div>
+          <div class="hr-skel-line hr-skel-line--med">&nbsp;</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <script type="module" src="{{ 'health-plan-v2.js' | asset_url }}"></script>
 
 {% schema %}
