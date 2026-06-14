@@ -26,6 +26,20 @@ function platformLabel(p: string): string {
   return p.charAt(0).toUpperCase() + p.slice(1);
 }
 
+type TrendDirection = "up" | "down" | "flat";
+
+function trendTone(dir: TrendDirection): "success" | "critical" | "neutral" {
+  if (dir === "up") return "success";
+  if (dir === "down") return "critical";
+  return "neutral";
+}
+
+function trendLabel(dir: TrendDirection, pct: number): string {
+  if (dir === "flat") return "No change vs prior 30d";
+  const arrow = dir === "up" ? "▲" : "▼"; // ▲ / ▼
+  return `${arrow} ${Math.abs(pct)}% vs prior 30d`;
+}
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   await authenticate.admin(request);
 
@@ -54,7 +68,7 @@ export default function Index() {
     );
   }
 
-  const { chat, reminders, ab } = stats;
+  const { chat, reminders, ab, klaviyo } = stats;
 
   return (
     <s-page heading="Health Roadmap">
@@ -134,18 +148,34 @@ export default function Index() {
               </s-stack>
             </s-section>
 
-            {/* Email capture */}
+            {/* Email capture — live from the Klaviyo guest list */}
             <s-section heading="Email Capture (Klaviyo)">
-              <s-stack gap="base">
-                <s-stack direction="inline" justifyContent="space-between">
-                  <s-text>Captures (30d)</s-text>
-                  <s-text>{stats.klaviyoCaptures30d.toLocaleString()}</s-text>
+              {klaviyo ? (
+                <s-stack gap="base">
+                  <s-stack direction="inline" justifyContent="space-between">
+                    <s-text>Total list size</s-text>
+                    <s-text>{klaviyo.total.toLocaleString()}</s-text>
+                  </s-stack>
+                  <s-stack direction="inline" justifyContent="space-between">
+                    <s-text>Last 30 days</s-text>
+                    <s-text color="subdued">{klaviyo.last30d.toLocaleString()}</s-text>
+                  </s-stack>
+                  <s-stack direction="inline" justifyContent="space-between">
+                    <s-text>Prior 30 days</s-text>
+                    <s-text color="subdued">{klaviyo.prev30d.toLocaleString()}</s-text>
+                  </s-stack>
+                  <s-stack direction="inline" gap="small" alignItems="center">
+                    <s-text>Signup rate</s-text>
+                    <s-badge tone={trendTone(klaviyo.trendDirection)}>
+                      {trendLabel(klaviyo.trendDirection, klaviyo.trendPct)}
+                    </s-badge>
+                  </s-stack>
                 </s-stack>
-                <s-stack direction="inline" justifyContent="space-between">
-                  <s-text>Captures (all time)</s-text>
-                  <s-text color="subdued">{stats.klaviyoCapturesTotal.toLocaleString()}</s-text>
-                </s-stack>
-              </s-stack>
+              ) : (
+                <s-text color="subdued">
+                  Klaviyo stats unavailable right now — try reloading shortly.
+                </s-text>
+              )}
             </s-section>
           </s-stack>
         </s-grid>

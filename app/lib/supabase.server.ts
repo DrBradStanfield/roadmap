@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react-router';
 import type { HealthInputs } from '../../packages/health-core/src/types';
 import { measurementsToInputs, medicationsToInputs, screeningsToInputs } from '../../packages/health-core/src/mappings';
 import { MEASUREMENT_SOURCES, type MeasurementStatus, type MeasurementSource } from '../../packages/health-core/src/validation';
+import { getCachedKlaviyoCaptureStats, type KlaviyoCaptureStats } from './klaviyo.server';
 
 // ---------------------------------------------------------------------------
 // Environment
@@ -782,7 +783,7 @@ export async function getUserIdByCustomerId(shopifyCustomerId: string): Promise<
 // ONLY the server touchpoints that still exist in v2:
 //   - Chatbot usage (chat_messages / chat_conversations — Shopify + Discord)
 //   - v2 email reminders (reminder_optin_v2 — opt-ins, providers, sends)
-//   - Klaviyo email captures (audit_logs 'KLAVIYO_CAPTURE' events)
+//   - Klaviyo email captures (live from the Klaviyo "Health Roadmap Guests" list)
 //   - A/B testing headline (ab_events)
 //
 // All windows are explicit (e.g. "30d") so a number is never silently capped.
@@ -813,12 +814,14 @@ export interface DashboardStats {
   chatMessages30d: number;
   activeChatters30d: number;
   reminderOptins: number;
-  klaviyoCaptures30d: number;
+  klaviyoCaptures30d: number; // last-30d, from Klaviyo (null if Klaviyo unavailable)
   abImpressions: number;
   // Sections
   chat: ChatStats;
   reminders: ReminderStats;
-  klaviyoCapturesTotal: number;
+  // Live Klaviyo guest-list stats; null when the Klaviyo API is unavailable so
+  // the dashboard can render the card as "unavailable" instead of crashing.
+  klaviyo: KlaviyoCaptureStats | null;
   ab: { activeTestName: string | null; impressions: number; conversions: number };
   recentChats: { platform: string; createdAt: string }[];
 }
@@ -902,11 +905,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     convTotalRes,
     convDiscordRes,
     chatMsgRes,
-    klaviyo30Res,
-    klaviyoTotalRes,
     optinRes,
     recentChatRes,
     activeTests,
+    klaviyoSettled,
   ] = await Promise.all([
     // Chat conversations — total + Discord split (Shopify = total − Discord).
     supabaseAdmin.from('chat_conversations').select('*', { count: 'exact', head: true }),
@@ -919,16 +921,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       .from('chat_messages')
       .select('role, is_fallback, created_at, user_id')
       .gte('created_at', windowStart),
-    // Klaviyo email captures — count-only audit events (no email stored here).
-    supabaseAdmin
-      .from('audit_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('action', 'KLAVIYO_CAPTURE')
-      .gte('created_at', windowStart),
-    supabaseAdmin
-      .from('audit_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('action', 'KLAVIYO_CAPTURE'),
     // v2 reminder opt-ins (provider, last_sent, schedule aggregated in JS).
     supabaseAdmin.from('reminder_optin_v2').select('provider, last_sent, schedule'),
     // Recent chat activity — platform + timestamp only, NO content (PHI-safe).
@@ -939,8 +931,20 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       .limit(8),
     // A/B headline: the currently-active test, if any (only one is ever active).
     getActiveABTests(),
+    // Klaviyo guest-list capture stats — live from the Klaviyo API, fetched in
+    // parallel and isolated via allSettled so a Klaviyo outage/timeout never
+    // rejects the whole dashboard (the card just renders "unavailable").
+    getCachedKlaviyoCaptureStats().then(
+      (value) => ({ ok: true as const, value }),
+      (error) => {
+        console.error('Klaviyo dashboard stats error:', error);
+        Sentry.captureException(error, { tags: { feature: 'klaviyo_dashboard' } });
+        return { ok: false as const };
+      },
+    ),
   ]);
   const activeTest = activeTests[0] ?? null;
+  const klaviyo: KlaviyoCaptureStats | null = klaviyoSettled.ok ? klaviyoSettled.value : null;
 
   const chatAgg = aggregateChatMessages(chatMsgRes.data as ChatMessageRow[] | null);
   const reminderAgg = aggregateReminderOptins(
@@ -971,7 +975,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     chatMessages30d: chatAgg.userMessages,
     activeChatters30d: chatAgg.activeChatters,
     reminderOptins: activeOptins,
-    klaviyoCaptures30d: klaviyo30Res.count ?? 0,
+    klaviyoCaptures30d: klaviyo?.last30d ?? 0,
     abImpressions,
     chat: {
       totalConversations,
@@ -982,7 +986,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       fallbackRate30d: chatAgg.fallbackRate,
     },
     reminders: { activeOptins, ...reminderAgg },
-    klaviyoCapturesTotal: klaviyoTotalRes.count ?? 0,
+    klaviyo,
     ab: { activeTestName, impressions: abImpressions, conversions: abConversions },
     recentChats: (recentChatRes.data ?? []).map(
       (r: { platform: string | null; created_at: string }) => ({
