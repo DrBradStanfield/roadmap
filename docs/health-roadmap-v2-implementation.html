@@ -171,6 +171,21 @@
     </div>
   </div>
 
+  <div class="logentry">
+    <div class="hdr"><span class="pill warn">PROD OUTAGE + RECOVERY</span><strong>RR7 cutover to production: first deploy crashed on boot (Node 20 + Supabase), ~caught by health checks but the rolling strategy still updated both machines → brief outage → rolled back → root-caused → fixed (Node 22) → re-deployed safely via canary → RR7 now LIVE + verified.</strong></div>
+    <div class="body">
+      <ul>
+        <li><span class="pill warn">what happened</span> Brad chose to skip the dev-app rehearsal (deleted dev app, <code>shopify app dev</code> is a repo Dangerous-Gotcha, no Docker/Postgres in the env) and deploy straight to prod, fixing forward. First <code>fly deploy</code> (default rolling strategy) built fine but the server <strong>crashed on boot</strong> — never bound <code>:3000</code>, <code>/healthz</code> failed. Fly's rolling deploy updated BOTH machines to the broken image anyway → production down (<code>healthz</code> HTTP 000).</li>
+        <li><span class="pill warn">root cause</span> RR7's lockfile regen bumped <code>@supabase/realtime-js</code> 2.93.2 → 2.108.1, which hard-throws <em>"Node.js 20 detected without native WebSocket support"</em> at <code>supabase.createClient</code> on module load. The Docker base was <code>node:20-alpine</code>; local Node is 22 (has native WebSocket) — so it passed every local check and only failed in the container. NOT the auth layer or the instrument.server.mjs Docker fix (that loaded fine — the server reached <code>[shopify-api] v13.0.0</code> before crashing). Exactly the class of failure a boot rehearsal would have caught.</li>
+        <li><span class="pill ok">recovery</span> Rolled back to v358 (the prior Remix image) via <code>fly deploy --image &lt;prev&gt;</code> → prod restored (<code>healthz</code> 200) within minutes. Root-caused from the captured v359 boot logs.</li>
+        <li><span class="pill ok">fix + safe redeploy</span> Dockerfile <code>node:20-alpine → node:22-alpine</code> (native WebSocket global; <code>engines</code> already allowed <code>&gt;=21</code>; Node 20 is ~EOL). Redeployed with <code>fly deploy --strategy canary</code> — a throwaway canary machine is health-checked FIRST, leaving the serving machines untouched if it fails (the fix for the rolling-strategy outage trap). Canary passed → rolled out → v361.</li>
+        <li><span class="pill ok">verified live on v361</span> <code>healthz</code> 200; shopify-api 13.0.0 / environment React Router; all 6 crons started + executing (YouTube bot tick scanned 63 threads/posted 0; Discord bot connected as "Dr Brad AI#5863"); <strong>app-proxy HMAC auth works under RR7</strong> — live <code>POST /apps/health-tool-1/api/chat</code> → 200 with a correct plan-context answer ("Your BMI is 24.7…"), confirming <code>authenticate.public.appProxy</code> + the chat pipeline under RR7. 2026-04 admin API active at runtime.</li>
+        <li><span class="pill info">deploy-strategy lesson (CLAUDE.md-worthy)</span> Fly's default rolling deploy + health checks does NOT protect against a boot crash — it updated both machines to the unhealthy image and took prod down. <strong>Use <code>--strategy canary</code> (or bluegreen) for risky server deploys</strong> so a failed boot never touches the serving machines.</li>
+        <li><span class="pill warn">follow-up (optional)</span> Only <code>fly deploy</code> ran (server runtime now 2026-04). <code>shopify.app.toml api_version=2026-04</code> hasn't been pushed to Shopify via <code>shopify app deploy</code>, so webhook subscriptions are still registered at the prior version — benign (payloads nearly identical for our 3 events), sync when convenient.</li>
+      </ul>
+    </div>
+  </div>
+
   <h3>Standalone history-page bundle removed + auth-flag cleanup (2026-06-14, Brad) · /pages/health-history deleted on Shopify → dead in-repo bundle removed; flag kept (legacy-load-bearing)</h3>
 
   <div class="logentry">
