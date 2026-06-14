@@ -99,7 +99,7 @@ function getAuthState(): AuthState {
   return { isLoggedIn, loginUrl, accountUrl, redirectFailed };
 }
 
-export function HealthTool({ syncControl }: { syncControl?: (ctx: { hasData: boolean }) => ReactNode } = {}) {
+export function HealthTool({ syncControl, remindersSection }: { syncControl?: (ctx: { hasData: boolean }) => ReactNode; remindersSection?: ReactNode } = {}) {
   const [inputs, setInputs] = useState<Partial<HealthInputs>>(() => {
     // Local-first: the RoadmapStore is initialised before render (app.tsx), so
     // read the saved prefill synchronously here. This lets InputPanel's first
@@ -1121,6 +1121,7 @@ export function HealthTool({ syncControl }: { syncControl?: (ctx: { hasData: boo
   const resultsPanelProps = {
     results,
     syncControl,
+    remindersSection,
     isValid,
     authState,
     saveStatus,

@@ -16,6 +16,7 @@ import { googleDriveConfig } from './google-config';
 import { BACKEND_KEY, migrateLocalInto, useBusyRun, type Backend } from './connect';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
+import { remindersSupported } from './reminders';
 
 const LABELS: Record<Exclude<Backend, 'local'>, string> = {
   dropbox: 'Dropbox',
@@ -83,12 +84,14 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
       </div>
     );
   } else if (backend !== 'local') {
+    // Single clean line: the privacy promise IS the status (the ✓ now leads it).
+    // The reminders toggle moved out to its own plan section (RemindersSection,
+    // wired via the remindersSection prop in app.tsx). "Change" stays as a quiet
+    // secondary link — it's the only way to switch/disconnect the cloud.
     content = (
       <div className="hr-sync hr-sync-cloud">
-        <span className="hr-sync-status">✓ Synced to {LABELS[backend]}</span>
+        <span className="hr-sync-status">✓ Your health data lives only in {LABELS[backend]} — never on Dr Brad's servers.</span>
         <button className="hr-sync-link" onClick={() => setPickerOpen(true)}>Change</button>
-        <span className="hr-sync-detail">Your health data lives only in {LABELS[backend]} — never on Dr Brad's servers.</span>
-        <RemindersControl backend={backend} />
       </div>
     );
   } else if (!hasData) {
@@ -110,5 +113,24 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
       {content}
       {pickerOpen && <BackendPickerModal current={backend} onClose={() => setPickerOpen(false)} />}
     </>
+  );
+}
+
+/**
+ * Email-reminders as its own labelled section of the plan (Brad, 2026-06-15:
+ * "that should be in the email-reminders section, not at the top"). Rendered
+ * via the remindersSection prop in app.tsx, near the foot of the plan. Returns
+ * null for backends that can't do reminders (local / WebDAV) — same gate as the
+ * inline control used, so nothing renders where reminders aren't possible.
+ */
+export function RemindersSection({ backend }: { backend: Backend }) {
+  if (!remindersSupported(backend)) return null;
+  return (
+    <section className="hr-reminders-section">
+      <h3 className="hr-reminders-heading">Email reminders</h3>
+      <div className="hr-sync hr-sync-cloud">
+        <RemindersControl backend={backend} />
+      </div>
+    </section>
   );
 }

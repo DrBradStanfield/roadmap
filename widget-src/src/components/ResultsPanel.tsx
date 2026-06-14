@@ -70,6 +70,10 @@ interface ResultsPanelProps {
    *  shows). Render-prop: receives whether the user has entered real data,
    *  so the "choose where to save" pitch can stay hidden for brand-new users. */
   syncControl?: (ctx: { hasData: boolean }) => React.ReactNode;
+  /** Standalone-only: the local-first email-reminders section, rendered as its
+   *  own block lower in the plan (not bolted onto the sync line at the top).
+   *  undefined on the live Shopify widget (which has its own ReminderSettings). */
+  remindersSection?: React.ReactNode;
 }
 
 function getBmiStatus(bmiCategory: string, waistToHeightRatio?: number): { label: string; className: string } {
@@ -638,7 +642,7 @@ function ReminderSettings({
   );
 }
 
-export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, guestReportData, formStage, syncControl }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, guestReportData, formStage, syncControl, remindersSection }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -955,8 +959,14 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
         individual situation.
       </div>
 
-      {/* Reminder Settings — logged-in users only */}
-      {authState?.isLoggedIn && onReminderPreferenceChange && (
+      {/* Email reminders. The local-first builds pass remindersSection (the cloud
+          opt-in) and own the reminders UI; the server-backed ReminderSettings
+          (per-category prefs via the Shopify proxy) is the live Shopify widget's
+          version and would be a dead no-op on local-first, so the two are
+          mutually exclusive. */}
+      {remindersSection ? (
+        remindersSection
+      ) : authState?.isLoggedIn && onReminderPreferenceChange ? (
         <ReminderSettings
           preferences={reminderPreferences ?? []}
           onPreferenceChange={onReminderPreferenceChange}
@@ -964,7 +974,7 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
           sex={sex}
           age={results?.age}
         />
-      )}
+      ) : null}
 
       {guestReportData && <GuestEmailCapture hook={guestEmailHook} loginUrl={authState?.loginUrl} />}
 

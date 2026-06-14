@@ -46,10 +46,15 @@
 }
 .hr-sync-form .hr-sync-btn { margin-left: 0; align-self: flex-start; }
 .hr-sync-error { flex-basis: 100%; color: #b91c1c; font-size: 12.5px; margin-top: 6px; }
-/* Email-reminders toggle row, under the sync status line. */
+/* Email-reminders as its own plan section (moved out of the top sync line). */
+.hr-reminders-section { margin: 18px 0 12px; }
+.hr-reminders-heading {
+  font-size: 14px; font-weight: 700; color: #1c2b33; margin: 0 0 8px;
+}
+/* The control row itself. Sits in its own .hr-sync card now, so no top border
+   (that dashed rule was the divider when it nested under the status line). */
 .hr-reminders {
   flex-basis: 100%; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  margin-top: 6px; padding-top: 6px; border-top: 1px dashed #cfe3d6;
 }
 .hr-reminders .hr-sync-link { margin-left: 0; }
 .hr-reminders .hr-sync-status { font-size: 12.5px; }

@@ -26,7 +26,7 @@ import {
 } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
-import { SyncControl } from './sync-control';
+import { SyncControl, RemindersSection } from './sync-control';
 import { HistoryLightboxHost } from './history-lightbox';
 import { migrateLocalInto, BACKEND_KEY, type Backend } from './connect';
 
@@ -115,7 +115,10 @@ async function main() {
   createRoot(container).render(
     <React.StrictMode>
       <ErrorBoundary>
-        <HealthTool syncControl={({ hasData }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} />} />
+        <HealthTool
+          syncControl={({ hasData }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} />}
+          remindersSection={<RemindersSection backend={backend} />}
+        />
         <HistoryLightboxHost />
       </ErrorBoundary>
     </React.StrictMode>,
