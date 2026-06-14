@@ -8,7 +8,7 @@ This file provides context for Claude Code when working on this project.
 
 ## Architecture Map
 
-See [docs/architecture.html](docs/architecture.html) — single-page visual reference for every subsystem (auth flow, data sync, widget, chatbot pipeline, lab upload, reminders, A/B testing, blog, database schema) with SVG diagrams. Open in a browser. Update only when an architectural shape changes (new subsystem, new external service, restructured flow) — not per-commit.
+See [docs/architecture-v2.html](docs/architecture-v2.html) — single-page visual reference for every subsystem (auth flow, data sync, widget, chatbot pipeline, lab upload, reminders, A/B testing, blog, database schema) with SVG diagrams. Open in a browser. Update only when an architectural shape changes (new subsystem, new external service, restructured flow) — not per-commit.
 
 ## Health Algorithm Reference
 

@@ -274,7 +274,7 @@
 
 <h1 id="intro">Health Roadmap — Architecture (v2, local-first)</h1>
 <div class="meta">
-  Last updated 2026-06-13. <span class="pill">Live in production</span> — <code>/pages/roadmap</code> serves the v2 local-first build (<code>health-roadmap-727</code>). This page is the current source of truth for architecture. The legacy v1 (Supabase-backed) shape is preserved at <a href="architecture.html">architecture.html</a> for historical reference; the migration that produced v2 is logged in <a href="health-roadmap-v2.html">health-roadmap-v2.html</a> (decision record) and <a href="health-roadmap-v2-implementation.html">health-roadmap-v2-implementation.html</a> (build log).
+  Last updated 2026-06-15. <span class="pill">Live in production</span> — <code>/pages/roadmap</code> serves the v2 local-first build, and the thin server runs React Router 7 on Fly (<code>v361+</code>). This page is the single, self-contained source of truth for v2 architecture. The legacy v1 (Supabase-backed) shape is preserved at <a href="architecture.html">architecture.html</a> for historical reference; the blow-by-blow of the migration (dated decisions, deviations, build log) lives in <strong>git history</strong>, not in a companion doc.
 </div>
 
 <div class="card">
@@ -282,7 +282,7 @@
   <br><br>
   <strong>What this document is:</strong> a single visual map of how the v2 app fits together — the three build flavours, the local-first storage spine, the merge engine, the cloud backends, the thin server that survives, and the data path that deliberately never touches Brad's infrastructure.
   <br><br>
-  <strong>What it isn't:</strong> a changelog or a decision record. It captures architectural <em>shape</em> as it exists in code today. For <em>why</em> each decision was made, see <a href="health-roadmap-v2.html">health-roadmap-v2.html</a>; for agent-facing build/deploy instructions, see <a href="../CLAUDE.md">CLAUDE.md</a>.
+  <strong>What it isn't:</strong> a changelog or a build log. It captures architectural <em>shape</em> as it exists in code today. For the dated <em>why</em> behind each decision and the step-by-step migration record, read the git history; for agent-facing build/deploy instructions, see <a href="../CLAUDE.md">CLAUDE.md</a>.
 </div>
 
 <div class="callout">
@@ -365,7 +365,7 @@
 
   <!-- Brad's thin server -->
   <rect x="320" y="330" width="540" height="180" rx="12" fill="#fef5e7" stroke="#fd7e14" stroke-width="1.5" stroke-dasharray="4 3"/>
-  <text x="335" y="354" font-size="13" font-weight="600" fill="#9a3412">Brad's thin server — Fly.io (Remix) · optional · free · degrades gracefully</text>
+  <text x="335" y="354" font-size="13" font-weight="600" fill="#9a3412">Brad's thin server — Fly.io (React Router 7) · optional · free · degrades gracefully</text>
   <rect x="335" y="366" width="160" height="44" rx="6" fill="#ffffff" stroke="#fd7e14"/>
   <text x="415" y="385" font-size="11" font-weight="600" text-anchor="middle" fill="#111">/api/chat</text>
   <text x="415" y="399" font-size="9" text-anchor="middle" fill="#666">classifier→router→LLM</text>
@@ -455,13 +455,22 @@
   <div class="card">
     <h4>Server (thin, optional)</h4>
     <ul>
-      <li>Remix on Node 20, Fly.io <code>health-tool-app</code> (iad, 1 machine min)</li>
-      <li>Shopify App Remix SDK — app proxy + HMAC for the AI endpoints</li>
+      <li>React Router 7 on <code>node:22-alpine</code>, Fly.io <code>health-tool-app</code> (iad, 1 machine min)</li>
+      <li><code>@shopify/shopify-app-react-router</code> — app proxy + HMAC for the AI endpoints; Shopify Admin API <code>2026-04</code></li>
       <li>Anthropic (Claude Haiku 4.5) for chat + lab extraction</li>
       <li>Supabase (chat history + A/B only), Resend (reminders + ops digests), Klaviyo (email list)</li>
-      <li>discord.js gateway; Polaris admin app</li>
+      <li>discord.js gateway; admin app on <strong>Polaris web components</strong> (not Polaris React)</li>
     </ul>
   </div>
+</div>
+
+<h3>Server runtime — the RR7 migration (live)</h3>
+<p>The thin server was migrated <strong>Remix 2.x → React Router 7</strong> (Shopify's recommended path: <code>@shopify/shopify-app-react-router</code> + <code>react-router@7</code>, <code>shopify-api@13</code>, <code>session-storage-postgresql@6</code>, <code>@sentry/react-router</code>). The client widget never imported Remix, so the migration touched only <code>app/</code>: <code>json()</code> sites became <code>Response.json()</code> / <code>data()</code>, <code>RemixServer</code>→<code>ServerRouter</code>, and the admin UI moved off Polaris React onto Polaris web components. Shopify Admin API is on <code>2026-04</code>. RR7 is live in production (Fly <code>v361+</code>).</p>
+<div class="callout danger">
+  <strong>HIPAA scrub must survive the Docker image without the workspace.</strong> Sentry init runs in a root <code>instrument-scrub.mjs</code> loaded via <code>node --import</code> <em>outside</em> the bundle, so it cannot import the PHI-redaction helpers from <code>@roadmap/health-core</code> — <code>.dockerignore</code> excludes <code>node_modules/</code> and <code>dist/</code>, and nothing rebuilds health-core's <code>dist</code> in the image, so that import would crash the server on boot and take HIPAA scrubbing down with it. The file is therefore a self-contained plain-ESM copy (<code>COPY . .</code>, relative import, zero workspace/dist dependency), guarded by a 4-test parity suite (<code>instrument-scrub-parity.test.ts</code>) that fails CI if it drifts from health-core's <code>sentry-scrub.ts</code>.
+</div>
+<div class="callout danger">
+  <strong>Risky server deploys must use <code>--strategy canary</code>, not the default rolling deploy.</strong> The RR7 cutover crashed on boot (a transitive <code>@supabase/realtime-js</code> bump hard-threw on Node 20's missing native WebSocket; local Node 22 hid it). Fly's default <em>rolling</em> deploy + health checks did <strong>not</strong> protect against a boot crash — it updated <em>both</em> machines to the broken image and took production down. Recovery was <code>fly deploy --image &lt;prev&gt;</code>; the fix was <code>node:20-alpine</code> → <code>node:22-alpine</code>, redeployed via <code>fly deploy --strategy canary</code> (a throwaway canary machine is health-checked first, leaving the serving machines untouched if it fails).
 </div>
 
 <h2 id="builds">Builds &amp; flags</h2>
@@ -839,7 +848,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 <ul>
   <li><strong>Pages:</strong> <code>npm run build:pages</code> → commit + push <code>main</code> → GitHub Actions publishes <code>drbradstanfield.github.io/roadmap</code>. (A <code>dev</code> branch builds to a <code>/dev/</code> subpath, best-effort.)</li>
   <li><strong>Shopify widget:</strong> <code>shopify app config use shopify.app.toml</code> → <code>npm run build:shopify-prod</code> → strip <code>*.map</code> → <code>npx shopify app deploy --force</code>. Verify the banner is <code>health-roadmap-&lt;N&gt;</code> (prod), not <code>-dev-&lt;N&gt;</code>.</li>
-  <li><strong>Backend:</strong> from repo root, dereference the <code>docs/products.md</code> symlink (Fly's builders can't follow it), <code>fly deploy</code>, then <code>git checkout docs/products.md</code> to restore the symlink.</li>
+  <li><strong>Backend:</strong> from repo root, dereference the <code>docs/products.md</code> symlink (Fly's builders can't follow it), deploy, then <code>git checkout docs/products.md</code> to restore the symlink. Use <code>fly deploy --strategy canary</code> for any risky change — the default rolling strategy does not protect against a boot crash (see <a href="#gotchas">gotchas</a>).</li>
 </ul>
 <p>Rollback: the legacy <code>health-tool.js</code> still ships in the extension assets; reverting the <code>app-block.liquid</code> commit and redeploying restores the v1 widget.</p>
 
@@ -895,12 +904,13 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 <div class="callout danger"><strong>Build behaviour belongs in the module swap, not component conditionals.</strong> Keep export surfaces identical across the three builds so shared components compile everywhere and the legacy bundle stays byte-stable. The only exception is an inline fetch the shim can't see (e.g. <code>migrateGuestChat</code>), which gets a <code>LOCAL_FIRST</code>/<code>SHOPIFY_SURFACE</code> component gate.</div>
 <div class="callout danger"><strong>The Shopify config drifts.</strong> A bare <code>shopify app deploy</code> targets whatever config was last <code>config use</code>'d — a bare deploy once shipped to the dev app by mistake. Always <code>shopify app config use shopify.app.toml</code> first and verify the <code>health-roadmap-&lt;N&gt;</code> banner.</div>
 <div class="callout danger"><strong>Crons self-start on import.</strong> Importing any <code>*-cron.server.ts</code> (even to call its <code>stop*</code>) starts it. Don't import a cron module from a non-server context.</div>
+<div class="callout danger"><strong>Risky Fly deploys: use <code>--strategy canary</code>.</strong> The default rolling deploy + health checks does NOT protect against a boot crash — during the RR7 cutover it updated both machines to an image that crashed before binding <code>:3000</code> and took production down. Canary (or bluegreen) health-checks a throwaway machine first, so a failed boot never touches the serving machines. The class of failure (a transitive dep throwing on the container's Node version, invisible to a newer local Node) is exactly what a boot rehearsal — or canary — catches.</div>
 <div class="callout"><strong>CSS scoping while the legacy bundle still ships.</strong> Any changed shared selector must be scoped under <code>.health-tool</code>, or the stale <code>health-site-chat.css</code> can win by document order.</div>
 <div class="callout"><strong><code>docs/products.md</code> must stay a symlink (git mode 120000).</strong> The Fly deploy dereferences it for the Docker context and restores it with <code>git checkout</code>; if that restore is skipped, the next <code>git add</code> bakes the 680-line file into the repo and the chatbot's product context silently drifts.</div>
 <div class="callout"><strong>Google Drive refresh tokens need a <em>published</em> OAuth app.</strong> In Testing mode they expire after 7 days — prefer Dropbox as the default for exactly this reason.</div>
 
 <hr>
-<p class="meta">For the reasoning behind any decision here, see <a href="health-roadmap-v2.html">health-roadmap-v2.html</a> (decision record) and <a href="health-roadmap-v2-implementation.html">health-roadmap-v2-implementation.html</a> (build log). For agent-facing build/deploy instructions and the full gotcha list, see <a href="../CLAUDE.md">CLAUDE.md</a>.</p>
+<p class="meta">This is the single source of truth for v2 architecture. The reasoning behind each decision and the dated migration build log live in the repo's git history (the former <code>health-roadmap-v2.html</code> decision record and <code>health-roadmap-v2-implementation.html</code> build log were consolidated here and deleted on 2026-06-15). For agent-facing build/deploy instructions and the full gotcha list, see <a href="../CLAUDE.md">CLAUDE.md</a>.</p>
 
 </main>
 </div>
