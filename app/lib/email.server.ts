@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import { PAGES_APP_URL } from './local-first-route.server';
-import * as Sentry from '@sentry/remix';
+import * as Sentry from '@sentry/react-router';
 
 // ---------------------------------------------------------------------------
 // Resend client

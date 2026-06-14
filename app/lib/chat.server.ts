@@ -5,7 +5,7 @@
  * All user health data is assembled server-side — the client sends only the question.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import * as Sentry from '@sentry/remix';
+import * as Sentry from '@sentry/react-router';
 import fs from 'fs';
 import path from 'path';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';

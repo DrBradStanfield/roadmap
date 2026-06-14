@@ -4,4 +4,4 @@ webhooks_path = "/webhooks/app/uninstalled"
 
 [commands]
 predev = ""
-dev = "npm exec remix vite:dev"
+dev = "NODE_OPTIONS='--import ./instrument.server.mjs' npm exec react-router dev"

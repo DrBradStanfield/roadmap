@@ -3,7 +3,7 @@
  * Extracted from api.measurements, api.reminders, api.user-data to eliminate duplication.
  */
 
-import * as Sentry from '@sentry/remix';
+import * as Sentry from '@sentry/react-router';
 import { authenticate } from '../shopify.server';
 import { getOrCreateSupabaseUser, createUserClient } from './supabase.server';
 

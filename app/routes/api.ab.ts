@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs } from '@remix-run/node';
+import { type ActionFunctionArgs } from "react-router";
 import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { recordABEvent, type ABEventType } from '../lib/supabase.server';
@@ -18,14 +18,14 @@ export async function action({ request }: ActionFunctionArgs) {
   await authenticate.public.appProxy(request);
 
   if (isBotUA(request.headers.get('user-agent'))) {
-    return json({ success: false, error: 'bot' });
+    return Response.json({ success: false, error: 'bot' });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return json({ success: false, error: 'Invalid JSON' }, { status: 400 });
+    return Response.json({ success: false, error: 'Invalid JSON' }, { status: 400 });
   }
 
   const b = body as Record<string, unknown>;
@@ -35,16 +35,16 @@ export async function action({ request }: ActionFunctionArgs) {
     : null;
 
   if (!eventData || !eventType) {
-    return json({ success: false, error: 'Missing impression or conversion' }, { status: 400 });
+    return Response.json({ success: false, error: 'Missing impression or conversion' }, { status: 400 });
   }
 
   const parsed = abEventSchema.safeParse(eventData);
   if (!parsed.success) {
-    return json({ success: false, error: 'Invalid event data' }, { status: 400 });
+    return Response.json({ success: false, error: 'Invalid event data' }, { status: 400 });
   }
 
   if (!checkABRateLimit(parsed.data.visitorId)) {
-    return json({ success: false, error: 'Rate limited' }, { status: 429 });
+    return Response.json({ success: false, error: 'Rate limited' }, { status: 429 });
   }
 
   await recordABEvent(
@@ -54,5 +54,5 @@ export async function action({ request }: ActionFunctionArgs) {
     eventType!,
   );
 
-  return json({ success: true });
+  return Response.json({ success: true });
 }

@@ -14,7 +14,7 @@
  *   YOUTUBE_BOT_SUMMARY_EMAIL — recipient (defaults to brad@drstanfield.com)
  *   RESEND_API_KEY — already required for the reminder email path
  */
-import * as Sentry from '@sentry/remix';
+import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin, tryAcquireCronLock } from './supabase.server';
 import { sendEmail, escapeHtml } from './email.server';
 import { withTimeout, nzNowParts } from './cron-helpers.server';

@@ -1,102 +1,24 @@
 import { PassThrough } from "stream";
 import { renderToPipeableStream } from "react-dom/server";
-import { RemixServer } from "@remix-run/react";
-import {
-  createReadableStreamFromReadable,
-  type EntryContext,
-} from "@remix-run/node";
-import { isbot } from "isbot";
+import { ServerRouter, type EntryContext } from "react-router";
+import { createReadableStreamFromReadable } from "@react-router/node";
+import { isBotUA } from "./lib/bot-detect";
 import { addDocumentResponseHeaders } from "./shopify.server";
-import * as Sentry from "@sentry/remix";
+import * as Sentry from "@sentry/react-router";
 import { stopReminderV2Cron } from './lib/reminder-v2-cron.server';
 import { stopTrendingCron } from './lib/trending-cron.server';
 import { stopDiscordBot } from './lib/discord-bot.server';
 import { stopYouTubeBot } from './lib/youtube-bot.server';
 import { stopYouTubeBotSummaryCron } from './lib/youtube-bot-summary-cron.server';
 import { stopChatSummaryCron } from './lib/chat-summary-cron.server';
-import { scrubSensitiveData, scrubBreadcrumbData, scrubUrl } from '../packages/health-core/src/sentry-scrub';
 
-Sentry.init({
-  dsn: process.env.SENTRY_DSN,
-  tracesSampleRate: 0.2,
-  enabled: !!process.env.SENTRY_DSN,
-  ignoreErrors: [
-    // Shopify's privacy banner failing to reach their own analytics endpoint
-    /monorail-edge\.shopifysvc\.com/,
-    // UpPromote affiliate app: URIError from their getCookie on malformed cookie values
-    /getCookie.*uppromote/,
-  ],
-  denyUrls: [
-    // Shopify's privacy/cookie consent banner: URIError from decodeURIComponent on malformed cookies
-    /cdn\/shopifycloud\/privacy-banner/,
-  ],
-  beforeSend(event, hint) {
-    // Known Remix library bug: @remix-run/web-fetch doesn't check stream.locked before
-    // calling cancel() on abort. Fires when a user closes the tab while request.json()
-    // holds a reader on the body stream. Confirmed benign — user is already gone, no
-    // data affected. Drop only when the stack confirms it originates in the library.
-    const err = hint?.originalException;
-    if (
-      err instanceof TypeError &&
-      err.message.includes('Cannot cancel a stream that already has a reader') &&
-      err.stack?.includes('@remix-run/web-fetch')
-    ) {
-      return null;
-    }
+// NOTE: Sentry.init (with the HIPAA PII/PHI scrubbing) now lives in instrument.server.mjs,
+// loaded via `node --import` before this bundle. See that file. Here we only consume the
+// already-initialized SDK for error capture + the RR7 handleError hook.
 
-    // Scrub PII/PHI from event data before it leaves the server
-    if (event.extra) {
-      event.extra = scrubSensitiveData(event.extra) as Record<string, unknown>;
-    }
-    if (event.contexts) {
-      event.contexts = scrubSensitiveData(event.contexts) as Record<string, Record<string, unknown>>;
-    }
-    if (event.request) {
-      // Request body contains health data — remove entirely
-      delete event.request.data;
-      if (event.request.url) {
-        event.request.url = scrubUrl(event.request.url);
-      }
-      if (event.request.query_string) {
-        event.request.query_string = scrubUrl('?' + event.request.query_string).slice(1);
-      }
-      delete event.request.cookies;
-      if (event.request.headers) {
-        delete (event.request.headers as Record<string, string>).cookie;
-      }
-    }
-    if (event.breadcrumbs) {
-      event.breadcrumbs = event.breadcrumbs.map(b => {
-        if ((b.category === 'fetch' || b.category === 'xhr' || b.category === 'http') && b.data) {
-          return { ...b, data: scrubBreadcrumbData(b.data as Record<string, unknown>) };
-        }
-        if (b.category === 'console') {
-          return {
-            ...b,
-            message: b.message ? '[Filtered]' : b.message,
-            data: b.data ? scrubSensitiveData(b.data) as Record<string, unknown> : b.data,
-          };
-        }
-        return b;
-      });
-    }
-    return event;
-  },
-  beforeBreadcrumb(breadcrumb) {
-    if ((breadcrumb.category === 'fetch' || breadcrumb.category === 'xhr' || breadcrumb.category === 'http') && breadcrumb.data) {
-      breadcrumb.data = scrubBreadcrumbData(breadcrumb.data as Record<string, unknown>);
-    }
-    if (breadcrumb.category === 'console') {
-      if (breadcrumb.message) breadcrumb.message = '[Filtered]';
-      if (breadcrumb.data) {
-        breadcrumb.data = scrubSensitiveData(breadcrumb.data) as Record<string, unknown>;
-      }
-    }
-    return breadcrumb;
-  },
-});
-
-// Graceful shutdown: stop the cron job and allow in-flight requests to drain
+// Graceful shutdown: stop the cron jobs/bots and allow in-flight requests to drain.
+// The 6 server modules self-start via top-level side-effects when their *.server modules
+// are first imported by routes; these stop* handlers tear them down on SIGTERM.
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully...');
   stopReminderV2Cron();
@@ -113,22 +35,32 @@ process.on('SIGTERM', () => {
 
 export const streamTimeout = 5000;
 
+// RR7 error hook — the required wiring for server-side loader/action error capture. The old
+// @sentry/remix integration auto-wired this; RR7 needs this explicit export. Errors are
+// scrubbed in instrument.server.mjs before send.
+export function handleError(error: unknown, { request }: { request: Request }) {
+  // Don't report aborted requests (client navigated away).
+  if (!request.signal.aborted) {
+    Sentry.captureException(error);
+  }
+}
+
 export default async function handleRequest(
   request: Request,
   responseStatusCode: number,
   responseHeaders: Headers,
-  remixContext: EntryContext
+  reactRouterContext: EntryContext
 ) {
   addDocumentResponseHeaders(request, responseHeaders);
   const userAgent = request.headers.get("user-agent");
-  const callbackName = isbot(userAgent ?? '')
+  const callbackName = isBotUA(userAgent)
     ? "onAllReady"
     : "onShellReady";
 
   return new Promise((resolve, reject) => {
     const { pipe, abort } = renderToPipeableStream(
-      <RemixServer
-        context={remixContext}
+      <ServerRouter
+        context={reactRouterContext}
         url={request.url}
       />,
       {

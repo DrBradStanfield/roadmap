@@ -20,7 +20,7 @@
  */
 import fs from 'fs';
 import path from 'path';
-import * as Sentry from '@sentry/remix';
+import * as Sentry from '@sentry/react-router';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
 import { sanitizeForRouter } from './chat-router.server';
 

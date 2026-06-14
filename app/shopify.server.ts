@@ -1,15 +1,15 @@
-import "@shopify/shopify-app-remix/adapters/node";
+import "@shopify/shopify-app-react-router/adapters/node";
 import {
   ApiVersion,
   AppDistribution,
   shopifyApp,
-} from "@shopify/shopify-app-remix/server";
+} from "@shopify/shopify-app-react-router/server";
 import { PostgreSQLSessionStorage } from "@shopify/shopify-app-session-storage-postgresql";
 
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
-  apiVersion: ApiVersion.October25,
+  apiVersion: ApiVersion.April26,
   scopes: process.env.SCOPES?.split(","),
   appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
@@ -17,17 +17,16 @@ const shopify = shopifyApp({
     process.env.SESSION_DATABASE_URL!,
   ),
   distribution: AppDistribution.AppStore,
-  future: {
-    unstable_newEmbeddedAuthStrategy: true,
-    removeRest: true,
-  },
+  // The old `future` flags are gone in @shopify/shopify-app-react-router v1:
+  // the new embedded auth strategy is the default, and REST is removed by default
+  // (GraphQL-only). No flags needed.
   ...(process.env.SHOP_CUSTOM_DOMAIN
     ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
     : {}),
 });
 
 export default shopify;
-export const apiVersion = ApiVersion.October25;
+export const apiVersion = ApiVersion.April26;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 export const authenticate = shopify.authenticate;
 export const unauthenticated = shopify.unauthenticated;

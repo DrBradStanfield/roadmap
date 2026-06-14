@@ -1,5 +1,5 @@
-import { json, type ActionFunctionArgs } from '@remix-run/node';
-import * as Sentry from '@sentry/remix';
+import { type ActionFunctionArgs } from "react-router";
+import * as Sentry from '@sentry/react-router';
 import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { sendFeedbackEmail } from '../lib/email.server';
@@ -42,7 +42,7 @@ const feedbackSchema = z.object({
 
 export async function action({ request }: ActionFunctionArgs) {
   if (request.method !== 'POST') {
-    return json({ success: false, error: 'Method not allowed' }, { status: 405 });
+    return Response.json({ success: false, error: 'Method not allowed' }, { status: 405 });
   }
 
   // HMAC verification — proves request came through Shopify app proxy
@@ -50,7 +50,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const ip = getClientIp(request);
   if (isRateLimited(ip)) {
-    return json({ success: false, error: 'Too many requests. Please try again later.' }, { status: 429 });
+    return Response.json({ success: false, error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
 
   try {
@@ -58,12 +58,12 @@ export async function action({ request }: ActionFunctionArgs) {
     const parsed = feedbackSchema.safeParse(body);
 
     if (!parsed.success) {
-      return json({ success: false, error: 'Invalid input' }, { status: 400 });
+      return Response.json({ success: false, error: 'Invalid input' }, { status: 400 });
     }
 
     // Honeypot triggered — silently succeed without sending
     if (parsed.data.website) {
-      return json({ success: true });
+      return Response.json({ success: true });
     }
 
     // Extract optional customer ID for context
@@ -75,13 +75,13 @@ export async function action({ request }: ActionFunctionArgs) {
     recordRequest(ip);
 
     if (!sent) {
-      return json({ success: false, error: 'Failed to send feedback' }, { status: 500 });
+      return Response.json({ success: false, error: 'Failed to send feedback' }, { status: 500 });
     }
 
-    return json({ success: true });
+    return Response.json({ success: true });
   } catch (error) {
     console.error('Error processing feedback:', error);
     Sentry.captureException(error);
-    return json({ success: false, error: 'Server error' }, { status: 500 });
+    return Response.json({ success: false, error: 'Server error' }, { status: 500 });
   }
 }

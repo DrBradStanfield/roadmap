@@ -6,8 +6,8 @@
  * POST /api/chat { message, conversationId? } — Send message, get response
  * DELETE /api/chat { conversationId }    — Delete conversation
  */
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from '@remix-run/node';
-import * as Sentry from '@sentry/remix';
+import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
+import * as Sentry from '@sentry/react-router';
 import { getAuthenticatedUser, checkSubscriptionFromTags, getCustomerOrders, getClientIp } from '../lib/route-helpers.server';
 import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
@@ -130,7 +130,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const sessionToken = url.searchParams.get('sessionToken');
     const hasCustomerId = !!url.searchParams.get('logged_in_customer_id');
     if (!hasCustomerId && !sessionToken) {
-      return json({
+      return Response.json({
         success: true,
         conversations: [],
         isGuest: true,
@@ -142,7 +142,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       auth = await getAuthOrGuest(request, sessionToken, url.searchParams.get('localFirst') === '1');
     } catch (err) {
       if (err instanceof GuestRateLimitError) {
-        return json({ success: false, error: 'rate_limited' }, { status: 429 });
+        return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
       }
       throw err;
     }
@@ -158,10 +158,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
       if (error) {
         console.error('Error loading chat messages:', error);
-        return json({ success: false, error: 'Failed to load messages' }, { status: 500 });
+        return Response.json({ success: false, error: 'Failed to load messages' }, { status: 500 });
       }
 
-      return json({
+      return Response.json({
         success: true,
         messages: (data ?? []).map((m: { id: string; role: string; content: string; created_at: string }) => ({
           id: m.id,
@@ -181,7 +181,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     if (convError) {
       console.error('Error listing conversations:', convError);
-      return json({ success: false, error: 'Failed to load conversations' }, { status: 500 });
+      return Response.json({ success: false, error: 'Failed to load conversations' }, { status: 500 });
     }
 
     // Off the response path: load profile + refresh subscription plan from
@@ -201,7 +201,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       });
     }
 
-    return json({
+    return Response.json({
       success: true,
       conversations: (convData ?? []).map((c: { id: string; title: string; created_at: string; updated_at: string }) => ({
         id: c.id,
@@ -213,11 +213,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
   } catch (error) {
     if (error instanceof GuestRateLimitError) {
-      return json({ success: false, error: 'rate_limited' }, { status: 429 });
+      return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
     }
     console.error('Chat loader error:', error);
     Sentry.captureException(error, { tags: { feature: 'chat' } });
-    return json({ success: false, error: 'Internal error' }, { status: 500 });
+    return Response.json({ success: false, error: 'Internal error' }, { status: 500 });
   }
 }
 
@@ -229,7 +229,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const t0 = Date.now();
   try {
     if (process.env.CHAT_ENABLED === 'false') {
-      return json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
+      return Response.json({ success: false, error: 'Chat is temporarily disabled' }, { status: 503 });
     }
 
     const body = await request.json();
@@ -239,7 +239,7 @@ export async function action({ request }: ActionFunctionArgs) {
       auth = await getAuthOrGuest(request, body.sessionToken, body.localFirst === true);
     } catch (err) {
       if (err instanceof GuestRateLimitError) {
-        return json({ success: false, error: 'rate_limited' }, { status: 429 });
+        return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
       }
       throw err;
     }
@@ -248,7 +248,7 @@ export async function action({ request }: ActionFunctionArgs) {
     if (request.method === 'DELETE') {
       const { conversationId } = body;
       if (!conversationId || typeof conversationId !== 'string') {
-        return json({ success: false, error: 'conversationId required' }, { status: 400 });
+        return Response.json({ success: false, error: 'conversationId required' }, { status: 400 });
       }
 
       const { error } = await auth.client
@@ -258,21 +258,21 @@ export async function action({ request }: ActionFunctionArgs) {
 
       if (error) {
         console.error('Error deleting conversation:', error);
-        return json({ success: false, error: 'Failed to delete' }, { status: 500 });
+        return Response.json({ success: false, error: 'Failed to delete' }, { status: 500 });
       }
 
       logAudit(auth.userId, 'CHAT_CONVERSATION_DELETED', 'chat', conversationId);
-      return json({ success: true });
+      return Response.json({ success: true });
     }
 
     // ----- POST — send message -----
     const { message, conversationId } = body;
 
     if (!message || typeof message !== 'string') {
-      return json({ success: false, error: 'message required' }, { status: 400 });
+      return Response.json({ success: false, error: 'message required' }, { status: 400 });
     }
     if (message.length > MAX_MESSAGE_LENGTH) {
-      return json({ success: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)` }, { status: 400 });
+      return Response.json({ success: false, error: `Message too long (max ${MAX_MESSAGE_LENGTH} chars)` }, { status: 400 });
     }
 
     // Sanitize message for router (strips control chars, caps at 2000 chars)
@@ -308,7 +308,7 @@ export async function action({ request }: ActionFunctionArgs) {
             messageLength: message.length,
           },
         });
-        return json({
+        return Response.json({
           success: true,
           conversationId,
           messageId: null,
@@ -382,7 +382,7 @@ export async function action({ request }: ActionFunctionArgs) {
         tags: { feature: 'chat' },
         extra: { isGuest: auth.isGuest, userId: auth.userId },
       });
-      return json({ success: false, error: 'Could not load health data' }, { status: 500 });
+      return Response.json({ success: false, error: 'Could not load health data' }, { status: 500 });
     }
 
     // Create or validate conversation
@@ -402,7 +402,7 @@ export async function action({ request }: ActionFunctionArgs) {
           tags: { feature: 'chat' },
           extra: { userId: auth.userId, dbError: convError?.message },
         });
-        return json({ success: false, error: 'Failed to create conversation' }, { status: 500 });
+        return Response.json({ success: false, error: 'Failed to create conversation' }, { status: 500 });
       }
       activeConversationId = conv.id;
     }
@@ -424,7 +424,7 @@ export async function action({ request }: ActionFunctionArgs) {
         tags: { feature: 'chat' },
         extra: { userId: auth.userId, conversationId: activeConversationId, dbError: userMsgError.message },
       });
-      return json({ success: false, error: 'Failed to save message' }, { status: 500 });
+      return Response.json({ success: false, error: 'Failed to save message' }, { status: 500 });
     }
 
     // Check for document content match (uses full docs from context, no extra DB call)
@@ -571,7 +571,7 @@ export async function action({ request }: ActionFunctionArgs) {
       isGuest: auth.isGuest,
     }));
 
-    return json({
+    return Response.json({
       success: true,
       conversationId: activeConversationId,
       messageId: null,
@@ -580,10 +580,10 @@ export async function action({ request }: ActionFunctionArgs) {
     });
   } catch (error) {
     if (error instanceof GuestRateLimitError) {
-      return json({ success: false, error: 'rate_limited' }, { status: 429 });
+      return Response.json({ success: false, error: 'rate_limited' }, { status: 429 });
     }
     console.error('Chat action error:', error);
     Sentry.captureException(error, { tags: { feature: 'chat' } });
-    return json({ success: false, error: 'Failed to process message' }, { status: 500 });
+    return Response.json({ success: false, error: 'Failed to process message' }, { status: 500 });
   }
 }

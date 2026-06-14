@@ -1,6 +1,5 @@
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import type { LoaderFunctionArgs } from "react-router";
+import { data, useLoaderData } from "react-router";
 import { Page, Layout, Card, BlockStack, Text, Banner } from "@shopify/polaris";
 
 import { authenticate } from "../shopify.server";
@@ -12,13 +11,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const startedAt = new Date().toISOString();
   try {
     await runYouTubeBotSummaryOnce();
-    return json({
+    return data({
       ok: true,
       startedAt,
       completedAt: new Date().toISOString(),
     });
   } catch (error) {
-    return json({
+    return data({
       ok: false,
       startedAt,
       completedAt: new Date().toISOString(),

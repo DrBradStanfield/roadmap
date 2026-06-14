@@ -10,7 +10,7 @@
  * routes to the appropriate handler in a single LLM call.
  */
 import { z } from 'zod';
-import * as Sentry from '@sentry/remix';
+import * as Sentry from '@sentry/react-router';
 import {
   UNIFIED_SYSTEM_PROMPT,
   EXTRACTION_MODEL,

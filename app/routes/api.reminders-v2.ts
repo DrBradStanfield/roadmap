@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
+import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { z } from 'zod';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
@@ -56,25 +56,25 @@ const bodySchema = z.union([
 ]);
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  return json({ error: 'POST only' }, { status: 405, headers: corsHeaders(request) });
+  return Response.json({ error: 'POST only' }, { status: 405, headers: corsHeaders(request) });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
   const headers = corsHeaders(request);
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
-  if (request.method !== 'POST') return json({ error: 'POST only' }, { status: 405, headers });
+  if (request.method !== 'POST') return Response.json({ error: 'POST only' }, { status: 405, headers });
 
   const origin = request.headers.get('Origin');
   if (!origin || !ALLOWED_ORIGINS.has(origin)) {
-    return json({ error: 'Origin not allowed' }, { status: 403, headers });
+    return Response.json({ error: 'Origin not allowed' }, { status: 403, headers });
   }
 
   if (!allowRequest(getClientIp(request))) {
-    return json({ error: 'Too many requests' }, { status: 429, headers });
+    return Response.json({ error: 'Too many requests' }, { status: 429, headers });
   }
 
   const parsed = bodySchema.safeParse(await parseSimpleRequestJson(request));
-  if (!parsed.success) return json({ error: 'Invalid input' }, { status: 400, headers });
+  if (!parsed.success) return Response.json({ error: 'Invalid input' }, { status: 400, headers });
   const input = parsed.data;
 
   if (input.op === 'optin') {
@@ -84,13 +84,13 @@ export async function action({ request }: ActionFunctionArgs) {
     } else if (input.accessToken) {
       proof = { provider: input.provider, accessToken: input.accessToken } as ProviderProof;
     }
-    if (!proof) return json({ error: 'Missing provider proof' }, { status: 400, headers });
+    if (!proof) return Response.json({ error: 'Missing provider proof' }, { status: 400, headers });
 
     const verified = await verifyProviderEmail(proof);
     if ('reason' in verified) {
       // The server knows WHY (e.g. the GitHub PAT lacks the email permission);
       // pass the machine-readable reason so the client never has to guess.
-      return json(
+      return Response.json(
         { error: 'Could not verify your email with the provider', reason: verified.reason },
         { status: 401, headers },
       );
@@ -99,16 +99,16 @@ export async function action({ request }: ActionFunctionArgs) {
     const token = await upsertOptin(verified.email, input.provider, input.schedule);
     // Fire-and-forget — Klaviyo must never block or fail the reminders opt-in.
     if (input.marketingEmail) void subscribeToKlaviyo({ email: input.marketingEmail });
-    return json({ token, email: verified.email }, { headers });
+    return Response.json({ token, email: verified.email }, { headers });
   }
 
   if (input.op === 'update') {
     const found = await updateScheduleByToken(input.token, input.schedule);
-    if (!found) return json({ error: 'Unknown token' }, { status: 404, headers });
-    return json({ ok: true }, { headers });
+    if (!found) return Response.json({ error: 'Unknown token' }, { status: 404, headers });
+    return Response.json({ ok: true }, { headers });
   }
 
   // cancel — idempotent: cancelling an already-gone opt-in succeeds.
   await deleteByToken(input.token);
-  return json({ ok: true }, { headers });
+  return Response.json({ ok: true }, { headers });
 }

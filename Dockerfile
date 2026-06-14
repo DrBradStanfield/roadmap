@@ -17,4 +17,7 @@ COPY . .
 
 RUN npm run build
 
+# `npm run start` carries NODE_OPTIONS='--import ./instrument.server.mjs' inline so Sentry
+# (with the HIPAA scrubbing) initializes before the RR7 server bundle loads. It is scoped to
+# the start script — NOT a Dockerfile-wide ENV — so it never runs during `npm run build` above.
 CMD ["npm", "run", "start"]

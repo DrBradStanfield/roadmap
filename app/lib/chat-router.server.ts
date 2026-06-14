@@ -9,7 +9,7 @@
 import fs from 'fs';
 import path from 'path';
 import { z } from 'zod';
-import * as Sentry from '@sentry/remix';
+import * as Sentry from '@sentry/react-router';
 import { callAnthropicWithUsage, extractJsonObject, type AnthropicUsage } from './anthropic.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 

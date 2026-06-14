@@ -13,7 +13,7 @@
  * '1970-01-01' sentinel seed, and skip-reason counters so a 0-send day is
  * explainable rather than silent.
  */
-import * as Sentry from '@sentry/remix';
+import * as Sentry from '@sentry/react-router';
 import { GROUP_COOLDOWNS, getCategoryGroup, type ReminderCategory } from '../../packages/health-core/src/reminders';
 import { buildReminderV2EmailHtml, sendReminderEmail } from './email.server';
 import { tryAcquireCronLock } from './supabase.server';

@@ -13,7 +13,7 @@
  * Mirrors the architecture of reminder-cron.server.ts: setInterval at hourly
  * cadence, processes on first tick ≥ TARGET_HOUR_NZ, distributed lock via Supabase.
  */
-import * as Sentry from '@sentry/remix';
+import * as Sentry from '@sentry/react-router';
 import { unauthenticated } from '../shopify.server';
 import { tryAcquireCronLock } from './supabase.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';

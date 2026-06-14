@@ -27,7 +27,7 @@
  */
 import fs from 'fs';
 import path from 'path';
-import * as Sentry from '@sentry/remix';
+import * as Sentry from '@sentry/react-router';
 import { supabaseAdmin } from './supabase.server';
 import { classifyMessage, shouldFireRouter } from './chat-classifier.server';
 import { routeQuery, sanitizeForRouter } from './chat-router.server';

@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from '@remix-run/node';
+import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { z } from 'zod';
 import { createRateLimiter } from '../lib/rate-limiter';
 import { ALLOWED_ORIGINS, corsHeaders, getClientIp, parseSimpleRequestJson } from '../lib/local-first-route.server';
@@ -40,7 +40,7 @@ const bodySchema = z.union([
 ]);
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  return json({ error: 'POST only' }, { status: 405, headers: corsHeaders(request) });
+  return Response.json({ error: 'POST only' }, { status: 405, headers: corsHeaders(request) });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -49,27 +49,27 @@ export async function action({ request }: ActionFunctionArgs) {
   // route handlers run — see the body-parse comment) but kept in case the
   // server stack ever changes.
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
-  if (request.method !== 'POST') return json({ error: 'POST only' }, { status: 405, headers });
+  if (request.method !== 'POST') return Response.json({ error: 'POST only' }, { status: 405, headers });
 
   // Cross-origin callers must be on the allow-list (browsers enforce the CORS
   // response; this server-side check also rejects spoofed/missing origins).
   const origin = request.headers.get('Origin');
   if (!origin || !ALLOWED_ORIGINS.has(origin)) {
-    return json({ error: 'Origin not allowed' }, { status: 403, headers });
+    return Response.json({ error: 'Origin not allowed' }, { status: 403, headers });
   }
 
   if (!allowRequest(getClientIp(request))) {
-    return json({ error: 'Too many requests' }, { status: 429, headers });
+    return Response.json({ error: 'Too many requests' }, { status: 429, headers });
   }
 
   const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_DRIVE_SECRET;
   if (!clientId || !clientSecret) {
-    return json({ error: 'Google Drive exchange is not configured' }, { status: 503, headers });
+    return Response.json({ error: 'Google Drive exchange is not configured' }, { status: 503, headers });
   }
 
   const parsed = bodySchema.safeParse(await parseSimpleRequestJson(request));
-  if (!parsed.success) return json({ error: 'Invalid input' }, { status: 400, headers });
+  if (!parsed.success) return Response.json({ error: 'Invalid input' }, { status: 400, headers });
 
   const params = new URLSearchParams({ client_id: clientId, client_secret: clientSecret });
   if (parsed.data.grantType === 'code') {
@@ -92,14 +92,14 @@ export async function action({ request }: ActionFunctionArgs) {
   if (!googleRes.ok) {
     // Pass Google's machine-readable error through (e.g. invalid_grant so the
     // client knows to re-auth) — never log it (it can reference the token).
-    return json(
+    return Response.json(
       { error: String(payload.error ?? 'exchange_failed'), errorDescription: String(payload.error_description ?? '') },
       { status: googleRes.status, headers },
     );
   }
 
   // Whitelist the fields the client needs — nothing else passes through.
-  return json(
+  return Response.json(
     {
       accessToken: payload.access_token,
       refreshToken: payload.refresh_token, // present on code exchange only

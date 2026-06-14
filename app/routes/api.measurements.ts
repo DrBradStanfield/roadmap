@@ -1,5 +1,5 @@
-import { json, type ActionFunctionArgs } from '@remix-run/node';
-import * as Sentry from '@sentry/remix';
+import { type ActionFunctionArgs } from "react-router";
+import * as Sentry from '@sentry/react-router';
 import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
@@ -24,21 +24,21 @@ async function handleKlaviyoCapture(data: unknown) {
   try {
     const parsed = klaviyoCaptureSchema.safeParse(data);
     if (!parsed.success) {
-      return json({ success: false, error: 'Invalid request data' }, { status: 400 });
+      return Response.json({ success: false, error: 'Invalid request data' }, { status: 400 });
     }
     const { email } = parsed.data;
     if (!checkGuestReportLimit(email.toLowerCase())) {
-      return json({ success: false, error: 'Email limit reached. Try again tomorrow.' }, { status: 429 });
+      return Response.json({ success: false, error: 'Email limit reached. Try again tomorrow.' }, { status: 429 });
     }
     // Email-only subscribe — no `properties`, so subscribeToKlaviyo skips the
     // profile-properties step entirely. Fire-and-forget so a Klaviyo hiccup
     // never blocks the user's plan.
     subscribeToKlaviyo({ email }).catch(() => {});
-    return json({ success: true });
+    return Response.json({ success: true });
   } catch (error) {
     console.error('Klaviyo capture error:', error);
     Sentry.captureException(error, { tags: { feature: 'klaviyo_capture' } });
-    return json({ success: false, error: 'Failed to capture email' }, { status: 500 });
+    return Response.json({ success: false, error: 'Failed to capture email' }, { status: 500 });
   }
 }
 
@@ -51,5 +51,5 @@ export async function action({ request }: ActionFunctionArgs) {
   if (body.klaviyoCapture) {
     return handleKlaviyoCapture(body.klaviyoCapture);
   }
-  return json({ success: false, error: 'Unsupported request' }, { status: 400 });
+  return Response.json({ success: false, error: 'Unsupported request' }, { status: 400 });
 }

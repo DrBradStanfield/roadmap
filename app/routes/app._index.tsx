@@ -1,6 +1,5 @@
-import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import type { LoaderFunctionArgs } from "react-router";
+import { data, useLoaderData } from "react-router";
 import {
   Page,
   Layout,
@@ -43,10 +42,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   try {
     const stats = await getDashboardStats();
-    return json({ stats, error: null });
+    return data({ stats, error: null });
   } catch (e) {
     console.error("Dashboard stats error:", e);
-    return json({
+    return data({
       stats: null,
       error: "Failed to load dashboard stats. Check Supabase configuration.",
     });

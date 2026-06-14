@@ -1,6 +1,5 @@
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { json } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
+import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
+import { data, useLoaderData, useSubmit, useNavigation } from "react-router";
 import { useState } from "react";
 import { z } from "zod";
 import {
@@ -133,10 +132,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       if (r) resultsMap[t.id] = r;
     });
     await Promise.all(resultPromises);
-    return json({ tests, resultsMap, error: null });
+    return data({ tests, resultsMap, error: null });
   } catch (e) {
     console.error("AB testing dashboard error:", e);
-    return json({ tests: [], resultsMap: {}, error: "Failed to load A/B tests." });
+    return data({ tests: [], resultsMap: {}, error: "Failed to load A/B tests." });
   }
 };
 
@@ -160,15 +159,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         });
       } catch (e) {
         const msg = e instanceof z.ZodError ? e.issues[0]?.message : 'Invalid test data';
-        return json({ success: false, error: msg });
+        return data({ success: false, error: msg });
       }
       const test = await createABTest(parsed.name, parsed.target, parsed.variants);
-      return json({ success: !!test, error: test ? null : 'Failed to create test' });
+      return data({ success: !!test, error: test ? null : 'Failed to create test' });
     }
 
     case 'activate': {
       const testId = formData.get('testId') as string;
-      if (!testId) return json({ success: false, error: 'Missing testId' });
+      if (!testId) return data({ success: false, error: 'Missing testId' });
 
       // Parallel: fetch test data, active tests, and shop ID simultaneously
       const [test, activeTests, shopId] = await Promise.all([
@@ -176,12 +175,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         getActiveABTests(),
         getShopId(admin),
       ]);
-      if (!test) return json({ success: false, error: 'Test not found' });
+      if (!test) return data({ success: false, error: 'Test not found' });
 
       // Guard: only one active test per target element
       const conflict = activeTests.find(t => t.target === test.target && t.id !== testId);
       if (conflict) {
-        return json({ success: false, error: `"${conflict.name}" already targets ${test.target}. Pause it first.` });
+        return data({ success: false, error: `"${conflict.name}" already targets ${test.target}. Pause it first.` });
       }
 
       await updateABTestStatus(testId, 'active');
@@ -189,15 +188,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const allActive = await getActiveABTests();
       const metafieldResult = await writeABMetafield(admin, shopId, allActive);
       if (metafieldResult.error) {
-        return json({ success: true, metafieldError: metafieldResult.error });
+        return data({ success: true, metafieldError: metafieldResult.error });
       }
-      return json({ success: true });
+      return data({ success: true });
     }
 
     case 'pause':
     case 'complete': {
       const testId = formData.get('testId') as string;
-      if (!testId) return json({ success: false, error: 'Missing testId' });
+      if (!testId) return data({ success: false, error: 'Missing testId' });
       const status: ABTestStatus = intent === 'complete' ? 'completed' : 'paused';
       const [, shopId] = await Promise.all([
         updateABTestStatus(testId, status),
@@ -208,11 +207,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const metafieldResult = allActive.length
         ? await writeABMetafield(admin, shopId, allActive)
         : await deleteABMetafield(admin, shopId);
-      return json({ success: true, metafieldError: metafieldResult.error });
+      return data({ success: true, metafieldError: metafieldResult.error });
     }
 
     default:
-      return json({ success: false, error: 'Unknown intent' });
+      return data({ success: false, error: 'Unknown intent' });
   }
 };
 

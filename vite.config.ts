@@ -1,13 +1,12 @@
-import { vitePlugin as remix } from "@remix-run/dev";
-import { installGlobals } from "@remix-run/node";
+import { reactRouter } from "@react-router/dev/vite";
+import { sentryReactRouter, type SentryReactRouterBuildOptions } from "@sentry/react-router";
 import { defineConfig, type UserConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
-installGlobals({ nativeFetch: true });
-
 // Related: https://github.com/remix-run/remix/issues/2835#issuecomment-1144102176
-// Replace the HOST env var with SHOPIFY_APP_URL so that it doesn't break the remix server. The CLI will eventually
-// stop passing in HOST, so we can remove this workaround after the next major release.
+// Replace the HOST env var with SHOPIFY_APP_URL so that it doesn't break the Vite server.
+// The CLI will eventually stop passing in HOST, so we can remove this workaround after
+// the next major release.
 if (
   process.env.HOST &&
   (!process.env.SHOPIFY_APP_URL ||
@@ -37,7 +36,19 @@ if (host === "localhost") {
   };
 }
 
-export default defineConfig({
+// Sentry source-map upload runs only when an auth token is present (local deploy
+// step / CI). Without it, the plugin is a no-op so local + Fly builds stay green.
+const sentryConfig: SentryReactRouterBuildOptions = {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  // Hidden source maps: uploaded to Sentry, never shipped to the client bundle.
+  unstable_sentryVitePluginOptions: {
+    sourcemaps: { filesToDeleteAfterUpload: ["**/*.map"] },
+  },
+};
+
+export default defineConfig((config) => ({
   server: {
     allowedHosts: [host],
     cors: {
@@ -51,17 +62,8 @@ export default defineConfig({
     },
   },
   plugins: [
-    remix({
-      ignoredRouteFiles: ["**/.*"],
-      future: {
-        v3_fetcherPersist: true,
-        v3_relativeSplatPath: true,
-        v3_throwAbortReason: true,
-        v3_lazyRouteDiscovery: true,
-        v3_singleFetch: false,
-        v3_routeConfig: true,
-      },
-    }),
+    reactRouter(),
+    sentryReactRouter(sentryConfig, config),
     tsconfigPaths(),
   ],
   build: {
@@ -70,4 +72,4 @@ export default defineConfig({
   optimizeDeps: {
     include: ["@shopify/app-bridge-react", "@shopify/polaris"],
   },
-}) satisfies UserConfig;
+}) satisfies UserConfig);

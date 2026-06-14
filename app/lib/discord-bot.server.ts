@@ -15,7 +15,7 @@ import {
   type Message,
   type OmitPartialGroupDMChannel,
 } from 'discord.js';
-import * as Sentry from '@sentry/remix';
+import * as Sentry from '@sentry/react-router';
 import { platformChatCompletion } from './platform-chat.server';
 import { findDuplicateReply } from './chat-dedup.server';
 import { sleep } from './cron-helpers.server';

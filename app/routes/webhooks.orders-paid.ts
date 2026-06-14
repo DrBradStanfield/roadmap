@@ -6,8 +6,8 @@
  *
  * Returns 500 on transient errors so Shopify retries the webhook.
  */
-import type { ActionFunctionArgs } from '@remix-run/node';
-import * as Sentry from '@sentry/remix';
+import type { ActionFunctionArgs } from 'react-router';
+import * as Sentry from '@sentry/react-router';
 import { authenticate } from '../shopify.server';
 import { addMessageCredits, getUserIdByCustomerId, logAudit } from '../lib/supabase.server';
 import { VARIANT_CREDIT_MAP } from '../lib/message-packs';

@@ -7,6 +7,7 @@ dist-pages/
 _site/
 build/
 .cache/
+.react-router/
 *.log
 .DS_Store
 .shopify/

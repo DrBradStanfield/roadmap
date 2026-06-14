@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/remix';
+import * as Sentry from '@sentry/react-router';
 
 const KLAVIYO_API_KEY = process.env.KLAVIYO_API_KEY;
 const KLAVIYO_LIST_ID = process.env.KLAVIYO_LIST_ID;
