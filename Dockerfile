@@ -1,4 +1,8 @@
-FROM node:20-alpine
+# Node 22 (not 20): @supabase/realtime-js >=2.108 hard-throws on Node <22 without
+# native WebSocket ("Node.js 20 detected without native WebSocket support"), crashing
+# the server at supabase createClient on boot. Node 22 ships a native WebSocket global.
+# package.json engines already allows >=21.0.0. (RR7 prod outage 2026-06-14.)
+FROM node:22-alpine
 
 EXPOSE 3000
 
