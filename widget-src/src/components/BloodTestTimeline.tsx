@@ -581,7 +581,9 @@ export function BloodTestTimeline({
   );
 }
 
-function BatchDateCell({ date, pinned }: { date: string; pinned: boolean }) {
+// Exported so StartingInfoVitals can reuse the exact same saved-date header
+// cell — keeps the two matrices pixel-identical without copy-paste drift.
+export function BatchDateCell({ date, pinned }: { date: string; pinned: boolean }) {
   const d = new Date(date + 'T00:00');
   const day = d.getDate();
   const mon = MONTH_LABELS[d.getMonth()];
@@ -607,7 +609,10 @@ interface ValueCellProps {
   onCorrect?: (oldId: string, newValueSI: number) => Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }>;
 }
 
-function ValueCell({
+// Exported so StartingInfoVitals reuses the identical click-to-correct saved
+// cell (FHIR correction UX, status tick, pinned styling) — one source of truth
+// for both matrices instead of two copies of the correction flow to keep in sync.
+export function ValueCell({
   metric, display, sex, siValue, rowId, status, pinned, onActivate, onDeactivate, onCorrect,
 }: ValueCellProps) {
   // `typed === null` ⇒ read-only; otherwise the in-place edit form is open.

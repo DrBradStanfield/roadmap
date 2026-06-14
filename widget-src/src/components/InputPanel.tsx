@@ -116,7 +116,7 @@ interface InputPanelProps {
   vitalsHistory: ApiMeasurement[];
   onSaveBloodTestBatch: (date: string, values: Record<string, number>) => Promise<void>;
   // Click-to-correct handler for saved cells in the BloodTestTimeline matrix.
-  onCorrectBloodTestValue?: (oldId: string, newValueSI: number) => Promise<boolean>;
+  onCorrectBloodTestValue?: (oldId: string, newValueSI: number) => Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }>;
   medications: ApiMedication[];
   onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];
@@ -902,6 +902,7 @@ export function InputPanel({
         unitSystem={unitSystem}
         isLoggedIn={isLoggedIn}
         onSave={onSaveBloodTestBatch}
+        onCorrectValue={onCorrectBloodTestValue}
         onFieldChange={updateField}
         formStage={formStage}
         onAutoFocusEmail={onAutoFocusEmail}

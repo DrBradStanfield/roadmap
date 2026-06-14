@@ -4985,133 +4985,43 @@ input[type="number"] {
    adds the per-row container, the floating Save button, the date+icon
    button inside the draft cell, and the BP-specific dual-input draft.
    ============================================================================ */
+/* The vitals card renders through the SAME unified single-scroller grid as
+   BloodTestTimeline (`.bt-timeline-scroll` + `--bt-col-count` pixel-width
+   inner), so it inherits every column/cell/sticky rule from the
+   `.bt-timeline-scroll` block above. Only the few things below are
+   vitals-specific: a self-contained card frame (the blood-test table gets its
+   frame from the parent `.section-card--bt`; the vitals table sits inside
+   "Starting Info" and needs its own), the two-line waist label, and the
+   BP dual-input draft + saved BP cell. */
 .bt-vitals-card {
-  display: flex; flex-direction: column; gap: 14px;
+  border: 1px solid var(--bt-ink-100);
+  border-radius: 12px;
+  overflow: hidden;
 }
-/* Right-align cells inside the strip so when a row doesn't have enough
-   history to overflow, the cells pack to the right and the empty space
-   sits on the LEFT (visually "scrolled all the way to the right") rather
-   than leaving a gap between the draft cell and the trend column. For
-   rows that DO overflow, there's no leftover space so justify-content
-   has no effect — the scroll-to-rightmost hook still handles those. */
-.bt-vitals-card .bt-strip-inner {
-  justify-content: flex-end;
-}
-/* `Waist\nCircumference` carries an explicit newline so the label
-   wraps cleanly into two lines (then the unit chip on the third).
+/* `Waist\nCircumference` carries an explicit newline so the label wraps
+   cleanly into two lines (then the unit chip + ref on following lines).
    Without `pre-line` the `\n` collapses to a space. */
 .bt-vitals-card .bt-name-label {
   white-space: pre-line;
 }
-/* Let the strip's inner expand to its content so saved-history cells
-   beyond viewport width become scrollable. With only `min-width: 100%`
-   the inner stayed at strip viewport width and children with
-   flex-shrink:0 leaked visually instead of triggering a scroll. Applied
-   on all viewports — without this, desktop strips with enough history
-   to overflow also failed to scroll. The iOS-WebKit sticky-vs-max-
-   content gotcha doesn't bite us on mobile (trend is `position: static`
-   there) and on desktop Blink/Chromium handles it correctly. */
-.bt-vitals-card .bt-strip-inner {
-  width: max-content;
-}
 @media (max-width: 768px) {
-  /* Tighter widths on mobile — the default `.bt-timeline` mobile var
-     values (140 name / 91 value) are sized for the blood-test matrix.
-     Vitals don't need that much room: longest ref is "Target: <120/80
-     mmHg" (~96px) and longest single-line label is "Blood Pressure"
-     (~87px). The compound `.bt-timeline.bt-vitals-card` selector beats
-     the base `.bt-timeline { --bt-name-w: 140px }` rule by specificity. */
+  /* Match the blood-test matrix's mobile vars (the unified grid uses the
+     same `.bt-timeline` machinery now, so the same widths keep the two
+     tables aligned at narrow viewports). */
   .bt-timeline.bt-vitals-card {
-    --bt-name-w: 100px;
-    --bt-value-w: 80px;
-  }
-  /* When the strip overflows, cells get partially clipped at the scroll
-     viewport's left edge — at scrollLeft=max, the leftmost visible cell
-     shows only its rightmost portion ("119/79" became "19/79"). Snap to
-     cell boundaries on release so no value gets visually truncated. */
-  .bt-vitals-card .bt-cell-strip {
-    scroll-snap-type: x mandatory;
-  }
-  .bt-vitals-card .bt-cell-strip .bt-cell-value,
-  .bt-vitals-card .bt-cell-strip .bt-cell-trend {
-    scroll-snap-align: end;
+    --bt-name-w: 140px;
+    --bt-value-w: 91px;
+    --bt-trend-w: 63px;
   }
 }
-/* Desktop: trend sticks to the right edge of the strip so it stays
-   visible while the user scrolls left to see older readings (matches
-   the blood-test matrix). Background covers the data cells passing
-   underneath. Mobile: position resets to static so the trend scrolls
-   with the data, freeing up horizontal room at narrow widths. */
-.bt-vitals-card .bt-cell-trend {
-  /* Solid background hides historical cells that scroll under the
-     sticky trend column on desktop. `var(--paper)` was never defined
-     anywhere — fell back to transparent, so data leaked through. */
-  background: #fff;
-  position: sticky;
-  right: 0;
-  z-index: 2;
-}
-@media (max-width: 768px) {
-  .bt-vitals-card .bt-cell-trend {
-    position: static;
-  }
-}
-.bt-vitals-row {
-  position: relative;
-}
-/* Each vitals row is its own self-contained mini-matrix — give it the
-   rounded border that wraps the whole thing. The live `.bt-row` only has
-   a bottom border (designed for the blood-test table where the outer
-   wrapper draws the box). Override here. */
-.bt-vitals-card .bt-row {
-  border: 1px solid var(--bt-ink-100);
-  border-radius: 10px;
-  overflow: hidden;
-}
-/* Floating Save chip — appears above the row's top-right when the metric's
-   draft is filled and the user is logged in. */
-.bt-vitals-save {
-  position: absolute; top: -28px; right: 0;
-  background: var(--color-brand); color: white;
-  border: none; border-radius: 6px;
-  padding: 4px 12px;
-  font-size: 11px; font-weight: 600;
-  cursor: pointer; font-family: inherit;
-}
-.bt-vitals-save:disabled { opacity: 0.6; cursor: default; }
-/* Date button inside the draft cell — day on top, year + calendar icon
-   on the next line, hidden <input type="date"> overlay triggers the
-   native picker via showPicker(). Mirrors live DraftDateCell pattern. */
-.bt-vitals-date-btn {
-  background: none; border: none; padding: 0; cursor: pointer;
-  font-family: inherit; color: var(--color-brand);
-  display: inline-flex; align-items: center; gap: 4px;
-  position: relative; line-height: 1;
-}
-.bt-vitals-date-icon { color: var(--color-brand); flex-shrink: 0; }
 /* Side-by-side sys / dia inputs in the BP draft cell. */
 .bt-vitals-bp-inputs {
-  display: flex; align-items: center; gap: 2px; width: 100%;
+  display: flex; align-items: center; justify-content: center; gap: 2px; width: 100%;
 }
-.bt-vitals-bp-inputs .bt-input { width: 45%; font-size: 13px; }
+.bt-vitals-bp-inputs .bt-input { width: 42%; font-size: 13px; }
 .bt-vitals-bp-sep { color: var(--bt-ink-400); font-size: 13px; font-weight: 600; }
 /* Saved BP cell renders the "128/80" value at slightly smaller size to fit. */
-.bt-value-num--bp { font-size: 13px !important; }
-/* Date text inside vitals cells. The live blood-test matrix scopes these
-   rules to `.bt-cell-date` / `.bt-cell-draft-date` parents (date-only
-   header cells), so they don't reach vitals cells which use
-   `.bt-cell-value` + `.bt-cell-draft`. Re-apply under `.bt-vitals-card`. */
-.bt-vitals-card .bt-date-day {
-  font-size: 10px; font-weight: 700; color: var(--bt-ink-500); line-height: 1.2;
-}
-.bt-vitals-card .bt-date-year {
-  font-size: 9px; font-weight: 500; color: var(--bt-ink-400); margin-top: 1px; line-height: 1.2;
-}
-.bt-vitals-card .bt-cell-draft .bt-date-day,
-.bt-vitals-card .bt-cell-draft .bt-date-year {
-  color: var(--color-brand);
-}
-.bt-vitals-card .bt-cell-draft .bt-date-year { opacity: 0.7; }
+.bt-value-num--bp { font-size: 13px; }
 
 
 /* --- BYOK chat key gate (standalone build; dead rules on Shopify) --- */

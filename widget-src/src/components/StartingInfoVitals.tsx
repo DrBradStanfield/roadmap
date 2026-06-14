@@ -1,33 +1,45 @@
-// Vitals (Weight, Waist, Blood Pressure) rendered as per-metric scrollable
-// rows that visually match the BloodTestTimeline matrix. Each metric owns
-// its own dates, so each row is its own mini-matrix with its own scroll.
+// Vitals (Weight, Waist, Blood Pressure) rendered through the SAME unified
+// column-grid layout as BloodTestTimeline: one shared card, one date-header
+// row, metrics as rows, dates as columns aligned across every row, a single
+// horizontal scroll, and a Trend column on the right. Brad's ask was that on
+// refresh the vitals table "match the layout of the blood test table" — so
+// this mirrors BloodTestTimeline's structure (`.bt-timeline-scroll` single
+// scroller + `--bt-col-count` pixel-width inner) rather than the old
+// per-metric independent strips.
 //
-// Reuses the existing `.bt-*` CSS classes from styles.css, the matrix's
-// `Sparkline` component, and `NumericInputCell` for the draft input.
-// Status thresholds (IBW for weight, WHtR < 0.5 for waist, BP < 120/80)
-// live here because they depend on user demographics that the shared
-// `statusOf` in `lib/blood-test-cell.ts` doesn't carry.
+// Columns are the UNION of every distinct date across weight / waist / BP
+// (sys+dia share a date) — sparse cells render an empty backfill input, just
+// like the blood-test matrix. A shared draft column on the right lets the user
+// add a new reading for any vital at one date.
+//
+// Status thresholds (IBW for weight, WHtR < 0.5 for waist, BP < 120/80) depend
+// on user demographics that the shared `statusOf` in `lib/blood-test-cell.ts`
+// doesn't carry, so they live here. Everything else reuses the `.bt-*` CSS,
+// the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   type ApiMeasurement,
   type HealthInputs,
-  type MetricType,
   type UnitSystem,
   toCanonicalValue,
   fromCanonicalValue,
   formatDisplayValue,
   getDisplayLabel,
-  getDisplayRange,
   parseLocalisedNumber,
   calculateIBW,
 } from '@roadmap/health-core';
-import { MONTHS_SHORT } from '../lib/constants';
-import { type Status, blockBadNumericKeys, validateTypedValue } from '../lib/blood-test-cell';
+import {
+  type Status,
+  blockBadNumericKeys,
+  validateTypedValue,
+} from '../lib/blood-test-cell';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
-import { Sparkline } from './BloodTestTimeline';
-
-const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
+import { useDebouncedSave } from '../lib/useDebouncedSave';
+import { Sparkline, ValueCell, BatchDateCell } from './BloodTestTimeline';
+import { NumericInputCell } from './NumericInputCell';
+import { DraftDateCell } from './DraftDateCell';
+import { UnitChip } from './UnitChip';
 
 interface StartingInfoVitalsProps {
   inputs: Partial<HealthInputs>;
@@ -39,6 +51,10 @@ interface StartingInfoVitalsProps {
   /** Same handler used by BloodTestTimeline. Sends SI values keyed by
    *  metricType + an ISO `yyyy-mm-dd` date through `handleSaveLongitudinal`. */
   onSave: (date: string, values: Record<string, number>) => Promise<void>;
+  /** Click-to-correct handler for saved single-value cells (weight / waist).
+   *  Same prop the blood-test matrix uses. BP cells stay display-only (a
+   *  sys/dia cell is ambiguous to correct in place). */
+  onCorrectValue?: (oldId: string, newValueSI: number) => Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }>;
   /** Mirror typed draft values back into `inputs[field]` (in SI). Needed so
    *  the suggestions engine sees live drafts AND so guest users' typed
    *  values persist via the parent's localStorage auto-save. */
@@ -50,26 +66,29 @@ interface StartingInfoVitalsProps {
    *  height → weight → email focus chain from the legacy form. */
   onAutoFocusEmail?: () => void;
   /** Per-field unit overrides — clicking the weight/waist chip toggles
-   *  just that metric's display unit (kg ↔ lbs, cm ↔ inches). Same
-   *  prop chain the blood-test matrix uses. */
+   *  just that metric's display unit (kg ↔ lbs, cm ↔ inches). */
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
 }
 
-type SimpleMetric = {
-  key: 'weight' | 'waist';
-  metric: MetricType;
-  label: string;
-  field: keyof HealthInputs;
-};
+// ── Row config ──────────────────────────────────────────────────────────
 
-const SIMPLE_METRICS: SimpleMetric[] = [
-  { key: 'weight', metric: 'weight',  label: 'Weight',               field: 'weightKg' },
-  { key: 'waist',  metric: 'waist',   label: 'Waist\nCircumference', field: 'waistCm' },
+type SimpleRowConfig = {
+  kind: 'simple';
+  metric: 'weight' | 'waist';
+  field: keyof HealthInputs;
+  label: string;
+};
+type BpRowConfig = { kind: 'bp'; label: string };
+type RowConfig = SimpleRowConfig | BpRowConfig;
+
+const ROWS: RowConfig[] = [
+  { kind: 'simple', metric: 'weight', field: 'weightKg', label: 'Weight' },
+  { kind: 'simple', metric: 'waist', field: 'waistCm', label: 'Waist\nCircumference' },
+  { kind: 'bp', label: 'Blood Pressure' },
 ];
 
-// ── Status thresholds (user-demographic-dependent — live here, not in
-// `lib/blood-test-cell.ts`, to keep that file scoped to lab metrics) ────
+// ── Status thresholds (demographic-dependent — live here) ────────────────
 
 function weightStatus(siKg: number | null | undefined, heightCm?: number, sex?: 'male' | 'female'): Status {
   if (siKg == null || Number.isNaN(siKg) || heightCm == null || !sex) return null;
@@ -93,57 +112,66 @@ function bpStatus(sys?: number | null, dia?: number | null, age?: number): Statu
   if (sys < sysTarget + 10 && dia < diaTarget + 5) return 'warn';
   return 'bad';
 }
-
-// Live preview from typed display-unit values (validates + canonicalises).
-function previewSimpleStatus(metric: 'weight' | 'waist', typed: string, display: UnitSystem, heightCm?: number, sex?: 'male' | 'female'): Status {
-  const n = parseLocalisedNumber(typed);
-  if (n === undefined) return null;
-  const si = toCanonicalValue(metric, n, display);
+function simpleStatus(metric: 'weight' | 'waist', si: number | null | undefined, heightCm?: number, sex?: 'male' | 'female'): Status {
   return metric === 'weight' ? weightStatus(si, heightCm, sex) : waistStatus(si, heightCm);
 }
 
-// ── Date helpers ────────────────────────────────────────────────────────
+// ── Date helpers ─────────────────────────────────────────────────────────
 
-function fmtDate(iso: string): { day: number; mon: string; yr: string } {
-  const d = new Date(iso + 'T00:00');
-  return {
-    day: d.getDate(),
-    mon: MONTH_LABELS[d.getMonth()],
-    yr: String(d.getFullYear()).slice(-2),
-  };
-}
 function todayIso(): string { return new Date().toISOString().slice(0, 10); }
 function isoOnly(s: string): string { return s.slice(0, 10); }
 
-// Group BP measurements by date — DB stores systolic + diastolic as two
-// rows sharing a recorded_at, but the UI pairs them per cell.
-type BpBatch = { date: string; sys?: number; dia?: number };
-function groupBp(rows: ApiMeasurement[]): BpBatch[] {
-  const map = new Map<string, BpBatch>();
-  for (const r of rows) {
-    if (r.metricType !== 'systolic_bp' && r.metricType !== 'diastolic_bp') continue;
-    const date = isoOnly(r.recordedAt);
-    if (!map.has(date)) map.set(date, { date });
-    const b = map.get(date)!;
-    if (r.metricType === 'systolic_bp') b.sys = r.value;
-    else b.dia = r.value;
-  }
-  return Array.from(map.values())
-    .filter(b => b.sys != null && b.dia != null)
-    .sort((a, b) => a.date.localeCompare(b.date));
+// ── Per-date model ───────────────────────────────────────────────────────
+// One column per distinct date. Each column carries the SI value + row id for
+// every vital recorded that day (sparse — a date may hold only a weight).
+
+export interface DateColumn {
+  date: string;
+  weight?: number; weightId?: string;
+  waist?: number; waistId?: string;
+  sys?: number; sysId?: string;
+  dia?: number; diaId?: string;
 }
 
-type SimpleBatch = { date: string; v: number };
-function groupSimple(rows: ApiMeasurement[], metric: 'weight' | 'waist'): SimpleBatch[] {
-  return rows
-    .filter(r => r.metricType === metric)
-    .map(r => ({ date: isoOnly(r.recordedAt), v: r.value }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+// Exported for unit testing — folds the flat vitals history into one column
+// per distinct date (sparse: a date may carry only some vitals), sorted oldest
+// → newest. sys+dia sharing a date are paired into the same column.
+export function buildColumns(rows: ApiMeasurement[]): DateColumn[] {
+  const byDate = new Map<string, DateColumn>();
+  const ensure = (date: string) => {
+    let c = byDate.get(date);
+    if (!c) { c = { date }; byDate.set(date, c); }
+    return c;
+  };
+  for (const r of rows) {
+    const date = isoOnly(r.recordedAt);
+    const c = ensure(date);
+    if (r.metricType === 'weight') { c.weight = r.value; c.weightId = r.id; }
+    else if (r.metricType === 'waist') { c.waist = r.value; c.waistId = r.id; }
+    else if (r.metricType === 'systolic_bp') { c.sys = r.value; c.sysId = r.id; }
+    else if (r.metricType === 'diastolic_bp') { c.dia = r.value; c.diaId = r.id; }
+  }
+  return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// Draft typed values (display unit) keyed by row.
+interface DraftRow {
+  date: string;
+  weight: string;
+  waist: string;
+  sys: string;
+  dia: string;
+}
+function emptyDraft(): DraftRow {
+  return { date: todayIso(), weight: '', waist: '', sys: '', dia: '' };
 }
 
 // ── Component ───────────────────────────────────────────────────────────
 
-export function StartingInfoVitals({ inputs, vitalsHistory, unitSystem, isLoggedIn, onSave, onFieldChange, formStage, onAutoFocusEmail, unitOverrides, onToggleFieldUnit }: StartingInfoVitalsProps) {
+export function StartingInfoVitals({
+  inputs, vitalsHistory, unitSystem, isLoggedIn, onSave, onCorrectValue,
+  onFieldChange, formStage, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
+}: StartingInfoVitalsProps) {
   const heightCm = inputs.heightCm;
   const sex = inputs.sex;
   const age = useMemo(() => {
@@ -151,154 +179,92 @@ export function StartingInfoVitals({ inputs, vitalsHistory, unitSystem, isLogged
     const now = new Date();
     const m = inputs.birthMonth ?? 1;
     let a = now.getFullYear() - inputs.birthYear;
-    if (now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < 1)) a -= 1;
+    if (now.getMonth() + 1 < m) a -= 1;
     return a;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputs.birthYear, inputs.birthMonth]);
 
   const ibwKg = useMemo(() => (heightCm && sex ? calculateIBW(heightCm, sex) : undefined), [heightCm, sex]);
   const waistTargetCm = useMemo(() => (heightCm ? heightCm * 0.5 : undefined), [heightCm]);
   const bpSysTarget = age != null && age >= 65 ? 130 : 120;
 
-  // Reference labels in the user's display unit.
-  const weightRef = ibwKg != null
-    ? `Target: ${formatDisplayValue('weight', ibwKg, unitSystem)} ${getDisplayLabel('weight', unitSystem)}`
-    : 'Set sex + height to see target';
-  const waistRef = waistTargetCm != null
-    ? `Target: <${formatDisplayValue('waist', waistTargetCm, unitSystem)} ${getDisplayLabel('waist', unitSystem)}`
-    : 'Set height to see target';
-  const bpRef = `Target: <${bpSysTarget}/80 mmHg`;
+  const fieldUnit = (field: 'weightKg' | 'waistCm'): UnitSystem => unitOverrides[field] ?? unitSystem;
 
-  // Memoised so typing in the draft doesn't refilter+resort the whole
-  // history array on every keystroke. Inputs change only when the parent
-  // pushes a new vitalsHistory.
-  const weightHistory = useMemo(() => groupSimple(vitalsHistory, 'weight'), [vitalsHistory]);
-  const waistHistory = useMemo(() => groupSimple(vitalsHistory, 'waist'), [vitalsHistory]);
-  const bpHistory = useMemo(() => groupBp(vitalsHistory), [vitalsHistory]);
+  // Reference labels (per row, in the row's display unit).
+  const refLabel = (row: RowConfig): string => {
+    if (row.kind === 'bp') return `Target: <${bpSysTarget}/80 mmHg`;
+    if (row.metric === 'weight') {
+      const u = fieldUnit('weightKg');
+      return ibwKg != null
+        ? `Target: ${formatDisplayValue('weight', ibwKg, u)} ${getDisplayLabel('weight', u)}`
+        : 'Set sex + height to see target';
+    }
+    const u = fieldUnit('waistCm');
+    return waistTargetCm != null
+      ? `Target: <${formatDisplayValue('waist', waistTargetCm, u)} ${getDisplayLabel('waist', u)}`
+      : 'Set height to see target';
+  };
 
-  return (
-    // `bt-timeline` provides the matrix-wide CSS variables (--bt-name-w,
-    // --bt-value-w, --bt-trend-w, ink colors, row min-height). Without it
-    // the cells fall back to content-size — name column collapses to ~91px.
-    <div className="bt-timeline bt-vitals-card">
-      <VitalsSimpleRow
-        key="weight"
-        metric={SIMPLE_METRICS[0]}
-        history={weightHistory}
-        unitSystem={unitOverrides.weightKg ?? unitSystem}
-        heightCm={heightCm}
-        sex={sex}
-        refLabel={weightRef}
-        isLoggedIn={isLoggedIn}
-        onSave={onSave}
-        onFieldChange={onFieldChange}
-        needsAttention={formStage === 2 && inputs.weightKg === undefined}
-        inputId="weightKg"
-        currentValue={inputs.weightKg}
-        onAutoFocusEmail={onAutoFocusEmail}
-        onToggleUnit={() => onToggleFieldUnit('weightKg')}
-      />
-      <VitalsSimpleRow
-        key="waist"
-        metric={SIMPLE_METRICS[1]}
-        history={waistHistory}
-        unitSystem={unitOverrides.waistCm ?? unitSystem}
-        heightCm={heightCm}
-        sex={sex}
-        refLabel={waistRef}
-        isLoggedIn={isLoggedIn}
-        onSave={onSave}
-        onFieldChange={onFieldChange}
-        currentValue={inputs.waistCm}
-        onToggleUnit={() => onToggleFieldUnit('waistCm')}
-      />
-      <VitalsBpRow
-        history={bpHistory}
-        bpStatusFn={(s, d) => bpStatus(s, d, age)}
-        refLabel={bpRef}
-        isLoggedIn={isLoggedIn}
-        onSave={onSave}
-        onFieldChange={onFieldChange}
-      />
-    </div>
+  const dateColumns = useMemo(() => buildColumns(vitalsHistory), [vitalsHistory]);
+
+  const [draft, setDraft] = useState<DraftRow>(emptyDraft);
+  const [activeCell, setActiveCell] = useState<string | null>(null);
+
+  // Pre-populate the weight/waist draft from `inputs[field]` (guest typed a
+  // value, reloaded → it lives in localStorage → inputs[field]) and re-render
+  // it in the active display unit on a unit toggle. Same pattern the old row
+  // used. BP isn't pre-populated here (its inputs round-trip below).
+  useEffect(() => {
+    const wU = fieldUnit('weightKg');
+    const formatted = inputs.weightKg != null ? formatDisplayValue('weight', inputs.weightKg, wU) : '';
+    setDraft(d => d.weight === formatted ? d : { ...d, weight: formatted });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputs.weightKg, unitOverrides.weightKg, unitSystem]);
+  useEffect(() => {
+    const wU = fieldUnit('waistCm');
+    const formatted = inputs.waistCm != null ? formatDisplayValue('waist', inputs.waistCm, wU) : '';
+    setDraft(d => d.waist === formatted ? d : { ...d, waist: formatted });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputs.waistCm, unitOverrides.waistCm, unitSystem]);
+
+  // Trend series (SI, oldest → newest) + last value/status per row.
+  const trend = useMemo(() => {
+    const weight: number[] = [], waist: number[] = [], sysSeries: number[] = [];
+    let lastW: number | undefined, lastWa: number | undefined;
+    let lastSys: number | undefined, lastDia: number | undefined;
+    for (const c of dateColumns) {
+      if (c.weight != null) { weight.push(c.weight); lastW = c.weight; }
+      if (c.waist != null) { waist.push(c.waist); lastWa = c.waist; }
+      if (c.sys != null && c.dia != null) { sysSeries.push(c.sys); lastSys = c.sys; lastDia = c.dia; }
+    }
+    return { weight, waist, sysSeries, lastW, lastWa, lastSys, lastDia };
+  }, [dateColumns]);
+
+  // Columns = existing dates + always-on draft column.
+  const columns = useMemo(
+    () => [...dateColumns.map(c => ({ kind: 'data' as const, col: c })), { kind: 'draft' as const }],
+    [dateColumns],
   );
-}
+  const colCount = columns.length;
 
-// ── Simple row (Weight / Waist) ─────────────────────────────────────────
+  const scrollRef = useScrollToRightOnMount<HTMLDivElement>([colCount]);
 
-interface SimpleRowProps {
-  metric: SimpleMetric;
-  history: SimpleBatch[];
-  unitSystem: UnitSystem;
-  heightCm?: number;
-  sex?: 'male' | 'female';
-  refLabel: string;
-  isLoggedIn: boolean;
-  onSave: (date: string, values: Record<string, number>) => Promise<void>;
-  onFieldChange: (field: keyof HealthInputs, value: number | undefined) => void;
-  /** Pulse the draft input to attract attention. Used at stage 2 for the
-   *  weight row only (progressive-disclosure gate). */
-  needsAttention?: boolean;
-  /** Optional id on the draft input — gives the existing height-onChange
-   *  in InputPanel a way to `focusById('weightKg')` after height entry. */
-  inputId?: string;
-  /** Current SI value from `inputs[field]` — used to pre-populate the
-   *  draft on mount for guests so their value persists after reload. */
-  currentValue?: number;
-  /** Weight row only — continues the focus chain to the email field
-   *  after a valid weight is entered. */
-  onAutoFocusEmail?: () => void;
-  /** Toggle the per-field display unit (kg ↔ lbs, cm ↔ inches). */
-  onToggleUnit?: () => void;
-}
-
-function VitalsSimpleRow({ metric, history, unitSystem, heightCm, sex, refLabel, isLoggedIn, onSave, onFieldChange, needsAttention, inputId, currentValue, onAutoFocusEmail, onToggleUnit }: SimpleRowProps) {
-  const sorted = useMemo(() => history.slice().sort((a, b) => a.date.localeCompare(b.date)), [history]);
-  // Pre-populate the draft from `inputs[field]` if the user already has a
-  // value (typical guest scenario: typed a weight, reloaded the page, the
-  // value lives in localStorage → inputs[field] → here). Logged-in users
-  // also benefit when they've previously mirrored a draft value.
-  const [draft, setDraft] = useState<{ value: string; date: string }>(() => ({
-    value: currentValue != null ? formatDisplayValue(metric.metric, currentValue, unitSystem) : '',
-    date: todayIso(),
-  }));
-  const [saving, setSaving] = useState(false);
-  const stripRef = useScrollToRightOnMount<HTMLDivElement>([sorted.length]);
-  const focusedEmailRef = useRef(false);
-  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const last = sorted[sorted.length - 1];
-  const lastStatus: Status = last
-    ? (metric.key === 'weight' ? weightStatus(last.v, heightCm, sex) : waistStatus(last.v, heightCm))
-    : null;
-  const sparkPoints = sorted.map(r => fromCanonicalValue(metric.metric, r.v, unitSystem));
-
-  const valid = useMemo(() => {
-    const { error } = validateTypedValue(metric.metric, draft.value, unitSystem);
-    if (error) return false;
-    const n = parseLocalisedNumber(draft.value);
-    return n != null;
-  }, [draft.value, metric.metric, unitSystem]);
-
-  // Mirror typed value back into `inputs[field]` (in SI) so the suggestions
-  // engine sees the live draft AND so guest users' typed values persist
-  // via the parent's localStorage auto-save. Undefined when invalid so we
-  // don't fire suggestions on bogus values.
-  const setDraftValue = (typed: string) => {
-    setDraft(d => ({ ...d, value: typed }));
-    const { error } = validateTypedValue(metric.metric, typed, unitSystem);
-    if (error) { onFieldChange(metric.field, undefined); return; }
+  // Draft value setters mirror into inputs[field] (SI) so suggestions + guest
+  // persistence stay live.
+  const setSimpleDraft = (metric: 'weight' | 'waist', typed: string) => {
+    const field: keyof HealthInputs = metric === 'weight' ? 'weightKg' : 'waistCm';
+    setDraft(d => ({ ...d, [metric]: typed }));
+    const display = fieldUnit(field as 'weightKg' | 'waistCm');
+    const { error } = validateTypedValue(metric, typed, display);
+    if (typed === '' || error) { onFieldChange(field, undefined); return; }
     const n = parseLocalisedNumber(typed);
-    onFieldChange(metric.field, n == null ? undefined : toCanonicalValue(metric.metric, n, unitSystem));
+    onFieldChange(field, n == null ? undefined : toCanonicalValue(metric, n, display));
 
-    // Weight row only: continue the height → weight → email focus chain.
-    // Mirrors the legacy logic at InputPanel.tsx:552 — only 2-3 digit
-    // typed values trigger it; a 2-digit value that could still extend
-    // to 3 (e.g., "8" → "80") waits 800ms before firing.
-    if (onAutoFocusEmail && !focusedEmailRef.current && !error && n != null) {
+    // Weight only: continue the height → weight → email focus chain.
+    if (metric === 'weight' && onAutoFocusEmail && !focusedEmailRef.current && !error && n != null) {
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
-      const r = getDisplayRange(metric.metric, unitSystem);
-      if (/^\d{2,3}$/.test(typed) && n >= r.min && n <= r.max) {
-        const couldExtend = /^\d{2}$/.test(typed) && n * 10 <= r.max;
+      if (/^\d{2,3}$/.test(typed) && n >= 30 && n <= 400) {
+        const couldExtend = /^\d{2}$/.test(typed) && n * 10 <= 400;
         if (!couldExtend) {
           focusedEmailRef.current = true;
           requestAnimationFrame(() => onAutoFocusEmail());
@@ -311,259 +277,213 @@ function VitalsSimpleRow({ metric, history, unitSystem, heightCm, sex, refLabel,
       }
     }
   };
+  const focusedEmailRef = useRef(false);
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync draft.value from the SI source of truth (`currentValue` =
-  // `inputs[field]`). Two cases this fires for:
-  //   1. Hydration — guest reloads the page; localStorage populates
-  //      `inputs[field]` *after* this component mounted, so the useState
-  //      initializer read undefined. This effect catches the update.
-  //   2. Per-field unit toggle — user clicks kg ↔ lbs; the same SI value
-  //      must re-render in the new unit.
-  // Typing the user enters round-trips through onFieldChange → inputs →
-  // back here; the same-value guard makes that a no-op.
-  useEffect(() => {
-    const formatted = currentValue != null
-      ? formatDisplayValue(metric.metric, currentValue, unitSystem)
-      : '';
-    setDraft(d => d.value === formatted ? d : { ...d, value: formatted });
+  const setBpDraft = (which: 'sys' | 'dia', typed: string) => {
+    setDraft(d => ({ ...d, [which]: typed }));
+    const n = parseLocalisedNumber(typed);
+    if (which === 'sys') onFieldChange('systolicBp', n != null && n >= 60 && n <= 250 ? n : undefined);
+    else onFieldChange('diastolicBp', n != null && n >= 40 && n <= 150 ? n : undefined);
+  };
+
+  // Validation of the whole draft + any filled value (blocks save while bad).
+  const draftValid = useMemo(() => {
+    const wOk = draft.weight === '' || !validateTypedValue('weight', draft.weight, fieldUnit('weightKg')).error;
+    const waOk = draft.waist === '' || !validateTypedValue('waist', draft.waist, fieldUnit('waistCm')).error;
+    const sysN = parseLocalisedNumber(draft.sys), diaN = parseLocalisedNumber(draft.dia);
+    const bpEmpty = draft.sys === '' && draft.dia === '';
+    const bpOk = bpEmpty || (sysN != null && diaN != null && sysN >= 60 && sysN <= 250 && diaN >= 40 && diaN <= 150);
+    const anyFilled = draft.weight !== '' || draft.waist !== '' || !bpEmpty;
+    return { ok: wOk && waOk && bpOk, anyFilled };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentValue, unitSystem]);
+  }, [draft, unitOverrides, unitSystem]);
 
-  const commit = async () => {
-    if (!valid || !isLoggedIn || saving) return;
-    const n = parseLocalisedNumber(draft.value);
-    if (n == null) return;
-    const si = toCanonicalValue(metric.metric, n, unitSystem);
-    setSaving(true);
-    try {
-      await onSave(draft.date, { [metric.metric]: si });
-      setDraft({ value: '', date: todayIso() });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="bt-vitals-row">
-      {valid && isLoggedIn && (
-        <button type="button" className="bt-vitals-save" onClick={commit} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-      )}
-      <div className="bt-row">
-        <div className="bt-cell-name">
-          <div className="bt-name-label">{metric.label}</div>
-          {onToggleUnit ? (
-            <button type="button" className="bt-unit-chip" onClick={onToggleUnit}
-                    title={`Switch unit for ${metric.label.replace('\n', ' ')}`}>
-              {getDisplayLabel(metric.metric, unitSystem)}
-            </button>
-          ) : (
-            <span className="bt-unit-chip bt-unit-chip--static">{getDisplayLabel(metric.metric, unitSystem)}</span>
-          )}
-          <div className="bt-ref-label">{refLabel}</div>
-        </div>
-        <div className="bt-scroll-x bt-cell-strip" ref={stripRef}>
-          <div className="bt-strip-inner">
-            {sorted.map((r, i) => (
-              <SimpleValueCell
-                key={r.date}
-                metric={metric}
-                reading={r}
-                status={metric.key === 'weight' ? weightStatus(r.v, heightCm, sex) : waistStatus(r.v, heightCm)}
-                unitSystem={unitSystem}
-                pinned={i === sorted.length - 1}
-              />
-            ))}
-            <SimpleDraftCell
-              metric={metric}
-              value={draft.value}
-              date={draft.date}
-              unitSystem={unitSystem}
-              heightCm={heightCm}
-              sex={sex}
-              onChangeValue={setDraftValue}
-              onChangeDate={date => setDraft(d => ({ ...d, date }))}
-              onEnter={commit}
-              onBlur={commit}
-              needsAttention={needsAttention}
-              inputId={inputId}
-            />
-            <div className="bt-cell-trend">
-              {sparkPoints.length >= 2 && <Sparkline points={sparkPoints}/>}
-              <span className={`bt-status-tick bt-status-${lastStatus ?? 'none'}`}/>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SimpleValueCell({ metric, reading, status, unitSystem, pinned }: {
-  metric: SimpleMetric;
-  reading: SimpleBatch;
-  status: Status;
-  unitSystem: UnitSystem;
-  pinned: boolean;
-}) {
-  const d = fmtDate(reading.date);
-  const displayVal = formatDisplayValue(metric.metric, reading.v, unitSystem);
-  return (
-    <div className={`bt-cell-value${pinned ? ' bt-cell-pinned' : ''}`}>
-      <span className="bt-date-day">{d.day} {d.mon}</span>
-      <span className="bt-date-year">'{d.yr}</span>
-      <span className="bt-value-num">{displayVal}</span>
-      <div className="bt-cell-foot">
-        <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>
-      </div>
-    </div>
-  );
-}
-
-function SimpleDraftCell({ metric, value, date, unitSystem, heightCm, sex, onChangeValue, onChangeDate, onEnter, onBlur, needsAttention, inputId }: {
-  metric: SimpleMetric;
-  value: string;
-  date: string;
-  unitSystem: UnitSystem;
-  heightCm?: number;
-  sex?: 'male' | 'female';
-  onChangeValue: (v: string) => void;
-  onChangeDate: (date: string) => void;
-  onEnter: () => void;
-  onBlur: () => void;
-  needsAttention?: boolean;
-  inputId?: string;
-}) {
-  const previewStatus = previewSimpleStatus(metric.key, value, unitSystem, heightCm, sex);
-  const { error } = validateTypedValue(metric.metric, value, unitSystem);
-  const d = fmtDate(date);
-  return (
-    <div className={`bt-cell-value bt-cell-draft bt-cell-vitals-draft${needsAttention ? ' field-attention' : ''}`}>
-      <span className="bt-date-day">{d.day} {d.mon}</span>
-      <DateButton date={date} onChange={onChangeDate}/>
-      <input
-        id={inputId}
-        type="text"
-        inputMode="decimal"
-        pattern="[0-9.,]*"
-        size={1}
-        className={`bt-input${error ? ' bt-input-error' : ''}`}
-        value={value}
-        placeholder="—"
-        title={error ?? undefined}
-        aria-label={`Enter ${metric.label.replace('\n', ' ')}`}
-        onChange={e => onChangeValue(e.target.value)}
-        onBlur={onBlur}
-        onKeyDown={e => {
-          blockBadNumericKeys(e);
-          if (e.key === 'Enter') { e.preventDefault(); onEnter(); }
-        }}
-      />
-      <div className="bt-cell-foot">
-        {error
-          ? <span className="bt-input-error-text">{error}</span>
-          : <span className={`bt-status-tick bt-status-${previewStatus ?? 'none'}`}/>}
-      </div>
-    </div>
-  );
-}
-
-// ── BP row (sys / dia paired by date) ────────────────────────────────────
-
-interface BpRowProps {
-  history: BpBatch[];
-  bpStatusFn: (sys?: number | null, dia?: number | null) => Status;
-  refLabel: string;
-  isLoggedIn: boolean;
-  onSave: (date: string, values: Record<string, number>) => Promise<void>;
-  onFieldChange: (field: keyof HealthInputs, value: number | undefined) => void;
-}
-
-function VitalsBpRow({ history, bpStatusFn, refLabel, isLoggedIn, onSave, onFieldChange }: BpRowProps) {
-  const sorted = history; // already sorted by groupBp
-  const [draft, setDraft] = useState<{ sys: string; dia: string; date: string }>({ sys: '', dia: '', date: todayIso() });
   const [saving, setSaving] = useState(false);
-  const stripRef = useScrollToRightOnMount<HTMLDivElement>([sorted.length]);
-
-  const last = sorted[sorted.length - 1];
-  const lastStatus = last ? bpStatusFn(last.sys, last.dia) : null;
-  // Sparkline shows systolic trend (the more clinically actionable line).
-  const sparkPoints = sorted.map(b => b.sys ?? 0);
-
-  const sysNum = parseLocalisedNumber(draft.sys);
-  const diaNum = parseLocalisedNumber(draft.dia);
-  const valid = sysNum != null && diaNum != null
-    && sysNum >= 60 && sysNum <= 250
-    && diaNum >= 40 && diaNum <= 150;
-
-  const setSys = (v: string) => {
-    setDraft(d => ({ ...d, sys: v }));
-    const n = parseLocalisedNumber(v);
-    onFieldChange('systolicBp', n != null && n >= 60 && n <= 250 ? n : undefined);
-  };
-  const setDia = (v: string) => {
-    setDraft(d => ({ ...d, dia: v }));
-    const n = parseLocalisedNumber(v);
-    onFieldChange('diastolicBp', n != null && n >= 40 && n <= 150 ? n : undefined);
-  };
 
   const commit = async () => {
-    if (!valid || !isLoggedIn || saving) return;
+    if (!isLoggedIn || saving || !draftValid.ok || !draftValid.anyFilled) return;
+    const values: Record<string, number> = {};
+    if (draft.weight !== '') {
+      const n = parseLocalisedNumber(draft.weight);
+      if (n != null) values.weight = toCanonicalValue('weight', n, fieldUnit('weightKg'));
+    }
+    if (draft.waist !== '') {
+      const n = parseLocalisedNumber(draft.waist);
+      if (n != null) values.waist = toCanonicalValue('waist', n, fieldUnit('waistCm'));
+    }
+    const sysN = parseLocalisedNumber(draft.sys), diaN = parseLocalisedNumber(draft.dia);
+    if (sysN != null && diaN != null) { values.systolic_bp = sysN; values.diastolic_bp = diaN; }
+    if (Object.keys(values).length === 0) return;
     setSaving(true);
     try {
-      await onSave(draft.date, { systolic_bp: sysNum!, diastolic_bp: diaNum! });
-      setDraft({ sys: '', dia: '', date: todayIso() });
+      await onSave(draft.date, values);
+      // Clear mirror so the legacy global save doesn't re-pick these up.
+      onFieldChange('weightKg', undefined);
+      onFieldChange('waistCm', undefined);
+      onFieldChange('systolicBp', undefined);
+      onFieldChange('diastolicBp', undefined);
+      setDraft(emptyDraft());
+      setActiveCell(null);
     } finally {
       setSaving(false);
     }
   };
 
+  // Auto-save on blur / Enter (500ms debounce so tab-between-cells doesn't
+  // fire mid-edit). Mirrors the blood-test matrix's scheduleMatrixSave.
+  const debounce = useDebouncedSave(500);
+  const commitRef = useRef(commit);
+  commitRef.current = commit;
+  const scheduleSave = () => {
+    if (!draftValid.ok || !draftValid.anyFilled || !isLoggedIn) return;
+    debounce.schedule(() => { void commitRef.current(); });
+  };
+  const flushSave = () => {
+    if (!draftValid.ok || !draftValid.anyFilled || !isLoggedIn) { debounce.cancel(); return; }
+    debounce.commit(() => { void commitRef.current(); });
+  };
+
   return (
-    <div className="bt-vitals-row">
-      {valid && isLoggedIn && (
-        <button type="button" className="bt-vitals-save" onClick={commit} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-      )}
-      <div className="bt-row">
-        <div className="bt-cell-name">
-          <div className="bt-name-label">Blood Pressure</div>
-          <span className="bt-unit-chip bt-unit-chip--static">mmHg</span>
-          <div className="bt-ref-label">{refLabel}</div>
-        </div>
-        <div className="bt-scroll-x bt-cell-strip" ref={stripRef}>
-          <div className="bt-strip-inner">
-            {sorted.map((b, i) => {
-              const d = fmtDate(b.date);
-              const status = bpStatusFn(b.sys, b.dia);
-              const pinned = i === sorted.length - 1;
+    <div className="bt-timeline bt-vitals-card">
+      <div className="bt-timeline-body">
+        <div ref={scrollRef} className="bt-timeline-scroll">
+          <div className="bt-timeline-scroll-inner" style={{ '--bt-col-count': colCount } as React.CSSProperties}>
+            {/* Header row — Metric | dates… | draft | Trend */}
+            <div className="bt-row bt-header-row">
+              <div className="bt-cell-name bt-cell-header">Metric</div>
+              {columns.map((c, i) => {
+                if (c.kind === 'draft') {
+                  return <DraftDateCell key="draft" date={draft.date}
+                                        onChange={date => setDraft(d => ({ ...d, date }))}
+                                        ariaLabel="Choose draft date"/>;
+                }
+                const isPinned = i === columns.length - 2;
+                return <BatchDateCell key={c.col.date} date={c.col.date} pinned={isPinned}/>;
+              })}
+              <div className="bt-row-filler"/>
+              <div className="bt-cell-trend bt-cell-header">Trend</div>
+            </div>
+
+            {/* Metric rows */}
+            {ROWS.map((row, rowIdx) => {
+              const last = rowIdx === ROWS.length - 1 ? ' bt-row-last' : '';
+              const nameCell = (
+                <div className="bt-cell-name">
+                  <div className="bt-name-label">{row.label}</div>
+                  {row.kind === 'simple' ? (
+                    <UnitChip
+                      label={getDisplayLabel(row.metric, fieldUnit(row.field as 'weightKg' | 'waistCm'))}
+                      onToggle={() => onToggleFieldUnit(row.field)}
+                    />
+                  ) : (
+                    <UnitChip label="mmHg"/>
+                  )}
+                  <div className="bt-ref-label">{refLabel(row)}</div>
+                </div>
+              );
+
+              if (row.kind === 'simple') {
+                const display = fieldUnit(row.field as 'weightKg' | 'waistCm');
+                const sparkPoints = (row.metric === 'weight' ? trend.weight : trend.waist)
+                  .map(si => fromCanonicalValue(row.metric, si, display));
+                const lastSi = row.metric === 'weight' ? trend.lastW : trend.lastWa;
+                const lastStatus = lastSi != null ? simpleStatus(row.metric, lastSi, heightCm, sex) : null;
+                return (
+                  <div key={row.metric} className={`bt-row${last}`}>
+                    {nameCell}
+                    {columns.map((c, colIdx) => {
+                      if (c.kind === 'draft') {
+                        const cellId = `draft.${row.metric}`;
+                        return (
+                          <NumericInputCell
+                            key={cellId}
+                            metric={row.metric}
+                            display={display}
+                            sex={sex}
+                            value={draft[row.metric]}
+                            placeholder="—"
+                            wrapperClass={`bt-cell-input bt-cell-draft${formStage === 2 && row.metric === 'weight' && inputs.weightKg === undefined ? ' field-attention' : ''}`}
+                            active={activeCell === cellId}
+                            onChange={v => setSimpleDraft(row.metric, v)}
+                            onFocus={() => setActiveCell(cellId)}
+                            onBlur={() => { setActiveCell(null); scheduleSave(); }}
+                            onKeyDown={e => { blockBadNumericKeys(e); if (e.key === 'Enter') { e.preventDefault(); flushSave(); } }}
+                          />
+                        );
+                      }
+                      const v = row.metric === 'weight' ? c.col.weight : c.col.waist;
+                      const id = row.metric === 'weight' ? c.col.weightId : c.col.waistId;
+                      const isPinned = colIdx === columns.length - 2;
+                      if (v == null) {
+                        return <div key={`${c.col.date}.${row.metric}`} className={`bt-cell-value${isPinned ? ' bt-cell-pinned' : ''}`}>{' '}</div>;
+                      }
+                      return (
+                        <ValueCell
+                          key={`${c.col.date}.${row.metric}`}
+                          metric={row.metric}
+                          display={display}
+                          sex={sex}
+                          siValue={v}
+                          rowId={id}
+                          status={simpleStatus(row.metric, v, heightCm, sex)}
+                          pinned={isPinned}
+                          onActivate={() => setActiveCell(`${c.col.date}.${row.metric}`)}
+                          onDeactivate={() => setActiveCell(null)}
+                          onCorrect={onCorrectValue}
+                        />
+                      );
+                    })}
+                    <div className="bt-row-filler"/>
+                    <div className="bt-cell-trend">
+                      {sparkPoints.length >= 2 && <Sparkline points={sparkPoints}/>}
+                      <span className={`bt-status-tick bt-status-${lastStatus ?? 'none'}`}/>
+                    </div>
+                  </div>
+                );
+              }
+
+              // BP row.
+              const bpSpark = trend.sysSeries;
+              const lastBpStatus = trend.lastSys != null ? bpStatus(trend.lastSys, trend.lastDia, age) : null;
               return (
-                <div key={b.date} className={`bt-cell-value${pinned ? ' bt-cell-pinned' : ''}`}>
-                  <span className="bt-date-day">{d.day} {d.mon}</span>
-                  <span className="bt-date-year">'{d.yr}</span>
-                  <span className="bt-value-num bt-value-num--bp">{b.sys}/{b.dia}</span>
-                  <div className="bt-cell-foot">
-                    <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>
+                <div key="bp" className={`bt-row${last}`}>
+                  {nameCell}
+                  {columns.map((c, colIdx) => {
+                    if (c.kind === 'draft') {
+                      return (
+                        <BpDraftCell
+                          key="draft.bp"
+                          sys={draft.sys}
+                          dia={draft.dia}
+                          previewStatus={bpStatus(parseLocalisedNumber(draft.sys), parseLocalisedNumber(draft.dia), age)}
+                          onSysChange={v => setBpDraft('sys', v)}
+                          onDiaChange={v => setBpDraft('dia', v)}
+                          onEnter={flushSave}
+                          onBlur={() => scheduleSave()}
+                        />
+                      );
+                    }
+                    const isPinned = colIdx === columns.length - 2;
+                    if (c.col.sys == null || c.col.dia == null) {
+                      return <div key={`${c.col.date}.bp`} className={`bt-cell-value${isPinned ? ' bt-cell-pinned' : ''}`}>{' '}</div>;
+                    }
+                    const status = bpStatus(c.col.sys, c.col.dia, age);
+                    return (
+                      <div key={`${c.col.date}.bp`} className={`bt-cell-value${isPinned ? ' bt-cell-pinned' : ''}`}>
+                        <span className="bt-value-num bt-value-num--bp num">{c.col.sys}/{c.col.dia}</span>
+                        <span className={`bt-status-tick bt-status-${status ?? 'none'}`}/>
+                      </div>
+                    );
+                  })}
+                  <div className="bt-row-filler"/>
+                  <div className="bt-cell-trend">
+                    {bpSpark.length >= 2 && <Sparkline points={bpSpark}/>}
+                    <span className={`bt-status-tick bt-status-${lastBpStatus ?? 'none'}`}/>
                   </div>
                 </div>
               );
             })}
-            <BpDraftCell
-              sys={draft.sys}
-              dia={draft.dia}
-              date={draft.date}
-              onSysChange={setSys}
-              onDiaChange={setDia}
-              onDateChange={date => setDraft(d => ({ ...d, date }))}
-              previewStatus={bpStatusFn(sysNum, diaNum)}
-              onEnter={commit}
-              onBlur={commit}
-            />
-            <div className="bt-cell-trend">
-              {sparkPoints.length >= 2 && <Sparkline points={sparkPoints}/>}
-              <span className={`bt-status-tick bt-status-${lastStatus ?? 'none'}`}/>
-            </div>
           </div>
         </div>
       </div>
@@ -571,26 +491,23 @@ function VitalsBpRow({ history, bpStatusFn, refLabel, isLoggedIn, onSave, onFiel
   );
 }
 
-function BpDraftCell({ sys, dia, date, onSysChange, onDiaChange, onDateChange, previewStatus, onEnter, onBlur }: {
+// ── BP draft cell — dual sys/dia input in one column ─────────────────────
+
+function BpDraftCell({ sys, dia, previewStatus, onSysChange, onDiaChange, onEnter, onBlur }: {
   sys: string;
   dia: string;
-  date: string;
+  previewStatus: Status;
   onSysChange: (v: string) => void;
   onDiaChange: (v: string) => void;
-  onDateChange: (d: string) => void;
-  previewStatus: Status;
   onEnter: () => void;
   onBlur: () => void;
 }) {
-  const d = fmtDate(date);
   const onKey: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     blockBadNumericKeys(e);
     if (e.key === 'Enter') { e.preventDefault(); onEnter(); }
   };
   return (
-    <div className="bt-cell-value bt-cell-draft bt-cell-vitals-draft">
-      <span className="bt-date-day">{d.day} {d.mon}</span>
-      <DateButton date={date} onChange={onDateChange}/>
+    <div className="bt-cell-value bt-cell-input bt-cell-draft">
       <div className="bt-vitals-bp-inputs">
         <input className="bt-input" inputMode="numeric" placeholder="sys" size={1}
                value={sys} onChange={e => onSysChange(e.target.value)} onKeyDown={onKey} onBlur={onBlur}/>
@@ -604,28 +521,3 @@ function BpDraftCell({ sys, dia, date, onSysChange, onDiaChange, onDateChange, p
     </div>
   );
 }
-
-// ── Calendar-icon button that opens the native date picker ─────────────
-
-function DateButton({ date, onChange }: { date: string; onChange: (d: string) => void }) {
-  const ref = useRef<HTMLInputElement | null>(null);
-  const open = () => {
-    try { (ref.current as any)?.showPicker?.(); }
-    catch { ref.current?.click(); }
-  };
-  const d = fmtDate(date);
-  return (
-    <button type="button" className="bt-vitals-date-btn" onClick={open} title="Click to change date">
-      <span className="bt-date-year">'{d.yr}</span>
-      <svg width="10" height="10" viewBox="0 0 16 16" fill="none" className="bt-vitals-date-icon" aria-hidden="true">
-        <rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
-        <line x1="2" y1="6.5" x2="14" y2="6.5" stroke="currentColor" strokeWidth="1.3"/>
-        <line x1="5" y1="2" x2="5" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-        <line x1="11" y1="2" x2="11" y2="4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-      </svg>
-      <input ref={ref} type="date" value={date} onChange={e => onChange(e.target.value)}
-             className="bt-date-hidden-icon" aria-label="Choose date"/>
-    </button>
-  );
-}
-
