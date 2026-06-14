@@ -13,7 +13,7 @@ import {
   isScreeningEligible,
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
-import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api';
+import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
 import { labValueLabel } from '../lib/lab-value-labels';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
 import { NumericInputCell } from './NumericInputCell';

@@ -1,8 +1,10 @@
 <!-- Health Roadmap — v2 LOCAL-FIRST (production cutover 2026-06-12).
      User-owned storage (their own cloud / localStorage), no Supabase, chat +
      lab-upload through Brad's thin server. Same bundle family as the GitHub
-     Pages build. The previous Supabase-backed widget (health-tool.js) is kept
-     in assets for rollback (git revert this block + redeploy). -->
+     Pages build. The legacy Supabase-backed widget (health-tool.js) was RETIRED
+     on 2026-06-15 — its bundle and entry are gone, and its API hit now-deleted
+     server endpoints + purged tables, so it offered no working rollback. To roll
+     back, git revert the teardown commits and rebuild from source. -->
 {{ 'health-plan-v2.css' | asset_url | stylesheet_tag }}
 <style>
   #upCartStickyButton, #PBarNextFrameWrapper { display: none !important; }

@@ -16,7 +16,7 @@
  *    → byok-upload.ts (the user's own Anthropic key, browser-direct).
  */
 import { parseJsonResponse, PROXY_PATH } from './api';
-import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode } from './api';
+import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 
 const LAB_IMPORT_V2_URL = `${PROXY_PATH}/api/lab-import-v2`;
 

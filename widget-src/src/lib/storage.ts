@@ -1,7 +1,7 @@
 import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core';
 import type { UnitSystem } from '@roadmap/health-core';
 import { healthInputSchema } from '@roadmap/health-core';
-import type { ApiReminderPreference } from './api';
+import type { ApiReminderPreference } from './api-types';
 
 /**
  * Sanitize inputs against the Zod schema (single source of truth).

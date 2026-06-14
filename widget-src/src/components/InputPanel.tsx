@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { ColumnHeader } from './ColumnHeader';
 import { DocumentLightbox } from './DocumentLightbox';
-import { DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument, type ApiSupplement, HISTORY_PAGE_PATH, openHistoryLightbox,
-} from '../lib/api';
+import { DOCUMENT_TYPE_LABELS, formatDocumentDate, HISTORY_PAGE_PATH, openHistoryLightbox } from '../lib/api';
+import type { ApiDocument, ApiSupplement } from '../lib/api-types';
 
 /** Intercept a history link: lightbox on the standalone, normal nav on Shopify. */
 const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {

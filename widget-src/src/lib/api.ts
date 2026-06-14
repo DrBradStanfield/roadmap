@@ -1,4 +1,4 @@
-import type { HealthInputs, MeasurementSource, DocumentType } from '@roadmap/health-core';
+import type { HealthInputs, MeasurementSource } from '@roadmap/health-core';
 import { safeGetItem, safeSetItem } from './storage';
 import {
   measurementsToInputs,
@@ -11,11 +11,26 @@ import {
   type ApiScreening,
 } from '@roadmap/health-core';
 import { Sentry } from './sentry';
-
-export interface ApiReminderPreference {
-  reminderCategory: string;
-  enabled: boolean;
-}
+// Shared data-shape types live in api-types.ts (decoupled from the fetch impls
+// so they survive independent of this module). Re-exported here so the many
+// `from '../lib/api'` import paths keep resolving.
+import type {
+  ApiReminderPreference,
+  ApiSupplement,
+  ApiLabValue,
+  ApiDocument,
+  ApiMedicationHistory,
+  LatestMeasurementsResult,
+  AddMeasurementResult,
+  CorrectMeasurementResult,
+  BulkSaveResult,
+  BulkLabValuesResult,
+  PageContent,
+  LabImportResult,
+  BatchPollResponse,
+  UploadErrorCode,
+} from './api-types';
+export * from './api-types';
 
 interface MeasurementsResponse {
   success: boolean;
@@ -73,34 +88,6 @@ export async function parseJsonResponse<T>(response: Response): Promise<T | null
   return response.json() as Promise<T>;
 }
 
-/** Snapshot of the user's saved data needed by the upload review modal
- *  for dedup badges + matrix context columns. One object, not three
- *  separate props, so call sites don't grow with each new history
- *  dimension. */
-export interface UploadHistory {
-  bloodTests: ApiMeasurement[];
-  labValues: ApiLabValue[];
-  documents: ApiDocument[];
-}
-
-/** Result from loading latest measurements: pre-fill inputs + raw measurements for "Previous:" labels. */
-export interface LatestMeasurementsResult {
-  /** Only demographic/height fields for pre-filling the form. */
-  inputs: Partial<HealthInputs>;
-  /** Raw latest measurements with dates, for "Previous:" labels and results fallback. */
-  previousMeasurements: ApiMeasurement[];
-  /** Medication statuses from the medications table. */
-  medications: ApiMedication[];
-  /** Cancer screening statuses from the screenings table. */
-  screenings: ApiScreening[];
-  /** Supplement records (logged-in users only). */
-  supplements: ApiSupplement[];
-  /** Reminder notification preferences. */
-  reminderPreferences: ApiReminderPreference[];
-  /** Active health documents — for the home panel + upload-review dup index. */
-  documents: ApiDocument[];
-}
-
 /**
  * Load latest measurements (one per metric) + profile demographics from cloud storage.
  * Returns pre-fill inputs (demographics + height only) and raw measurements separately.
@@ -143,11 +130,6 @@ export async function loadLatestMeasurements(): Promise<LatestMeasurementsResult
     return null;
   }
 }
-
-export type AddMeasurementResult =
-  | { status: 'inserted'; row: ApiMeasurement }
-  | { status: 'duplicate' }
-  | { status: 'error' };
 
 /**
  * Add a single measurement. Value must be in SI canonical units.
@@ -243,20 +225,6 @@ export async function loadAllHistory(
   }
 }
 
-/** Medication history record (from medication_history table). */
-export interface ApiMedicationHistory {
-  id: string;
-  medicationKey: string;
-  drugName: string;
-  doseValue: number | null;
-  doseUnit: string | null;
-  status: string;
-  effectiveStart: string;
-  effectiveEnd: string | null;
-  changeType: string;
-  source: string;
-}
-
 /** Load all medication history for chart annotations. */
 export async function loadMedicationHistory(): Promise<ApiMedicationHistory[]> {
   try {
@@ -332,18 +300,6 @@ export async function saveMedication(
     Sentry.captureException(error);
     return false;
   }
-}
-
-/** API supplement record. */
-export interface ApiSupplement {
-  id: string;
-  supplementKey: string;
-  supplementName: string;
-  doseValue: number | null;
-  doseUnit: string | null;
-  status: string;
-  startedAt: string | null;
-  updatedAt: string;
 }
 
 /** Save a supplement (upsert). */
@@ -613,88 +569,17 @@ export async function saveChangedMeasurements(
 }
 
 // ---------------------------------------------------------------------------
-// Lab Import
+// Lab Import — shapes (PageContent, ExtractedValue, LabImportResult, …) live in
+// api-types.ts; the fetch transports follow below.
 // ---------------------------------------------------------------------------
 
-export interface PageContent {
-  type: 'text' | 'image';
-  content: string;
-  mimeType?: string;
-}
-
-export interface ExtractedValue {
-  metric: string;
-  valueSI: number;
-  displayValue: number;
-  displayUnit: string;
-  /** Which unit system displayUnit/displayValue belong to. Optional for
-   *  back-compat with API responses predating the May 2026 redesign. */
-  displaySystem?: import('@roadmap/health-core').UnitSystem;
-  confidence: 'high' | 'medium' | 'low';
-  question?: string;
-}
-
-/** Document data returned by the LLM for non-lab documents.
- *  Classification is validated server-side against DOCUMENT_TYPES. */
-export interface DocumentResult {
-  classification: DocumentType;
-  title: string;
-  documentDate: string | null;
-  contentMarkdown: string;
-  metadata: Record<string, unknown>;
-}
-
-/** A lab value outside the 11 core metrics — stored as-is (no unit conversion). */
-export interface AdditionalLabValue {
-  name: string;
-  value: number;
-  unit: string;
-  referenceLow?: number | null;
-  referenceHigh?: number | null;
-}
-
-export interface LabImportResult {
-  classification: string;
-  reportDate: string | null;
-  values: ExtractedValue[];
-  additionalValues: AdditionalLabValue[];
-  document: DocumentResult | null;
-}
-
-/** Saved lab value from the API */
-export interface ApiLabValue {
-  id: string;
-  metricName: string;
-  value: number;
-  unit: string;
-  referenceLow: number | null;
-  referenceHigh: number | null;
-  recordedAt: string;
-  source: string;
-  createdAt: string;
-}
-
-/** Saved document from the API */
-export interface ApiDocument {
-  id: string;
-  documentType: string;
-  title: string;
-  documentDate: string | null;
-  contentMd: string;
-  metadata: Record<string, unknown>;
-  sourceFileName: string | null;
-  createdAt: string;
-  /** Path of the archived original in the user's own cloud (v2 local-first only). */
-  fileRef?: string | null;
-}
-
 /**
- * Legacy href target for full-history links in the legacy rollback bundle
- * (health-tool.js). NOTE: the /pages/health-history page was deleted from
- * production on 2026-06-14, so this link only resolves if that page is
- * recreated alongside a legacy rollback. On every live (v2/local-first)
- * surface the click is intercepted by openHistoryLightbox() (roadmap-data.ts
- * override) and this constant is never navigated to.
+ * Legacy href target for full-history links. The /pages/health-history page was
+ * removed from production on 2026-06-14, so this only resolves if that page is
+ * recreated. On every live (v2/local-first) surface the click is intercepted by
+ * openHistoryLightbox() (roadmap-data.ts override) and this constant is never
+ * navigated to — it only supplies the `<a href>` fallback for no-JS /
+ * right-click-open.
  */
 export const HISTORY_PAGE_PATH = '/pages/health-history';
 
@@ -763,8 +648,6 @@ export async function checkLabImportQuota(): Promise<{ allowed: boolean; remaini
  * Send extracted page content to the LLM proxy for lab result extraction.
  * One call per file — do not batch across files.
  */
-export type UploadErrorCode = 'rate_limit' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network';
-
 export async function labImport(
   pages: PageContent[],
   unitSystem: 'si' | 'conventional',
@@ -805,15 +688,6 @@ interface BatchCreateResponse {
   batchId?: string;
   totalFiles?: number;
   error?: string;
-}
-
-export interface BatchPollResponse {
-  status: 'processing' | 'ended';
-  completed: number;
-  total: number;
-  results?: Array<LabImportResult & { fileName: string }>;
-  error?: string;
-  errorCode?: UploadErrorCode;
 }
 
 /**
@@ -881,13 +755,6 @@ interface BulkSaveResponse {
   error?: string;
 }
 
-export interface BulkSaveResult {
-  saved: ApiMeasurement[];
-  /** How many submitted rows were already present (active) at (user, metric, recorded_at). */
-  skippedDuplicates: number;
-  /** How many submitted rows hit a server error (rare; surface in UI). */
-  errorCount: number;
-}
 
 /**
  * Save multiple measurements in a single request (from lab import review).
@@ -919,12 +786,6 @@ export async function bulkSaveMeasurements(
     return emptyResult(measurements.length);
   }
 }
-
-export type CorrectMeasurementResult =
-  | { status: 'ok'; newId: string }
-  | { status: 'conflict' }
-  | { status: 'not_found' }
-  | { status: 'error' };
 
 /**
  * FHIR replaces: correct a saved measurement. newValueSI is in SI canonical units
@@ -1057,14 +918,6 @@ export async function loadLabValues(
     console.warn('Load lab values error:', error);
     return null;
   }
-}
-
-export interface BulkLabValuesResult {
-  saved: ApiLabValue[];
-  /** How many rows were already present (active) at this (user, metric_name, recorded_at). */
-  skippedDuplicates: number;
-  /** How many rows hit a server error. */
-  errorCount: number;
 }
 
 /**

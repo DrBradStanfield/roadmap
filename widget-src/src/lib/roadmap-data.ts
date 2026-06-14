@@ -39,7 +39,7 @@ import type {
   BulkSaveResult,
   CorrectMeasurementResult,
   LatestMeasurementsResult,
-} from './api';
+} from './api-types';
 
 export * from './api';
 

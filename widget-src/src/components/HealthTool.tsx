@@ -24,7 +24,7 @@ import {
   type ApiMedication,
   type ApiScreening,
 } from '@roadmap/health-core';
-import { type ApiSupplement, type ApiLabValue } from '../lib/api';
+import type { ApiSupplement, ApiLabValue } from '../lib/api-types';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
 import { ChatSection, type ChatPrefetchData } from './ChatSection';
@@ -69,9 +69,8 @@ import {
   sendWelcomeEmail,
   trackABImpression,
   trackABConversion,
-  type ApiReminderPreference,
-  type ApiDocument,
 } from '../lib/api';
+import type { ApiReminderPreference, ApiDocument } from '../lib/api-types';
 import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
 
 // Auth state from Liquid template

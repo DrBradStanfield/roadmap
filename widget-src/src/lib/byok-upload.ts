@@ -29,7 +29,7 @@ import {
 } from '@roadmap/health-core/lab-extraction';
 import { getAnthropicKey } from './byok-chat';
 import { ByokAnthropicError, callAnthropicDirect, type ByokErrorCode } from './byok-anthropic';
-import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode } from './api';
+import type { BatchPollResponse, LabImportResult, PageContent, UploadErrorCode } from './api-types';
 
 const NO_KEY_MESSAGE =
   'Connect your Anthropic API key (in the "Ask about your plan" panel) to process documents on this page.';

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { deleteDocument, readDocumentFile, DOCUMENT_TYPE_LABELS, formatDocumentDate, type ApiDocument } from '../lib/api';
+import { deleteDocument, readDocumentFile, DOCUMENT_TYPE_LABELS, formatDocumentDate } from '../lib/api';
+import type { ApiDocument } from '../lib/api-types';
 import { renderMarkdown } from '../lib/markdown';
 import { useIsMobile } from '../lib/useIsMobile';
 

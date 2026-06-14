@@ -23,7 +23,8 @@ import {
   getProteinEvidence,
   getBmiEvidence,
 } from '@roadmap/health-core';
-import { type ApiReminderPreference, sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments, getReportEmailCaptured, markReportEmailCaptured } from '../lib/api';
+import { sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments, getReportEmailCaptured, markReportEmailCaptured } from '../lib/api';
+import type { ApiReminderPreference } from '../lib/api-types';
 import { EMAIL_REGEX } from '../lib/email';
 import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ColumnHeader } from './ColumnHeader';

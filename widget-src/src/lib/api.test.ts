@@ -1,110 +1,53 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-// Mock Sentry before importing api functions
+// Mock Sentry — api.ts imports it at module load (for sendFeedback / AB tracking).
 vi.mock('./sentry', () => ({
   Sentry: {
     captureException: vi.fn(),
   },
 }));
 
-import { loadLatestMeasurements, addMeasurement } from './api';
-import { Sentry } from './sentry';
+import { parseJsonResponse } from './api';
 
+// The Shopify app proxy can return an HTML maintenance/error page with a 200
+// status. parseJsonResponse is the guard every data call routes through — it
+// must return null (not throw) on non-JSON, and still surface genuinely
+// malformed JSON. (Before the legacy health-tool.js bundle was retired this
+// was covered indirectly through loadLatestMeasurements/addMeasurement; those
+// fetch wrappers now live in roadmap-data.ts as local-first store calls, so we
+// test the guard directly.)
 describe('parseJsonResponse — HTML response from Shopify proxy', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('loadLatestMeasurements returns null when proxy returns HTML', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('<!doctype html><html><body>Maintenance</body></html>', {
-        status: 200,
-        headers: { 'Content-Type': 'text/html' },
-      }),
-    );
-
-    const result = await loadLatestMeasurements();
-    expect(result).toBeNull();
+  it('returns null when the proxy returns HTML', async () => {
+    const response = new Response('<!doctype html><html><body>Maintenance</body></html>', {
+      status: 200,
+      headers: { 'Content-Type': 'text/html' },
+    });
+    expect(await parseJsonResponse(response)).toBeNull();
   });
 
-  it('loadLatestMeasurements does NOT report HTML responses to Sentry', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('<!doctype html><html><body>Error</body></html>', {
-        status: 200,
-        headers: { 'Content-Type': 'text/html' },
-      }),
-    );
-
-    await loadLatestMeasurements();
-    expect(Sentry.captureException).not.toHaveBeenCalled();
+  it('throws on genuine malformed JSON (correct content-type)', async () => {
+    const response = new Response('not valid json', {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    await expect(parseJsonResponse(response)).rejects.toThrow();
   });
 
-  it('loadLatestMeasurements DOES report genuine malformed JSON to Sentry', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('not valid json', {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
-
-    const result = await loadLatestMeasurements();
-    expect(result).toBeNull();
-    expect(Sentry.captureException).toHaveBeenCalledOnce();
+  it('parses valid JSON', async () => {
+    const response = new Response(JSON.stringify({ success: true, value: 42 }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect(await parseJsonResponse<{ value: number }>(response)).toEqual({ success: true, value: 42 });
   });
 
-  it('loadLatestMeasurements returns data for valid JSON', async () => {
-    const mockPayload = {
-      success: true,
-      data: [{ metric_type: 'weight', value: 80, recorded_at: '2026-01-01' }],
-      profile: { sex: 1, birth_year: 1985, birth_month: 6, unit_system: 1 },
-      medications: [],
-      screenings: [],
-      reminderPreferences: [],
-    };
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(mockPayload), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
-
-    const result = await loadLatestMeasurements();
-    expect(result).not.toBeNull();
-    expect(result?.previousMeasurements).toHaveLength(1);
-  });
-
-  it('addMeasurement returns error status when proxy returns HTML', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('<!doctype html>', {
-        status: 200,
-        headers: { 'Content-Type': 'text/html' },
-      }),
-    );
-
-    const result = await addMeasurement('weight', 75);
-    expect(result).toEqual({ status: 'error' });
-  });
-
-  it('addMeasurement returns duplicate status on 409', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ success: false, error: 'duplicate' }), {
-        status: 409,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
-
-    const result = await addMeasurement('weight', 75);
-    expect(result).toEqual({ status: 'duplicate' });
-  });
-
-  it('handles missing content-type header as non-JSON', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response('some text', { status: 200 }),
-    );
-
-    const result = await loadLatestMeasurements();
-    expect(result).toBeNull();
-    expect(Sentry.captureException).not.toHaveBeenCalled();
+  it('treats a missing content-type header as non-JSON', async () => {
+    const response = new Response('some text', { status: 200 });
+    expect(await parseJsonResponse(response)).toBeNull();
   });
 });
 

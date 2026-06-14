@@ -500,12 +500,12 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
       <td><code>api.ts→roadmap-data.ts</code>, <code>chat-api.ts→byok-chat.ts</code>, <code>upload-api.ts→byok-upload.ts</code></td>
     </tr>
     <tr>
-      <td><strong>Legacy v1</strong> <span class="pill gray">rollback only</span></td>
-      <td><code>npm run build:widget</code></td>
-      <td><a class="file-link" href="../widget-src/vite.config.ts">vite.config.ts</a> + site-chat/chatbot/upload</td>
-      <td>none (undefined → false)</td>
-      <td><code>health-tool.js</code>, …</td>
-      <td>none</td>
+      <td><strong>Legacy v1</strong> <span class="pill gray">RETIRED 2026-06-15</span></td>
+      <td><em>deleted</em> (was <code>npm run build:widget</code>)</td>
+      <td><em>deleted</em> (<code>vite.config.ts</code> + entry <code>src/index.tsx</code> removed)</td>
+      <td>—</td>
+      <td><code>health-tool.js</code> deleted from assets</td>
+      <td>—</td>
     </tr>
   </tbody>
 </table>
@@ -514,7 +514,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
   <strong>Two corrections vs the older docs.</strong> (1) There is no <code>vite.config.pages.ts</code> — the Pages config is <code>vite.config.standalone.ts</code>, and <code>build:pages</code>/<code>build:shopify-prod</code> live in the <em>root</em> <code>package.json</code>, not <code>widget-src/</code>. (2) The Shopify prod build swaps <strong>only the storage module</strong>; its chat and upload still go through Brad's server (<code>chat-api.ts</code> / <code>upload-api.ts</code> → app proxy). The three-swap set is the <em>Pages</em> build, where AI is BYOK.
 </div>
 <div class="callout">
-  <strong>Flag semantics.</strong> <code>LOCAL_FIRST</code> is true on both v2 builds: the plan lives client-side, "logged in" is just storage UX, chat sends the plan as context, and legacy login-sync server calls are neutralized by the shim. <code>SHOPIFY_SURFACE</code> is true <em>only</em> on drstanfield.com: it gates features that need Brad's server (the guest report-email/Klaviyo capture). The legacy v1 build sees both as false, so <code>api.ts</code>'s no-op stubs keep it byte-stable.
+  <strong>Flag semantics.</strong> <code>LOCAL_FIRST</code> is true on both v2 builds: the plan lives client-side, "logged in" is just storage UX, chat sends the plan as context, and legacy login-sync server calls are neutralized by the shim. <code>SHOPIFY_SURFACE</code> is true <em>only</em> on drstanfield.com: it gates features that need Brad's server (the guest report-email/Klaviyo capture). Both v2 builds redirect <code>lib/api → roadmap-data.ts</code>; the now-retired legacy v1 build saw both flags as false and used <code>api.ts</code>'s fetch functions directly.
 </div>
 
 <h2 id="module-swap">The module-swap mechanism</h2>
@@ -850,7 +850,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
   <li><strong>Shopify widget:</strong> <code>shopify app config use shopify.app.toml</code> → <code>npm run build:shopify-prod</code> → strip <code>*.map</code> → <code>npx shopify app deploy --force</code>. Verify the banner is <code>health-roadmap-&lt;N&gt;</code> (prod), not <code>-dev-&lt;N&gt;</code>.</li>
   <li><strong>Backend:</strong> from repo root, dereference the <code>docs/products.md</code> symlink (Fly's builders can't follow it), deploy, then <code>git checkout docs/products.md</code> to restore the symlink. Use <code>fly deploy --strategy canary</code> for any risky change — the default rolling strategy does not protect against a boot crash (see <a href="#gotchas">gotchas</a>).</li>
 </ul>
-<p>Rollback: the legacy <code>health-tool.js</code> still ships in the extension assets; reverting the <code>app-block.liquid</code> commit and redeploying restores the v1 widget.</p>
+<p>Rollback: there is <strong>no JS rollback bundle</strong>. The legacy <code>health-tool.js</code> was retired on 2026-06-15 (bundle, entry, and config deleted), and even before deletion it was a dead end — its <code>api.ts</code> fetch functions targeted server endpoints and Supabase tables that the v2 teardown removed/purged, so re-pointing <code>app-block.liquid</code> at it would load a non-functional, data-less zombie. A genuine rollback now means reverting the v2 teardown commits and rebuilding the v1 stack from git history.</p>
 
 <h2 id="security">Security model</h2>
 <ul>
@@ -876,9 +876,9 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 <details>
   <summary>Client &amp; Shopify</summary>
   <ul>
-    <li><code>sync-embed.liquid</code> deleted (its background guest→Supabase sync is meaningless when there's no Supabase health store). Its companion <code>health_roadmap_authenticated</code> localStorage flag was <strong>not</strong> removed: <code>HealthTool.tsx</code> (shared source, all three builds) still <em>sets</em> it whenever the data layer reports saved data (<code>setAuthenticatedFlag()</code> after <code>loadLatestMeasurements()</code>). On the v2 surfaces the flag is now purely write-only — <code>data-logged-in="true"</code> is hardcoded, so the flag-reading branches (<code>redirectFailed</code>, stale-cache clearing) can't fire, and the line-112 prefill read is behind the <code>LOCAL_FIRST</code> early-return. Its only remaining reader is the legacy rollback bundle. The former <code>history-block.liquid</code> reader was removed on 2026-06-14 (next bullet).</li>
+    <li><code>sync-embed.liquid</code> deleted (its background guest→Supabase sync is meaningless when there's no Supabase health store). Its companion <code>health_roadmap_authenticated</code> localStorage flag was <strong>not</strong> removed: <code>HealthTool.tsx</code> (shared source, both v2 builds) still <em>sets</em> it whenever the data layer reports saved data (<code>setAuthenticatedFlag()</code> after <code>loadLatestMeasurements()</code>). On the v2 surfaces the flag is now purely write-only — <code>data-logged-in="true"</code> is hardcoded, so the flag-reading branches (<code>redirectFailed</code>, stale-cache clearing) can't fire, and the prefill read is behind the <code>LOCAL_FIRST</code> early-return. With the legacy <code>health-tool.js</code> bundle retired (2026-06-15), <strong>no live build reads it at all</strong> — the writes are dead-but-harmless. The former <code>history-block.liquid</code> reader was removed on 2026-06-14 (next bullet).</li>
     <li>The separate dev Shopify app (<code>shopify.app.dev.toml</code>, <code>899d91…</code>) and <code>extensions-dev/</code> deleted; <code>/pages/test</code> removed.</li>
-    <li>Legacy <code>health-tool.js</code> remains buildable as a rollback asset, but its backend is gone — a frozen zombie, not live code. The standalone <code>health-history.js</code> bundle and its <code>history-block.liquid</code> mount were <strong>deleted</strong> on 2026-06-14 when Brad removed the <code>/pages/health-history</code> page from Shopify production — that page was the last live consumer of the <code>health_roadmap_authenticated</code> auto-redirect, so the redirect path is now unreachable in production. The in-widget history view survives as a lazy chunk of the v2 build (<code>HistoryPanel</code> opened via <code>openHistoryLightbox</code>), independent of the deleted page bundle.</li>
+    <li>Legacy <code>health-tool.js</code> was <strong>retired and deleted on 2026-06-15</strong> — bundle, entry (<code>src/index.tsx</code>), and vite config (<code>vite.config.ts</code>) all removed; <code>build:widget</code> no longer produces it (it now builds only the upload/site-chat/chatbot side bundles). Its backend was already gone, so it was a frozen, data-less zombie — no working rollback. The standalone <code>health-history.js</code> bundle and its <code>history-block.liquid</code> mount were <strong>deleted</strong> earlier, on 2026-06-14, when Brad removed the <code>/pages/health-history</code> page from Shopify production — that page was the last live consumer of the <code>health_roadmap_authenticated</code> auto-redirect, so the redirect path is now unreachable in production. The in-widget history view survives as a lazy chunk of the v2 build (<code>HistoryPanel</code> opened via <code>openHistoryLightbox</code>), independent of the deleted page bundle.</li>
   </ul>
 </details>
 <details>
@@ -905,7 +905,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 <div class="callout danger"><strong>The Shopify config drifts.</strong> A bare <code>shopify app deploy</code> targets whatever config was last <code>config use</code>'d — a bare deploy once shipped to the dev app by mistake. Always <code>shopify app config use shopify.app.toml</code> first and verify the <code>health-roadmap-&lt;N&gt;</code> banner.</div>
 <div class="callout danger"><strong>Crons self-start on import.</strong> Importing any <code>*-cron.server.ts</code> (even to call its <code>stop*</code>) starts it. Don't import a cron module from a non-server context.</div>
 <div class="callout danger"><strong>Risky Fly deploys: use <code>--strategy canary</code>.</strong> The default rolling deploy + health checks does NOT protect against a boot crash — during the RR7 cutover it updated both machines to an image that crashed before binding <code>:3000</code> and took production down. Canary (or bluegreen) health-checks a throwaway machine first, so a failed boot never touches the serving machines. The class of failure (a transitive dep throwing on the container's Node version, invisible to a newer local Node) is exactly what a boot rehearsal — or canary — catches.</div>
-<div class="callout"><strong>CSS scoping while the legacy bundle still ships.</strong> Any changed shared selector must be scoped under <code>.health-tool</code>, or the stale <code>health-site-chat.css</code> can win by document order.</div>
+<div class="callout"><strong>CSS scoping across co-loaded bundles.</strong> The site-chat / chatbot bundles still ship their own CSS on the same pages, so any changed shared selector must be scoped under <code>.health-tool</code>, or <code>health-site-chat.css</code> can win by document order.</div>
 <div class="callout"><strong><code>docs/products.md</code> must stay a symlink (git mode 120000).</strong> The Fly deploy dereferences it for the Docker context and restores it with <code>git checkout</code>; if that restore is skipped, the next <code>git add</code> bakes the 680-line file into the repo and the chatbot's product context silently drifts.</div>
 <div class="callout"><strong>Google Drive refresh tokens need a <em>published</em> OAuth app.</strong> In Testing mode they expire after 7 days — prefer Dropbox as the default for exactly this reason.</div>
 

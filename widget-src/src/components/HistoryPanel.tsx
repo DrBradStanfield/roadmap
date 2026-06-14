@@ -22,7 +22,8 @@ import {
 } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
 import 'chartjs-adapter-date-fns';
-import { loadAllHistory, loadLabValues, loadMedicationHistory, type ApiLabValue, type ApiMedicationHistory } from '../lib/api';
+import { loadAllHistory, loadLabValues, loadMedicationHistory } from '../lib/api';
+import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { labValueLabel } from '../lib/lab-value-labels';
 
