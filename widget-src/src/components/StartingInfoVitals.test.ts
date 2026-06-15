@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ApiMeasurement } from '@roadmap/health-core';
-import { buildColumns } from './StartingInfoVitals';
+import { buildColumns, bpPairReady, blurLeavesCell } from './StartingInfoVitals';
 
 // `buildColumns` is the one genuinely new pure helper introduced when the
 // vitals section was unified onto the blood-test matrix's column grid: it
@@ -81,5 +81,69 @@ describe('buildColumns', () => {
 
   it('returns an empty array for no measurements', () => {
     expect(buildColumns([])).toEqual([]);
+  });
+});
+
+// Blood pressure is an ATOMIC two-field value (systolic AND diastolic). The
+// vitals matrix auto-saves vital drafts on blur with a 500ms debounce. Before
+// the fix, leaving the systolic field (e.g. clicking into diastolic) could
+// schedule a save that fired mid-edit and committed a half-entered or stale
+// BP pair, then cleared the draft — the user saw their typed value vanish and
+// a wrong value land. `bpPairReady` is the gate that keeps a save from
+// committing unless BOTH fields hold a valid in-range number.
+describe('bpPairReady', () => {
+  it('is false when either field is empty (no half-pair commit)', () => {
+    expect(bpPairReady('120', '')).toBe(false);
+    expect(bpPairReady('', '80')).toBe(false);
+    expect(bpPairReady('', '')).toBe(false);
+  });
+
+  it('is false while a field is mid-typed below its valid range', () => {
+    // User has typed "8" toward "80" — must NOT commit yet.
+    expect(bpPairReady('120', '8')).toBe(false);
+    // Systolic still being typed.
+    expect(bpPairReady('5', '80')).toBe(false);
+  });
+
+  it('is true only when both sys + dia are valid in-range numbers', () => {
+    expect(bpPairReady('120', '80')).toBe(true);
+    expect(bpPairReady('135', '85')).toBe(true);
+  });
+
+  it('rejects out-of-physiological-range values', () => {
+    expect(bpPairReady('300', '80')).toBe(false); // sys too high
+    expect(bpPairReady('120', '200')).toBe(false); // dia too high
+    expect(bpPairReady('40', '80')).toBe(false); // sys too low
+  });
+});
+
+// The systolic and diastolic inputs share one matrix cell. A blur from
+// systolic → diastolic (focus staying inside the cell) must NOT trigger a
+// save — only a blur that leaves the whole BP cell should. This is what keeps
+// the draft from clearing under the user mid-edit.
+describe('blurLeavesCell', () => {
+  function fakeCell(children: unknown[]) {
+    return { contains: (n: unknown) => children.includes(n) } as unknown as HTMLElement;
+  }
+
+  it('returns false when focus moves to a sibling inside the same cell', () => {
+    const sib = {};
+    const cell = fakeCell([sib]);
+    expect(blurLeavesCell(sib as unknown as HTMLElement, cell)).toBe(false);
+  });
+
+  it('returns true when focus leaves the cell (relatedTarget outside)', () => {
+    const outside = {};
+    const cell = fakeCell([]);
+    expect(blurLeavesCell(outside as unknown as HTMLElement, cell)).toBe(true);
+  });
+
+  it('returns true when focus is lost entirely (relatedTarget null)', () => {
+    const cell = fakeCell([]);
+    expect(blurLeavesCell(null, cell)).toBe(true);
+  });
+
+  it('returns true defensively when the cell ref is missing', () => {
+    expect(blurLeavesCell(null, null)).toBe(true);
   });
 });

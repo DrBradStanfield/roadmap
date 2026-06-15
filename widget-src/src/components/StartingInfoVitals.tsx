@@ -121,6 +121,33 @@ function simpleStatus(metric: 'weight' | 'waist', si: number | null | undefined,
 function todayIso(): string { return new Date().toISOString().slice(0, 10); }
 function isoOnly(s: string): string { return s.slice(0, 10); }
 
+// ── Blood-pressure helpers (atomic sys+dia pair) ─────────────────────────
+// BP is a two-field value: a save must commit systolic AND diastolic together
+// or neither. These ranges gate both the live `onFieldChange` mirror and the
+// auto-save, so a half-entered or mid-typed pair (e.g. "120 / 8") never lands.
+const BP_SYS_MIN = 60, BP_SYS_MAX = 250;
+const BP_DIA_MIN = 40, BP_DIA_MAX = 150;
+
+/** True only when both fields hold a valid, in-physiological-range number —
+ *  the gate that stops an auto-save from committing a half-entered BP pair. */
+export function bpPairReady(sys: string, dia: string): boolean {
+  const s = parseLocalisedNumber(sys);
+  const d = parseLocalisedNumber(dia);
+  return (
+    s != null && s >= BP_SYS_MIN && s <= BP_SYS_MAX &&
+    d != null && d >= BP_DIA_MIN && d <= BP_DIA_MAX
+  );
+}
+
+/** True when a blur moves focus OUTSIDE the given cell (or focus is lost).
+ *  systolic ↔ diastolic share one cell, so a blur between them returns false
+ *  and must not trigger a save — only leaving the whole cell should. */
+export function blurLeavesCell(related: HTMLElement | null, cell: HTMLElement | null): boolean {
+  if (!cell) return true;
+  if (!related) return true;
+  return !cell.contains(related);
+}
+
 // ── Per-date model ───────────────────────────────────────────────────────
 // One column per distinct date. Each column carries the SI value + row id for
 // every vital recorded that day (sparse — a date may hold only a weight).
@@ -283,17 +310,18 @@ export function StartingInfoVitals({
   const setBpDraft = (which: 'sys' | 'dia', typed: string) => {
     setDraft(d => ({ ...d, [which]: typed }));
     const n = parseLocalisedNumber(typed);
-    if (which === 'sys') onFieldChange('systolicBp', n != null && n >= 60 && n <= 250 ? n : undefined);
-    else onFieldChange('diastolicBp', n != null && n >= 40 && n <= 150 ? n : undefined);
+    if (which === 'sys') onFieldChange('systolicBp', n != null && n >= BP_SYS_MIN && n <= BP_SYS_MAX ? n : undefined);
+    else onFieldChange('diastolicBp', n != null && n >= BP_DIA_MIN && n <= BP_DIA_MAX ? n : undefined);
   };
 
   // Validation of the whole draft + any filled value (blocks save while bad).
   const draftValid = useMemo(() => {
     const wOk = draft.weight === '' || !validateTypedValue('weight', draft.weight, fieldUnit('weightKg')).error;
     const waOk = draft.waist === '' || !validateTypedValue('waist', draft.waist, fieldUnit('waistCm')).error;
-    const sysN = parseLocalisedNumber(draft.sys), diaN = parseLocalisedNumber(draft.dia);
     const bpEmpty = draft.sys === '' && draft.dia === '';
-    const bpOk = bpEmpty || (sysN != null && diaN != null && sysN >= 60 && sysN <= 250 && diaN >= 40 && diaN <= 150);
+    // BP is atomic: a partially-filled pair (one field blank, or a mid-typed
+    // out-of-range value) is NOT savable. bpPairReady centralises that gate.
+    const bpOk = bpEmpty || bpPairReady(draft.sys, draft.dia);
     const anyFilled = draft.weight !== '' || draft.waist !== '' || !bpEmpty;
     return { ok: wOk && waOk && bpOk, anyFilled };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -312,8 +340,11 @@ export function StartingInfoVitals({
       const n = parseLocalisedNumber(draft.waist);
       if (n != null) values.waist = toCanonicalValue('waist', n, fieldUnit('waistCm'));
     }
-    const sysN = parseLocalisedNumber(draft.sys), diaN = parseLocalisedNumber(draft.dia);
-    if (sysN != null && diaN != null) { values.systolic_bp = sysN; values.diastolic_bp = diaN; }
+    // Only ever commit BP as a complete, in-range pair (never a half-entry).
+    if (bpPairReady(draft.sys, draft.dia)) {
+      values.systolic_bp = parseLocalisedNumber(draft.sys)!;
+      values.diastolic_bp = parseLocalisedNumber(draft.dia)!;
+    }
     if (Object.keys(values).length === 0) return;
     setSaving(true);
     try {
@@ -460,7 +491,12 @@ export function StartingInfoVitals({
                           onSysChange={v => setBpDraft('sys', v)}
                           onDiaChange={v => setBpDraft('dia', v)}
                           onEnter={flushSave}
-                          onBlur={() => scheduleSave()}
+                          // Only auto-save when focus LEAVES the whole BP cell
+                          // (not when moving systolic ↔ diastolic). Without
+                          // this, leaving the systolic field scheduled a save
+                          // that fired mid-edit and cleared the draft under the
+                          // user — the "focus jumped + wrong value" symptom.
+                          onCellExit={scheduleSave}
                         />
                       );
                     }
@@ -493,21 +529,29 @@ export function StartingInfoVitals({
 
 // ── BP draft cell — dual sys/dia input in one column ─────────────────────
 
-function BpDraftCell({ sys, dia, previewStatus, onSysChange, onDiaChange, onEnter, onBlur }: {
+function BpDraftCell({ sys, dia, previewStatus, onSysChange, onDiaChange, onEnter, onCellExit }: {
   sys: string;
   dia: string;
   previewStatus: Status;
   onSysChange: (v: string) => void;
   onDiaChange: (v: string) => void;
   onEnter: () => void;
-  onBlur: () => void;
+  /** Fires only when focus leaves the whole BP cell (not systolic ↔ diastolic). */
+  onCellExit: () => void;
 }) {
+  const cellRef = useRef<HTMLDivElement>(null);
   const onKey: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     blockBadNumericKeys(e);
     if (e.key === 'Enter') { e.preventDefault(); onEnter(); }
   };
+  // A blur to the sibling sys/dia input keeps focus inside the cell — don't
+  // save. Only schedule a save when focus actually exits the cell, so the
+  // draft can't clear under the user while they tab from systolic to diastolic.
+  const onBlur: React.FocusEventHandler<HTMLInputElement> = (e) => {
+    if (blurLeavesCell(e.relatedTarget as HTMLElement | null, cellRef.current)) onCellExit();
+  };
   return (
-    <div className="bt-cell-value bt-cell-input bt-cell-draft">
+    <div ref={cellRef} className="bt-cell-value bt-cell-input bt-cell-draft">
       <div className="bt-vitals-bp-inputs">
         <input className="bt-input" inputMode="numeric" placeholder="sys" size={1}
                value={sys} onChange={e => onSysChange(e.target.value)} onKeyDown={onKey} onBlur={onBlur}/>
