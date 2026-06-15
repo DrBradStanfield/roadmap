@@ -155,24 +155,27 @@ describe('blurLeavesCell', () => {
 // INSERT (an empty cell has no row to correct).
 describe('vitalsBackfillsToTasks', () => {
   const si: (m: 'weight' | 'waist') => UnitSystem = () => 'si';
+  // Convenience builders for the {simple, bp} backfill state.
+  const simpleBf = (simple: Record<string, string>) => ({ simple, bp: {} });
+  const bpBf = (bp: Record<string, { sys: string; dia: string }>) => ({ simple: {}, bp });
 
   it('returns no tasks for an empty backfill map', () => {
-    expect(vitalsBackfillsToTasks({}, si)).toEqual([]);
+    expect(vitalsBackfillsToTasks({ simple: {}, bp: {} }, si)).toEqual([]);
   });
 
   it('drops empty-string typed values', () => {
-    expect(vitalsBackfillsToTasks({ '2024-03-01|weight': '' }, si)).toEqual([]);
+    expect(vitalsBackfillsToTasks(simpleBf({ '2024-03-01|weight': '' }), si)).toEqual([]);
   });
 
   it('converts a weight (SI kg) to one task at its date', () => {
-    const tasks = vitalsBackfillsToTasks({ '2024-03-01|weight': '82' }, si);
+    const tasks = vitalsBackfillsToTasks(simpleBf({ '2024-03-01|weight': '82' }), si);
     expect(tasks).toEqual([{ date: '2024-03-01', values: { weight: 82 } }]);
   });
 
   it('converts conventional units (lbs → kg, in → cm) on commit', () => {
     const conv: (m: 'weight' | 'waist') => UnitSystem = () => 'conventional';
     const tasks = vitalsBackfillsToTasks(
-      { '2024-03-01|weight': '180', '2024-03-01|waist': '36' },
+      simpleBf({ '2024-03-01|weight': '180', '2024-03-01|waist': '36' }),
       conv,
     );
     const t = tasks.find(t => t.date === '2024-03-01')!;
@@ -182,7 +185,7 @@ describe('vitalsBackfillsToTasks', () => {
 
   it('groups weight + waist backfilled at the same date into one task', () => {
     const tasks = vitalsBackfillsToTasks(
-      { '2024-03-01|weight': '82', '2024-03-01|waist': '90' },
+      simpleBf({ '2024-03-01|weight': '82', '2024-03-01|waist': '90' }),
       si,
     );
     expect(tasks).toHaveLength(1);
@@ -191,7 +194,7 @@ describe('vitalsBackfillsToTasks', () => {
 
   it('produces one task per distinct date', () => {
     const tasks = vitalsBackfillsToTasks(
-      { '2024-03-01|weight': '82', '2025-01-10|weight': '79' },
+      simpleBf({ '2024-03-01|weight': '82', '2025-01-10|weight': '79' }),
       si,
     );
     expect(tasks).toHaveLength(2);
@@ -200,8 +203,42 @@ describe('vitalsBackfillsToTasks', () => {
 
   it('drops invalid / out-of-range typed values', () => {
     // weight 5 kg is below the metric's plausible range → dropped.
-    expect(vitalsBackfillsToTasks({ '2024-03-01|weight': '5' }, si)).toEqual([]);
+    expect(vitalsBackfillsToTasks(simpleBf({ '2024-03-01|weight': '5' }), si)).toEqual([]);
     // non-numeric → dropped.
-    expect(vitalsBackfillsToTasks({ '2024-03-01|weight': 'abc' }, si)).toEqual([]);
+    expect(vitalsBackfillsToTasks(simpleBf({ '2024-03-01|weight': 'abc' }), si)).toEqual([]);
+  });
+
+  // ── BP backfill (paired systolic_bp + diastolic_bp at a past date) ──────
+
+  it('commits a complete BP pair as paired systolic_bp + diastolic_bp at its date', () => {
+    const tasks = vitalsBackfillsToTasks(bpBf({ '2024-03-01': { sys: '128', dia: '82' } }), si);
+    expect(tasks).toHaveLength(1);
+    // mmHg has no SI conversion — stored as-is.
+    expect(tasks[0]).toEqual({ date: '2024-03-01', values: { systolic_bp: 128, diastolic_bp: 82 } });
+  });
+
+  it('does NOT commit a half-entered BP pair (one field blank)', () => {
+    expect(vitalsBackfillsToTasks(bpBf({ '2024-03-01': { sys: '128', dia: '' } }), si)).toEqual([]);
+    expect(vitalsBackfillsToTasks(bpBf({ '2024-03-01': { sys: '', dia: '82' } }), si)).toEqual([]);
+  });
+
+  it('does NOT commit a mid-typed out-of-range BP pair', () => {
+    // dia "8" on the way to "80" — must not land.
+    expect(vitalsBackfillsToTasks(bpBf({ '2024-03-01': { sys: '128', dia: '8' } }), si)).toEqual([]);
+  });
+
+  it('merges a BP backfill and a weight backfill at the same date into one task', () => {
+    const tasks = vitalsBackfillsToTasks(
+      {
+        simple: { '2024-03-01|weight': '82' },
+        bp: { '2024-03-01': { sys: '128', dia: '82' } },
+      },
+      si,
+    );
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]).toEqual({
+      date: '2024-03-01',
+      values: { weight: 82, systolic_bp: 128, diastolic_bp: 82 },
+    });
   });
 });

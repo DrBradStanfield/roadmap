@@ -22,6 +22,7 @@ import { MONTHS_SHORT } from '../lib/constants';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
+import { routeTasksToSaves, type CorrectFn } from '../lib/matrix-save';
 import {
   type Status,
   blockBadNumericKeys,
@@ -129,7 +130,7 @@ export interface BloodTestTimelineProps {
   // ValueCell calls this when the user submits an in-place correction.
   // Resolves true if the parent successfully refreshed; false leaves the
   // edit form open so the user can retry.
-  onCorrectValue?: (oldId: string, newValueSI: number) => Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }>;
+  onCorrectValue?: CorrectFn;
   // Called on every typed-value change so the suggestions engine (which reads
   // from `inputs[field]`) sees draft values live. Pass siValue = undefined
   // to clear the field (empty input or out-of-range).
@@ -358,35 +359,10 @@ export function BloodTestTimeline({
     // Same-(date, metric) rows route through correctMeasurement to honour FHIR
     // (replaces semantic + entered-in-error on old row), avoiding the silent
     // 409-cleared-draft that the partial unique index would otherwise produce.
-    // Index history once instead of `bloodTestHistory.find(...)` per metric
-    // per task: O(N+M) over O(N×M).
-    const activeRowByDateMetric = new Map<string, ApiMeasurement>();
-    for (const m of bloodTestHistory) {
-      if ((m.status ?? 'active') !== 'active') continue;
-      const key = `${m.recordedAt.slice(0, 10)}|${m.metricType}`;
-      if (!activeRowByDateMetric.has(key)) activeRowByDateMetric.set(key, m);
-    }
-
-    let anySaveFailed = false;
-    for (const t of tasks) {
-      const corrections: Array<{ id: string; value: number }> = [];
-      const newInserts: Record<string, number> = {};
-      for (const [metric, value] of Object.entries(t.values)) {
-        const existing = activeRowByDateMetric.get(`${t.date}|${metric}`);
-        if (existing && onCorrectValue) {
-          corrections.push({ id: existing.id, value });
-        } else {
-          newInserts[metric] = value;
-        }
-      }
-      if (corrections.length > 0 && onCorrectValue) {
-        const results = await Promise.all(corrections.map(c => onCorrectValue(c.id, c.value)));
-        if (results.some(r => !r.ok)) anySaveFailed = true;
-      }
-      if (Object.keys(newInserts).length > 0) {
-        await onSaveBatch(t.date, newInserts);
-      }
-    }
+    // Shared with the vitals matrix via routeTasksToSaves (one collision policy).
+    const { failed: anySaveFailed } = await routeTasksToSaves(
+      tasks, bloodTestHistory, onSaveBatch, onCorrectValue,
+    );
 
     // Preserve the user's typed draft if any save failed so they can retry
     // (otherwise the matrix clears and the typed value is lost).
@@ -606,7 +582,7 @@ interface ValueCellProps {
   pinned: boolean;
   onActivate: () => void;
   onDeactivate: () => void;
-  onCorrect?: (oldId: string, newValueSI: number) => Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }>;
+  onCorrect?: CorrectFn;
 }
 
 // Exported so StartingInfoVitals reuses the identical click-to-correct saved

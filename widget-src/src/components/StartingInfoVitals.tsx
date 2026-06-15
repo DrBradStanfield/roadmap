@@ -29,6 +29,7 @@ import {
   parseLocalisedNumber,
   calculateIBW,
 } from '@roadmap/health-core';
+import { routeTasksToSaves, type SaveTask, type CorrectFn } from '../lib/matrix-save';
 import {
   type Status,
   blockBadNumericKeys,
@@ -54,7 +55,7 @@ interface StartingInfoVitalsProps {
   /** Click-to-correct handler for saved single-value cells (weight / waist).
    *  Same prop the blood-test matrix uses. BP cells stay display-only (a
    *  sys/dia cell is ambiguous to correct in place). */
-  onCorrectValue?: (oldId: string, newValueSI: number) => Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }>;
+  onCorrectValue?: CorrectFn;
   /** Mirror typed draft values back into `inputs[field]` (in SI). Needed so
    *  the suggestions engine sees live drafts AND so guest users' typed
    *  values persist via the parent's localStorage auto-save. */
@@ -194,29 +195,44 @@ function emptyDraft(): DraftRow {
 }
 
 // Backfill typed values for EMPTY cells in existing date columns: a user can
-// click an empty weight/waist slot at a past date and type a value. Keyed by
-// `${date}|${metric}`. Mirrors BloodTestTimeline's backfill map. BP backfill is
-// intentionally NOT supported here (it's an atomic two-field cell — see the
-// empty-BP branch in the render). Only weight/waist (single-value metrics) are
-// backfillable, so the metric is always 'weight' | 'waist'.
+// click an empty weight/waist slot — or an empty BP slot — at a past date and
+// type a value. Single-value metrics (weight/waist) live in `simple`, keyed by
+// `${date}|${metric}`; BP is an atomic sys/dia pair keyed by date in `bp`.
+// Mirrors BloodTestTimeline's backfill map, plus a paired BP entry the
+// blood-test matrix doesn't need.
 type BackfillMetric = 'weight' | 'waist';
-type BackfillMap = Record<string, string>; // `${date}|${metric}` → typed value
+interface BackfillState {
+  simple: Record<string, string>; // `${date}|${metric}` → typed value
+  bp: Record<string, { sys: string; dia: string }>; // date → typed sys/dia pair
+}
+
+function emptyBackfills(): BackfillState {
+  return { simple: {}, bp: {} };
+}
 
 function backfillKey(date: string, metric: BackfillMetric): string {
   return `${date}|${metric}`;
 }
 
-/** Convert the backfill map into per-date SI value maps, ready for `onSave`.
- *  Each EMPTY-cell value becomes a new active measurement insert at its date —
- *  there is no existing row to correct (that's what makes the cell empty), so
- *  this is always a pure INSERT through the validated `onSave` path. Invalid /
- *  empty typed values are dropped. Exported for unit testing. */
+/** Convert the backfill state into per-date SI value maps, ready to save. Each
+ *  filled cell becomes a measurement at its date — through the SAME validated
+ *  save path as the draft (SI conversion, range check). A weight/waist entry is
+ *  a single metric; a BP entry is a paired systolic_bp + diastolic_bp committed
+ *  together (only when the pair is complete + in-range via `bpPairReady`).
+ *  Invalid / empty / half-entered values are dropped. Whether each resulting
+ *  metric INSERTs or routes to a correction (occupied slot) is decided later by
+ *  `routeTasksToSaves` against live history. Exported for unit testing. */
 export function vitalsBackfillsToTasks(
-  backfills: BackfillMap,
+  backfills: BackfillState,
   unitFor: (metric: BackfillMetric) => UnitSystem,
-): Array<{ date: string; values: Record<string, number> }> {
+): SaveTask[] {
   const byDate = new Map<string, Record<string, number>>();
-  for (const [key, typed] of Object.entries(backfills)) {
+  const ensure = (date: string) => {
+    const v = byDate.get(date) ?? {};
+    byDate.set(date, v);
+    return v;
+  };
+  for (const [key, typed] of Object.entries(backfills.simple)) {
     if (typed === '') continue;
     const sep = key.indexOf('|');
     const date = key.slice(0, sep);
@@ -226,9 +242,15 @@ export function vitalsBackfillsToTasks(
     if (validateTypedValue(metric, typed, display).error) continue;
     const n = parseLocalisedNumber(typed);
     if (n == null) continue;
-    const values = byDate.get(date) ?? {};
-    values[metric] = toCanonicalValue(metric, n, display);
-    byDate.set(date, values);
+    ensure(date)[metric] = toCanonicalValue(metric, n, display);
+  }
+  for (const [date, pair] of Object.entries(backfills.bp)) {
+    // BP is atomic — only commit a complete, in-range sys/dia pair. mmHg has no
+    // SI conversion (stored as-is), matching the draft-column BP commit.
+    if (!bpPairReady(pair.sys, pair.dia)) continue;
+    const values = ensure(date);
+    values.systolic_bp = parseLocalisedNumber(pair.sys)!;
+    values.diastolic_bp = parseLocalisedNumber(pair.dia)!;
   }
   return Array.from(byDate.entries()).map(([date, values]) => ({ date, values }));
 }
@@ -275,8 +297,8 @@ export function StartingInfoVitals({
   const dateColumns = useMemo(() => buildColumns(vitalsHistory), [vitalsHistory]);
 
   const [draft, setDraft] = useState<DraftRow>(emptyDraft);
-  // Typed values for empty weight/waist cells in existing date columns.
-  const [backfills, setBackfills] = useState<BackfillMap>({});
+  // Typed values for empty weight/waist/BP cells in existing date columns.
+  const [backfills, setBackfills] = useState<BackfillState>(emptyBackfills);
   const [activeCell, setActiveCell] = useState<string | null>(null);
 
   // Backfilling a PAST date deliberately does NOT mirror into inputs[field]
@@ -285,10 +307,22 @@ export function StartingInfoVitals({
   // not override it. Backfills persist only through `commit`'s save below.
   const setBackfillValue = (date: string, metric: BackfillMetric, typed: string) => {
     setBackfills(prev => {
-      const next = { ...prev };
-      if (typed === '') delete next[backfillKey(date, metric)];
-      else next[backfillKey(date, metric)] = typed;
-      return next;
+      const simple = { ...prev.simple };
+      if (typed === '') delete simple[backfillKey(date, metric)];
+      else simple[backfillKey(date, metric)] = typed;
+      return { ...prev, simple };
+    });
+  };
+  // Backfill a historical BP slot. systolic/diastolic edit independently but
+  // commit as one pair (the bpPairReady gate in vitalsBackfillsToTasks).
+  const setBackfillBp = (date: string, which: 'sys' | 'dia', typed: string) => {
+    setBackfills(prev => {
+      const bp = { ...prev.bp };
+      const cur = bp[date] ?? { sys: '', dia: '' };
+      const next = { ...cur, [which]: typed };
+      if (next.sys === '' && next.dia === '') delete bp[date];
+      else bp[date] = next;
+      return { ...prev, bp };
     });
   };
 
@@ -379,17 +413,24 @@ export function StartingInfoVitals({
     // out-of-range value) is NOT savable. bpPairReady centralises that gate.
     const bpOk = bpEmpty || bpPairReady(draft.sys, draft.dia);
 
-    // Backfilled empty cells (weight/waist only): validity is derived from the
-    // same `vitalsBackfillsToTasks` fold that `commit` uses — it drops every
-    // empty/invalid/out-of-range entry, so a backfill is OK iff every non-empty
-    // typed value survives the fold. One source of truth, no inline key re-parse.
-    const nonEmptyBackfills = Object.values(backfills).filter(v => v !== '').length;
-    const survivingBackfills = vitalsBackfillsToTasks(
-      backfills,
+    // Backfilled empty cells: validity is derived from the same
+    // `vitalsBackfillsToTasks` fold that `commit` uses — it drops every
+    // empty/invalid/out-of-range entry, so a SIMPLE backfill is OK iff every
+    // non-empty weight/waist cell survives the fold (one source of truth, no
+    // inline key re-parse). BP is atomic and validated separately: a half-typed
+    // pair must block save, so `anyBpHalf` gates it directly. (BP's surviving
+    // values would cancel on both sides of a simple-count equality, so they're
+    // excluded from the fold here by passing only `simple`.)
+    const nonEmptySimple = Object.values(backfills.simple).filter(v => v !== '').length;
+    const survivingSimple = vitalsBackfillsToTasks(
+      { simple: backfills.simple, bp: {} },
       metric => fieldUnit(metric === 'weight' ? 'weightKg' : 'waistCm'),
     ).reduce((n, t) => n + Object.keys(t.values).length, 0);
-    const backfillOk = survivingBackfills === nonEmptyBackfills;
-    const anyBackfill = nonEmptyBackfills > 0;
+    const anyBpHalf = Object.values(backfills.bp).some(
+      p => (p.sys !== '' || p.dia !== '') && !bpPairReady(p.sys, p.dia),
+    );
+    const backfillOk = survivingSimple === nonEmptySimple && !anyBpHalf;
+    const anyBackfill = nonEmptySimple > 0 || Object.keys(backfills.bp).length > 0;
 
     const anyFilled = draft.weight !== '' || draft.waist !== '' || !bpEmpty || anyBackfill;
     return { ok: wOk && waOk && bpOk && backfillOk, anyFilled };
@@ -415,27 +456,34 @@ export function StartingInfoVitals({
       values.diastolic_bp = parseLocalisedNumber(draft.dia)!;
     }
 
-    // Backfilled empty cells → one task per past date (pure inserts; an empty
-    // cell has no existing row to correct). Routes through the SAME validated
-    // `onSave` path as the draft, so SI conversion / range checks / the
-    // one-active-per-slot rule all apply identically.
-    const backfillTasks = vitalsBackfillsToTasks(
+    // Backfilled empty cells → one task per past date. Combine with the draft
+    // task and route them all through `routeTasksToSaves`: a slot that's still
+    // empty INSERTs; a slot that already holds an active value (rare two-device
+    // race) routes through the SAME `onCorrectValue` append-to-correct flow the
+    // blood-test matrix + click-to-edit use (new active row + old row flipped to
+    // `entered-in-error`, `corrects_id` set) — never a 409-and-clear, never a
+    // mutation. For BP a collision corrects the existing paired value at that
+    // date (sys and dia each route independently).
+    const tasks: SaveTask[] = vitalsBackfillsToTasks(
       backfills,
       metric => fieldUnit(metric === 'weight' ? 'weightKg' : 'waistCm'),
     );
+    if (Object.keys(values).length > 0) tasks.push({ date: draft.date, values });
 
-    if (Object.keys(values).length === 0 && backfillTasks.length === 0) return;
+    if (tasks.length === 0) return;
     setSaving(true);
     try {
-      for (const t of backfillTasks) await onSave(t.date, t.values);
-      if (Object.keys(values).length > 0) await onSave(draft.date, values);
+      const { failed } = await routeTasksToSaves(tasks, vitalsHistory, onSave, onCorrectValue);
+      // Preserve the user's typed values if any correction failed so they can
+      // retry — don't clear the draft/backfills out from under them.
+      if (failed) return;
       // Clear mirror so the legacy global save doesn't re-pick these up.
       onFieldChange('weightKg', undefined);
       onFieldChange('waistCm', undefined);
       onFieldChange('systolicBp', undefined);
       onFieldChange('diastolicBp', undefined);
       setDraft(emptyDraft());
-      setBackfills({});
+      setBackfills(emptyBackfills());
       setActiveCell(null);
     } finally {
       setSaving(false);
@@ -538,7 +586,7 @@ export function StartingInfoVitals({
                             key={cellId}
                             metric={row.metric}
                             display={display}
-                            value={backfills[bfKey] ?? ''}
+                            value={backfills.simple[bfKey] ?? ''}
                             pinned={isPinned}
                             active={activeCell === cellId}
                             onChange={val => setBackfillValue(c.col.date, row.metric, val)}
@@ -582,7 +630,7 @@ export function StartingInfoVitals({
                   {columns.map((c, colIdx) => {
                     if (c.kind === 'draft') {
                       return (
-                        <BpDraftCell
+                        <BpInputCell
                           key="draft.bp"
                           sys={draft.sys}
                           dia={draft.dia}
@@ -601,12 +649,26 @@ export function StartingInfoVitals({
                     }
                     const isPinned = colIdx === columns.length - 2;
                     if (c.col.sys == null || c.col.dia == null) {
-                      // Empty BP slot stays display-only. Unlike weight/waist,
-                      // BP is an atomic sys/dia pair; backfilling a historical
-                      // column would need a dual input + the same
-                      // half-pair/blur-save guards as the draft cell. Deferred
-                      // (flagged to Brad) — past BP is added via the draft column.
-                      return <div key={`${c.col.date}.bp`} className={`bt-cell-value${isPinned ? ' bt-cell-pinned' : ''}`}>{' '}</div>;
+                      // Empty BP slot → click-to-input, reusing the SAME guarded
+                      // dual sys/dia component as the draft column (one source of
+                      // truth for the 542e811 blur/half-pair guards). Commits a
+                      // paired systolic_bp + diastolic_bp at this past date via
+                      // the validated save path.
+                      const bp = backfills.bp[c.col.date] ?? { sys: '', dia: '' };
+                      return (
+                        <BpInputCell
+                          key={`${c.col.date}.bp`}
+                          sys={bp.sys}
+                          dia={bp.dia}
+                          previewStatus={bpStatus(parseLocalisedNumber(bp.sys), parseLocalisedNumber(bp.dia), age)}
+                          pinned={isPinned}
+                          backfill
+                          onSysChange={v => setBackfillBp(c.col.date, 'sys', v)}
+                          onDiaChange={v => setBackfillBp(c.col.date, 'dia', v)}
+                          onEnter={flushSave}
+                          onCellExit={scheduleSave}
+                        />
+                      );
                     }
                     const status = bpStatus(c.col.sys, c.col.dia, age);
                     return (
@@ -631,9 +693,18 @@ export function StartingInfoVitals({
   );
 }
 
-// ── BP draft cell — dual sys/dia input in one column ─────────────────────
+// ── BP input cell — dual sys/dia input in one column ─────────────────────
+// ONE guarded BP input shared by the draft column (today's reading) AND the
+// historical backfill cells (a past empty BP slot). Both need the exact same
+// 542e811 guards: the sibling-blur suppression (`blurLeavesCell`) so tabbing
+// systolic → diastolic doesn't fire a mid-edit save, and a commit gated on a
+// complete in-range pair (`bpPairReady`, applied by the caller's save fold).
+// `backfill`/`pinned` only swap the wrapper classes so it matches the
+// surrounding empty-cell vs draft-cell styling.
 
-function BpDraftCell({ sys, dia, previewStatus, onSysChange, onDiaChange, onEnter, onCellExit }: {
+function BpInputCell({
+  sys, dia, previewStatus, onSysChange, onDiaChange, onEnter, onCellExit, pinned, backfill,
+}: {
   sys: string;
   dia: string;
   previewStatus: Status;
@@ -642,6 +713,10 @@ function BpDraftCell({ sys, dia, previewStatus, onSysChange, onDiaChange, onEnte
   onEnter: () => void;
   /** Fires only when focus leaves the whole BP cell (not systolic ↔ diastolic). */
   onCellExit: () => void;
+  /** 2nd-from-right column highlight (matches BatchDateCell pinning). */
+  pinned?: boolean;
+  /** Style as an empty-slot backfill cell rather than the draft column. */
+  backfill?: boolean;
 }) {
   const cellRef = useRef<HTMLDivElement>(null);
   const onKey: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
@@ -650,12 +725,15 @@ function BpDraftCell({ sys, dia, previewStatus, onSysChange, onDiaChange, onEnte
   };
   // A blur to the sibling sys/dia input keeps focus inside the cell — don't
   // save. Only schedule a save when focus actually exits the cell, so the
-  // draft can't clear under the user while they tab from systolic to diastolic.
+  // value can't clear under the user while they tab from systolic to diastolic.
   const onBlur: React.FocusEventHandler<HTMLInputElement> = (e) => {
     if (blurLeavesCell(e.relatedTarget as HTMLElement | null, cellRef.current)) onCellExit();
   };
+  const wrapperClass = backfill
+    ? `bt-cell-backfill${pinned ? ' bt-cell-pinned' : ''}`
+    : 'bt-cell-value bt-cell-input bt-cell-draft';
   return (
-    <div ref={cellRef} className="bt-cell-value bt-cell-input bt-cell-draft">
+    <div ref={cellRef} className={wrapperClass}>
       <div className="bt-vitals-bp-inputs">
         <input className="bt-input" inputMode="numeric" placeholder="sys" size={1}
                value={sys} onChange={e => onSysChange(e.target.value)} onKeyDown={onKey} onBlur={onBlur}/>
