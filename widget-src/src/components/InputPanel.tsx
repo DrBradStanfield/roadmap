@@ -885,6 +885,13 @@ export function InputPanel({
             </div>
           </div>
 
+          {/* Returning users (collapsible "Starting Info"): birth month/year
+              belong with the other PREFILL demographics — directly under Sex +
+              Height — NOT after the vitals table. Fresh users keep the
+              progressive-disclosure layout (birth info renders below the vitals
+              matrix; see the !canCollapse branch in the main composition). */}
+          {canCollapse && renderBirthInfo()}
+
           {(!inputs.sex || !inputs.heightCm) && (
             <p className="field-hint-attention field-hint-attention--centered">
               Enter your sex and height — then more fields will appear.
@@ -2312,7 +2319,12 @@ export function InputPanel({
       <div className="section-card">
         {renderProfile()}
         {formStage >= 2 && <div className="stage-reveal">{renderVitals()}</div>}
-        {formStage >= 2 && (
+        {/* Birth info placement is split by user type:
+            - Returning (canCollapse): rendered inside renderProfile, under
+              Sex + Height (the other PREFILL demographics).
+            - Fresh (!canCollapse): rendered HERE, below the vitals matrix —
+              the progressive-disclosure order Brad confirmed is correct. */}
+        {formStage >= 2 && !canCollapse && (
           <div className={`prefill-fields-wrapper${collapseAnimating && !prefillExpanded ? ' collapsing' : ''}${collapsed && !prefillExpanded ? ' collapsed' : ''}`}>
             <div>{renderBirthInfo()}</div>
           </div>
