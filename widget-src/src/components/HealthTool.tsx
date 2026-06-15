@@ -257,8 +257,17 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
           setChatPrefetch(null); // clear stale guest prefetch so authenticated chat loads fresh
         }
 
-        // Phase 1: show cached data instantly
-        const cached = loadFromLocalStorage();
+        // Phase 1: show cached data instantly.
+        // Local-first skips this: the RoadmapStore is initialised before render
+        // and read synchronously (getInitialInputsSync seeds the prefill at
+        // construction), and Phase 2 runs against the in-memory store with no
+        // network latency — so there's no blank-flash to paper over. Worse, the
+        // legacy `health_roadmap_data` mirror here builds SYNTHETIC longitudinal
+        // rows stamped at TODAY's date; if the store no longer has that value
+        // (deleted/corrected away), the empty-authoritative branch below won't
+        // overwrite them, leaving a phantom value on screen. The store is the
+        // single source of truth in local-first — don't seed from the v1 cache.
+        const cached = LOCAL_FIRST ? null : loadFromLocalStorage();
         if (cached && Object.keys(cached.inputs).length > 0) {
           // Only load prefill fields into inputs — longitudinal values go to previousMeasurements
           // so they render as blue "previous value" labels instead of editable input values.
@@ -334,6 +343,15 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
           loadBloodTestHistory();
           // Cache to localStorage for instant display on next page load
           saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, result.reminderPreferences);
+        } else if (LOCAL_FIRST) {
+          // Local-first: the RoadmapStore IS the source of truth and owns its own
+          // persistence. An empty result is AUTHORITATIVE (the user genuinely has
+          // no saved data) — never "guest data in the legacy cache waiting to
+          // sync". Running the v1 guest→cloud resync below would re-insert the
+          // stale `health_roadmap_data` mirror's longitudinal values (weight,
+          // waist, BP, …) via addMeasurement at TODAY's date, resurrecting a value
+          // the user deleted/corrected away or cleared. Deletions must stay
+          // deleted, so do nothing here.
         } else {
           // No cloud data — sync localStorage→cloud directly.
           // (sync-embed.liquid skips when the widget is on the page, so the widget must handle this.)
