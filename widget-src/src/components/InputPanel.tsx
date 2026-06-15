@@ -3,6 +3,7 @@ import { ColumnHeader } from './ColumnHeader';
 import { DocumentLightbox } from './DocumentLightbox';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate, HISTORY_PAGE_PATH, openHistoryLightbox } from '../lib/api';
 import { isLabArchiveDocument } from '../lib/archive-payloads';
+import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiDocument, ApiSupplement } from '../lib/api-types';
 
 /** Intercept a history link: lightbox on the standalone, normal nav on Shopify. */
@@ -117,7 +118,7 @@ interface InputPanelProps {
   vitalsHistory: ApiMeasurement[];
   onSaveBloodTestBatch: (date: string, values: Record<string, number>) => Promise<void>;
   // Click-to-correct handler for saved cells in the BloodTestTimeline matrix.
-  onCorrectBloodTestValue?: (oldId: string, newValueSI: number) => Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }>;
+  onCorrectBloodTestValue?: CorrectFn;
   medications: ApiMedication[];
   onMedicationChange: (medicationKey: string, drugName: string, doseValue: number | null, doseUnit: string | null) => void;
   screenings: ApiScreening[];

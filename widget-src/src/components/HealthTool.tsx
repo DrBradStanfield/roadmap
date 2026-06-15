@@ -70,6 +70,7 @@ import {
   trackABImpression,
   trackABConversion,
 } from '../lib/api';
+import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiReminderPreference, ApiDocument } from '../lib/api-types';
 import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
 
@@ -576,10 +577,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // latest for its metric (correcting a non-latest entry shouldn't shift the
   // latest summary). For `bloodTestHistory`, a miss means local state is
   // stale — fall back to a refetch so the corrected row appears.
-  const handleCorrectBloodTestValue = useCallback(async (
-    oldId: string,
-    newValueSI: number,
-  ): Promise<{ ok: true } | { ok: false; reason: 'conflict' | 'not_found' | 'error' }> => {
+  const handleCorrectBloodTestValue = useCallback<CorrectFn>(async (
+    oldId,
+    newValueSI,
+  ) => {
     if (!authState.isLoggedIn) return { ok: false, reason: 'error' };
     const result = await correctMeasurement(oldId, newValueSI);
     if (result.status !== 'ok') return { ok: false, reason: result.status };
