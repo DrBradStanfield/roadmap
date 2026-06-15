@@ -5002,15 +5002,15 @@ input[type="number"] {
    BloodTestTimeline (`.bt-timeline-scroll` + `--bt-col-count` pixel-width
    inner), so it inherits every column/cell/sticky rule from the
    `.bt-timeline-scroll` block above. Only the few things below are
-   vitals-specific: a self-contained card frame (the blood-test table gets its
-   frame from the parent `.section-card--bt`; the vitals table sits inside
-   "Starting Info" and needs its own), the two-line waist label, and the
-   BP dual-input draft + saved BP cell. */
-.bt-vitals-card {
-  border: 1px solid var(--bt-ink-100);
-  border-radius: 12px;
-  overflow: hidden;
-}
+   vitals-specific: the two-line waist label and the BP dual-input draft +
+   saved BP cell.
+
+   The vitals table is deliberately frame-LESS (no border / radius / shadow of
+   its own) so it sits flush inside the "Starting Info" `.section-card`, exactly
+   like the blood-test table sits flush inside its `.section-card--bt` parent.
+   Brad's note: the vitals table must NOT look like it's in a separate container
+   — it should match the borderless blood-test table. `.bt-vitals-card` is kept
+   only as a hook for the two vitals-specific rules below. */
 /* `Waist\nCircumference` carries an explicit newline so the label wraps
    cleanly into two lines (then the unit chip + ref on following lines).
    Without `pre-line` the `\n` collapses to a space. */

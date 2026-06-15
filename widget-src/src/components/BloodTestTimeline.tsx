@@ -776,16 +776,21 @@ interface BackfillCellProps {
   onBlur: () => void;
   onEnter: () => void;
   onChange: (v: string) => void;
+  /** Appends `bt-cell-pinned` (the 2nd-from-right column highlight). The
+   *  blood-test matrix never pins a backfill cell; the vitals matrix does. */
+  pinned?: boolean;
 }
 
-function BackfillCell({ metric, display, value, active, onFocus, onBlur, onEnter, onChange }: BackfillCellProps) {
+// Exported so StartingInfoVitals reuses the identical empty-slot input cell
+// (one source of truth for backfill styling + key handling across both matrices).
+export function BackfillCell({ metric, display, value, active, onFocus, onBlur, onEnter, onChange, pinned }: BackfillCellProps) {
   return (
     <NumericInputCell
       metric={metric}
       display={display}
       value={value}
       onChange={onChange}
-      wrapperClass="bt-cell-backfill"
+      wrapperClass={`bt-cell-backfill${pinned ? ' bt-cell-pinned' : ''}`}
       inputClass="bt-input bt-input-backfill"
       active={active}
       placeholder="—"

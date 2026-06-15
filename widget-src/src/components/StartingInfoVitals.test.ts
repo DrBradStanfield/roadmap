@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { ApiMeasurement } from '@roadmap/health-core';
-import { buildColumns, bpPairReady, blurLeavesCell } from './StartingInfoVitals';
+import type { ApiMeasurement, UnitSystem } from '@roadmap/health-core';
+import { buildColumns, bpPairReady, blurLeavesCell, vitalsBackfillsToTasks } from './StartingInfoVitals';
 
 // `buildColumns` is the one genuinely new pure helper introduced when the
 // vitals section was unified onto the blood-test matrix's column grid: it
@@ -145,5 +145,63 @@ describe('blurLeavesCell', () => {
 
   it('returns true defensively when the cell ref is missing', () => {
     expect(blurLeavesCell(null, null)).toBe(true);
+  });
+});
+
+// Empty weight/waist cells in past date columns are click-to-input: typing a
+// value backfills a NEW measurement at that date. `vitalsBackfillsToTasks`
+// folds the `${date}|${metric}` → typed map into one SI value map per date,
+// dropping empty / invalid / non-weight-waist entries. Each task is a pure
+// INSERT (an empty cell has no row to correct).
+describe('vitalsBackfillsToTasks', () => {
+  const si: (m: 'weight' | 'waist') => UnitSystem = () => 'si';
+
+  it('returns no tasks for an empty backfill map', () => {
+    expect(vitalsBackfillsToTasks({}, si)).toEqual([]);
+  });
+
+  it('drops empty-string typed values', () => {
+    expect(vitalsBackfillsToTasks({ '2024-03-01|weight': '' }, si)).toEqual([]);
+  });
+
+  it('converts a weight (SI kg) to one task at its date', () => {
+    const tasks = vitalsBackfillsToTasks({ '2024-03-01|weight': '82' }, si);
+    expect(tasks).toEqual([{ date: '2024-03-01', values: { weight: 82 } }]);
+  });
+
+  it('converts conventional units (lbs → kg, in → cm) on commit', () => {
+    const conv: (m: 'weight' | 'waist') => UnitSystem = () => 'conventional';
+    const tasks = vitalsBackfillsToTasks(
+      { '2024-03-01|weight': '180', '2024-03-01|waist': '36' },
+      conv,
+    );
+    const t = tasks.find(t => t.date === '2024-03-01')!;
+    expect(t.values.weight).toBeCloseTo(180 / 2.20462, 2);
+    expect(t.values.waist).toBeCloseTo(36 * 2.54, 2);
+  });
+
+  it('groups weight + waist backfilled at the same date into one task', () => {
+    const tasks = vitalsBackfillsToTasks(
+      { '2024-03-01|weight': '82', '2024-03-01|waist': '90' },
+      si,
+    );
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]).toMatchObject({ date: '2024-03-01', values: { weight: 82, waist: 90 } });
+  });
+
+  it('produces one task per distinct date', () => {
+    const tasks = vitalsBackfillsToTasks(
+      { '2024-03-01|weight': '82', '2025-01-10|weight': '79' },
+      si,
+    );
+    expect(tasks).toHaveLength(2);
+    expect(tasks.map(t => t.date).sort()).toEqual(['2024-03-01', '2025-01-10']);
+  });
+
+  it('drops invalid / out-of-range typed values', () => {
+    // weight 5 kg is below the metric's plausible range → dropped.
+    expect(vitalsBackfillsToTasks({ '2024-03-01|weight': '5' }, si)).toEqual([]);
+    // non-numeric → dropped.
+    expect(vitalsBackfillsToTasks({ '2024-03-01|weight': 'abc' }, si)).toEqual([]);
   });
 });
