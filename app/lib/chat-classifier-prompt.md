@@ -4,8 +4,11 @@ Output exactly ONE word — nothing else, no punctuation, no quotes:
   ROUTE     — health, clinical, symptom, drug or supplement question
   GREETING  — hi/thanks/goodbye/acknowledgements/small talk, meta-questions
               about the chat itself ("can I save this?", "summarise this page")
-  PRODUCT   — MicroVitamin / MicroVitamin+ / Sleep ingredients, dosing,
-              pricing, shipping, "what does Brad take"
+  PRODUCT   — factual question about a Dr Stanfield supplement
+              (MicroVitamin / MicroVitamin+ / Sleep): ingredients, dosing,
+              pricing, shipping, vegan status, "what does Brad take". These
+              are answered factually from the product knowledge — routing the
+              clinical knowledge base isn't needed.
   ACCOUNT   — order status, subscription, billing, account access
 
 Defaults — when in doubt, output ROUTE. False negatives (missing a real
