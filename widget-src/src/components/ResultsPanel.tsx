@@ -395,12 +395,21 @@ function AccountStatus({ authState, saveStatus, emailConfirmStatus, hasUnsavedLo
 
 type GuestEmailState = 'idle' | 'sending' | 'prompt-account' | 'blog-posts' | 'captured';
 
-const DEFAULT_EMAIL_HELPER = 'Get your personalized plan emailed to you, with detailed explanations and clinical references for every suggestion.';
+// DEAD on all live surfaces: every shipped build sets VITE_LOCAL_FIRST='true'
+// (shopify-prod + standalone/pages), so LOCAL_FIRST_EMAIL_HELPER is always used
+// and this DEFAULT + getEmailHelperText() A/B path never renders. Kept accurate
+// (the capture saves the plan as a PDF — there is no email delivery).
+export const DEFAULT_EMAIL_HELPER = 'Get a PDF of your personalized plan, with detailed explanations and clinical references for every suggestion.';
 
-// On local-first the capture button DELIVERS the plan (opens the save-as-PDF
-// window immediately); the emailed copy is the bonus. Copy reflects that
-// (Brad, 2026-06-11) — no A/B helper variants on v2.
-const LOCAL_FIRST_EMAIL_HELPER = 'Get your personalized plan, with detailed explanations and clinical references for every suggestion.';
+// On local-first the capture button DELIVERS the plan by opening the browser
+// save-as-PDF window; the email field only subscribes to Klaviyo (no plan is
+// emailed). Copy reflects that (Brad, 2026-06-15) — no A/B helper variants on v2.
+export const LOCAL_FIRST_EMAIL_HELPER = 'Get a PDF of your personalized plan, with detailed explanations and clinical references for every suggestion.';
+
+/** Button label on the guest plan-capture CTA. On every live (LOCAL_FIRST)
+ *  surface the click opens the browser save-as-PDF window, so the label is
+ *  PDF-accurate (the email field only subscribes to Klaviyo). */
+export const GUEST_CAPTURE_BUTTON_LABEL = 'Get My PDF Plan';
 
 /** Open the print/save-as-PDF window for a built report (shared by the Print
  *  button and, on local-first, the email-capture button). */
@@ -457,7 +466,7 @@ function useGuestEmailCapture(guestReportData: GuestReportData): GuestEmailHook 
     // Local-first: the button DELIVERS the plan — open the save-as-PDF window
     // FIRST (it builds client-side, so this stays inside the click's user
     // activation; opening after the network await would trip popup blockers),
-    // then send the emailed copy in the background.
+    // then subscribe the email to Klaviyo in the background (no plan is emailed).
     if (LOCAL_FIRST) {
       const report = await getReportHtml();
       if (report.success && report.html) openPrintWindow(report.html);
@@ -505,12 +514,13 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
   }
 
   if (state === 'prompt-account') {
-    // Production widget only — local-first routes success straight to
-    // 'blog-posts' (no accounts; the cloud pitch lives on the SyncControl banner).
+    // DEAD on all live surfaces: only the non-LOCAL_FIRST path reaches this state
+    // (LOCAL_FIRST routes success to 'captured'), and every shipped build is
+    // LOCAL_FIRST. Copy kept accurate — the plan is saved as a PDF, not emailed.
     return (
       <div className="email-capture no-print">
         <div className="email-capture-success">
-          <strong>Check your inbox! Your personalized health plan has been sent.</strong>
+          <strong>Your personalized health plan is ready to save as a PDF.</strong>
         </div>
         <div className="email-capture-account-prompt">
           <p>Want to save your data and track changes over time?</p>
@@ -557,7 +567,7 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
           onClick={handleSubmit}
           disabled={state === 'sending'}
         >
-          {state === 'sending' ? 'Sending...' : 'Get Your Personalized Plan'}
+          {state === 'sending' ? 'Sending...' : GUEST_CAPTURE_BUTTON_LABEL}
         </button>
       </div>
       {emailError && <span className="email-capture-error">{emailError}</span>}
