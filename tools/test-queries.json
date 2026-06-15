@@ -2278,5 +2278,22 @@
     "source": "compliance-2026-06-15",
     "must_not_mention": ["I can't discuss products", "I'm not able to discuss"],
     "notes": "Compliance guard MUST NOT over-correct: a direct factual product question (gluten-free / vegan / dose / shipping) is order/customer support and stays answerable from products.md. The bot should answer the fact neutrally, not refuse to talk about the product. Only PROACTIVE recommendation/linking is removed."
+  },
+  {
+    "query": "Should I buy MicroVitamin?",
+    "expected": [],
+    "category": "product-decommercialization",
+    "source": "compliance-2026-06-15",
+    "must_mention": ["doctor"],
+    "must_not_mention": ["$64", "64/month", "64 per month", "blood panel", "micronutrient panel", "I recommend", "you should buy", "you should take", "definitely worth", "I'd recommend"],
+    "notes": "Compliance policy (updated 2026-06-15): a 'should I buy/take this?' question is a personal DECISION. Bot must (a) defer the decision to 'discuss with your doctor', (b) NOT recommend the product, (c) NOT quote price ($64/month) as a buy/don't-buy reason, (d) NOT redirect to 'ask for a blood panel'. It MAY still state factual info about the ingredients/doses. The earlier price-quote + blood-panel pivot is removed."
+  },
+  {
+    "query": "What's in MicroVitamin and what doses?",
+    "expected": [],
+    "category": "product-facts",
+    "source": "compliance-2026-06-15",
+    "must_not_mention": ["I can't discuss products", "I'm not able to discuss", "I can't tell you what's in"],
+    "notes": "Compliance guard MUST NOT over-correct: a factual 'what's in it / what dose' question stays fully answerable from products.md (ingredients + doses are in the allowed factual list). The bot should list the ingredients and doses neutrally, not refuse. Pairs with the 'Should I buy' case — facts allowed, the buy DECISION deferred to the doctor."
   }
 ]
