@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, type MutableRefObject } from 'rea
 import { ColumnHeader } from './ColumnHeader';
 import { DocumentLightbox } from './DocumentLightbox';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate, HISTORY_PAGE_PATH, openHistoryLightbox } from '../lib/api';
+import { isLabArchiveDocument } from '../lib/archive-payloads';
 import type { ApiDocument, ApiSupplement } from '../lib/api-types';
 
 /** Intercept a history link: lightbox on the standalone, normal nav on Shopify. */
@@ -2350,8 +2351,11 @@ export function InputPanel({
 function HealthRecordsSection({ documents, onDeleted }: { documents: ApiDocument[]; onDeleted?: (docId: string) => void }) {
   const [selectedDoc, setSelectedDoc] = useState<ApiDocument | null>(null);
 
-  const scanResults = documents.filter(d => d.documentType === 'scan_result');
-  const otherDocs = documents.filter(d => d.documentType !== 'scan_result');
+  // Blood-test reports are persisted to the user's cloud but never listed here —
+  // their extracted values already appear in the Blood Test Results table.
+  const visible = documents.filter(d => !isLabArchiveDocument(d));
+  const scanResults = visible.filter(d => d.documentType === 'scan_result');
+  const otherDocs = visible.filter(d => d.documentType !== 'scan_result');
 
   return (
     <>
