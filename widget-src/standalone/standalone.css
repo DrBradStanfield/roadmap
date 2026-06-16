@@ -25,7 +25,18 @@
   background: #f0faf8; border: 1px solid #b2dfdb; border-radius: 10px;
   padding: 10px 14px; font-size: 13.5px; color: #1c2b33; margin-bottom: 12px;
 }
-.hr-sync-cloud { background: #f0fbf4; border-color: #b7e4c7; }
+/* De-greened (Brad, 2026-06-17): the connected-cloud status now matches the
+   neutral plan cards (e.g. the "Get a PDF of your personalized plan…" card)
+   instead of a green emphasis box — white surface, neutral gray border,
+   neutral text. NOTE: the privacy sentence does NOT fit on one line at the
+   card width for the longest provider ("Google Drive" / "your own server") —
+   see the review note. Left to wrap gracefully rather than overflow until the
+   copy is shortened. */
+.hr-sync-cloud {
+  background: #fff;
+  border-color: var(--color-gray-border, #e2e8e9);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
 .hr-sync-status { font-weight: 600; }
 .hr-sync-detail { color: #5a6b73; font-size: 12.5px; flex-basis: 100%; }
 .hr-sync-btn {

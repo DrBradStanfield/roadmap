@@ -729,8 +729,12 @@ function BpInputCell({
   const onBlur: React.FocusEventHandler<HTMLInputElement> = (e) => {
     if (blurLeavesCell(e.relatedTarget as HTMLElement | null, cellRef.current)) onCellExit();
   };
+  // `bt-cell-value` carries the fixed column width (flex: 0 0 var(--bt-value-w)).
+  // The backfill branch was missing it, so an empty BP slot collapsed to its
+  // content width (~33px) and pushed every column to its right out of
+  // alignment with the weight/waist rows. The draft branch already had it.
   const wrapperClass = backfill
-    ? `bt-cell-backfill${pinned ? ' bt-cell-pinned' : ''}`
+    ? `bt-cell-value bt-cell-backfill${pinned ? ' bt-cell-pinned' : ''}`
     : 'bt-cell-value bt-cell-input bt-cell-draft';
   return (
     <div ref={cellRef} className={wrapperClass}>

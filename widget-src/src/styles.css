@@ -365,11 +365,18 @@ input[type="number"] {
   cursor: pointer;
 }
 
-/* Animated collapse: fields height transition */
+/* Animated collapse: fields height transition.
+   The wrapper can hold MORE than one child: returning users also get the
+   birth month/year group as a second grid item (renderBirthInfo). A single
+   `grid-template-rows: 0fr` only zeroes the FIRST track, leaving the second
+   child in an `auto` implicit row at full height — that was the ~82px gap
+   between the collapsed "Starting Info" summary line and the vitals table.
+   Collapse implicit tracks too via `grid-auto-rows`. */
 .prefill-fields-wrapper {
   display: grid;
   grid-template-rows: 1fr;
-  transition: grid-template-rows 0.35s ease, opacity 0.25s ease;
+  grid-auto-rows: auto;
+  transition: grid-template-rows 0.35s ease, grid-auto-rows 0.35s ease, opacity 0.25s ease;
   opacity: 1;
 }
 .prefill-fields-wrapper.collapsing > *,
@@ -381,6 +388,7 @@ input[type="number"] {
 }
 .prefill-fields-wrapper.collapsed {
   grid-template-rows: 0fr;
+  grid-auto-rows: 0fr;
   opacity: 0;
 }
 
@@ -5011,6 +5019,21 @@ input[type="number"] {
    Brad's note: the vitals table must NOT look like it's in a separate container
    — it should match the borderless blood-test table. `.bt-vitals-card` is kept
    only as a hook for the two vitals-specific rules below. */
+/* Desktop only: unlike the blood-test table (whose `.section-card--bt` parent
+   zeros its 24px padding), the vitals table shares Card 1 with the profile
+   fields, so its `.section-card` keeps the standard 24px inset those fields
+   need. That pushed the vitals matrix 24px further in on BOTH sides than the
+   blood-test table (Brad: "the left and right padding is still too much").
+   Pull the matrix back out by the card's padding so its edges sit flush with
+   the card — lining up with the blood-test table.
+   NOTE: this is NOT needed on mobile — there the `.section-card { padding:12px
+   !important }` rule wins over `--bt`'s `padding:0`, so BOTH cards already sit
+   at the same 12px inset (see the `.bt-timeline-header` mobile comment). The
+   mobile media block below explicitly zeroes this margin back out. */
+.bt-vitals-card {
+  margin-left: -24px;
+  margin-right: -24px;
+}
 /* `Waist\nCircumference` carries an explicit newline so the label wraps
    cleanly into two lines (then the unit chip + ref on following lines).
    Without `pre-line` the `\n` collapses to a space. */
@@ -5018,6 +5041,14 @@ input[type="number"] {
   white-space: pre-line;
 }
 @media (max-width: 768px) {
+  /* Both cards already sit at the same 12px inset on mobile (the `!important`
+     `.section-card` padding wins over `--bt`'s `padding:0`), so the vitals
+     matrix needs NO pull-out here — zero the desktop negative margin back out
+     or it would over-extend the matrix 12px past the blood-test table's edge. */
+  .bt-vitals-card {
+    margin-left: 0;
+    margin-right: 0;
+  }
   /* Match the blood-test matrix's mobile vars (the unified grid uses the
      same `.bt-timeline` machinery now, so the same widths keep the two
      tables aligned at narrow viewports). */

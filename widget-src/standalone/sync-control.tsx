@@ -90,7 +90,7 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
     // secondary link — it's the only way to switch/disconnect the cloud.
     content = (
       <div className="hr-sync hr-sync-cloud">
-        <span className="hr-sync-status">✓ Your health data lives only in {LABELS[backend]} — never on Dr Brad's servers.</span>
+        <span className="hr-sync-status">✓ Your health data is yours alone — it never leaves your {LABELS[backend]}</span>
         <button className="hr-sync-link" onClick={() => setPickerOpen(true)}>Change</button>
       </div>
     );

@@ -409,7 +409,7 @@ export const LOCAL_FIRST_EMAIL_HELPER = 'Get a PDF of your personalized plan, wi
 /** Button label on the guest plan-capture CTA. On every live (LOCAL_FIRST)
  *  surface the click opens the browser save-as-PDF window, so the label is
  *  PDF-accurate (the email field only subscribes to Klaviyo). */
-export const GUEST_CAPTURE_BUTTON_LABEL = 'Get My PDF Plan';
+export const GUEST_CAPTURE_BUTTON_LABEL = 'Get My Health Plan';
 
 /** Open the print/save-as-PDF window for a built report (shared by the Print
  *  button and, on local-first, the email-capture button). */

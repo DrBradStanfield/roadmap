@@ -26,8 +26,8 @@ describe('guest plan-capture CTA copy (PDF, not email)', () => {
     expect(DEFAULT_EMAIL_HELPER).toBe(HEADLINE);
   });
 
-  it('button label is the locked "Get My PDF Plan"', () => {
-    expect(GUEST_CAPTURE_BUTTON_LABEL).toBe('Get My PDF Plan');
+  it('button label is the locked "Get My Health Plan"', () => {
+    expect(GUEST_CAPTURE_BUTTON_LABEL).toBe('Get My Health Plan');
   });
 
   it('no CTA copy mentions email/emailed/sent (the framing is now inaccurate)', () => {
