@@ -1,0 +1,89 @@
+[
+  {
+    "name": "single-field-mmol",
+    "query": "Set my LDL to 3.8 mmol/L.",
+    "category": "field-edit",
+    "notes": "Single field edit, SI unit stated explicitly.",
+    "expect": {
+      "edits": [
+        { "kind": "field", "field": "ldlC", "displayValue": 3.8, "unitSystem": "si" }
+      ]
+    }
+  },
+  {
+    "name": "cross-unit-mgdl",
+    "query": "My LDL is 147 mg/dL.",
+    "category": "field-edit",
+    "notes": "Conventional unit stated — assert the model emits the stated value verbatim, NOT pre-converted to SI (3.8). Conversion is downstream in the form.",
+    "expect": {
+      "edits": [
+        { "kind": "field", "field": "ldlC", "displayValue": 147, "unitSystem": "conventional" }
+      ]
+    }
+  },
+  {
+    "name": "batch-one-draw",
+    "query": "My labs on June 1 2026 were LDL 3.8 mmol/L, HDL 1.1 mmol/L and triglycerides 1.4 mmol/L.",
+    "category": "field-edit",
+    "notes": "Three results from one blood draw → three field edits sharing the same date (2026-06-01).",
+    "expect": {
+      "edits": [
+        { "kind": "field", "field": "ldlC", "displayValue": 3.8, "unitSystem": "si", "date": "2026-06-01" },
+        { "kind": "field", "field": "hdlC", "displayValue": 1.1, "unitSystem": "si", "date": "2026-06-01" },
+        { "kind": "field", "field": "triglycerides", "displayValue": 1.4, "unitSystem": "si", "date": "2026-06-01" }
+      ],
+      "unordered": true
+    }
+  },
+  {
+    "name": "medication-statin",
+    "query": "Set my statin to atorvastatin 20mg.",
+    "category": "medication-edit",
+    "notes": "Medication edit with drug name + dose.",
+    "expect": {
+      "edits": [
+        { "kind": "medication", "medicationKey": "statin", "drugName": "atorvastatin", "doseValue": 20, "doseUnit": "mg" }
+      ]
+    }
+  },
+  {
+    "name": "ambiguous-unit-negative",
+    "query": "My LDL is 3.8.",
+    "category": "negative-ambiguous",
+    "notes": "Bare number, no unit (3.8 could be mmol/L or mg/dL). Model should ASK for the unit, NOT emit an edit.",
+    "expect": {
+      "edits": [],
+      "mustAskClarifying": true
+    }
+  },
+  {
+    "name": "non-edit-negative",
+    "query": "What's a healthy LDL level to aim for?",
+    "category": "negative-non-edit",
+    "notes": "A normal health question — must answer in prose, must NOT spuriously fire an edit tool.",
+    "expect": {
+      "edits": []
+    }
+  },
+  {
+    "name": "in-range-edits-no-quibble",
+    "query": "Set my LDL to 2.1 mmol/L.",
+    "category": "field-edit",
+    "notes": "A clearly-stated, plausible value with an explicit unit pre-fills cleanly. (Contrast with out-of-range-clarifies below — the model does NOT quibble on plausible values.)",
+    "expect": {
+      "edits": [
+        { "kind": "field", "field": "ldlC", "displayValue": 2.1, "unitSystem": "si" }
+      ]
+    }
+  },
+  {
+    "name": "out-of-range-clarifies",
+    "query": "Set my LDL to 99 mmol/L.",
+    "category": "negative-out-of-range",
+    "notes": "Documents OBSERVED behaviour (2026-06-17): a wildly-implausible value (99 mmol/L is ~10x any real LDL) makes the model PAUSE and ask the user to confirm the unit/value rather than silently pre-filling. This is clinically safer than blind data-entry; the form's Save-time Zod range check is the hard backstop, but the model adds a softer first line of defence. If a future model change makes it pre-fill out-of-range values verbatim instead, that's also acceptable (range is the form's job) — flip this case to expect the edit and note the change.",
+    "expect": {
+      "edits": [],
+      "mustAskClarifying": true
+    }
+  }
+]

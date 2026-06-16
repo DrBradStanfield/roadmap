@@ -1,3 +1,4 @@
+import { readFileSync } from 'fs';
 import { describe, it, expect } from 'vitest';
 import {
   parseProposedEdit,
@@ -136,5 +137,63 @@ describe('parseProposedEdits — block array', () => {
 
   it('returns empty for a pure text response (no tool use — additive, no regression)', () => {
     expect(parseProposedEdits([{ type: 'text' }])).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fixture self-validation: the live tool-use harness (tools/test-tool-edits.ts)
+// asserts the model's output against tools/test-tool-edits.json. If a fixture
+// expectation states a field/unit the parser can't even produce, the live
+// harness would fail for the wrong reason (a stale fixture, not a model bug).
+// This guards the fixture's structured expectations are themselves producible
+// — without spending any API tokens.
+// ---------------------------------------------------------------------------
+
+describe('tools/test-tool-edits.json fixture is self-consistent', () => {
+  const fixturePath = new URL('../../../tools/test-tool-edits.json', import.meta.url);
+  const cases = JSON.parse(readFileSync(fixturePath, 'utf-8')) as Array<{
+    name: string;
+    query: string;
+    expect: {
+      edits: Array<Record<string, unknown> & { kind: 'field' | 'medication' }>;
+      mustAskClarifying?: boolean;
+    };
+  }>;
+
+  it('has unique non-empty case names and queries', () => {
+    expect(cases.length).toBeGreaterThan(0);
+    const names = cases.map((c) => c.name);
+    expect(new Set(names).size).toBe(names.length);
+    for (const c of cases) {
+      expect(c.name).toBeTruthy();
+      expect(c.query).toBeTruthy();
+    }
+  });
+
+  it('every expected edit is a value the parser would accept', () => {
+    for (const c of cases) {
+      for (const e of c.expect.edits) {
+        if (e.kind === 'field') {
+          const metric = FIELD_TO_METRIC[e.field as string] as MetricType;
+          // The expectation's stated unitSystem must be a real label for that metric,
+          // and feeding it back through the parser must reproduce the same intent.
+          const unit = UNIT_DEFS[metric].label[e.unitSystem as 'si' | 'conventional'];
+          const parsed = parseProposedEdit(FIELD, {
+            field: e.field, value: e.displayValue, unit, date: e.date,
+          }) as ProposedFieldEdit | null;
+          expect(parsed, `${c.name}: field edit ${JSON.stringify(e)} must round-trip`).not.toBeNull();
+          expect(parsed!.field).toBe(e.field);
+          expect(parsed!.unitSystem).toBe(e.unitSystem);
+          expect(parsed!.displayValue).toBe(e.displayValue);
+        } else {
+          const parsed = parseProposedEdit(MED, {
+            medicationKey: e.medicationKey, drugName: e.drugName,
+            doseValue: e.doseValue, doseUnit: e.doseUnit,
+          }) as ProposedMedicationEdit | null;
+          expect(parsed, `${c.name}: medication edit ${JSON.stringify(e)} must round-trip`).not.toBeNull();
+          expect(parsed!.medicationKey).toBe(e.medicationKey);
+        }
+      }
+    }
   });
 });
