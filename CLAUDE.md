@@ -183,7 +183,12 @@ Full deploy (widget + Shopify extensions + backend):
 #    (build:widget only builds the side bundles: upload, site-chat, chatbot.)
 npm run build:shopify-prod
 
-# 2. Upload sourcemaps to Sentry (requires SENTRY_AUTH_TOKEN in .env — local only, not on Fly.io)
+# 2. Upload WIDGET sourcemaps to Sentry (requires SENTRY_AUTH_TOKEN in .env — local only).
+#    sentry:sourcemaps uploads from extensions/health-tool-widget/assets, which holds the
+#    main v2 bundle (step 1) PLUS the side bundles (site-chat, chatbot). build:shopify-prod
+#    only emits the main v2 + upload bundles, so run build:widget first to refresh the
+#    side bundles' maps too, or their Sentry maps go stale.
+npm run build:widget
 cd widget-src && npm run sentry:sourcemaps && cd ..
 
 # 3. Remove sourcemaps before Shopify deploy (they push the extension over the 10MB limit)
@@ -195,8 +200,16 @@ npx shopify app deploy --force
 # 5. Resolve symlinks for remote Docker builders (Dropbox not available on Fly build servers)
 cp -L docs/products.md /tmp/_products.md && rm docs/products.md && mv /tmp/_products.md docs/products.md
 
-# 6. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives)
-fly deploy
+# 6. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives).
+#    --build-arg SENTRY_RELEASE: per-commit release name for the SERVER source-map upload
+#      (node:22-alpine has no git CLI, so the SHA can't be auto-detected in the container;
+#       org/project slugs come from fly.toml [build.args]).
+#    --build-secret sentry_auth_token: the Sentry auth token, mounted ONLY for the build
+#      RUN (never baked into the image). Without it the server map upload no-ops gracefully.
+#    Omit either flag and the build still succeeds — it just skips/garbles the server upload.
+fly deploy \
+  --build-arg SENTRY_RELEASE="health-tool-app@$(git rev-parse --short HEAD)" \
+  --build-secret sentry_auth_token="$(grep -E '^SENTRY_AUTH_TOKEN=' .env | cut -d= -f2-)"
 
 # 7. Restore symlink after deploy
 git checkout docs/products.md
@@ -258,7 +271,7 @@ family via the dev Shopify app — see "Two Shopify apps" below.)
 - **Symlink resolution before deploy**: `docs/products.md` is a symlink to the claude_business Dropbox folder. Fly.io's remote builders can't follow local symlinks. The deploy command dereferences the symlink to a temp file, removes the symlink, then moves the real file into place. `git checkout` restores the symlink after deploy. **Do NOT use `cp -L file file`** — `cp` follows destination symlinks, so the symlink is never replaced.
 - `fly deploy` must be run from the **project root** (`/roadmap/`), not a subdirectory. The Dockerfile is at root level. Do NOT use `--app` flag — Fly reads `fly.toml` from the current directory.
 - `npx shopify app deploy --force` — the `--force` flag is required in non-interactive environments (CI, Claude Code). Without it, the CLI prompts for confirmation and hangs.
-- `SENTRY_AUTH_TOKEN` is only used locally for sourcemap uploads. Fly.io only needs `SENTRY_DSN` (already set as a secret).
+- `SENTRY_AUTH_TOKEN` is never a Fly RUNTIME secret (the running server only needs `SENTRY_DSN`, already set). For sourcemap uploads it's used two ways: locally for the WIDGET maps (step 2), and passed into the Fly BUILD as a `--build-secret sentry_auth_token=...` (step 6) for the SERVER maps. As a build secret it's mounted only for the `npm run build` RUN in the Dockerfile and never persists in any image layer. The server source-map config lives in `vite.config.ts` (`sentryConfig`) + `react-router.config.ts` (`sentryOnBuildEnd`); when the build secret is absent the upload disables itself gracefully (build stays green).
 - If Fly.io is suspended, `fly deploy` won't unsuspend it. Use `fly machine start <id>` first.
 - **Use `fly deploy --strategy canary` for risky server deploys (framework/runtime/dep changes).** Fly's DEFAULT rolling deploy + the `/healthz` check does NOT protect against a boot crash — on 2026-06-14 the RR7 cutover crashed on boot (server never bound `:3000`) and the rolling strategy updated BOTH machines to the broken image anyway, taking production down (rolled back via `fly deploy --image <prev>`). Canary boots ONE throwaway machine, health-checks it FIRST, and leaves the serving machines untouched if it fails. The boot crash was `@supabase/realtime-js >=2.108` hard-throwing "Node.js 20 detected without native WebSocket support" — local Node was 22 so it only failed in the `node:*-alpine` container; that's why the Docker base is now `node:22`. **Lesson: anything that regenerates package-lock.json (a migration, a dep add/remove) can silently bump a runtime dep that only fails in the Docker Node version — canary-deploy it.**
 

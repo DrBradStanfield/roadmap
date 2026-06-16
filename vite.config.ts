@@ -37,14 +37,34 @@ if (host === "localhost") {
 }
 
 // Sentry source-map upload runs only when an auth token is present (local deploy
-// step / CI). Without it, the plugin is a no-op so local + Fly builds stay green.
+// step / CI / the Fly Docker build's --build-secret). Without it the upload is
+// disabled outright so local + Fly builds stay green instead of erroring on a
+// missing org / undefined release.
+//
+//  - org/project come from SENTRY_ORG/PROJECT (non-secret slugs; on Fly they're
+//    baked as Dockerfile build ARGs from fly.toml's [build.args]).
+//  - release.name comes from SENTRY_RELEASE — set EXPLICITLY (not just via env)
+//    because the RR7 `sentryOnBuildEnd` pass reads release only from this config
+//    object (it would otherwise upload with `--release undefined`), and because
+//    node:22-alpine has no git CLI so the plugin can't auto-detect HEAD's SHA in
+//    the container. On Fly it's passed at deploy time via --build-arg.
+//  - `disable` is set at the TOP-LEVEL `sourcemaps` (not under
+//    unstable_sentryVitePluginOptions) because that's the key `sentryOnBuildEnd`
+//    actually reads for its disable check — keeping the no-op honored on the
+//    final RR7 upload pass too.
+//
+// .env is .dockerignore'd, so on Fly these all arrive via build args / a build
+// secret, never from a copied .env. See CLAUDE.md Sentry + Deploy Workflow.
+const hasSentryUpload = !!process.env.SENTRY_AUTH_TOKEN;
 const sentryConfig: SentryReactRouterBuildOptions = {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
+  release: { name: process.env.SENTRY_RELEASE },
   // Hidden source maps: uploaded to Sentry, never shipped to the client bundle.
-  unstable_sentryVitePluginOptions: {
-    sourcemaps: { filesToDeleteAfterUpload: ["**/*.map"] },
+  sourcemaps: {
+    disable: !hasSentryUpload,
+    filesToDeleteAfterUpload: ["**/*.map"],
   },
 };
 

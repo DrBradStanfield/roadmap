@@ -7,6 +7,12 @@ app = 'health-tool-app'
 primary_region = 'iad'
 
 [build]
+  # Non-secret Sentry slugs for the server source-map upload during the Docker build.
+  # (The release name is per-commit so it's passed at deploy time via --build-arg
+  # SENTRY_RELEASE=...; the auth token via --build-secret. See CLAUDE.md Deploy Workflow.)
+  [build.args]
+    SENTRY_ORG = 'dr-brad-inc'
+    SENTRY_PROJECT = 'javascript-remix'
 
 [env]
   HOST = '0.0.0.0'
