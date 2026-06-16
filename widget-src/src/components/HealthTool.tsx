@@ -30,6 +30,7 @@ import {
   type ProposedMedicationEdit,
 } from '@roadmap/health-core';
 import type { BloodTestPrefillFn } from './BloodTestTimeline';
+import { routeVitalsEdit, type VitalsPrefillFn } from './StartingInfoVitals';
 import type { ApiSupplement, ApiLabValue } from '../lib/api-types';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
@@ -150,6 +151,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // Filled by BloodTestTimeline so the chatbot can inject a value into a
   // blood-test cell (highlighted, for the user to Save).
   const bloodTestPrefillRef = useRef<BloodTestPrefillFn | null>(null);
+  // Filled by StartingInfoVitals ONLY when the vitals matrix is mounted
+  // (returning users). Its presence is the routing signal: a chatbot vitals
+  // edit flashes the matrix cell when set, else falls back to the plain field.
+  const vitalsPrefillRef = useRef<VitalsPrefillFn | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'first-saved' | 'duplicates' | 'error'>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
@@ -1105,11 +1110,19 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const applyFieldEdit = useCallback((edit: ProposedFieldEdit) => {
     const metric = FIELD_TO_METRIC[edit.field] as MetricType | undefined;
     if (!metric) return;
-    // Vitals (weight/waist/BP) live in the form inputs (SI); set them directly
-    // so the value + suggestions update and the user Saves via "Save New Values".
+    // Vitals (weight/waist/BP). When the vitals MATRIX is mounted (returning
+    // users), route into its draft/backfill cell so it pre-fills AND flashes —
+    // exactly like the blood-test matrix. The matrix only registers its prefill
+    // ref while mounted, so a non-null ref is the "matrix is shown" signal.
+    // Fresh users (legacy plain fields, ref null) fall back to setting the form
+    // input directly — no flash, unchanged behaviour.
     if (VITALS_INPUT_FIELDS.includes(edit.field)) {
-      const si = toCanonicalValue(metric, edit.displayValue, edit.unitSystem);
-      handleInputChange({ ...inputsRef.current, [edit.field]: si });
+      if (routeVitalsEdit(!!vitalsPrefillRef.current) === 'matrix') {
+        vitalsPrefillRef.current!(metric, edit.displayValue, edit.unitSystem, edit.date);
+      } else {
+        const si = toCanonicalValue(metric, edit.displayValue, edit.unitSystem);
+        handleInputChange({ ...inputsRef.current, [edit.field]: si });
+      }
       return;
     }
     // Blood-test metrics → the timeline matrix's draft/backfill cell.
@@ -1198,6 +1211,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     hasApiResponse,
     bloodTestFlushRef,
     bloodTestPrefillRef,
+    vitalsPrefillRef,
     formStage,
     lastSavedAt,
     setShowUploadModal,

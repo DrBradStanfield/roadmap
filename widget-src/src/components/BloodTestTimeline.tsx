@@ -22,6 +22,7 @@ import { MONTHS_SHORT } from '../lib/constants';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
+import { usePrefillRef } from '../lib/usePrefillRef';
 import { routeTasksToSaves, type CorrectFn } from '../lib/matrix-save';
 import {
   type Status,
@@ -366,13 +367,7 @@ export function BloodTestTimeline({
     return cellId;
   };
 
-  const prefillRefCurrent = useRef(prefillCell);
-  prefillRefCurrent.current = prefillCell;
-  useEffect(() => {
-    if (!prefillRef) return;
-    prefillRef.current = (m, v, u, d) => prefillRefCurrent.current(m, v, u, d);
-    return () => { if (prefillRef) prefillRef.current = null; };
-  }, [prefillRef]);
+  usePrefillRef(prefillCell, prefillRef);
 
   // Convert display-unit typed values to SI using the metric's display unit.
   const toSiMap = (typedMap: Partial<Record<MetricType, string>>): Record<string, number> => {

@@ -61,7 +61,7 @@ import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { LOCAL_FIRST } from '../lib/build-flags';
 import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
-import { StartingInfoVitals } from './StartingInfoVitals';
+import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
 
 interface FieldConfig {
@@ -139,6 +139,10 @@ interface InputPanelProps {
   bloodTestFlushRef?: MutableRefObject<(() => Promise<void>) | null>;
   // Forwarded to BloodTestTimeline so the chatbot can pre-fill a blood-test cell.
   bloodTestPrefillRef?: MutableRefObject<BloodTestPrefillFn | null>;
+  // Forwarded to StartingInfoVitals (matrix mode only) so the chatbot can
+  // pre-fill + flash a vitals cell. Non-null on the ref ⇒ the vitals matrix is
+  // mounted; HealthTool uses that to route vitals chat edits here vs the field.
+  vitalsPrefillRef?: MutableRefObject<VitalsPrefillFn | null>;
   formStage: 1 | 2 | 3;
   lastSavedAt?: number | null;
   setShowUploadModal?: (show: boolean) => void;
@@ -177,7 +181,7 @@ export function InputPanel({
   supplements, onSupplementChange, onSupplementDelete,
   scheduleLongitudinalSave, flushLongitudinalSave,
   isSavingLongitudinal, hasApiResponse,
-  bloodTestFlushRef, bloodTestPrefillRef,
+  bloodTestFlushRef, bloodTestPrefillRef, vitalsPrefillRef,
   formStage,
   lastSavedAt,
   setShowUploadModal, loginUrl, activeSuggestionIds,
@@ -919,6 +923,7 @@ export function InputPanel({
         onAutoFocusEmail={onAutoFocusEmail}
         unitOverrides={unitOverrides}
         onToggleFieldUnit={onToggleFieldUnit}
+        prefillRef={vitalsPrefillRef}
       />
     </section>
   );

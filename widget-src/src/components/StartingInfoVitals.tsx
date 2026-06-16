@@ -17,10 +17,11 @@
 // doesn't carry, so they live here. Everything else reuses the `.bt-*` CSS,
 // the matrix's `Sparkline`, `NumericInputCell`, `DraftDateCell`, and `UnitChip`.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import {
   type ApiMeasurement,
   type HealthInputs,
+  type MetricType,
   type UnitSystem,
   toCanonicalValue,
   fromCanonicalValue,
@@ -37,6 +38,7 @@ import {
 } from '../lib/blood-test-cell';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { useDebouncedSave } from '../lib/useDebouncedSave';
+import { usePrefillRef } from '../lib/usePrefillRef';
 import { Sparkline, ValueCell, BatchDateCell, BackfillCell } from './BloodTestTimeline';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
@@ -70,6 +72,34 @@ interface StartingInfoVitalsProps {
    *  just that metric's display unit (kg ↔ lbs, cm ↔ inches). */
   unitOverrides: Record<string, UnitSystem>;
   onToggleFieldUnit: (field: string) => void;
+  /** When provided, the matrix exposes an imperative `prefill(metric, value,
+   *  fromUnit, date)` so the chatbot can inject a vitals value into the
+   *  draft/backfill cell (highlighted, for the user to Save). Mirrors
+   *  BloodTestTimeline's prefillRef seam — its presence also signals to the
+   *  parent that the vitals matrix (not the legacy form) is mounted, so chat
+   *  edits should flash a cell here rather than silently set a plain field. */
+  prefillRef?: MutableRefObject<VitalsPrefillFn | null>;
+}
+
+/** Inject a vitals value into the matrix from outside (e.g. the chatbot).
+ *  `value` is in `fromUnit`; the matrix converts to its own display unit.
+ *  `date` null = today's draft column. BP routes by metric (systolic_bp /
+ *  diastolic_bp) into the shared sys/dia cell. Returns the cell key it filled
+ *  so the parent can scroll/highlight it (or null for an unhandled metric). */
+export type VitalsPrefillFn = (
+  metric: MetricType,
+  value: number,
+  fromUnit: UnitSystem,
+  date: string | null,
+) => string | null;
+
+/** Decide where a chatbot vitals edit should land. When the vitals matrix is
+ *  mounted (`matrixMounted`, i.e. its prefill ref is registered) the value
+ *  routes to the matrix cell so it pre-fills AND flashes; otherwise it goes to
+ *  the plain form field (fresh users, no flash). Pure so HealthTool's routing
+ *  is unit-testable without rendering. */
+export function routeVitalsEdit(matrixMounted: boolean): 'matrix' | 'field' {
+  return matrixMounted ? 'matrix' : 'field';
 }
 
 // ── Row config ──────────────────────────────────────────────────────────
@@ -260,6 +290,7 @@ export function vitalsBackfillsToTasks(
 export function StartingInfoVitals({
   inputs, vitalsHistory, unitSystem, isLoggedIn, onSave, onCorrectValue,
   onFieldChange, formStage, onAutoFocusEmail, unitOverrides, onToggleFieldUnit,
+  prefillRef,
 }: StartingInfoVitalsProps) {
   const heightCm = inputs.heightCm;
   const sex = inputs.sex;
@@ -402,6 +433,51 @@ export function StartingInfoVitals({
     if (which === 'sys') onFieldChange('systolicBp', n != null && n >= BP_SYS_MIN && n <= BP_SYS_MAX ? n : undefined);
     else onFieldChange('diastolicBp', n != null && n >= BP_DIA_MIN && n <= BP_DIA_MAX ? n : undefined);
   };
+
+  // Inject an external value (from the chatbot) into the matrix and flash the
+  // cell, mirroring BloodTestTimeline.prefillCell exactly: convert into the
+  // cell's display unit, route to a same-date backfill slot if that slot is
+  // EMPTY, else the draft column, then set `activeCell` (the same brand-
+  // underline highlight a focused cell gets). Weight/waist reuse the simple
+  // draft/backfill setters; BP routes by metric into its shared sys/dia cell.
+  // Returns the cell key so the parent can scroll to it.
+  const prefillCell: VitalsPrefillFn = (metric, value, fromUnit, date) => {
+    const column = date ? dateColumns.find(c => c.date === date) : undefined;
+    // Every branch flashes (highlights) the cell it filled and returns its key.
+    const flash = (cellId: string) => { setActiveCell(cellId); return cellId; };
+
+    if (metric === 'systolic_bp' || metric === 'diastolic_bp') {
+      // mmHg has no SI conversion (stored as-is); the chat value is the number.
+      const typed = String(value);
+      const which = metric === 'systolic_bp' ? 'sys' : 'dia';
+      // Backfill only when an existing date column has NO BP recorded yet
+      // (both sys+dia absent). A partial/complete BP there is a correction,
+      // which goes through the dedicated path, not chat pre-fill.
+      if (date && column && column.sys == null && column.dia == null) {
+        setBackfillBp(date, which, typed);
+        return flash(`${date}.bp`);
+      }
+      if (date) setDraft(d => ({ ...d, date }));
+      setBpDraft(which, typed);
+      return flash('draft.bp');
+    }
+
+    if (metric !== 'weight' && metric !== 'waist') return null;
+    const field: 'weightKg' | 'waistCm' = metric === 'weight' ? 'weightKg' : 'waistCm';
+    const cellUnit = fieldUnit(field);
+    const si = toCanonicalValue(metric, value, fromUnit);
+    const typed = formatDisplayValue(metric, si, cellUnit);
+    const existing = column ? (metric === 'weight' ? column.weight : column.waist) : undefined;
+    if (date && column && existing == null) {
+      setBackfillValue(date, metric, typed);
+      return flash(`${date}.${metric}`);
+    }
+    if (date) setDraft(d => ({ ...d, date }));
+    setSimpleDraft(metric, typed); // mirrors to inputs[field] so suggestions update live
+    return flash(`draft.${metric}`);
+  };
+
+  usePrefillRef(prefillCell, prefillRef);
 
   // Validation of the whole draft + backfills + any filled value (blocks save
   // while bad).
@@ -634,6 +710,7 @@ export function StartingInfoVitals({
                           key="draft.bp"
                           sys={draft.sys}
                           dia={draft.dia}
+                          active={activeCell === 'draft.bp'}
                           previewStatus={bpStatus(parseLocalisedNumber(draft.sys), parseLocalisedNumber(draft.dia), age)}
                           onSysChange={v => setBpDraft('sys', v)}
                           onDiaChange={v => setBpDraft('dia', v)}
@@ -660,6 +737,7 @@ export function StartingInfoVitals({
                           key={`${c.col.date}.bp`}
                           sys={bp.sys}
                           dia={bp.dia}
+                          active={activeCell === `${c.col.date}.bp`}
                           previewStatus={bpStatus(parseLocalisedNumber(bp.sys), parseLocalisedNumber(bp.dia), age)}
                           pinned={isPinned}
                           backfill
@@ -703,7 +781,7 @@ export function StartingInfoVitals({
 // surrounding empty-cell vs draft-cell styling.
 
 function BpInputCell({
-  sys, dia, previewStatus, onSysChange, onDiaChange, onEnter, onCellExit, pinned, backfill,
+  sys, dia, previewStatus, onSysChange, onDiaChange, onEnter, onCellExit, pinned, backfill, active,
 }: {
   sys: string;
   dia: string;
@@ -717,6 +795,9 @@ function BpInputCell({
   pinned?: boolean;
   /** Style as an empty-slot backfill cell rather than the draft column. */
   backfill?: boolean;
+  /** Brand-underline highlight (the same `bt-input-active` cue a focused cell
+   *  gets) — used so a chatbot prefill flashes the filled BP cell. */
+  active?: boolean;
 }) {
   const cellRef = useRef<HTMLDivElement>(null);
   const onKey: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
@@ -739,10 +820,10 @@ function BpInputCell({
   return (
     <div ref={cellRef} className={wrapperClass}>
       <div className="bt-vitals-bp-inputs">
-        <input className="bt-input" inputMode="numeric" placeholder="sys" size={1}
+        <input className={`bt-input${active ? ' bt-input-active' : ''}`} inputMode="numeric" placeholder="sys" size={1}
                value={sys} onChange={e => onSysChange(e.target.value)} onKeyDown={onKey} onBlur={onBlur}/>
         <span className="bt-vitals-bp-sep">/</span>
-        <input className="bt-input" inputMode="numeric" placeholder="dia" size={1}
+        <input className={`bt-input${active ? ' bt-input-active' : ''}`} inputMode="numeric" placeholder="dia" size={1}
                value={dia} onChange={e => onDiaChange(e.target.value)} onKeyDown={onKey} onBlur={onBlur}/>
       </div>
       <div className="bt-cell-foot">

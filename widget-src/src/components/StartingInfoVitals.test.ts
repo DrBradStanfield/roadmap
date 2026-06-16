@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ApiMeasurement, UnitSystem } from '@roadmap/health-core';
-import { buildColumns, bpPairReady, blurLeavesCell, vitalsBackfillsToTasks } from './StartingInfoVitals';
+import { buildColumns, bpPairReady, blurLeavesCell, vitalsBackfillsToTasks, routeVitalsEdit } from './StartingInfoVitals';
 
 // `buildColumns` is the one genuinely new pure helper introduced when the
 // vitals section was unified onto the blood-test matrix's column grid: it
@@ -15,6 +15,20 @@ function m(metricType: string, value: number, date: string, id = `${metricType}-
     source: 'manual', status: 'active', correctsId: null, externalId: null,
   };
 }
+
+// A chatbot vitals edit (weight / waist / BP) must land in the matrix CELL —
+// pre-filled + flashed — when the vitals matrix is the active rendering
+// (returning users), but fall back to setting the plain form field (no flash)
+// for fresh users who still see the legacy inline inputs. The matrix only
+// registers its prefill ref while mounted, so "ref present" is the signal.
+describe('routeVitalsEdit', () => {
+  it('routes to the matrix cell (flash) when the matrix is mounted', () => {
+    expect(routeVitalsEdit(true)).toBe('matrix');
+  });
+  it('routes to the plain form field (no flash) when the matrix is not mounted', () => {
+    expect(routeVitalsEdit(false)).toBe('field');
+  });
+});
 
 describe('buildColumns', () => {
   it('returns one column per distinct date, sorted oldest → newest', () => {
