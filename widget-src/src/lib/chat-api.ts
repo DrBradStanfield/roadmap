@@ -3,6 +3,7 @@
  * Uses the same Shopify app proxy path as all other API calls.
  */
 import * as Sentry from '@sentry/react';
+import type { ProposedEdit } from '@roadmap/health-core';
 import { PROXY_PATH, parseJsonResponse } from './api';
 import { getChatHistory } from './chat-history-access';
 import type { ChatHistoryStore } from '../storage/chat-history-store';
@@ -35,6 +36,8 @@ export interface SendMessageResult {
   content: string;
   sessionToken?: string;
   isGuest?: boolean;
+  /** Form edits the model proposed via tool_use (pre-fill the form / update meds). */
+  proposedEdits?: ProposedEdit[];
 }
 
 export interface ChatListResult {
@@ -278,6 +281,9 @@ export async function sendMessage(
         content: data.content,
         sessionToken: data.sessionToken,
         isGuest: data.isGuest,
+        ...(Array.isArray(data.proposedEdits) && data.proposedEdits.length > 0
+          ? { proposedEdits: data.proposedEdits as ProposedEdit[] }
+          : {}),
       },
       error: null,
     };

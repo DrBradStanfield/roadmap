@@ -23,10 +23,22 @@ export class ByokAnthropicError extends Error {
 
 const ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages';
 
+/** One block of an Anthropic Messages `content` array (text or tool_use). */
+export interface AnthropicContentBlock {
+  type: string;
+  text?: string;
+  name?: string;
+  input?: unknown;
+}
+
+/** Pull the `content` block array out of a raw Messages response. */
+export function extractContentBlocks(data: unknown): AnthropicContentBlock[] {
+  return (data as { content?: AnthropicContentBlock[] })?.content ?? [];
+}
+
 /** Join the text blocks of an Anthropic Messages response into one string. */
 export function extractResponseText(data: unknown): string {
-  const blocks = (data as { content?: Array<{ type: string; text?: string }> })?.content ?? [];
-  return blocks
+  return extractContentBlocks(data)
     .filter((b) => b.type === 'text')
     .map((b) => b.text ?? '')
     .join('')
@@ -34,10 +46,18 @@ export function extractResponseText(data: unknown): string {
 }
 
 /**
- * POST a Messages request with the user's key and return the assistant text.
- * Throws ByokAnthropicError on transport/auth/empty failures.
+ * POST a Messages request with the user's key and return the raw assistant
+ * content blocks (text + tool_use). Throws ByokAnthropicError on
+ * transport/auth/empty failures. `callAnthropicDirect` is the text-only wrapper
+ * kept for byok-upload.ts; chat uses this to also see tool_use blocks.
+ *
+ * "Empty" means no usable content at all — a response carrying ONLY tool_use
+ * blocks (the model proposed a form edit without prose) is NOT empty.
  */
-export async function callAnthropicDirect(apiKey: string, body: Record<string, unknown>): Promise<string> {
+export async function callAnthropicDirectRaw(
+  apiKey: string,
+  body: Record<string, unknown>,
+): Promise<{ text: string; blocks: AnthropicContentBlock[] }> {
   let response: Response;
   try {
     response = await fetch(ANTHROPIC_MESSAGES_URL, {
@@ -76,7 +96,18 @@ export async function callAnthropicDirect(apiKey: string, body: Record<string, u
     throw new ByokAnthropicError('server_error', `Anthropic error (${response.status}). Try again shortly.`);
   }
 
-  const text = extractResponseText(await response.json());
-  if (!text) throw new ByokAnthropicError('empty', 'Empty response from Anthropic. Try again.');
-  return text;
+  const data = await response.json();
+  const blocks = extractContentBlocks(data);
+  const text = extractResponseText(data);
+  const hasToolUse = blocks.some((b) => b.type === 'tool_use');
+  if (!text && !hasToolUse) throw new ByokAnthropicError('empty', 'Empty response from Anthropic. Try again.');
+  return { text, blocks };
+}
+
+/**
+ * POST a Messages request with the user's key and return the assistant text.
+ * Throws ByokAnthropicError on transport/auth/empty failures.
+ */
+export async function callAnthropicDirect(apiKey: string, body: Record<string, unknown>): Promise<string> {
+  return (await callAnthropicDirectRaw(apiKey, body)).text;
 }

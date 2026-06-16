@@ -3895,6 +3895,42 @@ input[type="number"] {
 
 /* --- Floating chat FAB --- */
 
+/* Medication-from-chat undo banner (top-centre, above the FAB). */
+.chat-med-undo {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #1f2937;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  animation: chat-fab-entrance 0.25s ease-out;
+}
+.chat-med-undo-btn {
+  background: var(--color-brand);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chat-med-undo-dismiss {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
 .chat-fab {
   position: fixed;
   bottom: 24px;

@@ -17,13 +17,19 @@ import {
   computeFormStage,
   resolveEmailConfirmStatus,
   FIELD_METRIC_MAP,
+  toCanonicalValue,
+  VITALS_INPUT_FIELDS,
   type HealthInputs,
   type UnitSystem,
   type MetricType,
   type ApiMeasurement,
   type ApiMedication,
   type ApiScreening,
+  type ProposedEdit,
+  type ProposedFieldEdit,
+  type ProposedMedicationEdit,
 } from '@roadmap/health-core';
+import type { BloodTestPrefillFn } from './BloodTestTimeline';
 import type { ApiSupplement, ApiLabValue } from '../lib/api-types';
 import { InputPanel } from './InputPanel';
 import { ResultsPanel } from './ResultsPanel';
@@ -141,6 +147,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // `handleSaveLongitudinal` (legacy path) skips blood-test metrics, so without
   // this flush, typed-but-unsaved matrix values are lost when the user uploads.
   const bloodTestFlushRef = useRef<(() => Promise<void>) | null>(null);
+  // Filled by BloodTestTimeline so the chatbot can inject a value into a
+  // blood-test cell (highlighted, for the user to Save).
+  const bloodTestPrefillRef = useRef<BloodTestPrefillFn | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'first-saved' | 'duplicates' | 'error'>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
@@ -1076,6 +1085,69 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     }
   }, [authState.isLoggedIn]);
 
+  // ---------------------------------------------------------------------------
+  // Chatbot-driven form edits (the chat proposes; this routes to the real form)
+  // ---------------------------------------------------------------------------
+  // A one-shot undo for a medication change the chat just applied (meds
+  // auto-save, so the chat states the change + offers Undo).
+  const [medUndo, setMedUndo] = useState<
+    | { key: string; drugName: string; doseValue: number | null; doseUnit: string | null }
+    | null
+  >(null);
+  const medicationsRef = useRef(medications);
+  medicationsRef.current = medications;
+  // Latest values for the chat-edit callbacks (memoised; avoid stale closures).
+  const inputsRef = useRef(inputs);
+  inputsRef.current = inputs;
+  const isMobileRef = useRef(isMobile);
+  isMobileRef.current = isMobile;
+
+  const applyFieldEdit = useCallback((edit: ProposedFieldEdit) => {
+    const metric = FIELD_TO_METRIC[edit.field] as MetricType | undefined;
+    if (!metric) return;
+    // Vitals (weight/waist/BP) live in the form inputs (SI); set them directly
+    // so the value + suggestions update and the user Saves via "Save New Values".
+    if (VITALS_INPUT_FIELDS.includes(edit.field)) {
+      const si = toCanonicalValue(metric, edit.displayValue, edit.unitSystem);
+      handleInputChange({ ...inputsRef.current, [edit.field]: si });
+      return;
+    }
+    // Blood-test metrics → the timeline matrix's draft/backfill cell.
+    bloodTestPrefillRef.current?.(metric, edit.displayValue, edit.unitSystem, edit.date);
+  }, [handleInputChange]);
+
+  const applyMedicationEdit = useCallback((edit: ProposedMedicationEdit) => {
+    // Snapshot the prior value FIRST so Undo can restore it.
+    const prior = medicationsRef.current.find(m => m.medicationKey === edit.medicationKey);
+    setMedUndo({
+      key: edit.medicationKey,
+      drugName: prior?.drugName ?? 'none',
+      doseValue: prior?.doseValue ?? null,
+      doseUnit: prior?.doseUnit ?? null,
+    });
+    handleMedicationChange(edit.medicationKey, edit.drugName, edit.doseValue, edit.doseUnit);
+  }, [handleMedicationChange]);
+
+  const handleProposeEdit = useCallback((edits: ProposedEdit[]) => {
+    let hasFieldEdit = false;
+    for (const edit of edits) {
+      if (edit.kind === 'field') { applyFieldEdit(edit); hasFieldEdit = true; }
+      else applyMedicationEdit(edit);
+    }
+    // Mobile hand-off: bring the user to the form so they SEE the pre-filled
+    // cell + Save button (they were on the chat tab). Mirror handleAutoFocusEmail.
+    if (hasFieldEdit && isMobileRef.current) {
+      setActiveTab('input');
+      swiperRef.current?.slideTo(0);
+    }
+  }, [applyFieldEdit, applyMedicationEdit]);
+
+  const undoMedEdit = useCallback(() => {
+    if (!medUndo) return;
+    handleMedicationChange(medUndo.key, medUndo.drugName, medUndo.doseValue, medUndo.doseUnit);
+    setMedUndo(null);
+  }, [medUndo, handleMedicationChange]);
+
   // The guest email capture exists for true guests AND on the Shopify v2
   // surface (where "logged in" is storage UX only). Never on Pages (no Brad
   // server) and never for production logged-in customers.
@@ -1125,6 +1197,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     isSavingLongitudinal,
     hasApiResponse,
     bloodTestFlushRef,
+    bloodTestPrefillRef,
     formStage,
     lastSavedAt,
     setShowUploadModal,
@@ -1184,6 +1257,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       ? { ...effectiveInputs, unitSystem, medications, screenings, ...(chatMeasurementHistory ? { measurementHistory: chatMeasurementHistory } : {}) }
       : null,
     prefetchedData: chatPrefetch,
+    onProposeEdit: handleProposeEdit,
   };
 
   return (
@@ -1216,6 +1290,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
                   isLoggedIn={chatSectionProps.isLoggedIn}
                   guestInputs={chatSectionProps.guestInputs}
                   muted={formStage < 3}
+                  onProposeEdit={handleProposeEdit}
                 />
               </div>
             </SwiperSlide>
@@ -1243,6 +1318,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
                 isLoggedIn={chatSectionProps.isLoggedIn}
                 guestInputs={chatSectionProps.guestInputs}
                 muted={formStage < 3}
+                onProposeEdit={handleProposeEdit}
               />
             </div>
           )}
@@ -1276,6 +1352,22 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
           progress={uploadProgress}
           onClick={() => setShowUploadModal(true)}
         />
+      )}
+
+      {/* Undo banner for a medication the chat just changed (meds auto-save, so
+          the chat applies + states the change and offers an explicit Undo). */}
+      {medUndo && createPortal(
+        <div className="chat-med-undo no-print" role="status">
+          <span className="chat-med-undo-text">Medication updated from chat.</span>
+          <button type="button" className="chat-med-undo-btn" onClick={undoMedEdit}>Undo</button>
+          <button
+            type="button"
+            className="chat-med-undo-dismiss"
+            aria-label="Dismiss"
+            onClick={() => setMedUndo(null)}
+          >✕</button>
+        </div>,
+        document.body,
       )}
 
       {/* Floating chat FAB + expanded panel — portaled to body so their

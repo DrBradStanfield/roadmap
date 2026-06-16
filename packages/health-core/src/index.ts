@@ -201,6 +201,23 @@ export {
   type UnitDef,
 } from './units';
 
+// Chat → form-edit tool schemas + validation (chatbot drives the form UI)
+export {
+  EDITABLE_FIELDS,
+  VITALS_INPUT_FIELDS,
+  PROPOSE_FIELD_EDIT_TOOL,
+  PROPOSE_MEDICATION_EDIT_TOOL,
+  CHAT_EDIT_TOOLS,
+  PREFILL_ACK_MESSAGE,
+  resolveUnitSystem,
+  parseProposedEdit,
+  parseProposedEdits,
+  type EditableField,
+  type ProposedEdit,
+  type ProposedFieldEdit,
+  type ProposedMedicationEdit,
+} from './chat-edits';
+
 // Evidence (stat card clinical detail)
 export type { SuggestionEvidence } from './evidence';
 export { STAT_CARD_EVIDENCE, getIbwEvidence, getProteinEvidence, getBmiEvidence } from './evidence';

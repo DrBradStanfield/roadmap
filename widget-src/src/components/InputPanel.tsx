@@ -60,7 +60,7 @@ import {
 import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { LOCAL_FIRST } from '../lib/build-flags';
 import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
-import { BloodTestTimeline } from './BloodTestTimeline';
+import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
 import { StartingInfoVitals } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
 
@@ -137,6 +137,8 @@ interface InputPanelProps {
   // Forwarded to BloodTestTimeline so the parent (HealthTool) can flush
   // typed-but-unsaved matrix values before kicking off the upload modal.
   bloodTestFlushRef?: MutableRefObject<(() => Promise<void>) | null>;
+  // Forwarded to BloodTestTimeline so the chatbot can pre-fill a blood-test cell.
+  bloodTestPrefillRef?: MutableRefObject<BloodTestPrefillFn | null>;
   formStage: 1 | 2 | 3;
   lastSavedAt?: number | null;
   setShowUploadModal?: (show: boolean) => void;
@@ -175,7 +177,7 @@ export function InputPanel({
   supplements, onSupplementChange, onSupplementDelete,
   scheduleLongitudinalSave, flushLongitudinalSave,
   isSavingLongitudinal, hasApiResponse,
-  bloodTestFlushRef,
+  bloodTestFlushRef, bloodTestPrefillRef,
   formStage,
   lastSavedAt,
   setShowUploadModal, loginUrl, activeSuggestionIds,
@@ -1075,6 +1077,7 @@ export function InputPanel({
       loginUrl={loginUrl}
       hasApiResponse={hasApiResponse}
       flushRef={bloodTestFlushRef}
+      prefillRef={bloodTestPrefillRef}
     />
   );
 

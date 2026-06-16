@@ -1,5 +1,28 @@
 [
   {
+    "query": "set my LDL to 3.8 mmol/L from June 1",
+    "category": "chat-edit",
+    "source": "production",
+    "notes": "Tool-use: should pre-fill the LDL cell + ask the user to review and Save. Verifies tool-use is additive (answer still produced).",
+    "must_mention": ["save"],
+    "must_not_mention": ["I can't update", "I'm unable to change"]
+  },
+  {
+    "query": "my cholesterol was 200, can you record it",
+    "category": "chat-edit",
+    "source": "production",
+    "notes": "Unit ambiguity: cholesterol 200 could be mg/dL or mmol/L — the bot must ASK which unit, not guess.",
+    "must_mention": ["mg/dL", "mmol/L"]
+  },
+  {
+    "query": "I started atorvastatin 20mg, please update my meds",
+    "category": "chat-edit",
+    "source": "production",
+    "notes": "Medication tool-use: should update the statin + state the change and offer undo. Answer must still be produced.",
+    "must_mention": ["atorvastatin"],
+    "must_not_mention": ["I can't change your medication"]
+  },
+  {
     "query": "I have high blood pressure, what does the algorithm suggest?",
     "expected": [
       "hypertension-in-adults"

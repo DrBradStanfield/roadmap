@@ -20,6 +20,7 @@ import {
   type MeasurementHistoryMap,
 } from '../../packages/health-core/src/measurement-history';
 import { healthInputSchema } from '../../packages/health-core/src/validation';
+import { CHAT_EDIT_TOOLS, PREFILL_ACK_MESSAGE, parseProposedEdits, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
 import { loadHealthData } from './supabase.server';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
 import { decodeSex, decodeUnitSystem } from '../../packages/health-core/src/types';
@@ -593,6 +594,8 @@ export interface ChatCompletionResult {
   failureMode?: ChatFailureMode;
   /** The original error message, if any — for Sentry context. Not shown to users. */
   errorDetail?: string;
+  /** Form edits the model proposed via tool_use (additive — empty on normal turns). */
+  proposedEdits?: ProposedEdit[];
 }
 
 export async function getChatCompletion(
@@ -604,14 +607,25 @@ export async function getChatCompletion(
     max_tokens: CHAT_MAX_TOKENS,
     temperature: 0.3,
     system: systemBlocks,
+    tools: CHAT_EDIT_TOOLS,
     messages,
   };
 
   try {
     const result = await callAnthropicWithUsage(body);
-    // Empty-response check: API returned 200 but no usable text. Treated as a
-    // failure mode distinct from API errors — different cause, same UX (fallback).
+    const proposedEdits = parseProposedEdits(result.contentBlocks);
+    // Empty-response check: API returned 200 but no usable text. A tool-only
+    // response (model proposed an edit with no prose) is NOT empty — give the
+    // thread a short line; the confirmation card carries the detail.
     if (!result.content || result.content.trim().length === 0) {
+      if (proposedEdits.length > 0) {
+        return {
+          content: PREFILL_ACK_MESSAGE,
+          usage: result.usage,
+          isFallback: false,
+          proposedEdits,
+        };
+      }
       return {
         content: FALLBACK_RESPONSE,
         usage: result.usage,
@@ -623,6 +637,7 @@ export async function getChatCompletion(
       content: result.content,
       usage: result.usage,
       isFallback: false,
+      ...(proposedEdits.length > 0 ? { proposedEdits } : {}),
     };
   } catch (err) {
     // API errors (timeout, 5xx, network, malformed response). fetchAnthropicRaw

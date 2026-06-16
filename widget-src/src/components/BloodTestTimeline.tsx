@@ -147,7 +147,22 @@ export interface BloodTestTimelineProps {
   // backfills) to `flushRef.current` so the parent can flush in-flight
   // typed values before kicking off other save flows (e.g. lab upload).
   flushRef?: MutableRefObject<(() => Promise<void>) | null>;
+  // When provided, the matrix exposes an imperative `prefill(metric, value,
+  // fromUnit, date)` so the chatbot can inject a value into the draft/backfill
+  // (highlighted, for the user to Save). Mirrors the flushRef seam.
+  prefillRef?: MutableRefObject<BloodTestPrefillFn | null>;
 }
+
+/** Inject a value into the matrix from outside (e.g. the chatbot). `value` is
+ *  in `fromUnit`; the matrix converts to its own display unit. `date` null =
+ *  today's draft column. Returns the cell key it filled so the parent can
+ *  scroll/highlight it. */
+export type BloodTestPrefillFn = (
+  metric: MetricType,
+  value: number,
+  fromUnit: UnitSystem,
+  date: string | null,
+) => string | null;
 
 interface DraftRow {
   date: string;
@@ -189,7 +204,7 @@ const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 export function BloodTestTimeline({
   bloodTestHistory, unitSystem, unitOverrides, onToggleFieldUnit, isLoggedIn,
   onSaveBatch, onCorrectValue, onFieldChange, isSaving, sex, onUploadClick, uploadDisabled, loginUrl,
-  hasApiResponse, flushRef,
+  hasApiResponse, flushRef, prefillRef,
 }: BloodTestTimelineProps) {
   const batches = useMemo(() => groupByBatch(bloodTestHistory), [bloodTestHistory]);
   // Restore draft + backfills from localStorage on mount so typed-but-unsaved
@@ -319,6 +334,45 @@ export function BloodTestTimeline({
       }
       return next;
     });
+
+  // Inject an external value (from the chatbot) into the matrix. Converts the
+  // value from its stated unit into THIS cell's display unit, formats it, and
+  // routes it to the matching existing batch (backfill) or the draft column.
+  // Returns the cell key so the parent can scroll/highlight it.
+  const prefillCell: BloodTestPrefillFn = (metric, value, fromUnit, date) => {
+    const row = ROWS.find(r => r.metric === metric);
+    if (!row) return null; // e.g. PSA — not in this matrix
+    const cellUnit = fieldUnit(row.field);
+    // Re-express the value in the cell's display unit (chat sends the user's
+    // stated unit; the cell may be showing the other system).
+    const si = toCanonicalValue(metric, value, fromUnit);
+    const typed = formatDisplayValue(metric, si, cellUnit);
+
+    // Use the backfill column only when an existing batch on that date has an
+    // EMPTY cell for this metric. If a value already exists there, route to the
+    // draft column instead (the user reviews + Saves; a real correction goes
+    // through the click-to-edit ValueCell path, not chat pre-fill).
+    const existingBatch = date ? batches.find(b => b.date === date) : undefined;
+    if (date && existingBatch && existingBatch.values[metric] == null) {
+      setBackfillValue(date, metric, typed);
+      const cellId = `${date}.${metric}`;
+      setActiveCell(cellId);
+      return cellId;
+    }
+    if (date) setDraftDate(date);
+    setDraftValue(metric, typed); // mirrors to inputs[field] so suggestions update live
+    const cellId = `draft.${metric}`;
+    setActiveCell(cellId);
+    return cellId;
+  };
+
+  const prefillRefCurrent = useRef(prefillCell);
+  prefillRefCurrent.current = prefillCell;
+  useEffect(() => {
+    if (!prefillRef) return;
+    prefillRef.current = (m, v, u, d) => prefillRefCurrent.current(m, v, u, d);
+    return () => { if (prefillRef) prefillRef.current = null; };
+  }, [prefillRef]);
 
   // Convert display-unit typed values to SI using the metric's display unit.
   const toSiMap = (typedMap: Partial<Record<MetricType, string>>): Record<string, number> => {

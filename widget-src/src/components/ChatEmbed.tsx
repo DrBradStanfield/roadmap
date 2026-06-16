@@ -6,6 +6,7 @@
  * panel scrolls into view, giving the health widget priority on page load.
  */
 import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
+import type { ProposedEdit } from '@roadmap/health-core';
 import { getChatGate } from '../lib/chat-api';
 import { useChatState, THINKING_MESSAGES, MAX_CHARS } from '../hooks/useChatState';
 import { ChatKeyGate } from './ChatKeyGate';
@@ -18,9 +19,10 @@ interface ChatEmbedProps {
   isLoggedIn: boolean;
   guestInputs?: Record<string, unknown> | null;
   muted?: boolean;
+  onProposeEdit?: (edits: ProposedEdit[]) => void;
 }
 
-export function ChatEmbed({ isLoggedIn, guestInputs, muted }: ChatEmbedProps) {
+export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: ChatEmbedProps) {
   // BYOK gate (standalone build only — null on the Shopify widget).
   const [, refreshGate] = useReducer((x: number) => x + 1, 0);
   const gate = getChatGate();
@@ -29,6 +31,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted }: ChatEmbedProps) {
   const { state, actions, refs } = useChatState({
     isLoggedIn, guestInputs,
     onRemoteConversationSelected: closeDrawer,
+    onProposeEdit,
   });
   const { inputRef, messagesContainerRef } = refs;
 

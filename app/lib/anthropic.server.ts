@@ -226,6 +226,14 @@ export interface AnthropicUsage {
   cacheReadTokens: number;
 }
 
+/** One block of an Anthropic Messages `content` array (text or tool_use). */
+export interface AnthropicContentBlock {
+  type: string;
+  text?: string;
+  name?: string;
+  input?: unknown;
+}
+
 /**
  * Shared fetch + error handling. Returns text content + usage metrics.
  *
@@ -272,7 +280,7 @@ function isNetworkOrTimeoutError(err: unknown): boolean {
 
 async function fetchAnthropicRaw(
   apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000,
-): Promise<{ content: string; usage: AnthropicUsage }> {
+): Promise<{ content: string; usage: AnthropicUsage; contentBlocks: AnthropicContentBlock[] }> {
   for (let attempt = 1; attempt <= RETRY_MAX_ATTEMPTS; attempt++) {
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -304,11 +312,19 @@ async function fetchAnthropicRaw(
       }
 
       const data = await response.json();
-      const textBlock = (data.content as Array<{ type: string; text?: string }>)?.find(b => b.type === 'text');
-      if (!textBlock?.text) throw new Error('No text in Anthropic response');
+      const contentBlocks = (data.content as AnthropicContentBlock[]) ?? [];
+      const text = contentBlocks
+        .filter(b => b.type === 'text')
+        .map(b => b.text ?? '')
+        .join('');
+      const hasToolUse = contentBlocks.some(b => b.type === 'tool_use');
+      // A response carrying ONLY tool_use blocks (the model proposed a form
+      // edit with no prose) is valid — don't treat it as an empty failure.
+      if (!text && !hasToolUse) throw new Error('No text in Anthropic response');
 
       return {
-        content: textBlock.text,
+        content: text,
+        contentBlocks,
         usage: {
           inputTokens: data.usage?.input_tokens ?? 0,
           outputTokens: data.usage?.output_tokens ?? 0,
@@ -339,10 +355,11 @@ async function callAnthropic(apiKey: string, body: Record<string, unknown>): Pro
   return result.content;
 }
 
-/** Text + usage wrapper — for chat (prompt caching metrics). */
+/** Text + usage + raw content blocks wrapper — for chat (prompt caching
+ *  metrics + tool_use parsing). */
 export async function callAnthropicWithUsage(
   body: Record<string, unknown>, timeoutMs = 60_000,
-): Promise<{ content: string; usage: AnthropicUsage }> {
+): Promise<{ content: string; usage: AnthropicUsage; contentBlocks: AnthropicContentBlock[] }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
   return fetchAnthropicRaw(apiKey, body, timeoutMs);

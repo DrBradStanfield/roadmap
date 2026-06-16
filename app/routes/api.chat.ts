@@ -576,6 +576,11 @@ export async function action({ request }: ActionFunctionArgs) {
       conversationId: activeConversationId,
       messageId: null,
       content: completion.content,
+      // Form edits the model proposed via tool_use (already validated server-side).
+      // Omitted on normal turns — additive, no impact on existing clients.
+      ...(completion.proposedEdits && completion.proposedEdits.length > 0
+        ? { proposedEdits: completion.proposedEdits }
+        : {}),
       ...(auth.isGuest ? { sessionToken: auth.sessionToken, isGuest: true } : {}),
     });
   } catch (error) {

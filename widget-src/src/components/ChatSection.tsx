@@ -18,6 +18,7 @@ import { ChatHeaderTitle } from './ChatHeaderTitle';
 
 export type { ChatPrefetchData } from '../hooks/useChatState';
 import type { ChatPrefetchData } from '../hooks/useChatState';
+import type { ProposedEdit } from '@roadmap/health-core';
 
 interface ChatSectionProps {
   isLoggedIn: boolean;
@@ -27,9 +28,10 @@ interface ChatSectionProps {
   onExpand?: () => void;
   guestInputs?: Record<string, unknown> | null;
   prefetchedData?: ChatPrefetchData | null;
+  onProposeEdit?: (edits: ProposedEdit[]) => void;
 }
 
-export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpand, guestInputs, prefetchedData }: ChatSectionProps) {
+export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpand, guestInputs, prefetchedData, onProposeEdit }: ChatSectionProps) {
   const [isExpanded, setIsExpanded] = useState(startExpanded ?? false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showThreads, setShowThreads] = useState(false);
@@ -42,6 +44,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   const { state, actions, refs } = useChatState({
     isLoggedIn, guestInputs, prefetchedData,
     onRemoteConversationSelected: closeThreadsPanel,
+    onProposeEdit,
   });
   const { inputRef, messagesContainerRef } = refs;
 

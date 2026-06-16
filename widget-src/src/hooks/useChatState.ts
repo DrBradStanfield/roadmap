@@ -14,6 +14,7 @@ import {
   type ChatMessage,
 } from '../lib/chat-api';
 import { postSync, postInputSync, subscribeSync, generateInstanceId } from '../lib/chat-sync';
+import type { ProposedEdit } from '@roadmap/health-core';
 
 export interface ChatPrefetchData {
   conversations: ChatConversation[];
@@ -26,6 +27,8 @@ interface UseChatStateOptions {
   guestInputs?: Record<string, unknown> | null;
   prefetchedData?: ChatPrefetchData | null;
   onRemoteConversationSelected?: () => void;
+  /** Called when the model proposes form edits via tool_use (pre-fill / med update). */
+  onProposeEdit?: (edits: ProposedEdit[]) => void;
 }
 
 export const MAX_CHARS = 500;
@@ -43,7 +46,7 @@ export const THINKING_MESSAGES = [
   'Preparing response…',
 ];
 
-export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected }: UseChatStateOptions) {
+export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemoteConversationSelected, onProposeEdit }: UseChatStateOptions) {
   const [instanceId] = useState(generateInstanceId);
 
   const [conversations, setConversations] = useState<ChatConversation[]>(prefetchedData?.conversations ?? []);
@@ -60,6 +63,11 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Keep the latest onProposeEdit in a ref so handleSend's closure always fires
+  // the current callback without re-creating the (memoised) handler.
+  const onProposeEditRef = useRef(onProposeEdit);
+  useEffect(() => { onProposeEditRef.current = onProposeEdit; }, [onProposeEdit]);
 
   // Refs for current values needed inside async callbacks and subscriptions
   const conversationsRef = useRef(conversations);
@@ -262,6 +270,13 @@ export function useChatState({ isLoggedIn, guestInputs, prefetchedData, onRemote
       };
       const finalMessages = [...optimisticMessages, assistantMsg];
       setMessages(finalMessages);
+
+      // Apply any form edits the model proposed. Only the local sender reaches
+      // here (handleSend runs on the instance that sent), so the pre-fill /
+      // med-update fires once, not once per open tab.
+      if (result.proposedEdits && result.proposedEdits.length > 0) {
+        onProposeEditRef.current?.(result.proposedEdits);
+      }
 
       let finalConversations = currentConvs;
       let finalConvId = currentConvId;
