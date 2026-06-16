@@ -10,7 +10,10 @@ import { execSync } from 'child_process';
 //  - ES module with FIXED file names (Shopify asset_url can't follow vite
 //    content hashes). The lazy HistoryPanel chunk resolves relative to the
 //    importing module's CDN URL, so code-splitting still works.
-//  - No sourcemaps to the public theme (matches the Pages posture).
+//  - Hidden sourcemaps: .map files ARE emitted (so Sentry can symbolicate via
+//    debug IDs) but the shipped .js carries NO //# sourceMappingURL comment, so
+//    nothing is referenced/leaked publicly. The deploy workflow uploads the maps
+//    to Sentry then strips them before `shopify app deploy` (10MB limit).
 // Deploys with `npx shopify app deploy --force` (production app).
 let gitHash = 'dev';
 try {
@@ -65,7 +68,7 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, '../extensions/health-tool-widget/assets'),
     emptyOutDir: false, // assets dir also holds the upload bundle
-    sourcemap: false,
+    sourcemap: 'hidden',
     rollupOptions: {
       input: resolve(__dirname, 'standalone/app.tsx'),
       output: {
