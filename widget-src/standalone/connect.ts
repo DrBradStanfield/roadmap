@@ -19,12 +19,22 @@ import {
 } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
+import { clearLocalStorage } from '../src/lib/storage';
 import { Sentry } from '../src/lib/sentry';
 
 /** Which backend the app is currently using (a UI-level subset of StorageBackendId). */
 export type Backend = 'dropbox' | 'google-drive' | 'github' | 'self-host' | 'local';
 
 export const BACKEND_KEY = 'health_roadmap_backend';
+
+/** Human-readable provider names. Shared by the sync status line and the
+ *  backend picker's log-off copy so the two surfaces never drift. */
+export const PROVIDER_LABELS: Record<Exclude<Backend, 'local'>, string> = {
+  dropbox: 'Dropbox',
+  'google-drive': 'Google Drive',
+  github: 'GitHub',
+  'self-host': 'your own server',
+};
 
 /** Lift existing on-device data into a freshly-connected cloud (first connect). */
 export async function migrateLocalInto(adapter: StorageAdapter): Promise<void> {
@@ -85,6 +95,43 @@ export function adapterFor(backend: Backend): StorageAdapter | null {
     default:
       return null;
   }
+}
+
+/**
+ * Log off this device: sign out of the active cloud and wipe the on-device
+ * copy so the next person on a SHARED computer sees nothing. This NEVER deletes
+ * the user's cloud file — reconnecting the SAME account restores everything.
+ *
+ * What it clears:
+ *  - the active provider's auth tokens/credentials (adapter.disconnect() —
+ *    each adapter only does safeRemoveItem on its OWN local token/config keys,
+ *    no network delete is issued against the remote file)
+ *  - the local RoadmapFile cache (health_roadmap_file_v2 + _rev), any named
+ *    record files (chat-history.json, …) and stored documents
+ *    (LocalStorageAdapter.disconnect())
+ *  - the legacy v1 health blob + the authenticated flag (clearLocalStorage())
+ *  - the remembered-backend selection (BACKEND_KEY)
+ *
+ * The page then reloads; resolveBackend() finds no remembered backend and no
+ * local data, so the widget returns to the connect/onboarding screen. The
+ * reload also discards all in-memory store state.
+ */
+export async function logOff(backend: Backend): Promise<void> {
+  // Sign out of the active cloud (drops its tokens locally; the remote file is
+  // left untouched — adapter.disconnect() issues no remote delete).
+  try {
+    await adapterFor(backend)?.disconnect();
+  } catch (error) {
+    console.warn('Cloud disconnect during log-off failed', error);
+    Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'log-off', backend } });
+  }
+  // Wipe the on-device copy (RoadmapFile + version + named files + documents).
+  await new LocalStorageAdapter().disconnect();
+  // Also clear the legacy v1 health blob + the authenticated flag (the shared
+  // HealthTool source still writes these), so a shared device leaks nothing.
+  clearLocalStorage();
+  localStorage.removeItem(BACKEND_KEY);
+  location.reload();
 }
 
 /**

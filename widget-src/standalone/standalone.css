@@ -115,6 +115,8 @@
   color: #8aa0a9; margin: 12px 0 8px;
 }
 .hr-opt-local { border-style: dashed; }
+.hr-modal-logoff { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e3e9eb; text-align: center; }
+.hr-modal-logoff .hr-sync-link { margin-left: 0; }
 @media (max-width: 600px) {
   .hr-modal { max-width: none; width: 100vw; border-radius: 0; max-height: 100dvh; height: 100dvh; margin: 0; }
 }

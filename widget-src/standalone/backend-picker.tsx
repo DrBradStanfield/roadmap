@@ -17,7 +17,7 @@
 import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GitHubAdapter, WebDavAdapter } from '../src/storage';
-import { adapterFor, BACKEND_KEY, copyDownToDevice, finishFormConnect, useBusyRun, type Backend } from './connect';
+import { adapterFor, BACKEND_KEY, copyDownToDevice, finishFormConnect, logOff, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
 import { useModalDialog } from './use-dialog';
 
 /* Minimal brand marks (Brad OK'd logos). Inline so no asset fetches. */
@@ -100,7 +100,7 @@ const OPTIONS: Option[] = [
 ];
 
 export function BackendPickerModal({ current, onClose }: { current: Backend; onClose: () => void }) {
-  const [step, setStep] = useState<'list' | 'github' | 'self-host'>('list');
+  const [step, setStep] = useState<'list' | 'github' | 'self-host' | 'log-off'>('list');
   const { busy, error, setError, run } = useBusyRun();
   const [gh, setGh] = useState({ token: '', owner: '', repo: '' });
   const [wd, setWd] = useState({ url: '', username: '', password: '' });
@@ -192,6 +192,30 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
                 </button>
               </React.Fragment>
             ))}
+            {current !== 'local' && (
+              <div className="hr-modal-logoff">
+                <button type="button" className="hr-sync-link" disabled={busy} onClick={() => { setError(null); setStep('log-off'); }}>
+                  Log off this device
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {step === 'log-off' && current !== 'local' && (
+          <>
+            <button className="hr-modal-back" onClick={() => setStep('list')}>← Back</button>
+            <h2>Log off this device?</h2>
+            <p className="hr-modal-sub">
+              Your data stays safe in your {PROVIDER_LABELS[current]} — this just signs you out and
+              clears your health plan from this device. Sign back in with the same account to
+              restore everything.
+            </p>
+            <div className="hr-sync-form">
+              <button className="hr-sync-btn" disabled={busy} onClick={() => void run(() => logOff(current))}>
+                {busy ? 'Logging off…' : 'Log off'}
+              </button>
+            </div>
           </>
         )}
 

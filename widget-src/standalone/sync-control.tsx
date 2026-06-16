@@ -13,17 +13,10 @@
 import React, { useEffect, useState } from 'react';
 import { GoogleDriveAdapter } from '../src/storage';
 import { googleDriveConfig } from './google-config';
-import { BACKEND_KEY, migrateLocalInto, useBusyRun, type Backend } from './connect';
+import { BACKEND_KEY, migrateLocalInto, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
-
-const LABELS: Record<Exclude<Backend, 'local'>, string> = {
-  dropbox: 'Dropbox',
-  'google-drive': 'Google Drive',
-  github: 'GitHub',
-  'self-host': 'your own server',
-};
 
 export function SyncControl({ backend, reconnect, hasData = true }: {
   backend: Backend;
@@ -86,12 +79,13 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
   } else if (backend !== 'local') {
     // Single clean line: the privacy promise IS the status (the ✓ now leads it).
     // The reminders toggle moved out to its own plan section (RemindersSection,
-    // wired via the remindersSection prop in app.tsx). "Change" stays as a quiet
-    // secondary link — it's the only way to switch/disconnect the cloud.
+    // wired via the remindersSection prop in app.tsx). "Account" stays as a quiet
+    // secondary link — it opens the picker, where the user can switch the cloud
+    // or log off this device.
     content = (
       <div className="hr-sync hr-sync-cloud">
-        <span className="hr-sync-status">✓ Your health data is yours alone — it never leaves your {LABELS[backend]}</span>
-        <button className="hr-sync-link" onClick={() => setPickerOpen(true)}>Change</button>
+        <span className="hr-sync-status">✓ Your health data is yours alone — it never leaves your {PROVIDER_LABELS[backend]}</span>
+        <button className="hr-sync-link" onClick={() => setPickerOpen(true)}>Account</button>
       </div>
     );
   } else if (!hasData) {

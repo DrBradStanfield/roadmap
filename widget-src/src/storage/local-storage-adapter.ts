@@ -44,10 +44,12 @@ export class LocalStorageAdapter implements StorageAdapter {
   async disconnect(): Promise<void> {
     safeRemoveItem(fileKey(ROADMAP_FILE_NAME));
     safeRemoveItem(versionKey(ROADMAP_FILE_NAME));
-    // Named record files (chat-history.json, …) live under the prefix.
+    // Named record files (chat-history.json, …) and stored documents live under
+    // their prefixes — clear both so log-off leaves no health data behind on a
+    // shared device.
     try {
       for (const key of Object.keys(localStorage)) {
-        if (key.startsWith(NAMED_PREFIX)) safeRemoveItem(key);
+        if (key.startsWith(NAMED_PREFIX) || key.startsWith(DOC_PREFIX)) safeRemoveItem(key);
       }
     } catch {
       /* storage unavailable — nothing to clear */
