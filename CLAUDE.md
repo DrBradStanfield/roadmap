@@ -240,8 +240,8 @@ the teardown commits and rebuild the legacy entry from source.
 | Production v2 (drstanfield.com/pages/roadmap) | `npm run build:shopify-prod` | `'true'` | `'true'` | `api.ts → roadmap-data.ts` |
 | GitHub Pages / self-host | `npm run build:pages` | `'true'` | undefined (false) | `api.ts → roadmap-data.ts`, `chat-api.ts → byok-chat.ts`, `upload-api.ts → byok-upload.ts` |
 
-(The drstanfield.com/pages/test dev surface uses the same shopify-prod config
-family via the dev Shopify app — see "Two Shopify apps" below.)
+(Both the production and education Shopify apps build from this same
+shopify-prod config family — see "Shopify app configs" below.)
 
 - **`VITE_LOCAL_FIRST`** — marks every local-first build: the user's plan lives
   client-side (their cloud), so chat sends it as context, legacy login-sync
@@ -254,18 +254,44 @@ family via the dev Shopify app — see "Two Shopify apps" below.)
   never render there; the production widget gets it through the normal
   `!isLoggedIn` guest path instead. Declared in `widget-src/src/vite-env.d.ts`;
   defined in `vite.config.shopify-prod.ts`.
-- **Two Shopify apps, two configs.** PRODUCTION = `shopify.app.toml` ("Health
-  Roadmap", client_id `94c365…`, extensions `extensions/*`, embedded on
-  `/pages/roadmap`). DEV = `shopify.app.dev.toml` ("Health Roadmap (Dev)",
-  `899d91…`, `extension_directories = [ "extensions-dev/*" ]`, embedded on
-  `/pages/test`). `shopify app deploy` targets the **currently-active config**,
-  which is whatever the last `shopify app config use` set (it drifts!). So:
-  - Dev: `shopify app config use shopify.app.dev.toml` (or `-c dev`) → `shopify app deploy --force`.
+- **Shopify app configs (one per app registration — TWO exist).** PRODUCTION =
+  `shopify.app.toml` ("Health Roadmap", client_id `94c365…`, extensions
+  `extensions/*`, embedded on `/pages/roadmap`, Fly app `health-tool-app`,
+  store microvitamin/drstanfield.com). EDUCATION = `shopify.app.edu.toml` (a
+  separate app in org `222927919`, Fly app `health-tool-edu`, store
+  `sz5utw-1r` — see the EDUCATION bullet below). There is NO dev app (the old
+  `shopify.app.dev.toml` / "Health Roadmap (Dev)" / `extensions-dev/` /
+  `/pages/test` were all deleted, June 2026). `shopify app deploy` targets the
+  **currently-active config**, which is whatever the last `shopify app config
+  use` set (it drifts!). So:
   - **Production: `shopify app config use shopify.app.toml` → `npm run build:shopify-prod`
     → `rm -f extensions/health-tool-widget/assets/*.map` → `shopify app deploy --force`.**
-    Verify the success banner reads `health-roadmap-<N>` (prod), NOT
-    `health-roadmap-dev-<N>` (that's the dev app — wrong target).
+  - **Verify the success banner names the app you INTENDED** (prod
+    `health-roadmap-<N>`, vs the education app) — `shopify app deploy` ships to
+    whatever config is active, so the drift risk is now shipping to the WRONG
+    app (prod vs edu).
   No products.md symlink dance for Shopify deploys (that's Fly-only).
+- **EDUCATION store = a SECOND config + a SECOND Fly app (Option B, June 2026).** Brad's
+  education Shopify store `sz5utw-1r.myshopify.com` (display "brad-stanfield", in the
+  **"Dr Brad Stanfield" org `222927919`** — a DIFFERENT org than the microvitamin store)
+  runs the Health Roadmap tool as a **separate private app + separate Fly app from the
+  SAME codebase**, NOT by making production multi-tenant.
+  - New private custom app (its own `client_id`) registered in org `222927919`, kept as
+    a new config variant **`shopify.app.edu.toml`** — the production `shopify.app.toml`
+    (`94c365…`) is NEVER overwritten.
+  - Second Fly app **`health-tool-edu`** deployed from the same Dockerfile, with its OWN
+    `SHOPIFY_API_KEY` / `SHOPIFY_API_SECRET` (the new app's) and its own `SHOPIFY_APP_URL`
+    / app-proxy URL, but SHARING the same Supabase project, Anthropic key, and chatbot
+    knowledge files (the chatbot knowledge base is Brad-global / store-agnostic, so it
+    works on the edu store unchanged).
+  - **Reuses the app-proxy subpath `health-tool-1`** so the existing widget build — which
+    hardcodes `PROXY_PATH = '/apps/health-tool-1'` in `widget-src/src/lib/api.ts` — works
+    unchanged. **Order scopes are KEPT** on the edu app (`read_orders` + `read_all_orders`).
+  - **Rationale:** zero changes to the production auth path — single-secret HMAC
+    verification in `app/shopify.server.ts` / `route-helpers.server.ts` /
+    `local-first-route.server.ts` stays byte-identical, so the live drstanfield.com roadmap
+    cannot be affected. The one-server multi-tenant alternative (per-shop secret resolution)
+    was rejected as too risky to production.
 
 **Important deploy notes:**
 - **Symlink resolution before deploy**: `docs/products.md` is a symlink to the claude_business Dropbox folder. Fly.io's remote builders can't follow local symlinks. The deploy command dereferences the symlink to a temp file, removes the symlink, then moves the real file into place. `git checkout` restores the symlink after deploy. **Do NOT use `cp -L file file`** — `cp` follows destination symlinks, so the symlink is never replaced.
@@ -471,7 +497,7 @@ Backend: Initialized in `app/entry.server.tsx`.
 - **In-memory user cache**: After deleting profiles/auth users, restart Fly.io machine to clear cache.
 - **Shopify scopes**: `write_app_proxy` required (else proxy returns 404), `read_customers` for email lookup, `read_orders` + `read_all_orders` for chat order lookups.
 - **`getOrCreateSupabaseUser` resilience**: Handles "already registered" and race conditions by falling back to email lookup.
-- **Customer account extension** is link-only (`extensions/health-roadmap-link/`). Full extension was removed due to cross-origin localStorage barrier.
+- **Customer account: header link, NOT a UI extension (June 2026).** The customer-account UI extension (`extensions/health-roadmap-link/`) is being removed from the codebase (production included) and replaced by **just a link in the customer-account header** (a menu link) — same destination, none of the extension build/deploy surface. (An earlier link-only version of the full extension already existed because the full extension had been removed due to a cross-origin localStorage barrier; this drops the extension entirely.)
 - `automatically_update_urls_on_dev` is `false` to protect production URLs.
 - **Shopify Dashboard is read-only** — all config via `shopify.app.toml` + `npx shopify app deploy --force`.
 - **`sync-embed.liquid` is gone (v2 teardown)** — its sync-cleanup and sync-embed/widget mutual-exclusivity invariants are retired. With the legacy `health-tool.js` bundle also retired (2026-06-15), there is no rollback that restores it; if it is ever resurrected, recover its invariants from git history (`git log -- extensions/health-tool-widget/blocks/sync-embed.liquid`).

@@ -261,6 +261,7 @@
 
   <h2>Ops</h2>
   <a href="#pipeline">Dev → prod pipeline</a>
+  <a href="#edu-store">Education store (2nd app)</a>
   <a href="#deploy">Deployment</a>
   <a href="#security">Security model</a>
 
@@ -821,7 +822,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 <p class="meta">Executed 2026-06-12/13 via <a class="file-link" href="../supabase/data-purge-2026-06.sql">supabase/data-purge-2026-06.sql</a> in one verified transaction (back up → assert KEEP tables unchanged + health tables zero → commit). Verified afterward: 155 conversations / 540 messages preserved, all 11 health tables at 0, production chat answers end-to-end. The HIPAA audit-log table exists as a stub but its custodial purpose is gone — the user's own append-only file is now their record.</p>
 
 <h2 id="pipeline">Dev → production pipeline</h2>
-<p>One Shopify app now (the separate dev app and <code>/pages/test</code> were deleted). The promotion ladder is three tiers; pushing <code>main</code> auto-deploys Pages only — the live widget never changes without an explicit deploy.</p>
+<p>Two Shopify apps now — <strong>production</strong> (<code>shopify.app.toml</code>, Fly <code>health-tool-app</code>, store drstanfield.com) and <strong>education</strong> (<code>shopify.app.edu.toml</code>, Fly <code>health-tool-edu</code>, store <code>sz5utw-1r</code>). The earlier separate dev app and <code>/pages/test</code> were deleted. The promotion ladder is three tiers; pushing <code>main</code> auto-deploys Pages only — the live widget never changes without an explicit deploy.</p>
 <div class="diagram">
 <svg viewBox="0 0 980 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dev to prod pipeline">
   <defs>
@@ -844,10 +845,71 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 <div class="caption">localhost is for non-OAuth work only — it is <strong>never</strong> an approved OAuth origin (hard rule). OAuth flows are tested on the github.io surface. The Shopify deploy needs <code>shopify app config use shopify.app.toml</code> first (the active config drifts), and the success banner must read <code>health-roadmap-&lt;N&gt;</code>.</div>
 </div>
 
+<h2 id="edu-store">Education store — a second app instance, not a second tenant</h2>
+<p>Brad's new <strong>education</strong> Shopify store (<code>sz5utw-1r.myshopify.com</code>, display <em>brad-stanfield</em>, in the <strong>"Dr Brad Stanfield" org 222927919</strong> — a <em>different</em> org than the microvitamin store) needs the same Health Roadmap tool. The chosen shape (<strong>Option B</strong>) runs it as a <strong>separate private app + separate Fly app</strong> from the <em>same codebase</em>, rather than turning the production server into a multi-tenant host.</p>
+
+<div class="card">
+  <strong>The decision in one sentence:</strong> deploy the same Docker image a second time as <code>health-tool-edu</code>, pointed at a <em>new</em> private Shopify app registered in org 222927919, so the production auth path stays byte-identical and the live drstanfield.com roadmap cannot be affected by anything the education store does.
+</div>
+
+<div class="diagram">
+<svg viewBox="0 0 980 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Production app vs education app topology">
+  <defs>
+    <marker id="ee" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/></marker>
+  </defs>
+  <!-- PRODUCTION column -->
+  <rect x="20" y="20" width="430" height="270" rx="12" fill="#fef5e7" stroke="#fd7e14" stroke-width="1.5"/>
+  <text x="235" y="44" font-size="13" font-weight="700" text-anchor="middle" fill="#9a3412">PRODUCTION — microvitamin org</text>
+  <rect x="45" y="60" width="380" height="52" rx="8" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="235" y="80" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Private app · shopify.app.toml</text>
+  <text x="235" y="98" font-size="10" text-anchor="middle" fill="#666">client_id 94c365… · drstanfield.com/pages/roadmap</text>
+  <rect x="45" y="124" width="380" height="48" rx="8" fill="#ffffff" stroke="#fd7e14"/>
+  <text x="235" y="143" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Fly app · health-tool-app</text>
+  <text x="235" y="160" font-size="10" text-anchor="middle" fill="#666">own SHOPIFY_API_KEY / _SECRET / APP_URL</text>
+  <!-- EDUCATION column -->
+  <rect x="530" y="20" width="430" height="270" rx="12" fill="#eef6ff" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="745" y="44" font-size="13" font-weight="700" text-anchor="middle" fill="#1e40af">EDUCATION — org 222927919</text>
+  <rect x="555" y="60" width="380" height="52" rx="8" fill="#ffffff" stroke="#2563eb"/>
+  <text x="745" y="80" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Private app · shopify.app.edu.toml</text>
+  <text x="745" y="98" font-size="10" text-anchor="middle" fill="#666">new client_id · sz5utw-1r.myshopify.com</text>
+  <rect x="555" y="124" width="380" height="48" rx="8" fill="#ffffff" stroke="#2563eb"/>
+  <text x="745" y="143" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Fly app · health-tool-edu</text>
+  <text x="745" y="160" font-size="10" text-anchor="middle" fill="#666">own SHOPIFY_API_KEY / _SECRET / APP_URL</text>
+  <!-- SHARED bar -->
+  <rect x="120" y="216" width="740" height="60" rx="10" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="490" y="240" font-size="12" font-weight="700" text-anchor="middle" fill="#00695c">SHARED — same codebase / Dockerfile</text>
+  <text x="490" y="260" font-size="10" text-anchor="middle" fill="#555">same Supabase project · Anthropic key · chatbot knowledge files · app-proxy subpath /apps/health-tool-1</text>
+  <line x1="235" y1="172" x2="350" y2="216" stroke="#6b7280" stroke-width="2" marker-end="url(#ee)"/>
+  <line x1="745" y1="172" x2="630" y2="216" stroke="#6b7280" stroke-width="2" marker-end="url(#ee)"/>
+</svg>
+<div class="caption">Two app registrations (two <code>client_id</code>s, two TOML variants) and two Fly apps built from one image. They diverge only in their Shopify credentials and URLs; everything in the data/AI path is shared.</div>
+</div>
+
+<h3>What's separate, what's shared</h3>
+<div class="grid-2">
+  <div class="card">
+    <h3 style="margin-top:0">Separate (per store)</h3>
+    <ul>
+      <li>A new <strong>private custom app</strong> (its own <code>client_id</code>) registered in org <strong>222927919</strong>, kept as a new config variant <code><a class="file-link" href="../shopify.app.edu.toml">shopify.app.edu.toml</a></code> — the production <code>shopify.app.toml</code> (<code>94c365…</code>) is <strong>never overwritten</strong>.</li>
+      <li>A second Fly app <code>health-tool-edu</code> from the <em>same</em> Dockerfile, with its <strong>own</strong> <code>SHOPIFY_API_KEY</code> / <code>SHOPIFY_API_SECRET</code> (the new app's), its own <code>SHOPIFY_APP_URL</code> / app-proxy URL.</li>
+      <li><strong>Order scopes are kept</strong> on the edu app (<code>read_orders</code> + <code>read_all_orders</code>) so the chatbot's order-lookup path works there too.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Shared (Brad-global)</h3>
+    <ul>
+      <li>The <strong>same Supabase project</strong>, Anthropic key, and chatbot knowledge files — the chatbot's knowledge base is store-agnostic, so it works on the education store unchanged.</li>
+      <li>The <strong>app-proxy subpath</strong> <code>/apps/health-tool-1</code> is <em>reused</em>, so the existing widget build — which hardcodes <code>PROXY_PATH = '/apps/health-tool-1'</code> in <code><a class="file-link" href="../widget-src/src/lib/api.ts">widget-src/src/lib/api.ts</a></code> — works on the edu store with no rebuild.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout"><strong>Why a second app, not one multi-tenant server.</strong> The production auth path is single-secret HMAC verification (<code><a class="file-link" href="../app/shopify.server.ts">app/shopify.server.ts</a></code> / <code>route-helpers.server.ts</code> / <code>local-first-route.server.ts</code>). A second app instance keeps that code <strong>byte-identical</strong>, so the live drstanfield.com roadmap cannot be touched by the education store. The alternative — one server resolving a per-shop secret at request time — was rejected: it rewrites the most safety-critical code on the live path for a store that doesn't need shared infrastructure.</div>
+
 <h2 id="deploy">Deployment</h2>
 <ul>
   <li><strong>Pages:</strong> <code>npm run build:pages</code> → commit + push <code>main</code> → GitHub Actions publishes <code>drbradstanfield.github.io/roadmap</code>. (A <code>dev</code> branch builds to a <code>/dev/</code> subpath, best-effort.)</li>
-  <li><strong>Shopify widget:</strong> <code>shopify app config use shopify.app.toml</code> → <code>npm run build:shopify-prod</code> → strip <code>*.map</code> → <code>npx shopify app deploy --force</code>. Verify the banner is <code>health-roadmap-&lt;N&gt;</code> (prod), not <code>-dev-&lt;N&gt;</code>.</li>
+  <li><strong>Shopify widget:</strong> <code>shopify app config use shopify.app.toml</code> → <code>npm run build:shopify-prod</code> → strip <code>*.map</code> → <code>npx shopify app deploy --force</code>. Verify the success banner names the app you INTENDED (prod <code>health-roadmap-&lt;N&gt;</code>, not the education app).</li>
   <li><strong>Backend:</strong> from repo root, dereference the <code>docs/products.md</code> symlink (Fly's builders can't follow it), deploy, then <code>git checkout docs/products.md</code> to restore the symlink. Use <code>fly deploy --strategy canary</code> for any risky change — the default rolling strategy does not protect against a boot crash (see <a href="#gotchas">gotchas</a>).</li>
 </ul>
 <p>Rollback: there is <strong>no JS rollback bundle</strong>. The legacy <code>health-tool.js</code> was retired on 2026-06-15 (bundle, entry, and config deleted), and even before deletion it was a dead end — its <code>api.ts</code> fetch functions targeted server endpoints and Supabase tables that the v2 teardown removed/purged, so re-pointing <code>app-block.liquid</code> at it would load a non-functional, data-less zombie. A genuine rollback now means reverting the v2 teardown commits and rebuilding the v1 stack from git history.</p>
@@ -878,6 +940,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
   <ul>
     <li><code>sync-embed.liquid</code> deleted (its background guest→Supabase sync is meaningless when there's no Supabase health store). Its companion <code>health_roadmap_authenticated</code> localStorage flag was <strong>not</strong> removed: <code>HealthTool.tsx</code> (shared source, both v2 builds) still <em>sets</em> it whenever the data layer reports saved data (<code>setAuthenticatedFlag()</code> after <code>loadLatestMeasurements()</code>). On the v2 surfaces the flag is now purely write-only — <code>data-logged-in="true"</code> is hardcoded, so the flag-reading branches (<code>redirectFailed</code>, stale-cache clearing) can't fire, and the prefill read is behind the <code>LOCAL_FIRST</code> early-return. With the legacy <code>health-tool.js</code> bundle retired (2026-06-15), <strong>no live build reads it at all</strong> — the writes are dead-but-harmless. The former <code>history-block.liquid</code> reader was removed on 2026-06-14 (next bullet).</li>
     <li>The separate dev Shopify app (<code>shopify.app.dev.toml</code>, <code>899d91…</code>) and <code>extensions-dev/</code> deleted; <code>/pages/test</code> removed.</li>
+    <li>The <strong>customer-account UI extension</strong> (<code>extensions/health-roadmap-link/</code>) is removed from the codebase (production included). The customer-account surface is now <strong>just a link in the customer-account header</strong> (a menu link), not a UI extension — the same destination with none of the extension build/deploy surface.</li>
     <li>Legacy <code>health-tool.js</code> was <strong>retired and deleted on 2026-06-15</strong> — bundle, entry (<code>src/index.tsx</code>), and vite config (<code>vite.config.ts</code>) all removed; <code>build:widget</code> no longer produces it (it now builds only the upload/site-chat/chatbot side bundles). Its backend was already gone, so it was a frozen, data-less zombie — no working rollback. The standalone <code>health-history.js</code> bundle and its <code>history-block.liquid</code> mount were <strong>deleted</strong> earlier, on 2026-06-14, when Brad removed the <code>/pages/health-history</code> page from Shopify production — that page was the last live consumer of the <code>health_roadmap_authenticated</code> auto-redirect, so the redirect path is now unreachable in production. The in-widget history view survives as a lazy chunk of the v2 build (<code>HistoryPanel</code> opened via <code>openHistoryLightbox</code>), independent of the deleted page bundle.</li>
   </ul>
 </details>
@@ -902,7 +965,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 
 <h2 id="gotchas">Dangerous gotchas (v2)</h2>
 <div class="callout danger"><strong>Build behaviour belongs in the module swap, not component conditionals.</strong> Keep export surfaces identical across the three builds so shared components compile everywhere and the legacy bundle stays byte-stable. The only exception is an inline fetch the shim can't see (e.g. <code>migrateGuestChat</code>), which gets a <code>LOCAL_FIRST</code>/<code>SHOPIFY_SURFACE</code> component gate.</div>
-<div class="callout danger"><strong>The Shopify config drifts.</strong> A bare <code>shopify app deploy</code> targets whatever config was last <code>config use</code>'d — a bare deploy once shipped to the dev app by mistake. Always <code>shopify app config use shopify.app.toml</code> first and verify the <code>health-roadmap-&lt;N&gt;</code> banner.</div>
+<div class="callout danger"><strong>The Shopify config drifts.</strong> A bare <code>shopify app deploy</code> targets whatever config was last <code>config use</code>'d — so with both a production and an education app registered, the risk is shipping to the WRONG app (prod vs edu). Always <code>shopify app config use shopify.app.toml</code> first and verify the success banner names the app you intended (prod <code>health-roadmap-&lt;N&gt;</code>).</div>
 <div class="callout danger"><strong>Crons self-start on import.</strong> Importing any <code>*-cron.server.ts</code> (even to call its <code>stop*</code>) starts it. Don't import a cron module from a non-server context.</div>
 <div class="callout danger"><strong>Risky Fly deploys: use <code>--strategy canary</code>.</strong> The default rolling deploy + health checks does NOT protect against a boot crash — during the RR7 cutover it updated both machines to an image that crashed before binding <code>:3000</code> and took production down. Canary (or bluegreen) health-checks a throwaway machine first, so a failed boot never touches the serving machines. The class of failure (a transitive dep throwing on the container's Node version, invisible to a newer local Node) is exactly what a boot rehearsal — or canary — catches.</div>
 <div class="callout"><strong>CSS scoping across co-loaded bundles.</strong> The site-chat / chatbot bundles still ship their own CSS on the same pages, so any changed shared selector must be scoped under <code>.health-tool</code>, or <code>health-site-chat.css</code> can win by document order.</div>

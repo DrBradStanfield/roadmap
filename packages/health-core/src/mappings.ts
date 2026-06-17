@@ -1,8 +1,8 @@
 /**
  * Shared mappings between HealthInputs fields and measurement metric types.
  *
- * Used by both the storefront widget and customer account extension
- * to convert between API measurement records and HealthInputs objects.
+ * Used by the storefront widget to convert between API measurement
+ * records and HealthInputs objects.
  *
  * Demographics (sex, birthYear, birthMonth, unitSystem) are stored on the
  * profiles table, not as measurements. Use diffProfileFields() for those.
