@@ -3933,7 +3933,10 @@ input[type="number"] {
 
 .chat-fab {
   position: fixed;
-  bottom: 24px;
+  /* `--chat-fab-bottom` is set inline by the footer-dock observer in
+     site-chat.tsx to lift the FAB above the footer; defaults to the resting
+     24px offset when the footer is out of view (or absent on this theme). */
+  bottom: var(--chat-fab-bottom, 24px);
   right: 24px;
   height: 48px;
   padding: 0 20px;
@@ -3948,8 +3951,15 @@ input[type="number"] {
   justify-content: center;
   gap: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, bottom 0.25s ease-out;
   animation: chat-fab-entrance 0.3s ease-out;
+}
+
+/* Lifted state: the FAB has docked above the footer. The actual offset is the
+   inline `--chat-fab-bottom` variable (computed per scroll position); this
+   class is a hook for future styling / debugging and signals docked state. */
+.chat-fab.chat-fab-docked {
+  bottom: var(--chat-fab-bottom, 24px);
 }
 
 .chat-fab:hover {
