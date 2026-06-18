@@ -79,13 +79,19 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
   } else if (backend !== 'local') {
     // Single clean line: the privacy promise IS the status (the ✓ now leads it).
     // The reminders toggle moved out to its own plan section (RemindersSection,
-    // wired via the remindersSection prop in app.tsx). "Account" stays as a quiet
-    // secondary link — it opens the picker, where the user can switch the cloud
-    // or log off this device.
+    // wired via the remindersSection prop in app.tsx). The provider NAME is the
+    // affordance — clicking it opens the picker (the manage/Account surface),
+    // where the user can switch the cloud or log off this device. There is no
+    // separate "Account" link; the picker is the only home for log-off +
+    // switch-storage, so the name must open it (not link out to the cloud site).
     content = (
       <div className="hr-sync hr-sync-cloud">
-        <span className="hr-sync-status">✓ Your health data is yours alone — it never leaves your {PROVIDER_LABELS[backend]}</span>
-        <button className="hr-sync-link" onClick={() => setPickerOpen(true)}>Account</button>
+        <span className="hr-sync-status">
+          ✓ Your health data is yours alone — it never leaves your{' '}
+          <button type="button" className="hr-sync-status-link" onClick={() => setPickerOpen(true)}>
+            {PROVIDER_LABELS[backend]}
+          </button>
+        </span>
       </div>
     );
   } else if (!hasData) {

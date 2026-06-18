@@ -26,18 +26,26 @@
   padding: 10px 14px; font-size: 13.5px; color: #1c2b33; margin-bottom: 12px;
 }
 /* De-greened (Brad, 2026-06-17): the connected-cloud status now matches the
-   neutral plan cards (e.g. the "Get a PDF of your personalized plan…" card)
-   instead of a green emphasis box — white surface, neutral gray border,
-   neutral text. NOTE: the privacy sentence does NOT fit on one line at the
-   card width for the longest provider ("Google Drive" / "your own server") —
-   see the review note. Left to wrap gracefully rather than overflow until the
-   copy is shortened. */
+   neutral plan cards. Card styling is byte-identical to .email-capture (the
+   "Get a PDF of your personalized plan…" card) so they read as one set: white
+   surface, NO border, 12px radius, soft shadow, 20px padding (Brad, 2026-06-18).
+   The provider name carries the manage affordance via .hr-sync-status-link. */
 .hr-sync-cloud {
   background: #fff;
-  border-color: var(--color-gray-border, #e2e8e9);
+  border: 0;
+  border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  margin-bottom: 16px;
 }
 .hr-sync-status { font-weight: 600; }
+/* Provider name as the (only) manage affordance — opens the picker, where
+   log-off + switch-storage live. Inherits the status text's size/weight so the
+   sentence stays one continuous line; underlined to read as a link. */
+.hr-sync-status-link {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; color: var(--color-brand, #00a38b); text-decoration: underline;
+}
 .hr-sync-detail { color: #5a6b73; font-size: 12.5px; flex-basis: 100%; }
 .hr-sync-btn {
   margin-left: auto; background: #00a38b; color: #fff; border: 0; border-radius: 8px;
