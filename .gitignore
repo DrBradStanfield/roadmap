@@ -45,3 +45,6 @@ health_roadmap_file*
 
 # Sourcemaps — stripped before Shopify deploy; never tracked
 *.map
+
+# Code-review screenshot artifacts — local only, never tracked
+.review-shots/
