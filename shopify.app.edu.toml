@@ -1,0 +1,37 @@
+# Education-store app instance (org 222927919, store sz5utw-1r). Mirrors shopify.app.toml
+# (production) — only client_id + URLs differ. Deploy target: Fly app health-tool-edu.
+# Always `shopify app config use shopify.app.toml` after deploying this, to restore prod as active.
+
+client_id = "deb34fd962e5d868c1501ec10cd7888d"
+name = "Health Roadmap (Edu)"
+application_url = "https://health-tool-edu.fly.dev"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = false
+
+[webhooks]
+api_version = "2026-04"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "orders/paid" ]
+  uri = "/webhooks/orders-paid"
+
+[access_scopes]
+scopes = "write_app_proxy,read_customers,write_customers,read_orders,read_all_orders,read_reports,write_content"
+
+[auth]
+redirect_urls = [ "https://health-tool-edu.fly.dev/api/auth" ]
+
+[app_proxy]
+url = "https://health-tool-edu.fly.dev"
+subpath = "health-tool-1"
+prefix = "apps"
