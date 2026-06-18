@@ -703,6 +703,13 @@ INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
 VALUES ('trending_cron', NULL, NULL, '1970-01-01')
 ON CONFLICT DO NOTHING;
 
+-- Education store (health-tool-edu Fly app) shares this Supabase project, so it
+-- needs its OWN trending lock or it would contend with prod for 'trending_cron'
+-- and only one store's metafield would be written per day.
+INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
+VALUES ('trending_cron_edu', NULL, NULL, '1970-01-01')
+ON CONFLICT DO NOTHING;
+
 INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
 VALUES ('youtube_bot_summary', NULL, NULL, '1970-01-01')
 ON CONFLICT DO NOTHING;

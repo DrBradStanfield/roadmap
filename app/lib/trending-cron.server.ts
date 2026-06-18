@@ -15,7 +15,7 @@
  */
 import * as Sentry from '@sentry/react-router';
 import { unauthenticated } from '../shopify.server';
-import { tryAcquireCronLock } from './supabase.server';
+import { tryAcquireCronLock, type CronLockName } from './supabase.server';
 import { loadBlogIndex, type BlogIndexEntry } from './blog-index.server';
 import { withTimeout, nzNowParts } from './cron-helpers.server';
 
@@ -25,6 +25,16 @@ const CRON_INTERVAL_MS = 60 * 60 * 1000;
 const TARGET_HOUR_NZ = 3;
 const MACHINE_ID = process.env.FLY_MACHINE_ID || `local-${process.pid}`;
 const SHOP_DOMAIN = process.env.SHOPIFY_SHOP_DOMAIN || 'microvitamin.myshopify.com';
+
+// The education store runs as a SEPARATE Fly app (`health-tool-edu`) from the
+// SAME codebase, but it SHARES this app's Supabase project. So both apps' crons
+// contend for the same `cron_lock` rows. Each store therefore needs its OWN
+// trending lock, or only one store's metafield gets written per day (whichever
+// machine wins the shared lock). The lock name is selected by shop domain; the
+// edu store's lock row is seeded in supabase/rls-policies.sql.
+const EDU_SHOP_DOMAIN = 'sz5utw-1r.myshopify.com';
+const TRENDING_LOCK_NAME: CronLockName =
+  SHOP_DOMAIN === EDU_SHOP_DOMAIN ? 'trending_cron_edu' : 'trending_cron';
 
 // Articles younger than this are dropped — they don't have a clean baseline
 // window. Must be >= the leading edge of QUERY_PRIOR_BASELINE (-45d), otherwise
@@ -64,7 +74,7 @@ export function startTrendingCron(): void {
     return;
   }
 
-  console.log(`Trending cron started (will run on first tick ≥ ${TARGET_HOUR_NZ}:00 NZ daily, machine: ${MACHINE_ID})`);
+  console.log(`Trending cron started (will run on first tick ≥ ${TARGET_HOUR_NZ}:00 NZ daily, machine: ${MACHINE_ID}, shop: ${SHOP_DOMAIN}, lock: ${TRENDING_LOCK_NAME})`);
 
   cronIntervalId = setInterval(async () => {
     try {
@@ -79,7 +89,7 @@ export function startTrendingCron(): void {
 
       if (lastRunDate === todayStr) return;
 
-      const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'trending_cron');
+      const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, TRENDING_LOCK_NAME);
       if (!acquired) {
         lastRunDate = todayStr;
         return;
