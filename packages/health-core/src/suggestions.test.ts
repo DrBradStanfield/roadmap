@@ -2148,6 +2148,44 @@ describe('generateSuggestions', () => {
       expect(supplements.every(s => s.priority === 'info')).toBe(true);
     });
 
+    it('supplement descriptions lead with clinical-trial evidence', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+
+      // Each card's user-facing description should surface the actual trial /
+      // meta-analysis evidence from evidence.ts (trial + finding + dose), not
+      // generic marketing language.
+      const expectMentions: Record<string, RegExp> = {
+        'supplement-micronutrient-base': /COSMOS/i,
+        'supplement-creatine': /meta-analysis/i,
+        'supplement-collagen': /26 randomised controlled trials/i,
+        'supplement-omega3': /cardiovascular events/i,
+        'supplement-sleep': /melatonin/i,
+      };
+      for (const [id, re] of Object.entries(expectMentions)) {
+        const s = suggestions.find(x => x.id === id);
+        expect(s, `missing ${id}`).toBeTruthy();
+        expect(s!.description, `${id} description should mention trial evidence`).toMatch(re);
+      }
+    });
+
+    it('supplement suggestions expose DOI references only — no duplicated reason prose', () => {
+      const { inputs, results } = createTestData();
+      const suggestions = generateSuggestions(inputs, results);
+
+      const supplements = suggestions.filter(s => s.category === 'supplements');
+      // The trial summary already lives in the visible card `description`, so the
+      // "Why this suggestion?" expansion must render references ONLY — `reason`
+      // (and guidelines) are intentionally NOT attached, to avoid repetition.
+      expect(supplements.length).toBeGreaterThan(0);
+      expect(supplements.every(s => !s.reason)).toBe(true);
+      expect(supplements.every(s => (s.guidelines?.length ?? 0) === 0)).toBe(true);
+      expect(supplements.every(s => (s.references?.length ?? 0) > 0)).toBe(true);
+      expect(supplements.every(s =>
+        (s.references ?? []).every(r => r.url.includes('doi.org') || r.url.startsWith('https://')),
+      )).toBe(true);
+    });
+
   });
 
   describe('Protein target CKD adjustment', () => {

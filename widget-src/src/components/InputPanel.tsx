@@ -2196,6 +2196,12 @@ export function InputPanel({
     const filteredOptions = supplementSearch
       ? allOptions.filter(opt => opt.name.toLowerCase().includes(supplementSearch.toLowerCase()))
       : allOptions;
+    const trimmedSearch = supplementSearch.trim();
+    // A typed name with no exact preset match can always be added as a custom
+    // supplement — this must NOT be gated on filteredOptions having matches, or
+    // a supplement matching no preset can never be added.
+    const canAddCustomSupplement = !!trimmedSearch
+      && !allOptions.some(o => o.name.toLowerCase() === trimmedSearch.toLowerCase());
 
     const addSupplement = (key: string, name: string, defaultDose?: number, defaultUnit?: string) => {
       onSupplementChange(key, name, defaultDose ?? null, defaultUnit ?? null);
@@ -2276,7 +2282,7 @@ export function InputPanel({
                 setShowSupplementDropdown(true);
               }}
             />
-            {showSupplementDropdown && filteredOptions.length > 0 && (
+            {showSupplementDropdown && (filteredOptions.length > 0 || canAddCustomSupplement) && (
               <div className="supplement-dropdown">
                 {filteredOptions.slice(0, 8).map(opt => (
                   <button
@@ -2288,13 +2294,13 @@ export function InputPanel({
                     {opt.name}
                   </button>
                 ))}
-                {supplementSearch && !allOptions.some(o => o.name.toLowerCase() === supplementSearch.toLowerCase()) && (
+                {canAddCustomSupplement && (
                   <button
                     type="button"
                     className="supplement-dropdown-item supplement-custom"
-                    onClick={() => addSupplement(`custom_${supplementSearch.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')}`, supplementSearch.slice(0, 100))}
+                    onClick={() => addSupplement(`custom_${trimmedSearch.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')}`, trimmedSearch.slice(0, 100))}
                   >
-                    + Add "{supplementSearch}"
+                    + Add "{trimmedSearch}"
                   </button>
                 )}
               </div>

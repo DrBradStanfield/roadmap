@@ -1054,7 +1054,7 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Micronutrient base',
-      description: 'A daily foundation of well-absorbed micronutrients to help fill common dietary gaps and support general health.',
+      description: 'A COSMOS trial sub-study (2023) found that a daily multivitamin improved cognitive function in older adults — evidence that broad micronutrient support may benefit brain health alongside filling common dietary gaps.',
       ingredients: [
         'Methylated B-complex',
         'Vitamin D3 with K2',
@@ -1070,28 +1070,28 @@ export function generateSuggestions(
       category: 'supplements',
       priority: 'info',
       title: 'Creatine',
-      description: 'Creatine monohydrate supports muscle strength and power, and may benefit cognition. A typical maintenance dose is 3–5 g daily.',
+      description: 'One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training, with emerging evidence for cognitive benefits.',
     },
     {
       id: 'supplement-collagen',
       category: 'supplements',
       priority: 'info',
       title: 'Collagen peptides',
-      description: 'Hydrolyzed collagen peptides (10–15 g daily) can support skin hydration and elasticity.',
+      description: 'A 2023 meta-analysis of 26 randomised controlled trials found collagen peptides (10–15 g/day) improve skin hydration and elasticity compared with placebo.',
     },
     {
       id: 'supplement-omega3',
       category: 'supplements',
       priority: 'info',
       title: 'Omega-3',
-      description: 'Essential EPA/DHA fatty acids for cardiovascular and brain health.',
+      description: 'A meta-analysis of interventional trials found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death, with dose-dependent benefits strongest for EPA-rich formulations. Randomised trials also show omega-3 is needed for B vitamins to slow age-related brain atrophy.',
     },
     {
       id: 'supplement-sleep',
       category: 'supplements',
       priority: 'info',
       title: 'Sleep support',
-      description: 'Ingredients that may support quality sleep and recovery as part of good sleep hygiene.',
+      description: 'An umbrella review of meta-analyses found melatonin reduces the time taken to fall asleep and improves sleep quality, with a good safety profile — useful as part of a good sleep-hygiene routine.',
       ingredients: [
         'Low-dose melatonin',
         'Glycine',
@@ -1146,8 +1146,14 @@ export function generateSuggestions(
     const evidence = SUGGESTION_EVIDENCE[s.id]
       || SUGGESTION_EVIDENCE[s.id.replace(/-(?:overdue|upcoming|followup)$/, '')];
     if (evidence) {
-      s.reason = evidence.reason;
-      s.guidelines = evidence.guidelines;
+      // Supplement cards already surface the trial summary in their visible
+      // `description`, so the "Why this suggestion?" expansion shows only the
+      // study citations (references) — no duplicated reason prose. Clinical
+      // cards keep the full reason + guidelines + references.
+      if (s.category !== 'supplements') {
+        s.reason = evidence.reason;
+        s.guidelines = evidence.guidelines;
+      }
       s.references = evidence.references;
     }
   }
