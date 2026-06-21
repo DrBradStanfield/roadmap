@@ -38,6 +38,7 @@ import {
   getChatCompletion,
   loadBlogArticle,
   loadMatchedArticlesFromHandles,
+  DOCTOR_POSTURE,
 } from './chat.server';
 
 // ---------------------------------------------------------------------------
@@ -435,7 +436,8 @@ async function runPipeline(thread: YouTubeThread, entry: BlogIndexEntry, body: s
 
   const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body);
   const blogArticles = loadMatchedArticlesFromHandles(routerHandles);
-  const systemBlocks = buildSystemBlocks(platformContext, { blogArticles });
+  // YouTube is a doctor-family surface (Brad's public channel) → strict doctor posture.
+  const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, blogArticles });
   const conversationMessages = buildConversationMessages([], thread.text);
   const completion = await getChatCompletion(systemBlocks, conversationMessages);
 

@@ -160,6 +160,27 @@ try {
 const SYSTEM_PROMPT_WITH_ALGORITHM = CHAT_SYSTEM_PROMPT + ALGORITHM_DOC;
 
 // ---------------------------------------------------------------------------
+// Surface posture blocks — the per-surface override layer (identity, voice, and
+// product policy) injected after the shared cached base. The base stays
+// byte-identical across surfaces so its Anthropic prompt cache is shared; the
+// posture block is small and uncached. DOCTOR is the strict default (used by
+// drstanfield.com web, Discord, and YouTube); BRAND loosens it for the
+// microvitamin.com store. See docs/chat-architecture.md → "Surface posture".
+// ---------------------------------------------------------------------------
+
+function loadPosture(file: string): string {
+  try {
+    return fs.readFileSync(path.join(process.cwd(), 'app/lib', file), 'utf-8');
+  } catch {
+    console.warn(`Chat: ${file} not found — surface posture missing`);
+    return '';
+  }
+}
+
+export const DOCTOR_POSTURE = loadPosture('chat-posture-doctor.md');
+export const BRAND_POSTURE = loadPosture('chat-posture-brand.md');
+
+// ---------------------------------------------------------------------------
 // Context assembly (cached per user for 5 minutes)
 // ---------------------------------------------------------------------------
 
@@ -471,9 +492,11 @@ interface SystemBlock {
 
 export function buildSystemBlocks(
   userContextJson: string,
-  opts?: { documentContent?: string | null; orderSummary?: string; blogArticles?: string | null },
+  opts?: { surfaceContext?: string; documentContent?: string | null; orderSummary?: string; blogArticles?: string | null },
 ): SystemBlock[] {
-  // Cached blocks first (shared across all users), then per-user blocks
+  // Cached blocks first (shared across all users AND all surfaces — keep
+  // byte-identical so the prompt cache is shared), then the per-surface posture
+  // block (uncached), then per-user blocks.
   const blocks: SystemBlock[] = [
     {
       type: 'text',
@@ -494,6 +517,10 @@ export function buildSystemBlocks(
       type: 'text' as const,
       text: KNOWLEDGE_OVERVIEW,
       cache_control: { type: 'ephemeral' as const },
+    }] : []),
+    ...(opts?.surfaceContext ? [{
+      type: 'text' as const,
+      text: opts.surfaceContext,
     }] : []),
     {
       type: 'text',

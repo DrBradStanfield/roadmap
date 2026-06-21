@@ -12,6 +12,7 @@ import {
   buildConversationMessages,
   getChatCompletion,
   loadMatchedArticlesFromHandles,
+  DOCTOR_POSTURE,
 } from './chat.server';
 import type { ChatFailureMode } from './chat.server';
 import { routeQuery, sanitizeForRouter, type RouterResult } from './chat-router.server';
@@ -85,7 +86,8 @@ export async function platformChatCompletion(params: {
 
   const blogArticles = loadMatchedArticlesFromHandles(routerResult?.handles ?? []);
 
-  const systemBlocks = buildSystemBlocks(DISCORD_PLATFORM_CONTEXT, { blogArticles });
+  // Discord is a doctor-family surface (Brad's community) → strict doctor posture.
+  const systemBlocks = buildSystemBlocks(DISCORD_PLATFORM_CONTEXT, { surfaceContext: DOCTOR_POSTURE, blogArticles });
   const conversationMessages = buildConversationMessages(history, message);
   const completion = await getChatCompletion(systemBlocks, conversationMessages);
 

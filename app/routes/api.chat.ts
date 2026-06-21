@@ -17,6 +17,8 @@ import {
   buildConversationMessages,
   matchDocumentTitle,
   loadMatchedArticlesFromHandles,
+  DOCTOR_POSTURE,
+  BRAND_POSTURE,
   getChatCompletion,
   reportChatFallback,
   generateTitle,
@@ -446,7 +448,11 @@ export async function action({ request }: ActionFunctionArgs) {
     const blogArticles = loadMatchedArticlesFromHandles(effectiveHandles);
 
     // Build system blocks + messages, call LLM
-    const systemBlocks = buildSystemBlocks(context.userContextJson, { documentContent, orderSummary, blogArticles });
+    // Surface posture: the brand store (microvitamin.com) sets CHAT_SURFACE=brand;
+    // everything else (drstanfield.com education) defaults to the strict doctor
+    // posture — a config slip can never silently produce a selling bot.
+    const surfaceContext = process.env.CHAT_SURFACE === 'brand' ? BRAND_POSTURE : DOCTOR_POSTURE;
+    const systemBlocks = buildSystemBlocks(context.userContextJson, { surfaceContext, documentContent, orderSummary, blogArticles });
     const conversationMessages = buildConversationMessages(history, message);
     const tBeforeLlm = Date.now();
     const completion = await getChatCompletion(systemBlocks, conversationMessages);
