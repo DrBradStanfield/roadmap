@@ -11,6 +11,7 @@ import { createRoot } from 'react-dom/client';
 import { ChatSection } from './components/ChatSection';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { loadGuestInputs } from './lib/storage';
+import { resolveAssistantName, setAssistantName } from './lib/assistant-config';
 import { initSentry } from './lib/sentry';
 import './styles.css';
 
@@ -165,6 +166,8 @@ function ChatBubble({ isLoggedIn, fabLabel, guestInputs }: ChatBubbleProps) {
 function mount() {
   const container = document.getElementById('health-chat-root');
   if (!container) return;
+
+  setAssistantName(resolveAssistantName(container));
 
   const isLoggedIn = container.dataset.loggedIn === 'true';
   const productTitle = container.dataset.productTitle;

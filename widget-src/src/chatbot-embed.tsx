@@ -8,6 +8,7 @@ import { createRoot } from 'react-dom/client';
 import { ChatEmbed } from './components/ChatEmbed';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { loadFromLocalStorage, loadGuestInputs } from './lib/storage';
+import { resolveAssistantName, setAssistantName } from './lib/assistant-config';
 import { initSentry } from './lib/sentry';
 import { computeFormStage } from '@roadmap/health-core';
 import './styles.css';
@@ -41,6 +42,8 @@ function ChatEmbedRoot({ isLoggedIn, guestInputs }: { isLoggedIn: boolean; guest
 function mount() {
   const container = document.getElementById('health-chatbot-embed-root');
   if (!container) return;
+
+  setAssistantName(resolveAssistantName(container));
 
   const isLoggedIn = container.dataset.loggedIn === 'true';
 

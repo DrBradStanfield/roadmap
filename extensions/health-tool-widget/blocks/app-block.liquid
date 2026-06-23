@@ -37,6 +37,7 @@
   id="health-tool-root"
   data-logged-in="true"
   data-upload-url="{{ 'health-upload.js' | asset_url }}"
+  data-assistant-name="{{ shop.metafields.health_roadmap.chat_assistant_name | default: 'Brad AI' | escape }}"
 >
   <div class="hr-skeleton" aria-hidden="true">
     <div class="hr-skel-tabbar">&nbsp;</div>

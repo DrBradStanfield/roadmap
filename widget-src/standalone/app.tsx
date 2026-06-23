@@ -15,6 +15,7 @@ import { HealthTool } from '../src/components/HealthTool';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initSentry, Sentry } from '../src/lib/sentry';
 import { initRoadmapStore, flushRoadmapStoreSync } from '../src/lib/roadmap-data';
+import { resolveAssistantName, setAssistantName } from '../src/lib/assistant-config';
 import { pushReminderSchedule } from './reminders';
 import {
   DropboxAdapter,
@@ -110,6 +111,8 @@ async function main() {
     console.warn('Health tool mount point not found');
     return;
   }
+  // Per-store chatbot display name (default "Brad AI"; overridable per store).
+  setAssistantName(resolveAssistantName(container));
   // The sync control renders inside the plan panel (where the Shopify "Data
   // synced" line was) via the syncControl prop — not as a separate top banner.
   createRoot(container).render(

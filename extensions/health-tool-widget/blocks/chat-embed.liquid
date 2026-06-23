@@ -5,6 +5,7 @@
 {%- unless page.handle == 'roadmap' -%}
 <div id="health-chat-root"
   data-logged-in="{% if customer %}true{% else %}false{% endif %}"
+  data-assistant-name="{{ shop.metafields.health_roadmap.chat_assistant_name | default: 'Brad AI' | escape }}"
   {% if routes.account_login_url %}data-login-url="{{ routes.account_login_url }}"{% endif %}
   {% if product %}data-product-title="{{ product.title | escape }}"{% endif %}
   style="display:none">
