@@ -167,6 +167,12 @@ function mount() {
   const container = document.getElementById('health-chat-root');
   if (!container) return;
 
+  // The Health Roadmap tool renders its own chat FAB, so suppress the
+  // site-wide bubble on any page where the tool is present (prevents a double
+  // bubble on the homepage / roadmap page). On stores/pages without the tool,
+  // the site chat shows everywhere. Replaces the old per-page liquid rules.
+  if (document.getElementById('health-tool-root')) return;
+
   setAssistantName(resolveAssistantName(container));
 
   const isLoggedIn = container.dataset.loggedIn === 'true';
@@ -174,7 +180,7 @@ function mount() {
 
   const fabLabel = productTitle
     ? `Questions about ${productTitle}?`
-    : 'Need help? Ask here';
+    : (container.dataset.fabLabel || 'Need help? Ask here');
 
   const guestInputs = isLoggedIn ? null : loadGuestInputs();
 

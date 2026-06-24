@@ -1,11 +1,13 @@
 {%- comment -%}
-  Hide the floating chat bubble on the Health Roadmap page — that page
-  already has its own chat entry point via the widget FAB.
+  Site-wide floating chat bubble. Suppression on pages that have the Health
+  Roadmap tool (which renders its own chat FAB) is handled in the widget JS by
+  detecting #health-tool-root — so no per-page / per-template liquid rules are
+  needed here. The bubble label is configurable per store via the block setting.
 {%- endcomment -%}
-{%- unless page.handle == 'roadmap' -%}
 <div id="health-chat-root"
   data-logged-in="{% if customer %}true{% else %}false{% endif %}"
   data-assistant-name="{{ shop.metafields.health_roadmap.chat_assistant_name | default: 'Brad AI' | escape }}"
+  data-fab-label="{{ block.settings.fab_label | default: 'Need help? Ask here' | escape }}"
   {% if routes.account_login_url %}data-login-url="{{ routes.account_login_url }}"{% endif %}
   {% if product %}data-product-title="{{ product.title | escape }}"{% endif %}
   style="display:none">
@@ -14,15 +16,17 @@
 {{ 'health-site-chat.css' | asset_url | stylesheet_tag }}
 {{ 'health-site-chat.js' | asset_url | script_tag }}
 
-{%- if template.name == 'index' -%}
-<style>@media (max-width: 767px) { #health-chat-root { display: none; } }</style>
-{%- endif -%}
-{%- endunless -%}
-
 {% schema %}
 {
   "name": "Health Chat",
   "target": "body",
-  "settings": []
+  "settings": [
+    {
+      "type": "text",
+      "id": "fab_label",
+      "label": "Chat bubble label",
+      "default": "Need help? Ask here"
+    }
+  ]
 }
 {% endschema %}
