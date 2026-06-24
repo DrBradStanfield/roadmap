@@ -237,17 +237,20 @@ the teardown commits and rebuild the legacy entry from source.
 
 | Build | Command | `VITE_LOCAL_FIRST` | `VITE_SHOPIFY_SURFACE` | Module swaps |
 |---|---|---|---|---|
-| Production v2 (drstanfield.com/pages/roadmap) | `npm run build:shopify-prod` | `'true'` | `'true'` | `api.ts → roadmap-data.ts` |
+| Shopify storefront — prod **and** edu apps (post-split: microvitamin.com + drstanfield.com/pages/roadmap) | `npm run build:shopify-prod` | `'true'` | `'true'` | `api.ts → roadmap-data.ts` |
 | GitHub Pages / self-host | `npm run build:pages` | `'true'` | undefined (false) | `api.ts → roadmap-data.ts`, `chat-api.ts → byok-chat.ts`, `upload-api.ts → byok-upload.ts` |
 
 (Both the production and education Shopify apps build from this same
-shopify-prod config family — see "Shopify app configs" below.)
+shopify-prod config family — see "Shopify app configs" below. **⚠️ §12 split is
+LIVE (2026-06-24): the PROD app now serves `microvitamin.com` (commerce); the
+EDU app serves `drstanfield.com/pages/roadmap` (education). The same bundle ships
+to both — deploy twice, see "Shopify app configs".**)
 
 - **`VITE_LOCAL_FIRST`** — marks every local-first build: the user's plan lives
   client-side (their cloud), so chat sends it as context, legacy login-sync
   server calls are neutralized, etc.
-- **`VITE_SHOPIFY_SURFACE`** — marks the drstanfield.com v2 build ONLY (never
-  Pages): gates features that need Brad's server via the Shopify app proxy.
+- **`VITE_SHOPIFY_SURFACE`** — marks the Shopify-storefront v2 build ONLY (prod +
+  edu apps; never Pages): gates features that need Brad's server via the Shopify app proxy.
   Currently: the guest report email section ("Get your personalized plan
   emailed to you…" / `GuestEmailCapture` via `guestReportData` in
   HealthTool.tsx). The Pages build has no Brad server, so the section must
@@ -257,9 +260,11 @@ shopify-prod config family — see "Shopify app configs" below.)
 - **Shopify app configs (one per app registration — TWO exist).** PRODUCTION =
   `shopify.app.toml` ("Health Roadmap", client_id `94c365…`, extensions
   `extensions/*`, embedded on `/pages/roadmap`, Fly app `health-tool-app`,
-  store microvitamin/drstanfield.com). EDUCATION = `shopify.app.edu.toml` (a
-  separate app in org `222927919`, Fly app `health-tool-edu`, store
-  `sz5utw-1r` — see the EDUCATION bullet below). There is NO dev app (the old
+  store `microvitamin` → **`microvitamin.com` (commerce, post-split)**).
+  EDUCATION = `shopify.app.edu.toml` (a separate app in org `222927919`, Fly app
+  `health-tool-edu`, store `sz5utw-1r`/"brad-stanfield" → **`drstanfield.com`
+  (education, post-split) — the tool lives at `drstanfield.com/pages/roadmap`** —
+  see the EDUCATION bullet below). There is NO dev app (the old
   `shopify.app.dev.toml` / "Health Roadmap (Dev)" / `extensions-dev/` /
   `/pages/test` were all deleted, June 2026). `shopify app deploy` targets the
   **currently-active config**, which is whatever the last `shopify app config
@@ -292,6 +297,36 @@ shopify-prod config family — see "Shopify app configs" below.)
     `local-first-route.server.ts` stays byte-identical, so the live drstanfield.com roadmap
     cannot be affected. The one-server multi-tenant alternative (per-shop secret resolution)
     was rejected as too risky to production.
+- **§12 SPLIT IS LIVE (2026-06-24) — two domains, two Shopify apps, ONE codebase + ONE bundle.**
+  `drstanfield.com` = the **education** store (edu app `shopify.app.edu.toml` / Fly `health-tool-edu`);
+  the tool is at `drstanfield.com/pages/roadmap`. `microvitamin.com` = the **commerce** store (prod
+  app `shopify.app.toml` / Fly `health-tool-app`). Both stores load the **identical** widget
+  extension (built once here; the prod-built assets are deployed to BOTH Shopify apps). **To ship a
+  widget change to both stores, deploy twice (then restore prod active):**
+  1. `shopify app config use shopify.app.toml` → `npm run build:shopify-prod` (+ `build:widget` for
+     side bundles + Sentry sourcemaps + `rm *.map`) → `shopify app deploy --force` → verify banner
+     **`health-roadmap-<N>`** (prod / microvitamin).
+  2. `shopify app config use shopify.app.edu.toml` → `shopify app deploy --force` (no rebuild — same
+     assets) → verify banner **`health-roadmap-edu-<N>`** (edu / drstanfield).
+  3. `shopify app config use shopify.app.toml` → **RESTORE prod active** (config drifts!).
+  (Known leftover: `microvitamin.com`'s storefront still embeds the roadmap tool + chat blocks —
+  the tool was intended education-only post-split; pending cleanup.)
+- **Chatbot runs identically on both domains, name differs per store.** Storefront → Shopify app
+  proxy `/apps/health-tool-1/api/chat` → the store's Fly app (`drstanfield.com`→`health-tool-edu`,
+  `microvitamin.com`→`health-tool-app`) → Anthropic (shared key). Both Fly apps share the same
+  Supabase + Anthropic key + chatbot knowledge; the **edu Fly app OMITS the Discord/YouTube bot
+  tokens** so only prod runs those bots. The chat assistant's on-screen **display name is per-store
+  via the shop metafield `health_roadmap.chat_assistant_name`** (same namespace as `ab_config`),
+  **defaulting to `"Brad AI"`**. Flow: metafield → Liquid blocks emit
+  `data-assistant-name="{{ shop.metafields.health_roadmap.chat_assistant_name | default: 'Brad AI' }}"`
+  on the chat/widget roots (`app-block.liquid`, `chat-embed.liquid`, `chatbot-embed.liquid`) → read
+  at boot by `widget-src/src/lib/assistant-config.ts` (`resolveAssistantName`/`setAssistantName`/
+  `getAssistantName`) → rendered by `ChatMessageBubble.tsx` (the single name render site for ALL chat
+  surfaces: roadmap-tool chat, site-chat FAB, embedded chatbot). Because both stores ship the SAME
+  bundle, the name MUST come from this per-store metafield (a build flag can't differ them).
+  **Live state: `drstanfield.com` has no metafield → `"Brad AI"`; `microvitamin.com` metafield set
+  to `"MicroVitamin"`.** To change a store's name, set the metafield via the Admin API (`metafieldsSet`,
+  owner = the Shop GID, type `single_line_text_field`) — no redeploy needed.
 
 **Important deploy notes:**
 - **Symlink resolution before deploy**: `docs/products.md` is a symlink to the claude_business Dropbox folder. Fly.io's remote builders can't follow local symlinks. The deploy command dereferences the symlink to a temp file, removes the symlink, then moves the real file into place. `git checkout` restores the symlink after deploy. **Do NOT use `cp -L file file`** — `cp` follows destination symlinks, so the symlink is never replaced.
