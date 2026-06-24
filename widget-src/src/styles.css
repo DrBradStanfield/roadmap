@@ -33,6 +33,19 @@
   --spacing-md: 12px;
   --spacing-lg: 16px;
   --spacing-xl: 24px;
+
+  /* Form controls — one shared geometry for every single-line control
+     (text/number inputs, selects, the sex toggle + its buttons) so they
+     line up exactly when sitting on the same row (e.g. Height vs sex
+     toggle). Height is FIXED rather than derived from padding + line-height,
+     because native <select> chrome and the flex-parent `content-box`
+     default (iOS WebKit) otherwise render the same padding at different
+     heights. Pair every control rule with `box-sizing: border-box`. */
+  --control-height: 42px;
+  --control-padding-x: 12px;
+  --control-radius: 8px;
+  --control-border: 1px solid var(--color-gray-border);
+  --control-font-size: 16px;
 }
 
 /* Hide native number input spinners */
@@ -281,22 +294,9 @@ input[type="number"] {
   color: var(--color-gray-dark);
 }
 
-.unit-toggle select {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 12px;
-  font-size: 16px;
-  border: 1px solid var(--color-gray-border);
-  border-radius: 8px;
-  background: #fff;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.unit-toggle select:focus {
-  outline: none;
-  border-color: var(--color-brand);
-  box-shadow: 0 0 0 3px rgba(0, 163, 139, 0.1);
-}
+/* The Units control is now a compact `.unit-toggle-pill` button (styled
+   separately), not a full-height `<select>` — so it no longer shares the
+   `.health-field input, .health-field select` coherence geometry. */
 
 .health-section {
   padding-bottom: 9px;
@@ -416,27 +416,47 @@ input[type="number"] {
   color: var(--color-gray-dark);
 }
 
-.health-field input,
-.health-field select {
-  width: 100%;
+/* Coherence controls — HARDENED against theme leak (see CLAUDE.md "Storefront
+   theme leak" gotcha + memory `feedback_horizon_theme_input_leak`). Every
+   selector is scoped under the `.health-tool` root (specificity 0,2,1) so it
+   out-weighs BOTH (a) the stale `health-site-chat.css` copy of this file that
+   also loads on the storefront with the same UNscoped 0,1,1 rule but later in
+   document order, and (b) any Horizon `base.css` `input:not(...)` leak (0,1,1).
+   `box-sizing: border-box` + a FIXED `height` + an explicit `min-height` +
+   `line-height: normal` together neutralize Horizon's inherited `line-height:
+   1.6` and any min-height the theme injects — without these the deployed input
+   ballooned to 47.6px on live while selects sat at 43px (verified on
+   drstanfield.com). Keep the boxed look (border + radius + white bg) — unlike
+   the flush `.bt-input` matrix cells, these controls SHOULD render as boxes. */
+.health-tool .health-field input,
+.health-tool .health-field select,
+.health-tool .sex-toggle {
   box-sizing: border-box;
-  padding: 10px 12px;
-  font-size: 16px;
-  border: 1px solid var(--color-gray-border);
-  border-radius: 8px;
+  height: var(--control-height);
+  min-height: var(--control-height);
+  border: var(--control-border);
+  border-radius: var(--control-radius);
   background: #fff;
+}
+
+.health-tool .health-field input,
+.health-tool .health-field select {
+  width: 100%;
+  padding: 0 var(--control-padding-x);
+  font-size: var(--control-font-size);
+  line-height: normal;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.health-field input:focus,
-.health-field select:focus {
+.health-tool .health-field input:focus,
+.health-tool .health-field select:focus {
   outline: none;
   border-color: var(--color-brand);
   box-shadow: 0 0 0 3px rgba(0, 163, 139, 0.1);
 }
 
-.health-field input.error,
-.health-field select.error {
+.health-tool .health-field input.error,
+.health-tool .health-field select.error {
   border-color: var(--color-error);
 }
 
@@ -444,17 +464,25 @@ input[type="number"] {
   color: #aaa;
 }
 
-.sex-toggle {
+.health-tool .sex-toggle {
   display: flex;
-  border: 1px solid var(--color-gray-border);
-  border-radius: 8px;
   overflow: hidden;
 }
 
-.sex-toggle-btn {
+/* Scoped under .health-tool to match .sex-toggle — keeps the toggle buttons
+   immune to the stale site-chat copy / any future theme `button` leak (same
+   specificity tactic as the input/select rules above). */
+.health-tool .sex-toggle-btn {
   flex: 1;
-  padding: 10px 12px;
-  font-size: 16px;
+  /* Buttons fill the toggle's fixed height; no vertical padding (the
+     container sets the height) so they can't render taller/shorter than
+     the inputs sharing their row. min-height:0 + line-height:normal keep
+     Horizon's inherited line-height from inflating the button past the
+     container's fixed height. */
+  min-height: 0;
+  padding: 0 var(--control-padding-x);
+  font-size: var(--control-font-size);
+  line-height: normal;
   font-weight: 500;
   border: none;
   background: #fff;
@@ -463,11 +491,11 @@ input[type="number"] {
   transition: background 0.2s, color 0.2s;
 }
 
-.sex-toggle-btn:first-child {
+.health-tool .sex-toggle-btn:first-child {
   border-right: 1px solid var(--color-gray-border);
 }
 
-.sex-toggle-btn--active {
+.health-tool .sex-toggle-btn--active {
   background: var(--color-brand);
   color: #fff;
 }
@@ -2196,7 +2224,9 @@ input[type="number"] {
 }
 .hr-skel-line:last-child { margin-bottom: 0; }
 .hr-skel-line--title { height: 20px; width: 45%; margin-bottom: 22px; }
-.hr-skel-line--input { height: 42px; border-radius: 8px; margin-bottom: 18px; }
+/* Mirror the live input geometry (--control-*) so the skeleton placeholder
+   doesn't jump height/radius when the real controls hydrate. */
+.hr-skel-line--input { height: var(--control-height); border-radius: var(--control-radius); margin-bottom: 18px; }
 .hr-skel-line--short { width: 35%; }
 .hr-skel-line--med { width: 65%; }
 
@@ -4932,6 +4962,26 @@ input[type="number"] {
   outline: none;
   font-family: inherit;
   font-variant-numeric: tabular-nums;
+}
+/* Defensive reset against storefront-theme `input` styling leaking in.
+   The Horizon theme's base.css draws a box on every input — `border-radius:
+   var(--style-border-radius-inputs)` (4px), `background-color:
+   var(--color-input-background)` (white), and `border-color:
+   var(--color-input-border)` (which recolors our 1px transparent bottom
+   border to a visible line). That turns these flush matrix cells into white
+   rounded "bubbles". The doubled `.bt-input.bt-input` selector (specificity
+   0,2,0) out-weighs the theme's `input:not([type=checkbox],[type=radio])`
+   (0,1,1) so the box never draws. The `.bt-input-active`/`.bt-input-error`
+   rules below are also two-class and later in source order, so the focus +
+   error underlines still win over this reset. */
+.bt-input.bt-input {
+  border: none;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  -webkit-appearance: none;
+  appearance: none;
 }
 /* Mobile font-size ≥ 16px stops iOS WebKit from auto-zooming the viewport
    when a numeric input is focused. The auto-zoom otherwise visually
