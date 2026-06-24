@@ -2259,6 +2259,25 @@ input[type="number"] {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Print / Save-as-PDF: getReportHtml() clones .health-results-panel into a new
+   window with this same CSS and calls print() synchronously. The cloned cards
+   restart their staggered card-enter animation (animation-delay + `backwards`
+   fill holds opacity:0 during the delay), so the print snapshot captures them
+   mid-stagger — later cards faded/invisible. Force every entrance animation in
+   the printed plan to its settled state so the PDF always shows full opacity. */
+@media print {
+  .suggestion-card,
+  .stat-detail,
+  .med-step-enter,
+  .suggestion-highlight,
+  .suggestion-fade-out {
+    -webkit-animation: none !important;
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 /* Step/element entrance animation (medication steps, inline save button) */
 @keyframes step-enter {
   from { opacity: 0; transform: translateY(6px); }
