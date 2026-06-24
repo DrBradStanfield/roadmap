@@ -260,8 +260,9 @@
   <a href="#supabase">Supabase today + purge</a>
 
   <h2>Ops</h2>
+  <a href="#deployment-topology">Deployment topology (2 stores)</a>
   <a href="#pipeline">Dev → prod pipeline</a>
-  <a href="#edu-store">Education store (2nd app)</a>
+  <a href="#edu-store">Education / commerce split</a>
   <a href="#deploy">Deployment</a>
   <a href="#security">Security model</a>
 
@@ -275,7 +276,7 @@
 
 <h1 id="intro">Health Roadmap — Architecture (v2, local-first)</h1>
 <div class="meta">
-  Last updated 2026-06-15. <span class="pill">Live in production</span> — <code>/pages/roadmap</code> serves the v2 local-first build, and the thin server runs React Router 7 on Fly (<code>v361+</code>). This page is the single, self-contained source of truth for v2 architecture. The legacy v1 (Supabase-backed) shape is preserved at <a href="architecture.html">architecture.html</a> for historical reference; the blow-by-blow of the migration (dated decisions, deviations, build log) lives in <strong>git history</strong>, not in a companion doc.
+  Last updated 2026-06-25. <span class="pill">Live in production</span> — both storefronts serve the v2 local-first build on <code>/pages/roadmap</code>, and the thin server runs React Router 7 on Fly (<code>v361+</code>). As of the <strong>§12 split (2026-06-24)</strong> the tool runs on <strong>two domains / two Shopify apps / two Fly apps from one codebase &amp; one widget bundle</strong>: <code>drstanfield.com</code> is the <strong>education</strong> store (app <code>shopify.app.edu.toml</code>, Fly <code>health-tool-edu</code>) and <code>microvitamin.com</code> is the <strong>commerce</strong> store (app <code>shopify.app.toml</code>, Fly <code>health-tool-app</code>). This page is the single, self-contained source of truth for v2 architecture. The legacy v1 (Supabase-backed) shape is preserved at <a href="architecture.html">architecture.html</a> for historical reference; the blow-by-blow of the migration (dated decisions, deviations, build log) lives in <strong>git history</strong>, not in a companion doc.
 </div>
 
 <div class="card">
@@ -320,16 +321,17 @@
   </defs>
 
   <!-- Two front doors -->
-  <rect x="20" y="20" width="250" height="190" rx="12" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5" stroke-dasharray="4 3"/>
-  <text x="35" y="42" font-size="13" font-weight="600" fill="#00695c">Two equal front doors (delivery)</text>
-  <rect x="35" y="56" width="220" height="58" rx="8" fill="#ffffff" stroke="#00a38b" stroke-width="1.5"/>
-  <text x="145" y="78" font-size="12" font-weight="600" text-anchor="middle" fill="#111">drstanfield.com /pages/roadmap</text>
-  <text x="145" y="95" font-size="10" text-anchor="middle" fill="#666">Shopify theme extension</text>
-  <text x="145" y="107" font-size="10" text-anchor="middle" fill="#666">health-plan-v2.js (LOCAL_FIRST + SHOPIFY_SURFACE)</text>
-  <rect x="35" y="124" width="220" height="58" rx="8" fill="#ffffff" stroke="#00a38b" stroke-width="1.5"/>
-  <text x="145" y="146" font-size="12" font-weight="600" text-anchor="middle" fill="#111">GitHub Pages / self-host</text>
-  <text x="145" y="163" font-size="10" text-anchor="middle" fill="#666">standalone build (LOCAL_FIRST only)</text>
-  <text x="145" y="175" font-size="10" text-anchor="middle" fill="#666">BYOK chat + upload</text>
+  <rect x="20" y="20" width="250" height="200" rx="12" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="35" y="42" font-size="13" font-weight="600" fill="#00695c">Front doors (delivery)</text>
+  <rect x="35" y="52" width="220" height="68" rx="8" fill="#ffffff" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="145" y="70" font-size="11" font-weight="600" text-anchor="middle" fill="#111">2 Shopify stores · /pages/roadmap</text>
+  <text x="145" y="85" font-size="9.5" text-anchor="middle" fill="#666">drstanfield.com (education) + microvitamin.com (commerce)</text>
+  <text x="145" y="98" font-size="9.5" text-anchor="middle" fill="#666">SAME health-plan-v2.js bundle</text>
+  <text x="145" y="111" font-size="9.5" text-anchor="middle" fill="#666">(LOCAL_FIRST + SHOPIFY_SURFACE)</text>
+  <rect x="35" y="130" width="220" height="62" rx="8" fill="#ffffff" stroke="#00a38b" stroke-width="1.5"/>
+  <text x="145" y="150" font-size="12" font-weight="600" text-anchor="middle" fill="#111">GitHub Pages / self-host</text>
+  <text x="145" y="166" font-size="10" text-anchor="middle" fill="#666">standalone build (LOCAL_FIRST only)</text>
+  <text x="145" y="180" font-size="10" text-anchor="middle" fill="#666">BYOK chat + upload</text>
 
   <!-- The App -->
   <rect x="320" y="40" width="240" height="250" rx="12" fill="#ffffff" stroke="#00a38b" stroke-width="2"/>
@@ -425,7 +427,7 @@
   <div class="card">
     <h3 style="margin-top:0">Delivery (front door)</h3>
     <ul>
-      <li><strong>drstanfield.com</strong> — Shopify theme extension on <code>/pages/roadmap</code>. The mainstream door; AI runs on Brad's server (free to the user).</li>
+      <li><strong>Two Shopify stores</strong> — the same theme extension on <code>/pages/roadmap</code> for both <strong>drstanfield.com</strong> (education) and <strong>microvitamin.com</strong> (commerce). The mainstream door; AI runs on Brad's server (free to the user). Each store is a separate Shopify app + Fly app but serves the <em>identical</em> widget bundle — see <a href="#deployment-topology">deployment topology</a>.</li>
       <li><strong>GitHub Pages / self-host</strong> — the same app, statically hosted. The "works if Brad goes dark" door; AI is bring-your-own-key. Also the primary dev/test surface.</li>
     </ul>
   </div>
@@ -456,7 +458,7 @@
   <div class="card">
     <h4>Server (thin, optional)</h4>
     <ul>
-      <li>React Router 7 on <code>node:22-alpine</code>, Fly.io <code>health-tool-app</code> (iad, 1 machine min)</li>
+      <li>React Router 7 on <code>node:22-alpine</code>, two Fly.io apps from one image — <code>health-tool-app</code> (commerce/microvitamin) + <code>health-tool-edu</code> (education/drstanfield), iad, 1 machine min each</li>
       <li><code>@shopify/shopify-app-react-router</code> — app proxy + HMAC for the AI endpoints; Shopify Admin API <code>2026-04</code></li>
       <li>Anthropic (Claude Haiku 4.5) for chat + lab extraction</li>
       <li>Supabase (chat history + A/B only), Resend (reminders + ops digests), Klaviyo (email list)</li>
@@ -515,7 +517,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
   <strong>Two corrections vs the older docs.</strong> (1) There is no <code>vite.config.pages.ts</code> — the Pages config is <code>vite.config.standalone.ts</code>, and <code>build:pages</code>/<code>build:shopify-prod</code> live in the <em>root</em> <code>package.json</code>, not <code>widget-src/</code>. (2) The Shopify prod build swaps <strong>only the storage module</strong>; its chat and upload still go through Brad's server (<code>chat-api.ts</code> / <code>upload-api.ts</code> → app proxy). The three-swap set is the <em>Pages</em> build, where AI is BYOK.
 </div>
 <div class="callout">
-  <strong>Flag semantics.</strong> <code>LOCAL_FIRST</code> is true on both v2 builds: the plan lives client-side, "logged in" is just storage UX, chat sends the plan as context, and legacy login-sync server calls are neutralized by the shim. <code>SHOPIFY_SURFACE</code> is true <em>only</em> on drstanfield.com: it gates features that need Brad's server (the guest report-email/Klaviyo capture). Both v2 builds redirect <code>lib/api → roadmap-data.ts</code>; the now-retired legacy v1 build saw both flags as false and used <code>api.ts</code>'s fetch functions directly.
+  <strong>Flag semantics.</strong> <code>LOCAL_FIRST</code> is true on both v2 builds: the plan lives client-side, "logged in" is just storage UX, chat sends the plan as context, and legacy login-sync server calls are neutralized by the shim. <code>SHOPIFY_SURFACE</code> is true on the <em>Shopify-prod build</em> (the bundle served by both storefronts, drstanfield.com + microvitamin.com) and never on Pages: it gates features that need Brad's server (the guest report-email/Klaviyo capture). Both v2 builds redirect <code>lib/api → roadmap-data.ts</code>; the now-retired legacy v1 build saw both flags as false and used <code>api.ts</code>'s fetch functions directly.
 </div>
 
 <h2 id="module-swap">The module-swap mechanism</h2>
@@ -686,6 +688,40 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 
 <h2 id="chatbot">Chatbot — server-proxied vs BYOK</h2>
 <p>The same chat UI, two transports chosen at build time. The Shopify build keeps <code>chat-api.ts</code> (app proxy → Brad's server, Brad pays). The Pages build swaps in <code>byok-chat.ts</code> (browser → Anthropic direct, user pays). Both send the user's plan as context — the data still comes from the local file, not a server lookup.</p>
+
+<h3>Per-store assistant display name</h3>
+<p>The assistant's display name is <strong>per-store</strong>, driven by a shop metafield so the same bundle reads differently on each storefront. Default is <strong>"Brad AI"</strong>.</p>
+<div class="diagram">
+<svg viewBox="0 0 960 130" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Per-store chatbot name flow">
+  <defs><marker id="cn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#666"/></marker></defs>
+  <rect x="10" y="45" width="190" height="50" rx="8" fill="#eef6ff" stroke="#2563eb"/><text x="105" y="66" font-size="11" font-weight="600" text-anchor="middle" fill="#111">shop metafield</text><text x="105" y="82" font-size="9" text-anchor="middle" fill="#666">health_roadmap.chat_assistant_name</text>
+  <rect x="245" y="45" width="180" height="50" rx="8" fill="#f0f9f7" stroke="#00a38b"/><text x="335" y="66" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Liquid block</text><text x="335" y="82" font-size="9" text-anchor="middle" fill="#666">data-assistant-name=…</text>
+  <rect x="470" y="45" width="200" height="50" rx="8" fill="#f0f9f7" stroke="#00a38b"/><text x="570" y="63" font-size="11" font-weight="600" text-anchor="middle" fill="#111">assistant-config.ts</text><text x="570" y="79" font-size="9" text-anchor="middle" fill="#666">reads attr · default "Brad AI"</text>
+  <rect x="715" y="45" width="235" height="50" rx="8" fill="#f0f9f7" stroke="#00a38b"/><text x="832" y="63" font-size="11" font-weight="600" text-anchor="middle" fill="#111">ChatMessageBubble.tsx</text><text x="832" y="79" font-size="9" text-anchor="middle" fill="#666">renders the name in the UI</text>
+  <line x1="200" y1="70" x2="241" y2="70" stroke="#666" stroke-width="1.6" marker-end="url(#cn)"/>
+  <line x1="425" y1="70" x2="466" y2="70" stroke="#666" stroke-width="1.6" marker-end="url(#cn)"/>
+  <line x1="670" y1="70" x2="711" y2="70" stroke="#666" stroke-width="1.6" marker-end="url(#cn)"/>
+</svg>
+<div class="caption">drstanfield (education) → "Brad AI"; microvitamin (commerce) → "MicroVitamin". Set per-store as a shop metafield; the widget bundle is identical — the name is data, not a build flag.</div>
+</div>
+
+<h3>Data-editing via tool-use (the chatbot can pre-fill the form)</h3>
+<p>The chatbot can now <strong>propose edits to the user's roadmap</strong> using Anthropic tool-use, on <em>both</em> the server (storefront) and BYOK (Pages) paths. The tool definitions live in <a class="file-link" href="../packages/health-core/src/chat-edits.ts">health-core/chat-edits.ts</a> — <code>propose_field_edit</code> (a measurement/profile field) and <code>propose_medication_edit</code> — and the parsed intent (<code>parseProposedEdits()</code>) carries structured field / value / unit / date, never fuzzy text.</p>
+<div class="diagram">
+<svg viewBox="0 0 980 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Chatbot tool-use form pre-fill flow">
+  <defs><marker id="ce" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#16a34a"/></marker></defs>
+  <rect x="15" y="80" width="160" height="54" rx="8" fill="#f0f9f7" stroke="#00a38b"/><text x="95" y="103" font-size="11" font-weight="600" text-anchor="middle" fill="#111">user asks in chat</text><text x="95" y="119" font-size="9" text-anchor="middle" fill="#666">"my LDL is 3.1"</text>
+  <rect x="215" y="80" width="190" height="54" rx="8" fill="#fef2f2" stroke="#dc3545"/><text x="310" y="98" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Claude tool-use</text><text x="310" y="113" font-size="9" text-anchor="middle" fill="#666">propose_field_edit /</text><text x="310" y="126" font-size="9" text-anchor="middle" fill="#666">propose_medication_edit</text>
+  <rect x="445" y="80" width="180" height="54" rx="8" fill="#f0f9f7" stroke="#00a38b"/><text x="535" y="98" font-size="11" font-weight="600" text-anchor="middle" fill="#111">parseProposedEdits()</text><text x="535" y="114" font-size="9" text-anchor="middle" fill="#666">structured field/value/unit/date</text>
+  <rect x="665" y="55" width="300" height="44" rx="8" fill="#ecfdf5" stroke="#16a34a"/><text x="815" y="73" font-size="11" font-weight="600" text-anchor="middle" fill="#111">field edit → form pre-filled (highlighted)</text><text x="815" y="89" font-size="9" text-anchor="middle" fill="#666">user clicks Save — the save IS the confirmation</text>
+  <rect x="665" y="115" width="300" height="44" rx="8" fill="#fff3e0" stroke="#fd7e14"/><text x="815" y="133" font-size="11" font-weight="600" text-anchor="middle" fill="#111">medication edit → saves immediately</text><text x="815" y="149" font-size="9" text-anchor="middle" fill="#666">with one-click Undo</text>
+  <line x1="175" y1="107" x2="211" y2="107" stroke="#16a34a" stroke-width="1.6" marker-end="url(#ce)"/>
+  <line x1="405" y1="107" x2="441" y2="107" stroke="#16a34a" stroke-width="1.6" marker-end="url(#ce)"/>
+  <line x1="625" y1="100" x2="661" y2="80" stroke="#16a34a" stroke-width="1.6" marker-end="url(#ce)"/>
+  <line x1="625" y1="114" x2="661" y2="134" stroke="#16a34a" stroke-width="1.6" marker-end="url(#ce)"/>
+</svg>
+<div class="caption">No health data is ever auto-committed for measurements: the widget pre-fills the real form, highlighted, and the user's <strong>Save</strong> is the confirmation. Medications save immediately with Undo. Negatives are guarded — a bare number prompts for a unit; a wildly out-of-range value asks to confirm; a normal question fires no edit. Covered by a dedicated tool-use harness (<code>tools/test-tool-edits.ts</code>, fixtures <code>tools/test-tool-edits.json</code>) plus a no-spend self-consistency check in <code>chat-edits.test.ts</code>.</div>
+</div>
 <div class="grid-2">
   <div class="card">
     <h4>Server pipeline (storefront)</h4>
@@ -751,6 +787,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 <ul>
   <li><strong>Client</strong> — the shim's <code>sendGuestReport(email,…)</code> POSTs only <code>{klaviyoCapture:{email}}</code>; the PDF (<code>getReportHtml</code> → print window) is built first, inside the click's user activation. Gated to <code>SHOPIFY_SURFACE</code> — never fires on Pages.</li>
   <li><strong>Server</strong> — <a class="file-link" href="../app/routes/api.measurements.ts">api.measurements.ts</a> is gutted to a single survivor, <code>handleKlaviyoCapture</code>: validates <code>{email}</code> only, rate-limited 5/day/email, calls <code>subscribeToKlaviyo</code> (email-only, no profile properties), stores nothing.</li>
+  <li><strong>Per-app Klaviyo (after the §12 split).</strong> Each Fly app reads its own <code>KLAVIYO_API_KEY</code> / <code>KLAVIYO_LIST_ID</code> secret, so a roadmap-guest email lands in the right account/list for the store it was captured on: the <strong>commerce</strong> app (<code>health-tool-app</code>, microvitamin.com) uses the <strong>microvitamin</strong> Klaviyo (the original drstanfield account, renamed); the <strong>education</strong> app (<code>health-tool-edu</code>, drstanfield.com) is intended to use a <strong>new drstanfield</strong> Klaviyo account/list. <span class="pill warn">edu keys may not be set yet — intended wiring; the secret swap is handled separately.</span></li>
   <li><strong>One-time flag</strong> — on capture, <code>markReportEmailCaptured()</code> sets <code>profile.reportEmailCaptured</code> in the user's own file. On return, the email box never reappears; instead an inline <strong>"Save as PDF"</strong> button renders in the "Your plan to discuss with your doctor" header (the same slot the logged-in print button used). The flag rides whole-profile LWW — a concurrent cross-device edit at the exact capture moment could drop it, but it's monotonic and low-stakes (the box reappears once; Klaviyo dedups).</li>
 </ul>
 
@@ -821,8 +858,46 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 </div>
 <p class="meta">Executed 2026-06-12/13 via <a class="file-link" href="../supabase/data-purge-2026-06.sql">supabase/data-purge-2026-06.sql</a> in one verified transaction (back up → assert KEEP tables unchanged + health tables zero → commit). Verified afterward: 155 conversations / 540 messages preserved, all 11 health tables at 0, production chat answers end-to-end. The HIPAA audit-log table exists as a stub but its custodial purpose is gone — the user's own append-only file is now their record.</p>
 
+<h2 id="deployment-topology">Deployment topology — two domains, two apps, one bundle</h2>
+<p>The <strong>§12 split went live 2026-06-24.</strong> The Health Roadmap tool now runs on <strong>two storefronts</strong> from <strong>one codebase and one widget bundle</strong>. Each storefront is a separate Shopify app registration and a separate Fly app, but the prod-built widget extension deployed to both is byte-identical — per-store behaviour comes from shop metafields and per-Fly-app secrets, never from a forked build.</p>
+
+<table>
+  <thead><tr><th></th><th>Education</th><th>Commerce</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Domain</strong></td><td><code>drstanfield.com/pages/roadmap</code></td><td><code>microvitamin.com/pages/roadmap</code></td></tr>
+    <tr><td><strong>Shopify app config</strong></td><td><code>shopify.app.edu.toml</code> (org 222927919)</td><td><code>shopify.app.toml</code> (client_id 94c365…)</td></tr>
+    <tr><td><strong>Fly app</strong></td><td><code>health-tool-edu</code></td><td><code>health-tool-app</code></td></tr>
+    <tr><td><strong>Widget bundle</strong></td><td colspan="2" style="text-align:center"><code>health-plan-v2.js</code> — <strong>same prod build deployed to both</strong></td></tr>
+    <tr><td><strong>Bots (Discord / YouTube)</strong></td><td><span class="pill gray">off</span> — bot tokens omitted</td><td><span class="pill">on</span> — only commerce runs the bots</td></tr>
+    <tr><td><strong>Chatbot display name</strong></td><td>"Brad AI" (default)</td><td>"MicroVitamin"</td></tr>
+    <tr><td><strong>Klaviyo</strong> <span class="pill info">per-app</span></td><td>new drstanfield Klaviyo account/list (intended)</td><td>microvitamin Klaviyo (the renamed original)</td></tr>
+  </tbody>
+</table>
+
+<div class="grid-2">
+  <div class="card">
+    <h4 style="color:var(--ok)">Shared across both Fly apps</h4>
+    <ul>
+      <li>Same <strong>Supabase project</strong>, Anthropic key, and chatbot knowledge files (the KB is Brad-global / store-agnostic).</li>
+      <li>Same Postgres session store (<code>SESSION_DATABASE_URL</code>), same app-proxy subpath <code>/apps/health-tool-1</code>.</li>
+      <li>The auth path (single-secret HMAC) is byte-identical across both apps.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4 style="color:var(--primary)">Diverges per Fly app (secrets / metafields)</h4>
+    <ul>
+      <li><code>SHOPIFY_API_KEY</code> / <code>SHOPIFY_API_SECRET</code> / <code>SHOPIFY_APP_URL</code> — each app's own.</li>
+      <li><strong>Bot tokens</strong> — set on commerce only; the edu Fly app omits them, so only commerce runs the Discord/YouTube bots.</li>
+      <li><strong>Klaviyo</strong> — per-app <code>KLAVIYO_API_KEY</code> / <code>KLAVIYO_LIST_ID</code>: edu → new drstanfield account, commerce → microvitamin account. <span class="pill warn">edu keys planned / may not be wired yet</span></li>
+      <li><strong>Chatbot name</strong> — per-store shop metafield <code>health_roadmap.chat_assistant_name</code> (see <a href="#chatbot">chatbot</a>).</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout"><strong>Stale-naming note (corrected here).</strong> Earlier revisions of this doc called <code>drstanfield.com</code> "the production / commerce surface." After the §12 split that is <strong>wrong</strong>: <code>drstanfield.com</code> is the <em>education</em> store (Fly <code>health-tool-edu</code>); <code>microvitamin.com</code> is the <em>commerce</em> store (Fly <code>health-tool-app</code>). The Fly app name <code>health-tool-app</code> is still the commerce/microvitamin app despite the historical "production" framing.</div>
+
 <h2 id="pipeline">Dev → production pipeline</h2>
-<p>Two Shopify apps now — <strong>production</strong> (<code>shopify.app.toml</code>, Fly <code>health-tool-app</code>, store drstanfield.com) and <strong>education</strong> (<code>shopify.app.edu.toml</code>, Fly <code>health-tool-edu</code>, store <code>sz5utw-1r</code>). The earlier separate dev app and <code>/pages/test</code> were deleted. The promotion ladder is three tiers; pushing <code>main</code> auto-deploys Pages only — the live widget never changes without an explicit deploy.</p>
+<p>Two Shopify apps now — <strong>commerce</strong> (<code>shopify.app.toml</code>, Fly <code>health-tool-app</code>, store microvitamin.com) and <strong>education</strong> (<code>shopify.app.edu.toml</code>, Fly <code>health-tool-edu</code>, store drstanfield.com / <code>sz5utw-1r</code>). The earlier separate dev app and <code>/pages/test</code> were deleted. The promotion ladder is three tiers; pushing <code>main</code> auto-deploys Pages only — the live widget never changes without an explicit deploy.</p>
 <div class="diagram">
 <svg viewBox="0 0 980 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dev to prod pipeline">
   <defs>
@@ -836,8 +911,9 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
   <text x="485" y="70" font-size="13" font-weight="700" text-anchor="middle" fill="#14532d">2 · GitHub Pages</text>
   <text x="485" y="90" font-size="11" text-anchor="middle" fill="#666">build:pages · push main → Actions → /roadmap/</text>
   <rect x="690" y="45" width="270" height="60" rx="10" fill="#fef5e7" stroke="#fd7e14" stroke-width="1.5"/>
-  <text x="825" y="70" font-size="13" font-weight="700" text-anchor="middle" fill="#9a3412">3 · Shopify PRODUCTION</text>
-  <text x="825" y="90" font-size="11" text-anchor="middle" fill="#666">build:shopify-prod + deploy --force → /pages/roadmap</text>
+  <text x="825" y="68" font-size="13" font-weight="700" text-anchor="middle" fill="#9a3412">3 · Shopify (both stores)</text>
+  <text x="825" y="84" font-size="10" text-anchor="middle" fill="#666">build:shopify-prod + deploy --force → /pages/roadmap</text>
+  <text x="825" y="98" font-size="9.5" text-anchor="middle" fill="#666">same bundle → commerce + education apps</text>
   <line x1="290" y1="75" x2="346" y2="75" stroke="#16a34a" stroke-width="2.5" marker-end="url(#pp)"/>
   <line x1="620" y1="75" x2="686" y2="75" stroke="#fd7e14" stroke-width="2.5" marker-end="url(#pg)"/>
   <text x="653" y="38" font-size="10" font-weight="600" text-anchor="middle" fill="#9a3412">explicit gate</text>
@@ -845,11 +921,11 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 <div class="caption">localhost is for non-OAuth work only — it is <strong>never</strong> an approved OAuth origin (hard rule). OAuth flows are tested on the github.io surface. The Shopify deploy needs <code>shopify app config use shopify.app.toml</code> first (the active config drifts), and the success banner must read <code>health-roadmap-&lt;N&gt;</code>.</div>
 </div>
 
-<h2 id="edu-store">Education store — a second app instance, not a second tenant</h2>
-<p>Brad's new <strong>education</strong> Shopify store (<code>sz5utw-1r.myshopify.com</code>, display <em>brad-stanfield</em>, in the <strong>"Dr Brad Stanfield" org 222927919</strong> — a <em>different</em> org than the microvitamin store) needs the same Health Roadmap tool. The chosen shape (<strong>Option B</strong>) runs it as a <strong>separate private app + separate Fly app</strong> from the <em>same codebase</em>, rather than turning the production server into a multi-tenant host.</p>
+<h2 id="edu-store">Education / commerce split — two app instances, not a second tenant</h2>
+<p>Brad's <strong>education</strong> Shopify store (<code>sz5utw-1r.myshopify.com</code>, served at <code>drstanfield.com</code>, in the <strong>"Dr Brad Stanfield" org 222927919</strong> — a <em>different</em> org than the commerce/microvitamin store) runs the same Health Roadmap tool. The chosen shape (<strong>Option B</strong>) runs it as a <strong>separate private app + separate Fly app</strong> from the <em>same codebase</em>, rather than turning the commerce server into a multi-tenant host.</p>
 
 <div class="card">
-  <strong>The decision in one sentence:</strong> deploy the same Docker image a second time as <code>health-tool-edu</code>, pointed at a <em>new</em> private Shopify app registered in org 222927919, so the production auth path stays byte-identical and the live drstanfield.com roadmap cannot be affected by anything the education store does.
+  <strong>The decision in one sentence:</strong> deploy the same Docker image a second time as <code>health-tool-edu</code>, pointed at a <em>new</em> private Shopify app registered in org 222927919, so the commerce auth path stays byte-identical and the live microvitamin.com roadmap cannot be affected by anything the education store does (and vice versa).
 </div>
 
 <div class="diagram">
@@ -857,24 +933,24 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
   <defs>
     <marker id="ee" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6b7280"/></marker>
   </defs>
-  <!-- PRODUCTION column -->
+  <!-- COMMERCE column -->
   <rect x="20" y="20" width="430" height="270" rx="12" fill="#fef5e7" stroke="#fd7e14" stroke-width="1.5"/>
-  <text x="235" y="44" font-size="13" font-weight="700" text-anchor="middle" fill="#9a3412">PRODUCTION — microvitamin org</text>
+  <text x="235" y="44" font-size="13" font-weight="700" text-anchor="middle" fill="#9a3412">COMMERCE — microvitamin org</text>
   <rect x="45" y="60" width="380" height="52" rx="8" fill="#ffffff" stroke="#fd7e14"/>
   <text x="235" y="80" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Private app · shopify.app.toml</text>
-  <text x="235" y="98" font-size="10" text-anchor="middle" fill="#666">client_id 94c365… · drstanfield.com/pages/roadmap</text>
+  <text x="235" y="98" font-size="10" text-anchor="middle" fill="#666">client_id 94c365… · microvitamin.com/pages/roadmap</text>
   <rect x="45" y="124" width="380" height="48" rx="8" fill="#ffffff" stroke="#fd7e14"/>
-  <text x="235" y="143" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Fly app · health-tool-app</text>
-  <text x="235" y="160" font-size="10" text-anchor="middle" fill="#666">own SHOPIFY_API_KEY / _SECRET / APP_URL</text>
+  <text x="235" y="143" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Fly app · health-tool-app · bots ON</text>
+  <text x="235" y="160" font-size="10" text-anchor="middle" fill="#666">own SHOPIFY_API_KEY / _SECRET / APP_URL · microvitamin Klaviyo</text>
   <!-- EDUCATION column -->
   <rect x="530" y="20" width="430" height="270" rx="12" fill="#eef6ff" stroke="#2563eb" stroke-width="1.5"/>
   <text x="745" y="44" font-size="13" font-weight="700" text-anchor="middle" fill="#1e40af">EDUCATION — org 222927919</text>
   <rect x="555" y="60" width="380" height="52" rx="8" fill="#ffffff" stroke="#2563eb"/>
   <text x="745" y="80" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Private app · shopify.app.edu.toml</text>
-  <text x="745" y="98" font-size="10" text-anchor="middle" fill="#666">new client_id · sz5utw-1r.myshopify.com</text>
+  <text x="745" y="98" font-size="10" text-anchor="middle" fill="#666">new client_id · drstanfield.com (sz5utw-1r)</text>
   <rect x="555" y="124" width="380" height="48" rx="8" fill="#ffffff" stroke="#2563eb"/>
-  <text x="745" y="143" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Fly app · health-tool-edu</text>
-  <text x="745" y="160" font-size="10" text-anchor="middle" fill="#666">own SHOPIFY_API_KEY / _SECRET / APP_URL</text>
+  <text x="745" y="143" font-size="11" font-weight="600" text-anchor="middle" fill="#111">Fly app · health-tool-edu · bots OFF</text>
+  <text x="745" y="160" font-size="10" text-anchor="middle" fill="#666">own SHOPIFY_API_KEY / _SECRET / APP_URL · new drstanfield Klaviyo</text>
   <!-- SHARED bar -->
   <rect x="120" y="216" width="740" height="60" rx="10" fill="#f0f9f7" stroke="#00a38b" stroke-width="1.5"/>
   <text x="490" y="240" font-size="12" font-weight="700" text-anchor="middle" fill="#00695c">SHARED — same codebase / Dockerfile</text>
@@ -892,6 +968,9 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
     <ul>
       <li>A new <strong>private custom app</strong> (its own <code>client_id</code>) registered in org <strong>222927919</strong>, kept as a new config variant <code><a class="file-link" href="../shopify.app.edu.toml">shopify.app.edu.toml</a></code> — the production <code>shopify.app.toml</code> (<code>94c365…</code>) is <strong>never overwritten</strong>.</li>
       <li>A second Fly app <code>health-tool-edu</code> from the <em>same</em> Dockerfile, with its <strong>own</strong> <code>SHOPIFY_API_KEY</code> / <code>SHOPIFY_API_SECRET</code> (the new app's), its own <code>SHOPIFY_APP_URL</code> / app-proxy URL.</li>
+      <li><strong>Bots are commerce-only.</strong> The edu Fly app <em>omits</em> the Discord + YouTube bot tokens, so only the commerce app (<code>health-tool-app</code>) runs those gateway/poller bots — the edu app boots without them.</li>
+      <li><strong>Klaviyo is per-app.</strong> Each Fly app sets its own <code>KLAVIYO_API_KEY</code> / <code>KLAVIYO_LIST_ID</code>: commerce uses the <strong>microvitamin</strong> Klaviyo (the original drstanfield Klaviyo, since renamed to microvitamin); education captures roadmap-guest emails to a <strong>new drstanfield</strong> Klaviyo account/list. <span class="pill warn">edu keys may not be wired yet — intended wiring; secret swap handled separately.</span></li>
+      <li><strong>Chatbot display name is per-store</strong> via the <code>health_roadmap.chat_assistant_name</code> shop metafield (drstanfield → "Brad AI", microvitamin → "MicroVitamin"). See <a href="#chatbot">chatbot</a>.</li>
       <li><strong>Order scopes are kept</strong> on the edu app (<code>read_orders</code> + <code>read_all_orders</code>) so the chatbot's order-lookup path works there too.</li>
     </ul>
   </div>
@@ -907,7 +986,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 
 <div class="callout"><strong>Per-store crons on a shared Supabase.</strong> Both Fly apps run the same in-process <code>setInterval</code> crons (they self-start on module import). The <a class="file-link" href="../app/lib/trending-cron.server.ts">trending cron</a> targets the store named by the per-app secret <code>SHOPIFY_SHOP_DOMAIN</code> (prod falls back to <code>microvitamin.myshopify.com</code>; edu is set to <code>sz5utw-1r.myshopify.com</code>) and writes that store's <code>health_roadmap.trending_articles</code> shop metafield. Because the apps <em>share</em> Supabase, they would otherwise contend for the single <code>trending_cron</code> row in <code>cron_lock</code> — only one store's metafield would be written per day. So the cron picks its lock name by shop: prod uses <code>trending_cron</code>, edu uses <code>trending_cron_edu</code> (both seeded in <code><a class="file-link" href="../supabase/rls-policies.sql">rls-policies.sql</a></code>). The edu store is new, so its trending payload is empty <code>[]</code> until it accrues ≥7d of landing-page sessions — the storefront's "Trending" sidebar has a graceful empty state.</div>
 
-<div class="callout"><strong>Why a second app, not one multi-tenant server.</strong> The production auth path is single-secret HMAC verification (<code><a class="file-link" href="../app/shopify.server.ts">app/shopify.server.ts</a></code> / <code>route-helpers.server.ts</code> / <code>local-first-route.server.ts</code>). A second app instance keeps that code <strong>byte-identical</strong>, so the live drstanfield.com roadmap cannot be touched by the education store. The alternative — one server resolving a per-shop secret at request time — was rejected: it rewrites the most safety-critical code on the live path for a store that doesn't need shared infrastructure.</div>
+<div class="callout"><strong>Why a second app, not one multi-tenant server.</strong> The auth path is single-secret HMAC verification (<code><a class="file-link" href="../app/shopify.server.ts">app/shopify.server.ts</a></code> / <code>route-helpers.server.ts</code> / <code>local-first-route.server.ts</code>). A second app instance keeps that code <strong>byte-identical</strong>, so the live commerce (microvitamin.com) roadmap cannot be touched by the education store, and vice versa. The alternative — one server resolving a per-shop secret at request time — was rejected: it rewrites the most safety-critical code on the live path for a store that doesn't need shared infrastructure.</div>
 
 <h2 id="deploy">Deployment</h2>
 <ul>
