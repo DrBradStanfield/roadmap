@@ -115,7 +115,7 @@ type RowConfig = SimpleRowConfig | BpRowConfig;
 
 const ROWS: RowConfig[] = [
   { kind: 'simple', metric: 'weight', field: 'weightKg', label: 'Weight' },
-  { kind: 'simple', metric: 'waist', field: 'waistCm', label: 'Waist\nCircumference' },
+  { kind: 'simple', metric: 'waist', field: 'waistCm', label: 'Waist Circumference' },
   { kind: 'bp', label: 'Blood Pressure' },
 ];
 
