@@ -4,11 +4,22 @@ This file provides context for Claude Code when working on this project.
 
 ## Project Overview
 
-**Health Roadmap Tool** — a Shopify app that helps users track health metrics and receive personalized suggestions. Available as a storefront theme extension for guests and logged-in users. An app embed block handles background sync of guest localStorage data to Supabase when the user logs in.
+**Health Roadmap Tool** — a Shopify app that helps users track health metrics and receive personalized suggestions, plus a chatbot. Delivered as a storefront theme extension. **The app is local-first (v2):** a user's health data lives in **their own cloud** (Google Drive / Dropbox / GitHub) or on-device localStorage as a single `health-roadmap.json` file — **not** on Brad's server. "Logged in" just means "connected a cloud provider"; "guest" means localStorage-only. Brad's server (Fly.io) is a thin back-end for the chatbot, lab-import extraction, A/B events, email reminders, and Klaviyo email capture — it does **not** store health data. See "Local-First Architecture (v2)" below.
 
 ## Architecture Map
 
 See [docs/architecture-v2.html](docs/architecture-v2.html) — single-page visual reference for every subsystem (auth flow, data sync, widget, chatbot pipeline, lab upload, reminders, A/B testing, blog, database schema) with SVG diagrams. Open in a browser. Update only when an architectural shape changes (new subsystem, new external service, restructured flow) — not per-commit.
+
+## Local-First Architecture (v2)
+
+**This is the most important mental model for the whole app.** The v1 Supabase-backed per-user CRUD server was torn down at the 2026-06-12 production cutover and the health tables were **purged** June 2026 (`supabase/data-purge-2026-06.sql`). Health data is now **client-side, in the user's own storage**:
+
+- **Storage tiers** — `backendId`: `'local'` (guest, localStorage only, single device, zero server) or `'google-drive'` | `'dropbox'` | `'github'` (folder-scoped OAuth to the user's *own* cloud). There is no "create an account on Brad's server" anymore.
+- **The file** — all health data is one JSON file, `health-roadmap.json`; chat history is a sibling `chat-history.json`. Schema: [packages/health-core/src/roadmap-file.ts](packages/health-core/src/roadmap-file.ts).
+- **The data layer** — v2 builds swap `lib/api.ts → lib/roadmap-data.ts` (vite `resolveId`), which delegates to [widget-src/src/storage/roadmap-store.ts](widget-src/src/storage/roadmap-store.ts) (`RoadmapStore`). Cross-device convergence is a conflict-free `mergeFiles()` in [packages/health-core/src/merge.ts](packages/health-core/src/merge.ts) (append-only arrays; last-write-wins on mutable scalar fields; monotonic `eraseEpoch`).
+- **What Supabase still holds (NO health data):** chat (`chat_conversations`, `chat_messages`, `chat_match_events`, `guest_chat_sessions`), `reminder_optin_v2` (email + capability token + schedule, service-role only), `ab_tests`/`ab_events`, `audit_logs` (anonymized), `profiles` (now pseudonymous anchors for chat FKs — demographics scrubbed), Shopify session storage, `cron_lock`, `youtube_bot_log`. The v1 health tables (`health_measurements`, `medications`, `lab_values`, …) still appear in `rls-policies.sql` (CREATE TABLE) but the rows are purged and the v2 app never reads/writes them.
+- **Account/data deletion** is client-side: `RoadmapStore.deleteUserData()` bumps `eraseEpoch` and flushes an empty file (merge then treats it as the wholesale winner on every device). **There is no server deletion endpoint** (the v1 `api.user-data.ts` was deleted).
+- **Two build surfaces, same source** — the Shopify storefront build (`build:shopify-prod`, served on both stores) talks to Brad's Fly server *only* for chatbot / lab-import / A/B / reminders / Klaviyo capture; the GitHub Pages / self-host build (`build:pages`) has **no Brad server at all** (BYOK chat + upload). See "Local-first (v2) builds & build flags".
 
 ## Health Algorithm Reference
 
@@ -61,7 +72,9 @@ Some data files are shared with the marketing workspace at `~/Library/CloudStora
 
 ### Measurement Storage (FHIR Observation + replaces)
 
-Stored values are **never mutated**. `health_measurements` has FHIR R4 `Observation` semantics:
+> **v2 note:** these FHIR semantics are now enforced **client-side in the user's `health-roadmap.json` file** ([RoadmapStore](widget-src/src/storage/roadmap-store.ts) + [mergeFiles](packages/health-core/src/merge.ts)), **not** by Supabase RLS/RPC/triggers. The server-side machinery described below (the `correct_measurement` RPC, the BEFORE-UPDATE/INSERT triggers, the partial UNIQUE index, the 409 responses) is **retired** — it lived on the v1 `health_measurements` table that was purged June 2026. It's documented here because the *file* preserves the same Observation shape; read "server" as "the RoadmapStore + merge logic."
+
+Stored values are **never mutated**. The file's `measurements`/`labValues` arrays are append-only with FHIR R4 `Observation` semantics:
 
 - **`status`** (`'active' | 'entered-in-error'`) — only `active` rows feed `getLatestMeasurements()`/results. `entered-in-error` rows are kept for audit. Sticky: no revert to `active`.
 - **`corrects_id`** — when this row is a correction, points at the row it replaces (self-FK, `ON DELETE SET NULL`). NULL on original inserts.
@@ -72,21 +85,20 @@ Stored values are **never mutated**. `health_measurements` has FHIR R4 `Observat
   - `manual_correction` — inserted by the `correct_measurement` RPC
   - `apple_health`, `fitbit` — future HealthKit-style imports
 
-**Correction flow (only path that mutates a row's status):**
+**Correction flow (the only path that flips a row's status):**
 
 1. User clicks an existing value in `BloodTestTimeline`, types a new one, presses Enter or clicks away.
-2. Widget calls `correctMeasurement(oldId, newValueSI)` → POST `/api/measurements` with `{ correctMeasurement: { oldId, newValue } }`.
-3. The `correct_measurement` SECURITY DEFINER RPC atomically: UPDATE old row's status to `entered-in-error`, INSERT new row with `source='manual_correction'` + `corrects_id=oldId`.
-4. Audit log records `MEASUREMENT_CORRECTED` with `{oldId}` metadata.
+2. Widget calls `RoadmapStore.correctMeasurement(oldId, newValueSI)` — a purely client-side mutation of the in-memory file, persisted via the normal `flush()` (read-merge-write to the user's cloud). No server round-trip.
+3. It atomically marks the old row `status='entered-in-error'` and appends a new row with `source='manual_correction'` + `correctsId=oldId` ([roadmap-store.ts](widget-src/src/storage/roadmap-store.ts)).
 
-**Server-side invariants (see `supabase/rls-policies.sql`):**
+**Client-side invariants (RoadmapStore + `mergeFiles`):**
 
-- `enforce_measurement_correction_only` BEFORE UPDATE trigger blocks any column change other than `status`. Uses `to_jsonb(NEW) - 'status' IS DISTINCT FROM to_jsonb(OLD) - 'status'` for schema-resilient diff.
-- `validate_corrects_id_ownership` BEFORE INSERT trigger rejects any row whose `corrects_id` references another user's row.
-- Partial UNIQUE index `uniq_measurements_user_metric_active` on `(user_id, metric_type, recorded_at) WHERE status='active'` — guarantees at most one active row per slot. Lets historical `entered-in-error` rows coexist.
-- A duplicate active insert hits `23505 unique_violation` → API returns `409` with "Use the correction UI to update it." The same code path during a correction race returns `409` with "Another value was saved at this date. Refresh and try again."
+- Arrays are append-only; corrections never edit a row in place — they add a new row and flip the old row's `status`.
+- At most one `active` row per `(metric, day)` slot — enforced in `RoadmapStore.addMeasurement()` (the old DB partial-unique-index guarantee, moved client-side).
+- `mergeFiles()` makes `status` **monotonic / sticky**: if one device marks a row `entered-in-error` and another still has it `active`, the merge converges to `entered-in-error`.
+- A `correctsId` always points within the same file (single-owner), so the old cross-user-ownership trigger is moot.
 
-**Bulk save endpoint** returns `{ savedCount, skippedDuplicates, errorCount, totalCount }`. Server-side `addMeasurementWithStatus()` returns `{status: 'inserted' | 'duplicate' | 'error'}` per row; bulk handler aggregates. Lab-import re-upload of unchanged data is a no-op (all-duplicate is success, not error).
+**Bulk save (lab import review)** is also client-side: `RoadmapStore` appends each reviewed row, skipping `(metric, recorded_at)` duplicates. Re-uploading unchanged lab data is a no-op (all-duplicate is success, not error). (The server `api.lab-import-v2.ts` only *extracts* values from the uploaded file via Claude and returns them — it stores nothing.)
 
 ## Key Directories
 
@@ -104,17 +116,29 @@ Stored values are **never mutated**. `health_measurements` has FHIR R4 `Observat
 
 ## Important Files
 
-**Backend API:**
-- `app/lib/supabase.server.ts` — Supabase dual-client, auth helpers, CRUD, audit logging, `deleteAllUserData()`
-- `app/routes/api.measurements.ts` — Measurement CRUD + profile + medication API (HMAC auth)
-- `app/routes/api.user-data.ts` — Account deletion endpoint (HMAC auth, rate-limited)
-- `app/lib/email.server.ts` — Welcome + reminder emails via Resend. `suggestionEvidence()` renders evidence fields (reason, guidelines, references) inline in emails.
-- `app/lib/reminder-cron.server.ts` — Daily reminder cron (8:00 UTC, batches of 50)
-- `app/routes/api.reminders.ts` — Reminder preferences API + token-based unsubscribe page
-- `app/routes/api.ab.ts` — A/B test impression/conversion tracking (HMAC auth, rate-limited)
-- `app/routes/app.ab-testing.tsx` — A/B testing admin dashboard (Polaris UI)
-- `app/lib/ab-stats.ts` — Statistical significance (normalCDF, two-proportion z-test)
-- `app/lib/rate-limiter.ts` — Shared in-memory rate limiter factory
+**Backend — live server routes (`app/routes/`).** All storefront routes reach the Fly app *through* the Shopify app proxy `/apps/health-tool-1/...` (HMAC-verified). The app stores **no health data** — these are AI / email / tracking endpoints only.
+- `api.chat.ts` — Chatbot endpoint (app-proxy HMAC + optional guest session). GET list/load conversations, POST send (→ Anthropic Haiku via `chat.server.ts`, with `CHAT_EDIT_TOOLS` tool-use), DELETE conversation.
+- `api.lab-import-v2.ts` — Lab-document extraction (app-proxy HMAC + per-IP daily file cap + per-machine $ cap). Calls Claude Opus to extract values/images; **stores nothing**.
+- `api.measurements.ts` — **Klaviyo guest email capture ONLY** (`{ klaviyoCapture: { email } }`, 5/day/email). All v1 measurement/profile/medication CRUD was torn down. **No account-deletion endpoint exists** (deletion is client-side; the old `api.user-data.ts` is deleted).
+- `api.reminders-v2.ts` + `reminders-v2.unsubscribe.tsx` — v2 email-reminder opt-in/update/cancel (cross-origin CORS allow-list + IP rate limit; provider proof via Google ID token / cloud token) + token unsubscribe page.
+- `api.feedback.ts` — Feedback form → email (app-proxy HMAC + honeypot + 3/hour/IP).
+- `api.google-token.ts` — Stateless Google OAuth code/refresh↔token exchange (cross-origin CORS; stores no tokens).
+- `api.ab.ts` — A/B impression/conversion tracking → Supabase (app-proxy HMAC, rate-limited).
+- `webhooks.orders-paid.ts` — `orders/paid` webhook: adds chat message credits on Appstle variant purchase (idempotent per `order_id`). `webhooks.app.{uninstalled,scopes_update}.tsx` — session housekeeping. `healthz.ts` — Fly health check.
+- `app.ab-testing.tsx` — A/B testing admin dashboard (Polaris UI).
+
+**Backend — server libs (`app/lib/`):**
+- `supabase.server.ts` — Supabase dual-client, guest-session creation, audit logging, A/B + chat helpers. (`deleteAllUserData()` survives but is v2-unreachable.)
+- `email.server.ts` — Welcome + reminder emails via Resend. `suggestionEvidence()` renders evidence fields (reason, guidelines, references) inline.
+- `reminder-v2.server.ts` + `reminder-v2-cron.server.ts` — v2 reminder scheduler + daily cron (batches of 50; server is a "dumb scheduler", schedule computed client-side).
+- `ab-stats.ts` — Statistical significance (normalCDF, two-proportion z-test). `rate-limiter.ts` — shared in-memory rate limiter factory.
+- `route-helpers.server.ts` / `local-first-route.server.ts` / `shopify.server.ts` — app-proxy HMAC verification, CORS allow-list (localhost NEVER approved), guest-session resolution.
+
+**Chatbot pipeline:**
+- `app/routes/api.chat.ts` → `app/lib/chat.server.ts` (Anthropic call) — system prompt assembled from `app/lib/chat-system-prompt.md` + posture files `chat-posture-doctor.md` / `chat-posture-brand.md`.
+- `app/lib/chat-router.server.ts` / `chat-classifier.server.ts` / `chat-dedup.server.ts` — query routing/classification/dedup. `platform-chat.server.ts` — Discord/YouTube bots (prod Fly app only; edu omits the tokens).
+- `packages/health-core/src/chat-edits.ts` — tool-use form edits (`propose_field_edit` / `propose_medication_edit`, `parseProposedEdits()`).
+- `widget-src/src/lib/assistant-config.ts` — per-store assistant display name (metafield → boot). `components/ChatMessageBubble.tsx` — single name render site for ALL chat surfaces. `lib/chat-sync.ts` — chat-history.json sync.
 
 **Health Core Library (`packages/health-core/src/`):**
 - `calculations.ts` — Health formulas (IBW, BMI, protein, eGFR)
@@ -142,8 +166,12 @@ Stored values are **never mutated**. `health_measurements` has FHIR R4 `Observat
 - `lib/blood-test-cell.ts` — Pure helpers shared by the live timeline + review matrix: `validateTypedValue`, `statusOf`, `previewStatus`, `blockBadNumericKeys`.
 - `lib/useMatrixScrollSync.ts` — Horizontal-scroll sync across rows so dragging row 3 also moves the date header + every other row. Both matrix consumers register their rows/header.
 - `lib/useIsMobile.ts` — `useIsMobile(breakpoint)` hook
-- `lib/storage.ts` — localStorage helpers (guest data + logged-in user cache)
-- `lib/api.ts` — Measurement API client (app proxy, `apiCall()` error wrapper)
+- `lib/storage.ts` — localStorage helpers (guest cache + provider-connection state)
+- `lib/api.ts` — legacy API client; **in v2 builds it is module-swapped to `lib/roadmap-data.ts`** (vite `resolveId`), so the live data path is the local file, not this.
+- `lib/roadmap-data.ts` — local-first data shim: implements the api.ts surface against the user's file via `RoadmapStore` (the live read/write path on every v2 build).
+- `storage/roadmap-store.ts` — `RoadmapStore`: the in-memory file model + `flush()` (read-merge-write), `addMeasurement`/`correctMeasurement`/`deleteUserData`, cloud-adapter wiring (Drive/Dropbox/GitHub/local).
+- `packages/health-core/src/roadmap-file.ts` — the `health-roadmap.json` schema (FileMeasurement/FileLabValue with FHIR `status`/`correctsId`/`source`). `merge.ts` — `mergeFiles()` conflict-free cross-device merge.
+- `standalone/app.tsx` — shared entry for BOTH the Shopify-prod and Pages builds (mounts the app + `HistoryLightboxHost`). `site-chat.tsx` / `chatbot-embed.tsx` — the side-bundle chat entries.
 
 **Shopify Extensions (`extensions/health-tool-widget/blocks/`):**
 - `app-block.liquid` — Passes customer data to widget; static HTML skeleton with pulse animation
@@ -338,21 +366,26 @@ to both — deploy twice, see "Shopify app configs".**)
 
 ## Data Model
 
-### Tables
+### Local-first file collections (`health-roadmap.json`)
 
-- `profiles` — User accounts (shopify_customer_id nullable) + demographics (sex, birth_year, birth_month, unit_system, first_name, last_name) + reminder fields
-- `health_measurements` — Immutable time-series records (metric_type, value in SI, recorded_at, source, external_id). No UPDATE policy. `source` defaults to `'manual'`. `external_id` for deduplication of synced data.
-- `medications` — FHIR-compatible records (medication_key, drug_name, dose_value, dose_unit, status, started_at), UNIQUE per (user_id, medication_key). Keys: `statin`, `ezetimibe`, `statin_escalation`, `pcsk9i`, `bempedoic_acid`, `glp1`, `glp1_escalation`, `sglt2i`, `metformin`
-- `medication_history` — Immutable, append-only log of medication changes (FHIR MedicationStatement pattern). Tracks effective_start/effective_end periods, change_type (started/stopped/dose_changed/switched/initial). Auto-recorded on every medication save.
-- `supplements` — Mutable supplement records (supplement_key, supplement_name, dose_value, dose_unit, status, started_at), UNIQUE per (user_id, supplement_key). Logged-in users only.
-- `supplement_history` — Immutable, append-only log of supplement changes. Same pattern as medication_history.
-- `lab_values` — Free-form lab results beyond the 13 core metrics (sodium, ALT, MCV, etc.). FHIR Observation shape: `status` (`active` | `entered-in-error`), `source` (`lab_import` | `lab_import_edited` | `manual` | `manual_correction`), dedup via partial UNIQUE index `(user_id, lower(trim(metric_name)), recorded_at) WHERE status='active'`. Stored value+unit as reported by the lab — no SI conversion (units aren't canonical across labs).
-- `health_documents` — Scan results, clinic letters, discharge summaries, pathology reports, vaccination records. Stored markdown content + metadata. Dedup in the review modal is by `sourceFileName` (stable) rather than title+date (LLM-generated, drifts between extractions).
-- `reminder_preferences` — Per-category opt-out. Categories: `screening_colorectal`, `screening_breast`, `screening_cervical`, `screening_lung`, `screening_prostate`, `screening_dexa`, `blood_test_lipids`, `blood_test_hba1c`, `blood_test_creatinine`, `medication_review`
-- `reminder_log` — Cooldown enforcement. Groups: `screening` (90d), `blood_test` (180d), `medication_review` (365d)
-- `audit_logs` — HIPAA audit trail (user_id nullable for anonymization after deletion)
+Health data lives in the user's own file ([roadmap-file.ts](packages/health-core/src/roadmap-file.ts)) — **not** Supabase. The collections (append-only unless noted):
 
-Run `supabase/rls-policies.sql` in the SQL Editor to set up schema + RLS. Includes `GRANT EXECUTE ON FUNCTION get_latest_measurements() TO authenticated` — without this, queries silently return empty data.
+- `measurements` — Immutable time-series records (metric_type, value in SI, recorded_at, `source`, `status`, `correctsId`). Same FHIR Observation shape the old `health_measurements` table had.
+- `medications` — FHIR-compatible (medication_key, drug_name, dose_value, dose_unit, status, started_at). Keys: `statin`, `ezetimibe`, `statin_escalation`, `pcsk9i`, `bempedoic_acid`, `glp1`, `glp1_escalation`, `sglt2i`, `metformin`. `medicationHistory` — append-only change log (FHIR MedicationStatement: effective_start/end, change_type started/stopped/dose_changed/switched/initial).
+- `supplements` (+ `supplementHistory`) — supplement records (supplement_key, name, dose, status, started_at), same history pattern.
+- `labValues` — Free-form lab results beyond the core metrics (sodium, ALT, MCV, …). FHIR shape: `status` (`active`|`entered-in-error`), `source` (`lab_import`|`lab_import_edited`|`manual`|`manual_correction`); value+unit as reported by the lab (no SI conversion — units aren't canonical across labs). Dedup on `(metric_name, recorded_at)`.
+- `healthDocuments` — Scan results, clinic letters, discharge/pathology reports, vaccination records (markdown + metadata). Dedup on `sourceFileName` (stable) not title+date (LLM-generated, drifts).
+- `reminderOptIn` — mirrored client copy of the user's reminder schedule (the server's `reminder_optin_v2` row is the delivery source of truth).
+
+### Live Supabase tables (operational only — no health data)
+
+- `profiles` — pseudonymous anchors for chat FKs (demographics scrubbed in the June-2026 purge; `shopify_customer_id` may link a logged-in customer).
+- `chat_conversations` / `chat_messages` / `chat_match_events` / `guest_chat_sessions` — chatbot history + guest sessions (IPs anonymized).
+- `reminder_optin_v2` — service-role only: `email`, `provider`, capability `token` (for the unsubscribe link), `schedule`, `last_sent`. v2 reminder delivery reads this.
+- `ab_tests` / `ab_events` — A/B testing. `audit_logs` — HIPAA audit trail (user_id nullable, anonymized). `cron_lock`, `youtube_bot_log` — ops. Plus Shopify session storage (`SESSION_DATABASE_URL`).
+- **Retired/purged June 2026:** `health_measurements`, `medications`, `medication_history`, `supplements`, `supplement_history`, `lab_values`, `health_documents`, `screenings`, and the v1 reminder tables `reminder_preferences` / `reminder_log`. Their CREATE TABLE statements still sit in `rls-policies.sql` but the rows are gone and v2 never touches them.
+
+Run `supabase/rls-policies.sql` in the SQL Editor to set up the operational schema + RLS.
 
 ### Canonical Storage Units
 
@@ -374,7 +407,7 @@ Profile demographics: `height` (50–250 cm), `sex` (1=male, 2=female), `birth_y
 ### Field Categories (mappings.ts)
 
 - **`PREFILL_FIELDS`** (`heightCm`, `sex`, `birthYear`, `birthMonth`): Pre-filled from saved data, auto-saved with 500ms debounce. `unitSystem` also auto-saved alongside.
-- **`LONGITUDINAL_FIELDS`** (`weightKg`, `waistCm`, `hba1c`, `creatinine`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `systolicBp`, `diastolicBp`): Start **empty** with clickable previous-value label linking to history. Users enter new values and click "Save New Values" to append immutable records. **All future longitudinal fields must follow this pattern.**
+- **`LONGITUDINAL_FIELDS`** (`weightKg`, `waistCm`, `hba1c`, `creatinine`, `psa`, `apoB`, `ldlC`, `totalCholesterol`, `hdlC`, `triglycerides`, `systolicBp`, `diastolicBp`, `lpa`): Start **empty** with clickable previous-value label linking to history. Users enter new values and click "Save New Values" to append immutable records. **All future longitudinal fields must follow this pattern.**
 
 Results use `effectiveInputs` (current form + fallback to previous measurements).
 
@@ -382,8 +415,8 @@ Results use `effectiveInputs` (current form + fallback to previous measurements)
 
 1. **Static skeleton** (`app-block.liquid`): CSS + pulsing placeholder before JS loads
 2. **Phase 1 (instant)**: Reads cached data from localStorage
-3. **Phase 2 (async)**: API response overwrites with authoritative cloud data, caches to localStorage
-4. **Auto-save safety**: `hasApiResponse` flag prevents writes to Supabase until Phase 2 completes
+3. **Phase 2 (async)**: `RoadmapStore` loads the authoritative file from the user's cloud (Drive/Dropbox/GitHub), merges, and overwrites the cache
+4. **Auto-save safety**: a "hydrated" flag prevents writes to the cloud file until Phase 2's authoritative load completes (so a fast edit can't clobber unseen cloud data)
 
 ### Progressive Disclosure
 
@@ -405,33 +438,32 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. On mobil
 - **NEVER add `Access-Control-Allow-Origin: *`** or weaken CORS.
 - **If unsure about a security implication, STOP and ask me.**
 
-### Auth Flow (Shopify HMAC + Supabase RLS)
+### Auth Flow (v2 — local-first)
 
-**Guest:** localStorage only, no server calls.
+**Health data needs no auth at all** — it lives in the user's own cloud/localStorage, so there is no "log into Brad's server to see my data." HMAC is now an **anti-abuse front door on the server endpoints**, not an identity gate into a per-user database:
 
-**Logged-in:** Shopify app proxy → HMAC verification → `getOrCreateSupabaseUser()` → `createUserClient(userId)` (anon key + custom HS256 JWT) → all queries scoped by `auth.uid()` via RLS.
+- **Storefront endpoints** (chat, lab-import-v2, feedback, A/B, Klaviyo capture) — reached through the Shopify app proxy; `authenticate.public.appProxy()` verifies the request actually came from the storefront. This gates Brad-funded work (Claude calls, email). It optionally surfaces a `logged_in_customer_id` (for chat history / message credits) but creates no health-data session.
+- **Cross-origin endpoints** (`api.google-token`, `api.reminders-v2`) — no HMAC; CORS allow-list (`drstanfield.com`, the Pages origin) + IP rate limits. **localhost is NEVER approved** (see `local-first-route.server.ts`).
+- **Guest chat / reminders** run with an ephemeral session token, no customer ID.
+
+(The v1 path — `getOrCreateSupabaseUser()` → `createUserClient()` anon-key HS256 JWT → RLS `auth.uid()` — is retired along with the per-user tables.)
 
 ## API Endpoints
 
-### Storefront (via app proxy at `/apps/health-tool-1/api/measurements`)
+**There are NO health-data CRUD endpoints in v2** — measurements/profile/medications/supplements all read & write the user's local file via `RoadmapStore`, never the server. The live server surface is AI / email / tracking only:
 
-**GET** (no params) — Latest per metric + profile + medications + reminderPreferences
-**GET** `?metric_type=weight&limit=50` — History for one metric
-**GET** `?all_history=true&limit=100&offset=0` — All history with pagination
-**POST** `{ metricType, value, recordedAt?, source?, externalId? }` — Add measurement (SI units)
-**POST** `{ profile: { sex?, birthYear?, birthMonth?, unitSystem? } }` — Update profile
-**POST** `{ medication: { medicationKey, drugName, doseValue?, doseUnit? } }` — Upsert medication (auto-records history)
-**POST** `{ supplement: { supplementKey, supplementName, doseValue?, doseUnit?, status?, startedAt? } }` — Upsert supplement
-**POST** `{ deleteSupplement: { supplementKey } }` — Soft-delete supplement (sets status to 'stopped')
-**GET** `?medication_history=true` — All medication history (for chart annotations)
-**GET** `?supplement_history=true` — All supplement history (for chart annotations)
-**DELETE** `{ measurementId }` — Delete measurement (verifies ownership)
+**Storefront (Shopify app proxy `/apps/health-tool-1/...`, HMAC-verified):**
+- `POST api/chat` — send a chat message (→ Anthropic Haiku, tool-use form edits); `GET api/chat` — list/load conversations; `DELETE api/chat` — delete a conversation.
+- `GET/POST api/lab-import-v2` — lab-document extraction quota preflight / single-file or batch extract (Claude Opus; returns values, stores nothing).
+- `POST api/measurements` — **`{ klaviyoCapture: { email } }` only** (guest report-email capture, 5/day/email).
+- `POST api/feedback` — feedback form → email (honeypot, 3/hour/IP).
+- `POST api/ab` — A/B impression/conversion events.
 
-### Reminder Preferences (`/apps/health-tool-1/api/reminders`)
+**Cross-origin (CORS allow-list, no HMAC; localhost never approved):**
+- `POST api/google-token` — Google OAuth code/refresh↔token exchange (stateless).
+- `POST api/reminders-v2` — reminder opt-in / update / cancel (provider proof via Google ID token or cloud token). `GET/POST /reminders-v2.unsubscribe?token=…` — one-click unsubscribe page.
 
-**GET** (authenticated) — Reminder preferences as JSON
-**GET** `?token=xxx` — Standalone HTML preferences page (from email link)
-**POST** `{ reminderPreference: { category, enabled } }` or `{ globalOptout: bool }`
+**Webhooks (Shopify HMAC):** `orders/paid` (message credits), `app/uninstalled`, `app/scopes_update`.
 
 ## Adding New Screening Types (Checklist)
 
@@ -439,23 +471,23 @@ Missing any step causes **silent data loss**:
 
 1. `types.ts` — Add fields to `ScreeningInputs` interface
 2. `mappings.ts` — Add cases to `screeningsToInputs()` switch
-3. `rls-policies.sql` — Add keys to BOTH `CREATE TABLE` CHECK AND `ALTER TABLE` migration, then run migration
+3. `packages/health-core/src/roadmap-file.ts` — Add the key(s) to the file schema (screenings live in the user's local file now — **no SQL migration**, the v1 Supabase `screenings` table is purged)
 4. `suggestions.ts` — Add suggestion logic
 5. `InputPanel.tsx` — Add UI controls
 6. `HealthTool.tsx` — Ensure `handleScreeningChange` handles new keys
 7. `mappings.test.ts` — Add round-trip tests
 
-**`CREATE TABLE IF NOT EXISTS` is a no-op on existing tables.** You MUST add an `ALTER TABLE` migration and run it in Supabase. Same applies to new measurement metric types.
+(Because data is local-first, a missed step causes the value to silently not round-trip through the file — write the round-trip test. No Supabase migration is involved for health fields anymore.)
 
 ## Backend Features
 
-**Welcome email**: Fire-and-forget via Resend, idempotent (`welcome_email_sent` flag). Triggered after sync-embed or first measurement save. Requires `heightCm` + `sex`; silently skips if missing. Env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SHOPIFY_STORE_URL`.
+**Email (Resend)**: `email.server.ts` sends welcome + reminder emails. The v1 welcome triggers (sync-embed / first server measurement save) are retired with the CRUD API — welcome/transactional email in v2 is tied to the reminder-opt-in path. Env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SHOPIFY_STORE_URL`. (HIPAA-aware: no health *values* in emails.)
 
-**Reminder emails**: Daily cron sends consolidated reminders when screenings, blood tests, or medication reviews are due. 3 groups with cooldowns (screening 90d, blood_test 180d, medication_review 365d). HIPAA-aware (no health values in emails). Per-category opt-out + global opt-out.
+**Reminder emails (v2)**: The browser computes the user's reminder schedule from their local file and opts in via `POST api/reminders-v2`, which stores `{ email, provider, token, schedule, last_sent }` in `reminder_optin_v2`. A daily cron (`reminder-v2-cron.server.ts`, batches of 50) reads due items and sends consolidated reminders; the server is a "dumb scheduler" (no health data, no per-category preference table). Unsubscribe is the token link. (The v1 `reminder_preferences`/`reminder_log` tables + their cron are deleted.)
 
-**Audit logging**: All writes logged to `audit_logs` via `logAudit()`. On account deletion, logs anonymized.
+**Audit logging**: Operational writes logged to `audit_logs` via `logAudit()` (anonymized; no health values).
 
-**Account deletion**: Requires `{ confirmDelete: true }`, rate-limited 1/hour. Deletes measurements → medication_history → medications → supplement_history → supplements → anonymizes audit logs → deletes profile → deletes auth user → clears cache.
+**Account/data deletion**: **Client-side, no server endpoint.** `RoadmapStore.deleteUserData()` bumps `eraseEpoch` and flushes an empty file; `mergeFiles()` then treats the empty file as the wholesale winner on every device. A reminder opt-in row (if any) is orphaned until the user clicks unsubscribe or it decays. (The v1 server cascade `deleteAllUserData()` survives in `supabase.server.ts` but is unreachable in v2.)
 
 **Data sync** (v1 legacy): `sync-embed.liquid` was deleted in the v2 teardown. The widget-side sync path in `HealthTool.tsx` survives in shared source but is now effectively dead — the legacy `health-tool.js` bundle that was its only live consumer was retired 2026-06-15; the v2 builds route around it (`LOCAL_FIRST` + hardcoded `data-logged-in="true"`).
 
@@ -562,8 +594,10 @@ Backend: Initialized in `app/entry.server.tsx`.
 
 **Database connections**: Supabase JS client uses HTTP/REST via PostgREST (already pooled internally). Only `SESSION_DATABASE_URL` (Shopify session storage) uses direct Postgres connections. Connection limits depend on Supabase plan (Free: ~50, Pro: ~200).
 
-**Reminder cron**: Processes users in batches of 50 with concurrency limit of 5 (`CONCURRENCY_LIMIT` in `reminder-cron.server.ts`). Distributed lock prevents multiple Fly.io machines from processing simultaneously.
+**Reminder cron**: Processes opt-ins in batches of 50 with a concurrency limit (`reminder-v2-cron.server.ts`). Distributed lock (`cron_lock`) prevents multiple Fly.io machines from processing simultaneously.
 
 ## Environment Variables
 
-See `.env` for all required variables. Key: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `SUPABASE_JWT_SECRET`, `SESSION_DATABASE_URL`, `SENTRY_DSN`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SHOPIFY_STORE_URL`.
+See `.env` for all required variables. Key: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `SUPABASE_JWT_SECRET`, `SESSION_DATABASE_URL`, `SENTRY_DSN`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SHOPIFY_STORE_URL`, `ANTHROPIC_API_KEY` (chatbot + lab-import).
+
+**Per-Fly-app secrets diverge (post-§12 split):** each app sets its own `SHOPIFY_API_KEY`/`SHOPIFY_API_SECRET`/`SHOPIFY_APP_URL` and its own **`KLAVIYO_API_KEY`/`KLAVIYO_LIST_ID`** — commerce (`health-tool-app`) → microvitamin Klaviyo (`TpwCKK`); education (`health-tool-edu`) → new drstanfield Klaviyo (`R5nrgP`). The edu app also **omits** the Discord/YouTube bot tokens. `.env` holds both Klaviyo pairs (`KLAVIYO_*` = microvitamin; `KLAVIYO_DR_BRAD_*` = drstanfield).
