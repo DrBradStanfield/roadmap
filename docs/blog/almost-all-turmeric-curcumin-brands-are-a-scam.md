@@ -1,6 +1,7 @@
 ---
 title: "Almost All Turmeric (Curcumin) Brands Are a Scam"
 url: "https://drstanfield.com/blogs/articles/almost-all-turmeric-curcumin-brands-are-a-scam"
+commerceUrl: "https://microvitamin.com/blogs/articles/turmeric-curcumin-supplement-guide"
 youtube: "https://www.youtube.com/watch?v=vU1fCn0W6Uc"
 publishedAt: "2026-02-09T23:57:17Z"
 tags: ["General Health","Preventative Care","Research","Supplements"]

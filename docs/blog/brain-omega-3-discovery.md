@@ -1,6 +1,7 @@
 ---
 title: "Your Brain on Omega-3, Tantalizing Discovery!"
 url: "https://drstanfield.com/blogs/articles/brain-omega-3-discovery"
+commerceUrl: "https://microvitamin.com/blogs/articles/omega-3-brain-b-vitamins"
 youtube: "https://www.youtube.com/watch?v=Yg77_SrN6rw"
 publishedAt: "2024-09-26T00:17:19Z"
 tags: ["Supplements"]

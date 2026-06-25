@@ -1,6 +1,7 @@
 ---
 title: "Greens Powders: Benefits, Types, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/greens-powders-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/greens-powder-benefits-dosing-safety"
 publishedAt: "2024-12-30T12:00:00Z"
 type: "reference"
 tags: ["Supplements"]

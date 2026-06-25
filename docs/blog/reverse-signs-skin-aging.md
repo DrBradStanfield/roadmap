@@ -1,6 +1,7 @@
 ---
 title: "How To Reverse the Signs of Skin Aging (Latest Protocol)"
 url: "https://drstanfield.com/blogs/articles/reverse-signs-skin-aging"
+commerceUrl: "https://microvitamin.com/blogs/articles/evidence-based-skin-aging-protocol"
 youtube: "https://www.youtube.com/watch?v=SxCwmm6BI8I"
 publishedAt: "2024-12-17T01:24:10Z"
 tags: ["Skin Health"]

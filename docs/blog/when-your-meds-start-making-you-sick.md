@@ -1,6 +1,7 @@
 ---
 title: "When Your Meds Start Making You Sick"
 url: "https://drstanfield.com/blogs/articles/when-your-meds-start-making-you-sick"
+commerceUrl: "https://microvitamin.com/blogs/articles/polypharmacy-deprescribing-guide"
 youtube: "https://www.youtube.com/watch?v=r2vdiBHkNNA"
 publishedAt: "2025-10-29T02:10:26Z"
 tags: ["General Health","Preventative Care"]

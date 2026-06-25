@@ -1,6 +1,7 @@
 ---
 title: "ZMA Supplements: What Are the Benefits and Research?"
 url: "https://drstanfield.com/blogs/articles/zma-supplements-benefits-research"
+commerceUrl: "https://microvitamin.com/blogs/articles/cholesterol-supplements-evidence"
 publishedAt: "2025-01-29T16:30:23Z"
 tags: ["Supplements"]
 keywords: ["blood pressure","blood sugar","cholesterol","cognitive","diabetes","exercise","hormone","hypertension","magnesium","muscle","potassium","resistance training","sleep","stroke","testosterone","vitamin b6","zinc"]

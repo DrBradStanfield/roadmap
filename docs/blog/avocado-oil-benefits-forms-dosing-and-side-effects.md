@@ -1,6 +1,7 @@
 ---
 title: "Avocado Oil: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/avocado-oil-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/avocado-oil-benefits-forms-dosing"
 publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

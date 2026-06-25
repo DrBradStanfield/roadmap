@@ -1,6 +1,7 @@
 ---
 title: "Taurine.. Time to Throw it Away? Two New Studies"
 url: "https://drstanfield.com/blogs/articles/taurine-time-to-throw-it-away-two-new-studies"
+commerceUrl: "https://microvitamin.com/blogs/articles/taurine-supplements-aging"
 youtube: "https://www.youtube.com/watch?v=Onkl2RDBP8c"
 publishedAt: "2025-07-08T18:07:26Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]

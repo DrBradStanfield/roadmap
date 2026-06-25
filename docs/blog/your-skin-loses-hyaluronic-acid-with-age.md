@@ -1,6 +1,7 @@
 ---
 title: "Your Skin Loses 75% of This by Age 75 (New Fix)"
 url: "https://drstanfield.com/blogs/articles/your-skin-loses-hyaluronic-acid-with-age"
+commerceUrl: "https://microvitamin.com/blogs/articles/hyaluronic-acid-supplements-skin"
 youtube: "https://www.youtube.com/watch?v=ZZKdBM7D-3k"
 publishedAt: "2026-03-25T16:55:45Z"
 tags: ["Research","Skin Health","Supplements"]

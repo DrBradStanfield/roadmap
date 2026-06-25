@@ -1,6 +1,7 @@
 ---
 title: "Harvard Says THIS Is the Healthiest Way to Eat"
 url: "https://drstanfield.com/blogs/articles/harvard-says-this-is-the-healthiest-way-to-eat"
+commerceUrl: "https://microvitamin.com/blogs/articles/harvard-healthy-eating-plate"
 youtube: "https://www.youtube.com/watch?v=JfMD6nU-hS4"
 publishedAt: "2025-08-14T19:50:15Z"
 tags: ["Diet"]

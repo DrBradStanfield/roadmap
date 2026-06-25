@@ -1,6 +1,7 @@
 ---
 title: "Nitric Oxide Supplements: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/nitric-oxide-supplements-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/nitric-oxide-supplements-guide"
 publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

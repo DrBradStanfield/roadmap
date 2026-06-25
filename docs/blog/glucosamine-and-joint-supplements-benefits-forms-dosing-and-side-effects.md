@@ -1,6 +1,7 @@
 ---
 title: "Glucosamine, Chondroitin, and Joint Supplements: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/glucosamine-chondroitin-joint-supplements"
 publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

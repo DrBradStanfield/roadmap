@@ -1,6 +1,7 @@
 ---
 title: "The Food Pyramid's Replacement is a HUGE Upgrade"
 url: "https://drstanfield.com/blogs/articles/the-food-pyramids-replacement-is-a-huge-upgrade"
+commerceUrl: "https://microvitamin.com/blogs/articles/myplate-vs-healthy-eating-plate"
 youtube: "https://www.youtube.com/watch?v=RseqXn3s_zI"
 publishedAt: "2025-06-12T23:08:09Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]

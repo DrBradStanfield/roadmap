@@ -1,6 +1,7 @@
 ---
 title: "SAMe: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/same-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/same-supplement-guide"
 publishedAt: "2025-10-04T20:21:25Z"
 type: "reference"
 tags: ["Supplements"]

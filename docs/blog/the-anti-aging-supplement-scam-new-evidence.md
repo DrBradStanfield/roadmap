@@ -1,6 +1,7 @@
 ---
 title: "The Anti-Aging Supplement Scam (New Evidence)"
 url: "https://drstanfield.com/blogs/articles/the-anti-aging-supplement-scam-new-evidence"
+commerceUrl: "https://microvitamin.com/blogs/articles/anti-aging-supplement-scam-itp"
 youtube: "https://www.youtube.com/watch?v=Y28TiY5muIo"
 publishedAt: "2026-04-09T12:00:00Z"
 tags: ["Supplements", "Research"]

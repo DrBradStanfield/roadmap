@@ -1,6 +1,7 @@
 ---
 title: "How to Include More Calcium-Rich Foods in Your Diet"
 url: "https://drstanfield.com/blogs/articles/calcium-rich-foods-diet"
+commerceUrl: "https://microvitamin.com/blogs/articles/calcium-rich-foods"
 youtube: "https://www.youtube.com/watch?v=eeYQk7iaXo0"
 publishedAt: "2024-10-14T21:25:53Z"
 tags: ["Diet"]

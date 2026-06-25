@@ -1,6 +1,7 @@
 ---
 title: "The Truth About Nitric Oxide Supplements (Nitralis®)"
 url: "https://drstanfield.com/blogs/articles/the-truth-about-nitric-oxide-supplements-nitralis"
+commerceUrl: "https://microvitamin.com/blogs/articles/nitric-oxide-supplements-evidence"
 youtube: "https://www.youtube.com/watch?v=cIrRyu5_thc"
 publishedAt: "2026-02-25T02:32:08Z"
 tags: ["General Health","Preventative Care","Research"]

@@ -1,6 +1,7 @@
 ---
 title: "Salt-Substitutes Can Slash Your 5-Year Death Risk by 12%"
 url: "https://drstanfield.com/blogs/articles/salt-substitutes-can-slash-your-death-risk-by-12"
+commerceUrl: "https://microvitamin.com/blogs/articles/salt-substitute-blood-pressure"
 youtube: "https://www.youtube.com/watch?v=h7pWaoW6idQ"
 publishedAt: "2025-04-02T06:44:05Z"
 tags: ["Diet","General Health","Research"]

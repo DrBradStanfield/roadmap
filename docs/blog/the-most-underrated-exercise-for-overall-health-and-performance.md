@@ -1,6 +1,7 @@
 ---
 title: "Power Training Is The Most Underrated Exercise for Overall Health & Performance"
 url: "https://drstanfield.com/blogs/articles/the-most-underrated-exercise-for-overall-health-and-performance"
+commerceUrl: "https://microvitamin.com/blogs/articles/power-training-muscle-health"
 youtube: "https://www.youtube.com/watch?v=_RqDZXI4iC4"
 publishedAt: "2025-09-16T22:23:51Z"
 tags: ["Exercise"]

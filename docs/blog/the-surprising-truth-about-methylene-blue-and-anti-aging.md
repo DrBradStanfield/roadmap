@@ -1,6 +1,7 @@
 ---
 title: "The Surprising Truth About Methylene Blue and Anti-Aging"
 url: "https://drstanfield.com/blogs/articles/the-surprising-truth-about-methylene-blue-and-anti-aging"
+commerceUrl: "https://microvitamin.com/blogs/articles/methylene-blue-aging-evidence"
 youtube: "https://www.youtube.com/watch?v=0Yi_gd2otEg"
 publishedAt: "2025-03-05T21:40:11Z"
 tags: ["General Health","Research"]

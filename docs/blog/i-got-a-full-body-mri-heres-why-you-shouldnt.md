@@ -1,6 +1,7 @@
 ---
 title: "I Got a Full-Body MRI. Here's Why You Shouldn't."
 url: "https://drstanfield.com/blogs/articles/i-got-a-full-body-mri-heres-why-you-shouldnt"
+commerceUrl: "https://microvitamin.com/blogs/articles/full-body-mri-scan-evidence"
 youtube: "https://www.youtube.com/watch?v=OlWlBckB1WE"
 publishedAt: "2026-04-01T19:40:22Z"
 tags: ["Preventative Care","Research"]

@@ -1,6 +1,7 @@
 ---
 title: "CoQ10 (Ubiquinol): Benefits, Best Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/coq10-benefits-best-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/coq10-benefits-forms-dosing"
 publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

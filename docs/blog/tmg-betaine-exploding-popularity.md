@@ -1,6 +1,7 @@
 ---
 title: "Why TMG (Betaine) is Exploding in Popularity"
 url: "https://drstanfield.com/blogs/articles/tmg-betaine-exploding-popularity"
+commerceUrl: "https://microvitamin.com/blogs/articles/tmg-betaine-benefits"
 youtube: "https://www.youtube.com/watch?v=GsR6KcK4lHA"
 publishedAt: "2024-10-09T13:30:02Z"
 tags: ["Supplements","Exercise","General Health"]

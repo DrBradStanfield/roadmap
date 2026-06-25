@@ -1,6 +1,7 @@
 ---
 title: "Are Seed Oils Toxic and Inflammatory?"
 url: "https://drstanfield.com/blogs/articles/seed-oils-toxic-inflammatory"
+commerceUrl: "https://microvitamin.com/blogs/articles/seed-oils-evidence"
 youtube: "https://www.youtube.com/watch?v=XJ_uyV-ER_g"
 publishedAt: "2024-09-29T01:35:00Z"
 tags: ["General Health","Diet","Research"]

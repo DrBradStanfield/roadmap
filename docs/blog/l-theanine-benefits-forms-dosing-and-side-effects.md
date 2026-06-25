@@ -1,6 +1,7 @@
 ---
 title: "L-Theanine: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/l-theanine-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/l-theanine-benefits-dosing-safety"
 publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

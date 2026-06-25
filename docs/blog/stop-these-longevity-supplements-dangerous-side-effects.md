@@ -1,6 +1,7 @@
 ---
 title: "Stop These Longevity Supplements (Dangerous Side Effects)"
 url: "https://drstanfield.com/blogs/articles/stop-these-longevity-supplements-dangerous-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/supplements-hidden-side-effects"
 youtube: "https://www.youtube.com/watch?v=eeXhF6b_P0o"
 publishedAt: "2025-02-24T21:22:36Z"
 tags: ["Supplements","General Health"]

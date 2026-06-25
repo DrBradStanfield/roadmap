@@ -1,6 +1,7 @@
 ---
 title: "Concerning Omega-3 Brain Study"
 url: "https://drstanfield.com/blogs/articles/concerning-omega-3-brain-study"
+commerceUrl: "https://microvitamin.com/blogs/articles/omega-3-brain-study-evidence"
 youtube: "https://www.youtube.com/watch?v=gAjyBJl1OF8"
 publishedAt: "2026-05-20T12:00:00Z"
 tags: ["Supplements", "Research", "General Health"]

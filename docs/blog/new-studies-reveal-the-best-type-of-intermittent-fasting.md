@@ -1,6 +1,7 @@
 ---
 title: "New Studies Reveal the BEST Type of Intermittent Fasting"
 url: "https://drstanfield.com/blogs/articles/new-studies-reveal-the-best-type-of-intermittent-fasting"
+commerceUrl: "https://microvitamin.com/blogs/articles/intermittent-fasting-evidence-guide"
 youtube: "https://www.youtube.com/watch?v=nebqCIeMXL4"
 publishedAt: "2025-02-06T23:11:41Z"
 tags: ["Diet"]

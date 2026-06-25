@@ -1,6 +1,7 @@
 ---
 title: "5 Reasons You Aren't Losing Weight with Intermittent Fasting"
 url: "https://drstanfield.com/blogs/articles/losing-weight-intermittent-fasting"
+commerceUrl: "https://microvitamin.com/blogs/articles/intermittent-fasting-not-working"
 youtube: "https://www.youtube.com/watch?v=nZfOGLklnBM"
 publishedAt: "2025-01-03T15:30:01Z"
 tags: ["Diet"]

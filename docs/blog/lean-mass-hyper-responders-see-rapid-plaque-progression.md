@@ -1,6 +1,7 @@
 ---
 title: "Lean Mass Hyper-Responders See Rapid Plaque Progression"
 url: "https://drstanfield.com/blogs/articles/lean-mass-hyper-responders-see-rapid-plaque-progression"
+commerceUrl: "https://microvitamin.com/blogs/articles/keto-ldl-coronary-plaque-progression"
 youtube: "https://www.youtube.com/watch?v=JE1EACWZiWw"
 publishedAt: "2025-04-16T22:47:20Z"
 tags: ["Research"]

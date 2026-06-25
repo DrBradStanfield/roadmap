@@ -1,6 +1,7 @@
 ---
 title: "The EXACT Moment I Stopped Fearing Dementia"
 url: "https://drstanfield.com/blogs/articles/shingles-vaccine-dementia"
+commerceUrl: "https://microvitamin.com/blogs/articles/shingles-vaccine-dementia-risk"
 youtube: "https://www.youtube.com/watch?v=naT5JJtthVk"
 publishedAt: "2025-12-23T18:44:46Z"
 tags: ["General Health","Preventative Care","Research"]

@@ -1,6 +1,7 @@
 ---
 title: "Is the Berberine Hype Justified & Should You Take It?"
 url: "https://drstanfield.com/blogs/articles/is-the-berberine-hype-justified-should-you-take-it"
+commerceUrl: "https://microvitamin.com/blogs/articles/berberine-evidence-review"
 youtube: "https://www.youtube.com/watch?v=WAo-f0_s9p0"
 publishedAt: "2025-04-28T17:51:00Z"
 tags: ["General Health","Supplements","Research"]

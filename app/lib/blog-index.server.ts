@@ -5,6 +5,11 @@ export interface BlogIndexEntry {
   title: string;
   handle: string;
   url: string;
+  /** microvitamin.com (commerce) SEO post URL, when a commerce version exists.
+   *  `url` stays the drstanfield.com (education) URL. The chatbot cites
+   *  `commerceUrl` on the brand surface and `url` on the doctor surface
+   *  (see chat-posture-brand.md / chat-posture-doctor.md). */
+  commerceUrl?: string;
   tags: string[];
   keywords?: string[];
   publishedAt: string;

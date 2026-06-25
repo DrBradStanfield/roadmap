@@ -1,6 +1,7 @@
 ---
 title: "Which Mistakes Do Most People Make with Magnesium?"
 url: "https://drstanfield.com/blogs/articles/mistakes-people-make-magnesium"
+commerceUrl: "https://microvitamin.com/blogs/articles/magnesium-deficiency-forms-guide"
 youtube: "https://www.youtube.com/watch?v=9X6pweXDxjg"
 publishedAt: "2024-07-09T18:36:45Z"
 tags: ["Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "Cocoa Flavanols: Benefits, Best Sources, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/cocoa-flavanols-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/cocoa-flavanols-benefits-dosing"
 publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

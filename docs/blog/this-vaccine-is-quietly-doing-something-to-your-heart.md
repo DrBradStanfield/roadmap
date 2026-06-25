@@ -1,6 +1,7 @@
 ---
 title: "This Vaccine is Quietly Doing Something to Your Heart"
 url: "https://drstanfield.com/blogs/articles/this-vaccine-is-quietly-doing-something-to-your-heart"
+commerceUrl: "https://microvitamin.com/blogs/articles/shingles-vaccine-heart-research"
 youtube: "https://youtu.be/Ad7UqDA85F4"
 publishedAt: "2026-05-24T20:05:09Z"
 tags: ["Preventative Care", "Research"]

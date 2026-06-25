@@ -1,6 +1,7 @@
 ---
 title: "The Truth About Seed Oil Toxicity"
 url: "https://drstanfield.com/blogs/articles/the-truth-about-seed-oil-toxicity"
+commerceUrl: "https://microvitamin.com/blogs/articles/seed-oil-toxicity-evidence"
 youtube: "https://www.youtube.com/watch?v=XJ_uyV-ER_g"
 publishedAt: "2026-05-18T12:00:00Z"
 tags: ["Diet", "Research", "General Health"]

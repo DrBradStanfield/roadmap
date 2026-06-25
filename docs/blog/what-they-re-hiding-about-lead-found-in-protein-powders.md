@@ -1,6 +1,7 @@
 ---
 title: "What They’re HIDING About Lead Found in Protein Powders"
 url: "https://drstanfield.com/blogs/articles/what-they-re-hiding-about-lead-found-in-protein-powders"
+commerceUrl: "https://microvitamin.com/blogs/articles/lead-in-protein-powders"
 youtube: "https://www.youtube.com/watch?v=6zkAApqtrYQ"
 publishedAt: "2025-11-04T20:37:47Z"
 tags: ["Diet","Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "1,394 Person Study on Taurine Proves What We Suspected"
 url: "https://drstanfield.com/blogs/articles/1-394-person-study-on-taurine-proves-what-we-suspected"
+commerceUrl: "https://microvitamin.com/blogs/articles/taurine-rct-meta-analysis-1394-people"
 youtube: "https://www.youtube.com/watch?v=RGfmGu08MQ4"
 publishedAt: "2026-02-12T21:13:15Z"
 tags: ["General Health","Research","Supplements"]

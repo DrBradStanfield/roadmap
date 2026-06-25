@@ -1,6 +1,7 @@
 ---
 title: "Why Avoiding Cancer is Now Easier Than Ever"
 url: "https://drstanfield.com/blogs/articles/avoiding-cancer-easier-ever"
+commerceUrl: "https://microvitamin.com/blogs/articles/cancer-risk-reduction-guide"
 youtube: "https://www.youtube.com/watch?v=HWEAjoApMm8"
 publishedAt: "2024-11-04T03:29:43Z"
 tags: ["Research","Diet","General Health"]

@@ -1,6 +1,7 @@
 ---
 title: "Cranberry: Benefits, Best Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/cranberry-benefits-best-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/cranberry-uti-prevention-forms-dosing"
 publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

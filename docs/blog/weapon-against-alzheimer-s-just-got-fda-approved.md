@@ -1,6 +1,7 @@
 ---
 title: "Weapon Against Alzheimer’s Just Got FDA-Approved"
 url: "https://drstanfield.com/blogs/articles/weapon-against-alzheimer-s-just-got-fda-approved"
+commerceUrl: "https://microvitamin.com/blogs/articles/alzheimer-blood-test-fda-approved"
 youtube: "https://www.youtube.com/watch?v=tkGobEWcMSc"
 publishedAt: "2026-01-26T16:41:21Z"
 tags: ["General Health","Preventative Care","Research"]

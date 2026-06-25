@@ -1,6 +1,7 @@
 ---
 title: "Astaxanthin: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/astaxanthin-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/astaxanthin-benefits-dosing-safety"
 publishedAt: "2024-03-07T17:34:17Z"
 type: "reference"
 tags: ["Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "Myth Busting: Can Foods Help You Unclog Your Arteries?"
 url: "https://drstanfield.com/blogs/articles/foods-help-unclog-arteries"
+commerceUrl: "https://microvitamin.com/blogs/articles/diet-clogged-arteries"
 youtube: "https://www.youtube.com/watch?v=Hm7lFs7SewM"
 publishedAt: "2024-09-10T20:19:42Z"
 tags: ["Diet","Preventative Care"]

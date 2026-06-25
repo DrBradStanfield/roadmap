@@ -1,6 +1,7 @@
 ---
 title: "What's Causing Colon Cancer to Rise So Fast?"
 url: "https://drstanfield.com/blogs/articles/whats-causing-colon-cancer-to-rise-so-fast"
+commerceUrl: "https://microvitamin.com/blogs/articles/early-onset-colon-cancer-causes"
 youtube: "https://www.youtube.com/watch?v=cFF5KV5hFsU"
 publishedAt: "2026-05-17T17:05:00Z"
 tags: ["Research", "Preventative Care", "Diet"]

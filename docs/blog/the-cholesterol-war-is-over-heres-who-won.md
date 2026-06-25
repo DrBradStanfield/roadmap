@@ -1,6 +1,7 @@
 ---
 title: "The Cholesterol War Is Over (Here's Who Won)"
 url: "https://drstanfield.com/blogs/articles/the-cholesterol-war-is-over-heres-who-won"
+commerceUrl: "https://microvitamin.com/blogs/articles/cholesterol-ldl-target-evidence"
 youtube: "https://youtu.be/d0bytrCdnbA"
 publishedAt: "2026-04-23T12:00:00Z"
 tags: ["Research", "Preventative Care"]

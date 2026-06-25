@@ -1,6 +1,7 @@
 ---
 title: "Garlic: Benefits, Best Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/garlic-benefits-best-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/garlic-supplements-benefits-forms"
 publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

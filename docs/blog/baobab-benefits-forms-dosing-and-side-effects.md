@@ -1,6 +1,7 @@
 ---
 title: "Baobab: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/baobab-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/baobab-powder-benefits-dosing"
 publishedAt: "2024-03-27T03:38:34Z"
 type: "reference"
 tags: ["Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "Digestive Enzymes: Benefits, Types, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/digestive-enzymes-benefits-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/digestive-enzymes-guide"
 publishedAt: "2024-09-04T23:34:17Z"
 type: "reference"
 tags: ["Supplements"]

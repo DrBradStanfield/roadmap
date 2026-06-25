@@ -1,6 +1,7 @@
 ---
 title: "25% Reduction in Skin Wrinkles After 8 Weeks (New Collagen Study)"
 url: "https://drstanfield.com/blogs/articles/25-reduction-in-skin-wrinkles-after-8-weeks-new-collagen-study"
+commerceUrl: "https://microvitamin.com/blogs/articles/collagen-peptides-skin-evidence"
 youtube: "https://www.youtube.com/watch?v=Ueb3lUhaT2o"
 publishedAt: "2025-06-11T22:02:52Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "What Are The Benefits of Apple Cider Vinegar Supplements?"
 url: "https://drstanfield.com/blogs/articles/benefits-apple-cider-vinegar"
+commerceUrl: "https://microvitamin.com/blogs/articles/apple-cider-vinegar-guide"
 publishedAt: "2024-09-06T04:03:40Z"
 tags: ["Research","General Health","Diet"]
 keywords: ["blood pressure","blood sugar","calcium","cardiovascular","cholesterol","diabetes","glycine","hba1c","iron","magnesium","obesity","oxidative stress","potassium","weight loss"]

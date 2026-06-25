@@ -1,6 +1,7 @@
 ---
 title: "The “Longevity” Craze is Actually Making You Sicker"
 url: "https://drstanfield.com/blogs/articles/the-longevity-craze-is-actually-making-you-sicker"
+commerceUrl: "https://microvitamin.com/blogs/articles/longevity-clinic-overdiagnosis-harms"
 youtube: "https://www.youtube.com/watch?v=4l35bPuNOEs"
 publishedAt: "2025-07-29T23:10:36Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "Why Longevity Experts Are Warning Against Fasting"
 url: "https://drstanfield.com/blogs/articles/longevity-experts-warning-fasting"
+commerceUrl: "https://microvitamin.com/blogs/articles/intermittent-fasting-evidence"
 youtube: "https://www.youtube.com/watch?v=nZfOGLklnBM"
 publishedAt: "2024-08-22T00:56:03Z"
 tags: ["Diet"]

@@ -1,6 +1,7 @@
 ---
 title: "The 5 Lifesaving Blood Tests EVERYONE Must Get!"
 url: "https://drstanfield.com/blogs/articles/5-livesaving-blog-tests"
+commerceUrl: "https://microvitamin.com/blogs/articles/essential-blood-tests"
 youtube: "https://www.youtube.com/watch?v=snAnrbt_JQo"
 publishedAt: "2024-09-04T05:32:23Z"
 tags: ["Preventative Care"]

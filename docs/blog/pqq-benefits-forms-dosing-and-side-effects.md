@@ -1,6 +1,7 @@
 ---
 title: "PQQ: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/pqq-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/pqq-supplement-guide"
 publishedAt: "2025-07-19T04:04:17Z"
 type: "reference"
 tags: ["Supplements"]

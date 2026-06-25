@@ -1,6 +1,7 @@
 ---
 title: "Spend $40, Avoid Dying 12.2 Years Too Early"
 url: "https://drstanfield.com/blogs/articles/spend-40-dollars-avoid-dying-early"
+commerceUrl: "https://microvitamin.com/blogs/articles/blood-pressure-home-monitor-guide"
 youtube: "https://www.youtube.com/watch?v=RvosFvR0h3w"
 publishedAt: "2024-10-29T00:20:09Z"
 tags: ["General Health"]

@@ -1,6 +1,7 @@
 ---
 title: "Iron: Benefits, Best Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/iron-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/iron-supplement-guide"
 publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "The Unexpected Cause of the Scary Cancer Surge"
 url: "https://drstanfield.com/blogs/articles/the-unexpected-cause-of-the-scary-cancer-surge"
+commerceUrl: "https://microvitamin.com/blogs/articles/early-onset-cancer-risk"
 youtube: "https://www.youtube.com/watch?v=mrllxYn6eGw"
 publishedAt: "2026-02-18T19:21:30Z"
 tags: ["Diet","General Health","Preventative Care","Research"]

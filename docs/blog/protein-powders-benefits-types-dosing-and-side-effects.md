@@ -1,6 +1,7 @@
 ---
 title: "Protein Powders: Benefits, Types, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/protein-powder-guide"
 publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

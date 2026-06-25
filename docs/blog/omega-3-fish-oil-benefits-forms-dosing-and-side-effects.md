@@ -1,6 +1,7 @@
 ---
 title: "Omega-3 Fish Oil: Benefits, Best Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/omega-3-fish-oil-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/omega-3-fish-oil-guide"
 publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

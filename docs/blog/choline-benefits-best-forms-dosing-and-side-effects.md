@@ -1,6 +1,7 @@
 ---
 title: "Choline: Benefits, Best Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/choline-benefits-best-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/choline-benefits-forms-dosing"
 publishedAt: "2024-06-06T08:34:17Z"
 type: "reference"
 tags: ["Supplements"]

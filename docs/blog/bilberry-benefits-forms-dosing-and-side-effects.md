@@ -1,6 +1,7 @@
 ---
 title: "Bilberry: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/bilberry-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/bilberry-extract-benefits-dosing"
 publishedAt: "2024-04-15T13:42:51Z"
 type: "reference"
 tags: ["Supplements"]

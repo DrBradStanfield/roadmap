@@ -1,6 +1,7 @@
 ---
 title: "African Mango: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/african-mango-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/african-mango-irvingia-gabonensis-evidence"
 publishedAt: "2024-01-15T22:42:51Z"
 type: "reference"
 tags: ["Supplements"]

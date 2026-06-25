@@ -1,6 +1,7 @@
 ---
 title: "The Only Supplements That ACTUALLY Work (2025)"
 url: "https://drstanfield.com/blogs/articles/only-supplements-work-2025"
+commerceUrl: "https://microvitamin.com/blogs/articles/evidence-based-supplements-guide"
 youtube: "https://www.youtube.com/watch?v=uwnXLsAL9wM"
 publishedAt: "2024-11-19T03:13:05Z"
 tags: ["Supplements"]

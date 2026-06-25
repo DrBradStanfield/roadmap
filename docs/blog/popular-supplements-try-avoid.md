@@ -1,6 +1,7 @@
 ---
 title: "Which Popular Supplements Should You Actually Try to Avoid?"
 url: "https://drstanfield.com/blogs/articles/popular-supplements-try-avoid"
+commerceUrl: "https://microvitamin.com/blogs/articles/supplements-evidence-avoid"
 youtube: "https://www.youtube.com/watch?v=eeYQk7iaXo0"
 publishedAt: "2024-08-11T19:43:34Z"
 tags: ["Supplements"]

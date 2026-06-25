@@ -1,6 +1,7 @@
 ---
 title: "Why Healthy People Still Have Heart Attacks"
 url: "https://drstanfield.com/blogs/articles/why-healthy-people-still-have-heart-attacks"
+commerceUrl: "https://microvitamin.com/blogs/articles/normal-bmi-heart-attack-risk"
 youtube: "https://www.youtube.com/watch?v=c-vk5joT3KM"
 publishedAt: "2025-11-25T17:07:51Z"
 tags: ["Diet","General Health","Preventative Care","Research"]

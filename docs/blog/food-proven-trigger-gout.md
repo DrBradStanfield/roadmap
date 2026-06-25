@@ -1,6 +1,7 @@
 ---
 title: "What Types of Food Are Proven to Trigger Gout?"
 url: "https://drstanfield.com/blogs/articles/food-proven-trigger-gout"
+commerceUrl: "https://microvitamin.com/blogs/articles/gout-trigger-foods"
 publishedAt: "2024-11-18T20:48:50Z"
 tags: ["Diet"]
 keywords: ["antioxidant","blood pressure","diabetes","gout","inflammation","iodine","kidney","microbiome","obesity","uric acid"]

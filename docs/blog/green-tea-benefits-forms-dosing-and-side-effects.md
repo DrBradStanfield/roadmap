@@ -1,6 +1,7 @@
 ---
 title: "Green Tea: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/green-tea-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/green-tea-egcg-benefits-dosing"
 publishedAt: "2024-12-24T00:38:34Z"
 type: "reference"
 tags: ["Supplements"]

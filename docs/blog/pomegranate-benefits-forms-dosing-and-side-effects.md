@@ -1,6 +1,7 @@
 ---
 title: "Pomegranate: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/pomegranate-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/pomegranate-juice-benefits-dosing"
 publishedAt: "2025-01-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

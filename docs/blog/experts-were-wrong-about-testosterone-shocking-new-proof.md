@@ -1,6 +1,7 @@
 ---
 title: "Experts Were WRONG About Testosterone (Shocking New Proof)"
 url: "https://drstanfield.com/blogs/articles/experts-were-wrong-about-testosterone-shocking-new-proof"
+commerceUrl: "https://microvitamin.com/blogs/articles/testosterone-decline-myth-tmg"
 youtube: "https://www.youtube.com/watch?v=DgRIRPEf0VQ"
 publishedAt: "2025-11-15T23:06:00Z"
 tags: ["General Health","Research"]

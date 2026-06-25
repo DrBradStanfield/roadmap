@@ -1,6 +1,7 @@
 ---
 title: "Saffron: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/saffron-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/saffron-benefits-forms-dosing"
 publishedAt: "2025-09-28T09:00:00Z"
 type: "reference"
 tags: ["Supplements"]

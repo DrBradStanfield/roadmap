@@ -1,6 +1,7 @@
 ---
 title: "Doctor Recommended Intermittent Fasting Hack That ACTUALLY Works"
 url: "https://drstanfield.com/blogs/articles/doctor-recommended-intermittent-fasting-hack-that-actually-works"
+commerceUrl: "https://microvitamin.com/blogs/articles/intermittent-fasting-meal-timing"
 youtube: "https://www.youtube.com/watch?v=uXV5GRrZH9Q"
 publishedAt: "2025-04-30T00:47:26Z"
 tags: ["Diet","General Health","Research"]

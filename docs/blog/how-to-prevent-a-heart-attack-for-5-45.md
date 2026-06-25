@@ -1,6 +1,7 @@
 ---
 title: "How to Prevent a Heart Attack for $5.45"
 url: "https://drstanfield.com/blogs/articles/how-to-prevent-a-heart-attack-for-5-45"
+commerceUrl: "https://microvitamin.com/blogs/articles/heart-attack-prevention-ldl-statins"
 youtube: "https://www.youtube.com/watch?v=SZy8hfMbU90"
 publishedAt: "2025-02-04T23:48:02Z"
 tags: ["General Health"]

@@ -1,6 +1,7 @@
 ---
 title: "Do NOT Use Apple Cider Vinegar To Lose Weight (Use This Instead)"
 url: "https://drstanfield.com/blogs/articles/do-not-use-apple-cider-vinegar-to-lose-weight-use-this-instead"
+commerceUrl: "https://microvitamin.com/blogs/articles/apple-cider-vinegar-weight-loss-evidence"
 youtube: "https://www.youtube.com/watch?v=AcUbzqJwDbg"
 publishedAt: "2025-02-12T03:47:51Z"
 tags: ["Diet","General Health","Research"]

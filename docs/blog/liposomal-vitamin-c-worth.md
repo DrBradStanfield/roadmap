@@ -1,6 +1,7 @@
 ---
 title: "Is Liposomal Vitamin C Worth the Money or a Useless Fad?"
 url: "https://drstanfield.com/blogs/articles/liposomal-vitamin-c-worth"
+commerceUrl: "https://microvitamin.com/blogs/articles/liposomal-vitamin-c-evidence"
 publishedAt: "2024-12-09T15:30:08Z"
 tags: ["Supplements"]
 keywords: ["antioxidant","atherosclerosis","cardiovascular","cholesterol","collagen","iron","kidney","ldl","muscle","oxidative stress","skin","triglycerides","ultrasound","uv","vitamin c"]

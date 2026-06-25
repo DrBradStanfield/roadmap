@@ -1,6 +1,7 @@
 ---
 title: "Vitamin D: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/vitamin-d-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/vitamin-d3-supplement-guide-dosing-forms-benefits-safety"
 publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

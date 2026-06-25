@@ -1,6 +1,7 @@
 ---
 title: "Manuka Honey: Benefits, Grading, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/manuka-honey-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/manuka-honey-benefits-dosing"
 publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

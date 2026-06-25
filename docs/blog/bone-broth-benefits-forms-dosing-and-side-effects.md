@@ -1,6 +1,7 @@
 ---
 title: "Bone Broth: Benefits, Nutrition, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/bone-broth-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/bone-broth-collagen-guide"
 publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

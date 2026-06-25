@@ -1,6 +1,7 @@
 ---
 title: "An Evidence-Based Anti-Aging Skincare Routine"
 url: "https://drstanfield.com/blogs/articles/an-evidence-based-anti-aging-skincare-routine"
+commerceUrl: "https://microvitamin.com/blogs/articles/skincare-routine-evidence-based"
 youtube: "https://www.youtube.com/watch?v=PvzE-1f5dW4"
 publishedAt: "2025-09-07T21:16:10Z"
 tags: ["Skin Health"]

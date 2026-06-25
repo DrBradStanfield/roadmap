@@ -1,6 +1,7 @@
 ---
 title: "Lithium (Low-Dose): Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/lithium-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/lithium-orotate-forms-dosing-safety"
 publishedAt: "2025-06-17T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

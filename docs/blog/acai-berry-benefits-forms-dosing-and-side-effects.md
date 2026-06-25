@@ -1,6 +1,7 @@
 ---
 title: "Acai Berry: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/acai-berry-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/acai-berry-benefits-forms-dosing"
 publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

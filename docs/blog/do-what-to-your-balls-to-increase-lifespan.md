@@ -1,6 +1,7 @@
 ---
 title: "Do WHAT to Your Balls to Increase Lifespan??!"
 url: "https://drstanfield.com/blogs/articles/do-what-to-your-balls-to-increase-lifespan"
+commerceUrl: "https://microvitamin.com/blogs/articles/testosterone-lifespan-research"
 youtube: "https://www.youtube.com/watch?v=YoSwyPtaU74"
 publishedAt: "2026-01-19T23:37:28Z"
 tags: ["General Health","Preventative Care","Research"]

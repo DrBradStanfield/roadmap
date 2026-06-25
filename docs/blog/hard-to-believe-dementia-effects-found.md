@@ -1,6 +1,7 @@
 ---
 title: "These Diabetes Drugs May Also Slash Dementia Rates"
 url: "https://drstanfield.com/blogs/articles/hard-to-believe-dementia-effects-found"
+commerceUrl: "https://microvitamin.com/blogs/articles/glp1-sglt2-dementia-risk"
 youtube: "https://www.youtube.com/watch?v=i9Nm84nqeWA"
 publishedAt: "2025-07-13T22:34:36Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]

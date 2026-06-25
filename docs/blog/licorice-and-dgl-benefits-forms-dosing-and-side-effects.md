@@ -1,6 +1,7 @@
 ---
 title: "Licorice and DGL: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/licorice-and-dgl-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/dgl-licorice-forms-dosing-safety"
 publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

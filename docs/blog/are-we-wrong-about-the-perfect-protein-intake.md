@@ -1,6 +1,7 @@
 ---
 title: "Are We Wrong About the Perfect Protein Intake?"
 url: "https://drstanfield.com/blogs/articles/are-we-wrong-about-the-perfect-protein-intake"
+commerceUrl: "https://microvitamin.com/blogs/articles/protein-intake-guide-muscle-health"
 youtube: "https://www.youtube.com/watch?v=9B4xVLUztMY"
 publishedAt: "2025-08-06T00:57:00Z"
 tags: ["Diet"]

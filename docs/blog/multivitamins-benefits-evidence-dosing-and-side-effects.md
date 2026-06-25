@@ -1,6 +1,7 @@
 ---
 title: "Multivitamins: Benefits, Evidence, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/multivitamins-benefits-evidence-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/multivitamins-what-the-evidence-actually-shows"
 publishedAt: "2025-04-01T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

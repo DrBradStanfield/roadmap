@@ -1,6 +1,7 @@
 ---
 title: "New Study Just Crushed the Coffee Health Controversy"
 url: "https://drstanfield.com/blogs/articles/new-study-just-crushed-the-coffee-health-controversy"
+commerceUrl: "https://microvitamin.com/blogs/articles/coffee-health-benefits-evidence-review"
 youtube: "https://www.youtube.com/watch?v=X8uYpZrhaGY"
 publishedAt: "2025-05-22T01:05:30Z"
 tags: ["Diet"]

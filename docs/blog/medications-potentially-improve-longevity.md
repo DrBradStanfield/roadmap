@@ -1,6 +1,7 @@
 ---
 title: "Which Medications Can Potentially Improve Your Longevity?"
 url: "https://drstanfield.com/blogs/articles/medications-potentially-improve-longevity"
+commerceUrl: "https://microvitamin.com/blogs/articles/finasteride-statins-evidence-mens-health"
 youtube: "https://www.youtube.com/watch?v=eDresUkYRKQ"
 publishedAt: "2024-07-18T23:19:00Z"
 tags: ["Preventative Care"]

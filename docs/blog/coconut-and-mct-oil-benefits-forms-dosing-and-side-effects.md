@@ -1,6 +1,7 @@
 ---
 title: "Coconut Oil and MCT Oil: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/coconut-and-mct-oil-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/mct-oil-coconut-oil-evidence-guide"
 publishedAt: "2024-07-08T17:21:25Z"
 type: "reference"
 tags: ["Supplements"]

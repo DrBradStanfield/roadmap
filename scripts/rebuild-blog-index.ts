@@ -33,6 +33,14 @@ interface IndexEntry {
   title: string;
   handle: string;
   url: string;
+  /**
+   * The microvitamin.com (commerce) SEO post URL, when a commerce version of
+   * this post exists. `url` stays the drstanfield.com (education) URL; this is
+   * its commerce twin. The chatbot cites `commerceUrl` in brand posture and
+   * `url` in doctor posture (falling back to `url` when this is absent).
+   * See docs/blog-website-update.html (two-store blog plan).
+   */
+  commerceUrl?: string;
   tags: string[];
   keywords: string[];
   publishedAt: string;
@@ -105,6 +113,7 @@ function main() {
         publishedAt: fm.publishedAt || '',
       };
 
+      if (fm.commerceUrl) entry.commerceUrl = fm.commerceUrl;
       if (fm.type) entry.type = fm.type;
       if (fm.youtube) entry.youtube = fm.youtube;
       if (fm.product) entry.product = fm.product;

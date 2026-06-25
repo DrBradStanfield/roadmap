@@ -1,6 +1,7 @@
 ---
 title: "Low-Dose Lithium CRUSHES Dementia & Brain Aging?"
 url: "https://drstanfield.com/blogs/articles/low-dose-lithium-crushes-dementia"
+commerceUrl: "https://microvitamin.com/blogs/articles/low-dose-lithium-cognitive-health-research"
 youtube: "https://www.youtube.com/watch?v=h0b3EfuKaYQ"
 publishedAt: "2025-09-09T00:29:58Z"
 tags: ["Preventative Care","Supplements"]

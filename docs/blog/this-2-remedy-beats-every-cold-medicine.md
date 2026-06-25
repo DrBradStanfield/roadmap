@@ -1,6 +1,7 @@
 ---
 title: "This $2 Remedy Beats Every Cold Medicine"
 url: "https://drstanfield.com/blogs/articles/this-2-remedy-beats-every-cold-medicine"
+commerceUrl: "https://microvitamin.com/blogs/articles/cold-remedies-zinc-honey-saline"
 youtube: "https://www.youtube.com/watch?v=Pi7syWem5CM"
 publishedAt: "2026-04-16T12:00:00Z"
 tags: ["Supplements", "Research", "General Health"]

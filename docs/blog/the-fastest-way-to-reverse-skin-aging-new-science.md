@@ -1,6 +1,7 @@
 ---
 title: "The FASTEST Way To Reverse Skin Aging (New Science)"
 url: "https://drstanfield.com/blogs/articles/the-fastest-way-to-reverse-skin-aging-new-science"
+commerceUrl: "https://microvitamin.com/blogs/articles/laser-skin-rejuvenation-guide"
 youtube: "https://www.youtube.com/watch?v=lb7Zupcn0Qo"
 publishedAt: "2025-03-01T23:09:56Z"
 tags: ["Skin Health"]

@@ -1,6 +1,7 @@
 ---
 title: "Boron: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/boron-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/boron-supplement-guide"
 publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

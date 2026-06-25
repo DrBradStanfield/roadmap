@@ -1,6 +1,7 @@
 ---
 title: "Why I Take Low-Dose Tirzepatide (Zepbound)"
 url: "https://drstanfield.com/blogs/articles/why-i-take-low-dose-tirzepatide-zepbound"
+commerceUrl: "https://microvitamin.com/blogs/articles/tirzepatide-benefits-beyond-weight-loss"
 youtube: "https://youtu.be/yKPaVhpomks"
 publishedAt: "2026-05-28T00:34:28Z"
 tags: ["Research", "Preventative Care", "Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "Fatty Liver Treatment BREAKTHROUGH"
 url: "https://drstanfield.com/blogs/articles/fatty-liver-treatment-breakthrough"
+commerceUrl: "https://microvitamin.com/blogs/articles/fatty-liver-glp1-treatment"
 youtube: "https://www.youtube.com/watch?v=T5oaU73bJ_Y"
 publishedAt: "2025-10-30T21:45:08Z"
 tags: ["Diet","General Health","Preventative Care","Research"]

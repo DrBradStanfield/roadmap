@@ -1,6 +1,7 @@
 ---
 title: "Red Yeast Rice: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/red-yeast-rice-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/red-yeast-rice-monacolin-k-evidence-guide"
 publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

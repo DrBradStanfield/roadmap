@@ -1,6 +1,7 @@
 ---
 title: "Huperzine A: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/huperzine-a-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/huperzine-a-benefits-dosing-safety"
 publishedAt: "2025-06-03T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

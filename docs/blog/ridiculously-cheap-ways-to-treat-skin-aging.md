@@ -1,6 +1,7 @@
 ---
 title: "Ridiculously Cheap Ways to Treat Skin Aging"
 url: "https://drstanfield.com/blogs/articles/ridiculously-cheap-ways-to-treat-skin-aging"
+commerceUrl: "https://microvitamin.com/blogs/articles/skin-aging-evidence-guide"
 youtube: "https://www.youtube.com/watch?v=Tvkhhgrkv78"
 publishedAt: "2026-03-10T23:22:17Z"
 tags: ["Preventative Care","Research","Skin Health"]

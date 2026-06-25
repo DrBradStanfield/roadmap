@@ -1,6 +1,7 @@
 ---
 title: "Cinnamon: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/cinnamon-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/cinnamon-benefits-forms-dosing"
 publishedAt: "2024-06-19T07:17:08Z"
 type: "reference"
 tags: ["Supplements"]

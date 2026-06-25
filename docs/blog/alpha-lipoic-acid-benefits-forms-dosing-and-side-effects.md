@@ -1,6 +1,7 @@
 ---
 title: "Alpha Lipoic Acid: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/alpha-lipoic-acid-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/alpha-lipoic-acid-benefits-dosing"
 publishedAt: "2024-02-04T08:47:08Z"
 type: "reference"
 tags: ["Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "New Study Reveals the BEST Exercise to Reverse Skin Wrinkles"
 url: "https://drstanfield.com/blogs/articles/new-study-reveals-the-best-exercise-to-reverse-skin-wrinkles"
+commerceUrl: "https://microvitamin.com/blogs/articles/exercise-skin-aging"
 youtube: "https://www.youtube.com/watch?v=_YU77NJ04XM"
 publishedAt: "2025-04-30T00:47:40Z"
 tags: ["Exercise","Skin Health"]

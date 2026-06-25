@@ -1,6 +1,7 @@
 ---
 title: "Coronary Heart Disease is Almost ELIMINATED"
 url: "https://drstanfield.com/blogs/articles/coronary-heart-disease-is-almost-eliminated"
+commerceUrl: "https://microvitamin.com/blogs/articles/heart-disease-prevention-ldl-diet"
 youtube: "https://www.youtube.com/watch?v=jrcGb8BbjYQ"
 publishedAt: "2026-02-08T19:17:34Z"
 tags: ["Diet","General Health","Preventative Care","Research"]

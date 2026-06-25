@@ -1,5 +1,33 @@
 [
   {
+    "title": "We're All About to Become Lean AND Ripped (new evidence)",
+    "handle": "were-all-about-to-become-lean-and-ripped-new-evidence",
+    "url": "https://drstanfield.com/blogs/articles/were-all-about-to-become-lean-and-ripped-new-evidence",
+    "tags": [
+      "Research",
+      "Supplements",
+      "General Health"
+    ],
+    "keywords": [
+      "betaine",
+      "cholesterol",
+      "creatine",
+      "glp-1",
+      "ldl",
+      "muscle",
+      "obesity",
+      "resistance training",
+      "sarcopenia",
+      "tmg",
+      "weight loss"
+    ],
+    "publishedAt": "2026-06-15T12:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/muscle-loss-glp1-drugs-evidence",
+    "youtube": "https://www.youtube.com/watch?v=Zit5we5Ss18",
+    "product": "microvitamin-plus",
+    "summary": "Dr Brad's muscle-on-Ozempic post: the muscle you lose on GLP-1 drugs is normal (~25% of weight lost, same as dieting or surgery), and the apitegromab EMBRAZE trial preserves muscle but did NOT improve strength. Covers tirzepatide, retatrutide, bimagrumab, creatine, and resistance training."
+  },
+  {
     "title": "I've Never Seen Anything Like This in Cancer Research",
     "handle": "ive-never-seen-anything-like-this-in-cancer-research",
     "url": "https://drstanfield.com/blogs/articles/ive-never-seen-anything-like-this-in-cancer-research",
@@ -11,6 +39,7 @@
       "lung cancer"
     ],
     "publishedAt": "2026-06-10T12:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/kras-pancreatic-cancer-daraxonrasib",
     "youtube": "https://www.youtube.com/watch?v=d4qhykJ9PMs",
     "summary": "Dr Brad's pancreatic cancer breakthrough post: daraxonrasib roughly doubled survival (13.2 vs 6.6 months) by finally drugging KRAS, the 'undruggable' gene behind ~1 in 5 cancers. Covers G12C vs G12D, the cyclophilin-A mechanism, and early combination trials."
   },
@@ -33,6 +62,7 @@
       "statin"
     ],
     "publishedAt": "2026-06-08T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/pcsk9-gene-editing-cholesterol",
     "youtube": "https://youtu.be/tvef5PqDHc0",
     "summary": "Dr Brad's VERVE-102 post: a one-time gene-editing infusion lowered LDL cholesterol by 62% in a 35-patient phase 1 trial on top of maximum-tolerated statins. Covers PCSK9 discovery, base editing vs CRISPR cutting, and the 2024 setback that nearly ended the program."
   },
@@ -52,6 +82,7 @@
       "prostate"
     ],
     "publishedAt": "2026-06-02T16:06:13Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/microplastics-research-headlines-debunked",
     "youtube": "https://youtu.be/pNPvWsmxwno",
     "summary": "Dr Brad's microplastics post: three methodology problems (suspect math, glove contamination, fat mistaken for plastic) mean credit-card-per-week and plastic-in-brain headlines are not reliable. The chemicals with real evidence behind them are BPA, phthalates, and PFAS — measured in urine, linked to cardiovascular mortality, reproductive problems, and cancer."
   },
@@ -98,6 +129,7 @@
       "zinc"
     ],
     "publishedAt": "2026-05-28T00:34:28Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/tirzepatide-benefits-beyond-weight-loss",
     "youtube": "https://youtu.be/yKPaVhpomks",
     "product": "microvitamin",
     "summary": "Dr Brad's tirzepatide post: why he takes 1.25mg weekly (Mounjaro/Zepbound) as a lean non-diabetic GP. Covers weight-loss-independent benefits on heart, kidney, joints, liver, alcohol; the retatrutide comparison; and GLP-1 micronutrient gaps."
@@ -118,6 +150,7 @@
       "stroke"
     ],
     "publishedAt": "2026-05-24T20:05:09Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/shingles-vaccine-heart-research",
     "youtube": "https://youtu.be/Ad7UqDA85F4",
     "summary": "Dr Brad's shingles-vaccine-and-heart post: 1.27M Korean cohort + Wales natural experiment suggest the shingles vaccine lowers cardiovascular and dementia risk, but healthy-user bias inflates observational numbers. Covers Shingrix vs Zostavax, off-label evidence, CDC recommendations for adults 50+, and the practical case for getting Shingrix when eligible."
   },
@@ -147,6 +180,7 @@
       "vitamin b6"
     ],
     "publishedAt": "2026-05-20T12:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/omega-3-brain-study-evidence",
     "youtube": "https://www.youtube.com/watch?v=gAjyBJl1OF8",
     "product": "microvitamin",
     "summary": "Dr Brad's omega-3 post: a new ADNI study found faster cognitive decline in omega-3 users, but it didn't measure oxidation (the bottle) or B-vitamin status (the co-factor). Brad still takes omega-3 with B-vitamins and TMG. Covers VITACOG, DHA peroxidation, Albert NZ fish oil, ADNI biomarkers."
@@ -175,6 +209,7 @@
       "seed oil"
     ],
     "publishedAt": "2026-05-18T12:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/seed-oil-toxicity-evidence",
     "youtube": "https://www.youtube.com/watch?v=XJ_uyV-ER_g",
     "summary": "Dr Brad's seed oil post: meta-analyses of RCTs show linoleic acid doesn't raise inflammation markers and replacing saturated fat with PUFA cuts heart disease 17%. Covers omega-6 vs omega-3 ratio, oxidation during home cooking vs repeated fast-food frying, trans-fat history of margarine, and CRP subgroup signal at extreme intakes."
   },
@@ -199,6 +234,7 @@
       "weight loss"
     ],
     "publishedAt": "2026-05-17T17:05:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/early-onset-colon-cancer-causes",
     "youtube": "https://www.youtube.com/watch?v=cFF5KV5hFsU",
     "summary": "Dr Brad's early-onset colon cancer post: three research teams point at different suspects — picloram herbicide (OR 1.77), childhood E. coli colibactin (21% of CRC), and ultra-processed food (45% higher adenoma risk). Covers FIT screening from 45, fibre, activity, symptoms not to ignore."
   },
@@ -221,6 +257,7 @@
       "stroke"
     ],
     "publishedAt": "2026-05-15T03:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/aspirin-cancer-prevention-evidence",
     "youtube": "https://youtu.be/ulIkmIh7qL4",
     "summary": "Dr Brad's aspirin post: daily low-dose aspirin for primary cancer prevention is no longer supported and may increase cancer mortality in older adults. Covers ASPREE 2026 follow-up (HR 1.15 cancer death), Cochrane 2026, Rothwell 2010, CAPP2 Lynch syndrome exception, and TXA2/T-cell mechanism — secondary prevention after heart attack/stroke is unchanged."
   },
@@ -250,6 +287,7 @@
       "stroke"
     ],
     "publishedAt": "2026-05-08T12:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/statin-side-effects-evidence",
     "youtube": "https://youtu.be/ovWVNxSiJSE",
     "summary": "Dr Brad's statin post: SAMSON trial showed 90% of statin side effects come from the nocebo effect, not the drug. Covers Akira Endo's discovery, low-dose statin + ezetimibe combo, new 2026 ACC/AHA LDL <55 mg/dL target, dietary portfolio, muscle myth, dementia and diabetes risks."
   },
@@ -278,6 +316,7 @@
       "triglycerides"
     ],
     "publishedAt": "2026-05-08T02:05:49Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/heart-attack-risk-factors",
     "youtube": "https://youtu.be/XwrjGB0nq1s",
     "summary": "Dr Brad's heart attack risk post: a 9.3M-person study found >99% of people who had a first heart attack had at least one nonoptimal risk factor (BP ≥120/80, total cholesterol ≥200, fasting glucose ≥100, or any smoking history) before the event. The 'SMuRF-less' phenomenon was a measurement artefact. Brad recommends optimal targets (BP <120/80, LDL <55) plus ApoB testing now that JAMA cost-effectiveness is established and 2026 ACC/AHA guideline includes it."
   },
@@ -304,6 +343,7 @@
       "weight loss"
     ],
     "publishedAt": "2026-04-29T12:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/glp-1-cartilage-regeneration",
     "youtube": "https://www.youtube.com/watch?v=JM1he4pHzpw",
     "summary": "Dr Brad's GLP-1/cartilage post: a 2026 Cell Metabolism study found semaglutide grew cartilage 17% in obese knee osteoarthritis patients, independent of weight loss. Covers Gila monster venom origin, AMPK-PFKFB3 mechanism, pair-fed mouse experiment."
   },
@@ -331,6 +371,7 @@
       "blood pressure"
     ],
     "publishedAt": "2026-04-23T12:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/cholesterol-ldl-target-evidence",
     "youtube": "https://youtu.be/d0bytrCdnbA",
     "product": "microvitamin-plus",
     "summary": "Dr Brad's cholesterol target post: LDL below 55 mg/dL is now evidence-backed as superior to the old 70 target (Ez-PAVE RCT, 33% fewer events). Covers PCSK9 inhibitors, ezetimibe underuse, FOURIER, VESALIUS-CV, PESA subclinical atherosclerosis data, and ACC 2026 findings."
@@ -356,6 +397,7 @@
       "zinc"
     ],
     "publishedAt": "2026-04-16T12:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/cold-remedies-zinc-honey-saline",
     "youtube": "https://www.youtube.com/watch?v=Pi7syWem5CM",
     "summary": "Dr Brad's cold remedies post: zinc lozenges, hypertonic saline rinse, and honey outperform most OTC cold medicines. Zinc acetate/gluconate >75mg/day shortens colds ~33%; saline cuts duration ~2 days; honey eases cough."
   },
@@ -381,6 +423,7 @@
       "sarcopenia"
     ],
     "publishedAt": "2026-04-09T12:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/nmn-nr-nad-supplement-evidence",
     "youtube": "https://www.youtube.com/watch?v=XB6B_XjQMa8",
     "summary": "Dr Brad's NMN and NR post: gut bacteria break both down into cheap nicotinic acid before NAD is rebuilt, making premium NAD supplements no better than basic niacin. Covers meta-analyses showing no muscle, metabolic, or cognitive benefit; exercise as the evidence-based approach to NAD."
   },
@@ -404,6 +447,7 @@
       "skin"
     ],
     "publishedAt": "2026-04-09T12:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/anti-aging-supplement-scam-itp",
     "youtube": "https://www.youtube.com/watch?v=Y28TiY5muIo",
     "summary": "Dr Brad's anti-aging supplement skepticism post: most longevity supplements (AKG, resveratrol, NR, fish oil, astaxanthin) failed to extend lifespan in the ITP's 2026 results. Only prescription drugs (rapamycin, acarbose, canagliflozin) have shown reproducible lifespan extension."
   },
@@ -424,6 +468,7 @@
       "ultrasound"
     ],
     "publishedAt": "2026-04-01T19:40:22Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/full-body-mri-scan-evidence",
     "youtube": "https://www.youtube.com/watch?v=OlWlBckB1WE",
     "summary": "Dr Brad's full-body MRI post: advises against routine scans for most people — high incidental finding rates (36%), no lifespan benefit data, and overdiagnosis risk. Covers Prenuvo, ACR guidelines, cancer screening, thyroid overdiagnosis case study."
   },
@@ -447,6 +492,7 @@
       "stroke"
     ],
     "publishedAt": "2026-04-01T19:38:46Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/sodium-blood-pressure-research",
     "youtube": "https://www.youtube.com/watch?v=8gnJTNUQehs",
     "summary": "Dr Brad's salt post: lower sodium reduces blood pressure and stroke risk for most people; the J-curve claim doesn't hold in umbrella review evidence. Covers hypertension, potassium intake, salt substitutes, and sodium sensitivity variation."
   },
@@ -471,6 +517,7 @@
       "weight loss"
     ],
     "publishedAt": "2026-03-25T16:57:15Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/diet-quality-beats-low-fat-low-carb",
     "youtube": "https://www.youtube.com/watch?v=6geV5d39eA0",
     "summary": "Dr Brad's review of a 5.2M person-year diet study: why food quality beats low-fat/low-carb framing, the case for Mediterranean and plant-forward eating (legumes, whole foods, unsaturated fats), and why processed food is the real issue regardless of macro labelling."
   },
@@ -491,6 +538,7 @@
       "wrinkles"
     ],
     "publishedAt": "2026-03-25T16:55:45Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/hyaluronic-acid-supplements-skin",
     "youtube": "https://www.youtube.com/watch?v=ZZKdBM7D-3k",
     "product": "microvitamin-plus",
     "summary": "Dr Brad's hyaluronic acid post: oral HA supplements improve skin hydration, reduce wrinkles, and work indirectly via gut microbiome — not direct absorption. Covers 60-120mg dosing, low vs high molecular weight, skin aging, collagen, dry skin."
@@ -516,6 +564,7 @@
       "stroke"
     ],
     "publishedAt": "2026-03-18T06:11:43Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/nitric-oxide-arugula-vs-supplements",
     "youtube": "https://www.youtube.com/watch?v=RAPNAdxtyuE",
     "summary": "Dr Brad's nitric oxide post: arugula beats beetroot and supplements as a nitrate source — ~63g salad hits the 300mg nitrate threshold. Covers L-arginine, L-citrulline, beetroot juice, tadalafil, blood pressure, exercise performance, oxalate risk."
   },
@@ -544,6 +593,7 @@
       "sleep"
     ],
     "publishedAt": "2026-03-18T06:09:58Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/melatonin-heart-health-evidence",
     "youtube": "https://www.youtube.com/watch?v=k6OWC6f1Jtk",
     "product": "sleep",
     "summary": "Dr Brad's melatonin heart health post: a flawed observational study raised alarm but a 63-RCT meta-analysis shows melatonin reduces blood pressure, LDL, and inflammation. Covers sleep, heart disease, dosing (0.3-1mg), timing, and product quality."
@@ -564,6 +614,7 @@
       "ldl"
     ],
     "publishedAt": "2026-03-10T23:24:23Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/exercise-plaque-evidence",
     "youtube": "https://www.youtube.com/watch?v=Q2gL0ZjqaBY",
     "summary": "Dr Brad's exercise and arterial plaque post: high training loads increase plaque but not all-cause mortality. Covers endurance athletes, coronary artery calcium, CT plaque, LDL management, heart disease risk in fit adults."
   },
@@ -600,6 +651,7 @@
       "zinc"
     ],
     "publishedAt": "2026-03-10T23:22:17Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/skin-aging-evidence-guide",
     "youtube": "https://www.youtube.com/watch?v=Tvkhhgrkv78",
     "summary": "Dr Brad's skin aging post: diet, exercise, sleep, sunscreen (SPF50+, mineral or newer filters), and retinoids (tretinoin or adapalene) are the most evidence-backed affordable strategies. Covers photoaging, wrinkles, collagen, UV damage, skin elasticity in middle-aged adults."
   },
@@ -625,6 +677,7 @@
       "sleep"
     ],
     "publishedAt": "2026-03-04T00:31:31Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/coffee-dementia-risk-study",
     "youtube": "https://www.youtube.com/watch?v=zphjOojmo1M",
     "summary": "Dr Brad's coffee and dementia post: 2-3 cups/day of caffeinated coffee linked to ~19% lower dementia risk in a 131,821-person study. Covers caffeine mechanism, decaf vs caffeinated, optimal timing, filtered coffee, LDL risk from unfiltered."
   },
@@ -643,6 +696,7 @@
       "wrinkles"
     ],
     "publishedAt": "2026-03-01T23:39:13Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/microneedling-skin-evidence",
     "youtube": "https://www.youtube.com/watch?v=FOirk9-rLjA",
     "summary": "Dr Brad's microneedling post: promising evidence for wrinkles, acne scars, and pigmentation but bigger trials needed. At-home rollers use needles too short to reach collagen-stimulating depth; FDA hasn't cleared deeper devices for OTC use."
   },
@@ -665,6 +719,7 @@
       "rapamycin"
     ],
     "publishedAt": "2026-02-25T02:32:08Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/nitric-oxide-supplements-evidence",
     "youtube": "https://www.youtube.com/watch?v=cIrRyu5_thc",
     "summary": "Dr Brad’s nitric oxide post: L-arginine and L-citrulline don’t reliably improve performance; beetroot nitrate at 380mg+/day reduces blood pressure. DoNotAge Nitralis is underdosed with a fraudulent trial. Recommends nitrate-rich foods or quality beetroot juice."
   },
@@ -692,6 +747,7 @@
       "stroke"
     ],
     "publishedAt": "2026-02-22T18:52:40Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/saturated-fat-heart-disease-evidence",
     "youtube": "https://www.youtube.com/watch?v=hv_P4HEhjV4",
     "summary": "Dr Brad’s saturated fat post: evidence supports the diet-heart link — sat fat raises LDL, raising cardiovascular risk — but benefit of reducing it is modest and mainly for high-risk adults. Covers LDL, atherosclerosis, Cochrane review, heart attack, stroke, cholesterol, PESA study."
   },
@@ -718,6 +774,7 @@
       "obesity"
     ],
     "publishedAt": "2026-02-18T19:21:30Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/early-onset-cancer-risk",
     "youtube": "https://www.youtube.com/watch?v=mrllxYn6eGw",
     "summary": "Dr Brad’s early-onset cancer post: colorectal cancer deaths under 50 are genuinely rising (JAMA 2023), driven by Western diet, ultra-processed foods, microbiome disruption, and sedentary lifestyle. Covers fiber intake, exercise, colonoscopy screening from age 45, and red-flag symptoms like blood in stool."
   },
@@ -753,6 +810,7 @@
       "triglycerides"
     ],
     "publishedAt": "2026-02-12T21:13:15Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/taurine-rct-meta-analysis-1394-people",
     "youtube": "https://www.youtube.com/watch?v=RGfmGu08MQ4",
     "summary": "Dr Brad's taurine post: continues recommending taurine based on RCT meta-analyses showing benefits for blood pressure, blood sugar, cholesterol, and inflammation. Covers 1–3g dose, magnesium taurate form, dementia risk, diabetes, cardiovascular health."
   },
@@ -782,6 +840,7 @@
       "weight loss"
     ],
     "publishedAt": "2026-02-09T23:57:17Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/turmeric-curcumin-supplement-guide",
     "youtube": "https://www.youtube.com/watch?v=vU1fCn0W6Uc",
     "summary": "Dr Brad’s turmeric curcumin post: most supplements are mislabeled or ineffective; curcumin may help knee arthritis, ulcerative colitis, and prediabetes but needs 95% standardized extract and NovaSOL enhancer. Avoid piperine-only products."
   },
@@ -815,6 +874,7 @@
       "weight loss"
     ],
     "publishedAt": "2026-02-08T19:17:34Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/heart-disease-prevention-ldl-diet",
     "youtube": "https://www.youtube.com/watch?v=jrcGb8BbjYQ",
     "summary": "Dr Brad’s coronary heart disease post: LDL causes atherosclerosis and heart disease is nearly eliminable. Covers saturated fat, LDL cholesterol, olive oil, fiber, potassium, statins, and heart attack and stroke prevention."
   },
@@ -848,6 +908,7 @@
       "vitamin e"
     ],
     "publishedAt": "2026-02-03T00:32:28Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/antioxidants-aging-research",
     "youtube": "https://www.youtube.com/watch?v=kpn4NvWJaz4",
     "summary": "Dr Brad’s antioxidant post: in adults over 45, antioxidants combined with exercise improve muscle strength and physical function; GlyNAC preferred over Vitamin A or E. Covers oxidative stress, glutathione, aging, muscle, exercise adaptation."
   },
@@ -866,6 +927,7 @@
       "skin"
     ],
     "publishedAt": "2026-01-27T22:29:09Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/peanut-allergy-early-introduction",
     "youtube": "https://www.youtube.com/watch?v=j_T6B-KGPTc",
     "summary": "Dr Brad's peanut allergy post: early introduction at 4-6 months prevents allergy — delayed introduction guidelines likely caused the epidemic. Covers LEAP trial, dual exposure hypothesis, eczema risk, infant feeding guidelines."
   },
@@ -886,6 +948,7 @@
       "glp-1"
     ],
     "publishedAt": "2026-01-26T16:41:21Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/alzheimer-blood-test-fda-approved",
     "youtube": "https://www.youtube.com/watch?v=tkGobEWcMSc",
     "summary": "“Dr Brad’s Alzheimer’s post: semaglutide (GLP-1) failed to slow progression in the EVOKE trials. The new FDA-approved p-tau181 blood test reliably rules out Alzheimer’s (98% NPV) but a positive result is only ~22% accurate — follow-up testing required. For adults 55+ with memory symptoms.”"
   },
@@ -915,6 +978,7 @@
       "trt"
     ],
     "publishedAt": "2026-01-19T23:37:28Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/testosterone-lifespan-research",
     "youtube": "https://www.youtube.com/watch?v=YoSwyPtaU74",
     "summary": "Dr Brad’s testosterone and lifespan post: castration studies show a longevity signal but low testosterone causes diabetes, osteoporosis, and higher mortality. Fix root causes first (obesity, exercise, sleep), then TRT only for confirmed hypogonadism."
   },
@@ -935,6 +999,7 @@
       "weight loss"
     ],
     "publishedAt": "2026-01-19T23:37:09Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/2026-dietary-guidelines-review",
     "youtube": "https://www.youtube.com/watch?v=VY5xoJOdcM8",
     "summary": "“Dr Brad’s 2026 Dietary Guidelines post: mostly positive update — protein raised to 1.2-1.6 g/kg/day is evidence-based, but saturated fat guidance is contradictory and processed food warnings rely on observational data. Covers diet, muscle mass, protein intake, saturated fat, whole grains, weight loss.”"
   },
@@ -957,6 +1022,7 @@
       "ultrasound"
     ],
     "publishedAt": "2026-01-16T22:43:52Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/cancer-screening-guide",
     "youtube": "https://www.youtube.com/watch?v=GhmcFAtLw10",
     "summary": "“Dr Brad’s cancer screening post: prioritize proven screenings (mammogram, cervical, colorectal from 45, lung CT for smokers) over trendy full-body MRIs, which lack evidence of benefit. Covers breast, prostate, endometrial, colorectal, lung cancer, overdiagnosis risk.”"
   },
@@ -977,6 +1043,7 @@
       "stroke"
     ],
     "publishedAt": "2026-01-16T00:00:34Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/hormone-therapy-fda-label-change",
     "youtube": "https://www.youtube.com/watch?v=Ksb6VbiQNKY",
     "summary": "Dr Brad’s HRT post: the FDA removed estrogen warning labels in 2025; start HRT before 60 or within 10 years of menopause for mortality benefit. Covers hot flashes, menopause symptoms, breast cancer risk, shared decision-making."
   },
@@ -999,6 +1066,7 @@
       "weight loss"
     ],
     "publishedAt": "2026-01-11T22:03:32Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/exercise-for-knee-arthritis",
     "youtube": "https://www.youtube.com/watch?v=yRWVbodt2Lo",
     "summary": "Dr Brad’s knee arthritis post: aerobic exercise (walking, cycling, swimming) is the best evidence-based treatment for knee OA; semaglutide cut pain by 50%+ in obese patients with OA. Covers osteoarthritis, joint pain, weight loss, GLP-1."
   },
@@ -1026,6 +1094,7 @@
       "tmg"
     ],
     "publishedAt": "2026-01-11T22:03:17Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/nmn-nad-human-evidence",
     "youtube": "https://www.youtube.com/watch?v=lt8Z0fNukBw",
     "summary": "Dr Brad’s NMN and NAD+ supplements post: evidence does not support NMN or NR for anti-aging or longevity in humans. Covers NAD+ decline with age, failed ITP mouse study, long COVID RCT (no benefit), and why TMG may be more useful than NAD+ precursors."
   },
@@ -1053,6 +1122,7 @@
       "tmg"
     ],
     "publishedAt": "2025-12-23T18:44:46Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/shingles-vaccine-dementia-risk",
     "youtube": "https://www.youtube.com/watch?v=naT5JJtthVk",
     "summary": "Dr Brad’s shingles vaccine post: strong quasi-experimental evidence (Wales natural experiment) shows shingles vaccination reduces dementia risk by ~20% relatively. Covers varicella zoster virus, vascular dementia, Zostavax vs Shingrix, plus supplements like creatine, omega-3, TMG, multivitamin."
   },
@@ -1077,6 +1147,7 @@
       "stroke"
     ],
     "publishedAt": "2025-12-20T19:37:23Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/coffee-health-evidence",
     "youtube": "https://www.youtube.com/watch?v=dYKf9RDZ0Qg",
     "summary": "“Dr Brad’s coffee post: moderate filtered coffee (2-4 cups/day) is not carcinogenic and is linked to lower risk of heart disease, stroke, heart failure, and diabetes. Covers LDL, blood pressure, atrial fibrillation, antioxidants, brewing methods.”"
   },
@@ -1099,6 +1170,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-12-18T05:52:56Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/retatrutide-weight-loss-trial",
     "youtube": "https://www.youtube.com/watch?v=w0A_VRT3rIE",
     "summary": "Dr Brad’s retatrutide post: tirzepatide remains the better-tolerated choice despite retatrutide’s 28.7% weight loss. Covers GLP-1/GIP/glucagon triple agonist, phase 3 trial, dysesthesia, cardiac risk, comparison with semaglutide and tirzepatide for obesity."
   },
@@ -1126,6 +1198,7 @@
       "stroke"
     ],
     "publishedAt": "2025-12-16T20:07:50Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/pcsk9-inhibitors-heart-disease",
     "youtube": "https://www.youtube.com/watch?v=iTgNqFNW6n0",
     "summary": "Dr Brad’s PCSK9 inhibitor post: injectable evolocumab cuts first heart attack and stroke risk by 25% (VESALIUS-CV), and oral enlicitide cuts LDL ~58% in familial hypercholesterolaemia. Covers statins, LDL, cholesterol, cardiovascular primary prevention."
   },
@@ -1163,6 +1236,7 @@
       "fermented foods"
     ],
     "publishedAt": "2025-12-15T01:17:08Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-k2-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on vitamin K: bone health, cardiovascular health, nocturnal leg cramps. Older adults, postmenopausal women. Forms K1, K2 MK-7 (90-375 mcg/day), K2 MK-4 (45 mg pharmacological). Avoid if on warfarin without medical supervision. Always discuss with your doctor."
   },
@@ -1181,6 +1255,7 @@
       "ldl"
     ],
     "publishedAt": "2025-12-10T20:27:49Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/exercise-snacks-benefits",
     "youtube": "https://www.youtube.com/watch?v=Wdf1OGQWru0",
     "summary": "Dr Brad’s exercise snacks post: short bursts of vigorous daily movement improve VO2 max and lower LDL without a gym. Covers VILPA data, 14-trial meta-analysis, sedentary adults, busy people with no time for formal exercise."
   },
@@ -1207,6 +1282,7 @@
       "stroke"
     ],
     "publishedAt": "2025-12-10T00:17:45Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/omega-3-fish-oil-heart-health",
     "youtube": "https://www.youtube.com/watch?v=H8zUZOIZ7oY",
     "summary": "Dr Brad's omega-3 post: fish oil likely protects heart health but dose matters. 4g/day cut major cardiovascular events by 43% in dialysis patients; Brad takes 1g/day to avoid atrial fibrillation risk seen at higher doses. Covers EPA, DHA, heart attack, stroke, kidney failure, and the major CV trials — VITAL (28% MI reduction at 1g/day), STRENGTH (null at 4g/day), and REDUCE-IT (Vascepa / icosapent ethyl) framing."
   },
@@ -1231,6 +1307,7 @@
       "vitamin d3"
     ],
     "publishedAt": "2025-12-03T16:41:41Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d-heart-health-target-d-trial",
     "youtube": "https://www.youtube.com/watch?v=d44hcq-JLCI",
     "summary": "Dr Brad's vitamin D post: TARGET-D trial found 52% fewer recurrent heart attacks with treat-to-target dosing post-MI, but was unblinded. Brad now offers vitamin D testing as option to post-MI patients. Covers cardiovascular risk and deficiency."
   },
@@ -1256,6 +1333,7 @@
       "stroke"
     ],
     "publishedAt": "2025-11-26T19:24:41Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/blood-pressure-targets-what-the-evidence-says",
     "youtube": "https://www.youtube.com/watch?v=tvH0gMgSLd8",
     "summary": "Dr Brad’s blood pressure post: targets below 120 mmHg systolic are evidence-based, not Big Pharma-driven. Covers hypertension history, SPRINT trial, dementia risk, 2025 guidelines, salt, potassium, and weight loss."
   },
@@ -1283,6 +1361,7 @@
       "triglycerides"
     ],
     "publishedAt": "2025-11-25T17:07:51Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/normal-bmi-heart-attack-risk",
     "youtube": "https://www.youtube.com/watch?v=c-vk5joT3KM",
     "summary": "Dr Brad’s heart attack risk post: normal BMI doesn’t mean safe — waist circumference reveals hidden visceral fat. Normal-BMI adults with high waist had 81% higher diabetes and 29% higher blood pressure risk. Women ≥80cm, men ≥94cm."
   },
@@ -1305,6 +1384,7 @@
       "sleep"
     ],
     "publishedAt": "2025-11-23T19:52:54Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/melatonin-heart-failure-risk",
     "youtube": "https://www.youtube.com/watch?v=L_WgUlPNYHo",
     "product": "sleep",
     "summary": "Dr Brad’s melatonin post: the 89% heart failure headline is misleading — the observational study has major flaws and RCT data suggests melatonin may benefit heart health. Covers insomnia, sleep aid safety, dosage (0.3mg vs high-dose), circadian rhythm."
@@ -1339,6 +1419,7 @@
       "zinc"
     ],
     "publishedAt": "2025-11-20T19:11:54Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/iv-therapy-risks-evidence",
     "youtube": "https://www.youtube.com/watch?v=tLG6qWWPEsI",
     "summary": "Dr Brad’s IV therapy post: advises avoiding IV drip clinics — benefits unproven, real risks include infection, kidney failure and inflammation, oral supplements preferred. Covers NAD+ IV, vitamin C infusion, taurine, anti-aging claims."
   },
@@ -1390,6 +1471,7 @@
       "calcium"
     ],
     "publishedAt": "2025-11-19T03:51:25Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-a-forms-benefits-dosing",
     "type": "reference",
     "product": "microvitamin",
     "summary": "Reference on vitamin A: vision, immune function, skin health, bone density. Forms: retinol/retinyl palmitate (animal sources), beta-carotene (plant). Toxicity risk from high preformed vitamin A; safe in pregnancy only below UL. Always discuss with your doctor."
@@ -1417,6 +1499,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-11-15T23:06:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/testosterone-decline-myth-tmg",
     "youtube": "https://www.youtube.com/watch?v=DgRIRPEf0VQ",
     "summary": "Dr Brad’s testosterone post: the reported generational decline in men’s T may be a measurement artifact, not a real trend. Covers low testosterone symptoms, obesity link, sleep, resistance exercise, and TMG supplementation."
   },
@@ -1449,6 +1532,7 @@
       "tmg"
     ],
     "publishedAt": "2025-11-11T23:54:44Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/cholesterol-and-dementia-risk-what-a-1-million-person-study-reveals",
     "youtube": "https://www.youtube.com/watch?v=dpnYzGyL7qY",
     "summary": "Dr Brad’s dementia prevention post: long-term LDL lowering strongly protects against dementia. Covers statins, ezetimibe, PCSK9 inhibitors, 1M-person Mendelian randomization study, Alzheimer’s, vascular dementia, hearing loss, depression, creatine, TMG, multivitamin."
   },
@@ -1467,6 +1551,7 @@
       "resistance training"
     ],
     "publishedAt": "2025-11-10T23:48:11Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/vigorous-exercise-benefits",
     "youtube": "https://www.youtube.com/watch?v=53oDnQef_qo",
     "summary": "Dr Brad’s exercise intensity post: vigorous activity is 4-9x more effective than moderate, not 2x as guidelines assume. Covers VILPA, exercise snacks, zone 2 training, diabetes and mortality risk, sedentary adults, time-poor patients."
   },
@@ -1483,6 +1568,7 @@
       "kidney"
     ],
     "publishedAt": "2025-11-04T20:37:47Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/lead-in-protein-powders",
     "youtube": "https://www.youtube.com/watch?v=6zkAApqtrYQ",
     "summary": "Dr Brad’s protein powder lead post: Consumer Reports’ threshold is 17x stricter than the FDA’s, and typical daily dietary lead exposure already matches the worst-tested powder. Plant-based powders have higher lead; pea protein is Brad’s choice."
   },
@@ -1509,6 +1595,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-10-30T21:45:08Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/fatty-liver-glp1-treatment",
     "youtube": "https://www.youtube.com/watch?v=T5oaU73bJ_Y",
     "summary": "Dr Brad’s fatty liver post: FDA-approved semaglutide (Wegovy) resolves NAFLD/MASH in ~63% of patients; tirzepatide may be more effective. Covers GLP-1 side effects, muscle loss risk, protein intake 1.2g/kg, resistance exercise, black coffee, vitamin D, and LDL management."
   },
@@ -1532,6 +1619,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-10-29T22:37:37Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/artificial-sweeteners-microbiome",
     "youtube": "https://www.youtube.com/watch?v=rCOpHZcbPIY",
     "summary": "Dr Brad’s artificial sweeteners post: RCT evidence shows they aid modest weight loss and don’t worsen metabolic risk vs sugary drinks. Covers gut microbiome changes, zero-sugar drinks, diet soda safety, diabetes, cardiovascular risk, obesity."
   },
@@ -1561,6 +1649,7 @@
       "sleep"
     ],
     "publishedAt": "2025-10-29T02:10:26Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/polypharmacy-deprescribing-guide",
     "youtube": "https://www.youtube.com/watch?v=r2vdiBHkNNA",
     "summary": "Dr Brad’s deprescribing post: thoughtfully stopping unnecessary medications in older adults reduces falls, hospitalizations, and mortality. Covers polypharmacy, aspirin risks, sedatives, hyponatremia, SGLT2 inhibitors, and a 3-phase clinical framework."
   },
@@ -1592,6 +1681,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-10-22T04:35:09Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/glp1-microdosing-evidence",
     "youtube": "https://www.youtube.com/watch?v=4FJsXRYOMpc",
     "summary": "Dr Brad’s GLP-1 microdosing post: not recommended for healthy non-obese non-diabetic adults — benefits are hypothetical, muscle loss risk is real. Covers Ozempic, tirzepatide, semaglutide, weight loss, longevity, inflammation, calorie restriction."
   },
@@ -1631,6 +1721,7 @@
       "fenugreek"
     ],
     "publishedAt": "2025-10-18T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/sexual-enhancement-supplements-guide",
     "type": "reference",
     "summary": "Reference on sexual enhancement supplements: libido, erectile dysfunction. Covers maca root, yohimbine, L-arginine, ginseng, horny goat weed, tribulus. Evidence weak for most; major adulteration risk. Always discuss with your doctor."
   },
@@ -1658,6 +1749,7 @@
       "vitamin d3"
     ],
     "publishedAt": "2025-10-16T20:05:51Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d-telomeres-vital-study",
     "youtube": "https://www.youtube.com/watch?v=3qtUBN3b6sA",
     "product": "microvitamin",
     "summary": "Dr Brad’s vitamin D post: the telomere study headline is overblown — 140 base pairs is within measurement error and didn’t improve heart attack or cancer outcomes in VITAL. Covers vitamin D dose (600-1000 IU), routine blood testing, bone density risk at high doses, telomere aging."
@@ -1677,6 +1769,7 @@
       "muscle"
     ],
     "publishedAt": "2025-10-15T20:07:54Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/ashwagandha-research-evidence",
     "youtube": "https://www.youtube.com/watch?v=3Vp3i4bS8VU",
     "summary": "Dr Brad’s ashwagandha post: no evidence for exercise performance; may help stress and anxiety. Covers 600mg/day RCT, VO2max, cortisol, HPA axis, creatine as alternative for muscle and cognitive performance in men, women, and older adults."
   },
@@ -1706,6 +1799,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-10-15T01:14:52Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/spirulina-evidence-review",
     "youtube": "https://www.youtube.com/watch?v=Xcha7yqRglo",
     "summary": "Dr Brad’s spirulina post: modest benefits for weight, LDL, and blood pressure in overweight adults, but evidence quality is low and effects are smaller than DASH diet or fiber supplements. Covers dosing 2-3g/day, cholesterol, triglycerides, hypertension, obesity."
   },
@@ -1762,6 +1856,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-10-05T20:31:48Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/supplements-strongest-evidence",
     "youtube": "https://www.youtube.com/watch?v=HQeIhuROnpM",
     "product": "microvitamin",
     "summary": "Dr Brad's top 5 supplement picks for healthy aging: psyllium husk (fibre, LDL, blood sugar), multivitamin/mineral (cognition, magnesium), omega-3 ~1g/day (heart, brain), creatine (muscle, memory in older adults), TMG (homocysteine, Alzheimer's risk). Bonus: melatonin 300mcg."
@@ -1800,6 +1895,7 @@
       "parkinson"
     ],
     "publishedAt": "2025-10-04T20:21:25Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/same-supplement-guide",
     "type": "reference",
     "product": "microvitamin",
     "summary": "Reference on SAMe: depression, joint pain (osteoarthritis), liver health, fibromyalgia. Enteric-coated tosylate form; dosing 800-1,600 mg/day. Avoid in bipolar disorder; caution with antidepressants. Always discuss with your doctor."
@@ -1823,6 +1919,7 @@
       "sleep"
     ],
     "publishedAt": "2025-10-03T23:28:30Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-bisglycinate-sleep",
     "youtube": "https://www.youtube.com/watch?v=v6paAVTSevY",
     "product": "sleep",
     "summary": "Dr Brad’s magnesium bisglycinate post: supports sleep quality and recommends it as part of a broader sleep strategy. Covers 250mg elemental dose, insomnia severity index results, magnesium deficiency, and glycine synergy for poor sleep."
@@ -1844,6 +1941,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-10-02T23:36:02Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/protein-intake-guide-how-much-do-you-really-need",
     "youtube": "https://www.youtube.com/watch?v=_xTlBsdV9zg",
     "summary": "“Dr Brad’s protein intake post: recommends 1.2g/kg ideal body weight/day from whole foods, not ultra-processed high-protein products. Covers muscle gains, weight loss, kidney disease, cancer risk, mTOR, older adults, fiber.”"
   },
@@ -1878,6 +1976,7 @@
       "zeaxanthin"
     ],
     "publishedAt": "2025-09-28T09:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/saffron-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on saffron: mood support, depression, anxiety, sleep, eye health (macular degeneration), cognitive decline. Adults with mild-to-moderate depression or poor sleep. Standardized extracts (Affron, Safr'Inside); typical doses 28-30 mg/day. Caution with blood thinners. Always discuss with your doctor."
   },
@@ -1908,6 +2007,7 @@
       "blood sugar"
     ],
     "publishedAt": "2025-09-21T21:38:34Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/rhodiola-rosea-benefits-dosing-side-effects",
     "type": "reference",
     "summary": "Reference on rhodiola rosea: stress, fatigue, mild depression, anxiety. Evidence preliminary. Standardized extract 200-680 mg/day (3% rosavins). Caution with antidepressants and blood pressure meds. Always discuss with your doctor."
   },
@@ -1935,6 +2035,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-09-21T13:50:15Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/sleep-apnea-brain-health",
     "youtube": "https://www.youtube.com/watch?v=p8-IIbONXtw",
     "summary": "Dr Brad’s sleep apnea post: OSA accelerates brain aging (43% higher dementia risk, structural brain changes) and is treatable. Covers CPAP, lifestyle changes, GLP-1s (tirzepatide FDA-approved), diagnosis via STOP-BANG, snoring, daytime sleepiness."
   },
@@ -1957,6 +2058,7 @@
       "tmg"
     ],
     "publishedAt": "2025-09-16T22:23:51Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/power-training-muscle-health",
     "youtube": "https://www.youtube.com/watch?v=_RqDZXI4iC4",
     "summary": "Dr Brad’s post on power training (fast, explosive movements like plyometrics and jump training): why it’s underrated for longevity, how it preserves fast-twitch muscle fibres and reduces falls risk, and how to incorporate it at any age. Always discuss with your doctor."
   },
@@ -1981,6 +2083,7 @@
       "tmg"
     ],
     "publishedAt": "2025-09-15T00:17:53Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/exercise-training-history-lessons",
     "youtube": "https://www.youtube.com/watch?v=d1rs0DqKSJQ",
     "summary": "Dr Brad's exercise training post: variety, recovery, and power training matter more than any single \\\"best\\\" workout. Covers resistance and endurance combo, exercise snacks, 6 min/day vigorous activity reducing mortality, and power training for aging adults."
   },
@@ -2014,6 +2117,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-09-11T23:24:13Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/visceral-fat-insulin-resistance-diet",
     "youtube": "https://www.youtube.com/watch?v=FWcaFMQufFA",
     "summary": "Dr Brad’s visceral fat diet post: no single best diet — sustainable calorie reduction via high protein, high fiber, and less processed food reduces visceral fat and insulin resistance. Covers type 2 diabetes, HbA1c, obesity, sleep, exercise, GLP-1."
   },
@@ -2033,6 +2137,7 @@
       "iron"
     ],
     "publishedAt": "2025-09-09T00:29:58Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/low-dose-lithium-cognitive-health-research",
     "youtube": "https://www.youtube.com/watch?v=h0b3EfuKaYQ",
     "summary": "“Dr Brad’s low-dose lithium post: cautiously interested but not yet recommending supplements. Lithium orotate may prevent Alzheimer’s plaque buildup; lithium carbonate likely ineffective. Covers dementia, cognitive decline, brain aging in adults.”"
   },
@@ -2072,6 +2177,7 @@
       "zinc"
     ],
     "publishedAt": "2025-09-07T21:16:10Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/skincare-routine-evidence-based",
     "youtube": "https://www.youtube.com/watch?v=PvzE-1f5dW4",
     "product": "sleep",
     "summary": "Dr Brad’s skincare routine post: sunscreen, tretinoin or adapalene, diet/exercise/sleep are the evidence-based core. Covers collagen peptides, hyaluronic acid, mineral sunscreen, red light therapy, laser, IPL, and Botox for wrinkles and skin aging."
@@ -2089,6 +2195,7 @@
       "longevity"
     ],
     "publishedAt": "2025-08-29T18:23:08Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/zone-2-training-evidence",
     "youtube": "https://www.youtube.com/watch?v=zQO4YOSoZ_g",
     "summary": "Dr Brad’s Zone 2 training post: evidence does not support Zone 2 as optimal for mitochondrial function or fat oxidation in non-elite adults. Higher intensity exercise outperforms Zone 2; prioritize 75 min/week vigorous activity before adding Zone 2."
   },
@@ -2112,6 +2219,7 @@
       "stroke"
     ],
     "publishedAt": "2025-08-28T23:51:02Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/potassium-deficiency-stroke-risk",
     "youtube": "https://www.youtube.com/watch?v=lb5FleSDefo",
     "summary": "Dr Brad’s post on potassium deficiency and stroke risk: how low potassium raises blood pressure and stroke risk, how much potassium we need, food sources vs supplements, and the safe blood pressure target. Covers: stroke prevention, heart health, blood pressure, mineral deficiency."
   },
@@ -2131,6 +2239,7 @@
       "wrinkles"
     ],
     "publishedAt": "2025-08-27T21:15:34Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/collagen-supplements-evidence-critique",
     "youtube": "https://www.youtube.com/watch?v=U8uPzDdG77c",
     "product": "microvitamin-plus",
     "summary": "“Dr Brad's collagen peptides post: evidence likely supports benefits for skin hydration, elasticity, and wrinkles despite a 2025 meta-analysis claiming otherwise. Covers statistical pooling flaws, industry bias concerns, mechanism via fibroblasts, and Brad's personal decision to continue taking collagen.”"
@@ -2160,6 +2269,7 @@
       "sleep"
     ],
     "publishedAt": "2025-08-20T02:05:05Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/glycine-sleep-quality",
     "youtube": "https://www.youtube.com/watch?v=YHaqsps24tk",
     "product": "sleep",
     "summary": "Dr Brad's glycine post: 3g glycine before bed improves sleep quality and reduces next-day fatigue without disrupting sleep architecture. Covers dosage, melatonin 300mcg, magnesium, morning light, and exercise for sleep."
@@ -2190,6 +2300,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-08-14T19:50:15Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/harvard-healthy-eating-plate",
     "youtube": "https://www.youtube.com/watch?v=JfMD6nU-hS4",
     "summary": "Dr Brad’s healthy diet post: recommends Harvard’s Healthy Eating Plate over USDA MyPlate — favors plant-based protein and fatty fish (~1.2g/kg/day), whole grains, olive oil, varied vegetables, and water over dairy. Covers heart disease, blood pressure, weight loss, fiber."
   },
@@ -2210,6 +2321,7 @@
       "vitamin d"
     ],
     "publishedAt": "2025-08-14T00:22:32Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/sunscreen-myths-skin-cancer-risk",
     "youtube": "https://www.youtube.com/watch?v=vAPc_XE-QuU",
     "summary": "Dr Brad’s sunscreen post: sunscreen works but three myths (tanning beds, safe tanning, sunscreen-as-full-protection) drive rising skin cancer rates. Covers SPF limits, UVA vs UVB, melanoma risk, photoaging, and how to reduce UV exposure."
   },
@@ -2234,6 +2346,7 @@
       "sarcopenia"
     ],
     "publishedAt": "2025-08-06T00:57:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/protein-intake-guide-muscle-health",
     "youtube": "https://www.youtube.com/watch?v=9B4xVLUztMY",
     "summary": "Dr Brad’s protein intake post: targets 1.2 g/kg/day prioritising plant protein; source matters more than total amount. Covers sarcopenia, muscle loss, resistance training, weight management, kidney health, and cancer risk."
   },
@@ -2289,6 +2402,7 @@
       "zinc"
     ],
     "publishedAt": "2025-07-30T20:38:06Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/evidence-based-supplement-stack",
     "youtube": "https://www.youtube.com/watch?v=iuWUL0_t5B0",
     "product": "microvitamin-plus",
     "summary": "Dr Brad’s supplement stack post: he takes only omega-3 (~1g), MicroVitamin multivitamin, and a sleep supplement (melatonin 300mcg, magnesium glycinate, glycine). Covers dementia risk, atrial fibrillation, B vitamin-omega-3 synergy, vitamin D dosing, creatine, collagen, psyllium, taurine."
@@ -2320,6 +2434,7 @@
       "ultrasound"
     ],
     "publishedAt": "2025-07-29T23:10:36Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/longevity-clinic-overdiagnosis-harms",
     "youtube": "https://www.youtube.com/watch?v=4l35bPuNOEs",
     "summary": "“Dr Brad’s longevity clinic post: aggressive screening (full-body MRI, excess lab tests) often harms more than it helps via overdiagnosis and cascade of care. Covers thyroid cancer, incidental findings, prostate screening, evidence-based guidelines.”"
   },
@@ -2356,6 +2471,7 @@
       "liver"
     ],
     "publishedAt": "2025-07-19T04:04:17Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/pqq-supplement-guide",
     "type": "reference",
     "summary": "Reference on PQQ (pyrroloquinoline quinone): memory, brain health, energy, mood, sleep, muscle, cholesterol. Studied in middle-aged and older adults. Typical 20 mg/day. Evidence limited and mostly industry-funded. Always discuss with your doctor."
   },
@@ -2382,6 +2498,7 @@
       "tmg"
     ],
     "publishedAt": "2025-07-17T22:34:02Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/resistance-training-aging-muscle-function",
     "youtube": "https://www.youtube.com/watch?v=Sdjegey8Lhw",
     "summary": "“Dr Brad’s resistance training post: 70-year-olds who strength train maintain physical function comparable to non-training adults in their 20s. Covers muscle loss, aging, sit-to-stand test, neuromuscular adaptation, muscle power, and exercise guidelines.”"
   },
@@ -2408,6 +2525,7 @@
       "triglycerides"
     ],
     "publishedAt": "2025-07-16T00:05:32Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/lipoprotein-a-heart-risk",
     "youtube": "https://www.youtube.com/watch?v=Zc0FURnxO5I",
     "summary": "Dr Brad’s lipoprotein(a) post: get tested once ($51) — 1 in 5 people have elevated Lp(a), it’s genetic not lifestyle-driven, and high levels raise heart attack risk up to 45%. If elevated, aggressively lower LDL-c to 40-50 mg/dL with statin + ezetimibe."
   },
@@ -2439,6 +2557,7 @@
       "stroke"
     ],
     "publishedAt": "2025-07-13T22:35:37Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/colchicine-heart-disease-inflammation",
     "youtube": "https://www.youtube.com/watch?v=nPy5ydXsliI",
     "summary": "Dr Brad’s colchicine and heart disease post: anti-inflammatory drug colchicine cuts cardiovascular risk 12% in atherosclerosis; covers inflammation, LDL, plaque, and natural strategies including diet, exercise, sleep, and weight loss."
   },
@@ -2476,6 +2595,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-07-13T22:34:36Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/glp1-sglt2-dementia-risk",
     "youtube": "https://www.youtube.com/watch?v=i9Nm84nqeWA",
     "summary": "Dr Brad’s GLP-1 and SGLT2 inhibitor post: both drug classes associated with 33-43% lower dementia risk in type 2 diabetes patients. Covers Ozempic/semaglutide, Alzheimer’s, vascular dementia, insulin resistance, cognitive decline."
   },
@@ -2508,6 +2628,7 @@
       "triglycerides"
     ],
     "publishedAt": "2025-07-08T18:07:26Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/taurine-supplements-aging",
     "youtube": "https://www.youtube.com/watch?v=Onkl2RDBP8c",
     "summary": "Dr Brad’s taurine post: taurine likely does not decline with age, undermining the 2023 lifespan theory, but Brad continues taking it for metabolic benefits. Covers blood sugar, blood pressure, cholesterol, HbA1c, triglycerides, cancer safety concern, aging, supplements."
   },
@@ -2538,6 +2659,7 @@
       "vitamin k2"
     ],
     "publishedAt": "2025-07-03T02:07:16Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/bone-loss-after-40",
     "youtube": "https://www.youtube.com/watch?v=EbDxVr9-MYo",
     "product": "microvitamin",
     "summary": "Dr Brad’s bone loss post: resistance and impact exercise are the primary tools to prevent osteoporosis after 40; D3, K2, and magnesium support bone health; calcium supplements have mixed evidence. Covers DEXA screening, fracture risk, postmenopausal bone loss, bisphosphonates."
@@ -2570,6 +2692,7 @@
       "taurine"
     ],
     "publishedAt": "2025-07-01T18:11:29Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-dose-forms-guide",
     "youtube": "https://www.youtube.com/watch?v=oL6CtBcfcDo",
     "product": "microvitamin",
     "summary": "Dr Brad’s magnesium post: favor glycinate or taurate forms; avoid oxide (poorly absorbed). Blood tests miss deficiency. RDA 420mg men/320mg women; 126mg supplement tops up diet. Best RCT evidence is for sleep in older adults."
@@ -2600,6 +2723,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-06-30T18:04:01Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/blood-pressure-120-target",
     "youtube": "https://www.youtube.com/watch?v=MmKVtX98zlM",
     "summary": "Dr Brad’s blood pressure post: target systolic below 120 (not 140) cuts heart attack, stroke, and death risk by 21-27%, per SPRINT and two China RCTs. Covers hypertension, Type 2 diabetes, DASH diet, sodium reduction, exercise snacks, weight loss, and at-home BP monitors."
   },
@@ -2633,6 +2757,7 @@
       "GSK-3"
     ],
     "publishedAt": "2025-06-17T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/lithium-orotate-forms-dosing-safety",
     "type": "reference",
     "summary": "Reference on low-dose lithium: mood, depression, dementia, neuroprotection. OTC forms: lithium orotate, aspartate (typically 5mg elemental lithium/day). Distinct from prescription lithium for bipolar disorder. Always discuss with your doctor."
   },
@@ -2657,6 +2782,7 @@
       "muscle"
     ],
     "publishedAt": "2025-06-14T00:01:42Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d-dosing-immune-health-evidence-review",
     "youtube": "https://www.youtube.com/watch?v=WgA4Tow7cGo",
     "summary": "Dr Brad’s vitamin D post: 1,000 IU/day cut sick days 17% and fever-days 43% in children during winter when baseline levels were adequate. Covers immune function, 2024 Endocrine Society dose guidelines (600-800 IU adults), risks of high-dose supplementation, and MicroVitamin D reduction rationale."
   },
@@ -2691,6 +2817,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-06-12T23:08:09Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/myplate-vs-healthy-eating-plate",
     "youtube": "https://www.youtube.com/watch?v=RseqXn3s_zI",
     "summary": "Dr Brad’s healthy eating plate post: Harvard’s Healthy Eating Plate beats MyPlate and the Food Pyramid for practical meal planning. Covers whole grains, healthy protein up to 1.6g/kg/day, olive oil, vegetables, fruit, fibre, and limiting dairy and processed meat."
   },
@@ -2719,6 +2846,7 @@
       "wrinkles"
     ],
     "publishedAt": "2025-06-11T22:02:52Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/collagen-peptides-skin-evidence",
     "youtube": "https://www.youtube.com/watch?v=Ueb3lUhaT2o",
     "product": "microvitamin-plus",
     "summary": "Dr Brad's collagen peptides post: bovine collagen reduced eye wrinkles 25% and improved hydration 26% in 8 weeks; collagen source matters less than processing. Covers collagen vs protein, hyaluronic acid, sunscreen for skin aging."
@@ -2750,6 +2878,7 @@
       "collagen"
     ],
     "publishedAt": "2025-06-10T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/aloe-vera-gel-latex-guide",
     "type": "reference",
     "summary": "Reference on aloe vera: skin healing, gut health, blood sugar, constipation, GERD. Topical use for burns, sunburn, psoriasis, acne; oral use for IBS, ulcerative colitis, diabetes. Gel vs latex distinction critical — latex carries carcinogenicity and liver toxicity risks. Always discuss with your doctor."
   },
@@ -2776,6 +2905,7 @@
       "tmg"
     ],
     "publishedAt": "2025-06-04T02:39:33Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/exercise-snacks-science",
     "youtube": "https://www.youtube.com/watch?v=2NwiJAmNdoA",
     "summary": "Dr Brad’s exercise time post: even short bouts of vigorous activity (exercise snacks) yield major health benefits. Weekend warrior pattern rivals daily exercise. Covers muscle loss after 30, VILPA, all-cause mortality risk, 115 min vs 150 min WHO target."
   },
@@ -2814,6 +2944,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-06-03T01:26:25Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/metformin-knee-arthritis",
     "youtube": "https://www.youtube.com/watch?v=CStv_Q1v6Ws",
     "summary": "Dr Brad’s metformin post: may reduce knee osteoarthritis pain in overweight adults (JAMA RCT, 6 months), but concerns over blunted exercise gains and lower testosterone mean it’s not a blanket recommendation for non-diabetics. Covers weight loss, inflammation, GLP-1 mechanism, lifespan evidence."
   },
@@ -2842,6 +2973,7 @@
       "huperzia serrata"
     ],
     "publishedAt": "2025-06-03T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/huperzine-a-benefits-dosing-safety",
     "type": "reference",
     "summary": "Reference on huperzine A: memory, cognitive function, Alzheimer's disease, vascular dementia. Adults with dementia or age-related memory concerns. Natural Huperzia serrata extract preferred; 50-400 mcg/day, cycling recommended. Always discuss with your doctor."
   },
@@ -2872,6 +3004,7 @@
       "sleep"
     ],
     "publishedAt": "2025-05-27T22:11:28Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/glycine-sleep-benefits",
     "youtube": "https://www.youtube.com/watch?v=elK5Nq8oT3c",
     "product": "sleep",
     "summary": "Dr Brad’s glycine post: he takes 3g/day for sleep quality (falls asleep faster, less groggy) with a strong safety profile. Covers metabolic health, blood sugar, inflammation, heart attack risk, longevity in mice, and brain function."
@@ -2915,6 +3048,7 @@
       "low dose statin"
     ],
     "publishedAt": "2025-05-23T03:10:34Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/ezetimibe-statin-ldl-cholesterol",
     "youtube": "https://www.youtube.com/watch?v=uyDC-es2uQI",
     "summary": "Dr Brad’s statin and ezetimibe post: for statin selection questions (which statin, best statin, statin comparison, statin side effects), Brad’s approach is low-dose hydrophilic statin (pravastatin 20mg, rosuvastatin 5mg, or pitavastatin 1–2mg) combined with ezetimibe 10mg — beats high-dose monotherapy for both efficacy and tolerability. Covers LDL myths, statin side effects (dementia, testosterone, muscle), combination therapy evidence, and Brad’s own pravastatin 20mg + ezetimibe 10mg regimen."
   },
@@ -2940,6 +3074,7 @@
       "stroke"
     ],
     "publishedAt": "2025-05-22T01:05:30Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/coffee-health-benefits-evidence-review",
     "youtube": "https://www.youtube.com/watch?v=X8uYpZrhaGY",
     "summary": "Dr Brad’s coffee post: evidence supports 2-3 cups of filtered coffee daily as beneficial — lowers risk of heart disease, stroke, atrial fibrillation, liver disease, and cancer. Covers caffeine timing, cholesterol, sleep, and safe daily intake of up to 400mg."
   },
@@ -2975,6 +3110,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-05-20T20:21:44Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/lower-blood-pressure-cut-dementia-risk",
     "youtube": "https://www.youtube.com/watch?v=vUUqRQzQls0",
     "summary": "Dr Brad’s blood pressure and dementia post: target systolic BP below 120 to cut dementia risk 15% and heart attack/stroke risk 27%. Covers DASH diet, salt reduction, exercise, weight loss, and BP medications for hypertension."
   },
@@ -3013,6 +3149,7 @@
       "beta-sitosterol"
     ],
     "publishedAt": "2025-05-20T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/avocado-oil-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on avocado oil: heart health, cholesterol, skin moisturizing, carotenoid absorption. Extra virgin to refined forms; 1-2 tbsp/day. Latex allergy risk; warfarin interaction. Commercial adulteration common. Always discuss with your doctor."
   },
@@ -3047,6 +3184,7 @@
       "antioxidant"
     ],
     "publishedAt": "2025-05-20T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/holy-basil-tulsi-benefits-dosing",
     "type": "reference",
     "summary": "Reference on holy basil (tulsi): stress, anxiety, blood sugar (type 2 diabetes), immune support, cognition. Adults with stress symptoms or type 2 diabetes. Extract 300-1200 mg/day or leaf powder 1000-2500 mg/day. Always discuss with your doctor."
   },
@@ -3077,6 +3215,7 @@
       "longevity"
     ],
     "publishedAt": "2025-05-20T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/l-citrulline-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on L-citrulline: blood pressure, erectile dysfunction, exercise performance. Best evidence in adults with elevated BP and men with mild ED. Pure form preferred over citrulline malate. Doses 1.5-6 g/day. Always discuss with your doctor."
   },
@@ -3114,6 +3253,7 @@
       "aging"
     ],
     "publishedAt": "2025-05-20T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/maca-root-benefits-dosing-safety",
     "type": "reference",
     "summary": "Reference on maca root: libido, sexual function, erectile dysfunction, sperm quality, menopausal symptoms. Used by men and postmenopausal women. Powder or capsules; 1,500-3,000 mg/day. Thyroid caution; avoid in hormone-sensitive conditions. Always discuss with your doctor."
   },
@@ -3147,6 +3287,7 @@
       "inflammation"
     ],
     "publishedAt": "2025-05-20T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/saw-palmetto-prostate-supplements",
     "type": "reference",
     "summary": "Reference on saw palmetto and prostate supplements: BPH urinary symptoms, hair loss. Lipid extract 320mg/day; beta-sitosterol 30-91mg/day. Evidence mixed; excess zinc linked to prostate cancer risk. Always discuss with your doctor."
   },
@@ -3194,6 +3335,7 @@
       "herbal supplement"
     ],
     "publishedAt": "2025-05-20T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/st-johns-wort-benefits-dosing-safety",
     "type": "reference",
     "summary": "Reference on St. John's wort: mild to moderate depression, low mood, menopause hot flashes. Comparable to SSRIs; not for severe depression. Extract 300 mg 3x/day. Interacts with contraceptives, statins, warfarin. Always discuss with your doctor."
   },
@@ -3234,6 +3376,7 @@
       "zinc"
     ],
     "publishedAt": "2025-05-15T23:18:01Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/supplements-that-damage-blood-vessels",
     "youtube": "https://www.youtube.com/watch?v=INeQLAdDkEE",
     "product": "microvitamin",
     "summary": "Dr Brad’s harmful supplements post: calcium raises heart attack risk via artery calcification; iron, vitamin E, vitamin A, and resveratrol lack proven benefit and may harm. Covers blood vessel health, osteoporosis, antioxidants, longevity."
@@ -3262,6 +3405,7 @@
       "uv"
     ],
     "publishedAt": "2025-05-15T23:17:50Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/morning-light-sleep-quality",
     "youtube": "https://www.youtube.com/watch?v=gbsGL-LOIx4",
     "summary": "Dr Brad’s morning sunlight post: 30-60 min of bright morning light improves sleep quality, duration, and circadian rhythm via melatonin regulation. Covers light therapy devices, circadian rhythm, insomnia, shift workers, seasonal depression, metabolic syndrome risk."
   },
@@ -3299,6 +3443,7 @@
       "exercise"
     ],
     "publishedAt": "2025-05-13T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/ginger-benefits-dosing-safety",
     "type": "reference",
     "summary": "Reference on ginger: nausea (pregnancy, chemotherapy), indigestion, joint pain, blood sugar, menstrual pain. Powder 1-3g/day or extract 100-500mg/day. Caution: bleeding risk with blood thinners, CYP3A4 interactions. Always discuss with your doctor."
   },
@@ -3338,6 +3483,7 @@
       "fermented foods"
     ],
     "publishedAt": "2025-05-13T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/probiotics-strains-dosing-safety",
     "type": "reference",
     "summary": "Reference on probiotics: gut health, IBS symptom relief, immune modulation, antibiotic-associated diarrhea prevention; key strains (Lactobacillus, Bifidobacterium); dosing and CFU guidance; and safety. Covers bloating, irregular bowel, gut flora restoration. Always discuss with your doctor."
   },
@@ -3379,6 +3525,7 @@
       "inflammation"
     ],
     "publishedAt": "2025-05-13T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/psyllium-husk-benefits-dosing-and-side-effects",
     "type": "reference",
     "summary": "Reference on psyllium husk: constipation, LDL cholesterol, blood sugar, IBS, weight management. AGA first-line fiber for chronic constipation; FDA heart health claim. Whole husk or powder, 5-15 g/day. Always discuss with your doctor."
   },
@@ -3422,6 +3569,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-05-13T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/taurine-supplement-guide-evidence-dosing-forms",
     "type": "reference",
     "summary": "Reference on taurine: blood pressure, heart health, cholesterol, blood sugar, exercise recovery, aging. Strongest evidence in prehypertension and metabolic syndrome. Forms: powder or capsules, 1-6 g/day typical. Always discuss with your doctor."
   },
@@ -3457,6 +3605,7 @@
       "fiber"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/amla-supplement-guide",
     "type": "reference",
     "summary": "Reference on amla (Indian gooseberry): blood sugar, cholesterol, heart health, blood pressure. Adults with type 2 diabetes or high cholesterol. Powder 1-3g/day or extract 500-1000mg/day; caution with diabetes drugs. Always discuss with your doctor."
   },
@@ -3512,6 +3661,7 @@
       "aging"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/b-vitamins-forms-dosing-safety",
     "type": "reference",
     "summary": "Reference on B vitamins: energy metabolism, brain health, depression, stroke prevention. At-risk groups include older adults, vegans, metformin users, and MTHFR carriers. Covers all eight B vitamins, active forms (methylfolate, methylcobalamin), and megadose risks. Always discuss with your doctor."
   },
@@ -3548,6 +3698,7 @@
       "betaine"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/beetroot-nitrate-benefits-dosing",
     "type": "reference",
     "summary": "Reference on beetroot (beet juice): blood pressure, exercise endurance. For hypertension or heart disease. Juice or concentrate, 300-600 mg nitrate/day, 2-3 hrs before exercise. Nitrate content varies by product. Always discuss with your doctor."
   },
@@ -3588,6 +3739,7 @@
       "seed oil"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/black-seed-oil-benefits-dosing-safety",
     "type": "reference",
     "summary": "Reference on black seed oil (Nigella sativa): blood sugar, cholesterol, blood pressure, weight loss, asthma, joint pain. Oil or seed powder; oil 1,000-3,000 mg/day. Interacts with diabetes/BP meds; avoid in pregnancy. Always discuss with your doctor."
   },
@@ -3636,6 +3788,7 @@
       "microbiome"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/bone-broth-collagen-guide",
     "type": "reference",
     "summary": "Reference on bone broth: joint pain, skin wrinkles, muscle mass, sleep (glycine). Most evidence is for collagen peptides, not broth directly. Liquid/powder/capsule; 2-3 cups/day for joints. High sodium content; caution in kidney disease. Always discuss with your doctor."
   },
@@ -3688,6 +3841,7 @@
       "collagen"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/calcium-benefits-forms-dosing",
     "type": "reference",
     "product": "microvitamin",
     "summary": "Reference on calcium: bone health, fracture prevention, osteoporosis. Postmenopausal women, older adults, vegans, and pregnant women most at risk of deficiency. Forms include carbonate and citrate (citrate preferred for PPI users). Typical supplemental doses 500-1,200 mg/day; high doses may raise cardiovascular and kidney stone risk. Always discuss with your doctor."
@@ -3739,6 +3893,7 @@
       "calcium"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/cocoa-flavanols-benefits-dosing",
     "type": "reference",
     "summary": "Reference on cocoa flavanols: heart health, blood pressure, cholesterol, blood sugar. Adults seeking cardiovascular support. Standardized extract (200-500 mg/day) preferred; Dutching destroys up to 90% of flavanols. Always discuss with your doctor."
   },
@@ -3774,6 +3929,7 @@
       "cardiovascular"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/coconut-water-nutrition-hydration",
     "type": "reference",
     "summary": "Reference on coconut water: natural electrolyte drink for hydration, blood pressure support, exercise recovery. High potassium (400-500 mg/cup); low calorie. Caution: hyperkalemia risk in kidney disease, diabetes, or on ACE inhibitors/potassium-sparing diuretics. Always discuss with your doctor."
   },
@@ -3816,6 +3972,7 @@
       "longevity"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/coq10-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on CoQ10 (ubiquinol/ubiquinone): heart failure, migraine prevention, statin-related muscle pain and fatigue. Evidence strongest for heart failure (adjunct to medication) and migraine. Ubiquinol preferred over 60; typical dosing 100-300 mg/day with food. Caution with blood thinners, diabetes meds, and during cancer treatment. Always discuss with your doctor."
   },
@@ -3862,6 +4019,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/creatine-supplementation-evidence-based-guide-benefits-forms-dosage-safety",
     "type": "reference",
     "summary": "Reference on creatine: muscle strength, muscle size, sarcopenia, cognitive function under sleep deprivation. Benefits older adults, athletes, and vegetarians. Best form: creatine monohydrate 3-5 g/day. Always discuss with your doctor."
   },
@@ -3907,6 +4065,7 @@
       "sleep"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/dhea-supplement-guide",
     "type": "reference",
     "summary": "Reference on DHEA: hormone studied for adrenal insufficiency, depression, vaginal dryness and painful sex (FDA-approved), and bone density in women. Anti-aging evidence weak. Oral 25-50 mg/day with hormone monitoring. Always discuss with your doctor."
   },
@@ -3935,6 +4094,7 @@
       "immune system"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/echinacea-benefits-dosing",
     "type": "reference",
     "summary": "Reference on echinacea: cold prevention, upper respiratory infections, immune support. E. purpurea aerial extract most studied; ~900 mg/day. Avoid with autoimmune disease or immunosuppressants. Always discuss with your doctor."
   },
@@ -3980,6 +4140,7 @@
       "mediterranean diet"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/electrolytes-guide",
     "type": "reference",
     "summary": "Reference on electrolytes: hydration, muscle cramps, fatigue, heart rhythm, bone health. Key minerals: sodium, potassium, magnesium, calcium. Supplements mainly needed for endurance exercise >90 min or heat exposure. Always discuss with your doctor."
   },
@@ -4040,6 +4201,7 @@
       "seed oil"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/extra-virgin-olive-oil-benefits",
     "type": "reference",
     "summary": "Reference on extra virgin olive oil: heart health, blood sugar, brain health, inflammation. Most studied at 2-4 tablespoons/day replacing saturated fat. Polyphenol-rich EVOO preferred over refined oil. Always discuss with your doctor."
   },
@@ -4072,6 +4234,7 @@
       "epilepsy"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/gaba-supplement-evidence",
     "type": "reference",
     "summary": "Reference on GABA: stress, relaxation, sleep, blood pressure, muscle mass. Limited evidence oral GABA crosses the blood-brain barrier; effects are modest. Dosing ranges 100-3,000 mg depending on use. Avoid in pregnancy and with alcohol. Always discuss with your doctor."
   },
@@ -4107,6 +4270,7 @@
       "insulin resistance"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/garlic-supplements-benefits-forms",
     "type": "reference",
     "summary": "Reference on garlic: high blood pressure, cholesterol, immune support, joint pain, atherosclerosis. Forms include aged garlic extract, powder, black garlic. Bleeding risk; stop before surgery; interacts with warfarin. Always discuss with your doctor."
   },
@@ -4142,6 +4306,7 @@
       "glucosamine hydrochloride"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/glucosamine-chondroitin-joint-supplements",
     "type": "reference",
     "summary": "Reference on joint supplements: glucosamine, chondroitin, MSM, boswellia, collagen, and curcumin for osteoarthritis and joint pain. For adults with knee or hand pain. Forms, dosing, evidence quality, and safety. Always discuss with your doctor."
   },
@@ -4182,6 +4347,7 @@
       "antioxidant"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/glycine-supplement-guide-benefits-forms-dosage-and-side-effects",
     "type": "reference",
     "summary": "Reference on glycine: sleep quality, overactive bladder, joint health, glutathione/antioxidant support. Conditionally essential amino acid; older adults, athletes may have higher needs. Forms: powder, capsules, magnesium glycinate, collagen peptides; 3-5 g/day typical. Always discuss with your doctor."
   },
@@ -4215,6 +4381,7 @@
       "microbiome"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/green-coffee-bean-extract",
     "type": "reference",
     "summary": "Reference on green coffee bean extract: weight loss, blood sugar, blood pressure, cholesterol. Useful for overweight or diabetic adults. Standardized extracts (Svetol/GCA) 200-400 mg/day; key study retracted, evidence modest. Contains caffeine; avoid in pregnancy. Always discuss with your doctor."
   },
@@ -4260,6 +4427,7 @@
       "longevity"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/lutein-zeaxanthin-eye-health-guide",
     "type": "reference",
     "summary": "Reference on lutein and zeaxanthin: eye health, macular degeneration (AMD) prevention and slowing, blue light protection, and cataract risk reduction; food sources (leafy greens, egg yolk); dosing (10mg lutein/2mg zeaxanthin); and evidence quality. Always discuss with your doctor."
   },
@@ -4304,6 +4472,7 @@
       "olive oil"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/lycopene-benefits-dosing",
     "type": "reference",
     "summary": "Reference on lycopene: antioxidant, prostate cancer, heart health, blood pressure, skin UV protection, male infertility. Tomato oleoresin or synthetic forms, 6-25 mg/day by indication; always take with fat. Always discuss with your doctor."
   },
@@ -4344,6 +4513,7 @@
       "serotonin"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/melatonin-supplements-evidence-dosing-forms-and-safety",
     "type": "reference",
     "summary": "Reference on melatonin: sleep onset, jet lag, delayed sleep phase, migraine prevention. Children with ASD/ADHD, menopausal women, shift workers. Start low (0.3-3 mg). Caution with diabetes, fractures. Always discuss with your doctor."
   },
@@ -4386,6 +4556,7 @@
       "kidney"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/milk-thistle-silymarin-benefits-dosing",
     "type": "reference",
     "summary": "Reference on milk thistle (silymarin): liver health, fatty liver, blood sugar in type 2 diabetes, drug-induced liver injury, menopausal hot flashes. Standardized extract 200 mg 2-3x/day. Warfarin interaction risk. Always discuss with your doctor."
   },
@@ -4435,6 +4606,7 @@
       "amino acid"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/nac-benefits-dosing",
     "type": "reference",
     "summary": "Reference on NAC (N-acetyl cysteine): glutathione precursor, liver protection (paracetamol/acetaminophen overdose, NAFLD), respiratory mucus clearance, PCOS, and mental health use; dosing and forms; safety and drug interactions. Covers liver health, lung conditions, PCOS. Always discuss with your doctor."
   },
@@ -4487,6 +4659,7 @@
       "butyrate"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/prebiotics-types-dosing-benefits",
     "type": "reference",
     "summary": "Reference on prebiotics: gut health, constipation, IBS, mood, anxiety, blood sugar, immune support. Most adults get far less than clinical doses. Types: inulin, FOS, GOS, PHGG, psyllium; 2-20 g/day by indication. Always discuss with your doctor."
   },
@@ -4528,6 +4701,7 @@
       "plant protein"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/protein-powder-guide",
     "type": "reference",
     "summary": "Reference on protein powders: muscle building, muscle maintenance, sarcopenia prevention, weight management. Older adults, athletes, vegans/vegetarians. Types: whey (fast), casein (slow), pea, soy, rice, collagen. Dosing 0.55-0.80 g/lb for athletes. Always discuss with your doctor."
   },
@@ -4571,6 +4745,7 @@
       "statin"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/quercetin-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on quercetin: blood pressure, blood sugar, allergies, joint pain, prostatitis, immune support. Adults with hypertension, insulin resistance, or chronic prostatitis. Forms include free-form, phytosome (better absorbed), EMIQ; 500-1000 mg/day typical. Take with fat. Always discuss with your doctor."
   },
@@ -4610,6 +4785,7 @@
       "fiber"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/red-yeast-rice-monacolin-k-evidence-guide",
     "type": "reference",
     "summary": "Reference on red yeast rice: LDL cholesterol lowering, heart attack risk reduction. For high cholesterol or statin-intolerant adults. Monacolin K (like lovastatin); 1,200-2,400 mg/day. Muscle, liver, citrinin risks. Always discuss with your doctor."
   },
@@ -4657,6 +4833,7 @@
       "hba1c"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/resveratrol-benefits-dosing-safety",
     "type": "reference",
     "summary": "Reference on resveratrol: heart health, blood pressure, blood sugar, and memory. Mixed human evidence — animal benefits rarely translate. Trans-resveratrol preferred; 150–500 mg/day; higher doses may raise LDL. Always discuss with your doctor."
   },
@@ -4696,6 +4873,7 @@
       "copper"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/selenium-benefits-dosing-safety",
     "type": "reference",
     "summary": "Reference on selenium: thyroid hormone metabolism, antioxidant defense, immune function, and fertility; food sources (Brazil nuts richest); organic vs inorganic forms; safe dosing range and toxicity ceiling. Covers thyroid disease and low-intake populations. Always discuss with your doctor."
   },
@@ -4744,6 +4922,7 @@
       "potassium"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/shilajit-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on shilajit: testosterone support in older men, bone density in postmenopausal women, exercise fatigue reduction. Most evidence is small, short-term, and industry-funded. Resin (300-2000mg/day) or standardized extract (200-500mg/day). Heavy metal contamination risk — third-party testing essential. Always discuss with your doctor."
   },
@@ -4790,6 +4969,7 @@
       "aging"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/turmeric-curcumin-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on turmeric and curcumin: joint pain, osteoarthritis, gut health, depression, cholesterol. Enhanced forms (Meriva, BCM-95) with a fatty meal; 500-1500 mg/day. Liver caution with high-bioavailability forms. Always discuss with your doctor."
   },
@@ -4819,6 +4999,7 @@
       "restless legs syndrome"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/valerian-root-benefits-dosing",
     "type": "reference",
     "summary": "Reference on valerian root: sleep aid, anxiety, relaxation. Mixed evidence for insomnia (modest subjective benefit, weak objective data); not recommended for restless legs. Standardized extract 300-900 mg before bed. Avoid in pregnancy. Always discuss with your doctor."
   },
@@ -4864,6 +5045,7 @@
       "eye health"
     ],
     "publishedAt": "2025-05-06T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-e-forms-evidence-safety",
     "type": "reference",
     "summary": "Reference on vitamin E: antioxidant, fatty liver (NASH), Alzheimer's, heart health. RDA 15 mg/day; diet usually sufficient. Supplements may raise prostate cancer risk; natural vs synthetic forms differ in potency. Always discuss with your doctor."
   },
@@ -4887,6 +5069,7 @@
       "sleep"
     ],
     "publishedAt": "2025-04-30T00:47:40Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/exercise-skin-aging",
     "youtube": "https://www.youtube.com/watch?v=_YU77NJ04XM",
     "summary": "Dr Brad’s skin aging and exercise post: combine resistance and aerobic training for best results. Resistance training boosts dermal thickness via biglycan; aerobic raises IL-15 and reduces inflammation. Both improve elasticity and collagen."
   },
@@ -4916,6 +5099,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-04-30T00:47:26Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/intermittent-fasting-meal-timing",
     "youtube": "https://www.youtube.com/watch?v=uXV5GRrZH9Q",
     "summary": "Dr Brad’s intermittent fasting post: IF benefits come from eating less, not timing magic (Cochrane 2021). Circadian meal timing matters — earlier eating improves blood sugar, weight, triglycerides, sleep. Hack: brush teeth 30 min after dinner."
   },
@@ -4944,6 +5128,7 @@
       "metabolic syndrome"
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/chromium-picolinate-glycinate-benefits",
     "type": "reference",
     "summary": "Reference on chromium: blood sugar, insulin resistance, PCOS. Most evidence in type 2 diabetes (200-1,000 mcg/day); little benefit in healthy adults. Forms: picolinate (most studied), glycinate. Always discuss with your doctor."
   },
@@ -4992,6 +5177,7 @@
       "collagen powder"
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/collagen-peptides-benefits-forms-dosing-and-side-effects",
     "type": "reference",
     "summary": "Reference on collagen peptides: skin aging and wrinkle reduction, joint pain and mobility, muscle recovery, hydrolysed vs gelatin forms, dosing (10–15g/day), and evidence quality. Covers who benefits — skin health, joint issues, older adults. Always discuss with your doctor."
   },
@@ -5024,6 +5210,7 @@
       "skin"
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/cranberry-uti-prevention-forms-dosing",
     "type": "reference",
     "summary": "Reference on cranberry: UTI prevention, bladder health. Women with recurrent UTIs, children, men with urinary symptoms. Juice or capsules (36 mg PACs/day); kidney stone risk at high doses; warfarin interaction. Always discuss with your doctor."
   },
@@ -5078,6 +5265,7 @@
       "gut health"
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/flaxseed-oil-omega-6-evidence-guide",
     "type": "reference",
     "summary": "Reference on flaxseed oil, evening primrose, borage, and hemp oils: heart health, blood pressure, acne, dry eye, joint pain. ALA for vegans; whole flaxseed best for blood pressure. GLA may lower seizure threshold. Always discuss with your doctor."
   },
@@ -5112,6 +5300,7 @@
       "glycine"
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/l-tryptophan-5-htp-benefits-dosing",
     "type": "reference",
     "product": "sleep",
     "summary": "Reference on L-tryptophan and 5-HTP: sleep, mood, depression, anxiety, migraine, fibromyalgia. Serotonin precursors. L-tryptophan 250mg-1g; 5-HTP 50-300mg at bedtime. Do not combine with SSRIs or MAOIs. Always discuss with your doctor."
@@ -5148,6 +5337,7 @@
       "kidney"
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/lions-mane-chaga-benefits-dosing",
     "type": "reference",
     "summary": "Reference on lion's mane and chaga mushrooms: cognitive support, mood, immune function. Lion's mane may help mild cognitive impairment; chaga has no human trials. Forms differ (fruiting body vs mycelium). Chaga carries kidney injury risk from oxalates. Always discuss with your doctor."
   },
@@ -5185,6 +5375,7 @@
       "heart health"
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/mangosteen-supplement-guide",
     "type": "reference",
     "summary": "Reference on mangosteen: antioxidant, anti-inflammatory, acne, bad breath. Mostly preclinical evidence; two small RCTs only. Pericarp extract 200-400 mg/day. Avoid chronic high-dose juice (lactic acidosis risk). Always discuss with your doctor."
   },
@@ -5220,6 +5411,7 @@
       "skin"
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/manuka-honey-benefits-dosing",
     "type": "reference",
     "summary": "Reference on manuka honey: wound healing, acid reflux (GERD), antibacterial, dry eye, oral health. UMF 15+ for therapeutic use; 1-2 tsp/day general wellness, 5g three times daily for GERD. Avoid in infants. Always discuss with your doctor."
   },
@@ -5264,6 +5456,7 @@
       "sarcopenia"
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/nad-boosters-nmn-nr-nadh-evidence-guide",
     "type": "reference",
     "summary": "Reference on NAD boosters (NMN, NR, NADH): energy, fatigue, muscle, cognitive function. Adults with chronic fatigue, insulin resistance, or age-related decline. NMN 250-900mg/day, NR 250-1000mg/day, NADH 5-20mg; human trial results largely disappointing. Cancer and kidney concerns noted. Always discuss with your doctor."
   },
@@ -5299,6 +5492,7 @@
       "heart health"
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/olive-leaf-extract-benefits",
     "type": "reference",
     "summary": "Reference on olive leaf extract: blood pressure, cholesterol, blood sugar. Evidence mainly in hypertension or type 2 diabetes. Dose by oleuropein content (100-136 mg/day); may interact with BP and diabetes drugs. Always discuss with your doctor."
   },
@@ -5345,6 +5539,7 @@
       "dpa"
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/omega-3-fish-oil-guide",
     "type": "reference",
     "summary": "Reference on omega-3 (fish oil): heart health, triglyceride reduction, brain and cognitive benefits, EPA vs DHA distinction, oily fish vs supplement dosing, and safety. Covers the major cardiovascular trials in detail — VITAL (28% MI reduction, NEJM 2018), REDUCE-IT (Vascepa / icosapent ethyl, 25% MACE reduction with mineral-oil placebo controversy), STRENGTH (null with corn-oil placebo), ASCEND, JELIS — plus dose-response, AF risk at high doses, and who benefits most (CVD, high triglycerides, low fish intake). Always discuss with your doctor."
   },
@@ -5389,6 +5584,7 @@
       "exercise"
     ],
     "publishedAt": "2025-04-29T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/weight-loss-supplements-evidence-guide",
     "type": "reference",
     "summary": "Reference on weight loss supplements: appetite, fat burning, metabolism. For adults with overweight or obesity. Covers caffeine, green tea, CLA, chromium, garcinia cambogia, fiber; most show modest 1-2 kg benefit. Always discuss with your doctor."
   },
@@ -5426,6 +5622,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-04-28T17:51:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/berberine-evidence-review",
     "youtube": "https://www.youtube.com/watch?v=WAo-f0_s9p0",
     "summary": "“Dr Brad’s berberine post: modest evidence for blood sugar and cholesterol in pre-diabetics/type 2 diabetes; not recommended for healthy adults due to possible muscle and testosterone harms. Covers metformin comparison, weight loss, LDL, HbA1c, GLP-1.”"
   },
@@ -5445,6 +5642,7 @@
       "wrinkles"
     ],
     "publishedAt": "2025-04-24T01:49:02Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/hyaluronic-acid-skin-supplements",
     "youtube": "https://www.youtube.com/watch?v=b9tGX9FTnPI",
     "summary": "Dr Brad’s hyaluronic acid post: oral HA supplements reduce wrinkles by up to 18.8% in RCTs despite only 0.2% bioavailability — gut bacteria metabolites drive the effect, not direct absorption. Covers sodium hyaluronate 200mg, molecular weight myth, skin aging, wrinkles, safety."
   },
@@ -5481,6 +5679,7 @@
       "kidney"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/arginine-benefits-dosing-safety",
     "type": "reference",
     "summary": "Reference on L-arginine: blood pressure, erectile dysfunction, heart failure, exercise endurance. Forms: L-arginine HCl (deduct 17% for free arginine), Nitrosigine. Doses 4-15 g/day; contraindicated post-heart attack. Always discuss with your doctor."
   },
@@ -5533,6 +5732,7 @@
       "longevity"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/cholesterol-supplements-evidence-dosing",
     "type": "reference",
     "summary": "Reference on cholesterol-lowering supplements: high LDL, high triglycerides, heart disease risk. For statin-intolerant adults or mild hypercholesterolemia. Plant sterols/stanols, psyllium, omega-3s best evidenced; red yeast rice variable. Always discuss with your doctor."
   },
@@ -5566,6 +5766,7 @@
       "liver"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/garcinia-cambogia-hca-evidence",
     "type": "reference",
     "summary": "Reference on garcinia cambogia (HCA): weight loss, appetite suppression. Clinical evidence is weak — women-only modest benefit. Serious liver injury risk (transplant, death cases reported). Avoid with SSRIs. Unsafe in bipolar disorder. Doses 900-1500mg HCA/day before meals. Always discuss with your doctor."
   },
@@ -5597,6 +5798,7 @@
       "anxiety"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/ginkgo-biloba-benefits-dosing-safety",
     "type": "reference",
     "summary": "Reference on ginkgo biloba: memory, brain health, vertigo, tinnitus. Evidence largely disappointing; modest benefit for vertigo and diabetic nerve pain. Standardized extract, 120-240 mg/day. Bleeding risk. Always discuss with your doctor."
   },
@@ -5632,6 +5834,7 @@
       "fiber"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/glutamine-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on glutamine (L-glutamine): gut health, leaky gut, IBS-D, immune support, muscle recovery. Benefits most during stress, illness, or intense exercise. Powder form preferred; 5-15 g/day typical. Avoid in liver failure, kidney disease, active cancer. Always discuss with your doctor."
   },
@@ -5671,6 +5874,7 @@
       "gut health"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/iodine-kelp-benefits-dosage",
     "type": "reference",
     "summary": "Reference on iodine and kelp: thyroid health, fetal brain development. Deficiency risk in pregnant women, vegans, salt-avoiders. Potassium iodide preferred over kelp; RDA 150 mcg/day. Excess risks thyroid dysfunction. Always discuss with your doctor."
   },
@@ -5703,6 +5907,7 @@
       "stress"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/l-theanine-benefits-dosing-safety",
     "type": "reference",
     "summary": "Reference on L-theanine: relaxation, anxiety, sleep, focus. Found in green tea; also taken as supplement. Common dose 200-400 mg/day; forms include Suntheanine. Clinical evidence modest — benefits clearest in schizophrenia; limited for stress, sleep, or anxiety disorders. Always discuss with your doctor."
   },
@@ -5742,6 +5947,7 @@
       "fatigue"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/dgl-licorice-forms-dosing-safety",
     "type": "reference",
     "summary": "Reference on licorice and DGL: heartburn, acid reflux, peptic ulcers, canker sores. DGL is safer; regular licorice raises blood pressure and depletes potassium. Avoid in hypertension, pregnancy, heart disease. Always discuss with your doctor."
   },
@@ -5780,6 +5986,7 @@
       "inflammation"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/menopause-supplements-phytoestrogens",
     "type": "reference",
     "product": "sleep",
     "summary": "Reference on menopause supplements: hot flashes, night sweats, bone loss. Soy isoflavones (50-120 mg/day), red clover, black cohosh, progesterone cream. Liver risk (black cohosh); soy: thyroid, breast cancer risk. Always discuss with your doctor."
@@ -5812,6 +6019,7 @@
       "brain health"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/nitric-oxide-supplements-guide",
     "type": "reference",
     "summary": "Reference on nitric oxide supplements: blood pressure, exercise, erectile dysfunction. Adults with hypertension or ED. L-arginine, L-citrulline, beetroot nitrate; 3-8g/day. Avoid post-heart attack or kidney disease. Always discuss with your doctor."
   },
@@ -5844,6 +6052,7 @@
       "fish oil"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/phosphatidylserine-benefits-forms-dosing",
     "type": "reference",
     "product": "microvitamin",
     "summary": "Reference on phosphatidylserine (PS): memory, cognitive decline, stress, cortisol reduction. Older adults with memory concerns; athletes managing exercise stress. Soy/sunflower forms (100-300 mg/day); PS-DHA conjugate shows more promise. Caution with blood thinners. Always discuss with your doctor."
@@ -5882,6 +6091,7 @@
       "hyperkalemia"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/potassium-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on potassium: blood pressure, stroke risk, heart health, muscle cramps, electrolyte balance. Deficiency common in people eating processed foods or taking diuretics. Forms include citrate, gluconate, chloride; supplements typically capped at 99 mg/pill. Caution with kidney disease. Always discuss with your doctor."
   },
@@ -5927,6 +6137,7 @@
       "copper"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-c-benefits-dosing",
     "type": "reference",
     "summary": "Reference on vitamin C: immune support, collagen synthesis, antioxidant, modest blood pressure reduction, shorter cold duration. Higher risk of deficiency in smokers, post-bariatric surgery, restrictive diets. Ascorbic acid preferred form; 75-200 mg/day typical; kidney stone risk at higher doses in men. Always discuss with your doctor."
   },
@@ -5967,6 +6178,7 @@
       "brain health"
     ],
     "publishedAt": "2025-04-22T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/zinc-supplement-guide-forms-dosing-benefits-and-safety",
     "type": "reference",
     "summary": "Reference on zinc: immune function, cold duration, wound healing, acne, eye health. At risk: vegans, older adults, gut disorders. Forms: glycinate; gluconate/acetate for cold lozenges. RDA 8-11 mg, UL 40 mg. Always discuss with your doctor."
   },
@@ -5990,6 +6202,7 @@
       "vitamin d"
     ],
     "publishedAt": "2025-04-18T22:00:59Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d-supplements-guidelines",
     "youtube": "https://www.youtube.com/watch?v=lseY2Vk5Rq8",
     "summary": "Dr Brad’s vitamin D post: most adults don’t benefit from high-dose supplements; Endocrine Society now recommends 600-800 IU daily for general population. Covers deficiency, bone density, cancer, depression, falls risk, pregnancy, prediabetes, and adults over 75."
   },
@@ -6016,6 +6229,7 @@
       "statin"
     ],
     "publishedAt": "2025-04-16T22:47:20Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/keto-ldl-coronary-plaque-progression",
     "youtube": "https://www.youtube.com/watch?v=JE1EACWZiWw",
     "summary": "“Dr Brad's KETO-CTA post: lean mass hyper-responders (LMHRs) on ketogenic diets show rapid coronary plaque progression despite pristine metabolic health, matching plaque growth rates of type 2 diabetics. Covers high LDL, ApoB, atherosclerosis, keto diet cardiovascular risk.”"
   },
@@ -6052,6 +6266,7 @@
       "longevity"
     ],
     "publishedAt": "2025-04-15T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/acai-berry-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on acai berry: antioxidant effects, modest anti-inflammatory benefits, possible HDL cholesterol support, exercise recovery. Evidence is limited; no proven weight loss effect. Frozen pulp or freeze-dried powder preferred over capsules (extreme quality variability). Caution with blood thinners, diabetes medications. Always discuss with your doctor."
   },
@@ -6090,6 +6305,7 @@
       "rhodiola"
     ],
     "publishedAt": "2025-04-15T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/ashwagandha-evidence-guide",
     "type": "reference",
     "summary": "Reference on ashwagandha: stress, anxiety, sleep, testosterone (men), cognitive function. Most studied in adults with stress or insomnia. Forms: KSM-66, Sensoril, Shoden; 300-600 mg/day standardized extract for 8-12 weeks. Liver injury and thyroid effects reported. Always discuss with your doctor."
   },
@@ -6127,6 +6343,7 @@
       "obesity"
     ],
     "publishedAt": "2025-04-15T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/berberine-benefits-dosing",
     "type": "reference",
     "summary": "Reference on berberine: blood sugar, cholesterol, insulin resistance, weight loss. People with type 2 diabetes, prediabetes, or high LDL. Forms include HCl, phytosome, dihydroberberine; typical doses 900-1500 mg/day with meals. Always discuss with your doctor."
   },
@@ -6165,6 +6382,7 @@
       "hormone"
     ],
     "publishedAt": "2025-04-15T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/boron-supplement-guide",
     "type": "reference",
     "summary": "Reference on boron: bone health, joint pain (osteoarthritis), vitamin D, cognition. Forms: calcium fructoborate, citrate, glycinate; 1-3 mg/day general, 6 mg for joints. Caution with estrogen-sensitive conditions. Always discuss with your doctor."
   },
@@ -6206,6 +6424,7 @@
       "liver health"
     ],
     "publishedAt": "2025-04-15T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/glutathione-forms-dosing-benefits",
     "type": "reference",
     "summary": "Reference on glutathione: antioxidant, liver health, immune support, aging, cognitive function. Levels decline with age and in chronic disease. Forms include NAC (most evidence-backed), GlyNAC, liposomal, and reduced glutathione; typical dosing 600-1800 mg/day NAC. Always discuss with your doctor."
   },
@@ -6245,6 +6464,7 @@
       "calcium"
     ],
     "publishedAt": "2025-04-15T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/iron-supplement-guide",
     "type": "reference",
     "summary": "Reference on iron: anemia, fatigue, restless legs, pregnancy, athletic performance. Common in women, adolescent girls, vegetarians, athletes. Ferrous bisglycinate best tolerated; 50-100 mg/day for deficiency. Always discuss with your doctor."
   },
@@ -6283,6 +6503,7 @@
       "longevity"
     ],
     "publishedAt": "2025-04-15T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/nattokinase-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on nattokinase: blood clot prevention, blood pressure, heart health. Adults with cardiovascular risk, hypertension, or interest in clot-dissolving enzymes. Enteric-coated or softgel forms, 2000-4000 FU/day; avoid with blood thinners or aspirin. Always discuss with your doctor."
   },
@@ -6331,6 +6552,7 @@
       "anti-aging"
     ],
     "publishedAt": "2025-04-15T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/reishi-mushroom-evidence-guide",
     "type": "reference",
     "summary": "Reference on reishi mushroom: immune support, cancer adjunct, blood sugar, liver health. Evidence mostly preclinical; small trials. Extract or powder 1,500-5,400 mg/day. Liver injury risk; avoid with anticoagulants. Always discuss with your doctor."
   },
@@ -6399,6 +6621,7 @@
       "asthma"
     ],
     "publishedAt": "2025-04-15T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d3-supplement-guide-dosing-forms-benefits-safety",
     "type": "reference",
     "summary": "Reference on vitamin D: benefits (bone health, immune function, mood), common deficiency symptoms (fatigue, bone pain, low immunity), forms (D3 preferred over D2), optimal dosing and blood levels, and safety ceiling. Covers dark-skin, elderly, and northern-latitude populations at risk. Always discuss with your doctor."
   },
@@ -6432,6 +6655,7 @@
       "calcium"
     ],
     "publishedAt": "2025-04-08T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-forms-benefits-dosing",
     "type": "reference",
     "summary": "Reference on magnesium: benefits for sleep, muscle cramps, blood pressure, and anxiety; comparison of forms (glycinate and bisglycinate preferred over oxide); dosing guidance; and common deficiency signs. Covers who needs more — stress, poor sleep, leg cramps, athletes. Always discuss with your doctor."
   },
@@ -6454,6 +6678,7 @@
       "zinc"
     ],
     "publishedAt": "2025-04-07T02:37:28Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/sunscreen-spf-guide-mineral-chemical",
     "youtube": "https://www.youtube.com/watch?v=oaAwzHi0Lbw",
     "summary": "Dr Brad’s sunscreen post: recommends mineral or newer chemical sunscreens (bemotrizinol, TriAsorB) SPF 50+ broad spectrum; avoid 12 FDA-flagged ingredients with hormone-disruption concerns. Covers wrinkles, skin cancer, UV damage, zinc oxide."
   },
@@ -6474,6 +6699,7 @@
       "strength training"
     ],
     "publishedAt": "2025-04-02T06:54:33Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/creatine-lean-mass-study",
     "youtube": "https://www.youtube.com/watch?v=leuiEKMAiuM",
     "summary": "Dr Brad's analysis of a 2024 study questioning creatine efficacy — why the headlines were misleading, what the evidence actually shows about creatine for muscle strength and lean mass, and why Brad continues to recommend creatine supplementation. Always discuss with your doctor."
   },
@@ -6497,6 +6723,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-04-02T06:44:05Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/salt-substitute-blood-pressure",
     "youtube": "https://www.youtube.com/watch?v=h7pWaoW6idQ",
     "summary": "Dr Brad’s salt substitute post: switching to potassium-chloride salt substitute cut 5-year death risk 12% and stroke risk 14% in a 15,000-person RCT. Covers blood pressure, sodium, potassium, fiber, lean protein, and weight loss."
   },
@@ -6561,6 +6788,7 @@
       "citicoline"
     ],
     "publishedAt": "2025-04-01T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/multivitamins-what-the-evidence-actually-shows",
     "type": "reference",
     "summary": "Reference on multivitamins: nutrient gaps, memory, bone and immune health. For adults with poor diet or deficiency risk. COSMOS trial found cognitive benefit in older adults; mixed evidence for heart disease, cancer. Always discuss with your doctor."
   },
@@ -6591,6 +6819,7 @@
       "uric acid"
     ],
     "publishedAt": "2025-03-26T19:59:34Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/creatine-supplements-brain-health-muscle-safety-evidence",
     "youtube": "https://www.youtube.com/watch?v=7gyOZrfPWX8",
     "product": "microvitamin-plus",
     "summary": "Dr Brad’s creatine post: recommends 5g daily creatine monohydrate for muscle, cognition, and healthy aging. Covers memory benefits in older adults and women, osteosarcopenia, cardiovascular markers, hair loss and kidney safety myths, loading phase myth."
@@ -6627,6 +6856,7 @@
       "triglycerides"
     ],
     "publishedAt": "2025-03-25T23:52:48Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/taurine-supplement-benefits",
     "youtube": "https://www.youtube.com/watch?v=mdwZIFEHfu4",
     "summary": "Dr Brad’s taurine post: promising evidence supports it for metabolic health (blood sugar, blood pressure, cholesterol, triglycerides) and exercise performance; aging/lifespan data is still preliminary. Covers dosing 1-6g/day, dementia risk, safety."
   },
@@ -6650,6 +6880,7 @@
       "wrinkles"
     ],
     "publishedAt": "2025-03-24T00:02:57Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/red-light-therapy-skin-aging",
     "youtube": "https://www.youtube.com/watch?v=_bdK_Z65R38",
     "summary": "Dr Brad’s red light therapy mask post: promising but limited evidence (trials show up to 36% wrinkle reduction, no side effects), but not yet recommended over sunscreen + tretinoin. Covers photoaging, collagen, LED masks, wrinkles, skin aging."
   },
@@ -6680,6 +6911,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-03-17T00:43:40Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/high-fibre-diet-benefits-cuts-death-risk-by-23-percent",
     "youtube": "https://www.youtube.com/watch?v=ShWcFg8jdPk",
     "summary": "Dr Brad’s dietary fibre post: high fibre intake (25-32g/day) cuts all-cause mortality by 23% per a 64-study meta-analysis. Covers heart disease, LDL cholesterol, blood pressure, weight loss, diabetes, gut health, colorectal cancer, psyllium husk, and pairing with protein."
   },
@@ -6704,6 +6936,7 @@
       "wrinkles"
     ],
     "publishedAt": "2025-03-12T23:28:06Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/collagen-peptides-skin-wrinkles",
     "youtube": "https://www.youtube.com/watch?v=m4Tx7ZyBbwQ",
     "summary": "Dr Brad’s collagen peptides post: evidence supports 2.5-15g daily to reduce wrinkles, elasticity, and skin hydration. Covers 2023 meta-analysis of 26 RCTs, 14-31% wrinkle reduction, collagen vs protein debate, safety, and sunscreen use."
   },
@@ -6744,6 +6977,7 @@
       "zinc"
     ],
     "publishedAt": "2025-03-11T22:57:23Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/best-diet-health-evidence",
     "youtube": "https://www.youtube.com/watch?v=6k5q80tGIPg",
     "summary": "Dr Brad’s best diet post: optimize around 3 principles — essential vitamins/minerals (potassium, magnesium), 1.6g/kg protein favoring plants, and high fiber. Legumes top the list. Avoid processed carbs, sugar, saturated fat, and excess salt."
   },
@@ -6770,6 +7004,7 @@
       "oxidative stress"
     ],
     "publishedAt": "2025-03-05T21:40:11Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/methylene-blue-aging-evidence",
     "youtube": "https://www.youtube.com/watch?v=0Yi_gd2otEg",
     "summary": "Dr Brad’s methylene blue post: not recommended — no human aging trials, risks include serotonin syndrome and blood disorders. Covers mitochondria, cognitive studies, Alzheimer’s, biohacking, longevity alternatives."
   },
@@ -6798,6 +7033,7 @@
       "tmg"
     ],
     "publishedAt": "2025-03-02T16:40:02Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/testosterone-therapy-men-guide",
     "youtube": "https://www.youtube.com/watch?v=8ZN1xCr4SPs",
     "summary": "Dr Brad’s testosterone therapy post: only use TRT if testosterone is clinically low with symptoms — not for age-related decline. Covers TRAVERSE trial flaws, cardiovascular risks, erythrocytosis, and addressing obesity and exercise first."
   },
@@ -6818,6 +7054,7 @@
       "wrinkles"
     ],
     "publishedAt": "2025-03-01T23:09:56Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/laser-skin-rejuvenation-guide",
     "youtube": "https://www.youtube.com/watch?v=lb7Zupcn0Qo",
     "summary": "Dr Brad’s laser skin rejuvenation post: fractional lasers best balance effectiveness and recovery; red light therapy lacks sufficient evidence. Covers CO2, Er, IPL, radiofrequency, infrared, photodynamic, and fractional treatments for wrinkles, photoaging, skin laxity."
   },
@@ -6846,6 +7083,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-02-25T23:56:58Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/blood-pressure-dementia-risk",
     "youtube": "https://www.youtube.com/watch?v=5yCsB1iRR1o",
     "summary": "Dr Brad’s blood pressure post: the old 140 systolic target is too high — aim for under 120 to protect both heart and brain. Covers dementia risk, SPRINT trial, DASH diet, sodium, exercise, and weight loss for hypertension."
   },
@@ -6881,6 +7119,7 @@
       "vitamin e"
     ],
     "publishedAt": "2025-02-24T21:22:36Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/supplements-hidden-side-effects",
     "youtube": "https://www.youtube.com/watch?v=eeXhF6b_P0o",
     "summary": "Dr Brad’s supplement safety post: avoid resveratrol, metformin (non-diabetics), high-dose vitamin C, and vitamin E — all lack lifespan evidence and blunt exercise benefits; vitamin E may increase mortality and prostate cancer risk."
   },
@@ -6908,6 +7147,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-02-23T23:47:06Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/lower-blood-pressure-naturally",
     "youtube": "https://www.youtube.com/watch?v=szMdop7aBxw",
     "summary": "Dr Brad’s blood pressure post: diet, exercise, and sleep can meaningfully lower hypertension without medication. Covers DASH diet, potassium, fibre, isometric exercise (wall squats best per 2023 meta-analysis), and sleep quality. For hypertension, high BP, cardiovascular risk."
   },
@@ -6932,6 +7172,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-02-22T07:41:55Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/glp-1-weight-loss-evidence-guide",
     "youtube": "https://www.youtube.com/watch?v=Cg6Ahe8t8zQ",
     "summary": "Dr Brad’s Ozempic/GLP-1 post: GLP-1 meds are evidence-based for obesity (BMI 30+) with proper oversight. Muscle loss and thyroid cancer fears are overstated; gallstone risk modestly elevated. Covers semaglutide, tirzepatide, Mounjaro, Zepbound."
   },
@@ -6956,6 +7197,7 @@
       "skin"
     ],
     "publishedAt": "2025-02-16T20:15:44Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/bpc-157-peptide-evidence",
     "youtube": "https://www.youtube.com/watch?v=Y6smr1o-f9o",
     "summary": "Dr Brad’s BPC-157 post: skip it — no human RCTs exist, only animal data. Covers injury healing claims, tendon repair, peptide safety unknowns, USADA ban, and proven alternatives (creatine, betaine) for recovery."
   },
@@ -6983,6 +7225,7 @@
       "ultrasound"
     ],
     "publishedAt": "2025-02-15T00:14:11Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/heart-healthy-diet-arterial-plaque",
     "youtube": "https://www.youtube.com/watch?v=h3V3AnVf_w8",
     "summary": "Dr Brad’s artery health post: Mediterranean and DASH diets best reduce atherosclerotic plaque — limit saturated fat, prioritize unsaturated fats, fiber, and plant protein. Covers atherosclerosis reversal, LDL cholesterol, cardiovascular disease, heart attack prevention."
   },
@@ -7012,6 +7255,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-02-12T03:47:51Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/apple-cider-vinegar-weight-loss-evidence",
     "youtube": "https://www.youtube.com/watch?v=AcUbzqJwDbg",
     "summary": "Dr Brad’s apple cider vinegar post: ACV evidence is too weak to recommend for weight loss or blood sugar control. Covers Mediterranean diet, high-protein diet, exercise snacks, metformin, GLP-1 medications for obesity and blood sugar management."
   },
@@ -7032,6 +7276,7 @@
       "vitamin k2"
     ],
     "publishedAt": "2025-02-09T04:39:49Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/dental-plaque-removal-guide",
     "youtube": "https://www.youtube.com/watch?v=sa2S90cYzzA",
     "summary": "Dr Brad’s dental plaque post: recommends a 5-step oral hygiene routine — floss first, water flosser, 2-3 min brushing, 1500ppm fluoride toothpaste, and dental visits every 6-12 months. Covers gum disease, cavities, PFAS-free floss, electric toothbrush, xylitol, vitamin D3/K2."
   },
@@ -7055,6 +7300,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-02-06T23:11:41Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/intermittent-fasting-evidence-guide",
     "youtube": "https://www.youtube.com/watch?v=nebqCIeMXL4",
     "summary": "Dr Brad’s intermittent fasting post: meal timing matters more than window length — eat early, skip late dinners not breakfast, and prioritize protein to protect muscle. Covers weight loss, blood sugar, circadian rhythm, muscle mass, autophagy, time-restricted eating."
   },
@@ -7086,6 +7332,7 @@
       "testosterone"
     ],
     "publishedAt": "2025-02-04T23:48:02Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/heart-attack-prevention-ldl-statins",
     "youtube": "https://www.youtube.com/watch?v=SZy8hfMbU90",
     "summary": "Dr Brad’s heart attack prevention post: LDL is causal for atherosclerosis; target below 50-60 mg/dL. Covers Mediterranean diet, statins (rosuvastatin $5.45/month), ezetimibe, cholesterol controversy, and statin myths (dementia, testosterone, muscle pain)."
   },
@@ -7116,6 +7363,7 @@
       "zinc"
     ],
     "publishedAt": "2025-01-29T16:30:23Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/cholesterol-supplements-evidence",
     "summary": "Dr Brad's ZMA post: evidence doesn't support ZMA over individual ingredients; the funded 2000 study showed benefits but later RCTs did not. Covers testosterone, sleep, muscle, zinc toxicity risk, athletes, bodybuilders, fitness supplements."
   },
   {
@@ -7135,6 +7383,7 @@
       "vitamin e"
     ],
     "publishedAt": "2025-01-29T16:30:07Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/gummies-vs-capsules-supplements",
     "summary": "Dr Brad's comparison of supplement gummies vs capsules: why capsules are clinically superior (no added sugar, higher dose capacity, better stability), problems with gummies (sugar content, underdosing, heat instability), and Brad's recommendation to choose capsules. Covers: supplement forms, absorption, quality."
   },
   {
@@ -7168,6 +7417,7 @@
       "blood pressure"
     ],
     "publishedAt": "2025-01-15T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/elderberry-supplement-guide",
     "type": "reference",
     "summary": "Reference on elderberry: cold and flu symptom relief, immune support. Evidence mixed; small trials suggest may shorten illness. Syrup or capsule forms. Raw berries are toxic. Caution with autoimmune disease. Always discuss with your doctor."
   },
@@ -7198,6 +7448,7 @@
       "amino acid"
     ],
     "publishedAt": "2025-01-15T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/lysine-benefits-dosing-forms",
     "type": "reference",
     "summary": "Reference on lysine (L-lysine): cold sore prevention, herpes, canker sores, calcium and iron absorption, anxiety, hair loss. Dosing 1-3 g/day for herpes. L-lysine HCl form is 80% actual lysine by weight. Always discuss with your doctor."
   },
@@ -7245,6 +7496,7 @@
       "folate"
     ],
     "publishedAt": "2025-01-15T00:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/pomegranate-juice-benefits-dosing",
     "type": "reference",
     "summary": "Reference on pomegranate: blood pressure, heart health, blood sugar, exercise recovery. Most evidence in adults with hypertension or metabolic syndrome. Juice or extract forms. Caution with BP medications and statins. Always discuss with your doctor."
   },
@@ -7276,6 +7528,7 @@
       "zinc"
     ],
     "publishedAt": "2025-01-07T00:08:13Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/trace-minerals-multivitamin",
     "youtube": "https://www.youtube.com/watch?v=_hOxXq0wi-0",
     "summary": "Dr Brad's trace minerals post: trace minerals in multivitamins are not a fad — they cover dietary gaps for iodine, iron, and zinc. Key warning: avoid megadose supplements. Covers chromium, copper, iodine, iron, selenium, zinc, boron, and toxicity thresholds."
   },
@@ -7302,6 +7555,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-01-07T00:05:20Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/isometric-exercise-blood-pressure",
     "youtube": "https://www.youtube.com/watch?v=FayRla5_BrQ",
     "product": "microvitamin",
     "summary": "Dr Brad's blood pressure exercise post: isometric exercises, especially wall squats, are the most effective exercise type for lowering blood pressure. Covers hypertension, wall squat technique, exercise snacks, SPRINT trial, and why a 5-10 mmHg drop matters."
@@ -7331,6 +7585,7 @@
       "weight loss"
     ],
     "publishedAt": "2025-01-03T15:30:01Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/intermittent-fasting-not-working",
     "youtube": "https://www.youtube.com/watch?v=nZfOGLklnBM",
     "summary": "Dr Brad's intermittent fasting post: IF can fail due to caloric compensation, late-night eating, lack of diet/exercise support, diminishing returns, or underlying health issues. Covers weight loss, obesity, diabetes, cardiovascular risk, 5:2 and 8:16 protocols."
   },
@@ -7360,6 +7615,7 @@
       "zinc"
     ],
     "publishedAt": "2024-12-31T00:13:37Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/skin-tightening-supplements-guide",
     "youtube": "https://www.youtube.com/watch?v=IAXYVyiYZKQ",
     "product": "microvitamin-plus",
     "summary": "Dr Brad's skin tightening post: hyaluronic acid and collagen peptides are the only supplements with evidence for reducing wrinkles and improving skin elasticity. Covers sunscreen (zinc oxide), safe vs harmful UV filters, aging skin, photoaging, skin tightening."
@@ -7403,6 +7659,7 @@
       "skin"
     ],
     "publishedAt": "2024-12-30T12:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/greens-powder-benefits-dosing-safety",
     "type": "reference",
     "summary": "Reference on greens powders (super greens, AG1 etc.): what they contain, evidence quality (mostly weak observational), whether they replace vegetables, nutrient bioavailability, cost-benefit vs whole food, and Brad's clinical take (whole foods preferred). Always discuss with your doctor."
   },
@@ -7449,6 +7706,7 @@
       "kidney"
     ],
     "publishedAt": "2024-12-24T00:38:34Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/green-tea-egcg-benefits-dosing",
     "type": "reference",
     "summary": "Reference on green tea (EGCG, matcha): heart health, blood pressure, cholesterol, blood sugar, weight, cognition. 2-4 cups/day for general health. Supplements risk liver injury above 338 mg EGCG/day; avoid with iron. Always discuss with your doctor."
   },
@@ -7482,6 +7740,7 @@
       "zinc"
     ],
     "publishedAt": "2024-12-17T01:24:10Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/evidence-based-skin-aging-protocol",
     "youtube": "https://www.youtube.com/watch?v=SxCwmm6BI8I",
     "product": "microvitamin-plus",
     "summary": "Dr Brad's skin aging reversal post: 8 strategies — mineral sunscreen, ceramide moisturizer, hyaluronic acid supplements, collagen peptides (10-15g), retinoids (tretinoin/adapalene), AHA/BHA exfoliants, exercise, diet. Covers wrinkles and photoaging."
@@ -7511,6 +7770,7 @@
       "vitamin c"
     ],
     "publishedAt": "2024-12-09T15:30:08Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/liposomal-vitamin-c-evidence",
     "summary": "Dr Brad's liposomal vitamin C post: not worth the cost — absorption is higher but no proven clinical benefit over regular vitamin C. Covers liposome mechanism, absorption studies, cataract/cardiovascular claims, cost comparison, kidney stones, scurvy, antioxidant."
   },
   {
@@ -7534,6 +7794,7 @@
       "weight loss"
     ],
     "publishedAt": "2024-12-07T00:41:36Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/potassium-blood-pressure",
     "youtube": "https://www.youtube.com/watch?v=_Nn20bBtHwI",
     "summary": "Dr Brad's blood pressure post: potassium deficiency is the top modifiable nutrient factor for high blood pressure. A meta-analysis of 22 RCTs found 3,500-4,700mg/day reduces systolic BP by 7 mmHg. Covers sodium-potassium balance, magnesium link, food sources, kidney safety."
   },
@@ -7554,6 +7815,7 @@
       "sleep"
     ],
     "publishedAt": "2024-12-07T00:20:31Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/blood-type-diet-evidence",
     "summary": "Dr Brad's blood type diet post: the science doesn't support eating by blood type — multiple RCTs show diet benefits are blood-type-independent. Covers D'Adamo theory, lectin hypothesis, ABO genetics, and why the underlying diets still improve health."
   },
   {
@@ -7582,6 +7844,7 @@
       "vitamin d"
     ],
     "publishedAt": "2024-12-02T04:33:38Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-forms-compared-best-absorbed",
     "youtube": "https://www.youtube.com/watch?v=3HtDE-7IOHQ",
     "product": "sleep",
     "summary": "Dr Brad's magnesium forms post: prefers magnesium taurate (combined magnesium + taurine benefits); glycinate is a good alternative. Covers citrate, oxide, l-threonate, taurate, malate, orotate — absorption, sleep, blood pressure, diabetes."
@@ -7601,6 +7864,7 @@
       "vitamin b9"
     ],
     "publishedAt": "2024-11-28T07:00:07Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/methylated-vs-regular-multivitamins",
     "summary": "Dr Brad's methylated multivitamin post: evidence for benefits is weak and megadose methylated B supplements carry potential risks; most people don't need them. Covers MTHFR mutation, methylfolate, depression, cancer risk, and cardiovascular disease."
   },
   {
@@ -7623,6 +7887,7 @@
       "vitamin k2"
     ],
     "publishedAt": "2024-11-25T20:42:35Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-k2-d3-benefits",
     "youtube": "https://www.youtube.com/watch?v=s2bPHAo4z6Y",
     "summary": "Dr Brad's vitamin K2 + D3 post: MK7 90mcg worthwhile for bone health and may reduce arterial calcium in those with high CAC scores, but cardiovascular evidence is still emerging. Covers K1 vs K2, bone density, atherosclerosis, warfarin interaction, MicroVitamin."
   },
@@ -7672,6 +7937,7 @@
       "zinc"
     ],
     "publishedAt": "2024-11-19T03:13:05Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/evidence-based-supplements-guide",
     "youtube": "https://www.youtube.com/watch?v=uwnXLsAL9wM",
     "product": "sleep",
     "summary": "Dr Brad's supplement stack post: creatine 5g, protein 1.6g/kg, TMG 500mg, multivitamin, omega-3 1g, psyllium husk, collagen 10-15g, hyaluronic acid 200mg, melatonin 300mcg, glycine+NAC for glutathione. Covers muscle, brain, heart, skin, sleep."
@@ -7696,6 +7962,7 @@
       "uric acid"
     ],
     "publishedAt": "2024-11-18T20:48:50Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/gout-trigger-foods",
     "summary": "Dr Brad's gout post: reduce red meat, alcohol, and fructose to lower gout risk; plant-based purines and dairy are not triggers. Covers uric acid, hyperuricemia, flare symptoms, coffee as protective, cherries, and when medication like allopurinol is needed."
   },
   {
@@ -7728,6 +7995,7 @@
       "adaptogen"
     ],
     "publishedAt": "2024-11-15T04:30:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/ginseng-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on ginseng (Panax ginseng, Korean red ginseng, American ginseng): fatigue, blood sugar control, erectile dysfunction, sexual function, immune support. Forms: root powder 1000-3000 mg/day, standardized extract 200-400 mg/day. Avoid in pregnancy, breast cancer, and warfarin use. Always discuss with your doctor."
   },
@@ -7753,6 +8021,7 @@
       "wrinkles"
     ],
     "publishedAt": "2024-11-13T03:38:58Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/retinoids-tretinoin-adapalene-guide",
     "youtube": "https://www.youtube.com/watch?v=jeE9B8ChudI",
     "summary": "Dr Brad's retinoids post: tretinoin and adapalene are the most evidence-backed nightly anti-wrinkle treatments, affordable and available over-the-counter. Covers photoaging, collagen loss, wrinkles, vitamin A, alpha hydroxy acids, skincare routine."
   },
@@ -7784,6 +8053,7 @@
       "vitamin b3"
     ],
     "publishedAt": "2024-11-07T22:07:19Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/nmn-supplements-human-studies",
     "youtube": "https://www.youtube.com/watch?v=am2RHcPOaLA",
     "summary": "Dr Brad's review of 12+ human NMN studies: what NAD+ boosting does, what NMN human trials actually show (energy, metabolism, muscle), Brad's 4 key takeaways, and his current recommendation on NMN supplementation. Covers: NMN, NAD+, aging, longevity. Always discuss with your doctor."
   },
@@ -7815,6 +8085,7 @@
       "sunscreen"
     ],
     "publishedAt": "2024-11-04T03:29:43Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/cancer-risk-reduction-guide",
     "youtube": "https://www.youtube.com/watch?v=HWEAjoApMm8",
     "summary": "Dr Brad's cancer prevention post: lifestyle factors cause ~50% of cancer deaths in men and ~40% in women — all modifiable. Covers sun/SPF, exercise, Mediterranean diet, alcohol, obesity, smoking, HPV vaccine, and screening limits (Galleri test, full-body MRI caution)."
   },
@@ -7840,6 +8111,7 @@
       "uv"
     ],
     "publishedAt": "2024-11-04T03:07:12Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/l-theanine-aging-evidence",
     "summary": "Dr Brad's L-theanine post: current evidence is animal and worm studies only — no human RCTs — so Brad does not take it or include it in MicroVitamin. Covers longevity claims, aging, cognitive decline, tea vs supplements."
   },
   {
@@ -7860,6 +8132,7 @@
       "weight loss"
     ],
     "publishedAt": "2024-10-29T00:20:09Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/blood-pressure-home-monitor-guide",
     "youtube": "https://www.youtube.com/watch?v=RvosFvR0h3w",
     "summary": "Dr Brad's blood pressure post: hypertension can shorten life by 12.2 years and 46% of sufferers don't know they have it. Recommends a ~$40 home monitor plus 5 steps: reduce sodium, DASH diet, limit alcohol, exercise, and weight loss."
   },
@@ -7878,6 +8151,7 @@
       "sleep"
     ],
     "publishedAt": "2024-10-28T23:50:50Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/resting-heart-rate",
     "summary": "Dr Brad's post on resting heart rate (RHR): what a healthy RHR is (under 60 ideal), what causes high RHR (poor fitness, stress, dehydration), how aerobic exercise lowers it, and what RHR reveals about cardiovascular health and fitness level. Always discuss with your doctor."
   },
   {
@@ -7901,6 +8175,7 @@
       "zinc"
     ],
     "publishedAt": "2024-10-22T02:07:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/iv-vitamin-therapy-risks",
     "youtube": "https://www.youtube.com/watch?v=_hOxXq0wi-0",
     "summary": "Dr Brad's mobile IV vitamin therapy post: no clinical trial evidence supports wellness benefits; perceived gains are hydration effects only. Covers Myers' Cocktail, drip bars, IV vitamin risks, infection cases, megadose dangers, and when IV vitamins are medically warranted."
   },
@@ -7927,6 +8202,7 @@
       "zinc"
     ],
     "publishedAt": "2024-10-22T02:04:46Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/sunscreen-best-anti-wrinkle-cream",
     "youtube": "https://www.youtube.com/watch?v=RZwvaP5--gA",
     "summary": "Dr Brad's anti-wrinkle skin care post: sunscreen is the most effective anti-aging cream, with mineral (zinc oxide) or bemotrizinol options recommended. Covers retinoids (adapalene vs tretinoin), ceramides, niacinamide, AHAs, BHAs, wrinkles, skin aging."
   },
@@ -7962,6 +8238,7 @@
       "weight loss"
     ],
     "publishedAt": "2024-10-14T22:54:37Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/evidence-based-diet-guide",
     "youtube": "https://www.youtube.com/watch?v=lzW5URw1ktc",
     "summary": "Dr Brad's best diet post: high protein (1.6g/kg/day, primarily plant-based), unsaturated fats, high fiber, whole carbs, and low salt reduce heart disease, dementia, and death risk. Covers Mediterranean, keto, vegan, weight loss, muscle, aging."
   },
@@ -7987,6 +8264,7 @@
       "vitamin d"
     ],
     "publishedAt": "2024-10-14T21:25:53Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/calcium-rich-foods",
     "youtube": "https://www.youtube.com/watch?v=eeYQk7iaXo0",
     "summary": "Dr Brad's calcium post: get calcium from diet first — dairy, fatty fish, dark leafy greens, fortified foods. Supplements fine to fill gaps but exceeding RDA may raise heart disease risk. Covers osteoporosis, bone health, postmenopausal women, vegans, vitamin D absorption."
   },
@@ -8016,6 +8294,7 @@
       "tmg"
     ],
     "publishedAt": "2024-10-09T13:30:02Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/tmg-betaine-benefits",
     "youtube": "https://www.youtube.com/watch?v=GsR6KcK4lHA",
     "summary": "Dr Brad's TMG (betaine) post: supports muscle strength, testosterone, and may lower dementia risk via homocysteine reduction. Covers exercise performance, CrossFit, resistance training, Alzheimer's risk, cholesterol safety concern at 4g+, and NMN comparison."
   },
@@ -8044,6 +8323,7 @@
       "vitamin d"
     ],
     "publishedAt": "2024-10-06T22:16:11Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-glycinate-vs-oxide",
     "youtube": "https://www.youtube.com/watch?v=3HtDE-7IOHQ",
     "summary": "Dr Brad's magnesium forms post: glycinate is best absorbed with fewest side effects; oxide is poorly absorbed; citrate causes laxative effects; L-threonate lacks human data. Covers deficiency, sleep, blood pressure, diabetes, stroke."
   },
@@ -8068,6 +8348,7 @@
       "seed oil"
     ],
     "publishedAt": "2024-09-29T01:35:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/seed-oils-evidence",
     "youtube": "https://www.youtube.com/watch?v=XJ_uyV-ER_g",
     "summary": "Dr Brad's seed oils post: seed oils are not toxic or inflammatory — RCTs and a 2017 meta-analysis of 30 trials show no inflammation increase. Real risk is ultra-processed, repeatedly heated oils. Covers omega-6, linoleic acid, cholesterol, heart disease, cooking temperature."
   },
@@ -8089,6 +8370,7 @@
       "zinc"
     ],
     "publishedAt": "2024-09-26T14:30:01Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/iron-supplementation-guide",
     "summary": "Dr Brad's iron supplementation post: avoid iron supplements unless prescribed for confirmed deficiency — excess causes GI damage, organ iron build-up, and zinc absorption issues. Covers iron deficiency anemia, high-risk groups (pregnancy, vegans, menorrhagia), and upper intake limits."
   },
   {
@@ -8113,6 +8395,7 @@
       "zinc"
     ],
     "publishedAt": "2024-09-26T00:17:19Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/omega-3-brain-b-vitamins",
     "youtube": "https://www.youtube.com/watch?v=Yg77_SrN6rw",
     "summary": "Dr Brad's omega-3 and brain health post: DHA/EPA may improve cognition and reduce dementia risk, but B vitamins appear necessary to unlock the benefit. Covers memory, Alzheimer's, homocysteine, 1g/day dose."
   },
@@ -8133,6 +8416,7 @@
       "vitamin b6"
     ],
     "publishedAt": "2024-09-18T03:06:10Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/riboflavin-multivitamin-guide",
     "youtube": "https://www.youtube.com/watch?v=5GaCPDsJFGE",
     "summary": "Dr Brad's riboflavin (vitamin B2) post: 75% RDA in a multivitamin is sensible; deficiency is rare but higher risk in vegans, elderly, and those on certain meds. Covers symptoms, dietary sources, migraine use, megadose safety."
   },
@@ -8168,6 +8452,7 @@
       "weight loss"
     ],
     "publishedAt": "2024-09-14T03:22:51Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/alpha-lipoic-acid-benefits-risks",
     "youtube": "https://www.youtube.com/watch?v=p4tX7XwZMDU",
     "summary": "Dr Brad's alpha-lipoic acid post: ALA benefits diabetic neuropathy (600mg/day), blood sugar, metabolic syndrome, and male infertility, but may harm healthy adults, blunt exercise gains, and worsen Alzheimer's. R-isomer preferred."
   },
@@ -8202,6 +8487,7 @@
       "weight loss"
     ],
     "publishedAt": "2024-09-13T20:30:03Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/curcumin-vs-turmeric",
     "youtube": "https://www.youtube.com/watch?v=rntf8VM9nAM",
     "summary": "Dr Brad's curcumin and turmeric post: most evidence supports use for osteoarthritis pain relief, comparable to NSAIDs; benefits for inflammation, weight loss, diabetes, and dementia are small or limited. Covers bioavailability, piperine, liver injury risk, arthritis, cognitive decline."
   },
@@ -8238,6 +8524,7 @@
       "vitamin b3"
     ],
     "publishedAt": "2024-09-10T20:19:42Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/diet-clogged-arteries",
     "youtube": "https://www.youtube.com/watch?v=Hm7lFs7SewM",
     "summary": "Dr Brad's atherosclerosis and diet post: no food or supplement can unclog arteries, but a comprehensive approach can slow or modestly reverse plaque buildup. Covers fiber, omega-3s, unsaturated fats, phytosterols, niacin risk, statins, LDL cholesterol, hypertension, cardiovascular disease."
   },
@@ -8267,6 +8554,7 @@
       "weight loss"
     ],
     "publishedAt": "2024-09-06T04:03:40Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/apple-cider-vinegar-guide",
     "summary": "Dr Brad's apple cider vinegar post: evidence is weak and he does not recommend ACV as a supplement. Covers blood sugar control, HbA1c, weight loss, diabetes, obesity, tooth enamel erosion, and digestive side effects."
   },
   {
@@ -8307,6 +8595,7 @@
       "weight loss"
     ],
     "publishedAt": "2024-09-04T23:34:17Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/digestive-enzymes-guide",
     "type": "reference",
     "summary": "Reference on digestive enzymes: bloating, gas, lactose intolerance, malabsorption, pancreatic insufficiency. Bromelain, lactase, alpha-galactosidase, pancreatin; plant, fungal, and animal forms. Dosing by enzyme type; interactions with blood thinners and diabetes drugs. Always discuss with your doctor."
   },
@@ -8351,6 +8640,7 @@
       "vitamin d"
     ],
     "publishedAt": "2024-09-04T05:32:23Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/essential-blood-tests",
     "youtube": "https://www.youtube.com/watch?v=snAnrbt_JQo",
     "summary": "Dr Brad's blood tests post: recommends Lp(a), lipid panel (LDL/ApoB), HbA1c, kidney function, and full blood count for all adults; PSA for men; thyroid and vitamin D only if symptomatic. Covers LDL targets, statins, pre-diabetes, cardiovascular risk."
   },
@@ -8369,6 +8659,7 @@
       "sleep"
     ],
     "publishedAt": "2024-08-29T19:37:29Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/muscle-building-strategies",
     "youtube": "https://www.youtube.com/watch?v=EltoTYKvVoM",
     "summary": "Dr Brad's muscle building post: 10 evidence-based strategies including training within MRV, 10-20 sets/week per muscle group, 2+ min rest intervals, full range of motion, slow eccentric phase, progressive overload, 1.6g protein/kg/day, and periodization. For gym-goers and resistance training."
   },
@@ -8393,6 +8684,7 @@
       "fiber"
     ],
     "publishedAt": "2024-08-23T00:51:25Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/d-mannose-uti-evidence",
     "type": "reference",
     "summary": "Reference on D-mannose: UTI prevention, recurrent bladder infections. Women with frequent UTIs, especially postmenopausal. Powder or capsules, 1.5-2 g/day. Largest RCT (2024, n=598) showed no benefit vs. placebo; earlier uncontrolled studies positive. Generally well-tolerated; mild diarrhea reported. Always discuss with your doctor."
   },
@@ -8439,6 +8731,7 @@
       "weight loss"
     ],
     "publishedAt": "2024-08-22T02:25:09Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/dementia-risk-prevention-guide",
     "youtube": "https://www.youtube.com/watch?v=JpAeC5TKQmU",
     "summary": "Dr Brad's dementia prevention post: 14 modifiable risk factors from the 2024 Lancet Commission can reduce dementia risk by up to 45%. Covers hearing loss, hypertension, LDL cholesterol, diabetes, obesity, smoking, depression, exercise, sleep, air pollution, and social isolation."
   },
@@ -8468,6 +8761,7 @@
       "weight loss"
     ],
     "publishedAt": "2024-08-22T00:56:03Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/intermittent-fasting-evidence",
     "youtube": "https://www.youtube.com/watch?v=nZfOGLklnBM",
     "summary": "Dr Brad's intermittent fasting post: fasting benefits are likely from calorie restriction, not meal timing. Covers muscle loss risk with multi-day fasts, protein intake (1.6g/kg), sarcopenia, weight loss, blood sugar, autophagy."
   },
@@ -8503,6 +8797,7 @@
       "zinc"
     ],
     "publishedAt": "2024-08-11T19:58:36Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/reverse-skin-aging-protocol",
     "youtube": "https://www.youtube.com/watch?v=3Ar5FvAONwA",
     "summary": "Dr Brad's skin aging post: 9-step system to reverse wrinkles and photoaging. Covers retinoids (adapalene/tretinoin), alpha hydroxy acids, collagen, hyaluronic acid, vitamin B3, ceramides, bemotrizinol sunscreen, resistance training, and diet."
   },
@@ -8554,6 +8849,7 @@
       "zinc"
     ],
     "publishedAt": "2024-08-11T19:43:34Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/supplements-evidence-avoid",
     "youtube": "https://www.youtube.com/watch?v=eeYQk7iaXo0",
     "summary": "Dr Brad's supplements-to-avoid post: 9 supplements with risks outweighing benefits per clinical trials. Covers antioxidants (vitamins A, C, E), CoQ10, resveratrol, metformin (non-diabetics), iron, calcium, high-dose folic acid, niacin, and fat burners."
   },
@@ -8580,6 +8876,7 @@
       "vitamin k2"
     ],
     "publishedAt": "2024-08-09T04:19:30Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/multivitamin-cognitive-decline",
     "youtube": "https://www.youtube.com/watch?v=2DONY-rYFQY",
     "summary": "Dr Brad's multivitamin post: COSMOS studies show multivitamin/mineral supplementation equivalent to 2 years less cognitive aging, but avoid beta-carotene and vitamin E. Covers brain health, memory, cognitive decline prevention, megadosing risks, supplement selection."
   },
@@ -8606,6 +8903,7 @@
       "stroke"
     ],
     "publishedAt": "2024-07-26T20:58:47Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/sleep-schedule-evidence-based",
     "youtube": "https://www.youtube.com/watch?v=UXBcWPlZ_qA",
     "summary": "Dr Brad's sleep schedule post: consistent wake time, morning sunlight, caffeine cutoff 3h after waking, light early dinners, no naps, and low-dose melatonin (under 300mcg) improve sleep quality. Covers insomnia, circadian rhythm, blood pressure, blood sugar, obesity, anxiety, and pre-bed routines."
   },
@@ -8638,6 +8936,7 @@
       "testosterone"
     ],
     "publishedAt": "2024-07-18T23:19:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/finasteride-statins-evidence-mens-health",
     "youtube": "https://www.youtube.com/watch?v=eDresUkYRKQ",
     "summary": "Dr Brad's longevity medications post: Brad personally takes finasteride 1mg (prostate cancer prevention) and rosuvastatin 5mg (LDL lowering). Covers statins, ezetimibe, empagliflozin, cholesterol, atherosclerosis, prostate cancer, kidney disease."
   },
@@ -8664,6 +8963,7 @@
       "stroke"
     ],
     "publishedAt": "2024-07-11T21:04:17Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/omega-3-atrial-fibrillation-risk-evidence",
     "youtube": "https://www.youtube.com/watch?v=q71tHoHeXZo",
     "summary": "Dr Brad's omega-3 post: supplements at ~1g/day are still worth taking despite a 2024 UK Biobank study showing 133% higher atrial fibrillation risk. Covers EPA, DHA, ALA, fish oil, heart disease, AF risk, megadosing concerns, and the major trials — VITAL (28% MI reduction at 1g/day), STRENGTH (null at 4g/day with AF signal), REDUCE-IT (Vascepa / icosapent ethyl, 25% CVD reduction with the mineral-oil placebo controversy)."
   },
@@ -8692,6 +8992,7 @@
       "stroke"
     ],
     "publishedAt": "2024-07-09T18:36:45Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-deficiency-forms-guide",
     "youtube": "https://www.youtube.com/watch?v=9X6pweXDxjg",
     "summary": "Dr Brad's magnesium post: 52% of people are deficient despite normal blood tests, because serum reflects less than 1% of body stores. Covers best forms (glycinate, taurate), elemental dosing (320-420mg RDA), supplement label pitfalls, and links to diet quality."
   },
@@ -8738,6 +9039,7 @@
       "sleep"
     ],
     "publishedAt": "2024-07-08T17:21:25Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/mct-oil-coconut-oil-evidence-guide",
     "type": "reference",
     "summary": "Reference on coconut oil and MCT oil: weight loss, cognitive support in MCI, skin moisturizing. MCT oil (C8/C10) differs from coconut oil; 5-30 g/day dosing. AHA cautions on LDL and cardiovascular risk. Always discuss with your doctor."
   },
@@ -8766,6 +9068,7 @@
       "uric acid"
     ],
     "publishedAt": "2024-07-01T01:37:47Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/creatine-older-adults-guide",
     "youtube": "https://www.youtube.com/watch?v=FsHq03ecnhM",
     "summary": "Dr Brad's creatine post: recommends creatine monohydrate for older adults for muscle and potential cognitive/memory benefits. Covers 5g daily dose, kidney safety, hair loss myth, gout, and brain creatine research."
   },
@@ -8784,6 +9087,7 @@
       "sleep"
     ],
     "publishedAt": "2024-06-26T20:28:40Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/home-workout-science-guide",
     "youtube": "https://www.youtube.com/watch?v=nP04923o2iA",
     "summary": "Dr Brad's home workout post: customize your plan and use key technique principles — concentric-eccentric motion, full range of motion, 8-12 reps over training to failure, and 2+ min rest between sets. Covers resistance training, HIIT, older adults, injury prevention."
   },
@@ -8829,6 +9133,7 @@
       "olive oil"
     ],
     "publishedAt": "2024-06-25T18:38:34Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/cla-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on CLA (conjugated linoleic acid): modest fat loss, body composition, inflammation. Used by overweight adults seeking weight loss or exercise support. Forms: c9,t11 and t10,c12 isomers; typical dose 3-6 g/day. Safety concerns: insulin resistance, reduced HDL, liver effects. Always discuss with your doctor."
   },
@@ -8857,6 +9162,7 @@
       "vitamin k2"
     ],
     "publishedAt": "2024-06-20T20:21:11Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/vitamin-d3-k2-research",
     "youtube": "https://www.youtube.com/watch?v=s2bPHAo4z6Y",
     "summary": "Dr Brad's vitamin D3 and K2 post: evidence is mixed beyond deficiency; Brad takes D3 1000-2000IU and K2 MK-7 90mcg. Covers bone health, cardiovascular disease, osteoporosis, coronary artery calcification, cancer, and drug interactions."
   },
@@ -8905,6 +9211,7 @@
       "manganese"
     ],
     "publishedAt": "2024-06-19T07:17:08Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/cinnamon-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on cinnamon: blood sugar, cholesterol, inflammation. Adults with type 2 diabetes or prediabetes. Cassia vs Ceylon forms; Ceylon safer (lower coumarin). Dosing 1-6g/day bark or 250-500mg extract. Coumarin liver/bleeding risk; interacts with blood thinners. Always discuss with your doctor."
   },
@@ -8928,6 +9235,7 @@
       "vitamin c"
     ],
     "publishedAt": "2024-06-12T20:32:54Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/magnesium-l-threonate-sleep-evidence",
     "youtube": "https://www.youtube.com/watch?v=9X6pweXDxjg",
     "summary": "Dr Brad's magnesium L-threonate post: evidence for sleep benefits is weak — small studies exist but are low quality or not specific to this form. Covers magnesium forms, drug interactions (statins, gabapentin), dosing safety, insomnia."
   },
@@ -8965,6 +9273,7 @@
       "glaucoma"
     ],
     "publishedAt": "2024-06-06T08:34:17Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/choline-benefits-forms-dosing",
     "type": "reference",
     "summary": "Reference on choline: memory, fatty liver, brain health in pregnancy. Deficiency common in women and older adults. CDP-choline preferred for cognition; choline bitartrate raises TMAO and cardiovascular risk; alpha-GPC linked to stroke. Always discuss with your doctor."
   },
@@ -9004,6 +9313,7 @@
       "microbiome"
     ],
     "publishedAt": "2024-05-24T09:51:25Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/chia-seed-benefits-dosing",
     "type": "reference",
     "summary": "Reference on chia seeds: high fiber, plant-based omega-3 (ALA), blood sugar, blood pressure, gut and bone health. Dose 1-2 tbsp/day; soak before eating to avoid choking. Caution if kidney stone history (oxalates). Always discuss with your doctor."
   },
@@ -9042,6 +9352,7 @@
       "fish oil"
     ],
     "publishedAt": "2024-05-17T22:30:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/cbd-benefits-dosing-side-effects",
     "type": "reference",
     "summary": "Reference on CBD (cannabidiol): anxiety, insomnia, pain, and epilepsy/seizures. Adults use it for social anxiety (300 mg), sleep problems (160 mg), and chronic pain. Forms: full-spectrum, isolate, oils, topicals. Always discuss with your doctor."
   },
@@ -9079,6 +9390,7 @@
       "quercetin"
     ],
     "publishedAt": "2024-04-15T13:42:51Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/bilberry-extract-benefits-dosing",
     "type": "reference",
     "summary": "Reference on bilberry: retinopathy, dry eye, blood sugar, vascular health. Best evidence for diabetic/hypertensive retinopathy. Look for 36% anthocyanoside extract. Caution with blood thinners and diabetes meds. Always discuss with your doctor."
   },
@@ -9110,6 +9422,7 @@
       "microbiome"
     ],
     "publishedAt": "2024-03-27T03:38:34Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/baobab-powder-benefits-dosing",
     "type": "reference",
     "summary": "Reference on baobab: high fiber, gut health, blood sugar after meals, vitamin C, iron absorption. Adults wanting a fiber or nutrient boost. Powder 5-30 g/day; start low to avoid bloating. Caution in kidney disease. Always discuss with your doctor."
   },
@@ -9166,6 +9479,7 @@
       "sleep"
     ],
     "publishedAt": "2024-03-07T17:34:17Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/astaxanthin-benefits-dosing-safety",
     "type": "reference",
     "summary": "Reference on astaxanthin: antioxidant carotenoid studied for skin UV protection, triglycerides, HDL, joint pain, exercise recovery, and eye fatigue. Natural algal form (4-18 mg/day) used in trials; take with fat. Evidence is mixed and preliminary. Always discuss with your doctor."
   },
@@ -9201,6 +9515,7 @@
       "mediterranean diet"
     ],
     "publishedAt": "2024-02-17T07:30:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/apple-cider-vinegar-evidence-guide",
     "type": "reference",
     "summary": "Reference on apple cider vinegar: blood sugar control, weight loss, cholesterol. Studied in insulin resistance, type 2 diabetes, overweight adults. Liquid form only (pills ineffective); 1-2 tbsp/day diluted in water. Always discuss with your doctor."
   },
@@ -9235,6 +9550,7 @@
       "dha"
     ],
     "publishedAt": "2024-02-04T08:47:08Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/alpha-lipoic-acid-benefits-dosing",
     "type": "reference",
     "summary": "Reference on alpha-lipoic acid (ALA): nerve pain, blood sugar control, weight loss. Best evidence for diabetic neuropathy and insulin sensitivity. Forms: racemic or R-ALA, 300-1800 mg/day. Heartburn common. Always discuss with your doctor."
   },
@@ -9260,6 +9576,7 @@
       "magnesium"
     ],
     "publishedAt": "2024-01-22T10:04:17Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/alginate-supplements-acid-reflux",
     "type": "reference",
     "summary": "Reference on alginates (Gaviscon, sodium alginate): heartburn, acid reflux, GERD, throat reflux. Safe in pregnancy. Liquid, chewable, or capsule; 200–1000 mg after meals up to 4x daily. Separate from meds 2h. Always discuss with your doctor."
   },
@@ -9284,6 +9601,7 @@
       "inflammation"
     ],
     "publishedAt": "2024-01-15T22:42:51Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/african-mango-irvingia-gabonensis-evidence",
     "type": "reference",
     "summary": "Reference on African mango (Irvingia gabonensis): weight loss, cholesterol, blood sugar. Marketed for obesity and weight management; very weak evidence — only 3 small trials from one research group. IGOB131 extract 300mg/day studied. GI side effects possible. Always discuss with your doctor."
   },
@@ -9318,6 +9636,7 @@
       "anxiety"
     ],
     "publishedAt": "2024-01-09T11:21:25Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/acetyl-l-carnitine-benefits-dosing",
     "type": "reference",
     "summary": "Reference on acetyl-L-carnitine (ALCAR): memory, nerve pain, depression, blood pressure. May help older adults with early cognitive decline, diabetic neuropathy, low mood. Typical dose 1-3 g/day. Avoid if on chemotherapy or with thyroid/seizure disorders. Always discuss with your doctor."
   },
@@ -30858,32 +31177,5 @@
     "publishedAt": "",
     "type": "pathway",
     "summary": "Clinical pathway for zoledronic acid (Aclasta) infusion for osteoporosis: who qualifies, contraindications, pre-procedure workup, infusion technique, post-procedure follow-up, and when to seek specialist input. Always discuss with your doctor."
-  },
-  {
-    "title": "We're All About to Become Lean AND Ripped (new evidence)",
-    "handle": "were-all-about-to-become-lean-and-ripped-new-evidence",
-    "url": "https://drstanfield.com/blogs/articles/were-all-about-to-become-lean-and-ripped-new-evidence",
-    "youtube": "https://www.youtube.com/watch?v=Zit5we5Ss18",
-    "tags": [
-      "Research",
-      "Supplements",
-      "General Health"
-    ],
-    "keywords": [
-      "betaine",
-      "cholesterol",
-      "creatine",
-      "glp-1",
-      "ldl",
-      "muscle",
-      "obesity",
-      "resistance training",
-      "sarcopenia",
-      "tmg",
-      "weight loss"
-    ],
-    "product": "microvitamin-plus",
-    "publishedAt": "2026-06-15T12:00:00Z",
-    "summary": "Dr Brad's muscle-on-Ozempic post: the muscle you lose on GLP-1 drugs is normal (~25% of weight lost, same as dieting or surgery), and the apitegromab EMBRAZE trial preserves muscle but did NOT improve strength. Covers tirzepatide, retatrutide, bimagrumab, creatine, and resistance training."
   }
 ]

@@ -1,6 +1,7 @@
 ---
 title: "New Study Reveals the BEST Exercise to Treat Knee Arthritis"
 url: "https://drstanfield.com/blogs/articles/new-study-reveals-the-best-exercise-to-treat-knee-arthritis"
+commerceUrl: "https://microvitamin.com/blogs/articles/exercise-for-knee-arthritis"
 youtube: "https://www.youtube.com/watch?v=yRWVbodt2Lo"
 publishedAt: "2026-01-11T22:03:32Z"
 tags: ["Exercise","General Health","Preventative Care","Research"]

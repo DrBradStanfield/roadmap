@@ -1,6 +1,7 @@
 ---
 title: "5 Supplements That ACTUALLY Work"
 url: "https://drstanfield.com/blogs/articles/5-supplements-that-actually-work"
+commerceUrl: "https://microvitamin.com/blogs/articles/supplements-strongest-evidence"
 youtube: "https://www.youtube.com/watch?v=HQeIhuROnpM"
 publishedAt: "2025-10-05T20:31:48Z"
 tags: ["Supplements"]

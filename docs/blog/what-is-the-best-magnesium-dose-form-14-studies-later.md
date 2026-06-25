@@ -1,6 +1,7 @@
 ---
 title: "What is the Best Magnesium Dose & Form? (14 Studies Later)"
 url: "https://drstanfield.com/blogs/articles/what-is-the-best-magnesium-dose-form-14-studies-later"
+commerceUrl: "https://microvitamin.com/blogs/articles/magnesium-dose-forms-guide"
 youtube: "https://www.youtube.com/watch?v=oL6CtBcfcDo"
 publishedAt: "2025-07-01T18:11:29Z"
 tags: ["Supplements"]

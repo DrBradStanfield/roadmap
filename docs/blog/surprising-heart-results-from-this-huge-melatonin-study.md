@@ -1,6 +1,7 @@
 ---
 title: "Surprising Heart Results from This Huge Melatonin Study"
 url: "https://drstanfield.com/blogs/articles/surprising-heart-results-from-this-huge-melatonin-study"
+commerceUrl: "https://microvitamin.com/blogs/articles/melatonin-heart-health-evidence"
 youtube: "https://www.youtube.com/watch?v=k6OWC6f1Jtk"
 publishedAt: "2026-03-18T06:09:58Z"
 tags: ["Research","Supplements"]

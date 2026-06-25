@@ -1,6 +1,7 @@
 ---
 title: "Cholesterol-Lowering Supplements: Benefits, Evidence, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/cholesterol-supplements-evidence-dosing"
 publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "We Were Wrong About Aspirin (New Evidence)"
 url: "https://drstanfield.com/blogs/articles/we-were-wrong-about-aspirin-new-evidence"
+commerceUrl: "https://microvitamin.com/blogs/articles/aspirin-cancer-prevention-evidence"
 youtube: "https://youtu.be/ulIkmIh7qL4"
 publishedAt: "2026-05-15T03:00:00Z"
 tags: ["Research", "Preventative Care", "General Health"]

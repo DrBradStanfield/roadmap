@@ -1,6 +1,7 @@
 ---
 title: "Flaxseed Oil and Omega-6 Oils: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/flaxseed-oil-benefits-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/flaxseed-oil-omega-6-evidence-guide"
 publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

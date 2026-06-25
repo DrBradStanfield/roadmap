@@ -1,6 +1,7 @@
 ---
 title: "Menopause Supplements: Benefits, Evidence, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/menopause-supplements-benefits-evidence-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/menopause-supplements-phytoestrogens"
 publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

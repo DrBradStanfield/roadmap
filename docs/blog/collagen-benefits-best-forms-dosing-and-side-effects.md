@@ -1,6 +1,7 @@
 ---
 title: "Collagen: Benefits, Best Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/collagen-benefits-best-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/collagen-peptides-benefits-forms-dosing-and-side-effects"
 publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

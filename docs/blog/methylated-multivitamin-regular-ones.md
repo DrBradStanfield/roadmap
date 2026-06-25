@@ -1,6 +1,7 @@
 ---
 title: "Methylated Multivitamin vs Regular Ones: Which is Better?"
 url: "https://drstanfield.com/blogs/articles/methylated-multivitamin-regular-ones"
+commerceUrl: "https://microvitamin.com/blogs/articles/methylated-vs-regular-multivitamins"
 publishedAt: "2024-11-28T07:00:07Z"
 tags: ["Supplements"]
 keywords: ["cardiovascular","cognitive","folate","folic acid","vitamin b9"]

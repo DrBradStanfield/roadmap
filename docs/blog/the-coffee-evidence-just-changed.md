@@ -1,6 +1,7 @@
 ---
 title: "The Coffee Evidence Just Changed"
 url: "https://drstanfield.com/blogs/articles/the-coffee-evidence-just-changed"
+commerceUrl: "https://microvitamin.com/blogs/articles/coffee-health-evidence"
 youtube: "https://www.youtube.com/watch?v=dYKf9RDZ0Qg"
 publishedAt: "2025-12-20T19:37:23Z"
 tags: ["General Health","Preventative Care","Research"]

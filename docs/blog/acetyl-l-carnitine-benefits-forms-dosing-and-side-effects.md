@@ -1,6 +1,7 @@
 ---
 title: "Acetyl-L-Carnitine: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/acetyl-l-carnitine-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/acetyl-l-carnitine-benefits-dosing"
 publishedAt: "2024-01-09T11:21:25Z"
 type: "reference"
 tags: ["Supplements"]

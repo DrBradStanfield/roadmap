@@ -1,6 +1,7 @@
 ---
 title: "Rhodiola: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/rhodiola-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/rhodiola-rosea-benefits-dosing-side-effects"
 publishedAt: "2025-09-21T21:38:34Z"
 type: "reference"
 tags: ["Supplements"]

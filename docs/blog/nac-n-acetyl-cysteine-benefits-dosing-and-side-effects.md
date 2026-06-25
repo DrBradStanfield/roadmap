@@ -1,6 +1,7 @@
 ---
 title: "N-Acetyl Cysteine (NAC): Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/nac-n-acetyl-cysteine-benefits-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/nac-benefits-dosing"
 publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

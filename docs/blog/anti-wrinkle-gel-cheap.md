@@ -1,6 +1,7 @@
 ---
 title: "Retinoids: The World's #1 NIGHTLY Anti-Wrinkle Gel Is Stupidly Cheap"
 url: "https://drstanfield.com/blogs/articles/anti-wrinkle-gel-cheap"
+commerceUrl: "https://microvitamin.com/blogs/articles/retinoids-tretinoin-adapalene-guide"
 youtube: "https://www.youtube.com/watch?v=jeE9B8ChudI"
 publishedAt: "2024-11-13T03:38:58Z"
 tags: ["Skin Health"]

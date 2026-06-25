@@ -1,6 +1,7 @@
 ---
 title: "Berberine: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/berberine-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/berberine-benefits-dosing"
 publishedAt: "2025-04-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

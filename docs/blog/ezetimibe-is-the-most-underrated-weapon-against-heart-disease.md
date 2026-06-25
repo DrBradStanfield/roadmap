@@ -1,6 +1,7 @@
 ---
 title: "Ezetimibe is the Most Underrated Weapon Against Heart Disease"
 url: "https://drstanfield.com/blogs/articles/ezetimibe-is-the-most-underrated-weapon-against-heart-disease"
+commerceUrl: "https://microvitamin.com/blogs/articles/ezetimibe-statin-ldl-cholesterol"
 youtube: "https://www.youtube.com/watch?v=uyDC-es2uQI"
 publishedAt: "2025-05-23T03:10:34Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]

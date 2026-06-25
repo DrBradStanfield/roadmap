@@ -1,6 +1,7 @@
 ---
 title: "Scientists Just Found an EASY Way to Cut Dementia Risk By 15%"
 url: "https://drstanfield.com/blogs/articles/scientists-just-found-an-easy-way-to-cut-dementia-risk-by-15"
+commerceUrl: "https://microvitamin.com/blogs/articles/lower-blood-pressure-cut-dementia-risk"
 youtube: "https://www.youtube.com/watch?v=vUUqRQzQls0"
 publishedAt: "2025-05-20T20:21:44Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]

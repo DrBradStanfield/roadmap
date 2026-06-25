@@ -1,6 +1,7 @@
 ---
 title: "Coconut Water: Benefits, Nutrition, Hydration, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/coconut-water-benefits-nutrition-hydration-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/coconut-water-nutrition-hydration"
 publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

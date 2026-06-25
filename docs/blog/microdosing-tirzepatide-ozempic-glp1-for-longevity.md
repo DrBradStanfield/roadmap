@@ -1,6 +1,7 @@
 ---
 title: "Microdosing Tirzepatide & Ozempic (GLP-1) for Longevity"
 url: "https://drstanfield.com/blogs/articles/microdosing-tirzepatide-ozempic-glp1-for-longevity"
+commerceUrl: "https://microvitamin.com/blogs/articles/glp1-microdosing-evidence"
 youtube: "https://www.youtube.com/watch?v=4FJsXRYOMpc"
 publishedAt: "2025-10-22T04:35:09Z"
 tags: ["Preventative Care"]

@@ -1,6 +1,7 @@
 ---
 title: "NMN & NAD Supplements for Anti-Aging Just Changed"
 url: "https://drstanfield.com/blogs/articles/nmn-nad-supplements-for-anti-aging-just-changed"
+commerceUrl: "https://microvitamin.com/blogs/articles/nmn-nad-human-evidence"
 youtube: "https://www.youtube.com/watch?v=lt8Z0fNukBw"
 publishedAt: "2026-01-11T22:03:17Z"
 tags: ["General Health","Preventative Care","Research"]

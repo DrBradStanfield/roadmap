@@ -1,6 +1,7 @@
 ---
 title: "Popular Longevity Treatment Makes You Sick"
 url: "https://drstanfield.com/blogs/articles/popular-longevity-treatment-makes-you-sick"
+commerceUrl: "https://microvitamin.com/blogs/articles/iv-therapy-risks-evidence"
 youtube: "https://www.youtube.com/watch?v=tLG6qWWPEsI"
 publishedAt: "2025-11-20T19:11:54Z"
 tags: ["General Health","Preventative Care","Research"]

@@ -1,6 +1,7 @@
 ---
 title: "D-Mannose: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/d-mannose-benefits-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/d-mannose-uti-evidence"
 publishedAt: "2024-08-23T00:51:25Z"
 type: "reference"
 tags: ["Supplements"]

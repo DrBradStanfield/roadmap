@@ -1,6 +1,7 @@
 ---
 title: "Alginates: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/alginates-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/alginate-supplements-acid-reflux"
 publishedAt: "2024-01-22T10:04:17Z"
 type: "reference"
 tags: ["Supplements"]

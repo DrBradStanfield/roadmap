@@ -1,6 +1,7 @@
 ---
 title: "This Vitamin D Study Forced Me to Change My View"
 url: "https://drstanfield.com/blogs/articles/this-vitamin-d-study-forced-me-to-change-my-view"
+commerceUrl: "https://microvitamin.com/blogs/articles/vitamin-d-heart-health-target-d-trial"
 youtube: "https://www.youtube.com/watch?v=d44hcq-JLCI"
 publishedAt: "2025-12-03T16:41:41Z"
 tags: ["General Health","Preventative Care","Research"]

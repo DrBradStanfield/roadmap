@@ -1,6 +1,7 @@
 ---
 title: "Does Theanine Really Help with Anti-Aging and Longevity?"
 url: "https://drstanfield.com/blogs/articles/theanine-anti-aging-longevity"
+commerceUrl: "https://microvitamin.com/blogs/articles/l-theanine-aging-evidence"
 publishedAt: "2024-11-04T03:07:12Z"
 tags: ["General Health"]
 keywords: ["aging","anti-aging","cognitive","exercise","inflammation","l-theanine","lifespan","longevity","muscle","oxidative stress","sleep","uv"]

@@ -1,6 +1,7 @@
 ---
 title: "Green Coffee Bean Extract: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/green-coffee-bean-extract-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/green-coffee-bean-extract"
 publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

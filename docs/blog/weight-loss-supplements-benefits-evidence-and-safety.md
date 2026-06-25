@@ -1,6 +1,7 @@
 ---
 title: "Weight Loss Supplements: Benefits, Evidence, and Safety"
 url: "https://drstanfield.com/blogs/articles/weight-loss-supplements-benefits-evidence-and-safety"
+commerceUrl: "https://microvitamin.com/blogs/articles/weight-loss-supplements-evidence-guide"
 publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

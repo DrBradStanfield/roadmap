@@ -1,6 +1,7 @@
 ---
 title: "The Blood Type Diet: Does Blood Type Dictate Dietary Needs?"
 url: "https://drstanfield.com/blogs/articles/blood-type-diet-needs"
+commerceUrl: "https://microvitamin.com/blogs/articles/blood-type-diet-evidence"
 publishedAt: "2024-12-07T00:20:31Z"
 tags: ["Diet"]
 keywords: ["bmi","exercise","inflammation","insulin resistance","kidney","mediterranean diet","sleep"]

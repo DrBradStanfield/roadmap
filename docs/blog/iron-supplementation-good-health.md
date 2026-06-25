@@ -1,6 +1,7 @@
 ---
 title: "Iron Benefits: Is Iron Supplementation Good for Your Health?"
 url: "https://drstanfield.com/blogs/articles/iron-supplementation-good-health"
+commerceUrl: "https://microvitamin.com/blogs/articles/iron-supplementation-guide"
 publishedAt: "2024-09-26T14:30:01Z"
 tags: ["Diet","General Health"]
 keywords: ["cognitive","colon cancer","exercise","gut health","iron","skin","zinc"]

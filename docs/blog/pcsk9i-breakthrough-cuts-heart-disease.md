@@ -1,6 +1,7 @@
 ---
 title: "PCSK9i Breakthrough Cuts Heart Disease by 25%"
 url: "https://drstanfield.com/blogs/articles/pcsk9i-breakthrough-cuts-heart-disease"
+commerceUrl: "https://microvitamin.com/blogs/articles/pcsk9-inhibitors-heart-disease"
 youtube: "https://www.youtube.com/watch?v=iTgNqFNW6n0"
 publishedAt: "2025-12-16T20:07:50Z"
 tags: ["General Health","Preventative Care","Research"]

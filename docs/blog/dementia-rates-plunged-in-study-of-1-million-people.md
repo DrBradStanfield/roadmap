@@ -1,6 +1,7 @@
 ---
 title: "Dementia Rates PLUNGED in Study of 1 Million People"
 url: "https://drstanfield.com/blogs/articles/dementia-rates-plunged-in-study-of-1-million-people"
+commerceUrl: "https://microvitamin.com/blogs/articles/cholesterol-and-dementia-risk-what-a-1-million-person-study-reveals"
 youtube: "https://www.youtube.com/watch?v=dpnYzGyL7qY"
 publishedAt: "2025-11-11T23:54:44Z"
 tags: ["Preventative Care"]

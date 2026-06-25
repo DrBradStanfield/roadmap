@@ -1,6 +1,7 @@
 ---
 title: "Eat Real Food — I Was Wrong"
 url: "https://drstanfield.com/blogs/articles/eat-real-food-i-was-wrong"
+commerceUrl: "https://microvitamin.com/blogs/articles/2026-dietary-guidelines-review"
 youtube: "https://www.youtube.com/watch?v=VY5xoJOdcM8"
 publishedAt: "2026-01-19T23:37:09Z"
 tags: ["Diet","General Health","Preventative Care","Research"]

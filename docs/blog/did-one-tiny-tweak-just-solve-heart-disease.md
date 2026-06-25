@@ -1,6 +1,7 @@
 ---
 title: "Did One Tiny Tweak Just Solve Heart Disease?"
 url: "https://drstanfield.com/blogs/articles/did-one-tiny-tweak-just-solve-heart-disease"
+commerceUrl: "https://microvitamin.com/blogs/articles/pcsk9-gene-editing-cholesterol"
 youtube: "https://youtu.be/tvef5PqDHc0"
 publishedAt: "2026-06-08T00:00:00Z"
 tags: ["Research", "Preventative Care"]

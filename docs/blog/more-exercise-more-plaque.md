@@ -1,6 +1,7 @@
 ---
 title: "More Exercise, More Plaque?"
 url: "https://drstanfield.com/blogs/articles/more-exercise-more-plaque"
+commerceUrl: "https://microvitamin.com/blogs/articles/exercise-plaque-evidence"
 youtube: "https://www.youtube.com/watch?v=Q2gL0ZjqaBY"
 publishedAt: "2026-03-10T23:24:23Z"
 tags: ["Exercise","Preventative Care","Research"]

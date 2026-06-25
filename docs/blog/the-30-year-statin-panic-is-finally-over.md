@@ -1,6 +1,7 @@
 ---
 title: "The 30-Year Statin Panic Is Finally Over"
 url: "https://drstanfield.com/blogs/articles/the-30-year-statin-panic-is-finally-over"
+commerceUrl: "https://microvitamin.com/blogs/articles/statin-side-effects-evidence"
 youtube: "https://youtu.be/ovWVNxSiJSE"
 publishedAt: "2026-05-08T12:00:00Z"
 tags: ["Research", "Preventative Care", "General Health"]

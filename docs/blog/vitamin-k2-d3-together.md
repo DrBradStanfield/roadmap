@@ -1,6 +1,7 @@
 ---
 title: "Should You Take Vitamin K2 and Vitamin D3 Together?"
 url: "https://drstanfield.com/blogs/articles/vitamin-k2-d3-together"
+commerceUrl: "https://microvitamin.com/blogs/articles/vitamin-k2-d3-benefits"
 youtube: "https://www.youtube.com/watch?v=s2bPHAo4z6Y"
 publishedAt: "2024-11-25T20:42:35Z"
 tags: ["Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "If you’re struggling to find time to exercise, read this"
 url: "https://drstanfield.com/blogs/articles/if-you-re-struggling-to-find-time-to-exercise-read-this"
+commerceUrl: "https://microvitamin.com/blogs/articles/exercise-snacks-science"
 youtube: "https://www.youtube.com/watch?v=2NwiJAmNdoA"
 publishedAt: "2025-06-04T02:39:33Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]

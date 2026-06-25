@@ -1,6 +1,7 @@
 ---
 title: "Apple Cider Vinegar: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/apple-cider-vinegar-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/apple-cider-vinegar-evidence-guide"
 publishedAt: "2024-02-17T07:30:00Z"
 type: "reference"
 tags: ["Supplements"]

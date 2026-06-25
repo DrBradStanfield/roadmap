@@ -1,6 +1,7 @@
 ---
 title: "CLA (Conjugated Linoleic Acid): Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/cla-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/cla-benefits-forms-dosing"
 publishedAt: "2024-06-25T18:38:34Z"
 type: "reference"
 tags: ["Supplements"]

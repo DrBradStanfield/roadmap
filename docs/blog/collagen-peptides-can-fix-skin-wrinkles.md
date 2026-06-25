@@ -1,6 +1,7 @@
 ---
 title: "New Study Proves That Collagen Peptides Can Fix Skin Wrinkles!"
 url: "https://drstanfield.com/blogs/articles/collagen-peptides-can-fix-skin-wrinkles"
+commerceUrl: "https://microvitamin.com/blogs/articles/collagen-peptides-skin-wrinkles"
 youtube: "https://www.youtube.com/watch?v=m4Tx7ZyBbwQ"
 publishedAt: "2025-03-12T23:28:06Z"
 tags: ["Supplements","Skin Health"]

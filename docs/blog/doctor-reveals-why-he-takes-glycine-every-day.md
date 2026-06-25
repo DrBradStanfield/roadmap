@@ -1,6 +1,7 @@
 ---
 title: "Doctor Reveals Why He Takes Glycine Every Day"
 url: "https://drstanfield.com/blogs/articles/doctor-reveals-why-he-takes-glycine-every-day"
+commerceUrl: "https://microvitamin.com/blogs/articles/glycine-sleep-benefits"
 youtube: "https://www.youtube.com/watch?v=elK5Nq8oT3c"
 publishedAt: "2025-05-27T22:11:28Z"
 tags: ["Supplements"]

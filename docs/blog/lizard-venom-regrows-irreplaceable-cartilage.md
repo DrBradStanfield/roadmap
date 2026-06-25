@@ -1,6 +1,7 @@
 ---
 title: "Lizard Venom Regrows 'Irreplaceable' Cartilage"
 url: "https://drstanfield.com/blogs/articles/lizard-venom-regrows-irreplaceable-cartilage"
+commerceUrl: "https://microvitamin.com/blogs/articles/glp-1-cartilage-regeneration"
 youtube: "https://www.youtube.com/watch?v=JM1he4pHzpw"
 publishedAt: "2026-04-29T12:00:00Z"
 tags: ["Research", "General Health"]

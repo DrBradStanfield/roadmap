@@ -1,6 +1,7 @@
 ---
 title: "These 20 Studies Reveal The BEST Diet for a Longer, Healthier Life"
 url: "https://drstanfield.com/blogs/articles/best-diet-for-a-longer-healthier-life"
+commerceUrl: "https://microvitamin.com/blogs/articles/best-diet-health-evidence"
 youtube: "https://www.youtube.com/watch?v=6k5q80tGIPg"
 publishedAt: "2025-03-11T22:57:23Z"
 tags: ["Diet","General Health","Research"]

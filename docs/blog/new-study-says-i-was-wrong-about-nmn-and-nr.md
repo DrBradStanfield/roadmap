@@ -1,6 +1,7 @@
 ---
 title: "New Study Says I Was Wrong About NMN and NR?"
 url: "https://drstanfield.com/blogs/articles/new-study-says-i-was-wrong-about-nmn-and-nr"
+commerceUrl: "https://microvitamin.com/blogs/articles/nmn-nr-nad-supplement-evidence"
 youtube: "https://www.youtube.com/watch?v=XB6B_XjQMa8"
 publishedAt: "2026-04-09T12:00:00Z"
 tags: ["Supplements", "Research"]

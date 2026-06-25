@@ -1,6 +1,7 @@
 ---
 title: "Vitamin K: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/vitamin-k-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/vitamin-k2-benefits-forms-dosing"
 publishedAt: "2025-12-15T01:17:08Z"
 type: "reference"
 tags: ["Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "St. John's Wort: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/st-johns-wort-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/st-johns-wort-benefits-dosing-safety"
 publishedAt: "2025-05-20T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

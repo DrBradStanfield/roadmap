@@ -1,6 +1,7 @@
 ---
 title: "Ginseng: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/ginseng-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/ginseng-benefits-forms-dosing"
 publishedAt: "2024-11-15T04:30:00Z"
 type: "reference"
 tags: ["Supplements"]

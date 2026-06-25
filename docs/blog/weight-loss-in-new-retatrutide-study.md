@@ -1,6 +1,7 @@
 ---
 title: "28.7% Weight Loss in New Retatrutide Study"
 url: "https://drstanfield.com/blogs/articles/weight-loss-in-new-retatrutide-study"
+commerceUrl: "https://microvitamin.com/blogs/articles/retatrutide-weight-loss-trial"
 youtube: "https://www.youtube.com/watch?v=w0A_VRT3rIE"
 publishedAt: "2025-12-18T05:52:56Z"
 tags: ["General Health","Preventative Care","Research"]

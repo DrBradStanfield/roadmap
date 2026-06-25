@@ -1,6 +1,7 @@
 ---
 title: "What Coffee Actually Does to Your Brain (131,821 Person Study)"
 url: "https://drstanfield.com/blogs/articles/what-coffee-actually-does-to-your-brain-131821-person-study"
+commerceUrl: "https://microvitamin.com/blogs/articles/coffee-dementia-risk-study"
 youtube: "https://www.youtube.com/watch?v=zphjOojmo1M"
 publishedAt: "2026-03-04T00:31:31Z"
 tags: ["General Health","Preventative Care","Research"]

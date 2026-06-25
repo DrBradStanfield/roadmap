@@ -1,6 +1,7 @@
 ---
 title: "How Does Your Resting Heart Rate Reflect Your Health?"
 url: "https://drstanfield.com/blogs/articles/resting-heart-rate-health"
+commerceUrl: "https://microvitamin.com/blogs/articles/resting-heart-rate"
 publishedAt: "2024-10-28T23:50:50Z"
 tags: ["General Health"]
 keywords: ["blood pressure","cardiovascular","cholesterol","exercise","sleep"]

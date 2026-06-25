@@ -1,6 +1,7 @@
 ---
 title: "These Foods Lower Death Risk by 23%"
 url: "https://drstanfield.com/blogs/articles/these-foods-lower-death-risk-by-23"
+commerceUrl: "https://microvitamin.com/blogs/articles/high-fibre-diet-benefits-cuts-death-risk-by-23-percent"
 youtube: "https://www.youtube.com/watch?v=ShWcFg8jdPk"
 publishedAt: "2025-03-17T00:43:40Z"
 tags: ["General Health"]

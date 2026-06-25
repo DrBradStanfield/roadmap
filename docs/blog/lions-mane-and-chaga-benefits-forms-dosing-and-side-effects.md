@@ -1,6 +1,7 @@
 ---
 title: "Lion's Mane and Chaga: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/lions-mane-and-chaga-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/lions-mane-chaga-benefits-dosing"
 publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

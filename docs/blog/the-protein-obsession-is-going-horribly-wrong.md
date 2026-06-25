@@ -1,6 +1,7 @@
 ---
 title: "The Protein Obsession Is Going Horribly Wrong"
 url: "https://drstanfield.com/blogs/articles/the-protein-obsession-is-going-horribly-wrong"
+commerceUrl: "https://microvitamin.com/blogs/articles/protein-intake-guide-how-much-do-you-really-need"
 youtube: "https://www.youtube.com/watch?v=_xTlBsdV9zg"
 publishedAt: "2025-10-02T23:36:02Z"
 tags: ["Diet"]

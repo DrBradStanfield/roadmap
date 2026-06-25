@@ -1,6 +1,7 @@
 ---
 title: "Blood Pressure Targets Just Changed"
 url: "https://drstanfield.com/blogs/articles/blood-pressure-targets-just-changed"
+commerceUrl: "https://microvitamin.com/blogs/articles/blood-pressure-targets-what-the-evidence-says"
 youtube: "https://www.youtube.com/watch?v=tvH0gMgSLd8"
 publishedAt: "2025-11-26T19:24:41Z"
 tags: ["General Health","Preventative Care","Research"]

@@ -1,6 +1,7 @@
 ---
 title: "The Only Three Supplements Doctor Brad Takes"
 url: "https://drstanfield.com/blogs/articles/the-only-three-supplements-doctor-brad-takes"
+commerceUrl: "https://microvitamin.com/blogs/articles/evidence-based-supplement-stack"
 youtube: "https://www.youtube.com/watch?v=iuWUL0_t5B0"
 publishedAt: "2025-07-30T20:38:06Z"
 tags: ["Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "Are Supplement Gummies Effective Compared to Capsules?"
 url: "https://drstanfield.com/blogs/articles/supplement-gummies-compared-capsules"
+commerceUrl: "https://microvitamin.com/blogs/articles/gummies-vs-capsules-supplements"
 publishedAt: "2025-01-29T16:30:07Z"
 tags: ["Supplements"]
 keywords: ["folate","magnesium","vitamin b12","vitamin b9","vitamin c","vitamin d","vitamin e"]

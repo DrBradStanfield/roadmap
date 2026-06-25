@@ -1,6 +1,7 @@
 ---
 title: "Sexual Enhancement Supplements: Benefits, Evidence, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/sexual-enhancement-supplements-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/sexual-enhancement-supplements-guide"
 publishedAt: "2025-10-18T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

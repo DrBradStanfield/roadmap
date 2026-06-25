@@ -1,6 +1,7 @@
 ---
 title: "Vitamin A: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/vitamin-a-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/vitamin-a-forms-benefits-dosing"
 publishedAt: "2025-11-19T03:51:25Z"
 type: "reference"
 tags: ["Supplements"]

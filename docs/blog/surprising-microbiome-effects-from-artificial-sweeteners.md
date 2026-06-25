@@ -1,6 +1,7 @@
 ---
 title: "Surprising Microbiome Effects from Artificial Sweeteners"
 url: "https://drstanfield.com/blogs/articles/surprising-microbiome-effects-from-artificial-sweeteners"
+commerceUrl: "https://microvitamin.com/blogs/articles/artificial-sweeteners-microbiome"
 youtube: "https://www.youtube.com/watch?v=rCOpHZcbPIY"
 publishedAt: "2025-10-29T22:37:37Z"
 tags: ["Diet"]

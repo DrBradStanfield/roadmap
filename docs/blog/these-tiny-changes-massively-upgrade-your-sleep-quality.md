@@ -1,6 +1,7 @@
 ---
 title: "These TINY Changes Massively Upgrade Your Sleep Quality"
 url: "https://drstanfield.com/blogs/articles/these-tiny-changes-massively-upgrade-your-sleep-quality"
+commerceUrl: "https://microvitamin.com/blogs/articles/morning-light-sleep-quality"
 youtube: "https://www.youtube.com/watch?v=gbsGL-LOIx4"
 publishedAt: "2025-05-15T23:17:50Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]

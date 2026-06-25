@@ -1,6 +1,7 @@
 ---
 title: "Chia Seed: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/chia-seed-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/chia-seed-benefits-dosing"
 publishedAt: "2024-05-24T09:51:25Z"
 type: "reference"
 tags: ["Supplements"]

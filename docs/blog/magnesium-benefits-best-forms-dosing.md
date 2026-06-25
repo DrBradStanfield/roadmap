@@ -1,6 +1,7 @@
 ---
 title: "Magnesium: Benefits, Best Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/magnesium-benefits-best-forms-dosing"
+commerceUrl: "https://microvitamin.com/blogs/articles/magnesium-forms-benefits-dosing"
 publishedAt: "2025-04-08T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

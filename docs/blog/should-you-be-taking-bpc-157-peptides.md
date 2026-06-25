@@ -1,6 +1,7 @@
 ---
 title: "Should YOU Be Taking BPC-157 Peptides?"
 url: "https://drstanfield.com/blogs/articles/should-you-be-taking-bpc-157-peptides"
+commerceUrl: "https://microvitamin.com/blogs/articles/bpc-157-peptide-evidence"
 youtube: "https://www.youtube.com/watch?v=Y6smr1o-f9o"
 publishedAt: "2025-02-16T20:15:44Z"
 tags: ["Research"]

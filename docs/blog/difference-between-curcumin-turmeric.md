@@ -1,6 +1,7 @@
 ---
 title: "FAQ: What's the Difference Between Curcumin and Turmeric?"
 url: "https://drstanfield.com/blogs/articles/difference-between-curcumin-turmeric"
+commerceUrl: "https://microvitamin.com/blogs/articles/curcumin-vs-turmeric"
 youtube: "https://www.youtube.com/watch?v=rntf8VM9nAM"
 publishedAt: "2024-09-13T20:30:03Z"
 tags: ["Supplements","Research","General Health"]

@@ -1,6 +1,7 @@
 ---
 title: "Cancer Tests You Need Right Now"
 url: "https://drstanfield.com/blogs/articles/cancer-tests-you-need-right-now"
+commerceUrl: "https://microvitamin.com/blogs/articles/cancer-screening-guide"
 youtube: "https://www.youtube.com/watch?v=GhmcFAtLw10"
 publishedAt: "2026-01-16T22:43:52Z"
 tags: ["General Health","Preventative Care","Research"]

@@ -1,6 +1,7 @@
 ---
 title: "Why This Diet is Strongly Suspected To Be The Best"
 url: "https://drstanfield.com/blogs/articles/diet-strongly-suspected-best"
+commerceUrl: "https://microvitamin.com/blogs/articles/evidence-based-diet-guide"
 youtube: "https://www.youtube.com/watch?v=lzW5URw1ktc"
 publishedAt: "2024-10-14T22:54:37Z"
 tags: ["Diet"]

@@ -1,6 +1,7 @@
 ---
 title: "We're All About to Become Lean AND Ripped (new evidence)"
 url: "https://drstanfield.com/blogs/articles/were-all-about-to-become-lean-and-ripped-new-evidence"
+commerceUrl: "https://microvitamin.com/blogs/articles/muscle-loss-glp1-drugs-evidence"
 youtube: "https://www.youtube.com/watch?v=Zit5we5Ss18"
 publishedAt: "2026-06-15T12:00:00Z"
 tags: ["Research", "Supplements", "General Health"]

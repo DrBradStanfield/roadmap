@@ -1,6 +1,7 @@
 ---
 title: "99% of Heart Attacks Had This Prior Warning"
 url: "https://drstanfield.com/blogs/articles/99-of-heart-attacks-had-this-prior-warning"
+commerceUrl: "https://microvitamin.com/blogs/articles/heart-attack-risk-factors"
 youtube: "https://youtu.be/XwrjGB0nq1s"
 publishedAt: "2026-05-08T02:05:49Z"
 tags: ["Preventative Care", "Research", "General Health"]

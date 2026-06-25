@@ -1,6 +1,7 @@
 ---
 title: "This Incredibly Popular Supplement DAMAGES Your Blood Vessels"
 url: "https://drstanfield.com/blogs/articles/this-incredibly-popular-supplement-damages-your-blood-vessels"
+commerceUrl: "https://microvitamin.com/blogs/articles/supplements-that-damage-blood-vessels"
 youtube: "https://www.youtube.com/watch?v=INeQLAdDkEE"
 publishedAt: "2025-05-15T23:18:01Z"
 tags: ["Diet","Exercise","General Health","Preventative Care","Research","Skin Health","Supplements"]

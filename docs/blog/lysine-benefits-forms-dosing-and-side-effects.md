@@ -1,6 +1,7 @@
 ---
 title: "Lysine (L-Lysine): Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/lysine-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/lysine-benefits-dosing-forms"
 publishedAt: "2025-01-15T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

@@ -1,6 +1,7 @@
 ---
 title: "The Diet My Patients Use to CRUSH Visceral Fat"
 url: "https://drstanfield.com/blogs/articles/the-diet-my-patients-use-to-crush-visceral-fat"
+commerceUrl: "https://microvitamin.com/blogs/articles/visceral-fat-insulin-resistance-diet"
 youtube: "https://www.youtube.com/watch?v=FWcaFMQufFA"
 publishedAt: "2025-09-11T23:24:13Z"
 tags: ["Diet"]

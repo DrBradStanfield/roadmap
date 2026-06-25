@@ -1,6 +1,7 @@
 ---
 title: "The Grad Student Who Broke Microplastics Research"
 url: "https://drstanfield.com/blogs/articles/the-grad-student-who-broke-microplastics-research"
+commerceUrl: "https://microvitamin.com/blogs/articles/microplastics-research-headlines-debunked"
 youtube: "https://youtu.be/pNPvWsmxwno"
 publishedAt: "2026-06-02T16:06:13Z"
 tags: ["Research", "General Health"]

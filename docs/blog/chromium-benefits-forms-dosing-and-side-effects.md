@@ -1,6 +1,7 @@
 ---
 title: "Chromium: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/chromium-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/chromium-picolinate-glycinate-benefits"
 publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

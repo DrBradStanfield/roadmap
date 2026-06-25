@@ -1,6 +1,7 @@
 ---
 title: "Ginkgo Biloba: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/ginkgo-biloba-benefits-best-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/ginkgo-biloba-benefits-dosing-safety"
 publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

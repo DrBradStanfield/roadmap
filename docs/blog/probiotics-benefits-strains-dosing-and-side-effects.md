@@ -1,6 +1,7 @@
 ---
 title: "Probiotics: Benefits, Best Strains, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/probiotics-benefits-strains-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/probiotics-strains-dosing-safety"
 publishedAt: "2025-05-13T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

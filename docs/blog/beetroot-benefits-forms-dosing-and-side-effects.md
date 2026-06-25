@@ -1,6 +1,7 @@
 ---
 title: "Beetroot: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/beetroot-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/beetroot-nitrate-benefits-dosing"
 publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

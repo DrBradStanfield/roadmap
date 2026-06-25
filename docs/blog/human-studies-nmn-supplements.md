@@ -1,6 +1,7 @@
 ---
 title: "Human Studies on NMN Supplements: Are There Any Benefits?"
 url: "https://drstanfield.com/blogs/articles/human-studies-nmn-supplements"
+commerceUrl: "https://microvitamin.com/blogs/articles/nmn-supplements-human-studies"
 youtube: "https://www.youtube.com/watch?v=am2RHcPOaLA"
 publishedAt: "2024-11-07T22:07:19Z"
 tags: ["Supplements"]

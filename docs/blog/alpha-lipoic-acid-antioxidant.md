@@ -1,6 +1,7 @@
 ---
 title: "Alpha-Lipoic Acid: A Potent (But Potentially DAMAGING) Antioxidant"
 url: "https://drstanfield.com/blogs/articles/alpha-lipoic-acid-antioxidant"
+commerceUrl: "https://microvitamin.com/blogs/articles/alpha-lipoic-acid-benefits-risks"
 youtube: "https://www.youtube.com/watch?v=p4tX7XwZMDU"
 publishedAt: "2024-09-14T03:22:51Z"
 tags: ["Supplements"]

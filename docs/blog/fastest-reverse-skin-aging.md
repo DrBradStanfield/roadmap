@@ -1,6 +1,7 @@
 ---
 title: "The FASTEST Way To Reverse The Signs of Skin Aging"
 url: "https://drstanfield.com/blogs/articles/fastest-reverse-skin-aging"
+commerceUrl: "https://microvitamin.com/blogs/articles/reverse-skin-aging-protocol"
 youtube: "https://www.youtube.com/watch?v=3Ar5FvAONwA"
 publishedAt: "2024-08-11T19:58:36Z"
 tags: ["Skin Health"]

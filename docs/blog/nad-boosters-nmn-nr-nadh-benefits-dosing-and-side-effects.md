@@ -1,6 +1,7 @@
 ---
 title: "NAD Boosters (NMN, NR, NADH): Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/nad-boosters-nmn-nr-nadh-benefits-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/nad-boosters-nmn-nr-nadh-evidence-guide"
 publishedAt: "2025-04-29T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

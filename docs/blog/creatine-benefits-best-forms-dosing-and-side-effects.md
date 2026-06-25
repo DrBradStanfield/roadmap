@@ -1,6 +1,7 @@
 ---
 title: "Creatine: Benefits, Best Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/creatine-benefits-best-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/creatine-supplementation-evidence-based-guide-benefits-forms-dosage-safety"
 publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

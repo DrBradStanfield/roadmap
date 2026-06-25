@@ -1,6 +1,7 @@
 ---
 title: "CBD (Cannabidiol): Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/cbd-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/cbd-benefits-dosing-side-effects"
 publishedAt: "2024-05-17T22:30:00Z"
 type: "reference"
 tags: ["Supplements"]

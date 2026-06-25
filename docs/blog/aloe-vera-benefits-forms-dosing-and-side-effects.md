@@ -1,6 +1,7 @@
 ---
 title: "Aloe Vera: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/aloe-vera-benefits-forms-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/aloe-vera-gel-latex-guide"
 publishedAt: "2025-06-10T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

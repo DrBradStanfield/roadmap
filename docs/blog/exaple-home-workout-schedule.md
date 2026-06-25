@@ -1,6 +1,7 @@
 ---
 title: "Example Home-Based Workout Schedules That Are Scientifically Proven"
 url: "https://drstanfield.com/blogs/articles/exaple-home-workout-schedule"
+commerceUrl: "https://microvitamin.com/blogs/articles/home-workout-science-guide"
 youtube: "https://www.youtube.com/watch?v=nP04923o2iA"
 publishedAt: "2024-06-26T20:28:40Z"
 tags: ["Exercise"]

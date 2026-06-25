@@ -1,6 +1,7 @@
 ---
 title: "Garcinia Cambogia: Benefits, Forms, Dosing, and Side Effects"
 url: "https://drstanfield.com/blogs/articles/garcinia-cambogia-benefits-dosing-and-side-effects"
+commerceUrl: "https://microvitamin.com/blogs/articles/garcinia-cambogia-hca-evidence"
 publishedAt: "2025-04-22T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]

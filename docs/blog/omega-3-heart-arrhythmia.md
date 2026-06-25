@@ -1,6 +1,7 @@
 ---
 title: "New Study Links Omega-3 to Increased Heart Arrhythmia Risk"
 url: "https://drstanfield.com/blogs/articles/omega-3-heart-arrhythmia"
+commerceUrl: "https://microvitamin.com/blogs/articles/omega-3-atrial-fibrillation-risk-evidence"
 youtube: "https://www.youtube.com/watch?v=q71tHoHeXZo"
 publishedAt: "2024-07-11T21:04:17Z"
 tags: ["Research"]
