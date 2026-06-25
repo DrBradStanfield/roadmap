@@ -229,19 +229,44 @@ npx shopify app deploy --force
 cp -L docs/products.md /tmp/_products.md && rm docs/products.md && mv /tmp/_products.md docs/products.md
 
 # 6. Deploy backend to Fly.io (MUST run from project root where Dockerfile lives).
-#    --build-arg SENTRY_RELEASE: per-commit release name for the SERVER source-map upload
-#      (node:22-alpine has no git CLI, so the SHA can't be auto-detected in the container;
-#       org/project slugs come from fly.toml [build.args]).
-#    --build-secret sentry_auth_token: the Sentry auth token, mounted ONLY for the build
-#      RUN (never baked into the image). Without it the server map upload no-ops gracefully.
-#    Omit either flag and the build still succeeds — it just skips/garbles the server upload.
-fly deploy \
+#    THERE ARE TWO FLY APPS sharing the same Dockerfile + the same chatbot knowledge files:
+#      • health-tool-app  → commerce / microvitamin.com / BRAND chat surface   (fly.toml)
+#      • health-tool-edu  → education / drstanfield.com / DOCTOR chat surface  (fly.edu.toml)
+#    The chatbot knowledge base is Brad-global / store-agnostic, so a change to SHARED content
+#    — chatbot prompts (chat-system-prompt.md, chat-posture-*.md, chat-router-prompt.md),
+#    docs/blog/*.md + index.json, docs/products.md, evidence.ts — MUST be deployed to BOTH apps
+#    to go live on both surfaces. A change touching only one app's env/proxy → deploy just that one.
+#    Flags (identical for both, only the config + SENTRY_RELEASE app-name differ):
+#    --build-arg SENTRY_RELEASE: per-commit release for the SERVER source-map upload (the
+#      node:22-alpine container has no git CLI, so the SHA can't be auto-detected there;
+#      org/project slugs come from the [build.args] of each fly config).
+#    --build-secret sentry_auth_token: Sentry token, mounted ONLY for the build RUN (never
+#      baked into the image). Omit either flag and the build still succeeds — it just
+#      skips/garbles the server map upload.
+
+# 6a. Commerce / brand app (default config — fly.toml):
+fly deploy -c fly.toml \
   --build-arg SENTRY_RELEASE="health-tool-app@$(git rev-parse --short HEAD)" \
   --build-secret sentry_auth_token="$(grep -E '^SENTRY_AUTH_TOKEN=' .env | cut -d= -f2-)"
 
-# 7. Restore symlink after deploy
+# 6b. Education / doctor app (fly.edu.toml):
+fly deploy -c fly.edu.toml \
+  --build-arg SENTRY_RELEASE="health-tool-edu@$(git rev-parse --short HEAD)" \
+  --build-secret sentry_auth_token="$(grep -E '^SENTRY_AUTH_TOKEN=' .env | cut -d= -f2-)"
+
+# 7. Restore symlink after BOTH deploys
 git checkout docs/products.md
+
+# 8. Verify both apps are healthy (fly's own deploy health-checks gate success; confirm with):
+fly status -c fly.toml      # health-tool-app
+fly status -c fly.edu.toml  # health-tool-edu
+#    (Each app has a *.fly.dev hostname — health-tool-app.fly.dev / health-tool-edu.fly.dev —
+#     but in production the chatbot is reached through the Shopify app proxy, and a public
+#     healthz may not be exposed, so prefer `fly status` / `fly logs`. End-to-end sanity check:
+#     ask the live chatbot a question on microvitamin.com and on drstanfield.com.)
 ```
+
+**Single-app shortcut for a chatbot-knowledge-only change** (most common — e.g. a prompt or blog edit, no Dockerfile/dep change): the symlink dance (steps 1-script aside) is still required because the build ships `docs/products.md`; run steps 5 → 6a → 6b → 7. You do NOT need the Shopify-extension steps (1-4) unless the widget itself changed.
 
 ### Local-first (v2) builds & build flags
 
