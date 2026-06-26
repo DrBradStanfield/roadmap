@@ -131,6 +131,18 @@ export function initSentry() {
       // Raty star rating plugin (third-party, e.g. Judge.me) — attributed to our
       // bundle because Sentry's setTimeout instrumentation wraps their callbacks.
       /\.raty\b/,
+      // Shopify Horizon theme ships native ES modules with bare "@theme/*" import
+      // specifiers (an import-map feature). Old iOS Safari / in-app browsers lack
+      // import-map support and throw this TypeError. The stack is all [native code]
+      // (no URL), so allowUrls can't filter it — match on the message. We never ship
+      // "@theme/" specifiers, so this can't swallow a real error from our bundles.
+      /Module specifier, .*@theme\/.* does not start with/,
+      // Same Horizon theme on old WebKit: the engine can't parse the theme's modern
+      // "#private" class fields/methods, so module parsing fails with this SyntaxError
+      // (also "[native code]", no URL). Both variants ("Cannot parse class method with
+      // private name." / "Expected a ';' following a class field.") share this prefix.
+      // Our bundles are transpiled (no "#private" fields), so this is theme-only noise.
+      /Unexpected private name #/,
     ],
     allowUrls: [
       // Only capture errors originating from our own widget bundles…
