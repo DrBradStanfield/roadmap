@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { reactRouter } from "@react-router/dev/vite";
 import { sentryReactRouter, type SentryReactRouterBuildOptions } from "@sentry/react-router";
 import { defineConfig, type UserConfig } from "vite";
@@ -68,6 +69,41 @@ const sentryConfig: SentryReactRouterBuildOptions = {
   },
 };
 
+// react-router 7.17.0 ships a PRODUCTION dist (dist/production/*, stripped of dev
+// warnings/invariants) but its package.json `exports` has NO development/production
+// condition — every condition (node/import/module/default) points at
+// dist/development/index.mjs. So when react-router is externalized (the vite SSR
+// default), the running server resolves `import "react-router"` to the DEV build no
+// matter what NODE_ENV / --conditions are (verified: NODE_ENV=production +
+// --conditions=production still resolve dist/development). That's why prod Sentry
+// frames showed react-router/dist/development/chunk-*.mjs.
+//
+// Fix (server build only): bundle react-router into the SSR output (ssr.noExternal)
+// and redirect the bare specifier to the production entry. The client build already
+// gets the production build, so we scope the redirect to options.ssr and leave the
+// client untouched. Exact-match `react-router` only — sub-paths like `react-router/dom`
+// keep their normal resolution.
+const reactRouterProdEntry = new URL(
+  "./node_modules/react-router/dist/production/index.mjs",
+  import.meta.url,
+).pathname;
+// Guard: if a future react-router version drops/relocates dist/production, fall
+// through to normal resolution rather than redirecting to a missing file.
+const reactRouterProdEntryExists = existsSync(reactRouterProdEntry);
+
+function reactRouterServerProductionBuild() {
+  return {
+    name: "react-router-server-production-build",
+    enforce: "pre" as const,
+    resolveId(id: string, _importer: string | undefined, options?: { ssr?: boolean }) {
+      if (options?.ssr && id === "react-router" && reactRouterProdEntryExists) {
+        return reactRouterProdEntry;
+      }
+      return null;
+    },
+  };
+}
+
 export default defineConfig((config) => ({
   server: {
     allowedHosts: [host],
@@ -82,12 +118,19 @@ export default defineConfig((config) => ({
     },
   },
   plugins: [
+    reactRouterServerProductionBuild(),
     reactRouter(),
     sentryReactRouter(sentryConfig, config),
     tsconfigPaths(),
   ],
   build: {
     assetsInlineLimit: 0,
+  },
+  ssr: {
+    // Bundle react-router into the server output so the resolveId redirect above
+    // (to dist/production/index.mjs) is actually inlined instead of left as a
+    // runtime `import "react-router"` that re-resolves to dist/development.
+    noExternal: ["react-router"],
   },
   optimizeDeps: {
     include: ["@shopify/app-bridge-react"],
