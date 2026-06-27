@@ -224,6 +224,20 @@ function emptyDraft(): DraftRow {
   return { date: todayIso(), weight: '', waist: '', sys: '', dia: '' };
 }
 
+/** Merge a single BP field (systolic OR diastolic) into an existing sys/dia
+ *  pair WITHOUT touching the other field. BP is two independent inputs that
+ *  share one cell; each must update only its own slot. Generic over the carrier
+ *  so it works on a bare `{sys,dia}` backfill pair AND on the full `DraftRow`
+ *  (preserving date/weight/waist). (Exported for unit testing — guards the
+ *  "typing diastolic wipes systolic" clobber class.) */
+export function mergeBpDraft<T extends { sys: string; dia: string }>(
+  prev: T,
+  which: 'sys' | 'dia',
+  typed: string,
+): T {
+  return { ...prev, [which]: typed };
+}
+
 // Backfill typed values for EMPTY cells in existing date columns: a user can
 // click an empty weight/waist slot — or an empty BP slot — at a past date and
 // type a value. Single-value metrics (weight/waist) live in `simple`, keyed by
@@ -350,7 +364,7 @@ export function StartingInfoVitals({
     setBackfills(prev => {
       const bp = { ...prev.bp };
       const cur = bp[date] ?? { sys: '', dia: '' };
-      const next = { ...cur, [which]: typed };
+      const next = mergeBpDraft(cur, which, typed);
       if (next.sys === '' && next.dia === '') delete bp[date];
       else bp[date] = next;
       return { ...prev, bp };
@@ -361,15 +375,24 @@ export function StartingInfoVitals({
   // value, reloaded → it lives in localStorage → inputs[field]) and re-render
   // it in the active display unit on a unit toggle. Same pattern the old row
   // used. BP isn't pre-populated here (its inputs round-trip below).
+  // This effect is an external-PUSH channel, never an eraser: it only writes a
+  // saved value into the draft (mount pre-populate / unit toggle / prefill).
+  // The draft text is owned by the keystroke handler (setSimpleDraft) and
+  // cleared only by `commit`'s emptyDraft(). So when `inputs[field]` is null we
+  // early-return rather than blank: an INVALID typed value drives
+  // `inputs[field]` to undefined (setSimpleDraft mirrors only valid values), and
+  // blanking here would wipe the user's in-progress text AND hide the inline
+  // "Min …" error before they can fix it — the "field blanked out on a bad
+  // entry" symptom.
   useEffect(() => {
-    const wU = fieldUnit('weightKg');
-    const formatted = inputs.weightKg != null ? formatDisplayValue('weight', inputs.weightKg, wU) : '';
+    if (inputs.weightKg == null) return;
+    const formatted = formatDisplayValue('weight', inputs.weightKg, fieldUnit('weightKg'));
     setDraft(d => d.weight === formatted ? d : { ...d, weight: formatted });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputs.weightKg, unitOverrides.weightKg, unitSystem]);
   useEffect(() => {
-    const wU = fieldUnit('waistCm');
-    const formatted = inputs.waistCm != null ? formatDisplayValue('waist', inputs.waistCm, wU) : '';
+    if (inputs.waistCm == null) return;
+    const formatted = formatDisplayValue('waist', inputs.waistCm, fieldUnit('waistCm'));
     setDraft(d => d.waist === formatted ? d : { ...d, waist: formatted });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputs.waistCm, unitOverrides.waistCm, unitSystem]);
@@ -428,7 +451,7 @@ export function StartingInfoVitals({
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setBpDraft = (which: 'sys' | 'dia', typed: string) => {
-    setDraft(d => ({ ...d, [which]: typed }));
+    setDraft(d => mergeBpDraft(d, which, typed));
     const n = parseLocalisedNumber(typed);
     if (which === 'sys') onFieldChange('systolicBp', n != null && n >= BP_SYS_MIN && n <= BP_SYS_MAX ? n : undefined);
     else onFieldChange('diastolicBp', n != null && n >= BP_DIA_MIN && n <= BP_DIA_MAX ? n : undefined);

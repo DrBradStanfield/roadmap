@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ApiMeasurement, UnitSystem } from '@roadmap/health-core';
-import { buildColumns, bpPairReady, blurLeavesCell, vitalsBackfillsToTasks, routeVitalsEdit } from './StartingInfoVitals';
+import { buildColumns, bpPairReady, blurLeavesCell, vitalsBackfillsToTasks, routeVitalsEdit, mergeBpDraft } from './StartingInfoVitals';
 
 // `buildColumns` is the one genuinely new pure helper introduced when the
 // vitals section was unified onto the blood-test matrix's column grid: it
@@ -128,6 +128,40 @@ describe('bpPairReady', () => {
     expect(bpPairReady('300', '80')).toBe(false); // sys too high
     expect(bpPairReady('120', '200')).toBe(false); // dia too high
     expect(bpPairReady('40', '80')).toBe(false); // sys too low
+  });
+});
+
+// Reported bug: in the Blood Pressure cell, entering systolic then entering
+// diastolic wiped the systolic (and vice-versa) — the two inputs clobbered each
+// other's state. The fix is that each onChange merges ONLY its own field into
+// the existing pair, never replacing the whole value. `mergeBpDraft` is that
+// merge, extracted so the "one field never blanks the other" invariant is
+// directly testable (the setter in the component is `setDraft(d => ({ ...d,
+// ...mergeBpDraft(...) }))`).
+describe('mergeBpDraft — sys and dia never clobber each other', () => {
+  it('setting diastolic preserves an already-typed systolic', () => {
+    const afterSys = mergeBpDraft({ sys: '', dia: '' }, 'sys', '118');
+    expect(afterSys).toEqual({ sys: '118', dia: '' });
+    const afterDia = mergeBpDraft(afterSys, 'dia', '78');
+    expect(afterDia).toEqual({ sys: '118', dia: '78' });
+  });
+
+  it('re-entering systolic preserves the diastolic', () => {
+    const start = { sys: '118', dia: '78' };
+    const next = mergeBpDraft(start, 'sys', '120');
+    expect(next).toEqual({ sys: '120', dia: '78' });
+  });
+
+  it('clearing one field leaves the other intact', () => {
+    const next = mergeBpDraft({ sys: '120', dia: '80' }, 'sys', '');
+    expect(next).toEqual({ sys: '', dia: '80' });
+  });
+
+  it('does not mutate the previous pair (returns a new object)', () => {
+    const prev = { sys: '120', dia: '80' };
+    const next = mergeBpDraft(prev, 'dia', '85');
+    expect(prev).toEqual({ sys: '120', dia: '80' }); // untouched
+    expect(next).not.toBe(prev);
   });
 });
 

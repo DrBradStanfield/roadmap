@@ -46,3 +46,47 @@ describe('validateTypedValue — error text includes the display unit', () => {
     expect(validateTypedValue('lpa', '100', 'si').error).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Reported bug: entering weight 155 lbs (a clearly valid ~70 kg) in US
+// conventional units was said to be rejected with "weight needs to be at least
+// 44 lbs" and the field blanked. The suspected mechanism was the SI min (20 kg)
+// being compared against the raw conventional number. These tests pin the
+// CORRECT behaviour: the bound is always evaluated in the ACTIVE display unit,
+// so 155 lbs passes and only a value genuinely below the unit's own minimum
+// fails (with the bound expressed in that unit).
+// ---------------------------------------------------------------------------
+
+describe('validateTypedValue — weight bounds evaluated in the active unit', () => {
+  it('accepts 155 lbs in conventional units (the reported value)', () => {
+    expect(validateTypedValue('weight', '155', 'conventional').error).toBeNull();
+  });
+
+  it('accepts the equivalent 70 kg in SI units', () => {
+    expect(validateTypedValue('weight', '70', 'si').error).toBeNull();
+  });
+
+  it('rejects a value below the conventional minimum, expressed in lbs', () => {
+    // 30 lbs is below the 44 lbs (≈20 kg) floor.
+    const { error } = validateTypedValue('weight', '30', 'conventional');
+    expect(error).toBe('Min 44 lbs');
+  });
+
+  it('rejects a value below the SI minimum, expressed in kg', () => {
+    const { error } = validateTypedValue('weight', '15', 'si');
+    expect(error).toBe('Min 20 kg');
+  });
+
+  it('does not apply the SI 20-kg floor to a conventional number', () => {
+    // 25 lbs (≈11 kg) is below BOTH floors, but the error must be the lbs floor,
+    // never "Min 20 kg" — i.e. the conventional number is not measured against SI.
+    const { error } = validateTypedValue('weight', '25', 'conventional');
+    expect(error).toMatch(/lbs/);
+    expect(error).not.toMatch(/kg/);
+  });
+
+  it('accepts waist values in conventional inches without SI-cm confusion', () => {
+    expect(validateTypedValue('waist', '36', 'conventional').error).toBeNull();
+    expect(validateTypedValue('waist', '90', 'si').error).toBeNull();
+  });
+});
