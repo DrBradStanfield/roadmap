@@ -1,6 +1,6 @@
 ---
-title: "This is Embarrassing for the Longevity Supplement Industry"
-url: "https://drstanfield.com/blogs/articles/this-is-embarrassing-for-the-longevity-supplement-industry"
+title: "The Anti-Aging Supplement Everyone Took Never Worked"
+url: "https://drstanfield.com/blogs/articles/the-anti-aging-supplement-everyone-took-never-worked"
 commerceUrl: "https://microvitamin.com/blogs/articles/do-anti-aging-supplements-work"
 youtube: "https://www.youtube.com/watch?v=cy5ntNFqWoM"
 publishedAt: "2026-07-01T12:00:00Z"
