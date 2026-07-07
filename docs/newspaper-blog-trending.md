@@ -47,9 +47,11 @@ Where `baseline_weekly_sessions = prior_baseline_sessions / BASELINE_WINDOW_DAYS
 | `TARGET_HOUR_NZ` | 3 | Earliest NZ-local hour (Pacific/Auckland, DST-aware) the cron is eligible to run each day |
 | `CRON_INTERVAL_MS` | 60 min | Interval check; first tick at or after TARGET_HOUR_NZ that hasn't run today (NZ-local date) acquires the lock |
 
-**Pure function:** `computeTrending(current7dRows, priorBaselineRows, blogIndex, now)` — testable without network.
+**Pure function:** `computeTrending(current7dRows, priorBaselineRows, handleMap, now)` — testable without network (see `trending-cron.server.test.ts`).
 
 **Locale aggregation:** URLs like `/en-au/blogs/articles/foo` and `/blogs/articles/foo` are merged via regex `^/(?:[a-z-]+/)?blogs/articles/([\w-]+)/?$` so future markets aggregate automatically.
+
+**Per-store handle mapping (post-§12 split):** both Fly apps run the cron against their own store (`SHOPIFY_SHOP_DOMAIN`), but the two stores publish the same articles under DIFFERENT handles — `docs/blog/index.json` `handle` is the drstanfield.com (education) handle; the microvitamin.com (commerce) handle only exists inside `commerceUrl`. `buildStoreHandleMap(entries, shopDomain)` keys the index per store: education by `handle`; commerce by the `commerceUrl` handle, with the education handle ALIASED to the same entry because the commerce store's pre-split analytics (drstanfield.com pointed there until 2026-06-24) recorded sessions under the education handles. The metafield payload always carries the handle the target store serves, so its Liquid `articles['articles/' | append: entry.handle]` lookup resolves. Entries without `commerceUrl` are excluded on the commerce store.
 
 ## Cron mechanics
 
@@ -183,4 +185,6 @@ shopify theme push --path=theme --theme=178593038621 \
 - **`shopify theme push` exit code lies.** Returns 0 even on per-file errors. Parse the JSON output for `errors` / `warning` keys.
 - **ShopifyQL ≠ SQL.** No `count()`, no `count(*)`. Use named pre-aggregated metrics. Datasets in 2025-10 Admin API are limited to `sales`, `customers`, `sessions`.
 - **Sessions data is per-landing-page**, not per-page-view. Articles users navigate to from elsewhere on-site won't count. For Brad's blog this is fine; for other blogs evaluate before reusing.
+- **`metafieldsSet` is idempotent — an identical value is a no-op that returns the OLD `updatedAt`.** When the submitted value equals the stored value, Shopify commits nothing and echoes the existing record, `updatedAt` unchanged. Do NOT assert commit success on `updatedAt` freshness — that guard threw daily whenever the trending list was stable (e.g. `[]` over `[]`), producing the long-running "Metafield write returned stale updatedAt" Sentry issue (the original 2026-05-21 "silent failure" was this same no-op, misdiagnosed). Assert on the echoed `value` matching what you submitted instead — that also still catches the real failure mode (existing record echoed with a different value).
+- **The two stores use DIFFERENT handles for the same article.** Looking up commerce-store traffic handles against the index's education handles matches nothing → cron writes `[]` forever → microvitamin.com sidebar permanently shows the empty state (the July-2026 bug). Per-store keying lives in `buildStoreHandleMap`; any new consumer of blog traffic data must resolve handles per store via `commerceUrl`.
 - **`cron_lock` seed rows must NOT use `lock_date = NULL`.** The acquisition query is `UPDATE … WHERE lock_date != $today`. PostgreSQL evaluates `NULL != $today` as `NULL` (treated as false), so a NULL seed row never matches and the cron silently fails forever — no errors, no Sentry, no logs. Seed with a sentinel past date (`'1970-01-01'`), and `tryAcquireCronLock` also uses `.or('lock_date.is.null,lock_date.neq.$today')` as belt-and-braces defense.

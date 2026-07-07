@@ -188,15 +188,17 @@ async function getShopId(admin: any): Promise<string> {
   return id;
 }
 
-async function writeTrendingMetafield(
+/** Exported for unit tests. */
+export async function writeTrendingMetafield(
   admin: any,
   shopId: string,
   entries: { handle: string; score: number }[],
 ): Promise<void> {
+  const value = JSON.stringify(entries);
   const result = await admin.graphql(
     `mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
       metafieldsSet(metafields: $metafields) {
-        metafields { id key namespace updatedAt }
+        metafields { id key namespace value updatedAt }
         userErrors { field message code }
       }
     }`,
@@ -207,7 +209,7 @@ async function writeTrendingMetafield(
           key: METAFIELD_KEY,
           ownerId: shopId,
           type: 'json',
-          value: JSON.stringify(entries),
+          value,
         }],
       },
     },
@@ -232,17 +234,23 @@ async function writeTrendingMetafield(
     throw new Error(`Metafield write returned empty metafields array (no row written): ${JSON.stringify(body)}`);
   }
 
-  // Stale-updatedAt check: catches the silent-failure mode where Shopify
-  // returns the *existing* metafield record (with old updatedAt) instead of
-  // committing the new value. Seen on 2026-05-21 — the setInterval-driven
-  // cron acquired the lock, "succeeded", but the metafield's updatedAt
-  // didn't advance. The manual route-driven trigger doesn't reproduce it.
-  const writtenAt = new Date(written[0].updatedAt).getTime();
-  const ageMs = Date.now() - writtenAt;
-  if (ageMs > 60_000 || Number.isNaN(writtenAt)) {
+  // Commit check: assert the record Shopify echoed back carries the value we
+  // submitted. This catches the silent-failure mode (Shopify echoes the
+  // existing record with the OLD value — nothing committed) without the false
+  // alarm of the previous updatedAt-freshness guard: `metafieldsSet` is
+  // idempotent, so submitting a value identical to the stored one is a
+  // successful no-op that legitimately returns the OLD updatedAt (the
+  // "Metafield write returned stale updatedAt" Sentry noise, daily whenever
+  // the trending list didn't change — e.g. `[]` over `[]`).
+  const echoed = String(written[0].value ?? '');
+  // Tolerate JSON whitespace normalization by Shopify (value is compact
+  // JSON.stringify output, so re-stringifying the echo normalizes both sides).
+  let normalizedEcho: string;
+  try { normalizedEcho = JSON.stringify(JSON.parse(echoed)); } catch { normalizedEcho = echoed; }
+  if (normalizedEcho !== value) {
     throw new Error(
-      `Metafield write returned stale updatedAt (${written[0].updatedAt}, ${Math.round(ageMs / 1000)}s old) — ` +
-      `Shopify echoed the existing record instead of committing. Full response: ${JSON.stringify(body)}`,
+      `Metafield write echoed a different value than submitted — nothing committed. ` +
+      `Submitted: ${value} Echoed: ${echoed.slice(0, 500)}`,
     );
   }
   console.log(`Trending: metafield written (id=${written[0].id}, updatedAt=${written[0].updatedAt})`);
@@ -255,7 +263,68 @@ interface TrendingEntry {
   baselineWeekly: number;
 }
 
-function aggregateByHandle(rows: UrlViewRow[]): Map<string, number> {
+/** How a traffic handle resolves for one store: which blog-index entry it
+ *  belongs to, and the handle that store actually serves the article under
+ *  (= what goes in the metafield so the store's Liquid `articles[...]` lookup
+ *  resolves). */
+export interface StoreHandle {
+  storeHandle: string;
+  entry: BlogIndexEntry;
+}
+
+/** Extract the article handle from a full blog-post URL, or null. */
+function handleFromUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const match = new URL(url).pathname.match(ARTICLE_URL_RE);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Key the blog index by every handle the given store's traffic can appear
+ * under. The two stores publish the same articles under DIFFERENT handles:
+ * the index `handle` is the drstanfield.com (education) handle; the
+ * microvitamin.com (commerce) handle only exists inside `commerceUrl`.
+ *
+ * Commerce store: key by the commerce handle, and ALSO alias the education
+ * handle to the same entry — until the 2026-06-24 domain split,
+ * drstanfield.com pointed at the commerce store, so that store's baseline
+ * sessions live under the education handles. Without the alias every article
+ * fails a view floor on one side of the split and the trending list is
+ * permanently `[]` (the bug that emptied the microvitamin.com sidebar).
+ * Entries with no `commerceUrl` don't exist on the commerce store and are
+ * excluded.
+ */
+export function buildStoreHandleMap(
+  entries: BlogIndexEntry[],
+  shopDomain: string,
+): Map<string, StoreHandle> {
+  const map = new Map<string, StoreHandle>();
+  for (const entry of entries) {
+    if (shopDomain === EDU_SHOP_DOMAIN) {
+      map.set(entry.handle, { storeHandle: entry.handle, entry });
+      continue;
+    }
+    const commerceHandle = handleFromUrl(entry.commerceUrl);
+    if (!commerceHandle) continue;
+    map.set(commerceHandle, { storeHandle: commerceHandle, entry });
+    // Alias, not overwrite: another entry's own handle wins over this alias.
+    if (!map.has(entry.handle)) {
+      map.set(entry.handle, { storeHandle: commerceHandle, entry });
+    }
+  }
+  return map;
+}
+
+/** Sum views per store handle, resolving traffic handles (and locale-prefixed
+ *  URLs) through the store's handle map. */
+function aggregateByStoreHandle(
+  rows: UrlViewRow[],
+  handleMap: Map<string, StoreHandle>,
+): Map<string, number> {
   const totals = new Map<string, number>();
   for (const { url, views } of rows) {
     let pathname: string;
@@ -266,21 +335,23 @@ function aggregateByHandle(rows: UrlViewRow[]): Map<string, number> {
     }
     const match = pathname.match(ARTICLE_URL_RE);
     if (!match) continue;
-    const handle = match[1];
-    totals.set(handle, (totals.get(handle) ?? 0) + views);
+    const resolved = handleMap.get(match[1]);
+    if (!resolved) continue;
+    totals.set(resolved.storeHandle, (totals.get(resolved.storeHandle) ?? 0) + views);
   }
   return totals;
 }
 
-/** Pure function — accepts pre-fetched data so it's testable without network. */
+/** Pure function — accepts pre-fetched data so it's testable without network.
+ *  `handleMap` comes from `buildStoreHandleMap` for the target store. */
 export function computeTrending(
   current7dRows: UrlViewRow[],
   priorBaselineRows: UrlViewRow[],
-  blogIndex: Map<string, BlogIndexEntry>,
+  handleMap: Map<string, StoreHandle>,
   now: Date = new Date(),
 ): TrendingEntry[] {
-  const current7dByHandle = aggregateByHandle(current7dRows);
-  const priorBaselineByHandle = aggregateByHandle(priorBaselineRows);
+  const current7dByHandle = aggregateByStoreHandle(current7dRows, handleMap);
+  const priorBaselineByHandle = aggregateByStoreHandle(priorBaselineRows, handleMap);
 
   const minPublishedAt = new Date(now.getTime() - MIN_ARTICLE_AGE_DAYS * 86400 * 1000);
 
@@ -289,7 +360,7 @@ export function computeTrending(
   for (const [handle, current7d] of current7dByHandle) {
     if (current7d < MIN_CURRENT_7D_VIEWS) continue;
 
-    const meta = blogIndex.get(handle);
+    const meta = handleMap.get(handle)?.entry;
     if (!meta) continue;
 
     const publishedAt = new Date(meta.publishedAt);
@@ -333,10 +404,8 @@ export async function computeAndWriteTrending(): Promise<TrendingEntry[]> {
     `Trending: fetched ${current7dRows.length} 7d rows, ${priorBaselineRows.length} baseline rows, shop=${shopId}`,
   );
 
-  const blogIndex = new Map<string, BlogIndexEntry>(
-    loadBlogIndex().map(entry => [entry.handle, entry]),
-  );
-  const ranked = computeTrending(current7dRows, priorBaselineRows, blogIndex);
+  const handleMap = buildStoreHandleMap(loadBlogIndex(), SHOP_DOMAIN);
+  const ranked = computeTrending(current7dRows, priorBaselineRows, handleMap);
   console.log(`Trending: ranked ${ranked.length} candidates (TOP_N=${TOP_N})`);
 
   for (const entry of ranked) {
