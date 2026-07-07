@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { reactRouter } from "@react-router/dev/vite";
 import { sentryReactRouter, type SentryReactRouterBuildOptions } from "@sentry/react-router";
 import { defineConfig, type UserConfig } from "vite";
@@ -104,6 +104,69 @@ function reactRouterServerProductionBuild() {
   };
 }
 
+// Externalized packages that list react-router as a dep/peer but are VERIFIED
+// safe to leave external (the guard plugin below skips them):
+//  - @sentry/react-router: its server build never does a runtime
+//    `import "react-router"` (only string constants), AND it MUST stay external —
+//    instrument.server.mjs (`node --import`) initializes the node_modules copy
+//    before the bundle loads, so inlining it would create a second, uninitialized
+//    SDK instance and silently break server error reporting.
+const REACT_ROUTER_SAFE_EXTERNALS = new Set(["@sentry/react-router"]);
+
+function packageNameOf(specifier: string): string {
+  const parts = specifier.split("/");
+  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+}
+
+function packageListsReactRouter(pkgName: string): boolean {
+  try {
+    const pkg = JSON.parse(
+      readFileSync(
+        new URL(`./node_modules/${pkgName}/package.json`, import.meta.url),
+        "utf8",
+      ),
+    );
+    return Boolean(
+      pkg.dependencies?.["react-router"] ?? pkg.peerDependencies?.["react-router"],
+    );
+  } catch {
+    return false; // not a package (node builtin, chunk filename) — irrelevant
+  }
+}
+
+// Build-time guard for the invariant above: FAIL the SSR build if the emitted
+// server bundle still contains an external import of react-router itself or of
+// any package that declares react-router as a dependency/peer. Such an import
+// re-resolves at runtime to dist/development — a second react-router instance —
+// and recreates the useNavigate-Router-context crash. Client chunks are fully
+// bundled (no bare external specifiers), so this is a natural no-op there.
+function assertNoExternalReactRouterConsumers() {
+  return {
+    name: "assert-no-external-react-router-consumers",
+    generateBundle(_options: unknown, bundle: Record<string, any>) {
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type !== "chunk") continue;
+        for (const spec of [...chunk.imports, ...chunk.dynamicImports]) {
+          if (spec.startsWith(".") || spec.startsWith("/") || spec.startsWith("node:")) continue;
+          const pkgName = packageNameOf(spec);
+          if (REACT_ROUTER_SAFE_EXTERNALS.has(pkgName)) continue;
+          if (pkgName === "react-router" || packageListsReactRouter(pkgName)) {
+            this.error(
+              `Server bundle chunk "${chunk.fileName}" externally imports "${spec}", ` +
+                `which resolves react-router to dist/development at runtime — a second ` +
+                `react-router instance that crashes SSR (useNavigate Router-context ` +
+                `invariant; Sentry issue 7598495822). Add "${pkgName}" to ssr.noExternal ` +
+                `(if it imports react-router at runtime) or to REACT_ROUTER_SAFE_EXTERNALS ` +
+                `in vite.config.ts (only after verifying its server build never does a ` +
+                `runtime \`import "react-router"\`).`,
+            );
+          }
+        }
+      }
+    },
+  };
+}
+
 export default defineConfig((config) => ({
   server: {
     allowedHosts: [host],
@@ -119,6 +182,7 @@ export default defineConfig((config) => ({
   },
   plugins: [
     reactRouterServerProductionBuild(),
+    assertNoExternalReactRouterConsumers(),
     reactRouter(),
     sentryReactRouter(sentryConfig, config),
     tsconfigPaths(),
@@ -130,7 +194,34 @@ export default defineConfig((config) => ({
     // Bundle react-router into the server output so the resolveId redirect above
     // (to dist/production/index.mjs) is actually inlined instead of left as a
     // runtime `import "react-router"` that re-resolves to dist/development.
-    noExternal: ["react-router"],
+    //
+    // Every OTHER package in the SSR graph that itself imports `react-router` at
+    // runtime must ALSO be inlined, or its import re-resolves through the package
+    // exports to dist/development — a SECOND react-router instance whose hooks
+    // can't see the inlined copy's <Router> context. That's exactly what broke
+    // every embedded admin page after the original fix: externalized
+    // @shopify/shopify-app-react-router's AppProvider/AppBridge called the dev
+    // copy's useNavigate() during SSR → "may be used only in the context of a
+    // <Router>" → Unexpected Server Error (Sentry issue 7598495822).
+    //
+    //  - @shopify/shopify-app-react-router: renders React (AppProvider/AppBridge,
+    //    Link) inside our Router tree — MUST share the inlined instance.
+    //  - @react-router/node: no React rendering, but its module top-level does
+    //    `import "react-router"`, which would still load the dev copy into the
+    //    process; inlining routes it through the same production redirect.
+    // (@react-router/serve + /express run OUTSIDE the vite bundle as the runtime
+    // server; they only do data-plane request handling — never create React
+    // elements — so their own react-router copy can't clash with render context.
+    // @sentry/react-router's server build has no runtime react-router import.)
+    //
+    // This list is enforced: assertNoExternalReactRouterConsumers() (above) fails
+    // the build if a future dep leaves an external react-router consumer in the
+    // server bundle, so a regression can't ship silently.
+    noExternal: [
+      "react-router",
+      "@shopify/shopify-app-react-router",
+      "@react-router/node",
+    ],
   },
   optimizeDeps: {
     include: ["@shopify/app-bridge-react"],
