@@ -11,7 +11,8 @@ build/
 *.log
 .DS_Store
 .shopify/
-.claude/
+.claude/*
+!.claude/agents/
 .mcp.json
 shopify.app.toml
 fly.toml

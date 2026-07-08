@@ -558,6 +558,15 @@ Backend: Initialized in `app/entry.server.tsx`.
 
 **Mobile** — `useIsMobile(768)` hook drives tabbed view on mobile, unchanged two-column grid on desktop.
 
+## Model Delegation — plan big, execute small (cost control)
+
+Anthropic's benchmarked patterns (July 2026): a Sonnet executor with a rare Fable advisor ≈ 92% of Fable quality at ~63% of cost (SWE-bench Pro); a Fable orchestrator delegating to Sonnet workers ≈ 96% at ~46% (BrowseComp). Two subagents in `.claude/agents/` implement both:
+
+- **Advisor pattern (default for routine coding):** Brad starts the session on Sonnet (`/model sonnet`). Before committing to an architecture/data-model decision, any clinical-logic change (`health_roadmap_algorithm.md`, `evidence.ts`, suggestion/screening rules), security- or merge-semantics-sensitive code, a multi-file plan, or after two failed debugging attempts — escalate ONCE to the **`fable-advisor`** subagent with full context, then execute its plan. Never call the advisor when the session is already on Fable.
+- **Orchestrator pattern (heavy/architectural sessions):** run the session on Fable, delegate well-specified implementation, test runs, bulk edits, and file sweeps to the **`worker`** subagent (Sonnet); Fable reviews the diffs. Also pass `model: "sonnet"` on ad-hoc Agent calls for mechanical searches/test runs regardless of session model.
+- **Always Fable-level judgment** (main model or advisor, never a Sonnet worker deciding alone): clinical logic and evidence citations, the local-first merge semantics (`packages/health-core/src/merge.ts`), security rules, FHIR data-model changes.
+- **Do NOT set `CLAUDE_CODE_SUBAGENT_MODEL`** — it force-overrides every subagent (rank 1 in model resolution) and would downgrade the `fable-advisor` to the cheap model.
+
 ## Development Rules
 
 - **Single branch, main only.** Don't create feature branches, don't open PRs, don't use `git worktree`. Work on `main`, commit directly, push when ready. The PR + squash-merge dance + worktrees has caused real problems (files reverted across branch switches, stale worktrees, accidental drift). When in doubt: `git checkout main`, no branches.
