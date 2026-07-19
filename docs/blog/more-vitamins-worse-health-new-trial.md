@@ -1,5 +1,5 @@
 ---
-title: "More Vitamins, Worse Health? (New Trial)"
+title: "They Had to Stop This Vitamin C Trial Early"
 url: "https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial"
 commerceUrl: "https://microvitamin.com/blogs/articles/antioxidant-supplements-dose-safety"
 youtube: "https://www.youtube.com/watch?v=5gU4ydlgf_Y"

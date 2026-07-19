@@ -1,6 +1,62 @@
 [
   {
-    "title": "More Vitamins, Worse Health? (New Trial)",
+    "title": "Shrink the Fat Around Your Heart",
+    "handle": "shrink-the-fat-around-your-heart",
+    "url": "https://drstanfield.com/blogs/articles/shrink-the-fat-around-your-heart",
+    "tags": [
+      "Diet",
+      "Exercise",
+      "Preventative Care"
+    ],
+    "keywords": [
+      "blood sugar",
+      "bmi",
+      "cardiovascular",
+      "diabetes",
+      "exercise",
+      "fiber",
+      "glp-1",
+      "heart attack",
+      "hormone",
+      "inflammation",
+      "insulin resistance",
+      "kidney",
+      "mediterranean diet",
+      "muscle",
+      "obesity",
+      "olive oil",
+      "omega-3",
+      "resistance training",
+      "sglt2",
+      "sleep",
+      "weight loss"
+    ],
+    "publishedAt": "2026-07-16T08:00:00Z",
+    "commerceUrl": "https://microvitamin.com/blogs/articles/reduce-epicardial-fat",
+    "youtube": "https://youtu.be/jn-HKoOUd5o",
+    "summary": "Dr Brad's epicardial fat post: shrinking the fat around your heart works through diet (protein, fiber, polyphenols), aerobic exercise, and sleep — before considering SGLT2 inhibitors or GLP-1 drugs. Covers heart-disease risk, visceral fat, insulin resistance."
+  },
+  {
+    "title": "Fix Gout Without Giving Up Meat",
+    "handle": "fix-gout-without-giving-up-meat",
+    "url": "https://drstanfield.com/blogs/articles/fix-gout-without-giving-up-meat",
+    "tags": [
+      "General Health",
+      "Preventative Care"
+    ],
+    "keywords": [
+      "glp-1",
+      "gout",
+      "inflammation",
+      "uric acid",
+      "weight loss"
+    ],
+    "publishedAt": "2026-07-13T12:00:00Z",
+    "youtube": "https://www.youtube.com/watch?v=Hz7EwSQuObw",
+    "summary": "Dr Brad's gout post: GLP-1 weight-loss medications lower uric acid and often reduce or remove the need for allopurinol. Covers purine foods (organ meats, shellfish, beer), the 0.36 mmol/L urate target, and why starting treatment can trigger a flare."
+  },
+  {
+    "title": "They Had to Stop This Vitamin C Trial Early",
     "handle": "more-vitamins-worse-health-new-trial",
     "url": "https://drstanfield.com/blogs/articles/more-vitamins-worse-health-new-trial",
     "tags": [
