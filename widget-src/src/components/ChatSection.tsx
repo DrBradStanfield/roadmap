@@ -147,7 +147,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
           <div className="chat-messages" ref={messagesContainerRef} onScroll={handleMessagesScroll}>
             {state.messages.length === 0 && !state.isLoading && (
               <div className="chat-empty">
-                <p>Ask about your personalized suggestions based on your health data, clinical research, and Dr Brad's preventative care algorithm.</p>
+                <p>Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm.</p>
               </div>
             )}
             {state.messages.map(msg => (

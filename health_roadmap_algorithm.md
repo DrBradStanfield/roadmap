@@ -446,17 +446,17 @@ All three conditions must hold:
 
 **Max potency:** 63% (rosuvastatin 40mg).
 
-### Dr Stanfield's Statin Philosophy (for educational questions)
+### Statin Approach (for educational questions)
 
 When discussing statins in educational contexts (not personalized cascade suggestions), apply this approach:
 
 **Preferred starting options (low-dose hydrophilic statins):**
-- Pravastatin 20mg — Brad's current personal choice; water-soluble, lower muscle-side-effect risk
+- Pravastatin 20mg — a preferred low-dose option; water-soluble, lower muscle-side-effect risk
 - Rosuvastatin 5mg — also water-soluble at low dose; strong LDL reduction per mg
 - Pitavastatin 1–2mg — well-tolerated hydrophilic option; similar potency profile to pravastatin
 
 **Why low-dose + ezetimibe over high-dose monotherapy:**
-Low-dose statins (~30–40% LDL reduction) combined with ezetimibe 10mg (~20% additional reduction) achieve better outcomes with fewer side effects than high-dose statin alone. Combination therapy is Brad's recommended approach before escalating statin dose.
+Low-dose statins (~30–40% LDL reduction) combined with ezetimibe 10mg (~20% additional reduction) achieve better outcomes with fewer side effects than high-dose statin alone. Combination therapy is the recommended approach before escalating statin dose.
 
 **Escalation order:** low-dose statin → add ezetimibe → escalate statin dose → PCSK9 inhibitor. Never skip ezetimibe to go straight to high-dose.
 

@@ -26,7 +26,7 @@ export const LIPID_TREATMENT_TARGETS = {
 } as const;
 
 /** Dietary advice for elevated lipids — shared between suggestion card and InputPanel medication cascade */
-export const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk (7g/day) is a supplement that can lower LDL-C by 5\u201310% and is well-tolerated even with IBS or IBD.';
+export const LIPID_DIET_ADVICE = 'Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don\'t have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.';
 
 /** Format a metric value with its display unit, e.g. "5.7%" or "39 mmol/mol" */
 function fmtMetric(metricType: MetricType, value: number, us: UnitSystem): string {

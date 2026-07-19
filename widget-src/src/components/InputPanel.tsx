@@ -1724,7 +1724,7 @@ export function InputPanel({
                 <h4>Colorectal</h4>
                 {age < 45 && (
                   <div className="screening-notice">
-                    Note: ACS guidelines recommend starting colorectal screening at age 45. Dr Brad personally starts at age 35 due to increasing rates of colorectal cancer in younger adults. Discuss timing with your doctor.
+                    Note: ACS guidelines recommend starting colorectal screening at age 45. Given rising rates of colorectal cancer in younger adults, some clinicians consider starting earlier, around age 35. Discuss timing with your doctor.
                   </div>
                 )}
 

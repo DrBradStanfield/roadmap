@@ -140,7 +140,7 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
         >
           {state.messages.length === 0 && !state.isLoading && (
             <div className="chat-empty">
-              <p>{muted ? "Plus when you fill in your details, the answers will be tailored to your numbers." : "Ask about your personalized suggestions based on your health data, clinical research, and Dr Brad's preventative care algorithm."}</p>
+              <p>{muted ? "Plus when you fill in your details, the answers will be tailored to your numbers." : "Ask about your personalized suggestions based on your health data, clinical research, and the preventative care algorithm."}</p>
             </div>
           )}
           {state.messages.map(msg => (
