@@ -42,7 +42,9 @@ const TRENDING_LOCK_NAME: CronLockName =
 // ratio is inflated by zero-traffic days.
 const MIN_ARTICLE_AGE_DAYS = 45;
 const MIN_CURRENT_7D_VIEWS = 50;
-// Bumped from 10: shorter 37d window gives each low-traffic day more weight.
+// Denominator floor: score = current7d / max(baselineWeekly, this). Clamps
+// tiny baselines so they can't inflate the ratio — never excludes an article.
+// (Bumped from 10: shorter 37d window gives each low-traffic day more weight.)
 const MIN_BASELINE_WEEKLY_VIEWS = 12;
 const TOP_N = 5;
 // Baseline window length in days. Must match the SINCE/UNTIL range of
@@ -369,9 +371,9 @@ export function computeTrending(
 
     const baselineSessions = priorBaselineByHandle.get(handle) ?? 0;
     const baselineWeekly = (baselineSessions / BASELINE_WINDOW_DAYS) * 7;
-    if (baselineWeekly < MIN_BASELINE_WEEKLY_VIEWS) continue;
-
-    const score = current7d / baselineWeekly;
+    // Clamp the denominator — never exclude sub-floor articles (that emptied
+    // the microvitamin sidebar, July 2026; see docs/newspaper-blog-trending.md).
+    const score = current7d / Math.max(baselineWeekly, MIN_BASELINE_WEEKLY_VIEWS);
     candidates.push({ handle, score, current7d, baselineWeekly });
   }
 

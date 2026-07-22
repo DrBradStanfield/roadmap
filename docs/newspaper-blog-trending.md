@@ -31,9 +31,9 @@ A surge-detection trending sidebar on the blog index, rendered in a newspaper-st
 
 **Goal:** rank evergreen articles getting renewed attention vs their own baseline. Surge-detect, not popularity-detect.
 
-**Formula:** `score = current_7d_sessions / baseline_weekly_sessions`
+**Formula:** `score = current_7d_sessions / max(baseline_weekly_sessions, MIN_BASELINE_WEEKLY_VIEWS)`
 
-Where `baseline_weekly_sessions = prior_baseline_sessions / BASELINE_WINDOW_DAYS * 7`.
+Where `baseline_weekly_sessions = prior_baseline_sessions / BASELINE_WINDOW_DAYS * 7`. The baseline floor **clamps the denominator — it never excludes an article** (see Lessons learned: the July-2026 empty-sidebar regression).
 
 **Constants** (in [app/lib/trending-cron.server.ts](../app/lib/trending-cron.server.ts)):
 
@@ -41,7 +41,7 @@ Where `baseline_weekly_sessions = prior_baseline_sessions / BASELINE_WINDOW_DAYS
 |---|---|---|
 | `MIN_ARTICLE_AGE_DAYS` | 45 | Drop newly-published articles. Must be ≥ the leading edge of the baseline query (-45d), or the window predates publication and the ratio is inflated by zero-traffic days |
 | `MIN_CURRENT_7D_VIEWS` | 50 | Floor: prevent low-traffic noise from gaming the ratio |
-| `MIN_BASELINE_WEEKLY_VIEWS` | 12 | Floor: prevent tiny-baseline articles from inflating the ratio (bumped from 10 to compensate for the shorter 37-day baseline) |
+| `MIN_BASELINE_WEEKLY_VIEWS` | 12 | Denominator floor: `score = current7d / max(baselineWeekly, 12)`. Clamps tiny baselines so they can't inflate the ratio — never excludes an article (bumped from 10 to compensate for the shorter 37-day baseline) |
 | `BASELINE_WINDOW_DAYS` | 37 | Window length used as denominator (must match query SINCE/UNTIL) |
 | `TOP_N` | 5 | How many entries to write to the metafield |
 | `TARGET_HOUR_NZ` | 3 | Earliest NZ-local hour (Pacific/Auckland, DST-aware) the cron is eligible to run each day |
@@ -187,4 +187,5 @@ shopify theme push --path=theme --theme=178593038621 \
 - **Sessions data is per-landing-page**, not per-page-view. Articles users navigate to from elsewhere on-site won't count. For Brad's blog this is fine; for other blogs evaluate before reusing.
 - **`metafieldsSet` is idempotent — an identical value is a no-op that returns the OLD `updatedAt`.** When the submitted value equals the stored value, Shopify commits nothing and echoes the existing record, `updatedAt` unchanged. Do NOT assert commit success on `updatedAt` freshness — that guard threw daily whenever the trending list was stable (e.g. `[]` over `[]`), producing the long-running "Metafield write returned stale updatedAt" Sentry issue (the original 2026-05-21 "silent failure" was this same no-op, misdiagnosed). Assert on the echoed `value` matching what you submitted instead — that also still catches the real failure mode (existing record echoed with a different value).
 - **The two stores use DIFFERENT handles for the same article.** Looking up commerce-store traffic handles against the index's education handles matches nothing → cron writes `[]` forever → microvitamin.com sidebar permanently shows the empty state (the July-2026 bug). Per-store keying lives in `buildStoreHandleMap`; any new consumer of blog traffic data must resolve handles per store via `commerceUrl`.
+- **The baseline floor must CLAMP the denominator, not exclude the article.** From 2026-07-13 the microvitamin.com sidebar went empty again: the commerce store's surging articles (cold-remedies 367 sessions/7d, full-body-mri 352/7d) had a near-zero baseline window — campaign/newsletter traffic landing on old articles — and `baselineWeekly < MIN_BASELINE_WEEKLY_VIEWS → continue` dropped every candidate, so the cron wrote `[]` daily. A zero-baseline surge is the strongest possible surge signal; the floor's only job is to stop a tiny denominator inflating the score. Fixed by scoring `current7d / max(baselineWeekly, MIN_BASELINE_WEEKLY_VIEWS)`.
 - **`cron_lock` seed rows must NOT use `lock_date = NULL`.** The acquisition query is `UPDATE … WHERE lock_date != $today`. PostgreSQL evaluates `NULL != $today` as `NULL` (treated as false), so a NULL seed row never matches and the cron silently fails forever — no errors, no Sentry, no logs. Seed with a sentinel past date (`'1970-01-01'`), and `tryAcquireCronLock` also uses `.or('lock_date.is.null,lock_date.neq.$today')` as belt-and-braces defense.

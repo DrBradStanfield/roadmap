@@ -103,6 +103,43 @@ describe('buildStoreHandleMap + computeTrending — per-store article handles', 
   });
 });
 
+describe('computeTrending — baseline floor clamps the denominator, never excludes', () => {
+  // THE JULY-13 BUG (microvitamin.com sidebar empty again): sub-floor-baseline
+  // articles were EXCLUDED instead of having the denominator clamped, so a
+  // store whose surging articles had a near-zero baseline wrote `[]` daily.
+  // Full story: docs/newspaper-blog-trending.md, "The baseline floor must
+  // CLAMP the denominator" (Lessons learned).
+  const map = buildStoreHandleMap(
+    [indexEntry('edu-handle', 'commerce-handle')],
+    COMMERCE_DOMAIN,
+  );
+
+  it('includes a zero-baseline surging article, scored against the clamped floor', () => {
+    const ranked = computeTrending(
+      rows('/blogs/articles/commerce-handle', 100),
+      [], // no baseline traffic at all
+      map,
+    );
+    expect(ranked).toHaveLength(1);
+    expect(ranked[0].handle).toBe('commerce-handle');
+    // Denominator clamped to MIN_BASELINE_WEEKLY_VIEWS (12), not 0/undefined.
+    expect(ranked[0].score).toBeCloseTo(100 / 12, 5);
+    // baselineWeekly reports the REAL baseline for logging transparency.
+    expect(ranked[0].baselineWeekly).toBe(0);
+  });
+
+  it('clamps a sub-floor baseline so a tiny denominator cannot inflate the score', () => {
+    // 37 baseline sessions over the 37-day window = 7/week, under the 12 floor.
+    const ranked = computeTrending(
+      rows('/blogs/articles/commerce-handle', 100),
+      rows('/blogs/articles/commerce-handle', 37),
+      map,
+    );
+    expect(ranked).toHaveLength(1);
+    expect(ranked[0].score).toBeCloseTo(100 / 12, 5); // NOT 100/7 ≈ 14.3
+  });
+});
+
 describe('writeTrendingMetafield — commit verification', () => {
   const payload = [{ handle: 'foo', score: 3.2 }];
 
