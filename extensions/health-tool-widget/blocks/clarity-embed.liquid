@@ -1,9 +1,15 @@
+{%- comment -%}
+  Per-store Clarity project (one project per domain): set via the shop metafield
+  health_roadmap.clarity_project_id (same pattern as chat_assistant_name).
+  No metafield → falls back to the original drstanfield.com project.
+{%- endcomment -%}
+{%- assign clarity_project_id = shop.metafields.health_roadmap.clarity_project_id | default: 'vj1f8ywkt0' -%}
 <script>
   (function(c,l,a,r,i,t,y){
     c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
     t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
     y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-  })(window,document,"clarity","script","vj1f8ywkt0");
+  })(window,document,"clarity","script",{{ clarity_project_id | json }});
 </script>
 
 {% schema %}

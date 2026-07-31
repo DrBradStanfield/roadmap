@@ -258,19 +258,19 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Blood Work: Atherogenic Lipids ─────────────────────────
 
   'apob-very-high': {
-    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood and is considered the most accurate predictor of cardiovascular risk by the European Atherosclerosis Society. Each LDL, VLDL, and Lp(a) particle carries exactly one ApoB molecule, making it a superior marker to LDL cholesterol, which only estimates particle concentration. A very high ApoB indicates significantly elevated cardiovascular risk, and statin therapy is typically recommended.\n\nDr Stanfield uses on-treatment targets of ≤50 mg/dL (≤0.5 g/L) based on the ESC/EAS guidelines and the PESA study, which demonstrated that subclinical atherosclerosis progression is driven by cumulative LDL/ApoB exposure over time — even in young, apparently healthy adults.',
+    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood and is considered the most accurate predictor of cardiovascular risk by the European Atherosclerosis Society. Each LDL, VLDL, and Lp(a) particle carries exactly one ApoB molecule, making it a superior marker to LDL cholesterol, which only estimates particle concentration. A very high ApoB indicates significantly elevated cardiovascular risk, and statin therapy is typically recommended.\n\nSome doctors use on-treatment targets of ≤50 mg/dL (≤0.5 g/L) based on the ESC/EAS guidelines and the PESA study, which demonstrated that subclinical atherosclerosis progression is driven by cumulative LDL/ApoB exposure over time — even in young, apparently healthy adults.',
     guidelines: [...GUIDELINES_LIPIDS, 'EAS Consensus'],
     references: [...REFS_LIPID_EVIDENCE, ...REFS_PESA, ...REFS_LDL_SAFETY],
   },
 
   'apob-high': {
-    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood. It is considered a more accurate predictor of cardiovascular risk than LDL cholesterol by the European Atherosclerosis Society. Your level is elevated and lifestyle modifications and/or medication should be discussed with your doctor.\n\nDr Stanfield uses on-treatment targets of ≤50 mg/dL (≤0.5 g/L) based on ESC/EAS guidelines and the PESA study, which showed that early ApoB/LDL exposure drives atherosclerosis even in young, healthy adults.',
+    reason: 'ApoB directly measures the number of atherogenic (artery-clogging) particles in your blood. It is considered a more accurate predictor of cardiovascular risk than LDL cholesterol by the European Atherosclerosis Society. Your level is elevated and lifestyle modifications and/or medication should be discussed with your doctor.\n\nSome doctors use on-treatment targets of ≤50 mg/dL (≤0.5 g/L) based on ESC/EAS guidelines and the PESA study, which showed that early ApoB/LDL exposure drives atherosclerosis even in young, healthy adults.',
     guidelines: [...GUIDELINES_LIPIDS, 'EAS Consensus'],
     references: [...REFS_LIPID_EVIDENCE, ...REFS_PESA, ...REFS_LDL_SAFETY],
   },
 
   'apob-borderline': {
-    reason: 'ApoB measures the total number of atherogenic particles in your blood. Standard guidelines would classify this level as normal, but Dr Stanfield uses more aggressive targets based on the PESA study, which showed that cumulative LDL/ApoB exposure drives atherosclerosis even in young, apparently healthy adults. This is why your result shows as borderline rather than normal.',
+    reason: 'ApoB measures the total number of atherogenic particles in your blood. Standard guidelines would classify this level as normal, but some doctors use more aggressive targets based on the PESA study, which showed that cumulative LDL/ApoB exposure drives atherosclerosis even in young, apparently healthy adults. This is why your result shows as borderline rather than normal.',
     guidelines: [...GUIDELINES_LIPIDS, 'EAS Consensus'],
     references: [...REFS_LIPID_EVIDENCE, ...REFS_PESA],
   },
@@ -288,7 +288,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'ldl-borderline': {
-    reason: 'Standard guidelines would classify this LDL level as normal, but Dr Stanfield uses more aggressive targets based on the PESA study, which showed that cumulative LDL exposure drives atherosclerosis even in young, apparently healthy adults. LDL is a causal factor in atherosclerosis — the lower, the better over a lifetime of exposure.\n\nNote: ApoB is a more accurate marker than LDL cholesterol. If available, ask your doctor about testing ApoB.',
+    reason: 'Standard guidelines would classify this LDL level as normal, but some doctors use more aggressive targets based on the PESA study, which showed that cumulative LDL exposure drives atherosclerosis even in young, apparently healthy adults. LDL is a causal factor in atherosclerosis — the lower, the better over a lifetime of exposure.\n\nNote: ApoB is a more accurate marker than LDL cholesterol. If available, ask your doctor about testing ApoB.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [...REFS_LIPID_EVIDENCE, ...REFS_PESA],
   },
@@ -306,7 +306,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'non-hdl-borderline': {
-    reason: 'Non-HDL cholesterol captures all atherogenic particles (LDL + VLDL + remnants). Standard guidelines would classify this level as normal, but Dr Stanfield uses more aggressive targets based on the PESA study, which showed that cumulative exposure to atherogenic lipids drives atherosclerosis even in young, apparently healthy adults.\n\nNote: ApoB is the most accurate single marker. If available, ask your doctor about testing ApoB.',
+    reason: 'Non-HDL cholesterol captures all atherogenic particles (LDL + VLDL + remnants). Standard guidelines would classify this level as normal, but some doctors use more aggressive targets based on the PESA study, which showed that cumulative exposure to atherogenic lipids drives atherosclerosis even in young, apparently healthy adults.\n\nNote: ApoB is the most accurate single marker. If available, ask your doctor about testing ApoB.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [...REFS_LIPID_EVIDENCE, ...REFS_PESA],
   },
@@ -366,13 +366,13 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   },
 
   'bp-stage2': {
-    reason: 'Stage 2 hypertension (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, medication is typically recommended alongside lifestyle measures.\n\nDr Stanfield targets <120/80 mmHg for adults under 65, based on the SPRINT trial (9,300 participants), which showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
+    reason: 'Stage 2 hypertension (≥140/90 mmHg) significantly increases the risk of heart attack, stroke, kidney disease, and heart failure. At this level, medication is typically recommended alongside lifestyle measures.\n\nSome doctors target <120/80 mmHg for adults under 65, based on the SPRINT trial (9,300 participants), which showed that intensive blood pressure lowering to <120 mmHg significantly reduced cardiovascular events and mortality compared to the standard <140 mmHg target. The ESPRIT trial (11,255 participants) confirmed these benefits extend to patients with diabetes and prior stroke.',
     guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
     references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
   },
 
   'bp-stage1': {
-    reason: 'Stage 1 hypertension (130–139/80–89 mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nDr Stanfield targets <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
+    reason: 'Stage 1 hypertension (130–139/80–89 mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.',
     guidelines: [...GUIDELINES_BP, 'SPRINT 2015', 'ESPRIT 2024'],
     references: [...REFS_BP_LIFESTYLE, ...REFS_SODIUM, ...REFS_BP_TRIALS],
   },
@@ -380,7 +380,7 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Cholesterol Medication Cascade ─────────────────────────
 
   'med-statin': {
-    reason: 'Statins are the cornerstone of cholesterol-lowering therapy. Both the AHA/ACC and ESC/EAS guidelines recommend statins as first-line treatment when lipid levels exceed targets. Statins reduce LDL/ApoB by inhibiting cholesterol synthesis in the liver, and large clinical trials consistently show they reduce cardiovascular events and mortality.\n\nDr Stanfield uses more aggressive on-treatment lipid targets (ApoB ≤50 mg/dL, LDL ≤54 mg/dL) based on the PESA study, which showed that even young, healthy adults develop subclinical atherosclerosis when exposed to elevated lipids over time. Multiple studies confirm that very low LDL levels are safe.',
+    reason: 'Statins are the cornerstone of cholesterol-lowering therapy. Both the AHA/ACC and ESC/EAS guidelines recommend statins as first-line treatment when lipid levels exceed targets. Statins reduce LDL/ApoB by inhibiting cholesterol synthesis in the liver, and large clinical trials consistently show they reduce cardiovascular events and mortality.\n\nSome doctors use more aggressive on-treatment lipid targets (ApoB ≤50 mg/dL, LDL ≤54 mg/dL) based on the PESA study, which showed that even young, healthy adults develop subclinical atherosclerosis when exposed to elevated lipids over time. Multiple studies confirm that very low LDL levels are safe.',
     guidelines: [...GUIDELINES_LIPIDS],
     references: [...REFS_LIPID_GUIDELINES, ...REFS_PESA, ...REFS_LDL_SAFETY],
   },
@@ -427,8 +427,8 @@ export const SUGGESTION_EVIDENCE: Record<string, SuggestionEvidence> = {
   // ── Cancer Screening ───────────────────────────────────────
 
   'screening-colorectal': {
-    reason: 'The American Cancer Society recommends colorectal screening starting at age 45 for average-risk adults. Dr Stanfield recommends starting at age 35 due to rising rates of early-onset colorectal cancer, particularly in adults under 50 — a global trend documented across multiple countries over recent decades. Screening options include annual stool-based testing (FIT) or colonoscopy every 10 years.',
-    guidelines: ['ACS', 'Dr Stanfield'],
+    reason: 'The American Cancer Society recommends colorectal screening starting at age 45 for average-risk adults. Some doctors recommend starting at age 35 due to rising rates of early-onset colorectal cancer, particularly in adults under 50 — a global trend documented across multiple countries over recent decades. Screening options include annual stool-based testing (FIT) or colonoscopy every 10 years.',
+    guidelines: ['ACS'],
     references: [
       ...REFS_SCREENING_ACS,
       { label: 'Siegel 2019 – Rising early-onset colorectal cancer globally (Gut)', url: 'https://doi.org/10.1136/gutjnl-2019-319511' },
