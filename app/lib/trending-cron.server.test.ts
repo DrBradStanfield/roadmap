@@ -140,6 +140,79 @@ describe('computeTrending — baseline floor clamps the denominator, never exclu
   });
 });
 
+describe('computeTrending — fallback fill on sparse-qualifier days', () => {
+  // Brad publishes weekly, so on microvitamin.com the traffic concentrates in
+  // posts <45 days old and the surge algorithm structurally yields 0-1
+  // qualifiers most days. When fewer than TOP_N qualify, pad with the
+  // highest-raw-traffic (current7d) articles ≥45 days old — "most read", not
+  // "surging". Surge scoring itself is unchanged.
+  const NOW = new Date('2026-08-05T00:00:00Z');
+
+  const trafficRows = (...entries: [string, number][]) =>
+    entries.flatMap(([handle, views]) => rows(`/blogs/articles/${handle}`, views));
+
+  it('pads a sparse qualifier list with top-traffic ≥45d articles, surgers first, no duplicates', () => {
+    const map = buildStoreHandleMap(
+      [indexEntry('surger'), indexEntry('fill-a'), indexEntry('fill-b')],
+      EDU_DOMAIN,
+    );
+    const ranked = computeTrending(
+      trafficRows(['surger', 100], ['fill-a', 34], ['fill-b', 31]),
+      trafficRows(['surger', 370]), // baselineWeekly 70 → surge score 100/70 ≈ 1.43
+      map,
+      NOW,
+    );
+    // The surger ranks FIRST even though fill-a's raw score (34/12 ≈ 2.83)
+    // beats the surger's (100/70 ≈ 1.43) — qualifiers always outrank fill.
+    expect(ranked.map(e => e.handle)).toEqual(['surger', 'fill-a', 'fill-b']);
+    // Fill rows keep an honest score (current7d / clamped baseline).
+    expect(ranked[1].score).toBeCloseTo(34 / 12, 2);
+    expect(ranked[2].score).toBeCloseTo(31 / 12, 2);
+  });
+
+  it('never fills with an article younger than 45 days, regardless of traffic', () => {
+    const map = buildStoreHandleMap(
+      [indexEntry('old-low'), indexEntry('young', undefined, '2026-07-26T00:00:00Z')],
+      EDU_DOMAIN,
+    );
+    const ranked = computeTrending(
+      trafficRows(['old-low', 20], ['young', 200]),
+      [],
+      map,
+      NOW,
+    );
+    expect(ranked.map(e => e.handle)).toEqual(['old-low']);
+  });
+
+  it('applies no fill when TOP_N surge qualifiers already exist (unchanged behaviour)', () => {
+    const map = buildStoreHandleMap(
+      ['q1', 'q2', 'q3', 'q4', 'q5', 'extra'].map(h => indexEntry(h)),
+      EDU_DOMAIN,
+    );
+    const ranked = computeTrending(
+      trafficRows(['q1', 100], ['q2', 90], ['q3', 80], ['q4', 70], ['q5', 60], ['extra', 40]),
+      [],
+      map,
+      NOW,
+    );
+    expect(ranked.map(e => e.handle)).toEqual(['q1', 'q2', 'q3', 'q4', 'q5']);
+  });
+
+  it('orders fill entries by raw 7d traffic, not by their score', () => {
+    const map = buildStoreHandleMap(
+      [indexEntry('fill-hi'), indexEntry('fill-lo')],
+      EDU_DOMAIN,
+    );
+    const ranked = computeTrending(
+      trafficRows(['fill-hi', 40], ['fill-lo', 20]),
+      trafficRows(['fill-hi', 370]), // fill-hi score 40/70 ≈ 0.57 < fill-lo 20/12 ≈ 1.67
+      map,
+      NOW,
+    );
+    expect(ranked.map(e => e.handle)).toEqual(['fill-hi', 'fill-lo']);
+  });
+});
+
 describe('writeTrendingMetafield — commit verification', () => {
   const payload = [{ handle: 'foo', score: 3.2 }];
 

@@ -35,6 +35,8 @@ A surge-detection trending sidebar on the blog index, rendered in a newspaper-st
 
 Where `baseline_weekly_sessions = prior_baseline_sessions / BASELINE_WINDOW_DAYS * 7`. The baseline floor **clamps the denominator — it never excludes an article** (see Lessons learned: the July-2026 empty-sidebar regression).
 
+**Fallback fill (2026-08-05):** if fewer than `TOP_N` articles clear the surge gates (age ≥ `MIN_ARTICLE_AGE_DAYS` AND current7d ≥ `MIN_CURRENT_7D_VIEWS`), the remainder is padded with the highest-raw-traffic (current7d) articles that pass the same age gate — **no session floor for fill entries** (they're "most read", not "surging"). Surge qualifiers always rank above fill entries regardless of score; fill entries are ordered by raw current7d and carry their honest `score` in the same `{handle, score}` payload (metafield schema unchanged). Rationale: Brad publishes weekly, so traffic concentrates in posts younger than the age gate and the surge list structurally yields 0–1 entries most days — sparse days now fall back to the most-read ≥45-day-old articles.
+
 **Constants** (in [app/lib/trending-cron.server.ts](../app/lib/trending-cron.server.ts)):
 
 | Constant | Value | Purpose |

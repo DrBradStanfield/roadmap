@@ -357,10 +357,11 @@ export function computeTrending(
 
   const minPublishedAt = new Date(now.getTime() - MIN_ARTICLE_AGE_DAYS * 86400 * 1000);
 
-  const candidates: TrendingEntry[] = [];
+  const qualifiers: TrendingEntry[] = [];
+  const fillPool: TrendingEntry[] = [];
 
   for (const [handle, current7d] of current7dByHandle) {
-    if (current7d < MIN_CURRENT_7D_VIEWS) continue;
+    if (current7d <= 0) continue;
 
     const meta = handleMap.get(handle)?.entry;
     if (!meta) continue;
@@ -374,11 +375,29 @@ export function computeTrending(
     // Clamp the denominator — never exclude sub-floor articles (that emptied
     // the microvitamin sidebar, July 2026; see docs/newspaper-blog-trending.md).
     const score = current7d / Math.max(baselineWeekly, MIN_BASELINE_WEEKLY_VIEWS);
-    candidates.push({ handle, score, current7d, baselineWeekly });
+    const entry = { handle, score, current7d, baselineWeekly };
+    // The session floor gates SURGE qualification only; sub-floor articles
+    // stay eligible as fallback fill (below).
+    if (current7d >= MIN_CURRENT_7D_VIEWS) {
+      qualifiers.push(entry);
+    } else {
+      fillPool.push(entry);
+    }
   }
 
-  candidates.sort((a, b) => b.score - a.score);
-  return candidates.slice(0, TOP_N);
+  qualifiers.sort((a, b) => b.score - a.score);
+  const ranked = qualifiers.slice(0, TOP_N);
+
+  // Fallback fill: weekly publishing concentrates traffic in posts younger
+  // than the age gate, so the surge list structurally yields 0-1 entries most
+  // days. Pad the remainder with the most-read ≥45d articles by raw 7d
+  // traffic ("most read", not "surging"). Qualifiers always rank above fill;
+  // fill rows keep their honest score so the payload shape is unchanged.
+  if (ranked.length < TOP_N) {
+    fillPool.sort((a, b) => b.current7d - a.current7d);
+    ranked.push(...fillPool.slice(0, TOP_N - ranked.length));
+  }
+  return ranked;
 }
 
 /** Run the full algorithm and write the metafield. Exported for the manual-trigger test route. */
