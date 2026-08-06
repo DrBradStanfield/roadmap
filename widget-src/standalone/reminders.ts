@@ -27,6 +27,7 @@ import {
   setReminderOptIn,
 } from '../src/lib/roadmap-data';
 import { DropboxAdapter, GitHubAdapter, GoogleDriveAdapter } from '../src/storage';
+import { trackProductEvent } from '../src/lib/api';
 import { Sentry } from '../src/lib/sentry';
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
@@ -80,6 +81,7 @@ export async function optInToReminders(backend: Backend, marketingEmail?: string
     schedule,
     marketingEmail, // optional — JSON.stringify drops it when undefined
   });
+  if (res.ok) trackProductEvent('reminder_optin', { provider: backend });
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string; reason?: string };
     // The server says WHY verification failed — map its reason to user copy.

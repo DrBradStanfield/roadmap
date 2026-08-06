@@ -284,6 +284,9 @@ export {
   type MeasurementHistoryMap,
 } from './measurement-history';
 
+// Product funnel events — anonymous behavioral counters (client tracker + server enum)
+export { PRODUCT_EVENT_NAMES, type ProductEventName } from './product-events';
+
 // chat-history.json — chat conversations synced to the user's own cloud (Phase 6)
 export {
   CHAT_HISTORY_SCHEMA_VERSION,

@@ -533,7 +533,12 @@ export async function action({ request }: ActionFunctionArgs) {
       outputTokens: completion.usage.outputTokens,
       cacheReadTokens: completion.usage.cacheReadTokens,
       cacheCreationTokens: completion.usage.cacheCreationTokens,
-      cacheHitRatio: Math.round(100 * completion.usage.cacheReadTokens / Math.max(1, completion.usage.inputTokens)) / 100,
+      // Share of the prompt served from cache, 0–1. The three counters are
+      // DISJOINT — Anthropic's `input_tokens` excludes cache reads and cache
+      // writes — so the denominator is their sum, not inputTokens alone.
+      // (Dividing by inputTokens alone reported 8.63 on 2026-08-06.)
+      cacheHitRatio: Math.round(100 * completion.usage.cacheReadTokens / Math.max(1,
+        completion.usage.inputTokens + completion.usage.cacheReadTokens + completion.usage.cacheCreationTokens)) / 100,
       routerMs: routerResult?.latencyMs ?? null,
       routerCacheHit: routerResult?.cacheHit ?? null,
       routerInputTokens: routerResult?.usage.inputTokens ?? null,

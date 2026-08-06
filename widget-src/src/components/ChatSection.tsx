@@ -9,6 +9,7 @@
  */
 import React, { useState, useEffect, useCallback, useReducer } from 'react';
 import { FeedbackForm } from './FeedbackForm';
+import { trackProductEvent } from '../lib/api';
 import { getChatGate } from '../lib/chat-api';
 import { ChatKeyGate } from './ChatKeyGate';
 import { useChatState, THINKING_MESSAGES, MAX_CHARS } from '../hooks/useChatState';
@@ -71,6 +72,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   }, [messagesContainerRef]);
 
   const handleExpand = useCallback(() => {
+    trackProductEvent('chat_opened');
     if (onExpand) { onExpand(); return; }
     setIsExpanded(true);
     setShowFeedback(false);

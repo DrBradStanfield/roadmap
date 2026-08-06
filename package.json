@@ -20,6 +20,7 @@
     "shopify": "shopify",
     "vite": "vite",
     "test": "npm run test:core && npm run test:server",
+    "test:all": "vitest run",
     "test:core": "npm run test --workspace=@roadmap/health-core",
     "test:server": "vitest run app/lib",
     "test:watch": "npm run test --workspace=@roadmap/health-core -- --watch",

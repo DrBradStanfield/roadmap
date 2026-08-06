@@ -1,5 +1,6 @@
-import type { HealthInputs, MeasurementSource } from '@roadmap/health-core';
+import type { HealthInputs, MeasurementSource, ProductEventName } from '@roadmap/health-core';
 import { safeGetItem, safeSetItem } from './storage';
+import { SHOPIFY_SURFACE } from './build-flags';
 import {
   measurementsToInputs,
   diffInputsToMeasurements,
@@ -1040,3 +1041,47 @@ function trackABEvent(eventType: 'impression' | 'conversion'): void {
 
 export function trackABImpression(): void { trackABEvent('impression'); }
 export function trackABConversion(): void { trackABEvent('conversion'); }
+
+// ---------------------------------------------------------------------------
+// Product funnel events (anonymous behavioral counters — usage-audit 2026-08)
+// ---------------------------------------------------------------------------
+
+export interface ProductEventMetadata {
+  provider?: 'google-drive' | 'dropbox' | 'github' | 'webdav' | 'local';
+  count?: number;
+}
+
+/**
+ * Fire-and-forget anonymous funnel event. Event names are the shared
+ * PRODUCT_EVENT_NAMES enum in health-core; the server rejects anything else.
+ *
+ * - Only fires on the Shopify surface: the Pages/self-host build has no Brad
+ *   server, so this must no-op there (VITE_SHOPIFY_SURFACE gate).
+ * - Throttled to once per event name per tab session (sessionStorage), so
+ *   re-renders and repeat actions don't spam the endpoint.
+ * - Never attach health values or free text — metadata is a closed allow-list.
+ */
+export function trackProductEvent(
+  eventName: ProductEventName,
+  metadata?: ProductEventMetadata,
+): void {
+  if (!SHOPIFY_SURFACE) return;
+  try {
+    const sentKey = `hr_pe_${eventName}`;
+    if (sessionStorage.getItem(sentKey)) return;
+    sessionStorage.setItem(sentKey, '1');
+  } catch { /* sessionStorage unavailable — still send once */ }
+  const visitorId = getVisitorId();
+  apiCall(
+    () => fetch(`${PROXY_PATH}/api/events`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventName, visitorId, ...(metadata ? { metadata } : {}) }),
+      // Several call sites navigate/reload right after firing (cloud connect,
+      // save flows) — keepalive lets the request survive the page teardown.
+      keepalive: true,
+    }),
+    'Product event tracking failed',
+    null,
+  );
+}

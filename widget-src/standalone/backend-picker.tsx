@@ -18,6 +18,7 @@ import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { GitHubAdapter, WebDavAdapter } from '../src/storage';
 import { adapterFor, BACKEND_KEY, copyDownToDevice, finishFormConnect, logOff, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
+import { trackProductEvent } from '../src/lib/api';
 import { useModalDialog } from './use-dialog';
 
 /* Minimal brand marks (Brad OK'd logos). Inline so no asset fetches. */
@@ -133,6 +134,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
         location.reload();
         return;
       }
+      trackProductEvent('cloud_connect_started', { provider: id });
       // Full-page OAuth redirect — never resolves; completes in app.tsx on return.
       await adapterFor(id)!.connect();
     });
@@ -141,6 +143,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
   const submitForm = (id: 'github' | 'self-host'): void => {
     void run(async () => {
       await prepareSwitch();
+      trackProductEvent('cloud_connect_started', { provider: id === 'self-host' ? 'webdav' : id });
       const adapter =
         id === 'github'
           ? new GitHubAdapter({ token: gh.token.trim(), owner: gh.owner.trim(), repo: gh.repo.trim() })

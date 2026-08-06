@@ -23,7 +23,7 @@ import {
   getProteinEvidence,
   getBmiEvidence,
 } from '@roadmap/health-core';
-import { sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments, getReportEmailCaptured, markReportEmailCaptured } from '../lib/api';
+import { sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments, getReportEmailCaptured, markReportEmailCaptured, trackProductEvent } from '../lib/api';
 import type { ApiReminderPreference } from '../lib/api-types';
 import { EMAIL_REGEX } from '../lib/email';
 import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
@@ -706,6 +706,13 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
     const timer = setTimeout(() => { settledRef.current = true; }, 3000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Funnel signal: the user reached actual results (suggestions rendered).
+  // trackProductEvent self-throttles to once per tab session.
+  const hasSuggestions = (results?.suggestions?.length ?? 0) > 0;
+  useEffect(() => {
+    if (hasSuggestions) trackProductEvent('results_viewed');
+  }, [hasSuggestions]);
 
   // Detect new/changed suggestions
   useEffect(() => {

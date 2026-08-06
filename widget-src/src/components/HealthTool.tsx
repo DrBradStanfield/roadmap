@@ -76,6 +76,7 @@ import {
   sendWelcomeEmail,
   trackABImpression,
   trackABConversion,
+  trackProductEvent,
 } from '../lib/api';
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiReminderPreference, ApiDocument } from '../lib/api-types';
@@ -598,6 +599,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     if (!authState.isLoggedIn) return { ok: false, reason: 'error' };
     const result = await correctMeasurement(oldId, newValueSI);
     if (result.status !== 'ok') return { ok: false, reason: result.status };
+    trackProductEvent('correction_made');
 
     const newId = result.newId;
     const patchList = <T extends ApiMeasurement>(rows: T[]): T[] => {

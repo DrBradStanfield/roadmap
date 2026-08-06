@@ -1413,3 +1413,35 @@ ALTER TABLE reminder_optin_v2 ENABLE ROW LEVEL SECURITY;
 INSERT INTO cron_lock (lock_name, locked_by, locked_at, lock_date)
 VALUES ('reminder_v2_cron', NULL, NULL, '1970-01-01')
 ON CONFLICT DO NOTHING;
+
+-- ===== product telemetry (usage-audit 2026-08, Part 3) =====
+-- Two operational tables, NO health data. Service-role only (RLS enabled, no
+-- policies = zero rows via anon/authenticated API), matching reminder_optin_v2.
+
+-- Feedback submissions — mirrors the feedback email (api.feedback.ts) so
+-- feedback becomes queryable by the weekly product-health loop. The email to
+-- Brad remains the primary delivery; this insert is fire-and-forget.
+CREATE TABLE IF NOT EXISTS feedback_submissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  message TEXT NOT NULL,
+  customer_id TEXT,          -- Shopify logged_in_customer_id, NULL for guests
+  source TEXT NOT NULL DEFAULT 'widget',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE feedback_submissions ENABLE ROW LEVEL SECURITY;
+
+-- Anonymous funnel events — event name (enum PRODUCT_EVENT_NAMES in
+-- packages/health-core/src/product-events.ts) + visitor UUID (hr_vid) +
+-- optional small allow-listed metadata. NEVER health values or free text;
+-- shape enforced in app/lib/product-events.server.ts.
+CREATE TABLE IF NOT EXISTS product_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  event_name TEXT NOT NULL,
+  visitor_id TEXT NOT NULL,
+  metadata JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_product_events_name_time ON product_events(event_name, created_at);
+CREATE INDEX IF NOT EXISTS idx_product_events_visitor ON product_events(visitor_id);
+ALTER TABLE product_events ENABLE ROW LEVEL SECURITY;

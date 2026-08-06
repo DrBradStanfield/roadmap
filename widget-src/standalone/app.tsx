@@ -30,6 +30,7 @@ import { googleDriveConfig } from './google-config';
 import { SyncControl, RemindersSection } from './sync-control';
 import { HistoryLightboxHost } from './history-lightbox';
 import { migrateLocalInto, BACKEND_KEY, type Backend } from './connect';
+import { trackProductEvent } from '../src/lib/api';
 
 interface ResolvedBackend {
   adapter: StorageAdapter;
@@ -52,6 +53,7 @@ async function resolveBackend(): Promise<ResolvedBackend> {
   if (resumed) {
     await migrateLocalInto(resumed);
     localStorage.setItem(BACKEND_KEY, 'dropbox');
+    trackProductEvent('cloud_connect_success', { provider: 'dropbox' });
     return { adapter: resumed, backend: 'dropbox' };
   }
 
@@ -67,6 +69,7 @@ async function resolveBackend(): Promise<ResolvedBackend> {
   if (gdResumed) {
     await migrateLocalInto(gdResumed);
     localStorage.setItem(BACKEND_KEY, 'google-drive');
+    trackProductEvent('cloud_connect_success', { provider: 'google-drive' });
     return { adapter: gdResumed, backend: 'google-drive' };
   }
 

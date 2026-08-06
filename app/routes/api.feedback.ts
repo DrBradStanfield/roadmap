@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/react-router';
 import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { sendFeedbackEmail } from '../lib/email.server';
+import { recordFeedbackSubmission } from '../lib/product-events.server';
 import { getClientIp } from '../lib/route-helpers.server';
 
 // Rate limit: 3 submissions per hour per IP
@@ -69,6 +70,10 @@ export async function action({ request }: ActionFunctionArgs) {
     // Extract optional customer ID for context
     const url = new URL(request.url);
     const customerId = url.searchParams.get('logged_in_customer_id') || null;
+
+    // Queryable mirror of the email (weekly product-health loop reads this).
+    // Fire-and-forget: a DB failure must never block the feedback email.
+    recordFeedbackSubmission(parsed.data.email, parsed.data.message, customerId).catch(() => {});
 
     const sent = await sendFeedbackEmail(parsed.data.email, parsed.data.message, customerId);
 

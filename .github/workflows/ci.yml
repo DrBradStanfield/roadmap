@@ -45,6 +45,9 @@ jobs:
       # only the Remix-2.x turbo-stream DoS, removed at the Phase-7 RR7 migration).
       # The gate still fails on any NEW high/critical advisory in production deps.
       - run: npx audit-ci@^7 --config audit-ci.jsonc
-      - run: npm test
+      # test:all runs the root vitest config — a strict superset of `npm test`
+      # (health-core + app/lib) that also picks up widget-src and app/routes
+      # suites, which were previously never executed in CI.
+      - run: npm run test:all
       - run: npm run build
       - run: npm run build:widget

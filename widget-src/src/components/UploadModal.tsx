@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { UnitSystem, MeasurementSource, MetricType } from '@roadmap/health-core';
-import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode } from '../lib/api';
+import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, trackProductEvent } from '../lib/api';
 import type { PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
 import { ReviewTable, type FileResult, type DocumentToSave } from './ReviewTable';
 import { synthesizeLabArchiveEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
@@ -223,6 +223,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
 
     if (onStart) await onStart();
 
+    trackProductEvent('upload_started', { count: filesToProcess.length });
     setState('processing');
     onProcessingStart?.();
     setError(null);
@@ -311,6 +312,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
           tags: { uploadErrorCode: code },
           extra: { fileNames, fileTypes, fileCount },
         });
+        trackProductEvent('upload_extract_failed');
         setError(err instanceof UploadError
           ? UPLOAD_ERROR_MESSAGES[err.code]
           : 'An error occurred while processing files. Please try again.');
@@ -605,6 +607,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       }
 
       if (totalCompleted > 0) {
+        trackProductEvent('upload_saved', { count: totalSaved });
         setState('done');
         onComplete();
       } else {
