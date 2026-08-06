@@ -60,6 +60,10 @@ const USER_COOLDOWN_MS = 3_000;              // 3s minimum between responses to 
 const CONCURRENCY_LIMIT = 3;                 // max concurrent LLM calls
 const QUEUE_MAX_DEPTH = 10;                  // beyond this, reject with friendly message
 const HISTORY_MSG_LIMIT = 20;                // cap per-conversation history sent to LLM
+// How recently a user's last conversation must have been touched for a new
+// non-reply message to continue it instead of starting fresh. See
+// loadRecentConversation() for why this is user-scoped and deliberately short.
+const RECENT_CONVERSATION_WINDOW_MS = 30 * 60_000; // 30 minutes
 const PLATFORM_SHOPIFY = 'shopify';
 const PLATFORM_DISCORD = 'discord';
 
@@ -258,7 +262,13 @@ async function handleMessage(message: GuildMessage): Promise<void> {
 
     const truncatedInput = strippedContent.slice(0, DISCORD_MAX_MESSAGE_CHARS);
 
-    const dbResult = await loadConversationForReply(message, authorId);
+    // Explicit reply chain wins. Otherwise, outside a thread (threads carry their
+    // own history via loadThreadHistory), continue this user's recent conversation
+    // so channel follow-ups aren't each answered from scratch.
+    let dbResult = await loadConversationForReply(message, authorId);
+    if (!dbResult.conversationId && !message.channel.isThread()) {
+      dbResult = await loadRecentConversation(authorId);
+    }
     const conversationId = dbResult.conversationId;
 
     // Dedup check (shared with web — app/lib/chat-dedup.server.ts). Only when we have
@@ -503,6 +513,69 @@ async function loadConversationForReply(
     }));
 
   return { conversationId, history };
+}
+
+/**
+ * Continuity fallback for users who don't use Discord's reply function.
+ *
+ * Without this, every message that isn't an explicit reply (and isn't inside a
+ * thread) starts a BRAND-NEW conversation with no history — so a user asking
+ * follow-ups in the channel gets each turn answered from scratch. The 2026-08-06
+ * audit caught the failure mode: one user sent the same clarifying question 7
+ * times in 31 minutes, got 7 context-free answers that drifted against each
+ * other, and replied "I'm confused because you keep telling me different things".
+ *
+ * So: if the same Discord user has a conversation touched within the recency
+ * window, continue it. Scoped by user, not channel — `chat_conversations` has no
+ * channel column, so a user active in two channels inside the window can have
+ * those turns merged. That's a far smaller problem than answering every
+ * follow-up with no history, but it's why the window is deliberately short.
+ */
+async function loadRecentConversation(authorDiscordId: string): Promise<{
+  conversationId: string | null;
+  history: Array<{ role: 'user' | 'assistant'; content: string; created_at: string; is_fallback: boolean | null }>;
+}> {
+  if (!supabaseAdmin) return { conversationId: null, history: [] };
+
+  const since = new Date(Date.now() - RECENT_CONVERSATION_WINDOW_MS).toISOString();
+  const { data: conv, error: convErr } = await supabaseAdmin
+    .from('chat_conversations')
+    .select('id')
+    .eq('platform', PLATFORM_DISCORD)
+    .eq('external_id', authorDiscordId)
+    .gte('updated_at', since)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (convErr) {
+    console.warn('Discord: recent-conversation lookup failed:', convErr.message);
+    return { conversationId: null, history: [] };
+  }
+  if (!conv) return { conversationId: null, history: [] };
+
+  const { data, error } = await supabaseAdmin
+    .from('chat_messages')
+    .select('role, content, created_at, is_fallback')
+    .eq('conversation_id', conv.id)
+    .order('created_at', { ascending: true })
+    .limit(HISTORY_MSG_LIMIT);
+
+  if (error || !data) {
+    console.warn('Discord: failed to load recent conversation history:', error?.message);
+    return { conversationId: conv.id, history: [] };
+  }
+
+  const history = data
+    .filter(r => r.role === 'user' || r.role === 'assistant')
+    .map(r => ({
+      role: r.role as 'user' | 'assistant',
+      content: r.content as string,
+      created_at: r.created_at as string,
+      is_fallback: r.is_fallback as boolean | null,
+    }));
+
+  return { conversationId: conv.id, history };
 }
 
 /**
