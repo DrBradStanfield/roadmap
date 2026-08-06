@@ -2,9 +2,9 @@
  * Chat feature — context assembly, daily limit check, system prompt construction.
  *
  * Grounded in health_roadmap_algorithm.md and evidence.ts.
- * All user health data is assembled server-side — the client sends only the question.
+ * Health data is local-first (v2): the client sends the user's plan as
+ * `guestInputs` with every message — the server holds no health data at all.
  */
-import type { SupabaseClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/react-router';
 import fs from 'fs';
 import path from 'path';
@@ -21,16 +21,29 @@ import {
 } from '../../packages/health-core/src/measurement-history';
 import { healthInputSchema } from '../../packages/health-core/src/validation';
 import { CHAT_EDIT_TOOLS, PREFILL_ACK_MESSAGE, parseProposedEdits, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
-import { loadHealthData } from './supabase.server';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
-import { decodeSex, decodeUnitSystem } from '../../packages/health-core/src/types';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const CHAT_MODEL = 'claude-haiku-4-5-20251001';
-const CHAT_MAX_TOKENS = 2048;
+// The main answer runs on Sonnet 5; the classifier and router stay on Haiku 4.5
+// (a 1-token label and a handle list — exactly Haiku's job). The failures the
+// 2026-08-06 audit found were reasoning/self-check failures in the ANSWER —
+// fabricated citation identifiers, an invented acronym expansion — which is the
+// hop worth upgrading. At this volume the delta is ~$2/month.
+//
+// Sonnet 5 request-shape rules (differ from Haiku — do not copy between them):
+//   • NO `temperature`/`top_p`/`top_k` — non-default sampling params return 400.
+//   • Adaptive thinking is ON by default. Kept on deliberately: thinking is
+//     where the self-check happens ("do I actually have a DOI for this in
+//     context?"), and disabling it also makes Sonnet 5 less likely to reach for
+//     tools — this bot proposes medication/measurement edits via tools.
+//     `effort: medium` keeps latency sane (default is `high`).
+//   • `max_tokens` caps thinking + answer TOGETHER, so it is raised: replies run
+//     ~440 median / ~1230 max output tokens, and 2048 left no room to think.
+const CHAT_MODEL = 'claude-sonnet-5';
+const CHAT_MAX_TOKENS = 4096;
 const MAX_MESSAGE_LENGTH = 500;
 const HISTORY_TOKEN_BUDGET = 8000;
 const MAX_BLOG_CHARS = 80_000; // ~20K tokens — cap on combined blog articles in context
@@ -181,90 +194,37 @@ export const DOCTOR_POSTURE = loadPosture('chat-posture-doctor.md');
 export const BRAND_POSTURE = loadPosture('chat-posture-brand.md');
 
 // ---------------------------------------------------------------------------
-// Context assembly (cached per user for 5 minutes)
+// Context assembly — always from the client-supplied plan (local-first v2)
 // ---------------------------------------------------------------------------
-
-const contextCache = new Map<string, { context: ChatContext; expiresAt: number }>();
-const CONTEXT_CACHE_TTL = 5 * 60_000;
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of contextCache) {
-    if (now > entry.expiresAt) contextCache.delete(key);
-  }
-}, 5 * 60_000);
 
 export interface ChatContext {
   userContextJson: string;
-  subscriptionPlan: string;
-  messageCredits: number;
   /** Full documents for content matching (avoids second DB call) */
   healthDocuments: Array<{ title: string; document_date: string | null; document_type: string; content_md: string }>;
 }
 
-export async function assembleChatContext(
-  client: SupabaseClient,
-  userId?: string,
-): Promise<ChatContext | null> {
-  // Return cached context if available (health data doesn't change between chat messages)
-  if (userId) {
-    const cached = contextCache.get(userId);
-    if (cached && Date.now() < cached.expiresAt) return cached.context;
-  }
+/** No-data context: chat still answers general questions. */
+export const EMPTY_CHAT_CONTEXT: ChatContext = Object.freeze({
+  userContextJson: '{}',
+  healthDocuments: [],
+});
 
-  const data = await loadHealthData(client);
-  if (!data) return null;
-
-  const { profile, inputs, medInputs, screenInputs, healthDocuments } = data;
-
-  // Incomplete profile — can't personalize chat. Surface upstream as "load
-  // health data" failure so the UI prompts the user to finish onboarding.
-  if (profile.sex == null) return null;
-
-  const unitSystem = profile.unit_system != null ? decodeUnitSystem(profile.unit_system) : 'si';
-
-  const results = calculateHealthResults(inputs, unitSystem, medInputs, screenInputs);
-
-  const userContext = {
-    profile: {
-      sex: decodeSex(profile.sex),
-      age: results.age,
-      heightCm: profile.height,
-      unitSystem,
-    },
-    latestValues: buildLatestValues(inputs),
-    medications: medInputs,
-    screenings: screenInputs,
-    currentSuggestions: results.suggestions.map(s => ({
-      id: s.id,
-      category: s.category,
-      priority: s.priority,
-      title: s.title,
-    })),
-    uploadedDocuments: (healthDocuments ?? []).map(d => ({
-      title: d.title,
-      date: d.document_date,
-      type: d.document_type,
-    })),
-  };
-
-  const context: ChatContext = {
-    userContextJson: JSON.stringify(userContext, null, 2),
-    subscriptionPlan: profile.subscription_plan ?? 'free',
-    messageCredits: profile.message_credits ?? 0,
-    healthDocuments: healthDocuments ?? [],
-  };
-
-  if (userId) {
-    contextCache.set(userId, { context, expiresAt: Date.now() + CONTEXT_CACHE_TTL });
-  }
-
-  return context;
+/**
+ * Resolve the health context for a chat turn — logged-in or guest alike.
+ *
+ * The v1 server-side health tables were purged June 2026, so the
+ * client-supplied `guestInputs` is the ONLY possible source of health context.
+ * Inputs that are absent or fail schema validation (an empty form — v2 invites
+ * chat before any data entry — or a malformed payload) degrade to the empty
+ * context, never an error. (Regression: Sentry 7563968375 — the logged-in
+ * path used to read the purged tables and 500 on every message.)
+ */
+export function resolveChatContext(guestInputs: unknown): ChatContext {
+  return (guestInputs ? assembleGuestChatContext(guestInputs) : null) ?? EMPTY_CHAT_CONTEXT;
 }
 
 /**
- * Build chat context from client-supplied guest health inputs.
- * Same output shape as assembleChatContext but without DB calls.
+ * Build chat context from client-supplied health inputs.
  * Returns null if inputs fail validation.
  */
 export function assembleGuestChatContext(guestInputs: unknown): ChatContext | null {
@@ -323,8 +283,6 @@ export function assembleGuestChatContext(guestInputs: unknown): ChatContext | nu
 
   return {
     userContextJson: JSON.stringify(userContext, null, 2),
-    subscriptionPlan: 'free',
-    messageCredits: 0,
     healthDocuments: [],
   };
 }
@@ -632,7 +590,9 @@ export async function getChatCompletion(
   const body = {
     model: CHAT_MODEL,
     max_tokens: CHAT_MAX_TOKENS,
-    temperature: 0.3,
+    // No `temperature` — Sonnet 5 rejects non-default sampling params with a 400.
+    thinking: { type: 'adaptive' },
+    output_config: { effort: 'medium' },
     system: systemBlocks,
     tools: CHAT_EDIT_TOOLS,
     messages,
