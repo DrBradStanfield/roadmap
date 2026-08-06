@@ -4,7 +4,14 @@
  * Decides whether the v2 LLM router needs to fire for a given user turn.
  * For ~59% of observed traffic (greetings, product/account questions,
  * meta-questions, drug-dosing questions) the router returns empty handles
- * anyway — this short-circuits those, saving ~$0.004 + ~250-400ms per skip.
+ * anyway — this short-circuits those, saving ~$0.004 + ~1.3-1.9s per skip.
+ *
+ * That latency figure read ~250-400ms here until 2026-08-07. It was a
+ * pre-launch estimate production never matched. Measured over 200
+ * chat_match_events rows: router_latency_ms median 1615ms overall
+ * (cache HIT median 1311ms n=78; cache MISS median 1889ms n=122),
+ * p90 3063ms, max 8406ms. The skip is worth ~4-6x more than was
+ * documented — which strengthens the case for the serial classifier.
  *
  * Design docs:
  *   - chat-architecture.md § Pre-router classifier (full spec)
