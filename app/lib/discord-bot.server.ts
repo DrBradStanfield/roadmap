@@ -442,6 +442,50 @@ function stripBotMention(content: string, botUserId: string): string {
     .trim();
 }
 
+/** A stored chat turn, as the Discord handler needs it. */
+type ChatHistoryEntry = {
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+  is_fallback: boolean | null;
+};
+
+/** Which stored conversation (if any) an incoming message continues. */
+type ConversationLookup = { conversationId: string | null; history: ChatHistoryEntry[] };
+
+/**
+ * Load the last HISTORY_MSG_LIMIT turns of a stored conversation.
+ *
+ * `created_at` and `is_fallback` feed the shared content-based dedup check
+ * (chat-dedup.server.ts findDuplicateReply); the LLM itself uses only role and
+ * content. A read failure degrades to empty history rather than dropping the
+ * reply — answering without context beats not answering at all.
+ */
+async function loadConversationHistory(conversationId: string): Promise<ChatHistoryEntry[]> {
+  if (!supabaseAdmin) return [];
+
+  const { data, error } = await supabaseAdmin
+    .from('chat_messages')
+    .select('role, content, created_at, is_fallback')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true })
+    .limit(HISTORY_MSG_LIMIT);
+
+  if (error || !data) {
+    console.warn('Discord: failed to load conversation history:', error?.message);
+    return [];
+  }
+
+  return data
+    .filter(r => r.role === 'user' || r.role === 'assistant')
+    .map(r => ({
+      role: r.role as 'user' | 'assistant',
+      content: r.content as string,
+      created_at: r.created_at as string,
+      is_fallback: r.is_fallback as boolean | null,
+    }));
+}
+
 /**
  * If the message is a reply to one of the bot's previous messages, look up the
  * referenced bot message in Supabase by `discord_message_id`, then load the
@@ -451,10 +495,7 @@ function stripBotMention(content: string, botUserId: string): string {
 async function loadConversationForReply(
   message: GuildMessage,
   authorDiscordId: string,
-): Promise<{
-  conversationId: string | null;
-  history: Array<{ role: 'user' | 'assistant'; content: string; created_at: string; is_fallback: boolean | null }>;
-}> {
+): Promise<ConversationLookup> {
   if (!supabaseAdmin) return { conversationId: null, history: [] };
 
   const refId = message.reference?.messageId;
@@ -474,21 +515,14 @@ async function loadConversationForReply(
 
   // Fetch conversation metadata and message history in parallel — neither
   // depends on the other, both only need refMsg.conversation_id from above.
-  // created_at + is_fallback are needed for the shared content-based dedup check
-  // (chat-dedup.server.ts findDuplicateReply); downstream LLM code only uses role+content.
   const conversationId = refMsg.conversation_id;
-  const [convResult, histResult] = await Promise.all([
+  const [convResult, history] = await Promise.all([
     supabaseAdmin
       .from('chat_conversations')
       .select('platform, external_id')
       .eq('id', conversationId)
       .maybeSingle(),
-    supabaseAdmin
-      .from('chat_messages')
-      .select('role, content, created_at, is_fallback')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
-      .limit(HISTORY_MSG_LIMIT),
+    loadConversationHistory(conversationId),
   ]);
 
   // Verify conversation belongs to the same Discord user. If not, start fresh —
@@ -497,20 +531,6 @@ async function loadConversationForReply(
   if (convResult.error || !conv) return { conversationId: null, history: [] };
   if (conv.platform !== PLATFORM_DISCORD) return { conversationId: null, history: [] };
   if (conv.external_id !== authorDiscordId) return { conversationId: null, history: [] };
-
-  if (histResult.error || !histResult.data) {
-    console.warn('Discord: failed to load conversation history:', histResult.error?.message);
-    return { conversationId, history: [] };
-  }
-
-  const history = histResult.data
-    .filter(r => r.role === 'user' || r.role === 'assistant')
-    .map(r => ({
-      role: r.role as 'user' | 'assistant',
-      content: r.content as string,
-      created_at: r.created_at as string,
-      is_fallback: r.is_fallback as boolean | null,
-    }));
 
   return { conversationId, history };
 }
@@ -531,10 +551,7 @@ async function loadConversationForReply(
  * those turns merged. That's a far smaller problem than answering every
  * follow-up with no history, but it's why the window is deliberately short.
  */
-async function loadRecentConversation(authorDiscordId: string): Promise<{
-  conversationId: string | null;
-  history: Array<{ role: 'user' | 'assistant'; content: string; created_at: string; is_fallback: boolean | null }>;
-}> {
+async function loadRecentConversation(authorDiscordId: string): Promise<ConversationLookup> {
   if (!supabaseAdmin) return { conversationId: null, history: [] };
 
   const since = new Date(Date.now() - RECENT_CONVERSATION_WINDOW_MS).toISOString();
@@ -554,28 +571,7 @@ async function loadRecentConversation(authorDiscordId: string): Promise<{
   }
   if (!conv) return { conversationId: null, history: [] };
 
-  const { data, error } = await supabaseAdmin
-    .from('chat_messages')
-    .select('role, content, created_at, is_fallback')
-    .eq('conversation_id', conv.id)
-    .order('created_at', { ascending: true })
-    .limit(HISTORY_MSG_LIMIT);
-
-  if (error || !data) {
-    console.warn('Discord: failed to load recent conversation history:', error?.message);
-    return { conversationId: conv.id, history: [] };
-  }
-
-  const history = data
-    .filter(r => r.role === 'user' || r.role === 'assistant')
-    .map(r => ({
-      role: r.role as 'user' | 'assistant',
-      content: r.content as string,
-      created_at: r.created_at as string,
-      is_fallback: r.is_fallback as boolean | null,
-    }));
-
-  return { conversationId: conv.id, history };
+  return { conversationId: conv.id, history: await loadConversationHistory(conv.id) };
 }
 
 /**

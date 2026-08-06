@@ -19,7 +19,9 @@
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "shopify": "shopify",
     "vite": "vite",
-    "test": "npm run test --workspace=@roadmap/health-core",
+    "test": "npm run test:core && npm run test:server",
+    "test:core": "npm run test --workspace=@roadmap/health-core",
+    "test:server": "vitest run app/lib",
     "test:watch": "npm run test --workspace=@roadmap/health-core -- --watch",
     "rebuild-index": "npx tsx scripts/rebuild-blog-index.ts"
   },
