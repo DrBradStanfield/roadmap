@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { PRODUCT_EVENT_NAMES } from '@roadmap/health-core';
+// Deep relative import (not '@roadmap/health-core'): the Docker build runs
+// `npm ci` before COPY, so the workspace symlink never exists in the image —
+// same reason chat.server.ts / email.server.ts import health-core this way.
+import { PRODUCT_EVENT_NAMES } from '../../packages/health-core/src/product-events';
 import { supabaseAdmin } from './supabase.server';
 
 // Metadata is a closed allow-list: no free text, no health values. `provider`

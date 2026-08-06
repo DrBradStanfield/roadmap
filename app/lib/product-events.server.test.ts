@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PRODUCT_EVENT_NAMES } from '@roadmap/health-core';
+import { PRODUCT_EVENT_NAMES } from '../../packages/health-core/src/product-events';
 import { parseProductEvent } from './product-events.server';
 
 const VISITOR = '5f0e3e9a-6c1f-4b1a-9a3e-2d4c8b7a6f5e';
