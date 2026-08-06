@@ -3,14 +3,15 @@
  *
  * Loaded on all pages via chat-embed.liquid (app embed block).
  * Skips the roadmap page where HealthTool handles its own chat.
- * Reads guest health data from localStorage (entered on roadmap page).
- * Logged-in users get full personalization from Supabase (server-side).
+ * Reads cached health data from localStorage (entered on roadmap page) and
+ * sends it as chat context — local-first, the server holds no health data.
  */
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ChatSection } from './components/ChatSection';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { loadGuestInputs } from './lib/storage';
+import { observeVisibility } from './lib/observe-visibility';
 import { resolveAssistantName, setAssistantName } from './lib/assistant-config';
 import { initSentry } from './lib/sentry';
 import './styles.css';
@@ -85,20 +86,18 @@ function useFooterDock(fabRef: React.RefObject<HTMLButtonElement>) {
       window.removeEventListener('resize', schedule);
     };
 
-    // IntersectionObserver tells us *when* the footer enters/leaves the
+    // observeVisibility tells us *when* the footer enters/leaves the
     // viewport; while it's intersecting we track its exact position on scroll.
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) startListening();
-        else stopListening();
-        schedule();
-      },
-      { threshold: 0 },
-    );
-    observer.observe(footer);
+    // (Where IntersectionObserver is missing — Lockdown Mode — it degrades to
+    // always-listening, which is just the pre-optimization behaviour.)
+    const stopObserving = observeVisibility(footer, (visible) => {
+      if (visible) startListening();
+      else stopListening();
+      schedule();
+    }, { threshold: 0 });
 
     return () => {
-      observer.disconnect();
+      stopObserving();
       stopListening();
       if (frame) cancelAnimationFrame(frame);
       fab.style.removeProperty('--chat-fab-bottom');
@@ -182,7 +181,10 @@ function mount() {
     ? `Questions about ${productTitle}?`
     : (container.dataset.fabLabel || 'Need help? Ask here');
 
-  const guestInputs = isLoggedIn ? null : loadGuestInputs();
+  // Always send the cached plan as chat context — local-first (v2) means the
+  // server has no health data for logged-in customers either (the v1 tables
+  // were purged June 2026), so the client payload is the only possible source.
+  const guestInputs = loadGuestInputs();
 
   container.style.display = '';
   const root = createRoot(container);

@@ -35,7 +35,18 @@ function scrubBreadcrumb(breadcrumb: Sentry.Breadcrumb): Sentry.Breadcrumb | nul
 }
 
 /** Scrub PII/PHI from Sentry events before they leave the browser. */
-function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
+export function scrubEvent(event: Sentry.ErrorEvent): Sentry.ErrorEvent | null {
+  // Drop the SDK's own internal log object when it gets re-captured: after our
+  // processors drop a third-party error (e.g. the Horizon theme's
+  // "@shopify/events" TypeError), the SDK's "An event processor returned
+  // `null`, will not send event." message can escape as a rejected plain
+  // object and come back as "Object captured as exception with keys: message".
+  // Pure self-noise (Sentry 7620498452, 7645126135).
+  const serializedMessage = (event.extra?.__serialized__ as { message?: unknown } | undefined)?.message;
+  if (typeof serializedMessage === 'string' && serializedMessage.startsWith('An event processor returned')) {
+    return null;
+  }
+
   if (event.extra) {
     event.extra = scrubSensitiveData(event.extra) as Record<string, unknown>;
   }

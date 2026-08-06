@@ -17,6 +17,7 @@ export function renderMarkdown(md: string): string {
   const html: string[] = [];
   let inList = false;
   let inTable = false;
+  let isHeaderRow = false;
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
@@ -30,10 +31,12 @@ export function renderMarkdown(md: string): string {
         if (inList) { html.push('</ul>'); inList = false; }
         html.push('<div class="md-table-wrap"><table class="md-table">');
         inTable = true;
+        isHeaderRow = true;
       }
       const cells = line.trim().slice(1, -1).split('|').map(c => inlineFormat(escapeHtml(c.trim())));
-      // First data row = header if table just started
-      const tag = html[html.length - 1] === '<table class="md-table">' ? 'th' : 'td';
+      // First row of each table = header row
+      const tag = isHeaderRow ? 'th' : 'td';
+      isHeaderRow = false;
       html.push(`<tr>${cells.map(c => `<${tag}>${c}</${tag}>`).join('')}</tr>`);
       continue;
     } else if (inTable) {

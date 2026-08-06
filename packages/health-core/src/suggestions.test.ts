@@ -2672,7 +2672,9 @@ describe('Evidence attachment', () => {
     const colorectal = suggestions.find(s => s.id.startsWith('screening-colorectal'));
     expect(colorectal).toBeDefined();
     expect(colorectal!.reason).toBeDefined();
-    expect(colorectal!.reason).toContain('Dr Stanfield');
+    // Wording changed in the 2026-07-31 de-doctoring pass — assert the stable
+    // clinical claim, not attribution phrasing.
+    expect(colorectal!.reason).toContain('age 35');
     expect(colorectal!.references!.length).toBeGreaterThan(0);
   });
 

@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
 import type { ProposedEdit } from '@roadmap/health-core';
 import { getChatGate } from '../lib/chat-api';
+import { observeVisibility } from '../lib/observe-visibility';
 import { useChatState, THINKING_MESSAGES, MAX_CHARS } from '../hooks/useChatState';
 import { ChatKeyGate } from './ChatKeyGate';
 import { ChatMessageBubble } from './ChatMessageBubble';
@@ -38,23 +39,16 @@ export function ChatEmbed({ isLoggedIn, guestInputs, muted, onProposeEdit }: Cha
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Lazy-load conversations: fire only when this panel enters the viewport.
+  // Lazy-load conversations: fire only when this panel enters the viewport
+  // (loadConversationsIfNeeded is idempotent, so repeat enters are no-ops).
   // Since the embed is placed below the health widget, the widget's API calls
   // win network priority naturally.
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          actions.loadConversationsIfNeeded();
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(root);
-    return () => observer.disconnect();
+    return observeVisibility(root, visible => {
+      if (visible) actions.loadConversationsIfNeeded();
+    }, { threshold: 0.1 });
   }, [actions.loadConversationsIfNeeded]);
 
   // Auto-scroll messages to bottom on new message

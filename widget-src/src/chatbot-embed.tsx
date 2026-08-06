@@ -47,7 +47,10 @@ function mount() {
 
   const isLoggedIn = container.dataset.loggedIn === 'true';
 
-  const guestInputs = isLoggedIn ? null : loadGuestInputs();
+  // Always send the cached plan as chat context — local-first (v2) means the
+  // server has no health data for logged-in customers either (the v1 tables
+  // were purged June 2026), so the client payload is the only possible source.
+  const guestInputs = loadGuestInputs();
 
   const root = createRoot(container);
   root.render(
