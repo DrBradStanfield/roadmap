@@ -11,8 +11,7 @@ import * as Sentry from '@sentry/react-router';
 import { getAuthenticatedUser, checkSubscriptionFromTags, getCustomerOrders, getClientIp } from '../lib/route-helpers.server';
 import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
-  assembleChatContext,
-  assembleGuestChatContext,
+  resolveChatContext,
   buildSystemBlocks,
   buildConversationMessages,
   matchDocumentTitle,
@@ -325,36 +324,18 @@ export async function action({ request }: ActionFunctionArgs) {
     const sanitizedFirst = firstUserMsg ? sanitizeForRouter(firstUserMsg) : undefined;
     const sanitizedRecent = recentUserMsgs.map(sanitizeForRouter);
 
-    // Stage 1: classifier runs in parallel with user-data + orders. The
-    // classifier returns in ~100-200ms, by which time user-data is usually
-    // still loading — overlap is free.
-    let context;
-    let orderSummary = '';
+    // Stage 1: classifier + (logged-in) orders fetch dispatch first so their
+    // network round-trips overlap the synchronous context assembly below.
+    // Health context is client-supplied on every v2 surface — the v1
+    // server-side health tables were purged June 2026 — so it's built from
+    // body.guestInputs for guests and logged-in customers alike
+    // (missing/invalid inputs degrade to the empty context).
+    const ordersPromise = !auth.isGuest && auth.admin
+      ? getCachedOrders(auth.admin, auth.customerId!)
+      : Promise.resolve('');
     const classifierPromise = classifyMessage(sanitizedCurrent, sanitizedFirst, sanitizedRecent);
-
-    let classifierResult;
-    if (auth.isGuest) {
-      // `?? empty`: guestInputs that fail schema validation (an EMPTY form —
-      // v2 invites chat before any data entry — or a malformed payload) get the
-      // no-data context instead of nulling out and 500ing downstream.
-      const emptyGuestContext = { userContextJson: '{}', subscriptionPlan: 'free', messageCredits: 0, healthDocuments: [] };
-      [context, classifierResult] = await Promise.all([
-        Promise.resolve(
-          (body.guestInputs ? assembleGuestChatContext(body.guestInputs) : null) ?? emptyGuestContext
-        ),
-        classifierPromise,
-      ]);
-    } else {
-      let ctxResult: [Awaited<ReturnType<typeof assembleChatContext>>, string];
-      [ctxResult, classifierResult] = await Promise.all([
-        Promise.all([
-          assembleChatContext(auth.client, auth.userId),
-          auth.admin ? getCachedOrders(auth.admin, auth.customerId!) : Promise.resolve(''),
-        ]) as Promise<[Awaited<ReturnType<typeof assembleChatContext>>, string]>,
-        classifierPromise,
-      ]);
-      [context, orderSummary] = ctxResult;
-    }
+    const context = resolveChatContext(body.guestInputs);
+    const [orderSummary, classifierResult] = await Promise.all([ordersPromise, classifierPromise]);
 
     // Stage 2: router fires ONLY when the classifier didn't bypass it.
     // Trade-off: +150-300ms on ROUTE turns vs the previous parallel design,
@@ -375,16 +356,6 @@ export async function action({ request }: ActionFunctionArgs) {
         tags: { feature: 'chat', subsystem: 'router' },
         extra: { latencyMs: routerResult.latencyMs, cacheHit: routerResult.cacheHit },
       });
-    }
-
-    if (!context) {
-      const err = new Error('Chat: Could not load health data');
-      console.error(err.message);
-      Sentry.captureException(err, {
-        tags: { feature: 'chat' },
-        extra: { isGuest: auth.isGuest, userId: auth.userId },
-      });
-      return Response.json({ success: false, error: 'Could not load health data' }, { status: 500 });
     }
 
     // Create or validate conversation

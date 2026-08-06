@@ -1,4 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+// route-helpers.server.ts imports shopify.server.ts, which boots the whole
+// Shopify app (env validation + a live Postgres session-storage connection) at
+// module load — impossible in unit tests. The pure helpers under test never
+// touch it, so stub the module out.
+vi.mock('../shopify.server', () => ({ authenticate: {} }));
+
 import { getCustomerId, isValidUuid } from './route-helpers.server';
 
 describe('getCustomerId', () => {

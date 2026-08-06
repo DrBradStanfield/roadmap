@@ -1,9 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import jwt from 'jsonwebtoken';
 import * as Sentry from '@sentry/react-router';
-import type { HealthInputs } from '../../packages/health-core/src/types';
-import { measurementsToInputs, medicationsToInputs, screeningsToInputs } from '../../packages/health-core/src/mappings';
-import { MEASUREMENT_SOURCES, type MeasurementStatus, type MeasurementSource } from '../../packages/health-core/src/validation';
 import { getCachedKlaviyoCaptureStats, type KlaviyoCaptureStats } from './klaviyo.server';
 
 // ---------------------------------------------------------------------------
@@ -347,19 +344,6 @@ export class GuestRateLimitError extends Error {
 // Type definitions
 // ---------------------------------------------------------------------------
 
-export interface DbMeasurement {
-  id: string;
-  user_id: string;
-  metric_type: string;
-  value: number;
-  recorded_at: string;
-  created_at: string;
-  source: string;
-  external_id: string | null;
-  status?: string;
-  corrects_id?: string | null;
-}
-
 export interface DbProfile {
   id: string;
   shopify_customer_id: string;
@@ -380,75 +364,9 @@ export interface DbProfile {
   message_credits: number;
 }
 
-const MEASUREMENT_SOURCE_SET: ReadonlySet<string> = new Set(MEASUREMENT_SOURCES);
-
-/** Convert a DB measurement row to the camelCase API response format. */
-export function toApiMeasurement(m: DbMeasurement) {
-  // The DB CHECK constraint should reject anything outside MEASUREMENT_SOURCES,
-  // but if drift ever lands (e.g. a manual SQL migration) we'd otherwise leak
-  // an out-of-enum string to clients. Surface that via Sentry rather than
-  // silently miscategorising.
-  let source: MeasurementSource | undefined;
-  if (m.source == null) {
-    source = undefined;
-  } else if (MEASUREMENT_SOURCE_SET.has(m.source)) {
-    source = m.source as MeasurementSource;
-  } else {
-    Sentry.captureMessage('measurement.source out of enum', {
-      level: 'warning',
-      extra: { id: m.id, source: m.source },
-    });
-    source = undefined;
-  }
-  return {
-    id: m.id,
-    metricType: m.metric_type,
-    value: Number(m.value),
-    recordedAt: m.recorded_at,
-    createdAt: m.created_at,
-    source,
-    externalId: m.external_id,
-    // DB CHECK constraint guarantees status; cast is safe.
-    status: ((m.status ?? 'active') as MeasurementStatus),
-    correctsId: m.corrects_id ?? null,
-  };
-}
-
-/** Convert DB profile row to camelCase API format (demographics + height). */
-export function toApiProfile(p: DbProfile) {
-  return {
-    sex: p.sex,
-    birthYear: p.birth_year,
-    birthMonth: p.birth_month,
-    unitSystem: p.unit_system,
-    firstName: p.first_name,
-    lastName: p.last_name,
-    height: p.height,
-  };
-}
-
 // ---------------------------------------------------------------------------
-// Measurement CRUD — all queries use the RLS-enforced user client.
-// No userId parameter needed; RLS scopes to auth.uid() automatically.
-// All values are in SI canonical units.
-// ---------------------------------------------------------------------------
-
-/** Get the latest measurement for each metric_type for the authenticated user. */
-export async function getLatestMeasurements(
-  client: SupabaseClient,
-): Promise<DbMeasurement[]> {
-  const { data, error } = await client.rpc('get_latest_measurements');
-
-  if (error) {
-    console.error('Error fetching latest measurements:', error);
-    return [];
-  }
-
-  return (data ?? []) as DbMeasurement[];
-}
-
-// ---------------------------------------------------------------------------
-// Profile CRUD — demographics stored as columns on the profiles table.
+// Profile lookup — operational columns only (subscription plan, credits).
+// The v1 health/demographic reads were retired with the June-2026 purge.
 // RLS enforces auth.uid() on every query.
 // ---------------------------------------------------------------------------
 
@@ -467,143 +385,6 @@ export async function getProfile(
   }
 
   return data as DbProfile;
-}
-
-// ---------------------------------------------------------------------------
-// Medication CRUD — mutable medication status for the cholesterol cascade.
-// Uses UPSERT pattern (unique on user_id + medication_key).
-// ---------------------------------------------------------------------------
-
-export interface DbMedication {
-  id: string;
-  user_id: string;
-  medication_key: string;
-  drug_name: string;
-  dose_value: number | null;
-  dose_unit: string | null;
-  status: string;
-  started_at: string | null;
-  updated_at: string;
-  created_at: string;
-}
-
-/** Convert DB medication row to camelCase API format (FHIR-compatible). */
-export function toApiMedication(m: DbMedication) {
-  return {
-    id: m.id,
-    medicationKey: m.medication_key,
-    drugName: m.drug_name,
-    doseValue: m.dose_value,
-    doseUnit: m.dose_unit,
-    status: m.status,
-    startedAt: m.started_at,
-    updatedAt: m.updated_at,
-  };
-}
-
-/** Get all medications for the authenticated user. */
-export async function getMedications(
-  client: SupabaseClient,
-): Promise<DbMedication[]> {
-  const { data, error } = await client
-    .from('medications')
-    .select('*');
-
-  if (error) {
-    console.error('Error fetching medications:', error);
-    return [];
-  }
-
-  return (data ?? []) as DbMedication[];
-}
-
-// ---------------------------------------------------------------------------
-// Screening CRUD — mutable screening status for the cancer screening cascade.
-// Uses UPSERT pattern (unique on user_id + screening_key).
-// ---------------------------------------------------------------------------
-
-export interface DbScreening {
-  id: string;
-  user_id: string;
-  screening_key: string;
-  value: string;
-  updated_at: string;
-  created_at: string;
-}
-
-/** Convert DB screening row to camelCase API format. */
-export function toApiScreening(s: DbScreening) {
-  return {
-    id: s.id,
-    screeningKey: s.screening_key,
-    value: s.value,
-    updatedAt: s.updated_at,
-  };
-}
-
-/** Get all screenings for the authenticated user. */
-export async function getScreenings(
-  client: SupabaseClient,
-): Promise<DbScreening[]> {
-  const { data, error } = await client
-    .from('screenings')
-    .select('*');
-
-  if (error) {
-    console.error('Error fetching screenings:', error);
-    return [];
-  }
-
-  return (data ?? []) as DbScreening[];
-}
-
-// ---------------------------------------------------------------------------
-// Health Documents
-// ---------------------------------------------------------------------------
-
-interface DbHealthDocument {
-  id: string;
-  user_id: string;
-  document_type: string;
-  title: string;
-  document_date: string | null;
-  content_md: string;
-  metadata: Record<string, unknown>;
-  source_file_name: string | null;
-  created_at: string;
-}
-
-/** Convert DB document row to camelCase API format. */
-export function toApiDocument(d: DbHealthDocument) {
-  return {
-    id: d.id,
-    documentType: d.document_type,
-    title: d.title,
-    documentDate: d.document_date,
-    contentMd: d.content_md,
-    metadata: d.metadata,
-    sourceFileName: d.source_file_name,
-    createdAt: d.created_at,
-  };
-}
-
-export type ApiDocument = ReturnType<typeof toApiDocument>;
-
-/** Get all health documents for the authenticated user, newest first. */
-export async function getHealthDocuments(
-  client: SupabaseClient,
-): Promise<DbHealthDocument[]> {
-  const { data, error } = await client
-    .from('health_documents')
-    .select('*')
-    .order('document_date', { ascending: false, nullsFirst: false });
-
-  if (error) {
-    console.error('Error fetching health documents:', error);
-    return [];
-  }
-
-  return (data ?? []) as DbHealthDocument[];
 }
 
 /** Names of seeded `cron_lock` rows. New crons must add their lock name here AND
@@ -681,29 +462,6 @@ export async function tryAcquireCronLock(
   }
 
   return verify.locked_by === machineId && verify.lock_date === today;
-}
-
-// ---------------------------------------------------------------------------
-// Shared health data loading — parallel fetch + conversion to health-core format.
-// Used by chat.server.ts (LLM context).
-// ---------------------------------------------------------------------------
-
-export async function loadHealthData(client: SupabaseClient) {
-  const [profile, latestMeasurements, medications, screenings, healthDocuments] = await Promise.all([
-    getProfile(client),
-    getLatestMeasurements(client),
-    getMedications(client),
-    getScreenings(client),
-    getHealthDocuments(client),
-  ]);
-  if (!profile) return null;
-  const apiProfile = toApiProfile(profile);
-  const inputs = measurementsToInputs(
-    latestMeasurements.map(toApiMeasurement), apiProfile,
-  ) as HealthInputs;
-  const medInputs = medicationsToInputs(medications.map(toApiMedication));
-  const screenInputs = screeningsToInputs(screenings.map(toApiScreening));
-  return { profile, inputs, medInputs, screenInputs, healthDocuments };
 }
 
 // ---------------------------------------------------------------------------

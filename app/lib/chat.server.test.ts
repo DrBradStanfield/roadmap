@@ -4,6 +4,8 @@ import {
   buildSystemBlocks,
   matchDocumentTitle,
   assembleGuestChatContext,
+  resolveChatContext,
+  EMPTY_CHAT_CONTEXT,
   MAX_MESSAGE_LENGTH,
 } from './chat.server';
 
@@ -76,7 +78,7 @@ describe('buildSystemBlocks', () => {
   it('includes algorithm doc in first block', () => {
     const blocks = buildSystemBlocks('{}');
     // First block should contain the system prompt + algorithm
-    expect(blocks[0].text).toContain('Health Roadmap Assistant');
+    expect(blocks[0].text).toContain('evidence-based health assistant');
     expect(blocks[0].text).toContain('Scope boundaries');
   });
 
@@ -124,6 +126,32 @@ describe('buildSystemBlocks', () => {
   });
 });
 
+describe('resolveChatContext', () => {
+  // Regression: Sentry 7563968375 — logged-in customers got a 500 ("Chat:
+  // Could not load health data") because the server assembled their context
+  // from the v1 Supabase health tables, purged June 2026. Post-purge the
+  // client-supplied guestInputs is the ONLY possible health-context source
+  // (logged-in or not); its absence must degrade to the empty context so the
+  // chat still answers general questions — never null/500.
+  it('returns the empty context when the client sent no inputs (logged-in side surfaces)', () => {
+    expect(resolveChatContext(undefined)).toEqual(EMPTY_CHAT_CONTEXT);
+    expect(resolveChatContext(null)).toEqual(EMPTY_CHAT_CONTEXT);
+    expect(EMPTY_CHAT_CONTEXT.userContextJson).toBe('{}');
+  });
+
+  it('builds a personalized context from valid client inputs', () => {
+    const ctx = resolveChatContext({ heightCm: 180, sex: 'male', weightKg: 80 });
+    expect(ctx.userContextJson).toContain('"sex": "male"');
+    expect(ctx.userContextJson).toContain('"heightCm": 180');
+  });
+
+  it('falls back to the empty context on malformed inputs', () => {
+    expect(resolveChatContext('garbage')).toEqual(EMPTY_CHAT_CONTEXT);
+    expect(resolveChatContext(123)).toEqual(EMPTY_CHAT_CONTEXT);
+    expect(resolveChatContext({ weightKg: 80 })).toEqual(EMPTY_CHAT_CONTEXT);
+  });
+});
+
 describe('assembleGuestChatContext', () => {
   it('returns personalized context for valid guest inputs', () => {
     const result = assembleGuestChatContext({
@@ -134,8 +162,6 @@ describe('assembleGuestChatContext', () => {
       weightKg: 80,
     });
     expect(result).not.toBeNull();
-    expect(result!.subscriptionPlan).toBe('free');
-    expect(result!.messageCredits).toBe(0);
     expect(result!.healthDocuments).toEqual([]);
     expect(result!.userContextJson).toContain('"sex": "male"');
     expect(result!.userContextJson).toContain('"heightCm": 180');
