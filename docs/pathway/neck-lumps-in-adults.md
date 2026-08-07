@@ -3,7 +3,7 @@ title: "Pathway: Neck Lumps in Adults"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["neck lump", "neck mass", "lymph node", "lymphadenopathy", "thyroid nodule", "goitre", "branchial cyst", "thyroglossal cyst", "salivary gland", "metastatic", "lymphoma", "head and neck cancer", "FNA", "fine needle aspiration", "ENT", "tuberculosis", "TB", "swollen gland neck", "bump on neck", "lump side of neck", "hard lump neck", "painless lump neck", "swollen lymph node neck", "lump under jaw", "lump throat", "enlarged neck gland", "neck swelling", "lump back of neck", "gland in neck won't go down"]
-summary: "Neck lumps from lymph nodes, thyroid nodules, goitre, cysts, salivary glands: when infection, lymphoma, head and neck cancer demand specialist care."
+summary: "Clinical pathway for neck lumps in adults (age ≥15): red flags for head and neck cancer, background on common causes, assessment approach, and management by likely diagnosis. Always discuss with your doctor."
 ---
 
 # Neck Lumps in Adults

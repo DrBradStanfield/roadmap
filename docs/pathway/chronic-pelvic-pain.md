@@ -3,7 +3,7 @@ title: "Pathway: Chronic Pelvic Pain"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["chronic pelvic pain", "pelvic pain", "endometriosis", "adenomyosis", "pelvic inflammatory disease", "vulvodynia", "interstitial cystitis", "dysmenorrhoea", "pelvic congestion", "pudendal neuralgia", "cyclic pain", "dyspareunia", "pelvic floor", "musculoskeletal pelvic pain", "pelvic pain for months", "constant pain in pelvis", "ongoing pelvic ache", "lower pelvic pain that won't go away", "pain in my pelvis all the time", "pelvic pain that keeps coming back", "nagging pelvic pain", "pelvic pain not related to period", "pelvic pain for years", "dull ache in pelvis"]
-summary: "Chronic pelvic pain (6+ months): endometriosis, adenomyosis, interstitial cystitis, IBS, pelvic floor pain; managed with exercise, CBT, medication."
+summary: "Clinical pathway for chronic pelvic pain in women: red flags, common contributing causes (gynaecological, urological, gastrointestinal, musculoskeletal, neurological, psychological), assessment approach, and management including non-pharmacological strategies, medications, and flare management. Always discuss with your doctor."
 ---
 
 # Chronic Pelvic Pain

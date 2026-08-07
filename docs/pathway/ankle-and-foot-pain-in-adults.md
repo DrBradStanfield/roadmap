@@ -3,7 +3,7 @@ title: "Pathway: Ankle and Foot Pain in Adults"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["ankle pain", "foot pain", "plantar fasciitis", "hallux rigidus", "bunions", "hallux valgus", "metatarsalgia", "morton's neuroma", "achilles tendinopathy", "tibialis posterior", "tarsal coalition", "peroneal tendon", "hindfoot", "midfoot", "forefoot", "metatarsal stress fracture", "osteoarthritis", "gout", "septic arthritis", "flat foot", "pes planus", "sore ankle", "ankle hurts", "heel pain", "arch pain", "ball of foot pain", "toe pain", "foot swelling", "sore feet", "bottom of foot pain", "painful heel", "foot stiffness", "big toe pain", "foot ache", "burning foot pain", "outer ankle pain", "swollen ankle", "inner ankle pain", "top of foot pain", "pain when walking", "foot hurts to walk on", "morning heel pain", "sharp pain in foot", "can't put weight on foot", "rolled my ankle", "twisted ankle"]
-summary: "Non-injury ankle and foot pain: heel, plantar fasciitis, bunions, Morton's neuroma, Achilles tendinopathy, flat foot by forefoot, midfoot, hindfoot."
+summary: "Clinical pathway for ankle and foot pain in adults (non-injury): red flags, anatomical zone-based assessment, common causes by location (forefoot, midfoot, hindfoot), investigations, and management by diagnosis. Always discuss with your doctor."
 ---
 
 # Ankle and Foot Pain in Adults

@@ -3,7 +3,7 @@ title: "Pathway: Medications in Chronic Pain"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["chronic pain", "neuropathic pain", "nociceptive pain", "nociplastic pain", "paracetamol", "nsaids", "gabapentin", "pregabalin", "gabapentinoids", "tricyclic antidepressants", "nortriptyline", "amitriptyline", "opioids", "tramadol", "capsaicin", "lidocaine", "venlafaxine", "mirtazapine", "clonidine", "low dose naltrexone", "medicinal cannabis", "fibromyalgia", "pain management", "opioid reduction", "analgesics", "antidepressants for pain", "non-opioid pain relief", "opioid-induced hyperalgesia", "central sensitization", "multimodal analgesia", "opioid-sparing", "nerve pain medication", "musculoskeletal pain treatment", "medication overuse", "pain modulation", "serotonin syndrome", "bupropion for pain", "refractory pain", "pain clinic referral", "pharmacological pain management", "chronic pain pills", "long-term painkillers", "pain medication side effects", "stopping pain medication", "pain tablets not working", "what medication for nerve pain", "opioids for back pain", "gabapentin side effects", "antidepressant for chronic pain", "pain relief without opioids"]
-summary: "Chronic pain medications: paracetamol and NSAIDs for injury pain, gabapentinoids and tricyclic antidepressants for nerve pain, dosing and safety."
+summary: "Clinical guidance on medications used in chronic non-cancer pain: drug selection by pain type (nociceptive, neuropathic, nociplastic), dosing principles, safety considerations, and the limited role of opioids. Always discuss treatment options with your doctor."
 ---
 
 # Medications in Chronic Pain

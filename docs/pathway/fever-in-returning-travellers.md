@@ -3,7 +3,7 @@ title: "Pathway: Fever in Returning Travellers"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["fever", "returning traveller", "travel medicine", "malaria", "dengue", "typhoid", "viral haemorrhagic fever", "chikungunya", "zika", "leptospirosis", "rickettsial", "lyme disease", "hepatitis a", "tropical infection", "travel history", "fever after holiday", "sick after travelling", "fever came back from overseas", "unwell after trip abroad", "fever after safari", "mosquito bite abroad fever", "fever after Asia trip", "sweating shaking after travel", "fever after Africa trip", "got sick on holiday", "tropical fever", "fever returning from holiday"]
-summary: "Fever in returning travellers: exposure, diagnosis of malaria, dengue, chikungunya, typhoid, hepatitis A, leptospirosis, rickettsial and Lyme disease."
+summary: "Clinical pathway for fever after overseas travel: red flags requiring emergency care, detailed travel history and exposure assessment, disease-specific investigations, and management by diagnosis including drug treatments. Always discuss with your doctor."
 ---
 
 # Fever in Returning Travellers

@@ -3,7 +3,7 @@ title: "Pathway: Plantar Fasciitis"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["plantar fasciitis", "heel pain", "plantar fascia", "calcaneus", "foot pain", "heel spur", "arch pain", "podiatry", "physiotherapy", "steroid injection", "orthotics", "stretching"]
-summary: "Plantar fasciitis (heel pain): degenerative cause, risk factors, symptoms, other diagnoses, and options from stretching, ice, orthotics to injection."
+summary: "Clinical pathway for plantar fasciitis: background, risk factors, assessment including differential diagnosis, and conservative through procedural management options. Always discuss with your doctor."
 ---
 
 # Plantar Fasciitis

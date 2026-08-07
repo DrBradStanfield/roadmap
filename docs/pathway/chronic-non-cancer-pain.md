@@ -3,7 +3,7 @@ title: "Pathway: Chronic Non-cancer Pain"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["chronic pain", "persistent pain", "non-cancer pain", "nociceptive", "neuropathic", "nociplastic", "radicular pain", "CRPS", "complex regional pain syndrome", "fibromyalgia", "pain management", "opioids", "nerve block", "spinal cord stimulator", "flare-up", "pain diary", "psychosocial", "CBT", "ACT", "pacing", "allodynia", "hyperalgesia", "central sensitisation", "boom-bust", "activity pacing", "pain beliefs", "fear avoidance", "catastrophising", "radiofrequency", "rhizotomy", "facet joint", "pain flare", "low back pain", "diabetic neuropathy", "postherpetic neuralgia", "pain that won't go away", "pain every day", "constant pain", "living with pain", "pain for months", "pain affecting my life", "can't exercise because of pain", "pain gets worse some days", "tried everything for pain", "pain and depression", "nerve pain burning", "pain without injury"]
-summary: "Chronic non-cancer pain 3+ months: neuropathic, nociceptive and nociplastic types, CRPS; activity pacing and psychosocial support for living well."
+summary: "Clinical pathway for chronic non-cancer pain (persistent pain lasting 3+ months): assessment framework covering pain types, red flags, CRPS diagnosis, psychosocial factors; and management emphasising non-pharmacological approaches (physical activity, psychosocial support, self-management), pharmacological options, and when specialist referral is needed. Always discuss your situation with your doctor."
 ---
 
 # Chronic Non-cancer Pain

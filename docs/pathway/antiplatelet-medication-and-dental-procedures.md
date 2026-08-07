@@ -3,7 +3,7 @@ title: "Pathway: Antiplatelet Medication and Dental Procedures"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["antiplatelet", "dental", "aspirin", "clopidogrel", "dipyridamole", "ticagrelor", "tooth extraction", "dental surgery", "bleeding", "blood thinners", "platelets", "haemostasis"]
-summary: "Antiplatelet drugs and dental work: continue aspirin, clopidogrel, ticagrelor to prevent stroke, bleeding managed with sutures and tranexamic rinse."
+summary: "Clinical pathway for patients on antiplatelet medication undergoing dental procedures: key principle that stopping antiplatelet therapy is riskier than the bleeding risk from dental surgery, management of bleeding with haemostatic measures, and when to defer to specialist dental assessment. Always discuss with your doctor."
 ---
 
 # Antiplatelet Medication and Dental Procedures

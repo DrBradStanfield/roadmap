@@ -3,7 +3,7 @@ title: "Pathway: Soft Tissue Lumps in Adults"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["soft tissue lump", "sarcoma", "soft tissue tumor", "lipoma", "liposarcoma", "soft tissue mass", "lump", "swelling", "thigh lump", "subcutaneous lump", "deep fascia", "orthopaedic referral", "ultrasound soft tissue", "excision biopsy", "ganglion", "haematoma", "lump under skin", "bump under skin", "soft lump", "hard lump under skin", "sebaceous cyst", "growing lump", "lump on leg", "lump on back", "painless lump", "fatty lump", "cyst", "lump getting bigger"]
-summary: "Soft tissue lumps in adults: sarcoma versus benign causes (lipomas, cysts); urgent referral for deep, growing, or large lumps; ultrasound and biopsy."
+summary: "Clinical pathway for soft tissue lumps in adults (trunk and limbs, age ≥15): red flags for sarcoma, assessment approach including history, examination and imaging, and management by risk level. Always discuss new or changing lumps with your doctor."
 ---
 
 # Soft Tissue Lumps in Adults
