@@ -592,6 +592,8 @@ Anthropic's benchmarked patterns (July 2026): a Sonnet executor with a rare Fabl
 5. Same as Lane A steps 3–5: `/simplify` → full suite → deploy → verify live on both surfaces that matter → update story + regenerate html.
 6. The weekly product-health loop (docs/product-health/) reports the feature's funnel numbers; adoption evidence feeds the next iteration or a deliberate kill decision.
 
+**The weekly loop is self-improving and its manual lives in the repo**: [docs/product-health/LOOP.md](docs/product-health/LOOP.md) (the scheduled cloud trigger is a thin bootstrap that reads it). The loop runs a Fable orchestrator that fans out `worker` subagents, documents durable findings in docs/product-health/LEARNINGS.md, updates usage-evidence in user-stories.md, and amends its own playbook within hard guardrails (its write scope excludes all production code; the Guardrails section of LOOP.md is Brad-only). Build sessions should append notable usage learnings to LEARNINGS.md too — it's the shared knowledge base the loop reads first.
+
 **No staging exists** — production is the acceptance environment. Keep changes small, deploy promptly after the suite is green, verify immediately, and lean on the funnel events + Clarity + Sentry to catch what verification missed.
 
 ## Development Rules
