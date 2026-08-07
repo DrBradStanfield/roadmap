@@ -287,6 +287,16 @@ export {
 // Product funnel events — anonymous behavioral counters (client tracker + server enum)
 export { PRODUCT_EVENT_NAMES, type ProductEventName } from './product-events';
 
+// US-21 additional blood-test catalogue (phase-1 scaffold — units/groups/aliases)
+export {
+  LAB_CATALOG,
+  LAB_GROUPS,
+  resolveLabCatalogEntry,
+  type LabCatalogEntry,
+  type LabGroup,
+  type LabGroupId,
+} from './lab-catalog';
+
 // chat-history.json — chat conversations synced to the user's own cloud (Phase 6)
 export {
   CHAT_HISTORY_SCHEMA_VERSION,

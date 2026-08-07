@@ -3,7 +3,7 @@ title: "Pathway: Cough in Children"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["cough", "children", "paediatric", "croup", "pertussis", "whooping cough", "asthma", "bronchiolitis", "pneumonia", "wet cough", "dry cough", "post-viral cough", "habit cough", "psychogenic cough", "tracheomalacia", "tuberculosis", "foreign body", "inhaled foreign body", "chronic cough", "baby coughing", "toddler coughing at night", "child won't stop coughing", "kid bad cough", "child barking cough", "baby cough not going away", "child coughing after cold", "child cough keeps coming back", "child swallowed something", "toddler cough worse at night", "child cough vomiting"]
-summary: "Clinical pathway for cough in children: red flags requiring emergency assessment, differential diagnosis (asthma, croup, pertussis, post-viral, inhaled foreign body, tuberculosis, psychogenic cough), assessment approach, and management by cause. Always discuss with your doctor."
+summary: "Child cough: red flags, asthma, croup (barking), pertussis (whooping), foreign body, TB, habit cough, tracheomalacia"
 ---
 
 # Cough in Children

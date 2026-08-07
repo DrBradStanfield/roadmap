@@ -3,7 +3,7 @@ title: "Pathway: Wrist Fractures in Adults"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["wrist fracture", "distal radius fracture", "colles fracture", "smith's fracture", "scaphoid fracture", "barton's fracture", "chauffeur's fracture", "FOOSH", "fall on outstretched hand", "wrist injury", "wrist pain", "carpal fracture", "scapholunate", "avascular necrosis", "osteoporosis", "minimal trauma fracture", "plaster of paris", "orthopaedic", "wrist X-ray", "wrist cast"]
-summary: "Clinical pathway for wrist fractures in adults: fracture types (Colles', Smith's, scaphoid, Barton's, Chauffeur's), assessment, imaging, management by fracture type, and when to discuss urgent orthopaedic review with your doctor."
+summary: "Wrist fractures: Colles', Smith's, scaphoid, Barton's, Chauffeur's; FOOSH; X-ray, when to refer orthopaedic specialist."
 ---
 
 # Wrist Fractures in Adults

@@ -183,7 +183,7 @@
 <li>AC2: Server extracts and returns values only — stores nothing.</li>
 <li>AC3: Extraction failures surface a friendly error (and now emit <code>upload_extract_failed</code>).</li>
 <li>Evidence: upload funnel events just shipped; prior visibility was zero.</li>
-<li>Tests: ❌ UploadModal pipeline untested (754 lines). <strong>Action: pure-logic extraction tests (this pass); modal state-machine deferred.</strong></li>
+<li>Tests: ✅ pure pipeline covered (2026-08-07): <code>lab-extraction.test.ts</code> (content blocks, classification branching, unit-resolution fallback), <code>zip-extract.test.ts</code> (junk filtering, caps, nested folders — plus a real-fixture test against Brad's <code>health.zip</code>, local-only/skipped in CI, structure-only assertions), <code>anthropic.server.retry.test.ts</code> (retry/backoff/Sentry-silencing policy), <code>isImage</code>/<code>isPdf</code> guards. ❌ Remaining, with reasons: the React modal state machine, and <code>resizeImage</code>/<code>extractFromPdf</code> rendering (need real DOM/canvas — browser-mode testing infra); batch-API path.</li>
 </ul>
 <h3 id="us-13-review-before-save">US-13 · Review before save</h3>
 <p>As a user, I review extracted values in a metric×date matrix (mirroring the live timeline), can edit any value (tagged <code>lab_import_edited</code>), and only what I confirm is saved.</p>
@@ -249,15 +249,16 @@
 <li>AC6: Cross-device merge semantics reviewed for the new slot behavior (Fable-level judgment — merge.ts territory).</li>
 <li><strong>Usage signal (Lane B mandatory): new product event <code>lab_row_added</code> for manual adds; phase-1 surfacing measured via a <code>lab_rows_viewed</code> event (count metadata). Uploads already emit <code>upload_saved</code>.</strong></li>
 </ul>
-<p><strong>Open design questions — decide before code:</strong></p>
-<p>1. <strong>Units policy conflict (the big one):</strong> the documented v2 design stores labValues *as reported* ("no SI conversion — units aren't canonical across labs"). Uniform per-row display requires either (a) extending the canonical-units approach (units.ts-style conversions) to a much larger metric catalogue — a significant clinical-content surface with the same citation discipline as evidence.ts, or (b) a per-row unit lock (first stored unit wins; later mismatched units get flagged for explicit conversion at review). Option (b) is cheaper and safer to ship first.</p>
-<p>2. <strong>Catalogue scope for v1:</strong> local-first means we CANNOT mine users' stored labValues to see which tests are common (their data lives in their clouds, not ours) — scope must come from clinical judgment about standard panels (LFTs, U&amp;E/renal, FBC, thyroid, iron studies, extended lipids).</p>
-<p>3. <strong>Collapsed vs expanded by default</strong> under the core 8 (mobile real estate).</p>
-<p>4. Where the catalogue lives: <code>packages/health-core/src/lab-catalog.ts</code> (key, label, aliases, group, canonical unit, conversions, ref hints) — reference ranges are clinical content, so the evidence-discipline applies.</p>
-<p><strong>Proposed phasing</strong> (each phase independently shippable with its own signal):</p>
+<p><strong>Decisions (Brad, 2026-08-07):</strong></p>
+<p>1. <strong>Units: canonical-units catalogue — option (a).</strong> A new <code>packages/health-core/src/lab-catalog.ts</code> defines each test's canonical unit (units.ts discipline; conversion factors added per-metric as implemented, each verifiable). Per-lab reference ranges keep coming from the uploaded report (<code>referenceLow/High</code> already stored) — the catalogue carries units/grouping/aliases, not clinical thresholds, so the evidence-citation surface stays small.</p>
+<p>2. <strong>Initial panel scope:</strong> Renal (incl. electrolytes) · Liver · Thyroid (TFTs) · Hormones · Vitamins &amp; minerals · Inflammation markers. Grow from there.</p>
+<p>3. <strong>Collapsed by default</strong> under the core 8.</p>
+<p>4. <strong>Each group renders an icon to the left of its heading</strong> (kidney → Renal, etc.) — inline SVGs, same no-asset-fetch pattern as the backend-picker logos.</p>
+<p><strong>Remaining open questions:</strong> exact test list per panel (Brad to review the catalogue skeleton); mixed-unit handling for values stored before a metric's conversion exists (proposal: display as-reported with the unit label until the conversion lands).</p>
+<p><strong>Phasing</strong> (each phase independently shippable with its own signal):</p>
 <ul>
-<li><strong>Phase 1 — surface what exists:</strong> grouped read-only rows from stored labValues + corrections. No manual add, no conversions (per-row unit lock + mixed-unit flag). Signal: <code>lab_rows_viewed</code>.</li>
-<li><strong>Phase 2 — manual add:</strong> "+" button + curated catalogue with canonical units/validation. Signal: <code>lab_row_added</code>.</li>
+<li><strong>Phase 1 — surface what exists:</strong> grouped, collapsed-by-default read-only rows from stored labValues (+ corrections), group icons. Signal: <code>lab_rows_viewed</code>.</li>
+<li><strong>Phase 2 — manual add:</strong> "+" button + catalogue-driven add with canonical units/validation. Signal: <code>lab_row_added</code>.</li>
 <li><strong>Phase 3 — normalization:</strong> alias map + unit conversion at save/review for catalogue tests.</li>
 </ul>
 <hr>
@@ -266,7 +267,8 @@
 <p>2. ✅ US-03 — date-defaulting semantics pinned.</p>
 <p>3. ✅ US-07 — LDL-without-total already covered; verified.</p>
 <p>4. ✅ US-02 — BP dead-click + tooltip fixes shipped (collapsed-row value click, matrix shell focus, click-toggleable InfoTooltip, mobile fixed-bar clearance).</p>
-<p>Still consciously deferred: cloud adapter unit tests (OAuth mocking heavy), chat UI, print, modal state machines, HealthTool hydration gate.</p>
+<p><strong>2026-08-07 later passes:</strong> US-12 pure-pipeline tests landed (incl. the real <code>health.zip</code> local fixture); store gaps closed (deleteLabValue, documents, screenings, reminder prefs — which caught and fixed the US-17 opt-out revert bug); input hardening (US-02 AC4–6) shipped and live-verified; US-21 catalogue scaffold (<code>lab-catalog.ts</code>) created.</p>
+<p>Still consciously deferred, each needing infra or a product decision first: cloud adapter unit tests (OAuth mocking heavy), chat UI + upload modal state machines + canvas/pdf.js rendering (need browser-mode test infra — jsdom/Playwright component testing), print (manual/live verify), HealthTool hydration gate (UI-level), reminders opt-in UX path (pending the keep-or-kill decision).</p>
 </main>
 </div>
 </body>

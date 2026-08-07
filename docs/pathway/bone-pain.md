@@ -3,7 +3,7 @@ title: "Pathway: Bone Pain"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["bone pain", "bone cancer", "sarcoma", "osteomyelitis", "stress fracture", "osteoporotic fracture", "metastatic bone disease", "myeloma", "Paget disease", "spinal infection", "growing pains", "bone tenderness", "impending fracture", "skeletal pain", "deep bone pain", "aching bones", "pain in my bones", "bones aching", "deep aching pain", "bone hurts", "bone ache", "throbbing bone pain", "night bone pain", "bones hurt at night", "pain deep in leg", "bone pain at rest", "pain in my shins", "painful bones", "my bones feel sore", "bone pain waking me up", "pain right on the bone", "bones tender to touch", "pain in my rib bones", "bone pain all over body", "aching in my bones", "bone pain with no injury", "unexplained bone pain", "bone pain worse lying down"]
-summary: "Clinical pathway for bone pain: red flags (neoplasm, infection, fracture), assessment approach including history and investigations, specific conditions to consider (sarcoma, osteomyelitis, Paget disease, stress fracture, spinal infection), and management by suspected cause. Always discuss with your doctor."
+summary: "Bone pain, night pain, aching bones: cancer, sarcoma, infection, osteomyelitis, spinal infection, stress fracture, Paget"
 ---
 
 # Bone Pain

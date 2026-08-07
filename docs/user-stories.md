@@ -102,7 +102,7 @@ As a user with PDF/photo/ZIP lab reports, I drop them in and extraction starts a
 - AC2: Server extracts and returns values only — stores nothing.
 - AC3: Extraction failures surface a friendly error (and now emit `upload_extract_failed`).
 - Evidence: upload funnel events just shipped; prior visibility was zero.
-- Tests: ❌ UploadModal pipeline untested (754 lines). **Action: pure-logic extraction tests (this pass); modal state-machine deferred.**
+- Tests: ✅ pure pipeline covered (2026-08-07): `lab-extraction.test.ts` (content blocks, classification branching, unit-resolution fallback), `zip-extract.test.ts` (junk filtering, caps, nested folders — plus a real-fixture test against Brad's `health.zip`, local-only/skipped in CI, structure-only assertions), `anthropic.server.retry.test.ts` (retry/backoff/Sentry-silencing policy), `isImage`/`isPdf` guards. ❌ Remaining, with reasons: the React modal state machine, and `resizeImage`/`extractFromPdf` rendering (need real DOM/canvas — browser-mode testing infra); batch-API path.
 
 ### US-13 · Review before save
 As a user, I review extracted values in a metric×date matrix (mirroring the live timeline), can edit any value (tagged `lab_import_edited`), and only what I confirm is saved.
@@ -163,15 +163,17 @@ As a user whose lab reports contain tests beyond the core 8 (sodium, GGT, TSH, f
 - AC6: Cross-device merge semantics reviewed for the new slot behavior (Fable-level judgment — merge.ts territory).
 - **Usage signal (Lane B mandatory): new product event `lab_row_added` for manual adds; phase-1 surfacing measured via a `lab_rows_viewed` event (count metadata). Uploads already emit `upload_saved`.**
 
-**Open design questions — decide before code:**
-1. **Units policy conflict (the big one):** the documented v2 design stores labValues *as reported* ("no SI conversion — units aren't canonical across labs"). Uniform per-row display requires either (a) extending the canonical-units approach (units.ts-style conversions) to a much larger metric catalogue — a significant clinical-content surface with the same citation discipline as evidence.ts, or (b) a per-row unit lock (first stored unit wins; later mismatched units get flagged for explicit conversion at review). Option (b) is cheaper and safer to ship first.
-2. **Catalogue scope for v1:** local-first means we CANNOT mine users' stored labValues to see which tests are common (their data lives in their clouds, not ours) — scope must come from clinical judgment about standard panels (LFTs, U&E/renal, FBC, thyroid, iron studies, extended lipids).
-3. **Collapsed vs expanded by default** under the core 8 (mobile real estate).
-4. Where the catalogue lives: `packages/health-core/src/lab-catalog.ts` (key, label, aliases, group, canonical unit, conversions, ref hints) — reference ranges are clinical content, so the evidence-discipline applies.
+**Decisions (Brad, 2026-08-07):**
+1. **Units: canonical-units catalogue — option (a).** A new `packages/health-core/src/lab-catalog.ts` defines each test's canonical unit (units.ts discipline; conversion factors added per-metric as implemented, each verifiable). Per-lab reference ranges keep coming from the uploaded report (`referenceLow/High` already stored) — the catalogue carries units/grouping/aliases, not clinical thresholds, so the evidence-citation surface stays small.
+2. **Initial panel scope:** Renal (incl. electrolytes) · Liver · Thyroid (TFTs) · Hormones · Vitamins & minerals · Inflammation markers. Grow from there.
+3. **Collapsed by default** under the core 8.
+4. **Each group renders an icon to the left of its heading** (kidney → Renal, etc.) — inline SVGs, same no-asset-fetch pattern as the backend-picker logos.
 
-**Proposed phasing** (each phase independently shippable with its own signal):
-- **Phase 1 — surface what exists:** grouped read-only rows from stored labValues + corrections. No manual add, no conversions (per-row unit lock + mixed-unit flag). Signal: `lab_rows_viewed`.
-- **Phase 2 — manual add:** "+" button + curated catalogue with canonical units/validation. Signal: `lab_row_added`.
+**Remaining open questions:** exact test list per panel (Brad to review the catalogue skeleton); mixed-unit handling for values stored before a metric's conversion exists (proposal: display as-reported with the unit label until the conversion lands).
+
+**Phasing** (each phase independently shippable with its own signal):
+- **Phase 1 — surface what exists:** grouped, collapsed-by-default read-only rows from stored labValues (+ corrections), group icons. Signal: `lab_rows_viewed`.
+- **Phase 2 — manual add:** "+" button + catalogue-driven add with canonical units/validation. Signal: `lab_row_added`.
 - **Phase 3 — normalization:** alias map + unit conversion at save/review for catalogue tests.
 
 ---
@@ -183,4 +185,6 @@ As a user whose lab reports contain tests beyond the core 8 (sodium, GGT, TSH, f
 3. ✅ US-07 — LDL-without-total already covered; verified.
 4. ✅ US-02 — BP dead-click + tooltip fixes shipped (collapsed-row value click, matrix shell focus, click-toggleable InfoTooltip, mobile fixed-bar clearance).
 
-Still consciously deferred: cloud adapter unit tests (OAuth mocking heavy), chat UI, print, modal state machines, HealthTool hydration gate.
+**2026-08-07 later passes:** US-12 pure-pipeline tests landed (incl. the real `health.zip` local fixture); store gaps closed (deleteLabValue, documents, screenings, reminder prefs — which caught and fixed the US-17 opt-out revert bug); input hardening (US-02 AC4–6) shipped and live-verified; US-21 catalogue scaffold (`lab-catalog.ts`) created.
+
+Still consciously deferred, each needing infra or a product decision first: cloud adapter unit tests (OAuth mocking heavy), chat UI + upload modal state machines + canvas/pdf.js rendering (need browser-mode test infra — jsdom/Playwright component testing), print (manual/live verify), HealthTool hydration gate (UI-level), reminders opt-in UX path (pending the keep-or-kill decision).
