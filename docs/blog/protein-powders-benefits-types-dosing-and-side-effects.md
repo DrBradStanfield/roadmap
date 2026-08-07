@@ -6,7 +6,7 @@ publishedAt: "2025-05-06T00:00:00Z"
 type: "reference"
 tags: ["Supplements"]
 keywords: ["protein powder", "whey protein", "casein", "pea protein", "soy protein", "rice protein", "collagen", "creatine", "muscle", "strength training", "resistance training", "exercise", "sarcopenia", "weight loss", "obesity", "diabetes", "insulin resistance", "blood sugar", "cardiovascular", "bone density", "aging", "longevity", "amino acids", "leucine", "bcaa", "hemp protein", "egg protein", "plant protein"]
-summary: "Reference on protein powders: muscle building, muscle maintenance, sarcopenia prevention, weight management. Older adults, athletes, vegans/vegetarians. Types: whey (fast), casein (slow), pea, soy, rice, collagen. Dosing 0.55-0.80 g/lb for athletes. Always discuss with your doctor."
+summary: "How much protein per day, protein target in g/kg, whey vs casein vs plant protein powders, athletes, older adults, sarcopenia."
 ---
 
 *Read the full article at [drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects](https://drstanfield.com/blogs/articles/protein-powders-benefits-types-dosing-and-side-effects)*

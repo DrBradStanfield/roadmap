@@ -71,6 +71,7 @@
   <a class="toc-sub" href="#us-18-guest-email-capture">US-18</a>
   <a class="toc-sub" href="#us-19-sending-feedback">US-19</a>
   <a class="toc-sub" href="#us-20-mobile">US-20</a>
+  <a class="toc-sub" href="#us-21-additional-blood-tests-on-the-main-matrix-draft-design-stage-no-code-yet">US-21</a>
   <a href="#coverage-priorities-2026-08-07-pass-done">Coverage priorities — 2026-08-07 pass: DONE</a>
 </nav>
 <main>
@@ -97,6 +98,9 @@
 <li>AC1: Clicking anywhere in a vitals cell (including placeholder text and the <code>mmHg</code>/unit chip) focuses the editable input.</li>
 <li>AC2: A BP entry is accepted only as a complete sys/dia pair; a half-pair doesn't save.</li>
 <li>AC3: Values are validated against clinical ranges with ok/warn/bad ticks before save.</li>
+<li>AC4: Numeric fields accept only numeric characters — letters and symbols are blocked at the keystroke (and stripped on paste), on every surface incl. Safari where <code>type="number"</code> doesn't enforce this.</li>
+<li>AC5: An out-of-range value shows a visible inline error (e.g. "Max 250 mmHg") on the field itself — never a silent save-block where garbage looks accepted.</li>
+<li>AC6: After typing an unambiguous, in-range systolic value, focus auto-advances to diastolic (immediately for 3-digit values 100–250; after a short pause for 2-digit values 60–99 that could still gain a digit).</li>
 <li>Evidence: <strong>top friction in the audit</strong> — dead clicks on the BP <code>▫▫▫/? mmHg</code> control and <code>mmHg</code> label in 3 of 15 recorded sessions; tooltip/units-picker dead clicks in 4.</li>
 <li>Tests: 🟡 <code>StartingInfoVitals.test.ts</code> covers BP pair routing/readiness logic; <code>blood-test-cell.test.ts</code> covers validation. ❌ No test that a cell-shell click focuses the input (the actual reported friction). <strong>Action: fix + test (2026-08 backlog #1).</strong></li>
 </ul>
@@ -212,7 +216,8 @@
 <p>As a user, I opt in with my email and get consolidated reminders when bloods/screenings/med-reviews come due; unsubscribe is one click; the server never sees health values (only labels+dates).</p>
 <ul>
 <li>Evidence: <strong>2 opt-ins ever</strong> — before more engineering, decide surface/kill (audit #8). <code>reminder_optin</code> event now measures attempts.</li>
-<li>Tests: ✅ schedule/due logic; ❌ opt-in UX→server path untested (deferred pending the product decision).</li>
+<li>Tests: ✅ schedule/due logic + store persistence (<code>saveReminderPreference</code>/<code>setGlobalReminderOptout</code>, 2026-08-07); ❌ opt-in UX→server path untested (deferred pending the product decision).</li>
+<li><strong>Incident 2026-08-07:</strong> first store-level tests found <code>setGlobalReminderOptout</code> mutated rows without bumping their merge stamps — "turn off all reminders" silently reverted on the next sync. Fixed same day (routed through the stamped upsert path); regression test pins it. Open design TODO in the tests: on a fresh file with no per-category rows, the global opt-out is a no-op (depends on whether the UI seeds categories — check when the reminders decision is made).</li>
 </ul>
 <h3 id="us-18-guest-email-capture">US-18 · Guest email capture</h3>
 <p>As a guest, I can email myself the report (Klaviyo capture; Shopify surface only — never on Pages).</p>
@@ -230,6 +235,30 @@
 <ul>
 <li>Evidence: mobile engagement is much shallower than desktop (2.6 vs 7.4+ min new-user averages) — worth watching in funnel data.</li>
 <li>Tests: ❌ automated none; WebKit verification via <code>tools/webkit-verify.mjs</code> is the required manual gate per CLAUDE.md.</li>
+</ul>
+<h3 id="us-21-additional-blood-tests-on-the-main-matrix-draft-design-stage-no-code-yet">US-21 · Additional blood tests on the main matrix — <strong>DRAFT, design stage (no code yet)</strong></h3>
+<p>As a user whose lab reports contain tests beyond the core 8 (sodium, GGT, TSH, ferritin…), I can see those stored values as grouped rows under the core matrix and add a test I want to monitor via a "+" button — one place to watch everything.</p>
+<p><strong>What already exists</strong> (why this is surfacing, not building, for phase 1): the <code>labValues</code> collection in <code>health-roadmap.json</code> already captures every extracted additional test (FHIR <code>status</code>/<code>source</code>, value+unit as reported, reference ranges, dedup on <code>(metric_name, recorded_at)</code>). Today it's visible only in History and at upload-review time (<code>ReviewTable</code>); the main matrix never shows it. Label mapping exists (<code>lib/lab-value-labels.ts</code>), reference hints exist (<code>reference-hints.ts</code>).</p>
+<p><strong>Draft acceptance criteria</strong> (to iterate before build):</p>
+<ul>
+<li>AC1: Stored lab values render as rows beneath the core 8, grouped by panel (Liver · Kidney/renal · Electrolytes · Blood count · Hormones · Lipids-extended · Other), matching the matrix's column/date alignment and scroll-sync.</li>
+<li>AC2: "+ Add test" lets the user pick from a curated catalogue (searchable; canonical unit + validation range per test) or add a free-form test.</li>
+<li>AC3: A known test's row always displays ONE unit; a value arriving in a different unit is converted or flagged at review — never silently mixed into the row (a U/L value charted next to a µkat/L value would be clinically wrong).</li>
+<li>AC4: Upload-extracted and manually-entered values for the same test land in the same row (alias map keyed on stable metric keys — never dedup on raw LLM text, per the documented gotcha).</li>
+<li>AC5: Corrections work exactly like core rows (entered-in-error + correctsId chain — the labValue shape already carries status/source).</li>
+<li>AC6: Cross-device merge semantics reviewed for the new slot behavior (Fable-level judgment — merge.ts territory).</li>
+<li><strong>Usage signal (Lane B mandatory): new product event <code>lab_row_added</code> for manual adds; phase-1 surfacing measured via a <code>lab_rows_viewed</code> event (count metadata). Uploads already emit <code>upload_saved</code>.</strong></li>
+</ul>
+<p><strong>Open design questions — decide before code:</strong></p>
+<p>1. <strong>Units policy conflict (the big one):</strong> the documented v2 design stores labValues *as reported* ("no SI conversion — units aren't canonical across labs"). Uniform per-row display requires either (a) extending the canonical-units approach (units.ts-style conversions) to a much larger metric catalogue — a significant clinical-content surface with the same citation discipline as evidence.ts, or (b) a per-row unit lock (first stored unit wins; later mismatched units get flagged for explicit conversion at review). Option (b) is cheaper and safer to ship first.</p>
+<p>2. <strong>Catalogue scope for v1:</strong> local-first means we CANNOT mine users' stored labValues to see which tests are common (their data lives in their clouds, not ours) — scope must come from clinical judgment about standard panels (LFTs, U&amp;E/renal, FBC, thyroid, iron studies, extended lipids).</p>
+<p>3. <strong>Collapsed vs expanded by default</strong> under the core 8 (mobile real estate).</p>
+<p>4. Where the catalogue lives: <code>packages/health-core/src/lab-catalog.ts</code> (key, label, aliases, group, canonical unit, conversions, ref hints) — reference ranges are clinical content, so the evidence-discipline applies.</p>
+<p><strong>Proposed phasing</strong> (each phase independently shippable with its own signal):</p>
+<ul>
+<li><strong>Phase 1 — surface what exists:</strong> grouped read-only rows from stored labValues + corrections. No manual add, no conversions (per-row unit lock + mixed-unit flag). Signal: <code>lab_rows_viewed</code>.</li>
+<li><strong>Phase 2 — manual add:</strong> "+" button + curated catalogue with canonical units/validation. Signal: <code>lab_row_added</code>.</li>
+<li><strong>Phase 3 — normalization:</strong> alias map + unit conversion at save/review for catalogue tests.</li>
 </ul>
 <hr>
 <h2 id="coverage-priorities-2026-08-07-pass-done">Coverage priorities — 2026-08-07 pass: DONE</h2>

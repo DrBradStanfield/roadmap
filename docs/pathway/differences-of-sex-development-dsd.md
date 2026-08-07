@@ -3,7 +3,7 @@ title: "Pathway: Differences of Sex Development (DSD)"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["differences of sex development", "dsd", "intersex", "congenital adrenal hyperplasia", "cah", "ncah", "non-classic congenital adrenal hyperplasia", "nonclassic congenital adrenal hyperplasia", "late-onset congenital adrenal hyperplasia", "21-hydroxylase deficiency", "ambiguous genitalia", "hypospadias", "genital ambiguity", "newborn", "infant", "sex development", "cortisol", "aldosterone", "solu-cortef", "corticosteroids"]
-summary: "Clinical pathway for differences of sex development (DSD) in newborns and infants: red flags for congenital adrenal hyperplasia (CAH), background on prevalence and acute risks, assessment approach including history and genital examination, and ongoing management. Always discuss with your doctor."
+summary: "Congenital adrenal hyperplasia (CAH, NCAH, non-classic) and differences of sex development in newborns: red flags, ambiguous genitalia."
 ---
 
 # Differences of Sex Development (DSD)

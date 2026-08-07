@@ -141,6 +141,22 @@ const BLOG_INDEX: BlogIndexEntry[] = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf
 
 const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
 
+// Mirrors repairHandle() in app/lib/chat-router.server.ts — strips a leading
+// `<type>-` when the remainder is a real handle (the router emits
+// `guideline-diet` for `diet`). Duplicated because tsx can't import the server
+// module; keep the two in sync. Without it the harness under-reports the real
+// pass rate, which is exactly what happened on the protein queries.
+function repairHandle(h: string): string {
+  if (VALID_HANDLES.has(h)) return h;
+  for (const t of ['pathway', 'guideline', 'reference', 'article']) {
+    if (h.startsWith(`${t}-`)) {
+      const stripped = h.slice(t.length + 1);
+      if (VALID_HANDLES.has(stripped)) return stripped;
+    }
+  }
+  return h;
+}
+
 // Mirrors chat.server.ts loadMatchedArticlesFromHandles. Cap matches production (80K chars ≈ 20K tokens).
 const MAX_BLOG_CHARS = 80_000;
 const matchedContentCache = new Map<string, string | null>();
@@ -257,6 +273,7 @@ async function routeQuery(currentMessage: string, retryOnRateLimit = true): Prom
     if (!Array.isArray(parsed.handles)) return { handles: [], rateLimited: false };
     const handles = parsed.handles
       .filter((h): h is string => typeof h === 'string' && /^[a-z0-9-]+$/.test(h) && h.length <= 120)
+      .map(repairHandle)
       .filter(h => VALID_HANDLES.has(h))
       .slice(0, 3);
     return { handles, rateLimited: false };

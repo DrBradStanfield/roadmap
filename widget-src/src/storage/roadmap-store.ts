@@ -359,9 +359,15 @@ export class RoadmapStore {
   }
 
   setGlobalReminderOptout(optout: boolean): boolean {
-    // Disable/enable every known preference category.
-    for (const p of this.file.reminderPreferences) p.enabled = !optout;
-    this.touch();
+    // Disable/enable every known preference category — routed through
+    // saveReminderPreference so each flip is lamport-stamped. A raw in-place
+    // mutation left the rows' SyncStamp unchanged, so persist()'s
+    // read-merge-write let the stale cloud copy win the mergeByKey tie-break
+    // and the opt-out silently reverted on the next flush (US-17 regression,
+    // fixed 2026-08-07).
+    for (const p of [...this.file.reminderPreferences]) {
+      this.saveReminderPreference(p.category, !optout);
+    }
     return true;
   }
 

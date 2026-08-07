@@ -132,7 +132,8 @@ As a user, when I tell the chat my numbers ("my LDL is 3.2"), it proposes struct
 ### US-17 · Email reminders
 As a user, I opt in with my email and get consolidated reminders when bloods/screenings/med-reviews come due; unsubscribe is one click; the server never sees health values (only labels+dates).
 - Evidence: **2 opt-ins ever** — before more engineering, decide surface/kill (audit #8). `reminder_optin` event now measures attempts.
-- Tests: ✅ schedule/due logic; ❌ opt-in UX→server path untested (deferred pending the product decision).
+- Tests: ✅ schedule/due logic + store persistence (`saveReminderPreference`/`setGlobalReminderOptout`, 2026-08-07); ❌ opt-in UX→server path untested (deferred pending the product decision).
+- **Incident 2026-08-07:** first store-level tests found `setGlobalReminderOptout` mutated rows without bumping their merge stamps — "turn off all reminders" silently reverted on the next sync. Fixed same day (routed through the stamped upsert path); regression test pins it. Open design TODO in the tests: on a fresh file with no per-category rows, the global opt-out is a no-op (depends on whether the UI seeds categories — check when the reminders decision is made).
 
 ### US-18 · Guest email capture
 As a guest, I can email myself the report (Klaviyo capture; Shopify surface only — never on Pages).
@@ -147,6 +148,31 @@ As a user, I can send Brad feedback from the widget; it reaches his inbox (Resen
 As a mobile user, I get a tabbed layout (input/plan/chat) with CSS scroll-snap swiping, and every layout works in real iOS WebKit (not just Chrome emulation).
 - Evidence: mobile engagement is much shallower than desktop (2.6 vs 7.4+ min new-user averages) — worth watching in funnel data.
 - Tests: ❌ automated none; WebKit verification via `tools/webkit-verify.mjs` is the required manual gate per CLAUDE.md.
+
+### US-21 · Additional blood tests on the main matrix — **DRAFT, design stage (no code yet)**
+As a user whose lab reports contain tests beyond the core 8 (sodium, GGT, TSH, ferritin…), I can see those stored values as grouped rows under the core matrix and add a test I want to monitor via a "+" button — one place to watch everything.
+
+**What already exists** (why this is surfacing, not building, for phase 1): the `labValues` collection in `health-roadmap.json` already captures every extracted additional test (FHIR `status`/`source`, value+unit as reported, reference ranges, dedup on `(metric_name, recorded_at)`). Today it's visible only in History and at upload-review time (`ReviewTable`); the main matrix never shows it. Label mapping exists (`lib/lab-value-labels.ts`), reference hints exist (`reference-hints.ts`).
+
+**Draft acceptance criteria** (to iterate before build):
+- AC1: Stored lab values render as rows beneath the core 8, grouped by panel (Liver · Kidney/renal · Electrolytes · Blood count · Hormones · Lipids-extended · Other), matching the matrix's column/date alignment and scroll-sync.
+- AC2: "+ Add test" lets the user pick from a curated catalogue (searchable; canonical unit + validation range per test) or add a free-form test.
+- AC3: A known test's row always displays ONE unit; a value arriving in a different unit is converted or flagged at review — never silently mixed into the row (a U/L value charted next to a µkat/L value would be clinically wrong).
+- AC4: Upload-extracted and manually-entered values for the same test land in the same row (alias map keyed on stable metric keys — never dedup on raw LLM text, per the documented gotcha).
+- AC5: Corrections work exactly like core rows (entered-in-error + correctsId chain — the labValue shape already carries status/source).
+- AC6: Cross-device merge semantics reviewed for the new slot behavior (Fable-level judgment — merge.ts territory).
+- **Usage signal (Lane B mandatory): new product event `lab_row_added` for manual adds; phase-1 surfacing measured via a `lab_rows_viewed` event (count metadata). Uploads already emit `upload_saved`.**
+
+**Open design questions — decide before code:**
+1. **Units policy conflict (the big one):** the documented v2 design stores labValues *as reported* ("no SI conversion — units aren't canonical across labs"). Uniform per-row display requires either (a) extending the canonical-units approach (units.ts-style conversions) to a much larger metric catalogue — a significant clinical-content surface with the same citation discipline as evidence.ts, or (b) a per-row unit lock (first stored unit wins; later mismatched units get flagged for explicit conversion at review). Option (b) is cheaper and safer to ship first.
+2. **Catalogue scope for v1:** local-first means we CANNOT mine users' stored labValues to see which tests are common (their data lives in their clouds, not ours) — scope must come from clinical judgment about standard panels (LFTs, U&E/renal, FBC, thyroid, iron studies, extended lipids).
+3. **Collapsed vs expanded by default** under the core 8 (mobile real estate).
+4. Where the catalogue lives: `packages/health-core/src/lab-catalog.ts` (key, label, aliases, group, canonical unit, conversions, ref hints) — reference ranges are clinical content, so the evidence-discipline applies.
+
+**Proposed phasing** (each phase independently shippable with its own signal):
+- **Phase 1 — surface what exists:** grouped read-only rows from stored labValues + corrections. No manual add, no conversions (per-row unit lock + mixed-unit flag). Signal: `lab_rows_viewed`.
+- **Phase 2 — manual add:** "+" button + curated catalogue with canonical units/validation. Signal: `lab_row_added`.
+- **Phase 3 — normalization:** alias map + unit conversion at save/review for catalogue tests.
 
 ---
 

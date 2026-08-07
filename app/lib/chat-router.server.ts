@@ -36,6 +36,36 @@ const BLOG_INDEX = loadBlogIndex();
 
 export const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
 
+/**
+ * Repair the one handle malformation the router makes systematically: emitting
+ * `guideline-diet` instead of `diet`, i.e. concatenating the bracketed TYPE
+ * label onto the handle.
+ *
+ * It happens almost exclusively on the three guideline entries, whose handles
+ * are single generic words (`diet`, `exercise`, `sleep`) and so read as concept
+ * names rather than opaque identifiers. Router prompt Rule 7 forbids this
+ * explicitly and it still occurs.
+ *
+ * Impact before this fix (2026-08-07): "what is a good daily protein target?"
+ * returned ["guideline-exercise","guideline-diet"] — both correct choices —
+ * which the allowlist then silently dropped, producing an EMPTY result. All
+ * three protein failures in the supplement test category, and several protein
+ * questions in production, were this bug, not missing content.
+ *
+ * Deliberately narrow: only strips a leading `<type>-` when the remainder is a
+ * real handle. It can never invent or broaden a match.
+ */
+export function repairHandle(h: string): string {
+  if (VALID_HANDLES.has(h)) return h;
+  for (const t of ['pathway', 'guideline', 'reference', 'article']) {
+    if (h.startsWith(`${t}-`)) {
+      const stripped = h.slice(t.length + 1);
+      if (VALID_HANDLES.has(stripped)) return stripped;
+    }
+  }
+  return h;
+}
+
 // ---------------------------------------------------------------------------
 // Router index block — one line per entry, sorted by type then handle for
 // stable Anthropic cache keys. Locking this sort order; changes = cache miss.
@@ -269,8 +299,9 @@ export async function routeQuery(
     }
     const parsed = RouterOutput.parse(rawParsed);
 
-    // Allowlist: drop any handle the router hallucinated
-    const validHandles = parsed.handles.filter(h => VALID_HANDLES.has(h));
+    // Allowlist: drop any handle the router hallucinated — but repair the ONE
+    // systematic malformation first (see repairHandle).
+    const validHandles = parsed.handles.map(repairHandle).filter(h => VALID_HANDLES.has(h));
 
     const latencyMs = Date.now() - t0;
     const cacheHit = result.usage.cacheReadTokens > 0;

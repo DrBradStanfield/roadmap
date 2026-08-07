@@ -231,6 +231,281 @@ describe('RoadmapStore.bulkSaveLabValues dedup (US-13)', () => {
   });
 });
 
+// US-13 · Review before save — deleting a reviewed lab value
+// (docs/user-stories.md: "store deleteLabValue untested").
+describe('RoadmapStore.deleteLabValue (US-13)', () => {
+  it('soft-deletes: flips status to entered-in-error (never splices the row)', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const saved = store.bulkSaveLabValues([
+      { metricName: 'ferritin', value: 80, unit: 'ng/mL', recordedAt: '2024-06-01T09:00:00.000Z' },
+    ]);
+    const id = saved.saved[0].id;
+    await store.flush();
+
+    const ok = store.deleteLabValue(id);
+    expect(ok).toBe(true);
+    await store.flush();
+
+    const file = readCloudFile(cloud);
+    expect(file.labValues).toHaveLength(1); // row is kept, not removed
+    expect(file.labValues[0].id).toBe(id);
+    expect(file.labValues[0].status).toBe('entered-in-error');
+
+    // Reads (activeOnly) exclude it.
+    expect(store.loadLabValues()).toHaveLength(0);
+  });
+
+  it('deleting an unknown id returns false and leaves the file untouched', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.bulkSaveLabValues([
+      { metricName: 'ferritin', value: 80, unit: 'ng/mL', recordedAt: '2024-06-01T09:00:00.000Z' },
+    ]);
+    await store.flush();
+    const before = readCloudFile(cloud);
+
+    const ok = store.deleteLabValue('does-not-exist');
+    expect(ok).toBe(false);
+    await store.flush();
+
+    const after = readCloudFile(cloud);
+    expect(after.labValues).toEqual(before.labValues);
+  });
+
+  // TODO(US-13): possible bug — unlike deleteDocument (`if (!doc || doc.deleted)
+  // return false`), deleteLabValue has no already-deleted guard (roadmap-store.ts:515-521):
+  // it re-sets status unconditionally and returns true again. Harmless today (status
+  // is already 'entered-in-error', no duplicate row), but it's an inconsistency with
+  // the document-delete idempotency contract worth a second look if either path grows
+  // more logic (e.g. an audit-log side effect keyed off "was this a real transition").
+  it('deleting an already-deleted lab value succeeds again (idempotent no-op), pinning current behavior', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const id = store.bulkSaveLabValues([
+      { metricName: 'ferritin', value: 80, unit: 'ng/mL', recordedAt: '2024-06-01T09:00:00.000Z' },
+    ]).saved[0].id;
+    store.deleteLabValue(id);
+
+    const second = store.deleteLabValue(id);
+    expect(second).toBe(true);
+    await store.flush();
+
+    const file = readCloudFile(cloud);
+    expect(file.labValues).toHaveLength(1);
+    expect(file.labValues[0].status).toBe('entered-in-error');
+  });
+});
+
+// US-14 · Document archive — bulkSaveDocuments / deleteDocument / readDocumentFile
+// (docs/user-stories.md: "❌ store deleteDocument/readDocumentFile. Deferred.").
+describe('RoadmapStore document archive (US-14)', () => {
+  it('bulkSaveDocuments writes the blob + metadata; readDocumentFile reads the same bytes back', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const file = new Blob(['%PDF-1.4 fake lipid panel bytes'], { type: 'application/pdf' });
+
+    const [saved] = await store.bulkSaveDocuments([
+      {
+        documentType: 'pathology_report',
+        title: 'Lipid panel',
+        documentDate: '2024-05-10',
+        contentMd: '# Lipid panel\nLDL 3.2 mmol/L',
+        metadata: {},
+        sourceFileName: 'results.pdf',
+        file,
+      },
+    ]);
+    await store.flush();
+
+    expect(saved.contentMd).toBe('# Lipid panel\nLDL 3.2 mmol/L');
+    expect(saved.fileRef).toBeTruthy();
+
+    const cloudFile = readCloudFile(cloud);
+    expect(cloudFile.documents).toHaveLength(1);
+    expect(cloudFile.documents[0].fileRef).toBe(saved.fileRef);
+    expect(cloudFile.documents[0].contentHash).toMatch(/^sha256-/);
+
+    const readBack = await store.readDocumentFile(saved.fileRef!);
+    expect(await readBack.text()).toBe('%PDF-1.4 fake lipid panel bytes');
+  });
+
+  it('re-saving the identical file bytes dedups by content hash — a no-op, not a second entry', async () => {
+    // The store's dedup key is the SHA-256 of the uploaded blob (roadmap-store.ts
+    // bulkSaveDocuments), not sourceFileName — filename-level dedup for the review
+    // step happens upstream (ReviewTable/UploadModal, out of scope here). This test
+    // pins the store-layer contract only.
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const payload = { documentType: 'pathology_report', title: 'Lipid panel', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'results.pdf', file: new Blob(['identical bytes'], { type: 'application/pdf' }) };
+
+    const first = await store.bulkSaveDocuments([payload]);
+    expect(first).toHaveLength(1);
+    await store.flush();
+
+    const second = await store.bulkSaveDocuments([{ ...payload, title: 'Lipid panel (re-upload)' }]);
+    expect(second).toHaveLength(0);
+    await store.flush();
+
+    const file = readCloudFile(cloud);
+    expect(file.documents.filter((d) => !d.deleted)).toHaveLength(1);
+  });
+
+  it('deleteDocument tombstones (keeps the row, flips deleted) and hides it from reads', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const [saved] = await store.bulkSaveDocuments([
+      { documentType: 'scan_result', title: 'Chest X-ray', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'xray.jpg' },
+    ]);
+    await store.flush();
+
+    const ok = store.deleteDocument(saved.id);
+    expect(ok).toBe(true);
+    await store.flush();
+
+    const file = readCloudFile(cloud);
+    expect(file.documents).toHaveLength(1); // tombstoned, never spliced
+    expect(file.documents[0].deleted).toBe(true);
+    expect(store.loadLatestMeasurements().documents).toHaveLength(0);
+  });
+
+  it('deleting an unknown id, and re-deleting an already-deleted id, both return false without corrupting state', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const [saved] = await store.bulkSaveDocuments([
+      { documentType: 'scan_result', title: 'Chest X-ray', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'xray.jpg' },
+    ]);
+    await store.flush();
+
+    expect(store.deleteDocument('does-not-exist')).toBe(false);
+    expect(store.deleteDocument(saved.id)).toBe(true);
+    expect(store.deleteDocument(saved.id)).toBe(false); // already deleted
+    await store.flush();
+
+    const file = readCloudFile(cloud);
+    expect(file.documents).toHaveLength(1);
+    expect(file.documents[0].deleted).toBe(true);
+  });
+});
+
+// US-06 · Medications, supplements & screenings — store-level screening round-trip
+// (docs/user-stories.md US-06: "screening round-trip tests exist in mappings.test.ts"
+// — this pins the RoadmapStore.saveScreening layer itself, which sits underneath).
+describe('RoadmapStore.saveScreening (US-06)', () => {
+  it('round-trips a screening key/value into the file, snake_case -> camelCase', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.saveScreening('colorectal_method', 'fit_annual');
+    await store.flush();
+
+    const file = readCloudFile(cloud);
+    expect(file.screenings.colorectalMethod).toBe('fit_annual');
+  });
+
+  it('parses NUMERIC_SCREENING_KEYS (lung_pack_years, prostate_psa_value) to a number, not a string', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.saveScreening('lung_pack_years', '15');
+    await store.flush();
+
+    const file = readCloudFile(cloud);
+    expect(file.screenings.lungPackYears).toBe(15);
+    expect(typeof file.screenings.lungPackYears).toBe('number');
+  });
+
+  it('is a singleton merge, not a replace: setting a second key preserves the first', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.saveScreening('colorectal_method', 'fit_annual');
+    store.saveScreening('breast_frequency', 'annual');
+    await store.flush();
+
+    const file = readCloudFile(cloud);
+    expect(file.screenings.colorectalMethod).toBe('fit_annual');
+    expect(file.screenings.breastFrequency).toBe('annual');
+  });
+
+  it('bumps the sync clock (lamport/updatedAt) on every write, so it wins last-write-wins on merge', async () => {
+    const store = await RoadmapStore.create(new MemoryAdapter());
+    store.saveScreening('colorectal_method', 'fit_annual');
+    const afterFirst = store.loadLatestMeasurements().screenings.find((s) => s.screeningKey === 'colorectal_method');
+    expect(afterFirst?.value).toBe('fit_annual');
+
+    store.saveScreening('colorectal_method', 'colonoscopy_10yr');
+    const afterSecond = store.loadLatestMeasurements().screenings.find((s) => s.screeningKey === 'colorectal_method');
+    expect(afterSecond?.value).toBe('colonoscopy_10yr');
+  });
+});
+
+// US-17 · Email reminders — local preference state underneath the opt-in flow
+// (docs/user-stories.md US-17: "opt-in UX→server path untested" — this covers the
+// store-level preference persistence that sits below that path).
+describe('RoadmapStore reminder preferences (US-17)', () => {
+  it('saveReminderPreference persists an upsert keyed by category', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.saveReminderPreference('bloods_annual', true);
+    await store.flush();
+
+    let file = readCloudFile(cloud);
+    expect(file.reminderPreferences).toHaveLength(1);
+    expect(file.reminderPreferences[0]).toMatchObject({ category: 'bloods_annual', enabled: true });
+
+    // Re-saving the same category updates in place — no duplicate row.
+    store.saveReminderPreference('bloods_annual', false);
+    await store.flush();
+    file = readCloudFile(cloud);
+    expect(file.reminderPreferences).toHaveLength(1);
+    expect(file.reminderPreferences[0].enabled).toBe(false);
+  });
+
+  // Regression (fixed 2026-08-07): setGlobalReminderOptout used to mutate
+  // `p.enabled` in place WITHOUT bumping the rows' SyncStamp (lamport/updatedAt),
+  // so persist()'s read-merge-write let the stale cloud copy win the mergeByKey
+  // tie-break and the opt-out silently reverted on the very next flush — a
+  // privacy-relevant defect ("turn off all reminders" didn't stick). Fixed by
+  // routing each flip through saveReminderPreference (which stamps via
+  // upsertByKey). This test failed against the unstamped implementation.
+  it('setGlobalReminderOptout survives a flush (stamped rows win the merge)', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.saveReminderPreference('bloods_annual', true);
+    store.saveReminderPreference('screening_due', true);
+    await store.flush();
+
+    store.setGlobalReminderOptout(true);
+    expect(
+      store.loadLatestMeasurements().reminderPreferences.every((p) => p.enabled === false),
+    ).toBe(true);
+
+    await store.flush();
+
+    const file = readCloudFile(cloud);
+    expect(file.reminderPreferences).toHaveLength(2);
+    expect(file.reminderPreferences.every((p) => p.enabled === false)).toBe(true);
+  });
+
+  // TODO(US-17): possible gap — the method comment says "Disable/enable every known
+  // preference category" (roadmap-store.ts:361-366), but the implementation only
+  // iterates `this.file.reminderPreferences`, i.e. categories that already have a row
+  // from a prior saveReminderPreference call. On a fresh file (no rows saved yet — the
+  // common case for a user who never touched per-category toggles before hitting a
+  // global "turn off reminders" control) this is a complete no-op: nothing is created,
+  // nothing is disabled. Whether that's correct depends on whether the caller (UI/opt-in
+  // flow, out of scope for this store-level pass) always seeds all REMINDER_CATEGORIES
+  // rows first. Pinning current behavior; flagging for the store's owner to confirm.
+  it('is a no-op on a fresh file with no saved preferences yet (does not create rows for known categories)', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+
+    store.setGlobalReminderOptout(true);
+    await store.flush();
+
+    const file = readCloudFile(cloud);
+    expect(file.reminderPreferences).toEqual([]);
+  });
+});
+
 // US-03 · Blood-test matrix entry & backfill — date-defaulting semantics
 // (feedback 2026-03-22: a value appeared under a wrong date; root cause never
 // found, so this pins the exact current defaulting behavior as a regression anchor).

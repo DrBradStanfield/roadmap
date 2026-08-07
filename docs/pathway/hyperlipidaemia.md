@@ -3,7 +3,7 @@ title: "Pathway: Hyperlipidaemia"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["hyperlipidaemia", "high cholesterol", "dyslipidaemia", "LDL", "HDL", "triglycerides", "statin", "cardiovascular risk", "familial hypercholesterolaemia", "lipid lowering", "atorvastatin", "rosuvastatin", "ezetimibe", "CVD prevention"]
-summary: "Clinical pathway for hyperlipidaemia in adults: red flags, cardiovascular risk assessment, lipid targets by risk category, statin therapy and intolerance management, high triglycerides, familial hypercholesterolaemia, and monitoring. Always discuss treatment decisions with your doctor."
+summary: "High cholesterol: which statin to choose, statin side effects and intolerance, atorvastatin vs rosuvastatin, LDL targets, ezetimibe."
 ---
 
 # Hyperlipidaemia

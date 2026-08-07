@@ -4996,7 +4996,7 @@
     "publishedAt": "2025-05-06T00:00:00Z",
     "commerceUrl": "https://microvitamin.com/blogs/articles/protein-powder-guide",
     "type": "reference",
-    "summary": "Reference on protein powders: muscle building, muscle maintenance, sarcopenia prevention, weight management. Older adults, athletes, vegans/vegetarians. Types: whey (fast), casein (slow), pea, soy, rice, collagen. Dosing 0.55-0.80 g/lb for athletes. Always discuss with your doctor."
+    "summary": "How much protein per day, protein target in g/kg, whey vs casein vs plant protein powders, athletes, older adults, sarcopenia."
   },
   {
     "title": "Quercetin: Benefits, Forms, Dosing, and Side Effects",
@@ -16848,7 +16848,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Clinical pathway for differences of sex development (DSD) in newborns and infants: red flags for congenital adrenal hyperplasia (CAH), background on prevalence and acute risks, assessment approach including history and genital examination, and ongoing management. Always discuss with your doctor."
+    "summary": "Congenital adrenal hyperplasia (CAH, NCAH, non-classic) and differences of sex development in newborns: red flags, ambiguous genitalia."
   },
   {
     "title": "Pathway: Differentiating Asthma from COPD",
@@ -20610,7 +20610,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Clinical pathway for hyperlipidaemia in adults: red flags, cardiovascular risk assessment, lipid targets by risk category, statin therapy and intolerance management, high triglycerides, familial hypercholesterolaemia, and monitoring. Always discuss treatment decisions with your doctor."
+    "summary": "High cholesterol: which statin to choose, statin side effects and intolerance, atorvastatin vs rosuvastatin, LDL targets, ezetimibe."
   },
   {
     "title": "Pathway: Hypertension in Adults",

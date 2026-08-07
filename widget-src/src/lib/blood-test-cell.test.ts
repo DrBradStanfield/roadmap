@@ -141,14 +141,17 @@ describe('blockNonIntegerKeys — integer fields like BP (US-02 AC4)', () => {
     blockNonIntegerKeys(e);
     expect(e.preventDefault).not.toHaveBeenCalled();
   });
-  it('allows Backspace and shortcuts', () => {
-    expect(key('Backspace')).toSatisfy((e: ReturnType<typeof key>) => {
+  it.each(['Backspace', 'Tab', 'ArrowLeft', 'Enter', 'Delete', 'Home'])('allows control key %j', (k) => {
+    const e = key(k);
+    blockNonIntegerKeys(e);
+    expect(e.preventDefault).not.toHaveBeenCalled();
+  });
+  it('allows shortcuts (cmd/ctrl combos)', () => {
+    for (const mods of [{ metaKey: true }, { ctrlKey: true }]) {
+      const e = key('v', mods);
       blockNonIntegerKeys(e);
-      return !(e.preventDefault as ReturnType<typeof vi.fn>).mock.calls.length;
-    });
-    const paste = key('v', { metaKey: true });
-    blockNonIntegerKeys(paste);
-    expect(paste.preventDefault).not.toHaveBeenCalled();
+      expect(e.preventDefault).not.toHaveBeenCalled();
+    }
   });
 });
 

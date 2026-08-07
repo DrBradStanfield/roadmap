@@ -5,6 +5,7 @@ import { DocumentLightbox } from './DocumentLightbox';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate, HISTORY_PAGE_PATH, openHistoryLightbox } from '../lib/api';
 import { isLabArchiveDocument } from '../lib/archive-payloads';
 import type { CorrectFn } from '../lib/matrix-save';
+import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance } from '../lib/blood-test-cell';
 import type { ApiDocument, ApiSupplement } from '../lib/api-types';
 
 /** Intercept a history link: lightbox on the standalone, normal nav on Shopify. */
@@ -195,7 +196,11 @@ export function InputPanel({
   // field cancels a pending advance to that target.
   const advanceToWeight = useAutoAdvance();
   const advanceToEmail = useAutoAdvance();
+  const advanceToDiastolic = useAutoAdvance();
   const focusById = (id: string) => requestAnimationFrame(() => document.getElementById(id)?.focus());
+  // Shared keydown combos: numeric-only guard (US-02 AC4) + Enter-to-save.
+  const onNumericEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockBadNumericKeys(e); autoSaveOnEnterKey(e); };
+  const onIntegerEnter = (e: React.KeyboardEvent<HTMLInputElement>) => { blockNonIntegerKeys(e); autoSaveOnEnterKey(e); };
   const [dateInputs, setDateInputs] = useState<Record<string, { year: string; month: string }>>({});
 
   // Expand/collapse state for display-first longitudinal fields.
@@ -560,7 +565,7 @@ export function InputPanel({
               setRawInputs(prev => { const next = { ...prev }; delete next[field]; return next; });
               autoSaveOnBlur();
             }}
-            onKeyDown={autoSaveOnEnterKey}
+            onKeyDown={onNumericEnter}
             placeholder={isExpandedWithData ? '' : getPreviousPlaceholder(field)}
             step={step ? (fieldUnit(field) === 'si' ? step.si : step.conv) : undefined}
             min={r.min}
@@ -813,6 +818,7 @@ export function InputPanel({
                 <input
                   type="number"
                   id="heightCm"
+                  onKeyDown={blockBadNumericKeys}
                   onWheel={blurOnWheel}
                   value={rawInputs['heightCm'] !== undefined ? rawInputs['heightCm'] : toDisplay('heightCm', inputs.heightCm)}
                   onChange={(e) => {
@@ -976,9 +982,16 @@ export function InputPanel({
                   id="systolicBp"
                   onWheel={blurOnWheel}
                   value={inputs.systolicBp ?? ''}
-                  onChange={(e) => updateField('systolicBp', parseLocalisedNumber(e.target.value))}
+                  onChange={(e) => {
+                    updateField('systolicBp', parseLocalisedNumber(e.target.value));
+                    // US-02 AC6: hop to diastolic once systolic is unambiguous.
+                    const adv = bpSysAdvance(e.target.value);
+                    if (adv !== 'stay' && inputs.diastolicBp === undefined) {
+                      advanceToDiastolic({ ambiguous: adv === 'defer', advance: () => focusById('diastolicBp') });
+                    }
+                  }}
                   onBlur={() => { validateOnBlur('systolicBp'); autoSaveOnBlur(); }}
-                  onKeyDown={autoSaveOnEnterKey}
+                  onKeyDown={onIntegerEnter}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('systolicBp')}
                   min={60}
                   max={250}
@@ -993,7 +1006,7 @@ export function InputPanel({
                   value={inputs.diastolicBp ?? ''}
                   onChange={(e) => updateField('diastolicBp', parseLocalisedNumber(e.target.value))}
                   onBlur={() => { validateOnBlur('diastolicBp'); autoSaveOnBlur(); }}
-                  onKeyDown={autoSaveOnEnterKey}
+                  onKeyDown={onIntegerEnter}
                   placeholder={bpExpanded ? '' : getPreviousPlaceholder('diastolicBp')}
                   min={40}
                   max={150}
@@ -1050,6 +1063,7 @@ export function InputPanel({
           <input
             type="number"
             id="birthYear"
+            onKeyDown={blockNonIntegerKeys}
             onWheel={blurOnWheel}
             value={inputs.birthYear || ''}
             onChange={(e) => {
@@ -1885,6 +1899,7 @@ export function InputPanel({
                       <input
                         type="number"
                         id="lung-pack-years"
+                        onKeyDown={blockNonIntegerKeys}
                         onWheel={blurOnWheel}
                         value={scrNum(scr, 'lung_pack_years') ?? ''}
                         onChange={(e) => onScreeningChange('lung_pack_years', e.target.value)}
@@ -1987,7 +2002,7 @@ export function InputPanel({
                                 validateOnBlur('psa');
                                 autoSaveOnBlur();
                               }}
-                              onKeyDown={autoSaveOnEnterKey}
+                              onKeyDown={onNumericEnter}
                               placeholder=""
                               step="0.1"
                               min="0"
@@ -2241,6 +2256,9 @@ export function InputPanel({
                 type="number"
                 className="supplement-dose"
                 placeholder="Dose"
+                min={0}
+                max={99999}
+                onKeyDown={blockBadNumericKeys}
                 value={s.doseValue ?? ''}
                 onChange={e => {
                   const val = e.target.value ? parseLocalisedNumber(e.target.value) ?? null : null;
