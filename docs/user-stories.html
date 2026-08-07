@@ -257,9 +257,9 @@
 <p><strong>Remaining open questions:</strong> exact test list per panel (Brad to review the catalogue skeleton); mixed-unit handling for values stored before a metric's conversion exists (proposal: display as-reported with the unit label until the conversion lands).</p>
 <p><strong>Phasing</strong> (each phase independently shippable with its own signal):</p>
 <ul>
-<li><strong>Phase 1 — surface what exists:</strong> grouped, collapsed-by-default read-only rows from stored labValues (+ corrections), group icons. Signal: <code>lab_rows_viewed</code>.</li>
-<li><strong>Phase 2 — manual add:</strong> "+" button + catalogue-driven add with canonical units/validation. Signal: <code>lab_row_added</code>.</li>
-<li><strong>Phase 3 — normalization:</strong> alias map + unit conversion at save/review for catalogue tests.</li>
+<li><strong>Phase 1 — surface what exists: ✅ SHIPPED 2026-08-07.</strong> <code>AdditionalLabRows</code> renders grouped, collapsed-by-default read-only rows beneath the blood-test matrix (inline SVG icon per group, count, expand to dated value strips, mixed-unit flag, "Other tests" bucket for uncatalogued names). Logic in <code>lib/lab-rows.ts</code> (13 tests); catalogue resolver handles LLM underscore/space variance. Corrections deferred to phase 2 (labValues have no store-level correct method yet). Signal live: <code>lab_rows_viewed</code>.</li>
+<li><strong>Phase 2 — manual add:</strong> "+" button + catalogue-driven add with canonical units/validation; labValue corrections. Signal: <code>lab_row_added</code> (registered, unused yet).</li>
+<li><strong>Phase 3 — normalization:</strong> unit conversion at save/review for catalogue tests.</li>
 </ul>
 <hr>
 <h2 id="coverage-priorities-2026-08-07-pass-done">Coverage priorities — 2026-08-07 pass: DONE</h2>

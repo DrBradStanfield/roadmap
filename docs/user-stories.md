@@ -172,9 +172,9 @@ As a user whose lab reports contain tests beyond the core 8 (sodium, GGT, TSH, f
 **Remaining open questions:** exact test list per panel (Brad to review the catalogue skeleton); mixed-unit handling for values stored before a metric's conversion exists (proposal: display as-reported with the unit label until the conversion lands).
 
 **Phasing** (each phase independently shippable with its own signal):
-- **Phase 1 — surface what exists:** grouped, collapsed-by-default read-only rows from stored labValues (+ corrections), group icons. Signal: `lab_rows_viewed`.
-- **Phase 2 — manual add:** "+" button + catalogue-driven add with canonical units/validation. Signal: `lab_row_added`.
-- **Phase 3 — normalization:** alias map + unit conversion at save/review for catalogue tests.
+- **Phase 1 — surface what exists: ✅ SHIPPED 2026-08-07.** `AdditionalLabRows` renders grouped, collapsed-by-default read-only rows beneath the blood-test matrix (inline SVG icon per group, count, expand to dated value strips, mixed-unit flag, "Other tests" bucket for uncatalogued names). Logic in `lib/lab-rows.ts` (13 tests); catalogue resolver handles LLM underscore/space variance. Corrections deferred to phase 2 (labValues have no store-level correct method yet). Signal live: `lab_rows_viewed`.
+- **Phase 2 — manual add:** "+" button + catalogue-driven add with canonical units/validation; labValue corrections. Signal: `lab_row_added` (registered, unused yet).
+- **Phase 3 — normalization:** unit conversion at save/review for catalogue tests.
 
 ---
 
