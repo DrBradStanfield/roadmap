@@ -3,7 +3,7 @@ title: "Pathway: Chest Pain"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["chest pain", "angina", "acs", "acute coronary syndrome", "heart attack", "stemi", "nstemi", "pericarditis", "pneumothorax", "pulmonary embolism", "aortic dissection", "musculoskeletal chest pain", "gord", "costochondritis", "ecg", "chest hurts", "chest tightness", "chest pressure", "tight chest", "pain radiating to arm", "left arm pain", "chest pain walking uphill", "burning chest", "heartburn", "chest pain anxiety", "panic attack chest", "sharp chest pain breathing", "chest pain after eating", "chest heaviness", "chest squeezing", "chest pain shortness of breath", "pain in chest when coughing", "stabbing chest pain", "chest pain spreads to jaw", "chest pain and sweating", "dull ache in chest", "chest pain comes and goes", "chest pain lying down", "pain between shoulder blades", "tearing chest pain"]
-summary: "Clinical pathway for chest pain in adults: red flags requiring emergency assessment, differential diagnosis (ACS, PE, pneumothorax, aortic dissection, pericarditis, musculoskeletal, GORD), assessment approach including ECG and cardiovascular risk factors, and management by cause. Always discuss with your doctor."
+summary: "Distinguishes serious chest pain (ACS, PE, aortic dissection) from benign ones (musculoskeletal, GORD); chest tightness, pressure, arm pain."
 ---
 
 # Chest Pain

@@ -3,7 +3,7 @@ title: "Pathway: Wrist Pain in Adults"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["wrist pain", "carpal tunnel syndrome", "de quervain", "scaphoid fracture", "scapholunate instability", "tfcc", "triangular fibrocartilage", "kienböck disease", "ganglia", "gout", "inflammatory arthritis", "osteoarthritis", "cmcj", "druj", "ulnar nerve compression", "complex regional pain syndrome", "crps", "wrist assessment", "hand pain", "radial wrist pain", "ulnar wrist pain", "sore wrist", "wrist hurts typing", "numb hand wrist pain", "pain when bending wrist", "wrist pain after fall", "tingling fingers wrist", "wrist swollen and painful", "pain on side of wrist", "wrist lump painful", "wrist clicking pain", "wrist hurts gripping", "thumb side wrist pain"]
-summary: "Clinical pathway for wrist pain in adults: red flags, history and examination approach, differential diagnosis by anatomical location (radial, ulnar, central, multiple), imaging guidance, and management by cause. Always discuss with your doctor."
+summary: "Wrist pain with numbness and swelling from carpal tunnel syndrome, de Quervain, scaphoid fracture, TFCC tears, Kienböck disease and arthritis."
 ---
 
 # Wrist Pain in Adults

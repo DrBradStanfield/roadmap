@@ -3,7 +3,7 @@ title: "Pathway: Menopause Hormone Therapy (MHT)"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["menopause", "hormone therapy", "mht", "hrt", "perimenopause", "hot flushes", "vasomotor symptoms", "estrogen", "progesterone", "progestogen", "premature ovarian insufficiency", "early menopause", "estradiol", "progynova", "utrogestan", "mirena", "transdermal patch", "tibolone", "breast cancer risk", "menopause symptoms", "night sweats", "osteoporosis"]
-summary: "Clinical pathway for menopause hormone therapy (MHT): who is a candidate, contraindications, choice of regimen by menopausal status and uterine anatomy, estrogen and progestogen options, risk-benefit discussion (breast cancer, VTE, cardiovascular), monitoring, and when to consider stopping. Always discuss with your doctor."
+summary: "Menopause hormone therapy (MHT): estrogen and progestogen for hot flushes and night sweats by menopausal status, anatomy; cancer and VTE risk."
 ---
 
 # Menopause Hormone Therapy (MHT)

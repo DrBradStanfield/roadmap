@@ -206,15 +206,15 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // Get auth state once on mount
   const [authState] = useState<AuthState>(() => getAuthState());
 
-  // Lazy-load additional lab values only when the upload modal opens —
-  // they're only used by the review-matrix dedup/context columns and would
-  // otherwise sit unused on every widget mount. Generation counter
-  // discards stale responses if the user opens/closes the modal fast
-  // enough to trigger overlapping fetches, OR if a post-upload refetch
-  // (handleUploadComplete) is still in flight when the modal reopens.
+  // Load additional lab values on mount (AdditionalLabRows surfaces them
+  // under the matrix — US-21 phase 1) and refresh when the upload modal
+  // opens (review-matrix dedup/context columns). Was modal-open-only while
+  // the review matrix was the sole consumer; the mount load was missing and
+  // the lab-rows section rendered empty (caught by live WebKit verification
+  // 2026-08-07). Generation counter discards stale overlapping responses.
   const labValuesFetchGen = useRef(0);
   useEffect(() => {
-    if (!showUploadModal || !authState.isLoggedIn) return;
+    if (!authState.isLoggedIn) return;
     const myGen = ++labValuesFetchGen.current;
     loadLabValues().then(rows => {
       // Skip null (API error) so we don't blank cached history.

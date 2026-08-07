@@ -3,7 +3,7 @@ title: "Pathway: Fatigue"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["fatigue","tiredness","malaise","chronic fatigue","exhaustion","post-exertional malaise","PEM","anaemia","thyroid","depression","sleep","ME/CFS","post-viral fatigue","long COVID","feeling tired","always tired","no energy","low energy","lack of energy","exhausted all the time","worn out","gained weight and tired","cold and tired","always exhausted","constantly tired","tired all the time"]
-summary: "Clinical pathway for fatigue in adults: red flags (unexplained weight loss, night sweats), differential diagnosis (anaemia, hypothyroidism, depression, sleep apnoea, diabetes, cancer), investigations, and management. Always discuss with your doctor."
+summary: "Fatigue (exhaustion, always tired, no energy) in adults. Causes: anaemia, thyroid, depression, sleep apnoea, post-exertional malaise (PEM), ME/CFS."
 ---
 
 # Fatigue

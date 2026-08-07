@@ -3,7 +3,7 @@ title: "Pathway: Combined Oral Contraceptive Pill"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["combined oral contraceptive", "coc", "the pill", "contraception", "birth control", "hormonal contraception", "ethinylestradiol", "levonorgestrel", "norethisterone", "drospirenone", "vte", "venous thromboembolism", "contraindications", "missed pill", "breakthrough bleeding", "acne", "pcod", "dysmenorrhoea", "endometriosis", "ukmec"]
-summary: "Clinical pathway for prescribing and managing the combined oral contraceptive pill (COC): contraindications including absolute (UKMEC 4) and relative (UKMEC 3), assessment steps, pill selection, starting methods, side-effect management, and when to stop. Always discuss with your doctor."
+summary: "Combined oral contraceptive pill (COC): UKMEC 4 and UKMEC 3 contraindications, VTE risk, benefits for acne, dysmenorrhoea, endometriosis and PCOS."
 ---
 
 # Combined Oral Contraceptive Pill

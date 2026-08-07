@@ -3,7 +3,7 @@ title: "Pathway: Shoulder Pain"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["shoulder pain","rotator cuff","frozen shoulder","adhesive capsulitis","subacromial","impingement","calcific tendinitis","acromioclavicular","glenohumeral","shoulder dislocation","septic arthritis","polymyalgia rheumatica","corticosteroid injection","physiotherapy","musculoskeletal","can't lift my arm","shoulder stiff","shoulder hurts","sore shoulder"]
-summary: "Clinical pathway for shoulder pain in adults: red flags, differential diagnosis (rotator cuff, frozen shoulder, impingement, AC joint, glenohumeral osteoarthritis), assessment approach, and management by cause including analgesia, physiotherapy, and steroid injections. Always discuss with your doctor."
+summary: "Shoulder pain and stiffness (can't lift your arm): rotator cuff, frozen shoulder, impingement, calcific tendinitis by location; diagnosis and care."
 ---
 
 # Shoulder Pain

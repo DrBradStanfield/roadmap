@@ -3,7 +3,7 @@ title: "Pathway: Sore Throat"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["sore throat", "pharyngitis", "tonsillitis", "quinsy", "peritonsillar abscess", "strep throat", "group A streptococcus", "GAS", "rheumatic fever", "penicillin", "amoxicillin", "benzathine penicillin", "erythromycin", "roxithromycin"]
-summary: "Clinical pathway for sore throat including tonsillitis, quinsy, and pharyngitis: red flags for emergency care, assessment including rheumatic fever risk, antibiotic treatment criteria and drug choices, and when to seek specialist input. Always discuss with your doctor."
+summary: "Sore throat, pharyngitis, tonsillitis, quinsy: when strep (GAS) needs antibiotics, rheumatic fever (ARF) risk in children, and which drug to choose."
 ---
 
 # Sore Throat

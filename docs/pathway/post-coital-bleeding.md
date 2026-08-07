@@ -3,7 +3,7 @@ title: "Pathway: Post-coital Bleeding"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["post-coital bleeding", "bleeding after sex", "vaginal bleeding", "cervical ectropion", "cervicitis", "cervical polyp", "cervical cancer", "atrophic vaginitis", "chlamydia", "STI", "cervical screening", "HPV", "colposcopy", "gynaecology", "spotting after intercourse", "bleeding after intercourse", "bleed when I have sex", "blood after sex", "light bleeding after sex", "pink discharge after sex", "bleeding during sex", "irregular vaginal bleeding", "cervix bleeding", "postcoital spotting"]
-summary: "Clinical pathway for post-coital bleeding (vaginal bleeding within 24 hours of intercourse): red flags, possible causes including cervical, infectious, and traumatic, assessment approach, and management. Always discuss with your doctor."
+summary: "Bleeding after sex, post-coital within 24 hours: causes include cervical ectropion, cervicitis, polyps, chlamydia, HPV, atrophic vaginitis."
 ---
 
 # Post-coital Bleeding

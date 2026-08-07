@@ -3,7 +3,7 @@ title: "Pathway: Back and Neck Pain"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["back pain","neck pain","low back pain","lumbar","cervical","radicular pain","radiculopathy","sciatica","disc herniation","cauda equina","spinal cord compression","mechanical back pain","spinal stenosis","spondylosis","facet joint","nsaid","physiotherapy","musculoskeletal","sore back","aching back","back hurts","stiff neck","neck ache","lower back pain","upper back pain"]
-summary: "Clinical pathway for back and neck pain in adults: red flags requiring urgent assessment (cauda equina, spinal cord compression, infection, malignancy, fracture), assessment approach, pain classification (mechanical vs radicular vs serious pathology), and management including analgesia, self-management, and when to seek specialist input. Always discuss with your doctor."
+summary: "Back and neck pain: when to seek urgent care, distinguishing mechanical from radicular pain, NSAIDs and self-care, and options for persistent pain."
 ---
 
 # Back and Neck Pain

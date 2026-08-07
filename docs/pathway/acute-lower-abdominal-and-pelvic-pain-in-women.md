@@ -3,7 +3,7 @@ title: "Pathway: Acute Lower Abdominal and Pelvic Pain in Women"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["pelvic pain", "lower abdominal pain", "women", "ectopic pregnancy", "pelvic inflammatory disease", "PID", "ovarian cyst", "endometriosis", "dysmenorrhoea", "STI", "miscarriage", "appendicitis", "urinary tract infection", "ureteric colic", "mittelschmerz", "adnexal", "tubo-ovarian abscess", "vaginal bleeding", "vaginal discharge", "lower belly pain", "pain down there", "stomach pain women", "sharp pain in lower stomach", "period pain", "one sided pelvic pain", "groin pain female", "pelvic cramps", "ovary pain", "pregnancy pain", "pelvic infection", "kidney stone pain women", "bladder pain", "belly cramps", "right lower abdominal pain", "left lower abdominal pain", "sudden pelvic pain", "pain during sex woman", "missed period and pain", "shoulder tip pain", "stabbing pain lower belly", "pain when peeing woman", "twisted ovary pain", "pubic bone pain female", "pain worse when moving", "swollen lower belly woman"]
-summary: "Clinical pathway for acute lower abdominal and pelvic pain in women: red flags requiring emergency care, differential diagnosis (gynaecological, urological, gastrointestinal causes), assessment approach, and management. Always discuss with your doctor."
+summary: "Acute lower abdominal and pelvic pain in women: causes include PID, ectopic pregnancy, ovarian cysts, kidney stones, appendicitis, dysmenorrhoea."
 ---
 
 # Acute Lower Abdominal and Pelvic Pain in Women

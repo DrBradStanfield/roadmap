@@ -3,7 +3,7 @@ title: "Pathway: COVID-19"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["covid", "covid-19", "sars-cov-2", "coronavirus", "antiviral", "paxlovid", "nirmatrelvir", "molnupiravir", "isolation", "quarantine", "omicron", "long covid", "pims-ts", "kawasaki", "reinfection", "rebound"]
-summary: "Clinical pathway for community management of COVID-19 in adults and children: severity assessment, red flags requiring emergency care, risk factors for complications, antiviral eligibility, symptom management, isolation guidance, and when to seek further review. Always discuss with your doctor."
+summary: "COVID-19 in adults and children: severity, antivirals, isolation, fever/cough/breathing, when to seek help, rebound, long COVID, and PIMS-TS."
 ---
 
 # COVID-19

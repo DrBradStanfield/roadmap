@@ -3,7 +3,7 @@ title: "Pathway: Persistent Wet Cough in Children"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["wet cough", "persistent cough", "children", "protracted bacterial bronchitis", "bronchiectasis", "cystic fibrosis", "tuberculosis", "TB", "amoxicillin", "paediatric cough", "lower respiratory tract infection", "chronic cough", "child coughing up mucus", "kid wet cough won't go away", "child chest cough phlegm", "toddler cough with phlegm weeks", "child productive cough months", "child cough after every cold", "kid coughing up green stuff", "child wet cough antibiotics", "child cough worse in morning", "child cough wheezing phlegm", "young child recurring chest infection", "child cough not clearing up"]
-summary: "Clinical pathway for persistent wet cough in children lasting more than 4 weeks: assessment approach, likely diagnoses (protracted bacterial bronchitis, bronchiectasis, cystic fibrosis, TB), antibiotic management, and when to refer. Always discuss with your doctor."
+summary: "Persistent wet cough in children (4+ weeks, coughing up mucus): includes protracted bacterial bronchitis, bronchiectasis, cystic fibrosis, TB."
 ---
 
 # Persistent Wet Cough in Children
