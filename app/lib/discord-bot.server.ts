@@ -20,7 +20,7 @@ import { platformChatCompletion } from './platform-chat.server';
 import { findDuplicateReply } from './chat-dedup.server';
 import { sleep } from './cron-helpers.server';
 import { reportChatFallback } from './chat.server';
-import { generateTitle } from './chat.server';
+import { generateTitle, CHAT_MODEL } from './chat.server';
 import { ROUTER_VERSION, type RouterResult } from './chat-router.server';
 import { supabaseAdmin } from './supabase.server';
 import { createRateLimiter } from './rate-limiter';
@@ -661,8 +661,11 @@ interface PersistParams {
   contextRecent: string[];
 }
 
-const CHAT_MODEL_TAG = 'claude-haiku-4-5-20251001';
-
+// Model tag comes from chat.server.ts — the single source of truth for which
+// model actually answers. This was a hard-coded 'claude-haiku-4-5-20251001'
+// until 2026-08-07 and did not follow the Sonnet 5 cutover, so every Discord
+// row persisted since then is labelled with the wrong model. Rows created
+// before this fix cannot be trusted on the `model` column.
 async function persistConversation(p: PersistParams): Promise<void> {
   if (!supabaseAdmin || !DISCORD_BOT_PROFILE_ID) return;
 
@@ -722,7 +725,7 @@ async function persistConversation(p: PersistParams): Promise<void> {
       content: p.assistantContent,
       input_tokens: p.usage.inputTokens,
       output_tokens: p.usage.outputTokens,
-      model: CHAT_MODEL_TAG,
+      model: CHAT_MODEL,
       discord_message_id: firstSentId,
       is_fallback: p.isFallback,
       failure_mode: p.failureMode ?? null,

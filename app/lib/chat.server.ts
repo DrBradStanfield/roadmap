@@ -42,6 +42,13 @@ import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server'
 //     `effort: medium` keeps latency sane (default is `high`).
 //   • `max_tokens` caps thinking + answer TOGETHER, so it is raised: replies run
 //     ~440 median / ~1230 max output tokens, and 2048 left no room to think.
+/**
+ * Exported so every persistence path tags rows with the model that ACTUALLY
+ * answered. Discord previously hard-coded its own `CHAT_MODEL_TAG` constant,
+ * which silently kept saying 'claude-haiku-4-5-20251001' after the Sonnet 5
+ * cutover — mislabelling exactly the data we want to train on. Never re-declare
+ * this string locally; import it.
+ */
 const CHAT_MODEL = 'claude-sonnet-5';
 const CHAT_MAX_TOKENS = 4096;
 const MAX_MESSAGE_LENGTH = 500;
