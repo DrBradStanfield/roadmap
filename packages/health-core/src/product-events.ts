@@ -16,6 +16,9 @@ export const PRODUCT_EVENT_NAMES = [
   'correction_made',
   'reminder_optin',
   'chat_opened',
+  // US-21 additional blood tests: phase-1 surfacing + phase-2 manual add.
+  'lab_rows_viewed',
+  'lab_row_added',
 ] as const;
 
 export type ProductEventName = (typeof PRODUCT_EVENT_NAMES)[number];

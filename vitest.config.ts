@@ -15,6 +15,15 @@ import { defineConfig } from "vitest/config";
 //    including mirror `*.test.ts` files that aren't real suites. Exclude that dir so vitest
 //    doesn't try to run them.
 export default defineConfig({
+  // Resolve the workspace package to its SOURCE, exactly like the widget vite
+  // configs do. Without this, tests import dist/ — which is gitignored, never
+  // built in CI (test:all went red the first time a widget test imported the
+  // package name), and goes silently stale locally after any src edit.
+  resolve: {
+    alias: {
+      '@roadmap/health-core': new URL('./packages/health-core/src', import.meta.url).pathname,
+    },
+  },
   test: {
     exclude: [
       "**/node_modules/**",
