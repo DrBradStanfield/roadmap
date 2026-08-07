@@ -1,8 +1,10 @@
 /**
  * LLM retrieval router for the Health Roadmap chatbot.
  *
- * Reads the 991-entry blog index (cached as a single Anthropic prompt cache
- * block) and returns 0-3 content handles for the current user turn.
+ * Reads the blog index (cached as a single Anthropic prompt cache block) and
+ * returns 0-3 content handles for the current user turn. The entry count is
+ * derived from the index at load time and substituted into the prompt via
+ * {{ENTRY_COUNT}} — do not hard-code it here or in the .md, it drifts.
  *
  * Separate from chat.server.ts for single-responsibility and testability.
  */
@@ -72,7 +74,13 @@ function getRouterPrompt(): string {
     return cachedPrompt;
   }
   try {
-    cachedPrompt = fs.readFileSync(PROMPT_PATH, 'utf-8');
+    // {{ENTRY_COUNT}} is substituted from the loaded index so the prompt can't
+    // drift from the data. It was a hard-coded "991" in the .md until
+    // 2026-08-07, by which point the index held 1,015 — we were stating the
+    // wrong size of the very list being handed to the model in the same prompt.
+    cachedPrompt = fs
+      .readFileSync(PROMPT_PATH, 'utf-8')
+      .replace(/\{\{ENTRY_COUNT\}\}/g, String(BLOG_INDEX.length));
     promptCachedAt = Date.now();
     return cachedPrompt;
   } catch {

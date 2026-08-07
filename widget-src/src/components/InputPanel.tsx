@@ -637,19 +637,22 @@ export function InputPanel({
           >
             {name}
           </a>
-          <span className="collapsed-field-value">
+          {/* Whole value column expands the row — Clarity showed users dead-clicking
+              the value/unit text expecting exactly that (the 28px + button was the
+              only target). Unit pill stops propagation so toggling stays a toggle. */}
+          <span className="collapsed-field-value" onClick={onExpand} title="Add new value">
             {displayValue}{' '}
             {hasUnitToggle(field) ? (
               <button
                 type="button"
                 className="unit-toggle-pill"
-                onClick={(e) => { e.preventDefault(); onToggleFieldUnit(field); }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFieldUnit(field); }}
                 title={`Switch to ${fieldUnit(field) === 'si' ? 'conventional' : 'metric'} units`}
               >
                 {unitLabel}
               </button>
             ) : (
-              <span className="collapsed-field-unit">{unitLabel}</span>
+              <span className="collapsed-field-unit" title="This unit is fixed">{unitLabel}</span>
             )}
           </span>
           <span className="collapsed-field-date">{date}</span>
@@ -673,10 +676,13 @@ export function InputPanel({
     const diaMetric = FIELD_METRIC_MAP['diastolicBp'];
     const sysMeasurement = sysMetric ? previousMeasurements.find(m => m.metricType === sysMetric) : null;
     const diaMeasurement = diaMetric ? previousMeasurements.find(m => m.metricType === diaMetric) : null;
-    if (!sysMeasurement && !diaMeasurement) return null;
+    // A half-pair rendered as "120/?" reads as broken and invites repair clicks
+    // (top dead-click target in the 2026-08 Clarity audit). BP is atomic
+    // (bpPairReady) — treat a half-pair as no previous BP at all.
+    if (!sysMeasurement || !diaMeasurement) return null;
 
-    const sysVal = sysMeasurement ? Math.round(sysMeasurement.value) : '?';
-    const diaVal = diaMeasurement ? Math.round(diaMeasurement.value) : '?';
+    const sysVal = Math.round(sysMeasurement.value);
+    const diaVal = Math.round(diaMeasurement.value);
     const dates = [sysMeasurement?.recordedAt, diaMeasurement?.recordedAt].filter(Boolean) as string[];
     const latestDate = dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
     return { sysVal, diaVal, latestDate };
@@ -701,7 +707,11 @@ export function InputPanel({
           >
             Blood Pressure
           </a>
-          <span className="collapsed-field-value">{data.sysVal}/{data.diaVal} <span className="collapsed-field-unit">mmHg</span></span>
+          <span
+            className="collapsed-field-value"
+            onClick={() => { focusFieldRef.current = 'systolicBp'; setBpExpanded(true); }}
+            title="Add new value"
+          >{data.sysVal}/{data.diaVal} <span className="collapsed-field-unit" title="Blood pressure is always measured in mmHg">mmHg</span></span>
           <span className="collapsed-field-date">{formatShortDate(data.latestDate)}</span>
           <button type="button" className="collapsed-field-add" onClick={() => { focusFieldRef.current = 'systolicBp'; setBpExpanded(true); }} title="Add new value">+</button>
         </div>
