@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import type React from 'react';
 import { validateTypedValue } from './blood-test-cell';
 
 // ---------------------------------------------------------------------------
@@ -88,5 +89,87 @@ describe('validateTypedValue — weight bounds evaluated in the active unit', ()
   it('accepts waist values in conventional inches without SI-cm confusion', () => {
     expect(validateTypedValue('waist', '36', 'conventional').error).toBeNull();
     expect(validateTypedValue('waist', '90', 'si').error).toBeNull();
+  });
+});
+
+// US-02 AC4/AC6 (2026-08-07): numeric-only keystroke filtering + systolic
+// auto-advance. blockBadNumericKeys previously blocked ONLY -,+,e,E — letters
+// sailed through on text-type inputs (and Safari's type="number").
+import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance } from './blood-test-cell';
+
+function key(k: string, mods: Partial<{ ctrlKey: boolean; metaKey: boolean; altKey: boolean }> = {}) {
+  return {
+    key: k,
+    ctrlKey: false, metaKey: false, altKey: false, ...mods,
+    preventDefault: vi.fn(),
+  } as unknown as React.KeyboardEvent<HTMLInputElement> & { preventDefault: ReturnType<typeof vi.fn> };
+}
+
+describe('blockBadNumericKeys — decimal fields (US-02 AC4)', () => {
+  it.each(['a', 'z', 'B', ' ', '/', '-', '+', 'e', 'E', '%'])('blocks %j', (k) => {
+    const e = key(k);
+    blockBadNumericKeys(e);
+    expect(e.preventDefault).toHaveBeenCalled();
+  });
+  it.each(['0', '9', '.', ','])('allows %j', (k) => {
+    const e = key(k);
+    blockBadNumericKeys(e);
+    expect(e.preventDefault).not.toHaveBeenCalled();
+  });
+  it.each(['Backspace', 'Tab', 'ArrowLeft', 'Enter', 'Delete', 'Home'])('allows control key %j', (k) => {
+    const e = key(k);
+    blockBadNumericKeys(e);
+    expect(e.preventDefault).not.toHaveBeenCalled();
+  });
+  it('allows shortcuts (cmd/ctrl+a, ctrl+v)', () => {
+    for (const mods of [{ metaKey: true }, { ctrlKey: true }]) {
+      const e = key('a', mods);
+      blockBadNumericKeys(e);
+      expect(e.preventDefault).not.toHaveBeenCalled();
+    }
+  });
+});
+
+describe('blockNonIntegerKeys — integer fields like BP (US-02 AC4)', () => {
+  it.each(['a', '.', ',', '-', 'e', ' '])('blocks %j', (k) => {
+    const e = key(k);
+    blockNonIntegerKeys(e);
+    expect(e.preventDefault).toHaveBeenCalled();
+  });
+  it.each(['0', '5', '9'])('allows digit %j', (k) => {
+    const e = key(k);
+    blockNonIntegerKeys(e);
+    expect(e.preventDefault).not.toHaveBeenCalled();
+  });
+  it('allows Backspace and shortcuts', () => {
+    expect(key('Backspace')).toSatisfy((e: ReturnType<typeof key>) => {
+      blockNonIntegerKeys(e);
+      return !(e.preventDefault as ReturnType<typeof vi.fn>).mock.calls.length;
+    });
+    const paste = key('v', { metaKey: true });
+    blockNonIntegerKeys(paste);
+    expect(paste.preventDefault).not.toHaveBeenCalled();
+  });
+});
+
+describe('bpSysAdvance — systolic → diastolic auto-advance (US-02 AC6)', () => {
+  it('advances immediately on an unambiguous in-range 3-digit systolic', () => {
+    expect(bpSysAdvance('120')).toBe('advance');
+    expect(bpSysAdvance('100')).toBe('advance');
+    expect(bpSysAdvance('250')).toBe('advance');
+  });
+  it('defers on a plausible 2-digit systolic that could gain a third digit', () => {
+    expect(bpSysAdvance('85')).toBe('defer'); // valid 85, but could become 850? no — 85x invalid; still a complete plausible value typed slowly
+    expect(bpSysAdvance('60')).toBe('defer');
+    expect(bpSysAdvance('99')).toBe('defer');
+  });
+  it('stays on prefixes and out-of-range values', () => {
+    expect(bpSysAdvance('1')).toBe('stay');
+    expect(bpSysAdvance('12')).toBe('stay'); // prefix of 120
+    expect(bpSysAdvance('25')).toBe('stay'); // prefix of 250
+    expect(bpSysAdvance('999')).toBe('stay');
+    expect(bpSysAdvance('300')).toBe('stay');
+    expect(bpSysAdvance('')).toBe('stay');
+    expect(bpSysAdvance('abc')).toBe('stay');
   });
 });

@@ -34,6 +34,8 @@ import { routeTasksToSaves, type SaveTask, type CorrectFn } from '../lib/matrix-
 import {
   type Status,
   blockBadNumericKeys,
+  blockNonIntegerKeys,
+  bpSysAdvance,
   validateTypedValue,
 } from '../lib/blood-test-cell';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
@@ -823,10 +825,38 @@ function BpInputCell({
   active?: boolean;
 }) {
   const cellRef = useRef<HTMLDivElement>(null);
+  const sysRef = useRef<HTMLInputElement>(null);
+  const diaRef = useRef<HTMLInputElement>(null);
+  const advanceTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (advanceTimer.current) window.clearTimeout(advanceTimer.current); }, []);
+  // BP is integer-only (US-02 AC4) — block non-digit keystrokes; paste is
+  // sanitised in the change handlers below.
   const onKey: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
-    blockBadNumericKeys(e);
+    blockNonIntegerKeys(e);
     if (e.key === 'Enter') { e.preventDefault(); onEnter(); }
   };
+  // Auto-advance systolic → diastolic (US-02 AC6): immediately for an
+  // unambiguous 3-digit value, after 800ms for a plausible 2-digit one.
+  // Never steal focus if the user already left systolic or dia has content.
+  const handleSysChange = (raw: string) => {
+    const v = raw.replace(/[^0-9]/g, '');
+    onSysChange(v);
+    if (advanceTimer.current) { window.clearTimeout(advanceTimer.current); advanceTimer.current = null; }
+    if (dia !== '') return;
+    const adv = bpSysAdvance(v);
+    if (adv === 'advance') diaRef.current?.focus();
+    else if (adv === 'defer') {
+      advanceTimer.current = window.setTimeout(() => {
+        if (document.activeElement === sysRef.current) diaRef.current?.focus();
+      }, 800);
+    }
+  };
+  const handleDiaChange = (raw: string) => onDiaChange(raw.replace(/[^0-9]/g, ''));
+  // Visible range validation (US-02 AC5) — same inline-error pattern as
+  // NumericInputCell (this is the one cell that can't reuse it directly).
+  const sysError = validateTypedValue('systolic_bp', sys, 'si').error;
+  const diaError = validateTypedValue('diastolic_bp', dia, 'si').error;
+  const error = sysError ?? diaError;
   // A blur to the sibling sys/dia input keeps focus inside the cell — don't
   // save. Only schedule a save when focus actually exits the cell, so the
   // value can't clear under the user while they tab from systolic to diastolic.
@@ -852,14 +882,20 @@ function BpInputCell({
   return (
     <div ref={cellRef} className={wrapperClass} onClick={focusSysFromShell}>
       <div className="bt-vitals-bp-inputs">
-        <input className={`bt-input${active ? ' bt-input-active' : ''}`} inputMode="numeric" placeholder="sys" size={1}
-               value={sys} onChange={e => onSysChange(e.target.value)} onKeyDown={onKey} onBlur={onBlur}/>
+        <input ref={sysRef} className={`bt-input${active ? ' bt-input-active' : ''}${sysError ? ' bt-input-error' : ''}`}
+               inputMode="numeric" pattern="[0-9]*" placeholder="sys" size={1} aria-label="Systolic blood pressure"
+               aria-invalid={!!sysError} title={sysError ?? undefined}
+               value={sys} onChange={e => handleSysChange(e.target.value)} onKeyDown={onKey} onBlur={onBlur}/>
         <span className="bt-vitals-bp-sep">/</span>
-        <input className={`bt-input${active ? ' bt-input-active' : ''}`} inputMode="numeric" placeholder="dia" size={1}
-               value={dia} onChange={e => onDiaChange(e.target.value)} onKeyDown={onKey} onBlur={onBlur}/>
+        <input ref={diaRef} className={`bt-input${active ? ' bt-input-active' : ''}${diaError ? ' bt-input-error' : ''}`}
+               inputMode="numeric" pattern="[0-9]*" placeholder="dia" size={1} aria-label="Diastolic blood pressure"
+               aria-invalid={!!diaError} title={diaError ?? undefined}
+               value={dia} onChange={e => handleDiaChange(e.target.value)} onKeyDown={onKey} onBlur={onBlur}/>
       </div>
       <div className="bt-cell-foot">
-        <span className={`bt-status-tick bt-status-${previewStatus ?? 'none'}`}/>
+        {error
+          ? <span className="bt-input-error-text">{error}</span>
+          : <span className={`bt-status-tick bt-status-${previewStatus ?? 'none'}`}/>}
       </div>
     </div>
   );

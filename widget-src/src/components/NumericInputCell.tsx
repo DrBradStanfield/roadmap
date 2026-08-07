@@ -68,7 +68,9 @@ export function NumericInputCell({
         // calculations and stretches the matrix scroll width.
         size={1}
         value={value}
-        onChange={e => onChange(e.target.value)}
+        // Strip characters the keystroke filter can't catch (paste, drag-drop,
+        // IME) — US-02 AC4. Keystroke filtering alone leaves paste wide open.
+        onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ''))}
         onKeyDown={onKeyDown}
         onFocus={onFocus}
         onBlur={onBlur}

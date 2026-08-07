@@ -48,6 +48,15 @@ export const Classification = {
   GREETING: 'GREETING',
   PRODUCT: 'PRODUCT',
   ACCOUNT: 'ACCOUNT',
+  /**
+   * Reading back / correcting the user's OWN recorded numbers. Added 2026-08-07:
+   * router prompt Rule 6 already said these should return empty handles, but the
+   * classifier had no label for them, so every "What is my BMI?" fired a ~1.6s
+   * router call that came back empty. Measured on 143 empty-handle turns, this
+   * was the single largest bucket (50, 35%) — of which 33 are pure lookup.
+   * Interpretation ("is my Lp(a) a concern?") stays ROUTE by design.
+   */
+  MEASUREMENT: 'MEASUREMENT',
   ERROR: 'ERROR',
 } as const;
 
@@ -58,6 +67,7 @@ const VALID_CLASSIFICATIONS: ReadonlyArray<Classification> = [
   Classification.GREETING,
   Classification.PRODUCT,
   Classification.ACCOUNT,
+  Classification.MEASUREMENT,
 ];
 
 function parseClassification(raw: string): Classification {
@@ -149,7 +159,11 @@ export async function classifyMessage(
 
   const body = {
     model: CLASSIFIER_MODEL,
-    max_tokens: 5,
+    // 8, not 5: 'MEASUREMENT' (added 2026-08-07) is the longest label and a
+    // truncated word fails the exact-match parse, degrading to ERROR — which
+    // fail-safes to firing the router, i.e. silently undoing the saving this
+    // label exists to create. Unused output tokens are not billed.
+    max_tokens: 8,
     temperature: 0,
     system: [
       {

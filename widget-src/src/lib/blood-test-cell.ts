@@ -23,12 +23,41 @@ import type React from 'react';
 
 export type Status = 'ok' | 'warn' | 'bad' | null;
 
-// <input type="number"> accepts these but they're invalid for our metrics
-// (no negatives, no scientific notation).
-const BLOCKED_NUMERIC_KEYS = new Set(['-', '+', 'e', 'E']);
+// Keystroke filters (US-02 AC4). Most of our numeric cells are type="text"
+// (for inputMode/pattern control), and even type="number" doesn't reject
+// letters in Safari — so filtering must happen here, not in the browser.
+// Control keys (Backspace, Tab, arrows — key.length > 1) and shortcuts
+// (cmd/ctrl/alt combos) always pass.
+function blockKeysOutside(allowed: RegExp, e: React.KeyboardEvent<HTMLInputElement>) {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key.length === 1 && !allowed.test(e.key)) e.preventDefault();
+}
 
+/** Decimal fields: digits plus locale separators. */
 export function blockBadNumericKeys(e: React.KeyboardEvent<HTMLInputElement>) {
-  if (BLOCKED_NUMERIC_KEYS.has(e.key)) e.preventDefault();
+  blockKeysOutside(/[0-9.,]/, e);
+}
+
+/** Integer-only fields (BP, birth year, pack-years): digits only. */
+export function blockNonIntegerKeys(e: React.KeyboardEvent<HTMLInputElement>) {
+  blockKeysOutside(/[0-9]/, e);
+}
+
+/**
+ * Systolic → diastolic auto-advance decision (US-02 AC6).
+ * 'advance': unambiguous complete value (3 digits, 100–250) — move focus now.
+ * 'defer': plausible 2-digit systolic (60–99) that the user might still extend —
+ *          advance after a short pause unless another key arrives.
+ * 'stay': prefix ('12' → 120), out-of-range, or non-numeric.
+ */
+export type BpAdvance = 'advance' | 'defer' | 'stay';
+export function bpSysAdvance(typed: string): BpAdvance {
+  const t = typed.trim();
+  if (!/^\d+$/.test(t)) return 'stay';
+  const n = Number(t);
+  if (t.length >= 3) return n >= 100 && n <= 250 ? 'advance' : 'stay';
+  if (t.length === 2) return n >= 60 && n <= 99 ? 'defer' : 'stay';
+  return 'stay';
 }
 
 /** Validate a typed display-unit value against the metric's range. */

@@ -24,6 +24,9 @@ As a user, I can type height, weight, waist and a paired systolic/diastolic BP q
 - AC1: Clicking anywhere in a vitals cell (including placeholder text and the `mmHg`/unit chip) focuses the editable input.
 - AC2: A BP entry is accepted only as a complete sys/dia pair; a half-pair doesn't save.
 - AC3: Values are validated against clinical ranges with ok/warn/bad ticks before save.
+- AC4: Numeric fields accept only numeric characters — letters and symbols are blocked at the keystroke (and stripped on paste), on every surface incl. Safari where `type="number"` doesn't enforce this.
+- AC5: An out-of-range value shows a visible inline error (e.g. "Max 250 mmHg") on the field itself — never a silent save-block where garbage looks accepted.
+- AC6: After typing an unambiguous, in-range systolic value, focus auto-advances to diastolic (immediately for 3-digit values 100–250; after a short pause for 2-digit values 60–99 that could still gain a digit).
 - Evidence: **top friction in the audit** — dead clicks on the BP `▫▫▫/? mmHg` control and `mmHg` label in 3 of 15 recorded sessions; tooltip/units-picker dead clicks in 4.
 - Tests: 🟡 `StartingInfoVitals.test.ts` covers BP pair routing/readiness logic; `blood-test-cell.test.ts` covers validation. ❌ No test that a cell-shell click focuses the input (the actual reported friction). **Action: fix + test (2026-08 backlog #1).**
 

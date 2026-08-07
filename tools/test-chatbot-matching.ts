@@ -129,9 +129,15 @@ interface BlogIndexEntry {
   summary?: string;
 }
 
-const BLOG_INDEX: BlogIndexEntry[] = JSON.parse(
-  fs.readFileSync(path.join(REPO_ROOT, 'docs/blog/index.json'), 'utf-8')
-);
+// --index <path> overrides the index the ROUTER sees, so an experimental index
+// (e.g. summary-capped) can be A/B'd against production without touching
+// docs/blog/index.json. Matched-article loading still reads the real .md files.
+const indexPathArg = args.includes('--index') ? getArg('--index', '') : null;
+const INDEX_PATH = indexPathArg
+  ? path.resolve(indexPathArg)
+  : path.join(REPO_ROOT, 'docs/blog/index.json');
+
+const BLOG_INDEX: BlogIndexEntry[] = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8'));
 
 const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
 
@@ -186,7 +192,12 @@ const ROUTER_INDEX_BLOCK: string = [...BLOG_INDEX]
   .map(e => `[${e.type ?? 'article'}] ${e.handle}: ${e.summary ?? e.title}`)
   .join('\n');
 
-const ROUTER_PROMPT = fs.readFileSync(path.join(REPO_ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8');
+// {{ENTRY_COUNT}} substitution must mirror chat-router.server.ts getRouterPrompt().
+// Without it the harness would send the literal placeholder to the model and
+// stop being a faithful test of production.
+const ROUTER_PROMPT = fs
+  .readFileSync(path.join(REPO_ROOT, 'app/lib/chat-router-prompt.md'), 'utf-8')
+  .replace(/\{\{ENTRY_COUNT\}\}/g, String(BLOG_INDEX.length));
 
 // ---------------------------------------------------------------------------
 // Anthropic API call — minimal fetch glue, same body shape as routeQuery

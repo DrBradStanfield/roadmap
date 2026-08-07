@@ -51,14 +51,20 @@ const CLASSIFIER_MODEL = 'claude-haiku-4-5-20251001';
 const PROMPT_PATH = path.join(__dirname, '..', 'app', 'lib', 'chat-classifier-prompt.md');
 const CLASSIFIER_PROMPT = fs.readFileSync(PROMPT_PATH, 'utf-8');
 
-type Classification = 'ROUTE' | 'GREETING' | 'PRODUCT' | 'ACCOUNT' | 'ERROR';
+// Kept as a literal list rather than importing chat-classifier.server.ts: tsx
+// can't resolve the health-core workspace package through that import chain
+// (same constraint as test-chatbot-matching.ts). It therefore has to be kept in
+// sync BY HAND with Classification in app/lib/chat-classifier.server.ts.
+// Adding MEASUREMENT there on 2026-08-07 without updating here made the harness
+// parse a correct 'MEASUREMENT' reply as ERROR — a false failure. If you add a
+// label, add it in BOTH places.
+type Classification = 'ROUTE' | 'GREETING' | 'PRODUCT' | 'ACCOUNT' | 'MEASUREMENT' | 'ERROR';
+
+const VALID: ReadonlyArray<Classification> = ['ROUTE', 'GREETING', 'PRODUCT', 'ACCOUNT', 'MEASUREMENT'];
 
 function parseClassification(raw: string): Classification {
-  const cleaned = raw.trim().toUpperCase().replace(/[^A-Z]/g, '');
-  if (cleaned === 'ROUTE' || cleaned === 'GREETING' || cleaned === 'PRODUCT' || cleaned === 'ACCOUNT') {
-    return cleaned;
-  }
-  return 'ERROR';
+  const cleaned = raw.trim().toUpperCase().replace(/[^A-Z]/g, '') as Classification;
+  return VALID.includes(cleaned) ? cleaned : 'ERROR';
 }
 
 // ---------------------------------------------------------------------------

@@ -32,7 +32,9 @@ Decision rules:
    - Greetings, small talk, or non-health topics ("hi", "thanks", "what's the weather")
    - Questions about Dr Brad's products, store, pricing, ingredients, subscriptions, shipping/countries, or what Brad personally takes
    - Questions about the user's account, order, or subscription status
-   - Queries about the user's own lab values or measurements already in context ("what's my LDL?")
+   - Queries that only ask you to READ BACK or CORRECT the user's own recorded numbers ("what's my LDL?", "what is my BMI?", "summarise my cholesterol numbers", "my creatinine is 0.83 not 265"). The values are already in the main LLM's context.
+
+     ⚠️ This does NOT cover INTERPRETATION. If the user asks what their value MEANS, whether it is HIGH / GOOD / CONCERNING, or WHAT TO DO about it, you MUST route to the relevant reference or guideline — that content is exactly what makes the answer good. "Is my Lp(a) a concern?", "What does my Lp(a) result mean?", "Is that a healthy number?", "Based on my data, what should I improve first?" all ROUTE (to the Lp(a) reference, the lipid pathway, or the diet/exercise guideline as appropriate). Mentioning a personal number does not make a question out of scope — only a bare read-back does.
    - Acknowledgements, thank-yous, meta-questions about the chat itself ("can I save this?", "is this saved?", "I copied it"), and short corrections that aren't asking a new question ("I don't think that's right", "actually that was wrong")
    - Drug pharmacokinetic / dosing-time / formulation questions where the answer requires PK knowledge not in a specific pathway ("what time to take X", "with food or not", "morning vs evening")
 

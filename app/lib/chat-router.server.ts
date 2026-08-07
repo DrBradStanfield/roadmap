@@ -48,6 +48,38 @@ function typeRank(entry: BlogIndexEntry): number {
   return TYPE_ORDER[entry.type ?? 'article'] ?? 3;
 }
 
+/**
+ * Cap on summary length in the ROUTER's view of the index.
+ *
+ * The router's job is discriminative — "is this entry about the user's topic?" —
+ * which does not need the full summary. Full summaries averaged 269 chars and
+ * made the rendered index ~81K tokens; capping at 150 brings it to ~44K (54%)
+ * with no entries dropped.
+ *
+ * Measured with tools/test-chatbot-matching.ts (--runs 1, 2026-08-07), routing
+ * did NOT degrade — it improved slightly in every arm:
+ *   symptomatic (n=81):  baseline 92.6%  →  cap150 96.3%  →  cap120 93.8%
+ *   supplement  (n=16):  baseline 81.3%  →  cap120 87.5%
+ * Likely mechanism: less prose to scan sharpens the signal. Differences are
+ * within single-run noise, so treat this as "no degradation detected" rather
+ * than a proven gain — but the direction was consistent across all three.
+ *
+ * Only the ROUTER sees the truncated text. index.json is untouched, and
+ * buildKnowledgeOverview() in chat.server.ts keeps its own 50-word cap.
+ */
+const ROUTER_SUMMARY_MAX_CHARS = 150;
+
+function capSummary(s: string): string {
+  if (s.length <= ROUTER_SUMMARY_MAX_CHARS) return s;
+  const cut = s.slice(0, ROUTER_SUMMARY_MAX_CHARS);
+  // Prefer a clause boundary so we never sever mid-word.
+  for (const sep of ['. ', '; ', ', ', ' ']) {
+    const p = cut.lastIndexOf(sep);
+    if (p > ROUTER_SUMMARY_MAX_CHARS * 0.6) return cut.slice(0, p).replace(/[ ,;.]+$/, '');
+  }
+  return cut.trimEnd();
+}
+
 const ROUTER_INDEX_BLOCK: string = (() => {
   const sorted = [...BLOG_INDEX].sort((a, b) => {
     const tr = typeRank(a) - typeRank(b);
@@ -55,7 +87,7 @@ const ROUTER_INDEX_BLOCK: string = (() => {
     return a.handle.localeCompare(b.handle);
   });
   return sorted
-    .map(e => `[${e.type ?? 'article'}] ${e.handle}: ${e.summary ?? e.title}`)
+    .map(e => `[${e.type ?? 'article'}] ${e.handle}: ${capSummary(e.summary ?? e.title ?? '')}`)
     .join('\n');
 })();
 
