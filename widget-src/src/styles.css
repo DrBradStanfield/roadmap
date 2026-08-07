@@ -1809,8 +1809,15 @@ input[type="number"] {
   text-decoration: underline;
 }
 
-.bp-info-tooltip-wrap:hover .bp-info-tooltip,
-.bp-info-tooltip-wrap:focus-within .bp-info-tooltip,
+/* Hover-open is mouse-only: on touch, WebKit's sticky synthesized hover (and
+   :focus-within after a tap) would hold the bubble open and defeat the
+   tap-to-close toggle. Keyboard path: Enter/Space toggles --open, Tab away
+   closes via onBlur (InfoTooltip.tsx) — so no :focus-within rule needed. */
+@media (hover: hover) {
+  .bp-info-tooltip-wrap:hover .bp-info-tooltip {
+    display: block;
+  }
+}
 .bp-info-tooltip-wrap--open .bp-info-tooltip {
   display: block;
 }
