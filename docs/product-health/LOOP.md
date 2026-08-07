@@ -32,8 +32,13 @@ then you alone synthesize, write, and self-critique.
 2. **Gather** (fan out workers; each source that fails gets NAMED in the report
    — silence is never success):
    - **Feedback emails** (Gmail MCP): threads `subject:"Health Roadmap Feedback" newer_than:8d`.
-   - **Supabase** (needs `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` env vars; check
-     presence with `env | grep -c SUPABASE`, never print values): 7-day vs
+   - **Supabase** (needs `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and
+     `SUPABASE_PRODUCT_HEALTH_KEY` env vars — the latter is a dedicated
+     READ-ONLY role (`product_health_ro`, SELECT-only on operational tables,
+     expires 2027-08; you never get the service key). PostgREST calls send
+     `apikey: $SUPABASE_ANON_KEY` + `Authorization: Bearer
+     $SUPABASE_PRODUCT_HEALTH_KEY`. Check presence with `env | grep -c
+     SUPABASE`, never print values): 7-day vs
      prior-7-day for `chat_messages`; new `feedback_submissions`;
      `product_events` grouped by `event_name` (the funnel:
      results_viewed → upload_started/saved → cloud_connect_started/success →

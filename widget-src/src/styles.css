@@ -5172,6 +5172,7 @@ input[type="number"] {
   align-items: center;
   gap: 7px;
   padding: 9px 2px;
+  min-height: 44px; /* iOS tap-target minimum (visual audit measured 35px without it) */
   background: none;
   border: none;
   cursor: pointer;
