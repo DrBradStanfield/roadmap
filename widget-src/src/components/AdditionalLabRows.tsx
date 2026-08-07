@@ -108,7 +108,7 @@ function LabGroupSection({ group, expanded, onToggle }: { group: LabValueGroup; 
   return (
     <div className="alr-group">
       <button type="button" className="alr-group-header" aria-expanded={expanded} onClick={onToggle}>
-        <span className="alr-group-icon"><GroupIcon icon={group.icon}/></span>
+        <span className={`alr-group-icon alr-group-icon--${group.icon}`}><GroupIcon icon={group.icon}/></span>
         <span className="alr-group-label">{group.label}</span>
         <span className="alr-group-count">{group.series.length}</span>
         <ChevronIcon expanded={expanded}/>
@@ -143,6 +143,7 @@ export function AdditionalLabRows({ labValues }: { labValues: ApiLabValue[] }) {
 
   return (
     <div className="alr-wrap">
+      <div className="alr-title">Additional lab results</div>
       {groups.map(g => (
         <LabGroupSection key={g.id} group={g} expanded={expandedIds.has(g.id)} onToggle={() => toggle(g.id)}/>
       ))}

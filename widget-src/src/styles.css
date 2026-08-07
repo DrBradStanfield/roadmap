@@ -5166,46 +5166,72 @@ input[type="number"] {
   border-bottom: none;
 }
 
+.alr-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--bt-ink-400);
+  padding: 12px 2px 2px;
+}
+
 .alr-group-header {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 2px;
+  gap: 10px;
+  padding: 7px 6px;
   min-height: 44px; /* iOS tap-target minimum (visual audit measured 35px without it) */
   background: none;
   border: none;
+  border-radius: 10px;
   cursor: pointer;
   font-family: inherit;
   text-align: left;
-  color: var(--bt-ink-500);
+  color: var(--bt-ink-700);
+  transition: background-color 0.15s ease;
 }
 .alr-group-header:hover {
-  color: var(--bt-ink-700);
+  background: var(--bt-ink-50);
 }
 
+/* Tinted icon badge — one hue per panel so groups scan at a glance. */
 .alr-group-icon {
   display: inline-flex;
-  color: var(--bt-ink-400);
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
   flex-shrink: 0;
-}
-.alr-group-header:hover .alr-group-icon {
   color: var(--bt-ink-500);
+  background: var(--bt-ink-50);
 }
+.alr-group-icon--kidney  { color: #e11d48; background: #fff1f2; }
+.alr-group-icon--liver   { color: #b45309; background: #fffbeb; }
+.alr-group-icon--thyroid { color: #7c3aed; background: #f5f3ff; }
+.alr-group-icon--hormones{ color: #db2777; background: #fdf2f8; }
+.alr-group-icon--vitamins{ color: #059669; background: #ecfdf5; }
+.alr-group-icon--flame   { color: #ea580c; background: #fff7ed; }
+.alr-group-icon--flask   { color: #64748b; background: #f1f5f9; }
 
 .alr-group-label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.1px;
+  color: var(--bt-ink-800, #1f2937);
 }
 
 .alr-group-count {
-  font-size: 10px;
-  color: var(--bt-ink-400);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--bt-ink-500);
   background: var(--bt-ink-50);
-  border: 1px solid var(--bt-ink-200);
+  border: 1px solid var(--bt-ink-100);
   border-radius: 999px;
-  padding: 0px 6px;
+  min-width: 20px;
+  text-align: center;
+  padding: 1px 6px;
   line-height: 1.5;
 }
 
@@ -5219,10 +5245,14 @@ input[type="number"] {
 }
 
 .alr-group-body {
-  padding: 0 2px 10px;
+  /* Indent under the badge so series align with the group label. */
+  padding: 2px 6px 14px 42px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+@media (max-width: 768px) {
+  .alr-group-body { padding-left: 10px; }
 }
 
 .alr-series-row {
@@ -5254,18 +5284,28 @@ input[type="number"] {
   display: none;
 }
 
+/* Each dated value renders as a small chip — echoes the matrix cell language. */
 .alr-point {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 44px;
+  min-width: 52px;
+  padding: 5px 9px 4px;
+  background: #fafbfc;
+  border: 1px solid var(--bt-ink-100);
+  border-radius: 8px;
+}
+.alr-point:last-child {
+  /* newest reading gets a touch more presence */
+  background: #fff;
+  border-color: var(--bt-ink-200);
 }
 
 .alr-point-value {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--bt-ink-700);
+  color: var(--bt-ink-800, #1f2937);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -5278,7 +5318,7 @@ input[type="number"] {
 }
 
 .alr-point-date {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--bt-ink-400);
   margin-top: 1px;
   white-space: nowrap;
