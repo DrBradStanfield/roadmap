@@ -34,7 +34,7 @@ As a user, I can enter today's blood results in a draft column, and backfill old
 - AC3: At most one active row per (metric, day); a same-day re-entry routes through correction (US-04), never a silent overwrite or lost draft.
 - AC4: A failed save preserves the typed draft for retry.
 - Evidence: engaged sessions show field-by-field entry of masked numeric values; feedback email 2026-03-22 reported values appearing under a wrong date (root cause never found).
-- Tests: 🟡 `matrix-save.test.ts` (task routing), `blood-test-cell.test.ts` (validation), merge tests (slot invariant). ❌ The wrong-date report has no regression test pinning date-defaulting semantics. **Action: add date-semantics tests (this pass).**
+- Tests: ✅ `matrix-save.test.ts` (task routing), `blood-test-cell.test.ts` (validation), merge tests (slot invariant), and date-defaulting semantics pinned in `roadmap-store-data-safety.test.ts` (2026-08-07).
 
 ### US-04 · Correcting a saved value (FHIR)
 As a user who mistyped or whose lab import was wrong, I can click the saved cell, type the right value, and the display updates — while the old value is preserved as `entered-in-error` with a `correctsId` chain (never mutated or deleted).
@@ -43,7 +43,7 @@ As a user who mistyped or whose lab import was wrong, I can click the saved cell
 - AC3: Corrections converge across devices (status is sticky in merge).
 - AC4: Correcting a non-latest value doesn't disturb the latest summary.
 - Evidence: correction affordance was a deliberate UX decision (memory: corrections live with the data); `correction_made` funnel event now measures real usage.
-- Tests: 🟡 merge.test.ts covers `correctsId`/sticky status; ❌ `RoadmapStore.correctMeasurement` itself untested. **Action: store-level tests (this pass).**
+- Tests: ✅ merge.test.ts (`correctsId`/sticky status) + `roadmap-store-data-safety.test.ts` (store-level correction flow, 2026-08-07).
 
 ### US-05 · Unit switching
 As a US/international user, I can flip between conventional and SI units at any time; every field, threshold, and suggestion re-renders correctly and stored data never changes (SI canonical at rest).
@@ -64,7 +64,7 @@ As a user, once I've entered data I see prioritized suggestions (urgent/attentio
 - AC2: LDL-only entry (no total cholesterol) still produces lipid advice (regression: feedback 2026-03-06, fixed).
 - AC3: New/changed suggestions highlight briefly so I notice what my new data changed.
 - Evidence: "Why this suggestion?" expansions observed in recordings; `results_viewed` event now counts reach.
-- Tests: ✅ suggestions.test.ts (incl. lipid fallbacks via `resolveBestLipidMarker`); ❌ no explicit LDL-without-total regression case. **Action: verify/add (this pass).**
+- Tests: ✅ suggestions.test.ts — the LDL-without-total case is covered by `'shows LDL when neither ApoB nor non-HDL available'` (verified 2026-08-07).
 
 ### US-08 · Print / save my plan
 As a user, I can print or save my plan as a PDF to bring to my doctor (client-side; no server involved).
@@ -84,11 +84,12 @@ As a privacy-conscious user, I choose Google Drive / Dropbox / GitHub / my own W
 As a user with a phone and a laptop, edits from both devices converge without conflicts: append-only arrays union, mutable scalars last-write-wins, corrections/deletions sticky, `eraseEpoch` wins wholesale.
 - AC1: A fast edit on a fresh page load can never clobber unseen cloud data (hydration gate before first flush).
 - AC2: Deleted measurements never resurrect via merge.
-- Tests: ✅ mergeFiles thoroughly tested; 🟡 store resurrect-guard covered; ❌ `SyncManager` load→merge→push loop and the hydration gate untested. **Action: this pass (highest-risk gap in the repo — it guards user data).**
+- Tests: ✅ mergeFiles + store resurrect-guard + `sync-manager.test.ts` (read-merge-write, eraseEpoch wholesale win; 2026-08-07). Hydration gate (AC1) lives in HealthTool UI — still untested, accepted. **Writing these tests immediately caught a real defect — see US-11.**
 
 ### US-11 · Deleting my data
 As a user, I can erase everything from the tool on every device (eraseEpoch bump + empty flush); there is no server copy to chase.
-- Tests: 🟡 merge honors eraseEpoch; ❌ `deleteUserData` store path untested. **Action: this pass.**
+- Tests: ✅ `deleteUserData` + stale-device-cannot-resurrect covered (2026-08-07).
+- **Incident 2026-08-07:** first coverage of this path found that `migrateFile()` dropped `meta.eraseEpoch` on every storage read, so any stale device's flush resurrected erased data (merge gate never saw the epoch). Fixed in `migrate.ts` same day; regression tests pin it in `roadmap-store-data-safety.test.ts` + `sync-manager.test.ts`.
 
 ## Epic D — Lab uploads & documents
 
@@ -104,7 +105,7 @@ As a user with PDF/photo/ZIP lab reports, I drop them in and extraction starts a
 As a user, I review extracted values in a metric×date matrix (mirroring the live timeline), can edit any value (tagged `lab_import_edited`), and only what I confirm is saved.
 - AC1: Dedup: documents on `sourceFileName`, lab values on `(metric, recorded_at)` — re-uploading the same file is a no-op, not an error or duplicate.
 - AC2: Edited-at-review values carry the edited source for audit.
-- Tests: 🟡 one helper tested; dedup logic tested indirectly via store bulk-saves? ❌ mostly not. **Action: bulk-save dedup tests at store level (this pass).**
+- Tests: ✅ store-level bulk-save dedup (measurements + lab values, re-upload no-op) in `roadmap-store-data-safety.test.ts` (2026-08-07); ReviewTable UI itself still 🟡.
 
 ### US-14 · Document archive
 As a user, my uploaded reports/letters become organized markdown documents (+ original file when my cloud can hold it) that I can reopen in a lightbox.
@@ -146,11 +147,11 @@ As a mobile user, I get a tabbed layout (input/plan/chat) with CSS scroll-snap s
 
 ---
 
-## Coverage priorities (this pass, from stories × usage × risk)
+## Coverage priorities — 2026-08-07 pass: DONE
 
-1. **US-10/US-04/US-11 — RoadmapStore + SyncManager**: correctMeasurement, flush/hydration gate, deleteUserData, bulk-save dedup (US-13). This code guards user data with no server backstop.
-2. **US-03 — date-defaulting regression tests** for the wrong-date bug class.
-3. **US-07 — LDL-without-total explicit regression case.**
-4. **US-02 — BP/tooltip interaction fix + test** (top live friction).
+1. ✅ US-10/US-04/US-11/US-13 — RoadmapStore + SyncManager suites landed (16 tests) and **immediately caught the eraseEpoch-resurrection defect** (see US-11), fixed same day.
+2. ✅ US-03 — date-defaulting semantics pinned.
+3. ✅ US-07 — LDL-without-total already covered; verified.
+4. ✅ US-02 — BP dead-click + tooltip fixes shipped (collapsed-row value click, matrix shell focus, click-toggleable InfoTooltip, mobile fixed-bar clearance).
 
-Deferred consciously: cloud adapter unit tests (OAuth mocking heavy), chat UI, print, modal state machines.
+Still consciously deferred: cloud adapter unit tests (OAuth mocking heavy), chat UI, print, modal state machines, HealthTool hydration gate.

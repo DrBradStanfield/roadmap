@@ -75,11 +75,20 @@ export function migrateFile(
   return {
     ...(raw as Record<string, unknown>),
     schemaVersion: CURRENT_SCHEMA_VERSION,
+    // Spread rawMeta FIRST (rule 1 applies to meta too): rebuilding only the
+    // known fields silently dropped everything else — including `eraseEpoch`,
+    // which broke the "Delete All My Data" wholesale-win guarantee on every
+    // read (a stale device's flush resurrected erased data; US-11 regression
+    // tests in roadmap-store-data-safety.test.ts / sync-manager.test.ts).
     meta: {
+      ...rawMeta,
       createdAt: typeof rawMeta.createdAt === 'string' ? rawMeta.createdAt : base.meta.createdAt,
       updatedAt: typeof rawMeta.updatedAt === 'string' ? rawMeta.updatedAt : base.meta.updatedAt,
       lastDeviceId: typeof rawMeta.lastDeviceId === 'string' ? rawMeta.lastDeviceId : base.meta.lastDeviceId,
       lamport: typeof rawMeta.lamport === 'number' ? rawMeta.lamport : base.meta.lamport,
+      eraseEpoch: typeof rawMeta.eraseEpoch === 'number' && Number.isFinite(rawMeta.eraseEpoch)
+        ? rawMeta.eraseEpoch
+        : base.meta.eraseEpoch,
     },
     profile: {
       ...rawProfile,

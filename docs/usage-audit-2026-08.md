@@ -89,7 +89,7 @@ Meta-finding: 9 feedback emails in ~6 months, several containing real bugs — b
 
 1. **Fix the blood-pressure input dead-click friction** — 3 of 15 recorded sessions fought the `mmHg` control. Inspect hit-target/overlay; verify on live site + WebKit.
 2. **Make ⓘ tooltips reliably tappable** (Birth Month, age-based, units picker) — 4 sessions of dead clicks on info affordances.
-3. **Remove the upCart sticky button overlap** on the drstanfield roadmap page (theme/app conflict intercepting form clicks).
+3. ~~Remove the upCart sticky button overlap~~ **Already guarded** — `app-block.liquid:10` hides `#upCartStickyButton` + `#PBarNextFrameWrapper` on the roadmap page (found in the 2026-08-07 dead-click investigation; the recorded dead click predates or escaped the guard — verify on live). The real unguarded overlay was the mobile fixed "View My Plan" bar covering the last form rows — fixed 2026-08-07 (bottom padding).
 4. **Investigate `/en-pl/pages/roadmap`** — locale-prefixed paths appear to break an app-proxy fetch (JSON.parse on HTML). Check `PROXY_PATH` behavior under locale prefixes.
 5. **Complete the stale Subheading A/B test** (4 months running; A ahead at the edge of significance) and ship the winner.
 6. **Clean up microvitamin.com embeds** — 0 roadmap sessions in the sample; the pending post-split cleanup is confirmed safe to do.

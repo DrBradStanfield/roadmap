@@ -840,8 +840,17 @@ function BpInputCell({
   const wrapperClass = backfill
     ? `bt-cell-value bt-cell-backfill${pinned ? ' bt-cell-pinned' : ''}`
     : 'bt-cell-value bt-cell-input bt-cell-draft';
+  // The two BP inputs are ~35px wide inside a 91px mobile column — near-misses
+  // land on cell padding, the "/" separator, or the tick footer, all inert
+  // (dead-click cluster, 2026-08 audit / US-02). Route any click on those
+  // non-input parts to the systolic input; clicks ON an input are untouched
+  // (so aiming at diastolic still works).
+  const focusSysFromShell: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    if ((e.target as HTMLElement).tagName === 'INPUT') return;
+    cellRef.current?.querySelector('input')?.focus();
+  };
   return (
-    <div ref={cellRef} className={wrapperClass}>
+    <div ref={cellRef} className={wrapperClass} onClick={focusSysFromShell}>
       <div className="bt-vitals-bp-inputs">
         <input className={`bt-input${active ? ' bt-input-active' : ''}`} inputMode="numeric" placeholder="sys" size={1}
                value={sys} onChange={e => onSysChange(e.target.value)} onKeyDown={onKey} onBlur={onBlur}/>

@@ -148,6 +148,15 @@ input[type="number"] {
     padding: 0 0 16px;
   }
 
+  /* 76px bottom clearance while the fixed "See Your Personalized Plan" bar
+     (.mobile-view-plan-btn, ~60px tall at bottom:12px) is rendered — without it
+     the bar sits over the last form rows and intercepts taps meant for inputs
+     (2026-08 audit, US-02/US-20). Gated by HealthTool so the plan/chat tabs
+     don't pay a blank strip. */
+  .health-tool--plan-bar {
+    padding-bottom: 76px;
+  }
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1623,6 +1632,7 @@ input[type="number"] {
   text-align: left;
   font-weight: 500;
   white-space: nowrap;
+  cursor: pointer; /* whole value column expands the row (US-02 dead-click fix) */
 }
 
 .collapsed-field-unit {
@@ -1775,6 +1785,7 @@ input[type="number"] {
   position: absolute;
   left: 0;
   top: 100%;
+  max-width: calc(100vw - 32px); /* keep the 260px bubble on-screen on phones */
   z-index: 10;
   width: 260px;
   padding: 16px 12px 10px 12px;
@@ -1799,7 +1810,8 @@ input[type="number"] {
 }
 
 .bp-info-tooltip-wrap:hover .bp-info-tooltip,
-.bp-info-tooltip-wrap:focus-within .bp-info-tooltip {
+.bp-info-tooltip-wrap:focus-within .bp-info-tooltip,
+.bp-info-tooltip-wrap--open .bp-info-tooltip {
   display: block;
 }
 

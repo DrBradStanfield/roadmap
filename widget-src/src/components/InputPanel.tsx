@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { ColumnHeader } from './ColumnHeader';
+import { InfoTooltip } from './InfoTooltip';
 import { DocumentLightbox } from './DocumentLightbox';
 import { DOCUMENT_TYPE_LABELS, formatDocumentDate, HISTORY_PAGE_PATH, openHistoryLightbox } from '../lib/api';
 import { isLabArchiveDocument } from '../lib/archive-payloads';
@@ -670,7 +671,7 @@ export function InputPanel({
   };
 
   /** Shared BP data for collapsed and label rendering. */
-  const getBpPreviousData = (): { sysVal: string | number; diaVal: string | number; latestDate: string } | null => {
+  const getBpPreviousData = (): { sysVal: number; diaVal: number; latestDate: string } | null => {
     if (!isLoggedIn) return null;
     const sysMetric = FIELD_METRIC_MAP['systolicBp'];
     const diaMetric = FIELD_METRIC_MAP['diastolicBp'];
@@ -693,7 +694,7 @@ export function InputPanel({
     `Target: <${(inputs.birthYear && inputs.birthMonth && calculateAge(inputs.birthYear, inputs.birthMonth) >= 65) ? '130/80' : '120/80'} mmHg`;
 
   /** Render collapsed BP display. */
-  const renderCollapsedBp = (data: { sysVal: string | number; diaVal: string | number; latestDate: string }) => {
+  const renderCollapsedBp = (data: { sysVal: number; diaVal: number; latestDate: string }) => {
 
     return (
       <div className="health-field">
@@ -769,12 +770,9 @@ export function InputPanel({
           <div className="sex-height-row">
             <div className={`health-field${!inputs.sex ? ' field-attention' : ''}`}>
               <label>Sex
-                <span className="bp-info-tooltip-wrap" tabIndex={0}>
-                  <span className="bp-info-icon" aria-label="Why we ask for your sex">&#9432;</span>
-                  <span className="bp-info-tooltip">
-                    Used to calculate ideal body weight, kidney function, and screening programs.
-                  </span>
-                </span>
+                <InfoTooltip ariaLabel="Why we ask for your sex">
+                  Used to calculate ideal body weight, kidney function, and screening programs.
+                </InfoTooltip>
               </label>
               <div className="sex-toggle" role="radiogroup" aria-label="Sex">
                 <button
@@ -962,13 +960,10 @@ export function InputPanel({
         ) : (
           <div className="health-field">
             <label>Blood Pressure (mmHg)
-              <span className="bp-info-tooltip-wrap" tabIndex={0}>
-                <span className="bp-info-icon" aria-label="How to measure blood pressure">&#9432;</span>
-                <span className="bp-info-tooltip">
-                  Use a home blood pressure monitor or ask your doctor at your next visit.{' '}
-                  <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/monitoring-your-blood-pressure-at-home" target="_blank" rel="noopener noreferrer">Learn more &rarr;</a>
-                </span>
-              </span>
+              <InfoTooltip ariaLabel="How to measure blood pressure">
+                Use a home blood pressure monitor or ask your doctor at your next visit.{' '}
+                <a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/monitoring-your-blood-pressure-at-home" target="_blank" rel="noopener noreferrer">Learn more &rarr;</a>
+              </InfoTooltip>
             </label>
             {bpExpanded && bpLabel && (
               <span className="previous-reference">Previous: {bpLabel}</span>
@@ -1033,12 +1028,9 @@ export function InputPanel({
     <div className="health-field-group">
       <div className="health-field">
         <label htmlFor="birthMonth">Birth Month
-          <span className="bp-info-tooltip-wrap" tabIndex={0}>
-            <span className="bp-info-icon" aria-label="Why we ask for your birth date">&#9432;</span>
-            <span className="bp-info-tooltip">
-              Used to calculate age-based screening suggestions (cancer, bone density) and kidney function.
-            </span>
-          </span>
+          <InfoTooltip ariaLabel="Why we ask for your birth date">
+            Used to calculate age-based screening suggestions (cancer, bone density) and kidney function.
+          </InfoTooltip>
         </label>
         <select
           id="birthMonth"

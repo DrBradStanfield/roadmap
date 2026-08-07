@@ -1276,8 +1276,12 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     onProposeEdit: handleProposeEdit,
   };
 
+  // Bottom clearance only while the fixed "See Your Personalized Plan" bar is
+  // actually rendered (same condition as the button below) — an unconditional
+  // padding would leave a blank strip on the plan/chat tabs and stage 1.
+  const planBarVisible = isMobile && formStage >= 2 && activeTab === 'input';
   return (
-    <div className="health-tool">
+    <div className={`health-tool${planBarVisible ? ' health-tool--plan-bar' : ''}`}>
       {isMobile ? (
         <>
           <MobileTabBar activeTab={activeTab} onTabChange={setActiveTab} />
