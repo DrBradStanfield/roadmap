@@ -21,6 +21,29 @@
     // ship in the prod image) pulls vite -> esbuild@0.25.x. It is a build-time-only
     // binary, never invoked at runtime. REMOVE this entry once vite/@react-router/dev
     // resolve esbuild >=0.28.1.
-    "GHSA-gv7w-rqvm-qjhr"
+    "GHSA-gv7w-rqvm-qjhr",
+    //
+    // react-router 6.0.0–8.2.0 advisory batch (published ~2026-08-06, CI-red since).
+    // Fixed only in RR >=8.2.1 — a MAJOR upgrade this repo must canary-deploy as a
+    // dedicated task (the SSR dist/development redirect + ssr.noExternal machinery in
+    // vite.config.ts is 7.17-specific; see CLAUDE.md react-router gotcha). Per-advisory
+    // applicability (2026-08-07 review):
+    //  - GHSA-qwww-vcr4-c8h2 (high, RSC CSRF) + GHSA-h8fp-f39c-q6mh (RSC XSS): NOT
+    //    APPLICABLE — this app does not use RSC mode.
+    //  - GHSA-wrjc-x8rr-h8h6 (open redirect via backslash): admin-only surface behind
+    //    Shopify auth; no user-controlled navigation paths.
+    //  - GHSA-337j-9hxr-rhxg (deserializeErrors constructor injection): SSR hydration
+    //    of the embedded admin only; not reachable from the storefront widget.
+    //  - GHSA-chx6-hx7r-mcp5 (high, unauthenticated DoS via route matching): the one
+    //    real exposure (Fly hostname is reachable); impact bounded to CPU exhaustion +
+    //    health-check restart on a rate-limited, auto-restarting app. Accepted until
+    //    the upgrade.
+    // REMOVAL TRIGGER: the react-router >=8.2.1 migration (canary-deploy, re-verify the
+    // ssr.noExternal guard). Remove all five entries in that PR.
+    "GHSA-wrjc-x8rr-h8h6",
+    "GHSA-h8fp-f39c-q6mh",
+    "GHSA-337j-9hxr-rhxg",
+    "GHSA-chx6-hx7r-mcp5",
+    "GHSA-qwww-vcr4-c8h2"
   ]
 }
