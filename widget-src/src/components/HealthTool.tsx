@@ -1197,6 +1197,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     previousMeasurements,
     bloodTestHistory,
     vitalsHistory,
+    labValues: labValueHistory,
     onSaveBloodTestBatch: (date: string, values: Record<string, number>) =>
       handleSaveLongitudinal(date, values),
     onCorrectBloodTestValue: handleCorrectBloodTestValue,

@@ -141,6 +141,23 @@ const BLOG_INDEX: BlogIndexEntry[] = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf
 
 const VALID_HANDLES = new Set(BLOG_INDEX.map(e => e.handle));
 
+// Mirrors ROUTER_SUMMARY_MAX_CHARS + capSummary() in chat-router.server.ts.
+// The harness did NOT truncate until 2026-08-07, so it was rendering FULL
+// summaries while production rendered capped ones — every "baseline" number
+// measured a prompt production never sends. --summary-cap overrides it so
+// alternative caps can be A/B'd without editing the index.
+const SUMMARY_CAP = args.includes('--summary-cap') ? parseInt(getArg('--summary-cap', '150'), 10) : 150;
+
+function capSummary(s: string): string {
+  if (s.length <= SUMMARY_CAP) return s;
+  const cut = s.slice(0, SUMMARY_CAP);
+  for (const sep of ['. ', '; ', ', ', ' ']) {
+    const p = cut.lastIndexOf(sep);
+    if (p > SUMMARY_CAP * 0.6) return cut.slice(0, p).replace(/[ ,;.]+$/, '');
+  }
+  return cut.trimEnd();
+}
+
 // Mirrors repairHandle() in app/lib/chat-router.server.ts — strips a leading
 // `<type>-` when the remainder is a real handle (the router emits
 // `guideline-diet` for `diet`). Duplicated because tsx can't import the server
@@ -205,7 +222,7 @@ const ROUTER_INDEX_BLOCK: string = [...BLOG_INDEX]
     if (tr !== 0) return tr;
     return a.handle.localeCompare(b.handle);
   })
-  .map(e => `[${e.type ?? 'article'}] ${e.handle}: ${e.summary ?? e.title}`)
+  .map(e => `[${e.type ?? 'article'}] ${e.handle}: ${capSummary(e.summary ?? e.title ?? '')}`)
   .join('\n');
 
 // {{ENTRY_COUNT}} substitution must mirror chat-router.server.ts getRouterPrompt().

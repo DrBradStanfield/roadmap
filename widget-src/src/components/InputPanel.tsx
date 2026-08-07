@@ -6,7 +6,7 @@ import { DOCUMENT_TYPE_LABELS, formatDocumentDate, HISTORY_PAGE_PATH, openHistor
 import { isLabArchiveDocument } from '../lib/archive-payloads';
 import type { CorrectFn } from '../lib/matrix-save';
 import { blockBadNumericKeys, blockNonIntegerKeys, bpSysAdvance } from '../lib/blood-test-cell';
-import type { ApiDocument, ApiSupplement } from '../lib/api-types';
+import type { ApiDocument, ApiLabValue, ApiSupplement } from '../lib/api-types';
 
 /** Intercept a history link: lightbox on the standalone, normal nav on Shopify. */
 const interceptHistory = (metric: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -63,6 +63,7 @@ import { formatShortDate, MONTHS_FULL } from '../lib/constants';
 import { LOCAL_FIRST } from '../lib/build-flags';
 import { InlineDatePicker, getCurrentDateValue, type DateValue } from './DatePicker';
 import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline';
+import { AdditionalLabRows } from './AdditionalLabRows';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
 
@@ -118,6 +119,9 @@ interface InputPanelProps {
   /** Full vitals history (weight / waist / sys-BP / dia-BP). Same source
    *  as bloodTestHistory — just a different filter. */
   vitalsHistory: ApiMeasurement[];
+  /** Stored additional lab values (beyond the core 8) — read-only surfacing
+   *  beneath the matrix (US-21 phase 1). */
+  labValues: ApiLabValue[];
   onSaveBloodTestBatch: (date: string, values: Record<string, number>) => Promise<void>;
   // Click-to-correct handler for saved cells in the BloodTestTimeline matrix.
   onCorrectBloodTestValue?: CorrectFn;
@@ -176,7 +180,7 @@ function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) =
 export function InputPanel({
   inputs, onChange, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
-  isLoggedIn, previousMeasurements, bloodTestHistory, vitalsHistory, onSaveBloodTestBatch,
+  isLoggedIn, previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onSaveBloodTestBatch,
   onCorrectBloodTestValue,
   medications, onMedicationChange,
   screenings, onScreeningChange,
@@ -2377,6 +2381,7 @@ export function InputPanel({
       {formStage >= 3 && (
         <div className="section-card section-card--bt stage-reveal">
           {renderBloodTests()}
+          <AdditionalLabRows labValues={labValues}/>
         </div>
       )}
 
