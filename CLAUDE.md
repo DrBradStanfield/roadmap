@@ -573,6 +573,27 @@ Anthropic's benchmarked patterns (July 2026): a Sonnet executor with a rare Fabl
 - **Always Fable-level judgment** (main model or advisor, never a Sonnet worker deciding alone): clinical logic and evidence citations, the local-first merge semantics (`packages/health-core/src/merge.ts`), security rules, FHIR data-model changes.
 - **Do NOT set `CLAUDE_CODE_SUBAGENT_MODEL`** — it force-overrides every subagent (rank 1 in model resolution) and would downgrade the `fable-advisor` to the cheap model.
 
+## Development Pathway (story-driven — Brad, 2026-08-07)
+
+**Every behavior change flows through a user story.** The catalogue is [docs/user-stories.md](docs/user-stories.md) (source of truth; 20 stories with acceptance criteria, usage evidence, and test status). Its browser companion `docs/user-stories.html` is **generated** — after editing the .md, run `npx tsx scripts/build-user-stories-html.ts` in the same commit. Entry point for new threads remains `docs/architecture-v2.html` (how the system works) → user stories (what it must do for users) → this file (how to build/deploy).
+
+**Lane A — bug fix / change to existing behavior:**
+1. Find the story (US-xx) whose acceptance criteria the bug violates; if no AC covers it, add one — a bug without a violated AC means the spec was incomplete.
+2. Failing test citing the US-id → confirm it fails → fix → confirm it passes (existing bug-fix workflow).
+3. `/simplify` on the change.
+4. `npm run test:all` + build → deploy (both stores for widget changes) → **verify live**: Chrome DevTools MCP (desktop + mobile emulation) AND real WebKit for any layout/interaction change (`tools/webkit-verify-deadclicks.mjs` is the pattern; localhost/local build is NOT a sufficient gate — theme CSS and iOS WebKit bugs only reproduce live).
+5. Update the story's test-status line + regenerate the html.
+
+**Lane B — new feature:**
+1. **Write the story FIRST, before any code**: story sentence, acceptance criteria, epic placement in user-stories.md. The ACs are the spec and the test list.
+2. **Declare the usage signal in the story**: which `product_events` funnel event (or existing metric) will show whether the feature is used. If none fits, add one (event names in `packages/health-core/src/product-events.ts`, endpoint `api.events.ts`, client `trackProductEvent()`). A feature that can't be measured can't be evaluated by the weekly loop — reminders sat at 2 opt-ins for months because nothing measured it.
+3. Gate check before building: clinical logic → three-file sync rule (algorithm doc / evidence.ts / roadmap_text.html); merge semantics, security, FHIR shapes → Fable-level judgment (advisor if on Sonnet); new screening types → the 7-step checklist.
+4. Build with tests mapped to the ACs (each unit-testable AC gets a test citing the US-id; UI-only ACs get a live-verification step instead).
+5. Same as Lane A steps 3–5: `/simplify` → full suite → deploy → verify live on both surfaces that matter → update story + regenerate html.
+6. The weekly product-health loop (docs/product-health/) reports the feature's funnel numbers; adoption evidence feeds the next iteration or a deliberate kill decision.
+
+**No staging exists** — production is the acceptance environment. Keep changes small, deploy promptly after the suite is green, verify immediately, and lean on the funnel events + Clarity + Sentry to catch what verification missed.
+
 ## Development Rules
 
 - **Single branch, main only.** Don't create feature branches, don't open PRs, don't use `git worktree`. Work on `main`, commit directly, push when ready. The PR + squash-merge dance + worktrees has caused real problems (files reverted across branch switches, stale worktrees, accidental drift). When in doubt: `git checkout main`, no branches.

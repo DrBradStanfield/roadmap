@@ -2,7 +2,7 @@
 
 The user-perspective spec for every journey in the tool. Written 2026-08-07, grounded in the first usage audit ([usage-audit-2026-08.md](usage-audit-2026-08.md)); the architecture reference is [architecture-v2.html](architecture-v2.html). Each story carries acceptance criteria (AC), the **usage evidence** we have, and the **test status** against the current suites.
 
-**Maintenance contract:** when a feature's behavior changes, update its story here in the same commit. New tests should cite the story ID (e.g. `US-04`) in a comment. The weekly product-health loop reads this file to judge whether reported friction contradicts an AC.
+**Maintenance contract:** when a feature's behavior changes, update its story here in the same commit, then regenerate the browser companion: `npx tsx scripts/build-user-stories-html.ts` → `docs/user-stories.html` (linked from architecture-v2.html; never edit the html by hand). New tests cite the story ID (e.g. `US-04`) in a comment. New features follow CLAUDE.md → Development Pathway Lane B: story + acceptance criteria + a declared usage signal BEFORE code. The weekly product-health loop reads this file to judge whether reported friction contradicts an AC.
 
 Legend for test status: ✅ covered · 🟡 logic covered but UI/journey untested · ❌ untested.
 

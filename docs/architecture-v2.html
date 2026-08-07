@@ -270,6 +270,10 @@
   <a href="#migration">v1 → v2 teardown</a>
   <a href="#rejected">Rejected paths</a>
   <a href="#gotchas">Dangerous gotchas</a>
+
+  <h2>Product</h2>
+  <a href="user-stories.html">User stories ↗</a>
+  <a href="usage-audit-2026-08.md">Usage audit (2026-08) ↗</a>
 </nav>
 
 <main>
@@ -285,6 +289,8 @@
   <strong>What this document is:</strong> a single visual map of how the v2 app fits together — the three build flavours, the local-first storage spine, the merge engine, the cloud backends, the thin server that survives, and the data path that deliberately never touches Brad's infrastructure.
   <br><br>
   <strong>What it isn't:</strong> a changelog or a build log. It captures architectural <em>shape</em> as it exists in code today. For the dated <em>why</em> behind each decision and the step-by-step migration record, read the git history; for agent-facing build/deploy instructions, see <a href="../CLAUDE.md">CLAUDE.md</a>.
+  <br><br>
+  <strong>Companion — the product spec:</strong> <a href="user-stories.html">user-stories.html</a> is the user-perspective catalogue (20 stories: acceptance criteria, usage evidence, test status). This page answers <em>how the system works</em>; that one answers <em>what it must do for users</em>. Every feature or bug fix starts from a story there — the story-driven development pathway (Lane A fixes / Lane B new features, incl. the mandatory usage-signal declaration) is codified in <a href="../CLAUDE.md">CLAUDE.md → Development Pathway</a>. Grounding data: <a href="usage-audit-2026-08.md">the 2026-08 usage audit</a> and the weekly reports in <code>docs/product-health/</code>.
 </div>
 
 <div class="callout">
