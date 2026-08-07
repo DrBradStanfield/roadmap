@@ -3,7 +3,7 @@ title: "Pathway: Peripheral Neuropathy"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["peripheral neuropathy", "neuropathic pain", "tingling in feet", "numbness in hands", "burning feet", "pins and needles", "diabetic neuropathy", "B12 deficiency", "vitamin B12", "gabapentin", "pregabalin", "amitriptyline", "duloxetine", "nerve damage", "alcohol excess"]
-summary: "Tingling, numbness, burning feet; diabetes, B12, alcohol; amitriptyline, gabapentin, pregabalin, capsaicin."
+summary: "Peripheral neuropathy is damage to peripheral nerves causing numbness, tingling, burning pain, or weakness, most commonly from diabetes, vitamin B12 deficiency, or alcohol excess. Treatment focuses on addressing the underlying cause and managing pain with medications like amitriptyline, gabapentin, or topical capsaicin, along with careful foot care to prevent injuries. Always discuss with your doctor."
 ---
 
 # Peripheral Neuropathy

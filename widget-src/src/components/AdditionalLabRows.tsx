@@ -6,20 +6,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { groupLabValues, countLabValuePoints, type LabRowsIcon, type LabValueGroup } from '../lib/lab-rows';
 import { UnitChip } from './UnitChip';
 import { trackProductEvent } from '../lib/api';
-import { MONTHS_SHORT } from '../lib/constants';
+import { shortDateParts } from '../lib/constants';
 import type { ApiLabValue } from '../lib/api-types';
-
-const MONTH_LABELS = MONTHS_SHORT.map(m => m.label);
 
 function formatValue(v: number): string {
   return String(Math.round(v * 100) / 100);
 }
 
 function formatPointDate(iso: string): string {
-  const d = new Date(iso);
-  const day = d.getDate();
-  const mon = MONTH_LABELS[d.getMonth()];
-  const yr = String(d.getFullYear()).slice(-2);
+  const { day, mon, yr } = shortDateParts(new Date(iso));
   return `${day} ${mon} '${yr}`;
 }
 

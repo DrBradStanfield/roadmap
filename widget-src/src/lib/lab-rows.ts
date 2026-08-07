@@ -5,6 +5,7 @@
  * (see decisions in docs/user-stories.md § US-21).
  */
 import { LAB_GROUPS, resolveLabCatalogEntry, type LabGroupId } from '@roadmap/health-core';
+import { labValueLabel } from './lab-value-labels';
 import type { ApiLabValue } from './api-types';
 
 export type LabRowsGroupId = LabGroupId | 'other';
@@ -51,25 +52,6 @@ export interface LabValueGroup {
  *  ever fed a less-filtered source. */
 type LabValueRow = ApiLabValue & { status?: string };
 
-/** Resolve a reported metric name to a catalogue entry, tolerant of the
- *  underscore/space variance the LLM extractor produces (e.g. "free_t4"
- *  vs the catalogue alias "free t4"). Never match on raw text otherwise —
- *  always through the catalogue's key/label/alias lookup. */
-function resolveEntry(reportedName: string) {
-  return resolveLabCatalogEntry(reportedName) ?? resolveLabCatalogEntry(reportedName.replace(/_/g, ' '));
-}
-
-function titleCase(name: string): string {
-  return name
-    .trim()
-    .replace(/_/g, ' ')
-    .replace(/\s+/g, ' ')
-    .split(' ')
-    .filter(Boolean)
-    .map(w => (w.length <= 3 ? w.toUpperCase() : w[0].toUpperCase() + w.slice(1)))
-    .join(' ');
-}
-
 /** Group + series-ify stored lab values for read-only display. Entered-in-
  *  error rows are excluded; series are sorted oldest→newest; a series
  *  spanning more than one distinct unit is flagged `mixedUnits`. */
@@ -78,10 +60,10 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
 
   for (const row of rows) {
     if (row.status && row.status !== 'active') continue;
-    const entry = resolveEntry(row.metricName);
+    const entry = resolveLabCatalogEntry(row.metricName);
     const groupId: LabRowsGroupId = entry ? entry.group : 'other';
     const seriesKey = entry ? entry.key : row.metricName.trim().toLowerCase().replace(/\s+/g, '_');
-    const label = entry ? entry.label : titleCase(row.metricName);
+    const label = entry ? entry.label : labValueLabel(row.metricName);
 
     let groupMap = seriesByGroup.get(groupId);
     if (!groupMap) { groupMap = new Map(); seriesByGroup.set(groupId, groupMap); }

@@ -3,7 +3,7 @@ title: "Pathway: Thrombocytopenia (Low Platelets)"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["thrombocytopenia", "low platelets", "platelet count", "ITP", "idiopathic thrombocytopenic purpura", "bleeding", "bruising", "petechiae", "haematology", "MDS", "myelodysplastic syndrome", "DIC", "disseminated intravascular coagulation", "HIT", "heparin-induced thrombocytopenia", "gestational thrombocytopenia", "drug-induced thrombocytopenia"]
-summary: "Low platelets (ITP, B12 deficiency, drugs, liver disease): causes, red flags, testing, and management by platelet count."
+summary: "Clinical pathway for thrombocytopenia (low platelets): red flags requiring urgent haematology input, causes (spurious, reduced production, increased destruction), assessment approach including history, examination and investigations, and management by platelet count threshold. Always discuss with your doctor."
 ---
 
 # Thrombocytopenia (Low Platelets)

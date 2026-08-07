@@ -100,8 +100,16 @@ export const LAB_CATALOG: LabCatalogEntry[] = [
   { key: 'esr', label: 'ESR', group: 'inflammation', unit: 'mm/hr', aliases: ['erythrocyte sedimentation rate', 'sed rate'] },
 ];
 
-/** Resolve a report's test name (any casing/spelling) to a catalogue entry. */
+/** Resolve a report's test name (any casing/spelling) to a catalogue entry.
+ *  Tolerant of the underscore/space variance the LLM extractor produces
+ *  (e.g. "free_t4" vs the catalogue alias "free t4") — this is the single
+ *  resolver, so every consumer gets that normalization for free. */
 export function resolveLabCatalogEntry(reportedName: string): LabCatalogEntry | undefined {
-  const n = reportedName.trim().toLowerCase();
-  return LAB_CATALOG.find((e) => e.key === n || e.label.toLowerCase() === n || e.aliases.includes(n));
+  const raw = reportedName.trim().toLowerCase();
+  const spaced = raw.replace(/_/g, ' ');
+  return LAB_CATALOG.find((e) =>
+    e.key === raw || e.key === spaced ||
+    e.label.toLowerCase() === raw || e.label.toLowerCase() === spaced ||
+    e.aliases.includes(raw) || e.aliases.includes(spaced)
+  );
 }

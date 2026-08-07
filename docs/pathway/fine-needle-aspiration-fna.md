@@ -3,7 +3,7 @@ title: "Pathway: Fine Needle Aspiration (FNA)"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["fine needle aspiration", "fna", "biopsy", "lump", "lymphoma", "thyroid nodule", "sarcoma", "cytology", "pathology", "neck lump", "palpable mass"]
-summary: "Fine needle aspiration (FNA): lymphoma biopsy, thyroid nodule, ultrasound guidance, alternatives for sarcoma/children."
+summary: "Clinical guidance on when and how fine needle aspiration (FNA) is used: who should perform it, special rules for lymphoma, and when alternative pathways apply (thyroid nodules, suspected sarcoma, children). Always discuss with your doctor."
 ---
 
 # Fine Needle Aspiration (FNA)

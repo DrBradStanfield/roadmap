@@ -10188,7 +10188,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Easy bruising, nosebleeds, bleeding gums, red spots: haemophilia, vWD, thrombocytopenia, ITP; PFA-100; tranexamic acid."
+    "summary": "Clinical pathway for abnormal bleeding or bruising — covers bruises all over the body or for no reason, easy bruising, nosebleeds, bleeding gums, bleeding after a tooth is pulled, cuts that won't stop, and tiny red/purple spots on the skin: distinguishing mucocutaneous from internal bleeding, when to suspect a significant bleeding disorder, blood test investigation (FBC, coagulation screen, PFA-100, vWF), management including tranexamic acid use, and when to seek specialist or emergency input. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Abnormal Liver Function Tests",
@@ -10281,7 +10281,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Heavy periods, spotting between periods, clots, PCOS, fibroids, adenomyosis, Mirena, tranexamic acid, ultrasound, biopsy"
+    "summary": "Clinical pathway for abnormal uterine bleeding (AUB) in non-pregnant women of reproductive age — covers heavy periods (flooding, soaking through pads, passing clots), periods going on for weeks or that won't stop, bleeding between periods, spotting, and bleeding after sex: definitions, red flags, assessment approach, investigations including pelvic ultrasound and pipelle biopsy, and management options by cause. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Abortion for Fetal Anomalies or Genetic Disorders",
@@ -10511,7 +10511,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Abdominal pain red flags: appendicitis, AAA, ectopic pregnancy, peritonitis, bowel obstruction, renal colic, assessment."
+    "summary": "Clinical pathway for acute abdominal pain in adults (aged 15 and over): red flags requiring emergency care, assessment approach including history and examination, differential diagnosis by location and type, investigations, and management by cause. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Acute Abdominal Pain in Children",
@@ -10586,7 +10586,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Nosebleed, throat abscess, Ramsay Hunt, mastoiditis, malignant otitis: urgent ENT. Airway, bleeding, foreign body."
+    "summary": "Clinical pathway for acute ORL (ear, nose, and throat) and head and neck presentations in adults: when urgent specialist assessment is needed, red flag conditions, and conditions that require a different specialty. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Acute Angle-Closure Glaucoma",
@@ -11020,7 +11020,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Pelvic pain in women: ectopic pregnancy, miscarriage, PID, ovarian cyst, appendicitis, UTI, kidney stone, dysmenorrhoea"
+    "summary": "Clinical pathway for acute lower abdominal and pelvic pain in women: red flags requiring emergency care, differential diagnosis (gynaecological, urological, gastrointestinal causes), assessment approach, and management. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Acute Neurosurgery Assessment",
@@ -11588,7 +11588,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Broken bone: pain relief, immobilisation, red flags (pathological, non-accidental), osteoporosis, physiotherapy."
+    "summary": "General guidance for acute fracture and injury management: initial pain relief and immobilisation, history-taking, red flags (pathological fractures, non-accidental injury), follow-up including osteoporosis screening, physiotherapy, and return to activity. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Allergic Conjunctivitis",
@@ -11935,7 +11935,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Acute pain: paracetamol, NSAIDs, tramadol, morphine, oxycodone, naloxone, neuropathic treatments, entonox, constipation"
+    "summary": "Clinical pathway for acute pain in adults: step-up WHO-style pain ladder (paracetamol/NSAIDs → weak opioids → strong opioids), dosing for each drug class, naloxone use, neuropathic adjuvants (tricyclics, gabapentinoids), exit strategy, and when to escalate to hospital. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Anaphylaxis",
@@ -12085,7 +12085,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Heel pain, ankle pain, bunions, Morton's neuroma, flat foot: red flags, causes by location, investigations, management."
+    "summary": "Clinical pathway for ankle and foot pain in adults (non-injury): red flags, anatomical zone-based assessment, common causes by location (forefoot, midfoot, hindfoot), investigations, and management by diagnosis. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Ankle Fractures",
@@ -12283,7 +12283,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Aspirin/clopidogrel with tooth extraction: keep taking it. Stroke/MI risk > bleeding. Tranexamic mouth rinse, suturing."
+    "summary": "Clinical pathway for patients on antiplatelet medication undergoing dental procedures: key principle that stopping antiplatelet therapy is riskier than the bleeding risk from dental surgery, management of bleeding with haemostatic measures, and when to defer to specialist dental assessment. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Anxiety, Distress, and Agitation in Palliative Care",
@@ -12632,7 +12632,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Sciatica, back/neck, disc: cauda equina, weakness, bowel/bladder red flags. Mechanical vs radicular. NSAIDs, tricyclics."
+    "summary": "Clinical pathway for back and neck pain in adults: red flags requiring urgent assessment (cauda equina, spinal cord compression, infection, malignancy, fracture), assessment approach, pain classification (mechanical vs radicular vs serious pathology), and management including analgesia, self-management, and when to seek specialist input. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Bacterial Vaginosis",
@@ -13246,7 +13246,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Limping child or pseudoparalysis: septic arthritis, osteomyelitis, rheumatic fever, MRSA, red flags, emergency"
+    "summary": "Clinical pathway for bone and joint infections in children: red flags requiring emergency assessment, background on septic arthritis and osteomyelitis presentations, assessment approach, and management. These conditions require urgent specialist assessment — always discuss with your doctor."
   },
   {
     "title": "Pathway: Bone and Musculoskeletal Health in Spinal Cord Impairment (SCI)",
@@ -13351,7 +13351,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Bone pain, night pain, aching bones: cancer, sarcoma, infection, osteomyelitis, spinal infection, stress fracture, Paget"
+    "summary": "Clinical pathway for bone pain: red flags (neoplasm, infection, fracture), assessment approach including history and investigations, specific conditions to consider (sarcoma, osteomyelitis, Paget disease, stress fracture, spinal infection), and management by suspected cause. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Bow Legs (Genu Varum)",
@@ -13563,7 +13563,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Breast pain: cyclical/non-cyclical, cancer red flags, hormonal/musculoskeletal causes, diclofenac, evening primrose oil."
+    "summary": "Clinical pathway for breast pain (mastalgia) in adults: red flags for breast cancer, assessment approach, causes (cyclical, non-cyclical, musculoskeletal, extramammary), and conservative management options. Always discuss symptoms with your doctor."
   },
   {
     "title": "Pathway: Breast Screening and Surveillance",
@@ -14310,7 +14310,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Chest pain: ACS, PE, aortic dissection, pericarditis, GORD. Arm pain, sweating, shortness of breath, tearing. Red flags."
+    "summary": "Clinical pathway for chest pain in adults: red flags requiring emergency assessment, differential diagnosis (ACS, PE, pneumothorax, aortic dissection, pericarditis, musculoskeletal, GORD), assessment approach including ECG and cardiovascular risk factors, and management by cause. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Child Abuse and Neglect",
@@ -14719,7 +14719,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Chronic pain: neuropathic, fibromyalgia, CRPS, postherpetic neuralgia, red flags, pacing, CBT, specialist."
+    "summary": "Clinical pathway for chronic non-cancer pain (persistent pain lasting 3+ months): assessment framework covering pain types, red flags, CRPS diagnosis, psychosocial factors; and management emphasising non-pharmacological approaches (physical activity, psychosocial support, self-management), pharmacological options, and when specialist referral is needed. Always discuss your situation with your doctor."
   },
   {
     "title": "Pathway: Chronic Pelvic Pain",
@@ -14756,7 +14756,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Chronic pelvic pain: endometriosis, adenomyosis, vulvodynia, interstitial cystitis, pelvic floor, CBT, amitriptyline"
+    "summary": "Clinical pathway for chronic pelvic pain in women: red flags, common contributing causes (gynaecological, urological, gastrointestinal, musculoskeletal, neurological, psychological), assessment approach, and management including non-pharmacological strategies, medications, and flare management. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Chronic Red Eye",
@@ -15107,7 +15107,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Combined oral contraceptive pill: contraindications, VTE, acne, breakthrough bleeding, dysmenorrhoea, PCOS, missed pills"
+    "summary": "Clinical pathway for prescribing and managing the combined oral contraceptive pill (COC): contraindications including absolute (UKMEC 4) and relative (UKMEC 3), assessment steps, pill selection, starting methods, side-effect management, and when to stop. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Community Acquired Pneumonia (CAP) in Adults",
@@ -15302,7 +15302,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Constipation, hard stools, straining: laxatives, medication-induced, dyssynergic defecation, pelvic floor dysfunction"
+    "summary": "Clinical pathway for constipation in adults: red flags to watch for, how doctors assess and classify constipation, lifestyle measures, and the full laxative treatment ladder. Always discuss symptoms and treatment with your doctor."
   },
   {
     "title": "Pathway: Constipation in Children",
@@ -15781,7 +15781,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Child cough: red flags, asthma, croup (barking), pertussis (whooping), foreign body, TB, habit cough, tracheomalacia"
+    "summary": "Clinical pathway for cough in children: red flags requiring emergency assessment, differential diagnosis (asthma, croup, pertussis, post-viral, inhaled foreign body, tuberculosis, psychogenic cough), assessment approach, and management by cause. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Cough in Palliative Care",
@@ -15908,7 +15908,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "COVID-19 red flags, when to call 111, Paxlovid, isolation 5 days, PIMS-TS, Kawasaki, long COVID, reinfection, rebound"
+    "summary": "Clinical pathway for community management of COVID-19 in adults and children: severity assessment, red flags requiring emergency care, risk factors for complications, antiviral eligibility, symptom management, isolation guidance, and when to seek further review. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Croup",
@@ -16402,7 +16402,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Dengue in Asia/Pacific travellers: fever, eye pain, rash, bruising, low platelets, shock; NS1 antigen; supportive care."
+    "summary": "Clinical pathway for dengue fever in returning travellers: background, disease phases (febrile/critical/recovery), symptoms and warning features, risk factors for severe disease, investigations (NS1Ag, FBC, LFTs), supportive management, monitoring, and when to escalate. Dengue is a notifiable condition. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Dental Trauma",
@@ -16468,7 +16468,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Depression: suicidal thoughts, PHQ-9, SSRIs (sertraline, escitalopram), venlafaxine, mirtazapine, CBT, older adults"
+    "summary": "Clinical pathway for depression in adults aged 18 and over: red flags (suicidality), screening with PHQ-2 and PHQ-9, severity-based management (lifestyle, therapy, antidepressants), monitoring, and when specialist referral is needed. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Depression in Children and Youth",
@@ -17209,7 +17209,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Dyspnoea in MND/ALS: respiratory assessment, non-invasive ventilation (BiPAP), morphine, benzodiazepines, end-of-life"
+    "summary": "Clinical pathway for managing breathlessness (dyspnoea) in motor neurone disease (MND): assessment of respiratory function and reversible causes, non-pharmacological strategies, and stepwise pharmacological management including morphine and benzodiazepines. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Dyspnoea in Palliative Care",
@@ -17287,7 +17287,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Shortness of breath: COPD, asthma, heart failure, PE, anxiety; spirometry, NT-proBNP, red flags, breathing techniques"
+    "summary": "Clinical pathway for dyspnoea (shortness of breath) in adults: red flags, differential diagnosis (COPD, asthma, heart failure, PE, pneumothorax, anaemia, breathing pattern disorder), assessment including spirometry and NT-proBNP, and management by cause. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Ear Anomalies",
@@ -18344,7 +18344,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Always tired? Causes: anaemia, thyroid, depression, sleep apnoea, ME/CFS, Long COVID. Post-exertional malaise. Tests."
+    "summary": "Clinical pathway for fatigue in adults: red flags (unexplained weight loss, night sweats), differential diagnosis (anaemia, hypothyroidism, depression, sleep apnoea, diabetes, cancer), investigations, and management. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Febrile Illness in Children",
@@ -18499,7 +18499,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Fever after travel: malaria, dengue, typhoid, Zika, chikungunya, leptospirosis, rickettsial, Lyme, hepatitis A"
+    "summary": "Clinical pathway for fever after overseas travel: red flags requiring emergency care, detailed travel history and exposure assessment, disease-specific investigations, and management by diagnosis including drug treatments. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Fibromyalgia Diagnostic Criteria",
@@ -18546,7 +18546,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Fine needle aspiration (FNA): lymphoma biopsy, thyroid nodule, ultrasound guidance, alternatives for sarcoma/children."
+    "summary": "Clinical guidance on when and how fine needle aspiration (FNA) is used: who should perform it, special rules for lymphoma, and when alternative pathways apply (thyroid nodules, suspected sarcoma, children). Always discuss with your doctor."
   },
   {
     "title": "Pathway: Finger Dislocations",
@@ -22407,7 +22407,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Endometrial cancer follow-up: vaginal bleeding, pelvic mass, lymphoedema, menopausal symptoms."
+    "summary": "Clinical pathway for general practice follow-up of patients after low-risk endometrial cancer treatment. Covers assessment at 6 and 18 months, symptoms to watch for, warning signs requiring urgent review, and management of psychosocial and menopausal concerns. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Lower Urinary Tract Symptoms in Men (LUTS)",
@@ -22586,7 +22586,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Malaria in returned traveller: fever, prophylaxis (doxycycline), symptoms, severe malaria red flags, specialist referral"
+    "summary": "Clinical pathway for malaria in returned travellers: always consider malaria in any febrile patient who has returned from an endemic area. Covers prophylaxis for travellers, assessment for severe malaria, clinical presentation, investigations, and management. All suspected cases require specialist infectious diseases assessment — treatment is only available in hospital. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Malignant Spinal Cord Compression",
@@ -22916,7 +22916,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Nerve pain, fibromyalgia, arthritis; gabapentin, pregabalin, nortriptyline, paracetamol, NSAIDs; not opioids"
+    "summary": "Clinical guidance on medications used in chronic non-cancer pain: drug selection by pain type (nociceptive, neuropathic, nociplastic), dosing principles, safety considerations, and the limited role of opioids. Always discuss treatment options with your doctor."
   },
   {
     "title": "Pathway: Medications in Pregnancy and Breastfeeding",
@@ -23099,7 +23099,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Hot flushes, night sweats: MHT regimens (Utrogestan, Mirena, estradiol patch), breast cancer, VTE, cardiovascular risk"
+    "summary": "Clinical pathway for menopause hormone therapy (MHT): who is a candidate, contraindications, choice of regimen by menopausal status and uterine anatomy, estrogen and progestogen options, risk-benefit discussion (breast cancer, VTE, cardiovascular), monitoring, and when to consider stopping. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Metabolic Syndrome (Insulin Resistance Syndrome)",
@@ -23182,7 +23182,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Ball of foot pain (metatarsalgia): Morton's neuroma, stress fracture, footwear, orthotics, NSAIDs, paracetamol, podiatry"
+    "summary": "Clinical pathway for metatarsalgia (pain in the ball of the foot): causes including Morton's neuroma and stress fracture, assessment approach, and stepwise management from footwear changes and padding through to podiatry and specialist referral. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Metatarsus Adductus",
@@ -23546,7 +23546,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "ME/CFS: fatigue, post-exertional malaise, unrefreshing sleep, POTS; amitriptyline, fludrocortisone, propranolol; pacing."
+    "summary": "Clinical pathway for ME/CFS: red flags, IOM diagnostic criteria (substantial fatigue >6 months, post-exertional malaise, unrefreshing sleep, cognitive impairment or orthostatic intolerance), assessment approach, and management including pacing, sleep, orthostatic intolerance, pain, and psychological support. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Myelodysplastic Neoplasms",
@@ -23814,7 +23814,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Neck lumps: cancer red flags, thyroid nodule, goitre, salivary gland, branchial cyst, thyroglossal cyst, when urgent"
+    "summary": "Clinical pathway for neck lumps in adults (age ≥15): red flags for head and neck cancer, background on common causes, assessment approach, and management by likely diagnosis. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Neck Lumps in Children",
@@ -24404,7 +24404,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Ibuprofen, naproxen heartburn: stomach pain, acid reflux, GI bleed risk, PPI, COX-2, H. pylori, when to stop"
+    "summary": "Clinical pathway for dyspepsia, heartburn, and acid reflux (GORD/GERD) — covers stomach burning after meals, waking up at night with acid burning the throat, lump-in-throat feeling after eating, acid coming up or bitter taste, burning chest after food, and dyspepsia in people taking NSAIDs (ibuprofen, naproxen, diclofenac): red flags, GI risk stratification, when to add a PPI, when to investigate for H. pylori, and when to refer. Always discuss changes to your medications with your doctor."
   },
   {
     "title": "Pathway: Obsessive Compulsive Disorder (OCD)",
@@ -24830,7 +24830,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Spinal cord injury nerve pain: gabapentin, pregabalin, nortriptyline, atypical presentations"
+    "summary": "Clinical guidance for assessing and managing pain in spinal cord impairment: musculoskeletal, neuropathic, and spasticity-related pain. Pain presentation in SCI can be atypical. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Pain Management in Palliative Care",
@@ -25238,7 +25238,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Tingling, numbness, burning feet; diabetes, B12, alcohol; amitriptyline, gabapentin, pregabalin, capsaicin."
+    "summary": "Peripheral neuropathy is damage to peripheral nerves causing numbness, tingling, burning pain, or weakness, most commonly from diabetes, vitamin B12 deficiency, or alcohol excess. Treatment focuses on addressing the underlying cause and managing pain with medications like amitriptyline, gabapentin, or topical capsaicin, along with careful foot care to prevent injuries. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Permanent Contraception",
@@ -25300,7 +25300,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Persistent wet cough in children: protracted bacterial bronchitis, bronchiectasis, cystic fibrosis, TB, amoxicillin"
+    "summary": "Clinical pathway for persistent wet cough in children lasting more than 4 weeks: assessment approach, likely diagnoses (protracted bacterial bronchitis, bronchiectasis, cystic fibrosis, TB), antibiotic management, and when to refer. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Perthes Disease",
@@ -25388,7 +25388,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Whooping cough: coughing fits, inspiratory whoop, apnoea, cyanosis; azithromycin, isolation, prophylaxis, vaccination."
+    "summary": "Clinical pathway for pertussis (whooping cough): red flags requiring emergency assessment, background on transmission and risk, assessment of characteristic symptoms and contacts, antibiotic treatment (azithromycin first-line), isolation requirements, close contact prophylaxis, and prevention through vaccination. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Physical Activity — Adults",
@@ -25542,7 +25542,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Morning heel pain: plantar fasciitis, steroid injection, orthotics, stretching, heel spurs, tarsal tunnel."
+    "summary": "Clinical pathway for plantar fasciitis: background, risk factors, assessment including differential diagnosis, and conservative through procedural management options. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Pneumococcal Vaccination",
@@ -25784,7 +25784,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Bleeding after sex: cervical ectropion, cervicitis, cervical cancer, chlamydia, STI screening, HPV, colposcopy."
+    "summary": "Clinical pathway for post-coital bleeding (vaginal bleeding within 24 hours of intercourse): red flags, possible causes including cervical, infectious, and traumatic, assessment approach, and management. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Post-exposure Prophylaxis for HIV (PEP)",
@@ -25936,7 +25936,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Postherpetic neuralgia (PHN): amitriptyline, gabapentin, pregabalin, capsaicin; burning dermatome; vaccination, age 50+"
+    "summary": "Clinical pathway for postherpetic neuralgia: background on this common shingles complication, risk factors, assessment of nerve pain along a dermatome, and management options including oral medications (TCAs, gabapentinoids, anticonvulsants) and topical agents (capsaicin). Most cases are managed in primary care. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Postmenopausal Bleeding",
@@ -25976,7 +25976,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Postmenopausal bleeding: endometrial cancer, ultrasound, thickness, pipelle biopsy, tamoxifen, vaginal atrophy, estriol."
+    "summary": "Clinical pathway for postmenopausal bleeding: background, possible causes, assessment approach, investigation with pelvic ultrasound, and management based on endometrial thickness and biopsy results. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Postoperative Urologic Complications",
@@ -27372,7 +27372,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Strep causing joint pain, heart damage, jerky movements; penicillin injections; high risk in Māori and Pacific children."
+    "summary": "Clinical pathway for acute rheumatic fever (ARF) and rheumatic heart disease (RHD): red flags, high-risk groups, assessment including clinical features and diagnostic approach, and management including secondary prophylaxis with benzathine penicillin. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Rhinosinusitis",
@@ -27592,7 +27592,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Scrotal lump: torsion, cancer, hydrocele, varicocele, epididymitis, hernia, cyst; red flags, physical exam, management."
+    "summary": "Clinical pathway for scrotal lumps in adults (aged 15+): red flags requiring emergency assessment, differential diagnosis including testicular torsion, testicular cancer, hydrocele, epididymal cyst, varicocele, and hernia, plus assessment approach and management by cause. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Scrotal Pain and Swelling in Children",
@@ -27968,7 +27968,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Shin pain: splints (MTSS), stress fracture, compartment syndrome, tibialis; rest, orthotics, physiotherapy."
+    "summary": "Clinical pathway for shin pain in adults: causes (shin splints, stress fracture, exertional compartment syndrome, tibialis posterior dysfunction), assessment approach, and management by diagnosis. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Short and Tall Stature in Children",
@@ -28080,7 +28080,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Shoulder pain: rotator cuff, frozen shoulder, impingement, polymyalgia rheumatica, red flags, dislocation, injection."
+    "summary": "Clinical pathway for shoulder pain in adults: red flags, differential diagnosis (rotator cuff, frozen shoulder, impingement, AC joint, glenohumeral osteoarthritis), assessment approach, and management by cause including analgesia, physiotherapy, and steroid injections. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Silica Exposure",
@@ -28367,7 +28367,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Soft tissue lump red flags, sarcoma vs lipoma, when to see doctor, ultrasound, excision biopsy, ganglion, growing lump"
+    "summary": "Clinical pathway for soft tissue lumps in adults (trunk and limbs, age ≥15): red flags for sarcoma, assessment approach including history, examination and imaging, and management by risk level. Always discuss new or changing lumps with your doctor."
   },
   {
     "title": "Pathway: Sore Throat",
@@ -28394,7 +28394,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Strep throat, tonsillitis, pharyngitis: GAS, rheumatic fever/ARF risk, penicillin, amoxicillin, quinsy"
+    "summary": "Clinical pathway for sore throat including tonsillitis, quinsy, and pharyngitis: red flags for emergency care, assessment including rheumatic fever risk, antibiotic treatment criteria and drug choices, and when to seek specialist input. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Spasticity in Spinal Cord Impairment",
@@ -29323,7 +29323,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Low platelets (ITP, B12 deficiency, drugs, liver disease): causes, red flags, testing, and management by platelet count."
+    "summary": "Clinical pathway for thrombocytopenia (low platelets): red flags requiring urgent haematology input, causes (spurious, reduced production, increased destruction), assessment approach including history, examination and investigations, and management by platelet count threshold. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Thrombocytosis (High Platelets)",
@@ -31179,7 +31179,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Wrist fractures: Colles', Smith's, scaphoid, Barton's, Chauffeur's; FOOSH; X-ray, when to refer orthopaedic specialist."
+    "summary": "Clinical pathway for wrist fractures in adults: fracture types (Colles', Smith's, scaphoid, Barton's, Chauffeur's), assessment, imaging, management by fracture type, and when to discuss urgent orthopaedic review with your doctor."
   },
   {
     "title": "Pathway: Wrist Pain in Adults",
@@ -31225,7 +31225,7 @@
     ],
     "publishedAt": "",
     "type": "pathway",
-    "summary": "Wrist pain: carpal tunnel, de Quervain tenosynovitis, scaphoid fracture, TFCC, osteoarthritis, tingling, numbness."
+    "summary": "Clinical pathway for wrist pain in adults: red flags, history and examination approach, differential diagnosis by anatomical location (radial, ulnar, central, multiple), imaging guidance, and management by cause. Always discuss with your doctor."
   },
   {
     "title": "Pathway: Abdominal X-ray (AXR)",

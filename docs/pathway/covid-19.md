@@ -3,7 +3,7 @@ title: "Pathway: COVID-19"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["covid", "covid-19", "sars-cov-2", "coronavirus", "antiviral", "paxlovid", "nirmatrelvir", "molnupiravir", "isolation", "quarantine", "omicron", "long covid", "pims-ts", "kawasaki", "reinfection", "rebound"]
-summary: "COVID-19 red flags, when to call 111, Paxlovid, isolation 5 days, PIMS-TS, Kawasaki, long COVID, reinfection, rebound"
+summary: "Clinical pathway for community management of COVID-19 in adults and children: severity assessment, red flags requiring emergency care, risk factors for complications, antiviral eligibility, symptom management, isolation guidance, and when to seek further review. Always discuss with your doctor."
 ---
 
 # COVID-19

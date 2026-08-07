@@ -35,6 +35,11 @@ describe('lab catalogue integrity (US-21)', () => {
     expect(resolveLabCatalogEntry('not a real test')).toBeUndefined();
   });
 
+  it('resolves underscore-vs-space LLM extractor variance (free_t4 -> ft4)', () => {
+    expect(resolveLabCatalogEntry('free_t4')?.key).toBe('ft4');
+    expect(resolveLabCatalogEntry('vitamin_d')?.key).toBe('vitamin_d');
+  });
+
   it('every group has at least one entry', () => {
     for (const g of LAB_GROUPS) {
       expect(LAB_CATALOG.some((e) => e.group === g.id)).toBe(true);

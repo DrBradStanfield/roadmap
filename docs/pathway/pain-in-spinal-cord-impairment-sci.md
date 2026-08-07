@@ -3,7 +3,7 @@ title: "Pathway: Pain in Spinal Cord Impairment (SCI)"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["spinal cord injury", "sci", "neuropathic pain", "spasticity pain", "musculoskeletal pain", "gabapentin", "pregabalin", "tricyclic antidepressants", "nortriptyline", "syrinx", "chronic pain", "spinal cord impairment", "amitriptyline", "post-SCI syrinx", "syringomyelia", "visceral pain", "paralysis pain", "nerve pain after spinal injury", "above-level pain", "at-level pain", "below-level pain", "atypical pain presentation", "wheelchair user pain", "autonomic dysreflexia pain", "central sensitization", "pressure injury pain", "burning pain paralysis", "pain can't feel legs", "spinal injury muscle spasms", "pain after spinal cord injury", "pain with no sensation", "shoulder pain wheelchair", "pain below injury level", "syrinx symptoms", "new pain after sci", "sci pain medication", "pain management spinal injury", "incomplete spinal cord injury pain"]
-summary: "Spinal cord injury nerve pain: gabapentin, pregabalin, nortriptyline, atypical presentations"
+summary: "Clinical guidance for assessing and managing pain in spinal cord impairment: musculoskeletal, neuropathic, and spasticity-related pain. Pain presentation in SCI can be atypical. Always discuss with your doctor."
 ---
 
 # Pain in Spinal Cord Impairment (SCI)

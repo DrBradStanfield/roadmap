@@ -3,7 +3,7 @@ title: "Pathway: Bone and Joint Infections in Children"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["septic arthritis", "osteomyelitis", "bone infection", "joint infection", "children", "paediatric", "limp", "pseudoparalysis", "rheumatic fever", "spondylodiscitis", "MRSA", "child limping", "joint pain children", "bone pain children", "swollen joint child"]
-summary: "Limping child or pseudoparalysis: septic arthritis, osteomyelitis, rheumatic fever, MRSA, red flags, emergency"
+summary: "Clinical pathway for bone and joint infections in children: red flags requiring emergency assessment, background on septic arthritis and osteomyelitis presentations, assessment approach, and management. These conditions require urgent specialist assessment — always discuss with your doctor."
 ---
 
 # Bone and Joint Infections in Children

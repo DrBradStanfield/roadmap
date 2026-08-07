@@ -3,7 +3,7 @@ title: "Pathway: Constipation in Adults"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["constipation", "bowel", "laxatives", "hard stool", "infrequent stools", "impaction", "faecal impaction", "macrogol", "osmotic laxative", "stimulant laxative", "bulk forming", "stool softener", "dyssynergic defecation", "pelvic floor", "bowel habit", "bristol stool chart", "overflow diarrhoea", "haemorrhoids", "anal fissure", "IBS", "irritable bowel syndrome", "can't poo", "can't go to the toilet", "straining on the toilet", "hard poo", "stools like rocks", "no bowel movement", "blocked bowel", "trouble passing stools", "poo won't come out", "incomplete emptying", "feeling of incomplete emptying", "not pooing enough", "going to the toilet less often", "infrequent bowel movements", "stomach bloating", "haven't pooed in days", "trouble pooping", "can't go number two", "really straining to go", "belly feels full and blocked", "nothing comes out", "pushing really hard on the toilet", "dry hard pellets", "painful to poo", "backed up"]
-summary: "Constipation, hard stools, straining: laxatives, medication-induced, dyssynergic defecation, pelvic floor dysfunction"
+summary: "Clinical pathway for constipation in adults: red flags to watch for, how doctors assess and classify constipation, lifestyle measures, and the full laxative treatment ladder. Always discuss symptoms and treatment with your doctor."
 ---
 
 # Constipation in Adults

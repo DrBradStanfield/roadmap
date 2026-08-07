@@ -3,7 +3,7 @@ title: "Pathway: Plantar Fasciitis"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["plantar fasciitis", "heel pain", "plantar fascia", "calcaneus", "foot pain", "heel spur", "arch pain", "podiatry", "physiotherapy", "steroid injection", "orthotics", "stretching"]
-summary: "Morning heel pain: plantar fasciitis, steroid injection, orthotics, stretching, heel spurs, tarsal tunnel."
+summary: "Clinical pathway for plantar fasciitis: background, risk factors, assessment including differential diagnosis, and conservative through procedural management options. Always discuss with your doctor."
 ---
 
 # Plantar Fasciitis

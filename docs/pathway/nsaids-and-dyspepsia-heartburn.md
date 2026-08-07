@@ -3,7 +3,7 @@ title: "Pathway: NSAIDs and Dyspepsia / Heartburn"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["nsaid", "nsaids", "dyspepsia", "heartburn", "ibuprofen", "anti-inflammatory", "ppi", "proton pump inhibitor", "omeprazole", "pantoprazole", "cox-2", "celecoxib", "stomach pain", "gastric ulcer", "peptic ulcer", "gi bleed", "gastrointestinal", "helicobacter pylori", "aspirin", "naproxen", "diclofenac", "heartburn after meals", "acid reflux", "burning in chest", "sour taste in mouth", "regurgitation", "indigestion after eating", "food coming back up", "burning throat", "gerd", "gord", "reflux", "stomach burning", "acid in throat", "bitter taste", "stomach upset after ibuprofen", "acid indigestion", "waking up with heartburn", "reflux at night", "lump in throat feeling", "chronic cough from acid", "nausea after eating", "bloating after meals", "water brash", "chest burning after eating", "acid coming up", "pressure in chest after food", "too much acid in stomach"]
-summary: "Ibuprofen, naproxen heartburn: stomach pain, acid reflux, GI bleed risk, PPI, COX-2, H. pylori, when to stop"
+summary: "Clinical pathway for dyspepsia, heartburn, and acid reflux (GORD/GERD) — covers stomach burning after meals, waking up at night with acid burning the throat, lump-in-throat feeling after eating, acid coming up or bitter taste, burning chest after food, and dyspepsia in people taking NSAIDs (ibuprofen, naproxen, diclofenac): red flags, GI risk stratification, when to add a PPI, when to investigate for H. pylori, and when to refer. Always discuss changes to your medications with your doctor."
 ---
 
 # NSAIDs and Dyspepsia / Heartburn

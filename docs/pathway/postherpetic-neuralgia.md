@@ -3,7 +3,7 @@ title: "Pathway: Postherpetic Neuralgia"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["postherpetic neuralgia", "PHN", "shingles", "herpes zoster", "nerve pain", "neuropathic pain", "gabapentin", "pregabalin", "amitriptyline", "nortriptyline", "capsaicin", "dermatome", "burning pain"]
-summary: "Postherpetic neuralgia (PHN): amitriptyline, gabapentin, pregabalin, capsaicin; burning dermatome; vaccination, age 50+"
+summary: "Clinical pathway for postherpetic neuralgia: background on this common shingles complication, risk factors, assessment of nerve pain along a dermatome, and management options including oral medications (TCAs, gabapentinoids, anticonvulsants) and topical agents (capsaicin). Most cases are managed in primary care. Always discuss with your doctor."
 ---
 
 # Postherpetic Neuralgia

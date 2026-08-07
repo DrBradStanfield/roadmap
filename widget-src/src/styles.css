@@ -5141,6 +5141,155 @@ input[type="number"] {
 }
 
 /* ============================================================================
+ * AdditionalLabRows (US-21 phase 1) — grouped, collapsed-by-default read-only
+ * rows for stored labValues beyond the core 8. Sits inside `.section-card--bt`
+ * (which zeros the card's own padding for the matrix above), so this block
+ * supplies its own inset. Reuses the `.bt-unit-chip` look, so the `--bt-ink-*`
+ * scale is redeclared here — this renders as a sibling of `.bt-timeline`, not
+ * a descendant, so it can't inherit that scope's custom properties.
+ * ============================================================================ */
+.alr-wrap {
+  --bt-ink-50: #f6f7f8;
+  --bt-ink-100: #eceef0;
+  --bt-ink-200: #d7dbdf;
+  --bt-ink-400: #7b858e;
+  --bt-ink-500: #5b6670;
+  --bt-ink-700: #2b3036;
+  border-top: 1px solid var(--bt-ink-100);
+  padding: 4px 16px 8px;
+}
+
+.alr-group {
+  border-bottom: 1px solid var(--bt-ink-100);
+}
+.alr-group:last-child {
+  border-bottom: none;
+}
+
+.alr-group-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: var(--bt-ink-500);
+}
+.alr-group-header:hover {
+  color: var(--bt-ink-700);
+}
+
+.alr-group-icon {
+  display: inline-flex;
+  color: var(--bt-ink-400);
+  flex-shrink: 0;
+}
+.alr-group-header:hover .alr-group-icon {
+  color: var(--bt-ink-500);
+}
+
+.alr-group-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+.alr-group-count {
+  font-size: 10px;
+  color: var(--bt-ink-400);
+  background: var(--bt-ink-50);
+  border: 1px solid var(--bt-ink-200);
+  border-radius: 999px;
+  padding: 0px 6px;
+  line-height: 1.5;
+}
+
+.alr-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.alr-chevron--open {
+  transform: rotate(180deg);
+}
+
+.alr-group-body {
+  padding: 0 2px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alr-series-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.alr-series-label-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.alr-series-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bt-ink-700);
+}
+
+.alr-series-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.alr-series-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.alr-point {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+}
+
+.alr-point-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bt-ink-700);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.alr-point-unit {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--bt-ink-400);
+  margin-left: 3px;
+}
+
+.alr-point-date {
+  font-size: 9px;
+  color: var(--bt-ink-400);
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+.alr-mixed-note {
+  font-size: 10px;
+  color: var(--color-warning);
+  margin: 0;
+}
+
+/* ============================================================================
    StartingInfoVitals — per-metric matrix rows in the Starting Info card.
    Reuses all `.bt-*` cell classes from the BloodTestTimeline matrix; only
    adds the per-row container, the floating Save button, the date+icon

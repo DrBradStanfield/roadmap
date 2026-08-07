@@ -3,7 +3,7 @@ title: "Pathway: Acute Abdominal Pain in Adults"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["abdominal pain","acute abdomen","stomach pain","belly pain","aortic aneurysm","appendicitis","peritonitis","ectopic pregnancy","bowel obstruction","pancreatitis","cholecystitis","renal colic","diverticulitis","gastroenteritis","sepsis","surgical abdomen","tummy ache","severe stomach ache","abdominal cramps","stomach hurts","belly hurts"]
-summary: "Abdominal pain red flags: appendicitis, AAA, ectopic pregnancy, peritonitis, bowel obstruction, renal colic, assessment."
+summary: "Clinical pathway for acute abdominal pain in adults (aged 15 and over): red flags requiring emergency care, assessment approach including history and examination, differential diagnosis by location and type, investigations, and management by cause. Always discuss with your doctor."
 ---
 
 # Acute Abdominal Pain in Adults

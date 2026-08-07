@@ -3,7 +3,7 @@ title: "Pathway: Depression in Adults and Older Persons"
 type: "pathway"
 tags: ["Guideline"]
 keywords: ["depression", "antidepressants", "PHQ-9", "PHQ-2", "SSRI", "sertraline", "escitalopram", "citalopram", "fluoxetine", "paroxetine", "venlafaxine", "mirtazapine", "mental health", "suicidality", "CBT", "cognitive behavioural therapy", "mood", "mild depression", "moderate depression", "severe depression", "older adults", "hyponatraemia", "serotonin syndrome", "QT prolongation"]
-summary: "Depression: suicidal thoughts, PHQ-9, SSRIs (sertraline, escitalopram), venlafaxine, mirtazapine, CBT, older adults"
+summary: "Clinical pathway for depression in adults aged 18 and over: red flags (suicidality), screening with PHQ-2 and PHQ-9, severity-based management (lifestyle, therapy, antidepressants), monitoring, and when specialist referral is needed. Always discuss with your doctor."
 ---
 
 # Depression in Adults and Older Persons
