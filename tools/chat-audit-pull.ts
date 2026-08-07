@@ -212,6 +212,7 @@ function renderConversations(messages: Message[], routing: RoutingEvent[]): stri
     `**Total messages:** ${messages.length}`,
     `**Web:** ${messages.filter(m => m.platform === 'shopify' && m.role === 'user').length} user turns`,
     `**Discord:** ${messages.filter(m => m.platform === 'discord' && m.role === 'user').length} user turns`,
+    `**YouTube:** ${messages.filter(m => m.platform === 'youtube' && m.role === 'user').length} user turns`,
     ``,
     `---`,
     ``,
@@ -224,7 +225,10 @@ function renderConversations(messages: Message[], routing: RoutingEvent[]): stri
     const externalId = msgs[0].external_id;
     const firstMsg = msgs[0];
 
-    lines.push(`## Conversation ${convNum} — ${platform.toUpperCase()}${externalId ? ` (Discord: ${externalId})` : ''}`);
+    // external_id means a different thing per platform: Discord user ID vs
+    // YouTube top-level comment ID. Label it correctly rather than always "Discord".
+    const externalLabel = platform === 'youtube' ? 'comment' : platform === 'discord' ? 'Discord' : 'id';
+    lines.push(`## Conversation ${convNum} — ${platform.toUpperCase()}${externalId ? ` (${externalLabel}: ${externalId})` : ''}`);
     lines.push(`**ID:** ${convId}`);
     lines.push(`**Time:** ${firstMsg.created_at}`);
     lines.push(`**User ID:** ${firstMsg.user_id}`);
@@ -426,6 +430,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
   const convCount = convMap.size;
   const webTurns = messages.filter(m => m.platform === 'shopify' && m.role === 'user').length;
   const discordTurns = messages.filter(m => m.platform === 'discord' && m.role === 'user').length;
+  const youtubeTurns = messages.filter(m => m.platform === 'youtube' && m.role === 'user').length;
   const endDate = new Date().toISOString().slice(0, 10);
 
   // Build conversation cards
@@ -527,7 +532,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
         <header class="conv-header" tabindex="0" role="button" aria-expanded="false">
           <div class="conv-header-left">
             <span class="conv-num">#${convNum}</span>
-            <span class="platform-badge platform-${platform}">${platform === 'shopify' ? 'Shopify' : 'Discord'}</span>
+            <span class="platform-badge platform-${platform}">${platform === 'shopify' ? 'Shopify' : platform === 'youtube' ? 'YouTube' : 'Discord'}</span>
             <span class="conv-snippet">${snippet}</span>
           </div>
           <div class="conv-header-right">
@@ -624,6 +629,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
     }
     .platform-shopify { background: #e8f4ff; color: #2b5fb0; }
     .platform-discord { background: #ecebff; color: #5865F2; }
+    .platform-youtube { background: #ffeaea; color: #c4302b; }
     .conv-snippet {
       color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       flex: 1; min-width: 0;
@@ -914,6 +920,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
         <span><strong>${messages.length}</strong> messages</span>
         <span><strong>${webTurns}</strong> web user turns</span>
         <span><strong>${discordTurns}</strong> Discord user turns</span>
+        <span><strong>${youtubeTurns}</strong> YouTube user turns</span>
         ${messages.some(m => m.is_fallback) ? `<span><strong>${messages.filter(m => m.is_fallback).length}</strong> fallbacks</span>` : ''}
         ${routing.some(r => r.router_skipped) ? `<span><strong>${routing.filter(r => r.router_skipped).length}</strong> router-skipped</span>` : ''}
       </span></p>
@@ -924,6 +931,7 @@ function renderHtml(messages: Message[], routing: RoutingEvent[]): string {
           <option value="all">All platforms</option>
           <option value="shopify">Shopify</option>
           <option value="discord">Discord</option>
+          <option value="youtube">YouTube</option>
         </select>
         <select id="triage-filter" aria-label="Triage filter">
           <option value="all">All triage states</option>
