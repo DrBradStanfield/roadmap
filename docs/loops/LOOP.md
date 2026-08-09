@@ -33,8 +33,11 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 
 - **Every operative instruction file — this constitution, every charter, every
   LEARNINGS.md — is capped at 200 lines / 25KB.** (Anthropic's documented
-  ceiling for always-loaded instruction files, and the hard-enforced cap on
-  Claude Code's own memory index. Past it, models silently drop rules.)
+  ceiling for ALWAYS-LOADED instruction files, and the hard-enforced cap on
+  Claude Code's own memory index. Past it, models silently drop rules. The
+  500-line SKILL.md budget does NOT apply here — that's for ON-DEMAND files;
+  every run stacks constitution+charter+LEARNINGS, so the on-demand tier in
+  this fleet is `notes/`, reports, ledgers, and changelogs: cap-exempt.)
 - **Within 20 lines of the cap: one-in-one-out.** Any amendment must delete or
   compress at least as many lines as it adds.
 - **Outgrowing the cap means SPLIT, never raise**: move detail to a linked
