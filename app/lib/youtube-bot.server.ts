@@ -214,7 +214,6 @@ interface YouTubeThread {
   authorChannelId: string | null;
   text: string;
   publishedAt: string;
-  totalReplyCount: number;
 }
 
 async function listRecentThreads(token: string): Promise<YouTubeThread[]> {
@@ -236,7 +235,6 @@ async function listRecentThreads(token: string): Promise<YouTubeThread[]> {
     items?: Array<{
       snippet: {
         videoId: string;
-        totalReplyCount: number;
         topLevelComment: {
           id: string;
           snippet: {
@@ -259,7 +257,6 @@ async function listRecentThreads(token: string): Promise<YouTubeThread[]> {
       authorChannelId: top.snippet.authorChannelId?.value ?? null,
       text: top.snippet.textOriginal,
       publishedAt: top.snippet.publishedAt,
-      totalReplyCount: item.snippet.totalReplyCount,
     };
   });
 }
@@ -639,10 +636,28 @@ interface FilterResult {
   reason?: string;
 }
 
+function wordCount(text: string): number {
+  return text.trim().split(/\s+/).length;
+}
+
+function ageInDays(publishedAt: string): number {
+  return (Date.now() - new Date(publishedAt).getTime()) / (24 * 60 * 60_000);
+}
+
+/** The video's companion blog post + its body (frontmatter stripped), or null
+ *  when the video has no linked article or the file is unreadable. */
+function loadVideoBody(videoId: string): { entry: BlogIndexEntry; body: string } | null {
+  const entry = findBlogByVideoId(videoId);
+  if (!entry) return null;
+  const fullContent = loadBlogArticle(entry.handle);
+  if (!fullContent) return null;
+  return { entry, body: fullContent.replace(/^---[\s\S]*?---\n\n?/, '') };
+}
+
 function filterThread(thread: YouTubeThread): FilterResult {
   if (!thread.text || !thread.text.trim()) return { pass: false, reason: 'empty' };
-  const wordCount = thread.text.trim().split(/\s+/).length;
-  if (wordCount < MIN_WORDS) return { pass: false, reason: `too short (${wordCount} words)` };
+  const words = wordCount(thread.text);
+  if (words < MIN_WORDS) return { pass: false, reason: `too short (${words} words)` };
 
   // Don't reply to Brad's own comments
   if (thread.authorChannelId && CHANNEL_ID && thread.authorChannelId === CHANNEL_ID) {
@@ -650,8 +665,9 @@ function filterThread(thread: YouTubeThread): FilterResult {
   }
 
   // Stale comments — don't dig up old ones on first launch / after downtime
-  const ageDays = (Date.now() - new Date(thread.publishedAt).getTime()) / (24 * 60 * 60_000);
-  if (ageDays > COMMENT_MAX_AGE_DAYS) return { pass: false, reason: `older than ${COMMENT_MAX_AGE_DAYS} days` };
+  if (ageInDays(thread.publishedAt) > COMMENT_MAX_AGE_DAYS) {
+    return { pass: false, reason: `older than ${COMMENT_MAX_AGE_DAYS} days` };
+  }
 
   return { pass: true };
 }
@@ -670,7 +686,7 @@ function filterThread(thread: YouTubeThread): FilterResult {
 //      (classifier skip or SKIP_NO_REPLY with the follow-up posture block).
 // ---------------------------------------------------------------------------
 
-export type FollowUpDecision = { skip: string } | { candidate: YouTubeReply };
+type FollowUpDecision = { skip: string } | { candidate: YouTubeReply };
 
 export function assessThreadFollowUp(p: {
   replies: YouTubeReply[];       // full reply list, oldest-first
@@ -700,7 +716,9 @@ export function assessThreadFollowUp(p: {
 
 /** Rebuild the thread as chat history for the main LLM: top-level comment,
  *  then every reply before the candidate — bot turns as assistant, viewer
- *  turns as user (name-prefixed), consecutive same-role turns merged. */
+ *  turns as user (name-prefixed). Consecutive viewer turns are merged so a
+ *  multi-comment aside reads as one turn (the trailing candidate is appended
+ *  separately by buildConversationMessages and may still follow a user turn). */
 export function buildThreadHistory(
   original: { author: string; text: string },
   replies: YouTubeReply[],
@@ -861,13 +879,17 @@ async function processFollowUps(
   token: string,
   budget: number,
   videoPostCounts: Map<string, number>,
-): Promise<{ posted: number; skipped: number }> {
+): Promise<{ posted: number; skipped: number; gates: Record<string, number> }> {
   let posted = 0;
   let skipped = 0;
-  if (budget <= 0) return { posted, skipped };
+  // Which gate stopped each thread — the only way to see the gates working in prod.
+  const gates: Record<string, number> = {};
+  const gate = (reason: string) => { gates[reason] = (gates[reason] ?? 0) + 1; };
+
+  if (budget <= 0) return { posted, skipped, gates };
 
   const recent = await fetchRecentPostedThreads();
-  if (recent.threadIds.length === 0) return { posted, skipped };
+  if (recent.threadIds.length === 0) return { posted, skipped, gates };
   const channelHandle = await getChannelHandle(token);
 
   for (const threadId of recent.threadIds.slice(0, FOLLOWUP_THREADS_PER_TICK)) {
@@ -889,14 +911,16 @@ async function processFollowUps(
       originalAuthor: meta.originalAuthor,
       channelHandle,
     });
-    if ('skip' in decision) continue;
+    if ('skip' in decision) {
+      gate(decision.skip);
+      continue;
+    }
     const reply = decision.candidate;
 
     // Same hygiene gates as top-level, with the shorter follow-up word floor.
-    const ageDays = (Date.now() - new Date(reply.publishedAt).getTime()) / (24 * 60 * 60_000);
-    if (ageDays > COMMENT_MAX_AGE_DAYS) continue;
-    if (reply.text.trim().split(/\s+/).length < FOLLOWUP_MIN_WORDS) continue;
-    if ((videoPostCounts.get(meta.videoId) ?? 0) >= PER_VIDEO_REPLY_CAP) continue;
+    if (ageInDays(reply.publishedAt) > COMMENT_MAX_AGE_DAYS) { gate('stale'); continue; }
+    if (wordCount(reply.text) < FOLLOWUP_MIN_WORDS) { gate('too-short'); continue; }
+    if ((videoPostCounts.get(meta.videoId) ?? 0) >= PER_VIDEO_REPLY_CAP) { gate('video-cap'); continue; }
 
     let claimed: boolean;
     try {
@@ -907,13 +931,11 @@ async function processFollowUps(
     }
     if (!claimed) continue;
 
-    const blogEntry = findBlogByVideoId(meta.videoId);
-    const fullContent = blogEntry ? loadBlogArticle(blogEntry.handle) : null;
-    if (!blogEntry || !fullContent) {
+    const video = loadVideoBody(meta.videoId);
+    if (!video) {
       skipped++;
       continue;
     }
-    const blogBody = fullContent.replace(/^---[\s\S]*?---\n\n?/, '');
 
     const history = buildThreadHistory(
       { author: meta.originalAuthor, text: meta.originalComment },
@@ -928,12 +950,11 @@ async function processFollowUps(
       authorChannelId: reply.authorChannelId,
       text: reply.text,
       publishedAt: reply.publishedAt,
-      totalReplyCount: replies.length,
     };
 
     let outcome: PipelineOutcome;
     try {
-      outcome = await runPipeline(pseudoThread, blogEntry, blogBody, history);
+      outcome = await runPipeline(pseudoThread, video.entry, video.body, history);
     } catch (err) {
       logTickError(err);
       await unclaimComment(reply.id);
@@ -973,7 +994,7 @@ async function processFollowUps(
     posted++;
   }
 
-  return { posted, skipped };
+  return { posted, skipped, gates };
 }
 
 // ---------------------------------------------------------------------------
@@ -1026,17 +1047,11 @@ async function tick(): Promise<void> {
       continue;
     }
 
-    const blogEntry = findBlogByVideoId(thread.videoId);
-    if (!blogEntry) {
+    const video = loadVideoBody(thread.videoId);
+    if (!video) {
       skippedThisTick++;
       continue;
     }
-    const fullContent = loadBlogArticle(blogEntry.handle);
-    if (!fullContent) {
-      skippedThisTick++;
-      continue;
-    }
-    const blogBody = fullContent.replace(/^---[\s\S]*?---\n\n?/, '');
 
     if ((videoPostCounts.get(thread.videoId) ?? 0) >= PER_VIDEO_REPLY_CAP) {
       skippedThisTick++;
@@ -1045,7 +1060,7 @@ async function tick(): Promise<void> {
 
     let outcome: PipelineOutcome;
     try {
-      outcome = await runPipeline(thread, blogEntry, blogBody);
+      outcome = await runPipeline(thread, video.entry, video.body);
     } catch (err) {
       // Unhandled pipeline exception. Likely transient (Anthropic 529 / timeout) —
       // un-claim so the next tick can retry. Persistent failures will be visible
@@ -1105,7 +1120,8 @@ async function tick(): Promise<void> {
 
   // Follow-up pass: replies directed at the bot in threads it already
   // answered, within whatever daily budget the top-level loop left.
-  let followUps = { posted: 0, skipped: 0 };
+  let followUps: { posted: number; skipped: number; gates: Record<string, number> } =
+    { posted: 0, skipped: 0, gates: {} };
   try {
     followUps = await processFollowUps(
       token,
@@ -1126,6 +1142,7 @@ async function tick(): Promise<void> {
     skipped: skippedThisTick,
     followUpsPosted: followUps.posted,
     followUpsSkipped: followUps.skipped,
+    followUpGates: followUps.gates,
     dailyTotal: startingDailyCount + postedThisTick + followUps.posted,
   }));
 }
