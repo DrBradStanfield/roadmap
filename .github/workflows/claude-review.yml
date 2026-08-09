@@ -35,6 +35,8 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
+      id-token: write # claude-code-action's token exchange (first-run failure: "Failed to get OIDC token")
+      actions: read
     steps:
       - uses: actions/checkout@v5
         with:
