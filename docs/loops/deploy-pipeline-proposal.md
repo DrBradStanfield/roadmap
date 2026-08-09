@@ -143,6 +143,34 @@ block good fixes on style).
 - Clinical/merge/security exclusions are unchanged at every tier, Tier 3
   included.
 
+## Security hardening (two-agent audit, 2026-08-10 — applied same day)
+
+The audits found the v1 gate was decorative: any GitHub account could approve
+(sockpuppet), the reviewer-bot's own approval counted (self-approval loop),
+approvals weren't commit-pinned (stale-approval bypass), and claude-review's
+Bash + ANTHROPIC_API_KEY was a prompt-injection exfiltration channel. Fixes:
+
+- **Gate**: approvals count only from non-bot OWNER/COLLABORATOR reviews ON
+  the final commit; the named `test` check must be green (empty ≠ pass);
+  fork PRs excluded; deploy job asserts main tip == the gated merge commit.
+- **Credential boundary**: the five deploy secrets moved to the `production`
+  GitHub **environment with Brad as required reviewer** — every deploy run
+  PAUSES for his one-click approval before any secret is readable. This holds
+  even if a workflow file or the whole PR chain is compromised (old Fly
+  tokens revoked; only the spend-cappable ANTHROPIC_API_KEY stays repo-level
+  for the reviewer job).
+- **Reviewer defanged**: no Bash (Read/Grep/Glob only), never executes PR
+  code, verdict is an advisory comment — a human approval is always the gate.
+- **Supply chain**: flyctl action SHA-pinned (was @master).
+- **Known residuals** (accepted, documented): push rulesets restricting
+  `.github/workflows/**` are unavailable on personal public repos, so a
+  prompt-injected loop could still push a workflow edit — but the environment
+  gate caps the prize at the repo-level API key; Brad should eyeball whether
+  the Claude GitHub App's grant includes "Workflows: R/W" (Settings →
+  Integrations), and keep "Allow Actions to approve PRs" OFF (bot approvals
+  don't count in the gate anyway). No branch protection on main by design —
+  loops commit reports there; revisit at the quarterly fleet review.
+
 ## Economics
 
 Author run + reviewer run per shipped fix. The reviewer runs on
