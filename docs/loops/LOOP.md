@@ -32,12 +32,16 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 ## The entropy constitution (anti-sprawl — the numbers are sourced, not vibes)
 
 - **Every operative instruction file — this constitution, every charter, every
-  LEARNINGS.md — is capped at 200 lines / 25KB.** (Anthropic's documented
-  ceiling for ALWAYS-LOADED instruction files, and the hard-enforced cap on
-  Claude Code's own memory index. Past it, models silently drop rules. The
-  500-line SKILL.md budget does NOT apply here — that's for ON-DEMAND files;
-  every run stacks constitution+charter+LEARNINGS, so the on-demand tier in
-  this fleet is `notes/`, reports, ledgers, and changelogs: cap-exempt.)
+  LEARNINGS.md — is capped at 200 lines / 25KB** (Anthropic's ceiling for
+  ALWAYS-LOADED files: every run stacks constitution+charter+LEARNINGS, and
+  past the ceiling models silently drop rules).
+- **The on-demand tier has budgets too — nothing is uncapped**:
+  `notes/<slug>.md` ≤500 lines (the SKILL.md analog: one topic per file,
+  SPLIT at the cap, never grow past it); reports ≤150; changelogs keep only
+  their last 10 entries (git history is the archive — deletion from working
+  files is always safe). CSV ledgers alone grow without a line cap: they are
+  append-only DATA, never instructions — archive by year (`metrics-2026.csv`)
+  if one gets unwieldy.
 - **Within 20 lines of the cap: one-in-one-out.** Any amendment must delete or
   compress at least as many lines as it adds.
 - **Outgrowing the cap means SPLIT, never raise**: move detail to a linked
@@ -50,8 +54,6 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   least-earning rule in your charter and compress or delete it.
 - **Line counts are vital signs**: every report states the current line count
   of your charter and LEARNINGS.md next to the domain metrics.
-- Changelogs keep only their last 10 entries — git history is the archive;
-  deletion from working files is always safe.
 
 ## Learnings & metrics (how knowledge compounds without rotting)
 
