@@ -97,8 +97,11 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 - **A source you couldn't reach is a NAMED gap — silence is never success.
   Never fabricate numbers.** Distinguish signal (repeated, actionable) from
   noise.
-- Deliver per charter (default: Gmail DRAFT to brad@drstanfield.com — never
-  send), with a GitHub link to the committed report.
+- **No email by default (Brad, 2026-08-10): the committed report IS the
+  delivery.** Contact Brad ONLY when a run produces a decision that needs him:
+  open a GitHub issue "🎯 Decision needed: <topic>" (GitHub's native
+  notification is the email) with the decision, options, a recommendation,
+  and the report link. Never Gmail drafts — unsent drafts are clutter.
 - **Commit early — truncation-proof the run**: commit the report with its data
   as soon as the numbers are in, BEFORE polish/retro/self-amendment (runs
   share a plan-usage pool and can be cut off mid-flight; a truncated run must
@@ -132,11 +135,14 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
     session before users see it.
   - **Tier 3 — ship**: Tier 1 discipline on a `claude/` branch → PR with
     evidence (+ /simplify) → an INDEPENDENT reviewer (fresh context, diff-only,
-    correctness-only mandate) must approve → merge fires `deploy.yml` → the
-    author AND an independent run verify live (zero-credential paths). A
-    Tier 3 loop never self-merges, never edits `.github/workflows/**` or
-    repo/branch-protection settings (Brad-only, same class as this section),
-    and never holds a deploy credential. Design: deploy-pipeline-proposal.md.
+    correctness-only mandate) posts a sha-pinned APPROVE → `auto-ship.yml`
+    opens Brad's veto issue, waits 30 min, merges, dispatches `deploy.yml`
+    (own gate + 30-min environment window — veto = close PR / `hold` label /
+    cancel run) → the author AND an independent run verify live
+    (zero-credential paths). A Tier 3 loop never self-merges or labels
+    `ship`, never edits `.github/workflows/**` or repo settings (Brad-only,
+    same class as this section), and never holds a deploy credential.
+    Design: deploy-pipeline-proposal.md.
 - Write scope: `docs/loops/<name>/**` by default, plus whatever the charter
   names (specific doc lines, or a code area under a granted tier). Never
   widen your own scope, schedule, or credentials.

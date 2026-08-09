@@ -1,0 +1,108 @@
+# Auto-ship: zero-click merge for reviewer-approved agent PRs (Brad's call,
+# 2026-08-10: "I want to fully take myself out of the loop" — the PR-approval
+# click replaced by a 30-minute veto window, mirroring the deploy timer).
+#
+# Path: claude/* PR → Claude Review posts "VERDICT: APPROVE <head-sha>" →
+# this workflow verifies (same-repo claude/* PR, 'test' check green on that
+# exact sha, verdict comment authored by a trusted bot login, no 'hold'
+# label) → opens the veto issue (native email to Brad) → waits 30 min →
+# re-verifies (sha unchanged, still open, no 'hold') → labels 'ship' →
+# merges → dispatches deploy.yml, which runs its own gate + 30-min
+# environment window. Total path to production ≈ 65 min, two veto emails.
+#
+# VETO = close the PR or add the 'hold' label, any time before merge.
+#
+# Security notes: the verdict is trusted only from bot logins that external
+# users cannot impersonate, pinned to the head SHA (no stale approvals); a
+# poisoned diff still has to survive the fresh-context reviewer, and the
+# deploy credentials remain behind the environment timer regardless.
+# Editing this file is Brad-only (constitution Guardrails).
+
+name: Auto Ship
+
+on:
+  workflow_run:
+    workflows: ["Claude Review"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+  checks: read
+
+concurrency:
+  group: auto-ship-${{ github.event.workflow_run.pull_requests[0].number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  ship:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Verify, notify, wait 30 min, re-verify, merge, dispatch deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.workflow_run.pull_requests[0].number }}
+        run: |
+          set -euo pipefail
+          [ -n "${PR}" ] || { echo "No PR attached to the review run — nothing to do."; exit 0; }
+
+          pr_json() { gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}"; }
+          state=$(pr_json | jq -r '.state')
+          head_ref=$(pr_json | jq -r '.head.ref')
+          head_repo=$(pr_json | jq -r '.head.repo.full_name')
+          HEAD_SHA=$(pr_json | jq -r '.head.sha')
+          labels=$(pr_json | jq -r '[.labels[].name] | join(",")')
+
+          [ "${state}" = "open" ] || { echo "PR not open."; exit 0; }
+          case "${head_ref}" in claude/*) ;; *) echo "Not a claude/* branch — auto-ship only handles agent PRs."; exit 0;; esac
+          [ "${head_repo}" = "${GITHUB_REPOSITORY}" ] || { echo "Fork PR — never auto-shipped."; exit 0; }
+          case ",${labels}," in *,hold,*) echo "'hold' label present — vetoed."; exit 0;; esac
+
+          # Reviewer verdict: trusted bot author + pinned to the CURRENT head sha.
+          verdict=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments?per_page=100" \
+            | jq --arg sha "${HEAD_SHA}" '[.[] | select(
+                (.user.type=="Bot") and
+                (.user.login | IN("github-actions[bot]","claude[bot]","claude")) and
+                (.body | contains("VERDICT: APPROVE " + $sha))
+              )] | length')
+          [ "${verdict}" -ge 1 ] || { echo "No trusted APPROVE verdict for ${HEAD_SHA} — not shipping."; exit 0; }
+
+          # The named 'test' check must be green on this exact commit.
+          ok=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs" \
+            | jq '[.check_runs[] | select(.name=="test" and .conclusion=="success")] | length')
+          [ "${ok}" -ge 1 ] || { echo "'test' check not green on ${HEAD_SHA} — not shipping."; exit 0; }
+
+          # Veto window: notify (native email via issue), wait 30 minutes.
+          pr_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR}"
+          issue=$(gh issue create -R "${GITHUB_REPOSITORY}" \
+            --title "🕒 Auto-merge pending: PR #${PR} ships in ~30 min" \
+            --body "Reviewer approved PR #${PR} at ${HEAD_SHA}.
+          ${pr_url}
+          To VETO: close the PR or add the 'hold' label before the window ends.
+          After merge, deploy.yml runs with its own 30-min window (second veto email)." \
+            | grep -oE '[0-9]+$')
+          sleep 1800
+
+          # Re-verify nothing changed during the window.
+          state=$(pr_json | jq -r '.state'); sha_now=$(pr_json | jq -r '.head.sha')
+          labels=$(pr_json | jq -r '[.labels[].name] | join(",")')
+          veto=""
+          [ "${state}" = "open" ] || veto="PR closed during window"
+          [ "${sha_now}" = "${HEAD_SHA}" ] || veto="new commits during window (${sha_now})"
+          case ",${labels}," in *,hold,*) veto="'hold' label added";; esac
+          if [ -n "${veto}" ]; then
+            gh issue close "${issue}" -R "${GITHUB_REPOSITORY}" --comment "NOT merged — ${veto}."
+            echo "Vetoed: ${veto}"; exit 0
+          fi
+
+          gh pr edit "${PR}" -R "${GITHUB_REPOSITORY}" --add-label ship || true
+          gh pr merge "${PR}" -R "${GITHUB_REPOSITORY}" --merge
+          # GITHUB_TOKEN-caused events don't trigger workflows, so dispatch
+          # the deploy explicitly (its gate + environment window still apply).
+          gh workflow run deploy.yml -R "${GITHUB_REPOSITORY}" --ref main -f surfaces=all
+          gh issue close "${issue}" -R "${GITHUB_REPOSITORY}" \
+            --comment "Merged ${HEAD_SHA} and dispatched deploy.yml (its own 30-min window + veto email follows)."

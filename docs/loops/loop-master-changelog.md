@@ -5,6 +5,14 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-10 (v4, Brad-directed):** Full zero-click autonomy. (1) The
+  first-5-cycles human PR approval replaced by `auto-ship.yml`: reviewer's
+  sha-pinned APPROVE → 30-min veto issue → auto-merge → deploy dispatch (its
+  own 30-min environment window). Veto = close PR / `hold` label / cancel
+  run. Deploy gate's human-approval path remains for Brad-authored PRs.
+  (2) Email policy inverted: no Gmail drafts ever; the committed report is
+  the delivery; Brad is contacted only via "🎯 Decision needed" GitHub issues
+  (native email) when a run genuinely needs his call.
 - **2026-08-10 (v3.2):** Stale repo rule corrected — products.md is a REAL
   file post-inversion (the old "verify symlink 120000" line described the
   exact state the guard now blocks). Proposed by the product-health loop's

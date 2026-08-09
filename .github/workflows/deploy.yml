@@ -44,7 +44,8 @@ jobs:
   gate:
     # PR path: only merged same-repo PRs labeled `ship` (fork PRs get no
     # secrets and would fail confusingly — security audit LOW-9).
-    # Dispatch path: always allowed (a human clicked).
+    # Dispatch path: a human clicked, or auto-ship.yml dispatched after its
+    # own reviewer + 30-min veto gate.
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.merged == true &&

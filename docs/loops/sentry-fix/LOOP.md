@@ -61,11 +61,11 @@ beyond the metrics line. Most days should end here.
 2. Failing test citing the US-id → confirm it fails → minimal root-cause fix
    → full suite green → /simplify.
 3. ONE PR from a `claude/` branch: evidence = Sentry link, root cause,
-   before/after, escape analysis. Never self-merge; never label `ship`
-   yourself during the Brad-approves-first-5-cycles phase — Brad labels and
-   merges. The pipeline (reviewer → gate → Pages smoke → timer → deploy →
-   live verify) does the rest; after deploy, verify the fix live and mark the
-   Sentry issue resolved with the commit link.
+   before/after, escape analysis. Never self-merge or label `ship` — the
+   pipeline does it (reviewer's sha-pinned APPROVE → auto-ship 30-min veto
+   window → merge → deploy gate + 30-min environment window → live verify;
+   zero-click, Brad 2026-08-10). After deploy, verify the fix live and mark
+   the Sentry issue resolved with the commit link.
 4. **Escape analysis is mandatory in the PR + report**: why did tests miss
    it? (missing AC / untested surface / WebKit-only / theme CSS / data shape)
    → the resulting new test or LEARNINGS entry is the compounding half.
@@ -95,9 +95,10 @@ updates · Data gaps · Retro (incl. charter + LEARNINGS line counts).
 
 ## Delivery
 
-Fix runs: commit `sentry-fix: <issue-shortid> <summary>` + PR + Gmail DRAFT
-(never send) to brad@drstanfield.com: issue, root cause, PR link, escape
-analysis. No-op runs: metrics.csv line only, no email.
+Fix runs: commit report + PR (`sentry-fix: <issue-shortid> <summary>`) — the
+pipeline's veto issues are Brad's notification; no separate email. Open a
+"🎯 Decision needed" issue only when a fix is blocked on Brad (e.g. bug rooted
+in an excluded file). No-op runs: metrics.csv line only, nothing else.
 
 ## Changelog (self-amendments — newest first, keep 10)
 
