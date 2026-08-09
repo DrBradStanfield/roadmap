@@ -116,8 +116,11 @@ jobs:
       - name: Install Playwright WebKit
         run: npx playwright install --with-deps webkit
       - name: WebKit smoke — Pages app boots clean
+        # NOTE: the script must live INSIDE the workspace — Node resolves
+        # 'playwright' relative to the script's path, so /tmp can't see
+        # node_modules (first-run failure, 2026-08-10).
         run: |
-          cat > /tmp/pages-smoke.mjs <<'EOF'
+          cat > ./pages-smoke.tmp.mjs <<'EOF'
           import { webkit, devices } from 'playwright'
           const browser = await webkit.launch()
           const page = await browser.newPage({ ...devices['iPhone 13'] })
@@ -132,7 +135,7 @@ jobs:
           if (errors.length) { console.error('Page errors:', errors); process.exit(1) }
           console.log('Pages smoke OK — widget mounted, no page errors.')
           EOF
-          node /tmp/pages-smoke.mjs
+          node ./pages-smoke.tmp.mjs
 
   deploy:
     needs: [gate, pages-smoke]
