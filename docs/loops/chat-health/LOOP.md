@@ -102,8 +102,9 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
    claude_business repo). Keep the canonical noun and any acronym.
 2. **Classifier misses** — a category it should skip but doesn't: propose a
    prompt change; never apply it (Write scope below).
-3. **Content gaps** — list grouped by theme as a backlog for Brad. Never
-   invent clinical content.
+3. **Content gaps** — update [content-backlog.md](content-backlog.md): new
+   themes appended, repeat themes incremented in place (cumulative evidence,
+   no duplicates). Never invent clinical content.
 
 ## Verify — mandatory, no exceptions
 
@@ -148,10 +149,13 @@ counts).
 
 Commit `chat-health: weekly retrieval report YYYY-Www` to main + Gmail DRAFT
 (never send) to brad@drstanfield.com, subject `Chatbot retrieval — week Www`:
-TL;DR, fixes with numbers, what needs approval, GitHub link to the report.
+TL;DR, fixes with numbers, top 3 new/growing content gaps, what needs
+approval, GitHub links to the report and content-backlog.md.
 
 ## Changelog (self-amendments — newest first, keep 10)
 
+- 2026-08-10 (Brad): content gaps now accumulate in content-backlog.md
+  (in-place increments, status column); email draft surfaces top 3.
 - 2026-08-10: v2 — compacted to a deltas-only charter under the fleet
   constitution (211 → ~160 lines): orchestration, entropy, self-improvement,
   reporting and repo rules deduped to ../LOOP.md; success signal declared;
