@@ -97,3 +97,11 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   **`ANTHROPIC_TEST_API_KEY`**, which they already check first. A missing key
   is a named data gap and a proposal-only run, never an excuse to fabricate
   harness numbers.
+- **2026-08-10 [meta]** W33 run graded **A** (build session, against the
+  constitution): exemplary measure-before/after (two flat-number edits
+  reverted; baseline check killed a third), real defect found with a
+  ready diff (router `.max(3)` self-sabotage — approved and shipped same
+  day), 2 production regression fixtures added, amendments within cap,
+  monthly pruning done. Dings: first-pass line-count vitals misreported
+  (needed a correction commit) and the Gmail draft (charter contradiction,
+  self-flagged as proposal #5, since reconciled to the constitution).
