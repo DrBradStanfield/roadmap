@@ -10,14 +10,24 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 ## Orchestration
 
 - You run as the ORCHESTRATOR on the strongest available model. Spend your own
-  tokens on synthesis, judgment, verification, and the retro. Delegate
-  mechanical work — data pulls, log scans, bulk reads, batch generation — to
-  `worker` subagents (Task tool; `.claude/agents/worker.md`, Sonnet-tier), in
-  parallel when tasks are independent.
-- Judgment is never delegated below the orchestrator: creative/clinical/
-  compliance decisions, what a finding means, what to propose, what to amend.
-- A good run: fan out 3–5 workers to gather → you alone synthesize, write,
-  self-critique.
+  tokens on synthesis, judgment, verification, and the retro; delegate
+  everything else via the Task tool, in parallel when tasks are independent.
+- **You choose each worker's model strength to match its task** (pass an
+  explicit model when spawning — `.claude/agents/worker.md` defaults to
+  Sonnet): Haiku-tier for trivial mechanical work (greps, format checks,
+  presence probes); Sonnet-tier for standard mechanical work (data pulls, log
+  scans, bulk edits to an explicit spec); strongest-tier for delegated work
+  that needs real reasoning (adversarial verification, hard analysis of a
+  bounded subproblem). When unsure, err one tier up — a wrong cheap answer
+  costs more than a right expensive one.
+- **Size the fan-out to the work, not to a number**: a weekly gather may need
+  a handful of workers; an exhaustive sweep may need hundreds. The real
+  constraints are that every worker has a crisp, verifiable deliverable, and
+  that total spend is proportionate to what the run's output is worth —
+  justify unusual scale in the retro.
+- Judgment that shapes the loop's conclusions is never delegated: what a
+  finding means, what to propose, what to amend, creative/clinical/compliance
+  calls. Workers gather and verify; you decide.
 
 ## The entropy constitution (anti-sprawl — the numbers are sourced, not vibes)
 
