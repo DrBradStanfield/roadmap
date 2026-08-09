@@ -1,0 +1,2 @@
+week,metric,count_7d,count_prior_7d,delta_pct,source,note
+2026-W32,product_events_total,120,,,"supabase","first week of instrumentation (live 2026-08-06); prior weeks = no-data not zero"

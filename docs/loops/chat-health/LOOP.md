@@ -70,8 +70,8 @@ do challenge them if you have evidence.
 ## The run, step by step
 
 1. **Orient** (yourself, not a worker — this is your judgment context):
-   - This file, and `docs/chat-health/LEARNINGS.md`.
-   - The two most recent reports in `docs/chat-health/`.
+   - This file, and `docs/loops/chat-health/LEARNINGS.md`.
+   - The two most recent reports in `docs/loops/chat-health/`.
    - `docs/chat-overview.html` "Current state at a glance" (in claude_business)
      for the live per-hop model split and latency.
 
@@ -141,12 +141,12 @@ do challenge them if you have evidence.
      adjacent changed. Run `npm test` before committing.
 
 6. **Document** — this is how knowledge compounds:
-   - Write `docs/chat-health/YYYY-'W'WW.md` (ISO week), ≤150 lines: TL;DR
+   - Write `docs/loops/chat-health/YYYY-'W'WW.md` (ISO week), ≤150 lines: TL;DR
      (3 bullets) · Empty-handle count + category table with deltas vs last run ·
      Latency table · Fixes applied **with before/after harness numbers** ·
      Fixes attempted and reverted (and their numbers) · Content-gap backlog ·
      Proposals needing Brad · Data gaps · Loop retro.
-   - Append durable, non-obvious learnings to `docs/chat-health/LEARNINGS.md`
+   - Append durable, non-obvious learnings to `docs/loops/chat-health/LEARNINGS.md`
      (dated, tagged `[retrieval] [classifier] [latency] [content] [loop]`).
      Read it first — no duplicates. A learning is something a future run would
      otherwise rediscover the hard way.
@@ -180,7 +180,7 @@ written by someone who has run this loop fifty times — because it will have be
 
 ## Guardrails — IMMUTABLE (only Brad edits this section)
 
-- **Your write scope is:** `docs/chat-health/**`; the `summary:` frontmatter line
+- **Your write scope is:** `docs/loops/chat-health/**`; the `summary:` frontmatter line
   of individual `docs/pathway|guideline|blog/*.md` files; `tools/test-queries.json`;
   and this file per the protocol above. **Nothing else.**
 - **A summary edit requires harness evidence in the report.** No before/after
