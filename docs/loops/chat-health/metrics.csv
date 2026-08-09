@@ -5,3 +5,10 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W32,router_latency_median_ms,1615,,,chat_match_events,baseline 2026-08-07
 2026-W32,router_latency_p90_ms,3063,,,chat_match_events,baseline 2026-08-07
 2026-W32,router_cache_hit_rate_pct,39,,,chat_match_events,baseline 2026-08-07
+2026-W33,empty_handle_turns,27,5,,chat_match_events,"prior-7d not comparable: YT persistence + classifier both live 08-07; split shopify 3 / youtube 24 / discord 0"
+2026-W33,classifier_catchable_share_pct,4,73,-95,manual categorisation,"1/27 (PRODUCT); ~5 YT rants catchable only if bot should stop replying to them (product call)"
+2026-W33,routing_miss_share_pct,7,8,-13,manual categorisation,"2/27: MSM (pre-08-07-fix, passes today) + statin-cognition (edit attempted, no gain, reverted)"
+2026-W33,router_errors_7d,3,0,,chat_match_events,"all three: >3 handles -> Zod .max(3) rejects all; fix proposed W33 report"
+2026-W33,router_latency_median_ms,1362,1615,-16,chat_match_events,n=53
+2026-W33,router_latency_p90_ms,2217,3063,-28,chat_match_events,n=53
+2026-W33,router_cache_hit_rate_pct,20,39,-49,chat_match_events,"likely mix-shift: YT one-shot turns; watch W34"

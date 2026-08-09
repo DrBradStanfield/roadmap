@@ -2624,5 +2624,23 @@
     "category": "measurement",
     "expected_classification": "ROUTE",
     "notes": "personal data + advice - must route to guidelines"
+  },
+  {
+    "query": "Methylsulfonylmethan",
+    "expected": [
+      "glucosamine-and-joint-supplements-benefits-forms-dosing-and-side-effects"
+    ],
+    "category": "supplement",
+    "source": "production",
+    "notes": "2026-08-10 chat-health loop: real Shopify query (truncated European spelling of methylsulfonylmethane). Summary named only the acronym MSM; router returned empty."
+  },
+  {
+    "query": "A family member was started on a statin and developed cognitive decline shortly afterwards - could the statin be the cause?",
+    "expected": [
+      "the-30-year-statin-panic-is-finally-over"
+    ],
+    "category": "cardiovascular",
+    "source": "production",
+    "notes": "2026-08-10 chat-health loop: anonymised from a YouTube comment (statins + cognitive decline). Statin-panic post covers cognition/dementia; router returned empty in production."
   }
 ]
