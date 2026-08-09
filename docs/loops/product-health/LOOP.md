@@ -57,6 +57,19 @@ append rows to metrics.csv) · New errors · New feedback · Proposed backlog
   `npx tsx scripts/build-user-stories-html.ts`.
 - This charter, per the constitution's self-improvement protocol.
 
+## Code grant — Tier 3 "ship" (recorded by Brad, 2026-08-10)
+
+Named area: `widget-src/**` and `packages/health-core/src/**` — MINUS the
+constitution's standing exclusions (clinical: evidence.ts + the three-file sync
+set; merge.ts; security surfaces), which sit above every tier. Process is the
+constitution's Tier 3 verbatim: `claude/` branch, failing test citing the
+US-id, /simplify, PR with evidence; the pipeline (claude-review.yml +
+deploy.yml) does the rest. **First 5 cycles: Brad is the approving reviewer
+and performs the merge himself.** Never self-merge; never touch
+`.github/workflows/**`; at most ONE Tier 3 PR per run — a weekly report that
+also ships a fix is a good run, a run that ships three fixes and no report is
+a failed one.
+
 ## Delivery
 
 Commit `product-health: weekly report YYYY-Www` to main + Gmail DRAFT (never
