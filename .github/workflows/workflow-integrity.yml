@@ -1,11 +1,24 @@
-# Tripwire: the Claude GitHub App's grant includes "workflows: write" (an
-# all-or-nothing grant we can't remove selectively), and push rulesets that
-# would path-restrict .github/workflows/** are unavailable on personal public
-# repos. So this workflow ALERTS on any workflow-file change not made by Brad:
-# push-triggered (fires immediately) + a daily scheduled audit (catches the
-# case where a malicious push deleted this file in the same commit — the
-# schedule keeps running from main's last good state until that push, and the
-# product-health loop's weekly git-log check is the out-of-band backstop).
+# Tripwire + neutralizer for workflow-file tampering.
+#
+# WHY THIS EXISTS: the Claude GitHub App's grant includes workflows:write (an
+# all-or-nothing bundle), push rulesets that would path-restrict
+# .github/workflows/** are unavailable on personal public repos, and the
+# GITHUB_TOKEN is not allowed to modify workflow files (so a true auto-revert
+# from CI is impossible without storing a powerful PAT — which would itself be
+# the exfiltration prize). Therefore: true pre-receive REJECTION is not
+# available here. This is the strongest enforceable response instead:
+#
+#   Non-Brad push touching .github/workflows/** →
+#     1. immediately DISABLE every workflow file the push added/modified
+#     2. CANCEL any runs those workflows started from the same push
+#     3. open a 🚨 issue (native email to Brad) with the response playbook
+#   Daily scheduled audit backstops the tripwire-deleted-in-same-push case;
+#   the product-health loop's weekly git-log check is the out-of-band layer.
+#
+# Residual (documented, accepted): a same-push-triggered malicious run may
+# execute for a few seconds before cancellation — which is why the deploy
+# credentials live behind the 'production' environment wait timer and only the
+# spend-capped ANTHROPIC_API_KEY exists at repo level.
 #
 # Editing this file is Brad-only (constitution Guardrails).
 
@@ -21,13 +34,14 @@ on:
 permissions:
   contents: read
   issues: write
+  actions: write
 
 jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Alert on non-Brad workflow-file changes
+      - name: Neutralize and alert on non-Brad workflow-file changes
         env:
           GH_TOKEN: ${{ github.token }}
           ACTOR: ${{ github.actor }}
@@ -35,7 +49,6 @@ jobs:
         run: |
           set -euo pipefail
           alert() {
-            # one open tripwire issue at a time — comment instead of spamming
             existing=$(gh issue list -R "${GITHUB_REPOSITORY}" --state open \
               --search "SECURITY: workflow files in:title" --json number --jq '.[0].number // empty')
             if [ -n "${existing}" ]; then
@@ -46,21 +59,46 @@ jobs:
                 --body "$1"
             fi
           }
+
           if [ "${EVENT}" = "push" ]; then
-            if [ "${ACTOR}" != "DrBradStanfield" ]; then
-              alert "Push by **${ACTOR}** touched .github/workflows/** on main (commit ${GITHUB_SHA}).
-          Review immediately: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}
-          If malicious: revert the commit, revoke environment secrets, disable deploy.yml."
-            else
+            if [ "${ACTOR}" = "DrBradStanfield" ]; then
               echo "Workflow change pushed by DrBradStanfield — OK."
+              exit 0
             fi
+            # 1) Disable every workflow file this push added or modified.
+            touched=$(jq -r '[.commits[].added[], .commits[].modified[]] | unique | .[]
+                             | select(startswith(".github/workflows/"))' "${GITHUB_EVENT_PATH}")
+            disabled=""
+            for f in ${touched}; do
+              wf=$(basename "${f}")
+              if gh workflow disable "${wf}" -R "${GITHUB_REPOSITORY}" 2>/dev/null; then
+                disabled="${disabled} ${wf}"
+              fi
+              # 2) Cancel any runs it started from this same push.
+              for id in $(gh run list -R "${GITHUB_REPOSITORY}" --workflow="${wf}" --limit 10 \
+                            --json databaseId,headSha \
+                            --jq ".[] | select(.headSha==\"${GITHUB_SHA}\") | .databaseId" 2>/dev/null); do
+                gh run cancel "${id}" -R "${GITHUB_REPOSITORY}" 2>/dev/null || true
+              done
+            done
+            # 3) Alert Brad with the playbook.
+            alert "Push by **${ACTOR}** touched workflow files on main (commit ${GITHUB_SHA}).
+          Files: ${touched}
+          Auto-DISABLED:${disabled:- (none — deletions or disable failed: act NOW)}
+          Runs started by this push were cancelled.
+
+          Commit: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}
+          Playbook: (1) review the diff; (2) if malicious: git revert on main,
+          revoke the 'production' environment secrets, rotate ANTHROPIC_API_KEY;
+          (3) re-enable legitimate workflows via Actions tab."
             exit 0
           fi
-          # Scheduled audit: last 8 days of commits touching workflow files.
-          # Flags commits attributed to any OTHER GitHub account (bots incl.).
-          # Commits from Brad's Mac with an unmapped local email have a null
-          # author login and are not flagged — the push-path check above and
-          # the product-health loop's weekly log review cover the gap.
+
+          # Scheduled audit: last 8 days of commits touching workflow files,
+          # attributed to any account other than Brad. (Commits from Brad's
+          # Mac with an unmapped local email have a null author login — not
+          # flagged; the push path above and the product-health loop's weekly
+          # log review cover that gap.)
           since=$(date -u -d '8 days ago' +%Y-%m-%dT%H:%M:%SZ)
           suspicious=$(gh api "repos/${GITHUB_REPOSITORY}/commits?path=.github/workflows&since=${since}&per_page=100" \
             --jq '[.[] | select(.author.login != null and .author.login != "DrBradStanfield")
