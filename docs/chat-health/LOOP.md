@@ -7,7 +7,7 @@ scheduled trigger is a thin bootstrap that reads this file; everything about
 *how* you work is defined and evolved here, under version control, where Brad
 can see every change.
 
-Sibling loop: [`docs/loops/product-health/LOOP.md`](../product-health/LOOP.md) covers
+Sibling loop: [`docs/loops/LOOP.md`](../product-health/LOOP.md) covers
 how people *use the tool*. You cover one thing only: **does the chatbot retrieve
 the right knowledge, and answer well from it.** Don't duplicate its work — read
 its latest report for context, then stay in your lane.
@@ -114,6 +114,21 @@ do challenge them if you have evidence.
      Brad. Never invent clinical content.
 
 5. **Verify — mandatory, no exceptions.**
+
+   > **⚠️ Gotcha — the harness key must be named `ANTHROPIC_TEST_API_KEY` in the
+   > cloud environment, NOT `ANTHROPIC_API_KEY`.** The platform reserves
+   > `ANTHROPIC_API_KEY` for Claude Code's own auth and warns *"won't be used to
+   > authenticate requests — Claude Code sessions are authenticated through your
+   > Anthropic account"* (observed 2026-08-10 when Brad added it). Cloud
+   > sessions authenticate Claude Code through the account, so that variable is
+   > intercepted/ignored — but the harness makes its own direct `fetch` calls to
+   > `api.anthropic.com` and needs a key in the shell. All three harnesses
+   > (`test-chatbot-matching.ts`, `test-classifier.ts`, `test-tool-edits.ts`)
+   > check `ANTHROPIC_TEST_API_KEY` **first** by design. If the harness errors
+   > with "ANTHROPIC_TEST_API_KEY or ANTHROPIC_API_KEY must be set", that is a
+   > NAMED data gap (report it, run proposal-only) — never paste a key into the
+   > repo or the report.
+
    - Before any edit: `npx tsx tools/test-chatbot-matching.ts --category <cat>
      --runs 3 --concurrency 5`. Record the number.
    - Apply your edits, then `npm run rebuild-index`, then re-run the SAME command.

@@ -68,3 +68,10 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   `hyperlipidaemia` whose summary described the *condition*; the answer was in
   the body all along. When a query names a drug, check whether the owning
   document's summary names it too.
+- **2026-08-10 [loop]** Cloud environments intercept `ANTHROPIC_API_KEY` — the
+  platform warns it "won't be used to authenticate requests" because Claude
+  Code sessions authenticate through the account. Scripts that need a key for
+  their own direct API calls (the three test harnesses) must get it as
+  **`ANTHROPIC_TEST_API_KEY`**, which they already check first. A missing key
+  is a named data gap and a proposal-only run, never an excuse to fabricate
+  harness numbers.
