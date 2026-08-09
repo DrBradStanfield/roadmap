@@ -40,7 +40,7 @@ jobs:
           fetch-depth: 0 # need both origin/main and origin/dev
       - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       # Prod: main → site root. Always built, regardless of which branch
