@@ -88,8 +88,8 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 - Act on it: **small amendments (≤30 changed lines/run) to YOUR OWN charter**,
   applied directly with a dated changelog line. Subject to the entropy rules.
 - **This constitution, the Guardrails, your schedule, your write scope, your
-  credentials: proposal-only.** State the proposed change in the report and
-  email draft; only Brad applies it.
+  credentials: proposal-only.** State the proposed change in the report; only
+  Brad applies it.
 
 ## Reporting
 

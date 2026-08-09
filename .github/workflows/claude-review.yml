@@ -44,6 +44,11 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Without this the action never creates its PR comment NOR registers
+          # the github_comment MCP server — allow-listing the tool alone is not
+          # enough (shakedown fix #3: verdict produced, 5 permission denials,
+          # nothing posted).
+          track_progress: true
           prompt: |
             You are the INDEPENDENT REVIEWER in this repo's Tier 3 ship
             pipeline (docs/loops/deploy-pipeline-proposal.md). Review PR

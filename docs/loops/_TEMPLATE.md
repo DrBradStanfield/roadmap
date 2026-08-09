@@ -34,7 +34,9 @@ LEARNINGS.md's line counts).>
 self-amendment.>
 
 ## Delivery
-<Commit message format + Gmail DRAFT recipient/shape.>
+<Commit message format. The committed report IS the delivery (constitution:
+no email, never Gmail drafts); "🎯 Decision needed" issues only when a run
+genuinely needs Brad.>
 
 ## Changelog (self-amendments — newest first, keep 10)
 - <date>: charter created (Lane B: charter + signal + registry row before

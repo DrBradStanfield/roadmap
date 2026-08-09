@@ -41,7 +41,7 @@ unacted for a quarter, say so in the retro and propose the fleet review.
 - **Workflow integrity** (out-of-band backstop for the CI tripwire):
   `git log --since=8d --format='%an|%ae|%h|%s' -- .github/workflows/` — any
   commit not from Brad (his machine or his merges) is a CRITICAL finding:
-  lead the report AND the email draft with it.
+  lead the report with it AND open a "🎯 Decision needed" issue.
 - **Clarity** (`CLARITY_API_TOKEN` = drstanfield, `_MICROVITAMIN` = commerce):
   `https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=3`,
   Bearer auth. Its window is ~1–3 days: a sample, not the week — trends come
