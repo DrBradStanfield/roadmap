@@ -42,33 +42,46 @@ concurrency:
 
 jobs:
   gate:
-    # PR path: only merged PRs labeled `ship`. Dispatch path: always allowed.
+    # PR path: only merged same-repo PRs labeled `ship` (fork PRs get no
+    # secrets and would fail confusingly — security audit LOW-9).
+    # Dispatch path: always allowed (a human clicked).
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event.pull_request.merged == true &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
        contains(github.event.pull_request.labels.*.name, 'ship'))
     runs-on: ubuntu-latest
     steps:
-      - name: Verify PR had an approving review and green checks
+      - name: Verify a HUMAN approving review on the FINAL commit + green checks
         if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
-          SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
+          # Security audit HIGH-1: an approval only counts if it is (a) on the
+          # exact final commit (no stale approvals), (b) from a non-bot (the
+          # claude-review bot's opinion is advisory, never the gate), and
+          # (c) from the OWNER or a COLLABORATOR (no sockpuppet approvals on
+          # a public repo).
           approvals=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews" \
-            --jq '[.[] | select(.state=="APPROVED")] | length')
-          echo "Approving reviews: ${approvals}"
+            | jq --arg sha "$HEAD_SHA" '[.[] | select(
+                .state=="APPROVED" and .commit_id==$sha and .user.type!="Bot"
+                and (.author_association=="OWNER" or .author_association=="COLLABORATOR")
+              )] | length')
+          echo "Human approving reviews on ${HEAD_SHA}: ${approvals}"
           if [ "${approvals}" -lt 1 ]; then
-            echo "::error::No approving review on PR #${PR} — refusing to deploy."
+            echo "::error::No human (owner/collaborator) approval on the final commit of PR #${PR} — refusing to deploy."
             exit 1
           fi
-          # All check runs on the head commit must have succeeded (or be neutral/skipped).
-          bad=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${{ github.event.pull_request.head.sha }}/check-runs" \
-            --jq '[.check_runs[] | select(.conclusion != null and (.conclusion | IN("success","neutral","skipped")) | not)] | length')
-          if [ "${bad}" -gt 0 ]; then
-            echo "::error::PR #${PR} has non-successful check runs — refusing to deploy."
+          # The named 'test' check must have succeeded (an empty check list is
+          # a failure, not a pass — audit LOW-7), and nothing may have failed.
+          checks=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs")
+          bad=$(echo "$checks" | jq '[.check_runs[] | select(.conclusion != null and (.conclusion | IN("success","neutral","skipped")) | not)] | length')
+          ok=$(echo "$checks" | jq '[.check_runs[] | select(.name=="test" and .conclusion=="success")] | length')
+          if [ "${bad}" -gt 0 ] || [ "${ok}" -lt 1 ]; then
+            echo "::error::PR #${PR}: required 'test' check not green (successful-test=${ok}, non-green=${bad})."
             exit 1
           fi
 
@@ -141,10 +154,23 @@ jobs:
     needs: [gate, pages-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Deploy credentials live in the 'production' environment with Brad as
+    # required reviewer: this job PAUSES for his one-click approval before any
+    # secret is readable (security audit: the credential boundary that holds
+    # even if a workflow file or the PR chain is compromised).
+    environment: production
     steps:
       - uses: actions/checkout@v5
         with:
           ref: main # always deploy main tip — never a PR snapshot
+
+      - name: Assert main tip IS the gated merge commit (PR path — audit MED-5)
+        if: github.event_name == 'pull_request'
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          [ "$(git rev-parse HEAD)" = "$MERGE_SHA" ] || {
+            echo "::error::main moved past the gated commit — re-ship or dispatch deliberately."; exit 1; }
 
       - name: Guard — products.md must be a real file (not a symlink)
         run: |
@@ -201,32 +227,39 @@ jobs:
         run: shopify app deploy --force --config shopify.app.edu.toml
 
       # ---------- Fly (both apps; canary = a boot-crashing image never reaches serving machines) ----------
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      # SHA-pinned (audit MED-4): @master on a secret-bearing job is a supply-
+      # chain hole. This SHA = tag v1/1.6.
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # v1 / 1.6
         if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
 
       - name: Fly deploy — health-tool-app (commerce)
         if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_PROD }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           flyctl deploy -c fly.toml --strategy canary \
             --build-arg SENTRY_RELEASE="health-tool-app@$(git rev-parse --short HEAD)" \
-            --build-secret sentry_auth_token="${{ secrets.SENTRY_AUTH_TOKEN }}"
+            --build-secret sentry_auth_token="$SENTRY_AUTH_TOKEN"
 
       - name: Fly deploy — health-tool-edu (education)
         if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_EDU }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           flyctl deploy -c fly.edu.toml --strategy canary \
             --build-arg SENTRY_RELEASE="health-tool-edu@$(git rev-parse --short HEAD)" \
-            --build-secret sentry_auth_token="${{ secrets.SENTRY_AUTH_TOKEN }}"
+            --build-secret sentry_auth_token="$SENTRY_AUTH_TOKEN"
 
       - name: Health gates
         if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+        env:
+          FLY_TOKEN_PROD: ${{ secrets.FLY_DEPLOY_TOKEN_PROD }}
+          FLY_TOKEN_EDU: ${{ secrets.FLY_DEPLOY_TOKEN_EDU }}
         run: |
-          FLY_API_TOKEN="${{ secrets.FLY_DEPLOY_TOKEN_PROD }}" flyctl status -c fly.toml
-          FLY_API_TOKEN="${{ secrets.FLY_DEPLOY_TOKEN_EDU }}" flyctl status -c fly.edu.toml
+          FLY_API_TOKEN="$FLY_TOKEN_PROD" flyctl status -c fly.toml
+          FLY_API_TOKEN="$FLY_TOKEN_EDU" flyctl status -c fly.edu.toml
 
   verify-live:
     needs: deploy
