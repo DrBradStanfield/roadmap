@@ -1,0 +1,7 @@
+week,metric,count_7d,count_prior_7d,delta_pct,source,note
+2026-W32,empty_handle_turns,143,,,chat_match_events,baseline 2026-08-07 (router_skipped=false AND matched_handles empty)
+2026-W32,classifier_catchable_share_pct,73,,,manual categorisation,headline metric — should fall run over run
+2026-W32,routing_miss_share_pct,8,,,manual categorisation,content exists but not found — best fix target
+2026-W32,router_latency_median_ms,1615,,,chat_match_events,baseline 2026-08-07
+2026-W32,router_latency_p90_ms,3063,,,chat_match_events,baseline 2026-08-07
+2026-W32,router_cache_hit_rate_pct,39,,,chat_match_events,baseline 2026-08-07
