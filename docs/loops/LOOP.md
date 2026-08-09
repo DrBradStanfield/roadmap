@@ -42,14 +42,12 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   files is always safe). CSV ledgers alone grow without a line cap: they are
   append-only DATA, never instructions — archive by year (`metrics-2026.csv`)
   if one gets unwieldy.
-- **Within 20 lines of the cap: one-in-one-out.** Any amendment must delete or
-  compress at least as many lines as it adds.
-- **Outgrowing the cap means SPLIT, never raise**: move detail to a linked
-  reference file in your loop's folder, loaded on demand. The operative file
-  stays a router of currently-binding rules.
-- **Prefer distillation over accretion**: rewrite an existing rule to be
-  sharper rather than appending an exception. A playbook that reads like case
-  law is failing.
+- **Within 20 lines of the cap: one-in-one-out** — amendments delete/compress
+  at least as many lines as they add.
+- **Outgrowing the cap means SPLIT, never raise**: push detail to a linked
+  on-demand file; the operative file stays a router of binding rules.
+- **Prefer distillation over accretion**: sharpen an existing rule rather than
+  appending an exception. A playbook that reads like case law is failing.
 - **Monthly pruning pass** (first run of each month): the retro must name the
   least-earning rule in your charter and compress or delete it.
 - **Line counts are vital signs**: every report states the current line count
