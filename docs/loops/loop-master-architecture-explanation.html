@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loop Fleet Architecture — decisions &amp; research</title>
+<style>
+  :root { --bg:#f8f9fa; --card:#fff; --ink:#1a1a2e; --muted:#6b7280; --primary:#2563eb; --border:#e5e7eb; --warn:#d97706; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); line-height:1.55;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:36px 20px 60px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:28px 34px; margin-bottom:20px; }
+  h1 { font-size:26px; margin:0 0 6px; } h2 { font-size:19px; margin:26px 0 8px; }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.88em; background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:1px 5px; }
+  pre { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:14px; overflow-x:auto; font-size:13px; line-height:1.45; }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th,td { border-bottom:1px solid var(--border); text-align:left; padding:7px 10px; vertical-align:top; }
+  th { color:var(--muted); font-weight:500; font-size:12px; text-transform:uppercase; letter-spacing:.3px; }
+  .meta { color:var(--muted); font-size:13.5px; margin-bottom:22px; }
+  a { color:var(--primary); }
+  .q { border-left:3px solid var(--border); margin:10px 0; padding:2px 14px; color:var(--muted); font-size:14px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Loop Fleet Architecture</h1>
+<p class="meta">Decision record + research citations for the autonomous-loop system in <code>docs/loops/</code>. Authored 2026-08-10 (Brad + Claude). The operative rules live in <a href="LOOP.md">LOOP.md</a> (the constitution) — this page explains <em>why</em> they are what they are. Update only when an architectural decision changes.</p>
+
+<div class="card">
+<h2>The vision (Brad, 2026-08-07 → 08-10)</h2>
+<p>Not one loop but a fleet — potentially hundreds — each compounding knowledge about one aspect of the product: usage, chatbot quality, ads, and whatever comes next. Shared invariants: the main thread runs on the best available model as an <strong>orchestrator</strong> that fans out efficient, task-matched worker agents; every loop <strong>improves itself</strong>; everything is documented so data, docs, and product improve together; and — critically — the system <strong>fights entropy</strong> so self-improvement never becomes sprawl.</p>
+
+<h2>The structure</h2>
+<pre>docs/loops/
+  LOOP.md          ← THE CONSTITUTION: shared rules every loop inherits (Brad-guarded)
+  REGISTRY.md      ← fleet index: one row per loop (schedule, trigger, signal, status)
+  _TEMPLATE.md     ← charter template for new loops
+  loop-master-architecture-explanation.html   ← this page
+  &lt;name&gt;/
+    LOOP.md        ← the loop's CHARTER: deltas only (mission, sources, scope, delivery)
+    LEARNINGS.md   ← curated qualitative findings (capped, compacted)
+    metrics.csv    ← append-only numeric ledger (never summarized away)
+    YYYY-Www.md    ← weekly reports</pre>
+<p>Each trigger is a three-line bootstrap: read the constitution, then your charter; charters never override Guardrails. A loop only ever loads the constitution + its own folder — never the fleet (progressive disclosure at fleet scale). Improving the constitution improves every loop at once.</p>
+</div>
+
+<div class="card">
+<h2>Decision 1 — the 200-line / 25KB cap (researched, not arbitrary)</h2>
+<p>Brad challenged the first proposed cap (~120 lines) as arbitrary. Research agents were fanned out against Anthropic's primary sources (2026-08-10). Findings:</p>
+<table>
+<tr><th>Number</th><th>Source</th><th>What it governs</th></tr>
+<tr><td><strong>200 lines</strong></td><td>code.claude.com/docs/en/memory</td><td>CLAUDE.md-class always-loaded instruction files: <em>"target under 200 lines… Longer files consume more context and reduce adherence."</em></td></tr>
+<tr><td><strong>200 lines / 25KB</strong></td><td>same</td><td>Claude Code's own self-amending memory index (<code>MEMORY.md</code>) — a <em>hard, enforced</em> cap: content past it is silently dropped on load. The closest structural analog to a loop playbook.</td></tr>
+<tr><td>500 lines</td><td>Agent Skills docs</td><td>SKILL.md body — but only because skills use progressive disclosure (detail split into reference files).</td></tr>
+<tr><td>1,000–2,000 tokens</td><td>anthropic.com/engineering/effective-context-engineering-for-ai-agents</td><td>The stated right-size for distilled sub-agent summaries.</td></tr>
+</table>
+<p>Two principles from the same sources drive the design: <strong>bloat causes silent rule-dropping, not graceful degradation</strong> (a live model deprioritizes buried instructions — the exact failure mode a playbook can't afford), and <strong>large context windows are not an exemption</strong> (attention degradation scales with length architecturally). In every doc, the remedy for outgrowing a ceiling is the same: <strong>split into linked reference files — never raise the number</strong>. Hence the constitution's uniform rule: every operative file ≤200 lines / 25KB; one-in-one-out within 20 lines of the cap; split, don't grow.</p>
+<p>Empirical validation from this very repo: the chat-health playbook, self-amending without a cap, hit <strong>211 lines in three days</strong>.</p>
+</div>
+
+<div class="card">
+<h2>Decision 2 — learnings split by shape: prose vs ledger</h2>
+<p>Records split by <strong>durability and shape, not topic</strong>:</p>
+<table>
+<tr><th>Type</th><th>Destination</th><th>Why</th></tr>
+<tr><td>Time-series numbers (funnel counts, deltas)</td><td><code>metrics.csv</code>, append-only</td><td>Trends must never be prose-summarized — "usage was up" destroys the number. Greppable, diffable, chartable. Precedent: the business repo already runs two such ledgers (<code>ad-creative-results.csv</code>, <code>title-thumbnail-results.csv</code>).</td></tr>
+<tr><td>Qualitative findings</td><td><code>LEARNINGS.md</code>, capped 200/25KB</td><td>Nuance needs sentences; the cap + compaction keep it a live index, not an archive (git is the archive).</td></tr>
+<tr><td>Narrative</td><td>Weekly report files</td><td>Already the right shape — the "topic file" tier.</td></tr>
+</table>
+<p><strong>Compaction is a standing constraint, not a chore</strong> (modeled on Claude Code's own memory mechanism): within 20 lines of the cap, compact in the same run — merge near-duplicates, drop superseded entries, demote aged-obvious ones. <strong>Dedup is mechanical</strong>: same tag + same subsystem → update the existing entry in place, never append a paraphrase (grep-by-wording can't catch restatements; this rule can). Entries needing &gt;3 sentences become topic files with one-line index entries — the index/topic-file split Claude Code's harness memory uses in production.</p>
+</div>
+
+<div class="card">
+<h2>Decision 3 — entropy is fought on a schedule, and the budget is Brad-locked</h2>
+<p>Monthly pruning pass (first run of the month): the retro must name the least-earning rule and compress or delete it — entropy-fighting that isn't on the calendar doesn't happen. Line counts are published in every report as vital signs. And the enforcement asymmetry is deliberate: <strong>the entropy caps live in the constitution's Guardrails section, which only Brad may edit</strong> — the one thing a self-improving loop can never do is relax the rules about its own growth. Loops optimize within the budget; only Brad sets the budget.</p>
+
+<h2>Decision 4 — fleet-level entropy: loops must earn their keep</h2>
+<p>At hundreds of loops, the biggest sprawl risk isn't file length — it's loops nobody reads. So loops are treated as features under the repo's own Lane B discipline: <strong>every charter declares a success signal</strong> (what proves its outputs are acted on) before its first run, the registry makes the fleet visible in one screen, and a quarterly review kills or merges non-earning loops. This mirrors the lesson that created the loop system in the first place: the reminders feature sat at 2 opt-ins for months because nothing measured it.</p>
+
+<h2>Decision 5 — orchestration economics</h2>
+<p>Orchestrator = strongest available model (judgment, synthesis, retro — never delegated). Workers = task-matched cheaper models (mechanical pulls, scans, batch work → Sonnet-tier), fanned out in parallel. This is the repo's documented plan-big/execute-small pattern (≈92–96% of top-model quality at ≈46–63% of cost, per CLAUDE.md's benchmarks) applied to autonomous runs. Practical note: all three current loops fire Monday morning NZ within ~96 minutes and share one plan-usage pool — stagger across days if runs truncate.</p>
+
+<h2>History / status</h2>
+<p>2026-08-06: single product-health routine created (thin bootstrap → in-repo playbook). 2026-08-07: self-improvement protocol + guardrails v1; scoped read-only DB credential minted; env vars persisted to the cloud environment (with a UI save bug found and worked around — see the product-health memory notes). 2026-08-10: Brad's entropy challenge → research pass → this fleet architecture implemented; chat-health migrated in with a mandated compaction; ads loop remains in claude_business as an adoption candidate.</p>
+</div>
+</main>
+</body>
+</html>

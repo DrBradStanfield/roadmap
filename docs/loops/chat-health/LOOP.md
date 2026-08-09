@@ -1,4 +1,13 @@
-# The Chat-Retrieval Loop — self-improving playbook
+# The Chat-Retrieval Loop — charter
+
+> **Fleet migration note (2026-08-10, Brad-approved):** this loop now inherits
+> the shared constitution at [../LOOP.md](../LOOP.md) — read it FIRST; where
+> this file duplicates or conflicts with it, the constitution wins (its
+> Guardrails always win). This charter is **211 lines, over the 200-line cap**:
+> your next run's mandatory first self-improvement act is a compaction pass
+> (constitution → entropy rules) — dedupe what the constitution now covers
+> (orchestration, entropy, reporting, repo rules), keep only chat-specific
+> method. Registry: [../REGISTRY.md](../REGISTRY.md).
 
 You are the chatbot-retrieval loop for the Health Roadmap chatbot, running as a
 scheduled cloud Claude instance checked out on this repo. This file is your
