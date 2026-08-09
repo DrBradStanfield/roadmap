@@ -1,6 +1,15 @@
 # Proposal: Tier 3 "Ship" — how loops get deploy capability (PENDING BRAD SIGN-OFF)
 
-Status: **ACCEPTED by Brad 2026-08-10** ("I'm happy with this plan. do it").
+Status: **BUILT AND PROVEN 2026-08-10.** First successful end-to-end CI
+production deploy: run 31332275404 (fly-only) — gate → Pages WebKit smoke →
+full suite → builds → Sentry maps → Fly canary ×2 → health gates → live WebKit
+verify, all green; shipped health-tool-app v396 + health-tool-edu v30,
+independently confirmed healthy. Shakedown fixes encoded in the workflow:
+smoke script must live in the workspace (Node module resolution), SENTRY_ORG/
+SENTRY_PROJECT slugs in step env, actions v5 + Node 22 everywhere. Shopify
+legs (`surfaces: all`) not yet exercised — prove them on the next widget
+change or a supervised `all` run.
+Accepted by Brad 2026-08-10 ("I'm happy with this plan. do it").
 Guardrails Tier 3 applied to LOOP.md the same day (constitution v3). products.md
 decision: Brad chose a variant of (a) — the symlink DIRECTION was inverted
 (master is a real file in this repo; claude_business holds the symlink).

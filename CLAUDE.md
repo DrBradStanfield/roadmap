@@ -203,7 +203,19 @@ npx vitest run widget-src/src/lib/storage.test.ts # Widget tests
 
 ### Deploy Workflow
 
-Full deploy (widget + Shopify extensions + backend):
+**Preferred path (since 2026-08-10): the CI pipeline.** `.github/workflows/deploy.yml`
+runs the whole sequence below deterministically — gate → GitHub Pages WebKit smoke →
+full test suite → builds → Sentry maps → Shopify deploy ×2 → Fly deploy ×2
+(`--strategy canary`) → health gates → live WebKit verify — with all deploy
+credentials in GitHub Actions secrets (proven end-to-end: run 31332275404,
+fly-only, shipped v396/v30). Trigger: Actions → Deploy → Run workflow (choose
+surfaces), or automatically when a `ship`-labeled PR merges with an approving
+review (the Tier 3 loop pipeline, docs/loops/deploy-pipeline-proposal.md).
+CI deploys ship the exact main-tip commit — no working-tree risk. The manual
+sequence below remains valid for local/emergency use; agents cannot trigger
+the workflow (auto-mode blocks production deploys — a human clicks Run).
+
+Full manual deploy (widget + Shopify extensions + backend):
 
 ```bash
 # 1. Build the live v2 widget bundle (from project root). build:shopify-prod
