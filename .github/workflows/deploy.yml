@@ -104,9 +104,12 @@ jobs:
         run: |
           set -euo pipefail
           url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          # --assignee + @mention: bot-created issues notify nobody on their
+          # own — Brad only gets the email as an assignee/mentioned user.
           n=$(gh issue create -R "${GITHUB_REPOSITORY}" \
             --title "🚀 Production deploy pending — auto-ships in ~30 min" \
-            --body "Run: ${url}
+            --assignee DrBradStanfield \
+            --body "@DrBradStanfield — run: ${url}
           Trigger: ${GITHUB_EVENT_NAME} by ${GITHUB_ACTOR}, commit ${GITHUB_SHA}
           To VETO: cancel the run at the link above before the wait timer ends.
           This issue auto-closes when live verification passes." \

@@ -78,9 +78,12 @@ jobs:
 
           # Veto window: notify (native email via issue), wait 30 minutes.
           pr_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR}"
+          # --assignee + @mention: bot-created issues notify nobody on their
+          # own — Brad only gets the email as an assignee/mentioned user.
           issue=$(gh issue create -R "${GITHUB_REPOSITORY}" \
             --title "🕒 Auto-merge pending: PR #${PR} ships in ~30 min" \
-            --body "Reviewer approved PR #${PR} at ${HEAD_SHA}.
+            --assignee DrBradStanfield \
+            --body "@DrBradStanfield — reviewer approved PR #${PR} at ${HEAD_SHA}.
           ${pr_url}
           To VETO: close the PR or add the 'hold' label before the window ends.
           After merge, deploy.yml runs with its own 30-min window (second veto email)." \

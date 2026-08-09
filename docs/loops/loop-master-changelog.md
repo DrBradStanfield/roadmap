@@ -5,6 +5,14 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-10 (v4.1, Brad-directed):** Decision/veto issues must assign +
+  @mention Brad — diagnosed from a silent inbox: bot-created issues notify
+  nobody unless the recipient is mentioned, assigned, or watching All
+  Activity. Applied to auto-ship.yml, deploy.yml, and the constitution's
+  decision-issue rule. Same session: fleet dashboard added at
+  drbradstanfield.github.io/roadmap/fleet.html (pages.yml rebuilds it from
+  docs/loops CSVs on every loop commit; presentation only, never authoritative
+  — scheduled routines cannot publish claude.ai Artifacts, per docs).
 - **2026-08-10 (v4, Brad-directed):** Full zero-click autonomy. (1) The
   first-5-cycles human PR approval replaced by `auto-ship.yml`: reviewer's
   sha-pinned APPROVE → 30-min veto issue → auto-merge → deploy dispatch (its

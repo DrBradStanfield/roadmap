@@ -19,6 +19,9 @@ on:
       - 'widget-src/**'
       - 'packages/health-core/**'
       - '.github/workflows/pages.yml'
+      # Fleet dashboard: rebuilt from docs/loops CSVs on every loop commit.
+      - 'docs/loops/**'
+      - 'scripts/build-fleet-dashboard.mjs'
   workflow_dispatch:
 
 permissions:
@@ -51,6 +54,14 @@ jobs:
           npm ci
           VITE_BASE=/roadmap/ npm run build:pages
           mkdir -p _site && cp -r widget-src/dist-pages/. _site/
+
+      # Fleet dashboard (must run while main is checked out — the dev step
+      # below switches the tree). GITHUB_TOKEN only raises the API rate limit
+      # for the "needs attention" fetch; the page is pure static HTML.
+      - name: Build fleet dashboard → /fleet.html
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/build-fleet-dashboard.mjs _site/fleet.html
 
       # Staging: dev → /dev/. Best-effort — reuses main's node_modules (dev
       # rarely diverges in deps); a failed dev build warns and is skipped so it
