@@ -219,9 +219,26 @@ const EMPTY_USAGE: AnthropicUsage = {
   cacheReadTokens: 0,
 };
 
-const RouterOutput = z.object({
+// Exported for tests (handle-sanitation invariants).
+export const RouterOutput = z.object({
   handles: z.array(z.string().regex(/^[a-z0-9-]+$/).max(120)).max(3),
 });
+
+/**
+ * Normalise the router's raw handle array before schema parse so malformed
+ * output degrades gracefully instead of parse() throwing and dropping ALL
+ * handles: coerce spaces/caps, drop non-strings/empties, and soft-truncate to
+ * the schema's max of 3 — a 4th relevant handle must not void the first three
+ * (W33: all 3 production router_errors were exactly that).
+ */
+export function sanitizeRawHandles(handles: unknown): unknown {
+  if (!Array.isArray(handles)) return handles;
+  return handles
+    .filter((h): h is string => typeof h === 'string')
+    .map(h => h.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''))
+    .filter(h => h.length > 0)
+    .slice(0, 3);
+}
 
 // ---------------------------------------------------------------------------
 // Core routing function
@@ -287,16 +304,8 @@ export async function routeQuery(
     const result = await callAnthropicWithUsage(body, 5_000);
     rawJson = result.content;
 
-    // Sanitize before schema parse: normalise spaces/caps so a malformatted
-    // handle degrades gracefully rather than causing parse() to throw and drop
-    // all handles. e.g. "Cardiovascular Disease" → "cardiovascular-disease".
     const rawParsed = JSON.parse(extractJsonObject(rawJson)) as { handles?: unknown };
-    if (Array.isArray(rawParsed.handles)) {
-      rawParsed.handles = rawParsed.handles
-        .filter((h): h is string => typeof h === 'string')
-        .map(h => h.trim().toLowerCase().replace(/[^a-z0-9-]/g, ''))
-        .filter(h => h.length > 0);
-    }
+    rawParsed.handles = sanitizeRawHandles(rawParsed.handles);
     const parsed = RouterOutput.parse(rawParsed);
 
     // Allowlist: drop any handle the router hallucinated — but repair the ONE

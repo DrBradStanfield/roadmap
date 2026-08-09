@@ -1611,13 +1611,10 @@
   },
   {
     "query": "what is my ldl?",
-    "expected": [
-      "hyperlipidaemia",
-      "cholesterol-lowering-supplements-benefits-forms-dosing-and-side-effects"
-    ],
-    "category": "cardiovascular",
+    "category": "measurement",
     "source": "production",
-    "notes": "Short personalised query — user expecting chatbot to read their profile data"
+    "notes": "Recategorised router->classifier 2026-08-10 (W33 proposal 4, Brad-approved): since the 08-07 classifier the MEASUREMENT label skips this in production, so the router never sees it",
+    "expected_classification": "MEASUREMENT"
   },
   {
     "query": "I've been having chest pain. What are the red flags?",
