@@ -1,0 +1,36 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "94c365f02e9697f6e2a0ffeab8614080"
+name = "Health Roadmap"
+application_url = "https://health-tool-app.fly.dev"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = false
+
+[webhooks]
+api_version = "2026-04"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "orders/paid" ]
+  uri = "/webhooks/orders-paid"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_app_proxy,read_customers,write_customers,read_orders,read_all_orders,read_reports,write_content"
+
+[auth]
+redirect_urls = [ "https://health-tool-app.fly.dev/api/auth" ]
+
+[app_proxy]
+url = "https://health-tool-app.fly.dev"
+subpath = "health-tool-1"
+prefix = "apps"
