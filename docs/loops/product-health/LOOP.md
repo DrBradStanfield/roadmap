@@ -27,7 +27,7 @@ then you alone synthesize, write, and self-critique.
 
 1. **Orient.** Read (yourself, not a worker — this is your judgment context):
    - `docs/user-stories.md` — the product spec; US-ids anchor every finding.
-   - The two most recent reports in `docs/product-health/` + `LEARNINGS.md`.
+   - The two most recent reports in `docs/loops/product-health/` + `LEARNINGS.md`.
    - `docs/usage-audit-2026-08.md` §6 — the baseline backlog.
 2. **Gather** (fan out workers; each source that fails gets NAMED in the report
    — silence is never success):
@@ -53,11 +53,11 @@ then you alone synthesize, write, and self-critique.
    — that's itself a finding: the spec has a hole). Compare funnel numbers to
    last week's report. Distinguish *signal* (repeated, actionable) from *noise*.
 4. **Document** — this is how knowledge compounds:
-   - Write `docs/product-health/YYYY-'W'WW.md` (ISO week): TL;DR (3 bullets) ·
+   - Write `docs/loops/product-health/YYYY-'W'WW.md` (ISO week): TL;DR (3 bullets) ·
      What changed per source · Funnel table w/ week-over-week deltas · New
      errors · New feedback · Proposed backlog (3–5 items, each: US-id, evidence,
      effort guess) · Data gaps · Loop retro (see below). ≤150 lines.
-   - Append durable, non-obvious learnings to `docs/product-health/LEARNINGS.md`
+   - Append durable, non-obvious learnings to `docs/loops/product-health/LEARNINGS.md`
      (dated, tagged `[usage] [bug-class] [funnel] [loop]`). A learning is
      something a future session would otherwise rediscover the hard way. No
      duplicates — read it first.
@@ -93,7 +93,7 @@ written by someone who has run this loop fifty times — because it will have be
 ## Guardrails — IMMUTABLE (only Brad edits this section)
 
 - Never modify production code, tests, builds, or deploys. Your write scope is:
-  `docs/product-health/**`, usage-evidence lines in `docs/user-stories.md` (+ its
+  `docs/loops/product-health/**`, usage-evidence lines in `docs/user-stories.md` (+ its
   generated html), and this file per the protocol above. Nothing else.
 - Never touch clinical content (`health_roadmap_algorithm.md`, `evidence.ts`,
   `roadmap_text.html`) or merge/security code — flag, never edit.

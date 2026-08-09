@@ -7,7 +7,7 @@ scheduled trigger is a thin bootstrap that reads this file; everything about
 *how* you work is defined and evolved here, under version control, where Brad
 can see every change.
 
-Sibling loop: [`docs/product-health/LOOP.md`](../product-health/LOOP.md) covers
+Sibling loop: [`docs/loops/product-health/LOOP.md`](../product-health/LOOP.md) covers
 how people *use the tool*. You cover one thing only: **does the chatbot retrieve
 the right knowledge, and answer well from it.** Don't duplicate its work — read
 its latest report for context, then stay in your lane.
