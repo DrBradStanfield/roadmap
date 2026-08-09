@@ -51,6 +51,12 @@ jobs:
        github.event.pull_request.head.repo.full_name == github.repository &&
        contains(github.event.pull_request.labels.*.name, 'ship'))
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write # veto-window notification issue
+      pull-requests: read
+    outputs:
+      notify_issue: ${{ steps.notify.outputs.issue }}
     steps:
       - name: Verify a HUMAN approving review on the FINAL commit + green checks
         if: github.event_name == 'pull_request'
@@ -84,6 +90,27 @@ jobs:
             echo "::error::PR #${PR}: required 'test' check not green (successful-test=${ok}, non-green=${bad})."
             exit 1
           fi
+
+      # Zero-click autonomy relies on a VISIBLE veto window: this issue is
+      # Brad's native-email notification that a deploy is pending. The deploy
+      # job's 'production' environment wait-timer (30 min) is the window; the
+      # veto is cancelling the run. verify-live closes the issue on success —
+      # an issue left open means a deploy failed or is in flight.
+      - name: Veto-window notification (issue → email)
+        id: notify
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          n=$(gh issue create -R "${GITHUB_REPOSITORY}" \
+            --title "🚀 Production deploy pending — auto-ships in ~30 min" \
+            --body "Run: ${url}
+          Trigger: ${GITHUB_EVENT_NAME} by ${GITHUB_ACTOR}, commit ${GITHUB_SHA}
+          To VETO: cancel the run at the link above before the wait timer ends.
+          This issue auto-closes when live verification passes." \
+            | grep -oE '[0-9]+$')
+          echo "issue=${n}" >> "$GITHUB_OUTPUT"
 
   # Pre-production smoke on GitHub Pages (Brad, 2026-08-10): pages.yml already
   # auto-deploys the Pages build on widget/health-core pushes to main. Before
@@ -262,9 +289,12 @@ jobs:
           FLY_API_TOKEN="$FLY_TOKEN_EDU" flyctl status -c fly.edu.toml
 
   verify-live:
-    needs: deploy
+    needs: [gate, deploy]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -278,3 +308,12 @@ jobs:
         run: npx playwright install --with-deps webkit
       - name: Live WebKit smoke against production
         run: node tools/webkit-verify.mjs
+
+      - name: Close veto-window issue (deploy verified live)
+        if: needs.gate.outputs.notify_issue != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ needs.gate.outputs.notify_issue }}
+        run: |
+          gh issue close "$ISSUE" -R "${GITHUB_REPOSITORY}" \
+            --comment "Deployed and live-verified: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
