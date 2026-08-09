@@ -5,6 +5,7 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-10 (v2.3):** Truncation-proof commit ordering (report+data committed before polish; runs share a plan-usage pool) and the thin-trigger rule (substance lives in charters, never trigger prompts). Deploy-capability question (Brad: author-PR → reviewer loop → deploy → dual live verify) deferred to a research pass — recorded in session memory.
 - **2026-08-10 (v2.2, Brad-directed):** Guardrails reworked from a blanket
   code-freeze to a graduated grant ladder (Tier 0 propose / Tier 1 prepare on
   outcome branch / Tier 2 commit to named area), anchored on the physical
