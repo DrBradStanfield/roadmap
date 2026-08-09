@@ -40,8 +40,7 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   SPLIT at the cap, never grow past it); reports ≤150; changelogs keep only
   their last 10 entries (git history is the archive — deletion from working
   files is always safe). CSV ledgers alone grow without a line cap: they are
-  append-only DATA, never instructions — archive by year (`metrics-2026.csv`)
-  if one gets unwieldy.
+  append-only DATA, never instructions.
 - **Within 20 lines of the cap: one-in-one-out** — amendments delete/compress
   at least as many lines as they add.
 - **Outgrowing the cap means SPLIT, never raise**: push detail to a linked
