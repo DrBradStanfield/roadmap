@@ -47,6 +47,11 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   Bearer auth. Its window is ~1–3 days: a sample, not the week — trends come
   from metrics.csv, not any single pull.
 
+Conventions: the report/metrics week label is the COMPLETED ISO data week (the
+7d window ending at run time). Any funnel event reporting 0 must be classified
+dead-instrumentation vs. true-zero (inspect its emit site) before it enters the
+report — a zero row without that classification is a fabricated conclusion.
+
 ## Report sections (file: `2026-'W'WW.md` here, ≤150 lines)
 
 TL;DR (3 bullets) · What changed per source · Funnel table w/ deltas (also
@@ -81,5 +86,8 @@ send) to brad@drstanfield.com: TL;DR + proposed backlog + GitHub link.
 
 ## Changelog (self-amendments — newest first, keep 10)
 
+- 2026-08-10 (run W32): week-labeling convention (completed ISO data week) +
+  zero-event classification rule added; duplicate Clarity-window learning
+  pruned from LEARNINGS (monthly pruning pass).
 - 2026-08-10: charter extracted from the v1 playbook under the new fleet
   constitution; metrics.csv introduced; success signal declared.

@@ -17,6 +17,13 @@ duplicates.
 - **2026-08-07 [funnel]** Product events went live 2026-08-06; treat earlier
   weeks as no-data, not zero-usage. lab_rows_viewed/lab_row_added went live
   2026-08-07 (US-21 phase 1).
-- **2026-08-07 [loop]** Clarity's MCP/API window is ~1–3 days — weekly runs see
-  a sample, not the week; trends need the accumulated weekly reports, not any
-  single pull.
+- **2026-08-10 [funnel]** A funnel event reading 0 can be dead instrumentation,
+  not zero usage: `chat_opened` never fired (158 chat messages that same week)
+  because every live surface mounts ChatSection `startExpanded`, making its only
+  emit site unreachable. Rule now in the charter: classify every zero (inspect
+  the emit site) before reporting it. Verify each NEW event fires in production
+  within its first week.
+- **2026-08-10 [usage]** First instrumented week (W32, ~4 days): 190
+  results_viewed; uploads complete at 100% (7/7); corrections (9) and
+  additional-lab expansion (15, ~8% of viewers) both have real usage;
+  reminder_optin fired 0 times ever — the strongest kill-signal yet (US-17).

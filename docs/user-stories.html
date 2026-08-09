@@ -121,7 +121,7 @@
 <li>AC2: Old row flips to <code>entered-in-error</code>; new row has <code>source='manual_correction'</code>, <code>correctsId=old id</code>; results use only active rows.</li>
 <li>AC3: Corrections converge across devices (status is sticky in merge).</li>
 <li>AC4: Correcting a non-latest value doesn't disturb the latest summary.</li>
-<li>Evidence: correction affordance was a deliberate UX decision (memory: corrections live with the data); <code>correction_made</code> funnel event now measures real usage.</li>
+<li>Evidence: correction affordance was a deliberate UX decision (memory: corrections live with the data); <code>correction_made</code> funnel event now measures real usage — 9 corrections in the first instrumented week (2026-W32).</li>
 <li>Tests: ✅ merge.test.ts (<code>correctsId</code>/sticky status) + <code>roadmap-store-data-safety.test.ts</code> (store-level correction flow, 2026-08-07).</li>
 </ul>
 <h3 id="us-05-unit-switching">US-05 · Unit switching</h3>
@@ -159,7 +159,7 @@
 <li>AC1: OAuth (Drive/Dropbox) via PKCE redirect; GitHub/WebDAV via pasted credentials validated before commit.</li>
 <li>AC2: Switching providers copies current data to device first; log-off leaves the local copy intact.</li>
 <li>AC3: On-device guest data migrates up on first connect (merge, not overwrite).</li>
-<li>Evidence: a live Dropbox connect was captured on video (audit); privacy is a real user concern (feedback 2026-05-01). <code>cloud_connect_started/success</code> events now measure conversion/abandonment.</li>
+<li>Evidence: a live Dropbox connect was captured on video (audit); privacy is a real user concern (feedback 2026-05-01). <code>cloud_connect_started/success</code> events now measure conversion/abandonment — first week (2026-W32): 5 started → 2 succeeded (small n; no failure-step metadata yet).</li>
 <li>Tests: ❌ near-zero — only <code>logOff</code> teardown is tested. The adapters + PKCE + picker flow are untested. <strong>Action: sync-manager/store tests first (this pass); adapter tests deferred.</strong></li>
 </ul>
 <h3 id="us-10-cross-device-convergence">US-10 · Cross-device convergence</h3>
@@ -203,7 +203,7 @@
 <ul>
 <li>AC1: Server-proxied on Shopify surfaces; BYOK on Pages (no Brad server).</li>
 <li>AC2: <code>chat_opened</code> now measures adoption.</li>
-<li>Evidence: 926 messages; ~48% router unmatched; ~17% of queries are store-support questions (redirect opportunity); zero conversations link to a Shopify customer id (needs investigation).</li>
+<li>Evidence: 926 messages; ~48% router unmatched; ~17% of queries are store-support questions (redirect opportunity); zero conversations link to a Shopify customer id (needs investigation). 2026-W32: 158 messages/wk (+394% WoW); unmatched hit 73% that week; <code>chat_opened</code> has emitted 0 events ever — the only emit site is unreachable on every live surface (dead instrumentation, fix diff in loops/product-health/2026-W32.md).</li>
 <li>Tests: ✅ server-side chat.server tests + router fixture suites (<code>tools/test-queries.json</code> Phase D loop); ❌ chat UI/hooks untested (accepted for now).</li>
 </ul>
 <h3 id="us-16-chat-can-fill-my-form">US-16 · Chat can fill my form</h3>
@@ -215,7 +215,7 @@
 <h3 id="us-17-email-reminders">US-17 · Email reminders</h3>
 <p>As a user, I opt in with my email and get consolidated reminders when bloods/screenings/med-reviews come due; unsubscribe is one click; the server never sees health values (only labels+dates).</p>
 <ul>
-<li>Evidence: <strong>2 opt-ins ever</strong> — before more engineering, decide surface/kill (audit #8). <code>reminder_optin</code> event now measures attempts.</li>
+<li>Evidence: <strong>2 opt-ins ever</strong> — before more engineering, decide surface/kill (audit #8). <code>reminder_optin</code> event now measures attempts — 0 fires since instrumentation went live (2026-W32): the opt-in is either unreachable or unwanted.</li>
 <li>Tests: ✅ schedule/due logic + store persistence (<code>saveReminderPreference</code>/<code>setGlobalReminderOptout</code>, 2026-08-07); ❌ opt-in UX→server path untested (deferred pending the product decision).</li>
 <li><strong>Incident 2026-08-07:</strong> first store-level tests found <code>setGlobalReminderOptout</code> mutated rows without bumping their merge stamps — "turn off all reminders" silently reverted on the next sync. Fixed same day (routed through the stamped upsert path); regression test pins it. Open design TODO in the tests: on a fresh file with no per-category rows, the global opt-out is a no-op (depends on whether the UI seeds categories — check when the reminders decision is made).</li>
 </ul>
@@ -257,7 +257,7 @@
 <p><strong>Remaining open questions:</strong> exact test list per panel (Brad to review the catalogue skeleton); mixed-unit handling for values stored before a metric's conversion exists (proposal: display as-reported with the unit label until the conversion lands).</p>
 <p><strong>Phasing</strong> (each phase independently shippable with its own signal):</p>
 <ul>
-<li><strong>Phase 1 — surface what exists: ✅ SHIPPED 2026-08-07.</strong> <code>AdditionalLabRows</code> renders grouped, collapsed-by-default read-only rows beneath the blood-test matrix (inline SVG icon per group, count, expand to dated value strips, mixed-unit flag, "Other tests" bucket for uncatalogued names). Logic in <code>lib/lab-rows.ts</code> (13 tests); catalogue resolver handles LLM underscore/space variance. Corrections deferred to phase 2 (labValues have no store-level correct method yet). Signal live: <code>lab_rows_viewed</code>.</li>
+<li><strong>Phase 1 — surface what exists: ✅ SHIPPED 2026-08-07.</strong> <code>AdditionalLabRows</code> renders grouped, collapsed-by-default read-only rows beneath the blood-test matrix (inline SVG icon per group, count, expand to dated value strips, mixed-unit flag, "Other tests" bucket for uncatalogued names). Logic in <code>lib/lab-rows.ts</code> (13 tests); catalogue resolver handles LLM underscore/space variance. Corrections deferred to phase 2 (labValues have no store-level correct method yet). Signal live: <code>lab_rows_viewed</code> — 15 events in the first instrumented week (2026-W32) vs 190 <code>results_viewed</code> (~8% of viewers expand the additional-lab rows).</li>
 <li><strong>Phase 2 — manual add:</strong> "+" button + catalogue-driven add with canonical units/validation; labValue corrections. Signal: <code>lab_row_added</code> (registered, unused yet).</li>
 <li><strong>Phase 3 — normalization:</strong> unit conversion at save/review for catalogue tests.</li>
 </ul>

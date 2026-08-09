@@ -45,7 +45,7 @@ As a user who mistyped or whose lab import was wrong, I can click the saved cell
 - AC2: Old row flips to `entered-in-error`; new row has `source='manual_correction'`, `correctsId=old id`; results use only active rows.
 - AC3: Corrections converge across devices (status is sticky in merge).
 - AC4: Correcting a non-latest value doesn't disturb the latest summary.
-- Evidence: correction affordance was a deliberate UX decision (memory: corrections live with the data); `correction_made` funnel event now measures real usage.
+- Evidence: correction affordance was a deliberate UX decision (memory: corrections live with the data); `correction_made` funnel event now measures real usage — 9 corrections in the first instrumented week (2026-W32).
 - Tests: ✅ merge.test.ts (`correctsId`/sticky status) + `roadmap-store-data-safety.test.ts` (store-level correction flow, 2026-08-07).
 
 ### US-05 · Unit switching
@@ -80,7 +80,7 @@ As a privacy-conscious user, I choose Google Drive / Dropbox / GitHub / my own W
 - AC1: OAuth (Drive/Dropbox) via PKCE redirect; GitHub/WebDAV via pasted credentials validated before commit.
 - AC2: Switching providers copies current data to device first; log-off leaves the local copy intact.
 - AC3: On-device guest data migrates up on first connect (merge, not overwrite).
-- Evidence: a live Dropbox connect was captured on video (audit); privacy is a real user concern (feedback 2026-05-01). `cloud_connect_started/success` events now measure conversion/abandonment.
+- Evidence: a live Dropbox connect was captured on video (audit); privacy is a real user concern (feedback 2026-05-01). `cloud_connect_started/success` events now measure conversion/abandonment — first week (2026-W32): 5 started → 2 succeeded (small n; no failure-step metadata yet).
 - Tests: ❌ near-zero — only `logOff` teardown is tested. The adapters + PKCE + picker flow are untested. **Action: sync-manager/store tests first (this pass); adapter tests deferred.**
 
 ### US-10 · Cross-device convergence
@@ -120,7 +120,7 @@ As a user, my uploaded reports/letters become organized markdown documents (+ or
 As a user, I can ask the assistant about my suggestions; it answers with my plan as context, cites Brad's content, and its name matches the store I'm on (Brad AI / MicroVitamin).
 - AC1: Server-proxied on Shopify surfaces; BYOK on Pages (no Brad server).
 - AC2: `chat_opened` now measures adoption.
-- Evidence: 926 messages; ~48% router unmatched; ~17% of queries are store-support questions (redirect opportunity); zero conversations link to a Shopify customer id (needs investigation).
+- Evidence: 926 messages; ~48% router unmatched; ~17% of queries are store-support questions (redirect opportunity); zero conversations link to a Shopify customer id (needs investigation). 2026-W32: 158 messages/wk (+394% WoW); unmatched hit 73% that week; `chat_opened` has emitted 0 events ever — the only emit site is unreachable on every live surface (dead instrumentation, fix diff in loops/product-health/2026-W32.md).
 - Tests: ✅ server-side chat.server tests + router fixture suites (`tools/test-queries.json` Phase D loop); ❌ chat UI/hooks untested (accepted for now).
 
 ### US-16 · Chat can fill my form
@@ -131,7 +131,7 @@ As a user, when I tell the chat my numbers ("my LDL is 3.2"), it proposes struct
 
 ### US-17 · Email reminders
 As a user, I opt in with my email and get consolidated reminders when bloods/screenings/med-reviews come due; unsubscribe is one click; the server never sees health values (only labels+dates).
-- Evidence: **2 opt-ins ever** — before more engineering, decide surface/kill (audit #8). `reminder_optin` event now measures attempts.
+- Evidence: **2 opt-ins ever** — before more engineering, decide surface/kill (audit #8). `reminder_optin` event now measures attempts — 0 fires since instrumentation went live (2026-W32): the opt-in is either unreachable or unwanted.
 - Tests: ✅ schedule/due logic + store persistence (`saveReminderPreference`/`setGlobalReminderOptout`, 2026-08-07); ❌ opt-in UX→server path untested (deferred pending the product decision).
 - **Incident 2026-08-07:** first store-level tests found `setGlobalReminderOptout` mutated rows without bumping their merge stamps — "turn off all reminders" silently reverted on the next sync. Fixed same day (routed through the stamped upsert path); regression test pins it. Open design TODO in the tests: on a fresh file with no per-category rows, the global opt-out is a no-op (depends on whether the UI seeds categories — check when the reminders decision is made).
 
@@ -172,7 +172,7 @@ As a user whose lab reports contain tests beyond the core 8 (sodium, GGT, TSH, f
 **Remaining open questions:** exact test list per panel (Brad to review the catalogue skeleton); mixed-unit handling for values stored before a metric's conversion exists (proposal: display as-reported with the unit label until the conversion lands).
 
 **Phasing** (each phase independently shippable with its own signal):
-- **Phase 1 — surface what exists: ✅ SHIPPED 2026-08-07.** `AdditionalLabRows` renders grouped, collapsed-by-default read-only rows beneath the blood-test matrix (inline SVG icon per group, count, expand to dated value strips, mixed-unit flag, "Other tests" bucket for uncatalogued names). Logic in `lib/lab-rows.ts` (13 tests); catalogue resolver handles LLM underscore/space variance. Corrections deferred to phase 2 (labValues have no store-level correct method yet). Signal live: `lab_rows_viewed`.
+- **Phase 1 — surface what exists: ✅ SHIPPED 2026-08-07.** `AdditionalLabRows` renders grouped, collapsed-by-default read-only rows beneath the blood-test matrix (inline SVG icon per group, count, expand to dated value strips, mixed-unit flag, "Other tests" bucket for uncatalogued names). Logic in `lib/lab-rows.ts` (13 tests); catalogue resolver handles LLM underscore/space variance. Corrections deferred to phase 2 (labValues have no store-level correct method yet). Signal live: `lab_rows_viewed` — 15 events in the first instrumented week (2026-W32) vs 190 `results_viewed` (~8% of viewers expand the additional-lab rows).
 - **Phase 2 — manual add:** "+" button + catalogue-driven add with canonical units/validation; labValue corrections. Signal: `lab_row_added` (registered, unused yet).
 - **Phase 3 — normalization:** unit conversion at save/review for catalogue tests.
 
