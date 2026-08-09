@@ -1,0 +1,76 @@
+# Tripwire: the Claude GitHub App's grant includes "workflows: write" (an
+# all-or-nothing grant we can't remove selectively), and push rulesets that
+# would path-restrict .github/workflows/** are unavailable on personal public
+# repos. So this workflow ALERTS on any workflow-file change not made by Brad:
+# push-triggered (fires immediately) + a daily scheduled audit (catches the
+# case where a malicious push deleted this file in the same commit — the
+# schedule keeps running from main's last good state until that push, and the
+# product-health loop's weekly git-log check is the out-of-band backstop).
+#
+# Editing this file is Brad-only (constitution Guardrails).
+
+name: Workflow Integrity
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/**']
+  schedule:
+    - cron: '17 9 * * *'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Alert on non-Brad workflow-file changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.actor }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          alert() {
+            # one open tripwire issue at a time — comment instead of spamming
+            existing=$(gh issue list -R "${GITHUB_REPOSITORY}" --state open \
+              --search "SECURITY: workflow files in:title" --json number --jq '.[0].number // empty')
+            if [ -n "${existing}" ]; then
+              gh issue comment "${existing}" -R "${GITHUB_REPOSITORY}" --body "$1"
+            else
+              gh issue create -R "${GITHUB_REPOSITORY}" \
+                --title "🚨 SECURITY: workflow files changed by a non-Brad actor" \
+                --body "$1"
+            fi
+          }
+          if [ "${EVENT}" = "push" ]; then
+            if [ "${ACTOR}" != "DrBradStanfield" ]; then
+              alert "Push by **${ACTOR}** touched .github/workflows/** on main (commit ${GITHUB_SHA}).
+          Review immediately: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}
+          If malicious: revert the commit, revoke environment secrets, disable deploy.yml."
+            else
+              echo "Workflow change pushed by DrBradStanfield — OK."
+            fi
+            exit 0
+          fi
+          # Scheduled audit: last 8 days of commits touching workflow files.
+          # Flags commits attributed to any OTHER GitHub account (bots incl.).
+          # Commits from Brad's Mac with an unmapped local email have a null
+          # author login and are not flagged — the push-path check above and
+          # the product-health loop's weekly log review cover the gap.
+          since=$(date -u -d '8 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          suspicious=$(gh api "repos/${GITHUB_REPOSITORY}/commits?path=.github/workflows&since=${since}&per_page=100" \
+            --jq '[.[] | select(.author.login != null and .author.login != "DrBradStanfield")
+                   | {sha: .sha[0:8], who: .author.login, msg: (.commit.message | split("\n")[0])}]')
+          count=$(echo "${suspicious}" | jq 'length')
+          if [ "${count}" -gt 0 ]; then
+            alert "Daily audit: ${count} workflow-file commit(s) in the last 8 days not attributed to DrBradStanfield:
+          \`\`\`json
+          ${suspicious}
+          \`\`\`"
+          else
+            echo "Daily audit clean."
+          fi
