@@ -92,6 +92,10 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   noise.
 - Deliver per charter (default: Gmail DRAFT to brad@drstanfield.com — never
   send), with a GitHub link to the committed report.
+- **Commit early — truncation-proof the run**: commit the report with its data
+  as soon as the numbers are in, BEFORE polish/retro/self-amendment (runs
+  share a plan-usage pool and can be cut off mid-flight; a truncated run must
+  still leave its data on main, marked "run truncated after <step>").
 
 ## Repo rules (inherited from CLAUDE.md — binding)
 
@@ -142,6 +146,9 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   get the reminders treatment.
 - New loops start from `_TEMPLATE.md` in this folder; creating one is a Lane B
   act — charter + signal + registry row before the first scheduled run.
+- **Triggers stay thin** (a few bootstrap lines: constitution → charter →
+  stop-if-missing). Any substantive rule found living in a trigger prompt is
+  drift — move it into the charter and flag it in the retro.
 
 Constitution history lives in [loop-master-changelog.md](loop-master-changelog.md)
 (a history file, exempt from the operative cap — like reports and ledgers).
