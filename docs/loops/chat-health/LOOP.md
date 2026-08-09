@@ -57,7 +57,8 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
 1. This charter + `LEARNINGS.md` + `metrics.csv` here.
 2. The two most recent reports in this folder.
 3. `docs/chat-overview.html` "Current state at a glance" (claude_business
-   repo) — live per-hop model split and latency.
+   repo) — build-session envs only; unreachable from the cloud runner, where
+   it is a standing named gap (don't re-discover this each run).
 
 ## Gather (fan out workers; every unreachable source is a NAMED gap)
 
@@ -114,8 +115,12 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
 
 - Before any edit: `npx tsx tools/test-chatbot-matching.ts --category <cat>
   --runs 3 --concurrency 5`. Record the number. Apply edits, `npm run
-  rebuild-index`, re-run the SAME command. **Lower after-number → revert**,
-  and report the attempt with its numbers anyway.
+  rebuild-index`, re-run the SAME command. **Lower OR unchanged after-number →
+  revert**, and report the attempt with its numbers anyway.
+- Before drafting a summary edit for a failing query, check what the router
+  picked INSTEAD (verbose/single-query run). Selection-side failures (wrong
+  entry chosen despite correct terms) can't be fixed by summary edits — W33
+  spent two reverted edits learning this.
 - Add every confirmed production failure to `tools/test-queries.json` as a
   regression case, fixed or not.
 - `npx tsx tools/test-classifier.ts --runs 1` if anything
@@ -158,6 +163,9 @@ approval, GitHub links to the report and content-backlog.csv.
 
 ## Changelog (self-amendments — newest first, keep 10)
 
+- 2026-08-10 (W33 run): orient step 3 marked cloud-unreachable (standing gap);
+  Verify gains "inspect the router's alternative pick before editing" and
+  reverts now also fire on an UNCHANGED after-number (W33: two no-gain edits).
 - 2026-08-10 (Brad): content gaps now accumulate in content-backlog.csv —
   a ledger, per Brad, not a markdown table (machine-updatable, GitHub still
   renders it); in-place increments, status column; email surfaces top 3.

@@ -68,6 +68,28 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   `hyperlipidaemia` whose summary described the *condition*; the answer was in
   the body all along. When a query names a drug, check whether the owning
   document's summary names it too.
+- **2026-08-10 [retrieval]** The router self-sabotages on multi-topic queries:
+  when it emits >3 handles, Zod's `.max(3)` rejects the WHOLE array → logged as
+  `router_error` with empty handles, every found match discarded. 3 of 27
+  empty-handle turns in W33 were this. The sanitize block normalises handle
+  format but not count; fix is a one-line `.slice(0, 3)` (proposed W33 report).
+- **2026-08-10 [retrieval]** YouTube empty-handles are structurally different
+  from web ones: the bot pre-loads the video's companion blog into the reply
+  context (`findBlogByVideoId`), so an empty router result on an on-topic
+  comment is usually CORRECT — the router's only job there is cross-content.
+  But `routeQuery`/`classifyMessage` get the bare comment with no video
+  context, so oblique comments ("could it cause blindness?") are unroutable.
+  Categorise YT empties against the companion blog before calling them misses.
+- **2026-08-10 [retrieval]** Term-presence in the visible summary is necessary
+  but NOT sufficient: the statin-cognition query kept failing (77%→77%) after
+  "memory/cognitive decline" was placed inside the first 150 chars — the router
+  picked `medications-in-chronic-pain` instead. When a query fails, inspect
+  what the router chose INSTEAD before drafting any summary edit; if the
+  failure is selection-side, a summary edit can't fix it.
+- **2026-08-10 [loop]** Baseline a production failure in the harness BEFORE
+  editing anything: the 08-05 MSM miss already passed at baseline (the 08-07
+  fix wave had fixed it). Production failures predating the last fix wave may
+  be stale; measuring first killed a pointless edit.
 - **2026-08-10 [loop]** Cloud environments intercept `ANTHROPIC_API_KEY` — the
   platform warns it "won't be used to authenticate requests" because Claude
   Code sessions authenticate through the account. Scripts that need a key for
