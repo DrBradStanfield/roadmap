@@ -5,6 +5,12 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-10 (v3.2):** Stale repo rule corrected — products.md is a REAL
+  file post-inversion (the old "verify symlink 120000" line described the
+  exact state the guard now blocks). Proposed by the product-health loop's
+  first constitutional run (W32 retro, proposal-only discipline observed);
+  applied under Brad's standing inversion decision. Also: Tier 3 PR-path
+  carve-out noted in the no-branches rule.
 - **2026-08-10 (v3.1, Brad-directed):** Machine-readability rule generalized —
   structured records (ledgers, status tables, anything counted/filtered/
   joined/trended) live in CSV with stable headers, never prose; .md reserved

@@ -106,8 +106,10 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## Repo rules (inherited from CLAUDE.md — binding)
 
-- Commit everything to main and push (no branches, no PRs, sweep rule applies).
-  Verify `docs/products.md` is a symlink (git mode 120000) before committing.
+- Commit everything to main and push (no branches, no PRs, sweep rule applies
+  — EXCEPT Tier 3 code changes, which go via `claude/` branch + PR by design).
+  `docs/products.md` must be a REAL file (mode 100644), never a symlink
+  (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
 - Never print secret values; never commit real user data or health values;
   anonymize quoted user content.
 
