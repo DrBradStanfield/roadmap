@@ -54,6 +54,11 @@ const PER_VIDEO_REPLY_CAP = 10;       // ceiling per video lifetime
 const COMMENT_MAX_AGE_DAYS = 7;       // ignore comments older than this
 const MIN_WORDS = 5;                  // ≥5 words to be considered substantive
 
+// Multi-turn (follow-up) config — see § Follow-up replies below.
+const FOLLOWUP_MIN_WORDS = 3;             // follow-ups are naturally shorter ("does it cause blindness?")
+const MAX_CHANNEL_REPLIES_PER_THREAD = 2; // hard cap: initial reply + at most ONE follow-up (screenshot-risk control)
+const FOLLOWUP_THREADS_PER_TICK = 25;     // bound the per-tick comments.list calls
+
 const PLATFORM_YOUTUBE = 'youtube';
 
 /**
@@ -180,11 +185,22 @@ async function getAccessToken(): Promise<string> {
 // via the shared blog-index/loader the on-site chatbot already uses).
 // ---------------------------------------------------------------------------
 
-function buildYouTubePlatformContext(videoId: string, entry: BlogIndexEntry, body: string): string {
-  return YOUTUBE_PROMPT_TEMPLATE
+/** Appended to the platform context on follow-up turns only. The bot has
+ *  already answered once in this thread; the bar for speaking again is higher
+ *  and disengaging from hostility is mandatory (agreed with Brad 2026-08-10). */
+const FOLLOWUP_POSTURE = `
+
+FOLLOW-UP TURN: You already replied once in this comment thread (see the conversation history). This is a follow-up directed at you.
+- Answer ONLY a genuine, substantive follow-up question you can ground in the video content or provided articles.
+- If the message is hostile, sarcastic, bait, a rant, or mere disagreement without a question — return SKIP_NO_REPLY. Never argue, never defend yourself, never reply to hostility.
+- This is your LAST reply in this thread either way, so make it self-contained and do not invite further questions.`;
+
+function buildYouTubePlatformContext(videoId: string, entry: BlogIndexEntry, body: string, isFollowUp = false): string {
+  const base = YOUTUBE_PROMPT_TEMPLATE
     .replace('{{VIDEO_TITLE}}', entry.title)
     .replace('{{VIDEO_URL}}', `https://youtu.be/${videoId}`)
     .replace('{{VIDEO_CONTENT}}', body);
+  return isFollowUp ? base + FOLLOWUP_POSTURE : base;
 }
 
 // ---------------------------------------------------------------------------
@@ -246,6 +262,74 @@ async function listRecentThreads(token: string): Promise<YouTubeThread[]> {
       totalReplyCount: item.snippet.totalReplyCount,
     };
   });
+}
+
+export interface YouTubeReply {
+  id: string;
+  authorDisplayName: string;
+  authorChannelId: string | null;
+  text: string;
+  publishedAt: string;
+}
+
+/** List all replies under a top-level comment (YouTube threads are 2-level:
+ *  every reply's parentId is the top-level comment, and reply IDs are
+ *  `<threadId>.<suffix>`). Sorted oldest-first. */
+async function listReplies(token: string, topLevelCommentId: string): Promise<YouTubeReply[]> {
+  const url = new URL('https://www.googleapis.com/youtube/v3/comments');
+  url.searchParams.set('parentId', topLevelCommentId);
+  url.searchParams.set('part', 'snippet');
+  url.searchParams.set('maxResults', '100');
+  url.searchParams.set('textFormat', 'plainText');
+
+  const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`YouTube replies list failed: ${res.status} ${body.slice(0, 200)}`);
+  }
+  const data = await res.json() as {
+    items?: Array<{
+      id: string;
+      snippet: {
+        authorDisplayName: string;
+        authorChannelId?: { value: string };
+        textOriginal: string;
+        publishedAt: string;
+      };
+    }>;
+  };
+  return (data.items ?? [])
+    .map(item => ({
+      id: item.id,
+      authorDisplayName: item.snippet.authorDisplayName,
+      authorChannelId: item.snippet.authorChannelId?.value ?? null,
+      text: item.snippet.textOriginal,
+      publishedAt: item.snippet.publishedAt,
+    }))
+    .sort((a, b) => a.publishedAt.localeCompare(b.publishedAt));
+}
+
+let cachedChannelHandle: string | null | undefined;
+
+/** The channel's @handle (e.g. "@drbradstanfield") — YouTube auto-prefixes it
+ *  when a viewer taps Reply on one of our replies, which is the deterministic
+ *  "addressed to the bot" signal. Cached for the process lifetime; null when
+ *  the lookup fails (the addressee gate then falls back to original-author-only). */
+async function getChannelHandle(token: string): Promise<string | null> {
+  if (cachedChannelHandle !== undefined) return cachedChannelHandle;
+  try {
+    const url = new URL('https://www.googleapis.com/youtube/v3/channels');
+    url.searchParams.set('id', CHANNEL_ID!);
+    url.searchParams.set('part', 'snippet');
+    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`channels.list ${res.status}`);
+    const data = await res.json() as { items?: Array<{ snippet?: { customUrl?: string } }> };
+    cachedChannelHandle = data.items?.[0]?.snippet?.customUrl ?? null;
+  } catch (err) {
+    Sentry.captureException(err, { tags: { feature: 'youtube-bot', subsystem: 'channel-handle' } });
+    cachedChannelHandle = null;
+  }
+  return cachedChannelHandle;
 }
 
 async function postReply(token: string, parentCommentId: string, text: string): Promise<string> {
@@ -418,30 +502,43 @@ async function persistYouTubeTurn(p: {
   thread: YouTubeThread;
   outcome: PipelineOutcome;
   postedYoutubeId: string | null;
+  /** Set on follow-up turns: the reply comment we responded to (the thread id lives in thread.topLevelCommentId). */
+  followUpCommentId?: string | null;
 }): Promise<void> {
   if (!supabaseAdmin || !BOT_PROFILE_ID) return;
 
   const { thread, outcome } = p;
 
   try {
-    const { data: conv, error: convErr } = await supabaseAdmin
+    // Find-or-create keyed on the thread id, so follow-up turns append to the
+    // same conversation instead of forking a new one per turn.
+    const { data: existing } = await supabaseAdmin
       .from('chat_conversations')
-      .insert({
-        user_id: BOT_PROFILE_ID,
-        title: thread.text.slice(0, 80),
-        platform: PLATFORM_YOUTUBE,
-        external_id: thread.topLevelCommentId,
-      })
       .select('id')
-      .single();
-    if (convErr || !conv) {
-      Sentry.captureException(new Error('YouTube: failed to create conversation'), {
-        tags: { feature: 'youtube-bot', subsystem: 'persist-chat' },
-        extra: { dbError: convErr?.message, commentId: thread.topLevelCommentId },
-      });
-      return;
+      .eq('platform', PLATFORM_YOUTUBE)
+      .eq('external_id', thread.topLevelCommentId)
+      .maybeSingle();
+    let conversationId: string | null = existing?.id ?? null;
+    if (!conversationId) {
+      const { data: conv, error: convErr } = await supabaseAdmin
+        .from('chat_conversations')
+        .insert({
+          user_id: BOT_PROFILE_ID,
+          title: thread.text.slice(0, 80),
+          platform: PLATFORM_YOUTUBE,
+          external_id: thread.topLevelCommentId,
+        })
+        .select('id')
+        .single();
+      if (convErr || !conv) {
+        Sentry.captureException(new Error('YouTube: failed to create conversation'), {
+          tags: { feature: 'youtube-bot', subsystem: 'persist-chat' },
+          extra: { dbError: convErr?.message, commentId: thread.topLevelCommentId },
+        });
+        return;
+      }
+      conversationId = conv.id;
     }
-    const conversationId = conv.id;
 
     // The viewer's comment. Always stored — this is the prompt half of the pair.
     const { error: userErr } = await supabaseAdmin.from('chat_messages').insert({
@@ -494,6 +591,7 @@ async function persistYouTubeTurn(p: {
         platform: PLATFORM_YOUTUBE,
         videoId: thread.videoId,
         commentId: thread.topLevelCommentId,
+        followUpCommentId: p.followUpCommentId ?? null,
         postedYoutubeId: p.postedYoutubeId,
         posted: outcome.posted,
         skipReason: outcome.skipReason ?? null,
@@ -559,6 +657,113 @@ function filterThread(thread: YouTubeThread): FilterResult {
 }
 
 // ---------------------------------------------------------------------------
+// Follow-up replies (multi-turn) — three gates, decided 2026-08-10 with Brad:
+//   1. Addressee: only replies directed at the bot — the thread's original
+//      author continuing after our reply, or an explicit @our-handle mention
+//      (YouTube auto-inserts it when someone taps Reply on our reply). Other
+//      users talking to each other are never interrupted.
+//   2. Brad-engaged exit: any channel-authored reply we didn't post means Brad
+//      is personally in the thread — the bot leaves it to him, permanently.
+//   3. Hard cap: MAX_CHANNEL_REPLIES_PER_THREAD channel replies per thread
+//      (initial + one follow-up), regardless of quality — the screenshot-risk
+//      control. Hostile/bait follow-ups additionally die in the pipeline
+//      (classifier skip or SKIP_NO_REPLY with the follow-up posture block).
+// ---------------------------------------------------------------------------
+
+export type FollowUpDecision = { skip: string } | { candidate: YouTubeReply };
+
+export function assessThreadFollowUp(p: {
+  replies: YouTubeReply[];       // full reply list, oldest-first
+  botPostedIds: Set<string>;     // comment IDs the bot itself posted
+  channelId: string;
+  originalAuthor: string;        // display name of the thread's top-level author
+  channelHandle: string | null;  // "@handle", or null when unknown
+}): FollowUpDecision {
+  const channelReplies = p.replies.filter(r => r.authorChannelId === p.channelId);
+
+  if (channelReplies.some(r => !p.botPostedIds.has(r.id))) return { skip: 'brad-engaged' };
+  if (channelReplies.length === 0) return { skip: 'no-bot-reply-visible' };
+  if (channelReplies.length >= MAX_CHANNEL_REPLIES_PER_THREAD) return { skip: 'thread-cap' };
+
+  const lastBotTime = channelReplies[channelReplies.length - 1].publishedAt;
+  const handle = p.channelHandle?.toLowerCase();
+  const candidates = p.replies.filter(r =>
+    r.authorChannelId !== p.channelId &&
+    r.publishedAt > lastBotTime &&
+    (r.authorDisplayName === p.originalAuthor ||
+      (handle ? r.text.trim().toLowerCase().startsWith(handle) : false)),
+  );
+  if (candidates.length === 0) return { skip: 'no-addressed-followup' };
+
+  return { candidate: candidates[0] }; // oldest first — one follow-up per thread per tick
+}
+
+/** Rebuild the thread as chat history for the main LLM: top-level comment,
+ *  then every reply before the candidate — bot turns as assistant, viewer
+ *  turns as user (name-prefixed), consecutive same-role turns merged. */
+export function buildThreadHistory(
+  original: { author: string; text: string },
+  replies: YouTubeReply[],
+  channelId: string,
+  candidateId: string,
+): Array<{ role: 'user' | 'assistant'; content: string }> {
+  const turns: Array<{ role: 'user' | 'assistant'; content: string }> = [
+    { role: 'user', content: `${original.author}: ${original.text}` },
+  ];
+  for (const r of replies) {
+    if (r.id === candidateId) break;
+    turns.push(
+      r.authorChannelId === channelId
+        ? { role: 'assistant', content: r.text }
+        : { role: 'user', content: `${r.authorDisplayName}: ${r.text}` },
+    );
+  }
+  return turns.reduce<typeof turns>((merged, t) => {
+    const prev = merged[merged.length - 1];
+    if (prev && prev.role === t.role) prev.content += `\n\n${t.content}`;
+    else merged.push({ ...t });
+    return merged;
+  }, []);
+}
+
+/** Threads the bot has posted in recently (candidates for follow-up scanning),
+ *  plus the set of ALL comment IDs the bot ever posted in the window — used to
+ *  tell bot replies apart from Brad's own. Reply-row IDs (`thread.suffix`)
+ *  collapse onto their thread. */
+async function fetchRecentPostedThreads(): Promise<{
+  threadIds: string[];
+  botPostedIds: Set<string>;
+  threadMeta: Map<string, { videoId: string; originalAuthor: string; originalComment: string }>;
+}> {
+  const out = { threadIds: [] as string[], botPostedIds: new Set<string>(), threadMeta: new Map() };
+  if (!supabaseAdmin) return out;
+  const cutoff = new Date(Date.now() - COMMENT_MAX_AGE_DAYS * 24 * 60 * 60_000).toISOString();
+  const { data, error } = await supabaseAdmin
+    .from('youtube_bot_log')
+    .select('youtube_comment_id, posted_youtube_id, video_id, user_channel, user_comment, posted_at')
+    .eq('posted', true)
+    .gte('posted_at', cutoff)
+    .order('posted_at', { ascending: false });
+  if (error) {
+    Sentry.captureException(error, { tags: { feature: 'youtube-bot', subsystem: 'followups' } });
+    return out;
+  }
+  for (const row of data ?? []) {
+    if (row.posted_youtube_id) out.botPostedIds.add(row.posted_youtube_id);
+    // Top-level rows carry the thread id; follow-up rows carry `<threadId>.<suffix>`.
+    if (!row.youtube_comment_id.includes('.') && !out.threadMeta.has(row.youtube_comment_id)) {
+      out.threadIds.push(row.youtube_comment_id);
+      out.threadMeta.set(row.youtube_comment_id, {
+        videoId: row.video_id,
+        originalAuthor: row.user_channel ?? '',
+        originalComment: row.user_comment ?? '',
+      });
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Pipeline — classifier → conditional router → main LLM
 // ---------------------------------------------------------------------------
 
@@ -581,8 +786,14 @@ interface PipelineOutcome {
   isFallback?: boolean;
 }
 
-async function runPipeline(thread: YouTubeThread, entry: BlogIndexEntry, body: string): Promise<PipelineOutcome> {
+async function runPipeline(
+  thread: YouTubeThread,
+  entry: BlogIndexEntry,
+  body: string,
+  history: Array<{ role: 'user' | 'assistant'; content: string }> = [],
+): Promise<PipelineOutcome> {
   const sanitized = sanitizeForRouter(thread.text);
+  const isFollowUp = history.length > 0;
 
   const classifierResult = await classifyMessage(sanitized);
   if (classifierResult.classification === 'GREETING') {
@@ -604,11 +815,11 @@ async function runPipeline(thread: YouTubeThread, entry: BlogIndexEntry, body: s
     routerHandles = routerResult.handles;
   }
 
-  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body);
+  const platformContext = buildYouTubePlatformContext(thread.videoId, entry, body, isFollowUp);
   const blogArticles = loadMatchedArticlesFromHandles(routerHandles);
   // YouTube is a doctor-family surface (Brad's public channel) → strict doctor posture.
   const systemBlocks = buildSystemBlocks(platformContext, { surfaceContext: DOCTOR_POSTURE, blogArticles });
-  const conversationMessages = buildConversationMessages([], thread.text);
+  const conversationMessages = buildConversationMessages(history, thread.text);
   const completion = await getChatCompletion(systemBlocks, conversationMessages);
 
   const base = {
@@ -640,6 +851,129 @@ async function runPipeline(thread: YouTubeThread, entry: BlogIndexEntry, body: s
   }
 
   return { ...base, posted: true, replyText, llmOutput: replyText };
+}
+
+// ---------------------------------------------------------------------------
+// Follow-up scan — runs after the top-level loop, inside the same daily cap
+// ---------------------------------------------------------------------------
+
+async function processFollowUps(
+  token: string,
+  budget: number,
+  videoPostCounts: Map<string, number>,
+): Promise<{ posted: number; skipped: number }> {
+  let posted = 0;
+  let skipped = 0;
+  if (budget <= 0) return { posted, skipped };
+
+  const recent = await fetchRecentPostedThreads();
+  if (recent.threadIds.length === 0) return { posted, skipped };
+  const channelHandle = await getChannelHandle(token);
+
+  for (const threadId of recent.threadIds.slice(0, FOLLOWUP_THREADS_PER_TICK)) {
+    if (posted >= budget) break;
+    const meta = recent.threadMeta.get(threadId)!;
+
+    let replies: YouTubeReply[];
+    try {
+      replies = await listReplies(token, threadId);
+    } catch (err) {
+      logTickError(err);
+      continue;
+    }
+
+    const decision = assessThreadFollowUp({
+      replies,
+      botPostedIds: recent.botPostedIds,
+      channelId: CHANNEL_ID!,
+      originalAuthor: meta.originalAuthor,
+      channelHandle,
+    });
+    if ('skip' in decision) continue;
+    const reply = decision.candidate;
+
+    // Same hygiene gates as top-level, with the shorter follow-up word floor.
+    const ageDays = (Date.now() - new Date(reply.publishedAt).getTime()) / (24 * 60 * 60_000);
+    if (ageDays > COMMENT_MAX_AGE_DAYS) continue;
+    if (reply.text.trim().split(/\s+/).length < FOLLOWUP_MIN_WORDS) continue;
+    if ((videoPostCounts.get(meta.videoId) ?? 0) >= PER_VIDEO_REPLY_CAP) continue;
+
+    let claimed: boolean;
+    try {
+      claimed = await claimComment(reply.id);
+    } catch (err) {
+      logTickError(err);
+      continue;
+    }
+    if (!claimed) continue;
+
+    const blogEntry = findBlogByVideoId(meta.videoId);
+    const fullContent = blogEntry ? loadBlogArticle(blogEntry.handle) : null;
+    if (!blogEntry || !fullContent) {
+      skipped++;
+      continue;
+    }
+    const blogBody = fullContent.replace(/^---[\s\S]*?---\n\n?/, '');
+
+    const history = buildThreadHistory(
+      { author: meta.originalAuthor, text: meta.originalComment },
+      replies,
+      CHANNEL_ID!,
+      reply.id,
+    );
+    const pseudoThread: YouTubeThread = {
+      topLevelCommentId: threadId,
+      videoId: meta.videoId,
+      authorDisplayName: reply.authorDisplayName,
+      authorChannelId: reply.authorChannelId,
+      text: reply.text,
+      publishedAt: reply.publishedAt,
+      totalReplyCount: replies.length,
+    };
+
+    let outcome: PipelineOutcome;
+    try {
+      outcome = await runPipeline(pseudoThread, blogEntry, blogBody, history);
+    } catch (err) {
+      logTickError(err);
+      await unclaimComment(reply.id);
+      skipped++;
+      continue;
+    }
+
+    if (!outcome.posted) {
+      await persistYouTubeTurn({ thread: pseudoThread, outcome, postedYoutubeId: null, followUpCommentId: reply.id });
+      if (outcome.skipReason?.startsWith('main-LLM failure')) await unclaimComment(reply.id);
+      skipped++;
+      continue;
+    }
+
+    let postedId: string;
+    try {
+      postedId = await postReply(token, threadId, outcome.replyText!);
+    } catch (err) {
+      logTickError(err);
+      skipped++;
+      continue;
+    }
+
+    await markPosted({
+      commentId: reply.id,
+      videoId: meta.videoId,
+      userChannel: reply.authorDisplayName,
+      userComment: reply.text,
+      replyText: outcome.replyText!,
+      postedYoutubeId: postedId,
+      classification: outcome.classification ?? 'ERROR',
+      routerHandles: outcome.routerHandles ?? [],
+    });
+    await persistYouTubeTurn({ thread: pseudoThread, outcome, postedYoutubeId: postedId, followUpCommentId: reply.id });
+
+    videoPostCounts.set(meta.videoId, (videoPostCounts.get(meta.videoId) ?? 0) + 1);
+    posted++;
+  }
+
+  return { posted, skipped };
 }
 
 // ---------------------------------------------------------------------------
@@ -769,6 +1103,19 @@ async function tick(): Promise<void> {
     postedThisTick++;
   }
 
+  // Follow-up pass: replies directed at the bot in threads it already
+  // answered, within whatever daily budget the top-level loop left.
+  let followUps = { posted: 0, skipped: 0 };
+  try {
+    followUps = await processFollowUps(
+      token,
+      DAILY_REPLY_CAP - startingDailyCount - postedThisTick,
+      videoPostCounts,
+    );
+  } catch (err) {
+    logTickError(err);
+  }
+
   await cleanupSkippedRows();
 
   console.log(JSON.stringify({
@@ -777,7 +1124,9 @@ async function tick(): Promise<void> {
     threads: threads.length,
     posted: postedThisTick,
     skipped: skippedThisTick,
-    dailyTotal: startingDailyCount + postedThisTick,
+    followUpsPosted: followUps.posted,
+    followUpsSkipped: followUps.skipped,
+    dailyTotal: startingDailyCount + postedThisTick + followUps.posted,
   }));
 }
 
