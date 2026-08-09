@@ -5,6 +5,11 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-10 (v3.1, Brad-directed):** Machine-readability rule generalized —
+  structured records (ledgers, status tables, anything counted/filtered/
+  joined/trended) live in CSV with stable headers, never prose; .md reserved
+  for judgment and narrative. _TEMPLATE.md gains a required "Data files"
+  section so future loop designers apply it automatically.
 - **2026-08-10 (v3, Brad-approved):** Deploy capability lands as **Tier 3 —
   ship**: author-loop PR (`claude/` branch, Tier 1 discipline) → independent
   reviewer approval → merge fires the deterministic CI `deploy.yml` → dual

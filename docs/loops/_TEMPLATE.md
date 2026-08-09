@@ -21,6 +21,14 @@ scheduled run — a loop that can't be measured gets the reminders treatment.>
 <Section list. Always ends: Data gaps · Retro (incl. this charter's and
 LEARNINGS.md's line counts).>
 
+## Data files (CSV by default — constitution rule: machine-readable > prose)
+- `metrics.csv` — REQUIRED. Standard constitution columns unless overridden
+  here (declare the header).
+- <Every entity ledger this loop tracks — issues, backlog items, experiments,
+  statuses — is its OWN .csv with a stable header declared here. If a future
+  run will count, filter, join, or trend it, it is NOT prose. .md files are
+  only for judgment, causal insight, and narrative.>
+
 ## Write scope (beyond the default `docs/loops/<name>/**`)
 <Explicit named exceptions only. Grants beyond docs come from Brad, never
 self-amendment.>

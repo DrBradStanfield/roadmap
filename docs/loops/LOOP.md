@@ -52,7 +52,14 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## Learnings & metrics (how knowledge compounds without rotting)
 
-- **Numbers go to `docs/loops/<name>/metrics.csv`** (append-only ledger; never
+- **Structured records live in CSV, never prose — machine-readable by default
+  (Brad, 2026-08-10).** Anything a future run will count, filter, join, or
+  trend — time series, entity ledgers (issues, backlog items, experiments),
+  status tables — gets its own CSV in your folder with a stable header
+  declared in your charter. Prose (.md) is only for what genuinely needs
+  sentences: judgment, causal insight, narrative. Precedents:
+  `sentry-fix/ledger.csv`, `chat-health/content-backlog.csv`.
+- **Numbers go to `docs/loops/<name>/metrics.csv`** (append-only; never
   prose-summarize a time series — "usage was up" destroys the trend). Standard
   columns unless the charter overrides:
   `week,metric,count_7d,count_prior_7d,delta_pct,source,note`
