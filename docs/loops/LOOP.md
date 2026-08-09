@@ -56,17 +56,18 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   prose-summarize a time series — "usage was up" destroys the trend). Standard
   columns unless the charter overrides:
   `week,metric,count_7d,count_prior_7d,delta_pct,source,note`
-- **Qualitative findings go to `docs/loops/<name>/LEARNINGS.md`**: dated,
-  tagged, one entry = something a future session would otherwise rediscover
-  the hard way. Cluster under topic headings as the file matures, not pure
-  chronology.
+- **Qualitative findings go to `docs/loops/<name>/LEARNINGS.md` — the INDEX,
+  not the archive**: dated, tagged, one entry = something a future session
+  would otherwise rediscover the hard way. A learning that needs depth gets
+  its own topic file (`docs/loops/<name>/notes/<slug>.md`) linked from a
+  one-line index entry — detail loads on demand, the index stays scannable.
+  Cluster under topic headings as the file matures, not pure chronology.
 - **Mechanical dedup rule**: before appending, search existing entries for the
   same tag + subsystem. On a match, UPDATE that entry in place ("confirmed
   again <date>", sharpen the wording) — never append a paraphrase.
 - **Compaction is a standing constraint**: within 20 lines of the cap, compact
   in the same run — merge near-duplicates, drop superseded entries, demote
-  aged-obvious ones to that week's report. An entry needing >3 sentences
-  becomes its own topic file with a one-line index entry.
+  aged-obvious ones to that week's report, push depth out to `notes/` files.
 - **Raw pulls are worker-local**: subagent output (query dumps, issue lists)
   never lands in learnings — only the distilled fact does.
 
@@ -101,17 +102,35 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## Guardrails — IMMUTABLE (only Brad edits this section)
 
-- Never modify production code, tests, builds, or deploys unless your charter
-  EXPLICITLY grants a write scope beyond docs — and charters acquire such
-  grants only from Brad, never by self-amendment.
-- Default write scope: `docs/loops/<name>/**`, plus any doc lines your charter
-  names. Nothing else. Never widen your own permissions, schedule, or scope.
-- Never touch clinical content (`health_roadmap_algorithm.md`,
-  `packages/health-core/src/evidence.ts`, `roadmap_text.html`) or
-  merge/security code — flag, never edit.
+- **Deploys are never a loop's job.** Shipping to Shopify/Fly happens from
+  build sessions on Brad's machine (the cloud holds no deploy credentials — a
+  physical boundary). Nothing a loop writes reaches users until a build
+  session deploys and live-verifies it.
+- **Code changes follow a graduated grant ladder**, the loop's tier recorded
+  in its charter BY BRAD (self-amendment can never create or widen a grant):
+  - **Tier 0 — propose** (every loop's default): report the defect with
+    evidence; where useful, attach a ready-to-apply diff in the report.
+  - **Tier 1 — prepare**: write the fix on the loop's outcome branch, under
+    the repo's bug-fix workflow (failing test citing the US-id → fix → full
+    suite green), for a build session to review, merge, deploy, live-verify.
+  - **Tier 2 — commit** (named code area only): same test discipline,
+    committed to main; deploy + live verification still happen in a build
+    session before users see it.
+- Write scope: `docs/loops/<name>/**` by default, plus whatever the charter
+  names (specific doc lines, or a code area under a granted tier). Never
+  widen your own scope, schedule, or credentials.
+- **Clinical content and merge/security code sit above every tier.** Clinical
+  logic — thresholds, suggestion rules, cascades, and WHICH evidence is cited
+  (`health_roadmap_algorithm.md`, `evidence.ts`, `roadmap_text.html`) — plus
+  `merge.ts` and security surfaces are never edited by a loop. One narrow
+  errata exception, Tier 1+: a mechanically verifiable reference defect (a
+  DOI/URL typo where the corrected link demonstrably resolves to the SAME
+  paper) may be fixed with the resolution evidence in the commit and the
+  three-file sync rule checked; anything touching meaning is proposal-only.
 - The entropy caps above (200 lines / 25KB, one-in-one-out, split-don't-grow)
   are part of these Guardrails: no loop may relax them for any file it owns.
-- Never remove or weaken this section.
+- Never print secrets; never commit real user data. Never remove or weaken
+  this section.
 
 ## Fleet rules
 
@@ -124,10 +143,5 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 - New loops start from `_TEMPLATE.md` in this folder; creating one is a Lane B
   act — charter + signal + registry row before the first scheduled run.
 
-## Changelog (Brad-applied — newest first, keep 10)
-
-- 2026-08-10: v2 — refactored from the product-health playbook into the fleet
-  constitution: charters split out, entropy constitution codified from
-  researched numbers (Anthropic 200-line guidance + MEMORY.md 200/25KB
-  precedent), learnings/metrics split, fleet rules added.
-- 2026-08-07: v1 authored (single product-health playbook).
+Constitution history lives in [loop-master-changelog.md](loop-master-changelog.md)
+(a history file, exempt from the operative cap — like reports and ledgers).
