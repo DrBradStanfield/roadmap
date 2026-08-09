@@ -1,0 +1,240 @@
+# Production deploy — the ONLY sanctioned headless path to Shopify + Fly.
+#
+# Part of the Tier 3 "ship" pipeline (docs/loops/deploy-pipeline-proposal.md):
+# author agent opens a PR -> independent reviewer approves -> merge (with the
+# `ship` label) fires this workflow. All deploy credentials live ONLY in GitHub
+# Actions secrets — no agent environment ever holds them (confused-deputy
+# defense; see the proposal doc).
+#
+# Also manually runnable (workflow_dispatch) so Brad's build sessions can use
+# the same deterministic path instead of deploying from the Mac.
+#
+# Secrets required:
+#   FLY_DEPLOY_TOKEN_PROD   app-scoped deploy token for health-tool-app
+#   FLY_DEPLOY_TOKEN_EDU    app-scoped deploy token for health-tool-edu
+#   SENTRY_AUTH_TOKEN       sourcemap uploads (widget + server build secret)
+#   SHOPIFY_CLI_PARTNERS_TOKEN_PROD / _EDU   Shopify headless deploy auth
+#     (App Automation Tokens from the Dev Dashboard — one per app/org; env var
+#      name the CLI reads is SHOPIFY_CLI_PARTNERS_TOKEN. If Shopify auth fails
+#      on a CLI upgrade, re-check shopify.dev "Deploy in CI/CD" for the current
+#      variable name.)
+#
+# Editing this file is Brad-only (constitution Guardrails — no loop may touch
+# .github/workflows/**).
+
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      surfaces:
+        description: "What to deploy"
+        type: choice
+        options: [all, fly-only, shopify-only]
+        default: all
+  pull_request:
+    types: [closed]
+
+# One deploy at a time; later runs queue rather than interleave.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    # PR path: only merged PRs labeled `ship`. Dispatch path: always allowed.
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
+       contains(github.event.pull_request.labels.*.name, 'ship'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify PR had an approving review and green checks
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+          approvals=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/reviews" \
+            --jq '[.[] | select(.state=="APPROVED")] | length')
+          echo "Approving reviews: ${approvals}"
+          if [ "${approvals}" -lt 1 ]; then
+            echo "::error::No approving review on PR #${PR} — refusing to deploy."
+            exit 1
+          fi
+          # All check runs on the head commit must have succeeded (or be neutral/skipped).
+          bad=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${{ github.event.pull_request.head.sha }}/check-runs" \
+            --jq '[.check_runs[] | select(.conclusion != null and (.conclusion | IN("success","neutral","skipped")) | not)] | length')
+          if [ "${bad}" -gt 0 ]; then
+            echo "::error::PR #${PR} has non-successful check runs — refusing to deploy."
+            exit 1
+          fi
+
+  # Pre-production smoke on GitHub Pages (Brad, 2026-08-10): pages.yml already
+  # auto-deploys the Pages build on widget/health-core pushes to main. Before
+  # touching production, wait for that deploy (if one was triggered) and smoke
+  # the live Pages app in real WebKit. CAVEAT (why production live-verify still
+  # exists): Pages has no Shopify theme CSS and no Brad server — theme-CSS bugs
+  # and app-proxy paths only reproduce on the real stores.
+  pages-smoke:
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Wait for the Pages deploy of this commit (if one was triggered)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SHA=$(git rev-parse HEAD)
+          run_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/pages.yml/runs?head_sha=${SHA}" \
+            --jq '.workflow_runs[0].id // empty')
+          if [ -z "${run_id}" ]; then
+            echo "No pages.yml run for ${SHA} (server-only change) — smoking the existing Pages site."
+            exit 0
+          fi
+          for i in $(seq 1 60); do
+            status=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" --jq '.status')
+            conclusion=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}" --jq '.conclusion // ""')
+            if [ "${status}" = "completed" ]; then
+              [ "${conclusion}" = "success" ] || { echo "::error::Pages deploy failed (${conclusion})"; exit 1; }
+              echo "Pages deploy succeeded."; exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Timed out waiting for the Pages deploy."; exit 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright WebKit
+        run: npx playwright install --with-deps webkit
+      - name: WebKit smoke — Pages app boots clean
+        run: |
+          cat > /tmp/pages-smoke.mjs <<'EOF'
+          import { webkit, devices } from 'playwright'
+          const browser = await webkit.launch()
+          const page = await browser.newPage({ ...devices['iPhone 13'] })
+          const errors = []
+          page.on('pageerror', e => errors.push(String(e)))
+          await page.goto('https://drbradstanfield.github.io/roadmap/', { waitUntil: 'networkidle', timeout: 60000 })
+          await page.waitForSelector('#health-tool-root', { timeout: 30000 })
+          const mounted = await page.evaluate(() =>
+            (document.querySelector('#health-tool-root')?.children.length ?? 0) > 0)
+          await browser.close()
+          if (!mounted) { console.error('Widget did not mount on Pages'); process.exit(1) }
+          if (errors.length) { console.error('Page errors:', errors); process.exit(1) }
+          console.log('Pages smoke OK — widget mounted, no page errors.')
+          EOF
+          node /tmp/pages-smoke.mjs
+
+  deploy:
+    needs: [gate, pages-smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main # always deploy main tip — never a PR snapshot
+
+      - name: Guard — products.md must be a real file (not a symlink)
+        run: |
+          if [ -L docs/products.md ]; then
+            echo "::error::docs/products.md is a symlink in this checkout — the Fly image would ship broken chatbot product knowledge."
+            exit 1
+          fi
+          node scripts/check-symlinks.mjs
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Full test suite (final gate on the exact deployed commit)
+        run: npm run test:all
+
+      - name: Build widget bundles (main v2 + upload + side bundles)
+        run: |
+          npm run build:shopify-prod
+          npm run build:widget
+
+      - name: Upload widget sourcemaps to Sentry
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: cd widget-src && npm run sentry:sourcemaps
+
+      - name: Strip sourcemaps (Shopify 10MB extension limit)
+        run: rm -f extensions/health-tool-widget/assets/*.map
+
+      # ---------- Shopify (both apps, same assets) ----------
+      - name: Pin Shopify CLI
+        if: github.event_name == 'pull_request' || inputs.surfaces != 'fly-only'
+        run: npm i -g @shopify/cli@3.90.0
+
+      - name: Deploy Shopify extensions — prod app (microvitamin)
+        if: github.event_name == 'pull_request' || inputs.surfaces != 'fly-only'
+        env:
+          SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.SHOPIFY_CLI_PARTNERS_TOKEN_PROD }}
+          SHOPIFY_FLAG_FORCE: "1"
+        run: shopify app deploy --force --config shopify.app.toml
+
+      - name: Deploy Shopify extensions — edu app (drstanfield)
+        if: github.event_name == 'pull_request' || inputs.surfaces != 'fly-only'
+        env:
+          SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.SHOPIFY_CLI_PARTNERS_TOKEN_EDU }}
+          SHOPIFY_FLAG_FORCE: "1"
+        run: shopify app deploy --force --config shopify.app.edu.toml
+
+      # ---------- Fly (both apps; canary = a boot-crashing image never reaches serving machines) ----------
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+
+      - name: Fly deploy — health-tool-app (commerce)
+        if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_PROD }}
+        run: |
+          flyctl deploy -c fly.toml --strategy canary \
+            --build-arg SENTRY_RELEASE="health-tool-app@$(git rev-parse --short HEAD)" \
+            --build-secret sentry_auth_token="${{ secrets.SENTRY_AUTH_TOKEN }}"
+
+      - name: Fly deploy — health-tool-edu (education)
+        if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN_EDU }}
+        run: |
+          flyctl deploy -c fly.edu.toml --strategy canary \
+            --build-arg SENTRY_RELEASE="health-tool-edu@$(git rev-parse --short HEAD)" \
+            --build-secret sentry_auth_token="${{ secrets.SENTRY_AUTH_TOKEN }}"
+
+      - name: Health gates
+        if: github.event_name == 'pull_request' || inputs.surfaces != 'shopify-only'
+        run: |
+          FLY_API_TOKEN="${{ secrets.FLY_DEPLOY_TOKEN_PROD }}" flyctl status -c fly.toml
+          FLY_API_TOKEN="${{ secrets.FLY_DEPLOY_TOKEN_EDU }}" flyctl status -c fly.edu.toml
+
+  verify-live:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright WebKit
+        run: npx playwright install --with-deps webkit
+      - name: Live WebKit smoke against production
+        run: node tools/webkit-verify.mjs

@@ -1,0 +1,65 @@
+# Independent reviewer for agent-authored PRs (Tier 3 "ship" pipeline).
+#
+# Fires on PRs from claude/* branches: a FRESH-context Claude reviews the diff
+# adversarially with a correctness-only mandate (per Anthropic's Writer/
+# Reviewer guidance: the reviewer sees only the diff, not the reasoning that
+# produced it — and must not block good fixes on style).
+#
+# It posts a review. It does NOT merge; the merge decision stays with the
+# required approving review (Brad for the first cycles — see
+# docs/loops/deploy-pipeline-proposal.md, "Graduated autonomy dial").
+#
+# Uses ANTHROPIC_API_KEY (metered API billing, separate from the loops'
+# plan-usage pool). Editing this file is Brad-only (constitution Guardrails).
+
+name: Claude Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    if: startsWith(github.event.pull_request.head.ref, 'claude/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are the INDEPENDENT REVIEWER in this repo's Tier 3 ship
+            pipeline (docs/loops/deploy-pipeline-proposal.md). Review PR
+            #${{ github.event.pull_request.number }} adversarially, from the
+            diff and the repo state alone.
+
+            Mandate — flag ONLY defects that affect correctness, security, or
+            the stated requirements. Do not block on style, naming, or
+            preference. Specifically verify:
+            1. The change includes a test citing the relevant US-id, and the
+               test genuinely fails without the fix (read it critically).
+            2. The full suite consideration: does the diff plausibly break
+               anything it doesn't test? Run `npm run test:all` yourself.
+            3. Repo red lines: NO edits to clinical content
+               (health_roadmap_algorithm.md, packages/health-core/src/evidence.ts,
+               roadmap_text.html), merge semantics (packages/health-core/src/merge.ts),
+               security surfaces (HMAC/CORS/auth), .github/workflows/**, or
+               docs/loops/LOOP.md Guardrails. Any such edit in the diff is an
+               automatic REQUEST CHANGES regardless of quality.
+            4. FHIR/append-only invariants: no in-place mutation of
+               measurement/labValue rows, dedup on stable keys only.
+
+            Deliver your verdict as a PR review via
+            `gh pr review ${{ github.event.pull_request.number }}` —
+            `--approve` only if everything above holds, otherwise
+            `--request-changes` with the specific defects as inline reasoning
+            in the review body. Never merge, never push commits.
+          claude_args: |
+            --allowedTools "Bash,Read,Grep,Glob"

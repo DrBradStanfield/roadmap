@@ -1,7 +1,10 @@
 # Proposal: Tier 3 "Ship" — how loops get deploy capability (PENDING BRAD SIGN-OFF)
 
-Status: **PROPOSAL** — nothing here is operative until Brad applies the
-Guardrails amendment. Research pass 2026-08-10 (three parallel agents: official
+Status: **ACCEPTED by Brad 2026-08-10** ("I'm happy with this plan. do it").
+Guardrails Tier 3 applied to LOOP.md the same day (constitution v3). products.md
+decision: Brad chose a variant of (a) — the symlink DIRECTION was inverted
+(master is a real file in this repo; claude_business holds the symlink).
+Research pass 2026-08-10 (three parallel agents: official
 Claude Code docs, industry/security literature, this repo's deploy audit).
 Brad's baseline proposal: author loop → PR → reviewer loop → deploy → dual live
 verification. **Verdict: the baseline survives almost intact. The one change:
@@ -79,15 +82,15 @@ block good fixes on style).
 
 ## What this repo needs first (from the deploy audit)
 
-| # | Prerequisite | Notes |
+| # | Prerequisite | Status (2026-08-10) |
 |---|---|---|
-| 1 | **products.md decision** (blocker #1) | The symlink resolves only on Brad's Mac; content exists nowhere else; the Fly image bakes it in and a dangling symlink silently degrades chatbot knowledge. See decision 1 below. |
-| 2 | **Shopify App Automation Tokens ×2** (blocker #2) | Dev Dashboard, one per app (prod app in microvitamin org, edu app in org 222927919). Genuinely deploy-scoped, forced 1–6-month expiry. `SHOPIFY_APP_AUTOMATION_TOKEN` env var; pin the CLI version (open CI bugs on `cli/latest`). Replaces the Mac's cached browser-OAuth session. |
-| 3 | **Fly deploy tokens ×2** | `fly tokens create deploy -a <app> -x <expiry>` — set expiry explicitly (default is 20 years). One per app. |
-| 4 | GitHub repo settings | Branch protection on main (required checks: the full CI suite; required review: 1), auto-merge enabled, "Allow GitHub Actions to create and approve pull requests" enabled, Claude GitHub App token for the author's pushes (default GITHUB_TOKEN commits don't trigger CI). |
-| 5 | Secrets → GitHub Actions only | The four tokens above + SENTRY_AUTH_TOKEN + ANTHROPIC_API_KEY (reviewer). **None of these ever enter a cloud-session environment.** |
-| 6 | deploy.yml + reviewer.yml | New workflows; deploy.yml encodes the full CLAUDE.md deploy dance as tested pipeline code. |
-| 7 | Guardrails amendment (Brad-only) | See below. |
+| 1 | **products.md decision** (blocker #1) | ✅ DONE — Brad inverted the symlink: master is a real file in this repo (`e94a487`); claude_business holds the symlink; guard inverted. NOTE: this repo is PUBLIC — content (incl. complaints summary + v9 internal notes) is now visible; flagged to Brad, who can switch to a private-fetch design if wanted. |
+| 2 | **Shopify App Automation Tokens ×2** (blocker #2) | ⏳ **BRAD** — Dev Dashboard, one per app (prod app in microvitamin org, edu app in org 222927919); forced 1–6-month expiry. Store as `SHOPIFY_CLI_PARTNERS_TOKEN_PROD` / `_EDU` GitHub Actions secrets. CLI pinned at 3.90.0 in deploy.yml. |
+| 3 | **Fly deploy tokens ×2** | ✅ DONE — minted app-scoped, 180-day expiry (`gha-deploy-prod`/`-edu`, rotate ~2027-02); set as `FLY_DEPLOY_TOKEN_PROD`/`_EDU` secrets, value never displayed. |
+| 4 | GitHub repo settings | ⏳ **BRAD** — toggle "Allow GitHub Actions to create and approve pull requests" (Settings → Actions → General; classifier blocked the API write — only needed when agent approval replaces Brad's). Hard branch protection deliberately DEFERRED: deploy.yml's gate job verifies approval + green checks itself, so Brad's direct-push workflow and loop report commits stay unblocked; add protection when agent-approval graduates. |
+| 5 | Secrets → GitHub Actions only | ✅ DONE (except the Shopify pair): FLY_DEPLOY_TOKEN_PROD/EDU, SENTRY_AUTH_TOKEN, ANTHROPIC_API_KEY. **None of these ever enter a cloud-session environment.** |
+| 6 | deploy.yml + claude-review.yml | ✅ DONE — deploy.yml (gate → Pages WebKit smoke [Brad's 2026-08-10 addition] → Shopify ×2 → Fly ×2 canary → health gates → live WebKit verify) + claude-review.yml (fresh-context adversarial reviewer on `claude/*` PRs, correctness-only mandate, never merges). First run must be a supervised `workflow_dispatch`. |
+| 7 | Guardrails amendment (Brad-only) | ✅ DONE — Tier 3 applied to LOOP.md (constitution v3), changelog entry added. |
 
 ## Decisions for Brad
 

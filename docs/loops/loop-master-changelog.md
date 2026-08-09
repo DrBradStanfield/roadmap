@@ -5,6 +5,16 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-10 (v3, Brad-approved):** Deploy capability lands as **Tier 3 —
+  ship**: author-loop PR (`claude/` branch, Tier 1 discipline) → independent
+  reviewer approval → merge fires the deterministic CI `deploy.yml` → dual
+  zero-credential live verification. The old "deploys are never a loop's job"
+  boundary is re-founded on credentials: deploy tokens live ONLY in GitHub
+  Actions secrets, never in any loop's environment (confused-deputy defense —
+  loops read user free-text). Tier 3 loops never self-merge and never touch
+  workflows or repo settings. Research + full design:
+  deploy-pipeline-proposal.md. Same day: products.md symlink INVERTED (master
+  is now a real file in this repo) — deploy-pipeline prerequisite #1.
 - **2026-08-10 (v2.3):** Truncation-proof commit ordering (report+data committed before polish; runs share a plan-usage pool) and the thin-trigger rule (substance lives in charters, never trigger prompts). Deploy-capability question (Brad: author-PR → reviewer loop → deploy → dual live verify) deferred to a research pass — recorded in session memory.
 - **2026-08-10 (v2.2, Brad-directed):** Guardrails reworked from a blanket
   code-freeze to a graduated grant ladder (Tier 0 propose / Tier 1 prepare on

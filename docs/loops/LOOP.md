@@ -106,10 +106,11 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## Guardrails — IMMUTABLE (only Brad edits this section)
 
-- **Deploys are never a loop's job.** Shipping to Shopify/Fly happens from
-  build sessions on Brad's machine (the cloud holds no deploy credentials — a
-  physical boundary). Nothing a loop writes reaches users until a build
-  session deploys and live-verifies it.
+- **Deploy credentials are never in any loop's reach** (they live only in
+  GitHub Actions secrets — no model ever sees them). Production deploys run
+  exclusively through the deterministic CI pipeline (`deploy.yml`), entered
+  only via its gate; loops may also reach users through a build session on
+  Brad's machine deploying their committed work. Never both paths at once.
 - **Code changes follow a graduated grant ladder**, the loop's tier recorded
   in its charter BY BRAD (self-amendment can never create or widen a grant):
   - **Tier 0 — propose** (every loop's default): report the defect with
@@ -120,6 +121,13 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   - **Tier 2 — commit** (named code area only): same test discipline,
     committed to main; deploy + live verification still happen in a build
     session before users see it.
+  - **Tier 3 — ship**: Tier 1 discipline on a `claude/` branch → PR with
+    evidence (+ /simplify) → an INDEPENDENT reviewer (fresh context, diff-only,
+    correctness-only mandate) must approve → merge fires `deploy.yml` → the
+    author AND an independent run verify live (zero-credential paths). A
+    Tier 3 loop never self-merges, never edits `.github/workflows/**` or
+    repo/branch-protection settings (Brad-only, same class as this section),
+    and never holds a deploy credential. Design: deploy-pipeline-proposal.md.
 - Write scope: `docs/loops/<name>/**` by default, plus whatever the charter
   names (specific doc lines, or a code area under a granted tier). Never
   widen your own scope, schedule, or credentials.
