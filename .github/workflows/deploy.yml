@@ -172,6 +172,10 @@ jobs:
       - name: Upload widget sourcemaps to Sentry
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          # Slugs (non-secret) — same values as .env locally; sentry-cli reads
+          # them from the environment (run-2 failure: "org ID or slug required").
+          SENTRY_ORG: dr-brad-inc
+          SENTRY_PROJECT: javascript-remix
         run: cd widget-src && npm run sentry:sourcemaps
 
       - name: Strip sourcemaps (Shopify 10MB extension limit)
