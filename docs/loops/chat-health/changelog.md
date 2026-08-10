@@ -4,6 +4,10 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-08-10 (Brad, build session): Gather gains YouTube reply-length —
+  median words + breaches of the new ≤5-sentence/≤90-word/≤25-per-sentence
+  prompt cap (baseline: median 84 words). Prompt fixes only, never code
+  truncation.
 - 2026-08-10 (Brad): Delivery reconciled with the constitution — Gmail draft
   killed (W33 proposal 5); notification + committed report are the delivery.
 - 2026-08-10 (W33 run): orient step 3 marked cloud-unreachable (standing gap);
