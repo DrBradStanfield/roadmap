@@ -225,7 +225,8 @@
 <p><strong>No confirm-click gate (Brad, 2026-08-11).</strong> Double opt-in loses 20–40% of legitimate signups — taxing every honest user to catch a rare bad one. Instead the plan-ready email (US-22) does the work: a bounce proves the address is dead, and delivery is the enrollment trigger. The residual risk a bounce can't catch is a typo into a *valid stranger's* address (<code>john@</code> for <code>johnn@</code>), which delivers fine; AC2c bounds that (rare sends + prominent one-click unsubscribe). A click on that email is a strong ownership signal but is never required — treat clicks, not opens, as real (Apple Mail Privacy Protection fakes opens).</p>
 <p><strong>The ~900 existing captures (still needs a Brad call):</strong> they gave an email for a report, not for reminders, and predate any send. A bulk "want reminders?" mail is a re-permission campaign to people who never asked — real complaint risk on a domain that also carries transactional mail. Preferred shape if we do it: one genuinely useful email (plan re-entry + the reminders offer), once. Both lists are <code>single_opt_in</code> today, so no confirmation habit exists with these contacts.</p>
 <ul>
-<li>AC1: On cloud-connect success (Drive/Dropbox/GitHub), reminders default to ON, with the consent line and its opt-out visible on that same screen — never enrolled off-screen.</li>
+<li>AC1: On cloud-connect success (Drive/Dropbox/GitHub), enrollment happens <strong>immediately and without any user action</strong> — true opt-out (Brad, 2026-08-11). A user who reads the line and clicks away IS enrolled; only an explicit toggle-off unenrolls. The disclosure is a visible statement + already-on switch on that same screen, never a gate.</li>
+<li>AC1b: Consequence of AC1, accepted knowingly: every cloud-connecting user's due date + label + verified email reaches the server, where before only explicit opt-ins did. Still no measurement, lab value, or reasoning — the local-first invariant holds — but the population sending metadata widens from ~2 to everyone who connects. If a toggle-off arrives, the server row is DELETED, not just flagged.</li>
 <li>AC2: The enrolled email is either provider-verified (cloud-connect) OR a typed address whose plan-ready email <strong>delivered without bouncing</strong> (US-22). No confirm-click gate — see the consent reasoning below. <strong>US-22 is therefore a hard dependency for the typed lane.</strong></li>
 <li>AC2b: A hard bounce disenrolls: no reminders, and the address is removed from Klaviyo.</li>
 <li>AC2c: Because a delivered-but-mistyped address belongs to a stranger, the FIRST reminder to any bounce-validated (not provider-verified) address must carry the one-click unsubscribe prominently in the body, not just the header. Rare sends (90/180/365d) + one click to stop = bounded, self-correcting harm.</li>
@@ -256,12 +257,15 @@
 <ul>
 <li>AC1: On capture, Resend sends a plan-ready email containing no measurement, lab value, medication, or screening data — only the re-entry link and what reminders to expect.</li>
 <li>AC2: The send never blocks the user's plan; the US-18 PDF delivery is unchanged and a Resend failure is logged, not surfaced.</li>
-<li>AC3: A Resend <strong>bounce webhook</strong> (new route — none exists today) marks the address dead → removed from Klaviyo, never enrolled in reminders (US-17 AC2b).</li>
+<li>AC3: A Resend <strong>bounce webhook</strong> (new route — none exists today, signature-verified) marks the address dead → <strong>suppressed/unsubscribed in Klaviyo, not deleted</strong> (Brad, 2026-08-11: keeps the record and stays reversible if a bounce is misclassified) and never enrolled in reminders (US-17 AC2b).</li>
 <li>AC4: A delivered (non-bounced) address stays in Klaviyo and becomes reminder-eligible — delivery is the trigger, no confirm click.</li>
 <li>AC5: The re-entry link is click-tracked; <strong>clicks, not opens</strong>, are the ownership signal (Apple Mail Privacy Protection fakes opens).</li>
 <li>AC6: Shopify surface only; the Pages build no-ops.</li>
 <li>AC7: Once shipped, US-18's UI may promise the email (AC4 there).</li>
-<li><strong>Usage signal:</strong> <code>report_email_sent</code> / <code>report_email_bounced</code> / <code>report_email_clicked</code>. Bounce rate also measures how much of the ~900-address Klaviyo list is junk.</li>
+<li>AC8: <strong>New captures only</strong> (Brad, 2026-08-11) — no backfill send to the ~900 pre-existing addresses. They stay unvalidated and reminder-ineligible until Brad revisits, once real bounce/complaint rates from new sends are known.</li>
+<li>AC9: Ships on <strong>both</strong> Fly apps (commerce + education) together; they share one Resend key and from-address.</li>
+<li><strong>Usage signal:</strong> <code>report_email_sent</code> / <code>report_email_bounced</code> / <code>report_email_clicked</code>. Bounce rate on new captures is also the estimate for how much of the legacy ~900 is junk — the input to the backfill decision.</li>
+<li><strong>Brad prerequisite (only he can do it):</strong> register the bounce webhook in the Resend dashboard pointing at the new route, then put its signing secret on BOTH Fly apps as <code>RESEND_WEBHOOK_SECRET</code>. Until that exists, AC3 cannot be verified live.</li>
 <li>Tests: ❌ none yet — AC1–AC4 need coverage (send shape carries no health fields, bounce → Klaviyo removal + no enrollment, Resend failure doesn't break capture, Pages no-op).</li>
 </ul>
 <h3 id="us-19-sending-feedback">US-19 · Sending feedback</h3>
