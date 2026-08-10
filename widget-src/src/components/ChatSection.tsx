@@ -49,9 +49,12 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
   });
   const { inputRef, messagesContainerRef } = refs;
 
-  // Load on mount when startExpanded (mirrors original lazy-load behavior)
+  // Load on mount when startExpanded (mirrors original lazy-load behavior).
+  // chat_opened must fire on EVERY entry path — both live FABs mount
+  // startExpanded, so handleExpand alone never runs there (US-15 AC2).
   useEffect(() => {
     if (startExpanded) {
+      trackProductEvent('chat_opened');
       actions.loadConversationsIfNeeded();
     }
   }, [startExpanded, actions.loadConversationsIfNeeded]);
