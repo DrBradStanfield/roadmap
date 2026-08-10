@@ -86,7 +86,8 @@ jobs:
             --body "@DrBradStanfield — reviewer approved PR #${PR} at ${HEAD_SHA}.
           ${pr_url}
           To VETO: close the PR or add the 'hold' label before the window ends.
-          After merge, deploy.yml runs with its own 30-min window (second veto email)." \
+          After merge, deploy.yml runs with its own 30-min window (second veto email).
+          Fleet dashboard: https://drbradstanfield.github.io/roadmap/fleet.html" \
             | grep -oE '[0-9]+$')
           sleep 1800
 

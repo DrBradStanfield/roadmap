@@ -100,10 +100,10 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   Never fabricate numbers.** Distinguish signal (repeated, actionable) from
   noise.
 - **No email by default (Brad, 2026-08-10): the committed report IS the
-  delivery.** Contact Brad ONLY when a run produces a decision that needs him:
-  open a GitHub issue "🎯 Decision needed: <topic>" with the decision, options,
-  a recommendation, and the report link — **assign Brad and @DrBradStanfield
-  in the body** (the mention is what emails him; bot-created issues alone
+  delivery.** Contact Brad ONLY when a run needs his decision: open a GitHub
+  issue "🎯 Decision needed: <topic>" — decision, options, recommendation,
+  report link, fleet-dashboard URL (in REGISTRY.md) — **assign + @mention
+  @DrBradStanfield** (the mention is what emails him; bot issues alone
   notify nobody). Never Gmail drafts — unsent drafts are clutter.
 - **Commit early — truncation-proof the run**: commit the report with its data
   as soon as the numbers are in, BEFORE polish/retro/self-amendment (runs

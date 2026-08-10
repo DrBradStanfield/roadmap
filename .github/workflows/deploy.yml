@@ -112,7 +112,8 @@ jobs:
             --body "@DrBradStanfield — run: ${url}
           Trigger: ${GITHUB_EVENT_NAME} by ${GITHUB_ACTOR}, commit ${GITHUB_SHA}
           To VETO: cancel the run at the link above before the wait timer ends.
-          This issue auto-closes when live verification passes." \
+          This issue auto-closes when live verification passes.
+          Fleet dashboard: https://drbradstanfield.github.io/roadmap/fleet.html" \
             | grep -oE '[0-9]+$')
           echo "issue=${n}" >> "$GITHUB_OUTPUT"
 
