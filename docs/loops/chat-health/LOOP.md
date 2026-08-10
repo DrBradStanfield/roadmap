@@ -79,6 +79,12 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
     (`shopify`/`discord`/`youtube`). YouTube only began persisting
     2026-08-07 — if its count is 0 after that date, something is broken;
     say so.
+  - **YouTube reply length** (added 2026-08-10 with the prompt's three-way
+    cap): for `platform = youtube` assistant rows, report median words and
+    the count breaching ≤5 sentences / ≤90 words / ≤25 words-per-sentence
+    (2026-08-10 baseline: median 84 words, one 132-word outlier). A rising
+    breach rate means the prompt cap is decaying — propose a prompt fix,
+    never a code truncation.
 
 ## Categorise every empty-handle query (the analysis that drives everything)
 

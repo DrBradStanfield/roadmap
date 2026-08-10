@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { assessThreadFollowUp, buildThreadHistory, type YouTubeReply } from './youtube-bot.server';
+import { assessThreadFollowUp, buildThreadHistory, addressReply, type YouTubeReply } from './youtube-bot.server';
 
 const CHANNEL = 'UC_brad';
 const HANDLE = '@drbradstanfield';
@@ -107,6 +107,24 @@ describe('assessThreadFollowUp', () => {
       ].sort((a, b) => a.publishedAt.localeCompare(b.publishedAt)),
     });
     expect((d as { candidate: YouTubeReply }).candidate.id).toBe('t1.r2');
+  });
+});
+
+describe('addressReply', () => {
+  it('prefixes the asker @handle on follow-ups', () => {
+    expect(addressReply('Short answer.', '@viewer99')).toBe('@viewer99 Short answer.');
+  });
+
+  it('adds the missing @ when customUrl omits it', () => {
+    expect(addressReply('Short answer.', 'viewer99')).toBe('@viewer99 Short answer.');
+  });
+
+  it('degrades to no prefix when the handle is unresolvable', () => {
+    expect(addressReply('Short answer.', null)).toBe('Short answer.');
+  });
+
+  it('never double-tags when the model already addressed them', () => {
+    expect(addressReply('@Viewer99 already addressed.', '@viewer99')).toBe('@Viewer99 already addressed.');
   });
 });
 

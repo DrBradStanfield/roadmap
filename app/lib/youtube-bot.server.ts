@@ -306,6 +306,30 @@ async function listReplies(token: string, topLevelCommentId: string): Promise<Yo
     .sort((a, b) => a.publishedAt.localeCompare(b.publishedAt));
 }
 
+/** channelId → "@handle" (null = lookup failed / no handle). Process-lifetime cache. */
+const handleCache = new Map<string, string | null>();
+
+/** Resolve a channel's @handle via channels.list → snippet.customUrl. 1 quota unit,
+ *  cached per channel. Returns null on any failure — callers must degrade silently. */
+async function resolveHandle(token: string, channelId: string): Promise<string | null> {
+  const cached = handleCache.get(channelId);
+  if (cached !== undefined) return cached;
+  let handle: string | null = null;
+  try {
+    const url = new URL('https://www.googleapis.com/youtube/v3/channels');
+    url.searchParams.set('id', channelId);
+    url.searchParams.set('part', 'snippet');
+    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`channels.list ${res.status}`);
+    const data = await res.json() as { items?: Array<{ snippet?: { customUrl?: string } }> };
+    handle = data.items?.[0]?.snippet?.customUrl ?? null;
+  } catch (err) {
+    Sentry.captureException(err, { tags: { feature: 'youtube-bot', subsystem: 'resolve-handle' } });
+  }
+  handleCache.set(channelId, handle);
+  return handle;
+}
+
 let cachedChannelHandle: string | null | undefined;
 
 /** The channel's @handle (e.g. "@drbradstanfield") — YouTube auto-prefixes it
@@ -313,20 +337,26 @@ let cachedChannelHandle: string | null | undefined;
  *  "addressed to the bot" signal. Cached for the process lifetime; null when
  *  the lookup fails (the addressee gate then falls back to original-author-only). */
 async function getChannelHandle(token: string): Promise<string | null> {
-  if (cachedChannelHandle !== undefined) return cachedChannelHandle;
-  try {
-    const url = new URL('https://www.googleapis.com/youtube/v3/channels');
-    url.searchParams.set('id', CHANNEL_ID!);
-    url.searchParams.set('part', 'snippet');
-    const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) throw new Error(`channels.list ${res.status}`);
-    const data = await res.json() as { items?: Array<{ snippet?: { customUrl?: string } }> };
-    cachedChannelHandle = data.items?.[0]?.snippet?.customUrl ?? null;
-  } catch (err) {
-    Sentry.captureException(err, { tags: { feature: 'youtube-bot', subsystem: 'channel-handle' } });
-    cachedChannelHandle = null;
-  }
+  if (cachedChannelHandle === undefined) cachedChannelHandle = await resolveHandle(token, CHANNEL_ID!);
   return cachedChannelHandle;
+}
+
+/**
+ * Address a follow-up reply to the person who asked.
+ *
+ * Top-level replies are NOT tagged: YouTube nests them directly under the
+ * comment and notifies its author, so an @mention is pure clutter. Follow-ups
+ * ARE tagged: YouTube threads are flat (every reply hangs off the top-level
+ * comment), so our reply lands at the bottom of the list rather than beside
+ * theirs — the @handle is how YouTube's own UI addresses someone in a thread,
+ * and it's what reliably notifies a replier who isn't the thread author.
+ * Degrades to no prefix when the handle can't be resolved.
+ */
+export function addressReply(replyText: string, handle: string | null): string {
+  if (!handle) return replyText;
+  const at = handle.startsWith('@') ? handle : `@${handle}`;
+  if (replyText.toLowerCase().startsWith(at.toLowerCase())) return replyText; // already addressed
+  return `${at} ${replyText}`;
 }
 
 async function postReply(token: string, parentCommentId: string, text: string): Promise<string> {
@@ -969,9 +999,14 @@ async function processFollowUps(
       continue;
     }
 
+    // Address the asker by @handle — see addressReply() for why follow-ups are
+    // tagged and top-level replies are not.
+    const askerHandle = reply.authorChannelId ? await resolveHandle(token, reply.authorChannelId) : null;
+    const replyText = addressReply(outcome.replyText!, askerHandle);
+
     let postedId: string;
     try {
-      postedId = await postReply(token, threadId, outcome.replyText!);
+      postedId = await postReply(token, threadId, replyText);
     } catch (err) {
       logTickError(err);
       skipped++;
@@ -983,7 +1018,7 @@ async function processFollowUps(
       videoId: meta.videoId,
       userChannel: reply.authorDisplayName,
       userComment: reply.text,
-      replyText: outcome.replyText!,
+      replyText,
       postedYoutubeId: postedId,
       classification: outcome.classification ?? 'ERROR',
       routerHandles: outcome.routerHandles ?? [],
