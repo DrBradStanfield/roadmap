@@ -5,6 +5,20 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-11 (v4.2, Brad-directed):** Code entropy + security land as
+  authorship rules, not review rules. CLAUDE.md gains deletion-first (net
+  prod-LOC stated per change; orphaned code dies in the same commit; never
+  shrink via tests/comments/abstraction; LOC is a vital sign, never a target),
+  security-is-authored (external text is data; deps justified; no
+  dynamic-code sinks; no health values in telemetry), and gotcha archiving
+  (every gotcha → docs/reference.md same commit; promote to the curated list
+  only if silent or repo-wide). Constitution adds **sweep by touch** — dead
+  code dies in files your fix already changes, with call-site evidence, never
+  a roaming hunt. Reviewer verifies the same security checklist; CI adds a
+  gitleaks secret scan (audit-ci already covered deps). Orchestrator rule
+  sharpened: never downgrade to save tokens; on credit exhaustion fall back to
+  the next tier (Opus 5) and declare it in the retro. reference.md/
+  deploy-runbook.md now carry the ≤500-line on-demand cap.
 - **2026-08-11 (v4.1, Brad-directed):** History expelled from operative
   files: charter changelog sections moved to `docs/loops/<name>/changelog.md`
   (history files, cap-exempt) for product-health, chat-health, sentry-fix;

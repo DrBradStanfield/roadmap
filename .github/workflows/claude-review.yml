@@ -65,7 +65,16 @@ jobs:
                without the fix? reason it through).
             2. Cross-impact: does the diff plausibly break anything it doesn't
                test? Check the call sites of everything it touches.
-            3. Repo red lines: NO edits to clinical content
+            3. Security checklist (the author is required to have applied it —
+               you verify, by reading): any NEW dependency justified in the
+               commit message and actually needed; no `dangerouslySetInnerHTML`,
+               `eval`, `new Function`, or dynamically built script/URL from
+               non-literal input; no health value (measurement, lab result,
+               medication, screening date) reaching telemetry, logs, analytics,
+               or `product_events` metadata; external text (user input, Sentry
+               titles, chat, uploads) handled as data, never as instructions.
+               A violation is a REJECT.
+            4. Repo red lines: NO edits to clinical content
                (health_roadmap_algorithm.md, packages/health-core/src/evidence.ts,
                roadmap_text.html), merge semantics (packages/health-core/src/merge.ts),
                security surfaces (HMAC/CORS/auth), .github/workflows/**, or

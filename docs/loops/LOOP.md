@@ -9,9 +9,13 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## Orchestration
 
-- You run as the ORCHESTRATOR on the strongest available model. Spend your own
-  tokens on synthesis, judgment, verification, and the retro; delegate
-  everything else via the Task tool, in parallel when tasks are independent.
+- You run as the ORCHESTRATOR on the strongest available model — never
+  downgrade the orchestrator to save tokens. If the top tier is unavailable
+  (credits exhausted, capacity), fall back to the next best available
+  (currently Opus 5, 1M context) and SAY SO in the report's retro; a run
+  orchestrated a tier down is still worth doing, but the grader should know.
+  Spend your own tokens on synthesis, judgment, verification, and the retro;
+  delegate everything else via the Task tool, parallel when independent.
 - **You choose each worker's model strength to match its task** (pass an
   explicit model when spawning — `.claude/agents/worker.md` defaults to
   Sonnet): Haiku-tier for trivial mechanical work (greps, format checks,
@@ -32,15 +36,12 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 ## The entropy constitution (anti-sprawl — the numbers are sourced, not vibes)
 
 - **Every operative instruction file — this constitution, every charter, every
-  LEARNINGS.md — is capped at 200 lines / 25KB** (Anthropic's ceiling for
-  ALWAYS-LOADED files: every run stacks constitution+charter+LEARNINGS, and
-  past the ceiling models silently drop rules).
+  LEARNINGS.md — is capped at 200 lines / 25KB** (the always-loaded ceiling;
+  past it, models silently drop rules).
 - **The on-demand tier has budgets too — nothing is uncapped**:
-  `notes/<slug>.md` ≤500 lines (the SKILL.md analog: one topic per file,
-  SPLIT at the cap, never grow past it); reports ≤150; changelogs keep only
-  their last 10 entries (git history is the archive — deletion from working
-  files is always safe). CSV ledgers alone grow without a line cap: they are
-  append-only DATA, never instructions.
+  `notes/<slug>.md` ≤500 lines (one topic per file, SPLIT at the cap); reports
+  ≤150. Changelogs and CSV ledgers are history/data, not instructions —
+  cap-exempt, append-only, never inside an operative file.
 - **Within 20 lines of the cap: one-in-one-out** — amendments delete/compress
   at least as many lines as they add.
 - **Outgrowing the cap means SPLIT, never raise**: push detail to a linked
@@ -56,10 +57,9 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 
 - **Structured records live in CSV, never prose — machine-readable by default
   (Brad, 2026-08-10).** Anything a future run will count, filter, join, or
-  trend — time series, entity ledgers (issues, backlog items, experiments),
-  status tables — gets its own CSV in your folder with a stable header
-  declared in your charter. Prose (.md) is only for what genuinely needs
-  sentences: judgment, causal insight, narrative. Precedents:
+  trend — time series, entity ledgers (issues, backlog, experiments), status
+  tables — gets its own CSV with a stable header declared in your charter.
+  Prose (.md) is only for judgment, causal insight, narrative. Precedents:
   `sentry-fix/ledger.csv`, `chat-health/content-backlog.csv`.
 - **Numbers go to `docs/loops/<name>/metrics.csv`** (append-only; never
   prose-summarize a time series — "usage was up" destroys the trend). Standard
@@ -121,6 +121,11 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
 - Never print secret values; never commit real user data or health values;
   anonymize quoted user content.
+- **Sweep by touch (code-touching runs):** in any file your fix already
+  changes, check the exports you touched for callers — delete what is provably
+  dead in the SAME PR with the call-site evidence, or propose it in the report
+  if unsure. Never a roaming deletion hunt; never tests or comments. CLAUDE.md
+  (deletion-first, security-is-authored, gotcha archiving) binds you in full.
 
 ## Guardrails — IMMUTABLE (only Brad edits this section)
 

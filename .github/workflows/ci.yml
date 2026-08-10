@@ -45,6 +45,19 @@ jobs:
       # only the Remix-2.x turbo-stream DoS, removed at the Phase-7 RR7 migration).
       # The gate still fails on any NEW high/critical advisory in production deps.
       - run: npx audit-ci@^7 --config audit-ci.jsonc
+
+      # Secret scan (CLAUDE.md security rules): the deterministic layer no
+      # model review can replace. The repo is PUBLIC and .env holds every live
+      # credential, so one mis-staged file is an immediate breach. Uses the
+      # pinned BINARY, not gitleaks-action (that action requires a paid license
+      # for org accounts and adds a supply-chain surface for no gain).
+      - name: Secret scan (gitleaks)
+        run: |
+          set -euo pipefail
+          VER=8.28.0
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VER}/gitleaks_${VER}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks dir . --redact --no-banner --exit-code 1
       # test:all runs the root vitest config — a strict superset of `npm test`
       # (health-core + app/lib) that also picks up widget-src and app/routes
       # suites, which were previously never executed in CI.

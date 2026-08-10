@@ -101,19 +101,45 @@ jobs:
         id: notify
         env:
           GH_TOKEN: ${{ github.token }}
+          SURFACES_INPUT: ${{ inputs.surfaces }}
         run: |
           set -euo pipefail
           url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          # The email must be readable WITHOUT clicking: what is shipping, why,
+          # and what it touches. A bare SHA tells Brad nothing (2026-08-11).
+          subject=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" --jq '.commit.message' | head -1)
+          body_rest=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" --jq '.commit.message' | tail -n +2 | head -12)
+          files=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" \
+            --jq '.files[] | "- \(.filename) (+\(.additions)/-\(.deletions))"' | head -15)
+          nfiles=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" --jq '.files | length')
+          surfaces="${SURFACES_INPUT:-all}"
+
           # --assignee + @mention: bot-created issues notify nobody on their
           # own — Brad only gets the email as an assignee/mentioned user.
           n=$(gh issue create -R "${GITHUB_REPOSITORY}" \
-            --title "🚀 Production deploy pending — auto-ships in ~30 min" \
+            --title "🚀 Deploying: ${subject}" \
             --assignee DrBradStanfield \
-            --body "@DrBradStanfield — run: ${url}
-          Trigger: ${GITHUB_EVENT_NAME} by ${GITHUB_ACTOR}, commit ${GITHUB_SHA}
-          To VETO: cancel the run at the link above before the wait timer ends.
-          This issue auto-closes when live verification passes.
-          Fleet dashboard: https://drbradstanfield.github.io/roadmap/fleet.html" \
+            --body "$(printf '%s\n' \
+              "@DrBradStanfield — production deploy starts in ~30 min." \
+              "" \
+              "## What is shipping" \
+              "**${subject}**" \
+              "" \
+              "${body_rest}" \
+              "" \
+              "## Files (${nfiles} changed)" \
+              "${files}" \
+              "" \
+              "## Where" \
+              "Surfaces: ${surfaces} · commit \`${GITHUB_SHA}\` · triggered by ${GITHUB_ACTOR} (${GITHUB_EVENT_NAME})" \
+              "" \
+              "## To veto" \
+              "Cancel the run before the timer ends: ${url}" \
+              "" \
+              "---" \
+              "This issue auto-closes when live verification passes (a still-open issue = failed or in-flight deploy)." \
+              "Fleet dashboard: https://drbradstanfield.github.io/roadmap/fleet.html")" \
             | grep -oE '[0-9]+$')
           echo "issue=${n}" >> "$GITHUB_OUTPUT"
 
@@ -321,4 +347,8 @@ jobs:
           ISSUE: ${{ needs.gate.outputs.notify_issue }}
         run: |
           gh issue close "$ISSUE" -R "${GITHUB_REPOSITORY}" \
-            --comment "Deployed and live-verified: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            --comment "$(printf '%s\n' \
+              "✅ **Live and verified.** The change above is in production on every surface it targeted." \
+              "" \
+              "Verified by real-WebKit smoke against the live site (widget mounts, no console errors)." \
+              "Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}")"

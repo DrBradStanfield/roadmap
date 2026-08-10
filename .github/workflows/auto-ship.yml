@@ -77,17 +77,45 @@ jobs:
           [ "${ok}" -ge 1 ] || { echo "'test' check not green on ${HEAD_SHA} — not shipping."; exit 0; }
 
           # Veto window: notify (native email via issue), wait 30 minutes.
+          # The email must stand alone — what the change is, why it exists, and
+          # what the reviewer said — without opening a link (2026-08-11).
           pr_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR}"
+          title=$(pr_json | jq -r '.title')
+          author=$(pr_json | jq -r '.user.login')
+          pr_body=$(pr_json | jq -r '.body // ""' | head -20)
+          files=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" \
+            --jq '.[] | "- \(.filename) (+\(.additions)/-\(.deletions))"' | head -15)
+          nfiles=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR}/files" --jq 'length')
+          # The reviewer's verdict comment, minus the boilerplate header.
+          review=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments?per_page=100" \
+            --jq '[.[] | select(.body | contains("VERDICT: APPROVE"))] | last | .body' \
+            | grep -v '^\s*$' | tail -30)
+
           # --assignee + @mention: bot-created issues notify nobody on their
           # own — Brad only gets the email as an assignee/mentioned user.
           issue=$(gh issue create -R "${GITHUB_REPOSITORY}" \
-            --title "🕒 Auto-merge pending: PR #${PR} ships in ~30 min" \
+            --title "🕒 Auto-merging: ${title}" \
             --assignee DrBradStanfield \
-            --body "@DrBradStanfield — reviewer approved PR #${PR} at ${HEAD_SHA}.
-          ${pr_url}
-          To VETO: close the PR or add the 'hold' label before the window ends.
-          After merge, deploy.yml runs with its own 30-min window (second veto email).
-          Fleet dashboard: https://drbradstanfield.github.io/roadmap/fleet.html" \
+            --body "$(printf '%s\n' \
+              "@DrBradStanfield — an agent-authored fix merges and deploys in ~30 min." \
+              "" \
+              "## The change" \
+              "**${title}** (PR #${PR}, by ${author})" \
+              "" \
+              "${pr_body}" \
+              "" \
+              "## Files (${nfiles} changed)" \
+              "${files}" \
+              "" \
+              "## Independent reviewer said" \
+              "${review}" \
+              "" \
+              "## To veto" \
+              "Close the PR, or add the \`hold\` label, before the window ends: ${pr_url}" \
+              "" \
+              "---" \
+              "After merge, deploy.yml runs with its own 30-min window (a second email with the deploy detail)." \
+              "Fleet dashboard: https://drbradstanfield.github.io/roadmap/fleet.html")" \
             | grep -oE '[0-9]+$')
           sleep 1800
 
