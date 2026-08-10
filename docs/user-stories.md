@@ -188,9 +188,10 @@ As a guest who handed over my email, I **receive an email** confirming my plan i
 - AC6: Shopify surface only; the Pages build no-ops.
 - AC7: Once shipped, US-18's UI may promise the email (AC4 there).
 - AC8: **New captures only** (Brad, 2026-08-11) — no backfill send to the ~900 pre-existing addresses. They stay unvalidated and reminder-ineligible until Brad revisits, once real bounce/complaint rates from new sends are known.
-- AC9: Ships on **both** Fly apps (commerce + education) together; they share one Resend key and from-address.
+- AC9: Ships on **both** Fly apps (commerce + education) together; they share one Resend key and from-address. The bounce webhook needs only ONE endpoint, hosted on commerce: both apps send through the same Resend account, and the handler writes to the shared Supabase + the single commerce Klaviyo list.
+- AC10: The webhook also handles `email.complained` (spam complaint), not just `email.bounced` — under an opt-out model a complaint is the loudest possible "I never wanted this", and must suppress in Klaviyo AND unenroll from reminders immediately.
 - **Usage signal:** `report_email_sent` / `report_email_bounced` / `report_email_clicked`. Bounce rate on new captures is also the estimate for how much of the legacy ~900 is junk — the input to the backfill decision.
-- **Brad prerequisite (only he can do it):** register the bounce webhook in the Resend dashboard pointing at the new route, then put its signing secret on BOTH Fly apps as `RESEND_WEBHOOK_SECRET`. Until that exists, AC3 cannot be verified live.
+- **Brad prerequisite (only he can do it):** in the Resend dashboard, add a webhook for `email.bounced` + `email.complained` pointing at the new commerce route, then `fly secrets set RESEND_WEBHOOK_SECRET=… -a health-tool-app`. Everything else can be built and unit-tested first; only live verification of AC3/AC10 waits on this.
 - Tests: ❌ none yet — AC1–AC4 need coverage (send shape carries no health fields, bounce → Klaviyo removal + no enrollment, Resend failure doesn't break capture, Pages no-op).
 
 ### US-19 · Sending feedback

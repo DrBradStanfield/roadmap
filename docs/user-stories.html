@@ -263,9 +263,10 @@
 <li>AC6: Shopify surface only; the Pages build no-ops.</li>
 <li>AC7: Once shipped, US-18's UI may promise the email (AC4 there).</li>
 <li>AC8: <strong>New captures only</strong> (Brad, 2026-08-11) — no backfill send to the ~900 pre-existing addresses. They stay unvalidated and reminder-ineligible until Brad revisits, once real bounce/complaint rates from new sends are known.</li>
-<li>AC9: Ships on <strong>both</strong> Fly apps (commerce + education) together; they share one Resend key and from-address.</li>
+<li>AC9: Ships on <strong>both</strong> Fly apps (commerce + education) together; they share one Resend key and from-address. The bounce webhook needs only ONE endpoint, hosted on commerce: both apps send through the same Resend account, and the handler writes to the shared Supabase + the single commerce Klaviyo list.</li>
+<li>AC10: The webhook also handles <code>email.complained</code> (spam complaint), not just <code>email.bounced</code> — under an opt-out model a complaint is the loudest possible "I never wanted this", and must suppress in Klaviyo AND unenroll from reminders immediately.</li>
 <li><strong>Usage signal:</strong> <code>report_email_sent</code> / <code>report_email_bounced</code> / <code>report_email_clicked</code>. Bounce rate on new captures is also the estimate for how much of the legacy ~900 is junk — the input to the backfill decision.</li>
-<li><strong>Brad prerequisite (only he can do it):</strong> register the bounce webhook in the Resend dashboard pointing at the new route, then put its signing secret on BOTH Fly apps as <code>RESEND_WEBHOOK_SECRET</code>. Until that exists, AC3 cannot be verified live.</li>
+<li><strong>Brad prerequisite (only he can do it):</strong> in the Resend dashboard, add a webhook for <code>email.bounced</code> + <code>email.complained</code> pointing at the new commerce route, then <code>fly secrets set RESEND_WEBHOOK_SECRET=… -a health-tool-app</code>. Everything else can be built and unit-tested first; only live verification of AC3/AC10 waits on this.</li>
 <li>Tests: ❌ none yet — AC1–AC4 need coverage (send shape carries no health fields, bounce → Klaviyo removal + no enrollment, Resend failure doesn't break capture, Pages no-op).</li>
 </ul>
 <h3 id="us-19-sending-feedback">US-19 · Sending feedback</h3>
