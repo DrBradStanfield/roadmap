@@ -85,10 +85,5 @@ Commit `product-health: weekly report YYYY-Www` to main — the report is the
 delivery (constitution: no email by default). Open a "🎯 Decision needed"
 issue ONLY for items requiring Brad's call (keep-or-kill, spend, scope).
 
-## Changelog (self-amendments — newest first, keep 10)
-
-- 2026-08-10 (run W32): week-labeling convention (completed ISO data week) +
-  zero-event classification rule added; duplicate Clarity-window learning
-  pruned from LEARNINGS (monthly pruning pass).
-- 2026-08-10: charter extracted from the v1 playbook under the new fleet
-  constitution; metrics.csv introduced; success signal declared.
+Self-amendment history: [changelog.md](changelog.md) — history file, exempt
+from the operative cap. History NEVER lives inside this charter.

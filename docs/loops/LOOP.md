@@ -86,7 +86,10 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   missing, wrong, or wasteful in THIS run — including worker quality and
   queries that earned nothing.
 - Act on it: **small amendments (≤30 changed lines/run) to YOUR OWN charter**,
-  applied directly with a dated changelog line. Subject to the entropy rules.
+  applied directly, logged as a dated entry in `docs/loops/<name>/changelog.md`
+  (a history file — history NEVER lives inside a charter or this
+  constitution; a changelog section found inside one is drift, move it out
+  in the same run). Subject to the entropy rules.
 - **This constitution, the Guardrails, your schedule, your write scope, your
   credentials: proposal-only.** State the proposed change in the report; only
   Brad applies it.

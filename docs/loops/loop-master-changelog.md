@@ -5,6 +5,12 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-11 (v4.1, Brad-directed):** History expelled from operative
+  files: charter changelog sections moved to `docs/loops/<name>/changelog.md`
+  (history files, cap-exempt) for product-health, chat-health, sentry-fix;
+  _TEMPLATE.md fixed; constitution drift rule added (a changelog inside an
+  operative file = move it out same run). Same fix applied to the
+  claude_business fleet, where the template inheritance was caught.
 - **2026-08-10 (v4.1, Brad-directed):** Decision/veto issues must assign +
   @mention Brad — diagnosed from a silent inbox: bot-created issues notify
   nobody unless the recipient is mentioned, assigned, or watching All

@@ -100,8 +100,5 @@ pipeline's veto issues are Brad's notification; no separate email. Open a
 "🎯 Decision needed" issue only when a fix is blocked on Brad (e.g. bug rooted
 in an excluded file). No-op runs: metrics.csv line only, nothing else.
 
-## Changelog (self-amendments — newest first, keep 10)
-
-- 2026-08-10: charter created (Lane B: charter + signal + registry row before
-  first run). Design + trigger rationale (polling, not webhook — zero new
-  attack surface): ../deploy-pipeline-proposal.md + session decision record.
+Self-amendment history: [changelog.md](changelog.md) — history file, exempt
+from the operative cap. History NEVER lives inside this charter.
