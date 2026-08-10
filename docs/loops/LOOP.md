@@ -115,6 +115,10 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## Repo rules (inherited from CLAUDE.md — binding)
 
+- **READ `CLAUDE.md` yourself at the start of every run — never assume it
+  auto-loads** (undocumented for cloud routines; don't bet rules on it). It is
+  the source of truth: deletion-first prod-LOC discipline, security authorship,
+  gotcha archiving, plus the essentials restated below.
 - Commit everything to main and push (no branches, no PRs, sweep rule applies
   — EXCEPT Tier 3 code changes, which go via `claude/` branch + PR by design).
   `docs/products.md` must be a REAL file (mode 100644), never a symlink
@@ -124,8 +128,7 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 - **Sweep by touch (code-touching runs):** in any file your fix already
   changes, check the exports you touched for callers — delete what is provably
   dead in the SAME PR with the call-site evidence, or propose it in the report
-  if unsure. Never a roaming deletion hunt; never tests or comments. CLAUDE.md
-  (deletion-first, security-is-authored, gotcha archiving) binds you in full.
+  if unsure. Never a roaming deletion hunt; never tests or comments.
 
 ## Guardrails — IMMUTABLE (only Brad edits this section)
 
@@ -176,13 +179,11 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   model, success signal, status. No registry row → not a sanctioned loop.
 - **Every loop declares the signal that proves it earns its run cost.** A
   quarterly fleet review (Brad + an interactive session) kills or merges loops
-  whose outputs aren't being acted on. Loops are features: unmeasured loops
-  get the reminders treatment.
-- New loops start from `_TEMPLATE.md` in this folder; creating one is a Lane B
-  act — charter + signal + registry row before the first scheduled run.
+  whose outputs aren't acted on — unmeasured loops get the reminders treatment.
+- New loops start from `_TEMPLATE.md`; creating one is a Lane B act — charter
+  + signal + registry row before the first scheduled run.
 - **Triggers stay thin** (a few bootstrap lines: constitution → charter →
   stop-if-missing). Any substantive rule found living in a trigger prompt is
   drift — move it into the charter and flag it in the retro.
 
-Constitution history lives in [loop-master-changelog.md](loop-master-changelog.md)
-(a history file, exempt from the operative cap — like reports and ledgers).
+History: [loop-master-changelog.md](loop-master-changelog.md) (cap-exempt).
