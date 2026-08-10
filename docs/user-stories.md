@@ -144,13 +144,14 @@ As a user who has connected a cloud and entered real screening/blood data, I am 
 
 **Confirmation email sends via Resend, never Klaviyo (decision 2026-08-11).** Reminder consent must never be coupled to the marketing list: Klaviyo suppression is list-wide, so a supplement-promo unsubscribe would silently stop "your colonoscopy is due" — a marketing preference overriding a health reminder, with no error and nobody noticing. Two consents, two systems, two suppression lists. Supporting reasons: the confirm mail is textbook transactional (one-time, user-triggered, expected in seconds); a confirm landing in spam fails the whole redesign silently, and transactional streams land better; Resend is already wired (`reminder-v2.server.ts`, `email.server.ts`). Precedent already in the code — [api.reminders-v2.ts](../app/routes/api.reminders-v2.ts) takes `verified.email` for reminders and a SEPARATE `marketingEmail` for Klaviyo, fire-and-forget so Klaviyo can never fail an opt-in. Bonus: confirming before adding to Klaviyo filters typos/fakes, which raises Meta/Google audience match rates and cuts per-contact spend.
 
-**Two typed-address lanes, different risk — do not conflate:**
-- **New captures (low risk, build first):** confirm at the moment of capture. Contemporaneous and expected, so complaint risk is minimal.
-- **The ~900 existing captures (needs a Brad call):** they gave an email for a report, not for reminders. A bulk "do you want reminders?" mail is a re-permission campaign to people who never asked — real spam-complaint risk on a domain that also carries transactional mail. Preferred shape if we do it: one genuinely useful email (their roadmap + the reminders offer), once, not a bare permission ask. Both lists are `single_opt_in` today, so no confirmation habit exists with these contacts.
+**No confirm-click gate (Brad, 2026-08-11).** Double opt-in loses 20–40% of legitimate signups — taxing every honest user to catch a rare bad one. Instead the plan-ready email (US-18) does the work: a bounce proves the address is dead, and delivery is the enrollment trigger. The residual risk a bounce can't catch is a typo into a *valid stranger's* address (`john@` for `johnn@`), which delivers fine; AC2c bounds that (rare sends + prominent one-click unsubscribe). A click on that email is a strong ownership signal but is never required — treat clicks, not opens, as real (Apple Mail Privacy Protection fakes opens).
+
+**The ~900 existing captures (still needs a Brad call):** they gave an email for a report, not for reminders, and predate any send. A bulk "want reminders?" mail is a re-permission campaign to people who never asked — real complaint risk on a domain that also carries transactional mail. Preferred shape if we do it: one genuinely useful email (plan re-entry + the reminders offer), once. Both lists are `single_opt_in` today, so no confirmation habit exists with these contacts.
 
 - AC1: On cloud-connect success (Drive/Dropbox/GitHub), reminders default to ON, with the consent line and its opt-out visible on that same screen — never enrolled off-screen.
-- AC2: The enrolled email is either provider-verified OR a typed address that completed a confirm-link round trip (sent by Resend). No code path enrolls a typed address without that click — otherwise anyone can make the server email a stranger about their colonoscopy.
-- AC2b: A hard bounce on the confirm email means no enrollment, and the address is not added to Klaviyo (invalid addresses cost per-contact spend and dilute ad-audience match rates).
+- AC2: The enrolled email is either provider-verified (cloud-connect) OR a typed address whose plan-ready email **delivered without bouncing** (US-18). No confirm-click gate — see the consent reasoning below.
+- AC2b: A hard bounce disenrolls: no reminders, and the address is removed from Klaviyo.
+- AC2c: Because a delivered-but-mistyped address belongs to a stranger, the FIRST reminder to any bounce-validated (not provider-verified) address must carry the one-click unsubscribe prominently in the body, not just the header. Rare sends (90/180/365d) + one click to stop = bounded, self-correcting harm.
 - AC3: A user can turn reminders off permanently in one action, from the results surface and from any reminder email (RFC 8058 one-click unsubscribe already ships).
 - AC4: Turning reminders off survives a sync from a second device (see the 2026-08-07 incident below — this AC exists because that exact bug shipped).
 - AC5: The server still receives only due date + label + verified email + capability token. No measurement, lab value, or reasoning ever leaves the device — default-on must not widen the data sent.
@@ -160,9 +161,24 @@ As a user who has connected a cloud and entered real screening/blood data, I am 
 - Tests: ✅ schedule/due logic + store persistence (`saveReminderPreference`/`setGlobalReminderOptout`, 2026-08-07); ❌ opt-in UX→server path untested — **must be covered by the redesign** (AC1–AC4, especially AC2's abuse vector and AC4's regression).
 - **Incident 2026-08-07:** store-level tests found `setGlobalReminderOptout` mutated rows without bumping their merge stamps — "turn off all reminders" silently reverted on the next sync. Fixed same day (routed through the stamped upsert path); regression test pins it. **Open design TODO, now load-bearing:** on a fresh file with no per-category rows the global opt-out is a no-op — with default-on this becomes the primary path (a brand-new user turning reminders off), so the redesign must seed categories or make the global flag authoritative on its own.
 
-### US-18 · Guest email capture
-As a guest, I can email myself the report (Klaviyo capture; Shopify surface only — never on Pages).
-- Tests: 🟡 copy + captured-flag tested; capture path manual. Historical note: a guest's report email silently failed in v1 (feedback 2026-03-16) — the v2 path is different; keep an eye via Klaviyo stats.
+### US-18 · Guest email capture → plan-ready email (BUILD PENDING — Brad, 2026-08-11)
+As a guest who hands over my email for my plan, I actually **receive an email** — so I have a way back to my roadmap, and so a dead address is detectable.
+
+**Today the story title is a lie: nothing is emailed.** The capture button opens a client-side PDF/print window and subscribes the address to Klaviyo in the background. Deliberate at the time (`525e6be`, 2026-06-12: "NO Resend report email, and NO health data reaches the server") — but it means ~900 captured addresses have never been validated and the tool has no re-entry path.
+
+**The old implementation CANNOT be restored.** Pre-teardown `sendReportEmail(userId, client)` read the user's health values out of Supabase and built an email containing their waist, BP, HbA1c, LDL, ApoB, Lp(a) (`git show bbd79fd^:app/lib/email.server.ts`). Those tables are purged and that design violates the v2 invariant — no health value may transit Brad's server. Recover its layout/markup for reference only.
+
+**The v2 shape: the email carries NO health data.** It confirms the plan is ready, links back into the tool (where the plan re-renders from the user's own localStorage/cloud), and states what reminders they'll get. That keeps the local-first promise intact, makes the send cheap, and still yields the two signals we need: bounce (dead address) and click (ownership + re-engagement).
+
+- AC1: On capture, Resend sends a plan-ready email. It contains no measurement, lab value, medication, or screening data — only the re-entry link and what reminders to expect.
+- AC2: The send never blocks or breaks the user's plan: the PDF/print delivery stays exactly as it is, and a Resend failure is logged, not surfaced.
+- AC3: A Resend **bounce webhook** (new route; none exists today) marks the address dead → removed from Klaviyo, never enrolled in reminders (US-17 AC2b).
+- AC4: A delivered (non-bounced) address stays in Klaviyo and becomes eligible for reminders — delivery is the enrollment trigger, not a confirm click.
+- AC5: The re-entry link is click-tracked; clicks (not opens) are the ownership/engagement signal.
+- AC6: Shopify surface only — the Pages build has no Brad server and must no-op, as today.
+- **Usage signal:** `report_email_sent` / `report_email_bounced` / `report_email_clicked` product events; the bounce rate also tells us how much of the ~900-address Klaviyo list is junk.
+- Evidence: 874 addresses captured on the commerce Klaviyo list (+39 edu), ~4–5/day, all `single_opt_in`, none ever emailed by us. 50 unsubscribed lifetime.
+- Tests: 🟡 copy + captured-flag tested; capture path manual. Historical note: a guest's report email silently failed in v1 (feedback 2026-03-16) — that v1 path is gone; the new send needs its own tests (AC1–AC4).
 
 ### US-19 · Sending feedback
 As a user, I can send Brad feedback from the widget; it reaches his inbox (Resend) AND the `feedback_submissions` table so it's never silently lost; bots are honeypotted; 3/hour/IP.
