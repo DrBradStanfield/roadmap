@@ -129,11 +129,27 @@ As a user, when I tell the chat my numbers ("my LDL is 3.2"), it proposes struct
 
 ## Epic F — Staying engaged
 
-### US-17 · Email reminders
-As a user, I opt in with my email and get consolidated reminders when bloods/screenings/med-reviews come due; unsubscribe is one click; the server never sees health values (only labels+dates).
-- Evidence: **2 opt-ins ever** — before more engineering, decide surface/kill (audit #8). `reminder_optin` event now measures attempts — 0 fires since instrumentation went live (2026-W32): the opt-in is either unreachable or unwanted.
-- Tests: ✅ schedule/due logic + store persistence (`saveReminderPreference`/`setGlobalReminderOptout`, 2026-08-07); ❌ opt-in UX→server path untested (deferred pending the product decision).
-- **Incident 2026-08-07:** first store-level tests found `setGlobalReminderOptout` mutated rows without bumping their merge stamps — "turn off all reminders" silently reverted on the next sync. Fixed same day (routed through the stamped upsert path); regression test pins it. Open design TODO in the tests: on a fresh file with no per-category rows, the global opt-out is a no-op (depends on whether the UI seeds categories — check when the reminders decision is made).
+### US-17 · Email reminders (REDESIGN PENDING — Brad, 2026-08-11)
+As a user who has connected a cloud and entered real screening/blood data, I am reminded by email when something comes due **without having had to hunt for a setting** — because a reminder I never receive is the whole reason the tool failed to change my behaviour.
+
+**Status: the current design is a proven failure and is being replaced.** Shipped behaviour is explicit opt-in behind three barriers (cloud-connect → scroll past the disclaimer to the bottom of the results panel → two clicks). Result: **~1 genuine opt-in in two months** (the second `reminder_optin_v2` row is Brad's own e2e test). Nothing is broken — cron healthy, sends correct, nothing yet due (earliest 2027-05-12) — the feature simply never reaches anyone.
+
+**The decision (Brad, 2026-08-11):** move to reminders **on by default**, opt-out rather than opt-in. Sends are rare by design (screening 90d / bloods 180d / med-review 365d cooldowns), so the cost to a user who ignores them is near zero while the value to one who forgets a colonoscopy is the product's entire thesis.
+
+**Two constraints that bound the redesign** (they are not negotiable and any implementation must satisfy both):
+1. **Provider-verified email only — never a client-typed address.** Today's email comes from the cloud provider's own token/ID. If reminders ever accept a typed address (e.g. the Klaviyo report-capture field), anyone can enter `victim@example.com` and make Brad's server email a stranger "your colonoscopy is due" — an abuse vector and a spam-complaint engine. A typed address may only ever be used after a confirm-link round trip.
+2. **Default-on must stay visible, never silent.** Auto-enrolling silently would push every cloud-connected user's due-dates + labels to Brad's server without them knowing — quietly weakening the "your health data lives in your cloud, not our servers" promise that the product is marketed on ([architecture-v2.html](architecture-v2.html)), and inviting spam complaints that damage the sending domain shared with transactional mail. **Recommended design point:** at the cloud-connect success moment, a visible, pre-checked "Email me when something comes due" with a one-line plain statement of exactly what leaves the device (due date + label + email — never values), unmissable on one screen, plus a permanent off switch in settings.
+
+- AC1: On cloud-connect success (Drive/Dropbox/GitHub), reminders default to ON, with the consent line and its opt-out visible on that same screen — never enrolled off-screen.
+- AC2: The enrolled email is always provider-verified; no code path enrolls a client-typed address without a confirm-link round trip.
+- AC3: A user can turn reminders off permanently in one action, from the results surface and from any reminder email (RFC 8058 one-click unsubscribe already ships).
+- AC4: Turning reminders off survives a sync from a second device (see the 2026-08-07 incident below — this AC exists because that exact bug shipped).
+- AC5: The server still receives only due date + label + verified email + capability token. No measurement, lab value, or reasoning ever leaves the device — default-on must not widen the data sent.
+- AC6: Local-storage-only users (no cloud, no verified email) are never enrolled and are never shown a broken control.
+- **Usage signal (Lane B, declare before code):** `reminder_optin` fires on enrollment (already wired, already in the server enum) and a new `reminder_optout` fires on disable — the ratio is the honest measure. Kill criterion: if opt-out exceeds ~30% of enrollments, or spam complaints appear in Resend, the default-on decision is wrong and reverts.
+- Evidence: ~1 genuine opt-in ever (live query 2026-08-10); `reminder_optin` 0 fires since instrumentation went live 2026-08-06 — but both existing opt-ins PREDATE instrumentation, so zero events measures reach, not rejection. `reminder_log` empty and `last_sent: {}` are correct (nothing due yet), not a send bug. Cron `reminder_v2_cron` healthy (lock acquired daily).
+- Tests: ✅ schedule/due logic + store persistence (`saveReminderPreference`/`setGlobalReminderOptout`, 2026-08-07); ❌ opt-in UX→server path untested — **must be covered by the redesign** (AC1–AC4, especially AC2's abuse vector and AC4's regression).
+- **Incident 2026-08-07:** store-level tests found `setGlobalReminderOptout` mutated rows without bumping their merge stamps — "turn off all reminders" silently reverted on the next sync. Fixed same day (routed through the stamped upsert path); regression test pins it. **Open design TODO, now load-bearing:** on a fresh file with no per-category rows the global opt-out is a no-op — with default-on this becomes the primary path (a brand-new user turning reminders off), so the redesign must seed categories or make the global flag authoritative on its own.
 
 ### US-18 · Guest email capture
 As a guest, I can email myself the report (Klaviyo capture; Shopify surface only — never on Pages).

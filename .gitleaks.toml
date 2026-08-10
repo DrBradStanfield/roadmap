@@ -1,0 +1,28 @@
+# Secret-scan config for the gitleaks CI gate (.github/workflows/ci.yml).
+#
+# This repo is PUBLIC, so the gate is real: any true positive is an immediate
+# breach. Everything allowlisted below is a value that is PUBLIC BY DESIGN —
+# an OAuth client id that appears in the URL every user sees — or prose that
+# merely looks like a key. Never allowlist a real credential: rotate it.
+#
+# Verify locally before changing this file:
+#   gitleaks dir . --redact --no-banner
+#   gitleaks git . --redact --no-banner   # full history
+
+[extend]
+useDefault = true
+
+[[rules]]
+  id = "generic-api-key"
+  [rules.allowlist]
+    # Route names in a doc comment ("api.google-token, api.reminders-v2"),
+    # not keys. Matches the route token itself, so a real key on the same
+    # line would still be caught.
+    regexes = ['''^api\.(google-token|reminders-v2)$''']
+
+[[rules]]
+  id = "dropbox-api-token"
+  [rules.allowlist]
+    # Dropbox PKCE client id for the standalone build. Public by design: it is
+    # in the OAuth URL of every sign-in. Documented in dropbox-config.ts.
+    regexes = ['''xf96vqvjotm5xhx''']

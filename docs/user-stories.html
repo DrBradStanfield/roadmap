@@ -67,7 +67,7 @@
   <a class="toc-sub" href="#us-15-ask-about-my-plan">US-15</a>
   <a class="toc-sub" href="#us-16-chat-can-fill-my-form">US-16</a>
   <a href="#epic-f-staying-engaged">Staying engaged</a>
-  <a class="toc-sub" href="#us-17-email-reminders">US-17</a>
+  <a class="toc-sub" href="#us-17-email-reminders-redesign-pending-brad-2026-08-11">US-17</a>
   <a class="toc-sub" href="#us-18-guest-email-capture">US-18</a>
   <a class="toc-sub" href="#us-19-sending-feedback">US-19</a>
   <a class="toc-sub" href="#us-20-mobile">US-20</a>
@@ -212,12 +212,24 @@
 <li>Tests: ✅ chat-edits parsing + the paid tool-edit harness (<code>tools/test-tool-edits.json</code>).</li>
 </ul>
 <h2 id="epic-f-staying-engaged">Epic F — Staying engaged</h2>
-<h3 id="us-17-email-reminders">US-17 · Email reminders</h3>
-<p>As a user, I opt in with my email and get consolidated reminders when bloods/screenings/med-reviews come due; unsubscribe is one click; the server never sees health values (only labels+dates).</p>
+<h3 id="us-17-email-reminders-redesign-pending-brad-2026-08-11">US-17 · Email reminders (REDESIGN PENDING — Brad, 2026-08-11)</h3>
+<p>As a user who has connected a cloud and entered real screening/blood data, I am reminded by email when something comes due <strong>without having had to hunt for a setting</strong> — because a reminder I never receive is the whole reason the tool failed to change my behaviour.</p>
+<p><strong>Status: the current design is a proven failure and is being replaced.</strong> Shipped behaviour is explicit opt-in behind three barriers (cloud-connect → scroll past the disclaimer to the bottom of the results panel → two clicks). Result: <strong>~1 genuine opt-in in two months</strong> (the second <code>reminder_optin_v2</code> row is Brad's own e2e test). Nothing is broken — cron healthy, sends correct, nothing yet due (earliest 2027-05-12) — the feature simply never reaches anyone.</p>
+<p><strong>The decision (Brad, 2026-08-11):</strong> move to reminders <strong>on by default</strong>, opt-out rather than opt-in. Sends are rare by design (screening 90d / bloods 180d / med-review 365d cooldowns), so the cost to a user who ignores them is near zero while the value to one who forgets a colonoscopy is the product's entire thesis.</p>
+<p><strong>Two constraints that bound the redesign</strong> (they are not negotiable and any implementation must satisfy both):</p>
+<p>1. <strong>Provider-verified email only — never a client-typed address.</strong> Today's email comes from the cloud provider's own token/ID. If reminders ever accept a typed address (e.g. the Klaviyo report-capture field), anyone can enter <code>victim@example.com</code> and make Brad's server email a stranger "your colonoscopy is due" — an abuse vector and a spam-complaint engine. A typed address may only ever be used after a confirm-link round trip.</p>
+<p>2. <strong>Default-on must stay visible, never silent.</strong> Auto-enrolling silently would push every cloud-connected user's due-dates + labels to Brad's server without them knowing — quietly weakening the "your health data lives in your cloud, not our servers" promise that the product is marketed on (<a href="architecture-v2.html">architecture-v2.html</a>), and inviting spam complaints that damage the sending domain shared with transactional mail. <strong>Recommended design point:</strong> at the cloud-connect success moment, a visible, pre-checked "Email me when something comes due" with a one-line plain statement of exactly what leaves the device (due date + label + email — never values), unmissable on one screen, plus a permanent off switch in settings.</p>
 <ul>
-<li>Evidence: <strong>2 opt-ins ever</strong> — before more engineering, decide surface/kill (audit #8). <code>reminder_optin</code> event now measures attempts — 0 fires since instrumentation went live (2026-W32): the opt-in is either unreachable or unwanted.</li>
-<li>Tests: ✅ schedule/due logic + store persistence (<code>saveReminderPreference</code>/<code>setGlobalReminderOptout</code>, 2026-08-07); ❌ opt-in UX→server path untested (deferred pending the product decision).</li>
-<li><strong>Incident 2026-08-07:</strong> first store-level tests found <code>setGlobalReminderOptout</code> mutated rows without bumping their merge stamps — "turn off all reminders" silently reverted on the next sync. Fixed same day (routed through the stamped upsert path); regression test pins it. Open design TODO in the tests: on a fresh file with no per-category rows, the global opt-out is a no-op (depends on whether the UI seeds categories — check when the reminders decision is made).</li>
+<li>AC1: On cloud-connect success (Drive/Dropbox/GitHub), reminders default to ON, with the consent line and its opt-out visible on that same screen — never enrolled off-screen.</li>
+<li>AC2: The enrolled email is always provider-verified; no code path enrolls a client-typed address without a confirm-link round trip.</li>
+<li>AC3: A user can turn reminders off permanently in one action, from the results surface and from any reminder email (RFC 8058 one-click unsubscribe already ships).</li>
+<li>AC4: Turning reminders off survives a sync from a second device (see the 2026-08-07 incident below — this AC exists because that exact bug shipped).</li>
+<li>AC5: The server still receives only due date + label + verified email + capability token. No measurement, lab value, or reasoning ever leaves the device — default-on must not widen the data sent.</li>
+<li>AC6: Local-storage-only users (no cloud, no verified email) are never enrolled and are never shown a broken control.</li>
+<li><strong>Usage signal (Lane B, declare before code):</strong> <code>reminder_optin</code> fires on enrollment (already wired, already in the server enum) and a new <code>reminder_optout</code> fires on disable — the ratio is the honest measure. Kill criterion: if opt-out exceeds ~30% of enrollments, or spam complaints appear in Resend, the default-on decision is wrong and reverts.</li>
+<li>Evidence: ~1 genuine opt-in ever (live query 2026-08-10); <code>reminder_optin</code> 0 fires since instrumentation went live 2026-08-06 — but both existing opt-ins PREDATE instrumentation, so zero events measures reach, not rejection. <code>reminder_log</code> empty and <code>last_sent: {}</code> are correct (nothing due yet), not a send bug. Cron <code>reminder_v2_cron</code> healthy (lock acquired daily).</li>
+<li>Tests: ✅ schedule/due logic + store persistence (<code>saveReminderPreference</code>/<code>setGlobalReminderOptout</code>, 2026-08-07); ❌ opt-in UX→server path untested — <strong>must be covered by the redesign</strong> (AC1–AC4, especially AC2's abuse vector and AC4's regression).</li>
+<li><strong>Incident 2026-08-07:</strong> store-level tests found <code>setGlobalReminderOptout</code> mutated rows without bumping their merge stamps — "turn off all reminders" silently reverted on the next sync. Fixed same day (routed through the stamped upsert path); regression test pins it. <strong>Open design TODO, now load-bearing:</strong> on a fresh file with no per-category rows the global opt-out is a no-op — with default-on this becomes the primary path (a brand-new user turning reminders off), so the redesign must seed categories or make the global flag authoritative on its own.</li>
 </ul>
 <h3 id="us-18-guest-email-capture">US-18 · Guest email capture</h3>
 <p>As a guest, I can email myself the report (Klaviyo capture; Shopify surface only — never on Pages).</p>
