@@ -5,6 +5,14 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-11 (v4.3, Brad-caught):** "Loops inherit CLAUDE.md" was an
+  UNVERIFIED assumption, challenged by Brad the same day it was relied on.
+  Neither the loops blog post nor the routines docs state that a cloud routine
+  loads a repo's CLAUDE.md ("full Claude Code cloud sessions" implies it;
+  nothing guarantees it). Both fleets' constitutions now instruct the loop to
+  READ CLAUDE.md at run start instead of depending on auto-load. Lesson: a
+  rule that binds a loop must be in the constitution or explicitly fetched by
+  it — never assumed into context.
 - **2026-08-11 (v4.2, Brad-directed):** Code entropy + security land as
   authorship rules, not review rules. CLAUDE.md gains deletion-first (net
   prod-LOC stated per change; orphaned code dies in the same commit; never
