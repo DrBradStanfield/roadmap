@@ -45,6 +45,8 @@
     metrics.csv    ← append-only numeric ledger (never summarized away)
     YYYY-Www.md    ← weekly reports</pre>
 <p>Each trigger is a three-line bootstrap: read the constitution, then your charter; charters never override Guardrails. A loop only ever loads the constitution + its own folder — never the fleet (progressive disclosure at fleet scale). Improving the constitution improves every loop at once.</p>
+
+<p><strong>Never assume a file is in context — fetch it (2026-08-11, Brad-caught).</strong> The constitution's repo rules are described as "inherited from CLAUDE.md", and a rule was briefly added that <em>referenced</em> CLAUDE.md rather than restating it. Brad challenged whether a cloud loop reads CLAUDE.md at all. It cannot be verified: the loops blog post never mentions CLAUDE.md, and the <a href="https://code.claude.com/docs/en/routines.md">routines documentation</a> says routines "run autonomously as full Claude Code cloud sessions" and can use "skills committed to the cloned repository" — which implies project memory loads, but never states it. The failure mode is silent: the loop would simply never apply the rule, with no error anywhere. Both fleets' constitutions now <strong>instruct the loop to READ CLAUDE.md itself at run start</strong>. The general rule: a rule that binds a loop must live in the constitution or be explicitly fetched by it — never assumed into context.</p>
 </div>
 
 <div class="card">
