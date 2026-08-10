@@ -1,6 +1,6 @@
 ---
-title: "They Erased Their Inflammation. The Heart Attacks Kept Coming."
-url: "https://drstanfield.com/blogs/articles/they-erased-their-inflammation-the-heart-attacks-kept-coming"
+title: "Wrong About Inflammation & Heart Disease (new study)"
+url: "https://drstanfield.com/blogs/articles/wrong-about-inflammation-heart-disease-new-study"
 commerceUrl: "https://microvitamin.com/blogs/articles/lowering-inflammation-heart-disease"
 youtube: "https://youtu.be/tR0ueKzXmZ8"
 publishedAt: "2026-08-10T00:00:00Z"
