@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { PAGES_APP_URL } from './local-first-route.server';
 import * as Sentry from '@sentry/react-router';
+import { recordServerEvent } from './product-events.server';
 
 // ---------------------------------------------------------------------------
 // Resend client
@@ -9,6 +10,9 @@ import * as Sentry from '@sentry/react-router';
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
 const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL || 'https://drstanfield.com';
+// Our own origin, for links that must hit our routes (the US-22 click redirect)
+// rather than the storefront. Same source as the reminder cron's unsubscribe URL.
+const APP_BASE_URL = process.env.SHOPIFY_APP_URL || 'https://health-tool-app.fly.dev';
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
@@ -358,4 +362,79 @@ export function buildReminderV2EmailHtml(
   </div>
 </body>
 </html>`;
+}
+
+// ---------------------------------------------------------------------------
+// US-22 — plan-ready email
+// ---------------------------------------------------------------------------
+
+/**
+ * Build the plan-ready email sent when a guest hands over their address
+ * (US-22 AC1).
+ *
+ * Carries NO health data — not a value, not a suggestion, not a due date. The
+ * plan re-renders from the user's OWN storage when they follow the link, so
+ * nothing about their health has to transit or sit on Brad's server. That is
+ * the whole reason this email is thin: the local-first promise is the product.
+ *
+ * Its two jobs beyond being useful: a bounce proves the address is dead, and a
+ * click proves someone with access to that inbox wanted it (US-22 AC3/AC5).
+ */
+export function buildPlanReadyEmailHtml(openUrl: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;">
+    <div style="padding:24px;border-bottom:1px solid #eee;">
+      <h1 style="font-size:20px;color:#1a1a1a;margin:0;">Your Health Roadmap is ready</h1>
+    </div>
+    <div style="padding:24px;">
+      <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
+        Thanks for building your plan. You downloaded it as a PDF — this email is
+        just so you can find your way back to it whenever you want.
+      </p>
+      <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 24px;">
+        Your plan reloads from your own device or your own cloud storage. It is
+        not stored on our servers, so this email doesn't contain any of your
+        health information.
+      </p>
+      <p style="text-align:center;margin:0 0 24px;">
+        <a href="${openUrl}" style="display:inline-block;background:#0052a3;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-size:15px;">Open my Health Roadmap</a>
+      </p>
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0;">
+        We'll also email you when something in your plan comes due — a blood
+        test, a screening, or a medication review. That's a few emails a year at
+        most, and every one has a one-click unsubscribe.
+      </p>
+    </div>
+    <div style="padding:16px 24px;text-align:center;border-top:1px solid #eee;">
+      <p style="color:#999;font-size:12px;margin:0;">
+        Your health data lives only on your device or in your own cloud storage — never on Dr Brad's server.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * Send the plan-ready email (US-22 AC1/AC2). Never throws — the caller is the
+ * capture path and the user already has their PDF.
+ *
+ * The CTA points at our own /roadmap/open redirect rather than straight at the
+ * store, so the click is counted first-party (AC5) without Resend link-rewriting
+ * and without putting the recipient's address in an analytics row.
+ */
+export async function sendPlanReadyEmail(email: string): Promise<boolean> {
+  try {
+    const openUrl = `${APP_BASE_URL}/roadmap/open`;
+    await sendEmail(email, 'Your Health Roadmap is ready', buildPlanReadyEmailHtml(openUrl));
+    await recordServerEvent('report_email_sent');
+    return true;
+  } catch (error) {
+    console.error('Plan-ready email failed:', error);
+    Sentry.captureException(error, { tags: { feature: 'plan_ready_email' } });
+    return false;
+  }
 }

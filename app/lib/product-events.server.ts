@@ -23,6 +23,26 @@ export const productEventSchema = z.object({
 
 export type ProductEventInput = z.infer<typeof productEventSchema>;
 
+/**
+ * Sentinel visitor for events the SERVER originates, where no browser visitor
+ * exists: a plan-ready email send, a Resend bounce/complaint webhook, an email
+ * link click (US-22). Deliberately NOT the recipient's address or any hash of
+ * it — product_events stays anonymous counters, so these events answer "how
+ * many bounced", never "who bounced".
+ */
+export const SERVER_VISITOR_ID = '00000000-0000-0000-0000-000000000000';
+
+/** Fire-and-forget server-side counter. Never throws — callers are hot paths. */
+export async function recordServerEvent(
+  eventName: ProductEventInput['eventName'],
+): Promise<void> {
+  try {
+    await recordProductEvent({ eventName, visitorId: SERVER_VISITOR_ID });
+  } catch {
+    /* counters must never break the operation they measure */
+  }
+}
+
 export function parseProductEvent(body: unknown): ProductEventInput | null {
   const parsed = productEventSchema.safeParse(body);
   return parsed.success ? parsed.data : null;

@@ -264,3 +264,44 @@ export async function getCachedKlaviyoCaptureStats(): Promise<KlaviyoCaptureStat
   statsCache = { at: Date.now(), value };
   return value;
 }
+
+/**
+ * Suppress an address (US-22 AC3): it hard-bounced or the recipient marked us
+ * as spam, so it must stop receiving anything and must stop diluting the ad
+ * audiences this list feeds.
+ *
+ * Unsubscribe, never delete (Brad, 2026-08-11): the profile and its history
+ * stay, so a misclassified bounce is reversible and we keep the record that
+ * the address was ever captured. Klaviyo excludes UNSUBSCRIBED profiles from
+ * sends and from audience syncs, which is the whole point.
+ */
+export async function suppressInKlaviyo(email: string): Promise<boolean> {
+  const listId = klaviyoListId();
+  if (!klaviyoApiKey() || !listId) {
+    console.log('Klaviyo not configured, skipping suppression');
+    return false;
+  }
+  try {
+    const response = await fetch(`${KLAVIYO_BASE}/profile-subscription-bulk-delete-jobs/`, {
+      method: 'POST',
+      headers: { ...klaviyoHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        data: {
+          type: 'profile-subscription-bulk-delete-job',
+          attributes: {
+            profiles: { data: [{ type: 'profile', attributes: { email } }] },
+          },
+          relationships: { list: { data: { type: 'list', id: listId } } },
+        },
+      }),
+    });
+    if (!response.ok) {
+      console.error(`Klaviyo suppression failed: ${response.status} ${await response.text()}`);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Klaviyo suppression error:', error);
+    return false;
+  }
+}

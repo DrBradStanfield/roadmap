@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/react-router';
 import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
+import { sendPlanReadyEmail } from '../lib/email.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 
 const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000); // 5/day per email
@@ -10,8 +11,9 @@ const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000
 // ---------------------------------------------------------------------------
 // Klaviyo capture (local-first v2) — the "Get Your Personalized Plan" button.
 // The ONLY thing that crosses to the server is the email address: subscribe it
-// to the Klaviyo guest list and nothing else. NO health data, NO Resend, NO
-// report build (the PDF is generated client-side in the browser).
+// to the Klaviyo guest list, and (US-22) send the plan-ready email, which
+// carries no health data of any kind. NO report build — the PDF is still
+// generated client-side in the browser and remains the actual delivery.
 //
 // This is ALL that remains of the old /api/measurements endpoint. The v2 widget
 // is local-first (the user's data lives in their own cloud), so the legacy
@@ -19,6 +21,9 @@ const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000
 // production cutover.
 // ---------------------------------------------------------------------------
 const klaviyoCaptureSchema = z.object({ email: z.string().email().max(254) });
+
+// US-22: the plan-ready send lives in email.server so the template and the
+// send stay together (and so the no-health-data test can target the builder).
 
 async function handleKlaviyoCapture(data: unknown) {
   try {
@@ -34,6 +39,10 @@ async function handleKlaviyoCapture(data: unknown) {
     // profile-properties step entirely. Fire-and-forget so a Klaviyo hiccup
     // never blocks the user's plan.
     subscribeToKlaviyo({ email }).catch(() => {});
+    // US-22 AC1/AC2: the plan-ready email. Fire-and-forget for the same reason
+    // — the PDF is the delivery, and a Resend outage must never surface to a
+    // user who already has their plan. Carries no health data by construction.
+    sendPlanReadyEmail(email).catch(() => {});
     // No audit row written here — capture volume is now reported on the admin
     // dashboard straight from the Klaviyo list (the source of truth, with true
     // lifetime totals), so this path stores no email/PII and no tally at all.

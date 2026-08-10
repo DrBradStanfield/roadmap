@@ -19,6 +19,12 @@ export const PRODUCT_EVENT_NAMES = [
   // US-21 additional blood tests: phase-1 surfacing + phase-2 manual add.
   'lab_rows_viewed',
   'lab_row_added',
+  // US-22 plan-ready email. Server-originated (no browser visitor): recorded
+  // with the nil-UUID sentinel, see SERVER_VISITOR_ID in product-events.server.
+  'report_email_sent',
+  'report_email_bounced',
+  'report_email_complained',
+  'report_email_clicked',
 ] as const;
 
 export type ProductEventName = (typeof PRODUCT_EVENT_NAMES)[number];

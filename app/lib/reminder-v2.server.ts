@@ -205,6 +205,22 @@ export async function deleteByToken(token: string): Promise<boolean> {
   return (data?.length ?? 0) > 0;
 }
 
+/**
+ * Delete the opt-in for an address (US-22 AC3/AC10 — the address bounced or
+ * complained). Same DELETE semantics as unsubscribing by token: the row goes,
+ * nothing is retained. Safe when no row exists, which is the common case since
+ * most captured addresses never enrolled.
+ */
+export async function deleteByEmail(email: string): Promise<boolean> {
+  const { data, error } = await requireAdmin()
+    .from('reminder_optin_v2')
+    .delete()
+    .eq('email', email)
+    .select('id');
+  if (error) throw new Error(`reminder_optin_v2 delete-by-email failed: ${error.message}`);
+  return (data?.length ?? 0) > 0;
+}
+
 /** Page through all reminder opt-ins (cron). */
 export async function getOptinsBatch(
   limit: number,
