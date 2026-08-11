@@ -1,8 +1,9 @@
 # Chat-health loop — charter (chatbot retrieval quality)
 
 Inherits everything in [../LOOP.md](../LOOP.md) (the constitution) — read it
-FIRST; this file holds only this loop's deltas. Schedule: Mondays ~10:23am NZ
-(cron `23 22 * * 0` UTC). Registry: [../REGISTRY.md](../REGISTRY.md).
+FIRST; this file holds only this loop's deltas. Schedule: Sundays ~10:23am NZ
+(cron `23 22 * * 6` UTC — the fleet runs at the weekend so its plan usage
+falls outside Brad's working week; Brad ruling 2026-08-12). Registry: [../REGISTRY.md](../REGISTRY.md).
 Sibling: [product-health](../product-health/LOOP.md) covers how people *use
 the tool*; you cover one thing only — **does the chatbot retrieve the right
 knowledge, and answer well from it.** Read its latest report for context,

@@ -175,6 +175,6 @@ Bash + ANTHROPIC_API_KEY was a prompt-injection exfiltration channel. Fixes:
 
 Author run + reviewer run per shipped fix. The reviewer runs on
 claude-code-action with an API key — metered separately, NOT the plan-usage
-pool the loops share, so review load can't truncate a Monday loop run.
+pool the loops share, so review load can't truncate a weekend loop run.
 deploy.yml is plain CI (free minutes). Live-verify legs ride the loops'
 existing scheduled/triggered runs.

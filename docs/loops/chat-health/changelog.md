@@ -4,6 +4,13 @@ History is NOT operative instruction (Brad 2026-08-11): charters never
 contain their own changelog. Dated entries newest first, keep ~10 (git is
 the archive). Exempt from the 200-line operative cap.
 
+- 2026-08-12 (Brad-directed): schedule moved from MONDAY to SUNDAY ~10:23am NZ,
+  cron `23 22 * * 6` — the fleet's plan usage should land outside Brad's working week, so
+  Monday's capacity is his. Time-of-day and the ~96-minute fleet stagger are
+  unchanged; only the day moved, so the contention profile is exactly what it
+  was. Cloud routine `trig_01PhanDmZZWLpWJovnvfdLzm` updated in the same change. Verified across daylight
+  saving: the slot never crosses a day boundary.
+
 - 2026-08-10 (Brad, build session): Gather gains YouTube reply-length —
   median words + breaches of the new ≤5-sentence/≤90-word/≤25-per-sentence
   prompt cap (baseline: median 84 words). Prompt fixes only, never code

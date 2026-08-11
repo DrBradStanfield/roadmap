@@ -5,6 +5,20 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-12 (Brad-directed, fleet schedule):** The whole fleet moves to
+  WEEKEND firing — product-health and chat-health from Monday to Sunday
+  morning NZ (`47 20 * * 6`, `23 22 * * 6`), matching the claude_business
+  fleet, which moved the same day (ads-amazon-weekly Saturday,
+  ads-meta-weekly Sunday). Reason: both fleets draw on ONE plan-usage pool,
+  and Monday-morning runs were spending Brad's capacity during his working
+  week. Time-of-day and the fleet stagger are unchanged — only the day moved
+  — so the contention profile is exactly what it was. Both cloud routines
+  were updated in the same change; a schedule edited in the registry but not
+  in the routine is drift that only shows up as a run at the wrong hour.
+  sentry-fix deliberately stays DAILY: it triages production errors, so
+  weekend-only would be a functional downgrade, and its 5:13am NZ slot is
+  already clear of working hours.
+
 - **2026-08-11 (v4.3, Brad-caught):** "Loops inherit CLAUDE.md" was an
   UNVERIFIED assumption, challenged by Brad the same day it was relied on.
   Neither the loops blog post nor the routines docs state that a cloud routine
