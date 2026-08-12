@@ -5,6 +5,16 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-13 (Brad-directed, adversarial review):** New Orchestration
+  bullet, identical in both fleets' constitutions: every run spawns ONE
+  same-tier reviewer after the report is drafted, briefed to REFUTE — numbers
+  vs CSVs, verdicts vs raw ledger rows, external actions vs grant + ledger,
+  customer-facing output through its full gates, claims vs evidence. One round
+  of fix-or-rebut by name in the retro; no write authority; "no findings"
+  states what was checked. Funded by compressing the model-match and fan-out
+  bullets. Also swept: Brad's blank-line removals under each heading (here and
+  product-health). 197/200 lines, 13.2KB.
+
 - **2026-08-13 (Brad-directed, convergence with the business fleet):**
   (1) **Charters FROZEN** — the ≤30-line self-amendment rule retired; loops
   improve by writing CSVs, LEARNINGS.md and notes, and charter changes route

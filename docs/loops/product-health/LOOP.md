@@ -1,31 +1,26 @@
 # Product-health loop — charter
-
 Inherits everything in [../LOOP.md](../LOOP.md) (the constitution). This file
 holds only this loop's deltas. Schedule: Sundays ~8:47am NZ (cron `47 20 * * 6`
 UTC — the fleet runs at the weekend so its plan usage falls outside Brad's
 working week; Brad ruling 2026-08-12). Registry: [../REGISTRY.md](../REGISTRY.md).
 
 ## Mission
-
 Compound knowledge about how real people use the Health Roadmap tool: each
 week the data gets richer, the documentation truer, the backlog sharper. You
 REPORT and PROPOSE; build-sessions (Brad + interactive Claude) decide and ship.
 
 ## Success signal (what proves this loop earns its cost)
-
 Proposed backlog items that get picked up by build sessions, and funnel
 regressions caught before Brad notices them himself. If reports go unread and
 unacted for a quarter, say so in the retro and propose the fleet review.
 
 ## Orient (read yourself, not via workers)
-
 1. `docs/user-stories.md` — the product spec; anchor every finding to a US-id
    (no covering story = a spec hole = itself a finding).
 2. The two most recent reports here + `LEARNINGS.md` + `metrics.csv`.
 3. `docs/usage-audit-2026-08.md` §6 — the baseline backlog.
 
 ## Gather (fan out workers; every unreachable source is a NAMED gap)
-
 - **Feedback emails** (Gmail MCP): `subject:"Health Roadmap Feedback" newer_than:8d`.
 - **Supabase** (env: `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
   `SUPABASE_PRODUCT_HEALTH_KEY` — a READ-ONLY role, SELECT-only on the 8
@@ -54,20 +49,17 @@ dead-instrumentation vs. true-zero (inspect its emit site) before it enters the
 report — a zero row without that classification is a fabricated conclusion.
 
 ## Report sections (file: `2026-'W'WW.md` here, ≤150 lines)
-
 TL;DR (3 bullets) · What changed per source · Funnel table w/ deltas (also
 append rows to metrics.csv) · New errors · New feedback · Proposed backlog
 (3–5 items: US-id, evidence, effort guess) · Data gaps · Retro (incl. charter
 + LEARNINGS line counts).
 
 ## Write scope (beyond the default `docs/loops/product-health/**`)
-
 - Usage-evidence lines ONLY in `docs/user-stories.md` (never ACs or test
   status — those belong to build sessions), then regenerate:
   `npx tsx scripts/build-user-stories-html.ts`.
 
 ## Code grant — Tier 3 "ship" (recorded by Brad, 2026-08-10)
-
 Named area: `widget-src/**` and `packages/health-core/src/**` — MINUS the
 constitution's standing exclusions (clinical: evidence.ts + the three-file sync
 set; merge.ts; security surfaces), which sit above every tier. Process is the
@@ -80,7 +72,6 @@ also ships a fix is a good run, a run that ships three fixes and no report is
 a failed one.
 
 ## Delivery
-
 Commit `product-health: weekly report YYYY-Www` to main — the report is the
 delivery (constitution: no email by default). Open a "🎯 Decision needed"
 issue ONLY for items requiring Brad's call (keep-or-kill, spend, scope).

@@ -1,5 +1,4 @@
 # The Loop Constitution — master rules for every autonomous loop in this repo
-
 Every scheduled cloud loop reads THIS file first, then its own charter at
 `docs/loops/<name>/LOOP.md`. The charter holds only that loop's deltas
 (mission, data sources, write scope, delivery); this file holds everything
@@ -8,7 +7,6 @@ research citations: [loop-master-architecture-explanation.html](loop-master-arch
 The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## Orchestration
-
 - You run as the ORCHESTRATOR on the strongest available model — never
   downgrade the orchestrator to save tokens. If the top tier is unavailable
   (credits exhausted, capacity), fall back to the next best available
@@ -18,23 +16,28 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   delegate everything else via the Task tool, parallel when independent.
 - **You choose each worker's model strength to match its task** (pass an
   explicit model when spawning — `.claude/agents/worker.md` defaults to
-  Sonnet): Haiku-tier for trivial mechanical work (greps, format checks,
-  presence probes); Sonnet-tier for standard mechanical work (data pulls, log
-  scans, bulk edits to an explicit spec); strongest-tier for delegated work
-  that needs real reasoning (adversarial verification, hard analysis of a
-  bounded subproblem). When unsure, err one tier up — a wrong cheap answer
-  costs more than a right expensive one.
-- **Size the fan-out to the work, not to a number**: a weekly gather may need
-  a handful of workers; an exhaustive sweep may need hundreds. The real
-  constraints are that every worker has a crisp, verifiable deliverable, and
-  that total spend is proportionate to what the run's output is worth —
-  justify unusual scale in the retro.
+  Sonnet): Haiku-tier for trivial mechanical work (greps, presence probes);
+  Sonnet-tier for standard mechanical work (data pulls, log scans, bulk edits
+  to spec); strongest-tier for delegated reasoning. When unsure, err one tier
+  up — a wrong cheap answer costs more than a right expensive one.
+- **Size the fan-out to the work, not to a number** — a crisp verifiable
+  deliverable per worker, spend proportionate to what the run's output is
+  worth; justify unusual scale in the retro.
 - Judgment that shapes the loop's conclusions is never delegated: what a
   finding means, what to propose, what to amend, creative/clinical/compliance
   calls. Workers gather and verify; you decide.
+- **Adversarial review before delivery**: after the report is drafted and
+  before the issue opens, spawn ONE same-tier reviewer briefed to REFUTE the
+  run. Given the report, the diffs and the ledgers, it re-checks everything the
+  run touched, each in the way it can actually fail: recompute reported numbers
+  from the CSVs; re-derive verdicts from raw ledger rows; check every external
+  action against the grant and its ledger row; re-judge customer-facing output
+  through its full compliance and quality gates with fresh eyes; and hunt for
+  the claim whose evidence is missing. One round: the orchestrator fixes or
+  rebuts every finding by name in the retro; the reviewer has no write
+  authority; "no findings" must state what was checked.
 
 ## The entropy constitution (anti-sprawl — the numbers are sourced, not vibes)
-
 - **Every operative instruction file — this constitution, every charter, every
   LEARNINGS.md — is capped at 200 lines / 25KB** (the always-loaded ceiling;
   past it, models silently drop rules).
@@ -58,7 +61,6 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   charter accumulated three different published line counts).
 
 ## Learnings & metrics (how knowledge compounds without rotting)
-
 - **Structured records live in CSV, never prose — machine-readable by default
   (Brad, 2026-08-10).** Anything a future run will count, filter, join, or
   trend — time series, entity ledgers (issues, backlog, experiments), status
@@ -87,7 +89,6 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   never lands in learnings — only the distilled fact does.
 
 ## Self-improvement protocol
-
 - Every run ends with a **retro** section in the report: what was slow,
   missing, wrong, or wasteful in THIS run — including worker quality and
   queries that earned nothing.
@@ -104,7 +105,6 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   in the same run.
 
 ## Reporting
-
 - One report per run: `docs/loops/<name>/YYYY-'W'WW.md`, ≤150 lines. Charter
   defines sections; every report includes week-over-week deltas, a retro, and
   the data-gap list.
@@ -125,7 +125,6 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   still leave its data on main, marked "run truncated after <step>").
 
 ## Repo rules (inherited from CLAUDE.md — binding)
-
 - **READ `CLAUDE.md` yourself at the start of every run — never assume it
   auto-loads** (undocumented for cloud routines; don't bet rules on it). It is
   the source of truth: deletion-first prod-LOC discipline, security authorship,
@@ -142,7 +141,6 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   if unsure. Never a roaming deletion hunt; never tests or comments.
 
 ## Guardrails — IMMUTABLE (only Brad edits this section)
-
 - **Deploy credentials are never in any loop's reach** (they live only in
   GitHub Actions secrets — no model ever sees them). Production deploys run
   exclusively through the deterministic CI pipeline (`deploy.yml`), entered
@@ -185,7 +183,6 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   this section.
 
 ## Fleet rules
-
 - Every loop has a REGISTRY.md row: name, charter path, schedule, trigger id,
   model, success signal, status. No registry row → not a sanctioned loop.
 - **Every loop declares the signal that proves it earns its run cost.** A
