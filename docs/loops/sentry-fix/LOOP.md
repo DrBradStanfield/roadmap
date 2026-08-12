@@ -103,5 +103,5 @@ pipeline's veto issues are Brad's notification; no separate email. Open a
 "🎯 Decision needed" issue only when a fix is blocked on Brad (e.g. bug rooted
 in an excluded file). No-op runs: metrics.csv line only, nothing else.
 
-Self-amendment history: [changelog.md](changelog.md) — history file, exempt
+Charter history: [changelog.md](changelog.md) — history file, exempt
 from the operative cap. History NEVER lives inside this charter.

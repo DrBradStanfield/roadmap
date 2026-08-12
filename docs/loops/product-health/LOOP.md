@@ -86,5 +86,5 @@ Commit `product-health: weekly report YYYY-Www` to main — the report is the
 delivery (constitution: no email by default). Open a "🎯 Decision needed"
 issue ONLY for items requiring Brad's call (keep-or-kill, spend, scope).
 
-Self-amendment history: [changelog.md](changelog.md) — history file, exempt
+Charter history: [changelog.md](changelog.md) — history file, exempt
 from the operative cap. History NEVER lives inside this charter.

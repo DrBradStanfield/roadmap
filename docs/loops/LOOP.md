@@ -48,10 +48,14 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   on-demand file; the operative file stays a router of binding rules.
 - **Prefer distillation over accretion**: sharpen an existing rule rather than
   appending an exception. A playbook that reads like case law is failing.
-- **Monthly pruning pass** (first run of each month): the retro must name the
-  least-earning rule in your charter and compress or delete it.
-- **Line counts are vital signs**: every report states the current line count
-  of your charter and LEARNINGS.md next to the domain metrics.
+- **Monthly pruning pass** (first run of each month): read LEARNINGS.md and
+  notes as a WHOLE — merge duplicates, correct what later evidence overtook,
+  prune the least-earning entries. Charter dead weight: name it in the
+  report, Brad prunes (charters are frozen — see Self-improvement).
+- **Size is a vital sign**: every report states your charter's and
+  LEARNINGS.md's lines AND bytes, **pasted from actual `wc -l -c` output —
+  never estimated** (the first retros eyeballed 4 of 6 counts wrong; one
+  charter accumulated three different published line counts).
 
 ## Learnings & metrics (how knowledge compounds without rotting)
 
@@ -66,11 +70,13 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   columns unless the charter overrides:
   `week,metric,count_7d,count_prior_7d,delta_pct,source,note`
 - **Qualitative findings go to `docs/loops/<name>/LEARNINGS.md` — the INDEX,
-  not the archive**: dated, tagged, one entry = something a future session
-  would otherwise rediscover the hard way. A learning that needs depth gets
-  its own topic file (`docs/loops/<name>/notes/<slug>.md`) linked from a
-  one-line index entry — detail loads on demand, the index stays scannable.
-  Cluster under topic headings as the file matures, not pure chronology.
+  not the archive**: dated, tagged, one entry = a 1–3 sentence summary of
+  something a future session would otherwise rediscover the hard way. Depth
+  gets a topic file (`docs/loops/<name>/notes/<slug>.md`) linked from its
+  entry — **LEARNINGS.md IS the notes index** (no separate README; an
+  unlinked note is invisible), and pruning may compact an entry to its link
+  line but never drops a live note's only link. Cluster under topic headings
+  as the file matures, not pure chronology.
 - **Mechanical dedup rule**: before appending, search existing entries for the
   same tag + subsystem. On a match, UPDATE that entry in place ("confirmed
   again <date>", sharpen the wording) — never append a paraphrase.
@@ -85,14 +91,18 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 - Every run ends with a **retro** section in the report: what was slow,
   missing, wrong, or wasteful in THIS run — including worker quality and
   queries that earned nothing.
-- Act on it: **small amendments (≤30 changed lines/run) to YOUR OWN charter**,
-  applied directly, logged as a dated entry in `docs/loops/<name>/changelog.md`
-  (a history file — history NEVER lives inside a charter or this
-  constitution; a changelog section found inside one is drift, move it out
-  in the same run). Subject to the entropy rules.
-- **This constitution, the Guardrails, your schedule, your write scope, your
-  credentials: proposal-only.** State the proposed change in the report; only
-  Brad applies it.
+- **Improve by writing DATA and NOTES — never by rewriting your charter**
+  (Brad ruling 2026-08-13, superseding the ≤30-line self-amendment rule after
+  the business fleet froze charters 2026-08-12): knowledge compounds in your
+  CSVs, LEARNINGS.md and `notes/`, inside the entropy caps. Want a rule
+  change? Put it in the report **with the evidence — name the run where the
+  current rule actually cost something** — and Brad applies it.
+- **The charter is Brad's, not yours** — as are this constitution, the
+  Guardrails, your schedule, write scope and credentials. You decide what to
+  DO; Brad decides what you are ALLOWED to do.
+- **History NEVER lives inside an operative file**: a changelog section found
+  inside a charter or this constitution is drift — move it to `changelog.md`
+  in the same run.
 
 ## Reporting
 
@@ -109,7 +119,7 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   @DrBradStanfield** (the mention is what emails him; bot issues alone
   notify nobody). Never Gmail drafts — unsent drafts are clutter.
 - **Commit early — truncation-proof the run**: commit the report with its data
-  as soon as the numbers are in, BEFORE polish/retro/self-amendment (runs
+  as soon as the numbers are in, BEFORE polish and retro (runs
   share a plan-usage pool and can be cut off mid-flight; a truncated run must
   still leave its data on main, marked "run truncated after <step>").
 

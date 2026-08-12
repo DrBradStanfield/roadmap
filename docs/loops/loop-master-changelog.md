@@ -5,6 +5,23 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-13 (Brad-directed, convergence with the business fleet):**
+  (1) **Charters FROZEN** — the ≤30-line self-amendment rule retired; loops
+  improve by writing CSVs, LEARNINGS.md and notes, and charter changes route
+  through the report with evidence for Brad to apply. All five first-run
+  amendments were good ones, but a self-amending charter is the file whose
+  drift compounds silently; the business fleet froze 2026-08-12 and Brad chose
+  one regime over two. Monthly pruning re-scoped to LEARNINGS/notes (charter
+  dead weight is named, Brad cuts). (2) **Honest vitals** — line/byte counts
+  in retros must be pasted `wc -l -c` output, never estimates: first-run
+  retros eyeballed 4 of 6 counts wrong, and chat-health's charter accumulated
+  three different published line counts (161 registry / 178 retro / 172
+  actual); stale figures corrected in REGISTRY.md and the architecture page.
+  (3) **LEARNINGS.md IS the notes index** — 1–3 sentence entries, depth in
+  linked notes, no separate README files, pruning never drops a live note's
+  only link. Charter tails renamed "Charter history"; write-scope header
+  wording updated (chat-health).
+
 - **2026-08-12 (Brad-directed, fleet schedule):** The whole fleet moves to
   WEEKEND firing — product-health and chat-health from Monday to Sunday
   morning NZ (`47 20 * * 6`, `23 22 * * 6`), matching the claude_business
@@ -84,27 +101,3 @@ this record.
   workflows or repo settings. Research + full design:
   deploy-pipeline-proposal.md. Same day: products.md symlink INVERTED (master
   is now a real file in this repo) — deploy-pipeline prerequisite #1.
-- **2026-08-10 (v2.3):** Truncation-proof commit ordering (report+data committed before polish; runs share a plan-usage pool) and the thin-trigger rule (substance lives in charters, never trigger prompts). Deploy-capability question (Brad: author-PR → reviewer loop → deploy → dual live verify) deferred to a research pass — recorded in session memory.
-- **2026-08-10 (v2.2, Brad-directed):** Guardrails reworked from a blanket
-  code-freeze to a graduated grant ladder (Tier 0 propose / Tier 1 prepare on
-  outcome branch / Tier 2 commit to named area), anchored on the physical
-  boundary that deploys only happen from build sessions on Brad's machine.
-  Clinical/merge/security stay above every tier, with one narrow errata
-  exception for mechanically verifiable reference defects (DOI/URL typo,
-  same-paper resolution evidence required). LEARNINGS.md formalized as an
-  index with `notes/<slug>.md` topic files for depth. Changelog moved out of
-  the constitution into this file (entropy: history is not operative
-  instruction).
-- **2026-08-10 (v2.1, Brad-directed):** Orchestration reworked — worker model
-  strength is chosen per task by the orchestrator (Haiku/Sonnet/strongest, err
-  one tier up when unsure), and the fan-out is sized to the work (hundreds if
-  warranted) bounded by crisp deliverables + proportionate spend, not a
-  numeric cap.
-- **2026-08-10 (v2):** Refactored from the single product-health playbook into
-  the fleet constitution: charters split out per loop, entropy constitution
-  codified from researched numbers (Anthropic's 200-line guidance +
-  MEMORY.md's enforced 200-line/25KB precedent), learnings/metrics split,
-  fleet rules (registry, success signals, quarterly review) added. Decision
-  record: loop-master-architecture-explanation.html.
-- **2026-08-07 (v1):** Single product-health playbook authored (orchestrate-
-  don't-grind, self-improvement protocol, first guardrails).

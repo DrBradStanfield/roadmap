@@ -147,7 +147,7 @@ numbers · Fixes attempted and reverted (w/ numbers) · Content-gap backlog ·
 Proposals needing Brad · Data gaps · Retro (incl. charter + LEARNINGS line
 counts).
 
-## Write scope (Brad-set; self-amendment may never widen it)
+## Write scope (Brad-set; a loop may never widen it)
 
 - Default `docs/loops/chat-health/**`, plus:
 - The `summary:` frontmatter line of individual
@@ -168,5 +168,5 @@ Commit `chat-health: weekly retrieval report YYYY-Www` to main. No email
 delivery). The report's TL;DR must carry: fixes with numbers, top 3
 new/growing content gaps, and what needs Brad's approval.
 
-Self-amendment history: [changelog.md](changelog.md) — history file, exempt
+Charter history: [changelog.md](changelog.md) — history file, exempt
 from the operative cap. History NEVER lives inside this charter.
