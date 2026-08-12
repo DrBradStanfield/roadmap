@@ -23,7 +23,17 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   the proxy/edge answering (machine restart / cold start), not an application
   answer; client code must not treat it as final. Fixed for chat via one-shot
   retry (US-15 AC3, PR #11); same class likely reachable on the other
-  `PROXY_PATH` endpoints — extend only on Sentry evidence.
+  `PROXY_PATH` endpoints — extend only on Sentry evidence. Known residuals
+  (documented, not defects): send retry can duplicate the user row when
+  attempt 1 died mid-pipeline (same as a manual retype; pinning it needs a
+  server test); a 504 while attempt 1 still runs costs one extra LLM spend.
+- `[expected][sentry]` 2026-08-12 — The info-level issue titled
+  "Chat transient upstream 5xx, retrying once" IS the retry instrumentation
+  from PR #11 — ledger it `wontfix` (expected) on first appearance; its rate
+  is the transient-failure trend, worth reading, never "fixing".
+- `[process][review]` 2026-08-12 — Verify a safety claim at the CALL SITE
+  that enforces it, not the helper that implements it (round-1 REJECT: dedup
+  helper was sound, but the route gates it behind `if (conversationId)`).
 - `[gotcha][sentry-api]` 2026-08-12 — Issues-list `count` is LIFETIME and
   `statsPeriod` does not filter the list (valid values only ''/24h/14d);
   rank by summing `stats[period]` buckets and test newness via `lastSeen` vs
