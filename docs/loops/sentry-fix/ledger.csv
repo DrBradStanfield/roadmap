@@ -4,7 +4,7 @@ issue_id,project,first_seen,status,pr,note
 7573442962,javascript-remix,2026-06-24,wontfix,,parseModule SyntaxError on iOS 14.2 Safari — ancient browser below support floor; native frames only
 7573442964,javascript-remix,2026-06-24,wontfix,,parseModule SyntaxError on iOS 14.2 Safari — same session/class as 7573442962
 7573442965,javascript-remix,2026-06-24,wontfix,,parseModule SyntaxError on iOS 13.4 Facebook in-app webview — below support floor
-7425626862,javascript-remix,2026-04-20,claimed,,sendMessage POST 500 with no content-type and empty body — upstream proxy/edge failure before our handler (no server Sentry event; no DB writes at 16:06Z Aug 7; orphaned user row 16:21Z); fix: client one-shot retry of transient non-JSON 5xx
+7425626862,javascript-remix,2026-04-20,claimed,#11,sendMessage POST 500 with no content-type and empty body — upstream proxy/edge failure before our handler (no server Sentry event; no DB writes at 16:06Z Aug 7; orphaned user row 16:21Z); fix: client one-shot retry of transient non-JSON 5xx
 7653667248,javascript-remix,2026-08-05,wontfix,,YouTube OAuth refresh got a single 500 internal_failure from Google; handled + logged; transient
 7645126135,javascript-remix,2026-07-31,not-ours,,synthetic object capture via Sentry SDK internals; breadcrumb shows Shopify theme @shopify/events error
 7600858482,javascript-remix,2026-07-08,not-ours,,JSON.parse failure from UpCart third-party cart app parsing a 404 cart.js on en-pl locale; no frames

@@ -39,6 +39,9 @@ beyond the metrics line. Most days should end here.
 - List projects once per run: `GET /api/0/organizations/dr-brad-inc/projects/`
   (server = `javascript-remix`; include the widget project if present).
 - New/regressed unresolved issues: `GET /api/0/projects/dr-brad-inc/<proj>/issues/?query=is:unresolved&statsPeriod=14d&sort=date`.
+  `statsPeriod` shapes `stats` only — the list is ALL unresolved and `count`
+  is lifetime. Newness test = `lastSeen` vs the ledger; rank candidates by
+  summing `stats` buckets. Only each issue's latest event is retained.
 - Per candidate: latest event (stack, breadcrumbs, release, URL, user-agent).
 - Cross-checks when useful: `product_events` funnel counts (same read-only
   Supabase creds as product-health), release commits (`git log`).
