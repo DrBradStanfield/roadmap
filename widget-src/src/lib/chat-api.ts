@@ -122,16 +122,28 @@ const TRANSIENT_RETRY_DELAY_MS = 1000;
  * Shopify app proxy / Fly edge occasionally answers instead of our handler —
  * machine restart or cold start mid-request — as a 5xx with a non-JSON (often
  * empty) body, unlike our handler's JSON errors (Sentry JAVASCRIPT-REMIX-1M,
- * -22). Retrying a send is safe: the server's consecutive-duplicate dedup
- * (chat-dedup.server.ts) re-serves the reply if the first attempt actually
- * completed. Deterministic answers from our handler (JSON 5xx, 429) are
- * never retried.
+ * -22). Deterministic answers from our handler (JSON 5xx, 429) are never
+ * retried.
+ *
+ * `retryable`: the send POST is retryable ONLY within an existing
+ * conversation — the server's consecutive-duplicate dedup
+ * (chat-dedup.server.ts) is gated on conversationId, so retrying a thread's
+ * FIRST message could mint a ghost conversation + a second LLM spend. A
+ * retry that lands after attempt 1 died mid-pipeline can still duplicate the
+ * user row (bounded; a manual retype does the same).
  */
-async function fetchWithTransientRetry(input: string, init?: RequestInit): Promise<Response> {
+async function fetchWithTransientRetry(input: string, init?: RequestInit, retryable = true): Promise<Response> {
   const first = await fetch(input, init);
-  if (first.status < 500) return first;
+  if (!retryable || first.status < 500) return first;
   const contentType = first.headers.get('content-type') ?? '';
   if (contentType.includes('application/json')) return first;
+  // Keep the transient-failure rate visible in Sentry even when the retry
+  // rescues the request (the machine-level cause is still an open data gap).
+  Sentry.captureMessage('Chat transient upstream 5xx, retrying once', {
+    level: 'info',
+    tags: { feature: 'chat' },
+    extra: { status: first.status, contentType: contentType || null },
+  });
   await new Promise((resolve) => setTimeout(resolve, TRANSIENT_RETRY_DELAY_MS));
   return fetch(input, init);
 }
@@ -240,16 +252,20 @@ export async function sendMessage(
   guestInputs?: Record<string, unknown> | null,
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
   try {
-    const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message,
-        conversationId: conversationId || undefined,
-        ...(guestInputs ? { guestInputs } : {}),
-        ...chatBodyParts(),
-      }),
-    });
+    const response = await fetchWithTransientRetry(
+      `${PROXY_PATH}/api/chat`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          conversationId: conversationId || undefined,
+          ...(guestInputs ? { guestInputs } : {}),
+          ...chatBodyParts(),
+        }),
+      },
+      Boolean(conversationId),
+    );
 
     const data = await parseJsonResponse<any>(response);
 

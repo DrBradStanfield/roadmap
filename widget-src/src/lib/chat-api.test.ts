@@ -77,7 +77,7 @@ describe('chat-api transient upstream retry (US-15 AC3)', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result?.conversations).toHaveLength(1);
-    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).not.toHaveBeenCalledWith('Chat listConversations failed', expect.anything());
   });
 
   it('sendMessage retries a proxy-shaped 500 (no content-type, empty body) once and succeeds', async () => {
@@ -90,7 +90,17 @@ describe('chat-api transient upstream retry (US-15 AC3)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(error).toBeNull();
     expect(result?.content).toBe('hi');
-    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+    expect(Sentry.captureMessage).not.toHaveBeenCalledWith('Chat sendMessage failed', expect.anything());
+  });
+
+  it('sendMessage does NOT retry a thread-first message (no conversationId — server dedup cannot absorb it)', async () => {
+    fetchMock.mockResolvedValueOnce(emptyServerError());
+
+    const { result, error } = await settle(sendMessage('my message', null, null));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result).toBeNull();
+    expect(error?.error).toBe('Failed to send message');
   });
 
   it('sendMessage does NOT retry our handler\'s JSON 500', async () => {
@@ -122,6 +132,6 @@ describe('chat-api transient upstream retry (US-15 AC3)', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result).toBeNull();
-    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith('Chat listConversations failed', expect.anything());
   });
 });
