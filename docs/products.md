@@ -450,6 +450,24 @@ If a USA customer asks about a dose, use the v8 column. If an international cust
 
 ---
 
+## Regulated Label Marks by Market
+
+The physical/regulated marks that must appear correctly on MicroVitamin Capsules packaging and any creative that shows the bottle label (ads, listing photography, packshots). This is the single source of truth — other docs should point here rather than restating the list. For the underlying v7 (international) vs v8 (USA), 25 vs 26 ingredients distinction, see **Regional Formula Differences** above; do not duplicate that table here.
+
+**Australia** (MicroVitamin Capsules, AU market, v7 formula):
+- **`AUST: L 509250`** — the TGA (Therapeutic Goods Administration) listing number. Must appear on the label and in any creative showing the label. An earlier bottle version carried the now-superseded `AUST L 477345` — if that number ever appears in creative or copy, it is stale and must be swapped for `L 509250`.
+- **Australian Made roundel** — the kangaroo/triangle logo denoting local manufacture. Must be present and legible on the label.
+
+**United Kingdom** (MicroVitamin Capsules, UK market, v7 formula):
+- **GMP badge** — Good Manufacturing Practice certification mark.
+- **The flag** — UK flag graphic on the label.
+- **The v7 designation** — the formula version marking on-label (see Regional Formula Differences above for what v7 vs v8 means).
+- **"Food Supplement" wording** — the UK's regulatory term for the product category (not "dietary supplement," the US term); must appear on-label and in any UK-market copy that names the category.
+
+**Verification use:** anyone reviewing label creative (ad statics, packshots, listing images) for AU or UK must check every element above is present, current, and legible before approving — one flaw is a discard/reroll, not a fix-it. Both markets' correct bottle images live in the market cutout assets referenced by the creative pipeline (`docs/tools.md` / `assets/product-cutouts/`).
+
+---
+
 ## MicroVitamin Formula Changelog
 
 Complete version history for MicroVitamin Capsules and MicroVitamin+ Powder, cross-referenced against formula spreadsheets.
