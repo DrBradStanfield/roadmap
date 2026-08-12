@@ -1,1 +1,18 @@
 issue_id,project,first_seen,status,pr,note
+7571150649,javascript-remix,2026-06-23,not-ours,,@shopify/events module specifier from Shopify theme asset page-view-event.js; no frames in our bundles
+7661635476,javascript-remix,2026-08-09,wontfix,,youtube-bot logTickError capturing upstream HTML error page (transient upstream outage); handled; capture-hygiene note in LEARNINGS
+7573442962,javascript-remix,2026-06-24,wontfix,,parseModule SyntaxError on iOS 14.2 Safari — ancient browser below support floor; native frames only
+7573442964,javascript-remix,2026-06-24,wontfix,,parseModule SyntaxError on iOS 14.2 Safari — same session/class as 7573442962
+7573442965,javascript-remix,2026-06-24,wontfix,,parseModule SyntaxError on iOS 13.4 Facebook in-app webview — below support floor
+7425626862,javascript-remix,2026-04-20,claimed,,sendMessage POST 500 with no content-type and empty body — upstream proxy/edge failure before our handler (no server Sentry event; no DB writes at 16:06Z Aug 7; orphaned user row 16:21Z); fix: client one-shot retry of transient non-JSON 5xx
+7653667248,javascript-remix,2026-08-05,wontfix,,YouTube OAuth refresh got a single 500 internal_failure from Google; handled + logged; transient
+7645126135,javascript-remix,2026-07-31,not-ours,,synthetic object capture via Sentry SDK internals; breadcrumb shows Shopify theme @shopify/events error
+7600858482,javascript-remix,2026-07-08,not-ours,,JSON.parse failure from UpCart third-party cart app parsing a 404 cart.js on en-pl locale; no frames
+7587349924,javascript-remix,2026-07-01,wontfix,,youtube-bot logTickError — same class as 7661635476 (Cloudflare 522 HTML page captured)
+7620498452,javascript-remix,2026-07-19,triaged-ours,,health-site-chat onerror relays theme error objects as "Object captured as exception" — capture hygiene only; revisit if volume grows
+7574701559,javascript-remix,2026-06-25,wontfix,,dynamic module import failed — network flake on iOS 15.8; native frames only
+7625508570,javascript-remix,2026-07-21,triaged-ours,,IntersectionObserver missing on Safari 16.6 (lockdown mode suspected) — 1 event; feature-guard candidate; below fix threshold
+7395056765,javascript-remix,2026-04-08,not-ours,,Array.from on null — Firefox iOS unhandled rejection with native frame only; unattributable to our bundles
+7619798771,javascript-remix,2026-07-19,wontfix,,stylesheet append timeout on slow network (42/75 resources loaded) — guard working as designed; 1 event
+7542087983,javascript-remix,2026-06-10,triaged-ours,,site-chat iterates cross-origin styleSheets → SecurityError unhandled rejection — 2 events; fix candidate for a future run
+7448979905,javascript-remix,2026-04-29,triaged-ours,,listConversations GET 503 text/html — same transient-upstream class as 7425626862 and covered by the same retry fix; dormant since Jul 17
