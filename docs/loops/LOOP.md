@@ -73,9 +73,9 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   not the archive**: dated, tagged, one entry = a 1–3 sentence summary of
   something a future session would otherwise rediscover the hard way. Depth
   gets a topic file (`docs/loops/<name>/notes/<slug>.md`) linked from its
-  entry — **LEARNINGS.md IS the notes index** (no separate README; an
-  unlinked note is invisible), and pruning may compact an entry to its link
-  line but never drops a live note's only link. Cluster under topic headings
+  summary entry in the SAME run — **LEARNINGS.md IS the notes index** (no
+  separate README; an unlinked note is invisible), and pruning may compact an
+  entry to its link line but never drops a live note's only link. Cluster under topic headings
   as the file matures, not pure chronology.
 - **Mechanical dedup rule**: before appending, search existing entries for the
   same tag + subsystem. On a match, UPDATE that entry in place ("confirmed
