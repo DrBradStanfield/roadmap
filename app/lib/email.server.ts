@@ -38,13 +38,19 @@ export function escapeHtml(str: string): string {
  * inspecting `error`, those failures are silent and the caller treats them as
  * success. Surface them so callers / Sentry actually see them.
  */
-export async function sendEmail(to: string, subject: string, html: string): Promise<{ id: string }> {
+export async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  replyTo?: string,
+): Promise<{ id: string }> {
   if (!resend) throw new Error('Email service not configured');
   const { data, error } = await resend.emails.send({
     from: `Dr Brad Stanfield <${RESEND_FROM_EMAIL}>`,
     to,
     subject,
     html,
+    ...(replyTo ? { replyTo } : {}),
   });
   if (error) {
     throw new Error(`Resend rejected email to ${to}: ${error.name ?? 'unknown'} — ${error.message ?? JSON.stringify(error)}`);
@@ -391,8 +397,11 @@ export function buildPlanReadyEmailHtml(openUrl: string): string {
     </div>
     <div style="padding:24px;">
       <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        Thanks for building your plan. You downloaded it as a PDF — this email is
-        just so you can find your way back to it whenever you want.
+        Hi, well done on building your personalized health plan.
+      </p>
+      <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
+        You downloaded it as a PDF — this email is just so you can find your way
+        back to it whenever you want.
       </p>
       <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 24px;">
         Your plan reloads from your own device or your own cloud storage. It is
@@ -402,10 +411,17 @@ export function buildPlanReadyEmailHtml(openUrl: string): string {
       <p style="text-align:center;margin:0 0 24px;">
         <a href="${openUrl}" style="display:inline-block;background:#0052a3;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-size:15px;">Open my Health Roadmap</a>
       </p>
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0;">
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
         We'll also email you when something in your plan comes due — a blood
         test, a screening, or a medication review. That's a few emails a year at
         most, and every one has a one-click unsubscribe.
+      </p>
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
+        You can reply to this email to let me know how your experience was with
+        the Health Plan tool. I'd love to hear from you.
+      </p>
+      <p style="color:#333;font-size:15px;line-height:1.6;margin:0;">
+        To your health,<br>Brad
       </p>
     </div>
     <div style="padding:16px 24px;text-align:center;border-top:1px solid #eee;">
@@ -429,7 +445,10 @@ export function buildPlanReadyEmailHtml(openUrl: string): string {
 export async function sendPlanReadyEmail(email: string): Promise<boolean> {
   try {
     const openUrl = `${APP_BASE_URL}/roadmap/open`;
-    await sendEmail(email, 'Your Health Roadmap is ready', buildPlanReadyEmailHtml(openUrl));
+    // replyTo is load-bearing, not decoration: the copy invites a reply, and
+    // RESEND_FROM_EMAIL is a sending address that may not accept inbound mail.
+    // Without this, every reply Brad asked for would vanish.
+    await sendEmail(email, 'Your Health Roadmap is ready', buildPlanReadyEmailHtml(openUrl), FEEDBACK_EMAIL);
     await recordServerEvent('report_email_sent');
     return true;
   } catch (error) {
