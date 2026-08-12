@@ -116,8 +116,10 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   delivery.** Contact Brad ONLY when a run needs his decision: open a GitHub
   issue "🎯 Decision needed: <topic>" — decision, options, recommendation,
   report link, fleet-dashboard URL (in REGISTRY.md) — **assign + @mention
-  @DrBradStanfield** (the mention is what emails him; bot issues alone
-  notify nobody). Never Gmail drafts — unsent drafts are clutter.
+  @DrBradStanfield**. Cloud sessions author issues AS Brad, whom GitHub never
+  notifies of self-actions (probe-verified 2026-08-13) — the
+  `loop-issue-notify` workflow's bot comment is what emails him
+  (missing/disabled = a delivery gap in the retro). Never Gmail drafts.
 - **Commit early — truncation-proof the run**: commit the report with its data
   as soon as the numbers are in, BEFORE polish and retro (runs
   share a plan-usage pool and can be cut off mid-flight; a truncated run must
@@ -148,7 +150,7 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   only via its gate; loops may also reach users through a build session on
   Brad's machine deploying their committed work. Never both paths at once.
 - **Code changes follow a graduated grant ladder**, the loop's tier recorded
-  in its charter BY BRAD (self-amendment can never create or widen a grant):
+  in its charter BY BRAD (a loop can never create or widen its own grant):
   - **Tier 0 — propose** (every loop's default): report the defect with
     evidence; where useful, attach a ready-to-apply diff in the report.
   - **Tier 1 — prepare**: write the fix on the loop's outcome branch, under

@@ -31,12 +31,12 @@ LEARNINGS.md's line counts).>
 
 ## Write scope (beyond the default `docs/loops/<name>/**`)
 <Explicit named exceptions only. Grants beyond docs come from Brad, never
-self-amendment.>
+charter edits — charters are frozen.>
 
 ## Delivery
 <Commit message format. The committed report IS the delivery (constitution:
 no email, never Gmail drafts); "🎯 Decision needed" issues only when a run
 genuinely needs Brad.>
 
-Self-amendment history: [changelog.md](changelog.md) — create it with the
+Charter history: [changelog.md](changelog.md) — create it with the
 charter (history file, exempt from the cap). History NEVER lives in here.

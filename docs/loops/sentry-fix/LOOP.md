@@ -94,7 +94,6 @@ updates · Data gaps · Retro (incl. charter + LEARNINGS line counts).
   excluded files → Tier 0: propose with evidence, never edit.
 - ACs in `docs/user-stories.md` may be ADDED (never changed) when a bug
   reveals a spec hole — cite the Sentry issue; regenerate the html.
-- This charter, per the constitution's self-improvement protocol.
 
 ## Delivery
 

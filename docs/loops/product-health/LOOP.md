@@ -65,7 +65,6 @@ append rows to metrics.csv) · New errors · New feedback · Proposed backlog
 - Usage-evidence lines ONLY in `docs/user-stories.md` (never ACs or test
   status — those belong to build sessions), then regenerate:
   `npx tsx scripts/build-user-stories-html.ts`.
-- This charter, per the constitution's self-improvement protocol.
 
 ## Code grant — Tier 3 "ship" (recorded by Brad, 2026-08-10)
 

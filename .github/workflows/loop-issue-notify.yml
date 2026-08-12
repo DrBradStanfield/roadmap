@@ -1,0 +1,29 @@
+name: Loop issue notify
+
+# Cloud loop sessions authenticate to GitHub as DrBradStanfield himself, and
+# GitHub never notifies an account of its own actions — so a loop-opened
+# issue emails nobody (proven by the 2026-08-13 egress+delivery probe,
+# issue #1). This workflow answers every newly opened issue with a
+# github-actions[bot] comment: a comment by ANOTHER actor on a thread the
+# author participates in is what triggers the notification email.
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `@DrBradStanfield — new issue: "${context.payload.issue.title}". (Automated: issues here are authored by your own account, which GitHub never notifies — this bot comment is what reaches your email.)`
+            });
