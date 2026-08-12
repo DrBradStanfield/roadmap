@@ -115,6 +115,27 @@ export function migrateGuestChatOnLogin(): boolean {
 // API functions
 // ---------------------------------------------------------------------------
 
+const TRANSIENT_RETRY_DELAY_MS = 1000;
+
+/**
+ * Fetch with ONE retry for transient upstream failures (US-15 AC3). The
+ * Shopify app proxy / Fly edge occasionally answers instead of our handler —
+ * machine restart or cold start mid-request — as a 5xx with a non-JSON (often
+ * empty) body, unlike our handler's JSON errors (Sentry JAVASCRIPT-REMIX-1M,
+ * -22). Retrying a send is safe: the server's consecutive-duplicate dedup
+ * (chat-dedup.server.ts) re-serves the reply if the first attempt actually
+ * completed. Deterministic answers from our handler (JSON 5xx, 429) are
+ * never retried.
+ */
+async function fetchWithTransientRetry(input: string, init?: RequestInit): Promise<Response> {
+  const first = await fetch(input, init);
+  if (first.status < 500) return first;
+  const contentType = first.headers.get('content-type') ?? '';
+  if (contentType.includes('application/json')) return first;
+  await new Promise((resolve) => setTimeout(resolve, TRANSIENT_RETRY_DELAY_MS));
+  return fetch(input, init);
+}
+
 /** Query-string fragments shared by the GET endpoints: the guest session token
  *  (if any) and the local-first flag (forces the server's guest path). */
 function chatQueryParts(): string[] {
@@ -157,7 +178,7 @@ export async function listConversations(): Promise<ChatListResult | null> {
   try {
     const qs = chatQueryParts();
     const params = qs.length ? `?${qs.join('&')}` : '';
-    const response = await fetch(`${PROXY_PATH}/api/chat${params}`);
+    const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat${params}`);
     if (!response.ok) {
       Sentry.captureMessage('Chat listConversations failed', {
         level: 'warning',
@@ -189,7 +210,7 @@ export async function loadConversation(conversationId: string): Promise<ChatMess
   if (store) return store.getMessages(conversationId);
   try {
     const params = [`conversationId=${encodeURIComponent(conversationId)}`, ...chatQueryParts()].join('&');
-    const response = await fetch(
+    const response = await fetchWithTransientRetry(
       `${PROXY_PATH}/api/chat?${params}`,
     );
     if (!response.ok) {
@@ -219,7 +240,7 @@ export async function sendMessage(
   guestInputs?: Record<string, unknown> | null,
 ): Promise<{ result: SendMessageResult | null; error: ChatError | null }> {
   try {
-    const response = await fetch(`${PROXY_PATH}/api/chat`, {
+    const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -315,7 +336,7 @@ export async function deleteConversation(conversationId: string): Promise<boolea
 
 async function deleteServerConversation(conversationId: string): Promise<boolean> {
   try {
-    const response = await fetch(`${PROXY_PATH}/api/chat`, {
+    const response = await fetchWithTransientRetry(`${PROXY_PATH}/api/chat`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
