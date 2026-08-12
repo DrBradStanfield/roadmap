@@ -110,9 +110,9 @@ this loop on reasoning alone: if you cannot measure it, you propose it.
    claude_business repo). Keep the canonical noun and any acronym.
 2. **Classifier misses** — a category it should skip but doesn't: propose a
    prompt change; never apply it (Write scope below).
-3. **Content gaps** — update [content-backlog.csv](content-backlog.csv): new
-   themes appended, repeat themes updated IN PLACE (bump `last_seen`,
-   `count_7d`, `count_cumulative` — never a duplicate row). Quote any field
+3. **Content gaps** — update [content-backlog.csv](content-backlog.csv)
+   (header: `theme,example_queries_anonymised,first_seen,last_seen,count_7d,count_cumulative,status,note`):
+   new themes appended, repeat themes updated IN PLACE — never a duplicate row. Quote any field
    containing a comma; example queries anonymised, never containing personal
    health detail. `status` is set by Brad/build sessions (`open` → `planned`
    → `built <handle>` / `declined <reason>`); skip non-open rows when

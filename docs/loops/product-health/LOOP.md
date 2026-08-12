@@ -1,7 +1,7 @@
 # Product-health loop — charter
 
 Inherits everything in [../LOOP.md](../LOOP.md) (the constitution). This file
-holds only this loop's deltas. Schedule: Sundays ~8:47am NZ (cron 47 20 * * 6
+holds only this loop's deltas. Schedule: Sundays ~8:47am NZ (cron `47 20 * * 6`
 UTC — the fleet runs at the weekend so its plan usage falls outside Brad's
 working week; Brad ruling 2026-08-12). Registry: [../REGISTRY.md](../REGISTRY.md).
 

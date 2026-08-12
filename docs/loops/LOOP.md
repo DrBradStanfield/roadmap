@@ -92,7 +92,7 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   missing, wrong, or wasteful in THIS run — including worker quality and
   queries that earned nothing.
 - **Improve by writing DATA and NOTES — never by rewriting your charter**
-  (Brad 2026-08-13, superseding the ≤30-line self-amendment rule): knowledge
+  (Brad 2026-08-13; the old per-run charter-edit allowance is retired): knowledge
   compounds in your CSVs, LEARNINGS.md and `notes/`, inside the entropy caps.
   Want a rule change? Put it in the report **with the evidence — name the run
   where the current rule actually cost something** — and Brad applies it.
