@@ -35,6 +35,16 @@ const okSend = () =>
     headers: { 'Content-Type': 'application/json' },
   });
 
+/** The proxy/edge answering instead of our handler: 5xx, empty body, no content-type. */
+const emptyServerError = () => new Response(null, { status: 500 });
+
+/** Our handler answering deterministically: JSON body with an error field. */
+const jsonError = (status: number, error: string) =>
+  new Response(JSON.stringify({ success: false, error }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
 describe('chat-api transient upstream retry (US-15 AC3)', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -56,6 +66,8 @@ describe('chat-api transient upstream retry (US-15 AC3)', () => {
     return p;
   }
 
+  const send = () => settle(sendMessage('my message', 'c1', null));
+
   it('listConversations retries a proxy-shaped 503 (text/html) once and succeeds', async () => {
     fetchMock
       .mockResolvedValueOnce(new Response('<html>upstream unavailable</html>', { status: 503, headers: { 'Content-Type': 'text/html' } }))
@@ -70,10 +82,10 @@ describe('chat-api transient upstream retry (US-15 AC3)', () => {
 
   it('sendMessage retries a proxy-shaped 500 (no content-type, empty body) once and succeeds', async () => {
     fetchMock
-      .mockResolvedValueOnce(new Response(null, { status: 500 }))
+      .mockResolvedValueOnce(emptyServerError())
       .mockResolvedValueOnce(okSend());
 
-    const { result, error } = await settle(sendMessage('my message', 'c1', null));
+    const { result, error } = await send();
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(error).toBeNull();
@@ -82,14 +94,9 @@ describe('chat-api transient upstream retry (US-15 AC3)', () => {
   });
 
   it('sendMessage does NOT retry our handler\'s JSON 500', async () => {
-    fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ success: false, error: 'Failed to process message' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
+    fetchMock.mockResolvedValueOnce(jsonError(500, 'Failed to process message'));
 
-    const { result, error } = await settle(sendMessage('my message', 'c1', null));
+    const { result, error } = await send();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result).toBeNull();
@@ -97,14 +104,9 @@ describe('chat-api transient upstream retry (US-15 AC3)', () => {
   });
 
   it('sendMessage does NOT retry a 429', async () => {
-    fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ success: false, error: 'rate_limited' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
+    fetchMock.mockResolvedValueOnce(jsonError(429, 'rate_limited'));
 
-    const { result, error } = await settle(sendMessage('my message', 'c1', null));
+    const { result, error } = await send();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result).toBeNull();
@@ -113,8 +115,8 @@ describe('chat-api transient upstream retry (US-15 AC3)', () => {
 
   it('listConversations surfaces the failure when the retry also fails', async () => {
     fetchMock
-      .mockResolvedValueOnce(new Response(null, { status: 500 }))
-      .mockResolvedValueOnce(new Response(null, { status: 500 }));
+      .mockResolvedValueOnce(emptyServerError())
+      .mockResolvedValueOnce(emptyServerError());
 
     const result = await settle(listConversations());
 
