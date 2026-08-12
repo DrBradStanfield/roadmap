@@ -117,9 +117,9 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   issue "🎯 Decision needed: <topic>" — decision, options, recommendation,
   report link, fleet-dashboard URL (in REGISTRY.md) — **assign + @mention
   @DrBradStanfield**. Cloud sessions author issues AS Brad, whom GitHub never
-  notifies of self-actions (probe-verified 2026-08-13) — the
-  `loop-issue-notify` workflow's bot comment is what emails him
-  (missing/disabled = a delivery gap in the retro). Never Gmail drafts.
+  notifies of self-actions (probe-verified 2026-08-13) — the `loop-issue-notify`
+  workflow's bot comment is what emails him (missing/disabled = a delivery
+  gap in the retro). Never Gmail drafts.
 - **Commit early — truncation-proof the run**: commit the report with its data
   as soon as the numbers are in, BEFORE polish and retro (runs
   share a plan-usage pool and can be cut off mid-flight; a truncated run must
