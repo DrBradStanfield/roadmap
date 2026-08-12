@@ -40,8 +40,8 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   past it, models silently drop rules).
 - **The on-demand tier has budgets too — nothing is uncapped**:
   `notes/<slug>.md` ≤500 lines (one topic per file, SPLIT at the cap); reports
-  ≤150. Changelogs and CSV ledgers are history/data, not instructions —
-  cap-exempt, append-only, never inside an operative file.
+  ≤150. Changelogs keep their last ~10 entries (git is the archive); CSV
+  ledgers are append-only data, uncapped, never inside an operative file.
 - **Within 20 lines of the cap: one-in-one-out** — amendments delete/compress
   at least as many lines as they add.
 - **Outgrowing the cap means SPLIT, never raise**: push detail to a linked
