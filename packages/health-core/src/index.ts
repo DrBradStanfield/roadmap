@@ -263,6 +263,8 @@ export { migrateFile, SchemaTooNewError } from './migrate';
 export {
   computeReminderSchedule,
   computeNextDueDates,
+  SCHEDULE_LABELS,
+  ANNUAL_CHECKIN_LABEL,
   type ReminderScheduleItem,
 } from './reminder-schedule';
 

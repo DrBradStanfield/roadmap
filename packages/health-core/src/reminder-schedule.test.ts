@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { computeReminderSchedule, computeNextDueDates } from './reminder-schedule';
-import { computeDueReminders, type ReminderProfile } from './reminders';
+import { computeReminderSchedule, computeNextDueDates, SCHEDULE_LABELS } from './reminder-schedule';
+import { computeDueReminders, REMINDER_CATEGORIES, type ReminderProfile } from './reminders';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 import type { ScreeningInputs } from './types';
 
@@ -122,8 +122,11 @@ describe('v1 parity — overdue in v1 ⟺ dueAt in the past here', () => {
 });
 
 describe('computeReminderSchedule — RoadmapFile adapter', () => {
-  it('returns [] without demographics', () => {
-    expect(computeReminderSchedule(file(), NOW)).toEqual([]);
+  it('emits no ELIGIBILITY items without demographics (only the annual floor)', () => {
+    // Pre-floor this returned [] outright; since US-23 AC6 a schedule is never
+    // empty — but no screening/blood/med rule may fire without sex + birth year.
+    const items = computeReminderSchedule(file(), NOW);
+    expect(items.map((i) => i.category)).toEqual(['annual_checkin']);
   });
 
   it('derives age from birth year/month (pre-birthday)', () => {
@@ -138,7 +141,9 @@ describe('computeReminderSchedule — RoadmapFile adapter', () => {
       } as RoadmapFile['screenings'],
     });
     const items = computeReminderSchedule(f, NOW);
-    expect(items.map((i) => i.category)).toEqual(['screening_colorectal']);
+    // Colonoscopy is ~4 years out (nothing within 12 months) → the annual
+    // floor (US-23 AC6) appends a check-in alongside it.
+    expect(items.map((i) => i.category)).toEqual(['screening_colorectal', 'annual_checkin']);
   });
 
   it('uses latest ACTIVE measurement per metric and honours disabled preferences', () => {
@@ -158,9 +163,82 @@ describe('computeReminderSchedule — RoadmapFile adapter', () => {
     expect(items).toHaveLength(1);
     expect(items[0]).toMatchObject({ category: 'blood_test_lipids', dueAt: '2026-05-01' });
 
-    // disable the category → empty schedule
+    // disable the category → nothing left within 12 months → only the floor
     f.reminderPreferences[0].enabled = false;
     items = computeReminderSchedule(f, NOW);
-    expect(items).toHaveLength(0);
+    expect(items.map((i) => i.category)).toEqual(['annual_checkin']);
+  });
+});
+
+// US-23 AC6 — the annual floor (Brad, 2026-08-14): every enrolled person gets
+// at least one touch a year; a schedule is never empty.
+describe('computeReminderSchedule — annual floor', () => {
+  it('seeds one check-in 12 months out when the file has no demographics at all', () => {
+    const items = computeReminderSchedule(file(), NOW);
+    expect(items).toEqual([
+      { category: 'annual_checkin', group: 'annual', label: 'Annual health check-in', dueAt: '2027-06-15' },
+    ]);
+  });
+
+  it('does NOT add the floor when something is already due within 12 months', () => {
+    const f = file({
+      profile: { sex: 'female', birthYear: 1970, updatedAt: '2026-01-01T00:00:00Z', lamport: 1 },
+      measurements: [
+        createMeasurement({ id: 'm1', metricType: 'hba1c', value: 40, recordedAt: '2026-01-10T08:00:00Z', createdAt: '2026-01-10T08:00:00Z' }),
+      ],
+    });
+    const items = computeReminderSchedule(f, NOW); // hba1c due 2027-01-10 < 12mo away
+    expect(items.some((i) => i.category === 'annual_checkin')).toBe(false);
+  });
+
+  it('adds the floor when every real item is more than 12 months out', () => {
+    const f = file({
+      profile: { sex: 'male', birthYear: 1966, updatedAt: '2026-01-01T00:00:00Z', lamport: 1 },
+      screenings: {
+        colorectalMethod: 'colonoscopy_10yr',
+        colorectalLastDate: '2025-01',
+        updatedAt: '2026-01-01T00:00:00Z',
+        lamport: 1,
+      } as RoadmapFile['screenings'],
+    });
+    const items = computeReminderSchedule(f, NOW); // colonoscopy due 2035
+    expect(items.map((i) => i.category).sort()).toEqual(['annual_checkin', 'screening_colorectal']);
+    expect(items.find((i) => i.category === 'annual_checkin')!.dueAt).toBe('2027-06-15');
+  });
+});
+
+// US-23 AC4/AC8 — the label allow-list: every label a schedule builder can emit
+// must be declared in SCHEDULE_LABELS, or the server would reject a legitimate
+// push (and an undeclared label would mean free text can reach an inbox).
+describe('SCHEDULE_LABELS covers every emitted label', () => {
+  it('declares every category and matches the labels the builders emit', () => {
+    expect(Object.keys(SCHEDULE_LABELS).sort()).toEqual([...REMINDER_CATEGORIES].sort());
+
+    // Exercise the builders across both sexes and every screening variant that
+    // switches a label, and assert each emitted label is allow-listed.
+    const screenings = {
+      colorectalMethod: 'colonoscopy_10yr', colorectalLastDate: '2024-03',
+      breastFrequency: 'biennial', breastLastDate: '2024-01',
+      cervicalMethod: 'hpv_5yr', cervicalLastDate: '2024-01',
+      lungSmokingHistory: 'former_smoker', lungPackYears: 20, lungScreening: 'annual_ldct', lungLastDate: '2025-01',
+      prostateDiscussion: 'will_screen', prostateLastDate: '2025-01',
+      dexaScreening: 'dexa_scan', dexaLastDate: '2024-01', dexaResult: 'normal',
+      updatedAt: '2026-01-01T00:00:00Z',
+    } as unknown as ScreeningInputs;
+    const fitScreenings = { ...screenings, colorectalMethod: 'fit_annual' } as unknown as ScreeningInputs;
+    const dates = { ldl: '2025-05-01', hba1c: '2025-05-01', creatinine: '2025-05-01' };
+    const meds = [{ medicationKey: 'statin', drugName: 'atorvastatin', updatedAt: '2025-01-01' }];
+
+    const emitted = [
+      ...computeNextDueDates(MALE_60, screenings, dates, meds),
+      ...computeNextDueDates(MALE_60, fitScreenings, {}, []),
+      ...computeNextDueDates(FEMALE_55, screenings, {}, []),
+    ];
+    for (const item of emitted) {
+      expect(SCHEDULE_LABELS[item.category]).toContain(item.label);
+    }
+    // Both colorectal variants actually exercised (the one category with two labels).
+    const colorectalLabels = emitted.filter((i) => i.category === 'screening_colorectal').map((i) => i.label);
+    expect(new Set(colorectalLabels)).toEqual(new Set(['Colonoscopy', 'Colorectal screening']));
   });
 });

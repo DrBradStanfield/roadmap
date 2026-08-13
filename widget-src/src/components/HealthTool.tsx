@@ -1124,10 +1124,13 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     setMedUndo(null);
   }, [medUndo, handleMedicationChange]);
 
-  // The guest email capture exists for true guests AND on the Shopify v2
-  // surface (where "logged in" is storage UX only). Never on Pages (no Brad
-  // server) and never for production logged-in customers.
-  const emailCaptureActive = !authState.isLoggedIn || SHOPIFY_SURFACE;
+  // The email capture (and with it the US-23 reminders enrolment) exists ONLY
+  // on the Shopify v2 surface — the build with Brad's server behind it. The
+  // old expression (`!isLoggedIn || SHOPIFY_SURFACE`) kept Pages safe only by
+  // accident: its index.html happens to hardcode data-logged-in="true", so a
+  // config change would have silently surfaced a capture box that POSTs into
+  // a 404 (US-18 AC3 / US-23 AC9 — made explicit 2026-08-14).
+  const emailCaptureActive = SHOPIFY_SURFACE;
 
   const handleAutoFocusEmail = useCallback(() => {
     if (!emailCaptureActive) return;

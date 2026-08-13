@@ -10,7 +10,7 @@ import { supabaseAdmin } from './supabase.server';
 // upload batch). Anything else is rejected by .strict().
 const metadataSchema = z
   .object({
-    provider: z.enum(['google-drive', 'dropbox', 'github', 'webdav', 'local']).optional(),
+    provider: z.enum(['google-drive', 'dropbox', 'github', 'webdav', 'local', 'typed']).optional(),
     count: z.number().int().min(0).max(1000).optional(),
   })
   .strict();
@@ -35,9 +35,10 @@ export const SERVER_VISITOR_ID = '00000000-0000-0000-0000-000000000000';
 /** Fire-and-forget server-side counter. Never throws — callers are hot paths. */
 export async function recordServerEvent(
   eventName: ProductEventInput['eventName'],
+  metadata?: ProductEventInput['metadata'],
 ): Promise<void> {
   try {
-    await recordProductEvent({ eventName, visitorId: SERVER_VISITOR_ID });
+    await recordProductEvent({ eventName, visitorId: SERVER_VISITOR_ID, metadata });
   } catch {
     /* counters must never break the operation they measure */
   }

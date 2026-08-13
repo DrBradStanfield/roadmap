@@ -1397,7 +1397,10 @@ NOTIFY pgrst, 'reload schema';
 CREATE TABLE IF NOT EXISTS reminder_optin_v2 (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL UNIQUE,  -- normalised to lowercase in code; one subscription per address
-  provider TEXT NOT NULL CHECK (provider IN ('google-drive', 'dropbox', 'github')),
+  -- 'typed' (US-23): address typed at the PDF capture, delivery-validated via
+  -- the Resend bounce webhook rather than provider-verified. Live constraint
+  -- ALTERed 2026-08-14 (CREATE TABLE IF NOT EXISTS is a no-op on live tables).
+  provider TEXT NOT NULL CHECK (provider IN ('google-drive', 'dropbox', 'github', 'typed')),
   token TEXT NOT NULL UNIQUE,
   schedule JSONB NOT NULL DEFAULT '[]'::jsonb,   -- [{category, label, dueAt}]
   last_sent JSONB NOT NULL DEFAULT '{}'::jsonb,  -- {category: 'YYYY-MM-DD'} re-send cooldowns

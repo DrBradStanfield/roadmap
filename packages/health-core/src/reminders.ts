@@ -10,19 +10,19 @@ import { getPostFollowupDueDate, getScreeningNextDueDate } from './types';
 
 // ===== Types =====
 
-export type ReminderGroup = 'screening' | 'blood_test' | 'medication_review';
+export type ReminderGroup = 'screening' | 'blood_test' | 'medication_review' | 'annual';
 
 export type ReminderCategory =
   | 'screening_colorectal' | 'screening_breast' | 'screening_cervical'
   | 'screening_lung' | 'screening_prostate' | 'screening_dexa'
   | 'blood_test_lipids' | 'blood_test_hba1c' | 'blood_test_creatinine'
-  | 'medication_review';
+  | 'medication_review' | 'annual_checkin';
 
 export const REMINDER_CATEGORIES: ReminderCategory[] = [
   'screening_colorectal', 'screening_breast', 'screening_cervical',
   'screening_lung', 'screening_prostate', 'screening_dexa',
   'blood_test_lipids', 'blood_test_hba1c', 'blood_test_creatinine',
-  'medication_review',
+  'medication_review', 'annual_checkin',
 ];
 
 export interface DueReminder {
@@ -45,6 +45,7 @@ export const GROUP_COOLDOWNS: Record<ReminderGroup, number> = {
   screening: 90,
   blood_test: 180,
   medication_review: 365,
+  annual: 365,
 };
 
 /** Blood test staleness threshold in months (shared with the v2 schedule). */
@@ -399,6 +400,7 @@ export function filterByPreferences(
 export function getCategoryGroup(category: ReminderCategory): ReminderGroup {
   if (category.startsWith('screening_')) return 'screening';
   if (category.startsWith('blood_test_')) return 'blood_test';
+  if (category === 'annual_checkin') return 'annual';
   return 'medication_review';
 }
 
@@ -416,6 +418,7 @@ export const REMINDER_CATEGORY_LABELS: Record<ReminderCategory, string> = {
   blood_test_hba1c: 'HbA1c test reminders',
   blood_test_creatinine: 'Creatinine test reminders',
   medication_review: 'Medication review reminders',
+  annual_checkin: 'Annual health check-in reminders',
 };
 
 /**

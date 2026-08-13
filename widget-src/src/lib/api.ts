@@ -1003,7 +1003,7 @@ export function trackABConversion(): void { trackABEvent('conversion'); }
 // ---------------------------------------------------------------------------
 
 export interface ProductEventMetadata {
-  provider?: 'google-drive' | 'dropbox' | 'github' | 'webdav' | 'local';
+  provider?: 'google-drive' | 'dropbox' | 'github' | 'webdav' | 'local' | 'typed';
   count?: number;
 }
 

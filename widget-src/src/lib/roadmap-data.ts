@@ -28,7 +28,8 @@ import {
 import { RoadmapStore } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { setChatHistoryFactory } from './chat-history-access';
-import { PROXY_PATH, parseJsonResponse } from './api';
+import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './api';
+import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
 import type { StorageAdapter } from '../storage/adapter';
 import type {
@@ -282,11 +283,14 @@ export async function sendReportEmail(): Promise<{ success: boolean; error?: str
 /**
  * "Get Your Personalized Plan" on the local-first builds. Overrides api.ts's
  * sendGuestReport (which POSTs the full health inputs to the server and triggers
- * a Resend report email). Here the ONLY thing sent to the server is the email
- * address, for an email-only Klaviyo subscribe — NO health data, NO Resend. The
- * PDF is generated entirely client-side (getReportHtml) by the caller before
- * this runs. The `inputs`/`medications`/`screenings` args are accepted for
- * signature-compatibility with the caller but deliberately ignored.
+ * a Resend report email). Here what crosses is the email address plus the
+ * client-computed reminder CALENDAR — labels + due dates, the constitution's
+ * entire permitted footprint (US-23 AC1) — never a measurement, value, or
+ * reason. Typing the address IS the reminders enrolment (opt-out model; the
+ * disclosure line lives beside the input, and every email carries a one-click
+ * unsubscribe). The PDF is generated entirely client-side (getReportHtml) by
+ * the caller before this runs. The `inputs`/`medications`/`screenings` args
+ * are accepted for signature-compatibility with the caller but ignored.
  *
  * Shopify v2 surface only: the email section is gated to VITE_SHOPIFY_SURFACE,
  * so this never fires on Pages (no Brad server there).
@@ -297,13 +301,22 @@ export async function sendGuestReport(
   _medications?: Record<string, unknown>,
   _screenings?: Record<string, unknown>,
 ): Promise<{ success: boolean; error?: string }> {
+  // Self-guard, not just call-site gating (same posture as trackProductEvent):
+  // off the Shopify surface there is no Brad server, so a future caller must
+  // hit this wall, not a 404 that posts an email address into the void.
+  if (!SHOPIFY_SURFACE) return { success: false, error: 'Not available in this version.' };
   try {
     const response = await fetch(`${PROXY_PATH}/api/measurements`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ klaviyoCapture: { email } }),
+      body: JSON.stringify({
+        klaviyoCapture: { email, schedule: computeCurrentReminderSchedule() },
+      }),
     });
-    const result = await parseJsonResponse<{ success: boolean; error?: string }>(response);
+    const result = await parseJsonResponse<{ success: boolean; enrolled?: boolean; error?: string }>(response);
+    // Count ENROLMENTS, not attempts — the server says whether the row landed
+    // (US-23's usage signal shares US-17's optout:optin kill criterion).
+    if (result?.enrolled) trackProductEvent('reminder_optin', { provider: 'typed' });
     return result ?? { success: false, error: 'Network error' };
   } catch {
     return { success: false, error: 'Network error' };

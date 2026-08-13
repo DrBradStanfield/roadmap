@@ -563,6 +563,13 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
         </button>
       </div>
       {emailError && <span className="email-capture-error">{emailError}</span>}
+      {/* US-23 AC4 — typing the email IS the reminders enrolment (opt-out
+          model), so the disclosure sits beside the box, not behind a click.
+          Names what crosses (check-up names + dates) and the way out. */}
+      <p className="email-capture-disclosure">
+        We'll also email you when a check-up or blood test comes due — only the check-up names and
+        dates are stored, never your results. One-click unsubscribe in every email.
+      </p>
     </div>
   );
 }

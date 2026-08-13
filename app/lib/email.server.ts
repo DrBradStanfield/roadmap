@@ -12,7 +12,7 @@ const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.de
 const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL || 'https://drstanfield.com';
 // Our own origin, for links that must hit our routes (the US-22 click redirect)
 // rather than the storefront. Same source as the reminder cron's unsubscribe URL.
-const APP_BASE_URL = process.env.SHOPIFY_APP_URL || 'https://health-tool-app.fly.dev';
+export const APP_BASE_URL = process.env.SHOPIFY_APP_URL || 'https://health-tool-app.fly.dev';
 
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
@@ -304,6 +304,70 @@ function reminderItem(title: string, description: string, color: string): string
 // ---------------------------------------------------------------------------
 
 /**
+ * "Add to calendar" as a plain Google Calendar template URL (US-24 — links,
+ * not attachments; Brad 2026-08-14). All-day event on the due date (end date
+ * exclusive, so one day = dueAt..dueAt+1). The event description points at the
+ * /roadmap/open redirect, so a calendar-sourced return visit is click-counted
+ * the same first-party way as an email one.
+ */
+export function googleCalendarUrl(label: string, dueAt: string): string {
+  const day = dueAt.replace(/-/g, '');
+  const next = new Date(`${dueAt}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  const nextDay = next.toISOString().slice(0, 10).replace(/-/g, '');
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: label,
+    dates: `${day}/${nextDay}`,
+    details: `From your Health Roadmap. Reopen your plan: ${APP_BASE_URL}/roadmap/open`,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/**
+ * The user's full upcoming calendar, rendered into an email (US-23 AC3).
+ * Every reminder email carries this because, for a typed-lane user whose
+ * localStorage is long gone, the latest email IS their surviving copy of the
+ * plan's schedule (constitution: durability). Labels + dates only.
+ */
+function scheduleSection(schedule: Array<{ label: string; dueAt: string }>): string {
+  if (schedule.length === 0) return '';
+  const rows = [...schedule]
+    .sort((a, b) => (a.dueAt < b.dueAt ? -1 : 1))
+    .map(
+      (item) => `
+      <tr>
+        <td style="padding:6px 0;color:#333;font-size:14px;">${escapeHtml(item.label)}</td>
+        <td style="padding:6px 0 6px 12px;color:#555;font-size:14px;white-space:nowrap;">${formatReminderDate(item.dueAt)}</td>
+        <td style="padding:6px 0 6px 12px;font-size:13px;white-space:nowrap;">
+          <a href="${googleCalendarUrl(item.label, item.dueAt)}" style="color:#2563eb;text-decoration:underline;">Add to calendar</a>
+        </td>
+      </tr>`,
+    )
+    .join('');
+  return `
+      <div style="background:#f8f9fa;border-radius:6px;padding:16px;margin:24px 0 0;">
+        <p style="color:#1a1a1a;font-size:14px;font-weight:600;margin:0 0 8px;">Your full check-up calendar</p>
+        <table style="border-collapse:collapse;">${rows}</table>
+      </div>`;
+}
+
+/**
+ * US-23 AC5 — for a typed (not provider-verified) address, the unsubscribe
+ * must be prominent in the BODY: a delivered-but-mistyped address belongs to a
+ * stranger, and one obvious click has to end it.
+ */
+function prominentUnsubscribeBlock(unsubscribeUrl: string): string {
+  return `
+      <div style="border:1px solid #e5e7eb;border-radius:6px;padding:14px;margin:24px 0 0;text-align:center;">
+        <p style="color:#555;font-size:13px;line-height:1.5;margin:0;">
+          Didn't ask for these reminders, or got this by mistake?
+          <a href="${unsubscribeUrl}" style="color:#2563eb;text-decoration:underline;">Stop them with one click</a> — no login, no questions.
+        </p>
+      </div>`;
+}
+
+/**
  * Build HTML for a v2 reminder email. No name (the server doesn't store one),
  * no values, no reasoning — just which items are due. Personalisation comes
  * from the item labels the user's own browser computed ("Colonoscopy").
@@ -313,6 +377,12 @@ function reminderItem(title: string, description: string, color: string): string
 export function buildReminderV2EmailHtml(
   dueItems: Array<{ label: string; dueAt: string }>,
   unsubscribeUrl: string,
+  options: {
+    /** The complete stored schedule (due + upcoming) — US-23 AC3. */
+    fullSchedule?: Array<{ label: string; dueAt: string }>;
+    /** True for typed-lane recipients — US-23 AC5. */
+    prominentUnsubscribe?: boolean;
+  } = {},
 ): string {
   const items = dueItems
     .map((item) =>
@@ -350,6 +420,9 @@ export function buildReminderV2EmailHtml(
         </a>
       </div>
 
+      ${scheduleSection(options.fullSchedule ?? [])}
+      ${options.prominentUnsubscribe ? prominentUnsubscribeBlock(unsubscribeUrl) : ''}
+
       <div style="background:#f8f9fa;border-radius:6px;padding:16px;margin:24px 0 0;">
         <p style="color:#666;font-size:13px;line-height:1.5;margin:0;">
           <strong>Disclaimer:</strong> This tool provides educational information only. It is not medical advice and should not be used to diagnose or treat health conditions. Always consult your healthcare provider before making changes to your health regimen.
@@ -378,15 +451,28 @@ export function buildReminderV2EmailHtml(
  * Build the plan-ready email sent when a guest hands over their address
  * (US-22 AC1).
  *
- * Carries NO health data — not a value, not a suggestion, not a due date. The
- * plan re-renders from the user's OWN storage when they follow the link, so
- * nothing about their health has to transit or sit on Brad's server. That is
- * the whole reason this email is thin: the local-first promise is the product.
+ * Carries no measurement, lab value, medication, or result — the plan
+ * re-renders from the user's OWN storage when they follow the link. Since
+ * US-23 it MAY carry the reminder calendar (labels + due dates): that is the
+ * constitution's permitted server footprint, it is "what reminders to expect"
+ * (US-22 AC1's own words), and for a typed-lane user this email may end up
+ * being the only durable copy of their schedule.
  *
  * Its two jobs beyond being useful: a bounce proves the address is dead, and a
  * click proves someone with access to that inbox wanted it (US-22 AC3/AC5).
  */
-export function buildPlanReadyEmailHtml(openUrl: string): string {
+export function buildPlanReadyEmailHtml(
+  openUrl: string,
+  options: {
+    /** Present when the capture also enrolled reminders (US-23 AC1). */
+    schedule?: Array<{ label: string; dueAt: string }>;
+    unsubscribeUrl?: string;
+  } = {},
+): string {
+  const calendar = options.schedule?.length
+    ? scheduleSection(options.schedule) +
+      (options.unsubscribeUrl ? prominentUnsubscribeBlock(options.unsubscribeUrl) : '')
+    : '';
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -416,7 +502,8 @@ export function buildPlanReadyEmailHtml(openUrl: string): string {
         test, a screening, or a medication review. That's a few emails a year at
         most, and every one has a one-click unsubscribe.
       </p>
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
+      ${calendar}
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:${calendar ? '24px' : '0'} 0 16px;">
         You can reply to this email to let me know how your experience was with
         the Health Plan tool. I'd love to hear from you.
       </p>
@@ -442,13 +529,16 @@ export function buildPlanReadyEmailHtml(openUrl: string): string {
  * store, so the click is counted first-party (AC5) without Resend link-rewriting
  * and without putting the recipient's address in an analytics row.
  */
-export async function sendPlanReadyEmail(email: string): Promise<boolean> {
+export async function sendPlanReadyEmail(
+  email: string,
+  options: { schedule?: Array<{ label: string; dueAt: string }>; unsubscribeUrl?: string } = {},
+): Promise<boolean> {
   try {
     const openUrl = `${APP_BASE_URL}/roadmap/open`;
     // replyTo is load-bearing, not decoration: the copy invites a reply, and
     // RESEND_FROM_EMAIL is a sending address that may not accept inbound mail.
     // Without this, every reply Brad asked for would vanish.
-    await sendEmail(email, 'Your Health Roadmap is ready', buildPlanReadyEmailHtml(openUrl), FEEDBACK_EMAIL);
+    await sendEmail(email, 'Your Health Roadmap is ready', buildPlanReadyEmailHtml(openUrl, options), FEEDBACK_EMAIL);
     await recordServerEvent('report_email_sent');
     return true;
   } catch (error) {

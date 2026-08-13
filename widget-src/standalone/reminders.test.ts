@@ -339,7 +339,8 @@ describe('US-17 — turning reminders off is counted', () => {
 
     expect(postedBody(f)).toEqual({ op: 'cancel', token: 'cap-token' });
     expect(setReminderOptIn).toHaveBeenCalledWith({ ...ACTIVE, status: 'cancelled' });
-    expect(trackProductEvent).toHaveBeenCalledWith('reminder_optout');
+    // Tagged with the lane (US-23: typed and cloud ratios are judged apart).
+    expect(trackProductEvent).toHaveBeenCalledWith('reminder_optout', { provider: 'google-drive' });
   });
 
   it('does NOT count an opt-out the server refused — the ratio must stay honest', async () => {

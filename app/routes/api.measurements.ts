@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 import { sendPlanReadyEmail } from '../lib/email.server';
+import { buildUnsubscribeUrl, scheduleSchema, upsertTypedOptin } from '../lib/reminder-v2.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 
 const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000); // 5/day per email
@@ -20,7 +21,15 @@ const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000
 // per-user CRUD + guest-report-email paths were torn down at the 2026-06-12
 // production cutover.
 // ---------------------------------------------------------------------------
-const klaviyoCaptureSchema = z.object({ email: z.string().email().max(254) });
+// US-23 AC1: the capture MAY carry the client-computed reminder schedule —
+// labels validated against health-core's allow-list (never free text), length-
+// capped, categories closed. This is the constitution's entire permitted
+// server footprint: labels + due dates + the email. Optional so an old cached
+// widget bundle (email-only body) keeps working.
+const klaviyoCaptureSchema = z.object({
+  email: z.string().email().max(254),
+  schedule: scheduleSchema.optional(),
+});
 
 // US-22: the plan-ready send lives in email.server so the template and the
 // send stay together (and so the no-health-data test can target the builder).
@@ -31,7 +40,7 @@ async function handleKlaviyoCapture(data: unknown) {
     if (!parsed.success) {
       return Response.json({ success: false, error: 'Invalid request data' }, { status: 400 });
     }
-    const { email } = parsed.data;
+    const { email, schedule } = parsed.data;
     if (!checkGuestReportLimit(email.toLowerCase())) {
       return Response.json({ success: false, error: 'Email limit reached. Try again tomorrow.' }, { status: 429 });
     }
@@ -39,14 +48,44 @@ async function handleKlaviyoCapture(data: unknown) {
     // profile-properties step entirely. Fire-and-forget so a Klaviyo hiccup
     // never blocks the user's plan.
     subscribeToKlaviyo({ email }).catch(() => {});
-    // US-22 AC1/AC2: the plan-ready email. Fire-and-forget for the same reason
-    // — the PDF is the delivery, and a Resend outage must never surface to a
-    // user who already has their plan. Carries no health data by construction.
-    sendPlanReadyEmail(email).catch(() => {});
+
+    // US-23 AC1: typed-lane reminder enrolment. AWAITED (unlike the sends)
+    // because the response reports `enrolled` — the client's reminder_optin
+    // event must count NEW enrolments, not attempts or refreshes — but a
+    // Supabase error degrades to enrolled:false rather than failing a capture
+    // whose PDF the user already has. upsertTypedOptin never downgrades a
+    // provider-verified row, keeps the token and cooldowns on a refresh, and
+    // tells us whether this address was new.
+    let enrolment: { token: string; isNew: boolean } | null = null;
+    if (schedule?.length) {
+      try {
+        enrolment = await upsertTypedOptin(email, schedule);
+      } catch (error) {
+        Sentry.captureException(error, { tags: { feature: 'typed_reminder_enrol' } });
+      }
+    }
+
+    // US-22 AC1/AC2: the plan-ready email — sent ONCE per enrolled address
+    // (isNew), not on every capture: an attacker replaying a victim's email
+    // through the 5/day limiter must not turn this into a harassment channel
+    // (US-23 AC8), and a legitimate re-capture already has its PDF. Addresses
+    // that never enrol (no schedule / verified row) keep the old
+    // send-per-capture behaviour, still bounded by the limiter. When enrolled
+    // it carries the calendar (labels + dates, the permitted footprint) and
+    // the one-click unsubscribe (US-23 AC5). Fire-and-forget — a Resend
+    // outage must never surface to a user who already has their plan.
+    if (!enrolment || enrolment.isNew) {
+      sendPlanReadyEmail(
+        email,
+        enrolment
+          ? { schedule, unsubscribeUrl: buildUnsubscribeUrl(enrolment.token) }
+          : {},
+      ).catch(() => {});
+    }
     // No audit row written here — capture volume is now reported on the admin
     // dashboard straight from the Klaviyo list (the source of truth, with true
     // lifetime totals), so this path stores no email/PII and no tally at all.
-    return Response.json({ success: true });
+    return Response.json({ success: true, enrolled: enrolment?.isNew ?? false });
   } catch (error) {
     console.error('Klaviyo capture error:', error);
     Sentry.captureException(error, { tags: { feature: 'klaviyo_capture' } });

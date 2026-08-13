@@ -51,6 +51,32 @@ export interface ReminderScheduleItem {
   dueAt: string;
 }
 
+/** US-23 AC6 — the annual floor's label, shared by SCHEDULE_LABELS and the seeder. */
+export const ANNUAL_CHECKIN_LABEL = 'Annual health check-in';
+
+/**
+ * The complete set of labels this module can emit, per category — the server
+ * validates pushed labels against THIS map (US-23 AC4/AC8). Labels became an
+ * allow-list the day the typed lane opened: a cloud opt-in can only email its
+ * own verified address, but a typed enrolment names someone else's inbox, so a
+ * free-text label field would let an attacker put an arbitrary 80-char string
+ * into a victim's email. Every label the schedule builders below use MUST be
+ * listed here (a health-core test enforces it).
+ */
+export const SCHEDULE_LABELS: Record<ReminderCategory, readonly string[]> = {
+  screening_colorectal: ['Colonoscopy', 'Colorectal screening'],
+  screening_breast: ['Mammogram'],
+  screening_cervical: ['Cervical screening'],
+  screening_lung: ['Lung screening (low-dose CT)'],
+  screening_prostate: ['PSA test'],
+  screening_dexa: ['DEXA bone density scan'],
+  blood_test_lipids: ['Lipid panel blood test'],
+  blood_test_hba1c: ['HbA1c blood test'],
+  blood_test_creatinine: ['Creatinine blood test'],
+  medication_review: ['Medication review'],
+  annual_checkin: [ANNUAL_CHECKIN_LABEL],
+};
+
 // ===== Date helpers (mirror v1's month-granularity arithmetic) =====
 
 function toYmd(date: Date): string {
@@ -206,12 +232,35 @@ export function computeNextDueDates(
 
 /**
  * Compute the schedule straight from a RoadmapFile, honouring the file's
- * per-category reminder preferences. Returns [] when demographics are missing
- * (no sex/birth year → no eligibility rules can run).
+ * per-category reminder preferences.
+ *
+ * Never returns an empty schedule (US-23 AC6, Brad 2026-08-14): when nothing
+ * is due within the next 12 months — including the missing-demographics case,
+ * where no eligibility rule can run at all — the schedule is floored with one
+ * "Annual health check-in" item 12 months out. A colonoscopy-every-10-years
+ * user must not get a decade of silence; every enrolled person gets at least
+ * one touch a year. The schedule is recomputed on every visit/capture, so the
+ * floor date slides forward from whenever we last saw them.
  */
 export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
+  const disabled = disabledCategories(file);
+  const items = computeItemsFromFile(file, now).filter((item) => !disabled.has(item.category));
+
+  const horizon = toYmd(addMonths(toYmd(now), 12));
+  if (!items.some((item) => item.dueAt <= horizon)) {
+    items.push({
+      category: 'annual_checkin',
+      group: 'annual',
+      label: ANNUAL_CHECKIN_LABEL,
+      dueAt: horizon,
+    });
+  }
+  return items;
+}
+
+function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
   const { sex, birthYear, birthMonth } = file.profile;
-  if (!sex || !birthYear) return [];
+  if (!sex || !birthYear) return []; // no demographics → no eligibility rules can run
   let age = now.getFullYear() - birthYear;
   if (birthMonth && now.getMonth() + 1 < birthMonth) age -= 1;
 
@@ -229,10 +278,9 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
     updatedAt: m.updatedAt,
   }));
 
-  const disabled = new Set(
-    file.reminderPreferences.filter((p) => !p.enabled).map((p) => p.category),
-  );
+  return computeNextDueDates({ sex, age }, file.screenings, measurementDates, medications);
+}
 
-  return computeNextDueDates({ sex, age }, file.screenings, measurementDates, medications)
-    .filter((item) => !disabled.has(item.category));
+function disabledCategories(file: RoadmapFile): Set<string> {
+  return new Set(file.reminderPreferences.filter((p) => !p.enabled).map((p) => p.category));
 }

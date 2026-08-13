@@ -218,8 +218,9 @@ export async function cancelReminders(): Promise<void> {
   setReminderOptIn({ ...optIn, status: 'cancelled' });
   await flushRoadmapStore();
   // The optout:optin ratio is US-17's kill criterion — it only works if BOTH
-  // sides are counted (the opt-in side has fired since 2026-08-06).
-  trackProductEvent('reminder_optout');
+  // sides are counted (the opt-in side has fired since 2026-08-06), and per
+  // LANE: the provider tag lets the typed and cloud ratios be judged apart.
+  trackProductEvent('reminder_optout', { provider: optIn.provider });
 }
 
 /**

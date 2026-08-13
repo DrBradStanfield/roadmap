@@ -1306,6 +1306,14 @@ input[type="number"] {
   margin-top: 6px;
 }
 
+/* US-23 AC4 — the always-visible reminders disclosure under the email box. */
+.email-capture-disclosure {
+  color: #5a6b73;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 8px 0 0;
+}
+
 .email-capture-success {
   text-align: center;
   padding: 8px 0;
