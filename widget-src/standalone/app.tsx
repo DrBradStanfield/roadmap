@@ -14,9 +14,10 @@ import { createRoot } from 'react-dom/client';
 import { HealthTool } from '../src/components/HealthTool';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { initSentry, Sentry } from '../src/lib/sentry';
-import { initRoadmapStore, flushRoadmapStoreSync } from '../src/lib/roadmap-data';
+import { initRoadmapStore, flushRoadmapStoreSync, setPreEraseHook } from '../src/lib/roadmap-data';
 import { resolveAssistantName, setAssistantName } from '../src/lib/assistant-config';
-import { pushReminderSchedule } from './reminders';
+import { autoEnrolReminders, cancelRemindersForErase, pushReminderSchedule } from './reminders';
+import { RemindersEnrolledNotice } from './reminders-control';
 import {
   DropboxAdapter,
   GoogleDriveAdapter,
@@ -108,6 +109,9 @@ async function main() {
   initSentry();
   const { adapter, backend, reconnect } = await resolveBackend();
   await initRoadmapStore(adapter);
+  // "Delete all my data" must also delete the reminder row on Brad's server,
+  // and the token that authorises it dies with the file — so it runs first.
+  setPreEraseHook(cancelRemindersForErase);
 
   const container = document.getElementById('health-tool-root');
   if (!container) {
@@ -121,6 +125,11 @@ async function main() {
   createRoot(container).render(
     <React.StrictMode>
       <ErrorBoundary>
+        {/* US-17: the default-on enrolment notice sits ABOVE the widget, not in
+            the plan panel — the plan is slide 2 of the mobile tab layout and
+            every connect path reloads onto slide 1, so a notice inside it would
+            be announced to an off-screen panel. */}
+        <RemindersEnrolledNotice backend={backend} />
         <HealthTool
           syncControl={({ hasData }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} />}
           remindersSection={<RemindersSection backend={backend} />}
@@ -148,6 +157,12 @@ async function main() {
   // push per visit — it also discovers email-link unsubscribes (404 → the
   // stale opt-in is cleared). Fire-and-forget — never blocks the app.
   void pushReminderSchedule();
+
+  // Default-on reminders (US-17): a connected cloud IS the consent. No-ops
+  // unless this file records no decision yet, so it never overrides an
+  // opt-out. After render, so the notice's listener is mounted; after the
+  // store, so the pushed schedule is the user's real one.
+  void autoEnrolReminders(backend);
 }
 
 void main();

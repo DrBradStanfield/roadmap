@@ -78,6 +78,19 @@
 .hr-reminders .hr-sync-link { margin-left: 0; }
 .hr-reminders .hr-sync-status { font-size: 12.5px; }
 .hr-reminders .hr-sync-detail { flex-basis: auto; }
+/* US-17 default-on: the "what actually leaves your device" line ships with the
+   on-state, on its own row (the off-state's detail stays inline with its
+   button). Never hidden behind a disclosure toggle — that is the whole point. */
+.hr-reminders-disclosure {
+  flex-basis: 100%; color: #5a6b73; font-size: 12.5px; line-height: 1.45;
+}
+/* The enrolment notice sits ABOVE the widget (outside the tabbed panels), so it
+   is visible on the input tab where every cloud connect lands. Tinted .hr-sync
+   card + a left rule so it reads as an announcement, not another status line. */
+.hr-reminders-notice {
+  margin: 0 0 16px; border-left: 4px solid #00a38b; align-items: flex-start;
+}
+.hr-reminders-dismiss { margin-left: auto; }
 
 /* "Where should your health plan live?" lightbox — a native <dialog>,
    so focus trap / Escape / top-layer come from the platform. */

@@ -14,7 +14,11 @@ export const PRODUCT_EVENT_NAMES = [
   'cloud_connect_started',
   'cloud_connect_success',
   'correction_made',
+  // US-17 default-on reminders: optin fires on enrolment (auto or manual),
+  // optout on disable. The RATIO is the honest measure of the opt-out model —
+  // sustained optout > ~30% of optins means the default-on call was wrong.
   'reminder_optin',
+  'reminder_optout',
   'chat_opened',
   // US-21 additional blood tests: phase-1 surfacing + phase-2 manual add.
   'lab_rows_viewed',

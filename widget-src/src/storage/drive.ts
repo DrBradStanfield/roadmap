@@ -289,14 +289,19 @@ export class GoogleDriveAdapter implements StorageAdapter {
    * FALLBACK (popup sessions, or pre-email-scope grants that return no ID
    * token): a fresh GIS popup token, which the server uses for ONE in-memory
    * userinfo read. Needs a user gesture — call from the opt-in click.
+   *
+   * `silent` (US-17 auto-enrolment) forbids that fallback and returns null
+   * instead: auto-enrolment runs at page load, where a popup is both blocked
+   * by the browser and unasked-for by the user. Null = retry next visit.
    */
-  async getReminderProof(): Promise<{ idToken: string } | { accessToken: string }> {
+  async getReminderProof(silent = false): Promise<{ idToken: string } | { accessToken: string } | null> {
     // Reuses the one token-refresh implementation (incl. its revoked-token
     // handling); the refresh grant returns a fresh signed ID token when the
     // original grant included openid.
     if (await this.tryServerRefresh()) {
       if (this.lastIdToken) return { idToken: this.lastIdToken };
     }
+    if (silent) return null;
     const token = await this.acquireViaGis();
     this.saveTokens({ ...this.tokens, accessToken: token.accessToken, expiresAt: token.expiresAt });
     return { accessToken: token.accessToken };

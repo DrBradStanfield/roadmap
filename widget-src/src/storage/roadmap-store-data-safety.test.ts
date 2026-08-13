@@ -164,6 +164,42 @@ describe('RoadmapStore.deleteUserData (US-11)', () => {
     expect(file.measurements).toEqual([]);
     expect(deviceB.loadAllHistory()).toEqual([]);
   });
+
+  // US-17 AC4, found in adversarial review 2026-08-13 — BEFORE it shipped.
+  // Under default-on reminders the empty post-erase file reads as "never
+  // decided", so the next app load would enrol the user again. The erase would
+  // then be the thing that silently re-consented them, and because a higher
+  // eraseEpoch wins the merge WHOLESALE, the 'cancelled' record on their other
+  // devices could not save them either.
+  it('carries an explicit reminders opt-out THROUGH an erase (never re-consents)', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.setReminderOptIn({ status: 'active', token: 'cap-token', email: 'user@example.com', provider: 'dropbox' });
+    store.setReminderOptIn({ status: 'cancelled', token: 'cap-token', email: 'user@example.com', provider: 'dropbox' });
+
+    await store.deleteUserData();
+
+    const optIn = readCloudFile(cloud).reminderOptIn!;
+    expect(optIn.status).toBe('cancelled');
+    // The decision survives; the identity does NOT — an erase must not leave the
+    // user's address or capability token behind in the name of remembering a no.
+    expect(optIn.email).toBe('');
+    expect(optIn.token).toBe('');
+  });
+
+  it('leaves an ENROLLED user with no opt-in record after an erase (they start over)', async () => {
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.setReminderOptIn({ status: 'active', token: 'cap-token', email: 'user@example.com', provider: 'dropbox' });
+
+    await store.deleteUserData();
+
+    // No stale token or address survives. The server row is deleted separately,
+    // by the pre-erase hook in roadmap-data.ts (it needs the token, so it runs
+    // before this); re-enrolment on the next visit is the default-on model
+    // working as designed, and it shows the notice again.
+    expect(readCloudFile(cloud).reminderOptIn).toBeUndefined();
+  });
 });
 
 // US-13 · Review before save — bulk-save dedup (coverage priority #1).

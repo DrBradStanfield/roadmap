@@ -586,8 +586,23 @@ export class RoadmapStore {
     // through read-merge-write, whose never-lose-data semantics would otherwise
     // resurrect every record from the stored copy (and any other device's).
     const eraseEpoch = (this.file.meta.eraseEpoch ?? 0) + 1;
+    // An erase must not silently re-consent the user. Under US-17's default-on
+    // model the empty file reads as "never decided", so the next app load would
+    // enrol them again — undoing an explicit opt-out (AC4) via a button that
+    // promises the opposite. A higher eraseEpoch also wins the merge WHOLESALE,
+    // so the 'cancelled' record on their other devices can't save them either.
+    // Carry the decision, never the identity: no token, no email address.
+    const optedOut = this.file.reminderOptIn?.status === 'cancelled'
+      ? this.file.reminderOptIn.provider
+      : null;
     this.file = migrateFile(null, { deviceId: this.deviceId, now: new Date().toISOString() });
     this.file.meta.eraseEpoch = eraseEpoch;
+    if (optedOut) {
+      this.file.reminderOptIn = {
+        status: 'cancelled', token: '', email: '', provider: optedOut,
+        updatedAt: new Date().toISOString(), lamport: 1,
+      };
+    }
     try {
       await this.flush();
       return { success: true };

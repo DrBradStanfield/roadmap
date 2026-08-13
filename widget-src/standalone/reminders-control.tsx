@@ -16,7 +16,7 @@
 import React, { useEffect, useState } from 'react';
 import { getReminderOptIn } from '../src/lib/roadmap-data';
 import { EMAIL_REGEX } from '../src/lib/email';
-import { cancelReminders, optInToReminders, remindersSupported } from './reminders';
+import { cancelReminders, ENROL_NOTICE_KEY, optInToReminders, remindersSupported } from './reminders';
 import type { Backend } from './connect';
 
 export function RemindersControl({ backend }: { backend: Backend }) {
@@ -66,7 +66,7 @@ export function RemindersControl({ backend }: { backend: Backend }) {
     if (marketingEmail !== undefined && !EMAIL_REGEX.test(marketingEmail)) {
       throw new Error('That email doesn’t look right — please check it (or untick the box).');
     }
-    await optInToReminders(backend, marketingEmail);
+    await optInToReminders(backend, { marketingEmail });
     resetStep();
   });
   const turnOff = wrap(() => cancelReminders());
@@ -79,6 +79,14 @@ export function RemindersControl({ backend }: { backend: Backend }) {
           <button className="hr-sync-link" disabled={busy} onClick={() => void turnOff()}>
             {busy ? 'Turning off…' : 'Turn off'}
           </button>
+          {/* US-17 AC1/AC5: default-on must never be silent. Wherever the
+              control renders, it states exactly what leaves the device. */}
+          <span className="hr-reminders-disclosure">
+            We’ll email you when a check-up or blood test comes due. What reaches Dr Brad’s server:
+            the NAME and due date of each check-up (for example “Colonoscopy — due May 2027”), plus
+            your cloud account’s email address. Your measurements, results and plan never leave
+            your device.
+          </span>
         </>
       ) : confirming ? (
         <div className="hr-sync-form">
@@ -124,6 +132,48 @@ export function RemindersControl({ backend }: { backend: Backend }) {
         </>
       )}
       {error && <span className="hr-sync-error">{error}</span>}
+    </div>
+  );
+}
+
+/**
+ * The "you're enrolled" notice for US-17's default-on enrolment — Brad's second
+ * non-negotiable constraint: default-on must be VISIBLE, never silent.
+ *
+ * It renders ABOVE the whole widget, not inside the plan panel, and that is the
+ * point. The plan panel is slide 2 of the mobile tab layout and every connect
+ * path ends in a reload onto the *input* tab, so a notice living there would
+ * mount off-screen and be seen by nobody on the majority surface. It is also
+ * absent from the no-data-yet render branch — exactly the user who just
+ * connected a cloud.
+ *
+ * It is the control itself, not a copy of it: same state, same off switch, same
+ * disclosure — so turning reminders off is one click from the sentence that
+ * told you they were on. It survives a reload (sessionStorage) and stays until
+ * dismissed, because a disclosure the user blinked past is not a disclosure.
+ */
+export function RemindersEnrolledNotice({ backend }: { backend: Backend }) {
+  const [shown, setShown] = useState(() => {
+    try { return sessionStorage.getItem(ENROL_NOTICE_KEY) === '1'; } catch { return false; }
+  });
+
+  useEffect(() => {
+    const onEnrolled = () => setShown(true);
+    window.addEventListener('hr:reminders-enrolled', onEnrolled);
+    return () => window.removeEventListener('hr:reminders-enrolled', onEnrolled);
+  }, []);
+
+  if (!shown) return null;
+  const dismiss = (): void => {
+    try { sessionStorage.removeItem(ENROL_NOTICE_KEY); } catch { /* nothing to clear */ }
+    setShown(false);
+  };
+  return (
+    <div className="hr-sync hr-reminders-notice">
+      <RemindersControl backend={backend} />
+      <button type="button" className="hr-sync-link hr-reminders-dismiss" onClick={dismiss}>
+        Got it
+      </button>
     </div>
   );
 }

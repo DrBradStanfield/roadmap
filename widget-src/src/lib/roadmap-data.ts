@@ -29,6 +29,7 @@ import { RoadmapStore } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse } from './api';
+import { Sentry } from './sentry';
 import type { StorageAdapter } from '../storage/adapter';
 import type {
   AddMeasurementResult,
@@ -216,8 +217,29 @@ export async function readDocumentFile(fileRef: string): Promise<Blob | null> {
   }
 }
 
+/**
+ * Teardown that must run BEFORE the erase, registered by the standalone entry.
+ * `src/` must never import `standalone/`, so the dependency is injected rather
+ * than imported. Today it is the reminders row on Brad's server: "delete all my
+ * data" has to include the one copy that isn't on the device, and the token
+ * authorising that delete lives inside the file the erase is about to wipe.
+ */
+let preEraseHook: (() => Promise<void>) | null = null;
+export function setPreEraseHook(fn: () => Promise<void>): void {
+  preEraseHook = fn;
+}
+
 export async function deleteUserData(): Promise<{ success: boolean; error?: string }> {
-  return store ? store.deleteUserData() : { success: false, error: 'Data store not initialised' };
+  if (!store) return { success: false, error: 'Data store not initialised' };
+  try {
+    await preEraseHook?.();
+  } catch (error) {
+    // Best-effort: an unreachable server must never block a user from erasing
+    // their own device. The orphaned row is reported, not silently swallowed.
+    console.warn('Pre-erase teardown failed', error);
+    Sentry.captureException(error, { tags: { area: 'reminders', op: 'pre-erase' } });
+  }
+  return store.deleteUserData();
 }
 
 // ---------------------------------------------------------------------------
