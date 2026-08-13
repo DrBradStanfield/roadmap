@@ -178,6 +178,10 @@ same commit).
 - **Single branch, main only** for sessions — commit directly, push when
   ready. EXCEPTION: Tier 3 / pipeline code changes go via `claude/` branch +
   PR (that's the review boundary).
+- **Pull first (2026-08-13)** — cloud loops push to `main` on weekends (and
+  sentry-fix daily): start every session, and precede every push, with
+  `git pull --ff-only` (commit local work first per the sweep rule; on
+  divergence, merge deliberately — never force).
 - **🧹 SWEEP EVERYTHING ON EVERY COMMIT (HARD).** "Commit" means ALL
   uncommitted changes, tracked and untracked, from every session. Never stash
   aside, never reword others' work. Say what you swept. Commit freely; gate
