@@ -41,8 +41,11 @@ vi.mock('./supabase.server', () => ({
 }));
 
 import {
+  ensureAnnualFloor,
   inTypedQuietPeriod,
   scheduleSchema,
+  unsubscribeByToken,
+  upsertOptin,
   upsertTypedOptin,
 } from './reminder-v2.server';
 
@@ -78,6 +81,33 @@ describe('US-23 AC4/AC8 — the label allow-list', () => {
   });
 });
 
+describe('US-23 AC4 — dueAt must be a real calendar date', () => {
+  it('rejects regex-valid impossible dates (they make the email builders throw)', () => {
+    const poisoned = [{ category: 'annual_checkin', label: 'Annual health check-in', dueAt: '2026-99-99' }];
+    expect(scheduleSchema.safeParse(poisoned).success).toBe(false);
+  });
+});
+
+describe('US-23 AC6 — the SERVER-side annual floor (integrity bound, not UX)', () => {
+  const NOW = new Date('2026-08-14T00:00:00Z');
+
+  it('appends a check-in when every pushed date is beyond 12 months — the "silent kill switch" clamp', () => {
+    const suppressed = [{ category: 'screening_colorectal', label: 'Colonoscopy', dueAt: '2099-12-31' }];
+    const floored = ensureAnnualFloor(suppressed, NOW);
+    expect(floored).toHaveLength(2);
+    expect(floored[1]).toEqual({ category: 'annual_checkin', label: 'Annual health check-in', dueAt: '2027-08-14' });
+  });
+
+  it('floors an empty schedule too (old client bundles without the client floor)', () => {
+    expect(ensureAnnualFloor([], NOW)).toHaveLength(1);
+  });
+
+  it('leaves a schedule alone when something is already due within 12 months', () => {
+    const fine = [VALID_ITEM]; // 2027-05-12 < 12 months from NOW
+    expect(ensureAnnualFloor(fine, NOW)).toBe(fine);
+  });
+});
+
 describe('US-23 AC2 — the typed quiet period', () => {
   const day = (iso: string) => iso.slice(0, 10);
 
@@ -91,6 +121,59 @@ describe('US-23 AC2 — the typed quiet period', () => {
   it('never holds a provider-verified row — the address vouched for itself', () => {
     const optin = { provider: 'google-drive' as const, created_at: '2026-08-14T02:00:00.000Z' };
     expect(inTypedQuietPeriod(optin, day('2026-08-14'))).toBe(false);
+  });
+});
+
+describe('upsertOptin structurally refuses the typed lane', () => {
+  it('throws on provider "typed" — the guarded door is upsertTypedOptin, and deleting this guard must fail a test', async () => {
+    await expect(upsertOptin('anyone@example.com', 'typed', [VALID_ITEM])).rejects.toThrow(/upsertTypedOptin/);
+  });
+});
+
+describe('cloud opt-in over an existing row preserves the unsubscribe token and cooldowns', () => {
+  it('reuses the existing token and last_sent instead of minting/resetting (already-sent links must keep working)', async () => {
+    primedResults = [
+      { data: { token: 'original-token', last_sent: { blood_test_lipids: '2026-08-01' } }, error: null }, // lookup
+      { data: null, error: null }, // upsert
+    ];
+
+    const token = await upsertOptin('user@example.com', 'google-drive', [VALID_ITEM]);
+
+    expect(token).toBe('original-token');
+    const upsert = calls.find((c) => c.method === 'upsert')!;
+    const payload = upsert.args[0] as Record<string, unknown>;
+    expect(payload.token).toBe('original-token');
+    expect(payload.last_sent).toEqual({ blood_test_lipids: '2026-08-01' });
+  });
+});
+
+describe('US-23 AC5/AC8 — unsubscribe is a DURABLE tombstone for typed rows', () => {
+  it('tombstones a typed row (schedule=[], row kept) so a replayed capture is a refresh, not a fresh isNew', async () => {
+    primedResults = [
+      { data: { provider: 'typed', schedule: [VALID_ITEM] }, error: null }, // lookup
+      { data: null, error: null },                                         // tombstone update
+    ];
+
+    const provider = await unsubscribeByToken('tok');
+
+    expect(provider).toBe('typed');
+    const update = calls.find((c) => c.method === 'update')!;
+    expect((update.args[0] as Record<string, unknown>).schedule).toEqual([]);
+    expect(calls.map((c) => c.method)).not.toContain('delete');
+  });
+
+  it('is idempotent: a second click on an already-tombstoned row counts nothing', async () => {
+    primedResults = [{ data: { provider: 'typed', schedule: [] }, error: null }];
+    expect(await unsubscribeByToken('tok')).toBeNull();
+  });
+
+  it('cloud rows keep hard-delete semantics', async () => {
+    primedResults = [
+      { data: { provider: 'google-drive', schedule: [VALID_ITEM] }, error: null }, // lookup
+      { data: [{ provider: 'google-drive' }], error: null },                       // delete().select()
+    ];
+    expect(await unsubscribeByToken('tok')).toBe('google-drive');
+    expect(calls.map((c) => c.method)).toContain('delete');
   });
 });
 

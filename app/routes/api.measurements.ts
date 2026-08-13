@@ -5,9 +5,17 @@ import { authenticate } from '../shopify.server';
 import { subscribeToKlaviyo } from '../lib/klaviyo.server';
 import { sendPlanReadyEmail } from '../lib/email.server';
 import { buildUnsubscribeUrl, scheduleSchema, upsertTypedOptin } from '../lib/reminder-v2.server';
+import { recordServerEvent } from '../lib/product-events.server';
+import { getClientIp } from '../lib/local-first-route.server';
 import { createRateLimiter } from '../lib/rate-limiter';
 
 const checkGuestReportLimit = createRateLimiter(5, 24 * 60 * 60_000, 30 * 60_000); // 5/day per email
+// Per-IP as well as per-victim-email: the email limiter bounds harm to ONE
+// address but nothing stopped one client enrolling a whole address LIST
+// (N strangers' emails at rest + N sends from our domain). Best-effort — the
+// proxy's forwarded IP and a per-process Map — but it turns bulk abuse from
+// free into work (review 2026-08-14).
+const checkCaptureIpLimit = createRateLimiter(20, 60 * 60_000, 30 * 60_000); // 20/hour per IP
 
 // ---------------------------------------------------------------------------
 // Klaviyo capture (local-first v2) — the "Get Your Personalized Plan" button.
@@ -34,14 +42,14 @@ const klaviyoCaptureSchema = z.object({
 // US-22: the plan-ready send lives in email.server so the template and the
 // send stay together (and so the no-health-data test can target the builder).
 
-async function handleKlaviyoCapture(data: unknown) {
+async function handleKlaviyoCapture(data: unknown, clientIp: string) {
   try {
     const parsed = klaviyoCaptureSchema.safeParse(data);
     if (!parsed.success) {
       return Response.json({ success: false, error: 'Invalid request data' }, { status: 400 });
     }
     const { email, schedule } = parsed.data;
-    if (!checkGuestReportLimit(email.toLowerCase())) {
+    if (!checkGuestReportLimit(email.toLowerCase()) || !checkCaptureIpLimit(clientIp)) {
       return Response.json({ success: false, error: 'Email limit reached. Try again tomorrow.' }, { status: 429 });
     }
     // Email-only subscribe — no `properties`, so subscribeToKlaviyo skips the
@@ -65,27 +73,36 @@ async function handleKlaviyoCapture(data: unknown) {
       }
     }
 
-    // US-22 AC1/AC2: the plan-ready email — sent ONCE per enrolled address
-    // (isNew), not on every capture: an attacker replaying a victim's email
-    // through the 5/day limiter must not turn this into a harassment channel
-    // (US-23 AC8), and a legitimate re-capture already has its PDF. Addresses
-    // that never enrol (no schedule / verified row) keep the old
-    // send-per-capture behaviour, still bounded by the limiter. When enrolled
-    // it carries the calendar (labels + dates, the permitted footprint) and
-    // the one-click unsubscribe (US-23 AC5). Fire-and-forget — a Resend
-    // outage must never surface to a user who already has their plan.
-    if (!enrolment || enrolment.isNew) {
-      sendPlanReadyEmail(
-        email,
-        enrolment
-          ? { schedule, unsubscribeUrl: buildUnsubscribeUrl(enrolment.token) }
-          : {},
-      ).catch(() => {});
+    // US-22 AC1/AC2 + US-23 AC8: the plan-ready email fires ONLY on a NEW
+    // enrolment — the one path that proves this address wasn't already known.
+    // Every other body shape reaching this line is an attacker or a stale
+    // cached bundle, and each was a bypass of the "one email per address ever"
+    // bound before 2026-08-14's review: a schedule-less body sent per-capture;
+    // a capture against a cloud-enrolled address (upsertTypedOptin → null)
+    // sent per-capture to exactly the most engaged users; and unsubscribe+
+    // re-capture minted a fresh isNew (closed by the tombstone in
+    // unsubscribeByToken, which makes a replayed capture a refresh instead).
+    // The email carries the calendar (labels + dates, the permitted footprint)
+    // and the one-click unsubscribe (AC5). Fire-and-forget — a Resend outage
+    // must never surface to a user who already has their plan.
+    if (enrolment?.isNew) {
+      sendPlanReadyEmail(email, {
+        schedule,
+        unsubscribeUrl: buildUnsubscribeUrl(enrolment.token),
+      }).catch(() => {});
+      // Counted HERE, not by the client: the server is the only party that
+      // knows the enrolment landed, and counting server-side also counts
+      // abuse enrolments — a client-side event would let an attacked system
+      // report optout > optin and look broken (review 2026-08-14).
+      void recordServerEvent('reminder_optin', { provider: 'typed' });
     }
+    // The response is CONSTANT — no enrolled field. Echoing enrolment state
+    // made the endpoint a membership oracle: "enrolled:false" told any
+    // storefront visitor that victim@example.com already uses the tool.
     // No audit row written here — capture volume is now reported on the admin
     // dashboard straight from the Klaviyo list (the source of truth, with true
     // lifetime totals), so this path stores no email/PII and no tally at all.
-    return Response.json({ success: true, enrolled: enrolment?.isNew ?? false });
+    return Response.json({ success: true });
   } catch (error) {
     console.error('Klaviyo capture error:', error);
     Sentry.captureException(error, { tags: { feature: 'klaviyo_capture' } });
@@ -100,7 +117,7 @@ export async function action({ request }: ActionFunctionArgs) {
   await authenticate.public.appProxy(request);
   const body = await request.json();
   if (body.klaviyoCapture) {
-    return handleKlaviyoCapture(body.klaviyoCapture);
+    return handleKlaviyoCapture(body.klaviyoCapture, getClientIp(request));
   }
   return Response.json({ success: false, error: 'Unsupported request' }, { status: 400 });
 }

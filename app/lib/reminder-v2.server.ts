@@ -75,7 +75,13 @@ export const scheduleSchema = z
       .object({
         category: z.string().refine((c) => CATEGORY_SET.has(c), 'unknown category'),
         label: z.string().min(1).max(80),
-        dueAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        dueAt: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          // A regex-valid impossible date ('2026-99-99') survives to the email
+          // builders, where new Date().toISOString() THROWS — poisoning every
+          // future send for that row (daily cron error, no email, forever).
+          .refine((d) => !Number.isNaN(Date.parse(d)), 'not a real date'),
       })
       .refine(
         (item) => (SCHEDULE_LABELS[item.category as keyof typeof SCHEDULE_LABELS] ?? []).includes(item.label),
@@ -95,6 +101,31 @@ export function mintCapabilityToken(): string {
 /** The one place the unsubscribe URL's shape is known (cron + capture route). */
 export function buildUnsubscribeUrl(token: string): string {
   return `${APP_BASE_URL}/reminders-v2/unsubscribe?token=${encodeURIComponent(token)}`;
+}
+
+/**
+ * Server-side annual floor (US-23 AC6 as an INTEGRITY bound, not just UX).
+ * The client seeds the same floor, but the server cannot trust the client:
+ * the capture endpoint is reachable by any storefront visitor, so an attacker
+ * who knows a typed user's email could push a schedule whose every date is
+ * decades out — silently switching off the retention engine for that user.
+ * Clamping on WRITE turns that attack from "silent kill switch" into "at
+ * worst, degraded to an annual check-in". Pure date arithmetic on data we
+ * already hold — the server stays a dumb scheduler. Deliberately NOT applied
+ * to tombstones (schedule=[] via unsubscribe): an explicit off stays off.
+ */
+export function ensureAnnualFloor(
+  schedule: StoredScheduleItem[],
+  now: Date = new Date(),
+): StoredScheduleItem[] {
+  const horizon = new Date(now);
+  horizon.setUTCMonth(horizon.getUTCMonth() + 12);
+  const horizonYmd = horizon.toISOString().slice(0, 10);
+  if (schedule.some((item) => item.dueAt <= horizonYmd)) return schedule;
+  return [
+    ...schedule,
+    { category: 'annual_checkin', label: 'Annual health check-in', dueAt: horizonYmd },
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -219,12 +250,16 @@ export async function upsertTypedOptin(
   if (data) {
     const { error: updateError } = await requireAdmin()
       .from('reminder_optin_v2')
-      .update({ schedule, updated_at: new Date().toISOString() })
-      .eq('email', normalized);
+      .update({ schedule: ensureAnnualFloor(schedule), updated_at: new Date().toISOString() })
+      .eq('email', normalized)
+      // Re-checked IN the write, not just the read above: a cloud opt-in that
+      // raced between our SELECT and this UPDATE must not have its schedule
+      // clobbered by a typed refresh (TOCTOU, review 2026-08-14).
+      .eq('provider', 'typed');
     if (updateError) throw new Error(`reminder_optin_v2 refresh failed: ${updateError.message}`);
     return { token: data.token, isNew: false };
   }
-  return { token: await writeOptinRow(normalized, 'typed', schedule), isNew: true };
+  return { token: await writeOptinRow(normalized, 'typed', schedule, null), isNew: true };
 }
 
 export async function upsertOptin(
@@ -239,16 +274,31 @@ export async function upsertOptin(
   if (provider === 'typed') {
     throw new Error("typed enrolments must go through upsertTypedOptin, never upsertOptin");
   }
-  return writeOptinRow(email, provider, schedule);
+  const normalized = email.toLowerCase();
+  const { data, error } = await requireAdmin()
+    .from('reminder_optin_v2')
+    .select('token, last_sent')
+    .eq('email', normalized)
+    .maybeSingle();
+  if (error) throw new Error(`reminder_optin_v2 lookup failed: ${error.message}`);
+  return writeOptinRow(normalized, provider, schedule, data);
 }
 
-/** The one raw row write (mint token, reset cooldowns). Private on purpose. */
+/**
+ * The one raw row write. `existing` (the pre-write row, null when absent)
+ * makes an upgrade PRESERVE the token and cooldowns: a typed user who later
+ * cloud-connects keeps the same unsubscribe token, so the links in every
+ * email already in their inbox keep working, and last_sent survives so an
+ * item sent yesterday isn't re-sent tomorrow (review 2026-08-14 — the same
+ * two invariants the typed refresh path holds). Private on purpose.
+ */
 async function writeOptinRow(
   email: string,
   provider: ReminderV2Provider,
   schedule: StoredScheduleItem[],
+  existing: { token: string; last_sent?: Record<string, string> } | null,
 ): Promise<string> {
-  const token = mintCapabilityToken();
+  const token = existing?.token ?? mintCapabilityToken();
   const { error } = await requireAdmin()
     .from('reminder_optin_v2')
     .upsert(
@@ -256,8 +306,8 @@ async function writeOptinRow(
         email: email.toLowerCase(),
         provider,
         token,
-        schedule,
-        last_sent: {},
+        schedule: ensureAnnualFloor(schedule),
+        last_sent: existing?.last_sent ?? {},
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'email' },
@@ -273,7 +323,7 @@ export async function updateScheduleByToken(
 ): Promise<boolean> {
   const { data, error } = await requireAdmin()
     .from('reminder_optin_v2')
-    .update({ schedule, updated_at: new Date().toISOString() })
+    .update({ schedule: ensureAnnualFloor(schedule), updated_at: new Date().toISOString() })
     .eq('token', token)
     .select('id');
   if (error) throw new Error(`reminder_optin_v2 update failed: ${error.message}`);
@@ -299,6 +349,41 @@ export function inTypedQuietPeriod(
   const gate = new Date(optin.created_at);
   gate.setUTCDate(gate.getUTCDate() + 3);
   return todayStr < gate.toISOString().slice(0, 10);
+}
+
+/**
+ * The email unsubscribe page's action (US-23 AC5/AC8). For a TYPED row the
+ * off switch must be DURABLE against re-enrolment: deleting the row would
+ * make the next attacker-replayed capture look brand new — isNew again, a
+ * fresh plan-ready email again, reminders again — so the victim's one click
+ * never sticks. Instead the row becomes a TOMBSTONE (schedule=[], token and
+ * created_at kept): the cron has nothing to send, a replayed capture hits
+ * the refresh path (isNew=false → no email), and the same link keeps working
+ * if clicked twice. The refresh path CAN refill a tombstone's schedule — a
+ * user who deliberately re-captures their own email is re-consenting under
+ * the opt-out model; the accepted residual is that an attacker can do the
+ * same, bounded to rare reminder-cadence emails each carrying this same
+ * one-click off switch. Cloud rows keep hard-delete semantics (their client
+ * flips its own file to cancelled when the push 404s).
+ * Returns the row's provider for per-lane optout counting; null = no row.
+ */
+export async function unsubscribeByToken(token: string): Promise<ReminderV2Provider | null> {
+  const { data, error } = await requireAdmin()
+    .from('reminder_optin_v2')
+    .select('provider, schedule')
+    .eq('token', token)
+    .maybeSingle();
+  if (error) throw new Error(`reminder_optin_v2 unsubscribe lookup failed: ${error.message}`);
+  if (!data) return null;
+  if (data.provider !== 'typed') return deleteByToken(token);
+
+  if ((data.schedule as StoredScheduleItem[]).length === 0) return null; // already tombstoned — don't re-count
+  const { error: updateError } = await requireAdmin()
+    .from('reminder_optin_v2')
+    .update({ schedule: [], updated_at: new Date().toISOString() })
+    .eq('token', token);
+  if (updateError) throw new Error(`reminder_optin_v2 tombstone failed: ${updateError.message}`);
+  return 'typed';
 }
 
 export async function deleteByToken(token: string): Promise<ReminderV2Provider | null> {

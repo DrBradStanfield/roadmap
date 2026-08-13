@@ -1,5 +1,5 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
-import { deleteByToken } from '../lib/reminder-v2.server';
+import { unsubscribeByToken } from '../lib/reminder-v2.server';
 import { recordServerEvent } from '../lib/product-events.server';
 
 /**
@@ -53,7 +53,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export async function action({ request }: ActionFunctionArgs) {
   const token = new URL(request.url).searchParams.get('token');
   if (!token) return page('Link invalid', '<p style="color:#555;">This unsubscribe link is missing its token.</p>');
-  const provider = await deleteByToken(token); // idempotent — already-gone tokens land on the same page
+  const provider = await unsubscribeByToken(token); // idempotent — already-gone tokens land on the same page
   // The typed lane's PRIMARY opt-out surface is this page, not the widget —
   // without this event its kill criterion (optout:optin per lane) is blind
   // (adversarial review, 2026-08-14). Only counted when a row actually died.

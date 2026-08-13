@@ -28,7 +28,7 @@ import {
 import { RoadmapStore } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { setChatHistoryFactory } from './chat-history-access';
-import { PROXY_PATH, parseJsonResponse, trackProductEvent } from './api';
+import { PROXY_PATH, parseJsonResponse } from './api';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
 import type { StorageAdapter } from '../storage/adapter';
@@ -313,10 +313,10 @@ export async function sendGuestReport(
         klaviyoCapture: { email, schedule: computeCurrentReminderSchedule() },
       }),
     });
-    const result = await parseJsonResponse<{ success: boolean; enrolled?: boolean; error?: string }>(response);
-    // Count ENROLMENTS, not attempts — the server says whether the row landed
-    // (US-23's usage signal shares US-17's optout:optin kill criterion).
-    if (result?.enrolled) trackProductEvent('reminder_optin', { provider: 'typed' });
+    // reminder_optin for the typed lane is counted SERVER-side (the only party
+    // that knows the enrolment landed, and the response deliberately carries
+    // no enrolment state — it would be a membership oracle for typed emails).
+    const result = await parseJsonResponse<{ success: boolean; error?: string }>(response);
     return result ?? { success: false, error: 'Network error' };
   } catch {
     return { success: false, error: 'Network error' };
