@@ -370,50 +370,6 @@ export async function saveScreening(
   }
 }
 
-/**
- * Save a reminder preference (enable/disable a category).
- */
-export async function saveReminderPreference(
-  category: string,
-  enabled: boolean,
-): Promise<boolean> {
-  try {
-    const response = await fetch(`${PROXY_PATH}/api/reminders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reminderPreference: { category, enabled } }),
-    });
-    if (!response.ok) return false;
-
-    const result = await parseJsonResponse<{ success: boolean }>(response);
-    return result?.success ?? false;
-  } catch (error) {
-    console.warn('Error saving reminder preference:', error);
-    Sentry.captureException(error);
-    return false;
-  }
-}
-
-/**
- * Set global reminder opt-out.
- */
-export async function setGlobalReminderOptout(optout: boolean): Promise<boolean> {
-  try {
-    const response = await fetch(`${PROXY_PATH}/api/reminders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ globalOptout: optout }),
-    });
-    if (!response.ok) return false;
-
-    const result = await parseJsonResponse<{ success: boolean }>(response);
-    return result?.success ?? false;
-  } catch (error) {
-    console.warn('Error setting global reminder optout:', error);
-    Sentry.captureException(error);
-    return false;
-  }
-}
 
 /**
  * Trigger the welcome email and return success/failure.

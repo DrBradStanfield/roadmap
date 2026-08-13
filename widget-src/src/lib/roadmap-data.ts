@@ -147,12 +147,6 @@ export async function deleteSupplementApi(supplementKey: string): Promise<boolea
 export async function saveScreening(screeningKey: string, value: string): Promise<boolean> {
   return store ? store.saveScreening(screeningKey, value) : false;
 }
-export async function saveReminderPreference(category: string, enabled: boolean): Promise<boolean> {
-  return store ? store.saveReminderPreference(category, enabled) : false;
-}
-export async function setGlobalReminderOptout(optout: boolean): Promise<boolean> {
-  return store ? store.setGlobalReminderOptout(optout) : false;
-}
 export async function bulkSaveMeasurements(
   measurements: Array<{ metricType: string; value: number; recordedAt: string; source: MeasurementSource }>,
 ): Promise<BulkSaveResult> {

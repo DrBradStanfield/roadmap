@@ -10,9 +10,6 @@ import {
   APOB_THRESHOLDS,
   NON_HDL_THRESHOLDS,
   LDL_THRESHOLDS,
-  REMINDER_CATEGORIES,
-  REMINDER_CATEGORY_LABELS,
-  type ReminderCategory,
   getEgfrStatus,
   getLpaStatus,
   getHba1cStatus,
@@ -24,7 +21,6 @@ import {
   getBmiEvidence,
 } from '@roadmap/health-core';
 import { sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, getABAssignments, getReportEmailCaptured, markReportEmailCaptured, trackProductEvent } from '../lib/api';
-import type { ApiReminderPreference } from '../lib/api-types';
 import { EMAIL_REGEX } from '../lib/email';
 import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ColumnHeader } from './ColumnHeader';
@@ -55,9 +51,6 @@ interface ResultsPanelProps {
   onDeleteData?: () => void;
   isDeleting?: boolean;
   redirectFailed?: boolean;
-  reminderPreferences?: ApiReminderPreference[];
-  onReminderPreferenceChange?: (category: string, enabled: boolean) => void;
-  onGlobalReminderOptout?: () => void;
   sex?: 'male' | 'female';
   guestReportData?: {
     inputs: Record<string, unknown>;
@@ -70,9 +63,8 @@ interface ResultsPanelProps {
    *  shows). Render-prop: receives whether the user has entered real data,
    *  so the "choose where to save" pitch can stay hidden for brand-new users. */
   syncControl?: (ctx: { hasData: boolean }) => React.ReactNode;
-  /** Standalone-only: the local-first email-reminders section, rendered as its
-   *  own block lower in the plan (not bolted onto the sync line at the top).
-   *  undefined on the live Shopify widget (which has its own ReminderSettings). */
+  /** The local-first email-reminders section (US-17), rendered as its own block
+   *  lower in the plan — not bolted onto the sync line at the top. */
   remindersSection?: React.ReactNode;
 }
 
@@ -575,91 +567,7 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
   );
 }
 
-/** Filter reminder categories based on user's sex and age. */
-function getVisibleCategories(sex?: 'male' | 'female', age?: number): ReminderCategory[] {
-  return REMINDER_CATEGORIES.filter(cat => {
-    // Breast/cervical: female only
-    if (cat === 'screening_breast' || cat === 'screening_cervical') return sex === 'female';
-    // Prostate: male only
-    if (cat === 'screening_prostate') return sex === 'male';
-    // DEXA: female ≥50, male ≥70
-    if (cat === 'screening_dexa') {
-      if (age === undefined) return false;
-      return (sex === 'female' && age >= 50) || (sex === 'male' && age >= 70);
-    }
-    return true;
-  });
-}
-
-function ReminderSettings({
-  preferences,
-  onPreferenceChange,
-  onGlobalOptout,
-  sex,
-  age,
-}: {
-  preferences: ApiReminderPreference[];
-  onPreferenceChange: (category: string, enabled: boolean) => void;
-  onGlobalOptout?: () => void;
-  sex?: 'male' | 'female';
-  age?: number;
-}) {
-  const [expanded, setExpanded] = useState(false);
-
-  const visibleCategories = getVisibleCategories(sex, age);
-  const disabledSet = new Set(
-    preferences.filter(p => !p.enabled).map(p => p.reminderCategory)
-  );
-
-  return (
-    <div className="reminder-settings">
-      <button
-        className="reminder-settings-toggle"
-        onClick={() => setExpanded(!expanded)}
-        type="button"
-      >
-        Email Reminders
-        <span className="collapse-chevron">{expanded ? '\u25BE' : '\u25B8'}</span>
-      </button>
-
-      {expanded && (
-        <div className="reminder-settings-content">
-          <p className="reminder-settings-desc">
-            Choose which health reminder emails you'd like to receive.
-          </p>
-
-          <div className="reminder-checkboxes">
-            {visibleCategories.map(cat => {
-              const isEnabled = !disabledSet.has(cat);
-              return (
-                <label key={cat} className="reminder-checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={isEnabled}
-                    onChange={(e) => onPreferenceChange(cat, e.target.checked)}
-                  />
-                  <span>{REMINDER_CATEGORY_LABELS[cat]}</span>
-                </label>
-              );
-            })}
-          </div>
-
-          {onGlobalOptout && (
-            <button
-              className="reminder-unsubscribe-btn"
-              onClick={onGlobalOptout}
-              type="button"
-            >
-              Unsubscribe from all health notifications
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, reminderPreferences, onReminderPreferenceChange, onGlobalReminderOptout, sex, guestReportData, formStage, syncControl, remindersSection }: ResultsPanelProps) {
+export function ResultsPanel({ results, isValid, authState, saveStatus, emailConfirmStatus, unitSystem, unitOverrides, hasUnsavedLongitudinal, onSaveLongitudinal, isSavingLongitudinal, onDeleteData, isDeleting, redirectFailed, sex, guestReportData, formStage, syncControl, remindersSection }: ResultsPanelProps) {
   // Track highlighted (new/changed) suggestion IDs
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [fadingOutIds, setFadingOutIds] = useState<Set<string>>(new Set());
@@ -983,22 +891,11 @@ export function ResultsPanel({ results, isValid, authState, saveStatus, emailCon
         individual situation.
       </div>
 
-      {/* Email reminders. The local-first builds pass remindersSection (the cloud
-          opt-in) and own the reminders UI; the server-backed ReminderSettings
-          (per-category prefs via the Shopify proxy) is the live Shopify widget's
-          version and would be a dead no-op on local-first, so the two are
-          mutually exclusive. */}
-      {remindersSection ? (
-        remindersSection
-      ) : authState?.isLoggedIn && onReminderPreferenceChange ? (
-        <ReminderSettings
-          preferences={reminderPreferences ?? []}
-          onPreferenceChange={onReminderPreferenceChange}
-          onGlobalOptout={onGlobalReminderOptout}
-          sex={sex}
-          age={results?.age}
-        />
-      ) : null}
+      {/* Email reminders (US-17 cloud opt-in). The server-backed per-category
+          ReminderSettings that used to share this slot died with the v1 CRUD
+          layer — both v2 builds always pass remindersSection, so it was
+          unreachable (deleted 2026-08-13). */}
+      {remindersSection}
 
       {guestReportData && <GuestEmailCapture hook={guestEmailHook} loginUrl={authState?.loginUrl} />}
 

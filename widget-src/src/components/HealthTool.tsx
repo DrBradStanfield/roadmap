@@ -71,15 +71,13 @@ import {
   saveSupplement,
   deleteSupplementApi,
   deleteUserData,
-  saveReminderPreference,
-  setGlobalReminderOptout,
   sendWelcomeEmail,
   trackABImpression,
   trackABConversion,
   trackProductEvent,
 } from '../lib/api';
 import type { CorrectFn } from '../lib/matrix-save';
-import type { ApiReminderPreference, ApiDocument } from '../lib/api-types';
+import type { ApiDocument } from '../lib/api-types';
 import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
 
 // Auth state from Liquid template
@@ -161,7 +159,6 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const [isSavingLongitudinal, setIsSavingLongitudinal] = useState(false);
   const isSavingLongitudinalRef = useRef(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [reminderPreferences, setReminderPreferences] = useState<ApiReminderPreference[]>([]);
   const medSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const screeningSaveTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const isFirstSaveRef = useRef(true);
@@ -327,9 +324,6 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
           if (cached.screenings?.length > 0) {
             setScreenings(cached.screenings);
           }
-          if (cached.reminderPreferences?.length > 0) {
-            setReminderPreferences(cached.reminderPreferences);
-          }
         }
 
         // Phase 2: API response is authoritative
@@ -353,12 +347,11 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
           setMedications(result.medications);
           setScreenings(result.screenings);
           if (result.supplements) setSupplements(result.supplements);
-          setReminderPreferences(result.reminderPreferences);
           setDocumentHistory(result.documents);
           // Full blood-test history for the timeline-matrix UI (fire-and-forget).
           loadBloodTestHistory();
           // Cache to localStorage for instant display on next page load
-          saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, result.reminderPreferences);
+          saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
         } else if (LOCAL_FIRST) {
           // Local-first: the RoadmapStore IS the source of truth and owns its own
           // persistence. An empty result is AUTHORITATIVE (the user genuinely has
@@ -457,9 +450,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
               setPreviousMeasurements(syncResult.previousMeasurements);
               setMedications(syncResult.medications);
               setScreenings(syncResult.screenings);
-              setReminderPreferences(syncResult.reminderPreferences);
               loadBloodTestHistory();
-              saveToLocalStorage(syncResult.inputs, syncResult.previousMeasurements, syncResult.medications, syncResult.screenings, syncResult.reminderPreferences);
+              saveToLocalStorage(syncResult.inputs, syncResult.previousMeasurements, syncResult.medications, syncResult.screenings);
             } else {
               previousInputsRef.current = { ...cached.inputs };
             }
@@ -827,9 +819,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setPreviousMeasurements(result.previousMeasurements);
       setMedications(result.medications);
       setScreenings(result.screenings);
-      setReminderPreferences(result.reminderPreferences);
       setDocumentHistory(result.documents);
-      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings, result.reminderPreferences);
+      saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
     }
     // labValues are lazy — refresh now so the next modal-open shows the
     // values this upload just saved without an extra round-trip. Bump the
@@ -925,35 +916,6 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     }
   }, [formStage, supplements, documentHistory]);
 
-  const handleReminderPreferenceChange = useCallback(async (category: string, enabled: boolean) => {
-    // Optimistic update
-    setReminderPreferences(prev => {
-      const idx = prev.findIndex(p => p.reminderCategory === category);
-      if (idx >= 0) {
-        const next = [...prev];
-        next[idx] = { ...next[idx], enabled };
-        return next;
-      }
-      return [...prev, { reminderCategory: category, enabled }];
-    });
-
-    if (authState.isLoggedIn) {
-      await saveReminderPreference(category, enabled);
-    }
-  }, [authState.isLoggedIn]);
-
-  const handleGlobalReminderOptout = useCallback(async () => {
-    if (!authState.isLoggedIn) return;
-    const confirmed = window.confirm(
-      'This will disable all health reminder emails. You can re-enable them anytime. Continue?',
-    );
-    if (!confirmed) return;
-
-    // Optimistic: mark all as disabled
-    setReminderPreferences(prev => prev.map(p => ({ ...p, enabled: false })));
-    await setGlobalReminderOptout(true);
-  }, [authState.isLoggedIn]);
-
   const handleDeleteData = useCallback(async () => {
     if (!authState.isLoggedIn) return;
     const confirmed = window.confirm(
@@ -972,7 +934,6 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       setBloodTestHistory([]);
       setMedications([]);
       setScreenings([]);
-      setReminderPreferences([]);
       previousInputsRef.current = {};
       setSaveStatus('idle');
       window.alert('All your health data has been deleted.');
@@ -1006,7 +967,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       const next = idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
 
       // Cache to localStorage
-      saveToLocalStorage(inputs, previousMeasurements, next, screenings, reminderPreferences);
+      saveToLocalStorage(inputs, previousMeasurements, next, screenings);
 
       return next;
     });
@@ -1021,7 +982,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         saveMedication(medicationKey, drugName, doseValue, doseUnit);
       }, 300));
     }
-  }, [authState.isLoggedIn, inputs, previousMeasurements, screenings, reminderPreferences]);
+  }, [authState.isLoggedIn, inputs, previousMeasurements, screenings]);
 
   const handleScreeningChange = useCallback((screeningKey: string, value: string) => {
     setScreenings(prev => {
@@ -1034,7 +995,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       };
       const next = idx >= 0 ? [...prev.slice(0, idx), updated, ...prev.slice(idx + 1)] : [...prev, updated];
 
-      saveToLocalStorage(inputs, previousMeasurements, medications, next, reminderPreferences);
+      saveToLocalStorage(inputs, previousMeasurements, medications, next);
 
       return next;
     });
@@ -1047,7 +1008,7 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
         saveScreening(screeningKey, value);
       }, 300));
     }
-  }, [authState.isLoggedIn, inputs, previousMeasurements, medications, reminderPreferences]);
+  }, [authState.isLoggedIn, inputs, previousMeasurements, medications]);
 
   const supSaveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   useEffect(() => () => { for (const t of supSaveTimers.current.values()) clearTimeout(t); }, []);
@@ -1243,9 +1204,6 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     onDeleteData: handleDeleteData,
     isDeleting,
     redirectFailed: authState.redirectFailed,
-    reminderPreferences,
-    onReminderPreferenceChange: handleReminderPreferenceChange,
-    onGlobalReminderOptout: handleGlobalReminderOptout,
     sex: inputs.sex,
     guestReportData: emailCaptureActive
       ? { inputs: effectiveInputs, medications, screenings }
