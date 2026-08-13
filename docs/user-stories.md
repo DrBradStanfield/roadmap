@@ -2,6 +2,21 @@
 
 The user-perspective spec for every journey in the tool. Written 2026-08-07, grounded in the first usage audit ([usage-audit-2026-08.md](usage-audit-2026-08.md)); the architecture reference is [architecture-v2.html](architecture-v2.html). Each story carries acceptance criteria (AC), the **usage evidence** we have, and the **test status** against the current suites.
 
+## The product constitution (Brad, 2026-08-14 — read every story against this)
+
+**What this is:** a preventative-care protocol generator plus a recall system. One five-minute check-up tells a user what to actually do — bloods, screenings, medications, supplements, weight, sleep, exercise — and the reminder calendar makes sure it keeps happening over the years. The website is the onboarding funnel and the calculator; **email is the product surface the user lives in.** For preventative care an annual touch is the correct cadence, not a retention failure — never chase app-engagement metrics here.
+
+**The avatar:** 45–55, health-curious but unsystematic, low tech-literacy (they arrive from a longevity YouTube channel, so they already care; they just don't *systematize*). They will type an email address; they will mostly not connect a cloud drive — live funnel 2026-08-14: ~13% of visitors type an email, ~1% connect a cloud. Design for zero thought: the right thing happens by default, visibly, with a one-click way out. The genuinely health-indifferent mass market only becomes reachable at the mobile app (US-25); don't contort the web product for a user who can't arrive yet.
+
+**The promise (one sentence — keep it literally true):** *Your health data stays on your device. We keep one thing — your reminder calendar, what's due and when — so we can nudge you.*
+What may cross to Brad's server, visibly disclosed: reminder labels + due dates, the enrolled email, a capability token. What never crosses: measurements, lab values, medications, results, reasoning. A label can carry an inference (a lung-CT row implies smoking history); we **disclose that at enrolment rather than neuter the labels** — specific recall notices are what clinics already send, and specificity is what makes the email valuable standalone (Brad, 2026-08-14, superseding the "vague emails" option).
+
+**Durability (why localStorage loss is a bounded cost, not a crisis):** the artifacts survive — the PDF, every reminder email (each carries the user's full schedule, so the inbox always holds a current copy of the calendar), and calendar entries (US-24). Re-entry is cheap by design: the check-up takes five minutes, and re-entering IS re-assessing. Cloud sync (US-09) is the durability upgrade for the motivated, not the front door. The real fix is the mobile app (US-25). We never "fix" durability by holding health data server-side.
+
+**Email architecture (decided 2026-08-11, reaffirmed 2026-08-14):** Resend sends everything programmatic — reminders, the plan-ready email, confirmations. Klaviyo holds only the marketing list. Never merge them: Klaviyo suppression is list-wide, so a supplement-promo unsubscribe would silently kill "your colonoscopy is due" with no error anywhere. Two consents, two systems, two suppression lists.
+
+**Architectural destination:** the mobile app (US-25) — on-device notifications (reminders with no server at all), HealthKit ingestion (data entry with no typing), durable storage (no wipe anxiety). Check near-term decisions against one question: *does this move toward or away from the phone?*
+
 **Maintenance contract:** when a feature's behavior changes, update its story here in the same commit, then regenerate the browser companion: `npx tsx scripts/build-user-stories-html.ts` → `docs/user-stories.html` (linked from architecture-v2.html; never edit the html by hand). New tests cite the story ID (e.g. `US-04`) in a comment. New features follow CLAUDE.md → Development Pathway Lane B: story + acceptance criteria + a declared usage signal BEFORE code. The weekly product-health loop reads this file to judge whether reported friction contradicts an AC.
 
 Legend for test status: ✅ covered · 🟡 logic covered but UI/journey untested · ❌ untested.
@@ -77,6 +92,8 @@ As a user, I can print or save my plan as a PDF to bring to my doctor (client-si
 
 ### US-09 · Choosing where my data lives
 As a privacy-conscious user, I choose Google Drive / Dropbox / GitHub / my own WebDAV server / just-this-browser, from a neutral picker with no dark patterns, and can switch later without losing anything (data copies down, tokens dropped, new provider lifted).
+
+**Positioning (constitution, 2026-08-14):** cloud sync is the **durability upgrade for the motivated**, not the front door — the funnel says ~1% take it while ~13% type an email (US-23). The picker and its place in the flow stay exactly as they are (Brad's call, 2026-08-14); what changes is expectations: US-23, not this story, is how the mass avatar gets longitudinal value.
 - AC1: OAuth (Drive/Dropbox) via PKCE redirect; GitHub/WebDAV via pasted credentials validated before commit.
 - AC2: Switching providers copies current data to device first; log-off leaves the local copy intact.
 - AC3: On-device guest data migrates up on first connect (merge, not overwrite).
@@ -130,8 +147,10 @@ As a user, when I tell the chat my numbers ("my LDL is 3.2"), it proposes struct
 
 ## Epic F — Staying engaged
 
-### US-17 · Email reminders (default-on — BUILT 2026-08-13, awaiting live verification)
+### US-17 · Email reminders — the retention engine (cloud lane BUILT 2026-08-13; typed lane = US-23)
 As a user who has connected a cloud and entered real screening/blood data, I am reminded by email when something comes due **without having had to hunt for a setting** — because a reminder I never receive is the whole reason the tool failed to change my behaviour.
+
+**Reframed 2026-08-14 (constitution):** reminders are not a settings feature — they are the product's retention engine, and email is the primary surface for the primary avatar. This story covers the provider-verified (cloud-connect) lane, which the funnel shows is the ~1% path; the typed-email lane — the ~13% path and therefore the trunk — is promoted to its own story, **US-23**. Shared mechanics that apply to BOTH lanes (full-schedule-in-every-email, the annual floor, calendar links) are specified in US-23 AC3/AC6 and US-24 to avoid duplication.
 
 **Status: the opt-in design was a proven failure; the opt-out replacement is built (2026-08-13).** The old behaviour was explicit opt-in behind three barriers (cloud-connect → scroll past the disclaimer to the bottom of the results panel → two clicks). Result: **~1 genuine opt-in in two months** (the second `reminder_optin_v2` row is Brad's own e2e test). Nothing was broken — cron healthy, sends correct, nothing yet due (earliest 2027-05-12) — the feature simply never reached anyone.
 
@@ -160,7 +179,7 @@ As a user who has connected a cloud and entered real screening/blood data, I am 
 
 - AC1: On cloud-connect success (Drive/Dropbox/GitHub), enrollment happens **immediately and without any user action** — true opt-out (Brad, 2026-08-11). A user who reads the line and clicks away IS enrolled; only an explicit toggle-off unenrolls. The disclosure is a visible statement + already-on switch on that same screen, never a gate.
 - AC1b: Consequence of AC1, accepted knowingly: every cloud-connecting user's due date + label + verified email reaches the server, where before only explicit opt-ins did. Still no measurement, lab value, or reasoning — the local-first invariant holds — but the population sending metadata widens from ~2 to everyone who connects. If a toggle-off arrives, the server row is DELETED, not just flagged.
-- AC2 (**NOT BUILT — the typed lane is still the whole audience**): The enrolled email is either provider-verified (cloud-connect ✅ built 2026-08-13) OR a typed address whose plan-ready email **delivered without bouncing** (US-22 ✅ live, but nothing yet enrols from it). No confirm-click gate — see the consent reasoning below. US-22 was the hard dependency and is now met; what remains is the enrolment itself, and it is NOT a small add: a typed-address user is a guest whose data sits in localStorage, so the client must push a schedule under a typed-address proof the server can trust. Design first. **The cloud-connect lane that shipped covers ~2 people; this one covers ~900.**
+- AC2: The enrolled email is either provider-verified (cloud-connect ✅ built 2026-08-13) OR a typed address whose plan-ready email **delivered without bouncing** — the typed lane is now its own story, **US-23** (promoted 2026-08-14: it is the ~13% lane and the highest-leverage unbuilt thing in the product). No confirm-click gate — see the consent reasoning below.
 - AC2b: A hard bounce disenrolls: no reminders, and the address is removed from Klaviyo.
 - AC2c: Because a delivered-but-mistyped address belongs to a stranger, the FIRST reminder to any bounce-validated (not provider-verified) address must carry the one-click unsubscribe prominently in the body, not just the header. Rare sends (90/180/365d) + one click to stop = bounded, self-correcting harm.
 - AC3: A user can turn reminders off permanently in one action, from the results surface and from any reminder email (RFC 8058 one-click unsubscribe already ships).
@@ -178,7 +197,7 @@ As a guest, I enter my email and **immediately get my whole plan as a downloadab
 - AC1: The button renders the plan and opens the save-as-PDF/print window **client-side** — the plan never leaves the device.
 - AC2: The typed address is subscribed to Klaviyo fire-and-forget; a Klaviyo failure never blocks or delays the PDF.
 - AC3: Rate-limited per address (guest report limit) and behind app-proxy HMAC; Shopify surface only — the Pages build has no Brad server and must no-op.
-- AC4: The PDF is the delivery. Nothing in the UI may promise an email unless US-22 has shipped.
+- AC4: The PDF is the delivery. US-22 has shipped, so the UI may promise the plan-ready email; once US-23 ships, the capture UI must also carry its reminders disclosure (US-23 AC4).
 - Evidence: 874 addresses captured on the commerce Klaviyo list, ~4–5/day, all `single_opt_in`; 50 unsubscribed lifetime.
 - Tests: 🟡 copy + captured-flag tested; PDF path manual (shares US-08's untested print pipeline). Historical note: a guest's report email silently failed in v1 (feedback 2026-03-16) — that v1 path is gone.
 
@@ -243,6 +262,37 @@ As a user whose lab reports contain tests beyond the core 8 (sodium, GGT, TSH, f
 - **Phase 3 — normalization:** unit conversion at save/review for catalogue tests.
 
 ---
+
+### US-23 · Typed-email reminders — **THE TRUNK (Brad-approved 2026-08-14; not built)**
+As someone who typed my email to get my plan PDF, I get reminded when my check-ups and blood tests come due — because I am the ~13% lane (874+ captures, ~4–5/day) and the cloud lane (US-17) is the ~1% lane. **This is the highest-leverage unbuilt thing in the product.**
+
+**Why it's safe now:** US-22's delivery-validation machine is live and verified (signature-checked bounce/complaint webhook → Klaviyo suppression + `deleteByEmail`). Delivery is the consent gate Brad chose over confirm-clicks; a bounce un-enrols before any reminder could ever fire.
+
+- AC1: When the capture button is pressed, the client sends the **schedule alongside the email** — the same client-computed labels + due dates as US-17, stored as one `reminder_optin_v2` row with `provider: 'typed'`. Nothing else crosses (constitution: calendar, not chart).
+- AC2: No reminder is ever sent to a typed address until the plan-ready email has **delivered without bouncing**. Bounces arrive in minutes and reminders in months, so the residual race is closed with a quiet period: the cron skips typed rows younger than 3 days.
+- AC3 (both lanes): Every reminder email carries the user's **full upcoming schedule**, not just the due item — the email is the surviving artifact for a user whose localStorage is long gone (constitution: durability). The server already stores the whole list; this costs nothing.
+- AC4: Labels are **specific** ("Colonoscopy — due May 2027"), per the constitution's recall-letter decision. The capture UI carries a one-line disclosure that typing the email turns reminders on, with the off switch named.
+- AC5: The FIRST reminder to any typed address carries the one-click unsubscribe prominently in the body, not just the header (inherited from US-17 AC2c — a delivered-but-mistyped address belongs to a stranger; rare sends + one click = bounded harm).
+- AC6 (both lanes): **The annual floor** — if the computed schedule has nothing due within 12 months, seed one "Annual health check-in" item 12 months out. Every enrolled person gets at least one touch a year; a colonoscopy-every-10-years user must not get a decade of silence (Brad, 2026-08-14).
+- AC7: Re-capturing with the same email **updates** the schedule (the table is keyed by email; the existing upsert already does this). A user who redoes their check-up next year refreshes their own calendar.
+- AC8: Abuse bound for `victim@example.com`: the victim receives one plan-ready email (no health data) with a working unsubscribe; the 5/day/email rate limit holds; a complaint (US-22 AC10) suppresses + un-enrols immediately.
+- AC9: Shopify surface only — the Pages build has no Brad server; its capture UI never fires (already true for US-18).
+- **Usage signal:** `reminder_optin` with `provider: 'typed'` (enum addition) vs `reminder_optout` — same ratio, same ~30% kill criterion as US-17. Bounce rate on new sends stays the estimator for the legacy-~900 backfill decision (US-22 AC8, still Brad's open call).
+- Tests: ❌ none yet — AC1 (schedule crosses with email, nothing else), AC2 (quiet period), AC6 (floor), AC7 (re-capture upsert) all need coverage before build completes.
+
+### US-24 · Add my check-ups to my calendar — **Brad-approved 2026-08-14 (links, not attachments)**
+As a user reading my plan or a reminder email, I can add any due item to my own calendar in one tap — Google/Apple's calendar becomes a reminder engine Brad never operates (the zero-server rung of the reminders ladder).
+- AC1: Implemented as **Google Calendar template links** (`calendar.google.com/calendar/render?action=TEMPLATE…`) — plain URLs, no attachments (Brad, 2026-08-14: cleaner than .ics; Resend supports attachments but links beat them on deliverability and simplicity).
+- AC2: Each link creates an all-day event on the due date, titled with the label, description linking back to the tool.
+- AC3: Links appear wherever the schedule renders in email (plan-ready email once US-23 gives it a schedule; every reminder email).
+- AC4: Zero server-side storage change; zero new data crosses.
+- Tests: ❌ URL-building unit test when built.
+
+### US-25 · The mobile app — architectural destination (stub; this-year ambition once the web loop is proven)
+As the avatar's future self, I have an app that makes the whole thing automatic: **on-device notifications** (reminders with no server at all — the true serverless end-state), **HealthKit ingestion** (US labs push results into Apple Health; the app reads bloods, recomputes the plan, no typing), durable storage (no localStorage wipe anxiety). The enrolment/consent model built for US-17/US-23 transfers as-is; the server calendar shrinks toward zero as users migrate. Every near-term decision gets checked against the constitution's question: *does this move toward or away from the phone?*
+
+### US-26 · Action links — every reminder pairs the "what" with a "where" (stub)
+As a user told a lipid panel is due, the reminder also tells me where to get one — direct-to-consumer lab links (Quest/Ulta-style, US), supplement refills via Brad's store, later pharmacy integration. Start affiliate-grade (plain links, zero API work); the click-through data is the evidence needed before building any real integration. This is the monetization seam, honestly labeled — and it must never gate the reminder itself.
 
 ## Coverage priorities — 2026-08-07 pass: DONE
 
