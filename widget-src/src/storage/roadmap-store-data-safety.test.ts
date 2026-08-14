@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { RoadmapFile } from '@roadmap/health-core';
-import { RoadmapStore } from './roadmap-store';
+import { RoadmapStore, PENDING_MIRROR_KEY } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
-import { ROADMAP_FILE_NAME } from './adapter';
+import { LocalStorageAdapter } from './local-storage-adapter';
+import { ROADMAP_FILE_NAME, StorageError } from './adapter';
 
 /** The file as it landed in the (simulated) cloud after a flush. */
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {
@@ -446,6 +447,144 @@ describe('RoadmapStore document archive (US-14)', () => {
     const file = readCloudFile(cloud);
     expect(file.documents).toHaveLength(1);
     expect(file.documents[0].deleted).toBe(true);
+  });
+});
+
+// US-09 AC4 · A failed cloud save is never memory-only (Sentry JAVASCRIPT-REMIX-3X,
+// 2026-08-14: a Drive session's token refresh failed mid-session; every persist
+// threw "Google Drive needs to be reconnected", the edits lived ONLY in memory,
+// and a tab close would have silently lost them while the UI still showed the
+// connected checkmark).
+describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
+  /** A cloud adapter whose writes fail like an expired/unrefreshable token. */
+  class TokenExpiredAdapter extends MemoryAdapter {
+    async write(): Promise<never> {
+      throw new StorageError('Google Drive needs to be reconnected.');
+    }
+  }
+
+  // Real-shaped in-memory localStorage (same pattern as connect.test.ts) — the
+  // mirror path writes through lib/storage's safe helpers, which no-op silently
+  // when localStorage is missing, so these tests must provide one.
+  beforeEach(() => {
+    const backing = new Map<string, string>();
+    const store = {
+      getItem: (k: string) => (backing.has(k) ? backing.get(k)! : null),
+      setItem: (k: string, v: string) => void backing.set(k, v),
+      removeItem: (k: string) => void backing.delete(k),
+    };
+    Object.defineProperty(globalThis, 'localStorage', { value: store, writable: true, configurable: true });
+  });
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, 'localStorage');
+  });
+
+  function readMirror(): RoadmapFile | null {
+    const raw = localStorage.getItem('health_roadmap_file_v2');
+    return raw == null ? null : (JSON.parse(raw) as RoadmapFile);
+  }
+
+  it('mirrors the working copy on-device when a cloud save fails, and sets the pending marker', async () => {
+    const store = await RoadmapStore.create(new TokenExpiredAdapter());
+    store.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+
+    await expect(store.flush()).rejects.toThrow(/still on this device/);
+
+    const mirror = readMirror();
+    expect(mirror).not.toBeNull();
+    expect(mirror!.measurements.map((m) => [m.metricType, m.value])).toEqual([['weight', 80]]);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
+  });
+
+  it('the next cloud session merges the mirrored changes back up and clears the marker on success', async () => {
+    // Session 1: cloud already has one row; a second row fails to save and mirrors.
+    const cloud = new MemoryCloud();
+    const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    seeded.addMeasurement('ldl', 3.2, '2024-01-01T00:00:00.000Z');
+    await seeded.flush();
+
+    const failing = await RoadmapStore.create(new TokenExpiredAdapter(cloud));
+    failing.addMeasurement('weight', 80, '2024-02-01T00:00:00.000Z');
+    await expect(failing.flush()).rejects.toThrow();
+
+    // Session 2 (e.g. next page load, token refresh works again).
+    const recovered = await RoadmapStore.create(new MemoryAdapter(cloud));
+    await recovered.flush();
+
+    const file = readCloudFile(cloud);
+    const rows = file.measurements.map((m) => [m.metricType, m.value]).sort();
+    expect(rows).toEqual([['ldl', 3.2], ['weight', 80]]);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull();
+  });
+
+  it('a successful erase also wipes the on-device mirror + marker (no pre-erase copy outlives it)', async () => {
+    // Session with an earlier failure's residue on-device, then a healthy erase.
+    const cloud = new MemoryCloud();
+    const failing = await RoadmapStore.create(new TokenExpiredAdapter(cloud));
+    failing.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    await expect(failing.flush()).rejects.toThrow();
+    expect(readMirror()).not.toBeNull();
+
+    const healthy = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const result = await healthy.deleteUserData();
+    expect(result.success).toBe(true);
+
+    expect(readMirror()).toBeNull();
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull();
+    expect(readCloudFile(cloud).meta.eraseEpoch).toBe(1);
+  });
+
+  it('an erase during a cloud outage mirrors the ERASED file, so the erase itself survives a tab close', async () => {
+    const cloud = new MemoryCloud();
+    const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    seeded.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    await seeded.flush();
+
+    const failing = await RoadmapStore.create(new TokenExpiredAdapter(cloud));
+    const result = await failing.deleteUserData();
+    expect(result.success).toBe(false);
+
+    const mirror = readMirror();
+    expect(mirror).not.toBeNull();
+    expect(mirror!.meta.eraseEpoch).toBe(1);
+    expect(mirror!.measurements).toEqual([]);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
+  });
+
+  it('a corrupt on-device mirror never bricks startup — create() continues on the cloud file', async () => {
+    // Independent-review finding 1: the recovery path must be as fault-tolerant
+    // as the mirror-write path. Marker kept so a schema-too-new mirror can be
+    // retried once assets update.
+    const cloud = new MemoryCloud();
+    const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    seeded.addMeasurement('ldl', 3.2, '2024-01-01T00:00:00.000Z');
+    await seeded.flush();
+
+    localStorage.setItem('health_roadmap_file_v2', '{not valid json');
+    localStorage.setItem(PENDING_MIRROR_KEY, '2026-08-14T00:00:00.000Z');
+
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(store.loadAllHistory()).toHaveLength(1);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
+
+    // A later successful save must NOT strand the skipped mirror: the marker
+    // survives so the next load (e.g. with updated assets) retries it.
+    store.addMeasurement('hdl', 1.3, '2024-03-01T00:00:00.000Z');
+    await store.flush();
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
+  });
+
+  it('without the pending marker, a stale on-device copy is NOT merged into a cloud session', async () => {
+    // A leftover local file (pre-connect residue) must not be re-lifted on every
+    // load — only a marker left by a failed cloud save opens the merge gate.
+    await new LocalStorageAdapter().write(ROADMAP_FILE_NAME, { stale: true }, null);
+
+    const cloud = new MemoryCloud();
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    await store.flush();
+
+    expect(readCloudFile(cloud).measurements).toHaveLength(1);
   });
 });
 

@@ -52,8 +52,10 @@ import {
   type ScreeningInputs,
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
-import { SyncManager, type DocumentSpec } from './sync-manager';
+import { SyncManager, type DocumentSpec, type SyncContext } from './sync-manager';
+import { LocalStorageAdapter } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
+import { safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 
 /** The primary record file's DocumentSpec — schema knowledge lives beside the
@@ -63,6 +65,14 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
   migrate: (raw, ctx) => migrateFile(raw as RoadmapFile | null, ctx),
   merge: (local, base, ctx) => mergeFiles(local, base, ctx),
 };
+
+/**
+ * Set while the on-device mirror may hold changes a cloud backend hasn't seen
+ * (US-09 AC4). Written when a cloud persist fails (the working copy is mirrored
+ * locally so a tab close can't lose it); cleared by the next successful cloud
+ * save, after create() has merged the mirror back in.
+ */
+export const PENDING_MIRROR_KEY = 'health_roadmap_pending_cloud_sync';
 
 // --- App-facing shapes (moved here from api.ts; the data ones come from health-core) ---
 
@@ -163,6 +173,10 @@ export class RoadmapStore {
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private persisting = false;
   private dirtyDuringPersist = false;
+  /** True when a pending mirror existed but could not be read/merged at
+   *  create() — persist success must then LEAVE the marker so the mirror is
+   *  retried next load (e.g. once updated assets can parse its newer schema). */
+  private mirrorSkipped = false;
   private readonly deviceId: string;
 
   private constructor(
@@ -179,8 +193,29 @@ export class RoadmapStore {
   static async create(adapter: StorageAdapter): Promise<RoadmapStore> {
     const deviceId = getDeviceId();
     const sync = new SyncManager(adapter, deviceId, ROADMAP_DOC);
-    const file = await sync.load();
-    return new RoadmapStore(sync, adapter, file, deviceId);
+    const store = new RoadmapStore(sync, adapter, await sync.load(), deviceId);
+    // A previous cloud session failed to save and mirrored its changes
+    // on-device (see persist()'s catch). Merge them in now and schedule a save
+    // to lift them up; the marker clears only once a cloud save succeeds.
+    if (adapter.id !== 'local' && safeGetItem(PENDING_MIRROR_KEY) != null) {
+      // Fault-tolerant like the mirror-WRITE side: a corrupt mirror (read
+      // throws) or one written by a newer bundle (migrate throws SchemaTooNew)
+      // must not brick the load — continue on the cloud file and KEEP the
+      // marker: a schema-too-new mirror becomes readable once assets update.
+      try {
+        const ctx: SyncContext = { deviceId, now: new Date().toISOString() };
+        const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+        if (body != null) {
+          store.file = ROADMAP_DOC.merge(store.file, ROADMAP_DOC.migrate(body, ctx), ctx);
+          store.touch();
+        } else {
+          safeRemoveItem(PENDING_MIRROR_KEY); // stale marker, nothing mirrored
+        }
+      } catch {
+        store.mirrorSkipped = true; // mirror unreadable — continue on the cloud file
+      }
+    }
+    return store;
   }
 
   get backendId() {
@@ -591,6 +626,15 @@ export class RoadmapStore {
     }
     try {
       await this.flush();
+      // The erase reached the cloud — wipe the on-device residue too (failure
+      // mirror + marker + named files/documents), so no pre-erase copy outlives
+      // the erase on this device (US-11). On a failed flush we keep the mirror
+      // instead: it now holds the ERASED file, whose bumped eraseEpoch wins the
+      // merge and carries the erase to the cloud next session.
+      if (this.adapter.id !== 'local') {
+        safeRemoveItem(PENDING_MIRROR_KEY);
+        await new LocalStorageAdapter().disconnect();
+      }
       return { success: true };
     } catch (e) {
       return { success: false, error: (e as Error).message };
@@ -710,15 +754,33 @@ export class RoadmapStore {
           now: new Date().toISOString(),
         });
       } while (this.dirtyDuringPersist);
+      // A skipped (unreadable) mirror holds data this save did NOT include —
+      // keep its marker so the next load retries it.
+      if (this.adapter.id !== 'local' && !this.mirrorSkipped) safeRemoveItem(PENDING_MIRROR_KEY);
       return true;
     } catch (error) {
-      // The background cloud save failed — the user's changes are still in
-      // memory (a later mutation reschedules), but this MUST be observable:
-      // unreported, it's silent data-at-risk. Most persist() call sites are
-      // fire-and-forget (`void this.persist()`), so without this catch it
-      // became an unhandled rejection that Sentry's noise filters dropped.
-      // Returning false (not rethrowing) keeps those sites from re-creating
-      // the unhandled rejection; awaited callers (flush) check the result.
+      // The background cloud save failed — this MUST be observable (unreported,
+      // it's silent data-at-risk), and the changes must NOT stay memory-only:
+      // mirror the working copy on-device so a tab close can't lose it, and
+      // leave the marker so the next cloud session merges it back up (US-09
+      // AC4; Sentry JAVASCRIPT-REMIX-3X — a mid-session token-refresh failure
+      // made every save throw while the UI still showed the connected state).
+      // Most persist() call sites are fire-and-forget (`void this.persist()`),
+      // so returning false (not rethrowing) keeps them from re-creating the
+      // unhandled rejection Sentry's noise filters dropped; awaited callers
+      // (flush) check the result.
+      if (this.adapter.id !== 'local') {
+        safeSetItem(PENDING_MIRROR_KEY, new Date().toISOString());
+        // Deliberately a merged SyncManager save, NOT writeSync: the local file
+        // may hold guest-era data this session never loaded (no marker set), and
+        // a plain overwrite would destroy its only copy. The merge preserves it —
+        // and lifts it up with the mirror on the next cloud session.
+        try {
+          await new SyncManager(new LocalStorageAdapter(), this.deviceId, ROADMAP_DOC).save(this.file);
+        } catch {
+          /* device storage unavailable — memory-only is the best we have */
+        }
+      }
       console.warn('Cloud sync failed', error);
       Sentry.captureException(error, {
         tags: { area: 'cloud-sync', op: 'persist', backend: this.adapter.id },
