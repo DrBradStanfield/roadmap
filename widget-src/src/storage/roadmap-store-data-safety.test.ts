@@ -566,6 +566,12 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     expect(store.loadAllHistory()).toHaveLength(1);
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
+
+    // A later successful save must NOT strand the skipped mirror: the marker
+    // survives so the next load (e.g. with updated assets) retries it.
+    store.addMeasurement('hdl', 1.3, '2024-03-01T00:00:00.000Z');
+    await store.flush();
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
   });
 
   it('without the pending marker, a stale on-device copy is NOT merged into a cloud session', async () => {

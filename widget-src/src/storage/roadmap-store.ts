@@ -173,6 +173,10 @@ export class RoadmapStore {
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   private persisting = false;
   private dirtyDuringPersist = false;
+  /** True when a pending mirror existed but could not be read/merged at
+   *  create() — persist success must then LEAVE the marker so the mirror is
+   *  retried next load (e.g. once updated assets can parse its newer schema). */
+  private mirrorSkipped = false;
   private readonly deviceId: string;
 
   private constructor(
@@ -208,7 +212,7 @@ export class RoadmapStore {
           safeRemoveItem(PENDING_MIRROR_KEY); // stale marker, nothing mirrored
         }
       } catch {
-        /* mirror unreadable — continue on the cloud file */
+        store.mirrorSkipped = true; // mirror unreadable — continue on the cloud file
       }
     }
     return store;
@@ -750,7 +754,9 @@ export class RoadmapStore {
           now: new Date().toISOString(),
         });
       } while (this.dirtyDuringPersist);
-      if (this.adapter.id !== 'local') safeRemoveItem(PENDING_MIRROR_KEY);
+      // A skipped (unreadable) mirror holds data this save did NOT include —
+      // keep its marker so the next load retries it.
+      if (this.adapter.id !== 'local' && !this.mirrorSkipped) safeRemoveItem(PENDING_MIRROR_KEY);
       return true;
     } catch (error) {
       // The background cloud save failed — this MUST be observable (unreported,
