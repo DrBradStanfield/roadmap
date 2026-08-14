@@ -1,6 +1,6 @@
 ---
-title: "Astronauts Lose Bone 10x Faster. NASA Found What Stops It."
-url: "https://drstanfield.com/blogs/articles/astronauts-lose-bone-10x-faster-nasa-found-what-stops-it"
+title: "NASA Found How To Stop Osteoporosis"
+url: "https://drstanfield.com/blogs/articles/nasa-found-how-to-stop-osteoporosis"
 commerceUrl: "https://microvitamin.com/blogs/articles/how-to-increase-bone-density"
 youtube: "https://youtu.be/bPviC3mFAxg"
 publishedAt: "2026-08-07T12:00:00Z"
