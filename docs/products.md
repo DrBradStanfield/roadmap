@@ -1,10 +1,10 @@
 # Products — Detailed Reference
 
-> **Current version: v8 (USA) / v7 (international).** Ingredient doses, forms, and claims throughout this file reflect **v8** — the version currently shipping to USA customers via microvitamin.com. International markets (UK, Canada, EU, AU) are still shipping **v7** until that inventory rolls over. When a v7 vs v8 difference matters for a customer answer, see the **Regional Formula Differences** section near the end of this file. Do not reference v9 formulas in customer-facing contexts — that version is internal/unreleased.
+> **Current version: v8 (USA) / v8.5 (Australia) / v7 (UK, Canada, EU).** Ingredient doses, forms, and claims throughout this file reflect **v8** — the version currently shipping to USA customers via microvitamin.com. **Australia has upgraded to v8.5** (2026-08 — the v8 ingredient set with most vitamin/mineral doses raised; see Regional Formula Differences). UK, Canada, and EU are still shipping **v7** until that inventory rolls over (those markets will move to v9). When a regional difference matters for a customer answer, see the **Regional Formula Differences** section near the end of this file. Do not reference v9 formulas in customer-facing contexts — that version is internal/unreleased.
 
 ## MicroVitamin Capsules
 
-Flagship product. $65 one-time / $58.50/mo subscription (USA v8 pricing — see the price-history FAQ below; international v7 still ships at $55 one-time / $49.50/mo until inventory rolls over). 150 capsules (5/day, 30 servings). 26 ingredients. Manufactured in five regions for local supply: USA (Makers Nutrition, GMP & FDA registered), Australia, Canada, the United Kingdom, and Germany — each at GMP-certified facilities. 384+ reviews, 4.88 average rating.
+Flagship product. $65 one-time / $58.50/mo subscription (USA v8 pricing — see the price-history FAQ below; UK/Canada/EU v7 still ships at $55 one-time / $49.50/mo until inventory rolls over; Australia ships v8.5 — see Regional Formula Differences). 150 capsules (5/day, 30 servings). 26 ingredients. Manufactured in five regions for local supply: USA (Makers Nutrition, GMP & FDA registered), Australia, Canada, the United Kingdom, and Germany — each at GMP-certified facilities. 384+ reviews, 4.88 average rating.
 
 Ingredient categories:
 - Cognition & Focus (COSMOS-aligned): Choline Bitartrate 181.5mg, Methylated B12 12mcg, Methylated Folate 200mcg DFE, full B-complex (B1 0.9mg, B2 0.975mg, Nicotinamide 16mg, B5 3.75mg, B6 1.275mg as P5P, Biotin 22.5mcg)
@@ -74,7 +74,7 @@ That's completely normal and a sign the formula contains the ingredients we list
 The smell is a normal characteristic of the active ingredients themselves, not a sign that anything is wrong. Our manufacturers have confirmed it comes from the combination of choline bitartrate, the B-vitamin complex, and vitamin D — these nutrients have their own natural odour, and when they're together in capsules at clinical doses, that smell is what you notice when you open the bottle. It does not indicate degradation or affect potency.
 
 **Why are some of my MicroVitamin capsules showing brown spots?**
-Brown spots on the capsules come from an earlier formula (v3 through v6, manufactured before the v7 transition). Those versions used cupric sulfate as the copper source, which over time interacted with other ingredients inside the capsule and produced visible brown spots. It's not dangerous and the capsules are still safe to take — it just doesn't look very nice. The current formulas (v7 international, v8 USA) use copper bisglycinate instead, which doesn't cause this.
+Brown spots on the capsules come from an earlier formula (v3 through v6, manufactured before the v7 transition). Those versions used cupric sulfate as the copper source, which over time interacted with other ingredients inside the capsule and produced visible brown spots. It's not dangerous and the capsules are still safe to take — it just doesn't look very nice. The current formulas (v7 UK/Canada/EU, v8 USA, v8.5 Australia) use copper bisglycinate instead, which doesn't cause this.
 
 **Did MicroVitamin fail ConsumerLab testing? Why did your product get "Not Approved"?**
 In early 2026, ConsumerLab.com tested MicroVitamin and marked it "Not Approved," finding higher-than-labeled amounts of vitamin D (48.4 mcg vs. labeled 25 mcg — 193.6%) and folate (404.5 mcg DFE vs. labeled 200 mcg DFE — 202.3%). This is a fair question and Dr Stanfield addressed it publicly and transparently with customers.
@@ -266,7 +266,7 @@ Use this guide to match a shopper's primary concern to the right product.
 
 ### Capsules vs Powder — how to decide
 
-- **Choose MicroVitamin Capsules if:** you want the core 26 ingredients (USA v8) / 25 ingredients (international v7), prefer swallowing capsules over mixing a drink, don't need collagen/creatine, or want the lower price point ($58.50/mo USA v8 subscription; $49.50/mo international v7 subscription until inventory rolls over)
+- **Choose MicroVitamin Capsules if:** you want the core 26 ingredients (USA v8 / Australia v8.5) / 25 ingredients (UK/Canada/EU v7), prefer swallowing capsules over mixing a drink, don't need collagen/creatine, or want the lower price point ($58.50/mo USA v8 subscription; $49.50/mo UK/Canada/EU v7 subscription until inventory rolls over)
 - **Choose MicroVitamin+ Powder if:** you want collagen for skin, creatine for muscle/brain, fiber for gut health, or want everything in one scoop. Best value — saves $89.01/mo vs buying separately. Available in Mixed Berry or Unflavored
 - **Do NOT take both** — the Powder already contains all 26 core capsule ingredients (USA v8) / 25 core ingredients (international v7). Taking both would double-dose
 
@@ -285,7 +285,7 @@ MicroVitamin is nutritional insurance, not a nootropic or stimulant. You may not
 MicroVitamin (USA v8) costs $58.50/mo subscription ($65 one-time) — saves $59.71/mo vs the 26 v8 ingredients bought separately ($118.21/mo). International markets still ship v7 at $49.50/mo until inventory rolls over. MicroVitamin+ Powder costs $90/mo subscription ($100 one-time) — saves $89.01/mo vs the 30 v8 ingredients bought separately ($179.01/mo). Sleep: $36/mo vs $38.09 separately. USA v8 prices are higher than v7 due to the v8 ingredient upgrades (clinical-dose carotenoids, encapsulated D3/K2): current US v8 = MicroVitamin $65/$58.50, MicroVitamin+ $100/$90; see the price-history FAQs in each product section for context. Free shipping is available when ordering 3+ bottles (78% of customers do this). For international customers: duties and shipping add cost, but the per-ingredient value comparison still holds.
 
 **"Why should I trust a supplement sold by a YouTuber?"**
-Dr Stanfield is a practicing medical doctor (GP/family medicine), not just a content creator. The formula is based on human randomized controlled trials — not influencer opinion. Every ingredient dose is disclosed on the label (unlike proprietary blends). The formula is updated when new evidence emerges (currently version 8 in the USA; international markets are still on v7 until inventory rolls over). MicroVitamin Capsules are manufactured at GMP-certified facilities in five regions for local supply (USA — Makers Nutrition, FDA-registered; Australia; Canada; UK; Germany); MicroVitamin+ Powder and Sleep are made in the USA only — all with third-party heavy-metal testing on every batch. 238 of 508 customer reviews specifically mention trust in the evidence-based approach as their reason for buying.
+Dr Stanfield is a practicing medical doctor (GP/family medicine), not just a content creator. The formula is based on human randomized controlled trials — not influencer opinion. Every ingredient dose is disclosed on the label (unlike proprietary blends). The formula is updated when new evidence emerges (currently version 8 in the USA and version 8.5 in Australia; UK/Canada/EU are still on v7 until inventory rolls over). MicroVitamin Capsules are manufactured at GMP-certified facilities in five regions for local supply (USA — Makers Nutrition, FDA-registered; Australia; Canada; UK; Germany); MicroVitamin+ Powder and Sleep are made in the USA only — all with third-party heavy-metal testing on every batch. 238 of 508 customer reviews specifically mention trust in the evidence-based approach as their reason for buying.
 
 **"5 capsules per day is too many"**
 Effective doses of Magnesium Taurate (126mg), Hyaluronic Acid (200mg), TMG (500mg), and Choline Bitartrate (181.5mg) physically require more volume than one pill. Competitors that fit everything into a single capsule underdose key ingredients to levels with no clinical effect. If swallowing 5 capsules is a dealbreaker, consider MicroVitamin+ Powder — one scoop with even more ingredients. Tips: take capsules with food spread across meals, or take all 5 at once with a large glass of water.
@@ -353,14 +353,14 @@ MicroVitamin addresses fatigue through nutrient gap correction, not stimulation:
 
 ## About Dr Brad Stanfield
 
-Dr Brad Stanfield is a General Practitioner (family medicine doctor) based in New Zealand. He runs a health YouTube channel at youtube.com/@DrBradStanfield with 320,000+ subscribers where he reviews clinical research on supplements and aging. The supplement formulas are based on human randomized controlled trials, with MicroVitamin Capsules manufactured at GMP-certified facilities in five regions for local supply (USA — Makers Nutrition, FDA-registered; Australia; Canada; UK; Germany) and MicroVitamin+ Powder and Sleep made in the USA only, all with third-party heavy-metal and purity testing on every batch. Formulas are updated as new evidence emerges (currently on version 8 of MicroVitamin in the USA; international markets are still shipping v7 until that inventory rolls over). Dr Stanfield sells supplements and discloses this openly — transparency and intellectual honesty are core values.
+Dr Brad Stanfield is a General Practitioner (family medicine doctor) based in New Zealand. He runs a health YouTube channel at youtube.com/@DrBradStanfield with 320,000+ subscribers where he reviews clinical research on supplements and aging. The supplement formulas are based on human randomized controlled trials, with MicroVitamin Capsules manufactured at GMP-certified facilities in five regions for local supply (USA — Makers Nutrition, FDA-registered; Australia; Canada; UK; Germany) and MicroVitamin+ Powder and Sleep made in the USA only, all with third-party heavy-metal and purity testing on every batch. Formulas are updated as new evidence emerges (currently on version 8 of MicroVitamin in the USA and version 8.5 in Australia; UK/Canada/EU are still shipping v7 until that inventory rolls over). Dr Stanfield sells supplements and discloses this openly — transparency and intellectual honesty are core values.
 
 ### What Brad takes personally
 
 When a user asks "what does Brad take?", "what meds is Brad on?", or "what supplements does Brad take?", use the list below. (Note: the old `/pages/my-supplements` page has been removed — do NOT link to it; it now 404s.)
 
 **Daily supplements (Brad takes them via 1 scoop of MicroVitamin+ Powder):**
-- All 26 core ingredients in MicroVitamin / MicroVitamin+: methylated B12 and folate, full B-complex, Vitamin K2 MK-7 90mcg, Vitamin D3 1,000IU, Magnesium Taurate 126mg, glycinate trace minerals, Lutein, Lycopene, Zeaxanthin, Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Vitamin C 45mg, Boron 1mg
+- All 26 core ingredients in MicroVitamin / MicroVitamin+: methylated B12 and folate, full B-complex, Vitamin K2 MK-7 90mcg, Vitamin D3 1,000IU, Magnesium Taurate 126mg, glycinate trace minerals, Lutein, Lycopene, Zeaxanthin, Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Vitamin C 45mg, Boron 1mg (USA v8 doses — Australia v8.5 raises several: see Regional Formula Differences)
 - Plus the powder additions: Collagen Peptides 12.5g, Creatine Monohydrate 5g, Psyllium Husk 2.5g, Taurine 1g
 - **Omega-3 (DHA/EPA) 1g daily** — see the Omega-3 section earlier in this file for the brand Brad takes and the link.
 - **Sleep by Dr Brad** at night — Melatonin 300mcg, Magnesium Bisglycinate 126mg, Glycine 2,500mg.
@@ -421,9 +421,9 @@ When a user asks "what does Brad take?", "what meds is Brad on?", or "what suppl
 
 ---
 
-## Regional Formula Differences (v8 USA vs v7 International)
+## Regional Formula Differences (v8 USA vs v8.5 Australia vs v7 International)
 
-MicroVitamin v8 is currently shipping in the **USA only**. International markets (UK, Canada, EU, AU) continue to ship **v7** until that inventory rolls over. When answering customer questions, use this table to give region-correct doses. The v7 formula is still safe and evidence-based — v8 is an iterative upgrade focused on (a) encapsulated forms for better stability and (b) clinically meaningful eye-carotenoid doses.
+Three versions are currently shipping: **v8 in the USA**, **v8.5 in Australia** (from 2026-08), and **v7 in the UK, Canada, and EU** until that inventory rolls over (those markets move to v9 next). When answering customer questions, use these tables to give region-correct doses. The v7 formula is still safe and evidence-based — v8 is an iterative upgrade focused on (a) encapsulated forms for better stability and (b) clinically meaningful eye-carotenoid doses; v8.5 keeps the v8 ingredient set and raises most vitamin and mineral doses (percentages of "recommended intake" differ between US Daily Values and AU NHMRC RDIs — quote the absolute dose, not a percentage, in customer answers).
 
 | Ingredient | v7 (international) | v8 (USA) | Notes |
 |---|---|---|---|
@@ -440,22 +440,46 @@ MicroVitamin v8 is currently shipping in the **USA only**. International markets
 | Peppermint Leaf Extract | 50 mg | — (removed) | Removed; not load-bearing for the formula |
 | L-Leucine (flow agent) | — | Added | Manufacturing-only — not a bioactive ingredient |
 
-**Ingredient counts:** v7 = 25 listed ingredients (capsules) / 29 (powder). v8 = 26 listed ingredients (capsules) / 30 (powder). The +1 is Zeaxanthin.
+**Ingredient counts:** v7 = 25 listed ingredients (capsules) / 29 (powder). v8 = 26 listed ingredients (capsules) / 30 (powder). The +1 is Zeaxanthin. v8.5 (AU) = 26 (same set as v8; TMG appears under "other ingredients" on the AU label rather than the actives panel).
 
 **What stayed the same in v8:** Choline Bitartrate 181.5mg, TMG 500mg, Hyaluronic Acid 200mg, Magnesium Taurate 126mg, Methylated Folate 200mcg DFE, Methylated B12 12mcg, B1/B2/B5/B6/Biotin (75% RDA), Selenium 27.5mcg glycinate, Manganese 1.15mg glycinate, Chromium 17.5mcg glycinate, Boron 1mg glycinate, Potassium 99mg.
 
-**For powder:** the 4 Plus additions (Collagen 12.5g, Creatine 5g, Psyllium 2.5g, Taurine 1g) are unchanged between v7 and v8.
+### v8.5 (Australia only, from 2026-08) — differences vs v8 USA
 
-If a USA customer asks about a dose, use the v8 column. If an international customer asks (or you don't know their region), default to giving the v7 dose with a note that v8 is rolling out in the USA first. v9 (in development) is internal-only — never reference v9 to customers.
+Source of truth: BJP Laboratories product spec PC2921.00 (signed 2026-02-03); all doses per daily serving (5 capsules). v8.5 keeps the full v8 ingredient set (26 ingredients, including Lutein 10mg + Zeaxanthin 2mg from Lutemax® 2020, Lycopene 10mg from LycoBeads®, encapsulated AlgeD3™ D3 1,000IU and K2VITAL® MK-7 90mcg) and raises most vitamin and mineral doses:
+
+| Ingredient | v8 (USA) | v8.5 (Australia) | Notes |
+|---|---|---|---|
+| B1 Thiamine | 0.9 mg | **1.2 mg** | Raised (as thiamine hydrochloride) |
+| B2 Riboflavin | 0.975 mg | **1.3 mg** | Raised |
+| B5 Pantothenic Acid | 3.75 mg | **5 mg** | Raised |
+| B6 (P5P) | 1.275 mg | **1.7 mg** | Raised; still pyridoxal-5-phosphate |
+| Biotin | 22.5 mcg | **30 mcg** | Raised |
+| Folate | 200 mcg DFE (≈118 mcg levomefolate mass) | **400 mcg levomefolic acid by mass** (≈680 mcg DFE) | ≈3.4× increase — don't call it a doubling; still methylated (Quatrefolic® levomefolate glucosamine) |
+| Vitamin C | 45 mg | **90 mg** | Doubled; still calcium ascorbate |
+| Magnesium | 126 mg elemental | **260 mg elemental** | Still magnesium taurate — roughly double the US dose |
+| Boron | 1 mg glycinate | **3 mg** (as borax) | Dose and form change |
+| Chromium | 17.5 mcg glycinate | **35 mcg** (picolinate) | Dose and form change |
+| Selenium | 27.5 mcg glycinate | **55 mcg** (selenomethionine) | Dose and form change |
+| Iodine | 75 mcg | **150 mcg** | Doubled (potassium iodide); 150 mcg = 100% AU RDI |
+| Manganese | 1.15 mg | **2.3 mg** | Still glycinate |
+| TMG | 500 mg betaine anhydrous (listed active) | **500 mg betaine hydrochloride** (label "other ingredient") | Regulatory placement: TGA listing carries betaine HCl as an excipient with no label claim — never attach a therapeutic claim to TMG in AU-facing copy |
+| Capsule | White TiO2-free | **Dark green HPMC** (chlorophyllin-coloured) | Customers may notice the colour difference vs US bottles |
+
+Unchanged from v8: Choline 181.5mg, Hyaluronic Acid 200mg (sodium hyaluronate), Nicotinamide 16mg, B12 12mcg (mecobalamin), D3 1,000IU, K2 90mcg, Zinc 11mg glycinate, Copper 0.9mg glycinate, Potassium 99mg, Lutein 10mg + Zeaxanthin 2mg, Lycopene 10mg. Made in Australia by BJP Laboratories (TGA-licensed); 24-month shelf life. The v8.5 AUST L number was TBA at spec signing — confirm from the printed label before using it in creative (the v7 number L 509250 does not carry over).
+
+**For powder:** the 4 Plus additions (Collagen 12.5g, Creatine 5g, Psyllium 2.5g, Taurine 1g) are unchanged between v7 and v8. There is no v8.5 powder — the powder is USA-only.
+
+If a USA customer asks about a dose, use the v8 column. If an Australian customer asks, use the v8.5 column. If a UK/Canada/EU customer asks (or you don't know their region), default to giving the v7 dose with a note that upgraded formulas are rolling out region by region. v9 (in development) is internal-only — never reference v9 to customers.
 
 ---
 
 ## Regulated Label Marks by Market
 
-The physical/regulated marks that must appear correctly on MicroVitamin Capsules packaging and any creative that shows the bottle label (ads, listing photography, packshots). This is the single source of truth — other docs should point here rather than restating the list. For the underlying v7 (international) vs v8 (USA), 25 vs 26 ingredients distinction, see **Regional Formula Differences** above; do not duplicate that table here.
+The physical/regulated marks that must appear correctly on MicroVitamin Capsules packaging and any creative that shows the bottle label (ads, listing photography, packshots). This is the single source of truth — other docs should point here rather than restating the list. For the underlying v7 (UK/CA/EU) vs v8 (USA) vs v8.5 (Australia) distinction, see **Regional Formula Differences** above; do not duplicate that table here.
 
-**Australia** (MicroVitamin Capsules, AU market, v7 formula):
-- **`AUST: L 509250`** — the TGA (Therapeutic Goods Administration) listing number. Must appear on the label and in any creative showing the label. An earlier bottle version carried the now-superseded `AUST L 477345` — if that number ever appears in creative or copy, it is stale and must be swapped for `L 509250`.
+**Australia** (MicroVitamin Capsules, AU market, **v8.5 formula** from 2026-08):
+- **AUST L number** — the TGA (Therapeutic Goods Administration) listing number. Must appear on the label and in any creative showing the label. v8.5 has its own AUST L (TBA on the signed spec — read it off the printed v8.5 label before approving creative). The v7 stock carried `AUST L 509250`; an even earlier bottle carried `AUST L 477345`. Neither older number may appear on v8.5 creative.
 - **Australian Made roundel** — the kangaroo/triangle logo denoting local manufacture. Must be present and legible on the label.
 
 **United Kingdom** (MicroVitamin Capsules, UK market, v7 formula):
@@ -477,7 +501,7 @@ Complete version history for MicroVitamin Capsules and MicroVitamin+ Powder, cro
 
 ### Complete Formula Table — Capsules (USA)
 
-All doses per daily serving. Dash (—) = not present in that version.
+All doses per daily serving. Dash (—) = not present in that version. (The Australia-only v8.5 is not a column here — see the Version 8.5 changelog entry below and Regional Formula Differences above.)
 
 #### Vitamins
 
@@ -620,6 +644,21 @@ Initial formula. Tablets, serving size TBD (moved to 5/serving at v3).
 - **Removed** Peppermint extract
 - **Added** L-Leucine as flow agent
 - Formula file: `multivitamin/formulas/14 formula v8.xlsx`
+
+#### Version 8.5 (Australia only — shipping from 2026-08)
+
+Australia-specific release manufactured by BJP Laboratories (Yatala, QLD; TGA-licensed). Keeps the full v8 ingredient set (26 ingredients) and adopts most of the v9 dose increases early, while staying on v8-era choline and potassium:
+
+- **Increased** B1 to 1.2 mg, B2 to 1.3 mg, B5 to 5 mg, B6 (P5P) to 1.7 mg, Biotin to 30 mcg
+- **Increased** Folate from 200 mcg DFE (≈118 mcg levomefolate mass) to 400 mcg levomefolic acid by mass (≈680 mcg DFE) — Quatrefolic® levomefolate glucosamine
+- **Increased** Vitamin C from 45 to 90 mg (calcium ascorbate)
+- **Increased** Magnesium from 126 to 260 mg elemental (magnesium taurate)
+- **Increased** Iodine from 75 to 150 mcg, Manganese from 1.15 to 2.3 mg
+- **Increased + form change** Boron 1 mg glycinate → 3 mg (borax); Chromium 17.5 mcg glycinate → 35 mcg (picolinate); Selenium 27.5 mcg glycinate → 55 mcg (selenomethionine)
+- **TMG** 500 mg as betaine **hydrochloride**, formally an excipient on the AU listing (no label claim) — the US v8 lists 500 mg betaine anhydrous as an active
+- **Kept** (unlike v9): Choline bitartrate 181.5 mg choline, Potassium 99 mg
+- Dark green HPMC capsules (chlorophyllin), size 00; 24-month shelf life
+- Spec file: `multivitamin/Manufacturing Australia/BJP laboratories/1 4th Nov 2025 v8.5/PC2921.00 - MicroVitamin v8.5.pdf`; formula file: `multivitamin/formulas/15 formula v8.5 AUS.xlsx`
 
 #### Version 9 (not yet on public changelog)
 
