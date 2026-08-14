@@ -30,7 +30,7 @@ import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import { SyncControl, RemindersSection } from './sync-control';
 import { HistoryLightboxHost } from './history-lightbox';
-import { migrateLocalInto, BACKEND_KEY, type Backend } from './connect';
+import { liftLocalInto, BACKEND_KEY, type Backend } from './connect';
 import { trackProductEvent } from '../src/lib/api';
 
 interface ResolvedBackend {
@@ -52,7 +52,7 @@ async function resolveBackend(): Promise<ResolvedBackend> {
     Sentry.captureException(error, { tags: { area: 'cloud-connect', backend: 'dropbox' } });
   }
   if (resumed) {
-    await migrateLocalInto(resumed);
+    await liftLocalInto(resumed, 'dropbox');
     localStorage.setItem(BACKEND_KEY, 'dropbox');
     trackProductEvent('cloud_connect_success', { provider: 'dropbox' });
     return { adapter: resumed, backend: 'dropbox' };
@@ -68,7 +68,7 @@ async function resolveBackend(): Promise<ResolvedBackend> {
     Sentry.captureException(error, { tags: { area: 'cloud-connect', backend: 'google-drive' } });
   }
   if (gdResumed) {
-    await migrateLocalInto(gdResumed);
+    await liftLocalInto(gdResumed, 'google-drive');
     localStorage.setItem(BACKEND_KEY, 'google-drive');
     trackProductEvent('cloud_connect_success', { provider: 'google-drive' });
     return { adapter: gdResumed, backend: 'google-drive' };

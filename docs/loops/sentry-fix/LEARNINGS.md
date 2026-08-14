@@ -52,12 +52,14 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   in cross-origin form: an edge 5xx without CORS headers surfaces as an
   immediate fetch REJECTION, not a status code.
 - `[defect][widget]` 2026-08-14 — `standalone/connect.ts` migrateLocalInto /
-  copyDownToDevice are type-broken and silently no-op (read() without
+  copyDownToDevice were type-broken and silently no-oped (read() without
   fileName; `{file}` destructured from `{body,version}`; SyncManager missing
-  its DocumentSpec). US-09 AC3 dead in source; UNCLAIMED — no Sentry signal
-  (silence is the symptom). Root enabler: NO typecheck gate in CI and
-  widget-src/tsconfig includes only `src/`, so `standalone/` is checked by
-  nothing.
+  its DocumentSpec). US-09 AC3 dead in source, no Sentry signal — silence was
+  the symptom. FIXED same day on Brad's live authorization (failing tests
+  first, `connect-migrate.test.ts`); widget-src/tsconfig now includes
+  `standalone/` so tsc sees the directory (13 pre-existing errors surfaced —
+  burn-down list). Root enabler still open: no typecheck gate in CI
+  (workflow edits are Brad-only — proposed).
 - `[gotcha][process]` 2026-08-14 — Fresh cloud containers start on a detached
   HEAD at origin/main's tip while the local `main` REF lags: diff/typecheck
   comparisons against `main` silently use stale code. `git checkout -B main

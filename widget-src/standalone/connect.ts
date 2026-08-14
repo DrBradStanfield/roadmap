@@ -6,15 +6,14 @@
  * two modules.
  */
 import { useState } from 'react';
-import { migrateFile } from '@roadmap/health-core';
 import {
   DropboxAdapter,
   GoogleDriveAdapter,
   GitHubAdapter,
   WebDavAdapter,
   LocalStorageAdapter,
-  SyncManager,
-  getDeviceId,
+  ROADMAP_FILE_NAME,
+  saveRoadmapFileInto,
   type StorageAdapter,
 } from '../src/storage';
 import { dropboxConfig } from './dropbox-config';
@@ -37,15 +36,42 @@ export const PROVIDER_LABELS: Record<Exclude<Backend, 'local'>, string> = {
   'self-host': 'your own server',
 };
 
-/** Lift existing on-device data into a freshly-connected cloud (first connect). */
+/**
+ * Lift existing on-device data into a freshly-connected cloud (first connect).
+ * A corrupt local file is skipped (unrecoverable anyway — never blocks the
+ * connect); a CLOUD save failure propagates. App code calls the policy wrapper
+ * `liftLocalInto` below; this throwing core stays exported for tests.
+ */
 export async function migrateLocalInto(adapter: StorageAdapter): Promise<void> {
-  const { file } = await new LocalStorageAdapter().read();
-  if (!file) return;
-  const deviceId = getDeviceId();
-  // SyncManager.save merges the local file with whatever is already in the cloud.
-  await new SyncManager(adapter, deviceId).save(
-    migrateFile(file, { deviceId, now: new Date().toISOString() }),
-  );
+  let body: unknown;
+  try {
+    ({ body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME));
+  } catch (error) {
+    console.warn('On-device data unreadable — connecting without the lift', error);
+    return;
+  }
+  if (body == null) return;
+  // saveRoadmapFileInto merges with whatever is already in the cloud.
+  await saveRoadmapFileInto(adapter, body);
+}
+
+/**
+ * The ONE lift policy, applied by every connect flow (OAuth return, form
+ * connect, Drive reconnect): a connect succeeds or fails on the connect
+ * itself — the guest-data lift never blocks it and never mislabels it as
+ * "connection failed". A failed lift MUST still be observable (a silent lift
+ * failure is exactly how the US-09 AC3 no-op shipped): Sentry + console. The
+ * on-device copy stays put — nothing is destroyed — but remains device-only,
+ * invisible to the cloud session, until a LATER connect or backend switch
+ * re-runs the lift (the remembered-choice resume path never lifts).
+ */
+export async function liftLocalInto(adapter: StorageAdapter, backend: Backend): Promise<void> {
+  try {
+    await migrateLocalInto(adapter);
+  } catch (error) {
+    console.warn('Guest-data lift on connect failed', error);
+    Sentry.captureException(error, { tags: { area: 'cloud-connect', op: 'migrate-up', backend } });
+  }
 }
 
 /**
@@ -57,7 +83,7 @@ export async function migrateLocalInto(adapter: StorageAdapter): Promise<void> {
  */
 export async function finishFormConnect(adapter: StorageAdapter, backend: Backend): Promise<void> {
   await adapter.connect();
-  await migrateLocalInto(adapter);
+  await liftLocalInto(adapter, backend);
   localStorage.setItem(BACKEND_KEY, backend);
   trackProductEvent('cloud_connect_success', { provider: backend === 'self-host' ? 'webdav' : backend });
   location.reload();
@@ -145,10 +171,16 @@ export async function copyDownToDevice(backend: Backend): Promise<void> {
   const adapter = adapterFor(backend);
   if (!adapter) return;
   try {
-    const { file } = await adapter.read();
-    if (file) await new SyncManager(new LocalStorageAdapter(), getDeviceId()).save(file);
+    await copyDownFrom(adapter);
   } catch (error) {
     console.warn('Copy-down before switch failed', error);
     Sentry.captureException(error, { tags: { area: 'cloud-sync', op: 'copy-down', backend } });
   }
+}
+
+/** The adapter-level copy-down (exported for tests; policy/catch stays above). */
+export async function copyDownFrom(adapter: StorageAdapter): Promise<void> {
+  const { body } = await adapter.read(ROADMAP_FILE_NAME);
+  if (body == null) return;
+  await saveRoadmapFileInto(new LocalStorageAdapter(), body);
 }
