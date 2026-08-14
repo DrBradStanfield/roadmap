@@ -4,7 +4,7 @@
 
 ## MicroVitamin Capsules
 
-Flagship product. $65 one-time / $58.50/mo subscription (USA v8 pricing — see the price-history FAQ below; UK/Canada/EU v7 still ships at $55 one-time / $49.50/mo until inventory rolls over; Australia ships v8.5 — see Regional Formula Differences). 150 capsules (5/day, 30 servings). 26 ingredients. Manufactured in five regions for local supply: USA (Makers Nutrition, GMP & FDA registered), Australia, Canada, the United Kingdom, and Germany — each at GMP-certified facilities. 384+ reviews, 4.88 average rating.
+Flagship product. $65 one-time / $58.50/mo subscription (USA v8 pricing — see the price-history FAQ below; UK/Canada/EU v7 still ships at $55 one-time / $49.50/mo until inventory rolls over; Australia ships v8.5 at $75 AUD one-time / $67.50 AUD subscription — see Regional Formula Differences). 150 capsules (5/day, 30 servings). 26 ingredients. Manufactured in five regions for local supply: USA (Makers Nutrition, GMP & FDA registered), Australia, Canada, the United Kingdom, and Germany — each at GMP-certified facilities. 384+ reviews, 4.88 average rating.
 
 Ingredient categories:
 - Cognition & Focus (COSMOS-aligned): Choline Bitartrate 181.5mg, Methylated B12 12mcg, Methylated Folate 200mcg DFE, full B-complex (B1 0.9mg, B2 0.975mg, Nicotinamide 16mg, B5 3.75mg, B6 1.275mg as P5P, Biotin 22.5mcg)
@@ -466,7 +466,7 @@ Source of truth: BJP Laboratories product spec PC2921.00 (signed 2026-02-03); al
 | TMG | 500 mg betaine anhydrous (listed active) | **500 mg betaine hydrochloride** (label "other ingredient") | Regulatory placement: TGA listing carries betaine HCl as an excipient with no label claim — never attach a therapeutic claim to TMG in AU-facing copy |
 | Capsule | White TiO2-free | **Dark green HPMC** (chlorophyllin-coloured) | Customers may notice the colour difference vs US bottles |
 
-Unchanged from v8: Choline 181.5mg, Hyaluronic Acid 200mg (sodium hyaluronate), Nicotinamide 16mg, B12 12mcg (mecobalamin), D3 1,000IU, K2 90mcg, Zinc 11mg glycinate, Copper 0.9mg glycinate, Potassium 99mg, Lutein 10mg + Zeaxanthin 2mg, Lycopene 10mg. Made in Australia by BJP Laboratories (TGA-licensed); 24-month shelf life. The v8.5 AUST L number was TBA at spec signing — confirm from the printed label before using it in creative (the v7 number L 509250 does not carry over).
+Unchanged from v8: Choline 181.5mg, Hyaluronic Acid 200mg (sodium hyaluronate), Nicotinamide 16mg, B12 12mcg (mecobalamin), D3 1,000IU, K2 90mcg, Zinc 11mg glycinate, Copper 0.9mg glycinate, Potassium 99mg, Lutein 10mg + Zeaxanthin 2mg, Lycopene 10mg. Made in Australia by BJP Laboratories (TGA-licensed); 24-month shelf life. v8.5 carries **AUST L 524572** on the label (the v7 number L 509250 does not carry over). AU pricing is unchanged with v8.5: **$75 AUD one-time / $67.50 AUD on subscription**.
 
 **For powder:** the 4 Plus additions (Collagen 12.5g, Creatine 5g, Psyllium 2.5g, Taurine 1g) are unchanged between v7 and v8. There is no v8.5 powder — the powder is USA-only.
 
@@ -479,7 +479,7 @@ If a USA customer asks about a dose, use the v8 column. If an Australian custome
 The physical/regulated marks that must appear correctly on MicroVitamin Capsules packaging and any creative that shows the bottle label (ads, listing photography, packshots). This is the single source of truth — other docs should point here rather than restating the list. For the underlying v7 (UK/CA/EU) vs v8 (USA) vs v8.5 (Australia) distinction, see **Regional Formula Differences** above; do not duplicate that table here.
 
 **Australia** (MicroVitamin Capsules, AU market, **v8.5 formula** from 2026-08):
-- **AUST L number** — the TGA (Therapeutic Goods Administration) listing number. Must appear on the label and in any creative showing the label. v8.5 has its own AUST L (TBA on the signed spec — read it off the printed v8.5 label before approving creative). The v7 stock carried `AUST L 509250`; an even earlier bottle carried `AUST L 477345`. Neither older number may appear on v8.5 creative.
+- **`AUST L 524572`** — the TGA (Therapeutic Goods Administration) listing number for v8.5. Must appear on the label and in any creative showing the label. The v7 stock carried `AUST L 509250`; an even earlier bottle carried `AUST L 477345`. Neither older number may appear on v8.5 creative.
 - **Australian Made roundel** — the kangaroo/triangle logo denoting local manufacture. Must be present and legible on the label.
 
 **United Kingdom** (MicroVitamin Capsules, UK market, v7 formula):
