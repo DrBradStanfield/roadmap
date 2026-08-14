@@ -799,6 +799,18 @@ async function sha256Blob(blob: Blob): Promise<string> {
   return `sha256-${hex}`;
 }
 
+/**
+ * Merge a raw roadmap-file body into `target` (migrate + read-merge-write).
+ * The one cross-adapter transfer primitive: the connect-time lift-up and the
+ * pre-switch copy-down (standalone/connect.ts) both delegate here, so
+ * DocumentSpec/SyncManager knowledge stays in this schema-owning module.
+ */
+export async function saveRoadmapFileInto(target: StorageAdapter, body: unknown): Promise<void> {
+  const deviceId = getDeviceId();
+  const ctx = { deviceId, now: new Date().toISOString() };
+  await new SyncManager(target, deviceId, ROADMAP_DOC).save(ROADMAP_DOC.migrate(body, ctx));
+}
+
 function toApiDocument(d: FileDocument): ApiDocument {
   return {
     id: d.id,

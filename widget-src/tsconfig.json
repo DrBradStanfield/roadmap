@@ -20,5 +20,5 @@
       "@roadmap/health-core/*": ["../packages/health-core/src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "standalone"]
 }
