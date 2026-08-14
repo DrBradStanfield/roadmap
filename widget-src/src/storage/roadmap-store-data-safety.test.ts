@@ -551,6 +551,23 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
   });
 
+  it('a corrupt on-device mirror never bricks startup — create() continues on the cloud file', async () => {
+    // Independent-review finding 1: the recovery path must be as fault-tolerant
+    // as the mirror-write path. Marker kept so a schema-too-new mirror can be
+    // retried once assets update.
+    const cloud = new MemoryCloud();
+    const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    seeded.addMeasurement('ldl', 3.2, '2024-01-01T00:00:00.000Z');
+    await seeded.flush();
+
+    localStorage.setItem('health_roadmap_file_v2', '{not valid json');
+    localStorage.setItem(PENDING_MIRROR_KEY, '2026-08-14T00:00:00.000Z');
+
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(store.loadAllHistory()).toHaveLength(1);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
+  });
+
   it('without the pending marker, a stale on-device copy is NOT merged into a cloud session', async () => {
     // A leftover local file (pre-connect residue) must not be re-lifted on every
     // load — only a marker left by a failed cloud save opens the merge gate.

@@ -194,13 +194,21 @@ export class RoadmapStore {
     // on-device (see persist()'s catch). Merge them in now and schedule a save
     // to lift them up; the marker clears only once a cloud save succeeds.
     if (adapter.id !== 'local' && safeGetItem(PENDING_MIRROR_KEY) != null) {
-      const ctx: SyncContext = { deviceId, now: new Date().toISOString() };
-      const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
-      if (body != null) {
-        store.file = ROADMAP_DOC.merge(store.file, ROADMAP_DOC.migrate(body, ctx), ctx);
-        store.touch();
-      } else {
-        safeRemoveItem(PENDING_MIRROR_KEY); // stale marker, nothing mirrored
+      // Fault-tolerant like the mirror-WRITE side: a corrupt mirror (read
+      // throws) or one written by a newer bundle (migrate throws SchemaTooNew)
+      // must not brick the load — continue on the cloud file and KEEP the
+      // marker: a schema-too-new mirror becomes readable once assets update.
+      try {
+        const ctx: SyncContext = { deviceId, now: new Date().toISOString() };
+        const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+        if (body != null) {
+          store.file = ROADMAP_DOC.merge(store.file, ROADMAP_DOC.migrate(body, ctx), ctx);
+          store.touch();
+        } else {
+          safeRemoveItem(PENDING_MIRROR_KEY); // stale marker, nothing mirrored
+        }
+      } catch {
+        /* mirror unreadable — continue on the cloud file */
       }
     }
     return store;
