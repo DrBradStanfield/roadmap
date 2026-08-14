@@ -5165,6 +5165,7 @@ input[type="number"] {
   --bt-ink-400: #7b858e;
   --bt-ink-500: #5b6670;
   --bt-ink-700: #2b3036;
+  --bt-warn: #c58b2a;
   border-top: 1px solid var(--bt-ink-100);
   /* Keep this inset FIXED (non-responsive): `.alr-matrix`'s -16px margin
      cancels it exactly so group matrices align with the core matrix. */
@@ -5221,6 +5222,7 @@ input[type="number"] {
 }
 .alr-group-icon--kidney  { color: #e11d48; background: #fff1f2; }
 .alr-group-icon--liver   { color: #b45309; background: #fffbeb; }
+.alr-group-icon--droplet { color: #dc2626; background: #fef2f2; }
 .alr-group-icon--thyroid { color: #7c3aed; background: #f5f3ff; }
 .alr-group-icon--hormones{ color: #db2777; background: #fdf2f8; }
 .alr-group-icon--vitamins{ color: #059669; background: #ecfdf5; }
@@ -5277,6 +5279,94 @@ input[type="number"] {
   font-weight: 500;
   color: var(--bt-ink-400);
   margin-left: 3px;
+}
+
+/* "+ Add a blood test" (US-21 phase 2) — collapsed button + inline form. */
+.alr-add-btn {
+  display: block;
+  margin: 8px 0 2px;
+  padding: 8px 12px;
+  min-height: 40px;
+  background: none;
+  border: 1px dashed var(--bt-ink-200);
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--bt-ink-500);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.alr-add-btn:hover {
+  background: var(--bt-ink-50);
+  color: var(--bt-ink-700);
+}
+
+.alr-add-form {
+  margin: 8px 0 2px;
+  padding: 10px;
+  border: 1px solid var(--bt-ink-100);
+  border-radius: 10px;
+  background: var(--bt-ink-50);
+}
+.alr-add-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.alr-add-select,
+.alr-add-input {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--bt-ink-700);
+  background: #fff;
+  border: 1px solid var(--bt-ink-200);
+  border-radius: var(--control-radius, 8px);
+  padding: 6px 8px;
+  min-height: 36px;
+  box-sizing: border-box;
+}
+.alr-add-select { max-width: 100%; }
+/* WebKit ~280px input min-content trap: cap the numeric/unit inputs hard. */
+.alr-add-value, .alr-add-unit { width: 84px; }
+.alr-add-name  { width: 150px; }
+.alr-add-date  { width: 140px; }
+
+.alr-add-notice {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--bt-warn);
+}
+
+.alr-add-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.alr-add-save,
+.alr-add-cancel {
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 7px 14px;
+  min-height: 36px;
+  cursor: pointer;
+}
+.alr-add-save {
+  background: var(--bt-ink-700);
+  color: #fff;
+  border: 1px solid var(--bt-ink-700);
+}
+.alr-add-save:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.alr-add-cancel {
+  background: none;
+  border: 1px solid var(--bt-ink-200);
+  color: var(--bt-ink-500);
 }
 
 /* ============================================================================

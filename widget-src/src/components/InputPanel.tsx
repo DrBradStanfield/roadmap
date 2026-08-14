@@ -122,6 +122,8 @@ interface InputPanelProps {
   /** Stored additional lab values (beyond the core 8) — read-only surfacing
    *  beneath the matrix (US-21 phase 1). */
   labValues: ApiLabValue[];
+  /** US-21 phase 2: present = manual add enabled; called after a saved add. */
+  onLabValueAdded?: () => void;
   onSaveBloodTestBatch: (date: string, values: Record<string, number>) => Promise<void>;
   // Click-to-correct handler for saved cells in the BloodTestTimeline matrix.
   onCorrectBloodTestValue?: CorrectFn;
@@ -180,7 +182,7 @@ function useAutoAdvance(): (opts: { ambiguous: boolean; advance: () => void }) =
 export function InputPanel({
   inputs, onChange, errors, unitSystem, onUnitSystemChange,
   unitOverrides, onToggleFieldUnit,
-  isLoggedIn, previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onSaveBloodTestBatch,
+  isLoggedIn, previousMeasurements, bloodTestHistory, vitalsHistory, labValues, onLabValueAdded, onSaveBloodTestBatch,
   onCorrectBloodTestValue,
   medications, onMedicationChange,
   screenings, onScreeningChange,
@@ -2381,7 +2383,7 @@ export function InputPanel({
       {formStage >= 3 && (
         <div className="section-card section-card--bt stage-reveal">
           {renderBloodTests()}
-          <AdditionalLabRows labValues={labValues}/>
+          <AdditionalLabRows labValues={labValues} onAdded={onLabValueAdded}/>
         </div>
       )}
 

@@ -6,6 +6,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { groupLabValues, countLabValuePoints, labGroupMatrix, type LabRowsIcon, type LabValueGroup } from '../lib/lab-rows';
+import { AddLabTest } from './AddLabTest';
 import { UnitChip } from './UnitChip';
 import { BatchDateCell } from './BloodTestTimeline';
 import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
@@ -30,6 +31,15 @@ function GroupIcon({ icon }: { icon: LabRowsIcon }) {
       return (
         <svg {...common}>
           <path d="M2 8.5c0-3 2.6-5.5 6.2-5.5 3.6 0 5.8 2.2 5.8 4.6 0 2.8-2.3 4.9-6 4.9-1.4 0-2.2.6-3.4.6C2.9 13.1 2 11.2 2 8.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+        </svg>
+      );
+    case 'droplet':
+      // Two blood cells (the 'hormones' icon is already a droplet).
+      return (
+        <svg {...common}>
+          <circle cx="5.6" cy="6.1" r="2.9" stroke="currentColor" strokeWidth="1.2"/>
+          <circle cx="10.6" cy="10" r="2.9" stroke="currentColor" strokeWidth="1.2"/>
+          <path d="M4.3 6.1a1.3 1.3 0 0 1 1.3-1.3" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
         </svg>
       );
     case 'thyroid':
@@ -142,7 +152,7 @@ function LabGroupSection({ group, expanded, onToggle }: { group: LabValueGroup; 
   );
 }
 
-export function AdditionalLabRows({ labValues }: { labValues: ApiLabValue[] }) {
+export function AdditionalLabRows({ labValues, onAdded }: { labValues: ApiLabValue[]; onAdded?: () => void }) {
   const groups = useMemo(() => groupLabValues(labValues), [labValues]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -151,7 +161,10 @@ export function AdditionalLabRows({ labValues }: { labValues: ApiLabValue[] }) {
     if (totalCount > 0) trackProductEvent('lab_rows_viewed', { count: totalCount });
   }, [totalCount]);
 
-  if (groups.length === 0) return null;
+  // With no data AND no add affordance there is nothing to show. When adding
+  // is available (US-21 phase 2) the section renders so a user can record
+  // their first test without uploading a report.
+  if (groups.length === 0 && !onAdded) return null;
 
   const toggle = (id: string) => {
     setExpandedIds(prev => {
@@ -167,6 +180,7 @@ export function AdditionalLabRows({ labValues }: { labValues: ApiLabValue[] }) {
       {groups.map(g => (
         <LabGroupSection key={g.id} group={g} expanded={expandedIds.has(g.id)} onToggle={() => toggle(g.id)}/>
       ))}
+      {onAdded && <AddLabTest onAdded={onAdded}/>}
     </div>
   );
 }

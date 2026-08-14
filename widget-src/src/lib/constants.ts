@@ -58,6 +58,16 @@ export function getYearOptions(count = 11): number[] {
 }
 
 /**
+ * Today as YYYY-MM-DD in the user's LOCAL timezone — for date-input defaults
+ * and max bounds. Deliberately not `toISOString().slice(0, 10)`: UTC can be a
+ * day behind (or ahead) of the user's calendar date.
+ */
+export function todayIsoLocal(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
  * Format a date string or Date object to a short locale string (e.g., "Jan 15, 2024")
  */
 export function formatShortDate(date: string | Date): string {

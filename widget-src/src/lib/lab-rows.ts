@@ -4,12 +4,12 @@
  * Read-only: no editing, no unit conversion — values render as-reported
  * (see decisions in docs/user-stories.md § US-21).
  */
-import { LAB_GROUPS, resolveLabCatalogEntry, type LabGroupId } from '@roadmap/health-core';
+import { LAB_GROUPS, resolveLabCatalogEntry, displayLabUnit, type LabGroupId } from '@roadmap/health-core';
 import { labValueLabel } from './lab-value-labels';
 import type { ApiLabValue } from './api-types';
 
 export type LabRowsGroupId = LabGroupId | 'other';
-export type LabRowsIcon = 'kidney' | 'liver' | 'thyroid' | 'hormones' | 'vitamins' | 'flame' | 'flask';
+export type LabRowsIcon = 'kidney' | 'liver' | 'droplet' | 'thyroid' | 'hormones' | 'vitamins' | 'flame' | 'flask';
 
 /** Widget-side pseudo-group for names the catalogue doesn't (yet) know. */
 const OTHER_GROUP: { id: 'other'; label: string; icon: LabRowsIcon } = {
@@ -69,7 +69,10 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
     if (!groupMap) { groupMap = new Map(); seriesByGroup.set(groupId, groupMap); }
     let series = groupMap.get(seriesKey);
     if (!series) { series = { label, points: [] }; groupMap.set(seriesKey, series); }
-    series.points.push({ id: row.id, value: row.value, unit: row.unit, recordedAt: row.recordedAt });
+    // Store the DISPLAY unit: catalogue-canonical when the reported spelling
+    // means the same unit, typography-normalized otherwise. Relabeling only —
+    // values are never converted; a truly different unit flags mixedUnits.
+    series.points.push({ id: row.id, value: row.value, unit: displayLabUnit(row.unit, entry), recordedAt: row.recordedAt });
   }
 
   const groupDefs: Array<{ id: LabRowsGroupId; label: string; icon: LabRowsIcon }> = [...LAB_GROUPS, OTHER_GROUP];

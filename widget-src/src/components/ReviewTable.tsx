@@ -11,6 +11,8 @@ import {
   BLOOD_TEST_METRICS,
   refHintFor,
   isScreeningEligible,
+  displayLabUnit,
+  resolveLabCatalogEntry,
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
@@ -243,7 +245,9 @@ function buildMatrixModel(
         kind: 'additional',
         nameKey,
         displayName: labValueLabel(lv.metricName),
-        unit: lv.unit,
+        // Same display-only unit-spelling normalization as the lab-rows
+        // matrix ("umol/L" → "µmol/L", ratio ≡ L/L) — values untouched.
+        unit: displayLabUnit(lv.unit, resolveLabCatalogEntry(lv.metricName)),
         referenceLow: lv.referenceLow,
         referenceHigh: lv.referenceHigh,
       });
@@ -288,7 +292,9 @@ function buildMatrixModel(
           kind: 'additional',
           nameKey,
           displayName: labValueLabel(av.name),
-          unit: av.unit,
+          // Display-only spelling normalization; the save path below keeps
+          // av.unit as-reported.
+          unit: displayLabUnit(av.unit, resolveLabCatalogEntry(av.name)),
           referenceLow: av.referenceLow ?? null,
           referenceHigh: av.referenceHigh ?? null,
         });

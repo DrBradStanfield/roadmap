@@ -34,6 +34,7 @@ import {
   mergeFiles,
   migrateFile,
   PREFILL_FIELDS,
+  resolveLabCatalogEntry,
   SCREENING_KEYS,
   type ApiMeasurement,
   type ApiProfile,
@@ -374,9 +375,14 @@ export class RoadmapStore {
   bulkSaveLabValues(values: Array<{ metricName: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string; source?: string }>): BulkLabValuesResult {
     const saved: ApiLabValue[] = [];
     let skippedDuplicates = 0;
-    const taken = new Set(activeOnly(this.file.labValues).map((l) => `${l.metricName}@${dayOf(l.recordedAt)}`));
+    // Slot on the stable catalogue key so spelling variants of one test
+    // ("Gamma GT" from an upload, "ggt" from manual add) dedup against each
+    // other; uncatalogued names slot on their raw spelling.
+    const labSlot = (name: string, recordedAt: string) =>
+      `${resolveLabCatalogEntry(name)?.key ?? name}@${dayOf(recordedAt)}`;
+    const taken = new Set(activeOnly(this.file.labValues).map((l) => labSlot(l.metricName, l.recordedAt)));
     for (const v of values) {
-      const slot = `${v.metricName}@${dayOf(v.recordedAt)}`;
+      const slot = labSlot(v.metricName, v.recordedAt);
       if (taken.has(slot)) { skippedDuplicates++; continue; }
       taken.add(slot);
       const row: FileLabValue = {

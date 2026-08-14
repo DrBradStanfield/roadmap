@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LAB_CATALOG, LAB_GROUPS, resolveLabCatalogEntry } from './lab-catalog';
+import { LAB_CATALOG, LAB_GROUPS, resolveLabCatalogEntry, normalizeLabUnit } from './lab-catalog';
 
 // US-21 · Additional blood tests — catalogue integrity (phase-1 scaffold).
 describe('lab catalogue integrity (US-21)', () => {
@@ -44,5 +44,78 @@ describe('lab catalogue integrity (US-21)', () => {
     for (const g of LAB_GROUPS) {
       expect(LAB_CATALOG.some((e) => e.group === g.id)).toBe(true);
     }
+  });
+});
+
+// US-21 units fix (found live by Brad 2026-08-14): common FBC/chemistry tests
+// were uncatalogued (16-row "Other tests" dump) and unit spellings rendered
+// raw ("umol/L", "x 10e9/L", ratio-vs-L/L false mixed-units flag).
+describe('US-21 units fix: haematology coverage', () => {
+  it('catalogues the common full-blood-count tests under haematology', () => {
+    for (const [name, key] of [
+      ['Haemoglobin', 'haemoglobin'], ['hb', 'haemoglobin'], ['hgb', 'haemoglobin'],
+      ['Hematocrit', 'haematocrit'], ['hct', 'haematocrit'],
+      ['WBC', 'wbc'], ['white cell count', 'wbc'],
+      ['RBC', 'rbc'], ['red blood cell count', 'rbc'],
+      ['platelet count', 'platelets'], ['plt', 'platelets'],
+      ['Neutrophils', 'neutrophils'], ['Lymphocytes', 'lymphocytes'],
+      ['Monocytes', 'monocytes'], ['Eosinophils', 'eosinophils'], ['Basophils', 'basophils'],
+      ['MCV', 'mcv'], ['MCH', 'mch'], ['MCHC', 'mchc'], ['RDW', 'rdw'],
+    ] as const) {
+      const entry = resolveLabCatalogEntry(name);
+      expect(entry?.key, name).toBe(key);
+      expect(entry?.group, name).toBe('haematology');
+    }
+  });
+
+  it('catalogues eGFR under renal and globulin under liver', () => {
+    expect(resolveLabCatalogEntry('eGFR')?.group).toBe('renal');
+    expect(resolveLabCatalogEntry('estimated gfr')?.key).toBe('egfr');
+    expect(resolveLabCatalogEntry('Globulin')?.group).toBe('liver');
+  });
+
+  it('haematocrit is canonically L/L and accepts the "ratio" unit spelling', () => {
+    const hct = resolveLabCatalogEntry('haematocrit')!;
+    expect(hct.unit).toBe('L/L');
+    expect(hct.unitAliases).toContain('ratio');
+  });
+});
+
+describe('US-21 units fix: normalizeLabUnit (spelling only — NEVER value conversion)', () => {
+  it('maps ASCII micro prefix to µ', () => {
+    expect(normalizeLabUnit('umol/L')).toBe('µmol/L');
+    expect(normalizeLabUnit('ug/L')).toBe('µg/L');
+  });
+
+  it('renders lab count-unit spellings with real superscripts', () => {
+    expect(normalizeLabUnit('x 10e9/L')).toBe('×10⁹/L');
+    expect(normalizeLabUnit('x 10e12/L')).toBe('×10¹²/L');
+    expect(normalizeLabUnit('10^9/L')).toBe('×10⁹/L');
+    expect(normalizeLabUnit('x10*9/L')).toBe('×10⁹/L');
+  });
+
+  it('uppercases the litre and fixes m2/m^2 in eGFR units', () => {
+    expect(normalizeLabUnit('g/l')).toBe('g/L');
+    expect(normalizeLabUnit('mL/min/1.73m2')).toBe('mL/min/1.73m²');
+    expect(normalizeLabUnit('mL/min/1.73m^2')).toBe('mL/min/1.73m²');
+  });
+
+  it('maps Greek small mu to the micro sign (LLM extraction emits either)', () => {
+    expect(normalizeLabUnit('μmol/L')).toBe('µmol/L');
+  });
+
+  it('resolves the extraction prompt’s standardized hs_crp spelling', () => {
+    expect(resolveLabCatalogEntry('hs_crp')?.key).toBe('crp');
+  });
+
+  it('leaves already-canonical and unknown units untouched', () => {
+    expect(normalizeLabUnit('mmol/L')).toBe('mmol/L');
+    expect(normalizeLabUnit('µmol/L')).toBe('µmol/L');
+    expect(normalizeLabUnit('U/L')).toBe('U/L');
+    expect(normalizeLabUnit('mIU/L')).toBe('mIU/L');
+    expect(normalizeLabUnit('ratio')).toBe('ratio');
+    expect(normalizeLabUnit('pg')).toBe('pg');
+    expect(normalizeLabUnit('%')).toBe('%');
+    expect(normalizeLabUnit('')).toBe('');
   });
 });

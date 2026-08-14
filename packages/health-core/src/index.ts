@@ -294,6 +294,8 @@ export {
   LAB_CATALOG,
   LAB_GROUPS,
   resolveLabCatalogEntry,
+  normalizeLabUnit,
+  displayLabUnit,
   type LabCatalogEntry,
   type LabGroup,
   type LabGroupId,

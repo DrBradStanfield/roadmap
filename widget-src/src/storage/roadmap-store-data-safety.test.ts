@@ -265,6 +265,31 @@ describe('RoadmapStore.bulkSaveLabValues dedup (US-13)', () => {
     expect(second.skippedDuplicates).toBe(1);
     expect(second.errorCount).toBe(0);
   });
+
+  // US-21 phase 2 (adversarial review 2026-08-14): dedup slots must resolve
+  // spelling variants to the stable catalogue key — an upload stores the
+  // extractor's raw name ("Gamma GT") while manual add stores the key
+  // ("ggt"); slotting on raw names let both live as active rows for the
+  // same test on the same day.
+  it('same test under a different spelling on the same day is a duplicate (catalogue-key slots)', async () => {
+    const store = await RoadmapStore.create(new MemoryAdapter());
+    const first = store.bulkSaveLabValues([
+      { metricName: 'Gamma GT', value: 30, unit: 'U/L', recordedAt: '2024-06-01T09:00:00.000Z' },
+    ]);
+    expect(first.saved).toHaveLength(1);
+    const second = store.bulkSaveLabValues([
+      { metricName: 'ggt', value: 32, unit: 'U/L', recordedAt: '2024-06-01T12:00:00.000Z', source: 'manual' },
+    ]);
+    expect(second.saved).toEqual([]);
+    expect(second.skippedDuplicates).toBe(1);
+    // Uncatalogued names still slot on their raw spelling.
+    const third = store.bulkSaveLabValues([
+      { metricName: 'reticulocytes', value: 60, unit: '×10⁹/L', recordedAt: '2024-06-01T09:00:00.000Z' },
+      { metricName: 'reticulocytes', value: 61, unit: '×10⁹/L', recordedAt: '2024-06-01T10:00:00.000Z' },
+    ]);
+    expect(third.saved).toHaveLength(1);
+    expect(third.skippedDuplicates).toBe(1);
+  });
 });
 
 // US-13 · Review before save — deleting a reviewed lab value

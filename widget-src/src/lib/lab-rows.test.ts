@@ -50,12 +50,12 @@ describe('US-21: groupLabValues', () => {
   });
 
   it('buckets uncatalogued names into the trailing "other" group', () => {
-    const groups = groupLabValues([row({ metricName: 'haemoglobin', value: 145, unit: 'g/L' })]);
+    const groups = groupLabValues([row({ metricName: 'lipase', value: 27, unit: 'U/L' })]);
     expect(groups).toHaveLength(1);
     expect(groups[0].id).toBe('other');
     expect(groups[0].label).toBe('Other tests');
     expect(groups[0].icon).toBe('flask');
-    expect(groups[0].series[0].label).toBe('Haemoglobin');
+    expect(groups[0].series[0].label).toBe('Lipase');
   });
 
   it('merges LLM re-extraction spelling drift into the same series via the catalogue key', () => {
@@ -116,6 +116,43 @@ describe('US-21: groupLabValues', () => {
     expect(groups).toHaveLength(1);
     expect(groups.some(g => g.id === 'other')).toBe(false);
     expect(groups.some(g => g.id === 'liver')).toBe(false);
+  });
+});
+
+// US-21 units fix: chips/cells show the mapped display unit — catalogue
+// canonical for same-unit spelling variants, typography-normalized otherwise.
+describe('US-21 units fix: display-unit mapping in groupLabValues', () => {
+  it('haematocrit "ratio" vs "L/L" is the SAME unit — one series, canonical L/L, not mixed', () => {
+    const groups = groupLabValues([
+      row({ metricName: 'haematocrit', value: 0.48, unit: 'ratio', recordedAt: '2026-01-01T00:00:00.000Z' }),
+      row({ metricName: 'Haematocrit', value: 0.43, unit: 'L/L', recordedAt: '2026-02-01T00:00:00.000Z' }),
+    ]);
+    const haem = groups.find(g => g.id === 'haematology')!;
+    expect(haem.series).toHaveLength(1);
+    expect(haem.series[0].mixedUnits).toBe(false);
+    expect(haem.series[0].unit).toBe('L/L');
+  });
+
+  it('ASCII spelling of a catalogued unit displays canonically (umol/L → µmol/L)', () => {
+    const groups = groupLabValues([row({ metricName: 'bilirubin', value: 15, unit: 'umol/L' })]);
+    const liver = groups.find(g => g.id === 'liver')!;
+    expect(liver.series[0].unit).toBe('µmol/L');
+    expect(liver.series[0].points[0].unit).toBe('µmol/L');
+  });
+
+  it('uncatalogued tests still get typography normalization (x 10e9/L → ×10⁹/L)', () => {
+    const groups = groupLabValues([row({ metricName: 'reticulocytes', value: 60, unit: 'x 10e9/L' })]);
+    expect(groups[0].id).toBe('other');
+    expect(groups[0].series[0].unit).toBe('×10⁹/L');
+  });
+
+  it('a genuinely different unit still flags mixedUnits (mg/L vs mg/dL)', () => {
+    const groups = groupLabValues([
+      row({ metricName: 'crp', value: 2.1, unit: 'mg/L', recordedAt: '2026-01-01T00:00:00.000Z' }),
+      row({ metricName: 'crp', value: 0.2, unit: 'mg/dL', recordedAt: '2026-02-01T00:00:00.000Z' }),
+    ]);
+    const inflammation = groups.find(g => g.id === 'inflammation')!;
+    expect(inflammation.series[0].mixedUnits).toBe(true);
   });
 });
 

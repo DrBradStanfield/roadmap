@@ -210,14 +210,17 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // the lab-rows section rendered empty (caught by live WebKit verification
   // 2026-08-07). Generation counter discards stale overlapping responses.
   const labValuesFetchGen = useRef(0);
-  useEffect(() => {
-    if (!authState.isLoggedIn) return;
+  const refreshLabValues = useCallback(() => {
     const myGen = ++labValuesFetchGen.current;
     loadLabValues().then(rows => {
       // Skip null (API error) so we don't blank cached history.
       if (rows && myGen === labValuesFetchGen.current) setLabValueHistory(rows);
     }).catch(() => {});
-  }, [showUploadModal, authState.isLoggedIn]);
+  }, []);
+  useEffect(() => {
+    if (!authState.isLoggedIn) return;
+    refreshLabValues();
+  }, [showUploadModal, authState.isLoggedIn, refreshLabValues]);
 
   // Toggle a single field's unit override
   const handleToggleFieldUnit = useCallback((field: string) => {
@@ -823,16 +826,13 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       saveToLocalStorage(result.inputs, result.previousMeasurements, result.medications, result.screenings);
     }
     // labValues are lazy — refresh now so the next modal-open shows the
-    // values this upload just saved without an extra round-trip. Bump the
-    // gen counter so a stale post-upload fetch can't overwrite a fresh
-    // modal-open fetch that started later.
-    const myGen = ++labValuesFetchGen.current;
-    loadLabValues().then(rows => {
-      if (rows && myGen === labValuesFetchGen.current) setLabValueHistory(rows);
-    }).catch(() => {});
+    // values this upload just saved without an extra round-trip. The gen
+    // counter (inside refreshLabValues) keeps a stale post-upload fetch from
+    // overwriting a fresh modal-open fetch that started later.
+    refreshLabValues();
     // Refresh full blood-test history so the matrix reflects newly extracted lab rows.
     loadBloodTestHistory();
-  }, []);
+  }, [refreshLabValues]);
 
   // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel
   const metricUnitOverrides = useMemo(() => {
@@ -1162,6 +1162,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     bloodTestHistory,
     vitalsHistory,
     labValues: labValueHistory,
+    // US-21 phase 2 manual add. Gated with the labValues fetch above: when
+    // that fetch is skipped (guest on the Shopify surface) an added row could
+    // never display, so the add affordance hides too.
+    onLabValueAdded: authState.isLoggedIn ? refreshLabValues : undefined,
     onSaveBloodTestBatch: (date: string, values: Record<string, number>) =>
       handleSaveLongitudinal(date, values),
     onCorrectBloodTestValue: handleCorrectBloodTestValue,
