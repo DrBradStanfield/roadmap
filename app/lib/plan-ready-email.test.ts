@@ -105,7 +105,11 @@ describe('US-24 — googleCalendarUrl', () => {
     expect(parsed.searchParams.get('action')).toBe('TEMPLATE');
     expect(parsed.searchParams.get('text')).toBe('DEXA bone density scan');
     expect(parsed.searchParams.get('dates')).toBe('20271231/20280101'); // year rollover handled
-    expect(parsed.searchParams.get('details')).toContain('/roadmap/open');
+    // The details string is VISIBLE text in the saved event (calendar
+    // descriptions don't hide hrefs behind labels) — it must show the
+    // canonical storefront page, never a fly.dev backend host.
+    expect(parsed.searchParams.get('details')).toContain('https://drstanfield.com/pages/roadmap');
+    expect(parsed.searchParams.get('details')).not.toContain('fly.dev');
   });
 });
 

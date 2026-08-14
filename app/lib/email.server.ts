@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { ROADMAP_URL } from '../routes/roadmap.open';
 import { PAGES_APP_URL } from './local-first-route.server';
 import * as Sentry from '@sentry/react-router';
 import { recordServerEvent } from './product-events.server';
@@ -306,9 +307,11 @@ function reminderItem(title: string, description: string, color: string): string
 /**
  * "Add to calendar" as a plain Google Calendar template URL (US-24 — links,
  * not attachments; Brad 2026-08-14). All-day event on the due date (end date
- * exclusive, so one day = dueAt..dueAt+1). The event description points at the
- * /roadmap/open redirect, so a calendar-sourced return visit is click-counted
- * the same first-party way as an email one.
+ * exclusive, so one day = dueAt..dueAt+1). The event description is VISIBLE
+ * text in the saved event, so it carries the canonical storefront URL — a
+ * fly.dev redirect there reads as phishing (Brad, 2026-08-14). Cost accepted:
+ * calendar-sourced return visits go uncounted; only the email CTA (a real
+ * href behind a button) routes through /roadmap/open.
  */
 export function googleCalendarUrl(label: string, dueAt: string): string {
   const day = dueAt.replace(/-/g, '');
@@ -319,7 +322,7 @@ export function googleCalendarUrl(label: string, dueAt: string): string {
     action: 'TEMPLATE',
     text: label,
     dates: `${day}/${nextDay}`,
-    details: `From your Health Roadmap. Reopen your plan: ${APP_BASE_URL}/roadmap/open`,
+    details: `From your Health Roadmap. Reopen your plan: ${ROADMAP_URL}`,
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }

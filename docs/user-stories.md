@@ -286,7 +286,7 @@ As someone who typed my email to get my plan PDF, I get reminded when my check-u
 ### US-24 · Add my check-ups to my calendar — **Brad-approved 2026-08-14 (links, not attachments)**
 As a user reading my plan or a reminder email, I can add any due item to my own calendar in one tap — Google/Apple's calendar becomes a reminder engine Brad never operates (the zero-server rung of the reminders ladder).
 - AC1: Implemented as **Google Calendar template links** (`calendar.google.com/calendar/render?action=TEMPLATE…`) — plain URLs, no attachments (Brad, 2026-08-14: cleaner than .ics; Resend supports attachments but links beat them on deliverability and simplicity).
-- AC2: Each link creates an all-day event on the due date, titled with the label, description linking back to the tool.
+- AC2: Each link creates an all-day event on the due date, titled with the label, description linking back to the tool — **via the canonical storefront URL** (`drstanfield.com/pages/roadmap`), never a fly.dev backend host: the description is visible text in the saved event, and a raw redirect URL reads as phishing (found live by Brad, fixed 2026-08-14; cost accepted — calendar-sourced returns go uncounted, only the email CTA routes through `/roadmap/open`).
 - AC3: Links appear wherever the schedule renders in email (plan-ready email once US-23 gives it a schedule; every reminder email).
 - AC4: Zero server-side storage change; zero new data crosses.
 - Tests: ✅ URL-building pinned (`plan-ready-email.test.ts`: TEMPLATE params, exclusive end date incl. year rollover, re-entry pointer); email placement pinned in the calendar-section suites.
