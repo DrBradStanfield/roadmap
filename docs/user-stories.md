@@ -97,8 +97,9 @@ As a privacy-conscious user, I choose Google Drive / Dropbox / GitHub / my own W
 - AC1: OAuth (Drive/Dropbox) via PKCE redirect; GitHub/WebDAV via pasted credentials validated before commit.
 - AC2: Switching providers copies current data to device first; log-off leaves the local copy intact.
 - AC3: On-device guest data migrates up on first connect (merge, not overwrite).
+- AC4 (added 2026-08-14, Sentry JAVASCRIPT-REMIX-3X): a failed cloud save is never memory-only — the working copy mirrors on-device at the moment of failure (marker-gated) and merges back up on the next successful cloud session or reconnect.
 - Evidence: a live Dropbox connect was captured on video (audit); privacy is a real user concern (feedback 2026-05-01). `cloud_connect_started/success` events now measure conversion/abandonment — first week (2026-W32): 5 started → 2 succeeded (small n; no failure-step metadata yet).
-- Tests: ❌ near-zero — only `logOff` teardown is tested. The adapters + PKCE + picker flow are untested. **Action: sync-manager/store tests first (this pass); adapter tests deferred.**
+- Tests: ❌ near-zero for the connect flow — only `logOff` teardown is tested; adapters + PKCE + picker remain untested. AC4 is covered (`roadmap-store-data-safety.test.ts`, 2026-08-14: failure-mirror + merge-back-up + marker gate).
 
 ### US-10 · Cross-device convergence
 As a user with a phone and a laptop, edits from both devices converge without conflicts: append-only arrays union, mutable scalars last-write-wins, corrections/deletions sticky, `eraseEpoch` wins wholesale.
