@@ -3,7 +3,7 @@
  * rows surfaced beneath the core blood-test matrix.
  */
 import { describe, it, expect } from 'vitest';
-import { groupLabValues, countLabValuePoints } from './lab-rows';
+import { groupLabValues, countLabValuePoints, labGroupMatrix } from './lab-rows';
 import type { ApiLabValue } from './api-types';
 
 function row(overrides: Partial<ApiLabValue> & { status?: string }): ApiLabValue & { status?: string } {
@@ -116,6 +116,34 @@ describe('US-21: groupLabValues', () => {
     expect(groups).toHaveLength(1);
     expect(groups.some(g => g.id === 'other')).toBe(false);
     expect(groups.some(g => g.id === 'liver')).toBe(false);
+  });
+});
+
+describe('US-21 AC1: labGroupMatrix', () => {
+  it('unions dates across series, ascending, and indexes points by seriesKey + day', () => {
+    const groups = groupLabValues([
+      row({ id: 'na1', metricName: 'sodium', value: 139, recordedAt: '2026-01-10T00:00:00.000Z' }),
+      row({ id: 'na2', metricName: 'sodium', value: 141, recordedAt: '2026-05-12T00:00:00.000Z' }),
+      row({ id: 'k1', metricName: 'potassium', value: 4.7, unit: 'mmol/L', recordedAt: '2026-05-12T00:00:00.000Z' }),
+    ]);
+    const renal = groups.find(g => g.id === 'renal')!;
+    const { dates, points } = labGroupMatrix(renal);
+    expect(dates).toEqual(['2026-01-10', '2026-05-12']);
+    expect(points['sodium']['2026-01-10'].id).toBe('na1');
+    expect(points['sodium']['2026-05-12'].id).toBe('na2');
+    expect(points['potassium']['2026-01-10']).toBeUndefined();
+    expect(points['potassium']['2026-05-12'].id).toBe('k1');
+  });
+
+  it('two same-day points in one series: the later recordedAt wins (LWW, like the core matrix)', () => {
+    const groups = groupLabValues([
+      row({ id: 'am', metricName: 'sodium', value: 138, recordedAt: '2026-01-10T08:00:00.000Z' }),
+      row({ id: 'pm', metricName: 'sodium', value: 142, recordedAt: '2026-01-10T18:00:00.000Z' }),
+    ]);
+    const renal = groups.find(g => g.id === 'renal')!;
+    const { dates, points } = labGroupMatrix(renal);
+    expect(dates).toEqual(['2026-01-10']);
+    expect(points['sodium']['2026-01-10'].id).toBe('pm');
   });
 });
 

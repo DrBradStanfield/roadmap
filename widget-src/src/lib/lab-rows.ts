@@ -95,6 +95,28 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
   return result;
 }
 
+/** Column dates (yyyy-mm-dd, ascending) + per-series point lookup for
+ *  rendering a group as a date-column matrix (US-21 AC1 — same layout as the
+ *  core 8). Two same-day points in one series: the later recordedAt wins,
+ *  mirroring the core matrix's last-write-wins upsert. */
+export function labGroupMatrix(group: LabValueGroup): {
+  dates: string[];
+  points: Record<string, Record<string, LabSeriesPoint>>;
+} {
+  const dates = new Set<string>();
+  const points: Record<string, Record<string, LabSeriesPoint>> = {};
+  for (const s of group.series) {
+    const byDate: Record<string, LabSeriesPoint> = {};
+    for (const p of s.points) { // ascending, so a later same-day point overwrites
+      const day = p.recordedAt.slice(0, 10);
+      dates.add(day);
+      byDate[day] = p;
+    }
+    points[s.seriesKey] = byDate;
+  }
+  return { dates: Array.from(dates).sort(), points };
+}
+
 /** Total value-points across all groups/series — the `lab_rows_viewed` count. */
 export function countLabValuePoints(groups: LabValueGroup[]): number {
   return groups.reduce((sum, g) => sum + g.series.reduce((s2, ser) => s2 + ser.points.length, 0), 0);

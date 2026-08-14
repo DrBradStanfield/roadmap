@@ -67,16 +67,3 @@ export function formatShortDate(date: string | Date): string {
     year: 'numeric',
   });
 }
-
-/**
- * Decompose a Date into the day / short-month / 2-digit-year parts used by
- * the compact "DD Mon 'YY" family of date renderings (DraftDateCell,
- * BatchDateCell, AdditionalLabRows point dates).
- */
-export function shortDateParts(date: Date): { day: number; mon: string; yr: string } {
-  return {
-    day: date.getDate(),
-    mon: MONTHS_SHORT[date.getMonth()].label,
-    yr: String(date.getFullYear()).slice(-2),
-  };
-}

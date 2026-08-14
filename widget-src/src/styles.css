@@ -4685,6 +4685,8 @@ input[type="number"] {
    sticky cell scrolls away with the data. A concrete width lets rows
    use `width: 100%`, and sticky anchors correctly. */
 .bt-timeline-scroll-inner {
+  /* The no-trend variant at `.alr-matrix .bt-timeline-scroll-inner` copies
+     this formula minus the trend term — keep the two in sync. */
   width: calc(var(--bt-name-w) + var(--bt-col-count) * var(--bt-value-w) + var(--bt-trend-w));
   min-width: 100%;
   display: flex;
@@ -5164,6 +5166,8 @@ input[type="number"] {
   --bt-ink-500: #5b6670;
   --bt-ink-700: #2b3036;
   border-top: 1px solid var(--bt-ink-100);
+  /* Keep this inset FIXED (non-responsive): `.alr-matrix`'s -16px margin
+     cancels it exactly so group matrices align with the core matrix. */
   padding: 4px 16px 8px;
 }
 
@@ -5252,90 +5256,27 @@ input[type="number"] {
   transform: rotate(180deg);
 }
 
-.alr-group-body {
-  /* Indent under the badge so series align with the group label. */
-  padding: 2px 6px 14px 42px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+/* Expanded group body — the SAME bt matrix as the core table (US-21 AC1).
+   All cell/scroller/sticky rules come from the `.bt-timeline` machinery above;
+   only the flush alignment and the no-trend width are group-specific.
+   Pull the matrix back out past `.alr-wrap`'s 16px inset so its columns start
+   at the same edge as the core matrix (whose `.bt-timeline-body` supplies the
+   identical 14px-desktop / 0-mobile inset this nested body then re-applies). */
+.alr-matrix {
+  margin: 0 -16px 10px;
 }
-@media (max-width: 768px) {
-  .alr-group-body { padding-left: 10px; }
-}
-
-.alr-series-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+.alr-matrix .bt-timeline-scroll-inner {
+  /* No trend column in the read-only lab matrix — drop --bt-trend-w from
+     the core width calc so the scroller ends at the last date column. */
+  width: calc(var(--bt-name-w) + var(--bt-col-count) * var(--bt-value-w));
 }
 
-.alr-series-label-row {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-
-.alr-series-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--bt-ink-700);
-}
-
-.alr-series-strip {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: 2px;
-}
-.alr-series-strip::-webkit-scrollbar {
-  display: none;
-}
-
-/* Each dated value renders as a small chip — echoes the matrix cell language. */
-.alr-point {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 52px;
-  padding: 5px 9px 4px;
-  background: #fafbfc;
-  border: 1px solid var(--bt-ink-100);
-  border-radius: 8px;
-}
-.alr-point:last-child {
-  /* newest reading gets a touch more presence */
-  background: #fff;
-  border-color: var(--bt-ink-200);
-}
-
-.alr-point-value {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--bt-ink-800, #1f2937);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.alr-point-unit {
+/* Per-point unit beside the value, shown only when a series mixes units. */
+.alr-cell-unit {
   font-size: 9px;
   font-weight: 500;
   color: var(--bt-ink-400);
   margin-left: 3px;
-}
-
-.alr-point-date {
-  font-size: 10px;
-  color: var(--bt-ink-400);
-  margin-top: 1px;
-  white-space: nowrap;
-}
-
-.alr-mixed-note {
-  font-size: 10px;
-  color: var(--color-warning);
-  margin: 0;
 }
 
 /* ============================================================================

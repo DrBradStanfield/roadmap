@@ -1,21 +1,19 @@
 // US-21 phase 1 — read-only surfacing of stored `labValues` (tests beyond
 // the core 8 matrix), grouped by panel, collapsed by default, icon per
-// group. No editing/corrections here (that's a later phase).
+// group. No editing/corrections here (that's a later phase). Expanded groups
+// render in the SAME date-column matrix layout as the core blood-test table
+// (AC1) — reusing its cells, scroller, and CSS vars.
 
 import { useEffect, useMemo, useState } from 'react';
-import { groupLabValues, countLabValuePoints, type LabRowsIcon, type LabValueGroup } from '../lib/lab-rows';
+import { groupLabValues, countLabValuePoints, labGroupMatrix, type LabRowsIcon, type LabValueGroup } from '../lib/lab-rows';
 import { UnitChip } from './UnitChip';
+import { BatchDateCell } from './BloodTestTimeline';
+import { useScrollToRightOnMount } from '../lib/useScrollToRightOnMount';
 import { trackProductEvent } from '../lib/api';
-import { shortDateParts } from '../lib/constants';
 import type { ApiLabValue } from '../lib/api-types';
 
 function formatValue(v: number): string {
   return String(Math.round(v * 100) / 100);
-}
-
-function formatPointDate(iso: string): string {
-  const { day, mon, yr } = shortDateParts(new Date(iso));
-  return `${day} ${mon} '${yr}`;
 }
 
 function GroupIcon({ icon }: { icon: LabRowsIcon }) {
@@ -81,25 +79,51 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
   );
 }
 
-function LabSeriesRow({ series }: { series: LabValueGroup['series'][number] }) {
+// The same single-scroller matrix as BloodTestTimeline (rows = tests,
+// columns = dates, sticky name cell, newest column pinned), read-only.
+function LabGroupMatrix({ group }: { group: LabValueGroup }) {
+  const { dates, points } = useMemo(() => labGroupMatrix(group), [group]);
+  const scrollRef = useScrollToRightOnMount<HTMLDivElement>([dates.length]);
   return (
-    <div className="alr-series-row">
-      <div className="alr-series-label-row">
-        <span className="alr-series-label">{series.label}</span>
-        <UnitChip label={series.unit} title="Unit as reported on the lab document"/>
-      </div>
-      <div className="alr-series-strip">
-        {series.points.map(p => (
-          <div className="alr-point" key={p.id}>
-            <span className="alr-point-value">
-              {formatValue(p.value)}
-              {series.mixedUnits && <span className="alr-point-unit">{p.unit}</span>}
-            </span>
-            <span className="alr-point-date">{formatPointDate(p.recordedAt)}</span>
+    <div className="bt-timeline alr-matrix">
+      <div className="bt-timeline-body">
+        <div ref={scrollRef} className="bt-timeline-scroll">
+          <div className="bt-timeline-scroll-inner" style={{ '--bt-col-count': dates.length } as React.CSSProperties}>
+            <div className="bt-row bt-header-row">
+              <div className="bt-cell-name bt-cell-header">Metric</div>
+              {dates.map((d, i) => <BatchDateCell key={d} date={d} pinned={i === dates.length - 1}/>)}
+              <div className="bt-row-filler"/>
+            </div>
+            {group.series.map((s, idx) => (
+              <div key={s.seriesKey} className={`bt-row${idx === group.series.length - 1 ? ' bt-row-last' : ''}`}>
+                <div className="bt-cell-name">
+                  <div className="bt-name-label">{s.label}</div>
+                  <UnitChip label={s.unit} title="Unit as reported on the lab document"/>
+                  {s.mixedUnits && <div className="bt-ref-label">Units vary between reports</div>}
+                </div>
+                {dates.map((d, i) => {
+                  const p = points[s.seriesKey]?.[d];
+                  const pinned = i === dates.length - 1 ? ' bt-cell-pinned' : '';
+                  if (!p) {
+                    // The space holds the cell open — theme `div:empty
+                    // { display:none }` collapses truly empty cells (gotcha).
+                    return <div key={d} className={`bt-cell-value bt-cell-empty${pinned}`}>{' '}</div>;
+                  }
+                  return (
+                    <div key={d} className={`bt-cell-value${pinned}`}>
+                      <span className="bt-value-num num">
+                        {formatValue(p.value)}
+                        {s.mixedUnits && <span className="alr-cell-unit">{p.unit}</span>}
+                      </span>
+                    </div>
+                  );
+                })}
+                <div className="bt-row-filler"/>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
-      {series.mixedUnits && <p className="alr-mixed-note">Units vary between reports</p>}
     </div>
   );
 }
@@ -113,11 +137,7 @@ function LabGroupSection({ group, expanded, onToggle }: { group: LabValueGroup; 
         <span className="alr-group-count">{group.series.length}</span>
         <ChevronIcon expanded={expanded}/>
       </button>
-      {expanded && (
-        <div className="alr-group-body">
-          {group.series.map(s => <LabSeriesRow series={s} key={s.seriesKey}/>)}
-        </div>
-      )}
+      {expanded && <LabGroupMatrix group={group}/>}
     </div>
   );
 }
