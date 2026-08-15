@@ -2,7 +2,12 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { execSync } from 'child_process';
 
-const gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+let gitHash = 'dev';
+try {
+  gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+} catch {
+  /* not a git checkout */
+}
 const release = `health-tool-widget@${gitHash}`;
 
 // Upload processing bundle — separate IIFE, loaded on demand.
