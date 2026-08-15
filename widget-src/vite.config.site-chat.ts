@@ -13,6 +13,13 @@ export default defineConfig({
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
     '__SENTRY_RELEASE__': JSON.stringify(release),
+    // This bundle runs only on the Shopify storefronts (it talks to Brad's
+    // server through the app proxy already — that's how chat works), so it is
+    // a Shopify surface: without this define trackProductEvent no-ops and
+    // chat_opened never fires from the site-wide FAB (US-15 AC2; the 2026-W33
+    // product-health report found the event dead here while this surface
+    // carried most chat traffic). Pinned by widget-src/vite-configs.test.ts.
+    'import.meta.env.VITE_SHOPIFY_SURFACE': JSON.stringify('true'),
   },
   build: {
     lib: {
