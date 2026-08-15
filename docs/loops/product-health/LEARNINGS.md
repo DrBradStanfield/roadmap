@@ -35,10 +35,14 @@ duplicates.
   *(Superseded 2026-08-16: the zero measured reach, not demand — default-on +
   the typed lane shipped 08-13/14 and the first week brought 18 enrolments,
   0 opt-outs.)*
-- **2026-08-16 [tooling]** Sentry issue-list `count` is LIFETIME, not
-  statsPeriod-scoped — W32 reported 86- and 24-event "14d" chat failures that
-  were lifetime totals of issues already silent for weeks. Sum the
-  `stats['14d']` buckets for windowed counts.
+- **2026-08-16 [tooling]** Sentry per-issue event COUNTS are not reproducible
+  across pulls: the same two chat issues returned 86/24 (W32), then 1/1 in two
+  W33 pulls (identical under statsPeriod=14d and 90d), and summed `stats`
+  buckets returned 0 even for an issue with a real in-window event. Treat any
+  Sentry count as soft; trend on the stable fields (firstSeen/lastSeen,
+  status) and say so whenever a count drives a conclusion. (The W33 report's
+  first draft "explained" W32's figures as lifetime counts — the adversarial
+  review disproved that same-run; the true origin of 86/24 is unidentified.)
 - **2026-08-16 [usage]** First week of the email machine (US-17/22/23): 18
   enrolments — 17 typed vs 3 cloud rows all-time, so the ~10:1 typed-lane bet
   held almost exactly; 40% plan-ready click rate; 1/25 bounce; 0 opt-outs.
