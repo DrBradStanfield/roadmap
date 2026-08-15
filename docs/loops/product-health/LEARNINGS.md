@@ -22,8 +22,25 @@ duplicates.
   because every live surface mounts ChatSection `startExpanded`, making its only
   emit site unreachable. Rule now in the charter: classify every zero (inspect
   the emit site) before reporting it. Verify each NEW event fires in production
-  within its first week.
+  within its first week. **Confirmed again 2026-08-16, second layer:** the
+  08-10 ChatSection fix reached only the widget bundle — side bundles
+  (site-chat, chatbot) have their OWN vite configs and never define
+  `VITE_SHOPIFY_SURFACE`, so `trackProductEvent` no-ops in the bundle carrying
+  most chat traffic. A shared-component event fix ships only where each
+  bundle's config defines the flag: check every bundle that mounts the component.
 - **2026-08-10 [usage]** First instrumented week (W32, ~4 days): 190
   results_viewed; uploads complete at 100% (7/7); corrections (9) and
   additional-lab expansion (15, ~8% of viewers) both have real usage;
   reminder_optin fired 0 times ever — the strongest kill-signal yet (US-17).
+  *(Superseded 2026-08-16: the zero measured reach, not demand — default-on +
+  the typed lane shipped 08-13/14 and the first week brought 18 enrolments,
+  0 opt-outs.)*
+- **2026-08-16 [tooling]** Sentry issue-list `count` is LIFETIME, not
+  statsPeriod-scoped — W32 reported 86- and 24-event "14d" chat failures that
+  were lifetime totals of issues already silent for weeks. Sum the
+  `stats['14d']` buckets for windowed counts.
+- **2026-08-16 [usage]** First week of the email machine (US-17/22/23): 18
+  enrolments — 17 typed vs 3 cloud rows all-time, so the ~10:1 typed-lane bet
+  held almost exactly; 40% plan-ready click rate; 1/25 bounce; 0 opt-outs.
+  Meanwhile per-day funnel rates were flat W32→W33 (results_viewed ~50/day):
+  raw weekly counts "doubled" only because W32 was a partial week.
