@@ -675,7 +675,9 @@ export function generateSuggestions(
     const statin = medications.statin;
     const statinDrug = statin?.drug;
     // Check if drug is a known valid statin (handles old tier-based values like 'tier_1')
-    const isValidStatinDrug = statinDrug && Object.hasOwn(STATIN_DRUGS, statinDrug);
+    // hasOwnProperty.call, not Object.hasOwn: the widget must run on iOS WebKit
+    // < 15.4, which lacks the ES2022 API (esbuild transpiles syntax, never APIs).
+    const isValidStatinDrug = statinDrug && Object.prototype.hasOwnProperty.call(STATIN_DRUGS, statinDrug);
     const isNotTolerated = statinDrug === 'not_tolerated';
     const statinTolerated = !isNotTolerated;
     const onStatin = statin && isValidStatinDrug;

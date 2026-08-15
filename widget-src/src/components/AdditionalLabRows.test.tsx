@@ -8,7 +8,6 @@
  * Bug (Brad, live, 2026-08-14): phase 1 shipped horizontal per-series value
  * strips instead — visually disconnected from the matrix directly above.
  */
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, fireEvent, cleanup } from '@testing-library/react';
 

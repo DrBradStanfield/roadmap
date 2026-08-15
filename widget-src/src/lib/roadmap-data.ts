@@ -298,8 +298,10 @@ export async function sendReportEmail(): Promise<{ success: boolean; error?: str
 export async function sendGuestReport(
   email: string,
   _inputs?: Record<string, unknown>,
-  _medications?: Record<string, unknown>,
-  _screenings?: Record<string, unknown>,
+  // Kept signature-compatible with api.ts's version BY HAND — the vite swap
+  // means tsc never checks this graph against the callers (see ci.yml gates).
+  _medications?: readonly ApiMedication[],
+  _screenings?: readonly ApiScreening[],
 ): Promise<{ success: boolean; error?: string }> {
   // Self-guard, not just call-site gating (same posture as trackProductEvent):
   // off the Shopify surface there is no Brad server, so a future caller must

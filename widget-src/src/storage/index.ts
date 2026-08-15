@@ -18,7 +18,7 @@ export { SyncManager, type SaveResult } from './sync-manager';
 // canonical copy of the Api* type names (api.ts owns those). The cross-adapter
 // transfer helper IS exported: it's how standalone/ lifts/copies the record
 // without ever touching DocumentSpec/SyncManager internals.
-export { saveRoadmapFileInto } from './roadmap-store';
+export { saveRoadmapFileInto, markSyncPending, isSyncPending, SYNC_PENDING_EVENT } from './roadmap-store';
 // Thrown by SyncManager (via migrate) when the cloud file is from a newer app
 // version — surfaced here so UI can show "update the app", not a generic error.
 export { SchemaTooNewError } from '@roadmap/health-core';

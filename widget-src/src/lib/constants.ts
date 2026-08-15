@@ -41,10 +41,10 @@ export function getAvailableMonths(
   currentYear: number,
   currentMonth: number,
   short = false
-): typeof MONTHS_FULL | typeof MONTHS_SHORT {
+): ReadonlyArray<{ value: string; label: string }> {
   const months = short ? MONTHS_SHORT : MONTHS_FULL;
   if (selectedYear === String(currentYear)) {
-    return months.filter(m => parseInt(m.value, 10) <= currentMonth) as typeof months;
+    return months.filter(m => parseInt(m.value, 10) <= currentMonth);
   }
   return months;
 }

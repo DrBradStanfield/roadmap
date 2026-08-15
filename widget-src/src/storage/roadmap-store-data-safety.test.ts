@@ -551,10 +551,10 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
   });
 
-  it('a corrupt on-device mirror never bricks startup — create() continues on the cloud file', async () => {
-    // Independent-review finding 1: the recovery path must be as fault-tolerant
-    // as the mirror-write path. Marker kept so a schema-too-new mirror can be
-    // retried once assets update.
+  it('an UNPARSEABLE mirror never bricks startup; its marker is cleared (nothing can ever lift it)', async () => {
+    // Adversarial finding (2026-08-14): corrupt bytes can never be read OR
+    // replaced (the mirror write reads before merging), so a kept marker would
+    // show "waiting to sync" forever for unrecoverable data. The bytes stay.
     const cloud = new MemoryCloud();
     const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
     seeded.addMeasurement('ldl', 3.2, '2024-01-01T00:00:00.000Z');
@@ -565,10 +565,26 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
 
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     expect(store.loadAllHistory()).toHaveLength(1);
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).toBeNull();
+    expect(localStorage.getItem('health_roadmap_file_v2')).toBe('{not valid json');
+  });
+
+  it('a SCHEMA-TOO-NEW mirror never bricks startup; its marker survives later saves (retried once assets update)', async () => {
+    const cloud = new MemoryCloud();
+    const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    seeded.addMeasurement('ldl', 3.2, '2024-01-01T00:00:00.000Z');
+    await seeded.flush();
+
+    // A mirror written by a future bundle: valid JSON, schemaVersion far ahead.
+    localStorage.setItem('health_roadmap_file_v2', JSON.stringify({ schemaVersion: 9999 }));
+    localStorage.setItem(PENDING_MIRROR_KEY, '2026-08-14T00:00:00.000Z');
+
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(store.loadAllHistory()).toHaveLength(1);
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
 
     // A later successful save must NOT strand the skipped mirror: the marker
-    // survives so the next load (e.g. with updated assets) retries it.
+    // survives so the next load (with updated assets) retries it.
     store.addMeasurement('hdl', 1.3, '2024-03-01T00:00:00.000Z');
     await store.flush();
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
@@ -641,8 +657,8 @@ describe('RoadmapStore.saveScreening (US-06)', () => {
 // (feedback 2026-03-22: a value appeared under a wrong date; root cause never
 // found, so this pins the exact current defaulting behavior as a regression anchor).
 describe('RoadmapStore.addMeasurement date semantics (US-03)', () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
 
   it('stores the exact recordedAt when one is provided', async () => {
     const store = await RoadmapStore.create(new MemoryAdapter());

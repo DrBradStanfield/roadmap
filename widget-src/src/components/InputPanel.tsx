@@ -368,12 +368,12 @@ export function InputPanel({
     }
   };
 
-  const getPreviousPlaceholder = (field: string): string | null => {
-    if (!isLoggedIn) return null;
+  const getPreviousPlaceholder = (field: string): string | undefined => {
+    if (!isLoggedIn) return undefined;
     const metric = FIELD_METRIC_MAP[field];
-    if (!metric) return null;
+    if (!metric) return undefined;
     const measurement = previousMeasurements.find(m => m.metricType === metric);
-    if (!measurement) return null;
+    if (!measurement) return undefined;
     return toDisplay(field, measurement.value);
   };
 

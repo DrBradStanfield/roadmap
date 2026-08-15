@@ -11,7 +11,6 @@
  * First component test in widget-src — mocks the data/hook seams so only
  * ChatSection's own mount/expand behavior is under test.
  */
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, fireEvent } from '@testing-library/react';
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getAuthRedirectFlag, consumeEmailConfirmFlag, hasAuthenticatedFlag, loadFromLocalStorage, saveToLocalStorage } from './storage';
+import { getAuthRedirectFlag, consumeEmailConfirmFlag, hasAuthenticatedFlag, loadFromLocalStorage } from './storage';
 
 describe('safe storage accessors', () => {
   let originalSessionStorage: Storage;

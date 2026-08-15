@@ -23,14 +23,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { FileReminderOptIn } from '@roadmap/health-core';
 
-const getReminderOptIn = vi.fn<() => FileReminderOptIn | undefined>(() => undefined);
+type FetchMock = ReturnType<typeof vi.fn<[input: RequestInfo | URL, init?: RequestInit], Promise<Response>>>;
+
+const getReminderOptIn = vi.fn<[], FileReminderOptIn | undefined>(() => undefined);
 const setReminderOptIn = vi.fn();
 const flushRoadmapStore = vi.fn(async () => {});
 const computeCurrentReminderSchedule = vi.fn(() => [
   { category: 'blood_test_lipids', group: 'blood_test', label: 'Lipid panel blood test', dueAt: '2027-05-12' },
 ]);
 const trackProductEvent = vi.fn();
-const getReminderProof = vi.fn<(silent?: boolean) => Promise<unknown>>(async () => ({ idToken: 'signed-id-token' }));
+const getReminderProof = vi.fn<[silent?: boolean], Promise<unknown>>(async () => ({ idToken: 'signed-id-token' }));
 
 vi.mock('../src/lib/roadmap-data', () => ({
   getReminderOptIn: () => getReminderOptIn(),
@@ -80,14 +82,14 @@ function stubBrowser(): void {
   vi.stubGlobal('window', { dispatchEvent: vi.fn() });
 }
 
-function mockFetchOk(body: unknown = { token: 'new-cap-token', email: 'user@example.com' }): ReturnType<typeof vi.fn> {
-  const f = vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));
+function mockFetchOk(body: unknown = { token: 'new-cap-token', email: 'user@example.com' }): FetchMock {
+  const f = vi.fn<[input: RequestInfo | URL, init?: RequestInit], Promise<Response>>(async () => new Response(JSON.stringify(body), { status: 200 }));
   vi.stubGlobal('fetch', f);
   return f;
 }
 
 /** Parsed POST body of the nth fetch call (the protocol is text/plain JSON). */
-function postedBody(f: ReturnType<typeof vi.fn>, n = 0): Record<string, unknown> {
+function postedBody(f: FetchMock, n = 0): Record<string, unknown> {
   return JSON.parse((f.mock.calls[n][1] as RequestInit).body as string);
 }
 

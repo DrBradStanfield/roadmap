@@ -80,7 +80,7 @@ export function loadFromLocalStorage(): LoadedData | null {
       // Stale localStorage may contain PostgREST NUMERIC strings (e.g. "5.2")
       // or corrupted NaN/Infinity values.
       previousMeasurements: (data.previousMeasurements ?? [])
-        .filter(m => m.value != null && m.value !== '' && Number.isFinite(Number(m.value)))
+        .filter(m => m.value != null && (m.value as unknown) !== '' && Number.isFinite(Number(m.value)))
         .map(m => ({ ...m, value: Number(m.value) })),
       medications: data.medications ?? [],
       screenings: data.screenings ?? [],

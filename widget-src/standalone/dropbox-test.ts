@@ -8,8 +8,9 @@
  * The app key is a PKCE client id — public by design (it appears in the OAuth
  * URL the user sees), so it is safe in this public repo.
  */
-import { createMeasurement, type FileMeasurement } from '@roadmap/health-core';
+import { createMeasurement, type FileMeasurement, type RoadmapFile } from '@roadmap/health-core';
 import { DropboxAdapter, getDeviceId, StorageError, SyncManager } from '../src/storage';
+import { ROADMAP_DOC } from '../src/storage/roadmap-store';
 
 const DROPBOX_APP_KEY = 'xf96vqvjotm5xhx';
 
@@ -64,7 +65,7 @@ export async function initDropboxTest(els: Els): Promise<void> {
     if (!adapter) return;
     els.result.textContent = 'Running…';
     try {
-      const sync = new SyncManager(adapter, getDeviceId());
+      const sync = new SyncManager<RoadmapFile>(adapter, getDeviceId(), ROADMAP_DOC);
       const before = await sync.load();
       const beforeActive = countActive(before.measurements);
       const measurement = createMeasurement({

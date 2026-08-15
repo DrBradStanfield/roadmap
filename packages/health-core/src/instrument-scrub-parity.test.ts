@@ -8,6 +8,8 @@
  */
 import { describe, it, expect } from 'vitest';
 import * as source from './sentry-scrub';
+// @ts-expect-error -- plain .mjs script with no declarations; this parity test
+// only needs its runtime exports.
 import * as copy from '../../../instrument-scrub.mjs';
 
 // One field per sensitive key currently redacted by the source. If health-core's list grows,

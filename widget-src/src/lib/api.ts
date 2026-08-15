@@ -416,8 +416,8 @@ export async function sendReportEmail(): Promise<{ success: boolean; error?: str
 export async function sendGuestReport(
   email: string,
   inputs: Record<string, unknown>,
-  medications?: Record<string, unknown>,
-  screenings?: Record<string, unknown>,
+  medications?: readonly ApiMedication[],
+  screenings?: readonly ApiScreening[],
 ): Promise<{ success: boolean; error?: string }> {
   return apiCall(
     async () => {

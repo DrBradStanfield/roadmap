@@ -11,7 +11,7 @@
  * picker once — the listener below already handles it.
  */
 import React, { useEffect, useState } from 'react';
-import { GoogleDriveAdapter } from '../src/storage';
+import { GoogleDriveAdapter, isSyncPending, SYNC_PENDING_EVENT } from '../src/storage';
 import { googleDriveConfig } from './google-config';
 import { BACKEND_KEY, liftLocalInto, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
 import { BackendPickerModal } from './backend-picker';
@@ -34,6 +34,21 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
     window.addEventListener('hr:open-backend-picker', open);
     return () => window.removeEventListener('hr:open-backend-picker', open);
   }, []);
+
+  // "Still waiting to sync" indicator — driven by the store's pending-sync
+  // marker: set by a failed cloud save or a failed connect-time lift, cleared
+  // by the next successful cloud save. The store fires SYNC_PENDING_EVENT on
+  // every flip (same convention as the hr:* reminder events), so the line
+  // appears only while data is genuinely unsynced and clears the moment it
+  // lands — no polling.
+  const [pendingSync, setPendingSync] = useState(false);
+  useEffect(() => {
+    if (backend === 'local') return;
+    const check = () => setPendingSync(isSyncPending());
+    check();
+    window.addEventListener(SYNC_PENDING_EVENT, check);
+    return () => window.removeEventListener(SYNC_PENDING_EVENT, check);
+  }, [backend]);
 
   // Reconnect via the GIS popup FALLBACK (~1 h token) — works even with the
   // exchange endpoint down; needs this click's user gesture. Local edits made
@@ -92,6 +107,12 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
             {PROVIDER_LABELS[backend]}
           </button>
         </span>
+        {pendingSync && (
+          <span className="hr-sync-detail">
+            Some data on this device is still waiting to sync to your {PROVIDER_LABELS[backend]} —
+            it will upload automatically. Your data is safe on this device meanwhile.
+          </span>
+        )}
       </div>
     );
   } else if (!hasData) {

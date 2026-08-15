@@ -145,8 +145,9 @@ function TimeSeriesChart({
           tooltip: {
             callbacks: {
               title: (items) => {
-                if (!items.length) return '';
-                const date = new Date(items[0].parsed.x);
+                const x = items[0]?.parsed.x;
+                if (x == null) return '';
+                const date = new Date(x);
                 return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
               },
               label: (item) => `${+Number(item.parsed.y).toPrecision(10)} ${unit}`,

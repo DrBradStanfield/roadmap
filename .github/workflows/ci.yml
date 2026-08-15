@@ -58,6 +58,15 @@ jobs:
           curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${VER}/gitleaks_${VER}_linux_x64.tar.gz" \
             | tar -xz -C /tmp gitleaks
           /tmp/gitleaks dir . --redact --no-banner --config .gitleaks.toml --exit-code 1
+      # Typecheck gates (Brad-authorized 2026-08-14). vite/esbuild strips
+      # types WITHOUT checking them, which is how standalone/connect.ts shipped
+      # with a type-broken, silently no-oping guest-data lift (US-09 AC3
+      # incident — docs/loops/sentry-fix/2026-08-14.md). Each project tsconfig
+      # was burned down to zero errors when its gate landed, so any error here
+      # is NEW. app/ has no gate yet — its burn-down is a separate task.
+      - run: npx tsc --noEmit -p widget-src/tsconfig.json
+      - run: npx tsc --noEmit -p packages/health-core/tsconfig.json
+
       # test:all runs the root vitest config — a strict superset of `npm test`
       # (health-core + app/lib) that also picks up widget-src and app/routes
       # suites, which were previously never executed in CI.

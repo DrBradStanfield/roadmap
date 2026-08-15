@@ -12,6 +12,7 @@ import {
   GitHubAdapter,
   WebDavAdapter,
   LocalStorageAdapter,
+  markSyncPending,
   ROADMAP_FILE_NAME,
   saveRoadmapFileInto,
   type StorageAdapter,
@@ -60,16 +61,17 @@ export async function migrateLocalInto(adapter: StorageAdapter): Promise<void> {
  * connect, Drive reconnect): a connect succeeds or fails on the connect
  * itself — the guest-data lift never blocks it and never mislabels it as
  * "connection failed". A failed lift MUST still be observable (a silent lift
- * failure is exactly how the US-09 AC3 no-op shipped): Sentry + console. The
- * on-device copy stays put — nothing is destroyed — but remains device-only,
- * invisible to the cloud session, until a LATER connect or backend switch
- * re-runs the lift (the remembered-choice resume path never lifts).
+ * failure is exactly how the US-09 AC3 no-op shipped): Sentry + console, plus
+ * the pending-mirror marker — RoadmapStore.create() (which runs right after)
+ * and every later session then merge the on-device copy up automatically, and
+ * the sync control shows "still waiting to sync" until the marker clears.
  */
 export async function liftLocalInto(adapter: StorageAdapter, backend: Backend): Promise<void> {
   try {
     await migrateLocalInto(adapter);
   } catch (error) {
     console.warn('Guest-data lift on connect failed', error);
+    markSyncPending();
     Sentry.captureException(error, { tags: { area: 'cloud-connect', op: 'migrate-up', backend } });
   }
 }

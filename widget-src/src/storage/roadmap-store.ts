@@ -35,6 +35,7 @@ import {
   migrateFile,
   PREFILL_FIELDS,
   resolveLabCatalogEntry,
+  SchemaTooNewError,
   SCREENING_KEYS,
   type ApiMeasurement,
   type ApiProfile,
@@ -67,12 +68,42 @@ export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
 };
 
 /**
- * Set while the on-device mirror may hold changes a cloud backend hasn't seen
- * (US-09 AC4). Written when a cloud persist fails (the working copy is mirrored
- * locally so a tab close can't lose it); cleared by the next successful cloud
- * save, after create() has merged the mirror back in.
+ * Set while the on-device copy may hold changes a cloud backend hasn't seen
+ * (US-09 AC4): a failed cloud persist mirrors the working copy locally under
+ * this marker, and a failed connect-time lift (standalone/connect.ts) marks
+ * the existing local file the same way. Cleared by the next successful cloud
+ * save, after create() has merged the on-device copy back in. ONLY the
+ * functions below write it — the key is exported for tests alone.
  */
 export const PENDING_MIRROR_KEY = 'health_roadmap_pending_cloud_sync';
+
+/** Fired on every marker flip; the sync-status UI listens (same convention as
+ *  the standalone hr:* events). Dispatch is best-effort — absent in tests. */
+export const SYNC_PENDING_EVENT = 'hr:sync-pending-changed';
+
+function notifySyncPending(): void {
+  try {
+    window.dispatchEvent(new Event(SYNC_PENDING_EVENT));
+  } catch {
+    /* non-browser environment (tests) */
+  }
+}
+
+/** Record that on-device data is ahead of the cloud (see PENDING_MIRROR_KEY). */
+export function markSyncPending(): void {
+  safeSetItem(PENDING_MIRROR_KEY, new Date().toISOString());
+  notifySyncPending();
+}
+
+function clearSyncPending(): void {
+  safeRemoveItem(PENDING_MIRROR_KEY);
+  notifySyncPending();
+}
+
+/** True while on-device data is still waiting to reach the cloud. */
+export function isSyncPending(): boolean {
+  return safeGetItem(PENDING_MIRROR_KEY) != null;
+}
 
 // --- App-facing shapes (moved here from api.ts; the data ones come from health-core) ---
 
@@ -99,6 +130,8 @@ export interface ApiDocument {
   metadata: Record<string, unknown>;
   sourceFileName: string | null;
   createdAt: string;
+  /** Cloud/device ref of the original uploaded file (mirrors api-types.ApiDocument). */
+  fileRef?: string | null;
 }
 export interface ApiLabValue {
   id: string;
@@ -197,11 +230,10 @@ export class RoadmapStore {
     // A previous cloud session failed to save and mirrored its changes
     // on-device (see persist()'s catch). Merge them in now and schedule a save
     // to lift them up; the marker clears only once a cloud save succeeds.
-    if (adapter.id !== 'local' && safeGetItem(PENDING_MIRROR_KEY) != null) {
-      // Fault-tolerant like the mirror-WRITE side: a corrupt mirror (read
-      // throws) or one written by a newer bundle (migrate throws SchemaTooNew)
-      // must not brick the load — continue on the cloud file and KEEP the
-      // marker: a schema-too-new mirror becomes readable once assets update.
+    if (adapter.id !== 'local' && isSyncPending()) {
+      // Fault-tolerant like the mirror-WRITE side: an unreadable mirror must
+      // not brick the load — continue on the cloud file. What happens to the
+      // marker depends on WHY it was unreadable (see the catch below).
       try {
         const ctx: SyncContext = { deviceId, now: new Date().toISOString() };
         const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
@@ -209,10 +241,20 @@ export class RoadmapStore {
           store.file = ROADMAP_DOC.merge(store.file, ROADMAP_DOC.migrate(body, ctx), ctx);
           store.touch();
         } else {
-          safeRemoveItem(PENDING_MIRROR_KEY); // stale marker, nothing mirrored
+          clearSyncPending(); // stale marker, nothing mirrored
         }
-      } catch {
-        store.mirrorSkipped = true; // mirror unreadable — continue on the cloud file
+      } catch (error) {
+        if (error instanceof SchemaTooNewError) {
+          // Written by a newer bundle — readable once assets update. Keep the
+          // marker (mirrorSkipped stops persist-success from clearing it).
+          store.mirrorSkipped = true;
+        } else {
+          // Unparseable local data can never be read OR replaced (the mirror
+          // write reads before merging, so it throws on the same bytes). A
+          // sticky marker would show "waiting to sync" forever for data
+          // nothing can recover — clear it; the bytes themselves stay put.
+          clearSyncPending();
+        }
       }
     }
     return store;
@@ -560,7 +602,7 @@ export class RoadmapStore {
     const p = this.file.profile;
     const out: Partial<HealthInputs> = {};
     for (const field of PREFILL_FIELDS) {
-      const v = (p as Record<string, unknown>)[field];
+      const v = (p as unknown as Record<string, unknown>)[field];
       if (v !== undefined) (out as Record<string, unknown>)[field] = v;
     }
     if (p.unitSystem !== undefined) out.unitSystem = p.unitSystem;
@@ -632,7 +674,7 @@ export class RoadmapStore {
       // instead: it now holds the ERASED file, whose bumped eraseEpoch wins the
       // merge and carries the erase to the cloud next session.
       if (this.adapter.id !== 'local') {
-        safeRemoveItem(PENDING_MIRROR_KEY);
+        clearSyncPending();
         await new LocalStorageAdapter().disconnect();
       }
       return { success: true };
@@ -756,7 +798,7 @@ export class RoadmapStore {
       } while (this.dirtyDuringPersist);
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
-      if (this.adapter.id !== 'local' && !this.mirrorSkipped) safeRemoveItem(PENDING_MIRROR_KEY);
+      if (this.adapter.id !== 'local' && !this.mirrorSkipped) clearSyncPending();
       return true;
     } catch (error) {
       // The background cloud save failed — this MUST be observable (unreported,
@@ -770,13 +812,13 @@ export class RoadmapStore {
       // unhandled rejection Sentry's noise filters dropped; awaited callers
       // (flush) check the result.
       if (this.adapter.id !== 'local') {
-        safeSetItem(PENDING_MIRROR_KEY, new Date().toISOString());
-        // Deliberately a merged SyncManager save, NOT writeSync: the local file
-        // may hold guest-era data this session never loaded (no marker set), and
-        // a plain overwrite would destroy its only copy. The merge preserves it —
-        // and lifts it up with the mirror on the next cloud session.
+        markSyncPending();
+        // Deliberately the merged transfer primitive, NOT writeSync: the local
+        // file may hold guest-era data this session never loaded (no marker
+        // set), and a plain overwrite would destroy its only copy. The merge
+        // preserves it — and lifts it up with the mirror on the next session.
         try {
-          await new SyncManager(new LocalStorageAdapter(), this.deviceId, ROADMAP_DOC).save(this.file);
+          await saveRoadmapFileInto(new LocalStorageAdapter(), this.file);
         } catch {
           /* device storage unavailable — memory-only is the best we have */
         }

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import type { HealthResults, Suggestion } from '@roadmap/health-core';
+import type { ApiMedication, ApiScreening, HealthResults, Suggestion } from '@roadmap/health-core';
 import {
   type UnitSystem,
   type MetricType,
@@ -54,8 +54,8 @@ interface ResultsPanelProps {
   sex?: 'male' | 'female';
   guestReportData?: {
     inputs: Record<string, unknown>;
-    medications?: Record<string, unknown>[];
-    screenings?: Record<string, unknown>[];
+    medications?: readonly ApiMedication[];
+    screenings?: readonly ApiScreening[];
   };
   formStage?: number;
   /** Standalone-only: replaces the Shopify AccountStatus block with the
@@ -423,7 +423,7 @@ function getEmailHelperText(): string {
   return DEFAULT_EMAIL_HELPER;
 }
 
-type GuestReportData = { inputs: Record<string, unknown>; medications?: Record<string, unknown>[]; screenings?: Record<string, unknown>[] };
+type GuestReportData = { inputs: Record<string, unknown>; medications?: readonly ApiMedication[]; screenings?: readonly ApiScreening[] };
 
 interface GuestEmailHook {
   email: string;

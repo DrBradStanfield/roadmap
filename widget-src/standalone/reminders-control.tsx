@@ -13,7 +13,7 @@
  * deliberate act of typing + ticking is the consent). The typed address goes
  * to Klaviyo only; the reminder row never stores it.
  */
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getReminderOptIn } from '../src/lib/roadmap-data';
 import { EMAIL_REGEX } from '../src/lib/email';
 import { cancelReminders, ENROL_NOTICE_KEY, optInToReminders, remindersSupported } from './reminders';

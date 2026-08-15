@@ -15,9 +15,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { RoadmapFile } from '@roadmap/health-core';
 import { MemoryAdapter, MemoryCloud, LocalStorageAdapter } from '../src/storage';
-import { ROADMAP_FILE_NAME } from '../src/storage/adapter';
-import { RoadmapStore } from '../src/storage/roadmap-store';
-import { migrateLocalInto, copyDownFrom } from './connect';
+import { ROADMAP_FILE_NAME, StorageError } from '../src/storage/adapter';
+import { RoadmapStore, PENDING_MIRROR_KEY } from '../src/storage/roadmap-store';
+import { migrateLocalInto, copyDownFrom, liftLocalInto } from './connect';
 
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {
   return JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json) as RoadmapFile;
@@ -77,6 +77,27 @@ describe('connect helpers lift/copy real data (US-09 AC2/AC3)', () => {
     const cloud = new MemoryCloud();
     await expect(migrateLocalInto(new MemoryAdapter(cloud))).resolves.toBeUndefined();
     expect(cloud.files.size).toBe(0);
+  });
+
+  it('a failed lift sets the pending-mirror marker, so the store recovery path retries it (US-09 AC4 wiring)', async () => {
+    const local = await RoadmapStore.create(new LocalStorageAdapter());
+    local.addMeasurement('weight', 80, '2024-01-01T00:00:00.000Z');
+    await local.flush();
+
+    class WriteFailsAdapter extends MemoryAdapter {
+      async write(): Promise<never> {
+        throw new StorageError('cloud down');
+      }
+    }
+    await liftLocalInto(new WriteFailsAdapter(), 'google-drive');
+
+    // The connect flow was not blocked (liftLocalInto resolved) and the marker
+    // is set — RoadmapStore.create() on the next line of app.tsx merges the
+    // on-device file up (pinned by 'the next cloud session merges…' above).
+    expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
+    // Local data untouched.
+    const { body } = await new LocalStorageAdapter().read(ROADMAP_FILE_NAME);
+    expect((body as RoadmapFile).measurements).toHaveLength(1);
   });
 
   it('copyDownFrom copies the cloud file down to this device, merged (AC2)', async () => {

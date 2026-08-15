@@ -5,7 +5,6 @@
  * (AC3 — one unit per row) and saves under the STABLE catalogue key so
  * manual and upload-extracted values land in the same row (AC4).
  */
-import React from 'react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
 

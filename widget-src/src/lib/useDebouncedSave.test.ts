@@ -7,8 +7,8 @@ import { createDebouncedSave } from './useDebouncedSave';
 // leak a fire after the component unmounted. These tests pin those down.
 
 describe('createDebouncedSave', () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
 
   it('fires the queued fn after the delay', () => {
     const d = createDebouncedSave(500);
