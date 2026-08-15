@@ -3,7 +3,12 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { execSync } from 'child_process';
 
-const gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+let gitHash = 'dev';
+try {
+  gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+} catch {
+  /* not a git checkout */
+}
 const release = `health-tool-widget@${gitHash}`;
 
 // Site-wide chat bubble — separate IIFE bundle.
