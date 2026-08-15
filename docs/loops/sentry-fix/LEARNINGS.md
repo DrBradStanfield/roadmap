@@ -58,8 +58,11 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   the symptom. FIXED same day on Brad's live authorization (failing tests
   first, `connect-migrate.test.ts`); widget-src/tsconfig now includes
   `standalone/` so tsc sees the directory (13 pre-existing errors surfaced —
-  burn-down list). Root enabler still open: no typecheck gate in CI
-  (workflow edits are Brad-only — proposed).
+  burn-down list). Root enabler CLOSED same day (Brad-authorized): both
+  project tsconfigs burned down 36→0 and gated in ci.yml; the burn-down
+  itself surfaced a second latent crash (Object.hasOwn on iOS WebKit <15.4
+  in the statin cascade — replaced with hasOwnProperty.call, floors kept at
+  ES2020). app/ still ungated — its burn-down is a standing task.
 - `[gotcha][process]` 2026-08-14 — Fresh cloud containers start on a detached
   HEAD at origin/main's tip while the local `main` REF lags: diff/typecheck
   comparisons against `main` silently use stale code. `git checkout -B main
