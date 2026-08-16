@@ -55,10 +55,11 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   notes as a WHOLE — merge duplicates, correct what later evidence overtook,
   prune the least-earning entries. Charter dead weight: name it in the
   report, Brad prunes (charters are frozen — see Self-improvement).
-- **Size is a vital sign**: every retro pastes RAW `wc -l -c` output for your
-  charter and LEARNINGS.md — the terminal's own bytes, NEVER a retyped number
-  (three retros across the fleets have mis-stated counts they claimed to
-  measure; one charter published three different line counts).
+- **Size is a vital sign**: every retro pastes MACHINE output, never a retyped
+  number (three fleet retros mis-stated counts they claimed to measure; one
+  charter published three different ones): `fleet-doctor.js --root docs/loops`
+  from the business repo (REGISTRY drift check) when it is on disk, else raw
+  `wc -l -c` for your charter and LEARNINGS.md. 25KB binds before lines.
 
 ## Learnings & metrics (how knowledge compounds without rotting)
 - **Structured records live in CSV, never prose — machine-readable by default
