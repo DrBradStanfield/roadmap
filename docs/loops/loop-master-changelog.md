@@ -5,6 +5,18 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-16 (Brad-directed):** "Size is a vital sign" now demands MACHINE
+  output: retros paste RAW `wc -l -c` for the charter and LEARNINGS.md — the
+  terminal's own bytes — never a retyped number. The rule already said "pasted
+  from actual `wc -l -c` — never estimated" and was violated anyway; the
+  business fleet's W34 retro published a notes file as 176 lines (actually
+  158) and burned four commits missing a line cap it claimed to have checked.
+  Third fleet-wide instance, counting this repo's charter that published three
+  different line counts — so the failure is transcription, not arithmetic.
+  The business constitution points at `node tools/fleet-doctor.js` instead;
+  THIS repo has no such tool, so it keeps `wc` (a rule naming a command that
+  does not exist here would be worse than the bug). Net-zero: 197 lines.
+
 - **2026-08-13 (Brad-directed, adversarial review):** New Orchestration
   bullet, identical in both fleets' constitutions: every run spawns ONE
   same-tier reviewer after the report is drafted, briefed to REFUTE — numbers
