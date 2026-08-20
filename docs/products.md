@@ -480,7 +480,7 @@ The physical/regulated marks that must appear correctly on MicroVitamin Capsules
 
 **Australia** (MicroVitamin Capsules, AU market, **v8.5 formula** from 2026-08):
 - **`AUST L 524572`** — the TGA (Therapeutic Goods Administration) listing number for v8.5. Must appear on the label and in any creative showing the label. The v7 stock carried `AUST L 509250`; an even earlier bottle carried `AUST L 477345`. Neither older number may appear on v8.5 creative.
-- **Australian Made roundel** — the kangaroo/triangle logo denoting local manufacture. Must be present and legible on the label.
+- **Australian Made roundel — MUST NOT APPEAR (Brad, 2026-08-21).** The kangaroo/triangle logo is the licensed AMAG certification mark and the brand holds no licence: the official v8.5 label (`AUS 8.5 Front (1).png` in the BJP `1 label v8.5/square` folder) deliberately carries no roundel, and no bottle image in any creative may show one — an AI generator or stale mockup adding it is a compliance breach, not a nice touch. Plain-text "Made in Australia" is fine anywhere. (This inverts the pre-2026-08-21 version of this rule, which wrongly required the roundel — that error propagated into a full ad fleet, fixed same day.)
 
 **United Kingdom** (MicroVitamin Capsules, UK market, v7 formula):
 - **GMP badge** — Good Manufacturing Practice certification mark.
