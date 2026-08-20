@@ -2454,7 +2454,8 @@ input[type="number"] {
 .upload-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  /* Must stay above the floating chat panel (z-index 1000). */
+  z-index: 1100;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
@@ -2896,7 +2897,8 @@ input[type="number"] {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  z-index: 999;
+  /* Above the floating chat panel (1000), below the upload modal (1100). */
+  z-index: 1050;
   background: #fff;
   border: 1px solid var(--color-gray-border);
   border-radius: 12px;
@@ -3355,7 +3357,9 @@ input[type="number"] {
   width: 640px;
   height: 720px;
   max-height: calc(100vh - 48px);
-  z-index: 100;
+  /* Above theme furniture (e.g. blog sidebar promos run z-index up to 999)
+     but below true app overlays (cart drawer, Klaviyo forms at 90000). */
+  z-index: 1000;
   background: #fff;
   border: 1px solid var(--color-gray-border);
   border-radius: 12px;
@@ -3977,7 +3981,8 @@ input[type="number"] {
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 100;
+  /* One above .chat-expanded so the undo toast stays visible over the panel. */
+  z-index: 1001;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -4063,10 +4068,9 @@ input[type="number"] {
   .chat-fab-label {
     display: none;
   }
-  /* Push chat bubble above sticky Add to Cart bar when it's visible */
-  body:has(#md-sticky-atc.show) .chat-fab {
-    bottom: 80px;
-  }
+  /* (The sticky add-to-cart lift is handled at every width by useFabLift in
+     site-chat.tsx via --chat-fab-bottom — a CSS bottom here would override
+     the animated variable and freeze the FAB.) */
   /* Hide FAB on the roadmap page — inline embed already provides chat */
   body:has(#health-chatbot-embed-root) .chat-fab {
     display: none;

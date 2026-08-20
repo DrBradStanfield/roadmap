@@ -6,7 +6,7 @@
  * Reads cached health data from localStorage (entered on roadmap page) and
  * sends it as chat context — local-first, the server holds no health data.
  */
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ChatSection } from './components/ChatSection';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -20,43 +20,56 @@ initSentry();
 
 // Gap (px) to leave between the FAB and the footer's top edge when docked.
 const FAB_FOOTER_GAP = 16;
+// Gap (px) between the FAB and the top of the theme's sticky add-to-cart bar.
+const FAB_STICKY_ATC_GAP = 12;
 // Resting offset (px) from the bottom of the viewport — matches the CSS default.
 const FAB_BASE_BOTTOM = 24;
 
 /**
- * Keep the floating FAB from overlapping the page footer.
- *
- * When the footer scrolls into view, lift the FAB so it sits just above the
- * footer's top edge; when the footer leaves the viewport, drop it back to its
- * resting position. Theme-agnostic and no-ops gracefully when there is no
- * footer (some themes), so this stays safe as shared extension code.
+ * Keep the floating FAB clear of page furniture pinned to the bottom of the
+ * viewport: the page footer (when it scrolls into view) and the theme's
+ * sticky add-to-cart bar (`#md-sticky-atc`, shown on product pages once the
+ * visitor scrolls past the main product form — without a lift the FAB sits
+ * directly on its Add-to-cart button). The FAB's `bottom` becomes the largest
+ * clearance any obstacle needs; each part no-ops when its element is missing,
+ * so this stays safe as shared extension code across themes/stores.
  *
  * Implemented by animating the FAB's `bottom` via a CSS custom property
  * (`--chat-fab-bottom`) — deliberately NOT `transform`, which the `.chat-fab`
  * already uses for its hover scale / entrance animation.
+ *
+ * Takes the FAB element (from a callback ref), not a ref object: the button
+ * unmounts while the chat panel is open and remounts as a NEW node on close,
+ * so the effect must re-bind — and immediately re-position — per element.
  */
-function useFooterDock(fabRef: React.RefObject<HTMLButtonElement>) {
+function useFabLift(fab: HTMLButtonElement | null) {
   useEffect(() => {
-    const fab = fabRef.current;
     if (!fab) return;
 
     const footer =
       document.querySelector<HTMLElement>('footer') ||
       document.querySelector<HTMLElement>('.shopify-section-group-footer-group');
-    // No footer on this theme/page — leave the FAB at its resting position.
-    if (!footer) return;
+    const stickyAtc = document.getElementById('md-sticky-atc');
+    // No bottom-pinned obstacles on this page — leave the FAB at rest.
+    if (!footer && !stickyAtc) return;
 
     let frame = 0;
     const reposition = () => {
       frame = 0;
-      const rect = footer.getBoundingClientRect();
-      // How far the footer's top edge sits above the viewport bottom.
-      const overlap = window.innerHeight - rect.top;
-      if (overlap > FAB_BASE_BOTTOM) {
-        fab.style.setProperty(
-          '--chat-fab-bottom',
-          `${Math.round(overlap + FAB_FOOTER_GAP)}px`,
-        );
+      let bottom = FAB_BASE_BOTTOM;
+      if (footer) {
+        // How far the footer's top edge sits above the viewport bottom.
+        const overlap = window.innerHeight - footer.getBoundingClientRect().top;
+        if (overlap > FAB_BASE_BOTTOM) {
+          bottom = Math.max(bottom, overlap + FAB_FOOTER_GAP);
+        }
+      }
+      if (stickyAtc && stickyAtc.classList.contains('show')) {
+        // offsetHeight: layout height, unaffected by the bar's slide-in transform.
+        bottom = Math.max(bottom, stickyAtc.offsetHeight + FAB_STICKY_ATC_GAP);
+      }
+      if (bottom > FAB_BASE_BOTTOM) {
+        fab.style.setProperty('--chat-fab-bottom', `${Math.round(bottom)}px`);
         fab.classList.add('chat-fab-docked');
       } else {
         fab.style.removeProperty('--chat-fab-bottom');
@@ -90,20 +103,44 @@ function useFooterDock(fabRef: React.RefObject<HTMLButtonElement>) {
     // viewport; while it's intersecting we track its exact position on scroll.
     // (Where IntersectionObserver is missing — Lockdown Mode — it degrades to
     // always-listening, which is just the pre-optimization behaviour.)
-    const stopObserving = observeVisibility(footer, (visible) => {
-      if (visible) startListening();
-      else stopListening();
-      schedule();
-    }, { threshold: 0 });
+    let stopObserving = () => {};
+    if (footer) {
+      stopObserving = observeVisibility(footer, (visible) => {
+        if (visible) startListening();
+        else stopListening();
+        schedule();
+      }, { threshold: 0 });
+    }
+
+    // Sticky-bar tracking: the bar toggles a `show` class from its own scroll
+    // listener, so a class MutationObserver (rAF-coalesced by `schedule`) is
+    // enough — no extra scroll listener needed. The resize handler is a
+    // DISTINCT function from `schedule`: the footer path's stopListening()
+    // removes `schedule` from window resize, and sharing the reference would
+    // silently detach this permanent listener too.
+    let barObserver: MutationObserver | null = null;
+    const onWindowResize = () => schedule();
+    if (stickyAtc) {
+      barObserver = new MutationObserver(schedule);
+      barObserver.observe(stickyAtc, { attributes: true, attributeFilter: ['class'] });
+      // Bar height varies by breakpoint, so track resizes for its lift too.
+      window.addEventListener('resize', onWindowResize, { passive: true });
+    }
+
+    // Position immediately: on a remount (chat closed) the obstacles may
+    // already be on screen and no observer callback is coming.
+    schedule();
 
     return () => {
       stopObserving();
       stopListening();
+      if (barObserver) barObserver.disconnect();
+      if (stickyAtc) window.removeEventListener('resize', onWindowResize);
       if (frame) cancelAnimationFrame(frame);
       fab.style.removeProperty('--chat-fab-bottom');
       fab.classList.remove('chat-fab-docked');
     };
-  }, [fabRef]);
+  }, [fab]);
 }
 
 interface ChatBubbleProps {
@@ -115,10 +152,12 @@ interface ChatBubbleProps {
 function ChatBubble({ isLoggedIn, fabLabel, guestInputs }: ChatBubbleProps) {
   const [open, setOpen] = useState(false);
   const [widgetChatOpen, setWidgetChatOpen] = useState(false);
-  const fabRef = useRef<HTMLButtonElement>(null);
+  // Callback-ref state (not useRef): the button remounts after every chat
+  // open/close cycle and the lift effect must re-bind to the new node.
+  const [fabEl, setFabEl] = useState<HTMLButtonElement | null>(null);
 
-  // Dock the FAB above the footer when the footer scrolls into view.
-  useFooterDock(fabRef);
+  // Lift the FAB clear of the footer and the theme's sticky add-to-cart bar.
+  useFabLift(fabEl);
 
   // Hide FAB when the widget's embedded chat is expanded — but only when the
   // dedicated embed block is NOT present. When the embed is on the page, all
@@ -151,7 +190,7 @@ function ChatBubble({ isLoggedIn, fabLabel, guestInputs }: ChatBubbleProps) {
 
   return (
     <button
-      ref={fabRef}
+      ref={setFabEl}
       className="chat-fab no-print"
       onClick={() => setOpen(true)}
       aria-label="Open chat"
