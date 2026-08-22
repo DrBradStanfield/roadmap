@@ -28,6 +28,10 @@ duplicates.
   `VITE_SHOPIFY_SURFACE`, so `trackProductEvent` no-ops in the bundle carrying
   most chat traffic. A shared-component event fix ships only where each
   bundle's config defines the flag: check every bundle that mounts the component.
+  **Closed 2026-08-22:** PR #23's define deployed 08-15T22:49Z; `chat_opened`
+  fired 29 times in W34, first event 22:52:36Z (~3 min later) — when a
+  container can't reach the live site, production telemetry with a tight
+  deploy-to-first-event timestamp IS the live verification.
 - **2026-08-10 [usage]** First instrumented week (W32, ~4 days): 190
   results_viewed; uploads complete at 100% (7/7); corrections (9) and
   additional-lab expansion (15, ~8% of viewers) both have real usage;
@@ -43,6 +47,18 @@ duplicates.
   status) and say so whenever a count drives a conclusion. (The W33 report's
   first draft "explained" W32's figures as lifetime counts — the adversarial
   review disproved that same-run; the true origin of 86/24 is unidentified.)
+- **2026-08-22 [tooling]** PostgREST silently caps any response at 1000 rows,
+  and two identical UNORDERED queries can return *different* arbitrary
+  1000-row subsets — an unordered fetch is never "all rows" past 1k. Always
+  pair `Prefer: count=exact` with explicit-`order` pagination and reconcile
+  the aggregate against the exact count (bit the W34 `ab_events` pull; caught
+  same-run by the worker's cross-check).
+- **2026-08-22 [tooling]** Clarity session counts can be ~99% synthetic:
+  W34's drstanfield pull showed 357k sessions/3d (~79× normal) that were one
+  fingerprint — Chrome+macOS+PC+no-referrer, ~22s engagement, US/BR/VN/MX —
+  a scraper wave, with Clarity's own bot filter catching only ~3%. Before
+  trusting a Clarity session count, check Browser/OS/referrer concentration;
+  a flooded pull is a named gap, not a data point.
 - **2026-08-16 [usage]** First week of the email machine (US-17/22/23): 18
   enrolments — 17 typed vs 3 cloud rows all-time, so the ~10:1 typed-lane bet
   held almost exactly; 40% plan-ready click rate; 1/25 bounce; 0 opt-outs.
