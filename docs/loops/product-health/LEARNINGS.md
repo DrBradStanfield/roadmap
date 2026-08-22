@@ -53,6 +53,11 @@ duplicates.
   pair `Prefer: count=exact` with explicit-`order` pagination and reconcile
   the aggregate against the exact count (bit the W34 `ab_events` pull; caught
   same-run by the worker's cross-check).
+- **2026-08-22 [tooling]** Email `product_events` (report_email_sent/clicked)
+  carry one constant visitor_id and empty metadata — click:send is an EVENT
+  ratio, never a per-recipient CTR (21 clicks could be one person), and the
+  numerator is uncohorted (a W34 click may be on a W33 send). Trend only
+  while computed identically week-to-week.
 - **2026-08-22 [tooling]** Clarity session counts can be ~99% synthetic:
   W34's drstanfield pull showed 357k sessions/3d (~79× normal) that were one
   fingerprint — Chrome+macOS+PC+no-referrer, ~22s engagement, US/BR/VN/MX —

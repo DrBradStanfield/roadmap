@@ -54,7 +54,7 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W34,reminder_optout_events,0,0,,"supabase","true zero — kill-ratio 0/56 cumulative vs 30% threshold"
 2026-W34,reminder_optin_total,58,20,,"supabase","all-time rows: 52 typed + 6 google-drive (~9:1)"
 2026-W34,report_email_sent,35,25,40,"supabase",""
-2026-W34,report_email_clicked,21,10,110,"supabase","60% CTR (clicks, not opens)"
+2026-W34,report_email_clicked,21,10,110,"supabase","60% click:send EVENT ratio — one constant visitor_id, no per-recipient dimension (adversarial-review catch); like-for-like vs W33's 40%"
 2026-W34,report_email_bounced,0,1,,"supabase","true zero; 0 complaints (webhook verified live W33)"
 2026-W34,chat_messages,335,260,29,"supabase","222 user-authored (169 prior)"
 2026-W34,chat_match_events,222,169,31,"supabase","42 matched; 180 empty of which 140 router_skipped; TRUE misses 40/82 = 49% — back at ~48% audit baseline after W33's 35%"
