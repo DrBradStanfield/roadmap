@@ -57,7 +57,7 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W34,report_email_clicked,21,10,110,"supabase","60% click:send EVENT ratio — one constant visitor_id, no per-recipient dimension (adversarial-review catch); like-for-like vs W33's 40%"
 2026-W34,report_email_bounced,0,1,,"supabase","true zero; 0 complaints (webhook verified live W33)"
 2026-W34,chat_messages,335,260,29,"supabase","222 user-authored (169 prior)"
-2026-W34,chat_match_events,222,169,31,"supabase","42 matched; 180 empty of which 140 router_skipped; TRUE misses 40/82 = 49% — back at ~48% audit baseline after W33's 35%"
+2026-W34,chat_match_events,222,169,31,"supabase","42 matched; 180 empty of which 140 router_skipped; TRUE misses 40/82 = 49% — BUT router_context shows ~80% of routed events are the YouTube comment bot; web-chat-only misses 4/16 = 25%, and 2 of those 4 are mid-conversation fragments where no-match is correct. Segment by platform before trending (post-delivery catch, 2026-08-22)"
 2026-W34,sentry_new_issues,1,1,,"sentry","JAVASCRIPT-REMIX-62 redirect-guard (dependency-level, node, 2 events, bot-shaped)"
 2026-W34,clarity_roadmap_visits_3d,,178,,"clarity","GAP: drstanfield sample flooded — 357k sessions/3d, 99% single Chrome/macOS/direct fingerprint, ~22s engagement; human trend unreadable this pull"
 2026-W34,feedback_organic,0,0,,"gmail+supabase","no feedback emails 8d; 0 feedback_submissions in window"

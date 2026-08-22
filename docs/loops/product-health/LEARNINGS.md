@@ -53,6 +53,16 @@ duplicates.
   pair `Prefer: count=exact` with explicit-`order` pagination and reconcile
   the aggregate against the exact count (bit the W34 `ab_events` pull; caught
   same-run by the worker's cross-check).
+- **2026-08-22 [usage]** The router "miss rate" (W32 73%→W33 35%→W34 49%) has
+  always conflated platforms: `router_context` shows ~80% of W34's routed
+  `chat_match_events` are the YOUTUBE COMMENT BOT (argumentative video
+  comments, where no blog match is often correct), not tool users. Web-chat
+  only: 12/16 matched; 2 of the 4 misses are mid-conversation fragments
+  ("female", a height reply) the classifier should arguably have skipped.
+  Real failure classes found: content gaps (turkesterone, BPC-157/peptides —
+  no post exists) and ONE router JSON-parse `router_error` (1/222). Segment
+  by `router_context` platform before drawing any router conclusion —
+  chat-health should re-baseline this way.
 - **2026-08-22 [tooling]** Email `product_events` (report_email_sent/clicked)
   carry one constant visitor_id and empty metadata — click:send is an EVENT
   ratio, never a per-recipient CTR (21 clicks could be one person), and the
