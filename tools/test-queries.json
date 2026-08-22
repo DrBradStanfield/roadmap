@@ -2665,6 +2665,6 @@
     "category": "classifier-greeting",
     "source": "production",
     "expected_classification": "GREETING",
-    "notes": "2026-08-22 chat-health loop: real Shopify turn — a bare demographic fragment with no question. Production classified ROUTE and burned a ~1.6s router call that returned empty. Desired: skip (GREETING/meta). Known-fail until the classifier prompt changes (Tier 0 proposal W34)."
+    "notes": "2026-08-22 chat-health loop: real Shopify turn — a bare demographic fragment with no question. Production classified ROUTE and burned a 1.1s router call that returned empty. Desired: skip (GREETING/meta). Known-fail until the classifier prompt changes (Tier 0 proposal W34)."
   }
 ]
