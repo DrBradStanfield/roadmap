@@ -6,6 +6,12 @@ name: Loop issue notify
 # issue #1). This workflow answers every newly opened issue with a
 # github-actions[bot] comment: a comment by ANOTHER actor on a thread the
 # author participates in is what triggers the notification email.
+#
+# 2026-08-24 (Brad): the comment now RELAYS the issue body itself, so the
+# notification email carries the report (TL;DR, what changed, whether a
+# decision is needed) instead of a useless "new issue" line. GitHub renders
+# comment markdown in the email, so tables/headings survive. Bodies longer
+# than the excerpt cap are cut at a paragraph boundary with a link back.
 
 on:
   issues:
@@ -21,9 +27,30 @@ jobs:
       - uses: actions/github-script@v7
         with:
           script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '*(no body)*';
+            // GitHub comment hard limit is 65536 chars; keep emails readable
+            // well below that. Loop reports run ~3-6k chars.
+            const MAX = 12000;
+            let excerpt = body;
+            if (body.length > MAX) {
+              const cut = body.lastIndexOf('\n\n', MAX);
+              excerpt = body.slice(0, cut > MAX / 2 ? cut : MAX)
+                + `\n\n… *(truncated — [read the full report](${issue.html_url}))*`;
+            }
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
-              body: `@DrBradStanfield — new issue: "${context.payload.issue.title}". (Automated: issues here are authored by your own account, which GitHub never notifies — this bot comment is what reaches your email.)`
+              body: [
+                `@DrBradStanfield — **${issue.title}** — report relayed below so the email is self-contained.`,
+                '',
+                '---',
+                '',
+                excerpt,
+                '',
+                '---',
+                '',
+                `*Automated relay: issues here are authored by your own account, which GitHub never notifies — this bot comment is what reaches your email. Reply on [the issue](${issue.html_url}) if anything needs action.*`
+              ].join('\n')
             });
