@@ -63,6 +63,12 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   itself surfaced a second latent crash (Object.hasOwn on iOS WebKit <15.4
   in the statin cascade — replaced with hasOwnProperty.call, floors kept at
   ES2020). app/ still ungated — its burn-down is a standing task.
+- `[noise][server]` 2026-08-23 — Open-redirect/XSS probes on the Shopify OAuth
+  surface (`/auth/exit-iframe?exitIframe=javascript:…` or `data:…`) surface as
+  handled "Invalid URL. Refusing to redirect" server errors — that is
+  `sanitizeRedirectUrl` REJECTING the payload, i.e. the defense firing, not a
+  defect. Ledger `wontfix` on sight; the auth route is grant-excluded, so any
+  capture-hygiene change would be propose-only — not worth it at probe volume.
 - `[gotcha][process]` 2026-08-14 — Fresh cloud containers start on a detached
   HEAD at origin/main's tip while the local `main` REF lags: diff/typecheck
   comparisons against `main` silently use stale code. `git checkout -B main
