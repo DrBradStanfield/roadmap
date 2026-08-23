@@ -28,16 +28,33 @@ jobs:
         with:
           script: |
             const issue = context.payload.issue;
+            // Only relay issues Brad's own account opened (i.e. loop sessions).
+            // Externally-authored issues already notify him natively, and on a
+            // PUBLIC repo (roadmap) relaying stranger bodies would amplify
+            // spam and re-ping any @mentioned third parties (adversarial
+            // review 2026-08-24).
+            if (issue.user.login !== 'DrBradStanfield') return;
             const body = issue.body || '*(no body)*';
             // GitHub comment hard limit is 65536 chars; keep emails readable
             // well below that. Loop reports run ~3-6k chars.
             const MAX = 12000;
             let excerpt = body;
             if (body.length > MAX) {
-              const cut = body.lastIndexOf('\n\n', MAX);
-              excerpt = body.slice(0, cut > MAX / 2 ? cut : MAX)
+              let head = body.slice(0, (() => {
+                const cut = body.lastIndexOf('\n\n', MAX);
+                return cut > MAX / 2 ? cut : MAX;
+              })());
+              // never end on a lone UTF-16 high surrogate (422s the API call)
+              if (/[\uD800-\uDBFF]$/.test(head)) head = head.slice(0, -1);
+              // close a code fence the cut may have left open
+              if (((head.match(/```/g) || []).length) % 2) head += '\n```';
+              excerpt = head
                 + `\n\n… *(truncated — [read the full report](${issue.html_url}))*`;
             }
+            // neutralize @mentions inside the relayed body (zero-width space)
+            // so the relay never re-pings anyone; the header line below still
+            // mentions Brad deliberately.
+            excerpt = excerpt.replace(/@(\w)/g, '@\u200b$1');
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
