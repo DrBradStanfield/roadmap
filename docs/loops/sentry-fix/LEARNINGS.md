@@ -8,8 +8,11 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
 - `[noise][server]` Dev-mode react-router frames in server stacks are EXPECTED
   residue, not a bug signal — react-router-serve runs the dev build in prod
   (see memory/project_react_router_serve_dev_build.md). Don't chase.
-- `[noise][widget]` Theme-origin errors: drstanfield.com runs Horizon — errors
-  with frames only in theme assets (not our bundles) are not ours.
+- `[noise][widget]` Foreign-origin errors: drstanfield.com runs Horizon —
+  errors with frames only in theme assets are not ours; same for
+  native-frames-only unhandled rejections (in-app-browser injected scripts:
+  GSA/Facebook webviews) when the minified symbol greps to nothing in our
+  bundles (confirmed again 2026-08-25, "Ba`prod").
 - `[prior][widget]` iOS WebKit-only layout/interaction bugs are a known class
   (CLAUDE.md list: content-box flex default, 280px input min-content, sticky
   in max-content parents). If a fix touches layout, the escape analysis should
