@@ -1,6 +1,6 @@
 ---
-title: "Is this Cancer Vaccine Actually a Big Deal?"
-url: "https://drstanfield.com/blogs/articles/is-this-cancer-vaccine-actually-a-big-deal"
+title: "This Vaccine Just Changed Cancer Forever"
+url: "https://drstanfield.com/blogs/articles/this-vaccine-just-changed-cancer-forever"
 commerceUrl: "https://microvitamin.com/blogs/articles/personalized-cancer-vaccine-phase-3"
 youtube: "https://youtu.be/IZlWYAp7g-g"
 publishedAt: "2026-08-26T05:00:00Z"
