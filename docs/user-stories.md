@@ -302,6 +302,15 @@ As the avatar's future self, I have an app that makes the whole thing automatic:
 ### US-26 · Action links — every reminder pairs the "what" with a "where" (stub)
 As a user told a lipid panel is due, the reminder also tells me where to get one — direct-to-consumer lab links (Quest/Ulta-style, US), supplement refills via Brad's store, later pharmacy integration. Start affiliate-grade (plain links, zero API work); the click-through data is the evidence needed before building any real integration. This is the monetization seam, honestly labeled — and it must never gate the reminder itself.
 
+## Epic G — Operational bots (non-avatar: Brad is the user; ops-safety specs only)
+
+### US-27 · YouTube bot posting caps hold when the data layer fails — **added by sentry-fix 2026-08-27 (spec hole found via Sentry JAVASCRIPT-REMIX-64/65/66)**
+As Brad, on whose channel the bot posts publicly, its safety caps (50 replies/day, 10/video lifetime) bind under ALL conditions — including when the Supabase reads behind them fail.
+- AC1: A failed cap read (today's post count, per-video totals) fails distinguishably (throws, same convention as the tick's other pre-posting reads) — never a value indistinguishable from zero posts.
+- AC2: With either cap unknown, the tick posts nothing (top-level or follow-up), logs the skip, and retries next tick.
+- Tests: ✅ `youtube-bot.server.test.ts` pins AC1+AC2 at the `readPostingCaps` gate (Supabase error on either read → rejects; success → both caps).
+- Origin: from 2026-08-26 an intermittent Supabase-side PGRST303 ("JWT issued at future") made ~⅓ of cap reads error; each affected tick silently re-armed the full daily budget (error was mapped to count 0 / empty map).
+
 ## Coverage priorities — 2026-08-07 pass: DONE
 
 1. ✅ US-10/US-04/US-11/US-13 — RoadmapStore + SyncManager suites landed (16 tests) and **immediately caught the eraseEpoch-resurrection defect** (see US-11), fixed same day.

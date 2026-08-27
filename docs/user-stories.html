@@ -78,6 +78,8 @@
   <a class="toc-sub" href="#us-24-add-my-check-ups-to-my-calendar-brad-approved-2026-08-14-links-not-attachments">US-24</a>
   <a class="toc-sub" href="#us-25-the-mobile-app-architectural-destination-stub-this-year-ambition-once-the-web-loop-is-proven">US-25</a>
   <a class="toc-sub" href="#us-26-action-links-every-reminder-pairs-the-what-with-a-where-stub">US-26</a>
+  <a href="#epic-g-operational-bots-non-avatar-brad-is-the-user-ops-safety-specs-only">Operational bots (non-avatar: Brad is the user; ops-safety specs only)</a>
+  <a class="toc-sub" href="#us-27-youtube-bot-posting-caps-hold-when-the-data-layer-fails-added-by-sentry-fix-2026-08-27-spec-hole-found-via-sentry-javascript-remix-64-65-66">US-27</a>
   <a href="#coverage-priorities-2026-08-07-pass-done">Coverage priorities — 2026-08-07 pass: DONE</a>
 </nav>
 <main>
@@ -370,6 +372,15 @@
 <p>As the avatar's future self, I have an app that makes the whole thing automatic: <strong>on-device notifications</strong> (reminders with no server at all — the true serverless end-state), <strong>HealthKit ingestion</strong> (US labs push results into Apple Health; the app reads bloods, recomputes the plan, no typing), durable storage (no localStorage wipe anxiety). The enrolment/consent model built for US-17/US-23 transfers as-is; the server calendar shrinks toward zero as users migrate. Every near-term decision gets checked against the constitution's question: *does this move toward or away from the phone?*</p>
 <h3 id="us-26-action-links-every-reminder-pairs-the-what-with-a-where-stub">US-26 · Action links — every reminder pairs the "what" with a "where" (stub)</h3>
 <p>As a user told a lipid panel is due, the reminder also tells me where to get one — direct-to-consumer lab links (Quest/Ulta-style, US), supplement refills via Brad's store, later pharmacy integration. Start affiliate-grade (plain links, zero API work); the click-through data is the evidence needed before building any real integration. This is the monetization seam, honestly labeled — and it must never gate the reminder itself.</p>
+<h2 id="epic-g-operational-bots-non-avatar-brad-is-the-user-ops-safety-specs-only">Epic G — Operational bots (non-avatar: Brad is the user; ops-safety specs only)</h2>
+<h3 id="us-27-youtube-bot-posting-caps-hold-when-the-data-layer-fails-added-by-sentry-fix-2026-08-27-spec-hole-found-via-sentry-javascript-remix-64-65-66">US-27 · YouTube bot posting caps hold when the data layer fails — <strong>added by sentry-fix 2026-08-27 (spec hole found via Sentry JAVASCRIPT-REMIX-64/65/66)</strong></h3>
+<p>As Brad, on whose channel the bot posts publicly, its safety caps (50 replies/day, 10/video lifetime) bind under ALL conditions — including when the Supabase reads behind them fail.</p>
+<ul>
+<li>AC1: A failed cap read (today's post count, per-video totals) fails distinguishably (throws, same convention as the tick's other pre-posting reads) — never a value indistinguishable from zero posts.</li>
+<li>AC2: With either cap unknown, the tick posts nothing (top-level or follow-up), logs the skip, and retries next tick.</li>
+<li>Tests: ✅ <code>youtube-bot.server.test.ts</code> pins AC1+AC2 at the <code>readPostingCaps</code> gate (Supabase error on either read → rejects; success → both caps).</li>
+<li>Origin: from 2026-08-26 an intermittent Supabase-side PGRST303 ("JWT issued at future") made ~⅓ of cap reads error; each affected tick silently re-armed the full daily budget (error was mapped to count 0 / empty map).</li>
+</ul>
 <h2 id="coverage-priorities-2026-08-07-pass-done">Coverage priorities — 2026-08-07 pass: DONE</h2>
 <p>1. ✅ US-10/US-04/US-11/US-13 — RoadmapStore + SyncManager suites landed (16 tests) and <strong>immediately caught the eraseEpoch-resurrection defect</strong> (see US-11), fixed same day.</p>
 <p>2. ✅ US-03 — date-defaulting semantics pinned.</p>

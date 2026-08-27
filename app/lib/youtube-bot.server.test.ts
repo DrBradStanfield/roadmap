@@ -1,5 +1,39 @@
-import { describe, it, expect } from 'vitest';
-import { assessThreadFollowUp, buildThreadHistory, addressReply, type YouTubeReply } from './youtube-bot.server';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  assessThreadFollowUp,
+  buildThreadHistory,
+  addressReply,
+  readPostingCaps,
+  type YouTubeReply,
+} from './youtube-bot.server';
+
+// Chainable PostgREST-builder stub: every filter returns the chain, awaiting it
+// resolves to whatever response the test staged.
+const supa = vi.hoisted(() => ({
+  countRes: { count: 0 as number | null, error: null as unknown },
+  listRes: { data: [] as Array<{ video_id: string | null }> | null, error: null as unknown },
+}));
+
+vi.mock('./supabase.server', () => ({
+  supabaseAdmin: {
+    from: () => ({
+      select: (_cols: string, opts?: { head?: boolean }) => {
+        const res = opts?.head ? supa.countRes : supa.listRes;
+        type Chain = {
+          eq: () => Chain;
+          gte: () => Chain;
+          then: (onOk: (v: unknown) => unknown) => Promise<unknown>;
+        };
+        const chain: Chain = {
+          eq: () => chain,
+          gte: () => chain,
+          then: (onOk) => Promise.resolve(res).then(onOk),
+        };
+        return chain;
+      },
+    }),
+  },
+}));
 
 const CHANNEL = 'UC_brad';
 const HANDLE = '@drbradstanfield';
@@ -154,5 +188,38 @@ describe('buildThreadHistory', () => {
     expect(h[0].role).toBe('user');
     expect(h[0].content).toBe('Viewer: original\n\nViewer: second thought');
     expect(h[1]).toEqual({ role: 'assistant', content: 'Answer.' });
+  });
+});
+
+// US-27 AC1+AC2 (Sentry JAVASCRIPT-REMIX-64/65): a failed cap read must fail
+// distinguishably (reject) — never resolve to a value that reads as zero
+// posts, which silently re-arms the full daily/per-video posting budget.
+describe('US-27: posting-cap reads fail closed', () => {
+  beforeEach(() => {
+    supa.countRes = { count: 0, error: null };
+    supa.listRes = { data: [], error: null };
+  });
+
+  it('rejects when the daily-count read errors (AC1: never resolves to 0)', async () => {
+    supa.countRes = { count: null, error: { code: 'PGRST303', message: 'JWT issued at future' } };
+    await expect(readPostingCaps()).rejects.toMatchObject({ code: 'PGRST303' });
+  });
+
+  it('rejects when the per-video read errors (AC1: never resolves to an empty map)', async () => {
+    supa.countRes = { count: 5, error: null };
+    supa.listRes = { data: null, error: { code: 'PGRST303', message: 'JWT issued at future' } };
+    await expect(readPostingCaps()).rejects.toMatchObject({ code: 'PGRST303' });
+  });
+
+  it('resolves both caps on success, aggregating per-video totals', async () => {
+    supa.countRes = { count: 7, error: null };
+    supa.listRes = {
+      data: [{ video_id: 'a' }, { video_id: 'a' }, { video_id: 'b' }, { video_id: null }],
+      error: null,
+    };
+    expect(await readPostingCaps()).toEqual({
+      dailyCount: 7,
+      videoPostCounts: new Map([['a', 2], ['b', 1]]),
+    });
   });
 });
