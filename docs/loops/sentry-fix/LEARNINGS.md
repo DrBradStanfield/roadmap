@@ -78,3 +78,14 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   origin/main` first. Related: on SHALLOW clones, `git log -S`/`--stat`
   falsely attribute changes to graft-boundary commits (they diff as whole-tree
   adds) — verify blob ids across parents before blaming a commit.
+- `[defect][server][platform]` 2026-08-27 — Supabase `PGRST303 "JWT issued at
+  future"` hit ~1/3 of requests from one Fly machine starting 08-26 with NO
+  deploy on our side. A legacy-style JWT (fixed old iat, e.g. the
+  product-health key) never failed in 25 probes while the failing paths use
+  the service key — with new-format `sb_*` keys the gateway mints a
+  per-request JWT whose iat can outrun the project's PostgREST clock, so
+  intermittent PGRST303 is platform-side: check the key format before hunting
+  our code. The defect it exposed (PR #30, US-27): "handled" degradation
+  values (0 / empty map / false) that feed a SAFETY decision are fail-open —
+  cap and limit reads must fail distinguishably (throw), never resolve to a
+  value that reads as "nothing counted".
