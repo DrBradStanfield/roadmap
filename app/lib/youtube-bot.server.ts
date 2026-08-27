@@ -463,8 +463,12 @@ async function markPosted(p: MarkPostedParams): Promise<void> {
   }
 }
 
+/** Throws when the count is unreadable (US-27 AC1) — returning 0 here silently
+ *  re-armed the full daily cap whenever Supabase errored (Sentry
+ *  JAVASCRIPT-REMIX-65). Captured at the query site so the Sentry issue keeps
+ *  this function's name; the caps catch in tick() must not re-capture. */
 async function countTodayPosts(): Promise<number> {
-  if (!supabaseAdmin) return 0;
+  if (!supabaseAdmin) throw new Error('supabaseAdmin not configured');
   const todayStart = new Date();
   todayStart.setUTCHours(0, 0, 0, 0);
   const { count, error } = await supabaseAdmin
@@ -474,28 +478,40 @@ async function countTodayPosts(): Promise<number> {
     .gte('posted_at', todayStart.toISOString());
   if (error) {
     Sentry.captureException(error, { tags: { feature: 'youtube-bot' } });
-    return 0;
+    throw error;
   }
   return count ?? 0;
 }
 
 /** Single-query fetch of how many replies we've posted on each video.
- *  Called once per tick to avoid N queries in the per-comment loop. */
+ *  Called once per tick to avoid N queries in the per-comment loop.
+ *  Throws when the counts are unreadable (US-27 AC1) — an empty map on error
+ *  bypassed PER_VIDEO_REPLY_CAP (Sentry JAVASCRIPT-REMIX-64). */
 async function fetchVideoPostCounts(): Promise<Map<string, number>> {
-  const counts = new Map<string, number>();
-  if (!supabaseAdmin) return counts;
+  if (!supabaseAdmin) throw new Error('supabaseAdmin not configured');
   const { data, error } = await supabaseAdmin
     .from('youtube_bot_log')
     .select('video_id')
     .eq('posted', true);
   if (error) {
     Sentry.captureException(error, { tags: { feature: 'youtube-bot' } });
-    return counts;
+    throw error;
   }
+  const counts = new Map<string, number>();
   for (const row of data ?? []) {
     if (row.video_id) counts.set(row.video_id, (counts.get(row.video_id) ?? 0) + 1);
   }
   return counts;
+}
+
+/** Both posting caps; rejects if either read failed — with caps unknown the
+ *  tick must post nothing and retry next tick (US-27 AC2). */
+export async function readPostingCaps(): Promise<{ dailyCount: number; videoPostCounts: Map<string, number> }> {
+  const [dailyCount, videoPostCounts] = await Promise.all([
+    countTodayPosts(),
+    fetchVideoPostCounts(),
+  ]);
+  return { dailyCount, videoPostCounts };
 }
 
 /**
@@ -1056,10 +1072,16 @@ async function tick(): Promise<void> {
 
   let postedThisTick = 0;
   let skippedThisTick = 0;
-  const [startingDailyCount, videoPostCounts] = await Promise.all([
-    countTodayPosts(),
-    fetchVideoPostCounts(),
-  ]);
+  let startingDailyCount: number;
+  let videoPostCounts: Map<string, number>;
+  try {
+    ({ dailyCount: startingDailyCount, videoPostCounts } = await readPostingCaps());
+  } catch {
+    // Already captured at the query site. Caps unknown ⇒ posting budget
+    // unknown ⇒ post nothing this tick (US-27 AC2); next tick retries.
+    console.log('YouTube bot: posting-cap reads failed — skipping tick, will retry next tick');
+    return;
+  }
 
   for (const thread of threads) {
     if (startingDailyCount + postedThisTick >= DAILY_REPLY_CAP) {
