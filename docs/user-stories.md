@@ -308,7 +308,7 @@ As a user told a lipid panel is due, the reminder also tells me where to get one
 As Brad, on whose channel the bot posts publicly, its safety caps (50 replies/day, 10/video lifetime) bind under ALL conditions — including when the Supabase reads behind them fail.
 - AC1: A failed cap read (today's post count, per-video totals) fails distinguishably (throws, same convention as the tick's other pre-posting reads) — never a value indistinguishable from zero posts.
 - AC2: With either cap unknown, the tick posts nothing (top-level or follow-up), logs the skip, and retries next tick.
-- Tests: ✅ `youtube-bot.server.test.ts` pins AC1+AC2 at the `readPostingCaps` gate (Supabase error on either read → rejects; success → both caps).
+- Tests: 🟡 `youtube-bot.server.test.ts` pins AC1 at the `readPostingCaps` gate (Supabase error on either read → rejects; success → both caps). AC2's tick half (catch → post nothing → log → retry) is review-verified only — `tick()` isn't exported; extracting it is a future testability task.
 - Origin: from 2026-08-26 an intermittent Supabase-side PGRST303 ("JWT issued at future") made ~⅓ of cap reads error; each affected tick silently re-armed the full daily budget (error was mapped to count 0 / empty map).
 
 ## Coverage priorities — 2026-08-07 pass: DONE
