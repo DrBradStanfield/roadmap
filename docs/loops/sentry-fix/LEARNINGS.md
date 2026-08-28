@@ -85,7 +85,7 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   the service key — with new-format `sb_*` keys the gateway mints a
   per-request JWT whose iat can outrun the project's PostgREST clock, so
   intermittent PGRST303 is platform-side: check the key format before hunting
-  our code (confirmed again 2026-08-28, escalated to ~13/16 bot ticks; deploys
+  our code (confirmed again 2026-08-28, escalated to ~40% of half-hourly bot ticks; deploys
   regroup the continuing fault under NEW Sentry issue ids — check the ledger
   for the class before triaging an id as new). The defect class it exposed,
   now fixed twice (PR #30/US-27 caps; PR #35/US-28 cron locks): a "handled"
