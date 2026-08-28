@@ -1,0 +1,73 @@
+# Stranded-branch watchdog.
+#
+# WHY THIS EXISTS: cloud loop sessions sometimes end on their disposable
+# claude/<session> branch without landing the work on main or opening a PR —
+# chat-health's W34 report stranded this way TWICE (2026-08-15 and
+# 2026-08-23) and was only found by a manual sweep on 2026-08-29. Nothing
+# else watches for unlanded branches, so this daily audit does: any branch
+# with commits not on main, no open PR, and a tip older than ~20h gets one
+# issue. github-actions[bot] is the author, so the issue emails Brad
+# natively (same mechanism workflow-integrity relies on).
+#
+# The 20h grace period keeps in-flight Tier 3 work (branch pushed, PR opened
+# the same run) from being flagged between push and PR creation.
+
+name: Stranded branch watch
+
+on:
+  schedule:
+    - cron: '37 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const GRACE_MS = 20 * 60 * 60 * 1000;
+            const branches = await github.paginate(github.rest.repos.listBranches, { owner, repo, per_page: 100 });
+            for (const b of branches) {
+              if (b.name === 'main') continue;
+              const cmp = await github.rest.repos.compareCommitsWithBasehead({
+                owner, repo, basehead: `main...${b.name}`, per_page: 1,
+              });
+              if (cmp.data.ahead_by === 0) continue; // fully merged — stale but not stranded
+              const tip = await github.rest.repos.getCommit({ owner, repo, ref: b.commit.sha });
+              const tipDate = new Date(tip.data.commit.committer.date);
+              if (Date.now() - tipDate.getTime() < GRACE_MS) continue; // still in flight
+              const prs = await github.rest.pulls.list({ owner, repo, head: `${owner}:${b.name}`, state: 'open' });
+              if (prs.data.length > 0) continue; // PR open — the normal review path has it
+              // one issue per branch, ever (Brad closes it when resolved; a
+              // closed issue means "seen", so never re-open or duplicate)
+              const marker = `Stranded branch: ${b.name}`;
+              const found = await github.rest.search.issuesAndPullRequests({
+                q: `repo:${owner}/${repo} is:issue in:title "${marker}"`,
+              });
+              if (found.data.items.some(i => i.title.endsWith(marker))) continue;
+              const subject = tip.data.commit.message.split('\n')[0];
+              await github.rest.issues.create({
+                owner, repo,
+                title: `⚠️ ${marker}`,
+                body: [
+                  `Branch \`${b.name}\` has **${cmp.data.ahead_by} commit(s) not on main**, no open PR, and its tip is >20h old — loop or session work is stranded there.`,
+                  '',
+                  `- Tip: \`${b.commit.sha.slice(0, 7)}\` — ${subject} (${tipDate.toISOString()})`,
+                  `- Compare: https://github.com/${owner}/${repo}/compare/main...${encodeURIComponent(b.name)}`,
+                  '',
+                  'What to do (pick one, then close this issue):',
+                  '1. **Land it** — merge to main (data/doc commits) or open the PR (Tier 3 code).',
+                  '2. **Superseded** — note where the replacement landed, then delete the branch.',
+                  '',
+                  '_Opened by stranded-branch-watch (daily). One issue per branch — closing it silences that branch permanently._',
+                ].join('\n'),
+              });
+            }

@@ -5,6 +5,17 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-08-29 (Brad-directed session — landing check):** new Repo-rules
+  line: a run's LAST git act is `git rev-list --count origin/main..HEAD` = 0,
+  or the commits sit in an open Tier 3 PR. Born from chat-health W34 stranding
+  TWICE on unopened `claude/…` session branches (runs 2026-08-15 + 2026-08-23;
+  found only by a manual sweep; the 08-23 run merged 2026-08-29 as cc2d13e, the 08-15 branch left for the watchdog to flag). Deterministic
+  backstop shipped alongside: `.github/workflows/stranded-branch-watch.yml`
+  (daily; opens one issue per branch that is ahead of main with no open PR and
+  a tip >20h old — bot-authored, so it emails Brad natively). Compensating
+  compactions for the 200-line cap: unreachable-source, history and
+  commit-early bullets rewrapped/tightened; no rule content lost.
+
 - **2026-08-16 (Brad-directed):** "Size is a vital sign" now demands MACHINE
   output: retros paste RAW `wc -l -c` for the charter and LEARNINGS.md — the
   terminal's own bytes — never a retyped number. The rule already said "pasted

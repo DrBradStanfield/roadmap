@@ -101,17 +101,15 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 - **The charter is Brad's, not yours** — as are this constitution, the
   Guardrails, your schedule, write scope and credentials. You decide what to
   DO; Brad decides what you are ALLOWED to do.
-- **History NEVER lives inside an operative file**: a changelog section found
-  inside a charter or this constitution is drift — move it to `changelog.md`
-  in the same run.
+- **History NEVER lives in an operative file**: a changelog section in a
+  charter or this constitution is drift — move it to `changelog.md` same run.
 
 ## Reporting
 - One report per run: `docs/loops/<name>/YYYY-'W'WW.md`, ≤150 lines. Charter
   defines sections; every report includes week-over-week deltas, a retro, and
   the data-gap list.
-- **A source you couldn't reach is a NAMED gap — silence is never success.
-  Never fabricate numbers.** Distinguish signal (repeated, actionable) from
-  noise.
+- **An unreachable source is a NAMED gap — silence is never success. Never
+  fabricate numbers.** Distinguish signal (repeated, actionable) from noise.
 - **No email by default (Brad, 2026-08-10): the committed report IS the
   delivery.** Contact Brad ONLY when a run needs his decision: open a GitHub
   issue "🎯 Decision needed: <topic>" — decision, options, recommendation,
@@ -121,9 +119,9 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   workflow's bot comment is what emails him (missing/disabled = a delivery
   gap in the retro). Never Gmail drafts.
 - **Commit early — truncation-proof the run**: commit the report with its data
-  as soon as the numbers are in, BEFORE polish and retro (runs
-  share a plan-usage pool and can be cut off mid-flight; a truncated run must
-  still leave its data on main, marked "run truncated after <step>").
+  as soon as the numbers are in, BEFORE polish and retro (runs share a
+  plan-usage pool and can be cut off mid-flight; a truncated run must still
+  leave its data on main, marked "run truncated after <step>").
 
 ## Repo rules (inherited from CLAUDE.md — binding)
 - **READ `CLAUDE.md` yourself at the start of every run — never assume it
@@ -134,6 +132,10 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   — EXCEPT Tier 3 code changes, which go via `claude/` branch + PR by design).
   `docs/products.md` must be a REAL file (mode 100644), never a symlink
   (inverted 2026-08-10; `scripts/check-symlinks.mjs` enforces).
+- **Landing check — the run's LAST git act**: `git rev-list --count
+  origin/main..HEAD` prints 0, or an OPEN Tier 3 PR holds the commits — else
+  push to main before ending. Session branches strand work invisibly
+  (chat-health W34, twice, 2026-08). Backstop: `stranded-branch-watch.yml`.
 - Never print secret values; never commit real user data or health values;
   anonymize quoted user content.
 - **Sweep by touch (code-touching runs):** in any file your fix already
