@@ -85,7 +85,12 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   the service key — with new-format `sb_*` keys the gateway mints a
   per-request JWT whose iat can outrun the project's PostgREST clock, so
   intermittent PGRST303 is platform-side: check the key format before hunting
-  our code. The defect it exposed (PR #30, US-27): "handled" degradation
-  values (0 / empty map / false) that feed a SAFETY decision are fail-open —
-  cap and limit reads must fail distinguishably (throw), never resolve to a
-  value that reads as "nothing counted".
+  our code (confirmed again 2026-08-28, escalated to ~13/16 bot ticks; deploys
+  regroup the continuing fault under NEW Sentry issue ids — check the ledger
+  for the class before triaging an id as new). The defect class it exposed,
+  now fixed twice (PR #30/US-27 caps; PR #35/US-28 cron locks): a "handled"
+  degradation value (0 / empty map / false) feeding a SAFETY or SCHEDULING
+  decision is fail-open — such reads must fail distinguishably (throw), never
+  resolve to a value that also has a legitimate meaning ("nothing counted",
+  "another machine won"). Audit shortcut: grep `return false` / `return 0` /
+  `return {}` inside catch/error branches of anything a cron or cap gate calls.
