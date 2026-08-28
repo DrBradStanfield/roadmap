@@ -47,8 +47,7 @@ export function startYouTubeBotSummaryCron(): void {
 
       if (lastRunDate === todayStr) return;
 
-      // A transient lock error throws to the catch below, which must not mark
-      // the day done — the machine then retries next tick (US-28 AC2).
+      // Acquire stays inside the try/catch (US-28 AC2: a lock error retries next tick).
       const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'youtube_bot_summary');
       if (!acquired) {
         lastRunDate = todayStr;

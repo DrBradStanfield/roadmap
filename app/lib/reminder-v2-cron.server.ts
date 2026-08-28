@@ -63,8 +63,7 @@ export function startReminderV2Cron(): void {
       const todayStr = now.toISOString().slice(0, 10);
       if (lastRunDate === todayStr) return;
 
-      // A transient lock error throws past the day-marking below, so this
-      // machine retries next tick instead of skipping the day (US-28 AC2).
+      // Acquire stays inside the try/catch (US-28 AC2: a lock error retries next tick).
       const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'reminder_v2_cron');
       if (!acquired) {
         lastRunDate = todayStr;
