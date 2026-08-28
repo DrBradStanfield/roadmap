@@ -45,28 +45,33 @@ async function processWithConcurrency<T, R>(
 }
 
 export function startReminderV2Cron(): void {
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Reminder v2 cron disabled in development');
+  // Same guard as the other three crons — this module self-starts on import
+  // (below), so without the 'test' case every suite that transitively imports
+  // it would spawn a real hourly interval.
+  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+    console.log(`Reminder v2 cron disabled in ${process.env.NODE_ENV}`);
     return;
   }
 
   console.log(`Reminder v2 cron started (first tick ≥ ${TARGET_HOUR_UTC}:00 UTC daily, machine: ${MACHINE_ID})`);
 
   cronIntervalId = setInterval(async () => {
-    const now = new Date();
-    if (now.getUTCHours() < TARGET_HOUR_UTC) return;
-
-    const todayStr = now.toISOString().slice(0, 10);
-    if (lastRunDate === todayStr) return;
-
-    const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'reminder_v2_cron');
-    if (!acquired) {
-      lastRunDate = todayStr;
-      return;
-    }
-    lastRunDate = todayStr;
-
     try {
+      const now = new Date();
+      if (now.getUTCHours() < TARGET_HOUR_UTC) return;
+
+      const todayStr = now.toISOString().slice(0, 10);
+      if (lastRunDate === todayStr) return;
+
+      // A transient lock error throws past the day-marking below, so this
+      // machine retries next tick instead of skipping the day (US-28 AC2).
+      const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, 'reminder_v2_cron');
+      if (!acquired) {
+        lastRunDate = todayStr;
+        return;
+      }
+      lastRunDate = todayStr;
+
       const count = await processV2Reminders(todayStr);
       console.log(`Reminder v2 cron: completed, sent ${count} emails`);
     } catch (error) {

@@ -311,6 +311,13 @@ As Brad, on whose channel the bot posts publicly, its safety caps (50 replies/da
 - Tests: 🟡 `youtube-bot.server.test.ts` pins AC1 at the `readPostingCaps` gate (Supabase error on either read → rejects; success → both caps). AC2's tick half (catch → post nothing → log → retry) is review-verified only — `tick()` isn't exported; extracting it is a future testability task.
 - Origin: from 2026-08-26 an intermittent Supabase-side PGRST303 ("JWT issued at future") made ~⅓ of cap reads error; each affected tick silently re-armed the full daily budget (error was mapped to count 0 / empty map).
 
+### US-28 · Daily crons survive transient lock errors — **added by sentry-fix 2026-08-28 (spec hole found via Sentry JAVASCRIPT-REMIX-66/68)**
+As Brad, whose server runs five daily jobs behind a cross-machine day lock (reminder emails, trending ×2, two ops summaries), a transient database error while acquiring the lock delays that machine's attempt to the next hourly tick — it never silently cancels the job for the day.
+- AC1: A transient DB error in `tryAcquireCronLock` (lock UPDATE or verify SELECT) fails distinguishably (throws, US-27 AC1's convention) — never the same `false` that means "another machine won". Permanent conditions (no admin client, missing seed row, malformed date) still return `false`: retrying cannot fix them.
+- AC2: On such an error the caller leaves the day unmarked and retries next tick; a genuine `false` still ends its day. Because the day lock itself is the cross-machine gate, a retry can never double-run a job another machine already claimed.
+- Tests: 🟡 `cron-lock.test.ts` pins AC1 (update error → rejects; verify error → rejects; won/lost/missing-seed/bad-date → boolean). `reminder-v2-cron.server.test.ts` pins AC2 for the reminder caller (rejection → re-attempt next tick then run; false → no re-attempt). The other three callers (trending, chat-summary, youtube-bot-summary) inherit AC2 through their existing tick catch — review-verified only: their start functions are disabled under NODE_ENV=test.
+- Origin: the US-27 platform fault also hit `tryAcquireCronLock` (JAVASCRIPT-REMIX-66: 4 events 08-26/27; -68: reminder_v2_cron + trending_cron 08-28). Every caller mapped the error's `false` to "day done", so one transient error made that machine skip its daily job; whether the job ran at all then depended on the other machine winning the lock.
+
 ## Coverage priorities — 2026-08-07 pass: DONE
 
 1. ✅ US-10/US-04/US-11/US-13 — RoadmapStore + SyncManager suites landed (16 tests) and **immediately caught the eraseEpoch-resurrection defect** (see US-11), fixed same day.

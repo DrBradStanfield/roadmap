@@ -91,6 +91,8 @@ export function startTrendingCron(): void {
 
       if (lastRunDate === todayStr) return;
 
+      // A transient lock error throws to the catch below, which must not mark
+      // the day done — the machine then retries next tick (US-28 AC2).
       const acquired = await tryAcquireCronLock(MACHINE_ID, todayStr, TRENDING_LOCK_NAME);
       if (!acquired) {
         lastRunDate = todayStr;

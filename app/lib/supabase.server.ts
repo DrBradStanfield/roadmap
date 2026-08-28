@@ -393,8 +393,15 @@ export async function getProfile(
 export type CronLockName = 'reminder_v2_cron' | 'trending_cron' | 'trending_cron_edu' | 'youtube_bot_summary' | 'chat_summary';
 
 /** Attempt to acquire the cron lock for today. Returns true if this machine
- *  should run the cron. Uses an atomic UPDATE with WHERE clause to prevent
- *  race conditions between machines. */
+ *  should run the cron; false if it lost the race or the lock is permanently
+ *  unusable (no admin client, missing seed row). Uses an atomic UPDATE with
+ *  WHERE clause to prevent race conditions between machines.
+ *
+ *  THROWS on transient DB errors (US-28 AC1): an error is not "another
+ *  machine won", and returning false here made the erroring machine mark the
+ *  day done and silently skip its daily job (Sentry JAVASCRIPT-REMIX-66/68).
+ *  Callers keep the acquire inside their tick try/catch, which must NOT mark
+ *  the day done — so the machine retries on the next tick. */
 export async function tryAcquireCronLock(
   machineId: string,
   today: string,
@@ -434,12 +441,14 @@ export async function tryAcquireCronLock(
     .or(`lock_date.is.null,lock_date.neq.${today}`);
 
   if (updateRes.error) {
+    // Transient failure — throw so the caller's tick catch retries next tick
+    // (the catch also owns the Sentry capture; capturing here too would
+    // double-report every error).
     console.error(`Error acquiring cron lock (${lockName}):`, updateRes.error);
-    Sentry.captureException(updateRes.error, {
-      tags: { feature: lockName },
-      extra: { machineId, today, lockName },
-    });
-    return false;
+    throw new Error(
+      `cron lock acquire failed (${lockName}): ${updateRes.error.message}`,
+      { cause: updateRes.error },
+    );
   }
 
   // Read back the row to determine who owns the lock for today. If this
@@ -450,14 +459,17 @@ export async function tryAcquireCronLock(
     .eq('lock_name', lockName)
     .maybeSingle();
 
-  if (verifyErr || !verify) {
+  if (verifyErr) {
     console.error(`Could not verify cron lock state (${lockName}):`, verifyErr);
-    if (verifyErr) {
-      Sentry.captureException(verifyErr, {
-        tags: { feature: lockName },
-        extra: { machineId, today, lockName },
-      });
-    }
+    throw new Error(
+      `cron lock verify failed (${lockName}): ${verifyErr.message}`,
+      { cause: verifyErr },
+    );
+  }
+  // No row at all = missing seed row (see CronLockName) — permanent
+  // misconfig, not transient; retrying won't help.
+  if (!verify) {
+    console.error(`Cron lock row missing (${lockName}) — check the seed in rls-policies.sql`);
     return false;
   }
 
