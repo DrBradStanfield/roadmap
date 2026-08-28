@@ -2639,5 +2639,32 @@
     "category": "cardiovascular",
     "source": "production",
     "notes": "2026-08-10 chat-health loop: anonymised from a YouTube comment (statins + cognitive decline). Statin-panic post covers cognition/dementia; router returned empty in production."
+  },
+  {
+    "query": "Short term is it really harmful for eca",
+    "expected": [
+      "weight-loss-supplements-benefits-evidence-and-safety"
+    ],
+    "category": "supplement",
+    "source": "production",
+    "notes": "2026-08-22 chat-health loop: real Shopify query (ECA = ephedrine/caffeine/aspirin stack). Body has a full Ephedra section incl. short-term harms and the FDA ban; no summary named ephedrine/ECA; router returned empty."
+  },
+  {
+    "query": "K2 is NOT involved in blood clotting. Show me a reference.",
+    "expected": [
+      "vitamin-k-benefits-forms-dosing-and-side-effects",
+      "vitamin-k2-d3-together",
+      "does-vitamin-k2-actually-protect-your-heart-new-trial"
+    ],
+    "category": "supplement",
+    "source": "production",
+    "notes": "2026-08-22 chat-health loop: YouTube comment on the 5-supplements video (cross-content case — companion blog does not cover K clotting). vitamin-k reference body has a Blood Clotting section citing K2 clotting efficacy; no K summary mentioned clotting; router returned empty."
+  },
+  {
+    "query": "female",
+    "category": "classifier-greeting",
+    "source": "production",
+    "expected_classification": "GREETING",
+    "notes": "2026-08-22 chat-health loop: real Shopify turn — a bare demographic fragment with no question. Production classified ROUTE and burned a 1.1s router call that returned empty. Desired: skip (GREETING/meta). Known-fail until the classifier prompt changes (Tier 0 proposal W34)."
   }
 ]

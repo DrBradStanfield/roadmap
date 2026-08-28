@@ -12,3 +12,12 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W33,router_latency_median_ms,1362,1615,-16,chat_match_events,n=53
 2026-W33,router_latency_p90_ms,2217,3063,-28,chat_match_events,n=53
 2026-W33,router_cache_hit_rate_pct,20,39,-49,chat_match_events,"likely mix-shift: YT one-shot turns; watch W34"
+2026-W34,empty_handle_turns,40,26,54,chat_match_events,"prior-7d slice measured this run (08-15 run never fired); 13d window total 58: shopify 5 / youtube 53 / discord 0"
+2026-W34,classifier_catchable_share_pct,2.5,4,-38,manual categorisation,"1/40 7d (bare fragment 'female'); 13d 1/58 (1.7%)"
+2026-W34,routing_miss_share_pct,2.5,7,-64,manual categorisation,"1/40 7d (ECA — passes harness at baseline, stochastic); 13d adds K2-clotting (claim-shaped, summary-unfixable)"
+2026-W34,router_errors_7d,1,1,0,chat_match_events,"1 transient JSON malformation each slice; zero .max(3) rejections in 13d (W33: 3/7d, all .max(3)) — consistent with the W33 slice fix being live"
+2026-W34,router_latency_median_ms,1459,1362,7,chat_match_events,"n=82; prior = W33 window (not adjacent slice — run gap)"
+2026-W34,router_latency_p90_ms,1993,2217,-10,chat_match_events,n=82
+2026-W34,router_cache_hit_rate_pct,34,20,70,chat_match_events,"recovered toward W32's 39%; W33 mix-shift hypothesis holds"
+2026-W34,yt_reply_median_words,66.5,84,-21,chat_messages,"7d n=74; 13d median 67 (n=135); prior = 2026-08-10 baseline; prompt cap ≤90 words"
+2026-W34,yt_reply_gt90w_count_7d,4,,,chat_messages,"4/74 (5.4%) breach >90 words; 13d 8/135, max 123; >5-sentence breaches 0 in 7d"

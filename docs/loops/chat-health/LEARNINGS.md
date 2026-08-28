@@ -89,7 +89,9 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
 - **2026-08-10 [loop]** Baseline a production failure in the harness BEFORE
   editing anything: the 08-05 MSM miss already passed at baseline (the 08-07
   fix wave had fixed it). Production failures predating the last fix wave may
-  be stale; measuring first killed a pointless edit.
+  be stale — or pure sampling noise: confirmed again 2026-08-22, when the ECA
+  routing miss (production empty that same morning) passed 3/3 at baseline
+  with no edit. One production empty is one router sample, not a defect.
 - **2026-08-10 [loop]** Cloud environments intercept `ANTHROPIC_API_KEY` — the
   platform warns it "won't be used to authenticate requests" because Claude
   Code sessions authenticate through the account. Scripts that need a key for
@@ -105,3 +107,11 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   monthly pruning done. Dings: first-pass line-count vitals misreported
   (needed a correction commit) and the Gmail draft (charter contradiction,
   self-flagged as proposal #5, since reconciled to the constitution).
+- **2026-08-22 [retrieval]** Claim-shaped inputs don't route at all: "K2 is
+  NOT involved in blood clotting. Show me a reference." returned ∅ 3/3 in the
+  harness both before AND after "blood clotting" was placed inside the
+  summary's visible 150 chars. Distinct from the 2026-08-10 selection-side
+  mode (wrong pick): here the router refuses to route a rebuttal/challenge as
+  a query. Summary edits cannot reach this class — the lever is the router
+  prompt (Tier 0 proposal, W34 report). Spot a 3/3-∅ result on a claim-shaped
+  input → skip the summary edit entirely.
