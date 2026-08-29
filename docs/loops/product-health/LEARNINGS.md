@@ -81,3 +81,15 @@ duplicates.
   held almost exactly; 40% plan-ready click rate; 1/25 bounce; 0 opt-outs.
   Meanwhile per-day funnel rates were flat W32→W33 (results_viewed ~50/day):
   raw weekly counts "doubled" only because W32 was a partial week.
+- **2026-08-29 [tooling]** git approxidate parses `--since=8d` as "August 8"
+  (day-of-month), NOT "8 days ago" — so the charter's workflow-integrity
+  command over-scans mid-month and, in the first days of a month, resolves to
+  a FUTURE date and silently returns empty: a falsely-clean tripwire. Use
+  `--since="8 days ago"` or an explicit ISO date. (Adversarial-review catch,
+  W35; substance re-verified with explicit dates — the window was clean.)
+- **2026-08-29 [usage]** "Nothing due until 2027" is stale since the typed
+  lane shipped: enrolment now captures already-overdue items, so real sends
+  can begin any week. They HAVE — the first genuine reminder send was stamped
+  (`last_sent`) 2026-08-28 on a row enrolled 08-25 with an item due 08-01,
+  inside the PGRST303 cron-fault window. Verify any "nothing due" claim
+  against live `reminder_optin_v2` schedules, not memory of the old cohort.
