@@ -107,11 +107,15 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   monthly pruning done. Dings: first-pass line-count vitals misreported
   (needed a correction commit) and the Gmail draft (charter contradiction,
   self-flagged as proposal #5, since reconciled to the constitution).
-- **2026-08-22 [retrieval]** Claim-shaped inputs don't route at all: "K2 is
-  NOT involved in blood clotting. Show me a reference." returned ∅ 3/3 in the
-  harness both before AND after "blood clotting" was placed inside the
-  summary's visible 150 chars. Distinct from the 2026-08-10 selection-side
-  mode (wrong pick): here the router refuses to route a rebuttal/challenge as
-  a query. Summary edits cannot reach this class — the lever is the router
-  prompt (Tier 0 proposal, W34 report). Spot a 3/3-∅ result on a claim-shaped
-  input → skip the summary edit entirely.
+- **2026-08-22, extended 2026-08-29 [retrieval]** Two input SHAPES the router
+  refuses outright — 3/3-∅ in the harness with the right terms already inside
+  the visible 150 chars, so summary edits cannot reach either: (a)
+  claim/rebuttal ("K2 is NOT involved in blood clotting. Show me a
+  reference."); (b) brand/sourcing asks about third-party products ("Which
+  company of Tirzepatide should I use"; "which potassium chloride salt
+  substitute to get" — ∅ though the summary contains that exact phrase).
+  Mechanism for (b): Rule 6's "Dr Brad's products / store / pricing"
+  empty-list bullet over-matches third-party brand questions. The prompt's
+  own "match on TOPIC, not input form" line loses to Rule 6 both times (it
+  was live when K2 failed). Lever = router prompt (Tier 0 proposals W34+W35).
+  A 3/3-∅ on either shape → skip the summary edit entirely.
