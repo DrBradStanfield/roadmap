@@ -35,7 +35,7 @@ unacted for a quarter, say so in the retro and propose the fleet review.
 - **Sentry** (`SENTRY_AUTH_TOKEN`): issues first-seen last 7d + big movers,
   project `dr-brad-inc/javascript-remix`, `statsPeriod=14d`.
 - **Workflow integrity** (out-of-band backstop for the CI tripwire):
-  `git log --since=8d --format='%an|%ae|%h|%s' -- .github/workflows/` — any
+  `git log --since="8 days ago" --format='%an|%ae|%h|%s' -- .github/workflows/` — any
   commit not from Brad (his machine or his merges) is a CRITICAL finding:
   lead the report with it AND open a "🎯 Decision needed" issue.
 - **Clarity** (`CLARITY_API_TOKEN` = drstanfield, `_MICROVITAMIN` = commerce):
