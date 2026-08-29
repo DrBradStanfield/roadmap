@@ -18,6 +18,7 @@ import { GROUP_COOLDOWNS, getCategoryGroup, type ReminderCategory } from '../../
 import { buildReminderV2EmailHtml, sendReminderEmail } from './email.server';
 import { tryAcquireCronLock } from './supabase.server';
 import { buildUnsubscribeUrl, getOptinsBatch, inTypedQuietPeriod, recordSent, type ReminderV2Optin } from './reminder-v2.server';
+import { recordServerEvent } from './product-events.server';
 
 const CRON_INTERVAL_MS = 60 * 60 * 1000; // hourly tick
 const TARGET_HOUR_UTC = 8;               // same morning window as the v1 reminder cron
@@ -123,6 +124,10 @@ async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promis
   });
   const sent = await sendReminderEmail(optin.email, html, unsubscribeUrl, "Dr Brad's Health Reminder");
   if (!sent) return 'email-send-failed';
+
+  // US-17 usage signal: the send is the retention engine's core act — count it
+  // (anonymous: provider + due-item count; never labels or addresses).
+  await recordServerEvent('reminder_sent', { provider: optin.provider, count: due.length });
 
   // Record per-category send dates. If this write fails the next run would
   // re-send, so surface it at error level (same posture as the v1 cron).

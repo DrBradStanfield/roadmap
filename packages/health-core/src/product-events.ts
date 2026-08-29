@@ -19,6 +19,10 @@ export const PRODUCT_EVENT_NAMES = [
   // sustained optout > ~30% of optins means the default-on call was wrong.
   'reminder_optin',
   'reminder_optout',
+  // Fired by the reminder cron on each successful send (server-originated,
+  // nil-UUID sentinel; metadata = provider + due-item count only) — sends
+  // were invisible until the first real one (2026-08-28) surfaced the gap.
+  'reminder_sent',
   'chat_opened',
   // US-21 additional blood tests: phase-1 surfacing + phase-2 manual add.
   'lab_rows_viewed',

@@ -18,6 +18,7 @@ vi.mock('./reminder-v2.server', () => ({
   recordSent: vi.fn(),
 }));
 vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
+vi.mock('./product-events.server', () => ({ recordServerEvent: vi.fn() }));
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -38,6 +39,64 @@ async function loadCron() {
   optinsMock.mockClear();
   return { cron, lockMock, optinsMock };
 }
+
+// US-17 (usage signal): a reminder SEND was invisible — the first genuine send
+// (2026-08-28) was evidenced only by its last_sent stamp. Every successful send
+// now records a `reminder_sent` server event (anonymous counter: provider +
+// due-item count, never labels or addresses); a failed send records nothing.
+describe('reminder v2 send observability — US-17: reminder_sent event', () => {
+  const optinRow = {
+    id: 'row-1',
+    email: 'user@example.com',
+    provider: 'typed' as const,
+    schedule: [
+      { category: 'blood_test_lipids', label: 'Lipid panel', dueAt: '2026-08-01' },
+      { category: 'screening_colorectal', label: 'Colonoscopy', dueAt: '2027-05-01' },
+    ],
+    last_sent: {},
+    token: 'tok',
+    created_at: '2026-08-20T00:00:00Z',
+  };
+
+  async function loadForSend() {
+    vi.resetModules();
+    const cron = await import('./reminder-v2-cron.server');
+    const { getOptinsBatch } = await import('./reminder-v2.server');
+    const { sendReminderEmail } = await import('./email.server');
+    const { recordServerEvent } = await import('./product-events.server');
+    const optinsMock = vi.mocked(getOptinsBatch);
+    const sendMock = vi.mocked(sendReminderEmail);
+    const eventMock = vi.mocked(recordServerEvent);
+    optinsMock.mockReset();
+    optinsMock.mockResolvedValue([]);
+    optinsMock.mockResolvedValueOnce([optinRow]);
+    sendMock.mockReset();
+    eventMock.mockReset();
+    return { cron, sendMock, eventMock };
+  }
+
+  it('records one reminder_sent with provider + due-count on a successful send', async () => {
+    const { cron, sendMock, eventMock } = await loadForSend();
+    sendMock.mockResolvedValue(true);
+
+    const sent = await cron.processV2Reminders('2026-08-30');
+
+    expect(sent).toBe(1);
+    expect(eventMock).toHaveBeenCalledTimes(1);
+    // Only the arrived item counts (dueAt 2026-08-01), not the 2027 one.
+    expect(eventMock).toHaveBeenCalledWith('reminder_sent', { provider: 'typed', count: 1 });
+  });
+
+  it('records nothing when the email send fails', async () => {
+    const { cron, sendMock, eventMock } = await loadForSend();
+    sendMock.mockResolvedValue(false);
+
+    const sent = await cron.processV2Reminders('2026-08-30');
+
+    expect(sent).toBe(0);
+    expect(eventMock).not.toHaveBeenCalled();
+  });
+});
 
 describe('reminder v2 cron tick — US-28 AC2: lock errors retry same day, losses end it', () => {
   let stop: (() => void) | null = null;
