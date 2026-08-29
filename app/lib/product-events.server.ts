@@ -2,7 +2,7 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { PRODUCT_EVENT_NAMES } from '../../packages/health-core/src/product-events';
+import { PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
 import { supabaseAdmin } from './supabase.server';
 
 // Metadata is a closed allow-list: no free text, no health values. `provider`
@@ -44,9 +44,16 @@ export async function recordServerEvent(
   }
 }
 
+const SERVER_ONLY = new Set<string>(SERVER_ONLY_EVENT_NAMES);
+
 export function parseProductEvent(body: unknown): ProductEventInput | null {
   const parsed = productEventSchema.safeParse(body);
-  return parsed.success ? parsed.data : null;
+  if (!parsed.success) return null;
+  // Server-originated counters can't arrive from a browser: a forged
+  // reminder_sent / report_email_* (or the nil sentinel as visitorId) would
+  // be indistinguishable from the real cron/webhook rows.
+  if (SERVER_ONLY.has(parsed.data.eventName) || parsed.data.visitorId === SERVER_VISITOR_ID) return null;
+  return parsed.data;
 }
 
 export async function recordProductEvent(event: ProductEventInput): Promise<boolean> {

@@ -36,3 +36,17 @@ export const PRODUCT_EVENT_NAMES = [
 ] as const;
 
 export type ProductEventName = (typeof PRODUCT_EVENT_NAMES)[number];
+
+/**
+ * Events only the SERVER originates (recorded under the nil-UUID sentinel —
+ * see SERVER_VISITOR_ID in product-events.server.ts). The client event route
+ * rejects these: a browser POST claiming one would be indistinguishable from
+ * the real cron/webhook counter (adversarial review, 2026-08-30).
+ */
+export const SERVER_ONLY_EVENT_NAMES = [
+  'reminder_sent',
+  'report_email_sent',
+  'report_email_bounced',
+  'report_email_complained',
+  'report_email_clicked',
+] as const satisfies readonly ProductEventName[];

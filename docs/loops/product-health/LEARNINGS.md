@@ -93,3 +93,6 @@ duplicates.
   (`last_sent`) 2026-08-28 on a row enrolled 08-25 with an item due 08-01,
   inside the PGRST303 cron-fault window. Verify any "nothing due" claim
   against live `reminder_optin_v2` schedules, not memory of the old cohort.
+  `reminder_sent` instrumented 2026-08-30 (server-only, forge-rejected at the
+  client route): W36 classifies its first number like any new event; sends are
+  rare by design (90/180/365d cooldowns), so a small count is expected, not a bug.

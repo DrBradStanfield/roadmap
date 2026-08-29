@@ -33,10 +33,16 @@ async function loadCron() {
   vi.stubEnv('NODE_ENV', 'production');
   const { tryAcquireCronLock } = await import('./supabase.server');
   const { getOptinsBatch } = await import('./reminder-v2.server');
+  const { sendReminderEmail } = await import('./email.server');
+  const { recordServerEvent } = await import('./product-events.server');
   const lockMock = vi.mocked(tryAcquireCronLock);
   const optinsMock = vi.mocked(getOptinsBatch);
   lockMock.mockReset();
   optinsMock.mockClear();
+  // Hermetic across describes: the send-observability tests set resolved
+  // values on these persistent mock instances (adversarial review 2026-08-30).
+  vi.mocked(sendReminderEmail).mockReset();
+  vi.mocked(recordServerEvent).mockReset();
   return { cron, lockMock, optinsMock };
 }
 
