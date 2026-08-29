@@ -73,7 +73,9 @@ duplicates.
   fingerprint — Chrome+macOS+PC+no-referrer, ~22s engagement, US/BR/VN/MX —
   a scraper wave, with Clarity's own bot filter catching only ~3%. Before
   trusting a Clarity session count, check Browser/OS/referrer concentration;
-  a flooded pull is a named gap, not a data point.
+  a flooded pull is a named gap, not a data point. **Confirmed again
+  2026-08-29 (week 2):** 200k sessions/3d, same ~98% fingerprint, country mix
+  shifted (Singapore #2) — persistent infrastructure-level load, not a blip.
 - **2026-08-16 [usage]** First week of the email machine (US-17/22/23): 18
   enrolments — 17 typed vs 3 cloud rows all-time, so the ~10:1 typed-lane bet
   held almost exactly; 40% plan-ready click rate; 1/25 bounce; 0 opt-outs.
