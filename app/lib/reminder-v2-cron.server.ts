@@ -126,8 +126,10 @@ async function processOneOptin(optin: ReminderV2Optin, todayStr: string): Promis
   if (!sent) return 'email-send-failed';
 
   // US-17 usage signal: the send is the retention engine's core act — count it
-  // (anonymous: provider + due-item count; never labels or addresses).
-  await recordServerEvent('reminder_sent', { provider: optin.provider, count: due.length });
+  // (anonymous: provider + due-item count; never labels or addresses). Not
+  // awaited: recordServerEvent swallows its own errors and nothing here
+  // depends on it, so it overlaps the recordSent write below.
+  void recordServerEvent('reminder_sent', { provider: optin.provider, count: due.length });
 
   // Record per-category send dates. If this write fails the next run would
   // re-send, so surface it at error level (same posture as the v1 cron).

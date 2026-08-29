@@ -67,8 +67,7 @@ describe('reminder v2 send observability — US-17: reminder_sent event', () => 
     const optinsMock = vi.mocked(getOptinsBatch);
     const sendMock = vi.mocked(sendReminderEmail);
     const eventMock = vi.mocked(recordServerEvent);
-    optinsMock.mockReset();
-    optinsMock.mockResolvedValue([]);
+    optinsMock.mockClear();
     optinsMock.mockResolvedValueOnce([optinRow]);
     sendMock.mockReset();
     eventMock.mockReset();
