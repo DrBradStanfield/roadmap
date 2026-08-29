@@ -21,9 +21,9 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W34,router_cache_hit_rate_pct,34,20,70,chat_match_events,"recovered toward W32's 39%; W33 mix-shift hypothesis holds"
 2026-W34,yt_reply_median_words,66.5,84,-21,chat_messages,"7d n=74; 13d median 67 (n=135); prior = 2026-08-10 baseline; prompt cap ≤90 words"
 2026-W34,yt_reply_gt90w_count_7d,4,,,chat_messages,"4/74 (5.4%) breach >90 words; 13d 8/135, max 123; >5-sentence breaches 0 in 7d"
-2026-W35,empty_handle_turns,38,39,-3,chat_match_events,"prior = re-measured W34 7d slice (published 40, re-measure 39 — boundary off-by-one); split shopify 3 / youtube 35 / discord 0"
+2026-W35,empty_handle_turns,38,40,-5,chat_match_events,"prior = W34 published count_7d; re-measure of that slice returned 39 (boundary off-by-one, tolerated); split shopify 3 / youtube 35 / discord 0"
 2026-W35,classifier_catchable_share_pct,0,2.5,-100,manual categorisation,"0/38 — first zero week; classifier skipped 142 turns upstream (GREETING 121 / PRODUCT 11 / ACCOUNT 6 / MEASUREMENT 4)"
-2026-W35,routing_miss_share_pct,7.9,2.5,216,manual categorisation,"3/38: testosterone-trials (stochastic — passes 3/3 at baseline) + tirzepatide-brand + KCl-brand (both ∅ 3/3, brand/sourcing shape — router Rule 6 over-fire; summary-unfixable, Tier 0 proposal)"
+2026-W35,routing_miss_share_pct,13.2,2.5,428,manual categorisation,"5/38: 1 stochastic (testosterone — passes 3/3 at baseline) + 4 consistent ∅ 3/3 (tirzepatide-company, KCl-brand, salt-ratio, lithium-test — practical/consumer shape, measured via shape probe; 2 of the 4 surfaced by adversarial review)"
 2026-W35,router_errors_7d,0,1,-100,chat_match_events,clean week; fallbacks also 0
 2026-W35,router_latency_median_ms,1322,1459,-9,chat_match_events,n=82
 2026-W35,router_latency_p90_ms,1861,1993,-7,chat_match_events,n=82

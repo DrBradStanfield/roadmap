@@ -85,7 +85,10 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   "memory/cognitive decline" was placed inside the first 150 chars — the router
   picked `medications-in-chronic-pain` instead. When a query fails, inspect
   what the router chose INSTEAD before drafting any summary edit; if the
-  failure is selection-side, a summary edit can't fix it.
+  failure is selection-side, a summary edit can't fix it. Confirmed again
+  2026-08-29: `medications-in-chronic-pain` also stole a compounded-
+  tirzepatide safety probe 3/3 — it is a recurring wrong-attractor for
+  drug-safety queries (second documented steal).
 - **2026-08-10 [loop]** Baseline a production failure in the harness BEFORE
   editing anything: the 08-05 MSM miss already passed at baseline (the 08-07
   fix wave had fixed it). Production failures predating the last fix wave may
@@ -107,15 +110,18 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   monthly pruning done. Dings: first-pass line-count vitals misreported
   (needed a correction commit) and the Gmail draft (charter contradiction,
   self-flagged as proposal #5, since reconciled to the constitution).
-- **2026-08-22, extended 2026-08-29 [retrieval]** Two input SHAPES the router
-  refuses outright — 3/3-∅ in the harness with the right terms already inside
-  the visible 150 chars, so summary edits cannot reach either: (a)
-  claim/rebuttal ("K2 is NOT involved in blood clotting. Show me a
-  reference."); (b) brand/sourcing asks about third-party products ("Which
-  company of Tirzepatide should I use"; "which potassium chloride salt
-  substitute to get" — ∅ though the summary contains that exact phrase).
-  Mechanism for (b): Rule 6's "Dr Brad's products / store / pricing"
-  empty-list bullet over-matches third-party brand questions. The prompt's
-  own "match on TOPIC, not input form" line loses to Rule 6 both times (it
-  was live when K2 failed). Lever = router prompt (Tier 0 proposals W34+W35).
-  A 3/3-∅ on either shape → skip the summary edit entirely.
+- **2026-08-22, class measured 2026-08-29 [retrieval]** The router refuses
+  PRACTICAL/CONSUMER-shaped inputs while routing knowledge-shaped twins of
+  the same topics (W35 probe, same index, same minutes: "Should I take
+  magnesium? What form is best?" ∅ 3/3 vs "What are the health benefits of
+  magnesium and which forms are best absorbed?" ✓ 3/3; salt-substitute pair
+  likewise). Instances — every one ∅ 3/3 with the right terms visible in the
+  summary: claim/rebuttal (K2, W34), brand/sourcing (tirzepatide company,
+  KCl brand), ratio/how-to (salt pig), test-availability (lithium),
+  form-choice (magnesium — a fixture that PASSED on 08-22, so the boundary
+  also drifts). Best-supported mechanism: Rule 6's empty-list bullets
+  (products/pricing, own-measurements, PK/formulation) each over-match their
+  nearest consumer shape; bullet-level attribution needs a prompt ablation
+  (out of loop scope), and the prompt's "match on TOPIC, not input form"
+  line demonstrably loses to Rule 6. Lever = router prompt (Tier 0, W34+W35).
+  3/3-∅ on a practical-shaped input → skip the summary edit entirely.
