@@ -2676,7 +2676,7 @@
     ],
     "category": "medications",
     "source": "production",
-    "notes": "2026-08-25 chat-health loop (W35): real Shopify turn — brand/sourcing ask about tirzepatide; router returned empty. Three tirzepatide blogs exist (the why-I-take post names Mounjaro/Zepbound); any of them grounds the answer."
+    "notes": "2026-08-25 chat-health loop (W35): real Shopify turn — brand/sourcing ask about tirzepatide; router returned empty. Three tirzepatide blogs exist (the why-I-take post names Mounjaro/Zepbound); any of them grounds the answer. KNOWN-FAIL (∅ 3/3 at baseline) until a router-prompt change lands (Tier 0 proposal W35)."
   },
   {
     "query": "Can you look up the testostrone dossage trials?",
@@ -2697,6 +2697,26 @@
     ],
     "category": "lifestyle",
     "source": "production",
-    "notes": "2026-08-27 chat-health loop (W35): real Shopify turn asked while reading the salt-substitute article; router returned empty although the summary contains 'potassium-chloride salt substitute' verbatim. Brand rec itself is unanswerable but the topical doc should match."
+    "notes": "2026-08-27 chat-health loop (W35): real Shopify turn asked while reading the salt-substitute article; production text had a trailing sentence asking which brand Dr Stanfield recommends (trimmed here — the fixture fails without it, so the failure doesn't rest on the Brad-mention). Router returned empty although the summary contains 'potassium-chloride salt substitute' verbatim. KNOWN-FAIL (∅ 3/3 at baseline) until a router-prompt change lands (Tier 0 proposal W35)."
+  },
+  {
+    "query": "Could you use a salt pig and combine salt and potassium? What would the best ratio be?",
+    "expected": [
+      "salt-substitutes-can-slash-your-death-risk-by-12",
+      "completely-wrong-about-salt-new-study"
+    ],
+    "category": "lifestyle",
+    "source": "production",
+    "notes": "2026-08-29 chat-health loop (W35): real YouTube comment on the salt video (bare-comment path, no video context). Self-contained — salt + potassium + ratio; the salt-substitutes blog body covers the 25% KCl ratio. Production router returned empty."
+  },
+  {
+    "query": "Isn't there a test to measure the amount of lithium in our bodies or blood?",
+    "expected": [
+      "lithium-benefits-forms-dosing-and-side-effects",
+      "scientists-just-found-an-easy-way-to-cut-dementia-risk-by-15"
+    ],
+    "category": "supplement",
+    "source": "production",
+    "notes": "2026-08-27 chat-health loop (W35): real YouTube comment on the lithium video (bare-comment path). Self-contained; the lithium blog covers serum monitoring and therapeutic ranges. Production router returned empty."
   }
 ]
