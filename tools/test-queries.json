@@ -2693,11 +2693,12 @@
     "query": "Based on the information in this article, are there any recommendations on which potassium chloride salt substitute to get?",
     "expected": [
       "salt-substitutes-can-slash-your-death-risk-by-12",
-      "completely-wrong-about-salt-new-study"
+      "completely-wrong-about-salt-new-study",
+      "potassium-benefits-forms-dosing-and-side-effects"
     ],
     "category": "lifestyle",
     "source": "production",
-    "notes": "2026-08-27 chat-health loop (W35): real Shopify turn asked while reading the salt-substitute article; production text had a trailing sentence asking which brand Dr Stanfield recommends (trimmed here — the fixture fails without it, so the failure doesn't rest on the Brad-mention). Router returned empty although the summary contains 'potassium-chloride salt substitute' verbatim. KNOWN-FAIL (∅ 3/3 at baseline) until a router-prompt change lands (Tier 0 proposal W35)."
+    "notes": "2026-08-27 chat-health loop (W35): real Shopify turn asked while reading the salt-substitute article; production text had a trailing sentence asking which brand Dr Stanfield recommends (trimmed here — the fixture fails without it, so the failure doesn't rest on the Brad-mention). Router returned empty although the summary contains 'potassium-chloride salt substitute' verbatim. KNOWN-FAIL (∅ 3/3 at baseline) until a router-prompt change lands (Tier 0 proposal W35). 2026-08-30: potassium reference added as acceptable — it covers KCl salt substitutes substantively (30 mentions), and the router consistently picks it; the salt blogs remain preferred."
   },
   {
     "query": "Could you use a salt pig and combine salt and potassium? What would the best ratio be?",

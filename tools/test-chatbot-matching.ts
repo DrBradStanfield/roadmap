@@ -101,6 +101,7 @@ console.log(`Using ${usingTestKey ? 'ANTHROPIC_TEST_API_KEY (test workspace)' : 
 
 const ANSWER_MODEL = 'claude-haiku-4-5-20251001';
 let ANSWER_SYSTEM_CONTEXT = '';
+let apiErrorCount = 0;
 
 if (answerCheckMode) {
   try {
@@ -273,7 +274,14 @@ async function routeQuery(currentMessage: string, retryOnRateLimit = true): Prom
     return routeQuery(currentMessage, false);
   }
 
-  if (!res.ok) return { handles: [], rateLimited: res.status === 429 };
+  if (!res.ok) {
+    // An errored call must be VISIBLE: silently returning ∅ made a rate-limit
+    // brownout look like a mass routing regression (2026-08-30, W35).
+    apiErrorCount++;
+    const errBody = await res.text().catch(() => '');
+    process.stdout.write(` [api-error ${res.status}: ${errBody.slice(0, 200)}]`);
+    return { handles: [], rateLimited: res.status === 429 };
+  }
 
   const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
   const text = data.content?.find(c => c.type === 'text')?.text ?? '';
@@ -509,6 +517,7 @@ for (const r of results) {
 }
 
 console.log(`\n${BOLD}=== Results (${elapsed}s) ===${RESET}\n`);
+if (apiErrorCount > 0) console.log(`${RED}⚠ ${apiErrorCount} API calls errored and scored as ∅ — this run's numbers are NOT trustworthy${RESET}\n`);
 console.log(`Total:       ${results.length}`);
 console.log(`${GREEN}Passing:     ${passed.length}${RESET}`);
 console.log(`${RED}Failing:     ${failed.length}${RESET}`);
