@@ -1,6 +1,6 @@
 ---
-title: "Iodine Made Us Smarter. Now We're Ruining It"
-url: "https://drstanfield.com/blogs/articles/iodine-made-us-smarter-now-were-ruining-it"
+title: "Our IQ Will Start Dropping Soon (new evidence)"
+url: "https://drstanfield.com/blogs/articles/our-iq-will-start-dropping-soon-new-evidence"
 commerceUrl: "https://microvitamin.com/blogs/articles/iodine-deficiency-coming-back"
 youtube: "https://youtu.be/CfrE9yZhYFs"
 publishedAt: "2026-08-27T20:16:10Z"
