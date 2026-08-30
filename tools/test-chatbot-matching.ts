@@ -577,4 +577,5 @@ if (verbose) {
 }
 
 console.log();
-process.exit(passOk && varOk ? 0 : 1);
+// Any errored API call makes the run's numbers untrustworthy — never exit green.
+process.exit(passOk && varOk && apiErrorCount === 0 ? 0 : 1);

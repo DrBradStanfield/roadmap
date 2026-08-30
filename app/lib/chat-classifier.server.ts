@@ -50,7 +50,8 @@ export const Classification = {
   ACCOUNT: 'ACCOUNT',
   /**
    * Reading back / correcting the user's OWN recorded numbers. Added 2026-08-07:
-   * router prompt Rule 6 already said these should return empty handles, but the
+   * the router prompt's empty-list rule (rule 7 since 2026-08-30, then Rule 6)
+   * already said these should return empty handles, but the
    * classifier had no label for them, so every "What is my BMI?" fired a ~1.6s
    * router call that came back empty. Measured on 143 empty-handle turns, this
    * was the single largest bucket (50, 35%) — of which 33 are pure lookup.
