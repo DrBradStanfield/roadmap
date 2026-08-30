@@ -63,6 +63,11 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   `{{ENTRY_COUNT}}`, kept its own copy of the valid classifier labels, and kept
   its own handle validation. Each one silently produced wrong pass rates. When a
   harness result surprises you, first check the harness mirrors production.
+  Fifth instance 2026-08-30: routeQuery silently scored any non-OK API
+  response as ∅ — an API-400 brownout mid-session read as a 92.8%→19%
+  "regression" (and ∅ scores as PASS on expected-empty fixtures). Fixed:
+  errors now print, count, and fail the exit code. A sudden collapse across
+  unrelated categories at once is the API, not your edit.
 - **2026-08-07 [content]** Drug-centric queries miss condition-centric
   summaries. "Which statin has the mildest side effects" failed against
   `hyperlipidaemia` whose summary described the *condition*; the answer was in
@@ -125,3 +130,11 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   (out of loop scope), and the prompt's "match on TOPIC, not input form"
   line demonstrably loses to Rule 6. Lever = router prompt (Tier 0, W34+W35).
   3/3-∅ on a practical-shaped input → skip the summary edit entirely.
+  RESOLVED 2026-08-30 (Brad-authorized edit, issue #39): a new top-level
+  "practical questions route" rule fixed all five known-fails plus four
+  Brad-product compliance guards (suite 89.3%→91.7%, adversarial-reviewed).
+  Position was the mechanism: carve-out sentences buried inside empty-list
+  bullets were inert; the same content as a top-level rule worked. Verify
+  each clause with the harness — two "obvious" clarifiers regressed other
+  fixtures before landing right. Still failing: tirzepatide-company
+  (selection-side). Verify the fix live post-deploy.
