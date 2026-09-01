@@ -163,7 +163,8 @@ Four things differ from the local path, and they are differences you will hit:
   mistakes; older history is out of reach and the user changes it in the app.
 - **Writes are budgeted, and a correction costs five adds.** Reads are never budgeted.
   When the budget runs out the refusal says so and reading still works.
-- **A record whose `schemaVersion` is newer than the server understands is read-only.**
+- **A record whose `schemaVersion` is newer than the server understands is out of reach
+  entirely — reads refuse too**, because the record is migrated before any tool sees it.
 
 Trust model, revocation, and the residual risks we accepted knowingly:
 [us32-remote-mcp-design.md](us32-remote-mcp-design.md). The short version: your record

@@ -777,12 +777,20 @@ export function dropboxAuthorizeUrl(state: string): string {
 async function dropboxToken(body: URLSearchParams): Promise<Record<string, unknown> | null> {
   body.set('client_id', process.env.DROPBOX_APP_KEY ?? '');
   body.set('client_secret', process.env.DROPBOX_APP_SECRET ?? '');
-  const res = await fetch(DROPBOX_TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
-    signal: AbortSignal.timeout(8000),
-  });
+  // A refused connection or the 8-second abort throws, and an uncaught throw
+  // here is a 500 at `/mcp` and a callback that never clears its state cookie.
+  // Every caller already reads null as "Dropbox would not answer".
+  let res: Response;
+  try {
+    res = await fetch(DROPBOX_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch {
+    return null;
+  }
   if (!res.ok) return null;
   return (await res.json().catch(() => null)) as Record<string, unknown> | null;
 }

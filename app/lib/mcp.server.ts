@@ -155,6 +155,7 @@ function checkCorrection(file: RoadmapFile, args: unknown, now: string): ToolAns
   }
   const row = typeof request.id === 'string' ? findRow(file, request.id) : undefined;
   if (!row) return null; // the tool layer answers "no such row" in its own words
+  // UTC by choice: the server has no user timezone; both sides are calendar days.
   const age = daysBetween(dayOf(row.recordedAt ?? ''), dayOf(now));
   if (age > MAX_CORRECTION_AGE_DAYS) {
     return refuse(
@@ -198,7 +199,10 @@ async function callHostedTool(
 
   const accessToken = await dropboxAccessToken(token.rt);
   if (!accessToken) {
-    return refuse('Dropbox would not renew this connection. The user may have disconnected the app; ask them to reconnect.');
+    return refuse(
+      'Dropbox would not renew this connection, so nothing was read and nothing was written. Either the user ' +
+        'disconnected the app or Dropbox could not be reached; ask them to try again, and to reconnect if it persists.',
+    );
   }
   const sync = new SyncManager<RoadmapFile>(makeAdapter(accessToken), 'mcp', ROADMAP_DOC, () => now);
 

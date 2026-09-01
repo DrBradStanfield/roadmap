@@ -573,6 +573,61 @@ describe('the consent screen cannot be skipped (US-32, design §4)', () => {
   });
 });
 
+describe('the consent POST must work in a real browser (US-32, N-1)', () => {
+  it('sends same-origin referrer policy, so the browser attaches a real Origin', async () => {
+    const clientId = await registerClientOverHttp();
+    const query = new URLSearchParams({
+      client_id: clientId, redirect_uri: REDIRECT, response_type: 'code',
+      code_challenge: CHALLENGE, code_challenge_method: 'S256',
+    });
+    const page = await get(`/mcp/authorize?${query}`);
+    expect(page.headers.get('Referrer-Policy')).toBe('same-origin');
+  });
+
+  it('accepts the consent POST from our own origin and refuses every other', async () => {
+    const clientId = await registerClientOverHttp();
+    const consent = async (origin: string | null) => {
+      const sealed = await consentScreen(clientId);
+      const headers: Record<string, string> = { 'content-type': 'application/x-www-form-urlencoded' };
+      if (origin !== null) headers.Origin = origin;
+      return post('/mcp/authorize', { headers, body: new URLSearchParams({ state: sealed }) });
+    };
+    expect((await consent(ISSUER)).status).toBe(302);
+    // `no-referrer` used to make a real browser send exactly this, and it 403d.
+    expect((await consent('null')).status).toBe(403);
+    expect((await consent('https://evil.test')).status).toBe(403);
+    expect((await consent(null)).status).toBe(302); // a non-browser client sends none
+  });
+});
+
+describe('Dropbox failing to answer is an error, not a crash (US-32, N-2)', () => {
+  it('answers in words when the token endpoint will not connect', async () => {
+    seedRecord();
+    const { access } = await connect();
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    }));
+    const answer = await callTool(access, 'read_record', {});
+    expect(answer.isError).toBe(true);
+    expect(answer.text).toContain('Dropbox would not renew this connection');
+    expect(answer.text).toContain('nothing was written');
+  });
+
+  it('redirects and clears the cookie when the code exchange will not connect', async () => {
+    const clientId = await registerClientOverHttp();
+    const { nonce, cookie } = await pressConnect(await consentScreen(clientId));
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    }));
+    const back = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(nonce)}`, { cookie });
+    expect(back.status).toBe(302);
+    expect(back.headers.get('set-cookie')).toContain('Max-Age=0');
+    const returned = new URL(back.headers.get('location')!);
+    expect(returned.searchParams.get('error')).toBe('server_error');
+    expect(returned.searchParams.get('code')).toBeNull();
+  });
+});
+
 describe('bodies and floods are bounded (US-32)', () => {
   const OVERSIZE = 'x'.repeat(64 * 1024 + 1);
 

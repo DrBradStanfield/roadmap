@@ -282,7 +282,24 @@ curl -si https://mcp.drstanfield.com/mcp          # 405
 curl -si -X DELETE https://mcp.drstanfield.com/mcp # 405
 curl -si -X POST -H 'Origin: https://example.com' https://mcp.drstanfield.com/mcp -d '{}'
 #   403, and NO Access-Control-Allow-Origin on any of these
+
+# Ten seconds, and it checks an assumption the rate limiters rest on: Fly's
+# proxy must OVERWRITE a client-supplied Fly-Client-IP, never pass it through.
+# Send the same forged header twice from one machine and watch /token's per-IP
+# limiter: if the forged value were trusted, an attacker would get a fresh
+# bucket per request forever.
+curl -si -X POST -H 'Fly-Client-IP: 1.2.3.4' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  --data 'grant_type=nonsense' https://mcp.drstanfield.com/mcp/token
+#   400 unsupported_grant_type. If a burst of these NEVER reaches 429 while the
+#   same burst without the header does, the header is being trusted — stop and
+#   tell the code (`getClientIp`), because every per-IP limit is then bypassable.
 ```
+
+**Known follow-up, NOT this branch.** `app/lib/route-helpers.server.ts` carries a second,
+`X-Forwarded-For`-only `getClientIp`, used by `api.chat` and `api.feedback`. Those limits
+are still spoofable by one header. Same one-line fix, different blast radius: it wants its
+own change and its own tests.
 
 **7. Add the connector, as a user would.** Claude: Settings → Connectors → Add custom
 connector → `https://mcp.drstanfield.com/mcp`. ChatGPT: Settings → Connectors →

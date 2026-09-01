@@ -342,7 +342,13 @@ function html(body: string, status = 200, headers: Record<string, string> = {}):
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
-      'Referrer-Policy': 'no-referrer',
+      // `same-origin`, NOT `no-referrer`: under `no-referrer` a browser posts the
+      // consent form with `Origin: null`, which `originRejected` refuses — the
+      // consent step could not complete in a real browser at all. That Origin
+      // check IS the CSRF defence on this POST: the cookie is SET by it, so
+      // SameSite protects nothing here, and browsers attach an Origin to every
+      // cross-site POST (as `null` when the referrer is suppressed).
+      'Referrer-Policy': 'same-origin',
       ...NO_STORE,
       ...headers,
     },
