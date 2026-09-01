@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { RoadmapFile } from '@roadmap/health-core';
+import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore, PENDING_MIRROR_KEY } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { LocalStorageAdapter } from './local-storage-adapter';
@@ -588,6 +588,44 @@ describe('RoadmapStore cloud-persist failure mirror (US-09 AC4)', () => {
     store.addMeasurement('hdl', 1.3, '2024-03-01T00:00:00.000Z');
     await store.flush();
     expect(localStorage.getItem(PENDING_MIRROR_KEY)).not.toBeNull();
+  });
+
+  // Adversarial review (2026-09-01): mergeFiles is the ONLY writer of
+  // meta.updatedAt, and migrate clamps every row clock to it. Both writes that
+  // bypass the merge — this mirror and flushSync — must advance the clock, or
+  // the offline edit they just saved is rewound to a stale anchor on the next
+  // load and loses a slot contest it genuinely won.
+  it('the mirror keeps the clock of the edit it saves (no rewind to a stale anchor)', async () => {
+    const cloud = new MemoryCloud();
+    const seeded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    await seeded.flush();
+    // Backdate the file's last write — the state of a device that has been
+    // offline since January.
+    const entry = cloud.files.get(ROADMAP_FILE_NAME)!;
+    const stale = JSON.parse(entry.json) as RoadmapFile;
+    stale.meta.createdAt = '2024-01-01T00:00:00.000Z';
+    stale.meta.updatedAt = '2024-01-01T00:00:00.000Z';
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(stale), version: entry.version });
+
+    const failing = await RoadmapStore.create(new TokenExpiredAdapter(cloud));
+    const row = insertedRow(failing.addMeasurement('weight', 80, '2024-06-01T00:00:00.000Z'));
+    await expect(failing.flush()).rejects.toThrow();
+
+    const mirrored = readMirror()!.measurements.find((m) => m.id === row.id)!;
+    expect(mirrored.createdAt).toBe(row.createdAt);
+  });
+
+  it('flushSync keeps the clock of the edit it saves (tab close on the local tier)', async () => {
+    const old = createEmptyFile({ deviceId: 'dev_old', now: '2024-01-01T00:00:00.000Z' });
+    await new LocalStorageAdapter().write(ROADMAP_FILE_NAME, old, null);
+
+    const store = await RoadmapStore.create(new LocalStorageAdapter());
+    const row = insertedRow(store.addMeasurement('weight', 80, '2024-06-01T00:00:00.000Z'));
+    store.flushSync(); // raw writeSync — no merge, so nothing else stamps meta
+
+    const reloaded = await RoadmapStore.create(new LocalStorageAdapter());
+    const saved = reloaded.loadAllHistory().find((m) => m.id === row.id)!;
+    expect(saved.createdAt).toBe(row.createdAt);
   });
 
   it('without the pending marker, a stale on-device copy is NOT merged into a cloud session', async () => {

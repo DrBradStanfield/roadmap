@@ -705,8 +705,20 @@ export class RoadmapStore {
       clearTimeout(this.persistTimer);
       this.persistTimer = null;
     }
+    this.stampWrite();
     if (this.adapter.writeSync) this.adapter.writeSync(ROADMAP_DOC.fileName, this.file);
     else void this.persist();
+  }
+
+  /**
+   * Advance the file's own clock before a write that bypasses mergeFiles — the
+   * only other thing that stamps meta.updatedAt. migrateFile clamps every row
+   * timestamp to that stamp, so without this an offline edit is rewound to the
+   * last successful sync on the next load and loses a slot contest it won.
+   */
+  private stampWrite(): void {
+    const now = new Date().toISOString();
+    if (now > this.file.meta.updatedAt) this.file.meta.updatedAt = now;
   }
 
   // =================================================================== private
@@ -818,6 +830,7 @@ export class RoadmapStore {
         // set), and a plain overwrite would destroy its only copy. The merge
         // preserves it — and lifts it up with the mirror on the next session.
         try {
+          this.stampWrite();
           await saveRoadmapFileInto(new LocalStorageAdapter(), this.file);
         } catch {
           /* device storage unavailable — memory-only is the best we have */

@@ -46,6 +46,18 @@ describe('mergeFiles — meta + lamport', () => {
     expect(merged.meta.updatedAt).toBe(OPTS.now);
   });
 
+  // The merged meta.updatedAt is the anchor migrate clamps every row clock to
+  // on the next load. A device with a backwards wall clock would otherwise
+  // write a file whose own rows post-date its meta — and rewrite them all.
+  it('never rewinds meta.updatedAt behind either input', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.meta.updatedAt = '2026-07-01T00:00:00Z';
+    b.meta.updatedAt = '2026-06-20T00:00:00Z';
+    expect(mergeFiles(a, b, OPTS).meta.updatedAt).toBe('2026-07-01T00:00:00Z');
+    expect(mergeFiles(b, a, OPTS).meta.updatedAt).toBe('2026-07-01T00:00:00Z');
+  });
+
   it('keeps the earliest createdAt', () => {
     const a = emptyFile();
     const b = emptyFile();
@@ -465,5 +477,193 @@ describe('document tombstones', () => {
     const merged = mergeFiles(a, b, OPTS);
     expect(merged.documents.map(d => d.id)).toEqual(['d1', 'd2']);
     expect(merged.documents.some(d => d.deleted)).toBe(false);
+  });
+});
+
+describe('mergeFiles — sloppy second writer (US-29; convergence per US-10)', () => {
+  // Defect 1: a second writer (a hand edit, or an AI agent with filesystem
+  // tools) reuses an existing row id with DIFFERENT content. Union-by-id kept
+  // the FIRST-SEEN copy, so the surviving value depended on merge direction —
+  // an in-place edit of an immutable clinical row, with no correction trail.
+  it('keeps both rows when an id is reused with different content, and stays symmetric', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.measurements = [measurement({ id: 'X', metricType: 'ldl', value: 2.1 })];
+    b.measurements = [measurement({ id: 'X', metricType: 'ldl', value: 9.9 })];
+
+    const ab = mergeFiles(a, b, OPTS);
+    const ba = mergeFiles(b, a, OPTS);
+    expect(stableStringify(ab)).toBe(stableStringify(ba));
+
+    // Nothing destroyed: both values survive under distinct ids...
+    expect(ab.measurements.map((m) => m.value).sort()).toEqual([2.1, 9.9]);
+    expect(new Set(ab.measurements.map((m) => m.id)).size).toBe(2);
+    // ...and the slot rule still holds.
+    expect(activeMeasurements(ab)).toHaveLength(1);
+  });
+
+  // Defect 1 (cont.): quarantining must be idempotent — re-merging the result
+  // against the copy that still holds the reused id must not grow the row set.
+  it('re-merging a quarantined result against the original converges', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.measurements = [measurement({ id: 'X', metricType: 'ldl', value: 2.1 })];
+    b.measurements = [measurement({ id: 'X', metricType: 'ldl', value: 9.9 })];
+    const once = mergeFiles(a, b, OPTS);
+    const twice = mergeFiles(once, b, OPTS);
+    expect(stableStringify(twice.measurements)).toBe(stableStringify(once.measurements));
+    expect(stableStringify(mergeFiles(b, once, OPTS).measurements)).toBe(
+      stableStringify(once.measurements),
+    );
+  });
+
+  // The quarantine must NOT fire on the legitimate cross-device case: same id,
+  // same content, different status is one row seen twice, not two rows.
+  it('same id + same content stays ONE row with the monotonic status', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.measurements = [measurement({ id: 'X', metricType: 'ldl', value: 2.1, status: 'active' })];
+    b.measurements = [measurement({ id: 'X', metricType: 'ldl', value: 2.1, status: 'entered-in-error' })];
+    const merged = mergeFiles(a, b, OPTS);
+    expect(merged.measurements).toHaveLength(1);
+    expect(merged.measurements[0].status).toBe('entered-in-error');
+  });
+
+  // Adversarial review (2026-09-01): a writer that mimics the quarantine suffix
+  // (`<id>#dup-<hash>#dup-<hash>`) used to have only ONE suffix stripped, so it
+  // regrouped under the real quarantined row's id and collided with it in the
+  // output map — one of the two contents was silently dropped, and which one
+  // depended on merge direction.
+  it('a doubled #dup- suffix regroups under the ORIGINAL id, keeping every content', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.measurements = [measurement({ id: 'X', metricType: 'ldl', value: 2.1 })];
+    b.measurements = [measurement({ id: 'X', metricType: 'ldl', value: 9.9 })];
+    const once = mergeFiles(a, b, OPTS);
+    const quarantined = once.measurements.find((m) => m.id.includes('#dup-'))!;
+
+    // A sloppy writer copies the quarantined row, edits it, and layers a second
+    // suffix on the id it copied.
+    const c = emptyFile();
+    c.measurements = [
+      { ...quarantined, id: `${quarantined.id}#dup-deadbeef`, value: 5.5, recordedAt: '2026-05-02', status: 'active' },
+    ];
+
+    const ac = mergeFiles(once, c, OPTS);
+    const ca = mergeFiles(c, once, OPTS);
+    expect(stableStringify(ac.measurements)).toBe(stableStringify(ca.measurements));
+    expect(ac.measurements.map((m) => m.value).sort()).toEqual([2.1, 5.5, 9.9]);
+    expect(new Set(ac.measurements.map((m) => m.id)).size).toBe(3);
+  });
+
+  // Demote-both guard (US-10): whatever the merge direction, a slot converges
+  // to the SAME single active row — never zero, never two.
+  it('two devices merging in opposite orders converge to one active row per slot', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    // Both devices saw the original X and corrected it — each with its own row.
+    a.measurements = [
+      measurement({ id: 'X', metricType: 'ldl', value: 2.1, status: 'entered-in-error', createdAt: '2026-05-01T08:00:00Z' }),
+      measurement({ id: 'Ya', metricType: 'ldl', value: 2.4, correctsId: 'X', createdAt: '2026-05-02T08:00:00Z' }),
+    ];
+    b.measurements = [
+      measurement({ id: 'X', metricType: 'ldl', value: 2.1, status: 'entered-in-error', createdAt: '2026-05-01T08:00:00Z' }),
+      measurement({ id: 'Yb', metricType: 'ldl', value: 2.6, correctsId: 'X', createdAt: '2026-05-03T08:00:00Z' }),
+    ];
+    const ab = activeMeasurements(mergeFiles(a, b, OPTS));
+    const ba = activeMeasurements(mergeFiles(b, a, OPTS));
+    expect(ab).toHaveLength(1);
+    expect(ba).toHaveLength(1);
+    expect(ab[0].id).toBe(ba[0].id);
+  });
+});
+
+// Adversarial review (2026-09-01): the row-immutability guarantee the header
+// claims was real only for measurements/labValues. The append-only LOGS
+// (medicationHistory, supplementHistory) and documents still resolved a reused
+// id first-seen — an in-place edit of an immutable row, and asymmetric. They
+// get the same (base id, content) union; documents keep the tombstone OR.
+describe('mergeFiles — append-only logs and documents quarantine a reused id (US-29)', () => {
+  const med = (over: Partial<FileMedication>): FileMedication => ({
+    id: 'H1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 40,
+    doseUnit: 'mg', updatedAt: '2026-05-01T00:00:00Z', lamport: 1, ...over,
+  });
+  const supp = (over: Partial<FileSupplement>): FileSupplement => ({
+    id: 'S1', supplementKey: 'omega3', supplementName: 'Omega-3', doseValue: 1,
+    doseUnit: 'g', status: 'active', startedAt: '2026-05-01',
+    updatedAt: '2026-05-01T00:00:00Z', lamport: 1, ...over,
+  });
+  const doc = (over: Partial<FileDocument>): FileDocument => ({
+    id: 'D1', title: 'orig', type: 'other', date: null, fileRef: '', contentHash: '',
+    mimeType: '', extractedText: 'A', addedAt: '2026-05-01T00:00:00Z', ...over,
+  });
+
+  it('medicationHistory keeps both contents and stays symmetric', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.medicationHistory = [med({})];
+    b.medicationHistory = [med({ drugName: 'HAND_EDITED', doseValue: 80 })];
+    const ab = mergeFiles(a, b, OPTS);
+    const ba = mergeFiles(b, a, OPTS);
+    expect(stableStringify(ab.medicationHistory)).toBe(stableStringify(ba.medicationHistory));
+    expect(ab.medicationHistory.map((r) => r.drugName).sort()).toEqual(['HAND_EDITED', 'atorvastatin']);
+    expect(new Set(ab.medicationHistory.map((r) => r.id)).size).toBe(2);
+  });
+
+  it('supplementHistory keeps both contents and stays symmetric', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.supplementHistory = [supp({})];
+    b.supplementHistory = [supp({ doseValue: 3 })];
+    const ab = mergeFiles(a, b, OPTS);
+    const ba = mergeFiles(b, a, OPTS);
+    expect(stableStringify(ab.supplementHistory)).toBe(stableStringify(ba.supplementHistory));
+    expect(ab.supplementHistory.map((r) => r.doseValue).sort()).toEqual([1, 3]);
+    expect(new Set(ab.supplementHistory.map((r) => r.id)).size).toBe(2);
+  });
+
+  it('documents keep both contents and stay symmetric', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.documents = [doc({})];
+    b.documents = [doc({ title: 'edited', extractedText: 'B' })];
+    const ab = mergeFiles(a, b, OPTS);
+    const ba = mergeFiles(b, a, OPTS);
+    expect(stableStringify(ab.documents)).toBe(stableStringify(ba.documents));
+    expect(ab.documents.map((d) => d.title).sort()).toEqual(['edited', 'orig']);
+    expect(new Set(ab.documents.map((d) => d.id)).size).toBe(2);
+  });
+
+  // The tombstone is OR-ed across copies of the SAME content, exactly as
+  // before — `deleted` is excluded from the signature, so a deleted and an
+  // undeleted copy are one row, not two.
+  it('a document delete survives the quarantine and never resurrects', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.documents = [doc({ deleted: true }), doc({ id: 'D2', title: 'other' })];
+    b.documents = [doc({}), doc({ id: 'D2', title: 'other', deleted: true })];
+    for (const merged of [mergeFiles(a, b, OPTS), mergeFiles(b, a, OPTS)]) {
+      expect(merged.documents).toHaveLength(2);
+      expect(merged.documents.every((d) => d.deleted)).toBe(true);
+    }
+  });
+
+  // Same content on both sides is still ONE row — the quarantine must not fire
+  // on the ordinary cross-device case.
+  it('same id + same content stays one row in every log', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.medicationHistory = [med({})];
+    b.medicationHistory = [med({})];
+    a.supplementHistory = [supp({})];
+    b.supplementHistory = [supp({})];
+    a.documents = [doc({})];
+    b.documents = [doc({})];
+    const merged = mergeFiles(a, b, OPTS);
+    expect(merged.medicationHistory).toHaveLength(1);
+    expect(merged.supplementHistory).toHaveLength(1);
+    expect(merged.documents).toHaveLength(1);
+    expect(merged.medicationHistory[0].id).toBe('H1');
+    expect(merged.documents[0].id).toBe('D1');
   });
 });
