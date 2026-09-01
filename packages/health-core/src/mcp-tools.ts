@@ -227,43 +227,22 @@ export function addLabValues(
   return { status: 'ok', file: next, text: describe('Added', rows) };
 }
 
-/** Float noise from a unit conversion is not a mismatch; a wrong number is. */
-function sameValue(a: number, b: number): boolean {
-  return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
-}
-
 /**
  * Correct one value: append a row carrying the new number and `correctsId`,
  * and flip the old row to `entered-in-error` (agent-access rule 2). Never
  * folded into an add — a correction is a separate decision, made with the row
  * id in hand.
  *
- * `expectedValue` is the agent stating what it believes it is replacing. It is
- * OPTIONAL on this local surface, where the user is watching their own file
- * and the CLI has never asked for it; the hosted surface requires it, because
- * there the guard is what stops an agent working from a stale or invented read
- * (design §3). When given it is compared against the STORED number — SI
- * canonical for a measurement, the lab's own for a lab value — which is
- * exactly what `read_record` returned.
+ * `expectedValue` is the agent stating what it believes it is replacing.
+ * `record-edits.ts` owns that check; it is OPTIONAL on this local surface and
+ * REQUIRED by the hosted server (design §3).
  */
 export function correctValueTool(
   file: RoadmapFile,
   request: z.infer<typeof correctValueInput>,
   now: string,
 ): ToolOutcome {
-  const { expectedValue, ...edit } = request;
-  if (expectedValue !== undefined) {
-    const old: FileMeasurement | FileLabValue | undefined =
-      file.measurements.find((m) => m.id === edit.id) ?? file.labValues.find((l) => l.id === edit.id);
-    if (old && !sameValue(old.value, expectedValue)) {
-      return {
-        status: 'rejected',
-        text: `Row ${oneLine(edit.id)} does not hold the value you expected. Nothing was written. ` +
-          'Read the record again before correcting.',
-      };
-    }
-  }
-  const result = correctValue(file, { ...edit, now });
+  const result = correctValue(file, { ...request, now });
   if (!result.ok) return rejection(result);
   return { status: 'ok', file: result.file, text: describe('Corrected', [result.row]) };
 }

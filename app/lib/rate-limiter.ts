@@ -2,12 +2,14 @@
 // Shared across routes (api.measurements, api.ab, etc.)
 export function createRateLimiter(max: number, windowMs: number, cleanupMs: number) {
   const map = new Map<string, { count: number; resetAt: number }>();
-  setInterval(() => {
+  const sweep = setInterval(() => {
     const now = Date.now();
     for (const [key, entry] of map) {
       if (now > entry.resetAt) map.delete(key);
     }
   }, cleanupMs);
+  // Never hold the process open just to sweep an in-memory map.
+  sweep.unref?.();
   return (key: string): boolean => {
     const now = Date.now();
     const entry = map.get(key);
@@ -27,12 +29,14 @@ export function createRateLimiter(max: number, windowMs: number, cleanupMs: numb
  */
 export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: number) {
   const map = new Map<string, { count: number; resetAt: number }>();
-  setInterval(() => {
+  const sweep = setInterval(() => {
     const now = Date.now();
     for (const [key, entry] of map) {
       if (now > entry.resetAt) map.delete(key);
     }
   }, cleanupMs);
+  // Never hold the process open just to sweep an in-memory map.
+  sweep.unref?.();
   const live = (key: string) => {
     const entry = map.get(key);
     return entry && Date.now() <= entry.resetAt ? entry : null;

@@ -51,9 +51,15 @@ function callbackUrl(): string {
 
 /**
  * `MCP_SEAL_KEYS` is an ordered, comma-separated list of base64 32-byte keys.
- * `kid` is the index. We seal with the FIRST and accept ANY, so rotation is one
- * atomic `fly secrets set` that prepends a key — there is no window in which a
- * machine holds half a view of the key set.
+ * We seal with the FIRST and accept ANY, so rotation is one atomic
+ * `fly secrets set` that prepends a key — there is no window in which a machine
+ * holds half a view of the key set.
+ *
+ * `kid` is a FINGERPRINT of the key, not its index. The design says "index",
+ * and index cannot survive the rotation the same paragraph prescribes:
+ * prepending a key renumbers every key, so every blob already issued would
+ * decrypt under the wrong one. A fingerprint names the key itself, so prepend
+ * and append both work and "accept any" stays literally true.
  */
 function sealKeys(): Buffer[] {
   const raw = process.env.MCP_SEAL_KEYS;
@@ -96,6 +102,11 @@ function hash(value: string): string {
   return crypto.createHash('sha256').update(value, 'utf8').digest('base64url');
 }
 
+/** Names one seal key without revealing it. Public — it rides in the header. */
+function fingerprint(key: Buffer): string {
+  return crypto.createHash('sha256').update(key).digest('base64url').slice(0, 11);
+}
+
 /**
  * The blob's cleartext header, and its own AAD. It carries `kid` (which key),
  * `typ` (which HKDF context) and the HASHES of the client id and the resource
@@ -105,7 +116,7 @@ function hash(value: string): string {
  * the tag check fails before any plaintext exists.
  */
 interface SealHeader {
-  k: number;
+  k: string;
   t: BlobType;
   c: string;
   r: string;
@@ -139,7 +150,7 @@ export interface SealAudience {
 export function seal(typ: BlobType, payload: unknown, audience: SealAudience): string {
   const keys = sealKeys();
   if (keys.length === 0) throw new Error('MCP_SEAL_KEYS is not configured');
-  const header: SealHeader = { k: 0, t: typ, c: hash(audience.clientId), r: hash(audience.resource) };
+  const header: SealHeader = { k: fingerprint(keys[0]), t: typ, c: hash(audience.clientId), r: hash(audience.resource) };
   const aad = Buffer.from(JSON.stringify(header), 'utf8');
   const nonce = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', typeKey(keys[0], typ), nonce, { authTagLength: 16 });
@@ -173,8 +184,7 @@ export function unseal<T>(typ: BlobType, token: string, audience: SealAudience, 
   }
   if (header.t !== typ) return null;
   if (header.c !== hash(audience.clientId) || header.r !== hash(audience.resource)) return null;
-  const keys = sealKeys();
-  const key = Number.isInteger(header.k) ? keys[header.k] : undefined;
+  const key = sealKeys().find((candidate) => fingerprint(candidate) === header.k);
   if (!key) return null;
 
   const raw = Buffer.from(bodyPart, 'base64url');

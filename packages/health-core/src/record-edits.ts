@@ -71,6 +71,17 @@ export interface CorrectValueRequest {
    * so passing one here is refused rather than silently ignored.
    */
   unit?: string;
+  /**
+   * What the caller believes the row holds right now, in the STORED number —
+   * SI canonical for a measurement, the lab's own for a lab value, which is
+   * exactly what a read returned. A mismatch refuses the correction, so a
+   * caller working from a stale or invented read writes nothing.
+   *
+   * Optional here and on the CLI, where a human is watching their own file.
+   * The hosted MCP server REQUIRES it (design §3, mitigation 1): there the
+   * caller is an agent that may have been talked into this.
+   */
+  expectedValue?: number;
   now: string;
 }
 
@@ -84,7 +95,8 @@ export type EditRejectionReason =
   | 'future-date'
   | 'slot-occupied'
   | 'not-found'
-  | 'not-active';
+  | 'not-active'
+  | 'value-changed';
 
 /** A refused write. The caller decides what to do — nothing was changed. */
 export interface EditRejection {
@@ -106,6 +118,11 @@ export type EditResult<TRow> = EditSuccess<TRow> | EditRejection;
 
 function reject(reason: EditRejectionReason, message: string, existing?: FileMeasurement | FileLabValue): EditRejection {
   return { ok: false, reason, message, ...(existing ? { existing } : null) };
+}
+
+/** Float noise from a unit conversion is not a mismatch; a wrong number is. */
+function sameValue(a: number, b: number): boolean {
+  return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
 }
 
 /** Rule 5 — a fresh UUID per row, always. */
@@ -274,6 +291,11 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
   const old = measurement ?? lab;
   if (!old) return reject('not-found', `No value in this record has id ${id}`);
   if (old.status !== 'active') return reject('not-active', `Value ${id} is already entered-in-error; correct the row that replaced it`);
+  // The refusal deliberately does not echo either number: a caller that
+  // guessed must not learn the value by guessing at it.
+  if (request.expectedValue !== undefined && !sameValue(old.value, request.expectedValue)) {
+    return reject('value-changed', `Row ${id} does not hold the value you expected; read the record again before correcting`);
+  }
   if (!Number.isFinite(request.newValue)) return reject('invalid-value', 'A value must be a finite number');
 
   if (measurement) {

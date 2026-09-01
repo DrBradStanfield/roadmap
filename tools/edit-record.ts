@@ -50,6 +50,8 @@ add        --metric  one of the app's core metrics (ldl, hba1c, weight, …), st
 correct    --id      the row id to correct (get-plan --json shows them). The new
                      row keeps the ORIGINAL date; the old row becomes
                      entered-in-error. Nothing is ever deleted or overwritten.
+                     --expect <n> refuses the correction unless the row holds
+                     that value now — worth passing from a script.
                      --unit converts, as it does for add; a lab value keeps the
                      unit its lab reported, so give the number only.
 
@@ -64,7 +66,7 @@ The file format and the rules this enforces: docs/agent-access.md
 // Arguments
 // ---------------------------------------------------------------------------
 
-const FLAGS = ['--metric', '--test', '--value', '--unit', '--date', '--id'] as const;
+const FLAGS = ['--metric', '--test', '--value', '--unit', '--date', '--id', '--expect'] as const;
 type Flag = typeof FLAGS[number];
 
 interface Args {
@@ -179,7 +181,15 @@ function runCorrect(args: Args, record: RoadmapFile, now: string): Change {
   const id = args.flags['--id'];
   if (!id) throw new PlanError('correct needs --id', 'Run `npx tsx tools/get-plan.ts <file> --json` to see the row ids.');
   if (args.flags['--date']) throw new PlanError('A correction cannot change the date', 'The new row keeps the original date. Drop --date.');
-  const result = correctValue(record, { id, newValue: numberFlag(args, '--value'), unit: args.flags['--unit'], now });
+  const result = correctValue(record, {
+    id,
+    newValue: numberFlag(args, '--value'),
+    unit: args.flags['--unit'],
+    // Optional here, required on the hosted server (US-32): a human running
+    // this is looking at the file, an agent is not.
+    expectedValue: args.flags['--expect'] === undefined ? undefined : numberFlag(args, '--expect'),
+    now,
+  });
   if (!result.ok) refuse(result, args.path);
   const unit = 'metricType' in result.row ? UNIT_DEFS[result.row.metricType as MetricType]?.canonical ?? '' : result.row.unit;
   // The superseded row, read back off the result — its status is now the flip.
