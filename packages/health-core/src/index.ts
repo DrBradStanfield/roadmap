@@ -138,6 +138,7 @@ export {
   LONGITUDINAL_FIELDS,
   BLOOD_TEST_METRICS,
   measurementsToInputs,
+  mergeLongitudinalInputs,
   diffInputsToMeasurements,
   diffProfileFields,
   hasCloudData,
@@ -255,6 +256,7 @@ export {
   type SyncStamp,
   type HistoryChangeType,
 } from './roadmap-file';
+export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
 export { mergeFiles, dayOf, type MergeOptions } from './merge';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError } from './migrate';

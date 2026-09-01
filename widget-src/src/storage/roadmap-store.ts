@@ -28,8 +28,8 @@ import {
   createMeasurement,
   dayOf,
   diffInputsToMeasurements,
-  encodeSex,
-  encodeUnitSystem,
+  fileProfileToApi,
+  fileScreeningRows,
   latestActivePerMetric,
   measurementsToInputs,
   mergeFiles,
@@ -37,9 +37,8 @@ import {
   PREFILL_FIELDS,
   resolveLabCatalogEntry,
   SchemaTooNewError,
-  SCREENING_KEYS,
+  screeningFieldName,
   type ApiMeasurement,
-  type ApiProfile,
   type ApiMedication,
   type ApiScreening,
   type DocumentType,
@@ -51,7 +50,6 @@ import {
   type MeasurementSource,
   type ReminderScheduleItem,
   type RoadmapFile,
-  type ScreeningInputs,
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
 import { SyncManager, type DocumentSpec, type SyncContext } from './sync-manager';
@@ -190,9 +188,6 @@ const PERSIST_DEBOUNCE_MS = 800;
 
 // --- small pure helpers ---
 
-function snakeToCamel(key: string): string {
-  return key.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
-}
 const NUMERIC_SCREENING_KEYS = new Set(['lung_pack_years', 'prostate_psa_value']);
 
 function newId(): string {
@@ -269,8 +264,7 @@ export class RoadmapStore {
 
   loadLatestMeasurements(): LatestMeasurementsResult {
     const measurements = activeOnly(this.file.measurements);
-    const apiProfile = this.toApiProfile();
-    const allInputs = measurementsToInputs(measurements as ApiMeasurement[], apiProfile);
+    const allInputs = measurementsToInputs(measurements as ApiMeasurement[], fileProfileToApi(this.file.profile));
 
     const inputs: Partial<HealthInputs> = {};
     for (const field of PREFILL_FIELDS) {
@@ -282,7 +276,7 @@ export class RoadmapStore {
       inputs,
       previousMeasurements: latestActivePerMetric(measurements) as ApiMeasurement[],
       medications: this.file.medications as ApiMedication[],
-      screenings: this.screeningsToRows(),
+      screenings: fileScreeningRows(this.file.screenings),
       supplements: this.file.supplements as ApiSupplement[],
       reminderPreferences: this.file.reminderPreferences.map((p) => ({
         reminderCategory: p.category,
@@ -416,7 +410,7 @@ export class RoadmapStore {
   }
 
   saveScreening(screeningKey: string, value: string): boolean {
-    const field = snakeToCamel(screeningKey) as keyof ScreeningInputs;
+    const field = screeningFieldName(screeningKey);
     const parsed = NUMERIC_SCREENING_KEYS.has(screeningKey) ? parseFloat(value) : value;
     const s = this.file.screenings;
     (s as unknown as Record<string, unknown>)[field] = parsed;
@@ -724,19 +718,6 @@ export class RoadmapStore {
 
   // =================================================================== private
 
-  private toApiProfile(): ApiProfile {
-    const p = this.file.profile;
-    return {
-      sex: p.sex ? encodeSex(p.sex) : null,
-      birthYear: p.birthYear ?? null,
-      birthMonth: p.birthMonth ?? null,
-      unitSystem: p.unitSystem ? encodeUnitSystem(p.unitSystem) : null,
-      firstName: null,
-      lastName: null,
-      height: p.heightCm ?? null,
-    };
-  }
-
   private applyProfileChanges(current: Partial<HealthInputs>, previous: Partial<HealthInputs>): void {
     const p = this.file.profile;
     let changed = false;
@@ -746,19 +727,6 @@ export class RoadmapStore {
     if (current.heightCm !== undefined && current.heightCm !== previous.heightCm) { p.heightCm = current.heightCm; changed = true; }
     if (current.unitSystem !== undefined && current.unitSystem !== previous.unitSystem) { p.unitSystem = current.unitSystem; changed = true; }
     if (changed) { p.updatedAt = new Date().toISOString(); p.lamport = (p.lamport ?? 0) + 1; }
-  }
-
-  private screeningsToRows(): ApiScreening[] {
-    const s = this.file.screenings;
-    const rows: ApiScreening[] = [];
-    for (const key of SCREENING_KEYS) {
-      const field = snakeToCamel(key) as keyof ScreeningInputs;
-      const v = (s as unknown as Record<string, unknown>)[field];
-      if (v !== undefined && v !== null && v !== '') {
-        rows.push({ id: key, screeningKey: key, value: String(v), updatedAt: s.updatedAt });
-      }
-    }
-    return rows;
   }
 
   /** Upsert a current-state row keyed by `keyField`, stamping the sync clock. */

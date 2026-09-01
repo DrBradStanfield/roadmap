@@ -111,6 +111,28 @@ export const LONGITUDINAL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
 ];
 
 /**
+ * Fill the longitudinal fields a form left empty from the user's saved rows —
+ * the "what am I actually being assessed on" step between stored measurements
+ * and `calculateHealthResults`. A field the caller already holds always wins
+ * (typing a new value must not be overridden by history), and `previous` is
+ * expected to hold ONE row per metric — the newest active one, per US-07 AC4 —
+ * so the first match for a metric is its current value.
+ */
+export function mergeLongitudinalInputs(
+  inputs: Partial<HealthInputs>,
+  previous: ReadonlyArray<Pick<ApiMeasurement, 'metricType' | 'value'>>,
+): Partial<HealthInputs> {
+  const base = { ...inputs };
+  for (const m of previous) {
+    const field = METRIC_TO_FIELD[m.metricType];
+    if (field && (LONGITUDINAL_FIELDS as readonly string[]).includes(field) && base[field] === undefined) {
+      (base as Record<string, unknown>)[field] = m.value;
+    }
+  }
+  return base;
+}
+
+/**
  * Metric types for blood test results (as opposed to body measurements).
  * Used to determine which measurements should use the user-selected blood test date.
  */

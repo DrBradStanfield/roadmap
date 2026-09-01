@@ -9,9 +9,9 @@ import {
   PREFILL_FIELDS,
   LONGITUDINAL_FIELDS,
   BLOOD_TEST_METRICS,
-  METRIC_TO_FIELD,
   FIELD_TO_METRIC,
   medicationsToInputs,
+  mergeLongitudinalInputs,
   screeningsToInputs,
   buildMeasurementHistory,
   computeFormStage,
@@ -485,18 +485,10 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // Effective inputs for results calculation: form inputs + fallback to
   // previousMeasurements, which the data layer has already reduced to the newest
   // active row per metric (US-07 AC4) — so the first match here IS the latest.
-  const effectiveInputs = useMemo(() => {
-    const base = { ...inputs };
-    if (authState.isLoggedIn) {
-      for (const m of previousMeasurements) {
-        const field = METRIC_TO_FIELD[m.metricType];
-        if (field && (LONGITUDINAL_FIELDS as readonly string[]).includes(field) && base[field] === undefined) {
-          (base as any)[field] = m.value;
-        }
-      }
-    }
-    return base;
-  }, [inputs, previousMeasurements, authState.isLoggedIn]);
+  const effectiveInputs = useMemo(
+    () => (authState.isLoggedIn ? mergeLongitudinalInputs(inputs, previousMeasurements) : { ...inputs }),
+    [inputs, previousMeasurements, authState.isLoggedIn],
+  );
 
   // Progressive disclosure: compute which stage of the form to show.
   // Override to stage 3 if user has saved blood test data (e.g. from lab import).

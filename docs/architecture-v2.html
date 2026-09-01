@@ -610,7 +610,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
   <li><strong><code>meta.lamport</code></strong> — file-level logical clock, bumped to <code>max+1</code> on every write.</li>
   <li><strong><code>meta.eraseEpoch</code></strong> — added after a real bug: "Delete All My Data" silently failed because the never-lose-data merge union resurrected deleted rows. A higher <code>eraseEpoch</code> now wins <code>mergeFiles</code> wholesale. <code>RoadmapStore.deleteUserData()</code> bumps it.</li>
   <li><strong><code>profile.reportEmailCaptured</code></strong> — set once when a user submits their email for the PDF; survives load→migrate (object spread) and merge (whole-profile LWW). See <a href="#lead-capture">lead capture</a>.</li>
-  <li><strong>Published for agents</strong> — <a class="file-link" href="health-roadmap-file.schema.json">health-roadmap-file.schema.json</a> (JSON Schema draft 2020-12, pinned to <code>roadmap-file.ts</code> by <code>roadmap-file.schema.test.ts</code>) and <a class="file-link" href="agent-access.md">agent-access.md</a>, the read/write contract for a user's own AI agent (US-29).</li>
+  <li><strong>Published for agents</strong> — <a class="file-link" href="health-roadmap-file.schema.json">health-roadmap-file.schema.json</a> (JSON Schema draft 2020-12, pinned to <code>roadmap-file.ts</code> by <code>roadmap-file.schema.test.ts</code>) and <a class="file-link" href="agent-access.md">agent-access.md</a>, the read/write contract for a user's own AI agent (US-29) &mdash; plus <code>tools/get-plan.ts</code>, which turns that file into the plan offline, no server and no model (US-30).</li>
 </ul>
 
 <h3>The store + sync</h3>
