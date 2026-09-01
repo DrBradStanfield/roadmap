@@ -10,14 +10,14 @@ import { describe, it, expect, vi } from 'vitest';
 import { chmodSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { createEmptyFile, createMeasurement, mergeLongitudinalInputs, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
 import { run } from './edit-record';
 import { run as runGetPlan } from './get-plan';
+import { REPO_ROOT, tsxSpawn } from './test-helpers';
 
 const CTX = { deviceId: 'us31_cli', now: '2026-09-01T09:00:00Z' };
 
@@ -241,7 +241,7 @@ describe('US-31 AC10 — error discipline, and nothing that could reach the netw
   });
 
   it('imports only health-core, node builtins and its sibling tools', async () => {
-    const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'edit-record.ts'), 'utf8');
+    const source = readFileSync(join(REPO_ROOT, 'tools/edit-record.ts'), 'utf8');
     const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.length).toBeGreaterThan(3);
     for (const spec of specifiers) {
@@ -333,14 +333,17 @@ describe('US-31 AC8 — two people, or two agents, writing at once', () => {
   it('keeps every row when four processes add to one file at once', async () => {
     const { dir, path } = writeFixture();
     const adds = [['hdl', '1.2'], ['weight', '92.4'], ['triglycerides', '1.1'], ['apob', '0.9']];
-    const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-    const runs = adds.map(([metric, value]) => new Promise<{ metric: string; code: number; output: string }>((resolve) => {
-      const child = spawn('npx', ['tsx', 'tools/edit-record.ts', 'add', path, '--metric', metric, '--value', value, '--date', '2026-08-14'], { cwd: repo });
-      let output = '';
-      child.stdout.on('data', (c) => { output += String(c); });
-      child.stderr.on('data', (c) => { output += String(c); });
-      child.on('close', (code) => resolve({ metric, code: code ?? 1, output }));
+    const runs = adds.map(([metric, value]) => new Promise<{ metric: string; code: number; stderr: string }>((resolve) => {
+      const [bin, args] = tsxSpawn(['tools/edit-record.ts', 'add', path, '--metric', metric, '--value', value, '--date', '2026-08-14']);
+      // stdout is discarded: nothing asserts on it, and an unread pipe can block.
+      const child = spawn(bin, args, { cwd: REPO_ROOT, stdio: ['ignore', 'ignore', 'pipe'] });
+      let stderr = '';
+      child.stderr.on('data', (c) => { stderr += String(c); });
+      // Only the tail of stderr reaches the failure message — the last lines say why.
+      child.on('close', (code) => resolve({
+        metric, code: code ?? 1, stderr: stderr.trimEnd().split('\n').slice(-5).join('\n'),
+      }));
     }));
     const results = await Promise.all(runs);
 
@@ -349,7 +352,7 @@ describe('US-31 AC8 — two people, or two agents, writing at once', () => {
     for (const result of results) {
       // Whatever it reported must be true: a write it claimed is on disk, and
       // a write it disowned left the record alone.
-      expect(result.code, `${result.metric}: ${result.output}`).toBe(0);
+      expect(result.code, `${result.metric}: ${result.stderr}`).toBe(0);
       expect(landed, `${result.metric} reported success`).toContain(result.metric);
     }
     expect(file.meta.lamport).toBeGreaterThanOrEqual(adds.length);

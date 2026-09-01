@@ -11,16 +11,15 @@ import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { mergeLongitudinalInputs, migrateFile, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
+import { REPO_ROOT, localCommand } from './test-helpers';
 
-const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
-const GUIDE = readFileSync(join(REPO, 'docs/guides/command-line.md'), 'utf8');
-const SAMPLE = join(REPO, 'docs/examples/health-roadmap.sample.json');
+const GUIDE = readFileSync(join(REPO_ROOT, 'docs/guides/command-line.md'), 'utf8');
+const SAMPLE = join(REPO_ROOT, 'docs/examples/health-roadmap.sample.json');
 
 /** The path the guide uses; the run swaps in a temp copy of the sample. */
 const GUIDE_PATH = '~/health-roadmap.json';
@@ -32,8 +31,11 @@ const GUIDE_PATH = '~/health-roadmap.json';
  */
 function guideRun(command: string, record: string, htmlOut: string) {
   expect(GUIDE, `guide no longer contains: ${command}`).toContain(command);
-  const [bin, ...rest] = command.replace(GUIDE_PATH, record).replace('~/plan.html', htmlOut).split(' ');
-  const result = spawnSync(bin, rest, { cwd: REPO, encoding: 'utf8' });
+  // The guide says `npx tsx …`; the run uses the repo-local tsx instead, so no
+  // spawn here reaches npm's network or its shared npx cache.
+  const [bin, args] = localCommand(
+    command.replace(GUIDE_PATH, record).replace('~/plan.html', htmlOut).split(' '));
+  const result = spawnSync(bin, args, { cwd: REPO_ROOT, encoding: 'utf8' });
   return { code: result.status, stdout: result.stdout, stderr: result.stderr };
 }
 
