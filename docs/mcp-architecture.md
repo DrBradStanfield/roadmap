@@ -1,6 +1,17 @@
-# US-32 · Hosted remote MCP server — design (rev 4, **DECIDED — FINAL**)
+# MCP architecture — local stdio server and hosted stateless server (US-32)
 
-2026-09-01. Brad has ruled on every open question; this document is now the build reference, not a proposal. It is committed as `docs/us32-remote-mcp-design.md` alongside the US-32 story when implementation starts.
+Hosted-server design: **rev 4, DECIDED — FINAL**. 2026-09-01. Brad has ruled on every open question; this document is the build reference, not a proposal. Sections 1 onward are that design; section 0 maps every agent surface, hosted or not.
+
+## 0. Map of the agent surfaces
+
+| Surface | What it is | Documented in | Status |
+| --- | --- | --- | --- |
+| Published file contract | The rules any agent follows to read and write `health-roadmap.json` | [agent-access.md](agent-access.md) + [health-roadmap-file.schema.json](health-roadmap-file.schema.json) | shipped |
+| `get-plan` CLI (US-30) | Computes the plan from a file, offline, no model | `tools/get-plan.ts` + [guides/command-line.md](guides/command-line.md) | shipped |
+| `edit-record` CLI (US-31) | Contract-enforcing writes from the shell | `tools/edit-record.ts` + [guides/command-line.md](guides/command-line.md) | shipped |
+| Local stdio MCP (US-32 phase 0) | The same tools over a local file path | `tools/mcp-server.ts` + [guides/connect-claude-desktop.md](guides/connect-claude-desktop.md) | shipped; verified with MCP Inspector and Claude Code 2026-09-02 |
+| Hosted MCP (US-32 phase 1) | The same tools behind a connector, sealed-token stateless | this doc + `app/lib/mcp*.server.ts` + [deploy-runbook.md](deploy-runbook.md) "Hosted MCP" | merged 2026-09-02, inert until the Fly secrets are set |
+| `report_feedback` tool | Prepares a prefilled GitHub issue; sends nothing itself | `packages/health-core/src/mcp-tools.ts` | shipped |
 
 **Intent:** a web ChatGPT/Claude user clicks connect, authorizes, and their AI reads and saves their health record in THEIR cloud. **Architecture:** fully stateless — no token table, nothing per-user in Supabase. The provider refresh token is sealed into the bearer token we issue.
 

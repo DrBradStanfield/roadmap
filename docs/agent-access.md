@@ -7,6 +7,8 @@ can open the file, read it, and write it back.
 
 This page is the contract for doing that safely.
 
+Tools that enforce this contract for you: `tools/get-plan.ts`, `tools/edit-record.ts`, `tools/mcp-server.ts`; the hosted server: [mcp-architecture.md](mcp-architecture.md).
+
 - Format: JSON Schema (draft 2020-12) —
   [`docs/health-roadmap-file.schema.json`](health-roadmap-file.schema.json),
   published at
@@ -167,7 +169,7 @@ Four things differ from the local path, and they are differences you will hit:
   entirely — reads refuse too**, because the record is migrated before any tool sees it.
 
 Trust model, revocation, and the residual risks we accepted knowingly:
-[us32-remote-mcp-design.md](us32-remote-mcp-design.md). The short version: your record
+[mcp-architecture.md](mcp-architecture.md). The short version: your record
 still lives only in your Dropbox, our server reads it in memory to answer one call and
 keeps no copy, and you cancel the whole thing at `dropbox.com/account/connected_apps` —
 which also disconnects the website from the folder, because Dropbox scopes the folder

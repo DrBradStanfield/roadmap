@@ -32,7 +32,7 @@ reminders / Klaviyo capture only.
   (sticky). One `active` row per (metric, day). Dedup on STABLE keys only:
   `sourceFileName` for documents, `(metric, recorded_at)` for lab values.
   Full FHIR tables + correction flow: docs/reference.md.
-- Agent contract: docs/health-roadmap-file.schema.json + docs/agent-access.md.
+- Agent surfaces: docs/agent-access.md (contract) · docs/mcp-architecture.md (map).
 - Supabase still holds OPERATIONAL data only (chat, guest sessions,
   reminder_optin_v2, ab_*, product_events, feedback_submissions, audit_logs,
   cron_lock, Shopify sessions). No health values, ever.
