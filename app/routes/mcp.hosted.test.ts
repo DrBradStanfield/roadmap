@@ -317,6 +317,54 @@ describe('the doors that must stay shut (US-32, design §6)', () => {
   });
 });
 
+/**
+ * Claude does not register: it sends its published CIMD id, and that document
+ * is Cloudflare-challenged from Fly (2026-09-02), so the id is pinned. The
+ * whole point is that /mcp/authorize answers it with no network call at all.
+ */
+describe('a pinned vendor client connects without DCR and without a fetch (US-32)', () => {
+  const CLAUDE_CIMD = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
+
+  it('shows the consent page and never reaches claude.ai', async () => {
+    const consent = await get(`/mcp/authorize?${new URLSearchParams({
+      client_id: CLAUDE_CIMD,
+      redirect_uri: REDIRECT,
+      response_type: 'code',
+      code_challenge: CHALLENGE,
+      code_challenge_method: 'S256',
+      state: 'client-state',
+      resource: `${ISSUER}/mcp`,
+    })}`);
+    expect(consent.status).toBe(200);
+    expect(await consent.text()).toContain('Claude');
+    const targets = (fetch as unknown as { mock: { calls: Array<[unknown]> } }).mock.calls;
+    expect(targets.some(([to]) => String(to).includes('claude.ai'))).toBe(false);
+  });
+
+  it('completes the whole flow on the pinned id', async () => {
+    seedRecord();
+    const { nonce, cookie } = await pressConnect(await consentScreen(CLAUDE_CIMD));
+    const back = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(nonce)}`, { cookie });
+    expect(back.status).toBe(302);
+    const returned = new URL(back.headers.get('location')!);
+    expect(returned.origin + returned.pathname).toBe(REDIRECT);
+    const tokens = await redeem({
+      grant_type: 'authorization_code',
+      code: returned.searchParams.get('code')!,
+      redirect_uri: REDIRECT,
+      code_verifier: VERIFIER,
+      client_id: CLAUDE_CIMD,
+    });
+    expect((await callTool(tokens.access_token, 'read_record', {})).isError).toBe(false);
+  });
+
+  it('still refuses a redirect_uri the pinned client never published', async () => {
+    const res = await get(`/mcp/authorize?client_id=${encodeURIComponent(CLAUDE_CIMD)}&redirect_uri=https%3A%2F%2Fevil.test%2Fcb&response_type=code&code_challenge=${CHALLENGE}&code_challenge_method=S256`);
+    expect(res.status).toBe(400);
+    expect(res.headers.get('location')).toBeNull();
+  });
+});
+
 describe('the authorization server refuses what it must (US-32, design §4)', () => {
   it('rejects an unknown client rather than redirecting anywhere', async () => {
     const res = await get(`/mcp/authorize?client_id=https%3A%2F%2Fevil.test%2Fc&redirect_uri=${encodeURIComponent(REDIRECT)}&response_type=code&code_challenge=${CHALLENGE}&code_challenge_method=S256`);

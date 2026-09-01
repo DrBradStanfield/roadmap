@@ -296,6 +296,25 @@ curl -si -X POST -H 'Fly-Client-IP: 1.2.3.4' \
 #   tell the code (`getClientIp`), because every per-IP limit is then bypassable.
 ```
 
+**Can Fly still fetch the vendors' client documents?** Run this whenever a vendor
+connection starts failing at "We do not recognise the app":
+
+```bash
+fly ssh console -a health-tool-edu -C "node -e \"fetch('https://chatgpt.com/oauth/client.json').then(r=>console.log(r.status,r.headers.get('cf-mitigated')))\""
+#   200 and null   → the fetch path still works for this vendor
+#   403 challenge  → the document is behind a bot check from datacenter IPs
+```
+
+On 2026-09-02 `https://claude.ai/oauth/mcp-oauth-client-metadata` answered `403
+challenge` from the Fly machine (User-Agent made no difference) and
+`https://chatgpt.com/oauth/client.json` answered `200 null`. **The rule: a vendor
+document that answers with a challenge gets PINNED in `KNOWN_CLIENTS`
+(`app/lib/mcp-auth.server.ts`) — never worked around.** No proxy, no scraped
+User-Agent, no third-party fetcher: those all mean trusting a document we could not
+authenticate anyway. Pinning is the spec's own sanctioned mechanism
+(draft-ietf-oauth-client-id-metadata-document-00 §4), it is two lines and a test, and
+the pinned redirect URI must also be in `ALLOWED_REDIRECTS`.
+
 **Known follow-up, NOT this branch.** `app/lib/route-helpers.server.ts` carries a second,
 `X-Forwarded-For`-only `getClientIp`, used by `api.chat` and `api.feedback`. Those limits
 are still spoofable by one header. Same one-line fix, different blast radius: it wants its

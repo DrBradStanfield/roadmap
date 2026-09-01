@@ -17,7 +17,9 @@ vi.mock('node:dns/promises', () => ({
 }));
 import {
   ACCESS_LIFETIME_SECONDS,
+  checkAuthorize,
   connectionKey,
+  KNOWN_CLIENTS,
   isAllowedRedirect,
   isLoopbackRedirect,
   isMcpEnabled,
@@ -256,8 +258,13 @@ describe('dynamic registration without a registry (US-32, design §4)', () => {
 });
 
 describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', () => {
+  // Deliberately NOT one of the pinned ids: this suite exercises the fetch path.
   const CIMD = 'https://claude.ai/.well-known/oauth-client';
-  const METADATA = { client_name: 'Claude', redirect_uris: ['https://claude.ai/api/mcp/auth_callback'] };
+  const METADATA = {
+    client_id: CIMD,
+    client_name: 'Claude',
+    redirect_uris: ['https://claude.ai/api/mcp/auth_callback'],
+  };
 
   function respond(body: unknown, init: { type?: string; status?: number } = {}) {
     return new Response(JSON.stringify(body), {
@@ -313,7 +320,7 @@ describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', ()
   });
 
   it('refuses metadata claiming a redirect URI we do not allow', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => respond({ client_name: 'X', redirect_uris: ['https://evil.test/cb'] })));
+    vi.stubGlobal('fetch', vi.fn(async () => respond({ ...METADATA, redirect_uris: ['https://evil.test/cb'] })));
     expect(await resolveClient(CIMD)).toBeNull();
   });
 
@@ -325,9 +332,96 @@ describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', ()
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
+  it('refuses a document that claims a different client_id (draft §4, a MUST)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => respond({ ...METADATA, client_id: 'https://claude.ai/other' })));
+    expect(await resolveClient(CIMD)).toBeNull();
+  });
+
+  it('refuses a document with no client_id at all', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => respond({ client_name: 'Claude', redirect_uris: METADATA.redirect_uris })));
+    expect(await resolveClient(CIMD)).toBeNull();
+  });
+
   it('is not a client at all unless it is a URL or one of our own ids', async () => {
     expect(await resolveClient('claude')).toBeNull();
     expect(await resolveClient('')).toBeNull();
+  });
+});
+
+/**
+ * 2026-09-02: claude.ai's CIMD document is behind a Cloudflare managed
+ * challenge from Fly, so the fetch path cannot resolve it. The two canonical
+ * vendor clients are pinned instead, and these tests are what keeps the pin
+ * honest: no network, exact ids only, and no weakening of the redirect check.
+ */
+describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () => {
+  const CLAUDE = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
+  const CHATGPT = 'https://chatgpt.com/oauth/client.json';
+
+  it('every pinned redirect is also in the allow-list, so the two cannot drift', () => {
+    for (const client of KNOWN_CLIENTS.values()) {
+      expect(client.redirectUris.length).toBeGreaterThan(0);
+      for (const uri of client.redirectUris) expect(isAllowedRedirect(uri)).toBe(true);
+    }
+  });
+
+  it('resolves without touching the network, even when fetch would throw', async () => {
+    const spy = vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    });
+    vi.stubGlobal('fetch', spy);
+    expect(await resolveClient(CLAUDE)).toEqual({
+      clientId: CLAUDE,
+      name: 'Claude',
+      redirectUris: ['https://claude.ai/api/mcp/auth_callback'],
+    });
+    expect(await resolveClient(CHATGPT)).toMatchObject({ name: 'ChatGPT' });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('resolves through the exact Cloudflare challenge that broke production', async () => {
+    const spy = vi.fn(async () => new Response('<html>Just a moment…</html>', {
+      status: 403,
+      headers: { 'content-type': 'text/html; charset=UTF-8', 'cf-mitigated': 'challenge' },
+    }));
+    vi.stubGlobal('fetch', spy);
+    expect(await resolveClient(CLAUDE)).not.toBeNull();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('pins an exact string, so lookalikes fall through to the fetch path', async () => {
+    const spy = vi.fn(async () => new Response('no', { status: 404 }));
+    vi.stubGlobal('fetch', spy);
+    for (const lookalike of [
+      'https://claude.ai/oauth/mcp-oauth-client-metadata/',
+      'https://claude.ai.evil.test/oauth/mcp-oauth-client-metadata',
+    ]) {
+      expect(await resolveClient(lookalike)).toBeNull();
+    }
+    expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives a pinned client no redirect it did not publish', () => {
+    const client = KNOWN_CLIENTS.get(CLAUDE)!;
+    const params = new URLSearchParams({
+      redirect_uri: 'https://evil.test/cb',
+      response_type: 'code',
+      code_challenge: 'a'.repeat(43),
+      code_challenge_method: 'S256',
+    });
+    const checked = checkAuthorize(params, client);
+    expect(checked.ok).toBe(false);
+    expect(checked).toMatchObject({ redirectable: false });
+  });
+
+  it('logs the drift with a host and no URL or query', () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+    checkAuthorize(new URLSearchParams({ redirect_uri: 'https://evil.test/cb?code=secret' }), KNOWN_CLIENTS.get(CHATGPT)!);
+    const message = String(logged.mock.calls[0][0]);
+    expect(message).toContain('chatgpt.com');
+    expect(message).not.toContain('?');
+    expect(message).not.toContain('evil.test');
+    expect(message).not.toContain('https://');
   });
 });
 

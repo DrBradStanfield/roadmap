@@ -68,7 +68,7 @@ It ships in `docs/user-stories.md` **in the same commit as Phase-1 code — neve
 | Secret | Use | Rotation |
 | --- | --- | --- |
 | `MCP_SEAL_KEYS` | Ordered list of 32-byte keys; `kid` = index. Seal with the **first**, accept **any**. Rotation is one atomic `fly secrets set` — prepend the new key. No window where a machine holds a partial view. | Overlap keeps a leaked key live up to the refresh lifetime (90 d); no-overlap forces every user to reconnect. **Default incident response is no-overlap**, because a leaked seal key is retroactive (§4). |
-| `MCP_CLIENT_HMAC_KEY` | HMAC over self-contained DCR `client_id`s. | **User-visible, not silent.** Anthropic freezes a connector's auth settings after it is added and OpenAI performs DCR once per connection, so rotation forces every affected user to **remove and re-add the connector**. Rotate only with a comms plan. |
+| `MCP_CLIENT_HMAC_KEY` | HMAC over self-contained DCR `client_id`s. | **User-visible, not silent.** Anthropic freezes a connector's auth settings after it is added, so rotation forces every affected user to **remove and re-add the connector**. Rotate only with a comms plan. |
 
 Reuse otherwise: `mergeFiles`, `migrateFile`, `SyncManager`, `createRateLimiter`, the plan derivation. No new npm dependency — `node:crypto` covers AES-256-GCM, HKDF, HMAC.
 
@@ -120,7 +120,7 @@ Every write: read → `migrateFile` → apply → `mergeFiles` → conditional w
 
 **We are the authorization server.** An IdP would mean user accounts — the one thing this product does not have. The identity we need is "the person who can authorize this folder," and the provider proves it.
 
-**VERIFIED HOLDS (review): registration needs no registry.** Anthropic supports `oauth_cimd`; CIMD requires no RFC 7592 round-trip; OpenAI performs DCR once per connection and reuses the result; RFC 7591 §3.2.1 permits a shared/self-contained `client_id`. We advertise `"client_id_metadata_document_supported": true` **and** `"none"` in `token_endpoint_auth_methods_supported` — Claude needs both or silently falls back to DCR. DCR fallback: `client_id = "c." + base64url(metadata) + "." + HMAC(MCP_CLIENT_HMAC_KEY, metadata)`, verified on every use against a redirect-URI allowlist (`https://claude.ai/api/mcp/auth_callback`, OpenAI's callback, RFC 8252 loopback with port ignored).
+**Registration needs no registry — but the canonical vendor clients are PINNED, not fetched.** On 2026-09-02, from inside the Fly machine, `https://claude.ai/oauth/mcp-oauth-client-metadata` answered with a Cloudflare managed challenge: 403, `text/html`, `cf-mitigated: challenge`, with and without a browser User-Agent. Claude's own CIMD document is therefore unfetchable from where we run, and every Claude connection died at "We do not recognise the app". `https://chatgpt.com/oauth/client.json` fetched fine the same day — the same class of risk, one day later. So `KNOWN_CLIENTS` in `app/lib/mcp-auth.server.ts` pins both canonical ids (Claude → `https://claude.ai/api/mcp/auth_callback`, ChatGPT → `https://chatgpt.com/connector_platform_oauth_redirect`) and is consulted BEFORE any network fetch, on an exact string match. That is not a workaround: IETF draft-ietf-oauth-client-id-metadata-document-00 §4 says a server SHOULD fetch the document and MAY apply its own policy about which clients it accepts, and pre-registration keyed by the CIMD id is that policy. The fetch policy below stays in force for every unknown `https://` id, and a fetched document MUST claim the exact URL it was fetched from. DCR remains the fallback; ChatGPT in fact connected over CIMD (`https://chatgpt.com/oauth/client.json`), not DCR. RFC 7591 §3.2.1 permits a shared/self-contained `client_id`. We advertise `"client_id_metadata_document_supported": true` **and** `"none"` in `token_endpoint_auth_methods_supported` — Claude needs both or silently falls back to DCR. DCR fallback: `client_id = "c." + base64url(metadata) + "." + HMAC(MCP_CLIENT_HMAC_KEY, metadata)`, verified on every use against a redirect-URI allowlist (`https://claude.ai/api/mcp/auth_callback`, OpenAI's callback; RFC 8252 loopback redirects: implemented, OFF — CLAUDE.md, localhost never on an allow-list).
 
 **CIMD fetch is an SSRF surface. Policy is mandatory:** `https` only; DNS-resolve and reject non-public IPs, **re-checked at connect time** (rebinding); **zero redirects**; 5 s timeout; 64 KB body cap; `application/json` required; no credentials sent; results into the bounded LRU of §2. `/mcp/authorize` is per-IP rate-limited **before** any fetch.
 
@@ -254,7 +254,8 @@ No health data in Supabase — and no *anything* in Supabase. No accounts, no pa
 | Claim | Status |
 | --- | --- |
 | MCP revision **2026-07-28** removed sessions, GET stream, DELETE, `Last-Event-ID` | Verified — but neither vendor claims support; build the 2025-11-25 shape (§6). |
-| CIMD/DCR need no registry (Anthropic `oauth_cimd`; no 7592 round-trip; OpenAI DCR once per connection; RFC 7591 §3.2.1) | **Verified — review confirmed.** |
+| CIMD/DCR need no registry (Anthropic `oauth_cimd`; no 7592 round-trip; RFC 7591 §3.2.1) | **Verified — review confirmed.** ChatGPT connected over CIMD, not DCR (2026-09-02). |
+| **CIMD fetch works from Fly** | **FAILED for claude.ai, 2026-09-02** — Cloudflare managed challenge (403, `text/html`, `cf-mitigated: challenge`) to any datacenter fetch, reproduced from the Fly machine. Works for `chatgpt.com` as of the same day. Replaced by pinning both canonical ids in `KNOWN_CLIENTS`; the fetch policy stands for unknown ids. |
 | Claude: PKCE S256, RFC 8707 `resource`, 401+`WWW-Authenticate`, `invalid_grant`, 10 s/30 s timeouts, egress `160.79.104.0/21` | Verified, first-party. |
 | ChatGPT: Pro/Plus/Business/Enterprise/Edu developer mode, SSE + streamable HTTP, CIMD/DCR, writes confirmed by default, `readOnlyHint` respected | Verified, first-party. Tier list is the one live discrepancy with third-party sources. |
 | Neither Dropbox nor Google rotates refresh tokens on refresh | **Verified 2026-09-01.** Load-bearing; see §4. |
@@ -342,6 +343,20 @@ The behaviour changes worth naming here:
   would put live provider credentials in a process-wide map — a new thing to leak, and a
   new line in §1's inventory of what we hold. The per-connection rate limit bounds the
   refresh rate instead.
+
+**The canonical vendor clients are pinned (2026-09-02, first live connections).** ChatGPT
+connected end to end over CIMD. Claude did not: `https://claude.ai/oauth/mcp-oauth-client-metadata`
+is served behind a Cloudflare managed challenge that answers any datacenter fetch with a
+403 `text/html` and `cf-mitigated: challenge`, reproduced from inside the Fly machine, so
+`resolveClient` returned null and the consent page said "We do not recognise the app". Both
+canonical ids now resolve from `KNOWN_CLIENTS` before any fetch, which the draft's §4 "MAY
+apply its own policy" explicitly allows. Two things follow. The pinned redirect URIs must
+also appear in `ALLOWED_REDIRECTS`, and a test asserts that so the lists cannot drift.
+And the failure mode of pinning is a vendor changing its callback: the user sees a plain
+refusal at `/mcp/authorize` — never a redirect, because that would make us an open
+redirector — and we see one `console.error` naming the reason and the client HOST only, no
+URL and no query. That log line is the whole detection mechanism, and it is enough,
+because the user's report and Sentry's line arrive together.
 
 **Residual risks noticed during the build that this document does not name.**
 - **DNS rebinding on the CIMD fetch has a real window.** We resolve, check every address

@@ -425,7 +425,7 @@ export function resetMcpMemory(): void {
 export interface McpClient {
   clientId: string;
   name: string;
-  redirectUris: string[];
+  readonly redirectUris: readonly string[];
 }
 
 /**
@@ -445,6 +445,43 @@ const ALLOWED_REDIRECTS = [
   'https://chatgpt.com/backend-api/aip/connectors/links/oauth/callback',
 ];
 const ALLOW_LOOPBACK_REDIRECT = false;
+
+/**
+ * The two canonical vendor clients, consulted BEFORE any network fetch.
+ *
+ * 2026-09-02: `https://claude.ai/oauth/mcp-oauth-client-metadata` answers a
+ * datacenter fetch with a Cloudflare managed challenge — 403, `text/html`,
+ * `cf-mitigated: challenge` — reproduced from inside the Fly machine, with and
+ * without a browser User-Agent. The document is unfetchable from where we run,
+ * so every Claude connection died at "We do not recognise the app".
+ * `https://chatgpt.com/oauth/client.json` fetches fine today, and is the same
+ * class of risk tomorrow.
+ *
+ * Pre-registration keyed by the client-id metadata document URL is one of the
+ * spec's own sanctioned mechanisms: IETF draft-ietf-oauth-client-id-metadata-
+ * document-00 §4 says a server SHOULD fetch the document and MAY apply its own
+ * policy about which clients it accepts. This IS that policy. The redirect URIs
+ * here are the vendors' published ones and must also be in ALLOWED_REDIRECTS —
+ * a test asserts that, so the two lists cannot drift apart.
+ */
+export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<McpClient>> = new Map([
+  [
+    'https://claude.ai/oauth/mcp-oauth-client-metadata',
+    {
+      clientId: 'https://claude.ai/oauth/mcp-oauth-client-metadata',
+      name: 'Claude',
+      redirectUris: Object.freeze(['https://claude.ai/api/mcp/auth_callback']),
+    },
+  ],
+  [
+    'https://chatgpt.com/oauth/client.json',
+    {
+      clientId: 'https://chatgpt.com/oauth/client.json',
+      name: 'ChatGPT',
+      redirectUris: Object.freeze(['https://chatgpt.com/connector_platform_oauth_redirect']),
+    },
+  ],
+]);
 
 /** RFC 8252 §7.3 — a loopback redirect matches on everything but the port. */
 export function isLoopbackRedirect(uri: string): boolean {
@@ -615,12 +652,17 @@ async function fetchClientMetadata(clientId: string, nowMs = Date.now()): Promis
   } catch {
     return null;
   }
-  let metadata: ClientMetadata | null;
+  let doc: Record<string, unknown>;
   try {
-    metadata = canonicalMetadata(JSON.parse(text) as unknown);
+    doc = JSON.parse(text) as Record<string, unknown>;
   } catch {
     return null;
   }
+  // A MUST in draft-ietf-oauth-client-id-metadata-document-00 §4: the document
+  // has to claim the very URL we fetched it from, or a client could point us at
+  // someone else's metadata and inherit their identity.
+  if (doc?.client_id !== clientId) return null;
+  const metadata = canonicalMetadata(doc);
   if (!metadata) return null;
 
   const client: McpClient = { clientId, name: metadata.client_name, redirectUris: metadata.redirect_uris };
@@ -659,12 +701,17 @@ export async function readCapped(source: { body: ReadableStream<Uint8Array> | nu
 }
 
 /**
- * Resolve whatever the client called itself. A URL is a CIMD document; a `c.`
- * prefix is our own self-contained DCR id. Nothing else is a client.
+ * Resolve whatever the client called itself. A `c.` prefix is our own
+ * self-contained DCR id; a pinned URL is answered from KNOWN_CLIENTS without
+ * touching the network; any other URL is a CIMD document we fetch. Nothing
+ * else is a client.
  */
 export async function resolveClient(clientId: string, nowMs = Date.now()): Promise<McpClient | null> {
   if (!clientId || clientId.length > 4096) return null;
   if (clientId.startsWith('c.')) return verifySelfContainedClient(clientId);
+  // Exact string only: a lookalike id falls through to the fetch path below.
+  const known = KNOWN_CLIENTS.get(clientId);
+  if (known) return known;
   if (clientId.startsWith('https://')) return fetchClientMetadata(clientId, nowMs);
   return null;
 }
@@ -693,6 +740,15 @@ export interface AuthorizeRequest {
   clientState: string;
 }
 
+/** The client's host, or a label — never the id itself, which may be long. */
+function clientHost(clientId: string): string {
+  try {
+    return new URL(clientId).host;
+  } catch {
+    return 'registered-client';
+  }
+}
+
 export type AuthorizeCheck =
   | { ok: true; request: AuthorizeRequest }
   | { ok: false; error: string; description: string; redirectable: boolean };
@@ -706,6 +762,10 @@ export type AuthorizeCheck =
 export function checkAuthorize(params: URLSearchParams, client: McpClient): AuthorizeCheck {
   const redirectUri = params.get('redirect_uri') ?? '';
   if (!client.redirectUris.includes(redirectUri) || !isAllowedRedirect(redirectUri)) {
+    // The HOST only, never the URL or the query — this file may not log a URL.
+    // A vendor quietly changing its callback shows up in Sentry as this line
+    // with its own hostname; anything else is someone probing us.
+    console.error(`[mcp] authorize refused: redirect_uri not allowed for client host ${clientHost(client.clientId)}`);
     return { ok: false, error: 'invalid_request', description: 'Unknown redirect_uri', redirectable: false };
   }
   const fail = (error: string, description: string): AuthorizeCheck =>
