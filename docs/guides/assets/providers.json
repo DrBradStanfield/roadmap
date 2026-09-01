@@ -1,0 +1,18 @@
+{
+  "chatgpt": {
+    "name": "ChatGPT",
+    "mono": "GPT",
+    "colour": "#0f9d78",
+    "mode": "soon",
+    "label": "Connect ChatGPT",
+    "note": "Coming soon"
+  },
+  "claude": {
+    "name": "Claude",
+    "mono": "C",
+    "colour": "#d97757",
+    "mode": "soon",
+    "label": "Connect Claude",
+    "note": "Coming soon"
+  }
+}

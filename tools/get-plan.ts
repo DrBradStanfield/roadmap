@@ -8,6 +8,10 @@
  * offline. No server, no model, no network, no telemetry. The record file is
  * opened read-only and never written back.
  *
+ * The pipeline itself lives in `packages/health-core/src/plan.ts`, so the MCP
+ * server (US-32) computes the same plan. What is left here is the shell: argv,
+ * reading the file, and the text and HTML a person reads.
+ *
  * Usage:
  *   npx tsx tools/get-plan.ts <health-roadmap.json>
  *   npx tsx tools/get-plan.ts <file> --json
@@ -20,45 +24,22 @@
  */
 import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { calculateHealthResults } from '../packages/health-core/src/calculations';
-import { fileProfileToApi, fileScreeningRows } from '../packages/health-core/src/file-inputs';
-import { displayLabUnit, resolveLabCatalogEntry } from '../packages/health-core/src/lab-catalog';
-import {
-  FIELD_METRIC_MAP,
-  METRIC_LABELS,
-  METRIC_TO_FIELD,
-  measurementsToInputs,
-  medicationsToInputs,
-  screeningsToInputs,
-  type ApiMeasurement,
-} from '../packages/health-core/src/mappings';
-import { latestActivePerMetric } from '../packages/health-core/src/measurement-history';
+import { FIELD_METRIC_MAP } from '../packages/health-core/src/mappings';
 import { migrateFile, SchemaTooNewError } from '../packages/health-core/src/migrate';
-import { computeReminderSchedule, type ReminderScheduleItem } from '../packages/health-core/src/reminder-schedule';
-import { CURRENT_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from '../packages/health-core/src/roadmap-file';
-import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs, Suggestion } from '../packages/health-core/src/types';
-import { UNIT_DEFS, formatDisplayValue, getDisplayLabel, type MetricType, type UnitSystem } from '../packages/health-core/src/units';
-import { getValidationErrors, validateHealthInputs } from '../packages/health-core/src/validation';
-
-const SCHEMA_URL =
-  'https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json';
-
-/** A failure the user can act on: one plain line plus a hint, never a stack. */
-export class PlanError extends Error {
-  constructor(message: string, readonly hint: string) {
-    super(message);
-    this.name = 'PlanError';
-  }
-}
-
-/**
- * Text out of the record, made safe to print: a name lifted off an uploaded PDF
- * can carry terminal control codes (cursor moves, screen clears, BEL), and the
- * record is data — it must never drive the terminal. Newlines survive.
- */
-export function printable(text: string): string {
-  return text.replace(/[\x00-\x09\x0b-\x1f\x7f-\x9f]/g, '');
-}
+import {
+  computePlan,
+  currentValues,
+  dueSplit,
+  PlanError,
+  printable,
+  renderJson,
+  SCHEMA_URL,
+  type DisplayRow,
+  type Plan,
+} from '../packages/health-core/src/plan';
+import { CURRENT_SCHEMA_VERSION, type RoadmapFile } from '../packages/health-core/src/roadmap-file';
+import type { Suggestion } from '../packages/health-core/src/types';
+import { formatDisplayValue, getDisplayLabel } from '../packages/health-core/src/units';
 
 // ---------------------------------------------------------------------------
 // Load — the untrusted-bytes boundary
@@ -95,111 +76,6 @@ export function loadRecord(path: string, now = new Date()): RoadmapFile {
 }
 
 // ---------------------------------------------------------------------------
-// Derive — the same path the widget takes (US-30 AC2)
-// ---------------------------------------------------------------------------
-
-export interface PlanInputs {
-  inputs: Partial<HealthInputs>;
-  unitSystem: UnitSystem;
-  medications: MedicationInputs;
-  screenings: ScreeningInputs;
-  /**
-   * The winning row per metric, with its clinical date. A row whose value the
-   * schema rejects is still here — the file says it, so the report shows it —
-   * but `Plan.excluded` names those fields and the plan did not use them.
-   */
-  currentRows: ApiMeasurement[];
-}
-
-/**
- * File → inputs, exactly as the widget derives them: the newest active row per
- * metric (US-07 AC4) mapped through `measurementsToInputs` over the file's
- * profile, medications and screenings converted by health-core. Per-field
- * display-unit overrides are deliberately absent — those live in the browser's
- * localStorage, never in the record, so the CLI renders in `profile.unitSystem`.
- */
-export function derivePlanInputs(file: RoadmapFile): PlanInputs {
-  const active = file.measurements.filter((m) => m.status === 'active') as ApiMeasurement[];
-  const currentRows = latestActivePerMetric(active);
-  return {
-    inputs: measurementsToInputs(currentRows, fileProfileToApi(file.profile)),
-    unitSystem: file.profile.unitSystem ?? 'si',
-    medications: medicationsToInputs(file.medications),
-    screenings: screeningsToInputs(fileScreeningRows(file.screenings)),
-    currentRows,
-  };
-}
-
-export interface PlanLab {
-  key: string;
-  label: string;
-  value: number;
-  unit: string;
-  date: string;
-}
-
-/** Latest active row per lab test, named and unit-labelled from the catalogue. */
-function derivePlanLabs(file: RoadmapFile): PlanLab[] {
-  const active = file.labValues.filter((l) => l.status === 'active');
-  const rows = latestActivePerMetric(active.map((l) => ({ ...l, metricType: l.metricName }))) as FileLabValue[];
-  return rows
-    .map((l) => {
-      const entry = resolveLabCatalogEntry(l.metricName);
-      return {
-        key: l.metricName,
-        label: entry?.label ?? l.metricName,
-        value: l.value,
-        unit: displayLabUnit(l.unit, entry),
-        date: String(l.recordedAt ?? '').slice(0, 10),
-      };
-    })
-    .sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
-}
-
-export interface Plan extends PlanInputs {
-  generatedAt: string;
-  results: HealthResults;
-  due: ReminderScheduleItem[];
-  labs: PlanLab[];
-  /** Input fields dropped as out of range — displayed, never fed to the plan. */
-  excluded: string[];
-}
-
-/**
- * The whole plan. Invalid fields are stripped before calculating (the widget
- * does the same), so one bad number costs its own suggestion, not the report.
- */
-export function computePlan(file: RoadmapFile, now = new Date()): Plan {
-  const derived = derivePlanInputs(file);
-  let inputs = derived.inputs;
-  let excluded: string[] = [];
-
-  const validation = validateHealthInputs(inputs);
-  if (!validation.success && validation.errors) {
-    const invalid = new Set(validation.errors.issues.map((i) => String(i.path[0])));
-    if (invalid.has('heightCm') || invalid.has('sex')) {
-      throw new PlanError(
-        `This record has no usable height and sex (${Object.values(getValidationErrors(validation.errors)).join('; ')})`,
-        'The plan needs both. Open the app and fill in the first two fields, then run this again.',
-      );
-    }
-    const stripped = { ...inputs } as Record<string, unknown>;
-    for (const field of invalid) stripped[field] = undefined;
-    inputs = stripped as Partial<HealthInputs>;
-    excluded = [...invalid];
-  }
-  return {
-    ...derived,
-    inputs,
-    excluded,
-    generatedAt: now.toISOString(),
-    results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings),
-    due: computeReminderSchedule(file, now),
-    labs: derivePlanLabs(file),
-  };
-}
-
-// ---------------------------------------------------------------------------
 // Shared shaping
 // ---------------------------------------------------------------------------
 
@@ -209,32 +85,6 @@ const PRIORITY_GROUPS = [
   ['attention', 'Needs attention'],
   ['info', 'Foundation'],
 ] as const;
-
-/** A printed row: current value or lab. `excluded` marks a value the plan ignored. */
-type DisplayRow = { label: string; value: unknown; unit: string; date: string; excluded?: boolean };
-
-/**
- * Current values as displayed: label, converted value, unit, clinical date.
- * A value the schema rejected is marked `excluded` — it is in the file, so it
- * is on the report, but the reader must not mistake it for a plan input.
- */
-function currentValues(plan: Plan) {
-  const excluded = new Set(plan.excluded);
-  return plan.currentRows
-    .filter((row) => row.metricType in UNIT_DEFS)
-    .map((row) => {
-      const metric = row.metricType as MetricType;
-      return {
-        metric: row.metricType,
-        label: METRIC_LABELS[row.metricType] ?? row.metricType,
-        value: formatDisplayValue(metric, row.value, plan.unitSystem),
-        unit: getDisplayLabel(metric, plan.unitSystem),
-        date: String(row.recordedAt ?? '').slice(0, 10),
-        excluded: excluded.has(METRIC_TO_FIELD[row.metricType]) || undefined,
-      };
-    })
-    .sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
-}
 
 function profileLine(plan: Plan): string {
   const bits: string[] = [];
@@ -253,15 +103,6 @@ function byPriority(suggestions: Suggestion[]): Array<{ priority: string; label:
     label,
     items: suggestions.filter((s) => s.priority === priority),
   })).filter((group) => group.items.length > 0);
-}
-
-function dueSplit(plan: Plan): { overdue: ReminderScheduleItem[]; upcoming: ReminderScheduleItem[] } {
-  const today = plan.generatedAt.slice(0, 10);
-  const sorted = [...plan.due].sort((a, b) => (a.dueAt < b.dueAt ? -1 : a.dueAt > b.dueAt ? 1 : 0));
-  return {
-    overdue: sorted.filter((i) => i.dueAt <= today),
-    upcoming: sorted.filter((i) => i.dueAt > today),
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -321,48 +162,6 @@ function wrap(text: string): string[] {
   }
   if (line) lines.push(pad + line);
   return lines;
-}
-
-/** The agent-facing shape. Field names are stable; add, never rename. */
-export function renderJson(plan: Plan): string {
-  const { overdue, upcoming } = dueSplit(plan);
-  return JSON.stringify(
-    {
-      schemaVersion: CURRENT_SCHEMA_VERSION,
-      generatedAt: plan.generatedAt,
-      unitSystem: plan.unitSystem,
-      profile: {
-        sex: plan.inputs.sex,
-        age: plan.results.age ?? null,
-        heightCm: plan.results.heightCm,
-        bmi: plan.results.bmi ?? null,
-        bmiCategory: plan.results.bmiCategory ?? null,
-        eGFR: plan.results.eGFR ?? null,
-        idealBodyWeightKg: plan.results.idealBodyWeight,
-        proteinTargetG: plan.results.proteinTarget,
-      },
-      inputs: plan.inputs,
-      currentValues: currentValues(plan),
-      labValues: plan.labs,
-      medications: plan.medications,
-      screenings: plan.screenings,
-      due: { overdue, upcoming },
-      suggestions: plan.results.suggestions.map((s) => ({
-        id: s.id,
-        category: s.category,
-        priority: s.priority,
-        title: s.title,
-        description: s.description,
-        ingredients: s.ingredients ?? [],
-        reason: s.reason ?? null,
-        guidelines: s.guidelines ?? [],
-        references: s.references ?? [],
-      })),
-      source: { schema: SCHEMA_URL, tool: 'tools/get-plan.ts', docs: 'docs/agent-access.md' },
-    },
-    null,
-    2,
-  );
 }
 
 /** Everything the file can contain is untrusted text — escape it, always. */
@@ -469,6 +268,7 @@ Reads the file and nothing else: no network, no model, no telemetry, and the
 record is never written back.
 
 --json emits:
+  instruction    how to present this plan: keep the hedging, keep the citations
   schemaVersion, generatedAt, unitSystem
   profile        age, sex, heightCm, bmi, bmiCategory, eGFR, idealBodyWeightKg,
                  proteinTargetG

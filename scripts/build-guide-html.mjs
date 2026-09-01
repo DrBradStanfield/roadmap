@@ -1,0 +1,142 @@
+#!/usr/bin/env node
+// Build a Shopify article body from a guide markdown master.
+//
+//   node scripts/build-guide-html.mjs docs/guides/getting-started.md --out build/guide.html
+//   node scripts/build-guide-html.mjs docs/guides/getting-started.md --no-script
+//
+// Content HTML only — the theme supplies the page. The prompt exists ONCE, in
+// the ```bootstrap-prompt fence; every button is derived from it.
+// --no-script drops the clipboard JS and degrades the copy box to a plain
+// block with a select-all hint, for hosts that strip <script>.
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+
+const argv = process.argv.slice(2);
+const noScript = argv.includes('--no-script');
+const outIdx = argv.indexOf('--out');
+const outPath = outIdx === -1 ? null : argv[outIdx + 1];
+const mdPath = argv.find((a) => a.endsWith('.md'));
+if (!mdPath) {
+  console.error('Usage: build-guide-html.mjs <guide.md> [--out file] [--no-script]');
+  process.exit(1);
+}
+
+const ASSETS = new URL('../docs/guides/assets/', import.meta.url);
+const md = readFileSync(mdPath, 'utf8');
+const prompt = md.match(/```bootstrap-prompt\n([\s\S]*?)\n```/)[1];
+const providers = JSON.parse(readFileSync(new URL('providers.json', ASSETS), 'utf8'));
+const diagram = readFileSync(new URL('diagram.svg', ASSETS), 'utf8').trim();
+
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+const fmRaw = md.match(/^---\n([\s\S]*?)\n---\n/)[1];
+const meta = Object.fromEntries(
+  fmRaw.split('\n').map((l) => {
+    const i = l.indexOf(':');
+    return [l.slice(0, i).trim(), l.slice(i + 1).trim().replace(/^"|"$/g, '')];
+  }),
+);
+
+// --- [connect:*] markers ---------------------------------------------------
+const button = (key) => {
+  const p = providers[key];
+  const mono = `<span class="rmg-mono" style="background:${p.colour}">${p.mono}</span>`;
+  const inner = `${mono}<span class="rmg-blabel">${p.label}</span><span class="rmg-bnote">${p.note}</span>`;
+  if (p.mode === 'soon') return `<span class="rmg-btn rmg-btn-soon" aria-disabled="true">${inner}</span>`;
+  return p.mode === 'link'
+    ? `<a class="rmg-btn" href="${p.url}${encodeURIComponent(prompt)}" target="_blank" rel="noopener noreferrer">${inner}</a>`
+    : `<a class="rmg-btn" href="${p.url}" target="_blank" rel="noopener noreferrer" data-rmg-copy>${inner}</a>`;
+};
+
+const promptBox = noScript
+  ? `<div class="rmg-promptbox"><p class="rmg-hint">Select the whole block below and copy it.</p><pre>${esc(prompt)}</pre></div>`
+  : `<div class="rmg-promptbox"><button class="rmg-copy" type="button" data-rmg-copy>Copy</button><pre>${esc(prompt)}</pre></div>`;
+
+// Markers become single-line tokens first: the generated HTML contains blank
+// lines, which would otherwise be split apart by the paragraph pass below.
+const blocks = {
+  '@@BTNROW@@': `<div class="rmg-btnrow">${['chatgpt', 'claude'].map(button).join('')}</div>`,
+  '@@DIAGRAM@@': diagram,
+  '@@PROMPT@@': promptBox,
+};
+let body = md.slice(md.indexOf('\n---\n', 4) + 5)
+  .replace(/\[connect:chatgpt\]\n\[connect:claude\]/, '@@BTNROW@@')
+  .replace('[diagram:local-first]', '@@DIAGRAM@@')
+  .replace(/```bootstrap-prompt\n[\s\S]*?\n```/, '@@PROMPT@@');
+
+// --- tiny markdown render --------------------------------------------------
+// Smart quotes FIRST: running them after tag generation turns href="..." into
+// href=“...”, an unquoted attribute that swallows the curly quotes into the URL.
+const inline = (s) =>
+  esc(s)
+    .replace(/"([^"]+)"/g, '“$1”')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+const rendered = body
+  .split(/\n\n+/)
+  .map((block) => {
+    const b = block.trim();
+    if (!b) return '';
+    if (b.startsWith('<')) return b;
+    if (b.startsWith('### ')) return `<h3>${inline(b.slice(4))}</h3>`;
+    if (b.startsWith('## ')) { const x = b.slice(3); return `<h2 id="${x.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}">${inline(x)}</h2>`; }
+    return `<p>${inline(b)}</p>`;
+  })
+  .join('\n')
+  .replace(/<p>(@@\w+@@)<\/p>/g, (_, k) => blocks[k]);
+
+// Every rule is scoped to .rmguide so nothing leaks into the theme, and the
+// doubled class outranks theme styles reaching in.
+const style = `<style>
+.rmguide .rmg-fig{margin:30px 0 34px;padding:22px 18px 16px;background:#fafcfd;border:1px solid #e3e9ef;border-radius:14px}
+.rmguide .rmg-fig figcaption{font-size:15px;line-height:1.5;color:#5c6b7a;text-align:center;margin-top:14px}
+.rmguide .rmg-fig svg{width:100%;height:auto;display:block}
+.rmguide .rmg-btnrow{display:grid;gap:12px;margin:24px 0}
+@media(min-width:640px){.rmguide .rmg-btnrow{grid-template-columns:repeat(2,1fr)}}
+.rmguide .rmg-btn.rmg-btn{display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;
+ padding:20px 14px;border:1px solid #d7e0e8;border-radius:13px;background:#fff;text-decoration:none;
+ color:#16202a;box-shadow:0 1px 2px rgba(16,32,48,.05)}
+.rmguide .rmg-btn-soon.rmg-btn-soon{background:#f7f9fb;border-style:dashed;border-color:#ccd7e1;box-shadow:none;cursor:not-allowed}
+.rmguide .rmg-btn-soon .rmg-mono{filter:grayscale(1);opacity:.45}
+.rmguide .rmg-btn-soon .rmg-blabel{color:#7d8c9a}
+.rmguide .rmg-btn-soon .rmg-bnote{font-weight:650;color:#96703a;letter-spacing:.04em;text-transform:uppercase;font-size:11.5px}
+.rmguide .rmg-mono{display:inline-block;min-width:30px;height:30px;padding:0 10px;border-radius:15px;color:#fff;
+ font:700 14px/30px -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.02em}
+.rmguide .rmg-blabel{font-weight:650;font-size:15.5px;line-height:1.25}
+.rmguide .rmg-bnote{font-size:13px;color:#5c6b7a;line-height:1.3}
+.rmguide .rmg-promptbox{position:relative;background:#131e28;border-radius:13px;margin:22px 0 28px}
+.rmguide .rmg-promptbox pre{margin:0;padding:24px 20px;overflow-x:auto;background:none;border:0;color:#d5e2ec;
+ font:400 13.5px/1.62 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word}
+.rmguide .rmg-hint{margin:0;padding:14px 20px 0;color:#8fa4b4;font-size:13.5px}
+.rmguide .rmg-copy.rmg-copy{position:absolute;top:11px;right:11px;background:#2c3e4d;color:#d5e2ec;border:0;border-radius:6px;
+ padding:6px 13px;font:650 13px/1 -apple-system,BlinkMacSystemFont,sans-serif;cursor:pointer;width:auto;min-height:0}
+.rmguide code{font:500 .92em/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:#eff3f6;padding:2px 6px;border-radius:4px}
+</style>`;
+
+const script = noScript ? '' : `
+<script>
+var RMG_PROMPT = ${JSON.stringify(prompt).replace(/</g, '\\u003c')};
+document.querySelectorAll('[data-rmg-copy]').forEach(function (el) {
+  el.addEventListener('click', function () {
+    if (navigator.clipboard) navigator.clipboard.writeText(RMG_PROMPT);
+    var l = el.querySelector('.rmg-blabel');
+    if (l) { var was = l.textContent; l.textContent = 'Copied. Now paste it.';
+             setTimeout(function () { l.textContent = was; }, 2500); }
+    else { var w = el.textContent; el.textContent = 'Copied'; setTimeout(function(){ el.textContent = w; }, 1500); }
+  });
+});
+</script>`;
+
+const html = `${style}\n<div class="rmguide">\n${rendered}\n</div>${script}\n`;
+
+if (outPath) {
+  mkdirSync(dirname(resolve(outPath)), { recursive: true });
+  writeFileSync(outPath, html);
+  console.error(`wrote ${outPath} (${html.length} bytes)${noScript ? ' [--no-script]' : ''}`);
+} else {
+  process.stdout.write(html);
+}
+console.error(`title: ${meta.title}`);
+console.error(`slug:  ${meta.slug}`);

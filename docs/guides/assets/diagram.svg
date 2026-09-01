@@ -1,0 +1,43 @@
+<figure class="rmg-fig">
+<svg viewBox="0 0 780 178" role="img" aria-labelledby="rmg-dgt rmg-dgd" xmlns="http://www.w3.org/2000/svg">
+  <title id="rmg-dgt">Where your health record lives</title>
+  <desc id="rmg-dgd">You talk to your AI. Your AI reads and writes one file, health-roadmap.json, in your own Dropbox or Google Drive. No other party is involved.</desc>
+  <defs>
+    <marker id="rmg-ae" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#0a6b5c"/>
+    </marker>
+    <style>
+      .rmguide .rmg-bx{fill:#fff;stroke:#d5dee6;stroke-width:1.5}
+      .rmguide .rmg-bx2{fill:#f1f8f6;stroke:#a4ccc2;stroke-width:1.5}
+      .rmguide .rmg-t{font:700 19px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;fill:#16202a}
+      .rmguide .rmg-s{font:400 14.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;fill:#5c6b7a}
+      .rmguide .rmg-m{font:600 13.5px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;fill:#0a6b5c}
+      .rmguide .rmg-f{font:500 14px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#0a6b5c}
+      .rmguide .rmg-ln{stroke:#0a6b5c;stroke-width:1.9;fill:none}
+    </style>
+  </defs>
+
+  <rect class="rmg-bx" x="6" y="24" width="212" height="122" rx="15"/>
+  <text class="rmg-t" x="112" y="70" text-anchor="middle">You</text>
+  <text class="rmg-s" x="112" y="96" text-anchor="middle">your questions,</text>
+  <text class="rmg-s" x="112" y="116" text-anchor="middle">your lab reports</text>
+
+  <rect class="rmg-bx2" x="284" y="24" width="212" height="122" rx="15"/>
+  <text class="rmg-t" x="390" y="64" text-anchor="middle">Your AI</text>
+  <text class="rmg-s" x="390" y="90" text-anchor="middle">Claude Code, or another</text>
+  <text class="rmg-s" x="390" y="110" text-anchor="middle">AI on your computer</text>
+
+  <rect class="rmg-bx" x="562" y="24" width="212" height="122" rx="15"/>
+  <text class="rmg-t" x="668" y="64" text-anchor="middle">Your cloud storage</text>
+  <text class="rmg-f" x="668" y="90" text-anchor="middle">health-roadmap.json</text>
+  <text class="rmg-s" x="668" y="114" text-anchor="middle">your Dropbox or Drive</text>
+
+  <line class="rmg-ln" x1="226" y1="88" x2="276" y2="88" marker-start="url(#rmg-ae)" marker-end="url(#rmg-ae)"/>
+  <text class="rmg-m" x="251" y="70" text-anchor="middle">you ask</text>
+
+  <line class="rmg-ln" x1="504" y1="88" x2="554" y2="88" marker-start="url(#rmg-ae)" marker-end="url(#rmg-ae)"/>
+  <text class="rmg-m" x="529" y="62" text-anchor="middle">reads</text>
+  <text class="rmg-m" x="529" y="77" text-anchor="middle">and writes</text>
+</svg>
+<figcaption>There is no fourth box. Your record never reaches our servers, so there is nothing for us to read or lose.</figcaption>
+</figure>

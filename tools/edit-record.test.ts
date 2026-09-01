@@ -18,7 +18,8 @@ import { createEmptyFile, createMeasurement, mergeLongitudinalInputs, type Roadm
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../widget-src/src/storage/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../widget-src/src/storage/adapter';
-import { assertUnchanged, recordStamp, run } from './edit-record';
+import { run } from './edit-record';
+import { assertUnchanged, recordStamp } from './record-io';
 
 const CTX = { deviceId: 'us31_cli', now: '2026-09-01T09:00:00Z' };
 
@@ -242,12 +243,12 @@ describe('US-31 AC10 — error discipline, and nothing that could reach the netw
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('imports only health-core, node builtins and get-plan', () => {
+  it('imports only health-core, node builtins and its sibling tools', () => {
     const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'edit-record.ts'), 'utf8');
     const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.length).toBeGreaterThan(3);
     for (const spec of specifiers) {
-      expect(spec).toMatch(/^(node:(fs|os|path|url|crypto)|\.\.\/packages\/health-core\/src\/[a-z-]+|\.\/get-plan)$/);
+      expect(spec).toMatch(/^(node:(fs|os|path|url|crypto)|\.\.\/packages\/health-core\/src\/[a-z-]+|\.\/(get-plan|record-io))$/);
     }
     expect(source).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket)\b/);
   });

@@ -28,7 +28,8 @@ import {
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../widget-src/src/storage/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../widget-src/src/storage/adapter';
-import { computePlan, derivePlanInputs, loadRecord, renderHtml, renderJson, renderText, run, PlanError } from './get-plan';
+import { computePlan, derivePlanInputs, renderJson, PlanError } from '../packages/health-core/src/plan';
+import { loadRecord, renderHtml, renderText, run } from './get-plan';
 
 const CTX = { deviceId: 'us30_test', now: '2026-09-01T09:00:00Z' };
 const NOW = new Date('2026-09-01T09:00:00Z');
@@ -157,7 +158,7 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
   it('AC3: --json is parseable and stable in shape', () => {
     const json = JSON.parse(renderJson(plan()));
     expect(Object.keys(json)).toEqual([
-      'schemaVersion', 'generatedAt', 'unitSystem', 'profile', 'inputs', 'currentValues',
+      'instruction', 'schemaVersion', 'generatedAt', 'unitSystem', 'profile', 'inputs', 'currentValues',
       'labValues', 'medications', 'screenings', 'due', 'suggestions', 'source',
     ]);
     expect(json.schemaVersion).toBe(1);
