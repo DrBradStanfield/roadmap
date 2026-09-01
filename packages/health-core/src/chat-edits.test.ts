@@ -3,7 +3,6 @@ import { describe, it, expect } from 'vitest';
 import {
   parseProposedEdit,
   parseProposedEdits,
-  resolveUnitSystem,
   EDITABLE_FIELDS,
   PROPOSE_FIELD_EDIT_TOOL,
   PROPOSE_MEDICATION_EDIT_TOOL,
@@ -11,6 +10,7 @@ import {
   type ProposedMedicationEdit,
 } from './chat-edits';
 import { FIELD_TO_METRIC, UNIT_DEFS, type MetricType } from './index';
+import { resolveUnitSystem } from './units';
 
 const FIELD = PROPOSE_FIELD_EDIT_TOOL.name;
 const MED = PROPOSE_MEDICATION_EDIT_TOOL.name;

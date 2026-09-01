@@ -92,6 +92,11 @@ follow Zinsser — simplicity, brevity, clarity, humanity. Short sentences, one
 idea each, active voice, concrete words, no filler. Plain technical English,
 not controlled language: clinical content keeps its calibrated hedging ("may
 support", "evidence suggests") — never flatten uncertainty for style.
+**Prose the audience reads** (blogs, emails, product copy, guides, ads, video
+scripts) also obeys [docs/writing-style.md](docs/writing-style.md) — the
+don't-sound-like-AI rules: banned phrases, tier-1/2 vocabulary caps, no em
+dashes outside scripts. It is a symlink to the claude_business master, so it
+is absent on CI and other machines; edit it there, not here.
 
 ## Tech Stack & Key Directories
 

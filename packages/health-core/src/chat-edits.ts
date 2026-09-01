@@ -20,7 +20,7 @@
  *                               + offers Undo.
  */
 import { z } from 'zod';
-import { UNIT_DEFS, type MetricType, type UnitSystem } from './units';
+import { resolveUnitSystem, type MetricType, type UnitSystem } from './units';
 import { FIELD_TO_METRIC, LONGITUDINAL_FIELDS } from './mappings';
 import { MEDICATION_KEYS } from './validation';
 import type { HealthInputs } from './types';
@@ -42,33 +42,6 @@ export type EditableField = (typeof EDITABLE_FIELDS)[number];
 /** Field → metric type (every editable field is a longitudinal measurement). */
 function fieldToMetric(field: string): MetricType | null {
   return (FIELD_TO_METRIC[field] as MetricType | undefined) ?? null;
-}
-
-// ---------------------------------------------------------------------------
-// Unit resolution — map the user's STATED unit string to a UnitSystem
-// ---------------------------------------------------------------------------
-
-/** Normalise a unit string for comparison: lowercase, strip spaces + micro sign variants. */
-function normaliseUnit(raw: string): string {
-  return raw
-    .trim()
-    .toLowerCase()
-    .replace(/µ|μ/g, 'u') // micro sign + Greek mu → 'u' (µmol/L → umol/l)
-    .replace(/\s+/g, '');
-}
-
-/**
- * Resolve a stated unit string against a metric's two known unit labels (si /
- * conventional). Returns the matching UnitSystem, or null if it matches neither
- * (the model should have ASKED rather than guessed — we reject so we never
- * silently store a wrong-unit value).
- */
-export function resolveUnitSystem(metric: MetricType, statedUnit: string): UnitSystem | null {
-  const def = UNIT_DEFS[metric];
-  const wanted = normaliseUnit(statedUnit);
-  if (normaliseUnit(def.label.si) === wanted) return 'si';
-  if (normaliseUnit(def.label.conventional) === wanted) return 'conventional';
-  return null;
 }
 
 // ---------------------------------------------------------------------------

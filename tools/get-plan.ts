@@ -51,6 +51,15 @@ export class PlanError extends Error {
   }
 }
 
+/**
+ * Text out of the record, made safe to print: a name lifted off an uploaded PDF
+ * can carry terminal control codes (cursor moves, screen clears, BEL), and the
+ * record is data — it must never drive the terminal. Newlines survive.
+ */
+export function printable(text: string): string {
+  return text.replace(/[\x00-\x09\x0b-\x1f\x7f-\x9f]/g, '');
+}
+
 // ---------------------------------------------------------------------------
 // Load — the untrusted-bytes boundary
 // ---------------------------------------------------------------------------
@@ -294,10 +303,7 @@ export function renderText(plan: Plan): string {
     }
   }
   out.push('', `Record: schemaVersion ${CURRENT_SCHEMA_VERSION} · ${SCHEMA_URL}`);
-  // A metric name lifted off an uploaded PDF can carry terminal control codes
-  // (cursor moves, screen clears, BEL). The record is data, so strip them —
-  // the file being printed must not be able to drive the terminal.
-  return out.join('\n').replace(/[\x00-\x09\x0b-\x1f\x7f-\x9f]/g, '');
+  return printable(out.join('\n'));
 }
 
 /** Hard-wrap prose to 76 columns, indented four spaces. */

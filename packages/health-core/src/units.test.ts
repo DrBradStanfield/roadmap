@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  resolveUnitSystem,
   toCanonicalValue,
   fromCanonicalValue,
   formatDisplayValue,
@@ -16,6 +17,7 @@ import {
   formatHeightDisplay,
   type MetricType,
 } from './units';
+import { METRIC_TYPES } from './validation';
 
 describe('Unit conversions — round-trip accuracy', () => {
   const metrics: MetricType[] = [
@@ -299,5 +301,24 @@ describe('Feet/inches conversions', () => {
     it('handles 6 ft exactly', () => {
       expect(formatHeightDisplay(182.88, 'conventional')).toBe('6\'0"');
     });
+  });
+});
+
+describe('resolveUnitSystem — no-regression sweep over every metric', () => {
+  it('resolves both of a metric\u2019s own labels to the system that converts them', () => {
+    for (const metric of METRIC_TYPES) {
+      const def = UNIT_DEFS[metric as MetricType];
+      expect([metric, resolveUnitSystem(metric as MetricType, def.label.si)]).toEqual([metric, 'si']);
+      // Three metrics (mmHg, ng/mL) label both systems the same; SI wins, and the
+      // two conversions are identical, so nothing is scaled differently.
+      const expected = def.label.si === def.label.conventional ? 'si' : 'conventional';
+      expect([metric, resolveUnitSystem(metric as MetricType, def.label.conventional)]).toEqual([metric, expected]);
+    }
+  });
+
+  it('refuses a unit that belongs to no system, rather than guessing', () => {
+    expect(resolveUnitSystem('weight', 'stone')).toBeNull();
+    expect(resolveUnitSystem('ldl', 'g/L')).toBeNull();
+    expect(resolveUnitSystem('ldl', '')).toBeNull();
   });
 });

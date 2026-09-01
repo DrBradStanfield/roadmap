@@ -296,6 +296,31 @@ export function getDisplayRange(
   return UNIT_DEFS[metric].validationRange[system];
 }
 
+/** Normalise a unit string for comparison: lowercase, strip spaces + micro sign variants. */
+function normaliseUnit(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/µ|μ/g, 'u') // micro sign + Greek mu → 'u' (µmol/L → umol/l)
+    .replace(/\s+/g, '');
+}
+
+/**
+ * Resolve a stated unit string against a metric's two known unit labels (si /
+ * conventional). Returns the matching UnitSystem, or null if it matches neither
+ * — every caller refuses rather than guesses, because a silently mis-scaled
+ * value is worse than a rejected one. Shared by the chatbot's proposed edits
+ * (chat-edits.ts) and the agent write ops (record-edits.ts), so the two cannot
+ * accept different spellings of the same unit.
+ */
+export function resolveUnitSystem(metric: MetricType, statedUnit: string): UnitSystem | null {
+  const def = UNIT_DEFS[metric];
+  const wanted = normaliseUnit(statedUnit);
+  if (normaliseUnit(def.label.si) === wanted) return 'si';
+  if (normaliseUnit(def.label.conventional) === wanted) return 'conventional';
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Locale detection
 // ---------------------------------------------------------------------------
