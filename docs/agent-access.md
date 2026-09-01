@@ -146,8 +146,36 @@ Validate your result against the schema before you write it back.
 - **A file with a higher `schemaVersion` than the app understands is refused, not
   downgraded** (`SchemaTooNewError`). Never bump `schemaVersion` yourself.
 
+## The hosted path (US-32 Phase 1)
+
+Everything above describes an agent holding the FILE. There is a second way in: a
+hosted MCP server at `https://mcp.drstanfield.com/mcp`, which a web ChatGPT or Claude
+user connects once and then asks in words. It offers the same five tools over the
+user's own Dropbox folder, and it enforces the rules above in code rather than asking
+you to keep them.
+
+Four things differ from the local path, and they are differences you will hit:
+
+- **`correct_value` requires `expectedValue`** — the number you believe the row holds
+  right now. It is optional locally. A mismatch refuses the call and writes nothing, so
+  read the record immediately before correcting.
+- **A row older than 90 days cannot be corrected there.** Corrections fix recent
+  mistakes; older history is out of reach and the user changes it in the app.
+- **Writes are budgeted, and a correction costs five adds.** Reads are never budgeted.
+  When the budget runs out the refusal says so and reading still works.
+- **A record whose `schemaVersion` is newer than the server understands is read-only.**
+
+Trust model, revocation, and the residual risks we accepted knowingly:
+[us32-remote-mcp-design.md](us32-remote-mcp-design.md). The short version: your record
+still lives only in your Dropbox, our server reads it in memory to answer one call and
+keeps no copy, and you cancel the whole thing at `dropbox.com/account/connected_apps` —
+which also disconnects the website from the folder, because Dropbox scopes the folder
+to the app, not to the surface.
+
 ## No telemetry
 
-Reading or writing this file contacts none of our servers — no sync endpoint, no
-analytics hook on the file, by design. We cannot see that you did this, and we do not
-want to.
+Reading or writing this file DIRECTLY contacts none of our servers — no sync endpoint,
+no analytics hook on the file, by design. We cannot see that you did this, and we do not
+want to. The hosted path above is the one exception, and it is one by construction: it
+is a request to our server, so we see that a call happened. We never store the values
+in it.

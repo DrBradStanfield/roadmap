@@ -27,7 +27,6 @@ import {
   dropboxAccessToken,
   isMcpEnabled,
   issuer,
-  resourceUrl,
   spendWrites,
   unpackSealed,
   WRITE_COST,
@@ -171,7 +170,7 @@ function daysBetween(from: string, to: string): number {
  * write with `strict_conflict` is what stops a stale write resurrecting a
  * record the user erased (design §7).
  */
-export async function callHostedTool(
+async function callHostedTool(
   token: AccessPayload,
   name: string,
   args: unknown,
@@ -256,7 +255,7 @@ function failure(id: Id, code: number, message: string) {
  * remembered between messages: a client that skips `initialize` is served,
  * which is what the next protocol revision expects anyway.
  */
-export async function handleRpc(incoming: unknown, token: AccessPayload, now: string): Promise<object | null> {
+async function handleRpc(incoming: unknown, token: AccessPayload, now: string): Promise<object | null> {
   if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
     return failure(null, INVALID_REQUEST, 'A request must be a JSON object');
   }

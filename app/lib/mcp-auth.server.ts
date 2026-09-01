@@ -538,7 +538,7 @@ export function isPublicAddress(address: string, family: number): boolean {
   return true;
 }
 
-export async function fetchClientMetadata(clientId: string, nowMs = Date.now()): Promise<McpClient | null> {
+async function fetchClientMetadata(clientId: string, nowMs = Date.now()): Promise<McpClient | null> {
   const cached = cimdCache.get(clientId);
   if (cached && cached.until > nowMs) return cached.client;
 

@@ -214,6 +214,95 @@ to both — deploy twice, see "Shopify app configs".**)
   This nearly produced a wrong report that `CHAT_SURFACE` was unset on the commerce app (it is set and Deployed). Treat an auth-failed command as *no information*: re-run it authenticated, then conclude.
 - **Use `fly deploy --strategy canary` for risky server deploys (framework/runtime/dep changes).** Fly's DEFAULT rolling deploy + the `/healthz` check does NOT protect against a boot crash — on 2026-06-14 the RR7 cutover crashed on boot (server never bound `:3000`) and the rolling strategy updated BOTH machines to the broken image anyway, taking production down (rolled back via `fly deploy --image <prev>`). Canary boots ONE throwaway machine, health-checks it FIRST, and leaves the serving machines untouched if it fails. The boot crash was `@supabase/realtime-js >=2.108` hard-throwing "Node.js 20 detected without native WebSocket support" — local Node was 22 so it only failed in the `node:*-alpine` container; that's why the Docker base is now `node:22`. **Lesson: anything that regenerates package-lock.json (a migration, a dep add/remove) can silently bump a runtime dep that only fails in the Docker Node version — canary-deploy it.**
 
+## Hosted MCP (health-tool-edu) — US-32 Phase 1
+
+The code is deployed and INERT until these steps are done. Every `/mcp` path and both
+`.well-known` documents return 404 while `MCP_SEAL_KEYS` is unset, so there is no rush
+and no half-on state. Education app, not commerce: the edu box omits the Discord and
+YouTube bot tokens, so the machine holding the seal key carries the smaller secret set.
+
+Nothing below can be done by an agent. All of it is Brad's.
+
+**1. Generate the two keys.** Two independent 32-byte secrets:
+
+```bash
+openssl rand -base64 32   # → MCP_SEAL_KEYS
+openssl rand -base64 32   # → MCP_CLIENT_HMAC_KEY
+```
+
+**2. Set them, plus the Dropbox confidential-client secret, on the EDU app only:**
+
+```bash
+fly secrets set -a health-tool-edu \
+  MCP_SEAL_KEYS="<key 1>" \
+  MCP_CLIENT_HMAC_KEY="<key 2>" \
+  MCP_ISSUER="https://mcp.drstanfield.com" \
+  DROPBOX_APP_KEY="<the app key the widget already uses>" \
+  DROPBOX_APP_SECRET="<from the Dropbox app console>"
+```
+
+The app key MUST be the one the widget already uses. Dropbox scopes the app folder to
+the app identity, so a second identity would see an empty folder (design §1).
+
+**3. DNS and TLS.** `mcp.drstanfield.com` CNAME → the edu Fly app, then:
+
+```bash
+fly certs add -a health-tool-edu mcp.drstanfield.com
+fly certs show -a health-tool-edu mcp.drstanfield.com   # wait for "Ready"
+```
+
+Must be IPv4 and publicly routable: Anthropic reaches it from `160.79.104.0/21`, and
+discovery comes from the same range, so a WAF in front of the authorization server
+breaks the flow.
+
+**4. Dropbox app console.** Add the redirect URI `https://mcp.drstanfield.com/mcp/callback`.
+Scopes: `files.content.read`, `files.content.write`, `files.metadata.read`. Leave the
+app type as **App folder**. Watch the ceiling: Dropbox freezes new links two weeks after
+the 50th user without production approval.
+
+**5. Check Fly's proxy access log before announcing anything.** OAuth secrets travel in
+query strings, so a proxy that logs request URLs would write `code` and `state` to a log
+we do not control. No route of ours logs a URL; confirm the platform does not either.
+
+**6. Smoke it, in this order.**
+
+```bash
+curl -s https://mcp.drstanfield.com/.well-known/oauth-protected-resource/mcp | jq
+#   resource must be exactly https://mcp.drstanfield.com/mcp
+#   authorization_servers[0] must be https://mcp.drstanfield.com
+
+curl -s https://mcp.drstanfield.com/.well-known/oauth-authorization-server | jq
+#   client_id_metadata_document_supported: true
+#   token_endpoint_auth_methods_supported: ["none"]
+
+curl -si -X POST https://mcp.drstanfield.com/mcp -d '{}'
+#   401, with WWW-Authenticate: Bearer resource_metadata="…"
+
+curl -si https://mcp.drstanfield.com/mcp          # 405
+curl -si -X DELETE https://mcp.drstanfield.com/mcp # 405
+curl -si -X POST -H 'Origin: https://example.com' https://mcp.drstanfield.com/mcp -d '{}'
+#   403, and NO Access-Control-Allow-Origin on any of these
+```
+
+**7. Add the connector, as a user would.** Claude: Settings → Connectors → Add custom
+connector → `https://mcp.drstanfield.com/mcp`. ChatGPT: Settings → Connectors →
+Advanced → Developer mode → Create, same URL. Both then run the OAuth flow: our consent
+screen, then Dropbox, then back. Time the token exchange — Claude allows 10 seconds and
+ours does a live Dropbox code exchange inside that budget (design §7).
+
+**8. Verify against a real record**, in this order, and check the Dropbox file after
+each write: `read_record` → `get_plan` → `add_measurement` → a correction with
+`expectedValue` → a correction WITHOUT it (must refuse) → a correction on a row older
+than 90 days (must refuse).
+
+**Rotation, when it is needed.** `MCP_SEAL_KEYS` is a comma-separated list; PREPEND the
+new key to keep existing connections alive, or REPLACE it outright to kill every
+connection at once — the standing incident response, because a leaked seal key is
+retroactive over every blob ever issued. `MCP_CLIENT_HMAC_KEY` is different and
+user-visible: rotating it forces every affected user to REMOVE AND RE-ADD the connector,
+because Anthropic freezes a connector's auth settings once it is added. Rotate that one
+only with a comms plan.
+
 ## Scalability & DDoS
 
 **DDoS protection layers**:

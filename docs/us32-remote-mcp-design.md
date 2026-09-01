@@ -182,26 +182,26 @@ Residual, disclosed: our write becomes **durable-by-retry**, but the **browser c
 Brad's ruling: build the full thing. The recruitment gate is removed. The phase structure remains as **build order**, because Phase 0 is the tool layer Phase 1 wraps, and it delivers working Claude Desktop support on day one.
 
 **Phase 0 — local stdio MCP server (~1 day).** All five tools over a local file path (`expectedValue` optional here; the hosted surface is where it is required). No server, no OAuth, no keys, no promise change. Ships value immediately to Claude Desktop and Claude Code users.
-- [ ] `packages/health-core/src/plan.ts` — move `derivePlanInputs`/`computePlan`/`renderJson` out of `tools/get-plan.ts`; CLI keeps argv, `fs`, HTML renderer; US-30 AC1 import guard still passes.
-- [ ] `get_plan` JSON gains the top-level `instruction` field (preserve hedging + citations).
-- [ ] Tool layer: `read_record` (strips `reminderOptIn.token`, `metric`/`since` filters), `get_plan`, `add_measurement`, `add_lab_values` — over `migrateFile` + `record-edits.ts`.
-- [ ] stdio MCP server entry in `tools/`, wired to a file path argument.
-- [ ] Tests: tool-layer unit tests + the `reminderOptIn.token` strip, citing US-32.
+- [x] `packages/health-core/src/plan.ts` — move `derivePlanInputs`/`computePlan`/`renderJson` out of `tools/get-plan.ts`; CLI keeps argv, `fs`, HTML renderer; US-30 AC1 import guard still passes.
+- [x] `get_plan` JSON gains the top-level `instruction` field (preserve hedging + citations).
+- [x] Tool layer: `read_record` (strips `reminderOptIn.token`, `metric`/`since` filters), `get_plan`, `add_measurement`, `add_lab_values` — over `migrateFile` + `record-edits.ts`.
+- [x] stdio MCP server entry in `tools/`, wired to a file path argument.
+- [x] Tests: tool-layer unit tests + the `reminderOptIn.token` strip, citing US-32.
 
 **Phase 1 — hosted, Dropbox only (~5–8 days).** Everything in §2 and §4.
-- [ ] Move `adapter.ts` + `sync-manager.ts` to health-core; update `widget-src` imports; existing sync-manager tests stay green.
-- [ ] `app/lib/mcp-auth.server.ts`: seal/unseal (§4 spec), stateless AS, CIMD fetch policy, DCR fallback, Dropbox confidential client.
-- [ ] `record-edits.ts`: add `expectedValue` to `CorrectValueRequest` (required hosted, optional flag in `tools/edit-record.ts`); tests; shipped CLI path unbroken.
-- [ ] `app/lib/mcp.server.ts`: JSON-RPC dispatch, five tools, Zod schemas, per-call caps, 90-day correction age limit, sealed `max_writes` with corrections weighted 5×.
-- [ ] Slot-occupied add returns a rejection naming the held row and pointing at `correct_value` (mirror `tools/edit-record.ts:274`).
-- [ ] `app/routes/mcp.$.tsx` + `app/routes/[.]well-known.$.tsx`.
-- [ ] Confirm no route logs a request URL; check Fly proxy access-log setting.
-- [ ] **Deferred from Phase 0 — stdio framing.** `serve()` re-splits its whole buffer per chunk, so a single long line costs O(n²) (measured: 4 MB 79 ms, 48 MB 10.9 s / 763 MB heap). Phase 0 caps a line at 8 MB and refuses it; the hosted transport is HTTP and does not reuse `serve()`, so the streaming `indexOf` rework lands only if a local client ever needs it.
-- [ ] **Deferred from Phase 0 — output backpressure.** The stdio server ignores `write()`'s return value, so a slow reader buffers a large `read_record` reply in memory. Harmless against a local peer that dies with us; the hosted surface must honour backpressure, since there the reader is a network.
-- [ ] `MCP_SEAL_KEYS` + `MCP_CLIENT_HMAC_KEY` as Fly secrets on `health-tool-edu`; DNS for `mcp.drstanfield.com`; Dropbox console redirect URI.
-- [ ] `docs/user-stories.md`: US-32 + the additive promise paragraph — **this commit, not earlier**. Regenerate `user-stories.html`.
-- [ ] `docs/agent-access.md`: hosted-path section. Guide buttons `[connect:chatgpt]`/`[connect:claude]` become the connector URL + add flow.
-- [ ] Live verify against both vendors; `npm run test:all`.
+- [x] Move `adapter.ts` + `sync-manager.ts` to health-core; update `widget-src` imports; existing sync-manager tests stay green.
+- [x] `app/lib/mcp-auth.server.ts`: seal/unseal (§4 spec), stateless AS, CIMD fetch policy, DCR fallback, Dropbox confidential client.
+- [x] `record-edits.ts`: add `expectedValue` to `CorrectValueRequest` (required hosted, optional flag in `tools/edit-record.ts`); tests; shipped CLI path unbroken.
+- [x] `app/lib/mcp.server.ts`: JSON-RPC dispatch, five tools, Zod schemas, per-call caps, 90-day correction age limit, sealed `max_writes` with corrections weighted 5×.
+- [x] Slot-occupied add returns a rejection naming the held row and pointing at `correct_value` (mirror `tools/edit-record.ts:274`).
+- [x] `app/routes/mcp.$.tsx` + `app/routes/[.]well-known.$.tsx`.
+- [x] Confirm no route logs a request URL. **Fly's proxy access-log setting is an operator check** — it is in the runbook, not done.
+- [x] **Deferred from Phase 0 — stdio framing.** Still deferred, deliberately: the hosted transport is HTTP and never touches `serve()`. `serve()` re-splits its whole buffer per chunk, so a single long line costs O(n²) (measured: 4 MB 79 ms, 48 MB 10.9 s / 763 MB heap). Phase 0 caps a line at 8 MB and refuses it; the hosted transport is HTTP and does not reuse `serve()`, so the streaming `indexOf` rework lands only if a local client ever needs it.
+- [x] **Deferred from Phase 0 — output backpressure.** Answered by construction: the hosted reply is one `Response` body, so the platform owns the flow control. The stdio server ignores `write()`'s return value, so a slow reader buffers a large `read_record` reply in memory. Harmless against a local peer that dies with us; the hosted surface must honour backpressure, since there the reader is a network.
+- [ ] **OPERATOR (Brad).** `MCP_SEAL_KEYS` + `MCP_CLIENT_HMAC_KEY` as Fly secrets on `health-tool-edu`; DNS for `mcp.drstanfield.com`; Dropbox console redirect URI.
+- [x] `docs/user-stories.md`: US-32 + the additive promise paragraph — **this commit, not earlier**. Regenerate `user-stories.html`.
+- [x] `docs/agent-access.md`: hosted-path section. **Guide buttons stay `soon`** — see the build note below.
+- [x] `npm run test:all` green (83 files, 1692 tests). [ ] **OPERATOR (Brad).** Live verify against both vendors — impossible before deployment.
 
 **Phase 2 — Drive.** §7's algorithm implemented and tested first, Google brand verification second.
 
@@ -237,3 +237,58 @@ No health data in Supabase — and no *anything* in Supabase. No accounts, no pa
 ## Sync-rule note
 
 Nothing here touches `health_roadmap_algorithm.md`, `evidence.ts`, or `roadmap_text.html`; `get_plan` re-exposes existing derivations unchanged, so the three-file rule is not triggered. **US-31 is taken (CLI writes, shipped 2026-09-01) — the hosted server is US-32.** `docs/user-stories.md` needs US-32 plus the additive promise paragraph, and `docs/agent-access.md` a hosted-path section, both in the Phase-1 commit.
+
+
+---
+
+## Build notes — Phase 1, 2026-09-02
+
+Written by the implementation, not by the decision. Four places where the build
+departed from the text above, each toward the stricter reading.
+
+**`kid` is a key fingerprint, not an index.** §2 says "`kid` = index" and, in the same
+row, that rotation PREPENDS the new key. Those cannot both hold: prepending renumbers
+every key, so every blob already issued would decrypt under the wrong one and every
+active connection would break at the moment rotation was supposed to preserve them. The
+`kid` is now a short SHA-256 fingerprint of the key itself. Prepend and append both
+work, and "seal with the first, accept any" is literally true. A rotation test is what
+found it.
+
+**Every issued value carries its client id in front of the sealed blob.** The AAD binds
+a blob to one client (§4), and unsealing therefore needs to know which client — but a
+bearer token arrives alone and Dropbox echoes exactly one opaque `state`. The id travels
+with the blob as `<client id>~<blob>`. It feeds the AAD, so it is bound rather than
+trusted; at `/token`, where the request states `client_id` independently, the two are
+compared, and that comparison is a real check. On `/mcp` there is nothing to compare
+against, so the binding is only carried. Stated plainly: a stolen bearer token is a
+stolen bearer token, and no framing fixes that.
+
+**RFC 8252 loopback redirects are implemented but OFF.** §4 allows "loopback with port
+ignored"; CLAUDE.md's hard rule says localhost is never on an allow-list. The matcher
+exists and is tested, and `ALLOW_LOOPBACK_REDIRECT` is `false`. A local client already
+has the Phase-0 stdio server and needs no OAuth, so nothing is lost. One constant to
+reverse, if Brad wants it.
+
+**A fifth padding bucket, 4096.** §4 names 256/512/1024/2048. A provider refresh token
+longer than the 2048 rung would otherwise fail to seal at all; the extra rung means it
+fails to leak instead of failing to work.
+
+**Guide buttons stay `soon`.** `docs/guides/getting-started.md` promises the connector
+buttons "switch on when it ships". They have not shipped: the code is deployed inert and
+the DNS does not exist. Flipping them in this commit would point a user at a 404 —
+exactly the failure mode the "promise ships with the code, never before" rule exists to
+prevent, in the other direction. They flip with the operator steps.
+
+**Residual risks noticed during the build that this document does not name.**
+- **DNS rebinding on the CIMD fetch has a real window.** We resolve, check every address
+  is public, then call `fetch`, which resolves again. `fetch` offers no way to pin the
+  connection to the address we checked. §4 asks for the re-check at connect time and
+  that is implemented; the TOCTOU gap is not closed, only narrowed.
+- **The write budget's within-the-hour half is per machine.** The connection pool spent
+  by refresh is durable because it rides in the credential; the allowance spent inside a
+  single access token's hour is an in-memory map, so N Fly machines multiply it by N.
+  The 5x weighting still bounds the falsification attack, but by 5x-per-machine.
+- **`MCP_SEAL_KEYS` malformed takes the routes down, not just the feature.** A key that
+  is not 32 bytes throws from `sealKeys()`, and `isMcpEnabled()` calls it. A typo in the
+  secret turns 404 into 500. Smoke step 6 catches it in seconds; worth knowing that is
+  what a 500 there means.
