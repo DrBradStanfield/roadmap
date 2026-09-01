@@ -16,6 +16,7 @@
  */
 import {
   buildMeasurementHistory,
+  measurementsToInputs,
   type MeasurementHistoryMap,
   type ApiMeasurement,
   type ApiMedication,
@@ -171,10 +172,11 @@ export async function deleteLabValue(labValueId: string): Promise<boolean> {
 }
 /**
  * Data snapshot for the BYOK chat's system-prompt context (byok-chat.ts).
- * Mirrors the website chat's guest-context shape: prefill inputs + the raw
- * medication/screening rows (byok-chat converts them with health-core) + the
- * dated blood-test/vitals time series (chronological per metric, capped —
- * same shape the storefront build sends as guestInputs.measurementHistory).
+ * Mirrors the website chat's guest-context shape: prefill inputs + the newest
+ * active value per metric (US-07 AC4) + the raw medication/screening rows
+ * (byok-chat converts them with health-core) + the dated blood-test/vitals
+ * time series (chronological per metric, capped — same shape the storefront
+ * build sends as guestInputs.measurementHistory).
  */
 export function getByokChatInputs():
   | (Record<string, unknown> & {
@@ -188,6 +190,7 @@ export function getByokChatInputs():
   const measurementHistory = buildMeasurementHistory(store.loadAllHistory());
   return {
     ...latest.inputs,
+    ...measurementsToInputs(latest.previousMeasurements),
     unitSystem: latest.inputs.unitSystem ?? 'si',
     medications: latest.medications,
     screenings: latest.screenings,

@@ -482,7 +482,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // Fire A/B impression once on mount
   useEffect(() => { trackABImpression(); }, []);
 
-  // Effective inputs for results calculation: form inputs + fallback to previousMeasurements
+  // Effective inputs for results calculation: form inputs + fallback to
+  // previousMeasurements, which the data layer has already reduced to the newest
+  // active row per metric (US-07 AC4) — so the first match here IS the latest.
   const effectiveInputs = useMemo(() => {
     const base = { ...inputs };
     if (authState.isLoggedIn) {
@@ -691,7 +693,8 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       const allSaved = !hasError;
 
       if (allSaved) {
-        // Update previousMeasurements (latest-per-metric) with the new values.
+        // Update previousMeasurements with the new values, holding the
+        // newest-active-row-per-metric invariant the load path establishes.
         // Only replace the existing entry when the saved row is newer —
         // backfilling an older date must NOT clobber the latest entry, since
         // `effectiveInputs` reads from `previousMeasurements` and would then

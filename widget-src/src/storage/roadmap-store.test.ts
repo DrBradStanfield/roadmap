@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { RoadmapFile } from '@roadmap/health-core';
+import { measurementsToInputs, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ROADMAP_FILE_NAME } from './adapter';
@@ -293,5 +293,65 @@ describe('RoadmapStore — screening current state (LWW singleton)', () => {
     const matches = rows.filter((r) => r.screeningKey === 'colorectal_method');
     expect(matches).toHaveLength(1); // singleton — no duplicate rows
     expect(matches[0].value).toBe('colonoscopy');
+  });
+});
+
+describe('RoadmapStore — latest value per metric drives the plan (US-07 AC4)', () => {
+  // Regression: loadLatestMeasurements() returned EVERY active row, so the
+  // consumers that reduce to one row per metric (effectiveInputs, the
+  // "Previous:" labels, the chat's guest context) read whichever row happened
+  // to come first — insertion order on one device, uuid order after a merge.
+  // A backfilled 2024 LDL then drove the plan over the 2026 one.
+  const OLD = '2024-01-10T00:00:00.000Z';
+  const NEW = '2026-08-10T00:00:00.000Z';
+
+  function ldlRows(store: RoadmapStore) {
+    return store.loadLatestMeasurements().previousMeasurements.filter((m) => m.metricType === 'ldl');
+  }
+
+  /** The backfilled 2024 row inserted FIRST, the 2026 one second. */
+  async function storeWithBackfilledLdl(cloud = new MemoryCloud()) {
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    store.addMeasurement('ldl', 3.5, OLD);
+    store.addMeasurement('ldl', 1.8, NEW);
+    return store;
+  }
+
+  it('single device: a backfilled older LDL never outranks the newest one', async () => {
+    const cloud = new MemoryCloud();
+    const store = await storeWithBackfilledLdl(cloud);
+
+    // Before any flush the file is in insertion order, so the backfilled row
+    // came first — the deterministic form of the bug.
+    expect(ldlRows(store)).toEqual([expect.objectContaining({ value: 1.8 })]);
+
+    await store.flush();
+    const reloaded = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(ldlRows(reloaded)).toEqual([expect.objectContaining({ value: 1.8 })]);
+  });
+
+  it('after a two-device merge the newest LDL still wins (uuid order is arbitrary)', async () => {
+    const cloud = new MemoryCloud();
+    const deviceA = await RoadmapStore.create(new MemoryAdapter(cloud));
+    deviceA.addMeasurement('ldl', 3.5, OLD);
+    await deviceA.flush();
+
+    const deviceB = await RoadmapStore.create(new MemoryAdapter(cloud));
+    deviceB.addMeasurement('ldl', 1.8, NEW);
+    await deviceB.flush();
+
+    // Both rows are now in the cloud, ordered by the merge's uuid sort.
+    const merged = await RoadmapStore.create(new MemoryAdapter(cloud));
+    expect(readCloudFile(cloud).measurements.filter((m) => m.metricType === 'ldl')).toHaveLength(2);
+    const rows = ldlRows(merged);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].value).toBe(1.8);
+  });
+
+  it('feeds the byok chat snapshot the newest value (measurementsToInputs building block)', async () => {
+    const store = await storeWithBackfilledLdl();
+
+    const inputs = measurementsToInputs(store.loadLatestMeasurements().previousMeasurements);
+    expect(inputs.ldlC).toBe(1.8);
   });
 });

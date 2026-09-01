@@ -81,8 +81,9 @@ As a user, once I've entered data I see prioritized suggestions (urgent/attentio
 - AC1: Suggestions follow `health_roadmap_algorithm.md`; evidence text from `evidence.ts`; `roadmap_text.html` stays consistent (three-file sync rule).
 - AC2: LDL-only entry (no total cholesterol) still produces lipid advice (regression: feedback 2026-03-06, fixed).
 - AC3: New/changed suggestions highlight briefly so I notice what my new data changed.
-- Evidence: "Why this suggestion?" expansions observed in recordings; `results_viewed` event now counts reach.
-- Tests: ✅ suggestions.test.ts — the LDL-without-total case is covered by `'shows LDL when neither ApoB nor non-HDL available'` (verified 2026-08-07).
+- AC4: Results and suggestions are computed from the most recent active value per metric by clinical date (`recordedAt`); backfilled older readings never drive the plan.
+- Evidence: "Why this suggestion?" expansions observed in recordings; `results_viewed` event now counts reach. AC4 added 2026-09-01 after a live reproduction: the v2 store returned ALL active rows from `loadLatestMeasurements()` (v1's server did the latest-per-metric selection), so every consumer taking the first match per metric read an arbitrary historical row — insertion order on one device, uuid order after a merge. Broken since 79afc7e (2026-06-08), all 13 LONGITUDINAL_FIELDS. Fix: `latestActivePerMetric()` in health-core, applied in the store.
+- Tests: ✅ suggestions.test.ts — the LDL-without-total case is covered by `'shows LDL when neither ApoB nor non-HDL available'` (verified 2026-08-07). ✅ AC4: measurement-history.test.ts (`latestActivePerMetric`) + roadmap-store.test.ts (single-device and post-merge LDL recency, 2026-09-01).
 
 ### US-08 · Print / save my plan
 As a user, I can print or save my plan as a PDF to bring to my doctor (client-side; no server involved). The guest capture button drives the same pipeline — see US-18.

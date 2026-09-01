@@ -30,6 +30,7 @@ import {
   diffInputsToMeasurements,
   encodeSex,
   encodeUnitSystem,
+  latestActivePerMetric,
   measurementsToInputs,
   mergeFiles,
   migrateFile,
@@ -279,7 +280,7 @@ export class RoadmapStore {
 
     return {
       inputs,
-      previousMeasurements: measurements as ApiMeasurement[],
+      previousMeasurements: latestActivePerMetric(measurements) as ApiMeasurement[],
       medications: this.file.medications as ApiMedication[],
       screenings: this.screeningsToRows(),
       supplements: this.file.supplements as ApiSupplement[],

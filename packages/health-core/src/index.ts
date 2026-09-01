@@ -277,9 +277,10 @@ export {
   splitDocumentRef,
 } from './document-path';
 
-// v2 chat context — dated measurement history shared by all chat surfaces
+// v2 measurement recency — dated chat history + newest-active-row resolution
 export {
   buildMeasurementHistory,
+  latestActivePerMetric,
   latestFromHistory,
   HISTORY_CAP_PER_METRIC,
   type DatedMeasurement,

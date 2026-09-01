@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildMeasurementHistory,
+  latestActivePerMetric,
   latestFromHistory,
   HISTORY_CAP_PER_METRIC,
 } from './measurement-history';
@@ -63,5 +64,85 @@ describe('latestFromHistory', () => {
       ldl: [],
     });
     expect(latest).toEqual({});
+  });
+});
+
+describe('latestActivePerMetric (US-07 AC4)', () => {
+  const row = (
+    id: string,
+    metricType: string,
+    recordedAt: string,
+    extra: { createdAt?: string; status?: string; value?: number } = {},
+  ) => ({ id, metricType, recordedAt, value: 0, ...extra });
+
+  it('keeps the most recent reading per metric', () => {
+    const out = latestActivePerMetric([
+      row('a', 'ldl', '2024-01-10', { value: 3.5 }),
+      row('b', 'ldl', '2026-08-10', { value: 1.8 }),
+      row('c', 'weight', '2026-02-02', { value: 80 }),
+    ]);
+    expect(out.map((r) => r.id).sort()).toEqual(['b', 'c']);
+    expect(out.find((r) => r.metricType === 'ldl')!.value).toBe(1.8);
+  });
+
+  it('a backfilled older reading never wins, whatever the array order', () => {
+    const newest = row('new', 'ldl', '2026-08-10', { value: 1.8, createdAt: '2026-08-10T09:00:00Z' });
+    const backfilled = row('old', 'ldl', '2024-01-10', { value: 3.5, createdAt: '2026-08-20T09:00:00Z' });
+    expect(latestActivePerMetric([newest, backfilled])).toEqual([newest]);
+    expect(latestActivePerMetric([backfilled, newest])).toEqual([newest]);
+  });
+
+  it('skips entered-in-error rows and falls back to the newest active one', () => {
+    const out = latestActivePerMetric([
+      row('a', 'ldl', '2024-01-10', { value: 3.5 }),
+      row('b', 'ldl', '2026-08-10', { value: 1.8, status: 'entered-in-error' }),
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].id).toBe('a');
+  });
+
+  it('drops a metric whose every row is entered-in-error', () => {
+    expect(latestActivePerMetric([row('a', 'ldl', '2026-08-10', { status: 'entered-in-error' })])).toEqual([]);
+  });
+
+  it('tiebreaks equal recordedAt on createdAt, then on id', () => {
+    const byCreated = latestActivePerMetric([
+      row('a', 'ldl', '2026-08-10', { value: 3.5, createdAt: '2026-08-10T08:00:00Z' }),
+      row('b', 'ldl', '2026-08-10', { value: 1.8, createdAt: '2026-08-10T09:00:00Z' }),
+    ]);
+    expect(byCreated[0].id).toBe('b');
+
+    // No createdAt anywhere → id decides, so both devices converge on one winner.
+    const byId = latestActivePerMetric([
+      row('zz', 'ldl', '2026-08-10', { value: 1.8 }),
+      row('aa', 'ldl', '2026-08-10', { value: 3.5 }),
+    ]);
+    expect(byId[0].id).toBe('zz');
+
+    // A row WITH createdAt beats one without (missing sorts as '').
+    const missing = latestActivePerMetric([
+      row('zz', 'ldl', '2026-08-10', { value: 3.5 }),
+      row('aa', 'ldl', '2026-08-10', { value: 1.8, createdAt: '2026-08-10T09:00:00Z' }),
+    ]);
+    expect(missing[0].id).toBe('aa');
+  });
+
+  it('compares date-only and datetime recordedAt correctly', () => {
+    const out = latestActivePerMetric([
+      row('a', 'ldl', '2026-08-10T23:00:00.000Z', { value: 1.8 }),
+      row('b', 'ldl', '2026-08-09', { value: 3.5 }),
+    ]);
+    expect(out[0].id).toBe('a');
+
+    // Same day, one date-only: the datetime is the later string, so it wins.
+    const sameDay = latestActivePerMetric([
+      row('a', 'ldl', '2026-08-10', { value: 3.5 }),
+      row('b', 'ldl', '2026-08-10T07:00:00.000Z', { value: 1.8 }),
+    ]);
+    expect(sameDay[0].id).toBe('b');
+  });
+
+  it('returns an empty array for no rows', () => {
+    expect(latestActivePerMetric([])).toEqual([]);
   });
 });

@@ -3,6 +3,7 @@ import {
   FIELD_TO_METRIC,
   METRIC_TO_FIELD,
   FIELD_METRIC_MAP,
+  PREFILL_FIELDS,
   measurementsToInputs,
   diffInputsToMeasurements,
   diffProfileFields,
@@ -27,6 +28,11 @@ describe('FIELD_TO_METRIC / METRIC_TO_FIELD', () => {
   it('cover all health metric types (no height — stored on profile)', () => {
     expect(Object.keys(FIELD_TO_METRIC)).toHaveLength(13);
     expect(Object.keys(METRIC_TO_FIELD)).toHaveLength(13);
+  });
+
+  it('PREFILL_FIELDS never overlap METRIC_TO_FIELD values (store prefill pass + byok spread order both assume it) [US-07 AC4]', () => {
+    const metricFields = new Set(Object.values(METRIC_TO_FIELD));
+    expect(PREFILL_FIELDS.filter((f) => metricFields.has(f))).toEqual([]);
   });
 });
 

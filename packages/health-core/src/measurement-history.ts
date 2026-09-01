@@ -1,6 +1,9 @@
 /**
- * Dated measurement history for the chat context — shared by every surface
- * that ships the user's time series to a model:
+ * Measurement recency. Two resolvers with different contracts: the dated
+ * history a chat surface ships to a model, and the newest ACTIVE row per
+ * metric the plan is computed from (`latestActivePerMetric`, US-07 AC4).
+ *
+ * The dated history is shared by every surface that ships the time series:
  *
  *   - HealthTool (Shopify v2 storefront) builds it client-side and sends it
  *     as guestInputs.measurementHistory to Brad's server
@@ -51,6 +54,39 @@ export function buildMeasurementHistory(
     if (out[k].length > cap) out[k] = out[k].slice(-cap);
   }
   return out;
+}
+
+/**
+ * The newest ACTIVE row per metricType — what "my current value" means wherever
+ * the plan is computed (US-07 AC4). Recency is clinical date (`recordedAt`), not
+ * file order: a file holds every reading, ordered by insertion on one device and
+ * by uuid after a merge, so a backfilled 2024 lab would otherwise outrank a 2026
+ * one. `createdAt` then `id` break ties, so every device picks the same winner.
+ *
+ * Returns rows (callers need `id`/`recordedAt`); `measurementsToInputs` is the
+ * separate rows-to-fields step.
+ */
+export function latestActivePerMetric<
+  T extends { id: string; metricType: string; recordedAt: string; createdAt?: string; status?: string },
+>(rows: T[]): T[] {
+  const best = new Map<string, T>();
+  for (const r of rows) {
+    if (r.status !== undefined && r.status !== 'active') continue;
+    const held = best.get(r.metricType);
+    if (!held || beats(r, held)) best.set(r.metricType, r);
+  }
+  return [...best.values()];
+}
+
+function beats(
+  a: { id: string; recordedAt: string; createdAt?: string },
+  b: { id: string; recordedAt: string; createdAt?: string },
+): boolean {
+  if (a.recordedAt !== b.recordedAt) return a.recordedAt > b.recordedAt;
+  const ac = a.createdAt ?? '';
+  const bc = b.createdAt ?? '';
+  if (ac !== bc) return ac > bc;
+  return a.id > b.id;
 }
 
 /**
