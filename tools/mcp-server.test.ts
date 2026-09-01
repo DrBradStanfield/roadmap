@@ -7,12 +7,13 @@
  * backup-and-replace path the CLI uses.
  */
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PassThrough } from 'node:stream';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core';
+import { MCP_TOOLS } from '../packages/health-core/src/mcp-tools';
 import { handle, MAX_LINE_BYTES, serve } from './mcp-server';
 
 const CTX = { deviceId: 'us32_server', now: '2026-09-01T09:00:00Z' };
@@ -59,16 +60,17 @@ describe('US-32 — the JSON-RPC handshake', () => {
     expect(response.result.capabilities).toEqual({ tools: { listChanged: false } });
     expect(response.result.serverInfo.name).toBe('health-roadmap');
     expect(response.result.instructions).toContain('not medical advice');
+    expect(response.result.instructions).toContain('report_feedback');
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('lists the five tools with their schemas, and stays quiet on a notification', () => {
+  it('lists the six tools with their schemas, and stays quiet on a notification', () => {
     const { dir, path } = writeFixture(fixture());
     const listed = handle({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, path) as
       { result: { tools: Array<{ name: string; inputSchema: object }> } };
 
     expect(listed.result.tools.map((t) => t.name)).toEqual([
-      'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value',
+      'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'report_feedback',
     ]);
     expect(listed.result.tools[0].inputSchema).toMatchObject({ type: 'object' });
     expect(handle({ jsonrpc: '2.0', method: 'notifications/initialized' }, path)).toBeNull();
@@ -212,7 +214,7 @@ describe('US-32 — the stdio transport', () => {
     const responses = lines.map((line) => JSON.parse(line));
     expect(responses.map((r) => r.id)).toEqual([1, 2, 3, 4, null]); // the notification got no reply
     expect(responses[0].result.protocolVersion).toBe('2025-11-25');
-    expect(responses[1].result.tools).toHaveLength(5);
+    expect(responses[1].result.tools).toHaveLength(MCP_TOOLS.length);
     expect(responses[2].result.content[0].text).toContain('Saved (backup:');
     expect(JSON.parse(responses[3].result.content[0].text).measurements).toHaveLength(1);
     expect(responses[4].error.code).toBe(-32700);
@@ -261,5 +263,24 @@ describe('US-32 — nothing that could reach the network is imported', () => {
       }
       expect(source, file).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket|https?:\/\/[^\s'"]*\/(api|v1))\b/);
     }
+  });
+});
+
+describe('US-32 AC9 — report_feedback over the wire', () => {
+  it('returns a prefilled issue URL and leaves the record exactly as it was', () => {
+    const { dir, path } = writeFixture(fixture());
+    const before = statSync(path);
+
+    const response = call(path, 'report_feedback', {
+      kind: 'feature', title: 'let me track resting heart rate', detail: 'The record has nowhere to put it.',
+    });
+
+    const link = text(response).split('\n')[0];
+    expect(link).toContain('https://github.com/DrBradStanfield/roadmap/issues/new?labels=agent-feedback,feature');
+    expect(response.result!.isError).toBeUndefined();
+    // No write, no backup: the file is only the thing being reported about.
+    expect(statSync(path).mtimeMs).toBe(before.mtimeMs);
+    expect(readdirSync(dir).filter((n) => n.includes('.bak-'))).toHaveLength(0);
+    rmSync(dir, { recursive: true, force: true });
   });
 });

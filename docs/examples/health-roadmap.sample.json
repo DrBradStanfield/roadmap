@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "createdAt": "2026-08-20T09:00:00Z",
+    "updatedAt": "2026-08-20T09:00:00Z",
+    "lastDeviceId": "sample_record",
+    "lamport": 1,
+    "eraseEpoch": 0
+  },
+  "profile": {
+    "updatedAt": "2026-08-20T09:00:00Z",
+    "lamport": 2,
+    "sex": "female",
+    "birthYear": 1984,
+    "birthMonth": 6,
+    "heightCm": 165,
+    "unitSystem": "si"
+  },
+  "measurements": [
+    {
+      "source": "manual",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "sample-diastolic_bp-2026-05-12",
+      "metricType": "diastolic_bp",
+      "value": 82,
+      "recordedAt": "2026-05-12",
+      "createdAt": "2026-05-12T08:00:00Z"
+    },
+    {
+      "source": "manual",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "sample-hba1c-2026-05-12",
+      "metricType": "hba1c",
+      "value": 38,
+      "recordedAt": "2026-05-12",
+      "createdAt": "2026-05-12T08:00:00Z"
+    },
+    {
+      "source": "manual",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "sample-hdl-2026-05-12",
+      "metricType": "hdl",
+      "value": 1.4,
+      "recordedAt": "2026-05-12",
+      "createdAt": "2026-05-12T08:00:00Z"
+    },
+    {
+      "source": "manual",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "sample-ldl-2026-05-12",
+      "metricType": "ldl",
+      "value": 3.6,
+      "recordedAt": "2026-05-12",
+      "createdAt": "2026-05-12T08:00:00Z"
+    },
+    {
+      "source": "manual",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "sample-systolic_bp-2026-05-12",
+      "metricType": "systolic_bp",
+      "value": 128,
+      "recordedAt": "2026-05-12",
+      "createdAt": "2026-05-12T08:00:00Z"
+    },
+    {
+      "source": "manual",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "sample-weight-2026-08-18",
+      "metricType": "weight",
+      "value": 68.5,
+      "recordedAt": "2026-08-18",
+      "createdAt": "2026-08-18T08:00:00Z"
+    }
+  ],
+  "medications": [
+    {
+      "id": "sample-med-statin",
+      "medicationKey": "statin",
+      "drugName": "atorvastatin",
+      "doseValue": 10,
+      "doseUnit": "mg",
+      "updatedAt": "2026-08-20T09:00:00Z",
+      "lamport": 1
+    }
+  ],
+  "medicationHistory": [],
+  "supplements": [],
+  "supplementHistory": [],
+  "screenings": {
+    "updatedAt": "2026-08-20T09:00:00Z",
+    "lamport": 0
+  },
+  "labValues": [
+    {
+      "id": "sample-ferritin-2026-05-12",
+      "metricName": "ferritin",
+      "value": 64,
+      "unit": "µg/L",
+      "referenceLow": null,
+      "referenceHigh": null,
+      "recordedAt": "2026-05-12",
+      "createdAt": "2026-05-12T08:00:00Z",
+      "source": "manual",
+      "status": "active",
+      "correctsId": null
+    }
+  ],
+  "documents": [],
+  "reminderPreferences": [],
+  "recommendationSnapshots": []
+}

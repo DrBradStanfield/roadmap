@@ -14,6 +14,9 @@ This page is the contract for doing that safely.
 - Current `schemaVersion`: **1**
 - TypeScript source of truth: `packages/health-core/src/roadmap-file.ts`
 - Compute the plan from the file: `npx tsx tools/get-plan.ts <file>` (in this repo) — see `--help`
+- Something wrong or missing? The MCP server's `report_feedback` tool prepares a prefilled
+  GitHub issue for the user to review and submit — it sends nothing itself, and no health
+  value belongs in it.
 
 ## Where the file is
 

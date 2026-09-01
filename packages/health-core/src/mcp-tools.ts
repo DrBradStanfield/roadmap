@@ -1,5 +1,5 @@
 /**
- * The five MCP tools, as pure functions (US-32).
+ * The six MCP tools, as pure functions (US-32).
  *
  * `record-edits.ts` holds the rules a write must keep and `plan.ts` holds the
  * derivation; this layer is what an AI assistant is actually offered — five
@@ -13,7 +13,7 @@
  */
 import { dayOf } from './merge';
 import { resolveLabCatalogEntry } from './lab-catalog';
-import { computePlan, oneLine, PlanError, renderJson } from './plan';
+import { computePlan, oneLine, PlanError, printable, renderJson } from './plan';
 import {
   appendLabValue,
   appendMeasurement,
@@ -21,6 +21,7 @@ import {
   type EditRejection,
 } from './record-edits';
 import type { FileLabValue, FileMeasurement, FileReminderOptIn, RoadmapFile } from './roadmap-file';
+import { UNIT_DEFS } from './units';
 import { METRIC_TYPES } from './validation';
 import { z } from 'zod';
 
@@ -41,6 +42,22 @@ export const MAX_LAB_ROWS_PER_CALL = 50;
  */
 export const MAX_NAME_LENGTH = 120;
 export const MAX_ID_LENGTH = 100;
+
+/**
+ * Longest a prepared feedback URL may be. GitHub takes a long query string but
+ * truncates a very long one SILENTLY, and a report that arrives with its last
+ * paragraph missing is worse than one that was refused.
+ */
+export const MAX_FEEDBACK_URL_LENGTH = 8000;
+
+/** Where a prepared report goes. The only place this repo's name is written. */
+const FEEDBACK_REPO = 'DrBradStanfield/roadmap';
+
+/** The version the server announces, and the one a report is stamped with. */
+export const SERVER_VERSION = '1.0.0';
+
+/** Bumped when a tool's meaning changes, so an old report reads correctly. */
+export const TOOL_LAYER_VERSION = 1;
 
 /** ISO calendar day — the only date shape a tool takes. */
 const DAY = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use a calendar day, YYYY-MM-DD');
@@ -78,6 +95,12 @@ export const correctValueInput = z.object({
   newValue: z.number().finite(),
   unit: z.string().min(1).max(MAX_NAME_LENGTH).optional(),
   expectedValue: z.number().finite().optional(),
+}).strict();
+
+export const reportFeedbackInput = z.object({
+  kind: z.enum(['bug', 'feature']),
+  title: z.string().min(1).max(MAX_NAME_LENGTH),
+  detail: z.string().min(1).max(2000),
 }).strict();
 
 /**
@@ -256,6 +279,60 @@ function describe(verb: string, rows: Array<FileMeasurement | FileLabValue>): st
     .join('\n');
 }
 
+/**
+ * Unit tokens a number can be wearing, longest first so "mmol/mol" is not
+ * matched as "mmol/". Read off the unit definitions rather than written out
+ * again, so a new metric's unit joins the guard for free. `in` is dropped: it
+ * is an English preposition long before it is inches, and "3 in a row" in a bug
+ * report is not a health value.
+ */
+const UNIT_TOKENS = [...new Set(
+  Object.values(UNIT_DEFS).flatMap((def) => [def.canonical, def.label.si, def.label.conventional]),
+)].filter((unit) => unit !== 'in').sort((a, b) => b.length - a.length);
+
+/** A number wearing one of those units — "2.1 mmol/L", "81 kg", "140 mmHg". */
+const VALUE_WITH_UNIT = new RegExp(
+  `\\d+(?:[.,]\\d+)?\\s*(?:${UNIT_TOKENS.map((u) => u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?![A-Za-z0-9])`,
+  'i',
+);
+
+/**
+ * Prepare a bug report or feature request as a prefilled GitHub issue URL. It
+ * holds no secret, makes no request and writes nothing: the user opens the URL,
+ * reads what it says and submits it themselves. That review is the real control
+ * on what leaves their machine — the tool's description is what keeps a health
+ * value out of the text, and the unit match below is only a cheap backstop.
+ */
+export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now: string): ToolOutcome {
+  const title = oneLine(request.title).trim();
+  const detail = printable(request.detail).trim();
+  const found = VALUE_WITH_UNIT.exec(`${title}\n${detail}`)?.[0];
+  if (found) {
+    return {
+      status: 'rejected',
+      text: `“${found}” reads as a health value, so nothing was prepared. A report leaves the user’s machine when ` +
+        'they submit it: say which tool or screen was wrong and what you expected, not what the record holds.',
+    };
+  }
+
+  const body = `${detail}\n\n---\nReported via health-roadmap MCP ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, ${dayOf(now)}`;
+  const url = `https://github.com/${FEEDBACK_REPO}/issues/new?labels=agent-feedback,${request.kind}`
+    + `&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+  if (url.length > MAX_FEEDBACK_URL_LENGTH) {
+    return {
+      status: 'rejected',
+      text: 'That report is too long to carry in a URL — GitHub would drop the end of it without saying so. ' +
+        'Shorten the detail and call again.',
+    };
+  }
+  return {
+    status: 'ok',
+    text: `${url}\n\nShow the user this link. Ask them to read the title and body first — they must contain no ` +
+      'health values, no names and no file paths — and to submit it themselves; it needs a GitHub account. ' +
+      'Nothing has been sent anywhere.',
+  };
+}
+
 // ---------------------------------------------------------------------------
 // The tool surface an MCP client sees
 // ---------------------------------------------------------------------------
@@ -284,7 +361,7 @@ export interface McpToolDefinition {
 const DAY_SCHEMA = { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' } as const;
 
 /**
- * The five tools, as an MCP client lists them. Annotations are HINTS — the
+ * The six tools, as an MCP client lists them. Annotations are HINTS — the
  * spec says a client must not trust them and "always allow" is one click — so
  * they describe the tool honestly rather than standing in for a check: the two
  * reads never write, the two adds only append, and `correct_value` is marked
@@ -394,6 +471,27 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
   },
+  {
+    name: 'report_feedback',
+    title: 'Prepare a bug report or feature request',
+    description:
+      'Prepare a bug report or feature request for the health-roadmap project as a prefilled GitHub issue URL. ' +
+      'Offer this when a tool refuses something the user reasonably expected, when the record cannot express ' +
+      'something they want to track, or when a result looks wrong. Never put health values, dates of results, ' +
+      'names or file paths in the title or detail — describe the problem, not the data — and note that nothing ' +
+      'is submitted here: the user opens the URL, reviews the text and files it themselves with a GitHub account.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['bug', 'feature'], description: 'Something broken, or something missing.' },
+        title: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'One line naming the problem.' },
+        detail: { type: 'string', maxLength: 2000, description: 'What happened, what you expected, and the steps — no health values.' },
+      },
+      required: ['kind', 'title', 'detail'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
 ];
 
 /** Zod schema per tool — the argument check `MCP_TOOLS` only describes. */
@@ -403,6 +501,7 @@ const INPUTS = {
   add_measurement: addMeasurementInput,
   add_lab_values: addLabValuesInput,
   correct_value: correctValueInput,
+  report_feedback: reportFeedbackInput,
 } as const;
 
 export function isToolName(name: string): name is keyof typeof INPUTS {
@@ -436,5 +535,7 @@ export function callTool(
       return addLabValues(file, parsed.data as z.infer<typeof addLabValuesInput>, now);
     case 'correct_value':
       return correctValueTool(file, parsed.data as z.infer<typeof correctValueInput>, now);
+    case 'report_feedback':
+      return reportFeedback(parsed.data as z.infer<typeof reportFeedbackInput>, now);
   }
 }

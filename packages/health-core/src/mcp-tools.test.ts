@@ -1,5 +1,5 @@
 /**
- * US-32 — the five tools an AI assistant is offered.
+ * US-32 — the six tools an AI assistant is offered.
  *
  * The write RULES are pinned in `record-edits.test.ts`; what is pinned here is
  * the tool layer's own promises: the capability token never leaves on a read,
@@ -21,9 +21,14 @@ import {
   labValueInput,
   MAX_LAB_ROWS_PER_CALL,
   MCP_TOOLS,
+  MAX_FEEDBACK_URL_LENGTH,
   readRecord,
   readRecordInput,
   redactRecord,
+  reportFeedback,
+  reportFeedbackInput,
+  SERVER_VERSION,
+  TOOL_LAYER_VERSION,
 } from './mcp-tools';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { METRIC_TYPES } from './validation';
@@ -253,6 +258,7 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
     add_measurement: addMeasurementInput,
     add_lab_values: addLabValuesInput,
     correct_value: correctValueInput,
+    report_feedback: reportFeedbackInput,
   };
 
   /** A client obeys the schema; zod is what actually refuses. Drift is a lie. */
@@ -291,7 +297,7 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
         }
       }
     }
-    expect(checked).toBe(7); // every string a tool takes is bounded
+    expect(checked).toBe(9); // every string a tool takes is bounded
   });
 
   it('diverges in exactly one place, on purpose: add_measurement.metricType', () => {
@@ -320,16 +326,84 @@ describe('US-32 — the dispatcher', () => {
     }
   });
 
-  it('publishes five tools, and marks only the two reads read-only', () => {
+  it('publishes six tools, and marks only the reads read-only', () => {
     expect(MCP_TOOLS.map((t) => t.name)).toEqual([
-      'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value',
+      'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'report_feedback',
     ]);
-    expect(MCP_TOOLS.filter((t) => t.annotations.readOnlyHint).map((t) => t.name)).toEqual(['read_record', 'get_plan']);
+    // report_feedback reads nothing and writes nothing — it returns a URL.
+    expect(MCP_TOOLS.filter((t) => t.annotations.readOnlyHint).map((t) => t.name))
+      .toEqual(['read_record', 'get_plan', 'report_feedback']);
     // A correction supersedes a row for good; only that tool claims to destroy.
     expect(MCP_TOOLS.filter((t) => t.annotations.destructiveHint).map((t) => t.name)).toEqual(['correct_value']);
     for (const tool of MCP_TOOLS) {
       expect(tool.inputSchema.additionalProperties, tool.name).toBe(false);
       expect(tool.annotations.openWorldHint, tool.name).toBe(false);
     }
+  });
+});
+
+describe('US-32 AC9 — report_feedback prepares an issue the user submits', () => {
+  const GOOD = { kind: 'bug', title: 'correct_value refused a row it should accept', detail: 'It said the row was superseded.' } as const;
+
+  /** The URL a call prepared, or a failed expectation naming the refusal. */
+  function url(request: z.infer<typeof reportFeedbackInput>): URL {
+    const outcome = reportFeedback(request, NOW);
+    if (outcome.status !== 'ok') throw new Error(`expected ok, got ${outcome.status}: ${outcome.text}`);
+    return new URL(outcome.text.split('\n')[0]);
+  }
+
+  it('builds a prefilled new-issue URL, labelled with the kind, and tells the assistant to hand it over', () => {
+    const outcome = ok(reportFeedback(GOOD, NOW));
+    const link = new URL(outcome.text.split('\n')[0]);
+
+    expect(link.origin + link.pathname).toBe('https://github.com/DrBradStanfield/roadmap/issues/new');
+    expect(link.searchParams.get('labels')).toBe('agent-feedback,bug');
+    expect(link.searchParams.get('title')).toBe(GOOD.title);
+    expect(link.searchParams.get('body')).toBe(
+      `${GOOD.detail}\n\n---\nReported via health-roadmap MCP ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, 2026-09-01`,
+    );
+    // Nothing is sent from here: the user is the one who submits it.
+    expect(outcome.text).toContain('submit it themselves');
+    expect(outcome.text).toContain('GitHub account');
+    expect(outcome.file).toBeUndefined();
+  });
+
+  it('labels a feature request as one', () => {
+    expect(url({ ...GOOD, kind: 'feature' }).searchParams.get('labels')).toBe('agent-feedback,feature');
+  });
+
+  it('encodes what would otherwise break the URL, and strips control characters', () => {
+    const link = url({
+      kind: 'bug',
+      title: 'add_lab_values & \u001b[2Jread_record\nboth wrong?',
+      detail: 'Steps:\n1. call it\n2. \u0007watch it fail #1',
+    });
+    expect(link.searchParams.get('title')).toBe('add_lab_values & [2Jread_record both wrong?');
+    expect(link.searchParams.get('body')).toContain('Steps:\n1. call it\n2. watch it fail #1');
+    expect(link.href).not.toContain('\u001b');
+    expect(link.href).not.toContain(' ');
+  });
+
+  it('refuses a report too long to carry, rather than letting GitHub truncate it silently', () => {
+    const outcome = reportFeedback({ ...GOOD, detail: '— why it broke —'.repeat(500) }, NOW);
+    expect(outcome.status).toBe('rejected');
+    expect(outcome.text).toContain('too long');
+    expect(ok(reportFeedback({ ...GOOD, detail: 'a'.repeat(2000) }, NOW)).text.split('\n')[0].length)
+      .toBeLessThanOrEqual(MAX_FEEDBACK_URL_LENGTH);
+  });
+
+  it('refuses a number wearing a unit — a health value the user would have submitted', () => {
+    for (const detail of ['my ldl is 2.1 mmol/L and it says otherwise', 'weight shows 81 kg twice', 'it took 140 mmHg as diastolic']) {
+      const outcome = reportFeedback({ ...GOOD, detail }, NOW);
+      expect(outcome.status, detail).toBe('rejected');
+      expect(outcome.text, detail).toContain('health value');
+    }
+    // The title is guarded too, not just the detail.
+    expect(reportFeedback({ ...GOOD, title: 'ferritin 210 ng/mL rejected' }, NOW).status).toBe('rejected');
+  });
+
+  it('lets a bare number through — a page number is not a lab result', () => {
+    expect(url({ ...GOOD, detail: 'See page 2 of the guide; it failed 3 times in a row.' })
+      .searchParams.get('body')).toContain('page 2');
   });
 });

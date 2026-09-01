@@ -3,11 +3,11 @@
  * The health record as an MCP server, over stdio (US-32, phase 0).
  *
  * Point Claude Desktop or Claude Code at one `health-roadmap.json` and the
- * assistant can read the record, compute the plan, add results and correct a
- * value — through the same functions the CLI uses, so nothing here can invent
- * its own idea of a legal write. Local only: one file path, no server, no
- * OAuth, no key, no network. The hosted server (phase 1) wraps this same tool
- * layer around a user's cloud folder.
+ * assistant can read the record, compute the plan, add results, correct a value
+ * and prepare a bug report — through the same functions the CLI uses, so
+ * nothing here can invent its own idea of a legal write. Local only: one file
+ * path, no server, no OAuth, no key, no network. The hosted server (phase 1)
+ * wraps this same tool layer around a user's cloud folder.
  *
  * Usage:
  *   npx tsx tools/mcp-server.ts --file ~/Dropbox/Apps/health-roadmap/health-roadmap.json
@@ -16,21 +16,24 @@
  * human should read goes to stderr.
  */
 import { pathToFileURL } from 'node:url';
-import { callTool, isToolName, MCP_TOOLS } from '../packages/health-core/src/mcp-tools';
+import { callTool, isToolName, MCP_TOOLS, SERVER_VERSION } from '../packages/health-core/src/mcp-tools';
 import { PlanError } from '../packages/health-core/src/plan';
 import { assertUnchanged, backup, openRecord, writeAtomic } from './record-io';
 
 /** The revision this speaks. Clients that ask for another get told this one. */
 const PROTOCOL_VERSION = '2025-11-25';
 
-const SERVER_INFO = { name: 'health-roadmap', title: 'Health Roadmap', version: '1.0.0' };
+const SERVER_INFO = { name: 'health-roadmap', title: 'Health Roadmap', version: SERVER_VERSION };
 
 /** What the assistant is told once, at connect. */
 const INSTRUCTIONS =
   'These tools read and write ONE local health record file — the user’s own. Read before you write: values are ' +
   'slotted one per metric per day, and a day that already holds a value is corrected, never added to twice. ' +
   'Nothing is ever deleted; a superseded row stays as "entered-in-error". The plan from get_plan is educational, ' +
-  'not medical advice, and its hedged wording and citations are calibrated — pass them on as written.';
+  'not medical advice, and its hedged wording and citations are calibrated — pass them on as written. ' +
+  'If a tool refuses something the user reasonably expected, the record cannot hold what they want to track, or a ' +
+  'result looks wrong, offer report_feedback: it prepares a GitHub issue link, carrying no health values, that the ' +
+  'user reviews and submits themselves.';
 
 export const HELP = `mcp-server — your health record as an MCP server, over stdio.
 
