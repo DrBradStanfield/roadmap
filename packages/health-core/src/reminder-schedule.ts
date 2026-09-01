@@ -38,6 +38,7 @@ import {
   getCategoryGroup,
   isActiveMedication,
 } from './reminders';
+import { ISO_DATE } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
 
 // ===== Types =====
@@ -245,17 +246,21 @@ export function computeNextDueDates(
 export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
   const disabled = disabledCategories(file);
   const items = computeItemsFromFile(file, now).filter((item) => !disabled.has(item.category));
+  // Last gate before the server: an unparseable date anywhere upstream (a
+  // medication's updatedAt, a screening date) reaches here as 'NaN-NaN-NaN',
+  // and scheduleSchema rejects the whole push. One bad row costs its own item.
+  const valid = items.filter((item) => ISO_DATE.test(item.dueAt));
 
   const horizon = toYmd(addMonths(toYmd(now), 12));
-  if (!items.some((item) => item.dueAt <= horizon)) {
-    items.push({
+  if (!valid.some((item) => item.dueAt <= horizon)) {
+    valid.push({
       category: 'annual_checkin',
       group: 'annual',
       label: ANNUAL_CHECKIN_LABEL,
       dueAt: horizon,
     });
   }
-  return items;
+  return valid;
 }
 
 function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleItem[] {
@@ -267,7 +272,12 @@ function computeItemsFromFile(file: RoadmapFile, now: Date): ReminderScheduleIte
   const measurementDates: MeasurementDates = {};
   for (const m of file.measurements) {
     if (m.status !== 'active') continue;
-    const day = m.recordedAt.slice(0, 10);
+    // No usable clinical date → drop the row, as buildMeasurementHistory does.
+    // Coercing is worse than dropping: '2026-13-45' has the ISO shape, wins
+    // `day > prev`, and produces dueAt 'NaN-NaN-NaN' — which the server's
+    // scheduleSchema rejects, failing the user's ENTIRE schedule push.
+    const day = (m.recordedAt || '').slice(0, 10);
+    if (!ISO_DATE.test(day) || Number.isNaN(Date.parse(day))) continue;
     const prev = measurementDates[m.metricType];
     if (!prev || day > prev) measurementDates[m.metricType] = day;
   }

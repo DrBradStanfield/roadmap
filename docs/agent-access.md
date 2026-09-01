@@ -13,6 +13,7 @@ This page is the contract for doing that safely.
   `https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json`
 - Current `schemaVersion`: **1**
 - TypeScript source of truth: `packages/health-core/src/roadmap-file.ts`
+- Compute the plan from the file: `npx tsx tools/get-plan.ts <file>` (in this repo) — see `--help`
 
 ## Where the file is
 

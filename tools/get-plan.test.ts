@@ -8,7 +8,7 @@
  * a user's plan.
  */
 import { describe, it, expect, vi } from 'vitest';
-import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { readFileSync, mkdtempSync, writeFileSync, rmSync, realpathSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,6 +74,19 @@ function fixture(): RoadmapFile {
   );
   // A merge + migrate round-trip: the bytes an agent (and the CLI) actually read.
   return migrateFile(JSON.parse(JSON.stringify(mergeFiles(file, createEmptyFile(CTX), CTX))), CTX);
+}
+
+/** Run the CLI with stdio captured; the spies are always restored. */
+function captureRun(argv: string[]): { code: number; stdout: string; stderr: string } {
+  const err = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+  const out = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+  const text = (spy: typeof err) => spy.mock.calls.map((c) => String(c[0])).join('');
+  try {
+    return { code: run(argv), stdout: text(out), stderr: text(err) };
+  } finally {
+    err.mockRestore();
+    out.mockRestore();
+  }
 }
 
 function writeFixture(file: RoadmapFile): { dir: string; path: string } {
@@ -262,20 +275,17 @@ describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', ()
   it('exits 1 with one line and a hint, and 0 on success, without touching the record', () => {
     const { dir, path } = writeFixture(fixture());
     const before = readFileSync(path, 'utf8');
-    const err = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
-    const out = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
 
-    expect(run([join(dir, 'absent.json')])).toBe(1);
-    expect(String(err.mock.calls[0][0])).toMatch(/^get_plan: Cannot read .*\n {2}\S/);
-    expect(String(err.mock.calls[0][0])).not.toContain('at ');
-    expect(run(['--help'])).toBe(0);
-    expect(run([path])).toBe(0);
-    expect(run([path, '--json'])).toBe(0);
-    expect(run([path, '--html', join(dir, 'plan.html')])).toBe(0);
-    expect(run([path, '--wat'])).toBe(1);
+    const absent = captureRun([join(dir, 'absent.json')]);
+    expect(absent.code).toBe(1);
+    expect(absent.stderr).toMatch(/^get_plan: Cannot read .*\n {2}\S/);
+    expect(absent.stderr).not.toContain('at ');
+    expect(captureRun(['--help']).code).toBe(0);
+    expect(captureRun([path]).code).toBe(0);
+    expect(captureRun([path, '--json']).code).toBe(0);
+    expect(captureRun([path, '--html', join(dir, 'plan.html')]).code).toBe(0);
+    expect(captureRun([path, '--wat']).code).toBe(1);
 
-    err.mockRestore();
-    out.mockRestore();
     expect(readFileSync(path, 'utf8')).toBe(before); // AC6: read-only
     rmSync(dir, { recursive: true, force: true });
   });
@@ -290,5 +300,108 @@ describe('US-30 AC1 — nothing that could reach the network is imported', () =>
       expect(spec).toMatch(/^(node:(fs|os|path|url|crypto)|\.\.\/packages\/health-core\/src\/[a-z-]+)$/);
     }
     expect(source).not.toMatch(/\b(fetch|XMLHttpRequest|WebSocket|https?:\/\/[^\s'"]*\/(api|v1))\b/);
+  });
+});
+
+describe('US-30 follow-up — --html never writes over the record', () => {
+  it('refuses an --html target that resolves to the record file itself', () => {
+    const { dir, path } = writeFixture(fixture());
+    const before = readFileSync(path, 'utf8');
+
+    const result = captureRun([path, '--html', realpathSync(path)]);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toMatch(/^get_plan: .*record file/);
+
+    expect(readFileSync(path, 'utf8')).toBe(before);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('refuses an --html target that is another flag, rather than writing a file called --json', () => {
+    const { dir, path } = writeFixture(fixture());
+
+    expect(captureRun([path, '--html', '--json']).code).toBe(1);
+
+    expect(existsSync('--json')).toBe(false);
+    rmSync(dir, { recursive: true, force: true });
+  });
+  it('reports an unwritable --html directory as a file problem, not a tool bug', () => {
+    const { dir, path } = writeFixture(fixture());
+    const err = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const out = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+
+    expect(run([path, '--html', join(dir, 'no-such-dir', 'plan.html')])).toBe(1);
+    const stderr = err.mock.calls.map((c) => String(c[0])).join('');
+
+    err.mockRestore();
+    out.mockRestore();
+    expect(stderr).toContain('Cannot write');
+    expect(stderr).not.toContain('This is a bug');
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('US-30 follow-up — an ignored value is never shown as a plan input', () => {
+  /** The fixture plus a hand-edited LDL far outside the schema's range. */
+  const outOfRange = (): RoadmapFile => {
+    const file = fixture();
+    file.measurements.push(createMeasurement({
+      id: 'm900', metricType: 'ldl', value: 9999, recordedAt: '2026-08-25',
+      createdAt: '2026-08-25T08:00:00Z', source: 'lab_import',
+    }));
+    return file;
+  };
+
+  it('marks the excluded value in text, --json and HTML, and keeps it out of the inputs', () => {
+    const plan = computePlan(outOfRange(), NOW);
+    expect(plan.inputs.ldlC).toBeUndefined();
+    expect(plan.excluded).toContain('ldlC');
+
+    expect(renderText(plan)).toMatch(/LDL Cholesterol.*9999.*excluded — out of range/);
+    expect(renderHtml(plan)).toContain('excluded — out of range');
+
+    const json = JSON.parse(renderJson(plan));
+    expect(json.inputs.ldlC).toBeUndefined();
+    expect(json.currentValues.find((v: { metric: string }) => v.metric === 'ldl')).toMatchObject({ excluded: true });
+    expect(json.currentValues.find((v: { metric: string }) => v.metric === 'hdl').excluded).toBeUndefined();
+  });
+
+  it('computes the rest of the plan from the valid values', () => {
+    const plan = computePlan(outOfRange(), NOW);
+    expect(plan.inputs.hdlC).toBe(1.2);
+    expect(plan.results.suggestions.length).toBeGreaterThan(0);
+  });
+
+  it('renders a lab row with no recordedAt as a file problem, not a tool bug', () => {
+    const file = fixture();
+    file.labValues = file.labValues.map((l) => ({ ...l, recordedAt: undefined as unknown as string }));
+    const { dir, path } = writeFixture(file);
+
+    const result = captureRun([path]);
+    expect(result.stderr).not.toContain('This is a bug');
+    expect(result.code).toBe(0);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('renders a measurement row with no recordedAt as a file problem, not a tool bug', () => {
+    const file = fixture();
+    file.measurements = file.measurements.map((m) => ({ ...m, recordedAt: undefined as unknown as string }));
+    const { dir, path } = writeFixture(file);
+
+    const result = captureRun([path]);
+    expect(result.stderr).not.toContain('This is a bug');
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain('LDL Cholesterol');
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('renders a current value with no recordedAt as a blank date, not a crash', () => {
+    const plan = computePlan(fixture(), NOW);
+    const undated = {
+      ...plan,
+      currentRows: plan.currentRows.map((r) => ({ ...r, recordedAt: undefined as unknown as string })),
+    };
+    expect(renderText(undated)).toContain('LDL Cholesterol');
+    expect(() => renderHtml(undated)).not.toThrow();
+    expect(JSON.parse(renderJson(undated)).currentValues[0].date).toBe('');
   });
 });

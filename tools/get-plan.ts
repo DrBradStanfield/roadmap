@@ -18,7 +18,7 @@
  * gitignored and built by nobody — the package-name import would silently run
  * a stale engine on a fresh clone.
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { calculateHealthResults } from '../packages/health-core/src/calculations';
 import { fileProfileToApi, fileScreeningRows } from '../packages/health-core/src/file-inputs';
@@ -26,6 +26,7 @@ import { displayLabUnit, resolveLabCatalogEntry } from '../packages/health-core/
 import {
   FIELD_METRIC_MAP,
   METRIC_LABELS,
+  METRIC_TO_FIELD,
   measurementsToInputs,
   medicationsToInputs,
   screeningsToInputs,
@@ -93,7 +94,11 @@ export interface PlanInputs {
   unitSystem: UnitSystem;
   medications: MedicationInputs;
   screenings: ScreeningInputs;
-  /** The winning row per metric — the value the plan used, with its clinical date. */
+  /**
+   * The winning row per metric, with its clinical date. A row whose value the
+   * schema rejects is still here — the file says it, so the report shows it —
+   * but `Plan.excluded` names those fields and the plan did not use them.
+   */
   currentRows: ApiMeasurement[];
 }
 
@@ -136,7 +141,7 @@ function derivePlanLabs(file: RoadmapFile): PlanLab[] {
         label: entry?.label ?? l.metricName,
         value: l.value,
         unit: displayLabUnit(l.unit, entry),
-        date: l.recordedAt.slice(0, 10),
+        date: String(l.recordedAt ?? '').slice(0, 10),
       };
     })
     .sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
@@ -147,6 +152,8 @@ export interface Plan extends PlanInputs {
   results: HealthResults;
   due: ReminderScheduleItem[];
   labs: PlanLab[];
+  /** Input fields dropped as out of range — displayed, never fed to the plan. */
+  excluded: string[];
 }
 
 /**
@@ -156,6 +163,7 @@ export interface Plan extends PlanInputs {
 export function computePlan(file: RoadmapFile, now = new Date()): Plan {
   const derived = derivePlanInputs(file);
   let inputs = derived.inputs;
+  let excluded: string[] = [];
 
   const validation = validateHealthInputs(inputs);
   if (!validation.success && validation.errors) {
@@ -169,10 +177,12 @@ export function computePlan(file: RoadmapFile, now = new Date()): Plan {
     const stripped = { ...inputs } as Record<string, unknown>;
     for (const field of invalid) stripped[field] = undefined;
     inputs = stripped as Partial<HealthInputs>;
+    excluded = [...invalid];
   }
   return {
     ...derived,
     inputs,
+    excluded,
     generatedAt: now.toISOString(),
     results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings),
     due: computeReminderSchedule(file, now),
@@ -191,8 +201,16 @@ const PRIORITY_GROUPS = [
   ['info', 'Foundation'],
 ] as const;
 
-/** Current values as displayed: label, converted value, unit, clinical date. */
-function currentValues(plan: Plan): Array<{ metric: string; label: string; value: string; unit: string; date: string }> {
+/** A printed row: current value or lab. `excluded` marks a value the plan ignored. */
+type DisplayRow = { label: string; value: unknown; unit: string; date: string; excluded?: boolean };
+
+/**
+ * Current values as displayed: label, converted value, unit, clinical date.
+ * A value the schema rejected is marked `excluded` — it is in the file, so it
+ * is on the report, but the reader must not mistake it for a plan input.
+ */
+function currentValues(plan: Plan) {
+  const excluded = new Set(plan.excluded);
   return plan.currentRows
     .filter((row) => row.metricType in UNIT_DEFS)
     .map((row) => {
@@ -202,7 +220,8 @@ function currentValues(plan: Plan): Array<{ metric: string; label: string; value
         label: METRIC_LABELS[row.metricType] ?? row.metricType,
         value: formatDisplayValue(metric, row.value, plan.unitSystem),
         unit: getDisplayLabel(metric, plan.unitSystem),
-        date: row.recordedAt.slice(0, 10),
+        date: String(row.recordedAt ?? '').slice(0, 10),
+        excluded: excluded.has(METRIC_TO_FIELD[row.metricType]) || undefined,
       };
     })
     .sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
@@ -246,7 +265,7 @@ export function renderText(plan: Plan): string {
   out.push(profileLine(plan));
   out.push(`Computed ${plan.generatedAt.slice(0, 10)} from your record file. Not medical advice — take it to your doctor.`);
 
-  const row = (r: { label: string; value: unknown; unit: string; date: string }) => `  ${r.label.padEnd(20)} ${String(r.value).padStart(6)} ${r.unit.padEnd(9)} ${r.date}`;
+  const row = (r: DisplayRow) => `  ${r.label.padEnd(20)} ${String(r.value).padStart(6)} ${r.unit.padEnd(9)} ${r.date}${r.excluded ? '  (excluded — out of range)' : ''}`;
   const values = currentValues(plan);
   out.push('', 'CURRENT VALUES');
   if (values.length === 0) out.push('  (none recorded yet)');
@@ -348,8 +367,8 @@ function esc(value: unknown): string {
 export function renderHtml(plan: Plan): string {
   const { overdue, upcoming } = dueSplit(plan);
   const values = currentValues(plan);
-  const rows = (items: Array<{ label: string; value: unknown; unit: string; date: string }>) =>
-    items.map((i) => `<tr><th>${esc(i.label)}</th><td>${esc(i.value)} ${esc(i.unit)}</td><td>${esc(i.date)}</td></tr>`).join('\n');
+  const rows = (items: DisplayRow[]) =>
+    items.map((i) => `<tr><th>${esc(i.label)}</th><td>${esc(i.value)} ${esc(i.unit)}${i.excluded ? ' <span class="ex">(excluded — out of range)</span>' : ''}</td><td>${esc(i.date)}</td></tr>`).join('\n');
 
   const suggestions = byPriority(plan.results.suggestions)
     .map(
@@ -400,6 +419,7 @@ a{color:inherit}
 .due li{margin:.2rem 0}
 .disclaimer{font-size:.85rem;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:.6rem .8rem}
 .od{color:#c0392b;font-weight:600}
+.ex{color:#c0392b;font-size:.82rem}
 footer{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--muted);font-size:.82rem}
 @media print{body{padding:0}.s{break-inside:avoid}}
 </style></head><body><main>
@@ -447,7 +467,8 @@ record is never written back.
   profile        age, sex, heightCm, bmi, bmiCategory, eGFR, idealBodyWeightKg,
                  proteinTargetG
   inputs         the HealthInputs the plan was computed from (SI canonical)
-  currentValues  one row per metric — label, display value, unit, clinical date
+  currentValues  one row per metric — label, display value, unit, clinical date;
+                 excluded: true marks a value out of range — shown, but unused
   labValues      latest per additional test (informational; not used to compute
                  suggestions)
   medications    screenings
@@ -458,6 +479,32 @@ record is never written back.
 The file format: docs/agent-access.md
 Schema: ${SCHEMA_URL}
 `;
+
+/**
+ * The report must never land on the record. A path can reach the same file by
+ * another name (a symlink, /var vs /private/var, or a different CASE on macOS
+ * APFS), so compare resolved paths — and refuse a target that is really the
+ * next flag. `realpathSync.native` is load-bearing: the JS implementation
+ * preserves the case it was given, so on a case-insensitive filesystem two
+ * spellings of the same file compare unequal and the guard would pass. Hard
+ * links are an accepted bypass — no filesystem-independent way to spot one.
+ * Overwriting any OTHER existing file is normal `-o` behaviour and stays
+ * allowed.
+ */
+function assertWritableTarget(htmlOut: string, recordPath: string): void {
+  if (htmlOut.startsWith('--')) {
+    throw new PlanError(`--html needs an output path, not ${htmlOut}`, 'Try `--html plan.html`.');
+  }
+  let sameFile = false;
+  try {
+    sameFile = realpathSync.native(htmlOut) === realpathSync.native(recordPath);
+  } catch {
+    // No such file yet — nothing to overwrite.
+  }
+  if (sameFile) {
+    throw new PlanError('--html would overwrite the record file itself', 'Give the report its own path, e.g. `--html plan.html`.');
+  }
+}
 
 export function run(argv: string[]): number {
   if (argv.length === 0 || argv.includes('--help') || argv.includes('-h')) {
@@ -473,10 +520,15 @@ export function run(argv: string[]): number {
     if (!path) throw new PlanError('No record file given', 'Run `npx tsx tools/get-plan.ts --help` for usage.');
     if (htmlAt >= 0 && !htmlOut) throw new PlanError('--html needs an output path', 'Try `--html plan.html`.');
     if (unknown) throw new PlanError(`Unknown option ${unknown}`, 'Run with --help for the options.');
+    if (htmlOut) assertWritableTarget(htmlOut, path);
 
     const plan = computePlan(loadRecord(path));
     if (htmlOut) {
-      writeFileSync(htmlOut, renderHtml(plan));
+      try {
+        writeFileSync(htmlOut, renderHtml(plan));
+      } catch {
+        throw new PlanError(`Cannot write ${htmlOut}`, 'Check the directory exists.');
+      }
       process.stdout.write(`Wrote ${htmlOut}\n`);
     } else if (argv.includes('--json')) {
       process.stdout.write(`${renderJson(plan)}\n`);

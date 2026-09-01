@@ -8,7 +8,7 @@ import type { ApiReminderPreference } from './api-types';
  * Validates each field individually — invalid fields are stripped,
  * unknown fields (e.g. unitSystem) pass through unchanged.
  */
-function sanitizeInputs(inputs: Partial<HealthInputs>): Partial<HealthInputs> {
+export function sanitizeInputs(inputs: Partial<HealthInputs>): Partial<HealthInputs> {
   const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean } }>;
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(inputs)) {

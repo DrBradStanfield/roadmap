@@ -31,7 +31,7 @@ import {
   type ProposedEdit,
 } from '@roadmap/health-core';
 import { getByokChatInputs } from './roadmap-data';
-import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
+import { safeGetItem, safeSetItem, safeRemoveItem, sanitizeInputs } from './storage';
 import { getChatHistory } from './chat-history-access';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 
@@ -180,7 +180,12 @@ Updating the user's form (tools):
 function buildUserContextJson(): string | null {
   const raw = getByokChatInputs();
   if (!raw) return null;
-  const parsed = healthInputSchema.safeParse(raw);
+  // The user's own file is an untrusted boundary too — a hand edit or a corrupt
+  // sync must cost its own field, not the whole context. Sanitize per field
+  // first, or one bad number tells the model "none entered yet". The prompt is
+  // built from parsed.data below, never the sanitized raw, so Zod's key
+  // stripping still stands between an unknown field and the model.
+  const parsed = healthInputSchema.safeParse(sanitizeInputs(raw as Partial<HealthInputs>));
   if (!parsed.success) return null;
   const inputs = parsed.data as HealthInputs;
   const unitSystem: UnitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';

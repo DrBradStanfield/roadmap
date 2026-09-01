@@ -4,6 +4,9 @@ import { computeDueReminders, REMINDER_CATEGORIES, type ReminderProfile } from '
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 import type { ScreeningInputs } from './types';
 
+/** The shape the server's scheduleSchema accepts — a NaN date fails the push. */
+const ISO_DATE_SHAPE = /^\d{4}-\d{2}-\d{2}$/;
+
 // Fixed "today" for determinism: 15 June 2026
 const NOW = new Date(2026, 5, 15);
 
@@ -168,6 +171,52 @@ describe('computeReminderSchedule — RoadmapFile adapter', () => {
     items = computeReminderSchedule(f, NOW);
     expect(items.map((i) => i.category)).toEqual(['annual_checkin']);
   });
+
+  it('drops a measurement row whose recordedAt is missing or unusable, instead of throwing or shadowing', () => {
+    // A hand-edited or half-written record can carry a row with no usable
+    // clinical date. Dropping it follows buildMeasurementHistory
+    // (measurement-history.ts:40 — "records without a valid recordedAt are
+    // dropped"). Coercing instead was rejected: '2026-13-45' passes the ISO
+    // shape, wins `day > prev`, and yields dueAt 'NaN-NaN-NaN', which the
+    // server's scheduleSchema rejects — failing the user's ENTIRE schedule
+    // push. (A dropped row cannot surface a spurious reminder either way:
+    // bloodTestSchedule skips a test with no lastDate.)
+    const profile = { sex: 'female', birthYear: 1970, updatedAt: '2026-01-01T00:00:00Z', lamport: 1 } as RoadmapFile['profile'];
+    const dated = createMeasurement({ id: 'm1', metricType: 'ldl', value: 2.5, recordedAt: '2025-05-01T08:00:00Z', createdAt: '2025-05-01T08:00:00Z' });
+    const valid = computeReminderSchedule(file({ profile, measurements: [dated] }), NOW);
+    expect(valid.find((i) => i.category === 'blood_test_lipids')).toMatchObject({ dueAt: '2026-05-01' });
+
+    for (const bad of [undefined, '', 'soon', '2026-13-45']) {
+      const junk = { ...createMeasurement({ id: 'm2', metricType: 'ldl', value: 9, recordedAt: '2026-06-01T08:00:00Z', createdAt: '2026-06-01T08:00:00Z' }), recordedAt: bad as unknown as string };
+      expect(computeReminderSchedule(file({ profile, measurements: [dated, junk] }), NOW)).toEqual(valid);
+    }
+  });
+
+  it('never emits a NaN dueAt from a garbage medication updatedAt, and still floors the schedule', () => {
+    // The same whole-push failure from the output side: medicationSchedule does
+    // date maths on whatever the file says, and an unparseable updatedAt yields
+    // dueAt 'NaN-NaN-NaN' — which the server's scheduleSchema rejects, taking
+    // every other reminder down with it. One bad row costs its own item only.
+    const f = file({
+      profile: { sex: 'male', birthYear: 1986, birthMonth: 11, updatedAt: '2026-01-01T00:00:00Z', lamport: 1 } as RoadmapFile['profile'],
+      screenings: {
+        colorectalMethod: 'colonoscopy_10yr',
+        colorectalLastDate: '2020-01',
+        updatedAt: '2026-01-01T00:00:00Z',
+        lamport: 1,
+      } as RoadmapFile['screenings'],
+      medications: [
+        { id: 'med1', medicationKey: 'statin', drugName: 'atorvastatin', doseValue: 20, doseUnit: 'mg', updatedAt: 'garbage', lamport: 1 },
+      ] as RoadmapFile['medications'],
+    });
+    const items = computeReminderSchedule(f, NOW);
+
+    expect(items.every((i) => ISO_DATE_SHAPE.test(i.dueAt))).toBe(true);
+    // The colonoscopy is years out, so the annual floor (US-23 AC6) still fires.
+    expect(items.map((i) => i.category)).toEqual(['screening_colorectal', 'annual_checkin']);
+    expect(items[0]).toMatchObject({ dueAt: '2030-01-01' });
+  });
+
 });
 
 // US-23 AC6 — the annual floor (Brad, 2026-08-14): every enrolled person gets
