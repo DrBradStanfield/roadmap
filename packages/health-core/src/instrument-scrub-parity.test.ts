@@ -81,6 +81,11 @@ describe('instrument-scrub.mjs ↔ health-core sentry-scrub parity', () => {
       '/apps/health-tool-1/api/measurements?token=abc&metric_type=ldl',
       'https://drstanfield.com/x?logged_in_customer_id=999&email=a@b.com&keep=1',
       'https://example.com/no-sensitive-params?page=2',
+      // OAuth/PKCE params (both impls must redact all of these, keep `safe`)
+      '/callback?code=SECRET&state=BLOB&access_token=X&safe=1',
+      'https://drstanfield.com/cb?code_verifier=v&code_challenge=c&client_secret=s&refresh_token=r&id_token=i&assertion=a&page=2',
+      // exact-match semantics: lookalike params must survive untouched
+      'https://example.com/x?estate=maple&statement=ok&postcode=1010',
       'not a url',
     ];
     for (const u of urls) {

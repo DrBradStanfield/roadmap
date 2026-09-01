@@ -248,6 +248,29 @@ describe('scrubUrl', () => {
     const url = 'https://example.com/api/measurements';
     expect(scrubUrl(url)).toBe(url);
   });
+
+  it('scrubs OAuth/PKCE params from a redirect-return URL, keeping safe ones', () => {
+    const result = scrubUrl('/callback?code=SECRET&state=BLOB&access_token=X&safe=1');
+    expect(result).toBe(
+      '/callback?code=%5BFiltered%5D&state=%5BFiltered%5D&access_token=%5BFiltered%5D&safe=1',
+    );
+    expect(result).not.toContain('SECRET');
+    expect(result).not.toContain('BLOB');
+  });
+
+  it('scrubs the remaining OAuth params', () => {
+    for (const param of ['code_verifier', 'code_challenge', 'client_secret',
+                         'refresh_token', 'id_token', 'assertion']) {
+      const result = scrubUrl(`https://example.com/oauth?${param}=LEAK`);
+      expect(result).not.toContain('LEAK');
+    }
+  });
+
+  it('matches param names EXACTLY — never by substring', () => {
+    // 'state' must not redact 'estate'/'statement'; 'code' must not redact 'postcode'.
+    const url = 'https://example.com/x?estate=maple&statement=ok&postcode=1010&encoded=y';
+    expect(scrubUrl(url)).toBe(url);
+  });
 });
 
 describe('scrubBreadcrumbData', () => {

@@ -170,7 +170,16 @@ export class DropboxAdapter implements StorageAdapter {
       expectedVersion == null
         ? { '.tag': 'add' } // first create — conflicts if a file already exists
         : { '.tag': 'update', update: expectedVersion }; // conditional on rev
-    const arg = { path: `/${fileName}`, mode, autorename: false, mute: true };
+    // strict_conflict on the rev-conditional path: without it Dropbox accepts an
+    // update whose rev doesn't match because the file was DELETED, silently
+    // re-creating it and resurrecting erased data.
+    const arg = {
+      path: `/${fileName}`,
+      mode,
+      autorename: false,
+      mute: true,
+      strict_conflict: expectedVersion != null,
+    };
     const res = await fetch(UPLOAD_URL, {
       method: 'POST',
       headers: {

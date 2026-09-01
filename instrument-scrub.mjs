@@ -94,7 +94,12 @@ export function scrubSensitiveData(input, maxDepth = 10, currentDepth = 0) {
   return result;
 }
 
-const SENSITIVE_PARAMS = ['token', 'logged_in_customer_id', 'email'];
+const SENSITIVE_PARAMS = [
+  'token', 'logged_in_customer_id', 'email',
+  // OAuth / PKCE (cloud-provider connect flows land on URLs carrying these)
+  'code', 'state', 'code_verifier', 'code_challenge',
+  'client_secret', 'refresh_token', 'access_token', 'id_token', 'assertion',
+];
 
 export function scrubUrl(url) {
   try {
