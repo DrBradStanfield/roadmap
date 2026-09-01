@@ -16,9 +16,10 @@
  * human should read goes to stderr.
  */
 import { pathToFileURL } from 'node:url';
-import { callTool, isToolName, MCP_TOOLS, RECORD_FREE_TOOLS, SERVER_VERSION } from '../packages/health-core/src/mcp-tools';
-import { PlanError } from '../packages/health-core/src/plan';
-import { assertUnchanged, backup, openRecord, writeAtomic } from './record-io';
+import { FileAdapter } from '../packages/health-core/src/file-adapter';
+import { MCP_TOOLS, runToolOverSync, SERVER_VERSION } from '../packages/health-core/src/mcp-tools';
+import { recordSync } from '../packages/health-core/src/roadmap-doc';
+import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
 
 /** The revision this speaks. Clients that ask for another get told this one. */
 const PROTOCOL_VERSION = '2025-11-25';
@@ -53,7 +54,8 @@ In Claude Desktop, add this to claude_desktop_config.json:
   }
 
 The file is read fresh on every call, backed up before every write, and
-replaced atomically. No network, no model, no telemetry.
+replaced atomically — the same read-merge-write path the hosted server uses
+over a cloud folder. No network, no model, no telemetry.
 `;
 
 // ---------------------------------------------------------------------------
@@ -73,6 +75,7 @@ const PARSE_ERROR = -32700;
 const INVALID_REQUEST = -32600;
 const METHOD_NOT_FOUND = -32601;
 const INVALID_PARAMS = -32602;
+const INTERNAL_ERROR = -32603;
 
 function result(id: Id, value: unknown) {
   return { jsonrpc: '2.0', id, result: value };
@@ -92,30 +95,16 @@ function toolResult(id: Id, text: string, isError = false) {
 // ---------------------------------------------------------------------------
 
 /**
- * One tool call, from bytes to bytes: read the record fresh (another device or
- * the app itself may have written it since the last call), run the tool, and
- * only if the tool produced a new file — back it up, check nothing moved
- * underneath, and replace it atomically. `record-io.ts` owns that boundary, so
- * the CLI and this server cannot lose the file in different ways.
- *
- * `RECORD_FREE_TOOLS` are run without opening anything: `report_feedback`
- * never touches the record, and opening it first turned "my record is missing"
- * into a failed bug report.
+ * One tool call against the user's file. The whole loop is `runToolOverSync`,
+ * which the hosted server runs too; what is local is the adapter under it and
+ * the backup line the user gets back (why: docs/mcp-architecture.md §7).
  */
-function callAgainstFile(path: string, name: string, args: unknown): { text: string; isError: boolean } {
-  if (!isToolName(name)) return { text: `No tool named ${name}.`, isError: true };
+async function callAgainstFile(path: string, name: string, args: unknown): Promise<{ text: string; isError: boolean }> {
   const now = new Date().toISOString();
-  const record = RECORD_FREE_TOOLS.has(name) ? undefined : openRecord(path);
-  const outcome = callTool(name, args, { file: record?.file, now });
-  if (outcome.status !== 'ok') return { text: outcome.text, isError: true };
-  if (!outcome.file) return { text: outcome.text, isError: false };
-  // A file to save with nothing opened would be a write dropped in silence.
-  if (!record) throw new Error(`${name} produced a file without opening one`);
-
-  assertUnchanged(record.path, record.stamp);
-  const bak = backup(record.path, now);
-  writeAtomic(record.path, outcome.file);
-  return { text: `${outcome.text}\nSaved (backup: ${bak}).`, isError: false };
+  const adapter = new FileAdapter(path);
+  return runToolOverSync(recordSync(adapter, 'mcp-stdio', now), name, args, now, {
+    savedNote: () => `Saved (backup: ${adapter.lastBackup}).`,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -127,7 +116,7 @@ function callAgainstFile(path: string, name: string, args: unknown): { text: str
  * a client that skips `initialize` still gets served, which is what the next
  * protocol revision expects anyway.
  */
-export function handle(incoming: unknown, path: string): object | null {
+export async function handle(incoming: unknown, path: string): Promise<object | null> {
   // Valid JSON that is not an object is not a request, and must not fall
   // through as a notification: a client that sent a batch — removed from MCP
   // after 2025-03 — would wait forever on the silence.
@@ -158,14 +147,20 @@ export function handle(incoming: unknown, path: string): object | null {
       const name = typeof params.name === 'string' ? params.name : '';
       if (!name) return failure(id, INVALID_PARAMS, 'tools/call needs a tool name');
       try {
-        const { text, isError } = callAgainstFile(path, name, params.arguments);
+        const { text, isError } = await callAgainstFile(path, name, params.arguments);
         return toolResult(id, text, isError);
       } catch (error) {
-        // The record itself is the problem — unreadable, moved, not a record.
-        // That is the user's to fix, so it reaches the assistant as a refusal,
-        // not a protocol failure that leaves it guessing.
-        if (error instanceof PlanError) return toolResult(id, `${error.message}. ${error.hint}`, true);
-        throw error;
+        // The record is the problem — unreadable, moved, not a record, or a
+        // write that would not settle. That is the user's to fix, so it reaches
+        // the assistant as a refusal it can read out.
+        if (isStorageFailure(error)) {
+          const told = describeStorageFailure(error, path);
+          return toolResult(id, `${told.message}. ${told.hint}`, true);
+        }
+        // Anything else is a bug in us. Not a refusal — the user can do
+        // nothing about it — but still an answer ON THIS REQUEST: a null id is
+        // a reply the client cannot match, so it waits forever.
+        return failure(id, INTERNAL_ERROR, error instanceof Error ? error.message : String(error));
       }
     }
     default:
@@ -193,17 +188,25 @@ export const MAX_LINE_BYTES = 8 * 1024 * 1024;
  * One JSON message per line, UTF-8, as the stdio transport defines it. A line
  * that is not JSON is answered and the connection continues: a client that
  * sends one bad frame should not have to reconnect.
+ *
+ * Lines are answered one at a time, in order. Not for the client's sake — it
+ * matches replies by id — but for the record's: two tool calls racing on one
+ * file would both be legal, and the loser would spend a SyncManager retry and
+ * a backup rotation on nothing.
  */
-export function serve(input: NodeJS.ReadableStream, output: Output, path: string): void {
+export async function serve(input: NodeJS.ReadableStream, output: Output, path: string): Promise<void> {
   let buffer = '';
   let overlong = false;
   input.setEncoding('utf8');
-  input.on('data', (chunk: string) => {
+  for await (const chunk of input as AsyncIterable<string>) {
     const lines = (buffer + chunk).split('\n');
     buffer = lines.pop() ?? ''; // whatever came after the last newline is a part-line
     if (overlong) {
       // Everything up to the next newline still belongs to the line we refused.
-      if (lines.length === 0) return void (buffer = '');
+      if (lines.length === 0) {
+        buffer = '';
+        continue;
+      }
       overlong = false;
       lines.shift();
     }
@@ -212,7 +215,7 @@ export function serve(input: NodeJS.ReadableStream, output: Output, path: string
       if (!line) continue;
       let response: object | null;
       try {
-        response = handle(JSON.parse(line), path);
+        response = await handle(JSON.parse(line), path);
       } catch (error) {
         response = error instanceof SyntaxError
           ? failure(null, PARSE_ERROR, 'Not valid JSON')
@@ -226,7 +229,7 @@ export function serve(input: NodeJS.ReadableStream, output: Output, path: string
       buffer = '';
       overlong = true;
     }
-  });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -246,7 +249,7 @@ export function main(argv: string[]): number {
   }
   // The client closing the pipe is a normal end of session, not a crash.
   process.stdout.on('error', () => process.exit(0));
-  serve(process.stdin, process.stdout, path);
+  void serve(process.stdin, process.stdout, path);
   return 0;
 }
 

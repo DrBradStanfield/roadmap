@@ -24,6 +24,7 @@ export type StorageBackendId =
   | 'dropbox'
   | 'github'
   | 'self-host'
+  | 'file' // one local file on disk, edited by the CLI and the stdio MCP server
   | 'local' // no-sync, single-device tier (localStorage) — the "guest" tier
   | 'memory'; // test/demo only
 
@@ -39,9 +40,13 @@ export class ConflictError extends Error {
   }
 }
 
-/** Any other storage failure (network, auth, corruption, verify mismatch). */
+/**
+ * Any other storage failure (network, auth, corruption, verify mismatch).
+ * `hint` is the user's next move, when the thrower knows one — the shared
+ * `describeStorageFailure` mapping prints it as the second line.
+ */
 export class StorageError extends Error {
-  constructor(message: string, public cause?: unknown) {
+  constructor(message: string, readonly hint?: string, readonly cause?: unknown) {
     super(message);
     this.name = 'StorageError';
   }

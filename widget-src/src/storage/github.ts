@@ -104,7 +104,7 @@ export class GitHubAdapter implements StorageAdapter {
       try {
         body = JSON.parse(new TextDecoder().decode(base64ToBytes(json.content))) as unknown;
       } catch (error) {
-        throw new StorageError('GitHub read failed: file is not valid JSON (possible corruption).', error);
+        throw new StorageError('GitHub read failed: file is not valid JSON (possible corruption).', undefined, error);
       }
     }
     return { body, version: json.sha ?? null };

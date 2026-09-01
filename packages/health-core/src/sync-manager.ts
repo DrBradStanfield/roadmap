@@ -25,8 +25,12 @@ import {
   type StorageAdapter,
   type StorageBackendId,
 } from './adapter';
+import { RecordShapeError, SchemaTooNewError } from './migrate';
 
 const MAX_SAVE_ATTEMPTS = 5;
+
+/** The write landed and the re-read disagreed, so the caller cannot say either way. */
+const VERIFY_HINT = 'The change may or may not have landed. Read the record again before trying it a second time.';
 
 /** Every synced document carries the lamport meta the verify step relies on. */
 export interface SyncedFile {
@@ -47,6 +51,10 @@ export interface DocumentSpec<T extends SyncedFile> {
   fileName: string;
   migrate(raw: unknown, ctx: SyncContext): T;
   merge(local: T, base: T, ctx: SyncContext): T;
+  /** The ids of the append-only rows in this document, so the verify step can
+   *  see that what was just written is actually there. Optional: a document
+   *  with no rows (chat history) has nothing to check. */
+  rowIds?(file: T): string[];
   /** Set false to skip the verify-after-write re-read (H5). Default true —
    *  right for health-record data; best-effort documents (chat history) can
    *  drop it and save a full-file transfer per save. */
@@ -104,7 +112,8 @@ export class SyncManager<T extends SyncedFile> {
       }
     }
     throw new StorageError(
-      `Save failed after ${MAX_SAVE_ATTEMPTS} attempts — a sync conflict storm. Your data is unharmed; try again.`,
+      `Save failed after ${MAX_SAVE_ATTEMPTS} attempts — a sync conflict storm`,
+      'Your data is unharmed and nothing was written. Try again.',
       lastError,
     );
   }
@@ -117,16 +126,87 @@ export class SyncManager<T extends SyncedFile> {
   private async verifyAfterWrite(expected: T): Promise<void> {
     const { body } = await this.adapter.read(this.doc.fileName);
     if (body == null) {
-      throw new StorageError('Verify-after-write failed: the file is missing after a successful write.');
+      throw new StorageError(
+        'Verify-after-write failed: the file is missing after a successful write',
+        VERIFY_HINT,
+      );
     }
     let parsed: T;
     try {
       parsed = this.doc.migrate(body, this.ctx());
     } catch (error) {
-      throw new StorageError('Verify-after-write failed: the written file did not parse.', error);
+      throw new StorageError('Verify-after-write failed: the written file did not parse', VERIFY_HINT, error);
     }
     if (parsed.meta.lamport < expected.meta.lamport) {
-      throw new StorageError('Verify-after-write failed: the written revision is older than expected.');
+      throw new StorageError('Verify-after-write failed: the written revision is older than expected', VERIFY_HINT);
+    }
+    // Lamport alone cannot see a lost update: a concurrent writer that dropped
+    // our rows advances it. The rows themselves are append-only, so every id we
+    // wrote must still be there — this is what makes a lost edit REPORTED
+    // rather than confirmed (mcp-architecture.md §7, Drive step 3).
+    if (this.doc.rowIds) {
+      const present = new Set(this.doc.rowIds(parsed));
+      const missing = this.doc.rowIds(expected).filter((id) => !present.has(id));
+      if (missing.length > 0) {
+        throw new StorageError(
+          `Verify-after-write failed: ${missing.length} row(s) that were just written are not in the file`,
+          VERIFY_HINT,
+        );
+      }
     }
   }
+}
+
+/**
+ * One storage failure, in the words the surface above will say — the hosted
+ * MCP server, the stdio server and the CLI all print this and nothing of their
+ * own, so a conflict storm reads the same wherever the user meets it.
+ * `provider` names what holds the record: 'The record in Dropbox', or a path.
+ *
+ * The fallback never blames the user: a failure nobody anticipated is ours.
+ */
+export interface StorageFailure {
+  /** One plain line. */
+  message: string;
+  /** What to do about it. */
+  hint: string;
+}
+
+export function describeStorageFailure(error: unknown, provider: string): StorageFailure {
+  if (error instanceof SchemaTooNewError) {
+    return {
+      message:
+        `This record was written by a newer version of the app: schema v${error.fileVersion}, ` +
+        `and this tool understands v${error.appVersion}`,
+      hint:
+        'It cannot be read or written here — reads refuse too, because the record is migrated before any tool ' +
+        'runs. Nothing was written. Open the app, which will update it.',
+    };
+  }
+  if (error instanceof RecordShapeError) {
+    return {
+      message: `${provider} is not a health-roadmap.json — ${error.detail}`,
+      hint: 'Point at the record file itself. Nothing was changed.',
+    };
+  }
+  if (error instanceof ConflictError) {
+    return {
+      message: `${provider} changed while this change was being written`,
+      hint: 'Nothing was written. Read the record again, then retry.',
+    };
+  }
+  if (error instanceof StorageError && error.hint) {
+    return { message: error.message, hint: error.hint };
+  }
+  return {
+    message: `${provider} did not answer. Nothing was written`,
+    hint: 'Try once more; if it keeps failing, check that the record is reachable.',
+  };
+}
+
+/** The failures storage is allowed to have. Anything else is a bug in us, and
+ *  must not be dressed up as something the user can fix. */
+export function isStorageFailure(error: unknown): boolean {
+  return error instanceof StorageError || error instanceof ConflictError
+    || error instanceof SchemaTooNewError || error instanceof RecordShapeError;
 }

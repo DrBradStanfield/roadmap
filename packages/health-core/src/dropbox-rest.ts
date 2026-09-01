@@ -52,7 +52,7 @@ export async function dropboxRead(accessToken: string, fileName: string): Promis
   try {
     body = text ? JSON.parse(text) : null;
   } catch (error) {
-    throw new StorageError('Dropbox read failed: file is not valid JSON (possible corruption).', error);
+    throw new StorageError('Dropbox read failed: file is not valid JSON (possible corruption).', undefined, error);
   }
   return { body, version: (meta?.rev as string) ?? null };
 }

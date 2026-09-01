@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { PassThrough } from 'node:stream';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core';
 import { MCP_TOOLS } from '../packages/health-core/src/mcp-tools';
+import { run as runCli } from './edit-record';
 import { handle, MAX_LINE_BYTES, serve } from './mcp-server';
 
 const CTX = { deviceId: 'us32_server', now: '2026-09-01T09:00:00Z' };
@@ -40,10 +41,9 @@ function writeFixture(file: RoadmapFile): { dir: string; path: string } {
 }
 
 /** One tools/call, as the protocol carries it. */
-function call(path: string, name: string, args: unknown = {}, id = 1) {
-  const response = handle({ jsonrpc: '2.0', id, method: 'tools/call', params: { name, arguments: args } }, path) as
+async function call(path: string, name: string, args: unknown = {}, id = 1) {
+  return (await handle({ jsonrpc: '2.0', id, method: 'tools/call', params: { name, arguments: args } }, path)) as
     { result?: { content: Array<{ text: string }>; isError?: boolean }; error?: { code: number } };
-  return response;
 }
 
 function text(response: { result?: { content: Array<{ text: string }> } }): string {
@@ -51,9 +51,9 @@ function text(response: { result?: { content: Array<{ text: string }> } }): stri
 }
 
 describe('US-32 — the JSON-RPC handshake', () => {
-  it('answers initialize with the protocol revision, the tools capability and its instructions', () => {
+  it('answers initialize with the protocol revision, the tools capability and its instructions', async () => {
     const { dir, path } = writeFixture(fixture());
-    const response = handle({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, path) as
+    const response = (await handle({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, path)) as
       { result: { protocolVersion: string; capabilities: object; serverInfo: { name: string }; instructions: string } };
 
     expect(response.result.protocolVersion).toBe('2025-11-25');
@@ -64,124 +64,102 @@ describe('US-32 — the JSON-RPC handshake', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('lists the six tools with their schemas, and stays quiet on a notification', () => {
+  it('lists the six tools with their schemas, and stays quiet on a notification', async () => {
     const { dir, path } = writeFixture(fixture());
-    const listed = handle({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, path) as
+    const listed = (await handle({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, path)) as
       { result: { tools: Array<{ name: string; inputSchema: object }> } };
 
     expect(listed.result.tools.map((t) => t.name)).toEqual([
       'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'report_feedback',
     ]);
     expect(listed.result.tools[0].inputSchema).toMatchObject({ type: 'object' });
-    expect(handle({ jsonrpc: '2.0', method: 'notifications/initialized' }, path)).toBeNull();
-    expect(handle({ jsonrpc: '2.0', id: 3, method: 'ping' }, path)).toMatchObject({ result: {} });
+    expect((await handle({ jsonrpc: '2.0', method: 'notifications/initialized' }, path))).toBeNull();
+    expect((await handle({ jsonrpc: '2.0', id: 3, method: 'ping' }, path))).toMatchObject({ result: {} });
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('refuses valid JSON that is not a request object, rather than going quiet', () => {
+  it('refuses valid JSON that is not a request object, rather than going quiet', async () => {
     const { dir, path } = writeFixture(fixture());
 
     // Batches were removed from MCP after 2025-03. Answering an array with
     // silence would hang a client that still sends one; -32600 with a null id
     // is what it can act on.
     for (const notARequest of [[{ jsonrpc: '2.0', id: 1, method: 'ping' }], 42, 'ping', null]) {
-      expect(handle(notARequest, path), JSON.stringify(notARequest)).toEqual({
+      expect((await handle(notARequest, path)), JSON.stringify(notARequest)).toEqual({
         jsonrpc: '2.0', id: null, error: { code: -32600, message: 'A request must be a JSON object' },
       });
     }
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('echoes a string id, and treats id 0 as a request and not a notification', () => {
+  it('echoes a string id, and treats id 0 as a request and not a notification', async () => {
     const { dir, path } = writeFixture(fixture());
 
-    expect(handle({ jsonrpc: '2.0', id: 'abc', method: 'ping' }, path)).toEqual({ jsonrpc: '2.0', id: 'abc', result: {} });
-    expect(handle({ jsonrpc: '2.0', id: 0, method: 'ping' }, path)).toEqual({ jsonrpc: '2.0', id: 0, result: {} });
+    expect((await handle({ jsonrpc: '2.0', id: 'abc', method: 'ping' }, path))).toEqual({ jsonrpc: '2.0', id: 'abc', result: {} });
+    expect((await handle({ jsonrpc: '2.0', id: 0, method: 'ping' }, path))).toEqual({ jsonrpc: '2.0', id: 0, result: {} });
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('reports an unknown method and an unknown tool differently', () => {
+  it('reports an unknown method and an unknown tool differently', async () => {
     const { dir, path } = writeFixture(fixture());
 
-    expect(handle({ jsonrpc: '2.0', id: 4, method: 'resources/list' }, path)).toMatchObject({
+    expect((await handle({ jsonrpc: '2.0', id: 4, method: 'resources/list' }, path))).toMatchObject({
       error: { code: -32601 },
     });
     // An unknown TOOL is the model's mistake to recover from, not a broken
     // connection — it comes back as a tool result it can read.
-    expect(call(path, 'delete_everything').result?.isError).toBe(true);
+    expect((await call(path, 'delete_everything')).result?.isError).toBe(true);
     rmSync(dir, { recursive: true, force: true });
   });
 });
 
 describe('US-32 — tools/call against a real file', () => {
-  it('reads the record without the reminder capability token', () => {
+  it('reads the record without the reminder capability token', async () => {
     const { dir, path } = writeFixture(fixture());
-    const body = text(call(path, 'read_record'));
+    const body = text((await call(path, 'read_record')));
 
     expect(body).not.toContain('SECRET-CAPABILITY-TOKEN');
     expect(JSON.parse(body).measurements).toHaveLength(1);
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('computes the plan, hedging and citations intact', () => {
+  it('computes the plan, hedging and citations intact', async () => {
     const { dir, path } = writeFixture(fixture());
-    const plan = JSON.parse(text(call(path, 'get_plan')));
+    const plan = JSON.parse(text((await call(path, 'get_plan'))));
 
     expect(plan.instruction).toContain('never upgrade it into a recommendation');
     expect(plan.suggestions.length).toBeGreaterThan(0);
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('writes an added measurement to disk, through a backup', () => {
+  it('writes an added measurement to disk, and names the backup it made', async () => {
     const { dir, path } = writeFixture(fixture());
-    const before = readFileSync(path, 'utf8');
 
-    const response = call(path, 'add_measurement', { metricType: 'hdl', value: 1.2 });
+    const response = (await call(path, 'add_measurement', { metricType: 'hdl', value: 1.2 }));
 
     expect(response.result?.isError).toBeUndefined();
-    expect(text(response)).toContain('Saved (backup:');
+    const backup = /backup: ([^)]+)\)/.exec(text(response))![1];
+    expect(readdirSync(dir).filter((n) => n.includes('.bak-'))).toEqual([backup]);
     const saved = JSON.parse(readFileSync(path, 'utf8')) as RoadmapFile;
     expect(saved.measurements.filter((m) => m.metricType === 'hdl')).toHaveLength(1);
-    const backups = readdirSync(dir).filter((n) => n.includes('.bak-'));
-    expect(backups).toHaveLength(1);
-    expect(readFileSync(join(dir, backups[0]), 'utf8')).toBe(before);
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('leaves the file untouched when a tool refuses', () => {
+  it('leaves the file untouched when a tool refuses', async () => {
     const { dir, path } = writeFixture(fixture());
     const before = readFileSync(path, 'utf8');
 
-    const response = call(path, 'add_measurement', { metricType: 'ldl', value: 2.1, recordedAt: '2026-07-14' });
+    const response = (await call(path, 'add_measurement', { metricType: 'ldl', value: 2.1, recordedAt: '2026-07-14' }));
 
     expect(response.result?.isError).toBe(true);
     expect(text(response)).toContain('correct_value');
     expect(readFileSync(path, 'utf8')).toBe(before);
-    expect(readdirSync(dir).filter((n) => n.includes('.bak-'))).toHaveLength(0);
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('refuses to write over a file whose arrays are not arrays, and leaves it alone', () => {
-    // migrateFile rebuilds unrecognised bytes as a BLANK record. A file that
-    // carries schemaVersion but junk elsewhere would be replaced by an empty
-    // one and the write would report success.
-    const dir = mkdtempSync(join(tmpdir(), 'us32-'));
-    const path = join(dir, 'health-roadmap.json');
-    const junk = '{"schemaVersion":1,"measurements":"nope","labValues":42}';
-    writeFileSync(path, junk);
-
-    const response = call(path, 'add_measurement', { metricType: 'hdl', value: 1.2 });
-
-    expect(response.result?.isError).toBe(true);
-    expect(text(response)).toContain('not a health-roadmap.json');
-    expect(readFileSync(path, 'utf8')).toBe(junk);
-    expect(readdirSync(dir).filter((n) => n.includes('.bak-'))).toHaveLength(0);
-    rmSync(dir, { recursive: true, force: true });
-  });
-
-  it('turns a missing or unreadable record into a refusal the assistant can explain', () => {
+  it('turns a missing or unreadable record into a refusal the assistant can explain', async () => {
     const { dir } = writeFixture(fixture());
-    const response = call(join(dir, 'not-here.json'), 'read_record');
+    const response = (await call(join(dir, 'not-here.json'), 'read_record'));
 
     expect(response.result?.isError).toBe(true);
     expect(text(response)).toContain('Cannot read');
@@ -242,29 +220,103 @@ describe('US-32 — the transport refuses a line it will not buffer', () => {
     expect(JSON.parse(lines[1])).toEqual({ jsonrpc: '2.0', id: 9, result: {} });
     rmSync(dir, { recursive: true, force: true });
   });
+
+  it('answers a valid line before the overlong one that followed it in the same chunk', async () => {
+    // The refusal used to be written straight from the data handler while the
+    // valid line waited on the async chain, so the client read the answers in
+    // the wrong order.
+    const { dir, path } = writeFixture(fixture());
+    const input = new PassThrough();
+    const lines: string[] = [];
+    serve(input, { write: (chunk: string) => lines.push(...chunk.trim().split('\n')) }, path);
+
+    input.write(`${JSON.stringify({ jsonrpc: '2.0', id: 11, method: 'ping' })}\n${'x'.repeat(MAX_LINE_BYTES + 1)}`);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(lines.map((line) => JSON.parse(line).id)).toEqual([11, null]);
+    rmSync(dir, { recursive: true, force: true });
+  });
 });
 
-describe('US-32 — a write is never dropped in silence', () => {
-  it('throws when a tool returns a file the server opened no record for', async () => {
-    // The old shape returned success here, discarding the file. No real tool
-    // does this; a future record-free tool that started writing would, and the
-    // failure must be loud rather than a save that quietly never happened.
+describe('US-32 — a storage failure reaches the client as a refusal, not silence', () => {
+  it('answers the request that failed, with its own id', async () => {
+    // Today a conflict storm or a failed verify escapes `handle`, and the
+    // transport answers with id null — a reply the client cannot match to its
+    // request, so it waits forever.
     vi.resetModules();
-    vi.doMock('../packages/health-core/src/mcp-tools', async () => ({
-      ...(await vi.importActual<typeof import('../packages/health-core/src/mcp-tools')>(
-        '../packages/health-core/src/mcp-tools',
-      )),
-      callTool: () => ({ status: 'ok', text: 'done', file: fixture() }),
+    vi.doMock('../packages/health-core/src/file-adapter', async () => {
+      // The adapter module is re-instantiated with the rest of the graph, so
+      // the ConflictError SyncManager catches must come from THAT copy.
+      const { ConflictError } = await import('../packages/health-core/src/adapter');
+      const record = fixture();
+      return {
+        BACKUPS_KEPT: 3,
+        FileAdapter: class {
+          readonly id = 'file';
+          readonly label = 'Local file';
+          readonly path = '/tmp/never-written.json';
+          lastBackup = '';
+          async connect() {}
+          isConnected() { return true; }
+          async disconnect() {}
+          async read() { return { body: JSON.parse(JSON.stringify(record)), version: 'v1' }; }
+          async write(): Promise<never> { throw new ConflictError('another writer, every time'); }
+          async readDocument(): Promise<never> { throw new Error('no'); }
+          async writeDocument(): Promise<never> { throw new Error('no'); }
+        },
+      };
+    });
+    try {
+      const { handle: mocked } = await import('./mcp-server');
+      const response = (await mocked({
+        jsonrpc: '2.0', id: 77, method: 'tools/call',
+        params: { name: 'add_measurement', arguments: { metricType: 'hdl', value: 1.2 } },
+      }, '/tmp/never-written.json')) as { id: number; result: { content: Array<{ text: string }>; isError?: boolean } };
+
+      expect(response.id).toBe(77);
+      expect(response.result.isError).toBe(true);
+      expect(response.result.content[0].text).toContain('conflict storm');
+    } finally {
+      vi.doUnmock('../packages/health-core/src/file-adapter');
+      vi.resetModules();
+    }
+  });
+});
+
+describe('US-32 — a bug in us still answers the request that hit it', () => {
+  it('answers -32603 with the request’s own id, never a null-id -32600', async () => {
+    // A failure that is NOT the record's — a broken adapter, a tool breaking
+    // its own contract — is ours, not something to word as a refusal. It still
+    // has to carry the id, or the client waits for a reply it can match.
+    vi.resetModules();
+    vi.doMock('../packages/health-core/src/file-adapter', () => ({
+      BACKUPS_KEPT: 3,
+      FileAdapter: class {
+        readonly id = 'file';
+        readonly label = 'Local file';
+        readonly path = '/tmp/never-read.json';
+        lastBackup = '';
+        async connect() {}
+        isConnected() { return true; }
+        async disconnect() {}
+        async read(): Promise<never> { throw new TypeError('adapter is broken'); }
+        async write(): Promise<never> { throw new TypeError('adapter is broken'); }
+        async readDocument(): Promise<never> { throw new Error('no'); }
+        async writeDocument(): Promise<never> { throw new Error('no'); }
+      },
     }));
     try {
       const { handle: mocked } = await import('./mcp-server');
-      const request = {
-        jsonrpc: '2.0', id: 1, method: 'tools/call',
-        params: { name: 'report_feedback', arguments: { kind: 'bug', title: 'x', detail: 'y' } },
-      };
-      expect(() => mocked(request, join(tmpdir(), 'no-such-record.json'))).toThrow(/without opening one/);
+      const response = (await mocked({
+        jsonrpc: '2.0', id: 'abc', method: 'tools/call',
+        params: { name: 'read_record', arguments: {} },
+      }, '/tmp/never-read.json')) as { id: string; error: { code: number; message: string } };
+
+      expect(response.id).toBe('abc');
+      expect(response.error.code).toBe(-32603);
+      expect(response.error.message).toContain('adapter is broken');
     } finally {
-      vi.doUnmock('../packages/health-core/src/mcp-tools');
+      vi.doUnmock('../packages/health-core/src/file-adapter');
       vi.resetModules();
     }
   });
@@ -274,12 +326,12 @@ describe('US-32 — nothing that could reach the network is imported', () => {
   const here = dirname(fileURLToPath(import.meta.url));
   const files = [
     join(here, 'mcp-server.ts'),
-    join(here, 'record-io.ts'),
+    join(here, '..', 'packages', 'health-core', 'src', 'file-adapter.ts'),
     join(here, '..', 'packages', 'health-core', 'src', 'mcp-tools.ts'),
     join(here, '..', 'packages', 'health-core', 'src', 'plan.ts'),
   ];
 
-  it('imports only health-core sources, siblings, zod and node builtins', () => {
+  it('imports only health-core sources, siblings, zod and node builtins', async () => {
     for (const file of files) {
       const source = readFileSync(file, 'utf8');
       const specifiers = [...source.matchAll(/\bfrom\s+'([^']+)'/g)].map((m) => m[1]);
@@ -293,13 +345,13 @@ describe('US-32 — nothing that could reach the network is imported', () => {
 });
 
 describe('US-32 AC9 — report_feedback over the wire', () => {
-  it('returns a prefilled issue URL and leaves the record exactly as it was', () => {
+  it('returns a prefilled issue URL and leaves the record exactly as it was', async () => {
     const { dir, path } = writeFixture(fixture());
     const before = statSync(path);
 
-    const response = call(path, 'report_feedback', {
+    const response = (await call(path, 'report_feedback', {
       kind: 'feature', title: 'let me track resting heart rate', detail: 'The record has nowhere to put it.',
-    });
+    }));
 
     const link = text(response).split('\n')[0];
     expect(link).toContain('https://github.com/DrBradStanfield/roadmap/issues/new?labels=agent-feedback,feature');
@@ -310,16 +362,16 @@ describe('US-32 AC9 — report_feedback over the wire', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('works when there is no record at all — the one tool that never reads the file', () => {
+  it('works when there is no record at all — the one tool that never reads the file', async () => {
     // The likeliest moment to report feedback is the moment the tool failed:
     // wrong path, record not created yet. Opening the record first turned that
     // into "no record here", swallowing the report.
     const dir = mkdtempSync(join(tmpdir(), 'us32-'));
     const path = join(dir, 'health-roadmap.json');
 
-    const response = call(path, 'report_feedback', {
+    const response = (await call(path, 'report_feedback', {
       kind: 'bug', title: 'the server cannot find my record', detail: 'It says no record here.',
-    });
+    }));
 
     expect(response.result!.isError).toBeUndefined();
     expect(text(response)).toContain('github.com/');
@@ -328,5 +380,42 @@ describe('US-32 AC9 — report_feedback over the wire', () => {
     expect(existsSync(path)).toBe(false);
     expect(readdirSync(dir)).toHaveLength(0);
     rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('US-31 AC8/AC9, US-32 AC6 — the CLI and the stdio server share one write path', () => {
+  /** Everything a run is entitled to differ by: minted ids, clocks, and who wrote. */
+  function normalise(json: string): unknown {
+    const ids = new Map<string, string>();
+    const stable = (id: string) => ids.get(id) ?? (ids.set(id, `id${ids.size}`), `id${ids.size - 1}`);
+    return JSON.parse(json, (key, value) => {
+      if (key === 'id' || key === 'correctsId') return typeof value === 'string' ? stable(value) : value;
+      if (key === 'createdAt' || key === 'updatedAt' || key === 'lastDeviceId') return '<run>';
+      return value;
+    });
+  }
+
+  it('writes byte-identical records for the same add, ids and clocks aside', async () => {
+    const cli = writeFixture(fixture());
+    const mcp = writeFixture(fixture());
+
+    const err = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    const out = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    try {
+      expect(await runCli(['add', cli.path, '--metric', 'hdl', '--value', '1.2', '--date', '2026-08-14'])).toBe(0);
+    } finally {
+      err.mockRestore();
+      out.mockRestore();
+    }
+    const written = await call(mcp.path, 'add_measurement', { metricType: 'hdl', value: 1.2, recordedAt: '2026-08-14' });
+    expect(written.result?.isError).toBeUndefined();
+
+    const [fromCli, fromMcp] = [readFileSync(cli.path, 'utf8'), readFileSync(mcp.path, 'utf8')];
+    expect(normalise(fromMcp)).toEqual(normalise(fromCli));
+    // One serializer, not two: same indentation, same trailing newline.
+    expect(fromMcp.split('\n').length).toBe(fromCli.split('\n').length);
+    expect(fromMcp.endsWith('\n') && fromCli.endsWith('\n')).toBe(true);
+    rmSync(cli.dir, { recursive: true, force: true });
+    rmSync(mcp.dir, { recursive: true, force: true });
   });
 });

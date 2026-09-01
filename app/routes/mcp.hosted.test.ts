@@ -464,11 +464,33 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
 
     // The allowance belongs to the CONNECTION: a fresh access token buys none.
     const renewed = await redeem({ grant_type: 'refresh_token', refresh_token: refresh, client_id: clientId });
+    // A day the hour's writes did not use, and a date that would otherwise be
+    // accepted — so the allowance is the only thing refusing it.
     const again = await callTool(renewed.access_token, 'add_measurement', {
-      metricType: 'ldl', value: 3, recordedAt: '2027-01-01',
+      metricType: 'ldl', value: 3, recordedAt: '2026-06-01',
     });
     expect(again.isError).toBe(true);
     expect(again.text).toContain('allowance');
+  });
+
+  it('4 — a REFUSED write still spends its cost, so guessing is not free', async () => {
+    // The falsification attack is an agent probing for a value it does not
+    // know. If a wrong expectedValue cost nothing, it could guess all day.
+    seedWithLdl('2026-08-30');
+    const { access } = await connect();
+
+    const attempts = WRITES_PER_HOUR / WRITE_COST.correct;
+    for (let i = 0; i < attempts; i++) {
+      const wrong = await callTool(access, 'correct_value', { id: LDL_ID, newValue: 2.8, expectedValue: 9.9 });
+      expect(wrong.isError, `attempt ${i}`).toBe(true);
+      expect(wrong.text, `attempt ${i}`).not.toContain('allowance');
+    }
+    const spent = await callTool(access, 'correct_value', { id: LDL_ID, newValue: 2.8, expectedValue: 9.9 });
+    expect(spent.isError).toBe(true);
+    expect(spent.text).toContain('allowance');
+    // Every one of them was refused, so the record never moved.
+    expect(storedRecord().measurements).toHaveLength(1);
+    expect(storedRecord().measurements[0].status).toBe('active');
   });
 
   it('replaying one refresh blob three times does not triple the allowance', async () => {
@@ -480,7 +502,7 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
     for (let round = 0; round < 3; round++) {
       const renewed = await redeem({ grant_type: 'refresh_token', refresh_token: refresh, client_id: clientId });
       const answer = await callTool(renewed.access_token, 'add_measurement', {
-        metricType: 'ldl', value: 3, recordedAt: `202${7 + round}-01-01`,
+        metricType: 'ldl', value: 3, recordedAt: `2026-06-0${round + 2}`,
       });
       if (!answer.isError) landed++;
     }
@@ -505,6 +527,26 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
     expect(answer.text).toContain(LDL_ID);
     expect(answer.text).toContain('correct_value');
     expect(storedRecord().measurements).toHaveLength(1);
+  });
+});
+
+describe('a folder that does not hold a record is refused, never blanked (US-32)', () => {
+  it('refuses the call and leaves the bytes exactly as they were', async () => {
+    // migrateFile rebuilds unrecognised bytes as a BLANK record, so without a
+    // shape gate the write replaced the user's file with an empty one and
+    // reported success. The gate is in the document spec, so the hosted
+    // adapter inherits it through SyncManager.
+    for (const json of ['[]', '"hello"', '{"schemaVersion":1,"measurements":"nope"}']) {
+      resetMcpMemory();
+      cloud = new MemoryCloud();
+      cloud.files.set(ROADMAP_FILE_NAME, { json, version: 1 });
+      const { access } = await connect();
+
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2 });
+      expect(answer.isError, json).toBe(true);
+      expect(answer.text, json).toContain('not a health-roadmap.json');
+      expect(cloud.files.get(ROADMAP_FILE_NAME)!.json, json).toBe(json);
+    }
   });
 });
 

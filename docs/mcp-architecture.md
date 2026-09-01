@@ -13,6 +13,8 @@ Hosted-server design: **rev 4, DECIDED — FINAL**. 2026-09-01. Brad has ruled o
 | Hosted MCP (US-32 phase 1) | The same tools behind a connector, sealed-token stateless | this doc + `app/lib/mcp*.server.ts` + [deploy-runbook.md](deploy-runbook.md) "Hosted MCP" | merged 2026-09-02, inert until the Fly secrets are set |
 | `report_feedback` tool | Prepares a prefilled GitHub issue; sends nothing itself | `packages/health-core/src/mcp-tools.ts` | shipped |
 
+**One write path.** Every surface in this table that writes reads and saves the record through `SyncManager` over a `StorageAdapter` — read, migrate, merge, conditional write on `expectedVersion`, verify. The CLI and the stdio server hand it `FileAdapter` (one local file); the hosted server hands it the Dropbox adapter. The database of record is a constructor argument, not a second code path.
+
 **Intent:** a web ChatGPT/Claude user clicks connect, authorizes, and their AI reads and saves their health record in THEIR cloud. **Architecture:** fully stateless — no token table, nothing per-user in Supabase. The provider refresh token is sealed into the bearer token we issue.
 
 Closes the gap `docs/guides/getting-started.md` admits: "A web AI cannot write to your Dropbox or Drive… That is the clunky step."
@@ -174,7 +176,14 @@ Vendor requirements: reachable from Anthropic's egress `160.79.104.0/21`, **IPv4
 
 ## 7. Failure and consistency
 
-Reuse `SyncManager` (moving to health-core): read, migrate, merge, write with `expectedVersion`, retry on `ConflictError`, verify-after-write.
+Reuse `SyncManager` (now in health-core): read, migrate, merge, write with `expectedVersion`, retry on `ConflictError`, verify-after-write. The local CLI and stdio server run the same loop over `file-adapter.ts`, so this is the only write path in the repo.
+
+Three pieces make that one path rather than three copies of it, and each lives above the adapters so no backend can drift from another:
+
+- **What counts as the record** — `ROADMAP_DOC.migrate` (`roadmap-doc.ts`) refuses bytes that are not a health record before `migrateFile` can normalise them into a blank one. It runs on every `load()` and on the re-read inside every `save()`, so it guards the write as well as the read. An absent file is still a fresh record; a present one must look like ours.
+- **The dispatch spine** — `runToolOverSync` (`mcp-tools.ts`): record-free tool or load, `callTool`, the surface's own guard, save. The hosted server passes its corrections checks and write budget as that guard — run BEFORE the tool, so a refused write still spends its cost (§3, mitigation 4); the stdio server passes the backup line it echoes. Nothing else differs.
+- **Not losing a concurrent edit** — the version precondition is checked and acted on under a `.lock` file (`file-adapter.ts`, `O_EXCL`, 25 ms backoff, 5 s wait, a lock older than 10 s treated as abandoned): between the check and the rename sit a backup, a prune and a temp write, so without it two processes both pass the check on the same bytes and the second rename discards the first's edit — each reporting success. `SyncManager`'s verify-after-write then asserts every row id it just wrote is present on the re-read (Drive step 3, applied to every backend), so a writer that still loses says so instead of printing "Wrote".
+- **The words a failure gets** — `describeStorageFailure` (`sync-manager.ts`) maps a schema-too-new record, a non-record, a conflict storm, a failed verify, an unreadable file and anything unforeseen into one message plus one hint, named for whichever provider holds the record. Every shell prints that and nothing of its own; a storage failure is a tool refusal on the request that failed, never a protocol error with a null id.
 
 **Dropbox — resurrection was the real hazard, and the fix has LANDED** (commit `4ee99d3`). Default `strict_conflict: false` accepts a stale rev against a **deleted** path and silently re-creates the file, so a stale write could resurrect a record the user erased (`eraseEpoch`, US-11). The widget adapter now sends `strict_conflict` on rev-conditional writes; the conflict raises, `SyncManager` re-reads, and recovery is an explicit re-create-from-merge. **The MCP server inherits this by reusing `SyncManager` — do not bypass it.**
 

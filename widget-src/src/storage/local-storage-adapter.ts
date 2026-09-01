@@ -63,7 +63,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       body = JSON.parse(raw);
     } catch (error) {
-      throw new StorageError('Local data is corrupt and could not be read.', error);
+      throw new StorageError('Local data is corrupt and could not be read.', undefined, error);
     }
     return { body, version: safeGetItem(versionKey(fileName)) ?? '0' };
   }
@@ -83,7 +83,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       localStorage.setItem(fileKey(fileName), JSON.stringify(body));
     } catch (error) {
-      throw new StorageError('Could not save on this device (local storage may be full).', error);
+      throw new StorageError('Could not save on this device (local storage may be full).', undefined, error);
     }
     safeSetItem(versionKey(fileName), next);
     return { version: next };
@@ -115,6 +115,7 @@ export class LocalStorageAdapter implements StorageAdapter {
     } catch (error) {
       throw new StorageError(
         'Could not store the document on this device (local storage is likely full). Connect a cloud backend for documents.',
+        undefined,
         error,
       );
     }

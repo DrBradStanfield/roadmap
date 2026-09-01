@@ -94,7 +94,7 @@ Anything outside the core metrics is a lab value, filed under its catalogue name
 
 Before every write, the record is copied next to itself as `health-roadmap.json.bak-` plus a timestamp. The newest three are kept and older ones are deleted. If a write files something you did not mean, the copy from just before it is sitting in the same folder.
 
-The write itself goes to a temporary file and is then renamed over the original, so an interrupted run leaves your record whole rather than half rewritten. If the file changed between being read and being written, by another device or by the app in a browser tab, the command stops and tells you to run it again. There is no lock, so do not leave the app open in another tab while you write.
+The write itself goes to a temporary file and is then renamed over the original, so an interrupted run leaves your record whole rather than half rewritten. If the file changed between being read and being written, by another device or by the app in a browser tab, the command notices, reads it again and merges the two edits rather than writing one of them away. Two commands running at the same moment take turns through a `.lock` file beside the record, so the second waits, re-reads and merges instead of overwriting the first — and after every write the command re-reads the file and checks its new rows are really there, so a lost edit is reported rather than confirmed.
 
 ## What these commands will not do
 

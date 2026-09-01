@@ -16,12 +16,11 @@
  */
 import { dayOf } from '../../packages/health-core/src/merge';
 import { dropboxRead, dropboxWrite } from '../../packages/health-core/src/dropbox-rest';
-import { SchemaTooNewError } from '../../packages/health-core/src/migrate';
-import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
+import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
 import { StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '../../packages/health-core/src/adapter';
-import { SyncManager } from '../../packages/health-core/src/sync-manager';
-import { callTool, isToolName, MCP_TOOLS, RECORD_FREE_TOOLS } from '../../packages/health-core/src/mcp-tools';
+import { describeStorageFailure } from '../../packages/health-core/src/sync-manager';
+import { isToolName, MCP_TOOLS, RECORD_FREE_TOOLS, runToolOverSync, ToolContractError, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import {
   allowToolCall,
@@ -121,11 +120,6 @@ export function setAdapterFactory(factory: AdapterFactory | null): void {
 // One tool call
 // ---------------------------------------------------------------------------
 
-interface ToolAnswer {
-  text: string;
-  isError: boolean;
-}
-
 function refuse(text: string): ToolAnswer {
   return { text, isError: true };
 }
@@ -145,12 +139,12 @@ function findRow(file: RoadmapFile, id: string): FileMeasurement | FileLabValue 
  * (design §3). Neither belongs in the tool layer: the CLI (US-31) keeps
  * `expectedValue` optional, because there a human is watching their own file.
  */
-function checkCorrection(file: RoadmapFile, args: unknown, now: string): ToolAnswer | null {
+function checkCorrection(file: RoadmapFile, args: unknown, now: string): string | null {
   const request = (args ?? {}) as { id?: unknown; expectedValue?: unknown };
   if (typeof request.expectedValue !== 'number') {
-    return refuse(
+    return (
       'correct_value needs expectedValue on this server: the value you believe the row holds right now. ' +
-        'Read the record, then correct. Nothing was written.',
+      'Read the record, then correct. Nothing was written.'
     );
   }
   const row = typeof request.id === 'string' ? findRow(file, request.id) : undefined;
@@ -158,9 +152,9 @@ function checkCorrection(file: RoadmapFile, args: unknown, now: string): ToolAns
   // UTC by choice: the server has no user timezone; both sides are calendar days.
   const age = daysBetween(dayOf(row.recordedAt ?? ''), dayOf(now));
   if (age > MAX_CORRECTION_AGE_DAYS) {
-    return refuse(
+    return (
       `That value was recorded ${age} days ago, and this server only corrects values from the last ` +
-        `${MAX_CORRECTION_AGE_DAYS} days. Nothing was written. The user can correct older values in the app.`,
+      `${MAX_CORRECTION_AGE_DAYS} days. Nothing was written. The user can correct older values in the app.`
     );
   }
   return null;
@@ -172,11 +166,32 @@ function daysBetween(from: string, to: string): number {
 }
 
 /**
- * Run one tool against the user's folder: read fresh, run the tool, and only
- * if the tool produced a new file, save it through `SyncManager` — read,
- * migrate, merge, conditional write, verify. Never bypass it: the conditional
- * write with `strict_conflict` is what stops a stale write resurrecting a
- * record the user erased (design §7).
+ * Everything this surface adds before a tool runs: the two corrections guards
+ * of design §3, and the weighted write budget. It is charged HERE, ahead of
+ * the tool, so a refused write still costs its allowance — an agent probing
+ * `expectedValue` for a value it does not know must pay per attempt (§3,
+ * mitigation 4). The loop itself is `runToolOverSync`, shared with the stdio
+ * server (docs §7).
+ */
+function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile, args: unknown, now: string): string | null {
+  if (name === 'correct_value') {
+    const refusal = checkCorrection(file, args, now);
+    if (refusal) return refusal;
+  }
+  if (WRITE_TOOLS.has(name) && !spendWrites(connectionKey(token.rt), writeCost(name))) {
+    return (
+      `This connection has spent its write allowance for the hour — ${WRITES_PER_HOUR} weighted writes an hour, ` +
+      `where a correction counts as ${WRITE_COST.correct}. Reading still works. The allowance comes back with ` +
+      'the hour; a new access token does not buy more. Ask the user to make this change in the app if it cannot wait.'
+    );
+  }
+  return null;
+}
+
+/**
+ * Run one tool against the user's folder. Never bypass `SyncManager`: the
+ * conditional write with `strict_conflict` is what stops a stale write
+ * resurrecting a record the user erased (design §7).
  */
 async function callHostedTool(
   token: AccessPayload,
@@ -188,73 +203,29 @@ async function callHostedTool(
 
   // Record-free tools open nothing, exactly as the stdio server runs them: the
   // likeliest moment to report a bug is the moment the record would not open,
-  // so `report_feedback` must not need Dropbox to answer.
-  if (RECORD_FREE_TOOLS.has(name)) {
-    const outcome = callTool(name, args, { file: undefined, now });
-    if (outcome.status !== 'ok') return refuse(outcome.text);
-    // A file to save with nothing opened would be a write dropped in silence.
-    if (outcome.file) throw new Error(`${name} produced a file without opening one`);
-    return { text: outcome.text, isError: false };
+  // so `report_feedback` must not need Dropbox — nor a token minted for it.
+  let accessToken = '';
+  if (!RECORD_FREE_TOOLS.has(name)) {
+    const minted = await dropboxAccessToken(token.rt);
+    if (!minted) {
+      return refuse(
+        'Dropbox would not renew this connection, so nothing was read and nothing was written. Either the user ' +
+          'disconnected the app or Dropbox could not be reached; ask them to try again, and to reconnect if it persists.',
+      );
+    }
+    accessToken = minted;
   }
-
-  const accessToken = await dropboxAccessToken(token.rt);
-  if (!accessToken) {
-    return refuse(
-      'Dropbox would not renew this connection, so nothing was read and nothing was written. Either the user ' +
-        'disconnected the app or Dropbox could not be reached; ask them to try again, and to reconnect if it persists.',
-    );
-  }
-  const sync = new SyncManager<RoadmapFile>(makeAdapter(accessToken), 'mcp', ROADMAP_DOC, () => now);
-
-  let file: RoadmapFile;
-  try {
-    file = await sync.load();
-  } catch (error) {
-    return refuse(describeStorageFailure(error));
-  }
-
-  if (name === 'correct_value') {
-    const refusal = checkCorrection(file, args, now);
-    if (refusal) return refusal;
-  }
-
-  const isWrite = WRITE_TOOLS.has(name);
-  if (isWrite && !spendWrites(connectionKey(token.rt), writeCost(name))) {
-    return refuse(
-      `This connection has spent its write allowance for the hour — ${WRITES_PER_HOUR} weighted writes an hour, ` +
-        `where a correction counts as ${WRITE_COST.correct}. Reading still works. The allowance comes back with ` +
-        'the hour; a new access token does not buy more. Ask the user to make this change in the app if it cannot wait.',
-    );
-  }
-
-  const outcome = callTool(name, args, { file, now });
-  if (outcome.status !== 'ok') return refuse(outcome.text);
-  if (!outcome.file) return { text: outcome.text, isError: false };
 
   try {
-    await sync.save(outcome.file);
+    return await runToolOverSync(recordSync(makeAdapter(accessToken), 'mcp', now), name, args, now, {
+      beforeCall: (file) => beforeHostedCall(token, name, file, args, now),
+      savedNote: () => 'Saved to the user’s Dropbox.',
+    });
   } catch (error) {
-    return refuse(describeStorageFailure(error));
+    if (error instanceof ToolContractError) throw error;
+    const failed = describeStorageFailure(error, 'The record in Dropbox');
+    return refuse(`${failed.message}. ${failed.hint}`);
   }
-  return { text: `${outcome.text}\nSaved to the user’s Dropbox.`, isError: false };
-}
-
-/**
- * A storage failure in the agent's own terms — one error naming the provider,
- * never a retry storm. A record from a newer app version is the one case with
- * a different answer, and it refuses the READ as well: `SyncManager.load()`
- * migrates before any tool sees the file, so a record this server only half
- * understands is out of reach in both directions.
- */
-function describeStorageFailure(error: unknown): string {
-  if (error instanceof SchemaTooNewError) {
-    return (
-      'This record was written by a newer version of the app than this server understands, so it cannot be ' +
-      'read or written here — reads refuse too, because the record is migrated before any tool runs. Nothing ' +
-      'was written. Ask the user to open the app, which will update it.'
-    );
-  }
-  return 'Dropbox did not answer. Nothing was written. Try once more; if it keeps failing, the user should check dropbox.com.';
 }
 
 // ---------------------------------------------------------------------------

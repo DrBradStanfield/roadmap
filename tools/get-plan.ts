@@ -22,10 +22,12 @@
  * gitignored and built by nobody — the package-name import would silently run
  * a stale engine on a fresh clone.
  */
-import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { realpathSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { FileAdapter } from '../packages/health-core/src/file-adapter';
 import { FIELD_METRIC_MAP } from '../packages/health-core/src/mappings';
-import { migrateFile, SchemaTooNewError } from '../packages/health-core/src/migrate';
+import { recordSync } from '../packages/health-core/src/roadmap-doc';
+import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
 import {
   computePlan,
   currentValues,
@@ -45,33 +47,18 @@ import { formatDisplayValue, getDisplayLabel } from '../packages/health-core/src
 // Load — the untrusted-bytes boundary
 // ---------------------------------------------------------------------------
 
-/** Read a record file through `migrateFile`, so the hardened boundary applies. */
-export function loadRecord(path: string, now = new Date()): RoadmapFile {
-  let raw: string;
+/**
+ * Read the record through the same adapter the writers use, so "what counts as
+ * my record" is decided in exactly one place (why: docs/mcp-architecture.md
+ * §7). Read-only: nothing here saves.
+ */
+export async function loadRecord(path: string, now = new Date()): Promise<RoadmapFile> {
   try {
-    raw = readFileSync(path, 'utf8');
-  } catch {
-    throw new PlanError(
-      `Cannot read ${path}`,
-      'Give the path to your health-roadmap.json — see docs/agent-access.md for where each backend keeps it.',
-    );
-  }
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new PlanError(`${path} is not valid JSON`, 'The file may be a partial write. Restore it from your cloud provider’s version history.');
-  }
-  try {
-    return migrateFile(parsed, { deviceId: 'get-plan-cli', now: now.toISOString() });
+    return await recordSync(new FileAdapter(path), 'get-plan-cli', now.toISOString()).load();
   } catch (error) {
-    if (error instanceof SchemaTooNewError) {
-      throw new PlanError(
-        `${path} is schema v${error.fileVersion}; this tool understands v${CURRENT_SCHEMA_VERSION}`,
-        'A newer version of the app wrote this file. Pull the latest repo and try again.',
-      );
-    }
-    throw error;
+    if (!isStorageFailure(error)) throw error;
+    const failed = describeStorageFailure(error, path);
+    throw new PlanError(failed.message, failed.hint);
   }
 }
 
@@ -313,7 +300,7 @@ function assertWritableTarget(htmlOut: string, recordPath: string): void {
   }
 }
 
-export function run(argv: string[]): number {
+export async function run(argv: string[]): Promise<number> {
   if (argv.length === 0 || argv.includes('--help') || argv.includes('-h')) {
     process.stdout.write(HELP);
     return 0;
@@ -329,7 +316,7 @@ export function run(argv: string[]): number {
     if (unknown) throw new PlanError(`Unknown option ${unknown}`, 'Run with --help for the options.');
     if (htmlOut) assertWritableTarget(htmlOut, path);
 
-    const plan = computePlan(loadRecord(path));
+    const plan = computePlan(await loadRecord(path));
     if (htmlOut) {
       try {
         writeFileSync(htmlOut, renderHtml(plan));
@@ -354,5 +341,5 @@ export function run(argv: string[]): number {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  process.exit(run(process.argv.slice(2)));
+  run(process.argv.slice(2)).then((code) => process.exit(code));
 }

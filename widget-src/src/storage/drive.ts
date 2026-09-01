@@ -323,7 +323,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     try {
       body = text ? (JSON.parse(text)) : null;
     } catch (error) {
-      throw new StorageError('Google Drive read failed: file is not valid JSON (possible corruption).', error);
+      throw new StorageError('Google Drive read failed: file is not valid JSON (possible corruption).', undefined, error);
     }
     // version: null is honest — Drive has no conditional write, so write()
     // ignores expectedVersion (LWW; the SyncManager merges first). Fetching the

@@ -21,6 +21,7 @@ import {
   type EditRejection,
 } from './record-edits';
 import type { FileLabValue, FileMeasurement, FileReminderOptIn, RoadmapFile } from './roadmap-file';
+import type { SyncManager } from './sync-manager';
 import { UNIT_DEFS } from './units';
 import { METRIC_TYPES } from './validation';
 import { z } from 'zod';
@@ -538,4 +539,79 @@ export function callTool(
     case 'correct_value':
       return correctValueTool(record, parsed.data as z.infer<typeof correctValueInput>, now);
   }
+}
+
+// ---------------------------------------------------------------------------
+// One tool call, over one record
+// ---------------------------------------------------------------------------
+
+/** A tool's answer, as MCP carries it: text, plus a flag if it refused. */
+export interface ToolAnswer {
+  text: string;
+  isError: boolean;
+}
+
+/** A tool broke its own contract. Not the user's to fix, so never a refusal. */
+export class ToolContractError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ToolContractError';
+  }
+}
+
+export interface RunToolOptions {
+  /**
+   * A guard the surface adds of its own, run on the opened record BEFORE the
+   * tool. Return refusal text to stop the call. It comes first so that a
+   * refused write still spends what it costs the surface: the hosted server
+   * charges its write allowance here, because free guesses at a value an agent
+   * does not know ARE the falsification attack (design §3).
+   */
+  beforeCall?(file: RoadmapFile): string | null;
+  /** Appended to a successful save — where the bytes landed. */
+  savedNote?(): string;
+}
+
+/**
+ * Run one tool against the user's record: read fresh (another device or the
+ * app itself may have written since the last call), run the tool, and only if
+ * the tool produced a new file, save it through `SyncManager` — read, migrate,
+ * merge, conditional write, verify. Both MCP servers run these few lines, so
+ * neither surface can lose the file in a way the other would not.
+ *
+ * `RECORD_FREE_TOOLS` are run without opening anything: `report_feedback`
+ * never touches the record, and opening it first turned "my record is missing"
+ * into a failed bug report.
+ *
+ * Storage failures are thrown, not worded here: each surface catches them and
+ * says them its own way through `describeStorageFailure`.
+ */
+export async function runToolOverSync(
+  sync: SyncManager<RoadmapFile>,
+  name: string,
+  args: unknown,
+  now: string,
+  options: RunToolOptions = {},
+): Promise<ToolAnswer> {
+  if (!isToolName(name)) return { text: `No tool named ${name}.`, isError: true };
+
+  if (RECORD_FREE_TOOLS.has(name)) {
+    const outcome = callTool(name, args, { file: undefined, now });
+    // A file to save with nothing opened would be a write dropped in silence.
+    if (outcome.status === 'ok' && outcome.file) {
+      throw new ToolContractError(`${name} produced a file without opening one`);
+    }
+    return { text: outcome.text, isError: outcome.status !== 'ok' };
+  }
+
+  const file = await sync.load();
+  const refusal = options.beforeCall?.(file);
+  if (refusal) return { text: refusal, isError: true };
+
+  const outcome = callTool(name, args, { file, now });
+  if (outcome.status !== 'ok') return { text: outcome.text, isError: true };
+  if (!outcome.file) return { text: outcome.text, isError: false };
+
+  await sync.save(outcome.file);
+  return { text: options.savedNote ? `${outcome.text}\n${options.savedNote()}` : outcome.text, isError: false };
 }

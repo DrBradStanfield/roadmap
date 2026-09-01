@@ -46,6 +46,20 @@ export class SchemaTooNewError extends Error {
   }
 }
 
+/**
+ * Thrown when the bytes are a record's neighbours rather than a record: a JSON
+ * array, a bare string, an object with no `schemaVersion`, or one that carries
+ * a `schemaVersion` and junk where its rows belong. `migrateFile` would turn
+ * any of them into a BLANK record — right for a first run, a catastrophe for a
+ * write — so the document spec refuses them before they reach it.
+ */
+export class RecordShapeError extends Error {
+  constructor(readonly detail: string) {
+    super(`Not a health-roadmap.json — ${detail}`);
+    this.name = 'RecordShapeError';
+  }
+}
+
 /** Guard for the untrusted-JSON boundary — shared by every synced-file migrate. */
 export function isObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);

@@ -346,6 +346,15 @@ describe('US-32 — the dispatcher', () => {
     }
   });
 
+  it('never lets a record-free tool produce a file, so no write is dropped in silence', () => {
+    // `runToolOverSync` runs these without opening the record and throws a
+    // ToolContractError if one hands back a file. Nothing can reach that throw
+    // today, and this is why: no record-free tool writes.
+    const outcome = callTool('report_feedback', { kind: 'bug', title: 'x', detail: 'y' }, { file: undefined, now: NOW });
+    expect(outcome.status).toBe('ok');
+    expect(outcome.status === 'ok' && outcome.file).toBeUndefined();
+  });
+
   it('publishes six tools, and marks only the reads read-only', () => {
     expect(MCP_TOOLS.map((t) => t.name)).toEqual([
       'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'report_feedback',

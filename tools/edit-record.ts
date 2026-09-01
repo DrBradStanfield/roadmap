@@ -14,14 +14,14 @@
  *   npx tsx tools/edit-record.ts add <file> --test ferritin --value 210 --unit "µg/L" [--date …]
  *   npx tsx tools/edit-record.ts correct <file> --id <rowId> --value 2.3
  *
- * Safety: the original is copied to `health-roadmap.json.bak-<ISO>` (last 3
- * kept) before the new file is written to a temp file and renamed into place,
- * so an interrupted write leaves the record as it was — `record-io.ts` owns
- * that boundary, and the MCP server (US-32) writes through the same one. No
- * network, no model, no telemetry; the record and its .bak siblings are the
- * only files touched.
+ * Safety: the bytes move through `SyncManager` over a `FileAdapter`, and the
+ * original is copied to `health-roadmap.json.bak-<ISO>` (last 3 kept) before
+ * the new bytes are written to a temp file and renamed into place. No network,
+ * no model, no telemetry; the record and its .bak siblings are the only files
+ * touched. why: docs/mcp-architecture.md §7.
  */
 import { pathToFileURL } from 'node:url';
+import { BACKUPS_KEPT, FileAdapter } from '../packages/health-core/src/file-adapter';
 import { oneLine, PlanError } from '../packages/health-core/src/plan';
 import {
   appendLabValue,
@@ -30,8 +30,9 @@ import {
   type EditResult,
 } from '../packages/health-core/src/record-edits';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../packages/health-core/src/roadmap-file';
+import { recordSync } from '../packages/health-core/src/roadmap-doc';
+import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
 import { formatDisplayValue, UNIT_DEFS, type MetricType } from '../packages/health-core/src/units';
-import { assertUnchanged, backup, BACKUPS_KEPT, openRecord, writeAtomic } from './record-io';
 
 export const HELP = `edit_record — add and correct values in your own record file.
 
@@ -201,23 +202,24 @@ function runCorrect(args: Args, record: RoadmapFile, now: string): Change {
 // CLI
 // ---------------------------------------------------------------------------
 
-export function run(argv: string[]): number {
+export async function run(argv: string[]): Promise<number> {
   if (argv.length === 0 || argv.includes('--help') || argv.includes('-h')) {
     process.stdout.write(HELP);
     return 0;
   }
+  let record = 'the record file';
   try {
     const args = parseArgs(argv);
     if (args.command !== 'add' && args.command !== 'correct') {
       throw new PlanError(`Unknown command "${args.command}"`, 'The commands are `add` and `correct`.');
     }
+    record = args.path;
     const now = new Date().toISOString();
-    const record = openRecord(args.path);
-    const change = args.command === 'add' ? runAdd(args, record.file, now) : runCorrect(args, record.file, now);
-
-    assertUnchanged(record.path, record.stamp);
-    const bak = backup(record.path, now);
-    writeAtomic(record.path, change.file);
+    const adapter = new FileAdapter(args.path);
+    const sync = recordSync(adapter, 'edit-record-cli', now);
+    const file = await sync.load();
+    const change = args.command === 'add' ? runAdd(args, file, now) : runCorrect(args, file, now);
+    await sync.save(change.file);
 
     const { row, unit, previous } = change;
     const verb = args.command === 'add' ? 'Added' : 'Corrected';
@@ -225,12 +227,18 @@ export function run(argv: string[]): number {
     process.stdout.write(
       `${verb} ${oneLine(rowName(row))} ${was}${shownValue(row)}${unit ? ` ${oneLine(unit)}` : ''}` +
       ` on ${oneLine(String(row.recordedAt).slice(0, 10))} — new row ${oneLine(row.id)}\n` +
-      `Wrote ${oneLine(record.path)} (backup: ${oneLine(bak)})\n`,
+      `Wrote ${oneLine(adapter.path)} (backup: ${oneLine(adapter.lastBackup)})\n`,
     );
     return 0;
   } catch (error) {
-    if (error instanceof PlanError) {
-      process.stderr.write(`edit_record: ${oneLine(error.message)}\n  ${oneLine(error.hint)}\n`);
+    // A rule the user broke, or the record refusing to be written — both are
+    // theirs to act on, and the storage half is worded once in health-core so
+    // the MCP servers say the same thing.
+    const failed = error instanceof PlanError ? error
+      : isStorageFailure(error) ? describeStorageFailure(error, record)
+      : null;
+    if (failed) {
+      process.stderr.write(`edit_record: ${oneLine(failed.message)}\n  ${oneLine(failed.hint)}\n`);
       return 1;
     }
     process.stderr.write(`edit_record: ${error instanceof Error ? error.message : String(error)}\n  This is a bug — please report it with the record file's schemaVersion.\n`);
@@ -239,5 +247,5 @@ export function run(argv: string[]): number {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  process.exit(run(process.argv.slice(2)));
+  run(process.argv.slice(2)).then((code) => process.exit(code));
 }

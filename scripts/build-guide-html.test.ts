@@ -17,6 +17,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(here, 'build-guide-html.mjs');
 const GUIDES = join(here, '..', 'docs', 'guides');
 
+const RAW = 'https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/guides/';
+
 /** Run the builder over a scratch guide. The scratch directory never survives. */
 function build(markdown: string): { html: string; stderr: string; ok: boolean } {
   const dir = mkdtempSync(join(tmpdir(), 'guide-'));
@@ -120,6 +122,19 @@ describe('build-guide-html.mjs — a guide that is missing something', () => {
   });
 });
 
+describe('build-guide-html.mjs — the link to the markdown master', () => {
+  it('names the guide\'s own file, inside the wrapper and before the script', () => {
+    const { html } = build(`${FRONT_MATTER}Prose.\n\n\`\`\`bootstrap-prompt\nRead my health record.\n\`\`\`\n`);
+    // The scratch guide is scratch.md, so the link must say scratch.md.
+    expect(html).toContain(
+      `<p class="rmg-md">This guide is also published as plain Markdown for AI agents: <a href="${RAW}scratch.md">docs/guides/scratch.md</a>. The Markdown is the master; this page is built from it.</p>`,
+    );
+    // Inside the .rmguide wrapper (its close is the last </div>), before the script.
+    expect(html.indexOf('rmg-md')).toBeLessThan(html.lastIndexOf('</div>'));
+    expect(html.lastIndexOf('</div>')).toBeLessThan(html.indexOf('<script>'));
+  });
+});
+
 describe('build-guide-html.mjs — the guides actually shipped', () => {
   it('builds every guide in docs/guides, prompt box and all', () => {
     const guides = readdirSync(GUIDES).filter((n) => n.endsWith('.md') && n !== 'README.md');
@@ -133,6 +148,8 @@ describe('build-guide-html.mjs — the guides actually shipped', () => {
       // The prompt box exists to carry the prompt: only a guide that has one.
       const carriesPrompt = readFileSync(path, 'utf8').includes('```bootstrap-prompt');
       expect(run.stdout.includes('<div class="rmg-promptbox">'), guide).toBe(carriesPrompt);
+      // Every published guide points an agent at its own markdown master.
+      expect(run.stdout, guide).toContain(`<a href="${RAW}${guide}">docs/guides/${guide}</a>`);
     }
   });
 });

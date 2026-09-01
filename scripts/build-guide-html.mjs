@@ -10,7 +10,7 @@
 // block with a select-all hint, for hosts that strip <script>.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 
 const argv = process.argv.slice(2);
 const noScript = argv.includes('--no-script');
@@ -148,6 +148,7 @@ const style = `<style>
 .rmguide .rmg-copy.rmg-copy{position:absolute;top:11px;right:11px;background:#2c3e4d;color:#d5e2ec;border:0;border-radius:6px;
  padding:6px 13px;font:650 13px/1 -apple-system,BlinkMacSystemFont,sans-serif;cursor:pointer;width:auto;min-height:0}
 .rmguide code{font:500 .92em/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:#eff3f6;padding:2px 6px;border-radius:4px}
+.rmguide .rmg-md{margin:34px 0 0;font-size:13.5px;line-height:1.5;color:#5c6b7a}
 </style>`;
 
 const script = noScript || !prompt ? '' : `
@@ -164,7 +165,12 @@ document.querySelectorAll('[data-rmg-copy]').forEach(function (el) {
 });
 </script>`;
 
-const html = `${style}\n<div class="rmguide">\n${rendered}\n</div>${script}\n`;
+// The .md is the master, so every page says where it lives: an agent handed a
+// guide URL can fetch the source instead of scraping the rendered page.
+const mdFile = `docs/guides/${basename(mdPath)}`;
+const mdLink = `<p class="rmg-md">This guide is also published as plain Markdown for AI agents: <a href="https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/${mdFile}">${mdFile}</a>. The Markdown is the master; this page is built from it.</p>`;
+
+const html = `${style}\n<div class="rmguide">\n${rendered}\n${mdLink}\n</div>${script}\n`;
 
 if (outPath) {
   mkdirSync(dirname(resolve(outPath)), { recursive: true });

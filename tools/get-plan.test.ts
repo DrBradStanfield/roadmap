@@ -78,12 +78,12 @@ function fixture(): RoadmapFile {
 }
 
 /** Run the CLI with stdio captured; the spies are always restored. */
-function captureRun(argv: string[]): { code: number; stdout: string; stderr: string } {
+async function captureRun(argv: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
   const err = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
   const out = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
   const text = (spy: typeof err) => spy.mock.calls.map((c) => String(c[0])).join('');
   try {
-    return { code: run(argv), stdout: text(out), stderr: text(err) };
+    return { code: await run(argv), stdout: text(out), stderr: text(err) };
   } finally {
     err.mockRestore();
     out.mockRestore();
@@ -230,23 +230,23 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
 });
 
 describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', () => {
-  it('reports a missing file', () => {
-    expect(() => loadRecord('/nope/health-roadmap.json')).toThrow(PlanError);
+  it('reports a missing file', async () => {
+    await expect(loadRecord('/nope/health-roadmap.json')).rejects.toThrow(PlanError);
   });
 
-  it('reports invalid JSON', () => {
+  it('reports invalid JSON', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'get-plan-'));
     const path = join(dir, 'health-roadmap.json');
     writeFileSync(path, '{"schemaVersion": 1,');
-    expect(() => loadRecord(path)).toThrow(/not valid JSON/);
+    await expect(loadRecord(path)).rejects.toThrow(/not valid JSON/);
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('refuses a newer schemaVersion rather than downgrading it', () => {
+  it('refuses a newer schemaVersion rather than downgrading it', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'get-plan-'));
     const path = join(dir, 'health-roadmap.json');
     writeFileSync(path, JSON.stringify({ ...fixture(), schemaVersion: 99 }));
-    expect(() => loadRecord(path)).toThrow(/schema v99/);
+    await expect(loadRecord(path)).rejects.toThrow(/schema v99/);
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -254,7 +254,7 @@ describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', ()
     expect(() => computePlan(createEmptyFile(CTX), NOW)).toThrow(/no usable height and sex/);
   });
 
-  it('loads a null-riddled file through migrateFile and still computes', () => {
+  it('loads a null-riddled file through migrateFile and still computes', async () => {
     const file = fixture();
     const mangled = {
       ...file,
@@ -268,26 +268,26 @@ describe('US-30 AC5 — an untrusted file fails clearly, never with a stack', ()
     const dir = mkdtempSync(join(tmpdir(), 'get-plan-'));
     const path = join(dir, 'health-roadmap.json');
     writeFileSync(path, JSON.stringify(mangled));
-    const plan = computePlan(loadRecord(path), NOW);
+    const plan = computePlan(await loadRecord(path), NOW);
     expect(plan.inputs.ldlC).toBe(2.1);
     expect(plan.labs).toEqual([]);
     expect(plan.results.suggestions.length).toBeGreaterThan(0);
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('exits 1 with one line and a hint, and 0 on success, without touching the record', () => {
+  it('exits 1 with one line and a hint, and 0 on success, without touching the record', async () => {
     const { dir, path } = writeFixture(fixture());
     const before = readFileSync(path, 'utf8');
 
-    const absent = captureRun([join(dir, 'absent.json')]);
+    const absent = await captureRun([join(dir, 'absent.json')]);
     expect(absent.code).toBe(1);
     expect(absent.stderr).toMatch(/^get_plan: Cannot read .*\n {2}\S/);
     expect(absent.stderr).not.toContain('at ');
-    expect(captureRun(['--help']).code).toBe(0);
-    expect(captureRun([path]).code).toBe(0);
-    expect(captureRun([path, '--json']).code).toBe(0);
-    expect(captureRun([path, '--html', join(dir, 'plan.html')]).code).toBe(0);
-    expect(captureRun([path, '--wat']).code).toBe(1);
+    expect((await captureRun(['--help'])).code).toBe(0);
+    expect((await captureRun([path])).code).toBe(0);
+    expect((await captureRun([path, '--json'])).code).toBe(0);
+    expect((await captureRun([path, '--html', join(dir, 'plan.html')])).code).toBe(0);
+    expect((await captureRun([path, '--wat'])).code).toBe(1);
 
     expect(readFileSync(path, 'utf8')).toBe(before); // AC6: read-only
     rmSync(dir, { recursive: true, force: true });
@@ -307,11 +307,11 @@ describe('US-30 AC1 — nothing that could reach the network is imported', () =>
 });
 
 describe('US-30 follow-up — --html never writes over the record', () => {
-  it('refuses an --html target that resolves to the record file itself', () => {
+  it('refuses an --html target that resolves to the record file itself', async () => {
     const { dir, path } = writeFixture(fixture());
     const before = readFileSync(path, 'utf8');
 
-    const result = captureRun([path, '--html', realpathSync(path)]);
+    const result = await captureRun([path, '--html', realpathSync(path)]);
     expect(result.code).toBe(1);
     expect(result.stderr).toMatch(/^get_plan: .*record file/);
 
@@ -319,20 +319,20 @@ describe('US-30 follow-up — --html never writes over the record', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('refuses an --html target that is another flag, rather than writing a file called --json', () => {
+  it('refuses an --html target that is another flag, rather than writing a file called --json', async () => {
     const { dir, path } = writeFixture(fixture());
 
-    expect(captureRun([path, '--html', '--json']).code).toBe(1);
+    expect((await captureRun([path, '--html', '--json'])).code).toBe(1);
 
     expect(existsSync('--json')).toBe(false);
     rmSync(dir, { recursive: true, force: true });
   });
-  it('reports an unwritable --html directory as a file problem, not a tool bug', () => {
+  it('reports an unwritable --html directory as a file problem, not a tool bug', async () => {
     const { dir, path } = writeFixture(fixture());
     const err = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
     const out = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
 
-    expect(run([path, '--html', join(dir, 'no-such-dir', 'plan.html')])).toBe(1);
+    expect(await run([path, '--html', join(dir, 'no-such-dir', 'plan.html')])).toBe(1);
     const stderr = err.mock.calls.map((c) => String(c[0])).join('');
 
     err.mockRestore();
@@ -374,23 +374,23 @@ describe('US-30 follow-up — an ignored value is never shown as a plan input', 
     expect(plan.results.suggestions.length).toBeGreaterThan(0);
   });
 
-  it('renders a lab row with no recordedAt as a file problem, not a tool bug', () => {
+  it('renders a lab row with no recordedAt as a file problem, not a tool bug', async () => {
     const file = fixture();
     file.labValues = file.labValues.map((l) => ({ ...l, recordedAt: undefined as unknown as string }));
     const { dir, path } = writeFixture(file);
 
-    const result = captureRun([path]);
+    const result = await captureRun([path]);
     expect(result.stderr).not.toContain('This is a bug');
     expect(result.code).toBe(0);
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('renders a measurement row with no recordedAt as a file problem, not a tool bug', () => {
+  it('renders a measurement row with no recordedAt as a file problem, not a tool bug', async () => {
     const file = fixture();
     file.measurements = file.measurements.map((m) => ({ ...m, recordedAt: undefined as unknown as string }));
     const { dir, path } = writeFixture(file);
 
-    const result = captureRun([path]);
+    const result = await captureRun([path]);
     expect(result.stderr).not.toContain('This is a bug');
     expect(result.code).toBe(0);
     expect(result.stdout).toContain('LDL Cholesterol');

@@ -92,7 +92,7 @@ export class WebDavAdapter implements StorageAdapter {
     try {
       body = text ? (JSON.parse(text)) : null;
     } catch (error) {
-      throw new StorageError('Self-host read failed: file is not valid JSON (possible corruption).', error);
+      throw new StorageError('Self-host read failed: file is not valid JSON (possible corruption).', undefined, error);
     }
     return { body, version: etag };
   }
