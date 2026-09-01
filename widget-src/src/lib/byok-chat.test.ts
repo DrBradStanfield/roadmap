@@ -40,6 +40,7 @@ const SNAPSHOT = {
 interface ChatContext {
   profile: Record<string, unknown>;
   inputs: Record<string, number | string | undefined>;
+  excludedFields?: string[];
 }
 
 /** The JSON the system prompt carries, or null when the chat sent none. */
@@ -78,5 +79,20 @@ describe('BYOK chat context — per-field sanitizing', () => {
 
   it('still sends no context when the required fields are unusable', async () => {
     expect(await contextSent({ ...SNAPSHOT, heightCm: 9999 })).toBeNull();
+  });
+
+  it('names the stripped field so the model knows a value exists but was unusable', async () => {
+    const context = await contextSent({ ...SNAPSHOT, ldlC: 9999 });
+    expect(context!.excludedFields).toEqual(['ldlC']);
+  });
+
+  it('adds no excludedFields entry when every field is valid', async () => {
+    const context = await contextSent({ ...SNAPSHOT, ldlC: 2.1 });
+    expect(context!.excludedFields).toBeUndefined();
+  });
+
+  it('never puts the invalid value anywhere in the request', async () => {
+    await contextSent({ ...SNAPSHOT, ldlC: 9999 });
+    expect(JSON.stringify(state.sent)).not.toContain('9999');
   });
 });

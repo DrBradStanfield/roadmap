@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { convertValidationErrorsToUnits, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid } from './validation';
+import { convertValidationErrorsToUnits, medicationSchema, screeningSchema, profileUpdateSchema, measurementSchema, validateInputValue, isBirthYearClearlyInvalid, sanitizeInputs, excludedInputFields } from './validation';
 
 // ---------------------------------------------------------------------------
 // Client-side input validation (identity fields only — no unit conversion)
@@ -429,5 +429,71 @@ describe('measurementSchema — string length limits', () => {
       externalId: 'a'.repeat(200),
     });
     expect(result.success).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Per-field sanitizing — one bad number costs its own field, never the record
+// ---------------------------------------------------------------------------
+
+describe('sanitizeInputs', () => {
+  it('strips only the out-of-range field and keeps the rest', () => {
+    const result = sanitizeInputs({ heightCm: 178, sex: 'male', ldlC: 9999, hdlC: 1.2 } as never);
+    expect(result).toEqual({ heightCm: 178, sex: 'male', hdlC: 1.2 });
+  });
+
+  it('keeps zero values (ldlC 0 / hdlC 0 are in range)', () => {
+    const result = sanitizeInputs({ heightCm: 178, sex: 'male', ldlC: 0, hdlC: 0 } as never);
+    expect(result.ldlC).toBe(0);
+    expect(result.hdlC).toBe(0);
+  });
+
+  it('passes unknown keys through unchanged', () => {
+    const result = sanitizeInputs({ heightCm: 178, unitSystem: 'si' } as never);
+    expect((result as Record<string, unknown>).unitSystem).toBe('si');
+  });
+
+  it('strips unusable required fields too', () => {
+    expect(sanitizeInputs({ heightCm: 9999, sex: 'male' } as never)).toEqual({ sex: 'male' });
+  });
+});
+
+describe('excludedInputFields', () => {
+  it('names the schema fields that sanitizeInputs drops', () => {
+    expect(excludedInputFields({ heightCm: 178, sex: 'male', ldlC: 9999 } as never)).toEqual(['ldlC']);
+  });
+
+  it('never names an unknown key (they are not schema fields)', () => {
+    expect(excludedInputFields({ heightCm: 178, unitSystem: 'si', junk: {} } as never)).toEqual([]);
+  });
+
+  it('is empty when every field is valid', () => {
+    expect(excludedInputFields({ heightCm: 178, sex: 'male', ldlC: 2.1 } as never)).toEqual([]);
+  });
+});
+
+describe('sanitizeInputs — prototype-chain keys', () => {
+  // `key in shape` walks the prototype chain: '__proto__' (an OWN property on
+  // any JSON.parse'd object that carries it) and 'constructor' both resolve to
+  // Object.prototype members, which have no .safeParse — a TypeError on every
+  // chat turn, reachable by any storefront visitor. Own-properties only.
+  const PROTO_PAYLOAD = () => JSON.parse('{"heightCm":180,"sex":"male","__proto__":1}');
+
+  it('does not throw on an own __proto__ key', () => {
+    expect(() => sanitizeInputs(PROTO_PAYLOAD())).not.toThrow();
+    expect(() => excludedInputFields(PROTO_PAYLOAD())).not.toThrow();
+  });
+
+  it('neither keeps nor names __proto__', () => {
+    const result = sanitizeInputs(PROTO_PAYLOAD());
+    expect(Object.prototype.hasOwnProperty.call(result, '__proto__')).toBe(false);
+    expect(excludedInputFields(PROTO_PAYLOAD())).toEqual([]);
+    expect(result).toEqual({ heightCm: 180, sex: 'male' });
+  });
+
+  it('passes other Object.prototype names through as unknown keys', () => {
+    const payload = { heightCm: 180, sex: 'male', constructor: 1, toString: 2, valueOf: 3 } as never;
+    expect(() => sanitizeInputs(payload)).not.toThrow();
+    expect(excludedInputFields(payload)).toEqual([]);
   });
 });

@@ -96,6 +96,8 @@ export type { LipidMarker } from './suggestions';
 export {
   METRIC_TYPES,
   healthInputSchema,
+  sanitizeInputs,
+  excludedInputFields,
   measurementSchema,
   profileUpdateSchema,
   validateHealthInputs,

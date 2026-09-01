@@ -19,7 +19,7 @@ import {
   ISO_DATE,
   type MeasurementHistoryMap,
 } from '../../packages/health-core/src/measurement-history';
-import { healthInputSchema } from '../../packages/health-core/src/validation';
+import { healthInputSchema, sanitizeInputs, excludedInputFields } from '../../packages/health-core/src/validation';
 import { CHAT_EDIT_TOOLS, PREFILL_ACK_MESSAGE, parseProposedEdits, type ProposedEdit } from '../../packages/health-core/src/chat-edits';
 import { callAnthropicWithUsage, type AnthropicUsage } from './anthropic.server';
 
@@ -235,17 +235,24 @@ export function resolveChatContext(guestInputs: unknown): ChatContext {
  * Returns null if inputs fail validation.
  */
 export function assembleGuestChatContext(guestInputs: unknown): ChatContext | null {
-  const parsed = healthInputSchema.safeParse(guestInputs);
+  const raw = (guestInputs && typeof guestInputs === 'object' ? guestInputs : {}) as Record<string, unknown>;
+  // Sanitize per field first: one out-of-range number used to collapse the
+  // WHOLE context to "no data entered", and the model then answered as if the
+  // user had entered nothing. The snapshot inputs below are still read from
+  // parsed.data, so Zod's key stripping stands between an unknown field and
+  // the model; unitSystem, medications, screenings and measurementHistory come
+  // off `raw` and carry their own sanitizers.
+  const parsed = healthInputSchema.safeParse(sanitizeInputs(raw as Partial<HealthInputs>));
   if (!parsed.success) return null;
 
   const inputs = parsed.data as HealthInputs;
-  const raw = guestInputs as Record<string, unknown>;
-  const unitSystem = raw?.unitSystem === 'conventional' ? 'conventional' : 'si';
+  const excludedFields = excludedInputFields(raw as Partial<HealthInputs>);
+  const unitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
 
   // Sanitize medications/screenings — only allow plain objects with string/number values
   // to prevent prompt injection via crafted nested objects
-  const medications = sanitizeFlatObject(raw?.medications);
-  const screenings = sanitizeFlatObject(raw?.screenings);
+  const medications = sanitizeFlatObject(raw.medications);
+  const screenings = sanitizeFlatObject(raw.screenings);
 
   const results = calculateHealthResults(inputs, unitSystem, medications, screenings);
 
@@ -258,7 +265,7 @@ export function assembleGuestChatContext(guestInputs: unknown): ChatContext | nu
   //     reading — the client's single snapshot field can be ambiguous (it
   //     reported LDL 2.0 where the newest dated lab was 1.2), so the dated
   //     series is the source of truth for "most recent".
-  const measurementHistory = sanitizeMeasurementHistory((guestInputs as Record<string, unknown>)?.measurementHistory);
+  const measurementHistory = sanitizeMeasurementHistory(raw.measurementHistory);
   const hasHistory = Object.keys(measurementHistory).length > 0;
   if (hasHistory) {
     for (const [field, value] of Object.entries(latestFromHistory(measurementHistory))) {
@@ -274,6 +281,10 @@ export function assembleGuestChatContext(guestInputs: unknown): ChatContext | nu
       unitSystem,
     },
     latestValues,
+    // Field names only — the user HAS a value here, it was out of range and
+    // unusable. Without it the model reads the gap as "never entered". The
+    // invalid values themselves never enter the prompt.
+    ...(excludedFields.length > 0 ? { excludedFields } : {}),
     // Chronological per metric; the LAST entry is the most recent. SI values,
     // same units as latestValues. Omitted (undefined) when no history was sent.
     ...(hasHistory ? { measurementHistory } : {}),

@@ -221,6 +221,55 @@ describe('assembleGuestChatContext', () => {
     const parsed = JSON.parse(result!.userContextJson);
     expect(parsed.profile.unitSystem).toBe('conventional');
   });
+
+  // The site chat is the highest-traffic chat path and its inputs are
+  // client-supplied. All-or-nothing validation meant one out-of-range field
+  // collapsed the whole context to "no data" — the model then confidently
+  // answered as if the user had entered nothing. Mirrors the BYOK fix.
+  it('drops one out-of-range field and keeps the rest of the context', () => {
+    const result = assembleGuestChatContext({
+      heightCm: 180,
+      sex: 'male',
+      birthYear: 1990,
+      weightKg: 80,
+      hdlC: 1.2,
+      ldlC: 9999,
+    });
+    expect(result).not.toBeNull();
+    const parsed = JSON.parse(result!.userContextJson);
+    expect(parsed.latestValues.ldlC).toBeUndefined();
+    expect(parsed.latestValues.hdlC).toBe('1.2');
+    expect(parsed.latestValues.weightKg).toBe('80');
+    expect(parsed.profile).toMatchObject({ sex: 'male', heightCm: 180 });
+    // The name tells the model a value exists but was unusable; the invalid
+    // VALUE never reaches the prompt.
+    expect(parsed.excludedFields).toEqual(['ldlC']);
+    expect(result!.userContextJson).not.toContain('9999');
+  });
+
+  it('adds no excludedFields entry when every field is valid', () => {
+    const result = assembleGuestChatContext({ heightCm: 180, sex: 'male', ldlC: 2.1 });
+    const parsed = JSON.parse(result!.userContextJson);
+    expect(parsed.latestValues.ldlC).toBe('2.1');
+    expect(parsed.excludedFields).toBeUndefined();
+  });
+
+  // A prototype-chain key ('__proto__' arrives as an OWN property from
+  // JSON.parse; 'constructor' is a plain own key) used to reach
+  // Object.prototype and TypeError on .safeParse — a 500 on every chat turn.
+  it('survives prototype-chain keys and never names them as excluded', () => {
+    const result = assembleGuestChatContext(
+      JSON.parse('{"heightCm":180,"sex":"male","ldlC":9999,"__proto__":1,"constructor":2}'),
+    );
+    expect(result).not.toBeNull();
+    const parsed = JSON.parse(result!.userContextJson);
+    expect(parsed.excludedFields).toEqual(['ldlC']);
+  });
+
+  it('still returns no context when the required fields are unusable', () => {
+    expect(assembleGuestChatContext({ heightCm: 9999, sex: 'male', ldlC: 2.1 })).toBeNull();
+    expect(assembleGuestChatContext({ heightCm: 180, sex: 'martian', ldlC: 2.1 })).toBeNull();
+  });
 });
 
 describe('matchDocumentTitle', () => {

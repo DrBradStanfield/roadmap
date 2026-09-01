@@ -19,6 +19,8 @@
  */
 import {
   healthInputSchema,
+  excludedInputFields,
+  sanitizeInputs,
   calculateHealthResults,
   medicationsToInputs,
   screeningsToInputs,
@@ -31,7 +33,7 @@ import {
   type ProposedEdit,
 } from '@roadmap/health-core';
 import { getByokChatInputs } from './roadmap-data';
-import { safeGetItem, safeSetItem, safeRemoveItem, sanitizeInputs } from './storage';
+import { safeGetItem, safeSetItem, safeRemoveItem } from './storage';
 import { getChatHistory } from './chat-history-access';
 import { ByokAnthropicError, callAnthropicDirectRaw } from './byok-anthropic';
 
@@ -188,6 +190,7 @@ function buildUserContextJson(): string | null {
   const parsed = healthInputSchema.safeParse(sanitizeInputs(raw as Partial<HealthInputs>));
   if (!parsed.success) return null;
   const inputs = parsed.data as HealthInputs;
+  const excludedFields = excludedInputFields(raw as Partial<HealthInputs>);
   const unitSystem: UnitSystem = raw.unitSystem === 'conventional' ? 'conventional' : 'si';
   const medications = medicationsToInputs(raw.medications ?? []);
   const screenings = screeningsToInputs(raw.screenings ?? []);
@@ -205,6 +208,9 @@ function buildUserContextJson(): string | null {
     {
       profile: { sex: inputs.sex, age: results.age, heightCm: inputs.heightCm, unitSystem },
       inputs: contextInputs,
+      // Field names only — a value IS there, it was out of range and unusable.
+      // Without it the model reads the gap as "never entered".
+      ...(excludedFields.length > 0 ? { excludedFields } : {}),
       ...(hasHistory ? { measurementHistory: history } : {}),
       medications,
       screenings,

@@ -1,23 +1,7 @@
 import type { HealthInputs, ApiMeasurement, ApiMedication, ApiScreening } from '@roadmap/health-core';
 import type { UnitSystem } from '@roadmap/health-core';
-import { healthInputSchema } from '@roadmap/health-core';
+import { sanitizeInputs } from '@roadmap/health-core';
 import type { ApiReminderPreference } from './api-types';
-
-/**
- * Sanitize inputs against the Zod schema (single source of truth).
- * Validates each field individually — invalid fields are stripped,
- * unknown fields (e.g. unitSystem) pass through unchanged.
- */
-export function sanitizeInputs(inputs: Partial<HealthInputs>): Partial<HealthInputs> {
-  const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean } }>;
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(inputs)) {
-    if (!(key in shape) || shape[key].safeParse(value).success) {
-      result[key] = value;
-    }
-  }
-  return result as Partial<HealthInputs>;
-}
 
 const STORAGE_KEY = 'health_roadmap_data';
 const UNIT_PREF_KEY = 'health_roadmap_unit_system';

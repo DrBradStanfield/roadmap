@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { UNIT_DEFS, UnitSystem } from './units';
 import { FIELD_METRIC_MAP } from './mappings';
+import type { HealthInputs } from './types';
 
 /**
  * Valid metric types for the health_measurements table.
@@ -116,6 +117,48 @@ export const healthInputSchema = z.object({
  * Type inferred from the schema
  */
 export type ValidatedHealthInputs = z.infer<typeof healthInputSchema>;
+
+/**
+ * True when the field is unknown to the schema, or its value satisfies it.
+ *
+ * Own-properties only: `key in shape` walks the prototype chain, so a payload
+ * carrying `__proto__` (an OWN key after JSON.parse) or `constructor` resolved
+ * to an Object.prototype member with no `.safeParse` and threw. Not guarded
+ * with try/catch — that would let such a key fall through as "invalid" and be
+ * named in excludedFields, breaking the schema-names-only invariant.
+ */
+function isInputFieldValid(key: string, value: unknown): boolean {
+  const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean } }>;
+  return !Object.prototype.hasOwnProperty.call(shape, key) || shape[key].safeParse(value).success;
+}
+
+/**
+ * Sanitize inputs against the Zod schema (single source of truth).
+ * Validates each field individually — invalid fields are stripped,
+ * unknown fields (e.g. unitSystem) pass through unchanged.
+ *
+ * Every caller sits on an untrusted boundary — localStorage, the user's own
+ * cloud file, a client-supplied chat payload. One bad number must cost its own
+ * field, never the whole record.
+ */
+export function sanitizeInputs(inputs: Partial<HealthInputs>): Partial<HealthInputs> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(inputs)) {
+    if (isInputFieldValid(key, value)) result[key] = value;
+  }
+  return result as Partial<HealthInputs>;
+}
+
+/**
+ * The field names sanitizeInputs strips. Always schema field names (unknown
+ * keys are never stripped), so they are safe to name to the model — the
+ * invalid VALUES are not, and never appear here.
+ */
+export function excludedInputFields(inputs: Partial<HealthInputs>): string[] {
+  return Object.entries(inputs)
+    .filter(([key, value]) => !isInputFieldValid(key, value))
+    .map(([key]) => key);
+}
 
 /**
  * Validate health inputs and return result
