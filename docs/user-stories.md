@@ -113,6 +113,15 @@ As a user, I can erase everything from the tool on every device (eraseEpoch bump
 - Tests: ✅ `deleteUserData` + stale-device-cannot-resurrect covered (2026-08-07).
 - **Incident 2026-08-07:** first coverage of this path found that `migrateFile()` dropped `meta.eraseEpoch` on every storage read, so any stale device's flush resurrected erased data (merge gate never saw the epoch). Fixed in `migrate.ts` same day; regression tests pin it in `roadmap-store-data-safety.test.ts` + `sync-manager.test.ts`.
 
+### US-29 · My AI agent reads and writes my record file directly — **docs-only, 2026-09-01**
+As a user whose health record is one JSON file in my own cloud, I can point Claude Code or ChatGPT at it and have my agent read my history and append new results, because the format and the safety rules are published — not reverse-engineered.
+- AC1: `docs/health-roadmap-file.schema.json` is a draft 2020-12 JSON Schema for `schemaVersion: 1`, published at a stable raw-GitHub URL, and a record built through the real code paths (`createEmptyFile` → `mergeFiles` → `migrateFile`) validates against it; a malformed record fails.
+- AC2: `docs/agent-access.md` states where the file lives per backend, and matches the adapters (`adapter.ts` `ROADMAP_FILE_NAME`, `dropbox.ts`, `drive.ts`, `github.ts`) rather than restating folder names from memory.
+- AC3: The write rules are stated as hard rules — never mutate or delete a row; a correction appends a row with `correctsId` and flips the old row to `entered-in-error` (one-way); fresh UUID per row; `meta.lamport`/`meta.eraseEpoch` are off-limits; SI canonical units for measurements, the lab's own unit for lab values; catalogue keys from `lab-catalog.ts` for `metricName`.
+- AC4: The honest caveats are stated — a filesystem write has no lock and no version guard, the app merges on its next sync, malformed rows are dropped or ignored rather than repaired.
+- Usage signal (declared honestly, per the constitution): **there is none from us, by design** — the file is in the user's storage and reading or writing it contacts no server we own, so no `product_events` row can exist without breaking the promise. What we can watch instead: unprompted GitHub issues, stars, and traffic on the repo and the schema URL; and organic movement in the existing cloud funnel (`cloud_connect_started/success`), since an agent user needs a cloud backend first. Both are weak and lagging. If neither moves within a quarter, this stays a docs page and earns no code.
+- Tests: ✅ AC1 (`roadmap-file.schema.test.ts` — empty record, full merged record with a real `entered-in-error` correction pair, unknown-field forward-compat, malformed record, ten per-invariant negative cases, and an enum parity pin that deep-equals the schema's `MetricType`/`MeasurementSource`/`medicationKey`/document-`type` enums against `validation.ts` so drift breaks the build). ❌ AC2–AC4 are prose; nothing tests that the doc still matches the adapters — a folder rename would drift silently.
+
 ## Epic D — Lab uploads & documents
 
 ### US-12 · Upload lab reports

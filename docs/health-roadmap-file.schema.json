@@ -1,0 +1,464 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json",
+  "title": "Health Roadmap record file",
+  "description": "The complete health record for one user: a single JSON document named health-roadmap.json, stored in the user's own cloud (Google Drive, Dropbox, GitHub, WebDAV) or in browser localStorage. Never on our server. Derived from packages/health-core/src/roadmap-file.ts at schemaVersion 1. Unknown properties are preserved on read and write (forward-compatibility rule 1 in migrate.ts), so every object here allows extra keys. Timestamps are ISO 8601 strings. `meta.createdAt`/`meta.updatedAt` are shape-checked on read (a malformed value is replaced with the load time); row timestamps are compared as strings and clamped, not format-validated — so this schema does not require a format. Agents: see docs/agent-access.md for the read/write rules.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "meta",
+    "profile",
+    "measurements",
+    "medications",
+    "medicationHistory",
+    "supplements",
+    "supplementHistory",
+    "screenings",
+    "labValues",
+    "documents",
+    "reminderPreferences",
+    "recommendationSnapshots"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "On-disk shape version. A file with a HIGHER version than the reading app understands must not be rewritten — migrate.ts throws SchemaTooNewError rather than downgrade it."
+    },
+    "meta": { "$ref": "#/$defs/RoadmapFileMeta" },
+    "profile": { "$ref": "#/$defs/RoadmapProfile" },
+    "measurements": {
+      "type": "array",
+      "description": "Append-only. Core metric values in SI canonical units.",
+      "items": { "$ref": "#/$defs/FileMeasurement" }
+    },
+    "medications": {
+      "type": "array",
+      "description": "Current state, one row per medicationKey.",
+      "items": { "$ref": "#/$defs/FileMedication" }
+    },
+    "medicationHistory": {
+      "type": "array",
+      "description": "Append-only log; rows carry changeType.",
+      "items": { "$ref": "#/$defs/FileMedication" }
+    },
+    "supplements": {
+      "type": "array",
+      "description": "Current state, one row per supplementKey.",
+      "items": { "$ref": "#/$defs/FileSupplement" }
+    },
+    "supplementHistory": {
+      "type": "array",
+      "description": "Append-only log; rows carry changeType.",
+      "items": { "$ref": "#/$defs/FileSupplement" }
+    },
+    "screenings": { "$ref": "#/$defs/FileScreenings" },
+    "labValues": {
+      "type": "array",
+      "description": "Append-only. Lab tests beyond the core metrics, kept in the lab's own reported unit.",
+      "items": { "$ref": "#/$defs/FileLabValue" }
+    },
+    "documents": {
+      "type": "array",
+      "description": "Metadata for uploaded reports. The bytes live beside this file, at fileRef.",
+      "items": { "$ref": "#/$defs/FileDocument" }
+    },
+    "reminderPreferences": {
+      "type": "array",
+      "description": "Current state, one row per reminder category.",
+      "items": { "$ref": "#/$defs/FileReminderPreference" }
+    },
+    "recommendationSnapshots": {
+      "type": "array",
+      "description": "Point-in-time record of what the tool advised, deduped by date.",
+      "items": { "$ref": "#/$defs/RecommendationSnapshot" }
+    },
+    "reminderOptIn": { "$ref": "#/$defs/FileReminderOptIn" }
+  },
+  "$defs": {
+    "RoadmapFileMeta": {
+      "type": "object",
+      "description": "Top-level sync state for the whole file. An agent writing the file sets `updatedAt` and nothing else here — `lamport`, `eraseEpoch` and `lastDeviceId` belong to the sync engine. Unrecognised keys added here are dropped by mergeFiles, which rebuilds meta from these five fields. `updatedAt` also anchors the clock clamp on read — a stale value rewinds rows written after it.",
+      "required": ["createdAt", "updatedAt", "lastDeviceId", "lamport"],
+      "properties": {
+        "createdAt": { "type": "string", "description": "ISO 8601 — earliest creation across devices." },
+        "updatedAt": { "type": "string", "description": "ISO 8601 — last write to the file." },
+        "lastDeviceId": { "type": "string", "description": "Device that produced this revision." },
+        "lamport": { "type": "number", "description": "File-level logical clock, monotonic per device." },
+        "eraseEpoch": {
+          "type": "number",
+          "description": "\"Delete All My Data\" counter. A file with a higher epoch wins a merge wholesale. Absent reads as 0."
+        }
+      }
+    },
+
+    "RoadmapProfile": {
+      "type": "object",
+      "description": "Demographics and display preferences. A last-write-wins singleton.",
+      "required": ["updatedAt"],
+      "properties": {
+        "updatedAt": { "type": "string" },
+        "lamport": { "type": "number" },
+        "sex": { "enum": ["male", "female"] },
+        "birthYear": { "type": "number" },
+        "birthMonth": { "type": "number", "description": "1–12." },
+        "heightCm": { "type": "number", "description": "Centimetres." },
+        "unitSystem": { "enum": ["si", "conventional"], "description": "Display units only; stored values are always SI." },
+        "unitOverrides": {
+          "type": "object",
+          "description": "Per-metric display-unit overrides, keyed by metric type.",
+          "additionalProperties": { "enum": ["si", "conventional"] }
+        },
+        "reportEmailCaptured": {
+          "type": "boolean",
+          "description": "Monotonic: set true once the user submits an email for their plan. Never set back to false."
+        }
+      }
+    },
+
+    "MetricType": {
+      "enum": [
+        "weight",
+        "waist",
+        "hba1c",
+        "ldl",
+        "total_cholesterol",
+        "hdl",
+        "triglycerides",
+        "systolic_bp",
+        "diastolic_bp",
+        "apob",
+        "creatinine",
+        "psa",
+        "lpa"
+      ],
+      "description": "The core metrics, from METRIC_TYPES in packages/health-core/src/validation.ts. Anything outside this list belongs in labValues. Height is not here — it lives in profile.heightCm, not as a measurement row."
+    },
+
+    "MeasurementSource": {
+      "enum": [
+        "manual",
+        "apple_health",
+        "fitbit",
+        "lab_import",
+        "lab_import_edited",
+        "manual_correction"
+      ],
+      "description": "Where the value came from. From MEASUREMENT_SOURCES in packages/health-core/src/validation.ts."
+    },
+
+    "MeasurementStatus": {
+      "enum": ["active", "entered-in-error"],
+      "description": "FHIR-style audit state. One-way: active may become entered-in-error, never the reverse."
+    },
+
+    "FileMeasurement": {
+      "type": "object",
+      "description": "One immutable measurement row. Never edit or delete a row — append a correction instead.",
+      "required": [
+        "id",
+        "metricType",
+        "value",
+        "recordedAt",
+        "createdAt",
+        "source",
+        "status",
+        "correctsId",
+        "externalId"
+      ],
+      "properties": {
+        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. Read ids as opaque strings: an id containing '#dup-' is a quarantined duplicate the merge created after an id was reused with different content — never write one yourself." },
+        "metricType": { "$ref": "#/$defs/MetricType" },
+        "value": { "type": "number", "description": "SI canonical unit: kg, cm, mmHg, mmol/mol (HbA1c), mmol/L (lipids), g/L (ApoB), µmol/L (creatinine), ng/mL (PSA), nmol/L (Lp(a))." },
+        "recordedAt": {
+          "type": "string",
+          "description": "ISO 8601. Only the calendar day matters: (metricType, day) is the slot key, and at most one active row exists per slot. Both 'YYYY-MM-DD' and a full timestamp occur in real files."
+        },
+        "createdAt": { "type": "string", "description": "ISO 8601 write time. Within a slot, the newest createdAt is the active row (id breaks ties)." },
+        "source": { "$ref": "#/$defs/MeasurementSource" },
+        "status": { "$ref": "#/$defs/MeasurementStatus" },
+        "correctsId": {
+          "type": ["string", "null"],
+          "description": "Id of the row this one replaces, or null."
+        },
+        "externalId": {
+          "type": ["string", "null"],
+          "description": "Id in the originating system (e.g. a HealthKit sample UUID), used for dedup."
+        }
+      }
+    },
+
+    "FileLabValue": {
+      "type": "object",
+      "description": "One immutable lab row for a test outside the core metrics. Same append-only rules as a measurement.",
+      "required": [
+        "id",
+        "metricName",
+        "value",
+        "unit",
+        "referenceLow",
+        "referenceHigh",
+        "recordedAt",
+        "createdAt",
+        "source",
+        "status",
+        "correctsId"
+      ],
+      "properties": {
+        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. An id containing '#dup-' is a merge-quarantined duplicate — never write one yourself." },
+        "metricName": {
+          "type": "string",
+          "description": "Prefer a catalogue key from packages/health-core/src/lab-catalog.ts (e.g. 'ferritin'). Free text otherwise. Slot key is (metricName, day of recordedAt)."
+        },
+        "value": { "type": "number" },
+        "unit": { "type": "string", "description": "The lab's own reported unit. No SI conversion is applied." },
+        "referenceLow": { "type": ["number", "null"], "description": "Lab reference range low, or null." },
+        "referenceHigh": { "type": ["number", "null"], "description": "Lab reference range high, or null." },
+        "recordedAt": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "source": { "$ref": "#/$defs/MeasurementSource" },
+        "status": { "$ref": "#/$defs/MeasurementStatus" },
+        "correctsId": { "type": ["string", "null"] }
+      }
+    },
+
+    "HistoryChangeType": {
+      "enum": ["started", "stopped", "dose_changed", "switched"],
+      "description": "How a history row differs from the state before it. Recorded at write time, present only on medicationHistory / supplementHistory rows."
+    },
+
+    "FileMedication": {
+      "type": "object",
+      "description": "One medication slot. In `medications` this is current state; in `medicationHistory` it is an appended log row.",
+      "required": ["updatedAt", "id", "medicationKey", "drugName", "doseValue", "doseUnit"],
+      "properties": {
+        "updatedAt": { "type": "string" },
+        "lamport": { "type": "number" },
+        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. An id containing '#dup-' is a merge-quarantined duplicate — never write one yourself." },
+        "medicationKey": {
+          "enum": [
+            "statin",
+            "ezetimibe",
+            "statin_escalation",
+            "pcsk9i",
+            "bempedoic_acid",
+            "glp1",
+            "glp1_escalation",
+            "sglt2i",
+            "metformin"
+          ],
+          "description": "MEDICATION_KEYS in validation.ts. The merge key for the current-state list."
+        },
+        "drugName": { "type": "string", "description": "Drug or sentinel value, e.g. 'atorvastatin', 'yes', 'not_yet', 'not_tolerated'." },
+        "doseValue": { "type": ["number", "null"] },
+        "doseUnit": { "type": ["string", "null"] },
+        "changeType": { "$ref": "#/$defs/HistoryChangeType" }
+      }
+    },
+
+    "FileSupplement": {
+      "type": "object",
+      "description": "One supplement. In `supplements` this is current state; in `supplementHistory` it is an appended log row.",
+      "required": [
+        "updatedAt",
+        "id",
+        "supplementKey",
+        "supplementName",
+        "doseValue",
+        "doseUnit",
+        "status",
+        "startedAt"
+      ],
+      "properties": {
+        "updatedAt": { "type": "string" },
+        "lamport": { "type": "number" },
+        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. An id containing '#dup-' is a merge-quarantined duplicate — never write one yourself." },
+        "supplementKey": { "type": "string", "description": "Lowercase alphanumeric with underscores. The merge key for the current-state list." },
+        "supplementName": { "type": "string" },
+        "doseValue": { "type": ["number", "null"] },
+        "doseUnit": { "type": ["string", "null"] },
+        "status": { "enum": ["active", "stopped"], "description": "Stopping a supplement flips this; it does not delete the row." },
+        "startedAt": { "type": "string" },
+        "changeType": { "$ref": "#/$defs/HistoryChangeType" }
+      }
+    },
+
+    "ScreeningResult": { "enum": ["normal", "abnormal", "awaiting"] },
+    "ScreeningFollowupStatus": { "enum": ["not_organized", "scheduled", "completed"] },
+
+    "FileScreenings": {
+      "type": "object",
+      "description": "The cancer- and bone-screening workflow, as one last-write-wins singleton. Every field is optional. Date fields use 'YYYY-MM' (month precision).",
+      "required": ["updatedAt"],
+      "properties": {
+        "updatedAt": { "type": "string" },
+        "lamport": { "type": "number" },
+
+        "colorectalMethod": { "enum": ["fit_annual", "colonoscopy_10yr", "other", "not_yet_started"] },
+        "colorectalLastDate": { "type": "string" },
+        "colorectalResult": { "$ref": "#/$defs/ScreeningResult" },
+        "colorectalFollowupStatus": { "$ref": "#/$defs/ScreeningFollowupStatus" },
+        "colorectalFollowupDate": { "type": "string" },
+
+        "breastFrequency": { "enum": ["annual", "biennial", "not_yet_started"] },
+        "breastLastDate": { "type": "string" },
+        "breastResult": { "$ref": "#/$defs/ScreeningResult" },
+        "breastFollowupStatus": { "$ref": "#/$defs/ScreeningFollowupStatus" },
+        "breastFollowupDate": { "type": "string" },
+
+        "cervicalMethod": { "enum": ["hpv_every_5yr", "pap_every_3yr", "other", "not_yet_started"] },
+        "cervicalLastDate": { "type": "string" },
+        "cervicalResult": { "$ref": "#/$defs/ScreeningResult" },
+        "cervicalFollowupStatus": { "$ref": "#/$defs/ScreeningFollowupStatus" },
+        "cervicalFollowupDate": { "type": "string" },
+
+        "lungSmokingHistory": { "enum": ["never_smoked", "former_smoker", "current_smoker"] },
+        "lungPackYears": { "type": "number" },
+        "lungScreening": { "enum": ["annual_ldct", "not_yet_started"] },
+        "lungLastDate": { "type": "string" },
+        "lungResult": { "$ref": "#/$defs/ScreeningResult" },
+        "lungFollowupStatus": { "$ref": "#/$defs/ScreeningFollowupStatus" },
+        "lungFollowupDate": { "type": "string" },
+
+        "prostateDiscussion": { "enum": ["not_yet", "elected_not_to", "will_screen"] },
+        "prostatePsaValue": { "type": "number", "description": "ng/mL." },
+        "prostateLastDate": { "type": "string" },
+
+        "endometrialDiscussion": { "enum": ["not_yet", "discussed"] },
+        "endometrialAbnormalBleeding": { "enum": ["no", "yes_reported", "yes_need_to_report"] },
+
+        "dexaScreening": { "enum": ["dexa_scan", "not_yet_started"] },
+        "dexaLastDate": { "type": "string" },
+        "dexaResult": { "enum": ["normal", "osteopenia", "osteoporosis", "awaiting"] },
+        "dexaFollowupStatus": { "$ref": "#/$defs/ScreeningFollowupStatus" },
+        "dexaFollowupDate": { "type": "string" }
+      }
+    },
+
+    "FileReminderPreference": {
+      "type": "object",
+      "description": "One reminder category the user has switched on or off. Merge key is `category`.",
+      "required": ["updatedAt", "category", "enabled"],
+      "properties": {
+        "updatedAt": { "type": "string" },
+        "lamport": { "type": "number" },
+        "category": { "type": "string" },
+        "enabled": { "type": "boolean" }
+      }
+    },
+
+    "FileReminderOptIn": {
+      "type": "object",
+      "description": "The user's email-reminder opt-in. Cancelling flips status; the object is never removed, because an absent field cannot win a merge.",
+      "required": ["updatedAt", "status", "token", "email", "provider"],
+      "properties": {
+        "updatedAt": { "type": "string" },
+        "lamport": { "type": "number" },
+        "status": { "enum": ["active", "cancelled"] },
+        "token": {
+          "type": "string",
+          "description": "Opaque server-issued capability token. It manages ONLY the reminder schedule. Treat it as a secret: never copy it elsewhere, never send it anywhere."
+        },
+        "email": { "type": "string", "description": "Provider-verified address, kept for display and change detection." },
+        "provider": { "enum": ["google-drive", "dropbox", "github"] }
+      }
+    },
+
+    "FileDocument": {
+      "type": "object",
+      "description": "Metadata for one uploaded report or letter. Deletion sets `deleted: true`; the row itself stays forever, or the union merge would resurrect it.",
+      "required": [
+        "id",
+        "title",
+        "type",
+        "date",
+        "fileRef",
+        "contentHash",
+        "mimeType",
+        "extractedText",
+        "addedAt"
+      ],
+      "properties": {
+        "id": { "type": "string", "description": "Stable unique id. Write a fresh UUID; never reuse one. An id containing '#dup-' is a merge-quarantined duplicate — never write one yourself." },
+        "title": { "type": "string" },
+        "type": {
+          "enum": [
+            "scan_result",
+            "clinic_letter",
+            "discharge_summary",
+            "pathology_report",
+            "vaccination_record",
+            "other"
+          ],
+          "description": "DOCUMENT_TYPES in validation.ts. It decides the archive folder (document-path.ts)."
+        },
+        "date": { "type": ["string", "null"], "description": "The document's own date, 'YYYY-MM-DD', or null." },
+        "fileRef": {
+          "type": "string",
+          "description": "Path of the stored original relative to the record folder, e.g. 'Lab results/2024-05-10 Lipid panel.pdf'. Empty string when the document is text-only."
+        },
+        "contentHash": { "type": "string", "description": "'sha256-…' over the stored bytes. Empty string when text-only." },
+        "mimeType": { "type": "string", "description": "Empty string when text-only." },
+        "extractedText": { "type": "string", "description": "Markdown text of the document, so search works without the original." },
+        "addedAt": { "type": "string" },
+        "metadata": { "type": "object", "description": "Free-form extraction metadata." },
+        "sourceFileName": {
+          "type": ["string", "null"],
+          "description": "Original upload filename. It is the dedup key for re-uploads — stable, unlike any generated title."
+        },
+        "deleted": { "type": "boolean", "description": "Tombstone. Merge ORs it, so a delete is never undone." }
+      }
+    },
+
+    "Suggestion": {
+      "type": "object",
+      "description": "One piece of advice the tool produced. Generated output — agents read it, they do not author it.",
+      "required": ["id", "category", "priority", "title", "description"],
+      "properties": {
+        "id": { "type": "string" },
+        "category": {
+          "enum": [
+            "nutrition",
+            "exercise",
+            "bloodwork",
+            "blood_pressure",
+            "general",
+            "sleep",
+            "medication",
+            "screening",
+            "supplements",
+            "skin"
+          ]
+        },
+        "priority": { "enum": ["info", "attention", "urgent"] },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "ingredients": { "type": "array", "items": { "type": "string" } },
+        "link": { "type": "string" },
+        "reason": { "type": "string" },
+        "guidelines": { "type": "array", "items": { "type": "string" } },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "url"],
+            "properties": {
+              "label": { "type": "string" },
+              "url": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "RecommendationSnapshot": {
+      "type": "object",
+      "description": "What the user was advised on one day. Deduped by date.",
+      "required": ["date", "suggestions"],
+      "properties": {
+        "date": { "type": "string", "description": "'YYYY-MM-DD'." },
+        "suggestions": { "type": "array", "items": { "$ref": "#/$defs/Suggestion" } }
+      }
+    }
+  }
+}

@@ -32,6 +32,7 @@ reminders / Klaviyo capture only.
   (sticky). One `active` row per (metric, day). Dedup on STABLE keys only:
   `sourceFileName` for documents, `(metric, recorded_at)` for lab values.
   Full FHIR tables + correction flow: docs/reference.md.
+- Agent contract: docs/health-roadmap-file.schema.json + docs/agent-access.md.
 - Supabase still holds OPERATIONAL data only (chat, guest sessions,
   reminder_optin_v2, ab_*, product_events, feedback_submissions, audit_logs,
   cron_lock, Shopify sessions). No health values, ever.
@@ -251,5 +252,4 @@ same commit).
 ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_* (commerce) / KLAVIYO_DR_BRAD_* (edu).
 Per-Fly-app secrets diverge post-split (own SHOPIFY_/KLAVIYO_ pairs; edu omits
 Discord/YouTube bot tokens). GitHub Actions: deploy secrets live ONLY in the
-gated `production` environment; ANTHROPIC_API_KEY (spend-capped) is the only
-repo-level secret.
+gated `production` env; ANTHROPIC_API_KEY (spend-capped) is the only repo secret.
