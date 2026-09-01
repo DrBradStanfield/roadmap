@@ -21,7 +21,7 @@ import { ROADMAP_DOC } from '../../packages/health-core/src/roadmap-doc';
 
 import { StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '../../packages/health-core/src/adapter';
 import { SyncManager } from '../../packages/health-core/src/sync-manager';
-import { callTool, isToolName, MCP_TOOLS } from '../../packages/health-core/src/mcp-tools';
+import { callTool, isToolName, MCP_TOOLS, RECORD_FREE_TOOLS } from '../../packages/health-core/src/mcp-tools';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import {
   allowToolCall,
@@ -184,6 +184,17 @@ async function callHostedTool(
   now: string,
 ): Promise<ToolAnswer> {
   if (!isToolName(name)) return refuse(`No tool named ${name}.`);
+
+  // Record-free tools open nothing, exactly as the stdio server runs them: the
+  // likeliest moment to report a bug is the moment the record would not open,
+  // so `report_feedback` must not need Dropbox to answer.
+  if (RECORD_FREE_TOOLS.has(name)) {
+    const outcome = callTool(name, args, { file: undefined, now });
+    if (outcome.status !== 'ok') return refuse(outcome.text);
+    // A file to save with nothing opened would be a write dropped in silence.
+    if (outcome.file) throw new Error(`${name} produced a file without opening one`);
+    return { text: outcome.text, isError: false };
+  }
 
   const accessToken = await dropboxAccessToken(token.rt);
   if (!accessToken) {

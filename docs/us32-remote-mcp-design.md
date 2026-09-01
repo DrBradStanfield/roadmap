@@ -75,7 +75,7 @@ Reuse otherwise: `mergeFiles`, `migrateFile`, `SyncManager`, `createRateLimiter`
 
 Read and write tools are separate by construction — no catch-all with a `method` argument.
 
-The hosted surface exposes **every tool in `MCP_TOOLS`**, the shared list the local stdio server and the CLI use — including `report_feedback`, which opens no socket and touches no record: it returns a prefilled GitHub issue URL for the user to click. One list, one surface, no hosted-only subset to drift.
+The hosted surface exposes **every tool in `MCP_TOOLS`**, the shared list the local stdio server and the CLI use — including `report_feedback`, which opens no socket and touches no record: it returns a prefilled GitHub issue URL for the user to click. The hosted dispatcher runs `RECORD_FREE_TOOLS` before it opens the folder at all, exactly as the stdio server does, so a user whose record will not load can still report that. One list, one surface, no hosted-only subset to drift.
 
 **VERIFIED HOLDS (review):** the write surface is restricted to **append-only arrays only**. `packages/health-core/src/merge.ts` (lines 24–43) enforces row immutability there via `unionRows`, while current-state lists and singletons are last-write-wins where a second writer can overwrite the user. So v1 never writes medications, supplements, screenings, profile, documents or reminders, and never deletes. Corrections stay inside the append-only arrays the merge protects.
 

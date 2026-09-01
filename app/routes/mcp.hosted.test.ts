@@ -239,6 +239,29 @@ describe('the whole connection, end to end (US-32)', () => {
   });
 });
 
+describe('a record-free tool needs no record and no Dropbox (US-32)', () => {
+  it('answers report_feedback with the record gone and no provider call', async () => {
+    seedRecord();
+    const { access } = await connect();
+    cloud.files.clear();
+    const calls = () => (fetch as unknown as { mock: { calls: unknown[] } }).mock.calls.length;
+    const before = calls();
+
+    const answer = await callTool(access, 'report_feedback', {
+      kind: 'bug', title: 'correct_value refused', detail: 'It asked for expectedValue and I had none.',
+    });
+    expect(answer.isError).toBe(false);
+    expect(answer.text).toContain('github.com');
+    expect(calls()).toBe(before);
+
+    // Still answers with Dropbox refusing outright, which is the point of it.
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('no', { status: 400 })));
+    const offline = await callTool(access, 'report_feedback', { kind: 'feature', title: 'a', detail: 'b' });
+    expect(offline.isError).toBe(false);
+    expect((await callTool(access, 'read_record', {})).isError).toBe(true);
+  });
+});
+
 describe('the doors that must stay shut (US-32, design §6)', () => {
   it('401s with the resource-metadata pointer when there is no token', async () => {
     const res = await mcpEndpoint(new Request(`${ISSUER}/mcp`, { method: 'POST', body: '{}' }));

@@ -15,8 +15,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mergeLongitudinalInputs, migrateFile, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
-import { MemoryAdapter, MemoryCloud } from '../widget-src/src/storage/memory-adapter';
-import { ROADMAP_FILE_NAME } from '../widget-src/src/storage/adapter';
+import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
+import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const GUIDE = readFileSync(join(REPO, 'docs/guides/command-line.md'), 'utf8');
