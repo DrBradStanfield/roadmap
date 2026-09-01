@@ -319,3 +319,26 @@ export {
   type ChatHistoryFile,
   type ChatHistoryFileMeta,
 } from './chat-history';
+
+// Cloud-storage layer — the adapter interface every backend implements and the
+// optimistic-concurrency read-merge-write loop above it. Lives here, not in the
+// widget, because the hosted MCP server (US-32) runs the same loop from Node.
+export {
+  ROADMAP_FILE_NAME,
+  ConflictError,
+  StorageError,
+  type StorageAdapter,
+  type StorageBackendId,
+  type ReadResult,
+  type WriteResult,
+} from './adapter';
+export {
+  SyncManager,
+  type DocumentSpec,
+  type SaveResult,
+  type SyncContext,
+  type SyncedFile,
+} from './sync-manager';
+export { ROADMAP_DOC } from './roadmap-doc';
+export { MemoryAdapter, MemoryCloud } from './memory-adapter';
+export { dropboxRead, dropboxWrite, DROPBOX_TOKEN_URL } from './dropbox-rest';

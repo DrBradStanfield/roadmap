@@ -15,9 +15,9 @@ import {
   type FileMedication,
   type RoadmapFile,
 } from '@roadmap/health-core';
-import { type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
-import { MemoryAdapter, MemoryCloud } from './memory-adapter';
-import { SyncManager } from './sync-manager';
+import { type ReadResult, type StorageAdapter, type WriteResult } from '@roadmap/health-core';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
+import { SyncManager } from '@roadmap/health-core';
 import { ROADMAP_DOC } from './roadmap-store';
 
 export interface SelfTestResult {

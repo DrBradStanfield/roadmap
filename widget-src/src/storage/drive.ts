@@ -28,7 +28,7 @@ import {
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
-} from './adapter';
+} from '@roadmap/health-core';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 

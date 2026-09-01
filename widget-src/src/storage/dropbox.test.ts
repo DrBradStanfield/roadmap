@@ -15,7 +15,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core';
 import { DropboxAdapter } from './dropbox';
-import { SyncManager } from './sync-manager';
+import { SyncManager } from '@roadmap/health-core';
 import { ROADMAP_DOC } from './roadmap-store';
 import {
   ConflictError,
@@ -23,7 +23,7 @@ import {
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
-} from './adapter';
+} from '@roadmap/health-core';
 
 const CONFIG = { clientId: 'test-app-key', redirectUri: 'https://example.com/' };
 

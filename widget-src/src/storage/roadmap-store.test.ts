@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { localDay, measurementsToInputs, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from './roadmap-store';
-import { MemoryAdapter, MemoryCloud } from './memory-adapter';
-import { ROADMAP_FILE_NAME } from './adapter';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
+import { ROADMAP_FILE_NAME } from '@roadmap/health-core';
 
 /** The file as it landed in the (simulated) cloud after a flush. */
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {

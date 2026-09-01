@@ -15,7 +15,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { RoadmapFile } from '@roadmap/health-core';
 import { MemoryAdapter, MemoryCloud, LocalStorageAdapter } from '../src/storage';
-import { ROADMAP_FILE_NAME, StorageError } from '../src/storage/adapter';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
 import { RoadmapStore, PENDING_MIRROR_KEY } from '../src/storage/roadmap-store';
 import { migrateLocalInto, copyDownFrom, liftLocalInto } from './connect';
 

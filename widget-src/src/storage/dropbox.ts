@@ -18,12 +18,14 @@
  * Brad supplies the app key (client id) via DropboxConfig; there is no secret.
  */
 import {
-  ConflictError,
+  dropboxRead,
+  dropboxWrite,
+  DROPBOX_TOKEN_URL,
   StorageError,
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
-} from './adapter';
+} from '@roadmap/health-core';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { claimRedirectCode, deriveCodeChallenge, generateCodeVerifier, generateState } from './pkce';
 
@@ -31,7 +33,7 @@ const TOKEN_KEY = 'health_roadmap_dropbox_tokens';
 const PKCE_KEY = 'health_roadmap_dropbox_pkce';
 
 const AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize';
-const TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
+const TOKEN_URL = DROPBOX_TOKEN_URL;
 const DOWNLOAD_URL = 'https://content.dropboxapi.com/2/files/download';
 const UPLOAD_URL = 'https://content.dropboxapi.com/2/files/upload';
 
@@ -140,65 +142,11 @@ export class DropboxAdapter implements StorageAdapter {
   // --- file ops -------------------------------------------------------------
 
   async read(fileName: string): Promise<ReadResult> {
-    const res = await fetch(DOWNLOAD_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${await this.accessToken()}`,
-        'Dropbox-API-Arg': JSON.stringify({ path: `/${fileName}` }),
-      },
-    });
-    if (res.status === 409) {
-      // path/not_found — no file yet.
-      return { body: null, version: null };
-    }
-    if (!res.ok) {
-      throw new StorageError(`Dropbox read failed (${res.status}): ${await res.text()}`);
-    }
-    const meta = this.parseApiResult(res);
-    const text = await res.text();
-    let body: unknown;
-    try {
-      body = text ? (JSON.parse(text)) : null;
-    } catch (error) {
-      throw new StorageError('Dropbox read failed: file is not valid JSON (possible corruption).', error);
-    }
-    return { body, version: (meta?.rev as string) ?? null };
+    return dropboxRead(await this.accessToken(), fileName);
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
-    const mode =
-      expectedVersion == null
-        ? { '.tag': 'add' } // first create — conflicts if a file already exists
-        : { '.tag': 'update', update: expectedVersion }; // conditional on rev
-    // strict_conflict on the rev-conditional path: without it Dropbox accepts an
-    // update whose rev doesn't match because the file was DELETED, silently
-    // re-creating it and resurrecting erased data.
-    const arg = {
-      path: `/${fileName}`,
-      mode,
-      autorename: false,
-      mute: true,
-      strict_conflict: expectedVersion != null,
-    };
-    const res = await fetch(UPLOAD_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${await this.accessToken()}`,
-        'Content-Type': 'application/octet-stream',
-        'Dropbox-API-Arg': JSON.stringify(arg),
-      },
-      body: JSON.stringify(body),
-    });
-    if (res.status === 409) {
-      // A write conflict (rev mismatch or add-over-existing) — surface for retry.
-      throw new ConflictError(`Dropbox write conflict: ${await res.text()}`);
-    }
-    if (!res.ok) {
-      throw new StorageError(`Dropbox write failed (${res.status}): ${await res.text()}`);
-    }
-    const meta = (await res.json()) as { rev?: string };
-    if (!meta.rev) throw new StorageError('Dropbox write returned no rev.');
-    return { version: meta.rev };
+    return dropboxWrite(await this.accessToken(), fileName, body, expectedVersion);
   }
 
   async readDocument(ref: string): Promise<Blob> {
@@ -267,16 +215,5 @@ export class DropboxAdapter implements StorageAdapter {
       expiresAt: Date.now() + json.expires_in * 1000,
     };
     saveTokens(this.tokens);
-  }
-
-  /** Parse the `dropbox-api-result` response header (file metadata incl. rev). */
-  private parseApiResult(res: Response): Record<string, unknown> | null {
-    const header = res.headers.get('dropbox-api-result');
-    if (!header) return null;
-    try {
-      return JSON.parse(header) as Record<string, unknown>;
-    } catch {
-      return null;
-    }
   }
 }

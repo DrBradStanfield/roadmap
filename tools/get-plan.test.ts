@@ -26,8 +26,8 @@ import {
   type RoadmapFile,
 } from '@roadmap/health-core';
 import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
-import { MemoryAdapter, MemoryCloud } from '../widget-src/src/storage/memory-adapter';
-import { ROADMAP_FILE_NAME } from '../widget-src/src/storage/adapter';
+import { MemoryAdapter, MemoryCloud } from '../packages/health-core/src/memory-adapter';
+import { ROADMAP_FILE_NAME } from '../packages/health-core/src/adapter';
 import { computePlan, derivePlanInputs, renderJson, PlanError } from '../packages/health-core/src/plan';
 import { loadRecord, renderHtml, renderText, run } from './get-plan';
 

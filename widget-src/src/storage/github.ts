@@ -21,7 +21,7 @@ import {
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
-} from './adapter';
+} from '@roadmap/health-core';
 import { getJson, setJson, safeRemoveItem } from '../lib/storage';
 import { bytesToBase64, base64ToBytes } from '../lib/base64';
 

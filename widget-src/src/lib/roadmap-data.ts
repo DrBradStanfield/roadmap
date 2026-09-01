@@ -32,7 +32,7 @@ import { setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse } from './api';
 import { SHOPIFY_SURFACE } from './build-flags';
 import { Sentry } from './sentry';
-import type { StorageAdapter } from '../storage/adapter';
+import type { StorageAdapter } from '@roadmap/health-core';
 import type {
   AddMeasurementResult,
   ApiDocument,

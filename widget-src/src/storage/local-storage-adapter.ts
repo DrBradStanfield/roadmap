@@ -16,7 +16,7 @@ import {
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
-} from './adapter';
+} from '@roadmap/health-core';
 
 // The roadmap file keeps its ORIGINAL keys (existing users' device data lives
 // under them); other named files (chat-history.json, …) get namespaced keys.

@@ -53,20 +53,17 @@ import {
   type RoadmapFile,
 } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
-import { SyncManager, type DocumentSpec, type SyncContext } from './sync-manager';
+import { ROADMAP_DOC, SyncManager, type SyncContext } from '@roadmap/health-core';
 import { LocalStorageAdapter } from './local-storage-adapter';
-import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
+import { ROADMAP_FILE_NAME, type StorageAdapter } from '@roadmap/health-core';
 import { ensureIsoDatetime } from '../lib/recordedAt';
 import { safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 
-/** The primary record file's DocumentSpec — schema knowledge lives beside the
- *  store that owns it (chat-history-store.ts holds CHAT_HISTORY_DOC likewise). */
-export const ROADMAP_DOC: DocumentSpec<RoadmapFile> = {
-  fileName: ROADMAP_FILE_NAME,
-  migrate: (raw, ctx) => migrateFile(raw as RoadmapFile | null, ctx),
-  merge: (local, base, ctx) => mergeFiles(local, base, ctx),
-};
+/** Re-exported so the widget's own modules keep importing it from the store
+ *  that uses it. It is defined in health-core (roadmap-doc.ts) because the
+ *  hosted MCP server runs the same read-merge-write loop from Node (US-32). */
+export { ROADMAP_DOC };
 
 /**
  * Set while the on-device copy may hold changes a cloud backend hasn't seen

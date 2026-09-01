@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createEmptyFile, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore, PENDING_MIRROR_KEY } from './roadmap-store';
-import { MemoryAdapter, MemoryCloud } from './memory-adapter';
+import { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
 import { LocalStorageAdapter } from './local-storage-adapter';
-import { ROADMAP_FILE_NAME, StorageError } from './adapter';
+import { ROADMAP_FILE_NAME, StorageError } from '@roadmap/health-core';
 
 /** The file as it landed in the (simulated) cloud after a flush. */
 function readCloudFile(cloud: MemoryCloud): RoadmapFile {

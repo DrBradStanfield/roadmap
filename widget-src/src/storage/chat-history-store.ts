@@ -21,9 +21,9 @@ import {
   type ChatFileMessage,
   type ChatHistoryFile,
 } from '@roadmap/health-core';
-import type { StorageAdapter } from './adapter';
+import type { StorageAdapter } from '@roadmap/health-core';
 import { getDeviceId } from './device-id';
-import { SyncManager, type DocumentSpec } from './sync-manager';
+import { SyncManager, type DocumentSpec } from '@roadmap/health-core';
 
 /** What the conversation list shows — everything but the message bodies. */
 export interface ChatConversationSummary {

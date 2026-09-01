@@ -11,8 +11,8 @@ export {
   type StorageBackendId,
   type ReadResult,
   type WriteResult,
-} from './adapter';
-export { SyncManager, type SaveResult } from './sync-manager';
+} from '@roadmap/health-core';
+export { SyncManager, type SaveResult } from '@roadmap/health-core';
 // RoadmapStore + its Api* types are imported directly from './roadmap-store' by
 // the data shim (lib/roadmap-data.ts) — not re-exported here to avoid a second
 // canonical copy of the Api* type names (api.ts owns those). The cross-adapter
@@ -22,7 +22,7 @@ export { saveRoadmapFileInto, markSyncPending, isSyncPending, SYNC_PENDING_EVENT
 // Thrown by SyncManager (via migrate) when the cloud file is from a newer app
 // version — surfaced here so UI can show "update the app", not a generic error.
 export { SchemaTooNewError } from '@roadmap/health-core';
-export { MemoryAdapter, MemoryCloud } from './memory-adapter';
+export { MemoryAdapter, MemoryCloud } from '@roadmap/health-core';
 export { LocalStorageAdapter } from './local-storage-adapter';
 export { DropboxAdapter, type DropboxConfig } from './dropbox';
 export { GitHubAdapter, type GitHubConfig } from './github';

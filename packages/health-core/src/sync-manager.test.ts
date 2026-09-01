@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core';
+import { createEmptyFile, createMeasurement } from './roadmap-file';
+import type { RoadmapFile } from './roadmap-file';
 import { SyncManager } from './sync-manager';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
-import { ROADMAP_DOC } from './roadmap-store';
+import { ROADMAP_DOC } from './roadmap-doc';
 
 // US-10 · Cross-device convergence — highest-risk gap flagged in
 // docs/user-stories.md ("SyncManager load→merge→push loop... untested").
