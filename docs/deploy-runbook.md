@@ -290,6 +290,14 @@ Advanced → Developer mode → Create, same URL. Both then run the OAuth flow: 
 screen, then Dropbox, then back. Time the token exchange — Claude allows 10 seconds and
 ours does a live Dropbox code exchange inside that budget (design §7).
 
+**Watch two things on that first connection.** (a) **Dropbox's `state` limit is believed,
+not verified** — documented as 500 bytes, never confirmed by us. We now send a 43-char
+nonce, so it should not bind; if Dropbox rejects the authorize URL or drops `state`, that
+is what happened, and the answer is in the nonce, not in the sealed blob (design §4). (b)
+The consent step is load-bearing: the callback needs the `__Host-mcp-state` cookie the
+consent POST sets, so a browser blocking first-party cookies for the domain will land on
+"that sign-in did not start here" rather than connecting.
+
 **8. Verify against a real record**, in this order, and check the Dropbox file after
 each write: `read_record` → `get_plan` → `add_measurement` → a correction with
 `expectedValue` → a correction WITHOUT it (must refuse) → a correction on a row older

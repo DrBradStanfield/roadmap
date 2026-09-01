@@ -10,16 +10,21 @@ export function createRateLimiter(max: number, windowMs: number, cleanupMs: numb
   }, cleanupMs);
   // Never hold the process open just to sweep an in-memory map.
   sweep.unref?.();
-  return (key: string): boolean => {
-    const now = Date.now();
-    const entry = map.get(key);
-    if (!entry || now > entry.resetAt) {
-      map.set(key, { count: 1, resetAt: now + windowMs });
-      return true;
-    }
-    entry.count++;
-    return entry.count <= max;
-  };
+  // `reset` is a test seam: the map is process-global and would otherwise leak
+  // between cases in a suite that drives a limited route many times.
+  return Object.assign(
+    (key: string): boolean => {
+      const now = Date.now();
+      const entry = map.get(key);
+      if (!entry || now > entry.resetAt) {
+        map.set(key, { count: 1, resetAt: now + windowMs });
+        return true;
+      }
+      entry.count++;
+      return entry.count <= max;
+    },
+    { reset: () => map.clear() },
+  );
 }
 
 /**

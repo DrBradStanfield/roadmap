@@ -31,9 +31,36 @@ import { createRateLimiter } from './rate-limiter';
  * The whole feature's on switch. Unset (the state of production until Brad
  * sets the Fly secret) and every `/mcp` route 404s, so this code can ship
  * inert and be turned on by adding a secret rather than by deploying again.
+ *
+ * A MALFORMED secret is the same answer as a missing one: disabled, 404, and
+ * one log line naming the variable. The alternative is a 500 on every route in
+ * the file, which is a worse failure and a more informative one to a stranger.
  */
 export function isMcpEnabled(): boolean {
-  return sealKeys().length > 0;
+  let keys: Buffer[];
+  try {
+    keys = sealKeys();
+  } catch {
+    return misconfigured('MCP_SEAL_KEYS');
+  }
+  if (keys.length === 0) return false;
+  try {
+    clientHmacKey();
+  } catch {
+    return misconfigured('MCP_CLIENT_HMAC_KEY');
+  }
+  return true;
+}
+
+const warnedAbout = new Set<string>();
+
+/** Names the variable, once, and never its value. Sentry sees the name only. */
+function misconfigured(variable: string): false {
+  if (!warnedAbout.has(variable)) {
+    warnedAbout.add(variable);
+    console.error(`[mcp] ${variable} is missing or malformed; the hosted MCP server stays disabled.`);
+  }
+  return false;
 }
 
 /** Public origin. The PRM `resource` must equal the URL a user types, exactly. */
@@ -89,8 +116,12 @@ export type BlobType = 'state' | 'code' | 'access' | 'refresh';
  */
 const BUCKETS = [256, 512, 1024, 2048, 4096];
 
-/** HKDF-SHA256 per blob type, so a `state` blob can never be read as an `access`. */
-function typeKey(key: Buffer, typ: BlobType): Buffer {
+/**
+ * HKDF-SHA256 per blob type, so a `state` blob can never be read as an
+ * `access`. Exported because the header check in `unseal` masks it: drop `typ`
+ * from the info string and every other test still passes.
+ */
+export function typeKey(key: Buffer, typ: BlobType): Buffer {
   return Buffer.from(crypto.hkdfSync('sha256', key, Buffer.alloc(0), `mcp/${typ}/v1`, 32));
 }
 
@@ -252,26 +283,30 @@ export const REFRESH_LIFETIME_SECONDS = 90 * 24 * 60 * 60;
 const STATE_LIFETIME_SECONDS = 10 * 60;
 
 /**
- * Weighted write budget (design §3, mitigation 4). `PER_ACCESS_WRITES` is what
- * one hour-long access token may spend; `CONNECTION_WRITES` is the whole
- * connection's pool, carried in the refresh blob and spent by refreshing —
- * the only durable quota statelessness allows, because a blob already in a
- * vendor's hands can never be updated by us.
+ * Weighted write allowance (design §3, mitigation 4): N weighted writes per
+ * connection per hour, per machine. A correction costs five adds — the
+ * silent-falsification attack needs one correction per metric, so weighting
+ * corrections is what actually bounds it, while a real session adds in batches
+ * (a lab panel is ONE add of many rows) and corrects a handful of times.
  *
- * A correction costs five adds. The silent-falsification attack needs one
- * correction per metric, so weighting corrections is what actually bounds it,
- * while a real session adds in batches (a lab panel is ONE add of many rows)
- * and corrects a handful of times.
+ * There is no lifetime pool. One was tried and removed: a sealed pool spent by
+ * REFRESHING rather than by writing charged an honest client for refreshes it
+ * had to make, so fifty refreshes and zero writes left a user permanently
+ * unable to write; and because a replayed refresh blob mints a fresh access
+ * blob from the same unchanged ciphertext, it bounded nobody. It was a lie in
+ * one direction and a no-op in the other.
  */
-export const PER_ACCESS_WRITES = 60;
-export const CONNECTION_WRITES = 3000;
+export const WRITES_PER_HOUR = 60;
 export const WRITE_COST = { add: 1, correct: 5 } as const;
+const WRITE_WINDOW_MS = 60 * 60 * 1000;
 
 export interface StatePayload {
   clientId: string;
   redirectUri: string;
   codeChallenge: string;
   clientState: string;
+  /** The value Dropbox echoes. Set at consent, held only in the cookie. */
+  nonce: string;
   exp: number;
 }
 
@@ -288,17 +323,12 @@ export interface CodePayload {
 export interface AccessPayload {
   clientId: string;
   rt: string;
-  /** Weighted writes this access token may spend before it must refresh. */
-  writes: number;
-  jti: string;
   exp: number;
 }
 
 export interface RefreshPayload {
   clientId: string;
   rt: string;
-  /** Weighted writes left in the whole connection's pool. */
-  budget: number;
   exp: number;
 }
 
@@ -307,25 +337,19 @@ function nowSeconds(nowMs: number): number {
 }
 
 /**
- * Mint the access/refresh pair a `/token` response carries. The access token
- * draws its allowance from the connection pool, so an attacker who wants more
- * writes per hour cannot get them: they must refresh, and refreshing drains
- * the pool that bounds the connection's whole 90 days.
+ * Mint the access/refresh pair a `/token` response carries.
+ *
+ * `refreshExp` carries the ORIGINAL refresh expiry through a refresh grant, so
+ * the 90 days run from consent and not from the last refresh. Without it the
+ * lifetime slides: a client that refreshes hourly never reaches an expiry, and
+ * "90 days" bounds nothing. Omitted on the code grant, where the clock starts.
  */
-export function issueTokens(clientId: string, rt: string, budget: number, nowMs: number) {
-  const granted = Math.min(PER_ACCESS_WRITES, Math.max(0, budget));
-  const access: AccessPayload = {
-    clientId,
-    rt,
-    writes: granted,
-    jti: crypto.randomUUID(),
-    exp: nowSeconds(nowMs) + ACCESS_LIFETIME_SECONDS,
-  };
+export function issueTokens(clientId: string, rt: string, nowMs: number, refreshExp?: number) {
+  const access: AccessPayload = { clientId, rt, exp: nowSeconds(nowMs) + ACCESS_LIFETIME_SECONDS };
   const refresh: RefreshPayload = {
     clientId,
     rt,
-    budget: Math.max(0, budget - granted),
-    exp: nowSeconds(nowMs) + REFRESH_LIFETIME_SECONDS,
+    exp: refreshExp ?? nowSeconds(nowMs) + REFRESH_LIFETIME_SECONDS,
   };
   return {
     access_token: packSealed('access', clientId, access),
@@ -359,20 +383,27 @@ export function claimCode(jti: string, nowMs = Date.now()): boolean {
 }
 
 /**
- * Writes already spent under one access token, per machine. The durable bound
- * is the connection pool spent by refresh; this is the within-the-hour half,
- * and like the code set it is best-effort across machines.
+ * Writes already spent by one CONNECTION this hour, per machine. Keyed on the
+ * hash of the provider refresh token, which is what a connection is: minting a
+ * second access token over the same connection lands on the same counter, so
+ * extra tokens buy no extra writes. Best-effort across Fly machines, like the
+ * code set — N machines multiply the allowance by N, and §4 says so.
  */
 const spentWrites = new Map<string, { used: number; at: number }>();
 
-export function spendWrites(jti: string, allowance: number, cost: number, nowMs = Date.now()): boolean {
+/** The connection a sealed credential belongs to, named without naming it. */
+export function connectionKey(rt: string): string {
+  return hash(rt);
+}
+
+export function spendWrites(connection: string, cost: number, nowMs = Date.now()): boolean {
   for (const [id, entry] of spentWrites) {
-    if (nowMs - entry.at > ACCESS_LIFETIME_SECONDS * 1000) spentWrites.delete(id);
+    if (nowMs - entry.at > WRITE_WINDOW_MS) spentWrites.delete(id);
   }
-  const entry = spentWrites.get(jti) ?? { used: 0, at: nowMs };
-  if (entry.used + cost > allowance) return false;
+  const entry = spentWrites.get(connection) ?? { used: 0, at: nowMs };
+  if (entry.used + cost > WRITES_PER_HOUR) return false;
   entry.used += cost;
-  spentWrites.set(jti, entry);
+  spentWrites.set(connection, entry);
   return true;
 }
 
@@ -381,6 +412,10 @@ export function resetMcpMemory(): void {
   spentCodes.clear();
   spentWrites.clear();
   cimdCache.clear();
+  warnedAbout.clear();
+  allowAuthorize.reset();
+  allowToken.reset();
+  allowToolCall.reset();
 }
 
 // ---------------------------------------------------------------------------
@@ -440,7 +475,9 @@ export function isAllowedRedirect(uri: string): boolean {
 function clientHmacKey(): Buffer {
   const raw = process.env.MCP_CLIENT_HMAC_KEY;
   if (!raw) throw new Error('MCP_CLIENT_HMAC_KEY is not configured');
-  return Buffer.from(raw, 'base64');
+  const key = Buffer.from(raw, 'base64');
+  if (key.length !== 32) throw new Error('MCP_CLIENT_HMAC_KEY is not 32 bytes');
+  return key;
 }
 
 interface ClientMetadata {
@@ -599,11 +636,12 @@ function cacheTtlMs(header: string | null): number {
 }
 
 /**
- * Read at most `cap` bytes. `content-length` is the server's claim, so it is
- * checked but never believed — a chunked response has none at all.
+ * Read at most `cap` bytes of a request or a response body, or throw. A
+ * `content-length` is the sender's claim, so it is checked where it exists but
+ * never believed — a chunked body has none at all.
  */
-async function readCapped(res: Response, cap: number): Promise<string> {
-  const reader = res.body?.getReader();
+export async function readCapped(source: { body: ReadableStream<Uint8Array> | null }, cap: number): Promise<string> {
+  const reader = source.body?.getReader();
   if (!reader) return '';
   const chunks: Uint8Array[] = [];
   let size = 0;
@@ -637,6 +675,16 @@ export async function resolveClient(clientId: string, nowMs = Date.now()): Promi
 
 /** Per-IP, before any CIMD fetch — the fetch is the expensive, abusable half. */
 export const allowAuthorize = createRateLimiter(20, 60_000, 10 * 60_000);
+
+/**
+ * Per-IP at `/token`, and per-connection at `tools/call`. Both are flood
+ * brakes, not quotas: a whole vendor's traffic arrives from one egress range,
+ * so an IP here can be thousands of users and the limit has to be generous or
+ * it locks out the honest ones. The per-connection one also bounds how often
+ * one connection can make us refresh a Dropbox access token.
+ */
+export const allowToken = createRateLimiter(300, 60_000, 10 * 60_000);
+export const allowToolCall = createRateLimiter(120, 60_000, 10 * 60_000);
 
 export interface AuthorizeRequest {
   client: McpClient;
@@ -684,12 +732,18 @@ export function checkAuthorize(params: URLSearchParams, client: McpClient): Auth
   };
 }
 
+/**
+ * The state the consent screen holds. The nonce is empty here on purpose: it
+ * is minted when the user presses Connect, so a state blob obtained from the
+ * consent page alone can never satisfy the callback.
+ */
 export function sealState(request: AuthorizeRequest, nowMs: number): string {
   const payload: StatePayload = {
     clientId: request.client.clientId,
     redirectUri: request.redirectUri,
     codeChallenge: request.codeChallenge,
     clientState: request.clientState,
+    nonce: '',
     exp: nowSeconds(nowMs) + STATE_LIFETIME_SECONDS,
   };
   return packSealed('state', request.client.clientId, payload);

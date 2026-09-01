@@ -19,7 +19,8 @@ vi.mock('node:dns/promises', () => ({ default: { lookup: async () => [{ address:
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { CONNECTION_WRITES, PER_ACCESS_WRITES, resetMcpMemory, unpackSealed, WRITE_COST, type AccessPayload } from '../lib/mcp-auth.server';
+import { resetMcpMemory, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-auth.server';
+import { MCP_TOOLS } from '../../packages/health-core/src/mcp-tools';
 import { MAX_CORRECTION_AGE_DAYS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
 
@@ -30,6 +31,8 @@ const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('
 const NOW = '2026-09-02T10:00:00.000Z';
 
 let cloud: MemoryCloud;
+/** A fresh Dropbox refresh token per test: the connection key is its hash. */
+let connections = 0;
 
 beforeEach(() => {
   process.env.MCP_ISSUER = ISSUER;
@@ -42,7 +45,7 @@ beforeEach(() => {
   setAdapterFactory(() => new MemoryAdapter(cloud));
   // Dropbox's token endpoint is the only network call the server makes here.
   vi.stubGlobal('fetch', vi.fn(async () => Response.json({
-    refresh_token: 'dropbox-refresh-token',
+    refresh_token: `dropbox-refresh-token-${++connections}`,
     access_token: 'dropbox-access-token',
     expires_in: 14400,
   })));
@@ -57,6 +60,10 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 // Helpers — the route's own loader/action, driven with real Requests
 // ---------------------------------------------------------------------------
+
+function unescapeHtml(text: string): string {
+  return text.replace(/&#(\d+);/g, (_, c) => String.fromCharCode(Number(c)));
+}
 
 function get(path: string, headers: HeadersInit = {}): Promise<Response> {
   const url = new URL(path, ISSUER);
@@ -79,10 +86,8 @@ async function registerClientOverHttp(): Promise<string> {
   return (await res.json()).client_id as string;
 }
 
-/** Register, authorize, consent, come back from Dropbox, and redeem the code. */
-async function connect(): Promise<{ clientId: string; access: string; refresh: string }> {
-  const clientId = await registerClientOverHttp();
-
+/** GET /mcp/authorize and pull our own sealed state out of the consent page. */
+async function consentScreen(clientId: string): Promise<string> {
   const query = new URLSearchParams({
     client_id: clientId,
     redirect_uri: REDIRECT,
@@ -94,17 +99,31 @@ async function connect(): Promise<{ clientId: string; access: string; refresh: s
   });
   const consent = await get(`/mcp/authorize?${query}`);
   expect(consent.status).toBe(200);
-  const html = await consent.text();
-  const sealedState = /name="state" value="([^"]+)"/.exec(html)![1].replace(/&#(\d+);/g, (_, c) => String.fromCharCode(Number(c)));
+  return unescapeHtml(/name="state" value="([^"]+)"/.exec(await consent.text())![1]);
+}
 
-  const toDropbox = await post('/mcp/authorize', {
+/**
+ * POST the consent form. What comes back is the pair the rest of the flow
+ * needs: the opaque nonce Dropbox will echo, and the cookie that holds the
+ * sealed state naming it.
+ */
+async function pressConnect(sealedState: string): Promise<{ nonce: string; cookie: string; to: URL }> {
+  const res = await post('/mcp/authorize', {
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ state: sealedState }),
   });
-  expect(toDropbox.status).toBe(302);
-  expect(toDropbox.headers.get('location')).toContain('https://www.dropbox.com/oauth2/authorize');
+  expect(res.status).toBe(302);
+  const to = new URL(res.headers.get('location')!);
+  return { nonce: to.searchParams.get('state')!, cookie: res.headers.get('set-cookie')!.split(';')[0], to };
+}
 
-  const back = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(sealedState)}`);
+/** Register, authorize, consent, come back from Dropbox, and redeem the code. */
+async function connect(): Promise<{ clientId: string; access: string; refresh: string }> {
+  const clientId = await registerClientOverHttp();
+  const { nonce, cookie, to } = await pressConnect(await consentScreen(clientId));
+  expect(to.origin + to.pathname).toBe('https://www.dropbox.com/oauth2/authorize');
+
+  const back = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(nonce)}`, { cookie });
   expect(back.status).toBe(302);
   const returned = new URL(back.headers.get('location')!);
   expect(returned.origin + returned.pathname).toBe(REDIRECT);
@@ -148,6 +167,20 @@ async function callTool(access: string, name: string, args: unknown, now = NOW) 
   return { text: answer.result!.content![0].text, isError: answer.result!.isError === true };
 }
 
+/** Distinct days, so every add lands in a free slot. */
+function dayNumber(n: number): string {
+  return new Date(Date.UTC(2026, 0, 1) + n * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** Write until the connection's hourly allowance refuses, and return the refusal. */
+async function spendTheHour(access: string): Promise<string> {
+  for (let i = 0; i <= WRITES_PER_HOUR; i++) {
+    const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3, recordedAt: dayNumber(i) });
+    if (answer.isError && answer.text.includes('allowance')) return answer.text;
+  }
+  return '';
+}
+
 function seedRecord(build: (file: RoadmapFile) => RoadmapFile = (f) => f): void {
   const file = build(createEmptyFile({ deviceId: 'phone', now: '2026-01-01T00:00:00.000Z' }));
   cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(file), version: 1 });
@@ -168,9 +201,7 @@ describe('the whole connection, end to end (US-32)', () => {
     expect((initialized.result as { protocolVersion: string }).protocolVersion).toBe('2025-11-25');
 
     const listed = await rpc(access, 'tools/list');
-    expect(listed.result!.tools!.map((t) => (t as { name: string }).name)).toEqual([
-      'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value',
-    ]);
+    expect(listed.result!.tools!.map((t) => (t as { name: string }).name)).toEqual(MCP_TOOLS.map((t) => t.name));
 
     const read = await callTool(access, 'read_record', {});
     expect(read.isError).toBe(false);
@@ -259,7 +290,7 @@ describe('the doors that must stay shut (US-32, design §6)', () => {
     seedRecord();
     const { access } = await connect();
     const listed = await rpc(access, 'tools/list');
-    expect(listed.result!.tools).toHaveLength(5);
+    expect(listed.result!.tools).toHaveLength(MCP_TOOLS.length);
   });
 });
 
@@ -309,16 +340,33 @@ describe('the authorization server refuses what it must (US-32, design §4)', ()
   it('spends an authorization code once per machine', async () => {
     seedRecord();
     const clientId = await registerClientOverHttp();
-    const query = new URLSearchParams({ client_id: clientId, redirect_uri: REDIRECT, response_type: 'code', code_challenge: CHALLENGE, code_challenge_method: 'S256' });
-    const html = await (await get(`/mcp/authorize?${query}`)).text();
-    const sealedState = /name="state" value="([^"]+)"/.exec(html)![1].replace(/&#(\d+);/g, (_, c) => String.fromCharCode(Number(c)));
-    const back = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(sealedState)}`);
+    const { nonce, cookie } = await pressConnect(await consentScreen(clientId));
+    const back = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(nonce)}`, { cookie });
     const code = new URL(back.headers.get('location')!).searchParams.get('code')!;
     const form = { grant_type: 'authorization_code', code, redirect_uri: REDIRECT, code_verifier: VERIFIER, client_id: clientId };
 
     await redeem(form);
     const replay = await post('/mcp/token', { headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(form) });
     expect((await replay.json()).error).toBe('invalid_grant');
+  });
+
+  it('refuses a code redeemed against a different registered redirect_uri', async () => {
+    const OTHER = 'https://chatgpt.com/connector_platform_oauth_redirect';
+    const res = await post('/mcp/register', {
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ client_name: 'Claude', redirect_uris: [REDIRECT, OTHER] }),
+    });
+    const clientId = (await res.json()).client_id as string;
+    const { nonce, cookie } = await pressConnect(await consentScreen(clientId));
+    const back = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(nonce)}`, { cookie });
+    const code = new URL(back.headers.get('location')!).searchParams.get('code')!;
+
+    const swapped = await post('/mcp/token', {
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: OTHER, code_verifier: VERIFIER, client_id: clientId }),
+    });
+    expect(swapped.status).toBe(400);
+    expect((await swapped.json()).error).toBe('invalid_grant');
   });
 
   it('takes form-encoding at /token and JSON at /register, not the other way round', async () => {
@@ -378,34 +426,52 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
     expect(storedRecord().labValues).toEqual([]);
   });
 
-  it('4 — a correction costs five adds, so the budget bounds falsification first', async () => {
+  it('4 — a correction costs five adds, so the allowance bounds falsification first', async () => {
     seedRecord();
-    const { access } = await connect();
-    const token = unpackSealed<AccessPayload>('access', access)!;
-    expect(token.writes).toBe(PER_ACCESS_WRITES);
+    const { clientId, access, refresh } = await connect();
 
     // Corrections exhaust the hour's allowance five times faster than adds.
-    expect(PER_ACCESS_WRITES / WRITE_COST.correct).toBeLessThan(PER_ACCESS_WRITES / WRITE_COST.add);
+    expect(WRITES_PER_HOUR / WRITE_COST.correct).toBeLessThan(WRITES_PER_HOUR / WRITE_COST.add);
 
-    let refused = '';
-    for (let day = 1; day <= PER_ACCESS_WRITES + 1; day++) {
-      const answer = await callTool(access, 'add_measurement', {
-        metricType: 'ldl',
-        value: 3,
-        recordedAt: `2026-0${day < 10 ? 1 : 2}-${String(day % 28 || 1).padStart(2, '0')}`,
-      });
-      if (answer.isError && answer.text.includes('write budget')) {
-        refused = answer.text;
-        break;
-      }
-    }
+    const refused = await spendTheHour(access);
+    expect(refused).toContain(String(WRITES_PER_HOUR));
     expect(refused).toContain('Reading still works');
-    // Reads are untouched by an exhausted write budget.
+    // Reads are untouched by an exhausted write allowance.
     expect((await callTool(access, 'read_record', {})).isError).toBe(false);
+
+    // The allowance belongs to the CONNECTION: a fresh access token buys none.
+    const renewed = await redeem({ grant_type: 'refresh_token', refresh_token: refresh, client_id: clientId });
+    const again = await callTool(renewed.access_token, 'add_measurement', {
+      metricType: 'ldl', value: 3, recordedAt: '2027-01-01',
+    });
+    expect(again.isError).toBe(true);
+    expect(again.text).toContain('allowance');
   });
 
-  it('the connection pool is finite, not just the hour', () => {
-    expect(CONNECTION_WRITES / PER_ACCESS_WRITES).toBeGreaterThan(1);
+  it('replaying one refresh blob three times does not triple the allowance', async () => {
+    seedRecord();
+    const { clientId, access, refresh } = await connect();
+    expect(await spendTheHour(access)).toContain('allowance');
+
+    let landed = 0;
+    for (let round = 0; round < 3; round++) {
+      const renewed = await redeem({ grant_type: 'refresh_token', refresh_token: refresh, client_id: clientId });
+      const answer = await callTool(renewed.access_token, 'add_measurement', {
+        metricType: 'ldl', value: 3, recordedAt: `202${7 + round}-01-01`,
+      });
+      if (!answer.isError) landed++;
+    }
+    expect(landed).toBe(0);
+  });
+
+  it('fifty refreshes with no writes leave the connection able to write', async () => {
+    seedRecord();
+    const { clientId, refresh } = await connect();
+    let latest = { access_token: '', refresh_token: refresh };
+    for (let i = 0; i < 50; i++) {
+      latest = await redeem({ grant_type: 'refresh_token', refresh_token: latest.refresh_token, client_id: clientId });
+    }
+    expect((await callTool(latest.access_token, 'add_measurement', { metricType: 'ldl', value: 3.2 })).isError).toBe(false);
   });
 
   it('a taken slot is refused and named, pointing at correct_value', async () => {
@@ -419,8 +485,8 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
   });
 });
 
-describe('a record from a newer app version is read-only (US-32, design §7)', () => {
-  it('refuses the write and says why', async () => {
+describe('a record from a newer app version is unreadable here (US-32, design §7)', () => {
+  it('refuses the call and says why — reads included', async () => {
     cloud.files.set(ROADMAP_FILE_NAME, {
       json: JSON.stringify({ ...createEmptyFile({ deviceId: 'phone', now: NOW }), schemaVersion: 99 }),
       version: 1,
@@ -428,8 +494,114 @@ describe('a record from a newer app version is read-only (US-32, design §7)', (
     const { access } = await connect();
     const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2 });
     expect(answer.isError).toBe(true);
-    expect(answer.text).toContain('READ-ONLY');
+    expect(answer.text).toContain('newer version');
+    expect(answer.text).not.toContain('READ-ONLY');
     expect(JSON.parse(cloud.files.get(ROADMAP_FILE_NAME)!.json).schemaVersion).toBe(99);
+
+    // The read refuses too: sync.load() migrates before any tool runs.
+    const read = await callTool(access, 'read_record', {});
+    expect(read.isError).toBe(true);
+    expect(read.text).toContain('newer version');
+  });
+});
+
+describe('the consent screen cannot be skipped (US-32, design §4)', () => {
+  it('sends Dropbox a short opaque nonce, not our sealed state', async () => {
+    const clientId = await registerClientOverHttp();
+    const { nonce, to } = await pressConnect(await consentScreen(clientId));
+    expect(nonce.length).toBeLessThanOrEqual(64);
+    expect(to.searchParams.get('state')).toBe(nonce);
+  });
+
+  it('sets the state cookie on consent, and clears it at the callback', async () => {
+    const clientId = await registerClientOverHttp();
+    const res = await post('/mcp/authorize', {
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ state: await consentScreen(clientId) }),
+    });
+    const setCookie = res.headers.get('set-cookie')!;
+    expect(setCookie).toContain('__Host-mcp-state=');
+    expect(setCookie).toContain('Secure');
+    expect(setCookie).toContain('HttpOnly');
+    expect(setCookie).toContain('SameSite=Lax');
+
+    const nonce = new URL(res.headers.get('location')!).searchParams.get('state')!;
+    const back = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(nonce)}`, {
+      cookie: setCookie.split(';')[0],
+    });
+    expect(back.headers.get('set-cookie')).toContain('Max-Age=0');
+  });
+
+  it('refuses a forged callback that carries no cookie, and mints no code', async () => {
+    const clientId = await registerClientOverHttp();
+    const { nonce } = await pressConnect(await consentScreen(clientId));
+    const forged = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(nonce)}`);
+    expect(forged.status).toBe(400);
+    expect(forged.headers.get('location')).toBeNull();
+  });
+
+  it('refuses a callback whose nonce is not the one in the cookie', async () => {
+    const clientId = await registerClientOverHttp();
+    const { cookie } = await pressConnect(await consentScreen(clientId));
+    const other = await pressConnect(await consentScreen(clientId));
+    const mismatch = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(other.nonce)}`, { cookie });
+    expect(mismatch.status).toBe(400);
+    expect(mismatch.headers.get('location')).toBeNull();
+  });
+});
+
+describe('bodies and floods are bounded (US-32)', () => {
+  const OVERSIZE = 'x'.repeat(64 * 1024 + 1);
+
+  it('413s an oversize body at every auth endpoint', async () => {
+    expect((await post('/mcp/token', {
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=refresh_token&refresh_token=${OVERSIZE}`,
+    })).status).toBe(413);
+    expect((await post('/mcp/register', {
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ client_name: OVERSIZE }),
+    })).status).toBe(413);
+    expect((await post('/mcp/authorize', {
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: `state=${OVERSIZE}`,
+    })).status).toBe(413);
+  });
+
+  it('413s an oversize JSON-RPC body', async () => {
+    seedRecord();
+    const { access } = await connect();
+    const res = await mcpEndpoint(new Request(`${ISSUER}/mcp`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping', pad: 'x'.repeat(1024 * 1024) }),
+    }));
+    expect(res.status).toBe(413);
+  });
+
+  it('rate-limits tools/call per connection', async () => {
+    seedRecord();
+    const { access } = await connect();
+    let refusal = '';
+    for (let i = 0; i < 200; i++) {
+      const answer = await callTool(access, 'read_record', {});
+      if (answer.isError && answer.text.includes('Too many')) {
+        refusal = answer.text;
+        break;
+      }
+    }
+    expect(refusal).toContain('Too many');
+  });
+
+  it('rate-limits /token per IP', async () => {
+    let last = 200;
+    for (let i = 0; i < 400 && last !== 429; i++) {
+      last = (await post('/mcp/token', {
+        headers: { 'content-type': 'application/x-www-form-urlencoded', 'fly-client-ip': '203.0.113.9' },
+        body: 'grant_type=nonsense',
+      })).status;
+    }
+    expect(last).toBe(429);
   });
 });
 

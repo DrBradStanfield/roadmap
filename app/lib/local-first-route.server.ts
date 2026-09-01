@@ -79,9 +79,21 @@ export function verifyAppProxySignature(request: Request, nowSeconds = Date.now(
  */
 export const PAGES_APP_URL = 'https://drbradstanfield.github.io/roadmap/';
 
-/** First hop of x-forwarded-for (Fly sets it). */
+/**
+ * The caller's IP, as far as anything here can know it.
+ *
+ * `Fly-Client-IP` is written by Fly's proxy — "the IP address of the client
+ * from the perspective of Fly Proxy" (https://fly.io/docs/networking/request-headers/)
+ * — so a client cannot forge it. `X-Forwarded-For` can be forged: a request
+ * arriving with its own header keeps it, and the first hop is then whatever
+ * the caller typed. It stays only as the fallback for a non-Fly runtime.
+ */
 export function getClientIp(request: Request): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  return (
+    request.headers.get('fly-client-ip')?.trim() ||
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    'unknown'
+  );
 }
 
 export function corsHeaders(request: Request): Record<string, string> {

@@ -2,8 +2,8 @@
  * The hosted MCP server: JSON-RPC over one HTTP POST, against the user's own
  * Dropbox folder (US-32 Phase 1, design §3/§6/§7).
  *
- * The tool layer is `packages/health-core/src/mcp-tools.ts` — the SAME five
- * pure functions the local stdio server (Phase 0) and the CLI run, so a hosted
+ * The tool layer is `packages/health-core/src/mcp-tools.ts` — the SAME pure
+ * functions the local stdio server (Phase 0) and the CLI run, so a hosted
  * call cannot invent a legal write the local path would refuse. What this file
  * adds is everything the hosted surface needs and the local one does not: a
  * bearer token to unseal, a Dropbox folder to read and write through
@@ -24,16 +24,23 @@ import { SyncManager } from '../../packages/health-core/src/sync-manager';
 import { callTool, isToolName, MCP_TOOLS } from '../../packages/health-core/src/mcp-tools';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import {
+  allowToolCall,
+  connectionKey,
   dropboxAccessToken,
   isMcpEnabled,
   issuer,
+  readCapped,
   spendWrites,
   unpackSealed,
   WRITE_COST,
+  WRITES_PER_HOUR,
   type AccessPayload,
 } from './mcp-auth.server';
 
 const PROTOCOL_VERSION = '2025-11-25';
+
+/** One JSON-RPC message. A lab panel of 50 rows is a few KB; this is slack. */
+const RPC_BODY_CAP = 1024 * 1024;
 
 /**
  * The next revision removed sessions, the GET stream, DELETE and
@@ -188,7 +195,7 @@ async function callHostedTool(
   try {
     file = await sync.load();
   } catch (error) {
-    return refuse(describeStorageFailure(error, name));
+    return refuse(describeStorageFailure(error));
   }
 
   if (name === 'correct_value') {
@@ -197,10 +204,11 @@ async function callHostedTool(
   }
 
   const isWrite = WRITE_TOOLS.has(name);
-  if (isWrite && !spendWrites(token.jti, token.writes, writeCost(name))) {
+  if (isWrite && !spendWrites(connectionKey(token.rt), writeCost(name))) {
     return refuse(
-      'This connection has spent its write budget for now. Reading still works. The budget refreshes with the ' +
-        'access token, so try again shortly, or ask the user to make this change in the app.',
+      `This connection has spent its write allowance for the hour — ${WRITES_PER_HOUR} weighted writes an hour, ` +
+        `where a correction counts as ${WRITE_COST.correct}. Reading still works. The allowance comes back with ` +
+        'the hour; a new access token does not buy more. Ask the user to make this change in the app if it cannot wait.',
     );
   }
 
@@ -211,7 +219,7 @@ async function callHostedTool(
   try {
     await sync.save(outcome.file);
   } catch (error) {
-    return refuse(describeStorageFailure(error, name));
+    return refuse(describeStorageFailure(error));
   }
   return { text: `${outcome.text}\nSaved to the user’s Dropbox.`, isError: false };
 }
@@ -219,14 +227,16 @@ async function callHostedTool(
 /**
  * A storage failure in the agent's own terms — one error naming the provider,
  * never a retry storm. A record from a newer app version is the one case with
- * a different answer: the server reads it and refuses to write it, because
- * writing a file it only half understands is how fields get dropped.
+ * a different answer, and it refuses the READ as well: `SyncManager.load()`
+ * migrates before any tool sees the file, so a record this server only half
+ * understands is out of reach in both directions.
  */
-function describeStorageFailure(error: unknown, name: string): string {
+function describeStorageFailure(error: unknown): string {
   if (error instanceof SchemaTooNewError) {
     return (
-      'This record was written by a newer version of the app than this server understands, so it is READ-ONLY ' +
-      `here. ${name} was not run and nothing was written. Ask the user to open the app, which will update.`
+      'This record was written by a newer version of the app than this server understands, so it cannot be ' +
+      'read or written here — reads refuse too, because the record is migrated before any tool runs. Nothing ' +
+      'was written. Ask the user to open the app, which will update it.'
     );
   }
   return 'Dropbox did not answer. Nothing was written. Try once more; if it keeps failing, the user should check dropbox.com.';
@@ -283,6 +293,14 @@ async function handleRpc(incoming: unknown, token: AccessPayload, now: string): 
     case 'tools/call': {
       const name = typeof params.name === 'string' ? params.name : '';
       if (!name) return failure(id, INVALID_PARAMS, 'tools/call needs a tool name');
+      // Per connection: every tool call refreshes a Dropbox access token under
+      // our one shared app identity, so a loop here is a loop at Dropbox.
+      if (!allowToolCall(connectionKey(token.rt))) {
+        return ok(id, {
+          content: [{ type: 'text', text: 'Too many tool calls from this connection in the last minute. Wait a moment, then try again.' }],
+          isError: true,
+        });
+      }
       const answer = await callHostedTool(token, name, params.arguments, now);
       return ok(id, { content: [{ type: 'text', text: answer.text }], ...(answer.isError ? { isError: true } : null) });
     }
@@ -344,9 +362,15 @@ export async function mcpEndpoint(request: Request, now = new Date().toISOString
   const token = unpackSealed<AccessPayload>('access', presented);
   if (!token) return unauthorized();
 
+  let text: string;
+  try {
+    text = await readCapped(request, RPC_BODY_CAP);
+  } catch {
+    return Response.json(failure(null, INVALID_REQUEST, 'That request body is too large'), { status: 413 });
+  }
   let body: unknown;
   try {
-    body = JSON.parse(await request.text());
+    body = JSON.parse(text);
   } catch {
     return Response.json(failure(null, INVALID_REQUEST, 'Not valid JSON'), { status: 400 });
   }

@@ -17,23 +17,24 @@ vi.mock('node:dns/promises', () => ({
 }));
 import {
   ACCESS_LIFETIME_SECONDS,
-  CONNECTION_WRITES,
+  connectionKey,
   isAllowedRedirect,
   isLoopbackRedirect,
   isMcpEnabled,
   isPublicAddress,
   issueTokens,
   packSealed,
-  PER_ACCESS_WRITES,
   registerClient,
   resolveClient,
   resetMcpMemory,
   seal,
   spendWrites,
+  typeKey,
   unpackSealed,
   unseal,
   verifyPkce,
   WRITE_COST,
+  WRITES_PER_HOUR,
   type AccessPayload,
   type RefreshPayload,
 } from './mcp-auth.server';
@@ -79,6 +80,14 @@ describe('seal / unseal (US-32)', () => {
     const token = seal('state', { clientId: AUDIENCE.clientId, rt: 'secret' }, AUDIENCE);
     expect(unseal('access', token, AUDIENCE)).toBeNull();
     expect(unseal('state', token, AUDIENCE)).not.toBeNull();
+  });
+
+  it('derives a different key per blob type — the HKDF info, not only the header', () => {
+    // The header check masks this: remove `typ` from the HKDF info and every
+    // other test still passes. The derivation is the defence behind it.
+    const key = Buffer.alloc(32, 1);
+    const derived = (['state', 'code', 'access', 'refresh'] as const).map((t) => typeKey(key, t).toString('hex'));
+    expect(new Set(derived).size).toBe(4);
   });
 
   it('will not open another client’s blob, or another resource’s', () => {
@@ -134,36 +143,74 @@ describe('token framing binds the client (US-32)', () => {
   });
 });
 
-describe('write budget, weighted (US-32, design §3 mitigation 4)', () => {
+describe('write allowance, weighted and per connection (US-32, design §3 mitigation 4)', () => {
   it('a correction costs five adds', () => {
     expect(WRITE_COST.correct).toBe(5 * WRITE_COST.add);
   });
 
-  it('spends an access token’s allowance, then refuses', () => {
-    const jti = 'token-1';
-    for (let i = 0; i < PER_ACCESS_WRITES / WRITE_COST.correct; i++) {
-      expect(spendWrites(jti, PER_ACCESS_WRITES, WRITE_COST.correct)).toBe(true);
+  it('spends the hour’s allowance, then refuses', () => {
+    const key = connectionKey('dropbox-refresh');
+    for (let i = 0; i < WRITES_PER_HOUR / WRITE_COST.correct; i++) {
+      expect(spendWrites(key, WRITE_COST.correct)).toBe(true);
     }
-    expect(spendWrites(jti, PER_ACCESS_WRITES, WRITE_COST.add)).toBe(false);
+    expect(spendWrites(key, WRITE_COST.add)).toBe(false);
   });
 
-  it('the connection pool is spent by refreshing, and runs out', () => {
-    let budget = CONNECTION_WRITES;
-    let refreshes = 0;
-    for (;;) {
-      const issued = issueTokens(AUDIENCE.clientId, 'rt', budget, Date.now());
-      const access = unpackSealed<AccessPayload>('access', issued.access_token)!;
-      if (access.writes === 0) break;
-      budget = unpackSealed<RefreshPayload>('refresh', issued.refresh_token)!.budget;
-      refreshes++;
-    }
-    expect(refreshes).toBe(CONNECTION_WRITES / PER_ACCESS_WRITES);
-    expect(budget).toBe(0);
+  it('is keyed on the connection, so extra access tokens buy no extra writes', () => {
+    const rt = 'dropbox-refresh';
+    for (let i = 0; i < WRITES_PER_HOUR; i++) expect(spendWrites(connectionKey(rt), WRITE_COST.add)).toBe(true);
+    expect(spendWrites(connectionKey(rt), WRITE_COST.add)).toBe(false);
+
+    // A second access token over the same connection lands on the same key.
+    const issued = issueTokens(AUDIENCE.clientId, rt, Date.now());
+    const access = unpackSealed<AccessPayload>('access', issued.access_token)!;
+    expect(spendWrites(connectionKey(access.rt), WRITE_COST.add)).toBe(false);
+  });
+
+  it('the allowance comes back with the hour, so refreshing never locks a user out', () => {
+    const key = connectionKey('dropbox-refresh');
+    for (let i = 0; i < WRITES_PER_HOUR; i++) expect(spendWrites(key, WRITE_COST.add)).toBe(true);
+    const nextHour = Date.now() + 61 * 60 * 1000;
+    expect(spendWrites(key, WRITE_COST.add, nextHour)).toBe(true);
   });
 
   it('an access token’s stated lifetime is honest — clients refresh against it', () => {
-    const issued = issueTokens(AUDIENCE.clientId, 'rt', CONNECTION_WRITES, Date.now());
+    const issued = issueTokens(AUDIENCE.clientId, 'rt', Date.now());
     expect(issued.expires_in).toBe(ACCESS_LIFETIME_SECONDS);
+  });
+
+  it('the refresh lifetime is absolute from consent, not sliding (US-32)', () => {
+    const start = Date.parse('2026-01-01T00:00:00.000Z');
+    const first = unpackSealed<RefreshPayload>(
+      'refresh',
+      issueTokens(AUDIENCE.clientId, 'rt', start).refresh_token,
+      start,
+    )!;
+    const day89 = start + 89 * 24 * 60 * 60 * 1000;
+    const renewed = issueTokens(AUDIENCE.clientId, 'rt', day89, first.exp);
+    expect(unpackSealed<RefreshPayload>('refresh', renewed.refresh_token, day89)!.exp).toBe(first.exp);
+  });
+});
+
+describe('misconfiguration disables the feature rather than 500ing (US-32)', () => {
+  it('names the malformed variable once, without its value', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    process.env.MCP_SEAL_KEYS = 'c2hvcnQ='; // valid base64, not 32 bytes
+    expect(isMcpEnabled()).toBe(false);
+    expect(isMcpEnabled()).toBe(false);
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(String(spy.mock.calls[0][0])).toContain('MCP_SEAL_KEYS');
+    expect(String(spy.mock.calls[0][0])).not.toContain('c2hvcnQ=');
+  });
+
+  it('is disabled when the client HMAC key is missing or malformed', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    delete process.env.MCP_CLIENT_HMAC_KEY;
+    expect(isMcpEnabled()).toBe(false);
+    process.env.MCP_CLIENT_HMAC_KEY = 'c2hvcnQ=';
+    expect(isMcpEnabled()).toBe(false);
+    process.env.MCP_CLIENT_HMAC_KEY = Buffer.alloc(32, 9).toString('base64');
+    expect(isMcpEnabled()).toBe(true);
   });
 });
 

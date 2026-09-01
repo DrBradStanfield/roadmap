@@ -67,6 +67,10 @@ Sentry.init({
       delete event.request.cookies;
       if (event.request.headers) {
         delete event.request.headers.cookie;
+        // Belt and braces for the hosted MCP server (US-32): the bearer token
+        // seals a live Dropbox refresh token, so it never reaches an event.
+        delete event.request.headers.authorization;
+        delete event.request.headers.Authorization;
       }
     }
     if (event.breadcrumbs) {

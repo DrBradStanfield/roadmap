@@ -18,15 +18,16 @@
  * The whole feature is inert until `MCP_SEAL_KEYS` exists: every path 404s,
  * so this code ships before the secrets do.
  */
+import crypto from 'node:crypto';
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { getClientIp } from '../lib/local-first-route.server';
 import { mcpEndpoint, originRejected } from '../lib/mcp.server';
 import {
   allowAuthorize,
+  allowToken,
   checkAuthorize,
   claimCode,
   CODE_LIFETIME_SECONDS,
-  CONNECTION_WRITES,
   dropboxAuthorizeUrl,
   dropboxConfigured,
   dropboxExchange,
@@ -34,9 +35,9 @@ import {
   issuer,
   issueTokens,
   packSealed,
+  readCapped,
   registerClient,
   resolveClient,
-
   sealState,
   unpackSealed,
   verifyPkce,
@@ -44,6 +45,22 @@ import {
   type RefreshPayload,
   type StatePayload,
 } from '../lib/mcp-auth.server';
+
+/**
+ * The consent screen is the only place a Dropbox trip may start, and this
+ * cookie is what proves it did. The sealed state rides in the cookie — first
+ * party, `__Host-`, HttpOnly — and Dropbox is handed a 32-byte nonce that the
+ * cookie's state names. So a forged `/mcp/callback` from anywhere else has no
+ * cookie and gets a 400, and the ~1 KB blob never has to survive a provider's
+ * `state` parameter (Dropbox's documented limit is 500 bytes; verify it live
+ * at the first connection, per the runbook).
+ */
+const STATE_COOKIE = '__Host-mcp-state';
+const STATE_COOKIE_ATTRS = 'Secure; HttpOnly; SameSite=Lax; Path=/';
+const CLEAR_STATE_COOKIE = `${STATE_COOKIE}=; ${STATE_COOKIE_ATTRS}; Max-Age=0`;
+
+/** 64 KB at the OAuth doors: a registration document is the largest honest body. */
+const AUTH_BODY_CAP = 64 * 1024;
 
 
 
@@ -61,6 +78,37 @@ function oauthError(error: string, description: string, status = 400): Response 
 /** Client-supplied text reaches HTML here, so it is escaped, never trusted. */
 function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+function tooLarge(): Response {
+  return oauthError('invalid_request', 'That request body is too large', 413);
+}
+
+/** Read a form or JSON body, capped, or null when it is over the cap. */
+async function cappedBody(request: Request): Promise<string | null> {
+  try {
+    return await readCapped(request, AUTH_BODY_CAP);
+  } catch {
+    return null;
+  }
+}
+
+function redirectTo(location: string, headers: Record<string, string> = {}): Response {
+  return new Response(null, { status: 302, headers: { Location: location, ...NO_STORE, ...headers } });
+}
+
+function readCookie(request: Request, name: string): string | null {
+  for (const part of (request.headers.get('cookie') ?? '').split(';')) {
+    const at = part.indexOf('=');
+    if (at > 0 && part.slice(0, at).trim() === name) return part.slice(at + 1).trim();
+  }
+  return null;
+}
+
+function sameNonce(returned: string, expected: string): boolean {
+  const a = Buffer.from(returned, 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 function segment(params: Record<string, string | undefined>): string {
@@ -81,7 +129,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   // session to resume. `Mcp-Session-Id` and `Last-Event-ID` are ignored.
   if (path === '') return mcpEndpoint(request);
   if (path === 'authorize') return authorizeScreen(request, url);
-  if (path === 'callback') return dropboxCallback(url);
+  if (path === 'callback') return dropboxCallback(request, url);
   return notFound();
 }
 
@@ -114,7 +162,7 @@ async function authorizeScreen(request: Request, url: URL): Promise<Response> {
     back.searchParams.set('iss', issuer());
     const state = url.searchParams.get('state');
     if (state) back.searchParams.set('state', state);
-    return Response.redirect(back.toString(), 302);
+    return redirectTo(back.toString());
   }
 
   const sealed = sealState(checked.request, Date.now());
@@ -126,9 +174,18 @@ async function authorizeScreen(request: Request, url: URL): Promise<Response> {
  * will seal, then hand the CLIENT its own authorization code — a 60-second
  * blob carrying the PKCE challenge it must answer.
  */
-async function dropboxCallback(url: URL): Promise<Response> {
-  const state = unpackSealed<StatePayload>('state', url.searchParams.get('state') ?? '');
-  if (!state) return htmlError('That sign-in took too long. Please start again from your assistant.');
+async function dropboxCallback(request: Request, url: URL): Promise<Response> {
+  // The cookie is the whole check: without it this browser never saw our
+  // consent screen, so there is nothing to continue and nothing to redirect to.
+  const held = readCookie(request, STATE_COOKIE);
+  const state = held ? unpackSealed<StatePayload>('state', held) : null;
+  if (!state) {
+    return htmlError('That sign-in did not start here, or it took too long. Please start again from your assistant.');
+  }
+  const clear = { 'Set-Cookie': CLEAR_STATE_COOKIE };
+  if (!state.nonce || !sameNonce(url.searchParams.get('state') ?? '', state.nonce)) {
+    return htmlError('That sign-in could not be matched to this browser. Please start again from your assistant.', clear);
+  }
 
   const denied = url.searchParams.get('error');
   const code = url.searchParams.get('code');
@@ -138,14 +195,14 @@ async function dropboxCallback(url: URL): Promise<Response> {
 
   if (denied || !code) {
     back.searchParams.set('error', 'access_denied');
-    return Response.redirect(back.toString(), 302);
+    return redirectTo(back.toString(), clear);
   }
 
   const refreshToken = await dropboxExchange(code);
   if (!refreshToken) {
     back.searchParams.set('error', 'server_error');
     back.searchParams.set('error_description', 'Dropbox would not complete the connection');
-    return Response.redirect(back.toString(), 302);
+    return redirectTo(back.toString(), clear);
   }
 
   const payload: CodePayload = {
@@ -157,7 +214,7 @@ async function dropboxCallback(url: URL): Promise<Response> {
     exp: Math.floor(Date.now() / 1000) + CODE_LIFETIME_SECONDS,
   };
   back.searchParams.set('code', packSealed('code', state.clientId, payload));
-  return Response.redirect(back.toString(), 302);
+  return redirectTo(back.toString(), clear);
 }
 
 // ---------------------------------------------------------------------------
@@ -177,13 +234,22 @@ export async function action({ request, params }: ActionFunctionArgs) {
   return notFound();
 }
 
-/** The user pressed Connect. Everything we need is inside the sealed state. */
+/**
+ * The user pressed Connect. This is where the flow becomes bound to THIS
+ * browser: we mint a nonce, seal it into the state, put the state in a cookie,
+ * and hand Dropbox the nonce alone.
+ */
 async function consentGiven(request: Request): Promise<Response> {
-  const form = await request.formData();
-  const sealed = String(form.get('state') ?? '');
-  const state = unpackSealed<StatePayload>('state', sealed);
+  const body = await cappedBody(request);
+  if (body === null) return tooLarge();
+  const state = unpackSealed<StatePayload>('state', new URLSearchParams(body).get('state') ?? '');
   if (!state) return htmlError('That sign-in took too long. Please start again from your assistant.');
-  return Response.redirect(dropboxAuthorizeUrl(sealed), 302);
+
+  const nonce = crypto.randomBytes(32).toString('base64url');
+  const sealed = packSealed('state', state.clientId, { ...state, nonce });
+  return redirectTo(dropboxAuthorizeUrl(nonce), {
+    'Set-Cookie': `${STATE_COOKIE}=${sealed}; ${STATE_COOKIE_ATTRS}; Max-Age=600`,
+  });
 }
 
 /**
@@ -195,11 +261,16 @@ async function consentGiven(request: Request): Promise<Response> {
  * inside that budget. Measure it (design §7).
  */
 async function tokenEndpoint(request: Request): Promise<Response> {
+  // A flood brake only: a whole vendor's users share one egress range, so this
+  // limit is generous by design (design §4, "useless when distributed").
+  if (!allowToken(getClientIp(request))) return new Response('Too many requests', { status: 429 });
   const type = request.headers.get('content-type') ?? '';
   if (!type.includes('application/x-www-form-urlencoded')) {
     return oauthError('invalid_request', 'Send application/x-www-form-urlencoded');
   }
-  const form = new URLSearchParams(await request.text());
+  const body = await cappedBody(request);
+  if (body === null) return tooLarge();
+  const form = new URLSearchParams(body);
   const clientId = form.get('client_id') ?? '';
   const grant = form.get('grant_type');
 
@@ -214,13 +285,14 @@ async function tokenEndpoint(request: Request): Promise<Response> {
     // cannot promise it across Fly machines. Redemption still needs the
     // verifier, which never leaves the client (design §4).
     if (!claimCode(code.jti)) return oauthError('invalid_grant', 'That code is not usable');
-    return Response.json(issueTokens(clientId, code.rt, CONNECTION_WRITES, Date.now()), { headers: NO_STORE });
+    return Response.json(issueTokens(clientId, code.rt, Date.now()), { headers: NO_STORE });
   }
 
   if (grant === 'refresh_token') {
     const refresh = unpackSealed<RefreshPayload>('refresh', form.get('refresh_token') ?? '');
     if (!refresh || refresh.clientId !== clientId) return oauthError('invalid_grant', 'Please reconnect');
-    return Response.json(issueTokens(clientId, refresh.rt, refresh.budget, Date.now()), { headers: NO_STORE });
+    // The original expiry travels through, so 90 days runs from consent.
+    return Response.json(issueTokens(clientId, refresh.rt, Date.now(), refresh.exp), { headers: NO_STORE });
   }
 
   return oauthError('unsupported_grant_type', 'Only authorization_code and refresh_token');
@@ -235,9 +307,11 @@ async function registerEndpoint(request: Request): Promise<Response> {
   if (!(request.headers.get('content-type') ?? '').includes('application/json')) {
     return oauthError('invalid_client_metadata', 'Send application/json');
   }
+  const text = await cappedBody(request);
+  if (text === null) return tooLarge();
   let body: unknown;
   try {
-    body = JSON.parse(await request.text());
+    body = JSON.parse(text);
   } catch {
     return oauthError('invalid_client_metadata', 'That is not JSON');
   }
@@ -262,7 +336,7 @@ async function registerEndpoint(request: Request): Promise<Response> {
 // HTML
 // ---------------------------------------------------------------------------
 
-function html(body: string, status = 200): Response {
+function html(body: string, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(body, {
     status,
     headers: {
@@ -270,12 +344,13 @@ function html(body: string, status = 200): Response {
       'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'",
       'Referrer-Policy': 'no-referrer',
       ...NO_STORE,
+      ...headers,
     },
   });
 }
 
-function htmlError(message: string): Response {
-  return html(page('Something went wrong', `<p>${escapeHtml(message)}</p>`), 400);
+function htmlError(message: string, headers: Record<string, string> = {}): Response {
+  return html(page('Something went wrong', `<p>${escapeHtml(message)}</p>`), 400, headers);
 }
 
 function page(title: string, inner: string): string {

@@ -42,7 +42,7 @@ It ships in `docs/user-stories.md` **in the same commit as Phase-1 code — neve
 
 | New | Why not smaller |
 | --- | --- |
-| `app/routes/mcp.$.tsx` | MCP endpoint plus `/authorize`, `/token`, `/register`, `/callback`, `/disconnect`. One splat, one file. |
+| `app/routes/mcp.$.tsx` | MCP endpoint plus `/authorize`, `/token`, `/register`, `/callback`. One splat, one file. No `/disconnect`: with no state to delete there is nothing for it to do, and the real revocation is the provider's own settings page (§1). |
 | `app/routes/[.]well-known.$.tsx` | RFC 9728 and RFC 8414 documents must sit at host root, so they cannot live under `/mcp`. One splat serves both. |
 | `app/lib/mcp.server.ts` | JSON-RPC dispatch, four tool definitions, Zod schemas. |
 | `app/lib/mcp-auth.server.ts` | Seal/unseal, stateless AS, two provider OAuth clients. |
@@ -61,7 +61,7 @@ Reuse otherwise: `mergeFiles`, `migrateFile`, `SyncManager`, `createRateLimiter`
 
 ---
 
-## 3. Tool surface v1 — five tools, append-only including corrections
+## 3. Tool surface v1 — append-only including corrections
 
 | Tool | Kind | Note |
 | --- | --- | --- |
@@ -75,6 +75,8 @@ Reuse otherwise: `mergeFiles`, `migrateFile`, `SyncManager`, `createRateLimiter`
 
 Read and write tools are separate by construction — no catch-all with a `method` argument.
 
+The hosted surface exposes **every tool in `MCP_TOOLS`**, the shared list the local stdio server and the CLI use — including `report_feedback`, which opens no socket and touches no record: it returns a prefilled GitHub issue URL for the user to click. One list, one surface, no hosted-only subset to drift.
+
 **VERIFIED HOLDS (review):** the write surface is restricted to **append-only arrays only**. `packages/health-core/src/merge.ts` (lines 24–43) enforces row immutability there via `unionRows`, while current-state lists and singletons are last-write-wins where a second writer can overwrite the user. So v1 never writes medications, supplements, screenings, profile, documents or reminders, and never deletes. Corrections stay inside the append-only arrays the merge protects.
 
 **Blast radius, stated honestly.** A prompt-injected agent **reads first**, so it knows every row id and value. With `correct_value` it can therefore *silently falsify every current clinical value* in roughly 30–100 calls. Each original flips to `entered-in-error`, which is **irreversible**. `get_plan` then generates a plan from the falsified record, and the user sees a coherent, wrong protocol. Append-only prevents data *loss*; it does not prevent data *corruption*. **Brad accepted this residual knowingly on 2026-09-01, choosing protocol completeness over the smaller surface.**
@@ -83,7 +85,11 @@ Read and write tools are separate by construction — no catch-all with a `metho
 1. **`expectedValue` on `CorrectValueRequest`.** Today it is `{id, newValue, now}` (`packages/health-core/src/record-edits.ts:57`) with no check. Hosted calls must state the value they expect to find, and a mismatch rejects — an agent working from a stale or hallucinated read writes nothing. Work item returns: `record-edits.ts`, an **optional** flag in `tools/edit-record.ts`, and tests. **Must not break the shipped CLI path (US-31)** — optional there, required on the hosted surface.
 2. **Age limit — refuse `correct_value` on rows older than N days; N = 90, tunable.** Corrections fix recent mistakes; a lab result from three years ago is history, not a typo. 90 days covers a quarterly test cadence with room to spare, and puts the bulk of the record permanently out of reach of an injected agent.
 3. **Per-call caps** on rows written, `add_lab_values` included.
-4. **Weighted `max_writes` budget**, sealed inside the access blob and spent by refresh rather than mutation — the only durable per-connection quota statelessness allows, because the budget travels with the credential. **A correction costs 5× an add.** Justification: the falsification attack needs one correction per metric, so weighting corrections is what actually bounds it, while a legitimate session corrects rarely and adds in batches — a lab-report import is many adds and zero corrections. 5× lets a normal session correct a handful of values without noticing the budget, and forces an attacker through five times as many refresh round-trips.
+4. **Weighted write allowance: N weighted writes per connection per hour, per machine** (N = 60), keyed on `sha256(provider refresh token)` — the connection, not the access token, so minting extra access tokens buys no extra writes. **A correction costs 5× an add.** Justification: the falsification attack needs one correction per metric, so weighting corrections is what actually bounds it, while a legitimate session corrects rarely and adds in batches — a lab-report import is many adds and zero corrections.
+
+   **Stated honestly: this bound is per machine, and it is per hour, not per connection lifetime.** N Fly machines multiply it by N, and an attacker willing to wait gets a fresh allowance every hour. It bounds the *rate* of silent falsification, not the total.
+
+   **A lifetime pool was specified here (`max_writes` sealed into the blob and spent by refreshing) and has been REMOVED (2026-09-02, security review).** It failed in both directions. It charged an honest client 60 writes for every refresh whether or not it wrote anything, so roughly fifty refreshes — a fortnight of ordinary hourly renewal — left a user permanently unable to write, told "try again shortly", which was false. And it bounded no attacker: replaying one refresh blob yields a fresh access blob every time, because the ciphertext a vendor holds can never be updated by us. A quota that cannot be decremented is not a quota.
 
 **Vendor confirmation prompts are NOT a security boundary:** the MCP spec states annotations are untrusted hints, and "always allow" is one click. Do not count them.
 
@@ -105,7 +111,9 @@ Every write: read → `migrateFile` → apply → `mergeFiles` → conditional w
 
 **Seal specification.** Payload → 12-byte CSPRNG nonce (prepended) → AES-256-GCM under a **per-type key** `HKDF(MCP_SEAL_KEYS[kid], info = "mcp/" + typ + "/v1")`, with **AAD = kid ‖ typ ‖ client_id ‖ resource**. AAD gives domain separation (a state blob can never be presented as an access blob) and binds each blob to its client and audience. **Padding: fixed-bucket to 256/512/1024/2048 bytes** — without it, blob length leaks the provider and roughly which credential is inside.
 
-**Stateless flow.** `/mcp/authorize` validates client, PKCE `S256` only, and `resource`, then shows **our** consent screen — required anyway by the confused-deputy rule, since we forward to a static upstream client id. Sealed `state` carries {client_id, redirect_uri, code_challenge, resource, nonce, exp +10 min}. Provider callback exchanges for the provider refresh token and mints an auth-code blob (exp **+60 s**). `/mcp/token` unseals, verifies PKCE/client/redirect/expiry, issues access (1 h) and refresh (90 d) blobs. `/token` is `application/x-www-form-urlencoded`; `/register` is `application/json` — two parsers in one route file, a real trap. A dead grant returns `invalid_grant`, never a custom code, or Claude never recovers.
+**Stateless flow.** `/mcp/authorize` validates client, PKCE `S256` only, and `resource`, then shows **our** consent screen — required anyway by the confused-deputy rule, since we forward to a static upstream client id. Sealed `state` carries {client_id, redirect_uri, code_challenge, clientState, nonce, exp +10 min}.
+
+**The consent screen is enforced by a cookie, not by convention** (added 2026-09-02, security review). Pressing Connect is what mints a 32-byte CSPRNG nonce; the sealed state naming it goes into a first-party `__Host-mcp-state` cookie (Secure, HttpOnly, SameSite=Lax, Path=/, 10 min) and **Dropbox is handed the nonce alone** as its `state`. `/mcp/callback` requires the cookie, unseals it, compares Dropbox's echoed `state` to the sealed nonce timing-safely, and clears the cookie. Without the cookie it is a 400 page and no redirect. This closes two things at once: a state blob obtained from an unauthenticated `GET /mcp/authorize` could otherwise be replayed straight into a forged callback, skipping consent entirely; and the sealed state was ~1 KB against Dropbox's documented 500-byte `state` limit. Still no server-side state — the cookie is the browser's copy, sealed. Provider callback exchanges for the provider refresh token and mints an auth-code blob (exp **+60 s**). `/mcp/token` unseals, verifies PKCE/client/redirect/expiry, issues access (1 h) and refresh (90 d) blobs. `/token` is `application/x-www-form-urlencoded`; `/register` is `application/json` — two parsers in one route file, a real trap. A dead grant returns `invalid_grant`, never a custom code, or Claude never recovers.
 
 **Provider leg.** Reuse the existing OAuth clients — mandatory, per §1's shared-identity finding. Same `GOOGLE_DRIVE_CLIENT_ID`/`GOOGLE_DRIVE_SECRET` from `app/routes/api.google-token.ts`; same Dropbox app key from `widget-src/src/storage/dropbox.ts`, now with its secret as a confidential client. Scopes: Dropbox `files.content.read`, `files.content.write`, `files.metadata.read`; Google `drive.file` only.
 
@@ -116,10 +124,10 @@ Every write: read → `migrateFile` → apply → `mergeFiles` → conditional w
 | **Retroactive key compromise** | An access blob wraps a **non-expiring** provider credential. Our `exp` is *advisory* — enforced only by our own unseal path. A leaked `MCP_SEAL_KEYS` opens **every blob ever issued**, including expired ones captured months earlier. The worst property of the design, and why no-overlap rotation is the default incident response. |
 | **Provider adopts refresh-token rotation** | Verified 2026-09-01: **neither Dropbox nor Google rotates refresh tokens on refresh.** The design depends on it. If either adopts rotation, every connection breaks **simultaneously** with no server-side remedy — we hold no row to update. This closes the door on generic/self-declared providers. |
 | **Google's 100-refresh-token cap** | Per account **per client id**, shared with the widget. A widget reconnect can therefore **evict the MCP grant** (Google silently drops the oldest). Never mint a spare token. |
-| Vendor token store leaks | Ciphertext only; inert without our key. |
+| Vendor token store leaks | **The provider credential is safe; our endpoint is not.** The Dropbox refresh token inside is ciphertext and inert without our key — but the blob itself is a live bearer against `/mcp` until its absolute expiry, and using it needs no key at all. What split custody protects is the PROVIDER credential, not access to this server. |
 | Token passthrough | Forbidden by spec and construction: we mint our own token, validate audience, never forward a provider token. |
 | Auth-code replay | **Known spec deviation.** OAuth 2.1 requires single-use codes; stateless cannot enforce it. Redemption needs the PKCE `code_verifier`, which never leaves the client, so a passive interceptor gains nothing. Window is 60 s. Per-machine `jti` set is best-effort, **not authoritative** across Fly machines. Documented, not papered over. |
-| Prompt injection | §3 — the silent-falsification residual, knowingly accepted, bounded by the four mandatory mitigations (`expectedValue`, 90-day age limit, per-call caps, 5×-weighted `max_writes`). |
+| Prompt injection | §3 — the silent-falsification residual, knowingly accepted, bounded by the four mandatory mitigations (`expectedValue`, 90-day age limit, per-call caps, the 5×-weighted hourly write allowance). |
 | Abuse | Per-IP, per-machine limiter — fine against floods, useless when distributed. No Anthropic spend here, so the app-proxy HMAC's cost rationale does not transfer. |
 | Tenant isolation | One rule: the connection derives from the bearer token and nothing else. No tool argument ever names a user, file, or path. |
 
@@ -166,10 +174,10 @@ Residual, disclosed: our write becomes **durable-by-retry**, but the **browser c
 | Other cases | Behaviour |
 | --- | --- |
 | Provider outage | One MCP error naming the provider. No retry storm. |
-| Access blob expired | Client refreshes; Claude reactively on 401, proactively ≤5 min before expiry, so `expires_in` must be honest. **A blob already in vendor hands can never be updated by us** — contents are frozen at issue, which is why `max_writes` is spent by refresh. |
+| Access blob expired | Client refreshes; Claude reactively on 401, proactively ≤5 min before expiry, so `expires_in` must be honest. **A blob already in vendor hands can never be updated by us** — contents are frozen at issue, which is why no quota can live inside one (§3 mitigation 4). |
 | Refresh blob or grant dead | `invalid_grant` → 401 → client re-runs OAuth. Causes: user revoked, six months idle (Google), Google testing-status 7-day expiry, widget reconnect evicting the grant (§4). |
 | Key rotated, no overlap | Every user reconnects. Only by intent. |
-| `schemaVersion` > 1 | `SchemaTooNewError` → read-only answer, explicit refusal to write. |
+| `schemaVersion` > 1 | `SchemaTooNewError` → the call refuses, **reads included**: `SyncManager.load()` migrates before any tool runs, so a record this server only half understands is out of reach in both directions. The refusal says so. |
 
 **Latency.** Claude allows **10 s** for the token endpoint, and ours does a provider code exchange inside it. Measure it.
 
@@ -192,7 +200,7 @@ Brad's ruling: build the full thing. The recruitment gate is removed. The phase 
 - [x] Move `adapter.ts` + `sync-manager.ts` to health-core; update `widget-src` imports; existing sync-manager tests stay green.
 - [x] `app/lib/mcp-auth.server.ts`: seal/unseal (§4 spec), stateless AS, CIMD fetch policy, DCR fallback, Dropbox confidential client.
 - [x] `record-edits.ts`: add `expectedValue` to `CorrectValueRequest` (required hosted, optional flag in `tools/edit-record.ts`); tests; shipped CLI path unbroken.
-- [x] `app/lib/mcp.server.ts`: JSON-RPC dispatch, five tools, Zod schemas, per-call caps, 90-day correction age limit, sealed `max_writes` with corrections weighted 5×.
+- [x] `app/lib/mcp.server.ts`: JSON-RPC dispatch, the shared `MCP_TOOLS` list, Zod schemas, per-call caps, 90-day correction age limit, and the per-connection hourly write allowance with corrections weighted 5×.
 - [x] Slot-occupied add returns a rejection naming the held row and pointing at `correct_value` (mirror `tools/edit-record.ts:274`).
 - [x] `app/routes/mcp.$.tsx` + `app/routes/[.]well-known.$.tsx`.
 - [x] Confirm no route logs a request URL. **Fly's proxy access-log setting is an operator check** — it is in the runbook, not done.
@@ -279,16 +287,44 @@ the DNS does not exist. Flipping them in this commit would point a user at a 404
 exactly the failure mode the "promise ships with the code, never before" rule exists to
 prevent, in the other direction. They flip with the operator steps.
 
+**Second review pass, 2026-09-02.** A fresh adversarial review found nine issues; all are
+fixed on this branch, and the paragraphs above are corrected rather than annotated.
+The behaviour changes worth naming here:
+
+- **The `max_writes` pool is gone** (§3 mitigation 4, rewritten). It locked honest users
+  out and bounded no attacker. The allowance is now per connection per hour, keyed on the
+  hash of the provider refresh token.
+- **The refresh lifetime is absolute.** It used to slide: every refresh set `exp` to 90
+  days out, so a client refreshing hourly never expired. The original expiry now travels
+  through the refresh grant.
+- **Consent is cookie-bound and Dropbox gets a nonce** (§4). Reproduced before the fix: a
+  sealed state from an unauthenticated `GET /mcp/authorize` plus a forged
+  `GET /mcp/callback` minted an authorization code with no consent step at all.
+- **`getClientIp` prefers `Fly-Client-IP`.** It preferred the first hop of
+  `X-Forwarded-For`, which a client sets itself, so every per-IP limiter in the app was
+  bypassable by one header. Fly's proxy writes `Fly-Client-IP` itself
+  (https://fly.io/docs/networking/request-headers/).
+- **Bodies are capped** — 64 KB at the OAuth doors, 1 MB at `/mcp`, 413 over — and
+  `/token` (per IP) and `tools/call` (per connection) are rate-limited. The limits are
+  deliberately generous: a whole vendor's users share one egress range, so a tight per-IP
+  limit would lock out honest traffic rather than an attacker.
+- **A malformed `MCP_SEAL_KEYS` or `MCP_CLIENT_HMAC_KEY` now disables the feature**
+  (404, plus one log line naming the variable and never its value) instead of turning
+  every route into a 500.
+- **Not done, deliberately: no Dropbox access-token cache.** Every `tools/call` refreshes
+  one. A memory cache keyed by connection would cut that to one per four hours, but it
+  would put live provider credentials in a process-wide map — a new thing to leak, and a
+  new line in §1's inventory of what we hold. The per-connection rate limit bounds the
+  refresh rate instead.
+
 **Residual risks noticed during the build that this document does not name.**
 - **DNS rebinding on the CIMD fetch has a real window.** We resolve, check every address
   is public, then call `fetch`, which resolves again. `fetch` offers no way to pin the
   connection to the address we checked. §4 asks for the re-check at connect time and
   that is implemented; the TOCTOU gap is not closed, only narrowed.
-- **The write budget's within-the-hour half is per machine.** The connection pool spent
-  by refresh is durable because it rides in the credential; the allowance spent inside a
-  single access token's hour is an in-memory map, so N Fly machines multiply it by N.
-  The 5x weighting still bounds the falsification attack, but by 5x-per-machine.
-- **`MCP_SEAL_KEYS` malformed takes the routes down, not just the feature.** A key that
-  is not 32 bytes throws from `sealKeys()`, and `isMcpEnabled()` calls it. A typo in the
-  secret turns 404 into 500. Smoke step 6 catches it in seconds; worth knowing that is
-  what a 500 there means.
+- **The hourly write allowance is per machine.** It is an in-memory map, so N Fly
+  machines multiply it by N. The 5× weighting still bounds the falsification attack, but
+  by 5×-per-machine-per-hour. Stated in §3 rather than only here.
+- **Dropbox's 500-byte `state` limit is believed, not verified.** The nonce is 43 chars,
+  so the constraint no longer binds, but the first live connection is still the test —
+  the runbook asks for it explicitly.

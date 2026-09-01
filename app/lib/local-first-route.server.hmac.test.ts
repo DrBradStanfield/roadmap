@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import crypto from 'node:crypto';
-import { verifyAppProxySignature } from './local-first-route.server';
+import { getClientIp, verifyAppProxySignature } from './local-first-route.server';
 
 const SECRET = 'test-shopify-secret';
 const NOW = 1_780_000_000; // fixed "current" time, seconds
@@ -68,5 +68,20 @@ describe('verifyAppProxySignature', () => {
     const req = new Request(signedUrl(baseParams));
     expect(verifyAppProxySignature(req, NOW)).toBe(false);
     process.env.SHOPIFY_API_SECRET = SECRET;
+  });
+});
+
+
+describe('getClientIp (US-32 M-6)', () => {
+  it('prefers the header Fly sets over the one a client can forge', () => {
+    const request = new Request('https://health-tool-edu.fly.dev/mcp/token', {
+      headers: { 'fly-client-ip': '203.0.113.7', 'x-forwarded-for': '10.0.0.1, 198.51.100.4' },
+    });
+    expect(getClientIp(request)).toBe('203.0.113.7');
+  });
+
+  it('falls back to x-forwarded-for, then to unknown', () => {
+    expect(getClientIp(new Request('https://x.test/', { headers: { 'x-forwarded-for': '198.51.100.4, 10.0.0.1' } }))).toBe('198.51.100.4');
+    expect(getClientIp(new Request('https://x.test/'))).toBe('unknown');
   });
 });
