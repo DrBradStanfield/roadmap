@@ -4,9 +4,8 @@
 // dedup (one active value per test per day) is surfaced, not silent.
 
 import { useState } from 'react';
-import { LAB_CATALOG, LAB_GROUPS, parseLocalisedNumber } from '@roadmap/health-core';
+import { LAB_CATALOG, LAB_GROUPS, localDay, parseLocalisedNumber } from '@roadmap/health-core';
 import { UnitChip } from './UnitChip';
-import { todayIsoLocal } from '../lib/constants';
 import { bulkSaveLabValues, trackProductEvent } from '../lib/api';
 
 export function AddLabTest({ onAdded }: { onAdded: () => void }) {
@@ -15,7 +14,7 @@ export function AddLabTest({ onAdded }: { onAdded: () => void }) {
   const [customName, setCustomName] = useState('');
   const [customUnit, setCustomUnit] = useState('');
   const [valueStr, setValueStr] = useState('');
-  const [date, setDate] = useState(todayIsoLocal);
+  const [date, setDate] = useState(() => localDay(new Date()));
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -33,13 +32,13 @@ export function AddLabTest({ onAdded }: { onAdded: () => void }) {
   // parseLocalisedNumber only returns finite numbers or undefined. The date
   // guard also blocks future dates typed past the input's max (ISO strings
   // compare lexicographically).
-  const canSave = !saving && !!metricName && !!date && date <= todayIsoLocal() &&
+  const canSave = !saving && !!metricName && !!date && date <= localDay(new Date()) &&
     value !== undefined && value >= 0;
 
   const close = () => {
     setOpen(false);
     setTestKey(''); setCustomName(''); setCustomUnit(''); setValueStr('');
-    setDate(todayIsoLocal()); setNotice(null);
+    setDate(localDay(new Date())); setNotice(null);
   };
 
   const save = async () => {
@@ -125,7 +124,7 @@ export function AddLabTest({ onAdded }: { onAdded: () => void }) {
           className="alr-add-input alr-add-date"
           type="date"
           value={date}
-          max={todayIsoLocal()}
+          max={localDay(new Date())}
           onChange={e => { setDate(e.target.value); setNotice(null); }}
         />
       </div>

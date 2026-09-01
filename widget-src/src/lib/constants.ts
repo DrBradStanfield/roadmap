@@ -58,22 +58,22 @@ export function getYearOptions(count = 11): number[] {
 }
 
 /**
- * Today as YYYY-MM-DD in the user's LOCAL timezone — for date-input defaults
- * and max bounds. Deliberately not `toISOString().slice(0, 10)`: UTC can be a
- * day behind (or ahead) of the user's calendar date.
+ * Format a date string, Date or epoch ms to a short locale string (e.g., "Jan 15, 2024").
+ *
+ * A stored `recordedAt` for a dated row is a calendar SLOT widened to UTC
+ * midnight — `2026-09-02T00:00:00.000Z` means "2 September", and dedup keys on
+ * that day. Read through the reader's own timezone it renders a day early west
+ * of Greenwich, so day-shaped input is formatted in UTC. A real instant is a
+ * moment, and still renders in local time.
  */
-export function todayIsoLocal(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-/**
- * Format a date string or Date object to a short locale string (e.g., "Jan 15, 2024")
- */
-export function formatShortDate(date: string | Date): string {
+export function formatShortDate(date: string | Date | number): string {
+  const slot = typeof date === 'string'
+    ? /^\d{4}-\d{2}-\d{2}$/.test(date) || /T00:00:00(\.000)?Z$/.test(date)
+    : new Date(date).getTime() % 86_400_000 === 0;
   return new Date(date).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: slot ? 'UTC' : undefined,
   });
 }

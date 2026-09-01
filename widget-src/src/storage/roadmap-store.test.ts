@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { measurementsToInputs, type RoadmapFile } from '@roadmap/health-core';
+import { localDay, measurementsToInputs, type RoadmapFile } from '@roadmap/health-core';
 import { RoadmapStore } from './roadmap-store';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ROADMAP_FILE_NAME } from './adapter';
@@ -195,7 +195,7 @@ describe('RoadmapStore — deleted measurements stay deleted (no resurrection)',
     const resurrected = readCloudFile(cloud).measurements.filter(
       (m) => m.metricType === 'systolic_bp' && m.status === 'active',
     );
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDay(new Date());
     expect(resurrected).toHaveLength(1);
     expect(resurrected[0].value).toBe(199);
     expect(resurrected[0].recordedAt.slice(0, 10)).toBe(today); // landed at today — the bug

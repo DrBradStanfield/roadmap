@@ -704,11 +704,14 @@ describe('RoadmapStore.addMeasurement date semantics (US-03)', () => {
     expect(insertedRow(store.addMeasurement('weight', 80, explicit)).recordedAt).toBe(explicit);
   });
 
-  it('defaults recordedAt to "now" (the clock at call time) when omitted', async () => {
+  it('defaults recordedAt to the LOCAL calendar day at midnight when omitted', async () => {
     vi.setSystemTime(new Date('2026-08-07T12:34:56.000Z'));
     const store = await RoadmapStore.create(new MemoryAdapter());
-    // roadmap-store.ts: `const when = recordedAt ?? new Date().toISOString();`
-    expect(insertedRow(store.addMeasurement('weight', 80)).recordedAt).toBe('2026-08-07T12:34:56.000Z');
+    // roadmap-store.ts widens the local day through `ensureIsoDatetime` — the
+    // same day-granularity shape the picked-date path stores, so the two paths
+    // cannot land the same day in two slots. WHICH day is local is proved by
+    // the dedicated TZ-pinned roadmap-store-local-day.test.ts.
+    expect(insertedRow(store.addMeasurement('weight', 80)).recordedAt).toMatch(/T00:00:00\.000Z$/);
   });
 
   it('a second value for the same (metric, day) is blocked as a duplicate, never silently overwritten or double-stored', async () => {

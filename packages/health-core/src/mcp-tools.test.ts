@@ -15,6 +15,7 @@ import {
   addMeasurementInput,
   callTool,
   correctValueInput,
+  RECORD_FREE_TOOLS,
   correctValueTool,
   getPlan,
   getPlanInput,
@@ -323,6 +324,25 @@ describe('US-32 — the dispatcher', () => {
     for (const [name, args] of cases) {
       const outcome = callTool(name as 'add_measurement', args, { file: base(), now: NOW });
       expect(outcome.status, `${name} ${JSON.stringify(args)}`).toBe('invalid-args');
+    }
+  });
+
+  it('names the tools that need no record, and refuses the rest without one', () => {
+    expect([...RECORD_FREE_TOOLS]).toEqual(['report_feedback']);
+    const wellFormed = {
+      read_record: {},
+      get_plan: {},
+      add_measurement: { metricType: 'ldl', value: 2.1 },
+      add_lab_values: { values: [{ metricName: 'ferritin', value: 210, unit: 'µg/L' }] },
+      correct_value: { id: 'm1', newValue: 2.1 },
+    } as const;
+    for (const [name, args] of Object.entries(wellFormed)) {
+      // A missing record is the user's to fix; it must reach the agent as a
+      // refusal it can read out, never as a thrown TypeError on `undefined`.
+      expect(RECORD_FREE_TOOLS.has(name as 'read_record'), name).toBe(false);
+      const outcome = callTool(name as 'read_record', args, { file: undefined, now: NOW });
+      expect(outcome.status, name).toBe('rejected');
+      expect(outcome.text, name).toMatch(/record/i);
     }
   });
 

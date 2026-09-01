@@ -27,7 +27,7 @@
  */
 import { resolveLabCatalogEntry } from './lab-catalog';
 import { METRIC_LABELS, METRIC_TO_FIELD } from './mappings';
-import { dayOf } from './merge';
+import { dayOf, localDay } from './merge';
 import { createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { resolveUnitSystem, toCanonicalValue, UNIT_DEFS, type MetricType } from './units';
 import { healthInputSchema, METRIC_TYPES } from './validation';
@@ -116,18 +116,22 @@ function newId(): string {
 /**
  * Rule 9 — a clinical date that exists and has not happened yet, reduced to
  * the calendar day the slot is keyed on (the same shape a lab import writes).
+ * "Today" is the writer's LOCAL day, for the default AND for the future check:
+ * on a UTC day an evening write defaults to yesterday, and the date the user is
+ * living in is refused as the future.
  * Storing the day, not the caller's string, is what makes what is echoed back
  * and what lands on disk the same thing: `2026-02-30` rolls forward to March
  * in `Date`, and `'2026-08-14 <script>…'` would otherwise be stored whole.
  */
 function resolveRecordedAt(recordedAt: string | undefined, now: string): string | EditRejection {
-  const when = recordedAt ?? now;
+  const today = localDay(now);
+  const when = recordedAt ?? today;
   const day = dayOf(when);
   const parsed = new Date(day);
   if (!/^\d{4}-\d{2}-\d{2}([T ]|$)/.test(when) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day) {
     return reject('invalid-date', `"${when}" is not a date`);
   }
-  if (day > dayOf(now)) {
+  if (day > today) {
     return reject('future-date', `${day} has not happened yet`);
   }
   return day;

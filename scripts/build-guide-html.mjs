@@ -9,6 +9,7 @@
 // --no-script drops the clipboard JS and degrades the copy box to a plain
 // block with a select-all hint, for hosts that strip <script>.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 
 const argv = process.argv.slice(2);
@@ -23,13 +24,19 @@ if (!mdPath) {
 
 const ASSETS = new URL('../docs/guides/assets/', import.meta.url);
 const md = readFileSync(mdPath, 'utf8');
-const prompt = md.match(/```bootstrap-prompt\n([\s\S]*?)\n```/)[1];
-const providers = JSON.parse(readFileSync(new URL('providers.json', ASSETS), 'utf8'));
+// Optional: a guide can be prose only. Absent, the button row, the prompt box
+// and the clipboard script are all left out — they exist to carry the prompt.
+const prompt = md.match(/```bootstrap-prompt\n([\s\S]*?)\n```/)?.[1];
 const diagram = readFileSync(new URL('diagram.svg', ASSETS), 'utf8').trim();
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-const fmRaw = md.match(/^---\n([\s\S]*?)\n---\n/)[1];
+const fm = md.match(/^---\n([\s\S]*?)\n---\n/);
+if (!fm) {
+  console.error(`${mdPath}: no front matter. A guide starts with a --- block carrying at least title: and slug:.`);
+  process.exit(1);
+}
+const fmRaw = fm[1];
 const meta = Object.fromEntries(
   fmRaw.split('\n').map((l) => {
     const i = l.indexOf(':');
@@ -37,55 +44,83 @@ const meta = Object.fromEntries(
   }),
 );
 
+// --- held HTML ------------------------------------------------------------
+// Generated HTML and code alike are parked as one-line tokens before the
+// markdown pass runs: that pass splits on blank lines and escapes angle
+// brackets, and either would wreck a <div> or a code block. ONE namespace,
+// restored ONCE over the finished document.
+//
+// The token carries a per-build nonce so a guide can write `@@T0@@` as prose —
+// a guide about this builder is exactly the guide that would — without the
+// restore pass swapping the reader's words for held fragment 0.
+const NONCE = randomBytes(4).toString('hex');
+const held = [];
+const hold = (html) => `@@T${NONCE}${held.push(html) - 1}@@`;
+
+// A block-level fragment alone in a paragraph loses the paragraph — a <div> or
+// a <pre> is not a phrase, but a lone code span still wants one. Anything the
+// builder did not park is prose: put it back verbatim.
+const restore = (html) =>
+  html.replace(new RegExp(`<p>@@T${NONCE}(\\d+)@@</p>|@@T${NONCE}(\\d+)@@`, 'g'), (match, alone, inline) => {
+    const fragment = held[alone ?? inline];
+    if (fragment === undefined) return match;
+    return alone !== undefined && fragment.startsWith('<code') ? `<p>${fragment}</p>` : fragment;
+  });
+
+let body = md.slice(md.indexOf('\n---\n', 4) + 5).replace('[diagram:local-first]', () => hold(diagram));
+
 // --- [connect:*] markers ---------------------------------------------------
-const button = (key) => {
-  const p = providers[key];
-  const mono = `<span class="rmg-mono" style="background:${p.colour}">${p.mono}</span>`;
-  const inner = `${mono}<span class="rmg-blabel">${p.label}</span><span class="rmg-bnote">${p.note}</span>`;
-  if (p.mode === 'soon') return `<span class="rmg-btn rmg-btn-soon" aria-disabled="true">${inner}</span>`;
-  return p.mode === 'link'
-    ? `<a class="rmg-btn" href="${p.url}${encodeURIComponent(prompt)}" target="_blank" rel="noopener noreferrer">${inner}</a>`
-    : `<a class="rmg-btn" href="${p.url}" target="_blank" rel="noopener noreferrer" data-rmg-copy>${inner}</a>`;
-};
+if (prompt) {
+  const providers = JSON.parse(readFileSync(new URL('providers.json', ASSETS), 'utf8'));
+  const button = (key) => {
+    const p = providers[key];
+    const mono = `<span class="rmg-mono" style="background:${p.colour}">${p.mono}</span>`;
+    const inner = `${mono}<span class="rmg-blabel">${p.label}</span><span class="rmg-bnote">${p.note}</span>`;
+    if (p.mode === 'soon') return `<span class="rmg-btn rmg-btn-soon" aria-disabled="true">${inner}</span>`;
+    return p.mode === 'link'
+      ? `<a class="rmg-btn" href="${p.url}${encodeURIComponent(prompt)}" target="_blank" rel="noopener noreferrer">${inner}</a>`
+      : `<a class="rmg-btn" href="${p.url}" target="_blank" rel="noopener noreferrer" data-rmg-copy>${inner}</a>`;
+  };
+  const promptBox = noScript
+    ? `<div class="rmg-promptbox"><p class="rmg-hint">Select the whole block below and copy it.</p><pre>${esc(prompt)}</pre></div>`
+    : `<div class="rmg-promptbox"><button class="rmg-copy" type="button" data-rmg-copy>Copy</button><pre>${esc(prompt)}</pre></div>`;
+  body = body
+    .replace(/\[connect:chatgpt\]\n\[connect:claude\]/, () => hold(`<div class="rmg-btnrow">${['chatgpt', 'claude'].map(button).join('')}</div>`))
+    .replace(/```bootstrap-prompt\n[\s\S]*?\n```/, () => hold(promptBox));
+} else if (body.includes('[connect:')) {
+  console.error(`${mdPath}: [connect:*] buttons need a \`\`\`bootstrap-prompt fence — they carry the prompt. Markers left as written.`);
+}
 
-const promptBox = noScript
-  ? `<div class="rmg-promptbox"><p class="rmg-hint">Select the whole block below and copy it.</p><pre>${esc(prompt)}</pre></div>`
-  : `<div class="rmg-promptbox"><button class="rmg-copy" type="button" data-rmg-copy>Copy</button><pre>${esc(prompt)}</pre></div>`;
-
-// Markers become single-line tokens first: the generated HTML contains blank
-// lines, which would otherwise be split apart by the paragraph pass below.
-const blocks = {
-  '@@BTNROW@@': `<div class="rmg-btnrow">${['chatgpt', 'claude'].map(button).join('')}</div>`,
-  '@@DIAGRAM@@': diagram,
-  '@@PROMPT@@': promptBox,
-};
-let body = md.slice(md.indexOf('\n---\n', 4) + 5)
-  .replace(/\[connect:chatgpt\]\n\[connect:claude\]/, '@@BTNROW@@')
-  .replace('[diagram:local-first]', '@@DIAGRAM@@')
-  .replace(/```bootstrap-prompt\n[\s\S]*?\n```/, '@@PROMPT@@');
+// Every other fenced block is code. Anchored to whole lines: unanchored, the
+// backticks inside a quoted `\`\`\`npm test\`\`\`` read as an opener and swallow
+// the document down to the next real fence.
+body = body.replace(/^```[^\n]*\n([\s\S]*?)\n```$/gm, (_, code) => hold(`<pre><code>${esc(code)}</code></pre>`));
 
 // --- tiny markdown render --------------------------------------------------
 // Smart quotes FIRST: running them after tag generation turns href="..." into
 // href=“...”, an unquoted attribute that swallows the curly quotes into the URL.
+// Code spans come out first, for the same reason: a quote inside `--out "x"`
+// is a literal, not prose, and the smart-quote pass would curl it.
 const inline = (s) =>
-  esc(s)
+  esc(s.replace(/`([^`]+)`/g, (_, code) => hold(`<code>${esc(code)}</code>`)))
     .replace(/"([^"]+)"/g, '“$1”')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
-const rendered = body
-  .split(/\n\n+/)
-  .map((block) => {
-    const b = block.trim();
-    if (!b) return '';
-    if (b.startsWith('<')) return b;
-    if (b.startsWith('### ')) return `<h3>${inline(b.slice(4))}</h3>`;
-    if (b.startsWith('## ')) { const x = b.slice(3); return `<h2 id="${x.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}">${inline(x)}</h2>`; }
-    return `<p>${inline(b)}</p>`;
-  })
-  .join('\n')
-  .replace(/<p>(@@\w+@@)<\/p>/g, (_, k) => blocks[k]);
+const rendered = restore(
+  body
+    .split(/\n\n+/)
+    .map((block) => {
+      const b = block.trim();
+      if (!b) return '';
+      if (b.startsWith('<')) return b;
+      if (b.startsWith('> ')) return `<blockquote><p>${inline(b.split('\n').map((l) => l.replace(/^>\s?/, '')).join(' '))}</p></blockquote>`;
+      if (b.startsWith('### ')) return `<h3>${inline(b.slice(4))}</h3>`;
+      if (b.startsWith('## ')) { const x = b.slice(3); return `<h2 id="${x.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}">${inline(x)}</h2>`; }
+      return `<p>${inline(b)}</p>`;
+    })
+    .join('\n'),
+);
 
 // Every rule is scoped to .rmguide so nothing leaks into the theme, and the
 // doubled class outranks theme styles reaching in.
@@ -115,7 +150,7 @@ const style = `<style>
 .rmguide code{font:500 .92em/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:#eff3f6;padding:2px 6px;border-radius:4px}
 </style>`;
 
-const script = noScript ? '' : `
+const script = noScript || !prompt ? '' : `
 <script>
 var RMG_PROMPT = ${JSON.stringify(prompt).replace(/</g, '\\u003c')};
 document.querySelectorAll('[data-rmg-copy]').forEach(function (el) {

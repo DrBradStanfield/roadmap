@@ -18,7 +18,7 @@ import {
   type ApiMeasurement,
 } from './mappings';
 import { latestActivePerMetric } from './measurement-history';
-import { cmpStr } from './merge';
+import { cmpStr, localDay } from './merge';
 import { computeReminderSchedule, type ReminderScheduleItem } from './reminder-schedule';
 import { CURRENT_SCHEMA_VERSION, type FileLabValue, type RoadmapFile } from './roadmap-file';
 import type { HealthInputs, HealthResults, MedicationInputs, ScreeningInputs } from './types';
@@ -104,6 +104,8 @@ export function derivePlanInputs(file: RoadmapFile): PlanInputs {
 }
 
 export interface PlanLab {
+  /** The row id — what `edit-record.ts correct --id` takes. */
+  id: string;
   key: string;
   label: string;
   value: number;
@@ -119,6 +121,7 @@ function derivePlanLabs(file: RoadmapFile): PlanLab[] {
     .map((l) => {
       const entry = resolveLabCatalogEntry(l.metricName);
       return {
+        id: l.id,
         key: l.metricName,
         label: entry?.label ?? l.metricName,
         value: l.value,
@@ -131,6 +134,8 @@ function derivePlanLabs(file: RoadmapFile): PlanLab[] {
 
 export interface Plan extends PlanInputs {
   generatedAt: string;
+  /** The user's local calendar day at `generatedAt` — the plan's ONE "today". */
+  today: string;
   results: HealthResults;
   due: ReminderScheduleItem[];
   labs: PlanLab[];
@@ -166,6 +171,7 @@ export function computePlan(file: RoadmapFile, now = new Date()): Plan {
     inputs,
     excluded,
     generatedAt: now.toISOString(),
+    today: localDay(now),
     results: calculateHealthResults(inputs as HealthInputs, derived.unitSystem, derived.medications, derived.screenings),
     due: computeReminderSchedule(file, now),
     labs: derivePlanLabs(file),
@@ -177,10 +183,12 @@ export function computePlan(file: RoadmapFile, now = new Date()): Plan {
 // ---------------------------------------------------------------------------
 
 /** A printed row: current value or lab. `excluded` marks a value the plan ignored. */
-export type DisplayRow = { label: string; value: unknown; unit: string; date: string; excluded?: boolean };
+export type DisplayRow = { id: string; label: string; value: unknown; unit: string; date: string; excluded?: boolean };
 
 /**
- * Current values as displayed: label, converted value, unit, clinical date.
+ * Current values as displayed: row id, label, converted value, unit, clinical
+ * date. The id is here because `correct --id` needs one and this is the only
+ * place a reader is told to look for it.
  * A value the schema rejected is marked `excluded` — it is in the file, so it
  * is on the report, but the reader must not mistake it for a plan input.
  */
@@ -191,6 +199,7 @@ export function currentValues(plan: Plan) {
     .map((row) => {
       const metric = row.metricType as MetricType;
       return {
+        id: row.id,
         metric: row.metricType,
         label: METRIC_LABELS[row.metricType] ?? row.metricType,
         value: formatDisplayValue(metric, row.value, plan.unitSystem),
@@ -203,11 +212,10 @@ export function currentValues(plan: Plan) {
 }
 
 export function dueSplit(plan: Plan): { overdue: ReminderScheduleItem[]; upcoming: ReminderScheduleItem[] } {
-  const today = plan.generatedAt.slice(0, 10);
   const sorted = [...plan.due].sort((a, b) => cmpStr(a.dueAt, b.dueAt));
   return {
-    overdue: sorted.filter((i) => i.dueAt <= today),
-    upcoming: sorted.filter((i) => i.dueAt > today),
+    overdue: sorted.filter((i) => i.dueAt <= plan.today),
+    upcoming: sorted.filter((i) => i.dueAt > plan.today),
   };
 }
 
@@ -219,6 +227,7 @@ export function renderJson(plan: Plan): string {
       instruction: PLAN_INSTRUCTION,
       schemaVersion: CURRENT_SCHEMA_VERSION,
       generatedAt: plan.generatedAt,
+      today: plan.today,
       unitSystem: plan.unitSystem,
       profile: {
         sex: plan.inputs.sex,

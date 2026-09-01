@@ -16,7 +16,7 @@
  * human should read goes to stderr.
  */
 import { pathToFileURL } from 'node:url';
-import { callTool, isToolName, MCP_TOOLS, SERVER_VERSION } from '../packages/health-core/src/mcp-tools';
+import { callTool, isToolName, MCP_TOOLS, RECORD_FREE_TOOLS, SERVER_VERSION } from '../packages/health-core/src/mcp-tools';
 import { PlanError } from '../packages/health-core/src/plan';
 import { assertUnchanged, backup, openRecord, writeAtomic } from './record-io';
 
@@ -97,14 +97,20 @@ function toolResult(id: Id, text: string, isError = false) {
  * only if the tool produced a new file — back it up, check nothing moved
  * underneath, and replace it atomically. `record-io.ts` owns that boundary, so
  * the CLI and this server cannot lose the file in different ways.
+ *
+ * `RECORD_FREE_TOOLS` are run without opening anything: `report_feedback`
+ * never touches the record, and opening it first turned "my record is missing"
+ * into a failed bug report.
  */
 function callAgainstFile(path: string, name: string, args: unknown): { text: string; isError: boolean } {
   if (!isToolName(name)) return { text: `No tool named ${name}.`, isError: true };
   const now = new Date().toISOString();
-  const record = openRecord(path);
-  const outcome = callTool(name, args, { file: record.file, now });
+  const record = RECORD_FREE_TOOLS.has(name) ? undefined : openRecord(path);
+  const outcome = callTool(name, args, { file: record?.file, now });
   if (outcome.status !== 'ok') return { text: outcome.text, isError: true };
   if (!outcome.file) return { text: outcome.text, isError: false };
+  // A file to save with nothing opened would be a write dropped in silence.
+  if (!record) throw new Error(`${name} produced a file without opening one`);
 
   assertUnchanged(record.path, record.stamp);
   const bak = backup(record.path, now);

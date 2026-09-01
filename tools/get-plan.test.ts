@@ -158,15 +158,17 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
   it('AC3: --json is parseable and stable in shape', () => {
     const json = JSON.parse(renderJson(plan()));
     expect(Object.keys(json)).toEqual([
-      'instruction', 'schemaVersion', 'generatedAt', 'unitSystem', 'profile', 'inputs', 'currentValues',
+      'instruction', 'schemaVersion', 'generatedAt', 'today', 'unitSystem', 'profile', 'inputs', 'currentValues',
       'labValues', 'medications', 'screenings', 'due', 'suggestions', 'source',
     ]);
     expect(json.schemaVersion).toBe(1);
     expect(json.profile).toMatchObject({ sex: 'male', age: 55, heightCm: 178 });
-    expect(json.currentValues).toContainEqual({ metric: 'ldl', label: 'LDL Cholesterol', value: '2.1', unit: 'mmol/L', date: '2026-07-14' });
+    // `id` is the row id `edit-record.ts correct --id` takes: the hint that
+    // sends a reader here for ids is only honest if they are printed.
+    expect(json.currentValues).toContainEqual({ id: 'm004', metric: 'ldl', label: 'LDL Cholesterol', value: '2.1', unit: 'mmol/L', date: '2026-07-14' });
     expect(json.labValues).toEqual([
-      { key: 'ferritin', label: 'Ferritin', value: 210, unit: 'µg/L', date: '2026-07-14' },
-      { key: 'tsh', label: 'TSH', value: 2.3, unit: 'mIU/L', date: '2026-07-14' },
+      { id: 'l1', key: 'ferritin', label: 'Ferritin', value: 210, unit: 'µg/L', date: '2026-07-14' },
+      { id: 'l2', key: 'tsh', label: 'TSH', value: 2.3, unit: 'mIU/L', date: '2026-07-14' },
     ]);
     expect(json.due.overdue[0]).toMatchObject({ category: 'screening_colorectal', dueAt: '2024-05-01' });
     const ezetimibe = json.suggestions.find((s: { id: string }) => s.id === 'med-ezetimibe');

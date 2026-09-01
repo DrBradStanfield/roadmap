@@ -19,6 +19,7 @@ import { RoadmapStore } from '../widget-src/src/storage/roadmap-store';
 import { MemoryAdapter, MemoryCloud } from '../widget-src/src/storage/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../widget-src/src/storage/adapter';
 import { run } from './edit-record';
+import { run as runGetPlan } from './get-plan';
 import { assertUnchanged, recordStamp } from './record-io';
 
 const CTX = { deviceId: 'us31_cli', now: '2026-09-01T09:00:00Z' };
@@ -33,13 +34,13 @@ function fixture(): RoadmapFile {
   return file;
 }
 
-/** Run the CLI with stdio captured; the spies are always restored. */
-function captureRun(argv: string[]): { code: number; stdout: string; stderr: string } {
+/** Run a CLI with stdio captured; the spies are always restored. */
+function captureRun(argv: string[], runner = run): { code: number; stdout: string; stderr: string } {
   const err = vi.spyOn(process.stderr, 'write').mockReturnValue(true);
   const out = vi.spyOn(process.stdout, 'write').mockReturnValue(true);
   const text = (spy: typeof err) => spy.mock.calls.map((c) => String(c[0])).join('');
   try {
-    return { code: run(argv), stdout: text(out), stderr: text(err) };
+    return { code: runner(argv), stdout: text(out), stderr: text(err) };
   } finally {
     err.mockRestore();
     out.mockRestore();
@@ -130,6 +131,19 @@ describe('US-31 AC3 — correct', () => {
     expect(file.measurements.find((m) => m.id === 'm1')!.status).toBe('entered-in-error');
     const fresh = file.measurements.find((m) => m.correctsId === 'm1')!;
     expect(fresh).toMatchObject({ value: 2.1, recordedAt: '2026-07-14', status: 'active', source: 'manual_correction' });
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('takes an id straight out of `get-plan --json` — the hint the error prints', () => {
+    // `correct --id` without an id tells the reader to run get-plan --json for
+    // the ids. This is that round trip, so the hint cannot go stale.
+    const { dir, path } = writeFixture();
+    const plan = captureRun([path, '--json'], runGetPlan);
+    expect(plan.code).toBe(0);
+    const id = (JSON.parse(plan.stdout) as { currentValues: Array<{ metric: string; id: string }> })
+      .currentValues.find((v) => v.metric === 'ldl')!.id;
+
+    expect(captureRun(['correct', path, '--id', id, '--value', '2.1']).code).toBe(0);
     rmSync(dir, { recursive: true, force: true });
   });
 

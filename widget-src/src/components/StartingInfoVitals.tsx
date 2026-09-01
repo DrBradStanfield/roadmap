@@ -29,6 +29,7 @@ import {
   getDisplayLabel,
   parseLocalisedNumber,
   calculateIBW,
+  localDay,
 } from '@roadmap/health-core';
 import { routeTasksToSaves, type SaveTask, type CorrectFn } from '../lib/matrix-save';
 import {
@@ -151,7 +152,6 @@ function simpleStatus(metric: 'weight' | 'waist', si: number | null | undefined,
 
 // ── Date helpers ─────────────────────────────────────────────────────────
 
-function todayIso(): string { return new Date().toISOString().slice(0, 10); }
 function isoOnly(s: string): string { return s.slice(0, 10); }
 
 // ── Blood-pressure helpers (atomic sys+dia pair) ─────────────────────────
@@ -223,7 +223,7 @@ interface DraftRow {
   dia: string;
 }
 function emptyDraft(): DraftRow {
-  return { date: todayIso(), weight: '', waist: '', sys: '', dia: '' };
+  return { date: localDay(new Date()), weight: '', waist: '', sys: '', dia: '' };
 }
 
 /** Merge a single BP field (systolic OR diastolic) into an existing sys/dia

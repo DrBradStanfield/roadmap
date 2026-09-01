@@ -38,6 +38,7 @@ import {
   getCategoryGroup,
   isActiveMedication,
 } from './reminders';
+import { dayOf, localDay } from './merge';
 import { ISO_DATE } from './measurement-history';
 import type { RoadmapFile } from './roadmap-file';
 
@@ -80,16 +81,21 @@ export const SCHEDULE_LABELS: Record<ReminderCategory, readonly string[]> = {
 
 // ===== Date helpers (mirror v1's month-granularity arithmetic) =====
 
-function toYmd(date: Date): string {
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${m}-${d}`;
-}
-
-function addMonths(dateStr: string, months: number): Date {
-  const date = new Date(dateStr);
-  date.setMonth(date.getMonth() + months);
-  return date;
+/**
+ * Add whole months to a STORED calendar day (YYYY-MM-DD), returning one.
+ *
+ * The arithmetic is UTC on both ends. `new Date('2026-05-12')` is UTC
+ * midnight, so reading the result back through the local clock hands every
+ * caller west of Greenwich the previous day — an item due tomorrow reads
+ * overdue today. Month overflow is Date#setUTCMonth's (31 Jan + 1 → 3 Mar),
+ * unchanged; an unparseable day still comes back 'NaN-NaN-NaN' for the ISO_DATE
+ * filter in computeReminderSchedule to drop.
+ */
+function addMonths(day: string, months: number): string {
+  const date = new Date(day);
+  date.setUTCMonth(date.getUTCMonth() + months);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
 }
 
 /** Earliest non-null date — matches v1's "overdue if EITHER candidate has passed". */
@@ -110,7 +116,7 @@ function screeningSchedule(
   const { age, sex } = profile;
 
   const push = (category: ReminderCategory, label: string, due: Date | null): void => {
-    if (due) items.push({ category, group: getCategoryGroup(category), label, dueAt: toYmd(due) });
+    if (due) items.push({ category, group: getCategoryGroup(category), label, dueAt: localDay(due) });
   };
 
   // Colorectal (age 35-75)
@@ -191,7 +197,7 @@ function bloodTestSchedule(measurementDates: MeasurementDates, items: ReminderSc
       category: t.category,
       group: 'blood_test',
       label: t.label,
-      dueAt: toYmd(addMonths(t.lastDate, BLOOD_TEST_STALE_MONTHS)),
+      dueAt: addMonths(t.lastDate, BLOOD_TEST_STALE_MONTHS),
     });
   }
 }
@@ -205,7 +211,7 @@ function medicationSchedule(medications: MedicationRecord[], items: ReminderSche
     category: 'medication_review',
     group: 'medication_review',
     label: 'Medication review',
-    dueAt: toYmd(addMonths(oldest, MEDICATION_REVIEW_STALE_MONTHS)),
+    dueAt: addMonths(dayOf(oldest), MEDICATION_REVIEW_STALE_MONTHS),
   });
 }
 
@@ -251,7 +257,7 @@ export function computeReminderSchedule(file: RoadmapFile, now: Date): ReminderS
   // and scheduleSchema rejects the whole push. One bad row costs its own item.
   const valid = items.filter((item) => ISO_DATE.test(item.dueAt));
 
-  const horizon = toYmd(addMonths(toYmd(now), 12));
+  const horizon = addMonths(localDay(now), 12);
   if (!valid.some((item) => item.dueAt <= horizon)) {
     valid.push({
       category: 'annual_checkin',

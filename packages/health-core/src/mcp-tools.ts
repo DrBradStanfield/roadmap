@@ -504,19 +504,33 @@ const INPUTS = {
   report_feedback: reportFeedbackInput,
 } as const;
 
-export function isToolName(name: string): name is keyof typeof INPUTS {
+export type ToolName = keyof typeof INPUTS;
+
+export function isToolName(name: string): name is ToolName {
   return name in INPUTS;
 }
+
+/**
+ * The tools that read no record. `report_feedback` is one: the likeliest
+ * moment to report a bug is the moment the record could not be opened, so the
+ * caller must be able to skip opening it. Every other tool needs the file, and
+ * gets a refusal it can read out loud when there is none.
+ */
+export const RECORD_FREE_TOOLS: ReadonlySet<ToolName> = new Set(['report_feedback']);
 
 /**
  * Run one tool call against a record. The arguments are whatever crossed the
  * wire, so they are parsed before anything reads them; a call that does not
  * fit its schema is refused as malformed, and the record is not touched.
+ *
+ * `file` is absent when the caller has no record open — legitimate only for
+ * `RECORD_FREE_TOOLS`. Anything else is refused in words, so a missing record
+ * reads to the agent as something the user can fix.
  */
 export function callTool(
-  name: keyof typeof INPUTS,
+  name: ToolName,
   args: unknown,
-  context: { file: RoadmapFile; now: string },
+  context: { file: RoadmapFile | undefined; now: string },
 ): ToolOutcome {
   const parsed = INPUTS[name].safeParse(args ?? {});
   if (!parsed.success) {
@@ -524,18 +538,25 @@ export function callTool(
     return { status: 'invalid-args', text: `${name}: ${[issue.path.join('.'), issue.message].filter(Boolean).join(' — ')}` };
   }
   const { file, now } = context;
+  if (!file && !RECORD_FREE_TOOLS.has(name)) {
+    return { status: 'rejected', text: `${name} needs the health record, and none is open. Check the file path the server was given.` };
+  }
+  // TS cannot narrow through a Set membership test. Every case below the
+  // report_feedback one is a record tool, and the guard just refused those
+  // without a record.
+  const record = file as RoadmapFile;
   switch (name) {
-    case 'read_record':
-      return readRecord(file, parsed.data as z.infer<typeof readRecordInput>);
-    case 'get_plan':
-      return getPlan(file, now);
-    case 'add_measurement':
-      return addMeasurement(file, parsed.data as z.infer<typeof addMeasurementInput>, now);
-    case 'add_lab_values':
-      return addLabValues(file, parsed.data as z.infer<typeof addLabValuesInput>, now);
-    case 'correct_value':
-      return correctValueTool(file, parsed.data as z.infer<typeof correctValueInput>, now);
     case 'report_feedback':
       return reportFeedback(parsed.data as z.infer<typeof reportFeedbackInput>, now);
+    case 'read_record':
+      return readRecord(record, parsed.data as z.infer<typeof readRecordInput>);
+    case 'get_plan':
+      return getPlan(record, now);
+    case 'add_measurement':
+      return addMeasurement(record, parsed.data as z.infer<typeof addMeasurementInput>, now);
+    case 'add_lab_values':
+      return addLabValues(record, parsed.data as z.infer<typeof addLabValuesInput>, now);
+    case 'correct_value':
+      return correctValueTool(record, parsed.data as z.infer<typeof correctValueInput>, now);
   }
 }

@@ -26,6 +26,7 @@ import { loadAllHistory, loadLabValues, loadMedicationHistory } from '../lib/api
 import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { labValueLabel } from '../lib/lab-value-labels';
+import { formatShortDate } from '../lib/constants';
 
 // Register only what we need
 Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Filler, annotationPlugin);
@@ -147,8 +148,7 @@ function TimeSeriesChart({
               title: (items) => {
                 const x = items[0]?.parsed.x;
                 if (x == null) return '';
-                const date = new Date(x);
-                return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                return formatShortDate(x);
               },
               label: (item) => `${+Number(item.parsed.y).toPrecision(10)} ${unit}`,
             },

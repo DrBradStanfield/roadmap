@@ -79,6 +79,19 @@ export function dayOf(iso: string): string {
   return iso.slice(0, 10);
 }
 
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * The calendar day an instant falls on IN THE WRITER'S OWN TIMEZONE — what a
+ * person means by "today". `dayOf` reads the day out of a stored string and is
+ * right for that; using it on a clock reading puts an 11am Auckland write on
+ * yesterday, because the instant is still 23:00Z.
+ */
+export function localDay(instant: string | Date): string {
+  const d = instant instanceof Date ? instant : new Date(instant);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 /** Stable string comparison (-1 | 0 | 1). */
 export function cmpStr(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;

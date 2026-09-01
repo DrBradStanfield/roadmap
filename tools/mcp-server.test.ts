@@ -6,8 +6,8 @@
  * the fact that a write tool actually lands bytes on disk through the same
  * backup-and-replace path the CLI uses.
  */
-import { describe, it, expect } from 'vitest';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { describe, it, expect, vi } from 'vitest';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -244,6 +244,32 @@ describe('US-32 — the transport refuses a line it will not buffer', () => {
   });
 });
 
+describe('US-32 — a write is never dropped in silence', () => {
+  it('throws when a tool returns a file the server opened no record for', async () => {
+    // The old shape returned success here, discarding the file. No real tool
+    // does this; a future record-free tool that started writing would, and the
+    // failure must be loud rather than a save that quietly never happened.
+    vi.resetModules();
+    vi.doMock('../packages/health-core/src/mcp-tools', async () => ({
+      ...(await vi.importActual<typeof import('../packages/health-core/src/mcp-tools')>(
+        '../packages/health-core/src/mcp-tools',
+      )),
+      callTool: () => ({ status: 'ok', text: 'done', file: fixture() }),
+    }));
+    try {
+      const { handle: mocked } = await import('./mcp-server');
+      const request = {
+        jsonrpc: '2.0', id: 1, method: 'tools/call',
+        params: { name: 'report_feedback', arguments: { kind: 'bug', title: 'x', detail: 'y' } },
+      };
+      expect(() => mocked(request, join(tmpdir(), 'no-such-record.json'))).toThrow(/without opening one/);
+    } finally {
+      vi.doUnmock('../packages/health-core/src/mcp-tools');
+      vi.resetModules();
+    }
+  });
+});
+
 describe('US-32 — nothing that could reach the network is imported', () => {
   const here = dirname(fileURLToPath(import.meta.url));
   const files = [
@@ -281,6 +307,26 @@ describe('US-32 AC9 — report_feedback over the wire', () => {
     // No write, no backup: the file is only the thing being reported about.
     expect(statSync(path).mtimeMs).toBe(before.mtimeMs);
     expect(readdirSync(dir).filter((n) => n.includes('.bak-'))).toHaveLength(0);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('works when there is no record at all — the one tool that never reads the file', () => {
+    // The likeliest moment to report feedback is the moment the tool failed:
+    // wrong path, record not created yet. Opening the record first turned that
+    // into "no record here", swallowing the report.
+    const dir = mkdtempSync(join(tmpdir(), 'us32-'));
+    const path = join(dir, 'health-roadmap.json');
+
+    const response = call(path, 'report_feedback', {
+      kind: 'bug', title: 'the server cannot find my record', detail: 'It says no record here.',
+    });
+
+    expect(response.result!.isError).toBeUndefined();
+    expect(text(response)).toContain('github.com/');
+    expect(text(response)).toContain('/issues/new');
+    // Nothing was created: no record, no backup, an empty directory.
+    expect(existsSync(path)).toBe(false);
+    expect(readdirSync(dir)).toHaveLength(0);
     rmSync(dir, { recursive: true, force: true });
   });
 });

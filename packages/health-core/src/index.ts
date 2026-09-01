@@ -259,7 +259,7 @@ export {
   type HistoryChangeType,
 } from './roadmap-file';
 export { fileProfileToApi, fileScreeningRows, screeningFieldName } from './file-inputs';
-export { mergeFiles, dayOf, type MergeOptions } from './merge';
+export { mergeFiles, dayOf, localDay, type MergeOptions } from './merge';
 export { classifyMedicationChange, classifySupplementChange, isTakingDrug } from './history-change';
 export { migrateFile, SchemaTooNewError } from './migrate';
 

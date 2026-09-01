@@ -16,6 +16,7 @@ import {
   METRIC_TO_FIELD,
   METRIC_LABELS,
   refHintFor,
+  localDay,
   parseLocalisedNumber,
 } from '@roadmap/health-core';
 import { MONTHS_SHORT } from '../lib/constants';
@@ -176,12 +177,8 @@ interface BackfillMap {
   [batchDate: string]: Partial<Record<MetricType, string>>;
 }
 
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 function emptyDraft(): DraftRow {
-  return { date: todayIso(), values: {} };
+  return { date: localDay(new Date()), values: {} };
 }
 
 function loadPersisted(): { draft: DraftRow; backfills: BackfillMap } | null {
@@ -191,7 +188,7 @@ function loadPersisted(): { draft: DraftRow; backfills: BackfillMap } | null {
     const parsed = JSON.parse(raw) as PersistedDraft;
     if (!parsed || typeof parsed !== 'object') return null;
     const draftDate = typeof parsed.draft?.date === 'string' && parsed.draft.date
-      ? parsed.draft.date : todayIso();
+      ? parsed.draft.date : localDay(new Date());
     const draftValues = (parsed.draft && typeof parsed.draft.values === 'object' && parsed.draft.values)
       ? (parsed.draft.values as Partial<Record<MetricType, string>>) : {};
     const backfills = (parsed.backfills && typeof parsed.backfills === 'object')

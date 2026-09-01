@@ -25,12 +25,19 @@ export default defineConfig({
     },
   },
   test: {
+    // `process.env.TZ = ...` at the top of a test file is a no-op in the default
+    // `threads` pool: a worker thread inherits a COPY of the environment and node
+    // never calls tzset for it, so the file runs in the machine's own timezone and
+    // its assertions only hold where the author sat. The `forks` pool starts a real
+    // child process, where the assignment lands before any Date is constructed.
+    poolMatchGlobs: [['**/*-local-day.test.ts', 'forks']],
     exclude: [
       "**/node_modules/**",
       "**/dist/**",
       "**/dist-pages/**",
       "**/build/**",
       "**/.react-router/**",
+      "**/.claude/**",
     ],
     server: {
       deps: {

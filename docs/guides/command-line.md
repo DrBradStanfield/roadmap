@@ -72,7 +72,7 @@ A record holds one value per metric per day. Try to add a second and it refuses 
 
 `edit_record: ldl already has a value on 2026-05-12`
 
-The second line names the row holding that day and gives you the command to fix it, id and all. That is also the easiest way to get a row id, because `--json` does not print them today.
+The second line names the row holding that day and gives you the command to fix it, id and all. Every row in `get-plan --json` also carries its `id`.
 
 ## Correct a value
 

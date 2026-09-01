@@ -31,6 +31,7 @@ import {
   fileProfileToApi,
   fileScreeningRows,
   latestActivePerMetric,
+  localDay,
   measurementsToInputs,
   mergeFiles,
   migrateFile,
@@ -55,6 +56,7 @@ import { getDeviceId } from './device-id';
 import { SyncManager, type DocumentSpec, type SyncContext } from './sync-manager';
 import { LocalStorageAdapter } from './local-storage-adapter';
 import { ROADMAP_FILE_NAME, type StorageAdapter } from './adapter';
+import { ensureIsoDatetime } from '../lib/recordedAt';
 import { safeGetItem, safeRemoveItem, safeSetItem } from '../lib/storage';
 import { Sentry } from '../lib/sentry';
 
@@ -310,7 +312,10 @@ export class RoadmapStore {
   // ================================================================= mutations
 
   addMeasurement(metricType: string, value: number, recordedAt?: string): AddMeasurementResult {
-    const when = recordedAt ?? new Date().toISOString();
+    // No date picked = today, in the USER'S timezone and at the day granularity
+    // the picked-date path already stores — otherwise an evening entry lands on
+    // the previous UTC day and the two paths fight over one slot.
+    const when = recordedAt ?? ensureIsoDatetime(localDay(new Date()));
     // Slot rule: one active value per (metric, day) — mirrors the server 409.
     const exists = activeOnly(this.file.measurements).some(
       (m) => m.metricType === metricType && dayOf(m.recordedAt) === dayOf(when),
@@ -509,7 +514,7 @@ export class RoadmapStore {
         const ref = buildDocumentRef({
           type: doc.type,
           title: doc.title,
-          date: doc.date ?? new Date().toISOString().slice(0, 10),
+          date: doc.date ?? localDay(new Date()),
           sourceFileName: d.sourceFileName,
           existingRefs,
         });

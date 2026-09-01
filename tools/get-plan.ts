@@ -113,7 +113,7 @@ export function renderText(plan: Plan): string {
   const out: string[] = [];
   out.push('YOUR HEALTH PLAN');
   out.push(profileLine(plan));
-  out.push(`Computed ${plan.generatedAt.slice(0, 10)} from your record file. Not medical advice — take it to your doctor.`);
+  out.push(`Computed ${plan.today} from your record file. Not medical advice — take it to your doctor.`);
 
   const row = (r: DisplayRow) => `  ${r.label.padEnd(20)} ${String(r.value).padStart(6)} ${r.unit.padEnd(9)} ${r.date}${r.excluded ? '  (excluded — out of range)' : ''}`;
   const values = currentValues(plan);
@@ -197,7 +197,7 @@ ${s.references?.length ? `<ul class="refs">${s.references.map((r) => `<li><a hre
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Health plan — ${esc(plan.generatedAt.slice(0, 10))}</title>
+<title>Health plan — ${esc(plan.today)}</title>
 <style>
 :root{color-scheme:light dark;--fg:#1a1a1a;--bg:#fff;--muted:#666;--line:#e2e2e2;--card:#fafafa}
 @media(prefers-color-scheme:dark){:root{--fg:#e8e8e8;--bg:#151515;--muted:#9a9a9a;--line:#333;--card:#1e1e1e}}
@@ -230,7 +230,7 @@ footer{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--line);color:v
 </style></head><body><main>
 <h1>Your health plan</h1>
 <p class="sub">${esc(profileLine(plan))}</p>
-<p class="sub">Computed ${esc(plan.generatedAt.slice(0, 10))} from your own record file, on your own machine.</p>
+<p class="sub">Computed ${esc(plan.today)} from your own record file, on your own machine.</p>
 <p class="disclaimer"><b>Disclaimer:</b> This tool is for educational purposes only and is not a substitute for professional medical advice. Always consult with your healthcare provider before making any health decisions. Suggestions are based on general guidelines and may not apply to your individual situation.</p>
 
 <h2>Current values</h2>
@@ -269,14 +269,15 @@ record is never written back.
 
 --json emits:
   instruction    how to present this plan: keep the hedging, keep the citations
-  schemaVersion, generatedAt, unitSystem
+  schemaVersion, generatedAt, today, unitSystem
   profile        age, sex, heightCm, bmi, bmiCategory, eGFR, idealBodyWeightKg,
                  proteinTargetG
   inputs         the HealthInputs the plan was computed from (SI canonical)
-  currentValues  one row per metric — label, display value, unit, clinical date;
-                 excluded: true marks a value out of range — shown, but unused
-  labValues      latest per additional test (informational; not used to compute
-                 suggestions)
+  currentValues  one row per metric — id, label, display value, unit, clinical
+                 date; excluded: true marks a value out of range — shown, but
+                 unused
+  labValues      latest per additional test, with its id (informational; not
+                 used to compute suggestions)
   medications    screenings
   due            { overdue, upcoming } — label + dueAt (YYYY-MM-DD)
   suggestions    id, category, priority, title, description, ingredients,
