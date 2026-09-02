@@ -21,8 +21,16 @@
  * are last-write-wins; the SyncManager's read-merge-write makes that safe. The
  * file `version` field is surfaced for change detection.
  */
-import { splitDocumentRef } from '@roadmap/health-core';
 import {
+  driveCreateFile,
+  driveCreateFolder,
+  driveDownloadJson,
+  driveFindFileId,
+  driveFindFolder,
+  driveUpdateFile,
+  splitDocumentRef,
+  DRIVE_API,
+  DRIVE_FOLDER_NAME,
   ROADMAP_FILE_NAME,
   StorageError,
   type ReadResult,
@@ -45,13 +53,10 @@ const CONFIG_KEY = 'health_roadmap_gdrive';
 const TOKENS_KEY = 'health_roadmap_gdrive_tokens';
 const PKCE_KEY = 'health_roadmap_gdrive_pkce';
 const AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-/** Everything the app creates lives in this folder (parity with Dropbox's app folder). */
-const FOLDER_NAME = 'Health Plan by Dr Brad';
-/** Pre-rename folder name (brand moved off "roadmap", 2026-06-10) — found folders are renamed in place. */
-const LEGACY_FOLDER_NAME = 'Health Roadmap by Dr Brad';
-const FOLDER_MIME = 'application/vnd.google-apps.folder';
-const DRIVE = 'https://www.googleapis.com/drive/v3';
-const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
+/** Folder names, file lookup and the upload requests are shared with the hosted
+ *  MCP server (`packages/health-core/src/drive-rest.ts`): both must find the
+ *  SAME file or the server writes a second record beside the user's. */
+const FOLDER_NAME = DRIVE_FOLDER_NAME;
 
 /** Presence of this object IS the "connected" flag. */
 interface Stored {
@@ -315,21 +320,12 @@ export class GoogleDriveAdapter implements StorageAdapter {
     this.rememberFileId(fileName, fileId);
     // Cosmetic, never blocks the read: adopt pre-folder files into the app folder.
     void this.ensureInFolderOnce(fileId);
-    const res = await fetch(`${DRIVE}/files/${fileId}?alt=media`, { headers: await this.authHeaders() });
-    if (res.status === 404) return { body: null, version: null };
-    if (!res.ok) throw new StorageError(`Google Drive read failed (${res.status}): ${await res.text()}`);
-    const text = await res.text();
-    let body: unknown;
-    try {
-      body = text ? (JSON.parse(text)) : null;
-    } catch (error) {
-      throw new StorageError('Google Drive read failed: file is not valid JSON (possible corruption).', undefined, error);
-    }
-    // version: null is honest — Drive has no conditional write, so write()
-    // ignores expectedVersion (LWW; the SyncManager merges first). Fetching the
-    // file's `version` field here cost an extra round trip per read (reads run
-    // on every load and twice per save) for a value nothing consumed.
-    return { body, version: null };
+    // version: null is honest — the BROWSER write is last-write-wins (the
+    // SyncManager merges first), so nothing here consumes a version and
+    // fetching one would cost an extra round trip on every load and every
+    // save. The hosted server does re-check it (design §7); the browser cannot
+    // detect being clobbered on Drive, and the guides say so.
+    return { body: await driveDownloadJson(await this.getToken(), fileId), version: null };
   }
 
   async write(fileName: string, body: object, _expectedVersion: string | null): Promise<WriteResult> {
@@ -337,14 +333,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const json = JSON.stringify(body);
     const fileId = this.cachedFileId(fileName) ?? (await this.findFileId(fileName));
     if (fileId) {
-      const res = await fetch(`${UPLOAD}/files/${fileId}?uploadType=media&fields=id,version`, {
-        method: 'PATCH',
-        headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
-        body: json,
-      });
-      if (!res.ok) throw new StorageError(`Google Drive write failed (${res.status}): ${await res.text()}`);
+      const version = await driveUpdateFile(await this.getToken(), fileId, json);
       this.rememberFileId(fileName, fileId);
-      return { version: String(((await res.json()) as { version?: string }).version ?? '') };
+      return { version };
     }
     // First write — create the file (multipart: metadata + content).
     const res = await this.createMultipart(fileName, 'application/json', json);
@@ -360,7 +351,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const parentId = folder ? await this.ensureSubfolderId(folder) : await this.ensureFolderId();
     const id = await this.findFileId(name, parentId);
     if (!id) throw new StorageError(`Google Drive document not found: ${ref}`);
-    const res = await fetch(`${DRIVE}/files/${id}?alt=media`, { headers: await this.authHeaders() });
+    const res = await fetch(`${DRIVE_API}/files/${id}?alt=media`, { headers: await this.authHeaders() });
     if (!res.ok) throw new StorageError(`Google Drive document read failed (${res.status}): ${ref}`);
     return res.blob();
   }
@@ -410,24 +401,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
       void this.ensureFolderName(this.stored.folderId); // self-heal renames; never blocks
       return this.stored.folderId;
     }
-    const q = encodeURIComponent(
-      `(name='${FOLDER_NAME}' or name='${LEGACY_FOLDER_NAME}') and mimeType='${FOLDER_MIME}' and trashed=false`,
-    );
-    const found = await fetch(`${DRIVE}/files?q=${q}&fields=files(id,name)&pageSize=1`, {
-      headers: await this.authHeaders(),
-    });
-    if (!found.ok) throw new StorageError(`Google Drive folder lookup failed (${found.status})`);
-    const hit = ((await found.json()) as { files?: Array<{ id: string; name: string }> }).files?.[0];
+    const hit = await driveFindFolder(await this.getToken());
     let id = hit?.id;
     if (id) void this.ensureFolderName(id, hit!.name);
     if (!id) {
-      const created = await fetch(`${DRIVE}/files?fields=id`, {
-        method: 'POST',
-        headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: FOLDER_NAME, mimeType: FOLDER_MIME }),
-      });
-      if (!created.ok) throw new StorageError(`Google Drive folder create failed (${created.status})`);
-      id = ((await created.json()) as { id: string }).id;
+      id = await driveCreateFolder(await this.getToken(), FOLDER_NAME);
       this.stored = { ...(this.stored ?? {}), folderName: FOLDER_NAME }; // fresh create = current name
     }
     this.stored = { ...(this.stored ?? {}), folderId: id };
@@ -444,7 +422,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     if (this.stored?.folderName === FOLDER_NAME) return;
     try {
       if (knownName !== FOLDER_NAME) {
-        await fetch(`${DRIVE}/files/${folderId}`, {
+        await fetch(`${DRIVE_API}/files/${folderId}`, {
           method: 'PATCH',
           headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: FOLDER_NAME }),
@@ -467,23 +445,9 @@ export class GoogleDriveAdapter implements StorageAdapter {
     const cached = this.stored?.subfolders?.[folderName];
     if (cached) return cached;
     const parentId = await this.ensureFolderId();
-    const q = encodeURIComponent(
-      `name='${folderName.replace(/'/g, "\\'")}' and mimeType='${FOLDER_MIME}' and '${parentId}' in parents and trashed=false`,
-    );
-    const found = await fetch(`${DRIVE}/files?q=${q}&fields=files(id)&pageSize=1`, {
-      headers: await this.authHeaders(),
-    });
-    if (!found.ok) throw new StorageError(`Google Drive subfolder lookup failed (${found.status})`);
-    let id = ((await found.json()) as { files?: Array<{ id: string }> }).files?.[0]?.id;
-    if (!id) {
-      const created = await fetch(`${DRIVE}/files?fields=id`, {
-        method: 'POST',
-        headers: { ...(await this.authHeaders()), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: folderName, mimeType: FOLDER_MIME, parents: [parentId] }),
-      });
-      if (!created.ok) throw new StorageError(`Google Drive subfolder create failed (${created.status})`);
-      id = ((await created.json()) as { id: string }).id;
-    }
+    const id =
+      (await driveFindFolder(await this.getToken(), [folderName], parentId))?.id ??
+      (await driveCreateFolder(await this.getToken(), folderName, parentId));
     this.stored = {
       ...(this.stored ?? {}),
       subfolders: { ...(this.stored?.subfolders ?? {}), [folderName]: id },
@@ -502,11 +466,11 @@ export class GoogleDriveAdapter implements StorageAdapter {
     this.folderCheckDone = true;
     try {
       const folderId = await this.ensureFolderId();
-      const meta = await fetch(`${DRIVE}/files/${fileId}?fields=parents`, { headers: await this.authHeaders() });
+      const meta = await fetch(`${DRIVE_API}/files/${fileId}?fields=parents`, { headers: await this.authHeaders() });
       if (!meta.ok) return;
       const parents = ((await meta.json()) as { parents?: string[] }).parents ?? [];
       if (parents.includes(folderId)) return;
-      await fetch(`${DRIVE}/files/${fileId}?addParents=${folderId}&removeParents=${parents.join(',')}`, {
+      await fetch(`${DRIVE_API}/files/${fileId}?addParents=${folderId}&removeParents=${parents.join(',')}`, {
         method: 'PATCH',
         headers: await this.authHeaders(),
       });
@@ -522,30 +486,17 @@ export class GoogleDriveAdapter implements StorageAdapter {
     content: Blob | string,
     parentId?: string,
   ): Promise<Response> {
-    const metadata = { name, parents: [parentId ?? (await this.ensureFolderId())] };
-    const boundary = 'rm_boundary_health_roadmap';
-    const body = new Blob([
-      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: ${contentType}\r\n\r\n`,
+    return driveCreateFile(
+      await this.getToken(),
+      name,
+      contentType,
       content,
-      `\r\n--${boundary}--`,
-    ]);
-    return fetch(`${UPLOAD}/files?uploadType=multipart&fields=id,version`, {
-      method: 'POST',
-      headers: { ...(await this.authHeaders()), 'Content-Type': `multipart/related; boundary=${boundary}` },
-      body,
-    });
+      parentId ?? (await this.ensureFolderId()),
+    );
   }
 
   private async findFileId(name: string, parentId?: string): Promise<string | undefined> {
-    const safe = name.replace(/'/g, "\\'");
-    const q = encodeURIComponent(
-      `name='${safe}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
-    );
-    const res = await fetch(`${DRIVE}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`, {
-      headers: await this.authHeaders(),
-    });
-    if (!res.ok) throw new StorageError(`Google Drive lookup failed (${res.status}): ${await res.text()}`);
-    return ((await res.json()) as { files?: Array<{ id: string }> }).files?.[0]?.id;
+    return driveFindFileId(await this.getToken(), name, parentId);
   }
 
   private async authHeaders(): Promise<Record<string, string>> {

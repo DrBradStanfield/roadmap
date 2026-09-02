@@ -41,6 +41,21 @@ export class ConflictError extends Error {
 }
 
 /**
+ * A write that landed and then vanished: the re-read after it is missing rows
+ * it had just written, so a concurrent writer overwrote them. It is a conflict
+ * — the SyncManager re-reads, re-merges and writes again — but a NAMED one,
+ * because unlike a refused write, something did happen. On a backend with a
+ * real conditional write this cannot occur; on Google Drive, which has none,
+ * it is design §7 step 3 doing the job step 2 cannot finish.
+ */
+export class LostUpdateError extends ConflictError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'LostUpdateError';
+  }
+}
+
+/**
  * Any other storage failure (network, auth, corruption, verify mismatch).
  * `hint` is the user's next move, when the thrower knows one — the shared
  * `describeStorageFailure` mapping prints it as the second line.

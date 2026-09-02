@@ -326,6 +326,7 @@ export {
 export {
   ROADMAP_FILE_NAME,
   ConflictError,
+  LostUpdateError,
   StorageError,
   type StorageAdapter,
   type StorageBackendId,
@@ -342,3 +343,22 @@ export {
 export { ROADMAP_DOC } from './roadmap-doc';
 export { MemoryAdapter, MemoryCloud } from './memory-adapter';
 export { dropboxRead, dropboxWrite, DROPBOX_TOKEN_URL } from './dropbox-rest';
+// Google Drive v3 as plain fetch calls: the folder/file discovery the browser
+// adapter and the hosted MCP server MUST agree on, plus the server's adapter.
+export {
+  DriveAdapter,
+  driveCreateFile,
+  driveCreateFolder,
+  driveDownloadJson,
+  driveFileVersion,
+  driveFindFileId,
+  driveFindFolder,
+  driveUpdateFile,
+  DRIVE_API,
+  DRIVE_FOLDER_NAME,
+  DRIVE_LEGACY_FOLDER_NAME,
+  DRIVE_FOLDER_MIME,
+  GOOGLE_AUTHORIZE_URL,
+  GOOGLE_TOKEN_URL,
+  GOOGLE_DRIVE_SCOPE,
+} from './drive-rest';
