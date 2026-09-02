@@ -14,13 +14,12 @@
  * browser refreshes with PKCE and the server refreshes as a confidential
  * client.
  */
-import { ConflictError, fetchOrFail, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
+import { ConflictError, fetchOrFail, jsonBody, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
 
 export const DROPBOX_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
 const DOWNLOAD_URL = 'https://content.dropboxapi.com/2/files/download';
 const UPLOAD_URL = 'https://content.dropboxapi.com/2/files/upload';
 
-/** Parse the `dropbox-api-result` response header (file metadata incl. rev). */
 /** The provider's user-facing name. One copy: the adapter's `label` and every
  *  message below read it from here. */
 const PROVIDER = 'Dropbox';
@@ -29,6 +28,7 @@ const PROVIDER = 'Dropbox';
  *  hand `fetchOrFail` the wrong one. Reach for this, never the bare global. */
 const request = (url: string | URL, init?: RequestInit): Promise<Response> => fetchOrFail(PROVIDER, url, init);
 
+/** Parse the `dropbox-api-result` response header (file metadata incl. rev). */
 function parseApiResult(res: Response): Record<string, unknown> | null {
   const header = res.headers.get('dropbox-api-result');
   if (!header) return null;
@@ -100,9 +100,7 @@ export async function dropboxWrite(
   });
   if (res.status === 409) throw new ConflictError(`${PROVIDER} write conflict: ${await res.text()}`);
   if (!res.ok) throw new StorageError(`${PROVIDER} write failed (${res.status}): ${await res.text()}`);
-  // A 2xx whose body is not JSON is a broken answer, not a crash: it falls
-  // into the "no rev" check below and is reported as a failed write.
-  const meta = (await res.json().catch(() => ({}))) as { rev?: string };
+  const meta = await jsonBody<{ rev?: string }>(res);
   if (!meta.rev) throw new StorageError(`${PROVIDER} write returned no rev.`);
   return { version: meta.rev };
 }

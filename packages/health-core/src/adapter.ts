@@ -100,6 +100,16 @@ export async function fetchOrFail(provider: string, url: string | URL, init?: Re
 }
 
 /**
+ * A 2xx whose body is not JSON is a broken answer, not a crash: an empty object
+ * drops each caller into its own "returned no id/version/rev" path. It lives
+ * beside `fetchOrFail` because it answers the next question that helper raises
+ * — the response arrived, now what — and every REST adapter asks it.
+ */
+export async function jsonBody<T>(res: Response): Promise<T> {
+  return (await res.json().catch(() => ({}))) as T;
+}
+
+/**
  * Result of reading a record file. `body` is the JSON-parsed object WITHOUT
  * normalisation — the SyncManager runs it through the document's `migrate()`
  * to fill defaults + gate the schema version. `version` is the backend's

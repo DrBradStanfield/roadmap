@@ -87,7 +87,6 @@ export function isAllowedRedirect(uri: string): boolean {
   return ALLOW_LOOPBACK_REDIRECT && isLoopbackRedirect(uri);
 }
 
-
 interface ClientMetadata {
   client_name: string;
   redirect_uris: string[];

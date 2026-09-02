@@ -30,6 +30,7 @@
 import {
   ConflictError,
   fetchOrFail,
+  jsonBody,
   StorageError,
   type ReadResult,
   type StorageAdapter,
@@ -67,12 +68,6 @@ const PROVIDER = 'Google Drive';
 /** `fetch` with this module's provider name already bound, so no call site can
  *  hand `fetchOrFail` the wrong one. Reach for this, never the bare global. */
 const request = (url: string | URL, init?: RequestInit): Promise<Response> => fetchOrFail(PROVIDER, url, init);
-
-/** A 2xx whose body is not JSON is a broken answer, not a crash: an empty
- *  object drops each caller into its own "returned no id/version" path. */
-async function jsonBody<T>(res: Response): Promise<T> {
-  return (await res.json().catch(() => ({}))) as T;
-}
 
 async function fail(what: string, res: Response): Promise<never> {
   throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${await res.text()}`);
