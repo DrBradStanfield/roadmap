@@ -12,7 +12,7 @@
  * Nothing here reads the clock, the filesystem or the network.
  */
 import { dayOf } from './merge';
-import { resolveLabCatalogEntry } from './lab-catalog';
+import { labSlotKey } from './lab-catalog';
 import { computePlan, oneLine, PlanError, printable, renderJson } from './plan';
 import {
   appendLabValue,
@@ -135,13 +135,8 @@ export function redactRecord(file: RoadmapFile): RedactedRecord {
   return { ...rest, reminderOptIn: optIn };
 }
 
-/** The stable name a test is filed under, so one spelling finds the other. */
-function slotKey(name: string): string {
-  return resolveLabCatalogEntry(name)?.key ?? name.trim().toLowerCase();
-}
-
 function matchesMetric(name: string, query: string): boolean {
-  return name.toLowerCase() === query || slotKey(name) === query;
+  return name.toLowerCase() === query || labSlotKey(name) === query;
 }
 
 /**
@@ -153,7 +148,7 @@ function matchesMetric(name: string, query: string): boolean {
  */
 export function readRecord(file: RoadmapFile, request: z.infer<typeof readRecordInput>): ToolOutcome {
   const record = redactRecord(file);
-  const metric = request.metric ? slotKey(request.metric) : undefined;
+  const metric = request.metric ? labSlotKey(request.metric) : undefined;
   const since = request.since;
   const keep = (row: { recordedAt?: string | null }) => !since || dayOf(row.recordedAt ?? '') >= since;
 

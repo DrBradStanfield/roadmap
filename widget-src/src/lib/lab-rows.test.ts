@@ -3,7 +3,7 @@
  * rows surfaced beneath the core blood-test matrix.
  */
 import { describe, it, expect } from 'vitest';
-import { groupLabValues, countLabValuePoints, labGroupMatrix } from './lab-rows';
+import { groupLabValues, countLabValuePoints, labGroupMatrix, groupLabHistory } from './lab-rows';
 import type { ApiLabValue } from './api-types';
 
 function row(overrides: Partial<ApiLabValue> & { status?: string }): ApiLabValue & { status?: string } {
@@ -32,6 +32,18 @@ describe('US-21: groupLabValues', () => {
     expect(ids.indexOf('renal')).toBeLessThan(ids.indexOf('inflammation'));
     const renal = groups.find(g => g.id === 'renal');
     expect(renal?.series[0].label).toBe('Sodium');
+  });
+
+  it('folds spelling variants of one test into a single series (US-10)', () => {
+    const groups = groupLabValues([
+      row({ metricName: 'vitamin d', value: 80, unit: 'nmol/L', recordedAt: '2026-08-14T00:00:00.000Z' }),
+      row({ metricName: 'vitamin_d', value: 88, unit: 'nmol/L', recordedAt: '2026-08-15T00:00:00.000Z' }),
+    ]);
+    const vitamins = groups.find(g => g.id === 'vitamins');
+    expect(vitamins).toBeDefined();
+    expect(vitamins!.series).toHaveLength(1);
+    expect(vitamins!.series[0].seriesKey).toBe('vitamin_d');
+    expect(vitamins!.series[0].points).toHaveLength(2);
   });
 
   it('resolves aliases case/spelling-insensitively (Gamma GT -> ggt)', () => {
@@ -197,5 +209,30 @@ describe('US-21: countLabValuePoints', () => {
 
   it('is zero for no groups', () => {
     expect(countLabValuePoints([])).toBe(0);
+  });
+});
+
+describe('US-10: groupLabHistory (history charts)', () => {
+  it('gives spelling variants of one test a single series, labelled from the catalogue', () => {
+    const { keys, series } = groupLabHistory([
+      row({ id: 'a', metricName: 'Vitamin D', value: 80, unit: 'nmol/L' }),
+      row({ id: 'b', metricName: 'vitamin_d', value: 88, unit: 'nmol/L' }),
+    ]);
+
+    expect(keys).toEqual(['vitamin_d']);
+    expect(series.vitamin_d.label).toBe('Vitamin D (25-OH)');
+    expect(series.vitamin_d.rows.map((r) => r.id)).toEqual(['a', 'b']);
+  });
+
+  it('keeps uncatalogued tests apart, title-cased, and sorts series by label', () => {
+    const { keys, series } = groupLabHistory([
+      row({ metricName: 'zinc', value: 12 }),
+      row({ metricName: 'some_novel_assay', value: 3 }),
+      row({ metricName: 'Some Novel Assay', value: 4 }),
+    ]);
+
+    expect(keys).toEqual(['some novel assay', 'zinc']);
+    expect(series['some novel assay'].rows).toHaveLength(2);
+    expect(series['some novel assay'].label).toBe('Some Novel Assay');
   });
 });

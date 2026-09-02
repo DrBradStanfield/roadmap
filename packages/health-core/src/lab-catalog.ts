@@ -174,15 +174,28 @@ export function displayLabUnit(reportedUnit: string, entry?: LabCatalogEntry): s
 }
 
 /** Resolve a report's test name (any casing/spelling) to a catalogue entry.
- *  Tolerant of the underscore/space variance the LLM extractor produces
- *  (e.g. "free_t4" vs the catalogue alias "free t4") — this is the single
- *  resolver, so every consumer gets that normalization for free. */
+ *  BOTH sides are spaced before comparing, so the underscore/space variance
+ *  the LLM extractor and agents produce washes out in either direction:
+ *  "free_t4" finds the alias "free t4", and "Vitamin D" finds the key
+ *  `vitamin_d`. This is the single resolver, so every consumer gets that
+ *  normalization for free. */
 export function resolveLabCatalogEntry(reportedName: string): LabCatalogEntry | undefined {
   const raw = reportedName.trim().toLowerCase();
-  const spaced = raw.replace(/_/g, ' ');
+  const spaced = raw.replace(/[_\s]+/g, ' ');
   return LAB_CATALOG.find((e) =>
-    e.key === raw || e.key === spaced ||
-    e.label.toLowerCase() === raw || e.label.toLowerCase() === spaced ||
+    e.key.replace(/_/g, ' ') === spaced ||
+    e.label.toLowerCase() === spaced ||
     e.aliases.includes(raw) || e.aliases.includes(spaced)
   );
+}
+
+/**
+ * The stable slot identity of a lab test: the catalogue key when the name is
+ * catalogued, otherwise the name folded to lower case with underscores and
+ * runs of whitespace flattened to single spaces. One key for every spelling,
+ * so "Vitamin D", `vitamin_d` and "vitamin d" share one slot at write, merge
+ * and read time instead of becoming rows the app can never reconcile.
+ */
+export function labSlotKey(name: string): string {
+  return resolveLabCatalogEntry(name)?.key ?? name.trim().toLowerCase().replace(/[_\s]+/g, ' ');
 }

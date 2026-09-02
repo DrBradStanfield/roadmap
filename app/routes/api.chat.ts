@@ -8,7 +8,8 @@
  */
 import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
-import { getAuthenticatedUser, checkSubscriptionFromTags, getCustomerOrders, getClientIp } from '../lib/route-helpers.server';
+import { getAuthenticatedUser, checkSubscriptionFromTags, getCustomerOrders } from '../lib/route-helpers.server';
+import { getClientIp } from '../lib/local-first-route.server';
 import { logAudit, getProfile, updateSubscriptionPlan, createUserClient, getOrCreateGuestSession, GuestRateLimitError, type DbProfile } from '../lib/supabase.server';
 import {
   resolveChatContext,
@@ -59,7 +60,7 @@ async function getAuthOrGuest(
   }
 
   // Guest path — HMAC was already verified inside getAuthenticatedUser
-  const ip = getClientIp(request);
+  const ip = getClientIp(request, 'shopify');
   const session = await getOrCreateGuestSession(ip, sessionToken);
   return {
     client: createUserClient(session.sessionId),

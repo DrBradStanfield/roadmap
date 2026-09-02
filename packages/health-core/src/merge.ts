@@ -58,6 +58,7 @@ import {
   type SyncStamp,
 } from './roadmap-file';
 import type { MeasurementStatus } from './validation';
+import { labSlotKey } from './lab-catalog';
 
 export interface MergeOptions {
   /** This device's id — stamped as the merge author on the result. */
@@ -404,7 +405,7 @@ export function mergeFiles(
       remote.measurements,
       (r) => r.metricType,
     ),
-    labValues: mergeSlotted<FileLabValue>(local.labValues, remote.labValues, (r) => r.metricName),
+    labValues: mergeSlotted<FileLabValue>(local.labValues, remote.labValues, (r) => labSlotKey(r.metricName)),
 
     medications: mergeByKey<FileMedication>(
       local.medications,

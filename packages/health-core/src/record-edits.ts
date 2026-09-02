@@ -25,7 +25,7 @@
  * screening op — those are last-write-wins current state, which a second
  * writer can only edit safely with the lamport discipline this does not take on.
  */
-import { resolveLabCatalogEntry } from './lab-catalog';
+import { labSlotKey } from './lab-catalog';
 import { METRIC_LABELS, METRIC_TO_FIELD } from './mappings';
 import { dayOf, localDay } from './merge';
 import { createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
@@ -222,15 +222,6 @@ export function appendMeasurement(file: RoadmapFile, request: AppendMeasurementR
 }
 
 /**
- * The stable slot identity of a lab row: the catalogue key when catalogued,
- * otherwise the name folded to lower case — so "Vitamin D" and "vitamin d"
- * are one test with one slot, not two rows the app can never reconcile.
- */
-function labKey(metricName: string): string {
-  return resolveLabCatalogEntry(metricName)?.key ?? metricName.trim().toLowerCase();
-}
-
-/**
  * Every spelling of a core metric this tool recognises — its key and its
  * display label, folded to lower case. A core metric written into `labValues`
  * is invisible to the suggestion engine, and `docs/agent-access.md` names them
@@ -247,7 +238,7 @@ const CORE_METRIC_NAMES = new Set<string>([
  */
 export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest): EditResult<FileLabValue> {
   const { value, now } = request;
-  const metricName = labKey(request.metricName);
+  const metricName = labSlotKey(request.metricName);
   if (!metricName) return reject('invalid-value', 'A lab value needs a test name');
   if (CORE_METRIC_NAMES.has(metricName)) {
     return reject('core-metric', `"${request.metricName}" is a core metric — write it as a measurement, in SI units`);
@@ -258,7 +249,7 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
   if (typeof recordedAt !== 'string') return recordedAt;
 
   const taken = file.labValues.find(
-    (l) => l.status === 'active' && labKey(l.metricName) === metricName && dayOf(l.recordedAt ?? '') === dayOf(recordedAt),
+    (l) => l.status === 'active' && labSlotKey(l.metricName) === metricName && dayOf(l.recordedAt ?? '') === dayOf(recordedAt),
   );
   if (taken) {
     return reject('slot-occupied', `${metricName} already has a value on ${dayOf(recordedAt)}`, taken);

@@ -112,8 +112,10 @@ someone's medical history, or lose their data at the next device sync.
    `YYYY-MM-DD` or a full timestamp — only the day is used for slotting.
 10. **Use catalogue keys for `metricName`.** If the test is in
     `packages/health-core/src/lab-catalog.ts` (ferritin, tsh, alt, …), use that `key`.
-    Matching happens on those keys, so free text creates a duplicate the app cannot
-    merge. Core metrics — LDL, HDL, HbA1c, creatinine and the rest — belong in
+    Matching happens on those keys. Catalogue spellings, aliases and
+    underscore/space variants all converge on the catalogue key at merge time, so
+    "Vitamin D", `vitamin_d` and "vitamin  d" land in one slot; only a name that is
+    genuinely uncatalogued beyond that fold stays a separate row. Core metrics — LDL, HDL, HbA1c, creatinine and the rest — belong in
     `measurements` with a `metricType` from `METRIC_TYPES`, not here.
 11. **Deleting a document** means setting `deleted: true` on its row. A removed row comes
     straight back from any other device.

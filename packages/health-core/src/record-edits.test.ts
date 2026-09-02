@@ -76,6 +76,14 @@ describe('US-31 AC2 — one active row per (metric, day) slot', () => {
     expect(result.row.value).toBe(2.1);
   });
 
+  it('files a spaced, Title-cased test name under its catalogue key (AC5)', () => {
+    const added = ok(appendLabValue(base(), { metricName: 'Vitamin D', value: 88, unit: 'nmol/L', recordedAt: '2026-08-14', now: NOW }));
+    expect(added.row.metricName).toBe('vitamin_d');
+    const again = appendLabValue(added.file, { metricName: 'vitamin_d', value: 92, unit: 'nmol/L', recordedAt: '2026-08-14', now: NOW });
+    expect(again.ok).toBe(false);
+    if (!again.ok) expect(again.reason).toBe('slot-occupied');
+  });
+
   it('lab slots collide across spellings of the same catalogued test', () => {
     const file = ok(appendLabValue(base(), { metricName: 'Gamma GT', value: 31, unit: 'U/L', recordedAt: '2026-08-14', now: NOW })).file;
     const again = appendLabValue(file, { metricName: 'ggt', value: 33, unit: 'U/L', recordedAt: '2026-08-14', now: NOW });

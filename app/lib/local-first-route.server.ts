@@ -80,20 +80,56 @@ export function verifyAppProxySignature(request: Request, nowSeconds = Date.now(
 export const PAGES_APP_URL = 'https://drbradstanfield.github.io/roadmap/';
 
 /**
- * The caller's IP, as far as anything here can know it.
+ * The caller's IP, as far as anything here can know it. Every rate limiter in
+ * the app keys on this one reader (2026-09-02) — a second copy would silently
+ * reopen a bypass — so the caller must name which of THREE trust models its
+ * route lives under, because they disagree about who the client is.
  *
- * `Fly-Client-IP` is written by Fly's proxy — "the IP address of the client
- * from the perspective of Fly Proxy" (https://fly.io/docs/networking/request-headers/)
- * — so a client cannot forge it. `X-Forwarded-For` can be forged: a request
- * arriving with its own header keeps it, and the first hop is then whatever
- * the caller typed. It stays only as the fallback for a non-Fly runtime.
+ * 1. `'fly'` — the browser reaches Fly directly (mcp, google-token,
+ *    reminders-v2). `Fly-Client-IP` is "the IP address of the client from the
+ *    perspective of Fly Proxy" (https://fly.io/docs/networking/request-headers/):
+ *    Fly's own TCP peer, so unforgeable, and here the peer IS the client.
+ * 2. `'shopify'` — the browser reaches Fly THROUGH the HMAC-verified Shopify
+ *    app proxy (chat, feedback, lab-import, measurements). Fly's peer is now
+ *    Shopify's egress, so `Fly-Client-IP` names Shopify — every shopper
+ *    collapses into one shared bucket. The shopper is the hop SHOPIFY added
+ *    to `X-Forwarded-For`, which sits immediately to the left of the entry
+ *    Fly saw. Anchor on `Fly-Client-IP` and step one left: that survives Fly
+ *    also appending its app's own address ("the last address (rightmost) in
+ *    this list will be a shared or dedicated IP address assigned to your
+ *    app") and any number of forged leading hops. Fly is not documented to
+ *    append its peer at all; when its address is absent from the list, the
+ *    LAST hop is Shopify's own append — the shopper — so use that.
+ * 3. Local dev — no proxy at all. No `Fly-Client-IP`, and a single-entry XFF
+ *    is the caller. Forgeable, and that is fine off Fly: nothing of value sits
+ *    behind these limiters there. Production always runs on Fly.
+ *
+ * The FIRST `X-Forwarded-For` entry is never trusted in any model: a request
+ * that arrives carrying its own XFF keeps it, so the left of the list is
+ * whatever the caller typed. Only entries a proxy we trust appended count.
+ * If XFF yields no hop at all (missing, blank, or holding only Fly's own
+ * address), `'shopify'` falls back to `Fly-Client-IP` — one shared bucket
+ * beats none. An XFF holding ONLY forged hops and no shopper cannot happen on
+ * these routes: Shopify appends the shopper before signing, and the HMAC check
+ * runs before the limiter, so a request that skipped Shopify never gets here.
  */
-export function getClientIp(request: Request): string {
-  return (
-    request.headers.get('fly-client-ip')?.trim() ||
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    'unknown'
-  );
+export function getClientIp(request: Request, trust: 'fly' | 'shopify'): string {
+  const flyIp = request.headers.get('fly-client-ip')?.trim() || '';
+  if (trust === 'shopify') {
+    const hops = (request.headers.get('x-forwarded-for') ?? '')
+      .split(',')
+      .map((hop) => hop.trim())
+      .filter(Boolean);
+    if (flyIp) {
+      // Read from the RIGHT, the only end a forger cannot reach.
+      const anchor = hops.lastIndexOf(flyIp);
+      const shopper = anchor >= 0 ? hops[anchor - 1] : hops[hops.length - 1];
+      if (shopper) return shopper;
+    } else if (hops.length === 1) {
+      return hops[0]; // local dev: nobody added a hop
+    }
+  }
+  return flyIp || 'unknown';
 }
 
 export function corsHeaders(request: Request): Record<string, string> {

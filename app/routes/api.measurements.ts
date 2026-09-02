@@ -117,7 +117,7 @@ export async function action({ request }: ActionFunctionArgs) {
   await authenticate.public.appProxy(request);
   const body = await request.json();
   if (body.klaviyoCapture) {
-    return handleKlaviyoCapture(body.klaviyoCapture, getClientIp(request));
+    return handleKlaviyoCapture(body.klaviyoCapture, getClientIp(request, 'shopify'));
   }
   return Response.json({ success: false, error: 'Unsupported request' }, { status: 400 });
 }

@@ -104,6 +104,18 @@ describe('US-32 — read_record filters', () => {
     expect(parsed.measurements).toEqual([]);
   });
 
+  it('finds a snake_case row from the spaced test name a person would type', () => {
+    const file = base();
+    file.labValues.push({
+      id: 'l2', metricName: 'vitamin_d', value: 88, unit: 'nmol/L', referenceLow: null, referenceHigh: null,
+      recordedAt: '2026-07-14', createdAt: '2026-07-14T08:00:00Z', source: 'lab_import',
+      status: 'active', correctsId: null,
+    });
+    const parsed = JSON.parse(ok(readRecord(file, { metric: 'Vitamin D' })).text);
+
+    expect(parsed.labValues.map((l: { id: string }) => l.id)).toEqual(['l2']);
+  });
+
   it('drops rows recorded before `since`, and leaves everything else whole', () => {
     const parsed = JSON.parse(ok(readRecord(base(), { since: '2026-06-01' })).text);
 
@@ -171,6 +183,14 @@ describe('US-32 — add_lab_values is a batch, and all or nothing', () => {
 
     expect(outcome.file?.labValues).toHaveLength(3);
     expect(outcome.text.split('\n')).toHaveLength(2);
+  });
+
+  it('files a spaced test name under its catalogue key', () => {
+    const outcome = ok(addLabValues(base(), {
+      values: [{ metricName: 'Vitamin D', value: 88, unit: 'nmol/L' }],
+    }, NOW));
+
+    expect(outcome.file?.labValues.map((l) => l.metricName)).toContain('vitamin_d');
   });
 
   it('writes NOTHING when one row of the panel is rejected, and says which', () => {
