@@ -202,6 +202,15 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
       hint: 'Point at the record file itself. Nothing was changed.',
     };
   }
+  // Before the plain ConflictError branch: a lost update is the one conflict
+  // where the write DID happen and was then overwritten, so "nothing was
+  // written" would be the comfortable answer and the wrong one.
+  if (error instanceof LostUpdateError) {
+    return {
+      message: `${provider} was overwritten by another writer while this change was being saved`,
+      hint: 'Some of this change may have landed. Read the record again before trying it a second time.',
+    };
+  }
   if (error instanceof ConflictError) {
     return {
       message: `${provider} changed while this change was being written`,

@@ -45,6 +45,9 @@ class FakeDrive {
   /** Fires after our upload has landed — a writer landing AFTER it, which step
    *  2 cannot see at all and only step 3's row-id verify catches. */
   onUpload: (() => void) | null = null;
+  /** Fires while the body is being downloaded — the window between the two
+   *  calls step 1 makes. */
+  onDownload: (() => void) | null = null;
   requests: string[] = [];
 
   create(name: string, content: string, mimeType = 'application/json', parents: string[] = []): DriveFile {
@@ -99,7 +102,11 @@ class FakeDrive {
     if (fileMatch && method === 'GET') {
       const file = this.files.get(fileMatch[1]);
       if (!file) return new Response('not found', { status: 404 });
-      if (url.searchParams.get('alt') === 'media') return new Response(file.content);
+      if (url.searchParams.get('alt') === 'media') {
+        const answer = new Response(file.content);
+        this.onDownload?.();
+        return answer;
+      }
       const version = String(file.version);
       this.onVersionRead?.();
       return Response.json({ version });
@@ -171,6 +178,32 @@ describe('step 1: read with fields=version (US-32 phase 2)', () => {
     expect((read.body as RoadmapFile).schemaVersion).toBe(1);
     expect(read.version).toBe(String(file.version));
     expect(drive.requests.some((r) => r.includes('fields=version'))).toBe(true);
+  });
+
+  it('reads the version BEFORE the bytes, so a writer mid-download conflicts', async () => {
+    const drive = new FakeDrive();
+    drive.install();
+    const file = seed(drive);
+
+    // They save while our download is in flight. If the version were read
+    // afterwards we would come away with THEIR version number attached to OUR
+    // bytes, the pre-upload check would find nothing moved, and their row would
+    // vanish with no error and no retry.
+    let struck = false;
+    drive.onDownload = () => {
+      if (struck) return;
+      struck = true;
+      const theirs = record((f) => {
+        f.measurements.push(measurement('theirs', '2026-01-09'));
+        f.meta.lamport = 99;
+      });
+      drive.clobber(file.id, JSON.stringify(theirs));
+    };
+
+    const saved = await sync('mcp').save(record((f) => f.measurements.push(measurement('ours', '2026-01-10'))));
+    expect(saved.attempts).toBeGreaterThan(0);
+    const ids = (JSON.parse(drive.files.get(file.id)!.content) as RoadmapFile).measurements.map((m) => m.id).sort();
+    expect(ids).toEqual(['ours', 'theirs']);
   });
 
   it('an absent file is an empty read, not a failure', async () => {

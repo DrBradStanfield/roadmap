@@ -191,20 +191,22 @@ Three pieces make that one path rather than three copies of it, and each lives a
 > **Accepted residual (surfaced by that work).** An **out-of-band RAW deletion** — the user deleting `health-roadmap.json` in the Dropbox UI rather than using the app's erase flow — carries **no `eraseEpoch` signal**, so a stale writer legitimately re-creates the content. This applies equally to the MCP server. The app's own erase flow (which rewrites rather than deletes) remains fully protected. **Future work:** a tombstone the erase flow leaves behind, so a raw deletion is distinguishable from a first-ever create. Not in v1.
 
 **Drive — BUILT (2026-09-02).** Drive v3 removed `etag` from every resource, so there is no conditional write. The specified algorithm is implemented in `packages/health-core/src/drive-rest.ts` (`DriveAdapter`) and tested step by step in `drive-rest.test.ts`:
-1. Read with `fields=version`. — `DriveAdapter.read`, one metadata call beside the `alt=media` download.
+1. Read with `fields=version`. — `DriveAdapter.read`, one metadata call BEFORE the `alt=media` download. The order is load-bearing: read the version afterwards and a writer landing mid-download hands back THEIR version number attached to OUR bytes, so step 2 finds nothing moved, passes, and drops their row with `attempts: 0` and no error anywhere. Version first makes the pair pessimistic — worst case the version is stale, step 2 conflicts, and the save retries. A wasted round trip beats a silent lost update, and a test pins it.
 2. **Re-fetch `version` immediately before upload**; if it moved, abort and re-merge. — `DriveAdapter.write` raises `ConflictError`, which `SyncManager.save` already catches, re-reads and re-merges.
 3. After writing, re-read and assert **every pre-read row id is still present** and the new rows landed. — `SyncManager.verifyAfterWrite`, unchanged and shared with every other backend: the ids it checks are the MERGED file's, which is the pre-read rows plus the new ones.
 4. Bounded retry. — the same `MAX_SAVE_ATTEMPTS = 5` loop.
 
 Step 3 needed one change above the adapters, and it is the only behaviour phase 2 altered for other backends: a failed verify used to be a fatal `StorageError`, so step 3 detected a lost update and then gave up. It is now a `LostUpdateError extends ConflictError`, which the existing loop retries — re-read, re-merge, write again, which is safe because the arrays are append-only. When the retries run out, the error says *some of it may have landed* rather than the comfortable falsehood *nothing was written*.
 
-**Two writers, honestly.** Step 2 narrows the window; it does not close it, because a check is not a precondition. A writer landing between our check and our upload is invisible to step 2 and invisible to lamport (their write advances it). Step 3 is the only thing that sees it, and it sees it by noticing OUR rows are gone. It cannot see rows written by someone else after our read and dropped by our own upload — that loss is undetectable from here, and their next save re-merges it back.
+**Two writers, honestly.** There are two windows, and they are caught by different steps. A writer landing DURING step 1's read is caught by step 2, because the version we carry is older than the file — that is why step 1 reads the version first. A writer landing between step 2's check and our upload is invisible to step 2 and invisible to lamport (their write advances it); step 3 is the only thing that sees it, and it sees it by noticing OUR rows are gone. What nothing here can see is a row written by someone else after our read and dropped by our own upload: that loss is undetectable from this side, and their next save re-merges it back.
 
 Residual, disclosed and unchanged: our write is **durable-by-retry**, but the **browser cannot detect being clobbered** — it neither re-checks the version nor consumes one (`widget-src/src/storage/drive.ts` returns `version: null` deliberately, to save a round trip on every load and save). On Drive, concurrent writers are **best-effort**, and the guide must say so.
 
 **Same file, or nothing.** Drive has no app folder, so "the record" is a name inside a folder we created. If the server discovered it differently from the browser, a user would end up with two records and see neither whole. So folder and file discovery moved into `drive-rest.ts` and the browser adapter's copies were deleted — one implementation, two callers.
 
 **Phase-2 gate: the algorithm implemented and tested first (done); Google brand verification and the console steps second (Brad — deploy-runbook.md step 4b).**
+
+**A provider outage costs a call, never a connection.** Google answers a dead grant with 400 `invalid_grant` and an outage with a 5xx, and `providerAccessToken` reads both the same way — null, and one worded tool refusal naming Google Drive. Telling them apart would only matter if we acted on it, and we do not: `/token` re-seals the refresh token we already hold without calling Google at all, so no outage and no misread error can burn a refresh token or force a reconnect. The user retries and it works.
 
 | Other cases | Behaviour |
 | --- | --- |
@@ -416,3 +418,18 @@ append-only, so writing the same rows twice is the same as writing them once. Dr
 the local file adapter inherit this and are better for it. The one thing that changed for
 them is the give-up message, which no longer says "nothing was written" for a loss where
 something plainly was.
+
+**Phase-1 blobs default to Dropbox.** `provider` is sealed into every blob phase 2 mints,
+but the blobs phase 1 already handed out carry no such field, and a blob in a vendor's
+token store can never be updated by us (§7). Reading `undefined` as a provider would have
+500ed every tool call on Brad's own live connections the moment this deployed. So
+`unpackSealed` — the one place a sealed payload is ever opened — defaults a missing or
+invalid provider to `dropbox`, which is what every one of those connections is. Two tests
+pin it: an old access blob works, and an old refresh blob mints an access blob that names
+Dropbox. It is not migration code; it is the only honest reading of a credential we
+cannot re-issue.
+
+**And a bug is now an error with an id.** `tools/call` wraps the tool run and answers
+JSON-RPC `-32603` on the failed request, the way the stdio server has since phase 0. A
+`ToolContractError` used to escape the endpoint and become a 500 that a vendor could not
+match to anything it had sent.

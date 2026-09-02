@@ -213,6 +213,7 @@ type Id = string | number | null;
 const INVALID_REQUEST = -32600;
 const METHOD_NOT_FOUND = -32601;
 const INVALID_PARAMS = -32602;
+const INTERNAL_ERROR = -32603;
 
 function ok(id: Id, value: unknown) {
   return { jsonrpc: '2.0', id, result: value };
@@ -263,7 +264,16 @@ async function handleRpc(incoming: unknown, token: AccessPayload, now: string): 
           isError: true,
         });
       }
-      const answer = await callHostedTool(token, name, params.arguments, now);
+      // A bug in us must reach the client as an error carrying THIS request's
+      // id, never as a 500 the vendor cannot match to anything — the stdio
+      // server has answered this way since phase 0. Storage failures are
+      // already words by here; what lands in this catch is ours.
+      let answer: ToolAnswer;
+      try {
+        answer = await callHostedTool(token, name, params.arguments, now);
+      } catch {
+        return failure(id, INTERNAL_ERROR, 'That tool failed inside this server. Nothing was written.');
+      }
       return ok(id, { content: [{ type: 'text', text: answer.text }], ...(answer.isError ? { isError: true } : null) });
     }
     default:

@@ -269,10 +269,19 @@ export function unpackSealed<T extends { clientId: string }>(
   } catch {
     return null;
   }
-  const payload = unseal<T>(typ, token.slice(at + 1), { clientId, resource: resourceUrl() }, nowMs);
+  const payload = unseal<T & { provider?: unknown }>(typ, token.slice(at + 1), { clientId, resource: resourceUrl() }, nowMs);
   // The AAD already proves this; the explicit check keeps the invariant
   // readable at every call site that depends on it.
-  return payload && payload.clientId === clientId ? payload : null;
+  if (!payload || payload.clientId !== clientId) return null;
+  // Phase-1 blobs carry no `provider` — the hosted server had one backend and
+  // did not need to say so. They are live in vendor token stores right now, and
+  // a blob a vendor holds can never be updated by us (§7), so refusing them, or
+  // reading `undefined` as a provider, would break Brad's own connections on the
+  // first tool call after this deploys. Every one of them is Dropbox. This is
+  // the only place a sealed payload is opened, so it is the only place the
+  // default belongs.
+  if (!isProvider(payload.provider)) (payload as { provider: McpProvider }).provider = 'dropbox';
+  return payload;
 }
 
 // ---------------------------------------------------------------------------

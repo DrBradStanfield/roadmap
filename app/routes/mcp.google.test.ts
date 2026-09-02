@@ -19,8 +19,9 @@ vi.mock('node:dns/promises', () => ({ default: { lookup: async () => [{ address:
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { DRIVE_FOLDER_NAME } from '../../packages/health-core/src/drive-rest';
+import { ToolContractError } from '../../packages/health-core/src/mcp-tools';
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { resetMcpMemory, unpackSealed, type AccessPayload, type McpProvider } from '../lib/mcp-auth.server';
+import { packSealed, resetMcpMemory, unpackSealed, type AccessPayload, type McpProvider } from '../lib/mcp-auth.server';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
 
@@ -368,5 +369,67 @@ describe('the real adapter finds the file the widget made (US-32 phase 2)', () =
     // finds it — and never by a folder id the server invented.
     expect(asked.some((a) => decodeURIComponent(a).includes(`name='${ROADMAP_FILE_NAME}'`))).toBe(true);
     expect(DRIVE_FOLDER_NAME).toBe('Health Plan by Dr Brad');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The blobs phase 1 already handed out
+// ---------------------------------------------------------------------------
+
+describe('a phase-1 blob, minted before `provider` existed (US-32 phase 2)', () => {
+  it('still opens, as Dropbox, and still works', async () => {
+    seedRecord();
+    const now = Math.floor(Date.now() / 1000);
+    // Exactly the phase-1 AccessPayload shape: no provider field at all. These
+    // are live in vendor token stores and we cannot update one, so reading
+    // `undefined` as a provider would have 500ed every call after this deploy.
+    const access = packSealed('access', 'client', { clientId: 'client', rt: 'dropbox-refresh', exp: now + 3600 });
+    expect(unpackSealed<AccessPayload>('access', access)!.provider).toBe('dropbox');
+
+    const answer = await callTool(access, 'read_record', {});
+    expect(answer.isError).toBe(false);
+    expect(builtFor).toEqual(['dropbox']);
+  });
+
+  it('a phase-1 refresh blob mints an access blob that names Dropbox', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const refresh = packSealed('refresh', 'client', {
+      clientId: 'client',
+      rt: 'dropbox-refresh',
+      exp: now + 30 * 86_400,
+    });
+    const res = await post('/mcp/token', {
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refresh, client_id: 'client' }),
+    });
+    expect(res.status).toBe(200);
+    const minted = (await res.json()) as { access_token: string };
+    expect(unpackSealed<AccessPayload>('access', minted.access_token)!.provider).toBe('dropbox');
+  });
+});
+
+describe('an internal failure is an error with an id, never a 500 (US-32 phase 2)', () => {
+  it('answers -32603 on the failed request rather than throwing out of the endpoint', async () => {
+    const { access } = await connect('Dropbox');
+    // A `ToolContractError` is the one failure the tool layer deliberately
+    // does NOT dress up as a storage problem — it means we broke our own
+    // contract. It used to escape the endpoint entirely and become a 500 the
+    // vendor could not match to any request.
+    setAdapterFactory(() => {
+      throw new ToolContractError('a bug in us');
+    });
+    const res = await mcpEndpoint(
+      new Request(`${ISSUER}/mcp`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 'abc', method: 'tools/call', params: { name: 'read_record', arguments: {} } }),
+      }),
+      NOW,
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { id: string; error: { code: number; message: string } };
+    expect(body.id).toBe('abc');
+    expect(body.error.code).toBe(-32603);
+    expect(body.error.message).toContain('Nothing was written');
   });
 });

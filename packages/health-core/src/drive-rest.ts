@@ -190,13 +190,25 @@ export class DriveAdapter implements StorageAdapter {
   }
   async disconnect(): Promise<void> {}
 
-  /** Step 1: read the bytes AND the version this write will be based on. */
+  /**
+   * Step 1: read the version FIRST, then the bytes it belongs to.
+   *
+   * The order is the whole point. A writer landing DURING the download would,
+   * with the version read afterwards, hand back their new version number
+   * attached to our old bytes — and the pre-upload check in `write` would then
+   * find nothing moved, pass, and drop their row with `attempts: 0` and no
+   * error anywhere. Reading the version first makes the pair pessimistic
+   * instead: worst case the version is stale, the check conflicts, and the
+   * save retries. A wasted round trip beats a silent lost update.
+   */
   async read(fileName: string): Promise<ReadResult> {
     const fileId = await this.findFile(fileName);
     if (!fileId) return { body: null, version: null };
+    const version = await driveFileVersion(this.accessToken, fileId);
+    if (version == null) return { body: null, version: null }; // deleted between the two calls
     const body = await driveDownloadJson(this.accessToken, fileId);
     if (body == null) return { body: null, version: null };
-    return { body, version: await driveFileVersion(this.accessToken, fileId) };
+    return { body, version };
   }
 
   /**
