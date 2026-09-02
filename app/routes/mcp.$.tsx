@@ -23,7 +23,7 @@ import { type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { getClientIp } from '../lib/local-first-route.server';
 import { mcpEndpoint, originRejected } from '../lib/mcp.server';
 import { checkAuthorize, sealState, verifyPkce } from '../lib/mcp-authorize.server';
-import { readCapped, registerClient, resolveClient } from '../lib/mcp-clients.server';
+import { readCapped, redirectMatches, registerClient, resolveClient } from '../lib/mcp-clients.server';
 import { isMcpEnabled, issuer } from '../lib/mcp-config.server';
 import {
   allowAuthorize,
@@ -293,7 +293,7 @@ async function tokenEndpoint(request: Request): Promise<Response> {
   if (grant === 'authorization_code') {
     const code = unpackSealed<CodePayload>('code', form.get('code') ?? '');
     if (!code || code.clientId !== clientId) return oauthError('invalid_grant', 'That code is not usable');
-    if (form.get('redirect_uri') !== code.redirectUri) return oauthError('invalid_grant', 'That code is not usable');
+    if (!redirectMatches(code.redirectUri, form.get('redirect_uri') ?? '')) return oauthError('invalid_grant', 'That code is not usable');
     if (!verifyPkce(form.get('code_verifier') ?? '', code.codeChallenge)) {
       return oauthError('invalid_grant', 'That code is not usable');
     }

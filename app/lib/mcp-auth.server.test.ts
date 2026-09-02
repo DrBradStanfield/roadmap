@@ -23,6 +23,7 @@ import {
   isAllowedRedirect,
   isLoopbackRedirect,
   isPublicAddress,
+  redirectMatches,
   KNOWN_CLIENTS,
   registerClient,
   resolveClient,
@@ -248,12 +249,53 @@ describe('dynamic registration without a registry (US-32, design §4)', () => {
     expect(registerClient({ redirect_uris: ['https://claude.ai/api/mcp/auth_callback'] })).not.toBeNull();
   });
 
-  it('does not allow loopback, even though RFC 8252 would', () => {
-    // CLAUDE.md's hard rule beats design §4's allowance; the matcher exists so
-    // turning it on is one constant.
+  it('registers a loopback redirect, so a command-line client can connect (US-32 AC21)', async () => {
+    const client = registerClient({
+      client_name: 'Gemini CLI',
+      redirect_uris: ['http://localhost:12345/oauth/callback'],
+    })!;
+    expect(client.clientId.startsWith('c.')).toBe(true);
+    const resolved = await resolveClient(client.clientId);
+    expect(resolved?.redirectUris).toEqual(['http://localhost:12345/oauth/callback']);
+  });
+
+  it('still refuses http that is not loopback (US-32 AC21)', () => {
+    expect(registerClient({ redirect_uris: ['http://example.com/cb'] })).toBeNull();
+    expect(registerClient({ redirect_uris: ['http://localhost.evil.com/cb'] })).toBeNull();
+    expect(registerClient({ redirect_uris: ['http://127.0.0.1.evil.com/cb'] })).toBeNull();
+  });
+});
+
+describe('loopback redirects, RFC 8252 §7.3 (US-32 AC21)', () => {
+  it('accepts only the three loopback hosts, over http, with no userinfo or fragment', () => {
     expect(isLoopbackRedirect('http://127.0.0.1:8931/cb')).toBe(true);
-    expect(isLoopbackRedirect('http://localhost:8931/cb')).toBe(false);
-    expect(isAllowedRedirect('http://127.0.0.1:8931/cb')).toBe(false);
+    expect(isLoopbackRedirect('http://localhost:8931/cb')).toBe(true);
+    expect(isLoopbackRedirect('http://[::1]:8931/cb')).toBe(true);
+    expect(isAllowedRedirect('http://127.0.0.1:8931/cb')).toBe(true);
+
+    // https://localhost is NOT loopback for this purpose: the exemption exists
+    // because a local listener cannot hold a certificate.
+    expect(isLoopbackRedirect('https://localhost:1234/cb')).toBe(false);
+    expect(isLoopbackRedirect('http://example.com/cb')).toBe(false);
+    // Exact host match — these are ordinary public names.
+    expect(isLoopbackRedirect('http://localhost.evil.com/cb')).toBe(false);
+    expect(isLoopbackRedirect('http://127.0.0.1.evil.com/cb')).toBe(false);
+    expect(isLoopbackRedirect('http://user@127.0.0.1/cb')).toBe(false);
+    expect(isLoopbackRedirect('http://127.0.0.1/cb#x')).toBe(false);
+    expect(isLoopbackRedirect('not a url')).toBe(false);
+  });
+
+  it('ignores the port and nothing else', () => {
+    expect(redirectMatches('http://localhost/callback', 'http://localhost:61234/callback')).toBe(true);
+    expect(redirectMatches('http://127.0.0.1:1/cb', 'http://127.0.0.1:65535/cb')).toBe(true);
+    // Path, host, scheme and query all still have to match exactly.
+    expect(redirectMatches('http://localhost/callback', 'http://localhost:61234/other')).toBe(false);
+    expect(redirectMatches('http://localhost/callback', 'http://127.0.0.1:61234/callback')).toBe(false);
+    expect(redirectMatches('http://localhost/callback', 'https://localhost/callback')).toBe(false);
+    expect(redirectMatches('http://localhost/cb', 'http://localhost:1/cb?next=x')).toBe(false);
+    // A public redirect is exact-match only: no port slack for anyone else.
+    expect(redirectMatches('https://claude.ai/api/mcp/auth_callback', 'https://claude.ai/api/mcp/auth_callback')).toBe(true);
+    expect(redirectMatches('https://claude.ai/api/mcp/auth_callback', 'https://claude.ai:8443/api/mcp/auth_callback')).toBe(false);
   });
 });
 
@@ -357,6 +399,7 @@ describe('CIMD fetch policy (US-32, design §4 — this is an SSRF surface)', ()
 describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () => {
   const CLAUDE = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
   const CHATGPT = 'https://chatgpt.com/oauth/client.json';
+  const CLAUDE_CODE = 'https://claude.ai/oauth/claude-code-client-metadata';
 
   it('every pinned redirect is also in the allow-list, so the two cannot drift', () => {
     for (const client of KNOWN_CLIENTS.values()) {
@@ -399,6 +442,40 @@ describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () =>
       expect(await resolveClient(lookalike)).toBeNull();
     }
     expect(spy).toHaveBeenCalledTimes(2);
+  });
+
+  it('answers Claude Code on a loopback port with no fetch at all (US-32 AC21)', async () => {
+    const spy = vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    });
+    vi.stubGlobal('fetch', spy);
+    const client = (await resolveClient(CLAUDE_CODE))!;
+    expect(client).toEqual({
+      clientId: CLAUDE_CODE,
+      name: 'Claude Code',
+      redirectUris: ['http://localhost/callback', 'http://127.0.0.1/callback'],
+    });
+    const checked = checkAuthorize(new URLSearchParams({
+      redirect_uri: 'http://127.0.0.1:61234/callback',
+      response_type: 'code',
+      code_challenge: 'a'.repeat(43),
+      code_challenge_method: 'S256',
+    }), client);
+    expect(checked.ok).toBe(true);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('gives Claude Code no path it did not publish, on any port', () => {
+    const client = KNOWN_CLIENTS.get(CLAUDE_CODE)!;
+    for (const redirect_uri of ['http://127.0.0.1:61234/steal', 'https://localhost:61234/callback']) {
+      const checked = checkAuthorize(new URLSearchParams({
+        redirect_uri,
+        response_type: 'code',
+        code_challenge: 'a'.repeat(43),
+        code_challenge_method: 'S256',
+      }), client);
+      expect(checked).toMatchObject({ ok: false, redirectable: false });
+    }
   });
 
   it('gives a pinned client no redirect it did not publish', () => {

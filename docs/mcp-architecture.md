@@ -334,11 +334,30 @@ compared, and that comparison is a real check. On `/mcp` there is nothing to com
 against, so the binding is only carried. Stated plainly: a stolen bearer token is a
 stolen bearer token, and no framing fixes that.
 
-**RFC 8252 loopback redirects are implemented but OFF.** §4 allows "loopback with port
-ignored"; CLAUDE.md's hard rule says localhost is never on an allow-list. The matcher
-exists and is tested, and `ALLOW_LOOPBACK_REDIRECT` is `false`. A local client already
-has the Phase-0 stdio server and needs no OAuth, so nothing is lost. One constant to
-reverse, if Brad wants it.
+**RFC 8252 loopback redirects are ON (2026-09-02, owner decision).** A command-line
+client has no callback host of its own: it listens on an ephemeral port on the user's own
+machine, and cannot know the port until it binds one. So `redirectMatches(registered,
+requested)` in `app/lib/mcp-clients.server.ts` tries an exact string first, then allows a
+loopback pair to differ in the PORT and in nothing else — both `http:`, host exactly
+`127.0.0.1`, `[::1]` or `localhost` and identical on both sides, same path, same query, no
+userinfo, no fragment. It is the only redirect comparison in the codebase, used at
+`/authorize` and at `/token`. `https://localhost` is refused: the exemption exists because
+a local listener cannot hold a certificate, so a URL that claims one is not it. The host
+match is exact, so `localhost.evil.com` and `127.0.0.1.evil.com` are ordinary public names
+and get nothing.
+
+Why this is safe, and why it does not contradict CLAUDE.md's "localhost is never on an
+allow-list": that rule is about CORS — granting a browser origin access to our endpoints.
+This grants nothing. It is where the user's own browser carries an authorization code back
+to a process on the user's own machine, and that code is worthless without the PKCE
+verifier, which never left the process that asked for it. PKCE S256 is mandatory on every
+authorization, and our consent screen names the client before anything is granted.
+
+Claude Code publishes a second metadata document,
+`https://claude.ai/oauth/claude-code-client-metadata`, behind the same Cloudflare challenge
+as the web one, so it is pinned in `KNOWN_CLIENTS` too — `client_name` "Claude Code",
+redirects `http://localhost/callback` and `http://127.0.0.1/callback`, copied verbatim.
+Gemini CLI registers dynamically with `http://localhost:<port>/oauth/callback`.
 
 **A fifth padding bucket, 4096.** §4 names 256/512/1024/2048. A provider refresh token
 longer than the 2048 rung would otherwise fail to seal at all; the extra rung means it
@@ -392,7 +411,7 @@ is served behind a Cloudflare managed challenge that answers any datacenter fetc
 `resolveClient` returned null and the consent page said "We do not recognise the app". Both
 canonical ids now resolve from `KNOWN_CLIENTS` before any fetch, which the draft's §4 "MAY
 apply its own policy" explicitly allows. Two things follow. The pinned redirect URIs must
-also appear in `ALLOWED_REDIRECTS`, and a test asserts that so the lists cannot drift.
+also pass `isAllowedRedirect`, and a test asserts that so the pins and the policy cannot drift.
 And the failure mode of pinning is a vendor changing its callback: the user sees a plain
 refusal at `/mcp/authorize` — never a redirect, because that would make us an open
 redirector — and we see one `console.error` naming the reason and the client HOST only, no

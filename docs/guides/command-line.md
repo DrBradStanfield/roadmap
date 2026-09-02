@@ -123,6 +123,21 @@ Rules:
 Start by showing me my current plan.
 ```
 
+## Connecting your terminal assistant instead
+
+If you use Claude Code or Gemini CLI, they can reach your record through our hosted
+server, with no clone and no file path to hand over. Run one of these once:
+
+```bash
+claude mcp add --transport http drstanfield https://mcp.drstanfield.com/mcp
+gemini mcp add -s user --transport http drstanfield https://mcp.drstanfield.com/mcp
+```
+
+A browser opens, you approve the connection and pick your cloud folder, and the
+assistant holds the connection from then on. It reads and writes the same file the
+commands above do, under the same rules. You cancel it at your cloud provider's
+connected-apps page.
+
 ## If something goes wrong
 
 Run either command with `--help` for the full list of options. If a command fails in a way this guide does not explain, or the output is wrong, open an issue at https://github.com/DrBradStanfield/roadmap/issues with the command you ran and what it printed. Leave your record out of it; the `schemaVersion` at the top of the file is all we need.
