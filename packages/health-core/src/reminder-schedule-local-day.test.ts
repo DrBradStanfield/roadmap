@@ -7,10 +7,10 @@
  * Americas, and the server emails on the wrong day. Stored dates get UTC
  * arithmetic; only `now`, a real instant, is read locally.
  *
- * The timezone is pinned per-file, never suite-wide; vitest.config routes
- * `*-local-day.test.ts` to the `forks` pool, because only a real child process
- * picks up a `process.env.TZ` assignment (a worker thread inherits a copy of
- * the environment and never re-reads the zone).
+ * The timezone is pinned per-file, never suite-wide; vitest.config runs the
+ * whole suite in the `forks` pool, because only a real child process picks up a
+ * `process.env.TZ` assignment (a worker thread inherits a copy of the
+ * environment and never re-reads the zone).
  */
 process.env.TZ = 'America/New_York';
 

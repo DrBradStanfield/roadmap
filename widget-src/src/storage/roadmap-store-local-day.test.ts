@@ -5,9 +5,9 @@
  * day. The now-path stored the raw instant, so an 11am Auckland entry landed on
  * the previous UTC day — the same value entered two ways could occupy two
  * slots. The timezone is pinned per-file, never suite-wide, and vitest.config
- * routes `*-local-day.test.ts` to the `forks` pool: only a real child process
- * picks up a `process.env.TZ` assignment (a worker thread inherits a copy of
- * the environment and never re-reads the zone).
+ * runs the whole suite in the `forks` pool: only a real child process picks up
+ * a `process.env.TZ` assignment (a worker thread inherits a copy of the
+ * environment and never re-reads the zone).
  */
 process.env.TZ = 'Pacific/Auckland';
 

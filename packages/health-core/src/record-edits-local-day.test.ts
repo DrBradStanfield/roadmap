@@ -7,8 +7,8 @@
  * silent — the row simply sits on the wrong day.
  *
  * The timezone is pinned HERE rather than suite-wide, where it would hide
- * UTC-only assumptions everywhere. vitest.config routes `*-local-day.test.ts`
- * to the `forks` pool: only a real child process picks up a `process.env.TZ`
+ * UTC-only assumptions everywhere. vitest.config runs the whole suite in the
+ * `forks` pool: only a real child process picks up a `process.env.TZ`
  * assignment (a worker thread inherits a copy of the environment and never
  * re-reads the zone), so in the default pool this pin would do nothing.
  */

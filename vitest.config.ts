@@ -25,12 +25,14 @@ export default defineConfig({
     },
   },
   test: {
-    // `process.env.TZ = ...` at the top of a test file is a no-op in the default
-    // `threads` pool: a worker thread inherits a COPY of the environment and node
-    // never calls tzset for it, so the file runs in the machine's own timezone and
-    // its assertions only hold where the author sat. The `forks` pool starts a real
-    // child process, where the assignment lands before any Date is constructed.
-    poolMatchGlobs: [['**/*-local-day.test.ts', 'forks']],
+    // The whole suite runs in `forks`. `process.env.TZ = ...` at the top of a test
+    // file is a no-op in the default `threads` pool — a worker thread inherits a COPY
+    // of the environment and node never calls tzset for it — so the TZ-pinned
+    // `*-local-day` suites need a real child process. Routing them by glob was
+    // path-dependent: micromatch `**` skips dot segments, so a `.claude/worktrees/`
+    // checkout ran them in threads and quietly failed. Forks for everything removes the
+    // trap, is faster here, and `poolMatchGlobs` is gone in vitest 3.
+    pool: 'forks',
     exclude: [
       "**/node_modules/**",
       "**/dist/**",

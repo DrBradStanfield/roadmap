@@ -5,9 +5,9 @@
  * Auckland a screening due TODAY was printed as "upcoming" — the reader was
  * told to wait a day for something already due. The timezone is pinned per-file
  * rather than suite-wide, so it cannot hide UTC-only assumptions elsewhere — and
- * vitest.config routes `*-local-day.test.ts` to the `forks` pool, because only a
- * real child process picks up a `process.env.TZ` assignment (a worker thread
- * inherits a copy of the environment and never re-reads the zone).
+ * vitest.config runs the whole suite in the `forks` pool, because only a real
+ * child process picks up a `process.env.TZ` assignment (a worker thread inherits
+ * a copy of the environment and never re-reads the zone).
  */
 process.env.TZ = 'Pacific/Auckland';
 
