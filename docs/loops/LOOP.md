@@ -162,9 +162,11 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   - **Tier 3 — ship**: Tier 1 discipline on a `claude/` branch → PR with
     evidence (+ /simplify) → an INDEPENDENT reviewer (fresh context, diff-only,
     correctness-only mandate) posts a sha-pinned APPROVE → `auto-ship.yml`
-    opens Brad's veto issue, waits 30 min, merges, dispatches `deploy.yml`
-    (own gate + 30-min environment window — veto = close PR / `hold` label /
-    cancel run) → the author AND an independent run verify live
+    opens Brad's veto issue, waits 30 min, merges, dispatches `deploy.yml`.
+    That 30 min is the ONLY window: since 2026-09-02 the `production`
+    environment has no wait timer and no required reviewer, so `deploy.yml`
+    runs straight through once its gate passes (veto = close PR / `hold`
+    label / cancel run) → the author AND an independent run verify live
     (zero-credential paths). A Tier 3 loop never self-merges or labels
     `ship`, never edits `.github/workflows/**` or repo settings (Brad-only,
     same class as this section), and never holds a deploy credential.

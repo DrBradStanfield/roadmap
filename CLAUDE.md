@@ -4,18 +4,16 @@ Context for Claude Code in this repo. Depth lives in on-demand docs:
 [docs/reference.md](docs/reference.md) (FHIR detail, file inventory, data model,
 A/B, endpoints, gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.md)
 (manual deploy, build flags, two-app split, scaling) ·
-[docs/architecture-v2.html](docs/architecture-v2.html) (visual system map — the
-entry point for new threads).
+[docs/architecture-v2.html](docs/architecture-v2.html) (visual system map; the entry point for new threads).
 
 ## Project Overview
 
-**Health Roadmap Tool** — a Shopify app: health-metric tracking + personalized
-suggestions + a chatbot, delivered as a storefront theme extension. **Local-first
-(v2):** a user's health data lives in THEIR cloud (Google Drive / Dropbox /
-GitHub) or localStorage as one `health-roadmap.json` file — never on Brad's
-server. "Logged in" = connected a cloud provider. Brad's Fly server is a thin
-backend for chatbot / lab-import extraction / A/B + product events / email
-reminders / Klaviyo capture only.
+**Health Roadmap Tool** — a Shopify app: health-metric tracking + suggestions +
+a chatbot, as a storefront theme extension. **Local-first (v2):** health data
+lives in THEIR cloud (Google Drive / Dropbox / GitHub) or localStorage as one
+`health-roadmap.json` file — never on Brad's server. "Logged in" = connected a
+cloud provider. Brad's Fly server is a thin backend only: chatbot, lab-import,
+A/B + product events, reminders, Klaviyo, hosted MCP (mcp.drstanfield.com).
 
 ## Local-First Architecture (v2) — the core mental model
 
@@ -26,16 +24,20 @@ reminders / Klaviyo capture only.
   `resolveId`) → [RoadmapStore](widget-src/src/storage/roadmap-store.ts).
   Cross-device merge: [mergeFiles()](packages/health-core/src/merge.ts) —
   append-only arrays, LWW scalars, monotonic `eraseEpoch`. File schema:
-  [roadmap-file.ts](packages/health-core/src/roadmap-file.ts).
+  [roadmap-file.ts](packages/health-core/src/roadmap-file.ts). Non-browser
+  writers all go through [sync-manager.ts](packages/health-core/src/sync-manager.ts):
+  CLI + stdio MCP via `file-adapter.ts` (lock, backups); hosted MCP via the REST
+  adapters. Same SyncManager — merge on conflict, verify after write.
 - FHIR invariants (client-side now): rows are NEVER mutated — corrections
   append a new row (`correctsId`) and flip the old one to `entered-in-error`
   (sticky). One `active` row per (metric, day). Dedup on STABLE keys only:
   `sourceFileName` for documents, `(metric, recorded_at)` for lab values.
   Full FHIR tables + correction flow: docs/reference.md.
 - Agent surfaces: docs/agent-access.md (contract) · docs/mcp-architecture.md (map).
-- Supabase still holds OPERATIONAL data only (chat, guest sessions,
-  reminder_optin_v2, ab_*, product_events, feedback_submissions, audit_logs,
-  cron_lock, Shopify sessions). No health values, ever.
+- Supabase still holds OPERATIONAL data only (`chat_*`, `guest_chat_sessions`,
+  `ab_*`, `product_events`, `reminder_optin_v2`, `feedback_submissions`,
+  `audit_logs`, `cron_lock`, `profiles`, `youtube_bot_log`, Shopify sessions).
+  No health values, ever.
 - Two builds, same source: Shopify storefront (`build:shopify-prod`, both
   stores) and GitHub Pages self-host (`build:pages`, no Brad server, BYOK).
   Flags: `VITE_LOCAL_FIRST` (all v2), `VITE_SHOPIFY_SURFACE` (Shopify only —
@@ -101,9 +103,8 @@ is absent on CI and other machines; edit it there, not here.
 ## Tech Stack & Key Directories
 
 React+TS widget (Vite) · Remix/react-router admin+API (`app/`) · Supabase
-(operational only) · Fly.io ×2 (`health-tool-app` commerce /
-`health-tool-edu` education) · Zod · Vitest · Sentry · Clarity (MCP, 10
-req/day) · Chrome DevTools MCP.
+(operational only) · Fly.io ×2 (`health-tool-app` commerce / `health-tool-edu`
+education) · Zod · Vitest · Sentry · Clarity (MCP, 10/day) · Chrome DevTools MCP.
 
 ```
 /packages/health-core/src/   calculations, suggestions, validation, units,
@@ -111,6 +112,8 @@ req/day) · Chrome DevTools MCP.
 /widget-src/src/             React widget (components/, lib/, storage/, hooks/)
 /app/                        server routes (app-proxy HMAC) + libs
 /extensions/health-tool-widget/  built assets + Liquid blocks
+/tools/                      mcp-server.ts + edit-record.ts + get-plan.ts (stdio
+                             MCP + CLI); the rest are test harnesses + ops scripts
 /docs/loops/                 autonomous-loop fleet (constitution + charters)
 ```
 Full file-by-file inventory: docs/reference.md.
@@ -123,6 +126,7 @@ npm run build:widget         # side bundles only (upload, site-chat, chatbot)
 npm test                     # health-core only
 npm run test:all             # EVERYTHING (root vitest; what CI runs)
 npx vitest run <path>        # single suite
+node scripts/build-guide-html.mjs docs/guides/<g>.md   # publishable guide HTML
 ```
 
 ## Deploy
@@ -130,11 +134,11 @@ npx vitest run <path>        # single suite
 **Primary path: CI.** `.github/workflows/deploy.yml` — gate → GitHub Pages
 WebKit smoke → full suite → builds → Sentry maps → Shopify ×2 → Fly ×2
 (`--strategy canary`) → health gates → live WebKit verify. All credentials in
-the gated `production` environment (30-min wait timer = veto window; the
-notification issue emails Brad). Trigger: Actions → Deploy → Run workflow, or
-automatically via the Tier 3 loop pipeline (claude-review → auto-ship →
-dispatch). Agents cannot trigger deploys (auto-mode blocks it) — a human
-clicks, or auto-ship dispatches after its own gate.
+the `production` environment, which since 2026-09-02 has NO wait timer and NO
+required reviewer: the gate is the only check, and the notification issue is a
+heads-up, not a veto. Trigger: Actions → Deploy → Run workflow, or the Tier 3
+loop pipeline (claude-review → auto-ship → dispatch). Agents cannot trigger
+deploys (auto-mode blocks it) — a human clicks, or auto-ship dispatches.
 **Commit before any deploy** — `fly deploy` ships the working tree.
 Manual/emergency sequence + two-app split detail: docs/deploy-runbook.md.
 
@@ -175,7 +179,7 @@ same commit).
 - **Loops fleet:** [docs/loops/LOOP.md](docs/loops/LOOP.md) constitution +
   thin charters + [REGISTRY.md](docs/loops/REGISTRY.md). Loops are features:
   registry row + success signal before first run. Tier 3 loops ship code via
-  claude-review → auto-ship (30-min veto) → deploy.yml.
+  claude-review → auto-ship (own 30-min veto) → deploy.yml, which runs unpaused.
 - **No staging — production is the acceptance environment.** Small changes,
   deploy promptly, verify immediately; lean on funnel events, Clarity, Sentry.
 
@@ -238,8 +242,10 @@ same commit).
   — hold space with an NBSP.
 - **Never dedup on LLM-generated text** (titles drift between runs) — stable
   IDs only.
-- **Lab-import auto-retries server-side** (up to 6 LLM calls worst-case) —
-  transient failures self-heal; don't add client retries.
+- **Lab-import auto-retries server-side** (`extractOrClassify` = 2 outer
+  attempts × 2 calls each (initial + `{` prefill) = 4 LLM calls worst-case; each
+  HTTP call retries transient 503/529/network up to `RETRY_MAX_ATTEMPTS=2`, flat
+  1 s → 8 HTTP attempts) — failures self-heal; don't add client retries.
 - **react-router 7.17 exports resolve everything to dist/development** —
   vite.config.ts redirects SSR to the prod build + `ssr.noExternal` inlining;
   a `generateBundle` guard FAILS THE BUILD if a dep escapes — add it to
@@ -254,7 +260,11 @@ same commit).
 ## Environment Variables
 
 `.env` has all. Key: SUPABASE_*, SESSION_DATABASE_URL, SENTRY_*, RESEND_*,
-ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_* (commerce) / KLAVIYO_DR_BRAD_* (edu).
+ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (per app).
+Fly-only: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY, DROPBOX_APP_KEY /
+DROPBOX_APP_SECRET, GOOGLE_DRIVE_CLIENT_ID / GOOGLE_DRIVE_SECRET (set only on
+`health-tool-app`, for the widget's Google exchange — the MCP's Drive leg on
+`health-tool-edu` is inert until they are set there too).
 Per-Fly-app secrets diverge post-split (own SHOPIFY_/KLAVIYO_ pairs; edu omits
 Discord/YouTube bot tokens). GitHub Actions: deploy secrets live ONLY in the
 gated `production` env; ANTHROPIC_API_KEY (spend-capped) is the only repo secret.

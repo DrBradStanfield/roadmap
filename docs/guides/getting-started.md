@@ -65,7 +65,7 @@ The longer version, including what to do when a step goes wrong, is in [connect 
 
 ## What your assistant can do
 
-It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same plan the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. And it corrects a value that went in wrong.
+It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same plan the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. And it corrects a value that went in wrong. If a tool refuses something you reasonably expected, it can hand you a prefilled GitHub issue link to report it; nothing is filed until you click it.
 
 It cannot delete anything, because there is no delete tool. A correction never erases either: the assistant adds a new row with the right number and marks the old row "entered-in-error", so both stay in your file for good. That is how a hospital record works, and it is why you can always see what you were told and when. It also cannot touch your medications, supplements, screenings, documents or profile.
 
@@ -145,7 +145,7 @@ Open the tool and correct the value there. The app appends the correction and ma
 
 Google Drive is not connected yet. If your record lives in Drive or GitHub, the web connector cannot reach it, and the setup prompt on your own computer is the way in.
 
-Do not leave the tool open in another tab while an AI is writing the file. There is no lock. Two writers at once, and one of them loses.
+Do not leave the tool open in another tab while an AI is writing the file. The writer on your computer takes a lock and merges in a conflicting edit. A browser tab writing through your cloud provider's own API sits outside that lock, so the two can still collide.
 
 ## Why it works this way
 

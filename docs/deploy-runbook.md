@@ -14,7 +14,14 @@ credentials in GitHub Actions secrets (proven end-to-end: run 31332275404,
 fly-only, shipped v396/v30). Trigger: Actions → Deploy → Run workflow (choose
 surfaces), or automatically when a `ship`-labeled PR merges with an approving
 review (the Tier 3 loop pipeline, docs/loops/deploy-pipeline-proposal.md).
-CI deploys ship the exact main-tip commit — no working-tree risk. The manual
+**The gate is the only check.** It demands an approving review on the FINAL
+commit from a non-bot `OWNER` or `COLLABORATOR`, a green `test` check, and no
+failed checks. Once it passes the deploy runs with no pause: the `production`
+environment lost its 30-minute wait timer on 2026-09-02 by owner decision, and
+has no required reviewer either. The notification issue is a heads-up, not a
+veto; to stop a deploy, cancel the run. CI ships the exact main-tip commit.
+Two traps: `tsx` is pinned to `4.23.13` (do not float it), and the gate trims
+output with `sed -n`, never `head`. The manual
 sequence below remains valid for local/emergency use; agents cannot trigger
 the workflow (auto-mode blocks production deploys — a human clicks Run).
 

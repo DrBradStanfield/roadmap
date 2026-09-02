@@ -23,7 +23,7 @@ Tools that enforce this contract for you: `tools/get-plan.ts`, `tools/edit-recor
 ## Where the file is
 
 The file name is always `health-roadmap.json` (`ROADMAP_FILE_NAME` in
-`widget-src/src/storage/adapter.ts`). Each backend scopes the app to one folder or repo,
+`packages/health-core/src/adapter.ts`). Each backend scopes the app to one folder or repo,
 so this is the whole footprint.
 
 | Backend | Location | Local path with desktop sync |
@@ -154,9 +154,15 @@ Validate your result against the schema before you write it back.
 
 Everything above describes an agent holding the FILE. There is a second way in: a
 hosted MCP server at `https://mcp.drstanfield.com/mcp`, which a web ChatGPT or Claude
-user connects once and then asks in words. It offers the same five tools over the
-user's own Dropbox folder, and it enforces the rules above in code rather than asking
-you to keep them.
+user connects once and then asks in words. It offers six tools — `read_record`,
+`get_plan`, `add_measurement`, `add_lab_values`, `correct_value`, `report_feedback` —
+over the user's own Dropbox folder, and it enforces the rules above in code rather than
+asking you to keep them.
+
+Google Drive is built and tested but not live: it appears as a connect option once
+`GOOGLE_DRIVE_CLIENT_ID` and `GOOGLE_DRIVE_SECRET` exist on the server. Until then,
+Dropbox is the only backend the hosted path offers. A user revokes a Drive connection at
+`myaccount.google.com/connections`, a Dropbox one at `dropbox.com/account/connected_apps`.
 
 Four things differ from the local path, and they are differences you will hit:
 
@@ -166,16 +172,17 @@ Four things differ from the local path, and they are differences you will hit:
 - **A row older than 90 days cannot be corrected there.** Corrections fix recent
   mistakes; older history is out of reach and the user changes it in the app.
 - **Writes are budgeted, and a correction costs five adds.** Reads are never budgeted.
-  When the budget runs out the refusal says so and reading still works.
+  When the budget runs out the refusal says so and reading still works. `add_lab_values`
+  also carries its own per-call cap of 50 rows, regardless of budget.
 - **A record whose `schemaVersion` is newer than the server understands is out of reach
   entirely — reads refuse too**, because the record is migrated before any tool sees it.
 
 Trust model, revocation, and the residual risks we accepted knowingly:
 [mcp-architecture.md](mcp-architecture.md). The short version: your record
-still lives only in your Dropbox, our server reads it in memory to answer one call and
-keeps no copy, and you cancel the whole thing at `dropbox.com/account/connected_apps` —
-which also disconnects the website from the folder, because Dropbox scopes the folder
-to the app, not to the surface.
+still lives only in your cloud storage, our server reads it in memory to answer one call
+and keeps no copy, and you cancel the whole thing at your provider's connected-apps
+settings — which also disconnects the website from the folder, because both providers
+scope the folder to the app, not to the surface.
 
 ## No telemetry
 

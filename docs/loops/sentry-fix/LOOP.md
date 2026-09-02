@@ -66,7 +66,7 @@ beyond the metrics line. Most days should end here.
 3. ONE PR from a `claude/` branch: evidence = Sentry link, root cause,
    before/after, escape analysis. Never self-merge or label `ship` — the
    pipeline does it (reviewer's sha-pinned APPROVE → auto-ship 30-min veto
-   window → merge → deploy gate + 30-min environment window → live verify;
+   window → merge → deploy gate, then an unpaused deploy → live verify;
    zero-click, Brad 2026-08-10). After deploy, verify the fix live and mark
    the Sentry issue resolved with the commit link.
 4. **Escape analysis is mandatory in the PR + report**: why did tests miss

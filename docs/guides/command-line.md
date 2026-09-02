@@ -82,6 +82,8 @@ The second line names the row holding that day and gives you the command to fix 
 
 Nothing was overwritten. The old row is still in the file, marked as an error and pointing at the new one, and the new row keeps the original date. This is how hospital records work, and it is why you can always see what you were told and when. A correction changes the value and never the date, so `--date` is refused here.
 
+Add `--expect <n>` and the correction only goes through if the row still holds that value; if someone else changed it first, the command refuses instead of correcting the wrong number. Worth adding whenever a script, not a person, is deciding what to correct.
+
 ## Add a lab test
 
 Anything outside the core metrics is a lab value, filed under its catalogue name, and it keeps the unit your lab reported rather than being converted:

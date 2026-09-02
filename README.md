@@ -1,249 +1,90 @@
 # Health Roadmap Tool
 
-A personalized health management tool embedded in a Shopify storefront. Users input their health metrics (body measurements, blood tests) and receive real-time personalized suggestions to discuss with their healthcare provider. Health data is stored as immutable time-series records, allowing users to track their metrics over time.
+Health-metric tracking with personalized suggestions, delivered as a Shopify
+storefront theme extension and as a self-hosted page.
 
-## Features
+**Local-first.** A user's health data lives in their own cloud (Google Drive,
+Dropbox, GitHub, WebDAV) or in localStorage, as a single `health-roadmap.json`
+file. It never lands on our server. "Logged in" means a cloud provider is
+connected. The Fly backend is thin: chatbot, lab-import extraction, A/B and
+product events, email reminders, Klaviyo capture, and the hosted MCP server.
+Supabase holds operational rows only, never health values.
 
-- **Two-panel interface**: Input form on the left, live results on the right
-- **Real-time calculations**: Results update as users type
-- **Unit system support**: Automatic locale detection (SI for NZ/AU/UK/EU, conventional for US) with manual toggle, synced to database for logged-in users
-- **Immutable measurement history**: Apple Health-style data model (no edits, only add/delete)
-- **SI canonical storage**: All values stored in SI units (kg, cm, mmol/L, mmol/mol, mmHg) to eliminate unit ambiguity
-- **Guest mode**: Works without signup (data saved to localStorage)
-- **Shopify login sync**: Logged-in customers automatically save data to cloud (HMAC-verified)
-- **Background sync**: App embed block syncs guest localStorage data to Supabase on any storefront page after login
-- **Personalized suggestions**: Based on clinical guidelines for BMI, HbA1c, LDL, blood pressure, etc.
-- **HIPAA audit logging**: All write operations logged for compliance (no PHI in metadata)
-- **Account data deletion**: Users can delete all their data with a single click (measurements, profile, auth user)
-- **Email reminder notifications**: Daily cron sends HIPAA-aware reminders when screenings, blood tests, or medication reviews are due. Per-category opt-out with group-level cooldowns (90d screening, 180d blood test, 365d medication). Token-based unsubscribe preferences page.
+## The three agent surfaces
 
-## Prerequisites
+The same file, the same write path, three ways in.
 
-- Node.js 20+
-- A [Shopify Partner](https://partners.shopify.com/) account
-- A [Supabase](https://supabase.com/) project
-- A [Fly.io](https://fly.io/) account (for backend hosting)
+1. **Widget** — the React app in the storefront or on the self-hosted page.
+   Reads and writes through `RoadmapStore`.
+2. **CLI and stdio MCP** — `tools/get-plan.ts`, `tools/edit-record.ts` and
+   `tools/mcp-server.ts`, running on the user's own machine against their own
+   file. See [docs/guides/command-line.md](docs/guides/command-line.md) and
+   [docs/guides/connect-claude-desktop.md](docs/guides/connect-claude-desktop.md).
+3. **Hosted MCP** — `https://mcp.drstanfield.com/mcp`, live since 2026-09-02 on
+   the Fly app `health-tool-edu`. Dropbox today; Google Drive is built and
+   switches on when its secrets are set.
 
-## Setup
+Every non-browser writer goes through the same `SyncManager`
+(`packages/health-core/src/sync-manager.ts`), which merges on conflict and
+verifies after writing. The CLI and stdio MCP run it over `file-adapter.ts`,
+which takes a lock file and keeps backups. The hosted MCP runs it over the REST
+adapters (`dropbox-rest.ts`, `drive-rest.ts`), where the provider's own
+conditional write does the same job.
+See [packages/health-core/README.md](packages/health-core/README.md).
 
-### 1. Clone and install
+Rows are never mutated. A correction appends a new row and marks the old one
+`entered-in-error`.
+
+## Two builds, one source
+
+| Build | Command | Where |
+| --- | --- | --- |
+| Shopify storefront | `npm run build:shopify-prod` | both stores, theme extension |
+| Self-host | `npm run build:pages` | GitHub Pages, no backend, bring your own keys |
+
+Flags: `VITE_LOCAL_FIRST` for all v2 behavior, `VITE_SHOPIFY_SURFACE` to gate
+the features that need our server.
+
+## Getting started
 
 ```bash
 git clone <repo-url>
 cd roadmap
 npm install
+cp .env.example .env   # fill in what you need
+npm run test:all
 ```
 
-### 2. Create a Shopify app
+Node 20.10 or newer. Never run `shopify app dev`: the dev preview overrides
+production.
 
-1. Go to [Shopify Partners](https://partners.shopify.com/) and create a new app
-2. Note the **Client ID** and **Client Secret**
-
-### 3. Configure Shopify app
+## Tests
 
 ```bash
-cp shopify.app.toml.example shopify.app.toml
+npm test          # symlink guard + health-core + server
+npm run test:all  # everything, and what CI runs
+npx vitest run <path>
 ```
 
-Edit `shopify.app.toml`:
-- Set `client_id` to your app's Client ID
-- Set `application_url` to your Fly.io app URL (e.g. `https://your-app.fly.dev`)
-- Update `redirect_urls` and `[app_proxy] url` to match
+## Deploy
 
-### 4. Configure Fly.io
+CI is the deploy path: `.github/workflows/deploy.yml`, triggered from Actions →
+Deploy → Run workflow. All credentials live in the GitHub `production`
+environment. Manual and emergency steps, plus the two-app Fly split, are in
+[docs/deploy-runbook.md](docs/deploy-runbook.md).
 
-```bash
-cp fly.toml.example fly.toml
-```
+## Where to read next
 
-Edit `fly.toml`:
-- Set `app` to your Fly.io app name
-
-### 5. Set up environment variables
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with your Supabase credentials (found in Supabase Dashboard > Settings > API).
-
-### 6. Set up Supabase database
-
-Run the SQL migration in your Supabase SQL Editor:
-
-```bash
-# Copy the contents of supabase/rls-policies.sql into the Supabase SQL Editor and run it
-```
-
-This creates:
-- **profiles** table — Maps Shopify customer IDs to Supabase Auth user IDs (`shopify_customer_id` is nullable for future mobile-only users)
-- **health_measurements** table — Immutable time-series health records with `metric_type`, `value` (SI canonical units), and `recorded_at`
-- **audit_logs** table — HIPAA audit trail for all write operations (anonymized on account deletion)
-- **Auth trigger** — Auto-creates a profile row when a Supabase Auth user is created
-- **get_latest_measurements()** RPC — Efficiently returns the latest value per metric type (scoped by `auth.uid()`)
-- **CHECK constraints** — Per-metric-type value range validation at the database level
-- **RLS policies** — Enforced access control using `auth.uid()` (SELECT, INSERT, DELETE; no UPDATE)
-
-### 7. Deploy
-
-```bash
-# Deploy Shopify extensions (widget + sync embed)
-npm run build:widget
-npx shopify app deploy --force
-
-# Deploy backend to Fly.io
-fly deploy
-
-# Set secrets on Fly.io
-fly secrets set SUPABASE_URL=https://your-project.supabase.co
-fly secrets set SUPABASE_SERVICE_KEY=your-service-key
-fly secrets set SUPABASE_ANON_KEY=your-anon-key
-fly secrets set SUPABASE_JWT_SECRET=your-jwt-secret
-```
-
-### 8. Install on your Shopify store
-
-1. **Install the app** on your Shopify store and accept the required permissions (`write_app_proxy`, `read_customers`)
-2. **Enable the "Health Data Sync" app embed** — In the Theme Editor, go to **App Embeds** and toggle on **"Health Data Sync"**. This runs silently on every storefront page and syncs guest localStorage data to Supabase when the user logs in.
-3. **Add the "Health Roadmap Tool" block** to the homepage — In the Theme Editor, navigate to the homepage, click **Add block**, and select **"Health Roadmap Tool"**. The health-history view is built into this widget (it opens as a lightbox); there is no separate history page to create.
-4. **Add a customer-account header link (admin step, no code)** — There is no longer a customer-account UI extension; the roadmap is surfaced as a single link in the logged-in customer-account header menu. In the Shopify admin go to **Settings > Customer accounts > Menu**, add a menu item linking to your store's homepage / roadmap URL (e.g. `https://yourdomain.com`), and label it "Health Roadmap". This is set in the admin, not in this repo.
-5. **Verify** — Test guest mode (no login), logged-in mode, guest→logged-in data sync (enter data as guest, log in, confirm it appears), the in-widget history lightbox, and the customer-account header link
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Theme Widget (Storefront)                                       │
-│  ├── Guest: localStorage (works without login)                  │
-│  ├── Logged in: Auto-detects Shopify customer                   │
-│  └── Calls backend measurement API for cloud sync               │
-├─────────────────────────────────────────────────────────────────┤
-│  App Embed Sync Block (every storefront page)                    │
-│  └── Background localStorage→Supabase sync for logged-in users  │
-├─────────────────────────────────────────────────────────────────┤
-│  Backend API (Remix App on Fly.io)                                │
-│  ├── GET/POST/DELETE /api/measurements (HMAC auth)              │
-│  ├── DELETE /api/user-data (account deletion, HMAC auth)        │
-│  └── Dual Supabase clients (admin + RLS-enforced user client)   │
-├─────────────────────────────────────────────────────────────────┤
-│  Shared Library (packages/health-core)                            │
-│  ├── Unit conversions (SI ↔ conventional)                        │
-│  ├── Health calculations (IBW, BMI, protein target)              │
-│  ├── Suggestion generation (unit-system-aware)                   │
-│  └── Field↔metric mappings, validation schemas                   │
-├─────────────────────────────────────────────────────────────────┤
-│  Supabase Database (RLS enabled)                                  │
-│  ├── profiles (shopify_customer_id → user mapping)              │
-│  ├── health_measurements (immutable time-series records)         │
-│  ├── reminder_preferences + reminder_log (email reminders)       │
-│  └── audit_logs (HIPAA audit trail, anonymized on deletion)      │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-## Authentication & Security
-
-All health data for logged-in customers is protected by Shopify's app proxy HMAC signature verification. The widget never calls the backend directly.
-
-### Data Flow
-
-```
-Guest (not logged in):
-  Widget → localStorage (no server calls)
-
-Logged-in customer (storefront widget):
-  Widget → /apps/health-tool-1/api/measurements (same-origin request)
-         → Shopify app proxy adds logged_in_customer_id + HMAC signature
-         → Fly.io backend verifies HMAC via authenticate.public.appProxy()
-         → Extracts verified customer ID from signed query params
-         → Maps Shopify customer → Supabase Auth user
-         → Creates RLS-scoped client (anon key + custom JWT)
-         → RLS enforces auth.uid() on every query
-```
-
-### Why This Is Secure
-
-- **HMAC-verified identity**: Shopify signs every proxied request with the app's secret key. The `logged_in_customer_id` parameter cannot be forged — any tampering invalidates the signature.
-- **No client-side secrets**: No API keys, tokens, or customer IDs are exposed in client code.
-- **No CORS**: Requests go through Shopify's proxy (same origin as the storefront).
-- **Server-side authorization**: The backend never trusts client-supplied identity. Customer ID always comes from the HMAC-verified query parameters.
-- **Row Level Security**: Supabase RLS policies enforce data isolation at the database level. All data queries use an anon key + custom JWT scoped to `auth.uid()` — the service key is only used for user creation.
-- **Error boundaries**: React error boundaries prevent component crashes from taking down the entire tool.
-
-## Project Structure
-
-```
-/roadmap
-├── /app                          # Remix app (Shopify admin + API)
-│   ├── /lib
-│   │   └── supabase.server.ts    # Dual Supabase clients, JWT signing, CRUD
-│   └── /routes
-│       ├── api.measurements.ts   # Measurement CRUD API (HMAC auth)
-│       ├── api.reminders.ts     # Reminder preferences + unsubscribe page
-│       └── api.user-data.ts     # Account data deletion (HMAC auth)
-├── /packages
-│   └── /health-core              # Shared library
-│       └── /src
-│           ├── calculations.ts   # IBW, BMI, protein target
-│           ├── suggestions.ts    # Recommendation generation (unit-aware)
-│           ├── units.ts          # Unit definitions, conversions, thresholds
-│           ├── mappings.ts       # Field↔metric mappings, data conversion
-│           ├── reminders.ts      # Pure reminder logic (computeDueReminders)
-│           ├── validation.ts     # Zod schemas
-│           └── types.ts          # TypeScript interfaces
-├── /widget-src                   # React widget source code
-│   └── /src
-│       ├── /components           # HealthTool, InputPanel, ResultsPanel
-│       └── /lib
-│           ├── storage.ts        # localStorage + unit preference
-│           └── api.ts            # Measurement API client (app proxy)
-├── /extensions
-│   └── /health-tool-widget       # Shopify theme extension (widget + sync embed)
-├── /supabase
-│   └── rls-policies.sql          # DB schema + RLS policies
-└── Dockerfile                    # Docker build for Fly.io
-```
-
-## Health Calculations
-
-| Metric | Formula | Source |
-|--------|---------|--------|
-| Ideal Body Weight | Devine Formula: 50kg + 0.91 × (height - 152.4cm) for males | Clinical standard |
-| Protein Target | 1.2g × IBW | Evidence-based recommendation |
-| BMI | weight / height² | WHO standard |
-| Waist-to-Height Ratio | waist / height | Metabolic risk indicator |
-
-## Testing
-
-```bash
-npm test              # Run all 138 tests once
-npm run test:watch    # Watch mode
-```
-
-## Development
-
-```bash
-npm run build:widget     # Build the health widget
-npm run dev:widget       # Watch widget for changes
-npm run deploy           # Deploy extensions to Shopify CDN
-fly deploy               # Deploy backend to Fly.io
-```
-
-## Troubleshooting
-
-### Measurements not saving (500 errors)
-
-If measurements return 500 errors after deployment, check the Fly.io logs (`fly logs --no-tail`) for these common issues:
-
-**`admin=false` / email is null**: The Shopify offline access token is missing from the PostgreSQL session table. Re-authenticate by visiting the app in Shopify admin, or uninstall and reinstall the app.
-
-**"A user with this email address has already been registered"**: The Supabase Auth user exists but the `profiles` row is missing or doesn't match the `shopify_customer_id`. The `getOrCreateSupabaseUser()` function handles this by looking up the existing auth user by email and re-creating the profile row.
-
-**"violates foreign key constraint health_measurements_user_id_fkey"**: The `user_id` doesn't exist in the `profiles` table. This is a symptom of the above issue — the profile wasn't created properly.
-
-### After redeploying to Fly.io
-
-Shopify sessions are stored in Supabase PostgreSQL, so deploys don't affect session persistence. The app runs stateless on Fly.io with no persistent volume.
-
-## Disclaimer
-
-This tool is for educational purposes only and is not a substitute for professional medical advice. Users should always consult with their healthcare provider before making health decisions.
+- [CLAUDE.md](CLAUDE.md) — the working contract for this repo.
+- [docs/architecture-v2.html](docs/architecture-v2.html) — the visual system
+  map, and the best entry point.
+- [docs/reference.md](docs/reference.md) — file inventory, data model,
+  endpoints, gotcha archive.
+- [docs/user-stories.md](docs/user-stories.md) — every behavior change starts
+  as a story here.
+- [docs/agent-access.md](docs/agent-access.md) and
+  [docs/mcp-architecture.md](docs/mcp-architecture.md) — the agent contract and
+  the MCP map.
+- [docs/guides/](docs/guides/) — the user-facing guides.
+- [docs/privacy-connector-addendum.md](docs/privacy-connector-addendum.md) —
+  draft privacy language for the AI connector.

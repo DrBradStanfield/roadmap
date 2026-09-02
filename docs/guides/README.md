@@ -22,6 +22,8 @@ stories: ["US-29", "US-30"]  # the user stories this guide serves
 ---
 ```
 
+`scripts/build-guide-html.mjs` only needs `title:` and `slug:` to run; it refuses a guide missing either. `description`, `updated` and `stories` are for the site and for us, not the build, but write them anyway: they are part of the contract above.
+
 ## Markers
 
 A marker on a line of its own is replaced by the build. Markers keep the `.md` readable and keep generated markup out of the master.

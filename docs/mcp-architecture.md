@@ -58,18 +58,21 @@ It ships in `docs/user-stories.md` **in the same commit as Phase-1 code — neve
 | --- | --- |
 | `app/routes/mcp.$.tsx` | MCP endpoint plus `/authorize`, `/token`, `/register`, `/callback`. One splat, one file. No `/disconnect`: with no state to delete there is nothing for it to do, and the real revocation is the provider's own settings page (§1). |
 | `app/routes/[.]well-known.$.tsx` | RFC 9728 and RFC 8414 documents must sit at host root, so they cannot live under `/mcp`. One splat serves both. |
-| `app/lib/mcp.server.ts` | JSON-RPC dispatch, four tool definitions, Zod schemas. |
+| `app/lib/mcp.server.ts` | Dispatch, corrections guards, write budget, -32603 gate. Tool definitions and Zod schemas live in `packages/health-core/src/mcp-tools.ts`. |
 | `app/lib/mcp-auth.server.ts` | Seal/unseal, stateless AS, two provider OAuth clients. |
 | **In-memory state (counted, not free):** bounded LRU for CIMD metadata (256 entries, TTL per HTTP cache headers, 1 h max), auth-code `jti` set (60 s TTL), per-IP rate maps. Per-machine, lost on deploy — by design. | |
 | **Zero tables.** | |
 | Moves into `packages/health-core/src/`: `adapter.ts`, `sync-manager.ts`, and `computePlan`/`renderJson` from `tools/get-plan.ts` | **Not pure moves.** `sync-manager.ts` gains the Drive-specific pre-write version re-check (§7), so this is a move *plus* a behaviour change with new tests. `record-edits.ts` separately gains the `expectedValue` parameter (§3). Net prod LOC is positive, modestly. |
 
-**Keys — one Fly secret.**
+**Keys — five Fly secrets, all on `health-tool-edu`.**
 
 | Secret | Use | Rotation |
 | --- | --- | --- |
 | `MCP_SEAL_KEYS` | Ordered list of 32-byte keys; `kid` = index. Seal with the **first**, accept **any**. Rotation is one atomic `fly secrets set` — prepend the new key. No window where a machine holds a partial view. | Overlap keeps a leaked key live up to the refresh lifetime (90 d); no-overlap forces every user to reconnect. **Default incident response is no-overlap**, because a leaked seal key is retroactive (§4). |
 | `MCP_CLIENT_HMAC_KEY` | HMAC over self-contained DCR `client_id`s. | **User-visible, not silent.** Anthropic freezes a connector's auth settings after it is added, so rotation forces every affected user to **remove and re-add the connector**. Rotate only with a comms plan. |
+| `MCP_ISSUER` | The `iss` this server claims (RFC 9207) and the value discovery advertises. Defaults to `https://mcp.drstanfield.com` (`app/lib/mcp-auth.server.ts`) if unset. | Changing it invalidates every blob sealed under the old value's AAD binding via `resource`; treat it as fixed. |
+| `DROPBOX_APP_KEY` | The Dropbox app id used for the provider OAuth leg. Same app as the widget's (`widget-src/src/storage/dropbox.ts`), now used as a confidential client with its secret. | Rotating it needs a matching Dropbox console change; every connected user reconnects. |
+| `DROPBOX_APP_SECRET` | The confidential-client secret paired with `DROPBOX_APP_KEY`. | Same as above. |
 
 Reuse otherwise: `mergeFiles`, `migrateFile`, `SyncManager`, `createRateLimiter`, the plan derivation. No new npm dependency — `node:crypto` covers AES-256-GCM, HKDF, HMAC.
 
@@ -83,7 +86,7 @@ Reuse otherwise: `mergeFiles`, `migrateFile`, `SyncManager`, `createRateLimiter`
 | `get_plan` | `readOnlyHint` | `renderJson(computePlan(file))`. The one thing only this repo can do; costs no Anthropic spend. |
 | `add_measurement` | append | One core metric, SI canonical, validated by health-core. |
 | `add_lab_values` | append | Batch — the lab-report case, which is the point. |
-| `correct_value` | append (**separate pathway**) | Mirrors `record-edits.correctValue` / `RoadmapStore.correctMeasurement` exactly: append a new row carrying `correctsId` and the **original `recordedAt`**, then flip the old row to `entered-in-error`. **Never folded into an add** — a slot-occupied add is *rejected*, and the rejection names the held row and points the agent at `correct_value`, mirroring the CLI's `refuse()` hint in `tools/edit-record.ts:274`. |
+| `correct_value` | append (**separate pathway**) | Mirrors `record-edits.correctValue` / `RoadmapStore.correctMeasurement` exactly: append a new row carrying `correctsId` and the **original `recordedAt`**, then flip the old row to `entered-in-error`. **Never folded into an add** — a slot-occupied add is *rejected*, and the rejection names the held row and points the agent at `correct_value`, mirroring the `refuse()` hint in `tools/edit-record.ts`. |
 
 **Corrections ship hosted, as their own pathway** (Brad's ruling, 2026-09-01, overruling the interim removal). A correction *is* an append under this data model — the protocol is append-with-`correctsId` plus a status flip on the superseded row — so withholding it would ship an incomplete protocol and push agents toward improvising something worse. The pathway stays distinct from `add_*` at every level: separate tool, separate arguments, separate rejection path.
 
@@ -102,6 +105,8 @@ The hosted surface exposes **every tool in `MCP_TOOLS`**, the shared list the lo
 4. **Weighted write allowance: N weighted writes per connection per hour, per machine** (N = 60), keyed on `sha256(provider refresh token)` — the connection, not the access token, so minting extra access tokens buys no extra writes. **A correction costs 5× an add.** Justification: the falsification attack needs one correction per metric, so weighting corrections is what actually bounds it, while a legitimate session corrects rarely and adds in batches — a lab-report import is many adds and zero corrections.
 
    **A refused write still spends its cost.** The allowance is charged before the tool runs, so an add into an occupied slot or a correction with the wrong `expectedValue` counts against the hour. Deliberate: an attacker probing for a value it does not know would otherwise get unlimited free guesses, and the guessing IS the attack. An honest client reads before it writes and rarely meets a refusal.
+
+   **A write that fails in storage also spends its cost.** The allowance is charged before the tool runs, so a write the provider refuses, drops or never answers counts against the hour too — an attacker cannot buy free attempts by making the storage call fail.
 
    **Stated honestly: this bound is per machine, and it is per hour, not per connection lifetime.** N Fly machines multiply it by N, and an attacker willing to wait gets a fresh allowance every hour. It bounds the *rate* of silent falsification, not the total.
 
@@ -133,7 +138,7 @@ Every write: read → `migrateFile` → apply → `mergeFiles` → conditional w
 
 **The consent screen is enforced by a cookie, not by convention** (added 2026-09-02, security review). Pressing Connect is what mints a 32-byte CSPRNG nonce; the sealed state naming it goes into a first-party `__Host-mcp-state` cookie (Secure, HttpOnly, SameSite=Lax, Path=/, 10 min) and **Dropbox is handed the nonce alone** as its `state`. `/mcp/callback` requires the cookie, unseals it, compares Dropbox's echoed `state` to the sealed nonce timing-safely, and clears the cookie. Without the cookie it is a 400 page and no redirect. This closes two things at once: a state blob obtained from an unauthenticated `GET /mcp/authorize` could otherwise be replayed straight into a forged callback, skipping consent entirely; and the sealed state was ~1 KB against Dropbox's documented 500-byte `state` limit. Still no server-side state — the cookie is the browser's copy, sealed. **Ceiling:** the sealed state carries the client id, and browsers cap a cookie near 4 KB, so a CIMD client id of a few thousand characters would make the consent step fail. Real ids are far short of it (`resolveClient` caps at 4096 chars, and a vendor's is ~50), but the limit is the cookie's, not ours. Provider callback exchanges for the provider refresh token and mints an auth-code blob (exp **+60 s**). `/mcp/token` unseals, verifies PKCE/client/redirect/expiry, issues access (1 h) and refresh (90 d) blobs. `/token` is `application/x-www-form-urlencoded`; `/register` is `application/json` — two parsers in one route file, a real trap. A dead grant returns `invalid_grant`, never a custom code, or Claude never recovers.
 
-**Provider leg.** Reuse the existing OAuth clients — mandatory, per §1's shared-identity finding. Same `GOOGLE_DRIVE_CLIENT_ID`/`GOOGLE_DRIVE_SECRET` from `app/routes/api.google-token.ts`; same Dropbox app key from `widget-src/src/storage/dropbox.ts`, now with its secret as a confidential client. Scopes: Dropbox `files.content.read`, `files.content.write`, `files.metadata.read`; Google `drive.file` only.
+**Provider leg.** Reuse the existing OAuth clients — mandatory, per §1's shared-identity finding. Same `GOOGLE_DRIVE_CLIENT_ID`/`GOOGLE_DRIVE_SECRET` from `app/routes/api.google-token.ts`. The server reads its own `DROPBOX_APP_KEY` Fly secret, but it is the same Dropbox app as the widget's (`widget-src/src/storage/dropbox.ts`), now with its secret as a confidential client. Scopes: Dropbox `files.content.read`, `files.content.write`, `files.metadata.read`; Google `drive.file` only.
 
 **Threats and residuals.**
 
@@ -166,6 +171,10 @@ Every write: read → `migrateFile` → apply → `mergeFiles` → conditional w
 **`health-tool-edu`,** at `https://mcp.drstanfield.com/mcp`. Education product, not commerce; the edu app omits the Discord and YouTube bot tokens, so the box holding `MCP_SEAL_KEYS` carries the smaller secret set.
 
 Vendor requirements: reachable from Anthropic's egress `160.79.104.0/21`, **IPv4-only, publicly routable**; discovery comes from the same range, so a WAF in front of the AS breaks the flow. PRM `resource` must match the typed URL exactly. `authorization_servers` must list our issuer **first** — Claude uses the first entry and does not fall back. Unauthenticated calls return **401** with `WWW-Authenticate: Bearer resource_metadata="…"`; Claude ignores that header on a 200.
+
+**`app/routes/[.]well-known.$.tsx` serves both the bare and the `/mcp`-suffixed paths** — `/.well-known/oauth-protected-resource` and `/.well-known/oauth-protected-resource/mcp` answer the same document, likewise for `/.well-known/oauth-authorization-server`. One splat route matches both forms so a vendor that appends the resource path still finds discovery.
+
+**Discovery advertises `scopes_supported: ['health.read', 'health.append']`, and nothing yet enforces them.** The token response echoes the same fixed `scope` string; no route checks it against the tool being called, so every tool a bearer token can reach, it can reach regardless of scope. What actually bounds a call is the write budget and corrections guards in `app/lib/mcp.server.ts` (§2, §3), not the advertised scopes.
 
 **Protocol shape — build 2025-11-25, be ready for 2026-07-28.** Emit RFC 9207 `iss` from day one. Branch on `MCP-Protocol-Version` and accept no-`initialize` 2026-07-28 clients. Return **405 on GET and DELETE**. Never mint `Mcp-Session-Id`; ignore it and `Last-Event-ID`. Statelessness makes forward-compatibility nearly free — the new revision removed exactly the stateful mechanisms we never built.
 
@@ -226,7 +235,7 @@ Residual, disclosed and unchanged: our write is **durable-by-retry**, but the **
 
 Brad's ruling: build the full thing. The recruitment gate is removed. The phase structure remains as **build order**, because Phase 0 is the tool layer Phase 1 wraps, and it delivers working Claude Desktop support on day one.
 
-**Phase 0 — local stdio MCP server (~1 day).** All five tools over a local file path (`expectedValue` optional here; the hosted surface is where it is required). No server, no OAuth, no keys, no promise change. Ships value immediately to Claude Desktop and Claude Code users.
+**Phase 0 — local stdio MCP server (~1 day).** All six tools over a local file path (`expectedValue` optional here; the hosted surface is where it is required). No server, no OAuth, no keys, no promise change. Ships value immediately to Claude Desktop and Claude Code users.
 - [x] `packages/health-core/src/plan.ts` — move `derivePlanInputs`/`computePlan`/`renderJson` out of `tools/get-plan.ts`; CLI keeps argv, `fs`, HTML renderer; US-30 AC1 import guard still passes.
 - [x] `get_plan` JSON gains the top-level `instruction` field (preserve hedging + citations).
 - [x] Tool layer: `read_record` (strips `reminderOptIn.token`, `metric`/`since` filters), `get_plan`, `add_measurement`, `add_lab_values` — over `migrateFile` + `record-edits.ts`.
@@ -238,7 +247,7 @@ Brad's ruling: build the full thing. The recruitment gate is removed. The phase 
 - [x] `app/lib/mcp-auth.server.ts`: seal/unseal (§4 spec), stateless AS, CIMD fetch policy, DCR fallback, Dropbox confidential client.
 - [x] `record-edits.ts`: add `expectedValue` to `CorrectValueRequest` (required hosted, optional flag in `tools/edit-record.ts`); tests; shipped CLI path unbroken.
 - [x] `app/lib/mcp.server.ts`: JSON-RPC dispatch, the shared `MCP_TOOLS` list, Zod schemas, per-call caps, 90-day correction age limit, and the per-connection hourly write allowance with corrections weighted 5×.
-- [x] Slot-occupied add returns a rejection naming the held row and pointing at `correct_value` (mirror `tools/edit-record.ts:274`).
+- [x] Slot-occupied add returns a rejection naming the held row and pointing at `correct_value` (mirror `refuse()` in `tools/edit-record.ts`).
 - [x] `app/routes/mcp.$.tsx` + `app/routes/[.]well-known.$.tsx`.
 - [x] Confirm no route logs a request URL. **Fly's proxy access-log setting is an operator check** — it is in the runbook, not done.
 - [x] **Deferred from Phase 0 — stdio framing.** Still deferred, deliberately: the hosted transport is HTTP and never touches `serve()`. `serve()` re-splits its whole buffer per chunk, so a single long line costs O(n²) (measured: 4 MB 79 ms, 48 MB 10.9 s / 763 MB heap). Phase 0 caps a line at 8 MB and refuses it; the hosted transport is HTTP and does not reuse `serve()`, so the streaming `indexOf` rework lands only if a local client ever needs it.
@@ -352,7 +361,12 @@ The behaviour changes worth naming here:
 - **`getClientIp` prefers `Fly-Client-IP`.** It preferred the first hop of
   `X-Forwarded-For`, which a client sets itself, so every per-IP limiter in the app was
   bypassable by one header. Fly's proxy writes `Fly-Client-IP` itself
-  (https://fly.io/docs/networking/request-headers/).
+  (https://fly.io/docs/networking/request-headers/). It now takes a second argument,
+  `getClientIp(request, 'fly' | 'shopify')`, so the storefront's own app-proxy callers
+  keep trusting `X-Forwarded-For` and only the MCP routes trust `Fly-Client-IP`.
+- **`providerRevokeUrl()` is surfaced on the consent and callback pages**
+  (`app/routes/mcp.$.tsx`), not just documented here — the page that grants access also
+  names the exact provider page that revokes it.
 - **Bodies are capped** — 64 KB at the OAuth doors, 1 MB at `/mcp`, 413 over — and
   `/token` (per IP) and `tools/call` (per connection) are rate-limited. The limits are
   deliberately generous: a whole vendor's users share one egress range, so a tight per-IP
@@ -433,3 +447,18 @@ cannot re-issue.
 JSON-RPC `-32603` on the failed request, the way the stdio server has since phase 0. A
 `ToolContractError` used to escape the endpoint and become a 500 that a vendor could not
 match to anything it had sent.
+
+**The `-32603` gate got narrower, and a real bug used to hide as a refusal (commit
+`b4fbf49`).** `callHostedTool`'s catch ran everything except `ToolContractError` through
+`describeStorageFailure`, whose fallback message is "The record did not answer. Nothing
+was written." A `TypeError` inside a tool, inside the corrections guards, or inside merge
+therefore reached the assistant worded as a refusal against a cloud folder that was fine
+— and nothing was logged. The nuance that hid it: both REST adapters called bare `fetch`,
+which throws a raw `TypeError` on a dead network, so the catch-all was also the only thing
+correctly turning a real provider outage into "did not answer." Deleting the catch-all
+outright would have mislabelled every outage as a bug. The fix is `fetchOrFail()`
+(`packages/health-core/src/adapter.ts`) — one function the adapters' own network calls go
+through, so a dead connection becomes a typed storage failure at the source rather than
+an ordinary exception at the top. `callHostedTool` now checks `isStorageFailure(error)`
+before deciding: true still becomes a worded refusal, false is logged (tool name and error
+name only, no health values) and rethrown as `-32603`.

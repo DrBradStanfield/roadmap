@@ -34,7 +34,7 @@ One thing is held back on purpose. If you use email reminders, your record carri
 
 You need three things.
 
-Node.js 20 or newer, from [nodejs.org](https://nodejs.org). Check with `node --version`.
+Node.js 20.10 or newer, from [nodejs.org](https://nodejs.org). Check with `node --version`.
 
 This repo on your computer: `git clone https://github.com/DrBradStanfield/roadmap.git`. Then `cd roadmap && npm install`.
 
@@ -94,9 +94,7 @@ There is no delete tool. Nothing Claude can call removes a row. It also cannot t
 
 Every write copies your record to a backup beside it first, named `health-roadmap.json.bak-` and the time. The last three are kept. If a write goes wrong, that file is your record from the moment before it.
 
-Two more habits worth keeping. Do not leave the web tool open in another tab while Claude is writing the file; there is no lock, and one writer will lose. And check what it files, because an AI can misread a lab report the same way a person can.
-
-Dates come from the clock in UTC, not your local timezone. If you are well ahead of UTC, "today" can land on yesterday's date. Say the date you mean and Claude will pass it through.
+Two more habits worth keeping. The local writer takes a lock file and merges its edit in if it hits a conflict. A browser tab writing through your cloud provider's own API sits outside that lock. Do not have both open at once. And check what it files, because an AI can misread a lab report the same way a person can.
 
 ## Claude on the web
 
