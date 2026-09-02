@@ -262,9 +262,9 @@ same commit).
 `.env` has all. Key: SUPABASE_*, SESSION_DATABASE_URL, SENTRY_*, RESEND_*,
 ANTHROPIC_API_KEY, SHOPIFY_*, KLAVIYO_API_KEY/KLAVIYO_LIST_ID (per app).
 Fly-only: MCP_ISSUER, MCP_SEAL_KEYS, MCP_CLIENT_HMAC_KEY,
-OPENAI_APPS_CHALLENGE, DROPBOX_APP_KEY / DROPBOX_APP_SECRET,
-GOOGLE_DRIVE_CLIENT_ID / GOOGLE_DRIVE_SECRET (BOTH Fly apps: `health-tool-app`
-for the widget's Google exchange, edu for the MCP's Drive leg).
-Per-Fly-app secrets diverge post-split (own SHOPIFY_/KLAVIYO_ pairs; edu omits
-Discord/YouTube bot tokens). GitHub Actions: deploy secrets live ONLY in the
+OPENAI_APPS_CHALLENGE, GITHUB_ISSUES_TOKEN (edu; the connector files bug reports
+— absent, it hands the user a link), DROPBOX_APP_KEY/SECRET,
+GOOGLE_DRIVE_CLIENT_ID/SECRET (BOTH Fly apps: `health-tool-app` for the widget's
+Google exchange, edu for the MCP's Drive leg). Per-app secrets diverge post-split
+(own SHOPIFY_/KLAVIYO_ pairs; edu omits Discord/YouTube bot tokens). GitHub Actions: deploy secrets live ONLY in the
 gated `production` env; ANTHROPIC_API_KEY (spend-capped) is the only repo secret.

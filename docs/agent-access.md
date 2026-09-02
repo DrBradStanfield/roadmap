@@ -16,9 +16,10 @@ Tools that enforce this contract for you: `tools/get-plan.ts`, `tools/edit-recor
 - Current `schemaVersion`: **1**
 - TypeScript source of truth: `packages/health-core/src/roadmap-file.ts`
 - Compute the plan from the file: `npx tsx tools/get-plan.ts <file>` (in this repo) — see `--help`
-- Something wrong or missing? The MCP server's `report_feedback` tool prepares a prefilled
-  GitHub issue for the user to review and submit — it sends nothing itself, and no health
-  value belongs in it.
+- Something wrong or missing? The MCP server's `report_feedback` tool reports it. On the
+  hosted server it FILES the GitHub issue itself, with no user action, and the issue is
+  public; a server with no GitHub token prepares a link the user submits instead. Tell the
+  user before you call it, and put no health value in it — one is refused.
 
 ## Where the file is
 

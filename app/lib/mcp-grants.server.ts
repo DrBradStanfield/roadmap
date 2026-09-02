@@ -7,6 +7,7 @@
 import { createRateLimiter } from './rate-limiter';
 import { resetMcpWarnings } from './mcp-config.server';
 import { resetCimdCache } from './mcp-clients.server';
+import { resetGithubIssues } from './github-issues.server';
 import { hash, packSealed } from './mcp-seal.server';
 import type { McpProvider } from './mcp-providers.server';
 
@@ -156,6 +157,7 @@ export function resetMcpMemory(): void {
   spentCodes.clear();
   spentWrites.clear();
   resetCimdCache();
+  resetGithubIssues();
   resetMcpWarnings();
   allowAuthorize.reset();
   allowToken.reset();

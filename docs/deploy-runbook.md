@@ -251,6 +251,21 @@ fly secrets set -a health-tool-edu \
   DROPBOX_APP_SECRET="<from the Dropbox app console>"
 ```
 
+**`GITHUB_ISSUES_TOKEN` is optional and separate** — `report_feedback` files the
+user's bug report as a public GitHub issue under it:
+
+```bash
+fly secrets set -a health-tool-edu GITHUB_ISSUES_TOKEN="<fine-grained PAT>"
+```
+
+Mint it at GitHub → Settings → Developer settings → Fine-grained tokens: resource
+owner `DrBradStanfield`, **only** the `roadmap` repository, **Issues: read and
+write** and no other permission, 1-year expiry. Nothing else on the machine reads
+it. Rotate by minting a new one and setting it again; unset it and the connector
+goes back to handing the user a prefilled link to submit themselves, which is what
+the local stdio server always does. Note the expiry — an expired token does not
+break the connector, it silently returns everyone to the link.
+
 The app key MUST be the one the widget already uses. Dropbox scopes the app folder to
 the app identity, so a second identity would see an empty folder (design §1).
 

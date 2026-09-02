@@ -23,6 +23,7 @@ import type { StorageAdapter } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
 import { isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, toolContent, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { githubFiler } from './github-issues.server';
 import { readCapped } from './mcp-clients.server';
 import { isMcpEnabled, issuer } from './mcp-config.server';
 import {
@@ -104,8 +105,10 @@ function refuse(text: string): ToolAnswer {
  * charged the moment it is published; there is no second list to forget.
  */
 const WRITE_COSTS = new Map(
-  MCP_TOOLS.filter((tool) => !tool.annotations.readOnlyHint)
-    .map((tool) => [tool.name, tool.annotations.destructiveHint ? WRITE_COST.correct : WRITE_COST.add]),
+  MCP_TOOLS.filter((tool) => !tool.annotations.readOnlyHint).map((tool) => [
+    tool.name,
+    tool.annotations.destructiveHint || tool.annotations.openWorldHint ? WRITE_COST.correct : WRITE_COST.add,
+  ]),
 );
 
 function findRow(file: RoadmapFile, id: string): FileMeasurement | FileLabValue | undefined {
@@ -177,6 +180,17 @@ function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile,
     const refusal = checkProfileUpdate(args);
     if (refusal) return refusal;
   }
+  return chargeWrites(token, name);
+}
+
+/**
+ * The weighted write budget, charged before the tool runs so a refused write
+ * still costs its allowance — free guesses at a value an agent does not know
+ * ARE the falsification attack (§3, mitigation 4). Split out because
+ * `report_feedback` opens no record and so never reaches `beforeCall`, and an
+ * uncharged tool that writes to a public issue tracker is a megaphone.
+ */
+function chargeWrites(token: AccessPayload, name: string): string | null {
   const cost = WRITE_COSTS.get(name);
   if (cost !== undefined && !spendWrites(connectionKey(token.rt), cost)) {
     return (
@@ -207,7 +221,10 @@ async function callHostedTool(
   // likeliest moment to report a bug is the moment the record would not open,
   // so `report_feedback` must not need the provider — nor a token minted for it.
   let accessToken = '';
-  if (!RECORD_FREE_TOOLS.has(name)) {
+  if (RECORD_FREE_TOOLS.has(name)) {
+    const refusal = chargeWrites(token, name);
+    if (refusal) return refuse(refusal);
+  } else {
     const minted = await providerAccessToken(token.provider, token.rt);
     if (!minted) {
       return refuse(
@@ -222,6 +239,9 @@ async function callHostedTool(
     return await runToolOverSync(recordSync(makeAdapter(token.provider, accessToken), 'mcp', now), name, args, now, {
       beforeCall: (file) => beforeHostedCall(token, name, file, args, now),
       savedNote: () => `Saved to the user’s ${provider}.`,
+      // With no GitHub token configured the tool falls back to a prefilled URL
+      // the user submits — which is all the stdio server can ever do.
+      fileFeedback: githubFiler(token.provider) ?? undefined,
     });
   } catch (error) {
     // Storage is allowed to fail, and the user can act on that, so it is worded

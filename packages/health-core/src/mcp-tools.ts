@@ -222,9 +222,15 @@ export const updateProfileOutput = z.object({
   }).strict()),
 }).strict();
 
-/** The prepared issue — nothing is sent; the URL is the whole result. */
+/**
+ * The issue. `filed` is the whole difference between the two surfaces: the
+ * hosted server posts it and answers with the issue it created; a server with
+ * no GitHub token prepares a URL the user opens themselves.
+ */
 export const reportFeedbackOutput = z.object({
+  filed: z.boolean(),
   url: z.string(),
+  number: z.number().int().optional(),
   kind: z.enum(['bug', 'feature']),
   title: z.string(),
 }).strict();
@@ -511,28 +517,90 @@ const VALUE_WITH_UNIT = new RegExp(
   'i',
 );
 
+/** An issue, as GitHub takes one. Built here; sent by whoever holds a token. */
+export interface FeedbackIssue {
+  title: string;
+  body: string;
+  labels: string[];
+}
+
 /**
- * Prepare a bug report or feature request as a prefilled GitHub issue URL. It
- * holds no secret, makes no request and writes nothing: the user opens the URL,
- * reads what it says and submits it themselves. That review is the real control
- * on what leaves their machine — the tool's description is what keeps a health
- * value out of the text, and the unit match below is only a cheap backstop.
+ * Filing, as a capability the surface hands in. The hosted server has a token
+ * and a repository; the stdio server has neither, so it passes nothing and the
+ * user gets a URL to open. A filer answers in words, never by throwing: an
+ * external system that will not take an issue is something the agent should
+ * read out, not a fault in us.
  */
-export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now: string): ToolOutcome {
+export type FeedbackFiler = (issue: FeedbackIssue) => Promise<
+  { ok: true; url: string; number: number } | { ok: false; refusal: string }
+>;
+
+/** Title as it reads on the issue list: whose report this is, then the report. */
+const FEEDBACK_TITLE_PREFIX = '[connector] ';
+
+/**
+ * The report as a fenced block. The detail is a model's prose about a user's
+ * problem — data, never markup and never instructions — and a fence is the one
+ * thing that makes GitHub render it as written: no headings, no images, and no
+ * `@name` linking to a person who never asked to be told about this. The fence
+ * is longer than the longest run of backticks inside it, so text that is itself
+ * about code cannot end it early.
+ */
+function fenced(text: string): string {
+  const longest = Math.max(0, ...[...text.matchAll(/`+/g)].map((run) => run[0].length));
+  const fence = '`'.repeat(Math.max(3, longest + 1));
+  return `${fence}\n${text}\n${fence}`;
+}
+
+/**
+ * Everything both surfaces do before anything leaves the machine: strip the
+ * text, refuse anything that reads as a health value, and build the issue.
+ *
+ * The unit match is a cheap backstop, not the control — the tool's description
+ * is what keeps a health value out of the text — but it is the last check
+ * standing on the hosted path, where nobody reviews the issue before it is
+ * public. It stays exactly as it was.
+ */
+function prepareFeedback(
+  request: z.infer<typeof reportFeedbackInput>,
+  now: string,
+): { ok: false; text: string } | { ok: true; title: string; detail: string; issue: FeedbackIssue } {
   const title = oneLine(request.title).trim();
   const detail = printable(request.detail).trim();
   const found = VALUE_WITH_UNIT.exec(`${title}\n${detail}`)?.[0];
   if (found) {
     return {
-      status: 'rejected',
+      ok: false,
       text: `“${found}” reads as a health value, so nothing was prepared. A report leaves the user’s machine when ` +
         'they submit it: say which tool or screen was wrong and what you expected, not what the record holds.',
     };
   }
+  const stamp = `Health Roadmap connector, server ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, ${dayOf(now)}`;
+  return {
+    ok: true,
+    title,
+    detail,
+    issue: {
+      title: `${FEEDBACK_TITLE_PREFIX}${title}`.slice(0, MAX_NAME_LENGTH),
+      body: `${fenced(detail)}\n\n---\nkind: ${request.kind}\n${stamp}\n` +
+        'Filed by the user’s AI assistant through the Health Roadmap connector; no health values are included by policy.',
+      labels: ['from-connector', request.kind === 'bug' ? 'bug' : 'enhancement'],
+    },
+  };
+}
 
-  const body = `${detail}\n\n---\nReported via health-roadmap MCP ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, ${dayOf(now)}`;
+/**
+ * Prepare a bug report as a prefilled GitHub issue URL — what a surface with no
+ * GitHub token can do. It holds no secret, makes no request and writes nothing:
+ * the user opens the URL, reads what it says and submits it themselves.
+ */
+export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now: string): ToolOutcome {
+  const prepared = prepareFeedback(request, now);
+  if (!prepared.ok) return { status: 'rejected', text: prepared.text };
+
+  const body = `${prepared.detail}\n\n---\nReported via health-roadmap MCP ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, ${dayOf(now)}`;
   const url = `https://github.com/${FEEDBACK_REPO}/issues/new?labels=agent-feedback,${request.kind}`
-    + `&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+    + `&title=${encodeURIComponent(prepared.title)}&body=${encodeURIComponent(body)}`;
   if (url.length > MAX_FEEDBACK_URL_LENGTH) {
     return {
       status: 'rejected',
@@ -545,7 +613,30 @@ export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now
     text: `${url}\n\nShow the user this link. Ask them to read the title and body first — they must contain no ` +
       'health values, no names and no file paths — and to submit it themselves; it needs a GitHub account. ' +
       'Nothing has been sent anywhere.',
-    data: { url, kind: request.kind, title },
+    data: { filed: false, url, kind: request.kind, title: prepared.title },
+  };
+}
+
+/**
+ * File the report, on a surface that can (US-32 AC9). The issue is public and
+ * the user does not see it before it exists, so the health-value guard above
+ * runs first and the filer is handed nothing but the text it refused to refuse.
+ */
+export async function fileFeedback(
+  request: z.infer<typeof reportFeedbackInput>,
+  now: string,
+  filer: FeedbackFiler,
+): Promise<ToolOutcome> {
+  const prepared = prepareFeedback(request, now);
+  if (!prepared.ok) return { status: 'rejected', text: prepared.text };
+
+  const result = await filer(prepared.issue);
+  if (!result.ok) return { status: 'rejected', text: result.refusal };
+  return {
+    status: 'ok',
+    text: `Filed as ${result.url}. Tell the user their report is in — it is a public issue on the project’s ` +
+      'GitHub, carrying their description and nothing about them or their health record.',
+    data: { filed: true, url: result.url, number: result.number, kind: request.kind, title: prepared.title },
   };
 }
 
@@ -850,13 +941,14 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'report_feedback',
-    title: 'Prepare a bug report or feature request',
+    title: 'File a bug report or feature request',
     description:
-      'Prepare a bug report or feature request for the health-roadmap project as a prefilled GitHub issue URL. ' +
-      'Offer this when a tool refuses something the user reasonably expected, when the record cannot express ' +
+      'Report a bug or request a feature for the health-roadmap project. On this server the report is filed for ' +
+      'the user as a PUBLIC GitHub issue — say so before you call it, and call it only when they have asked you ' +
+      'to. Offer it when a tool refuses something the user reasonably expected, when the record cannot express ' +
       'something they want to track, or when a result looks wrong. Never put health values, dates of results, ' +
-      'names or file paths in the title or detail — describe the problem, not the data — and note that nothing ' +
-      'is submitted here: the user opens the URL, reviews the text and files it themselves with a GitHub account.',
+      'names or file paths in the title or detail — describe the problem, not the data. A server with no GitHub ' +
+      'token instead answers with a link the user opens and submits themselves; the answer says which happened.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -870,14 +962,19 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     outputSchema: {
       type: 'object',
       properties: {
-        url: { type: 'string', description: 'The prefilled issue URL. Show it; the user submits it.' },
+        filed: { type: 'boolean', description: 'True if the issue now exists. False if the user must submit it.' },
+        url: { type: 'string', description: 'The issue, or the prefilled link the user opens.' },
+        number: { type: 'integer', description: 'The issue number, when one was filed.' },
         kind: { type: 'string', enum: ['bug', 'feature'] },
         title: { type: 'string' },
       },
-      required: ['url', 'kind', 'title'],
+      required: ['filed', 'url', 'kind', 'title'],
       additionalProperties: false,
     },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    // Not read-only and open-world: this one leaves the user's own file behind
+    // and writes something public on someone else's system. Not destructive —
+    // it takes nothing away — and not idempotent: two calls file two issues.
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   },
 ];
 
@@ -1006,6 +1103,12 @@ export interface RunToolOptions {
   beforeCall?(file: RoadmapFile): string | null;
   /** Appended to a successful save — where the bytes landed. */
   savedNote?(): string;
+  /**
+   * Lets `report_feedback` actually file the issue. A surface that holds a
+   * GitHub token passes one; a surface that does not passes nothing and the
+   * tool falls back to the prefilled URL the user submits (US-32 AC9).
+   */
+  fileFeedback?: FeedbackFiler;
 }
 
 /**
@@ -1032,7 +1135,12 @@ export async function runToolOverSync(
   if (!isToolName(name)) return { text: `No tool named ${name}.`, isError: true };
 
   if (RECORD_FREE_TOOLS.has(name)) {
-    const outcome = callTool(name, args, { file: undefined, now });
+    const parsed = name === 'report_feedback' && options.fileFeedback ? INPUTS[name].safeParse(args ?? {}) : undefined;
+    const outcome = parsed
+      ? parsed.success
+        ? await fileFeedback(parsed.data, now, options.fileFeedback!)
+        : callTool(name, args, { file: undefined, now }) // one place words a malformed call
+      : callTool(name, args, { file: undefined, now });
     // A file to save with nothing opened would be a write dropped in silence.
     if (outcome.status === 'ok' && outcome.file) {
       throw new ToolContractError(`${name} produced a file without opening one`);

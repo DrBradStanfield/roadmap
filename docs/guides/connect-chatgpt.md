@@ -92,4 +92,4 @@ ChatGPT says it cannot find your record: open [the tool](https://drstanfield.com
 
 Something looks wrong in your data: open the tool and correct the value there. The app appends the correction and marks the old row as an error, which is the safest undo you have.
 
-Anything else: ask ChatGPT to report the problem, and it can draft a bug report and hand you a link to review. Nothing is filed without you. Or open an issue at [github.com/DrBradStanfield/roadmap/issues](https://github.com/DrBradStanfield/roadmap/issues), or open the chat bubble on any page of this site and ask.
+Anything else: ask ChatGPT to report the problem and it files a bug report for you, as a public issue on the project's GitHub carrying its description and nothing about you. Or open an issue at [github.com/DrBradStanfield/roadmap/issues](https://github.com/DrBradStanfield/roadmap/issues), or open the chat bubble on any page of this site and ask.

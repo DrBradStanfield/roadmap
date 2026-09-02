@@ -24,7 +24,7 @@ Add lab results. A whole panel in one call, up to 50 tests, in the lab's own num
 
 Correct a value. Fix a number that went in wrong.
 
-Report a problem. If a tool refuses something you reasonably expected, Claude can draft a bug report and hand you a GitHub link to review. Nothing is filed without you.
+Report a problem. If a tool refuses something you reasonably expected, ask Claude to file a bug report and it will — a public issue on the project's GitHub, carrying its description of the problem and nothing about you.
 
 The file stays where it is. Nothing is uploaded, no account is created, no key is needed. The program opens no network connection at all: it reads your file, changes it, and writes it back.
 

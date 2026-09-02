@@ -66,9 +66,12 @@ because both use the same app identity. You can reconnect in one click.
 
 ## Bug reports
 
-One tool prepares a bug report as a prefilled GitHub link. It sends nothing. You open
-the link, read the text, and file it yourself with your own GitHub account. The tool
-refuses any report that looks like it contains a health value.
+If you ask your assistant to report a bug, it files one for you: our server opens a
+public issue on the project's GitHub repository. What goes in it is the assistant's own
+description of the problem, and nothing about you — no name, no email, no address, and
+no part of your health record. The tool refuses any report that reads as a health value.
+The issue is public, so your assistant should tell you before it files one. (Software you
+run yourself has no way to file anything: it hands you a link to submit instead.)
 
 ---
 

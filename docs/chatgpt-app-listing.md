@@ -26,7 +26,9 @@ Dropbox or Google Drive, and let ChatGPT read and update them.
 record, add measurements and lab results, correct a value you entered wrongly, and compute a plan
 from it: what is due for screening, and evidence-based suggestions with the citation behind each
 one. Values are never deleted; a correction appends the new number and marks the old row
-`entered-in-error`, so your history stays auditable. We store nothing. Disconnect at
+`entered-in-error`, so your history stays auditable. If something is wrong, ask it to file a bug
+report and it will, as a public issue on the project's GitHub — carrying its description of the
+problem and nothing about you. We store nothing. Disconnect at
 `dropbox.com/account/connected_apps` or `myaccount.google.com/connections`. This is educational
 information, not medical advice, and does not replace your doctor.
 
@@ -53,7 +55,7 @@ hints, pinned by `mcp-tools.test.ts`.
 | `add_lab_values` | false | false | false |
 | `correct_value` | false | **true** | false |
 | `update_profile` | false | **true** | false |
-| `report_feedback` | true | false | false |
+| `report_feedback` | false | false | **true** |
 
 **CSP and `_meta`.** None apply, so leave them blank. The server ships no widget, no UI resource
 and no iframe, so `_meta.ui.csp` (`connectDomains`, `resourceDomains`, `frameDomains`) and
@@ -63,9 +65,10 @@ and no iframe, so `_meta.ui.csp` (`connectDomains`, `resourceDomains`, `frameDom
 
 Three per tool, as the portal asks. Paste each line as written.
 
-**Open-world, all seven (`openWorldHint: false`).** Closed. The tool touches only the calling
+**Open-world, six of the seven (`openWorldHint: false`).** Closed. The tool touches only the calling
 user's own `health-roadmap.json`, in that user's own Dropbox or Google Drive, over that user's own
-credential. Never the open web, never another user's record. `report_feedback` touches no record.
+credential. Never the open web, never another user's record. `report_feedback` is the exception and
+is marked open-world: it touches no health record, and it files an issue on GitHub.
 
 - **`read_record`**
   - *Read-only:* Reads only. It fetches the record, filters it and returns rows. Nothing is written back.
@@ -86,8 +89,9 @@ credential. Never the open web, never another user's record. `report_feedback` t
   - *Read-only:* Not read-only. It writes sex, birth year, birth month or height into the record's profile and saves the file.
   - *Destructive:* Destructive. The profile is one last-writer-wins object, so a write overwrites what stood there and keeps no history. Guarded by a required `expected` value per field: a mismatch writes nothing.
 - **`report_feedback`**
-  - *Read-only:* Read-only. It never opens the health record. It builds a prefilled GitHub issue URL for the user to review, and files nothing itself.
-  - *Destructive:* Not destructive. Nothing is written, in the record or anywhere else.
+  - *Read-only:* Not read-only. It never opens the health record, but it files a public GitHub issue on the project's repository for the user.
+  - *Destructive:* Not destructive. It creates an issue and takes nothing away. Nothing in the health record is read or changed.
+  - *Open-world:* Open-world. This is the one tool that reaches outside the user's own file: it posts to GitHub's API, on our own repository, under our own token. It carries the assistant's description of the problem and nothing about the user — no name, no email, no address, and any text that reads as a health value is refused before anything is sent.
 
 ## Starter prompts
 
@@ -115,7 +119,7 @@ Three negative:
 
 1. **"Log my weight as 80 kg today"** on a day that already holds a weight. `add_measurement` refuses and the model offers `correct_value`: one active value per metric per day, so a silent overwrite would destroy history.
 2. **"Change that LDL row to 2.0"** with a mismatched `expectedValue`. `correct_value` refuses and the model re-reads: the row moved under it, and correcting the wrong row is a clinical error.
-3. **"File a bug: it rejected my ferritin of 210 ng/mL."** `report_feedback` refuses because the detail carries a health value: a GitHub issue is public.
+3. **"File a bug: it rejected my ferritin of 210 ng/mL."** `report_feedback` refuses because the detail carries a health value, and nothing is sent: the issue it would file is public.
 
 ## Demo credentials
 

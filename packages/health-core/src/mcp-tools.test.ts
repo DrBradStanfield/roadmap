@@ -15,6 +15,11 @@ import {
   addMeasurementInput,
   callTool,
   correctValueInput,
+  fileFeedback,
+  runToolOverSync,
+  MAX_NAME_LENGTH,
+  type FeedbackFiler,
+  type FeedbackIssue,
   RECORD_FREE_TOOLS,
   correctValueTool,
   getPlan,
@@ -524,18 +529,19 @@ describe('US-32 — the dispatcher', () => {
     expect(MCP_TOOLS.map((t) => t.name)).toEqual([
       'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'update_profile', 'report_feedback',
     ]);
-    // report_feedback reads nothing and writes nothing — it returns a URL.
+    // report_feedback files a public issue, so it is a write like any other.
     expect(MCP_TOOLS.filter((t) => t.annotations.readOnlyHint).map((t) => t.name))
-      .toEqual(['read_record', 'get_plan', 'report_feedback']);
+      .toEqual(['read_record', 'get_plan']);
     // A correction supersedes a row for good, and a profile write overwrites
     // the only copy there is; both claim to destroy, and nothing else does.
     expect(MCP_TOOLS.filter((t) => t.annotations.destructiveHint).map((t) => t.name))
       .toEqual(['correct_value', 'update_profile']);
     for (const tool of MCP_TOOLS) {
       expect(tool.inputSchema.additionalProperties, tool.name).toBe(false);
-      // Nothing here reaches outside the one user's own file, so no tool is open-world.
-      expect(tool.annotations.openWorldHint, tool.name).toBe(false);
     }
+    // Only report_feedback reaches outside the one user's own file: it writes
+    // an issue on GitHub, which is someone else's system (US-32 AC9).
+    expect(MCP_TOOLS.filter((t) => t.annotations.openWorldHint).map((t) => t.name)).toEqual(['report_feedback']);
   });
 
   // OpenAI's app submission requires all three hints DECLARED on every tool, plus
@@ -683,6 +689,7 @@ describe('US-32 — every tool answers with structured content that fits its out
   it('report_feedback answers with the URL it prepared', () => {
     const data = structured(reportFeedback({ kind: 'bug', title: 'Tool refused a valid day', detail: 'Steps here.' }, NOW), 'report_feedback');
     expect(data.kind).toBe('bug');
+    expect(data.filed).toBe(false);
     expect(String(data.url)).toContain('github.com');
   });
 
@@ -721,5 +728,99 @@ describe('US-32 — every tool answers with structured content that fits its out
     const keys = Object.keys(createEmptyFile({ deviceId: 'd', now: NOW }));
     const published = Object.keys(OUTPUTS.read_record.shape);
     expect(published.filter((k) => k !== 'reminderOptIn').sort()).toEqual(keys.sort());
+  });
+});
+
+describe('US-32 AC9 — a surface that can file, files it', () => {
+  /** report_feedback opens no record, so `runToolOverSync` never touches this. */
+  const NO_SYNC = { load: () => { throw new Error('report_feedback must not open the record'); } } as never;
+
+  const GOOD = { kind: 'bug', title: 'correct_value refused a row it should accept', detail: 'It said the row was superseded.' } as const;
+
+  /** A filer that remembers what it was handed, and answers as GitHub would. */
+  function spy(answer?: Awaited<ReturnType<FeedbackFiler>>) {
+    const seen: FeedbackIssue[] = [];
+    const filer: FeedbackFiler = async (issue) => {
+      seen.push(issue);
+      return answer ?? { ok: true, url: 'https://github.com/DrBradStanfield/roadmap/issues/7', number: 7 };
+    };
+    return { seen, filer };
+  }
+
+  it('hands the filer a titled, labelled issue and answers with the one it created', async () => {
+    const { seen, filer } = spy();
+    const outcome = await fileFeedback(GOOD, NOW, filer);
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0].title).toBe(`[connector] ${GOOD.title}`);
+    expect(seen[0].labels).toEqual(['from-connector', 'bug']);
+    expect(seen[0].body).toContain(GOOD.detail);
+    expect(seen[0].body).toContain(`kind: bug`);
+    expect(seen[0].body).toContain(`server ${SERVER_VERSION}`);
+    expect(seen[0].body).toContain('no health values are included by policy');
+
+    expect(outcome.status).toBe('ok');
+    const data = OUTPUTS.report_feedback.parse((outcome as { data: unknown }).data);
+    expect(data).toEqual({ filed: true, url: 'https://github.com/DrBradStanfield/roadmap/issues/7', number: 7, kind: 'bug', title: GOOD.title });
+    expect(outcome.status === 'ok' && outcome.file).toBeUndefined();
+  });
+
+  it('labels a feature request as an enhancement, and caps the title GitHub sees', async () => {
+    const { seen, filer } = spy();
+    await fileFeedback({ ...GOOD, kind: 'feature', title: 'x'.repeat(MAX_NAME_LENGTH) }, NOW, filer);
+    expect(seen[0].labels).toEqual(['from-connector', 'enhancement']);
+    expect(seen[0].title.length).toBe(MAX_NAME_LENGTH);
+  });
+
+  /**
+   * The issue is public and nobody reviews it first, so the detail is fenced:
+   * a heading, an image or an `@name` in a model's prose must not render, and
+   * must not summon a person who never asked to hear about this.
+   */
+  it('fences the report so its markdown is text and its @names ping nobody', async () => {
+    const { seen, filer } = spy();
+    await fileFeedback({ ...GOOD, detail: '# huge\n@octocat please look\n```js\ncode\n```' }, NOW, filer);
+    const [opening] = seen[0].body.split('\n');
+    expect(opening.length).toBeGreaterThan(3); // longer than the fence inside it
+    expect(seen[0].body.startsWith(`${opening}\n# huge`)).toBe(true);
+    expect(seen[0].body).toContain(`\n${opening}\n\n---`); // closed before the footer
+  });
+
+  it('refuses a health value before anything can leave, and files nothing', async () => {
+    const { seen, filer } = spy();
+    const outcome = await fileFeedback({ ...GOOD, detail: 'My LDL of 4.2 mmol/L looks wrong' }, NOW, filer);
+    expect(outcome.status).toBe('rejected');
+    expect(outcome.text).toContain('reads as a health value');
+    expect(seen).toHaveLength(0);
+  });
+
+  it('passes a filer refusal through in the filer’s own words, and writes no file', async () => {
+    const { filer } = spy({ ok: false, refusal: 'GitHub did not answer. Nothing was filed. Try again later.' });
+    const outcome = await fileFeedback(GOOD, NOW, filer);
+    expect(outcome.status).toBe('rejected');
+    expect(outcome.text).toContain('Nothing was filed');
+  });
+
+  it('falls back to the prefilled URL when the surface hands in no filer', async () => {
+    const answer = await runToolOverSync(NO_SYNC, 'report_feedback', GOOD, NOW);
+    expect(answer.isError).toBe(false);
+    expect(answer.text).toContain('github.com/DrBradStanfield/roadmap/issues/new');
+    expect((answer.structured as { filed: boolean }).filed).toBe(false);
+  });
+
+  it('files through runToolOverSync when one is handed in, without opening the record', async () => {
+    const { seen, filer } = spy();
+    const answer = await runToolOverSync(NO_SYNC, 'report_feedback', GOOD, NOW, { fileFeedback: filer });
+    expect(seen).toHaveLength(1);
+    expect(answer.isError).toBe(false);
+    expect((answer.structured as { filed: boolean }).filed).toBe(true);
+  });
+
+  it('still words a malformed call as malformed, filer or no filer', async () => {
+    const { seen, filer } = spy();
+    const answer = await runToolOverSync(NO_SYNC, 'report_feedback', { kind: 'wat' }, NOW, { fileFeedback: filer });
+    expect(answer.isError).toBe(true);
+    expect(answer.text).toContain('report_feedback');
+    expect(seen).toHaveLength(0);
   });
 });

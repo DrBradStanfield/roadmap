@@ -20,6 +20,7 @@ import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memor
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
+import { ISSUES_PER_HOUR } from '../lib/github-issues.server';
 import { MCP_TOOLS, OUTPUTS } from '../../packages/health-core/src/mcp-tools';
 import { MAX_CORRECTION_AGE_DAYS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
@@ -271,6 +272,130 @@ describe('a record-free tool needs no record and no Dropbox (US-32)', () => {
     const refused = await callTool(access, 'read_record', {});
     expect(refused.isError).toBe(true);
     expect(refused.structured).toBeUndefined(); // a refusal carries no structured content
+  });
+});
+
+describe('US-32 AC9 — the hosted server files the issue itself', () => {
+  const TOKEN = 'ghp-test-token';
+  const REPORT = { kind: 'bug', title: 'correct_value refused a row', detail: 'It said the row was superseded.' } as const;
+
+  /** Dropbox answers as always; GitHub answers however the case asks it to. */
+  function stubGithub(reply: () => Response | Promise<Response>) {
+    const posts: Array<{ url: string; init: RequestInit }> = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit = {}) => {
+      if (String(url).startsWith('https://api.github.com/')) {
+        posts.push({ url: String(url), init });
+        return reply();
+      }
+      return Response.json({ refresh_token: `dropbox-refresh-token-${++connections}`, access_token: 'a', expires_in: 14400 });
+    }));
+    return posts;
+  }
+
+  const created = (number: number) => Response.json(
+    { html_url: `https://github.com/DrBradStanfield/roadmap/issues/${number}`, number },
+    { status: 201 },
+  );
+
+  beforeEach(() => {
+    process.env.GITHUB_ISSUES_TOKEN = TOKEN;
+  });
+  afterEach(() => {
+    delete process.env.GITHUB_ISSUES_TOKEN;
+  });
+
+  it('posts the issue with the token, and answers with the issue it created', async () => {
+    const posts = stubGithub(() => created(11));
+    const { access } = await connect();
+    const answer = await callTool(access, 'report_feedback', REPORT);
+
+    expect(answer.isError).toBe(false);
+    expect(answer.structured).toEqual({
+      filed: true, url: 'https://github.com/DrBradStanfield/roadmap/issues/11', number: 11, kind: 'bug', title: REPORT.title,
+    });
+    expect(posts).toHaveLength(1);
+    expect(posts[0].url).toBe('https://api.github.com/repos/DrBradStanfield/roadmap/issues');
+    const headers = posts[0].init.headers as Record<string, string>;
+    expect(headers.Authorization).toBe(`Bearer ${TOKEN}`);
+    expect(headers.Accept).toBe('application/vnd.github+json');
+    expect(headers['X-GitHub-Api-Version']).toBe('2022-11-28');
+    expect(headers['User-Agent']).toBe('health-roadmap-mcp');
+
+    const sent = JSON.parse(posts[0].init.body as string) as { title: string; body: string; labels: string[] };
+    expect(sent.title).toBe(`[connector] ${REPORT.title}`);
+    expect(sent.labels).toEqual(['from-connector', 'bug']);
+    expect(sent.body).toContain('provider: dropbox');
+    expect(sent.body).toContain('no health values are included by policy');
+    // Nothing about the person: no token, no email, no connection key.
+    expect(sent.body).not.toContain(TOKEN);
+    expect(answer.text).not.toContain(TOKEN);
+  });
+
+  it('charges the write allowance a correction’s worth, because it writes in public', async () => {
+    stubGithub(() => created(12));
+    const { access } = await connect();
+    for (let i = 0; i < WRITES_PER_HOUR / WRITE_COST.correct; i++) {
+      const answer = await callTool(access, 'report_feedback', { ...REPORT, title: `report number ${i}` });
+      expect(answer.isError, `call ${i}`).toBe(false);
+    }
+    const spent = await callTool(access, 'report_feedback', { ...REPORT, title: 'one report too many' });
+    expect(spent.isError).toBe(true);
+    expect(spent.text).toContain('write allowance');
+  });
+
+  it('says nothing was filed when GitHub will not answer, and never throws', async () => {
+    const posts = stubGithub(() => new Response('nope', { status: 500 }));
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { access } = await connect();
+    const answer = await callTool(access, 'report_feedback', REPORT);
+
+    expect(answer.isError).toBe(true);
+    expect(answer.text).toBe('GitHub did not answer. Nothing was filed. Try again later.');
+    expect(answer.structured).toBeUndefined();
+    expect(posts).toHaveLength(1);
+    // The status, and not one word of the report.
+    for (const call of errors.mock.calls) expect(JSON.stringify(call)).not.toContain('superseded');
+    errors.mockRestore();
+  });
+
+  it('files the same report once a day, and answers the second call with the first issue', async () => {
+    const posts = stubGithub(() => created(13));
+    const { access } = await connect();
+    const first = await callTool(access, 'report_feedback', REPORT);
+    const again = await callTool(access, 'report_feedback', { ...REPORT, title: REPORT.title.toUpperCase() });
+
+    expect(posts).toHaveLength(1);
+    expect(again.isError).toBe(false);
+    expect(again.structured).toMatchObject({ filed: true, url: (first.structured as { url: string }).url });
+  });
+
+  it('stops at twenty issues an hour for the whole server, whoever is asking', async () => {
+    let n = 0;
+    const posts = stubGithub(() => created(++n));
+    // Two connections, ten issues each: the cap is the server's, not a user's,
+    // and neither connection comes near its own hourly allowance.
+    const { access } = await connect();
+    const other = await connect();
+    for (let i = 0; i < ISSUES_PER_HOUR; i++) {
+      const who = i % 2 === 0 ? access : other.access;
+      const answer = await callTool(who, 'report_feedback', { ...REPORT, title: `distinct report ${i}` });
+      expect(answer.isError, `issue ${i}`).toBe(false);
+    }
+    expect(posts).toHaveLength(ISSUES_PER_HOUR);
+
+    const capped = await callTool(access, 'report_feedback', { ...REPORT, title: 'the twenty-first report' });
+    expect(capped.isError).toBe(true);
+    expect(capped.text).toContain('Feedback is paused for an hour. Nothing was filed.');
+    expect(posts).toHaveLength(ISSUES_PER_HOUR); // nothing left the machine
+  });
+
+  it('refuses a health value before anything reaches GitHub', async () => {
+    const posts = stubGithub(() => created(14));
+    const { access } = await connect();
+    const answer = await callTool(access, 'report_feedback', { ...REPORT, detail: 'It showed 4.2 mmol/L and I expected less.' });
+    expect(answer.isError).toBe(true);
+    expect(answer.text).toContain('reads as a health value');
+    expect(posts).toHaveLength(0);
   });
 });
 
