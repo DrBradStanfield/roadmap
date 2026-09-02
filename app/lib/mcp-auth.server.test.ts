@@ -18,7 +18,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('node:dns/promises', () => ({
   default: { lookup: async () => [{ address: '1.1.1.1', family: 4 }] },
 }));
-import { checkAuthorize, verifyPkce } from './mcp-authorize.server';
+import { checkAuthorize, MAX_STATE_LENGTH, sealState, verifyPkce } from './mcp-authorize.server';
 import {
   isAllowedRedirect,
   isLoopbackRedirect,
@@ -34,6 +34,7 @@ import {
   connectionKey,
   issueTokens,
   type RefreshPayload,
+  type StatePayload,
   resetMcpMemory,
   spendWrites,
   WRITE_COST,
@@ -432,5 +433,74 @@ describe('PKCE (US-32)', () => {
     expect(verifyPkce(verifier, challenge)).toBe(true);
     expect(verifyPkce('b'.repeat(64), challenge)).toBe(false);
     expect(verifyPkce('short', challenge)).toBe(false);
+  });
+});
+
+/**
+ * US-32 · `state` is the client's own opaque value. OpenAI's platform relay
+ * sends 521 characters; we truncated at 512, echoed the stump on the callback
+ * and every ChatGPT connection died on "Invalid OAuth state". An OAuth client
+ * is entitled to get `state` back byte-identical or not at all — never
+ * shortened, because a shortened one looks valid and fails at the far end.
+ */
+describe('client state round-trip (US-32)', () => {
+  const CHATGPT_STATE = 'https://claude.ai/oauth/mcp-oauth-client-metadata';
+
+  function authorizeParams(state: string): URLSearchParams {
+    return new URLSearchParams({
+      redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
+      response_type: 'code',
+      code_challenge: 'a'.repeat(43),
+      code_challenge_method: 'S256',
+      state,
+    });
+  }
+
+  it('returns a 600-character state byte-identical, the length OpenAI actually sends', () => {
+    const state = 'S'.repeat(600);
+    const checked = checkAuthorize(authorizeParams(state), KNOWN_CLIENTS.get(CHATGPT_STATE)!);
+    expect(checked.ok).toBe(true);
+    if (!checked.ok) return;
+    expect(checked.request.clientState).toBe(state);
+  });
+
+  it('carries that state through the seal and back out unchanged', () => {
+    const state = 'S'.repeat(MAX_STATE_LENGTH);
+    const checked = checkAuthorize(authorizeParams(state), KNOWN_CLIENTS.get(CHATGPT_STATE)!);
+    expect(checked.ok).toBe(true);
+    if (!checked.ok) return;
+    const sealed = sealState(checked.request, 'dropbox', Date.now());
+    const opened = unpackSealed<StatePayload>('state', sealed);
+    expect(opened?.clientState).toBe(state);
+  });
+
+  it('refuses one character over the cap rather than truncating it', () => {
+    const checked = checkAuthorize(
+      authorizeParams('S'.repeat(MAX_STATE_LENGTH + 1)),
+      KNOWN_CLIENTS.get(CHATGPT_STATE)!,
+    );
+    expect(checked.ok).toBe(false);
+    expect(checked).toMatchObject({ error: 'invalid_request', redirectable: true });
+  });
+
+  /**
+   * The cap is set by the `__Host-mcp-state` COOKIE, not by taste. The sealed
+   * state is padded to a fixed bucket, and the jump from the 2048 bucket to
+   * the 4096 one takes the cookie from ~3.1 KB to ~5.8 KB — past the 4096-byte
+   * limit every browser enforces, where it is dropped silently and the
+   * callback finds no cookie. This test is the cap's justification.
+   */
+  it('keeps the sealed state cookie under the 4096-byte browser limit at the cap', () => {
+    const checked = checkAuthorize(
+      authorizeParams('S'.repeat(MAX_STATE_LENGTH)),
+      KNOWN_CLIENTS.get(CHATGPT_STATE)!,
+    );
+    expect(checked.ok).toBe(true);
+    if (!checked.ok) return;
+    // The cookie the callback actually reads carries the 43-byte consent nonce.
+    const opened = unpackSealed<StatePayload>('state', sealState(checked.request, 'dropbox', Date.now()))!;
+    const sealed = packSealed('state', opened.clientId, { ...opened, nonce: 'n'.repeat(43) });
+    const cookie = `__Host-mcp-state=${sealed}; Secure; HttpOnly; SameSite=Lax; Path=/; Max-Age=600`;
+    expect(cookie.length).toBeLessThan(4096);
   });
 });
