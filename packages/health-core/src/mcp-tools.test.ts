@@ -37,6 +37,7 @@ import {
   TOOL_LAYER_VERSION,
 } from './mcp-tools';
 import { dayOf, mergeFiles } from './merge';
+import { migrateFile } from './migrate';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { METRIC_TYPES } from './validation';
 
@@ -99,6 +100,36 @@ describe('US-32 — read_record strips the reminder capability token', () => {
     delete file.reminderOptIn;
 
     expect(JSON.parse(ok(readRecord(file, {})).text).reminderOptIn).toBeUndefined();
+  });
+});
+
+describe('US-32 — read_record survives a record from a newer app', () => {
+  it('validates a migrated record carrying an unknown top-level key', () => {
+    // `migrateFile` preserves unknown top-level fields by design, so a record
+    // written by a newer app arrives with sections this build never heard of.
+    // A strict outputSchema would fail the client's validation on every read.
+    const migrated = migrateFile(
+      { ...base(), futureSection: { anything: true } },
+      { deviceId: 'd', now: NOW },
+    ) as RoadmapFile & { futureSection: unknown };
+    expect(migrated.futureSection).toEqual({ anything: true });
+
+    const parsed = JSON.parse(ok(readRecord(migrated, {})).text);
+    expect(parsed.futureSection).toEqual({ anything: true });
+    expect(() => OUTPUTS.read_record.parse(parsed)).not.toThrow();
+    expect(OUTPUTS.read_record.parse(parsed).futureSection).toEqual({ anything: true });
+
+    const published = MCP_TOOLS.find((t) => t.name === 'read_record')!.outputSchema;
+    expect(published.additionalProperties).toBeUndefined();
+  });
+});
+
+describe('US-32 — a read answers compactly', () => {
+  it('emits JSON without pretty-print padding, so the text half stays inside client caps', () => {
+    const text = ok(readRecord(base(), {})).text;
+
+    expect(text).toBe(JSON.stringify(JSON.parse(text)));
+    expect(text).not.toContain('\n');
   });
 });
 
@@ -669,7 +700,9 @@ describe('US-32 — every tool answers with structured content that fits its out
     for (const tool of MCP_TOOLS) {
       expectParity(OUTPUTS[tool.name as keyof typeof OUTPUTS].shape, tool.outputSchema, tool.name);
       expect(tool.outputSchema.type, tool.name).toBe('object');
-      expect(tool.outputSchema.additionalProperties, tool.name).toBe(false);
+      // read_record alone stays open — a migrated record keeps unknown keys.
+      expect(tool.outputSchema.additionalProperties, tool.name)
+        .toBe(tool.name === 'read_record' ? undefined : false);
     }
 
     // The nested item schemas too: a field added to a row is exactly where the

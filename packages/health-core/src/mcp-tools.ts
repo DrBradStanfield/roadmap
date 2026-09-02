@@ -164,7 +164,7 @@ export const readRecordOutput = z.object({
   reminderPreferences: ROWS,
   recommendationSnapshots: ROWS,
   reminderOptIn: LOOSE.optional(),
-}).strict();
+}).passthrough();
 
 /** The plan, in the shape `planPayload` builds and `get-plan.ts --json` prints. */
 export const getPlanOutput = z.object({
@@ -317,7 +317,7 @@ function rejection(result: EditRejection): ToolOutcome {
 
 /** A read's answer: the same payload as data, and as the JSON older clients read. */
 function okJson(data: unknown): ToolOutcome {
-  return { status: 'ok', text: JSON.stringify(data, null, 2), data };
+  return { status: 'ok', text: JSON.stringify(data), data };
 }
 
 /** One core metric, SI canonical, validated by health-core. */
@@ -571,7 +571,7 @@ export interface McpToolDefinition {
    * carry `structuredContent` that fits (spec §Output Schema); a refusal is an
    * error result and carries none.
    */
-  outputSchema: ToolInputSchema;
+  outputSchema: Omit<ToolInputSchema, 'additionalProperties'> & { additionalProperties?: false };
   annotations: {
     readOnlyHint: boolean;
     destructiveHint: boolean;
@@ -657,7 +657,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       type: 'object',
       properties: RECORD_SECTIONS,
       required: Object.keys(RECORD_SECTIONS).filter((key) => key !== 'reminderOptIn'),
-      additionalProperties: false,
+      // Open, alone among the tools: `migrateFile` keeps unknown top-level keys,
+      // so a record written by a newer app would fail a strict schema on read.
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
