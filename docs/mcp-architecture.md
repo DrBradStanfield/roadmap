@@ -75,7 +75,7 @@ It ships in `docs/user-stories.md` **in the same commit as Phase-1 code — neve
 | --- | --- | --- |
 | `MCP_SEAL_KEYS` | Ordered list of 32-byte keys; `kid` = index. Seal with the **first**, accept **any**. Rotation is one atomic `fly secrets set` — prepend the new key. No window where a machine holds a partial view. | Overlap keeps a leaked key live up to the refresh lifetime (90 d); no-overlap forces every user to reconnect. **Default incident response is no-overlap**, because a leaked seal key is retroactive (§4). |
 | `MCP_CLIENT_HMAC_KEY` | HMAC over self-contained DCR `client_id`s. | **User-visible, not silent.** Anthropic freezes a connector's auth settings after it is added, so rotation forces every affected user to **remove and re-add the connector**. Rotate only with a comms plan. |
-| `MCP_ISSUER` | The `iss` this server claims (RFC 9207) and the value discovery advertises. Defaults to `https://mcp.drstanfield.com` (`app/lib/mcp-auth.server.ts`) if unset. | Changing it invalidates every blob sealed under the old value's AAD binding via `resource`; treat it as fixed. |
+| `MCP_ISSUER` | The `iss` this server claims (RFC 9207) and the value discovery advertises. Defaults to `https://mcp.drstanfield.com` (`app/lib/mcp-config.server.ts`) if unset. | Changing it invalidates every blob sealed under the old value's AAD binding via `resource`; treat it as fixed. |
 | `DROPBOX_APP_KEY` | The Dropbox app id used for the provider OAuth leg. Same app as the widget's (`widget-src/src/storage/dropbox.ts`), now used as a confidential client with its secret. | Rotating it needs a matching Dropbox console change; every connected user reconnects. |
 | `DROPBOX_APP_SECRET` | The confidential-client secret paired with `DROPBOX_APP_KEY`. | Same as above. |
 
@@ -249,7 +249,7 @@ Brad's ruling: build the full thing. The recruitment gate is removed. The phase 
 
 **Phase 1 — hosted, Dropbox only (~5–8 days).** Everything in §2 and §4.
 - [x] Move `adapter.ts` + `sync-manager.ts` to health-core; update `widget-src` imports; existing sync-manager tests stay green.
-- [x] `app/lib/mcp-{config,seal,clients,grants,authorize,providers}.server.ts`: seal/unseal (§4 spec), stateless AS, CIMD fetch policy, DCR fallback, Dropbox confidential client. (Split out of one 999-line `mcp-auth.server.ts` on 2026-09-02; a pure move.)
+- [x] `app/lib/mcp-{config,seal,clients,grants,authorize,providers}.server.ts`: seal/unseal (§4 spec), stateless AS, CIMD fetch policy, DCR fallback, Dropbox confidential client. (Split out of one 999-line auth-server module on 2026-09-02; a pure move.)
 - [x] `record-edits.ts`: add `expectedValue` to `CorrectValueRequest` (required hosted, optional flag in `tools/edit-record.ts`); tests; shipped CLI path unbroken.
 - [x] `app/lib/mcp.server.ts`: JSON-RPC dispatch, the shared `MCP_TOOLS` list, Zod schemas, per-call caps, 90-day correction age limit, and the per-connection hourly write allowance with corrections weighted 5×.
 - [x] Slot-occupied add returns a rejection naming the held row and pointing at `correct_value` (mirror `refuse()` in `tools/edit-record.ts`).

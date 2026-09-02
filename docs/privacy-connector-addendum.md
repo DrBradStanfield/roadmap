@@ -1,7 +1,7 @@
 # Privacy policy addendum: the AI connector
 
 DRAFT. Not published. Written 2026-09-02 from the code at `app/lib/mcp.server.ts`,
-`app/lib/mcp-auth.server.ts`, `app/routes/mcp.$.tsx` and
+`app/lib/mcp-*.server.ts`, `app/routes/mcp.$.tsx` and
 `packages/health-core/src/mcp-tools.ts`.
 
 This section covers one optional feature: connecting an AI assistant, such as ChatGPT
