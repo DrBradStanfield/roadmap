@@ -93,10 +93,13 @@ jobs:
           fi
 
       # Zero-click autonomy relies on a VISIBLE veto window: this issue is
-      # Brad's native-email notification that a deploy is pending. The deploy
-      # job's 'production' environment wait-timer (30 min) is the window; the
-      # veto is cancelling the run. verify-live closes the issue on success —
-      # an issue left open means a deploy failed or is in flight.
+      # Brad's native-email notification that a deploy is pending. The
+      # 'production' environment has had no wait timer or reviewer since
+      # 2026-09-02 — this gate job is the only check for manual deploys.
+      # auto-ship's own 30-min wait step (not this environment) is the Tier 3
+      # veto window; the veto here is cancelling the run. verify-live closes
+      # the issue on success — an issue left open means a deploy failed or is
+      # in flight.
       - name: Veto-window notification (issue → email)
         id: notify
         env:
@@ -212,10 +215,10 @@ jobs:
     needs: [gate, pages-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # Deploy credentials live in the 'production' environment with Brad as
-    # required reviewer: this job PAUSES for his one-click approval before any
-    # secret is readable (security audit: the credential boundary that holds
-    # even if a workflow file or the PR chain is compromised).
+    # Deploy credentials live in the 'production' environment. It has had no
+    # wait timer or required reviewer since 2026-09-02 — the gate job above is
+    # the only check for manual deploys (auto-ship's own 30-min wait step is
+    # the Tier 3 veto window, separate from this environment).
     environment: production
     steps:
       - uses: actions/checkout@v5

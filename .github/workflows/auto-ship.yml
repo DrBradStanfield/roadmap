@@ -1,21 +1,22 @@
 # Auto-ship: zero-click merge for reviewer-approved agent PRs (Brad's call,
 # 2026-08-10: "I want to fully take myself out of the loop" — the PR-approval
-# click replaced by a 30-minute veto window, mirroring the deploy timer).
+# click replaced by this workflow's own 30-minute veto window).
 #
 # Path: claude/* PR → Claude Review posts "VERDICT: APPROVE <head-sha>" →
 # this workflow verifies (same-repo claude/* PR, 'test' check green on that
 # exact sha, verdict comment authored by a trusted bot login, no 'hold'
 # label) → opens the veto issue (native email to Brad) → waits 30 min →
 # re-verifies (sha unchanged, still open, no 'hold') → labels 'ship' →
-# merges → dispatches deploy.yml, which runs its own gate + 30-min
-# environment window. Total path to production ≈ 65 min, two veto emails.
+# merges → dispatches deploy.yml, which runs its own gate job (the
+# 'production' environment itself has had no wait timer or reviewer since
+# 2026-09-02). Total path to production ≈ 35 min, two veto emails.
 #
 # VETO = close the PR or add the 'hold' label, any time before merge.
 #
 # Security notes: the verdict is trusted only from bot logins that external
 # users cannot impersonate, pinned to the head SHA (no stale approvals); a
-# poisoned diff still has to survive the fresh-context reviewer, and the
-# deploy credentials remain behind the environment timer regardless.
+# poisoned diff still has to survive the fresh-context reviewer, and this
+# workflow's own 30-min wait step is the Tier 3 veto window regardless.
 # Editing this file is Brad-only (constitution Guardrails).
 
 name: Auto Ship
@@ -114,7 +115,7 @@ jobs:
               "Close the PR, or add the \`hold\` label, before the window ends: ${pr_url}" \
               "" \
               "---" \
-              "After merge, deploy.yml runs with its own 30-min window (a second email with the deploy detail)." \
+              "After merge, deploy.yml runs its gate job (the production environment itself has no wait timer)." \
               "Fleet dashboard: https://drbradstanfield.github.io/roadmap/fleet.html")" \
             | grep -oE '[0-9]+$')
           sleep 1800
