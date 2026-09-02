@@ -20,9 +20,9 @@ Your health data lives in one file, in storage you control. Any AI can work with
 
 ChatGPT and Claude in a browser cannot open a file on your computer. So we run a small connector that sits between them and your cloud folder. You authorize it once, and after that you can say "add my new blood panel" or "what does my plan say about my LDL" from your phone.
 
-Dropbox is the only cloud this works with today. Google Drive is being built.
+This works with Dropbox and Google Drive today.
 
-Your record still lives only in your storage. Our server reads it, in memory, to answer your assistant, and keeps no copy. Your assistant holds a sealed credential that only we can open. You cancel it in your own Dropbox settings, at [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps). Cancelling there also disconnects this website from the folder, and you can reconnect here in one click.
+Your record still lives only in your storage. Our server reads it, in memory, to answer your assistant, and keeps no copy. Your assistant holds a sealed credential that only we can open. You cancel it in your own cloud settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) for Dropbox, [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive. Cancelling there also disconnects this website from the folder, and you can reconnect here in one click.
 
 [connect:chatgpt]
 [connect:claude]
@@ -143,15 +143,15 @@ Open the tool and correct the value there. The app appends the correction and ma
 
 ## What this cannot do
 
-Google Drive is not connected yet. If your record lives in Drive or GitHub, the web connector cannot reach it, and the setup prompt on your own computer is the way in.
+If your record lives in GitHub, the web connector cannot reach it, and the setup prompt on your own computer is the way in.
 
-Do not leave the tool open in another tab while an AI is writing the file. The writer on your computer takes a lock and merges in a conflicting edit. A browser tab writing through your cloud provider's own API sits outside that lock, so the two can still collide.
+Do not leave the tool open in another tab while an AI is writing the file. The writer on your computer takes a lock and merges in a conflicting edit. A browser tab writing through your cloud provider's own API sits outside that lock, so the two can still collide. On Google Drive this is looser still: Drive has no conditional write, so our server checks the file version before and after each save rather than reserving it, and two writers landing at the same instant can still race.
 
 ## Why it works this way
 
 Your record is yours. There is no account to create and no key to fetch, because there is nothing on our side to log in to. The AI doing the work is the one you already chose to trust. The format is open under the MIT licence in [a public repo](https://github.com/DrBradStanfield/roadmap), so if this site vanished tomorrow your file would still be a plain JSON document that any tool can read.
 
-An AI on your own computer never involves us at all. The web connector does, for as long as a call takes: our server opens your Dropbox folder, reads the record into memory, answers, and keeps nothing.
+An AI on your own computer never involves us at all. The web connector does, for as long as a call takes: our server opens your Dropbox or Google Drive folder, reads the record into memory, answers, and keeps nothing.
 
 ## If you get stuck
 

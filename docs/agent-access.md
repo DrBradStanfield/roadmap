@@ -156,12 +156,13 @@ Everything above describes an agent holding the FILE. There is a second way in: 
 hosted MCP server at `https://mcp.drstanfield.com/mcp`, which a web ChatGPT or Claude
 user connects once and then asks in words. It offers six tools — `read_record`,
 `get_plan`, `add_measurement`, `add_lab_values`, `correct_value`, `report_feedback` —
-over the user's own Dropbox folder, and it enforces the rules above in code rather than
-asking you to keep them.
+over the user's own Dropbox or Google Drive folder, and it enforces the rules above in
+code rather than asking you to keep them.
 
-Google Drive is built and tested but not live: it appears as a connect option once
-`GOOGLE_DRIVE_CLIENT_ID` and `GOOGLE_DRIVE_SECRET` exist on the server. Until then,
-Dropbox is the only backend the hosted path offers. A user revokes a Drive connection at
+Both backends are available: the consent screen offers Dropbox and Google Drive, and the
+choice is sealed into the token. Drive has no conditional write, so the server re-checks
+the file version before and after each save and retries on a conflict; concurrent writers
+there are best-effort. A user revokes a Drive connection at
 `myaccount.google.com/connections`, a Dropbox one at `dropbox.com/account/connected_apps`.
 
 Five things differ from the local path, and they are differences you will hit:

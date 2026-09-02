@@ -98,9 +98,9 @@ Two more habits worth keeping. The local writer takes a lock file and merges its
 
 ## Claude on the web
 
-Claude in a browser cannot open a file on your computer, and nothing in the sections above changes that. What it can do is connect to a small server we run, which opens your Dropbox folder for the length of one call. Same tools, same rules, no software on your machine.
+Claude in a browser cannot open a file on your computer, and nothing in the sections above changes that. What it can do is connect to a small server we run, which opens your Dropbox or Google Drive folder for the length of one call. Same tools, same rules, no software on your machine.
 
-Dropbox is the only cloud this works with today. Google Drive is being built.
+This works with Dropbox and Google Drive today. On Drive, Google offers no conditional write, so our server checks the file version before and after each save; two writers landing at the same instant can still race.
 
 1. In claude.ai, open Settings, then Connectors, then Add custom connector. Or follow [this link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Health%20Roadmap&connectorUrl=https%3A%2F%2Fmcp.drstanfield.com%2Fmcp), which opens that dialog with the name and the address already in it and waits for you to confirm.
 

@@ -254,9 +254,9 @@ fly secrets set -a health-tool-edu \
 The app key MUST be the one the widget already uses. Dropbox scopes the app folder to
 the app identity, so a second identity would see an empty folder (design §1).
 
-**Google Drive is a separate, later pair of secrets** (step 4b). Until they exist, the
-consent screen offers Dropbox alone and every Drive path is unreachable — that is the
-whole phase-2 gate, and it needs no deploy to open:
+**Google Drive is a separate pair of secrets** (step 4b). With no secrets the consent
+screen offers Dropbox alone and every Drive path is unreachable — that is the whole
+phase-2 gate, and it needs no deploy to open. **Set on `health-tool-edu` 2026-09-02**:
 
 ```bash
 fly secrets set -a health-tool-edu \
@@ -284,9 +284,13 @@ app type as **App folder**. Watch the ceiling: the app is approved for **500 use
 2026-09-02. Past that, Dropbox freezes new links and the app needs a higher limit, which
 is a request to Dropbox and Brad's to make.
 
-**4b. Google Cloud console — Drive (Phase 2).** The code is merged and tested; these
-steps are what turn it on. Same project and same OAuth client the widget uses
-(`api.google-token.ts`).
+**4b. Google Cloud console — Drive (Phase 2). DONE 2026-09-02**, except brand
+verification. Same project and same OAuth client the widget uses
+(`api.google-token.ts`). The live consent page now offers Dropbox and Google Drive.
+
+Status: redirect URI added ✅ · publishing status **In production** ✅ · `GOOGLE_DRIVE_*`
+Fly secrets on `health-tool-edu` ✅ · brand verification **not submitted** (users may see
+Google's "unverified app" interstitial until it is) · step 8 over Drive **not run yet**.
 
 1. **APIs & Services → Credentials →** the existing OAuth 2.0 Client ID → **Authorized
    redirect URIs → Add** `https://mcp.drstanfield.com/mcp/callback`. Exact string; Google
@@ -393,7 +397,8 @@ each write: `read_record` → `get_plan` → `add_measurement` → a correction 
 `expectedValue` → a correction WITHOUT it (must refuse) → a correction on a row older
 than 90 days (must refuse).
 
-**Run step 8 again over Drive once step 4b is done**, and check one extra thing: the
+**Run step 8 again over Drive — still outstanding as of 2026-09-02**, and check one
+extra thing: the
 server must write the SAME `health-roadmap.json` the website uses, inside **Health Plan
 by Dr Brad**. A second file of that name anywhere in the user's Drive means discovery
 diverged, and it is a stop-everything bug — the user would have two records and see

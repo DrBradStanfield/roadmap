@@ -12,9 +12,9 @@ This takes about five minutes. Everything happens in ChatGPT's own settings; the
 
 ## Before you start
 
-You need a paid ChatGPT plan on the web, and your record has to be in Dropbox. Dropbox is the only cloud this works with today. Google Drive is being built, and until it lands, a record in Drive or GitHub can only be reached by an AI running on your own computer. That path is in [how to let an AI read and update your health record](/blogs/guides/ai-health-record).
+You need a paid ChatGPT plan on the web, and your record has to be in Dropbox or Google Drive. Those are the two clouds this works with today. A record in GitHub can only be reached by an AI running on your own computer. That path is in [how to let an AI read and update your health record](/blogs/guides/ai-health-record).
 
-If you have never connected a cloud provider, there is no record to reach yet: the tool is holding it in your browser. Open [the tool](https://drstanfield.com/pages/roadmap), connect Dropbox, and save a value first.
+If you have never connected a cloud provider, there is no record to reach yet: the tool is holding it in your browser. Open [the tool](https://drstanfield.com/pages/roadmap), connect Dropbox or Google Drive, and save a value first.
 
 The address ChatGPT asks for:
 

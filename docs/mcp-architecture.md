@@ -11,7 +11,7 @@ Hosted-server design: **rev 4, DECIDED — FINAL**. 2026-09-01. Brad has ruled o
 | `edit-record` CLI (US-31) | Contract-enforcing writes from the shell | `tools/edit-record.ts` + [guides/command-line.md](guides/command-line.md) | shipped |
 | Local stdio MCP (US-32 phase 0) | The same tools over a local file path | `tools/mcp-server.ts` + [guides/connect-claude-desktop.md](guides/connect-claude-desktop.md) | shipped; verified with MCP Inspector and Claude Code 2026-09-02 |
 | Hosted MCP (US-32 phase 1) | The same tools behind a connector, sealed-token stateless | this doc + `app/lib/mcp*.server.ts` + [deploy-runbook.md](deploy-runbook.md) "Hosted MCP" | LIVE 2026-09-02 at `https://mcp.drstanfield.com/mcp`; Dropbox only; verified from Claude and ChatGPT on the web |
-| Hosted MCP over Drive (US-32 phase 2) | The same server, against Google Drive | this doc §7 + `packages/health-core/src/drive-rest.ts` | built and tested 2026-09-02; unreachable until the Google console steps and the `GOOGLE_DRIVE_*` secrets |
+| Hosted MCP over Drive (US-32 phase 2) | The same server, against Google Drive | this doc §7 + `packages/health-core/src/drive-rest.ts` | ENABLED 2026-09-02: the `GOOGLE_DRIVE_*` secrets are on `health-tool-edu` and the consent screen offers Drive. Brand verification not yet submitted; live verify over Drive (runbook step 8) not yet run |
 | `report_feedback` tool | Prepares a prefilled GitHub issue; sends nothing itself | `packages/health-core/src/mcp-tools.ts` | shipped |
 
 **One write path.** Every surface in this table that writes reads and saves the record through `SyncManager` over a `StorageAdapter` — read, migrate, merge, conditional write on `expectedVersion`, verify. The CLI and the stdio server hand it `FileAdapter` (one local file); the hosted server hands it `DropboxAdapter` or `DriveAdapter`, chosen by the provider sealed into the bearer token. The database of record is a constructor argument, not a second code path.
@@ -204,7 +204,7 @@ Three pieces make that one path rather than three copies of it, and each lives a
 
 > **Accepted residual (surfaced by that work).** An **out-of-band RAW deletion** — the user deleting `health-roadmap.json` in the Dropbox UI rather than using the app's erase flow — carries **no `eraseEpoch` signal**, so a stale writer legitimately re-creates the content. This applies equally to the MCP server. The app's own erase flow (which rewrites rather than deletes) remains fully protected. **Future work:** a tombstone the erase flow leaves behind, so a raw deletion is distinguishable from a first-ever create. Not in v1.
 
-**Drive — BUILT (2026-09-02).** Drive v3 removed `etag` from every resource, so there is no conditional write. The specified algorithm is implemented in `packages/health-core/src/drive-rest.ts` (`DriveAdapter`) and tested step by step in `drive-rest.test.ts`:
+**Drive — BUILT and ENABLED (2026-09-02).** Drive v3 removed `etag` from every resource, so there is no conditional write. The specified algorithm is implemented in `packages/health-core/src/drive-rest.ts` (`DriveAdapter`) and tested step by step in `drive-rest.test.ts`:
 1. Read with `fields=version`. — `DriveAdapter.read`, one metadata call BEFORE the `alt=media` download. The order is load-bearing: read the version afterwards and a writer landing mid-download hands back THEIR version number attached to OUR bytes, so step 2 finds nothing moved, passes, and drops their row with `attempts: 0` and no error anywhere. Version first makes the pair pessimistic — worst case the version is stale, step 2 conflicts, and the save retries. A wasted round trip beats a silent lost update, and a test pins it.
 2. **Re-fetch `version` immediately before upload**; if it moved, abort and re-merge. — `DriveAdapter.write` raises `ConflictError`, which `SyncManager.save` already catches, re-reads and re-merges.
 3. After writing, re-read and assert **every pre-read row id is still present** and the new rows landed. — `SyncManager.verifyAfterWrite`, unchanged and shared with every other backend: the ids it checks are the MERGED file's, which is the pre-read rows plus the new ones.
@@ -268,9 +268,9 @@ Brad's ruling: build the full thing. The recruitment gate is removed. The phase 
 - [x] `provider` sealed into the state, code, access and refresh payloads (AAD unchanged); the consent screen offers one button per configured provider; `/mcp` builds the adapter from the token alone.
 - [x] Google as a confidential client: `drive.file` only, `access_type=offline`, `prompt=consent`, no `include_granted_scopes`. Reuses `GOOGLE_DRIVE_CLIENT_ID`/`GOOGLE_DRIVE_SECRET` (§1's shared-identity finding).
 - [x] Tests citing US-32 phase 2: the four algorithm steps separately, the Google OAuth chain, the feature gate, and provider isolation (an edited provider dies at the GCM tag).
-- [x] Feature gate: no `GOOGLE_DRIVE_*` secrets → the consent screen shows Dropbox only. Merging is inert.
-- [ ] **OPERATOR (Brad).** Google console: redirect URI, publishing status **In production** (or refresh tokens die after 7 days), brand verification for `drive.file`; then the two Fly secrets on `health-tool-edu`. Runbook step 4b.
-- [ ] **OPERATOR (Brad).** Live verify over Drive, and the getting-started guide's Drive wording — concurrent writers are best-effort there.
+- [x] Feature gate: no `GOOGLE_DRIVE_*` secrets → the consent screen shows Dropbox only. Held phase 2 inert until the secrets landed 2026-09-02.
+- [x] **OPERATOR (Brad), 2026-09-02.** Google console: redirect URI added, publishing status **In production** (or refresh tokens die after 7 days), and the two Fly secrets on `health-tool-edu`. Drive now appears on the live consent screen. Runbook step 4b. **Still open:** brand verification for `drive.file` — until it lands, users may meet Google's "unverified app" interstitial.
+- [ ] **OPERATOR (Brad).** Live verify over Drive (runbook step 8). The guides now say concurrent writers are best-effort there.
 
 `[connect:gemini]` stays a prompt link at every phase.
 

@@ -18,28 +18,28 @@ model in [mcp-architecture.md](mcp-architecture.md).
 | Terms of service | `[TERMS_URL]` |
 | Category | Health and fitness |
 | Countries | All available countries. The app is English only and the support form is global. |
-| Auth | OAuth 2.1, PKCE, CIMD. The user authorizes their own Dropbox. |
+| Auth | OAuth 2.1, PKCE, CIMD. The user authorizes their own Dropbox or Google Drive. |
 
 **Short description.** Keep your blood tests and measurements in your own
-Dropbox, and let ChatGPT read and update them.
+Dropbox or Google Drive, and let ChatGPT read and update them.
 
 **Long description.** Health Roadmap stores your health record as a single
-`health-roadmap.json` file in your own Dropbox. Connect it and ChatGPT can read
+`health-roadmap.json` file in your own Dropbox or Google Drive. Connect it and ChatGPT can read
 that record, add new measurements and lab results, correct a value you entered
 wrongly, and compute a plan from it: what is due for screening, and
 evidence-based suggestions with the citation behind each one. Values are never
 deleted. A correction appends the new number and marks the old row
 `entered-in-error`, so your history stays auditable. We store nothing. The file
-is yours, in your Dropbox, and you disconnect at
-`dropbox.com/account/connected_apps`. This is educational information, not
+is yours, in your own cloud, and you disconnect at
+`dropbox.com/account/connected_apps` or `myaccount.google.com/connections`. This is educational information, not
 medical advice, and it does not replace your doctor.
 
 ## Compliance
 
 **We do not collect, solicit, or process protected health information (PHI).**
 
-The record lives in the user's own Dropbox and stays there. To answer one tool
-call, the server fetches the file over the user's own Dropbox credential, holds
+The record lives in the user's own Dropbox or Google Drive and stays there. To
+answer one tool call, the server fetches the file over the user's own credential, holds
 it in memory for that one request, and writes it back if the call was a write.
 Nothing is persisted: no per-user row, no health table, no health data at rest
 anywhere on our infrastructure (the v1 tables were purged 2026-06-12). Nothing
