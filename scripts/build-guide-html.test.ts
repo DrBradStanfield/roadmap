@@ -122,6 +122,74 @@ describe('build-guide-html.mjs — a guide that is missing something', () => {
   });
 });
 
+describe('build-guide-html.mjs — the connector buttons and copy boxes', () => {
+  // The buttons went live on 2026-09-02: they stopped being greyed "coming
+  // soon" spans and became links to the step lists further down the page.
+  const CONNECT = `${FRONT_MATTER}[connect:chatgpt]\n[connect:claude]
+
+The address both assistants ask for:
+
+\`\`\`copy-box
+https://mcp.drstanfield.com/mcp
+\`\`\`
+
+## Connect Claude on the web
+
+Steps.
+
+## Connect ChatGPT on the web
+
+Steps.
+`;
+
+  it('renders a live provider as a real link, not a disabled span', () => {
+    const { html } = build(CONNECT);
+    expect(html).toContain('<div class="rmg-btnrow">');
+    // The greyed span is what "coming soon" looked like. Only the stylesheet
+    // still names that class.
+    expect(html).not.toContain('<span class="rmg-btn rmg-btn-soon"');
+    expect(html).not.toContain('Coming soon');
+    expect(html).toContain('<a class="rmg-btn" href="#connect-claude-on-the-web">');
+    expect(html).toContain('<a class="rmg-btn" href="#connect-chatgpt-on-the-web">');
+  });
+
+  it('keeps an in-page button in the tab, so target=_blank is only for links off the site', () => {
+    const { html } = build(CONNECT);
+    expect(html).not.toContain('href="#connect-claude-on-the-web" target="_blank"');
+  });
+
+  it('renders the connector buttons in a guide with no bootstrap-prompt fence', () => {
+    // The buttons used to be gated on the prompt fence, because they carried
+    // the prompt in their href. They carry a link now, so the gate is gone.
+    const { html, stderr } = build(CONNECT);
+    expect(stderr).not.toMatch(/bootstrap-prompt/);
+    expect(html).not.toContain('[connect:');
+  });
+
+  it('gives a copy-box fence its own copy button and its own text', () => {
+    const { html } = build(`${FRONT_MATTER}One:
+
+\`\`\`copy-box
+https://mcp.drstanfield.com/mcp
+\`\`\`
+
+Two:
+
+\`\`\`bootstrap-prompt
+Read my health record.
+\`\`\`
+`);
+    // Two boxes, two buttons, each holding its own text — the script copies a
+    // button's own <pre>, so a second box cannot serve the first one's text.
+    expect(html.match(/<div class="rmg-promptbox">/g)).toHaveLength(2);
+    expect(html.match(/<button class="rmg-copy" type="button">Copy<\/button>/g)).toHaveLength(2);
+    expect(html).toContain('<pre>https://mcp.drstanfield.com/mcp</pre>');
+    expect(html).toContain('<pre>Read my health record.</pre>');
+    // Nothing is baked into the script any more.
+    expect(html).not.toContain('RMG_PROMPT');
+  });
+});
+
 describe('build-guide-html.mjs — the link to the markdown master', () => {
   it('names the guide\'s own file, inside the wrapper and before the script', () => {
     const { html } = build(`${FRONT_MATTER}Prose.\n\n\`\`\`bootstrap-prompt\nRead my health record.\n\`\`\`\n`);
@@ -145,11 +213,18 @@ describe('build-guide-html.mjs — the guides actually shipped', () => {
       expect(run.status, `${guide}: ${run.stderr}`).toBe(0);
       expect(run.stdout, guide).toContain('<div class="rmguide">');
       expect(run.stdout, guide).not.toContain('@@');
-      // The prompt box exists to carry the prompt: only a guide that has one.
-      const carriesPrompt = readFileSync(path, 'utf8').includes('```bootstrap-prompt');
-      expect(run.stdout.includes('<div class="rmg-promptbox">'), guide).toBe(carriesPrompt);
+      // A copy box exists to carry a block: only a guide that has one.
+      const source = readFileSync(path, 'utf8');
+      const carriesBox = source.includes('```bootstrap-prompt') || source.includes('```copy-box');
+      expect(run.stdout.includes('<div class="rmg-promptbox">'), guide).toBe(carriesBox);
       // Every published guide points an agent at its own markdown master.
       expect(run.stdout, guide).toContain(`<a href="${RAW}${guide}">docs/guides/${guide}</a>`);
+      // A button pointing at a step list on the same page is only honest if
+      // that heading is really there: renaming the heading must fail here, not
+      // leave a reader clicking a button that scrolls nowhere.
+      for (const [, id] of run.stdout.matchAll(/<a class="rmg-btn" href="#([^"]+)"/g)) {
+        expect(run.stdout, `${guide}: no heading with id ${id}`).toContain(`<h2 id="${id}">`);
+      }
     }
   });
 });

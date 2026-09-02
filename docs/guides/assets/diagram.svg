@@ -39,5 +39,5 @@
   <text class="rmg-m" x="529" y="62" text-anchor="middle">reads</text>
   <text class="rmg-m" x="529" y="77" text-anchor="middle">and writes</text>
 </svg>
-<figcaption>There is no fourth box. Your record never reaches our servers, so there is nothing for us to read or lose.</figcaption>
+<figcaption>Your record lives in your storage, not ours. An AI on your own computer reaches it directly. The web connector puts our server in the middle for the length of one call: it reads the file in memory and keeps no copy.</figcaption>
 </figure>

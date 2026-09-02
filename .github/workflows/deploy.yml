@@ -108,10 +108,10 @@ jobs:
 
           # The email must be readable WITHOUT clicking: what is shipping, why,
           # and what it touches. A bare SHA tells Brad nothing (2026-08-11).
-          subject=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" --jq '.commit.message' | head -1)
-          body_rest=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" --jq '.commit.message' | tail -n +2 | head -12)
+          subject=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" --jq '.commit.message' | sed -n '1p')
+          body_rest=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" --jq '.commit.message' | sed -n '2,13p')
           files=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" \
-            --jq '.files[] | "- \(.filename) (+\(.additions)/-\(.deletions))"' | head -15)
+            --jq '.files[] | "- \(.filename) (+\(.additions)/-\(.deletions))"' | sed -n '1,15p')
           nfiles=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}" --jq '.files | length')
           surfaces="${SURFACES_INPUT:-all}"
 

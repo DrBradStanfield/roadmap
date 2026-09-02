@@ -216,10 +216,13 @@ to both — deploy twice, see "Shopify app configs".**)
 
 ## Hosted MCP (health-tool-edu) — US-32 Phase 1
 
-The code is deployed and INERT until these steps are done. Every `/mcp` path and both
-`.well-known` documents return 404 while `MCP_SEAL_KEYS` is unset, so there is no rush
-and no half-on state. Education app, not commerce: the edu box omits the Discord and
-YouTube bot tokens, so the machine holding the seal key carries the smaller secret set.
+**LIVE since 2026-09-02** at `https://mcp.drstanfield.com/mcp`, verified end to end from
+both Claude (custom connector, CIMD) and ChatGPT (developer mode, OAuth). Steps 1 to 8
+below are the setup record, kept because they are also the rebuild and the rotation
+procedure. Every `/mcp` path and both `.well-known` documents return 404 while
+`MCP_SEAL_KEYS` is unset, so unsetting it is the kill switch. Education app, not
+commerce: the edu box omits the Discord and YouTube bot tokens, so the machine holding
+the seal key carries the smaller secret set.
 
 Nothing below can be done by an agent. All of it is Brad's.
 
@@ -257,8 +260,9 @@ breaks the flow.
 
 **4. Dropbox app console.** Add the redirect URI `https://mcp.drstanfield.com/mcp/callback`.
 Scopes: `files.content.read`, `files.content.write`, `files.metadata.read`. Leave the
-app type as **App folder**. Watch the ceiling: Dropbox freezes new links two weeks after
-the 50th user without production approval.
+app type as **App folder**. Watch the ceiling: the app is approved for **500 users** as of
+2026-09-02. Past that, Dropbox freezes new links and the app needs a higher limit, which
+is a request to Dropbox and Brad's to make.
 
 **5. Check Fly's proxy access log before announcing anything.** OAuth secrets travel in
 query strings, so a proxy that logs request URLs would write `code` and `state` to a log
@@ -321,8 +325,10 @@ are still spoofable by one header. Same one-line fix, different blast radius: it
 own change and its own tests.
 
 **7. Add the connector, as a user would.** Claude: Settings → Connectors → Add custom
-connector → `https://mcp.drstanfield.com/mcp`. ChatGPT: Settings → Connectors →
-Advanced → Developer mode → Create, same URL. Both then run the OAuth flow: our consent
+connector → `https://mcp.drstanfield.com/mcp`. ChatGPT: Settings → Security → Developer
+mode on → Plugins → Create app → same URL, Authentication OAuth, tick the risk box.
+(Both paths walked on 2026-09-02; the user-facing versions are
+`docs/guides/getting-started.md` and `docs/guides/connect-chatgpt.md`.) Both then run the OAuth flow: our consent
 screen, then Dropbox, then back. Time the token exchange — Claude allows 10 seconds and
 ours does a live Dropbox code exchange inside that budget (design §7).
 
@@ -346,6 +352,77 @@ retroactive over every blob ever issued. `MCP_CLIENT_HMAC_KEY` is different and
 user-visible: rotating it forces every affected user to REMOVE AND RE-ADD the connector,
 because Anthropic freezes a connector's auth settings once it is added. Rotate that one
 only with a comms plan.
+
+### Publishing the ChatGPT app
+
+Today a user needs **developer mode** to add our connector to ChatGPT, because OpenAI
+keeps unreviewed connectors behind it. Claude needs no equivalent: a custom connector is
+available on any plan. Publishing through OpenAI's review is what removes that step.
+**Nothing here has been submitted.** Researched 2026-09-02 from
+`developers.openai.com/plugins/deploy/submission`, `.../apps-sdk/app-developer-guidelines/`
+and `.../apps-sdk/app-submission-guidelines`.
+
+**Brad's, not an agent's — all of it.** Submission is tied to a verified identity on his
+OpenAI account and to policy acknowledgements he is signing.
+
+1. **Verify the identity.** A verified individual or business identity in the OpenAI
+   Platform, done in organization settings. The submitting role needs **Apps Management:
+   Write**. Reviewers check the listing against that identity, so the name, website,
+   support contact, privacy policy and terms must all match the publisher.
+2. **Four public URLs**, matching the publisher and live before submission: privacy
+   policy, terms of service, support contact, and a website. The privacy policy has to
+   state the categories of personal data collected, the purpose, the recipients, the
+   retention period and the user's controls. **We do not have a privacy policy that
+   describes this connector** — the existing site policy predates it. Writing one is the
+   first real work item, and it has to say what §1 of `mcp-architecture.md` says: the
+   record is read in memory to answer one call, no copy is kept, no per-user row exists,
+   and the user cancels at `dropbox.com/account/connected_apps`.
+3. **Verify domain ownership** for `mcp.drstanfield.com` in the submission form.
+4. **Tool metadata.** Every tool needs a title and the applicable `readOnlyHint` /
+   `destructiveHint` / `openWorldHint`. `MCP_TOOLS` already carries annotations; check
+   them against OpenAI's list before submitting rather than after a rejection.
+5. **Test cases: five positive and three negative**, each with the expected behaviour.
+   The negative ones are already written in effect — the occupied-day refusal, a
+   correction with a wrong `expectedValue`, a correction on a row older than 90 days.
+6. **Listing material:** name, short and long description, logo, category, starter
+   prompts, country availability.
+7. **Submit** at `platform.openai.com/plugins`, pick MCP-only. Review timelines are not
+   published. Approval does not publish it; Brad chooses when it goes live.
+
+**The gate to settle BEFORE spending time on the rest.** OpenAI's developer guidelines
+list **protected health information under Restricted Data** and say a plugin must not
+collect it, alongside a data-minimisation rule that tool inputs be narrowly scoped. Our
+connector's whole subject is a person's blood results. Read strictly, that is a refusal;
+read as written it is about what the *plugin* collects, and we collect nothing and store
+nothing. **This is a question for OpenAI, asked before submission, not a judgement call
+to make silently in a form.** Brad decides whether to ask, and how. If the answer is no,
+developer mode stays the honest path and the guides stay as they are.
+
+### Listing in Anthropic's Connectors Directory
+
+Claude's custom-connector path already works for every user, so a directory listing buys
+discovery, a named card with a logo, Suggested Connectors, and Anthropic-held client
+credentials. It is not needed for anyone to connect. Researched 2026-09-02 from
+`claude.com/docs/connectors/building/submission`.
+
+**The blocker is the account, and it is Brad's.** Submission happens in
+`claude.ai/admin-settings/directory/submissions/new`, which is part of **organization
+settings**: it needs a **Team or Enterprise** organization, and only an Owner or Primary
+owner can submit. An individual Pro or Max plan has no such page.
+
+If that is worth doing, the portal wants: the server URL and transport; tools synced
+live from the running server, each with a title and a read-only or write annotation;
+name, tagline (55 chars), description, categories, documentation URL, **privacy policy
+URL**, support contact, icon, and a permanent slug; the authentication mode (ours is
+CIMD, which the portal lists); a **data-handling answer that explicitly asks whether the
+connector handles personal health data** (yes, and say how); reviewer test-account
+credentials good enough to drive every tool end to end; and seven policy
+acknowledgements, one of them on prompt injection — where the honest answer is
+`mcp-architecture.md` §3's stated residual, not a reassurance.
+
+Also worth knowing: publishing to the open MCP Registry or the
+`modelcontextprotocol/servers` repo does **nothing** for visibility inside Claude. Only
+the directory does.
 
 ## Scalability & DDoS
 

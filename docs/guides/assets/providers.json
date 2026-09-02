@@ -3,16 +3,18 @@
     "name": "ChatGPT",
     "mono": "GPT",
     "colour": "#0f9d78",
-    "mode": "soon",
+    "mode": "live",
+    "url": "#connect-chatgpt-on-the-web",
     "label": "Connect ChatGPT",
-    "note": "Coming soon"
+    "note": "Needs developer mode"
   },
   "claude": {
     "name": "Claude",
     "mono": "C",
     "colour": "#d97757",
-    "mode": "soon",
+    "mode": "live",
+    "url": "#connect-claude-on-the-web",
     "label": "Connect Claude",
-    "note": "Coming soon"
+    "note": "No special mode needed"
   }
 }

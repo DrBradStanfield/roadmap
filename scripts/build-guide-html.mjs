@@ -4,9 +4,11 @@
 //   node scripts/build-guide-html.mjs docs/guides/getting-started.md --out build/guide.html
 //   node scripts/build-guide-html.mjs docs/guides/getting-started.md --no-script
 //
-// Content HTML only — the theme supplies the page. The prompt exists ONCE, in
-// the ```bootstrap-prompt fence; every button is derived from it.
-// --no-script drops the clipboard JS and degrades the copy box to a plain
+// Content HTML only — the theme supplies the page. A fence tagged
+// bootstrap-prompt or copy-box becomes a copy box; its Copy button reads the
+// text out of its own <pre>, so the page carries each block once and a second
+// box cannot copy the first one's text.
+// --no-script drops the clipboard JS and degrades every copy box to a plain
 // block with a select-all hint, for hosts that strip <script>.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
@@ -24,9 +26,6 @@ if (!mdPath) {
 
 const ASSETS = new URL('../docs/guides/assets/', import.meta.url);
 const md = readFileSync(mdPath, 'utf8');
-// Optional: a guide can be prose only. Absent, the button row, the prompt box
-// and the clipboard script are all left out — they exist to carry the prompt.
-const prompt = md.match(/```bootstrap-prompt\n([\s\S]*?)\n```/)?.[1];
 const diagram = readFileSync(new URL('diagram.svg', ASSETS), 'utf8').trim();
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -70,26 +69,34 @@ const restore = (html) =>
 let body = md.slice(md.indexOf('\n---\n', 4) + 5).replace('[diagram:local-first]', () => hold(diagram));
 
 // --- [connect:*] markers ---------------------------------------------------
-if (prompt) {
-  const providers = JSON.parse(readFileSync(new URL('providers.json', ASSETS), 'utf8'));
-  const button = (key) => {
-    const p = providers[key];
-    const mono = `<span class="rmg-mono" style="background:${p.colour}">${p.mono}</span>`;
-    const inner = `${mono}<span class="rmg-blabel">${p.label}</span><span class="rmg-bnote">${p.note}</span>`;
-    if (p.mode === 'soon') return `<span class="rmg-btn rmg-btn-soon" aria-disabled="true">${inner}</span>`;
-    return p.mode === 'link'
-      ? `<a class="rmg-btn" href="${p.url}${encodeURIComponent(prompt)}" target="_blank" rel="noopener noreferrer">${inner}</a>`
-      : `<a class="rmg-btn" href="${p.url}" target="_blank" rel="noopener noreferrer" data-rmg-copy>${inner}</a>`;
-  };
-  const promptBox = noScript
-    ? `<div class="rmg-promptbox"><p class="rmg-hint">Select the whole block below and copy it.</p><pre>${esc(prompt)}</pre></div>`
-    : `<div class="rmg-promptbox"><button class="rmg-copy" type="button" data-rmg-copy>Copy</button><pre>${esc(prompt)}</pre></div>`;
-  body = body
-    .replace(/\[connect:chatgpt\]\n\[connect:claude\]/, () => hold(`<div class="rmg-btnrow">${['chatgpt', 'claude'].map(button).join('')}</div>`))
-    .replace(/```bootstrap-prompt\n[\s\S]*?\n```/, () => hold(promptBox));
-} else if (body.includes('[connect:')) {
-  console.error(`${mdPath}: [connect:*] buttons need a \`\`\`bootstrap-prompt fence — they carry the prompt. Markers left as written.`);
-}
+const providers = JSON.parse(readFileSync(new URL('providers.json', ASSETS), 'utf8'));
+const button = (key) => {
+  const p = providers[key];
+  const mono = `<span class="rmg-mono" style="background:${p.colour}">${p.mono}</span>`;
+  const inner = `${mono}<span class="rmg-blabel">${p.label}</span><span class="rmg-bnote">${p.note}</span>`;
+  if (p.mode === 'soon') return `<span class="rmg-btn rmg-btn-soon" aria-disabled="true">${inner}</span>`;
+  // A live button is either an anchor to the steps further down the same page
+  // or a link off the site. Only the second one gets a new tab.
+  const away = p.url.startsWith('#') ? '' : ' target="_blank" rel="noopener noreferrer"';
+  return `<a class="rmg-btn" href="${p.url}"${away}>${inner}</a>`;
+};
+body = body.replace(
+  /\[connect:chatgpt\]\n\[connect:claude\]/,
+  () => hold(`<div class="rmg-btnrow">${['chatgpt', 'claude'].map(button).join('')}</div>`),
+);
+
+// A copy box is a fence the reader is meant to take whole: the setup prompt, a
+// config block, a server address. A guide may hold several, so the button
+// copies its own <pre> rather than one prompt baked into the script.
+let copyBoxes = 0;
+body = body.replace(/^```(?:bootstrap-prompt|copy-box)\n([\s\S]*?)\n```$/gm, (_, text) => {
+  copyBoxes += 1;
+  return hold(
+    noScript
+      ? `<div class="rmg-promptbox"><p class="rmg-hint">Select the whole block below and copy it.</p><pre>${esc(text)}</pre></div>`
+      : `<div class="rmg-promptbox"><button class="rmg-copy" type="button">Copy</button><pre>${esc(text)}</pre></div>`,
+  );
+});
 
 // Every other fenced block is code. Anchored to whole lines: unanchored, the
 // backticks inside a quoted `\`\`\`npm test\`\`\`` read as an opener and swallow
@@ -151,16 +158,15 @@ const style = `<style>
 .rmguide .rmg-md{margin:34px 0 0;font-size:13.5px;line-height:1.5;color:#5c6b7a}
 </style>`;
 
-const script = noScript || !prompt ? '' : `
+const script = noScript || !copyBoxes ? '' : `
 <script>
-var RMG_PROMPT = ${JSON.stringify(prompt).replace(/</g, '\\u003c')};
-document.querySelectorAll('[data-rmg-copy]').forEach(function (el) {
+document.querySelectorAll('.rmg-copy').forEach(function (el) {
+  var pre = el.parentNode.querySelector('pre');
   el.addEventListener('click', function () {
-    if (navigator.clipboard) navigator.clipboard.writeText(RMG_PROMPT);
-    var l = el.querySelector('.rmg-blabel');
-    if (l) { var was = l.textContent; l.textContent = 'Copied. Now paste it.';
-             setTimeout(function () { l.textContent = was; }, 2500); }
-    else { var w = el.textContent; el.textContent = 'Copied'; setTimeout(function(){ el.textContent = w; }, 1500); }
+    if (navigator.clipboard && pre) navigator.clipboard.writeText(pre.textContent);
+    var was = el.textContent;
+    el.textContent = 'Copied';
+    setTimeout(function () { el.textContent = was; }, 1500);
   });
 });
 </script>`;

@@ -26,7 +26,7 @@ import { loadAllHistory, loadLabValues, loadMedicationHistory } from '../lib/api
 import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { labValueLabel } from '../lib/lab-value-labels';
-import { formatShortDate } from '../lib/constants';
+import { chartTimestamp, formatShortDate } from '../lib/constants';
 
 // Register only what we need
 Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Filler, annotationPlugin);
@@ -322,7 +322,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
         ? `Stopped ${displayName}`
         : `${displayName}${dose}`;
       const ann: ChartAnnotation = {
-        date: new Date(h.effectiveStart).getTime(),
+        date: chartTimestamp(h.effectiveStart),
         label,
         color: MED_ANNOTATION_COLOR,
       };
@@ -420,7 +420,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
                 key={mt}
                 title={METRIC_LABELS[mt] || mt}
                 data={grouped[mt].map((m) => ({
-                  x: new Date(m.recordedAt).getTime(),
+                  x: chartTimestamp(m.recordedAt),
                   y: toDisplayValue(mt, m.value, unitSystem),
                 }))}
                 unit={getUnitLabel(mt, unitSystem)}
@@ -470,7 +470,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
                       key={name}
                       title={labValueLabel(name)}
                       data={labGrouped[name].map((v) => ({
-                        x: new Date(v.recordedAt).getTime(),
+                        x: chartTimestamp(v.recordedAt),
                         y: v.value,
                       }))}
                       unit={unit}

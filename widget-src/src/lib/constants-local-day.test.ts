@@ -15,7 +15,7 @@
 process.env.TZ = 'America/New_York';
 
 import { describe, it, expect } from 'vitest';
-import { formatShortDate } from './constants';
+import { chartTimestamp, formatShortDate } from './constants';
 
 describe('formatShortDate — west of Greenwich', () => {
   it('renders a stored day-shape as its own day, not the day before', () => {
@@ -29,5 +29,30 @@ describe('formatShortDate — west of Greenwich', () => {
   it('still renders a real instant in the reader’s own timezone', () => {
     // 09:00 in Auckland on 2 September is still 1 September in New York.
     expect(formatShortDate('2026-09-01T21:00:00.000Z')).toBe('Sep 1, 2026');
+  });
+});
+
+describe('chartTimestamp — the chart axis and the tooltip name one day', () => {
+  it('anchors a date-only slot to local midnight of that day', () => {
+    const d = new Date(chartTimestamp('2026-09-02'));
+    expect(d.getFullYear()).toBe(2026);
+    expect(d.getMonth()).toBe(8);
+    expect(d.getDate()).toBe(2);
+    expect(d.getHours()).toBe(0);
+  });
+
+  it('anchors a UTC-midnight slot to local midnight of the same day', () => {
+    expect(new Date(chartTimestamp('2026-09-02T00:00:00.000Z')).getDate()).toBe(2);
+  });
+
+  it('plots a real instant unchanged', () => {
+    // 09:00 in Auckland on 2 September is still 1 September in New York.
+    const t = chartTimestamp('2026-09-01T21:00:00.000Z');
+    expect(t).toBe(Date.parse('2026-09-01T21:00:00.000Z'));
+    expect(new Date(t).getDate()).toBe(1);
+  });
+
+  it('renders the tooltip on the same day the axis ticks', () => {
+    expect(formatShortDate(chartTimestamp('2026-09-02T00:00:00.000Z'))).toBe('Sep 2, 2026');
   });
 });
