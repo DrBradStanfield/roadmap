@@ -128,23 +128,23 @@ An empty account runs every test case above, since the writes create the file.
 
 ## Brad's dashboard checklist
 
-1. Verify the publisher identity in organization settings at
-   https://platform.openai.com/settings. The submitting role needs Apps
-   Management: Write, and the identity must match the website and support URLs.
-2. Publish the privacy policy and the terms, then replace `[PRIVACY_URL]` and
-   `[TERMS_URL]` above. The policy must state the data categories, purpose,
-   recipients, retention and user controls, matching the Compliance section.
-3. Start the submission at https://platform.openai.com/plugins, MCP only, and
-   enter `https://mcp.drstanfield.com/mcp`.
-4. Set the challenge base host to `mcp.drstanfield.com`, copy the generated
-   token, then run
-   `fly secrets set OPENAI_APPS_CHALLENGE=<token> -a health-tool-edu`. Confirm
-   with `curl https://mcp.drstanfield.com/.well-known/openai-apps-challenge`,
-   which must return that token alone as `text/plain`. Then click verify.
+1. Verify the publisher identity first (gates creating the app, not just
+   submitting it): Organization → General → Verifications → Individual or
+   Business → Start → "Start ID Check" (Persona: photo ID, likely a selfie).
+2. Publish the privacy policy and terms, then replace `[PRIVACY_URL]` and
+   `[TERMS_URL]` above, matching the Compliance section on data categories,
+   purpose, recipients, retention and user controls.
+3. At https://platform.openai.com/plugins, click Create plugin, choose "With MCP" (not
+   Skills only), enter `https://mcp.drstanfield.com/mcp`. Brad's dev-mode connector id
+   `asdk_app_…` is not a platform app record; this creates a separate, real one.
+4. Copy the domain-verification token shown in that flow, run `fly secrets set
+   OPENAI_APPS_CHALLENGE=<token> -a health-tool-edu`, confirm `curl .../.well-known/openai-apps-challenge`
+   returns that token alone as `text/plain`, then click Verify.
 5. Paste the listing fields, descriptions, category, countries and starter
-   prompts from above. Upload the logo as a square PNG, 512x512 or larger.
+   prompts above. Upload the logo (size requirement not yet reachable as of
+   2026-09-02; check the form when you get there).
 6. Paste the eight test cases and the demo-credentials answer.
-7. Read the developer policy questions honestly. The PHI question is settled by
-   the Compliance section; if OpenAI reads it differently, ask them rather than
-   guessing in the form.
+7. Read the developer policy questions honestly (the PHI question is settled
+   by the Compliance section; if OpenAI reads it differently, ask them rather
+   than guess in the form).
 8. Submit. Approval does not publish the app. Brad chooses when it goes live.

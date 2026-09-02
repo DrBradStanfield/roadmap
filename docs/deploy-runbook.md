@@ -427,7 +427,8 @@ compliance statement, and a numbered dashboard checklist. That file is the worki
 document; this section holds only what it depends on.
 
 **Brad's, not an agent's — all of it.** Submission is tied to a verified identity on his
-OpenAI account and to policy acknowledgements he is signing.
+OpenAI account and to policy acknowledgements he is signing. Identity verification gates
+creating the app in the dashboard, not just submitting it.
 
 **Two blockers before the form.** First, **we have no privacy policy that describes this
 connector** — the site policy predates it. It must state the data categories, purpose,

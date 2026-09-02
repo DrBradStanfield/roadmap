@@ -22,7 +22,7 @@ ChatGPT and Claude in a browser cannot open a file on your computer. So we run a
 
 This works with Dropbox and Google Drive today.
 
-Your record still lives only in your storage. Our server reads it, in memory, to answer your assistant, and keeps no copy. Your assistant holds a sealed credential that only we can open. You cancel it in your own cloud settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) for Dropbox, [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive. Cancelling there also disconnects this website from the folder, and you can reconnect here in one click.
+Your record still lives only in your storage. Our server reads it, in memory, to answer your assistant, and keeps no copy. Your assistant holds a sealed credential that only we can open. You cancel it in your own cloud settings: [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) for Dropbox, [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive. Cancelling there also disconnects this website from the folder, and you can reconnect here in one click. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing, and how to disconnect.
 
 [connect:chatgpt]
 [connect:claude]

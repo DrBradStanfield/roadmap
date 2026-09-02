@@ -116,7 +116,7 @@ https://mcp.drstanfield.com/mcp
 
 The hosted version is append-only, like this one, with two extra limits: a correction on a row older than 90 days is refused, and Claude has to state the value it believes it is replacing, so a correction written from a stale read changes nothing.
 
-You cancel it at [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps). That also disconnects this website from the folder, and reconnecting in the tool is one click.
+You cancel it at [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps). That also disconnects this website from the folder, and reconnecting in the tool is one click. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing, and how to disconnect.
 
 ChatGPT connects the same way, with one extra step: [connect ChatGPT to your health record](/blogs/guides/connect-chatgpt).
 

@@ -72,7 +72,7 @@ Do not leave the web tool open in another tab while ChatGPT is writing. There is
 
 ## How to cancel it
 
-Go to [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) and unlink Health Roadmap. That is the real switch, and it is yours, not ours.
+Go to [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) and unlink Health Roadmap. That is the real switch, and it is yours, not ours. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing, and how to disconnect.
 
 One thing to know before you press it: Dropbox ties the folder to the app, so unlinking also disconnects this website from your record. The tool will ask you to connect Dropbox again next time you open it, which is one click.
 
