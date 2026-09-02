@@ -284,13 +284,14 @@ app type as **App folder**. Watch the ceiling: the app is approved for **500 use
 2026-09-02. Past that, Dropbox freezes new links and the app needs a higher limit, which
 is a request to Dropbox and Brad's to make.
 
-**4b. Google Cloud console — Drive (Phase 2). DONE 2026-09-02**, except brand
-verification. Same project and same OAuth client the widget uses
+**4b. Google Cloud console — Drive (Phase 2). DONE 2026-09-02**, brand verification
+included. Same project and same OAuth client the widget uses
 (`api.google-token.ts`). The live consent page now offers Dropbox and Google Drive.
 
 Status: redirect URI added ✅ · publishing status **In production** ✅ · `GOOGLE_DRIVE_*`
-Fly secrets on `health-tool-edu` ✅ · brand verification **not submitted** (users may see
-Google's "unverified app" interstitial until it is) · step 8 over Drive **not run yet**.
+Fly secrets on `health-tool-edu` ✅ · brand verification **DONE 2026-09-02** — the
+consent screen shows the branded "Dr Brad" screen, no unverified-app interstitial ·
+step 8 over Drive **PASSED 2026-09-02**.
 
 1. **APIs & Services → Credentials →** the existing OAuth 2.0 Client ID → **Authorized
    redirect URIs → Add** `https://mcp.drstanfield.com/mcp/callback`. Exact string; Google
@@ -397,11 +398,13 @@ each write: `read_record` → `get_plan` → `add_measurement` → a correction 
 `expectedValue` → a correction WITHOUT it (must refuse) → a correction on a row older
 than 90 days (must refuse).
 
-**Run step 8 again over Drive — still outstanding as of 2026-09-02**, and check one
-extra thing: the
-server must write the SAME `health-roadmap.json` the website uses, inside **Health Plan
-by Dr Brad**. A second file of that name anywhere in the user's Drive means discovery
-diverged, and it is a stop-everything bug — the user would have two records and see
+**Step 8 over Drive — PASSED 2026-09-02, ~14:25 NZ.** The hosted MCP, via Claude.ai,
+wrote a measurement to `My Drive / Health Plan by Dr Brad / health-roadmap.json`; a
+Drive search found exactly one file of that name, so discovery did not diverge. The
+website, connected to the same Drive account, loaded that row, and a correction made
+on the website was read back by Claude. The one-file result closes the extra check
+below: a second file of that name anywhere in the user's Drive would mean discovery
+diverged, and would be a stop-everything bug — the user would have two records and see
 neither whole.
 
 **Rotation, when it is needed.** `MCP_SEAL_KEYS` is a comma-separated list; PREPEND the
