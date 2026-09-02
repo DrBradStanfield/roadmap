@@ -412,45 +412,31 @@ only with a comms plan.
 Today a user needs **developer mode** to add our connector to ChatGPT, because OpenAI
 keeps unreviewed connectors behind it. Claude needs no equivalent: a custom connector is
 available on any plan. Publishing through OpenAI's review is what removes that step.
-**Nothing here has been submitted.** Researched 2026-09-02 from
-`developers.openai.com/plugins/deploy/submission`, `.../apps-sdk/app-developer-guidelines/`
-and `.../apps-sdk/app-submission-guidelines`.
+**Nothing here has been submitted.** Every field the form asks for is written out in
+**[chatgpt-app-listing.md](chatgpt-app-listing.md)**: descriptions, category, tool
+annotations, starter prompts, the eight test cases, the demo-credentials answer, the PHI
+compliance statement, and a numbered dashboard checklist. That file is the working
+document; this section holds only what it depends on.
 
 **Brad's, not an agent's — all of it.** Submission is tied to a verified identity on his
 OpenAI account and to policy acknowledgements he is signing.
 
-1. **Verify the identity.** A verified individual or business identity in the OpenAI
-   Platform, done in organization settings. The submitting role needs **Apps Management:
-   Write**. Reviewers check the listing against that identity, so the name, website,
-   support contact, privacy policy and terms must all match the publisher.
-2. **Four public URLs**, matching the publisher and live before submission: privacy
-   policy, terms of service, support contact, and a website. The privacy policy has to
-   state the categories of personal data collected, the purpose, the recipients, the
-   retention period and the user's controls. **We do not have a privacy policy that
-   describes this connector** — the existing site policy predates it. Writing one is the
-   first real work item, and it has to say what §1 of `mcp-architecture.md` says: the
-   record is read in memory to answer one call, no copy is kept, no per-user row exists,
-   and the user cancels at `dropbox.com/account/connected_apps`.
-3. **Verify domain ownership** for `mcp.drstanfield.com` in the submission form.
-4. **Tool metadata.** Every tool needs a title and the applicable `readOnlyHint` /
-   `destructiveHint` / `openWorldHint`. `MCP_TOOLS` already carries annotations; check
-   them against OpenAI's list before submitting rather than after a rejection.
-5. **Test cases: five positive and three negative**, each with the expected behaviour.
-   The negative ones are already written in effect — the occupied-day refusal, a
-   correction with a wrong `expectedValue`, a correction on a row older than 90 days.
-6. **Listing material:** name, short and long description, logo, category, starter
-   prompts, country availability.
-7. **Submit** at `platform.openai.com/plugins`, pick MCP-only. Review timelines are not
-   published. Approval does not publish it; Brad chooses when it goes live.
+**Two blockers before the form.** First, **we have no privacy policy that describes this
+connector** — the site policy predates it. It must state the data categories, purpose,
+recipients, retention and the user's controls, and say what §1 of `mcp-architecture.md`
+says: the record is read in memory to answer one call, no copy is kept, no per-user row
+exists, and the user cancels at `dropbox.com/account/connected_apps`. Second, OpenAI's
+developer guidelines list **protected health information under Restricted Data**. Read
+strictly that is a refusal; read as written it is about what the plugin *collects*, and
+we collect and store nothing. **A question for OpenAI, asked before submission, not a
+judgement made silently in a form.** If the answer is no, developer mode stays the
+honest path.
 
-**The gate to settle BEFORE spending time on the rest.** OpenAI's developer guidelines
-list **protected health information under Restricted Data** and say a plugin must not
-collect it, alongside a data-minimisation rule that tool inputs be narrowly scoped. Our
-connector's whole subject is a person's blood results. Read strictly, that is a refusal;
-read as written it is about what the *plugin* collects, and we collect nothing and store
-nothing. **This is a question for OpenAI, asked before submission, not a judgement call
-to make silently in a form.** Brad decides whether to ask, and how. If the answer is no,
-developer mode stays the honest path and the guides stay as they are.
+**One new secret, `OPENAI_APPS_CHALLENGE`** on `health-tool-edu`: the token the
+submission portal generates for domain verification. `app/routes/[.]well-known.$.tsx`
+serves it at `/.well-known/openai-apps-challenge` as bare `text/plain`, `no-store`, and
+404s while unset. It answers independently of `isMcpEnabled()`, so ownership can be
+proved before the connector is switched on. Rotate by setting the secret again.
 
 ### Listing in Anthropic's Connectors Directory
 

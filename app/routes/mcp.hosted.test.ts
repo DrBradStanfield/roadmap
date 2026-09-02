@@ -790,3 +790,33 @@ describe('discovery documents (US-32, design §6)', () => {
     expect(doc.authorization_response_iss_parameter_supported).toBe(true);
   });
 });
+
+describe('OpenAI domain verification (docs/chatgpt-app-listing.md)', () => {
+  const get = async (): Promise<Response> => {
+    const { loader: wellKnown } = await import('./[.]well-known.$');
+    return (await wellKnown({ params: { '*': 'openai-apps-challenge' } } as never)) as Response;
+  };
+  afterEach(() => { delete process.env.OPENAI_APPS_CHALLENGE; });
+
+  it('serves the bare token as text/plain — never JSON, never a list', async () => {
+    process.env.OPENAI_APPS_CHALLENGE = '  openai-apps-challenge-token-abc123\n';
+    const res = await get();
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toBe('text/plain; charset=utf-8');
+    expect(res.headers.get('Cache-Control')).toBe('no-store');
+    // Trimmed, because `fly secrets set` from a file keeps the newline.
+    expect(await res.text()).toBe('openai-apps-challenge-token-abc123');
+  });
+
+  it('answers before the MCP flag, so ownership can be proved while the server is off', async () => {
+    process.env.OPENAI_APPS_CHALLENGE = 'token';
+    delete process.env.MCP_SEAL_KEYS;
+    expect((await get()).status).toBe(200);
+  });
+
+  it('404s when the secret is unset or blank', async () => {
+    expect((await get()).status).toBe(404);
+    process.env.OPENAI_APPS_CHALLENGE = '   ';
+    expect((await get()).status).toBe(404);
+  });
+});
