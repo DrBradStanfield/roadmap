@@ -14,7 +14,7 @@
  * browser refreshes with PKCE and the server refreshes as a confidential
  * client.
  */
-import { ConflictError, StorageError, type ReadResult, type WriteResult } from './adapter';
+import { ConflictError, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
 
 export const DROPBOX_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
 const DOWNLOAD_URL = 'https://content.dropboxapi.com/2/files/download';
@@ -95,4 +95,43 @@ export async function dropboxWrite(
   const meta = (await res.json()) as { rev?: string };
   if (!meta.rev) throw new StorageError('Dropbox write returned no rev.');
   return { version: meta.rev };
+}
+
+/**
+ * One connection's app folder, for the life of one request — the hosted MCP
+ * server's Dropbox backend. The access token is minted from the sealed refresh
+ * token and dies with the call; nothing is cached between requests, because
+ * there is no per-user anything to cache in (design §1).
+ *
+ * Documents (the uploaded PDFs) are deliberately unreachable: the hosted write
+ * surface is append-only clinical values and nothing else. `DriveAdapter` in
+ * `drive-rest.ts` is the same shape for Google.
+ */
+export class DropboxAdapter implements StorageAdapter {
+  readonly id = 'dropbox' as const;
+  readonly label = 'Dropbox';
+
+  constructor(private readonly accessToken: string) {}
+
+  async connect(): Promise<void> {}
+  isConnected(): boolean {
+    return true;
+  }
+  async disconnect(): Promise<void> {}
+
+  read(fileName: string): Promise<ReadResult> {
+    return dropboxRead(this.accessToken, fileName);
+  }
+
+  write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
+    return dropboxWrite(this.accessToken, fileName, body, expectedVersion);
+  }
+
+  async readDocument(): Promise<Blob> {
+    throw new StorageError('The hosted server does not read uploaded documents.');
+  }
+
+  async writeDocument(): Promise<void> {
+    throw new StorageError('The hosted server does not write uploaded documents.');
+  }
 }

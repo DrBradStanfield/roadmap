@@ -1,12 +1,12 @@
 /**
  * The hosted MCP server: JSON-RPC over one HTTP POST, against the user's own
- * Dropbox folder (US-32 Phase 1, design §3/§6/§7).
+ * cloud folder — Dropbox or Google Drive (US-32 Phases 1–2, design §3/§6/§7).
  *
  * The tool layer is `packages/health-core/src/mcp-tools.ts` — the SAME pure
  * functions the local stdio server (Phase 0) and the CLI run, so a hosted
  * call cannot invent a legal write the local path would refuse. What this file
  * adds is everything the hosted surface needs and the local one does not: a
- * bearer token to unseal, a Dropbox folder to read and write through
+ * bearer token to unseal, a cloud folder to read and write through
  * `SyncManager`, and the four MANDATORY corrections mitigations of design §3
  * — `expectedValue` required, a 90-day age limit, per-call caps, and a
  * weighted write budget.
@@ -15,25 +15,28 @@
  * build has no workspace symlink, and the package name only breaks at deploy.
  */
 import { dayOf } from '../../packages/health-core/src/merge';
-import { dropboxRead, dropboxWrite } from '../../packages/health-core/src/dropbox-rest';
+import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
+import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
-import { StorageError, type ReadResult, type StorageAdapter, type WriteResult } from '../../packages/health-core/src/adapter';
+import type { StorageAdapter } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure } from '../../packages/health-core/src/sync-manager';
 import { isToolName, MCP_TOOLS, RECORD_FREE_TOOLS, runToolOverSync, ToolContractError, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import {
   allowToolCall,
   connectionKey,
-  dropboxAccessToken,
   isMcpEnabled,
   issuer,
+  providerAccessToken,
+  providerLabel,
   readCapped,
   spendWrites,
   unpackSealed,
   WRITE_COST,
   WRITES_PER_HOUR,
   type AccessPayload,
+  type McpProvider,
 } from './mcp-auth.server';
 
 const PROTOCOL_VERSION = '2025-11-25';
@@ -67,53 +70,24 @@ const INSTRUCTIONS =
 export const MAX_CORRECTION_AGE_DAYS = 90;
 
 // ---------------------------------------------------------------------------
-// Dropbox, as a StorageAdapter
+// The user's folder, as a StorageAdapter
 // ---------------------------------------------------------------------------
 
-/**
- * One connection's folder, for the life of one request. The access token is
- * minted from the sealed refresh token and dies with the call; nothing is
- * cached between requests, because there is no per-user anything to cache in.
- *
- * Documents (the uploaded PDFs) are deliberately unreachable: v1 writes
- * append-only clinical values and nothing else.
- */
-class HostedDropboxAdapter implements StorageAdapter {
-  readonly id = 'dropbox' as const;
-  readonly label = 'Dropbox';
-
-  constructor(private readonly accessToken: string) {}
-
-  async connect(): Promise<void> {}
-  isConnected(): boolean {
-    return true;
-  }
-  async disconnect(): Promise<void> {}
-
-  read(fileName: string): Promise<ReadResult> {
-    return dropboxRead(this.accessToken, fileName);
-  }
-
-  write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
-    return dropboxWrite(this.accessToken, fileName, body, expectedVersion);
-  }
-
-  async readDocument(): Promise<Blob> {
-    throw new StorageError('The hosted server does not read uploaded documents.');
-  }
-
-  async writeDocument(): Promise<void> {
-    throw new StorageError('The hosted server does not write uploaded documents.');
-  }
-}
-
 /** Test seam: the suite hands in its own in-memory folder. */
-export type AdapterFactory = (accessToken: string) => StorageAdapter;
+export type AdapterFactory = (provider: McpProvider, accessToken: string) => StorageAdapter;
 
-let makeAdapter: AdapterFactory = (token) => new HostedDropboxAdapter(token);
+/**
+ * Which cloud comes from the sealed bearer token and nothing else — no tool
+ * argument ever names a user, a file or a provider (design §4, tenant
+ * isolation). Drive's adapter carries the §7 algorithm Dropbox does not need.
+ */
+const REAL_ADAPTER: AdapterFactory = (provider, token) =>
+  provider === 'google' ? new DriveAdapter(token) : new DropboxAdapter(token);
+
+let makeAdapter: AdapterFactory = REAL_ADAPTER;
 
 export function setAdapterFactory(factory: AdapterFactory | null): void {
-  makeAdapter = factory ?? ((token) => new HostedDropboxAdapter(token));
+  makeAdapter = factory ?? REAL_ADAPTER;
 }
 
 // ---------------------------------------------------------------------------
@@ -201,29 +175,31 @@ async function callHostedTool(
 ): Promise<ToolAnswer> {
   if (!isToolName(name)) return refuse(`No tool named ${name}.`);
 
+  const provider = providerLabel(token.provider);
+
   // Record-free tools open nothing, exactly as the stdio server runs them: the
   // likeliest moment to report a bug is the moment the record would not open,
-  // so `report_feedback` must not need Dropbox — nor a token minted for it.
+  // so `report_feedback` must not need the provider — nor a token minted for it.
   let accessToken = '';
   if (!RECORD_FREE_TOOLS.has(name)) {
-    const minted = await dropboxAccessToken(token.rt);
+    const minted = await providerAccessToken(token.provider, token.rt);
     if (!minted) {
       return refuse(
-        'Dropbox would not renew this connection, so nothing was read and nothing was written. Either the user ' +
-          'disconnected the app or Dropbox could not be reached; ask them to try again, and to reconnect if it persists.',
+        `${provider} would not renew this connection, so nothing was read and nothing was written. Either the user ` +
+          `disconnected the app or ${provider} could not be reached; ask them to try again, and to reconnect if it persists.`,
       );
     }
     accessToken = minted;
   }
 
   try {
-    return await runToolOverSync(recordSync(makeAdapter(accessToken), 'mcp', now), name, args, now, {
+    return await runToolOverSync(recordSync(makeAdapter(token.provider, accessToken), 'mcp', now), name, args, now, {
       beforeCall: (file) => beforeHostedCall(token, name, file, args, now),
-      savedNote: () => 'Saved to the user’s Dropbox.',
+      savedNote: () => `Saved to the user’s ${provider}.`,
     });
   } catch (error) {
     if (error instanceof ToolContractError) throw error;
-    const failed = describeStorageFailure(error, 'The record in Dropbox');
+    const failed = describeStorageFailure(error, `The record in ${provider}`);
     return refuse(`${failed.message}. ${failed.hint}`);
   }
 }
@@ -279,8 +255,8 @@ async function handleRpc(incoming: unknown, token: AccessPayload, now: string): 
     case 'tools/call': {
       const name = typeof params.name === 'string' ? params.name : '';
       if (!name) return failure(id, INVALID_PARAMS, 'tools/call needs a tool name');
-      // Per connection: every tool call refreshes a Dropbox access token under
-      // our one shared app identity, so a loop here is a loop at Dropbox.
+      // Per connection: every tool call refreshes a provider access token under
+      // our one shared app identity, so a loop here is a loop at the provider.
       if (!allowToolCall(connectionKey(token.rt))) {
         return ok(id, {
           content: [{ type: 'text', text: 'Too many tool calls from this connection in the last minute. Wait a moment, then try again.' }],

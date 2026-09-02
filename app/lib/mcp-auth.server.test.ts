@@ -164,7 +164,7 @@ describe('write allowance, weighted and per connection (US-32, design §3 mitiga
     expect(spendWrites(connectionKey(rt), WRITE_COST.add)).toBe(false);
 
     // A second access token over the same connection lands on the same key.
-    const issued = issueTokens(AUDIENCE.clientId, rt, Date.now());
+    const issued = issueTokens(AUDIENCE.clientId, 'dropbox', rt, Date.now());
     const access = unpackSealed<AccessPayload>('access', issued.access_token)!;
     expect(spendWrites(connectionKey(access.rt), WRITE_COST.add)).toBe(false);
   });
@@ -177,7 +177,7 @@ describe('write allowance, weighted and per connection (US-32, design §3 mitiga
   });
 
   it('an access token’s stated lifetime is honest — clients refresh against it', () => {
-    const issued = issueTokens(AUDIENCE.clientId, 'rt', Date.now());
+    const issued = issueTokens(AUDIENCE.clientId, 'dropbox', 'rt', Date.now());
     expect(issued.expires_in).toBe(ACCESS_LIFETIME_SECONDS);
   });
 
@@ -185,11 +185,11 @@ describe('write allowance, weighted and per connection (US-32, design §3 mitiga
     const start = Date.parse('2026-01-01T00:00:00.000Z');
     const first = unpackSealed<RefreshPayload>(
       'refresh',
-      issueTokens(AUDIENCE.clientId, 'rt', start).refresh_token,
+      issueTokens(AUDIENCE.clientId, 'dropbox', 'rt', start).refresh_token,
       start,
     )!;
     const day89 = start + 89 * 24 * 60 * 60 * 1000;
-    const renewed = issueTokens(AUDIENCE.clientId, 'rt', day89, first.exp);
+    const renewed = issueTokens(AUDIENCE.clientId, 'dropbox', 'rt', day89, first.exp);
     expect(unpackSealed<RefreshPayload>('refresh', renewed.refresh_token, day89)!.exp).toBe(first.exp);
   });
 });

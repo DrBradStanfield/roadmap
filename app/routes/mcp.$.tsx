@@ -3,8 +3,8 @@
  *
  *   POST /mcp             the MCP endpoint itself (JSON-RPC)
  *   GET  /mcp/authorize   our consent screen
- *   POST /mcp/authorize   consent given — on to Dropbox
- *   GET  /mcp/callback    Dropbox returns; we mint an authorization code
+ *   POST /mcp/authorize   consent given — on to the provider the user picked
+ *   GET  /mcp/callback    the provider returns; we mint an authorization code
  *   POST /mcp/token       code and refresh grants (form-encoded)
  *   POST /mcp/register    DCR fallback (JSON)
  *
@@ -25,16 +25,19 @@ import { mcpEndpoint, originRejected } from '../lib/mcp.server';
 import {
   allowAuthorize,
   allowToken,
+  availableProviders,
   checkAuthorize,
   claimCode,
   CODE_LIFETIME_SECONDS,
-  dropboxAuthorizeUrl,
-  dropboxConfigured,
-  dropboxExchange,
   isMcpEnabled,
+  isProvider,
   issuer,
   issueTokens,
   packSealed,
+  providerAuthorizeUrl,
+  providerExchange,
+  providerLabel,
+  providerRevokeUrl,
   readCapped,
   registerClient,
   resolveClient,
@@ -42,14 +45,15 @@ import {
   unpackSealed,
   verifyPkce,
   type CodePayload,
+  type McpProvider,
   type RefreshPayload,
   type StatePayload,
 } from '../lib/mcp-auth.server';
 
 /**
- * The consent screen is the only place a Dropbox trip may start, and this
+ * The consent screen is the only place a provider trip may start, and this
  * cookie is what proves it did. The sealed state rides in the cookie — first
- * party, `__Host-`, HttpOnly — and Dropbox is handed a 32-byte nonce that the
+ * party, `__Host-`, HttpOnly — and the provider is handed a 32-byte nonce that the
  * cookie's state names. So a forged `/mcp/callback` from anywhere else has no
  * cookie and gets a 400, and the ~1 KB blob never has to survive a provider's
  * `state` parameter (Dropbox's documented limit is 500 bytes; verify it live
@@ -129,7 +133,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   // session to resume. `Mcp-Session-Id` and `Last-Event-ID` are ignored.
   if (path === '') return mcpEndpoint(request);
   if (path === 'authorize') return authorizeScreen(request, url);
-  if (path === 'callback') return dropboxCallback(request, url);
+  if (path === 'callback') return providerCallback(request, url);
   return notFound();
 }
 
@@ -146,7 +150,12 @@ async function authorizeScreen(request: Request, url: URL): Promise<Response> {
   if (!allowAuthorize(getClientIp(request))) {
     return new Response('Too many requests', { status: 429 });
   }
-  if (!dropboxConfigured()) return oauthError('temporarily_unavailable', 'Dropbox is not configured', 503);
+  // Only providers whose secrets exist are offered, so Drive stays invisible
+  // until Brad finishes the Google console steps (design §7, phase-2 gate).
+  const providers = availableProviders();
+  if (providers.length === 0) {
+    return oauthError('temporarily_unavailable', 'No storage provider is configured', 503);
+  }
 
   const client = await resolveClient(url.searchParams.get('client_id') ?? '');
   // An unknown client can never be answered by redirecting — that would make
@@ -165,16 +174,21 @@ async function authorizeScreen(request: Request, url: URL): Promise<Response> {
     return redirectTo(back.toString());
   }
 
-  const sealed = sealState(checked.request, Date.now());
-  return html(consentPage(client.name, sealed));
+  // One sealed state per provider: the choice is inside the blob, so the POST
+  // cannot be edited into a provider the user did not press.
+  const offers = providers.map((provider) => ({
+    provider,
+    state: sealState(checked.request, provider, Date.now()),
+  }));
+  return html(consentPage(client.name, offers));
 }
 
 /**
- * Dropbox has sent the user back. Exchange the code for the refresh token we
- * will seal, then hand the CLIENT its own authorization code — a 60-second
+ * The provider has sent the user back. Exchange the code for the refresh token
+ * we will seal, then hand the CLIENT its own authorization code — a 60-second
  * blob carrying the PKCE challenge it must answer.
  */
-async function dropboxCallback(request: Request, url: URL): Promise<Response> {
+async function providerCallback(request: Request, url: URL): Promise<Response> {
   // The cookie is the whole check: without it this browser never saw our
   // consent screen, so there is nothing to continue and nothing to redirect to.
   const held = readCookie(request, STATE_COOKIE);
@@ -198,15 +212,16 @@ async function dropboxCallback(request: Request, url: URL): Promise<Response> {
     return redirectTo(back.toString(), clear);
   }
 
-  const refreshToken = await dropboxExchange(code);
+  const refreshToken = await providerExchange(state.provider, code);
   if (!refreshToken) {
     back.searchParams.set('error', 'server_error');
-    back.searchParams.set('error_description', 'Dropbox would not complete the connection');
+    back.searchParams.set('error_description', `${providerLabel(state.provider)} would not complete the connection`);
     return redirectTo(back.toString(), clear);
   }
 
   const payload: CodePayload = {
     clientId: state.clientId,
+    provider: state.provider,
     redirectUri: state.redirectUri,
     codeChallenge: state.codeChallenge,
     rt: refreshToken,
@@ -237,17 +252,22 @@ export async function action({ request, params }: ActionFunctionArgs) {
 /**
  * The user pressed Connect. This is where the flow becomes bound to THIS
  * browser: we mint a nonce, seal it into the state, put the state in a cookie,
- * and hand Dropbox the nonce alone.
+ * and hand the provider the nonce alone.
  */
 async function consentGiven(request: Request): Promise<Response> {
   const body = await cappedBody(request);
   if (body === null) return tooLarge();
   const state = unpackSealed<StatePayload>('state', new URLSearchParams(body).get('state') ?? '');
   if (!state) return htmlError('That sign-in took too long. Please start again from your assistant.');
+  // The provider is read from the sealed state, never from the form, and a
+  // provider whose secrets have since gone is refused rather than half-tried.
+  if (!isProvider(state.provider) || !availableProviders().includes(state.provider)) {
+    return htmlError('That storage provider is not available here. Please start again from your assistant.');
+  }
 
   const nonce = crypto.randomBytes(32).toString('base64url');
   const sealed = packSealed('state', state.clientId, { ...state, nonce });
-  return redirectTo(dropboxAuthorizeUrl(nonce), {
+  return redirectTo(providerAuthorizeUrl(state.provider, nonce), {
     'Set-Cookie': `${STATE_COOKIE}=${sealed}; ${STATE_COOKIE_ATTRS}; Max-Age=600`,
   });
 }
@@ -285,14 +305,16 @@ async function tokenEndpoint(request: Request): Promise<Response> {
     // cannot promise it across Fly machines. Redemption still needs the
     // verifier, which never leaves the client (design §4).
     if (!claimCode(code.jti)) return oauthError('invalid_grant', 'That code is not usable');
-    return Response.json(issueTokens(clientId, code.rt, Date.now()), { headers: NO_STORE });
+    return Response.json(issueTokens(clientId, code.provider, code.rt, Date.now()), { headers: NO_STORE });
   }
 
   if (grant === 'refresh_token') {
     const refresh = unpackSealed<RefreshPayload>('refresh', form.get('refresh_token') ?? '');
     if (!refresh || refresh.clientId !== clientId) return oauthError('invalid_grant', 'Please reconnect');
     // The original expiry travels through, so 90 days runs from consent.
-    return Response.json(issueTokens(clientId, refresh.rt, Date.now(), refresh.exp), { headers: NO_STORE });
+    return Response.json(issueTokens(clientId, refresh.provider, refresh.rt, Date.now(), refresh.exp), {
+      headers: NO_STORE,
+    });
   }
 
   return oauthError('unsupported_grant_type', 'Only authorization_code and refresh_token');
@@ -375,22 +397,30 @@ background:#1b5e4b;color:#fff;cursor:pointer}small{color:#555}</style>
  * What the user is actually agreeing to, in the words §1 approved. The
  * assistant's name is text it chose, so it is escaped.
  */
-function consentPage(clientName: string, sealedState: string): string {
+function consentPage(clientName: string, offers: Array<{ provider: McpProvider; state: string }>): string {
+  // One form per provider, each carrying its own sealed state. A button is a
+  // choice of cloud, and the choice is sealed the moment it is offered.
+  const buttons = offers
+    .map(
+      ({ provider, state }) => `<form method="post">
+<input type="hidden" name="state" value="${escapeHtml(state)}">
+<button type="submit">Continue to ${escapeHtml(providerLabel(provider))}</button>
+</form>`,
+    )
+    .join('\n');
+  const revoke = offers.map(({ provider }) => providerRevokeUrl(provider)).join(' or ');
   return page(
     'Connect your health record',
     `<p><strong>${escapeHtml(clientName)}</strong> is asking to read and add to your health record.</p>
-<p>Your record still lives only in your Dropbox. Our server reads it, in memory, to answer your
+<p>Your record still lives only in your own storage. Our server reads it, in memory, to answer your
 assistant, and your assistant holds a sealed credential only we can open. We keep no copy.</p>
 <ul>
 <li>It can read your record and compute your plan.</li>
 <li>It can add measurements and lab results, and correct a recent value. It cannot delete anything.</li>
-<li>You cancel it at <span>dropbox.com/account/connected_apps</span>. That also disconnects this
+<li>You cancel it at <span>${escapeHtml(revoke)}</span>. That also disconnects this
 website from your folder, and you can reconnect in one click.</li>
 </ul>
-<form method="post">
-<input type="hidden" name="state" value="${escapeHtml(sealedState)}">
-<button type="submit">Continue to Dropbox</button>
-</form>
+${buttons}
 <p><small>Educational, not medical advice.</small></p>`,
   );
 }
