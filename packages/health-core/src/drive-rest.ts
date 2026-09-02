@@ -37,7 +37,6 @@ import {
 
 /** Exported for the browser adapter's two cosmetic PATCHes (rename, re-parent). */
 export const DRIVE_API = 'https://www.googleapis.com/drive/v3';
-const DRIVE = DRIVE_API;
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
 
 /** Everything the app creates lives here (parity with Dropbox's app folder). */
@@ -73,7 +72,7 @@ export async function driveFindFileId(
   const q = encodeURIComponent(
     `name='${quoted(name)}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
   );
-  const res = await fetch(`${DRIVE}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`, {
+  const res = await fetch(`${DRIVE_API}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`, {
     headers: auth(accessToken),
   });
   if (!res.ok) await fail('lookup', res);
@@ -93,7 +92,7 @@ export async function driveFindFolder(
   const q = encodeURIComponent(
     `(${anyName}) and mimeType='${DRIVE_FOLDER_MIME}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
   );
-  const res = await fetch(`${DRIVE}/files?q=${q}&fields=files(id,name)&pageSize=1`, {
+  const res = await fetch(`${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=1`, {
     headers: auth(accessToken),
   });
   if (!res.ok) await fail('folder lookup', res);
@@ -101,7 +100,7 @@ export async function driveFindFolder(
 }
 
 export async function driveCreateFolder(accessToken: string, name: string, parentId?: string): Promise<string> {
-  const res = await fetch(`${DRIVE}/files?fields=id`, {
+  const res = await fetch(`${DRIVE_API}/files?fields=id`, {
     method: 'POST',
     headers: { ...auth(accessToken), 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, mimeType: DRIVE_FOLDER_MIME, ...(parentId ? { parents: [parentId] } : null) }),
@@ -149,7 +148,7 @@ export async function driveUpdateFile(accessToken: string, fileId: string, json:
  * compared and never sent as a precondition.
  */
 export async function driveFileVersion(accessToken: string, fileId: string): Promise<string | null> {
-  const res = await fetch(`${DRIVE}/files/${fileId}?fields=version`, { headers: auth(accessToken) });
+  const res = await fetch(`${DRIVE_API}/files/${fileId}?fields=version`, { headers: auth(accessToken) });
   if (res.status === 404) return null;
   if (!res.ok) await fail('version read', res);
   return ((await res.json()) as { version?: string }).version ?? null;
@@ -157,7 +156,7 @@ export async function driveFileVersion(accessToken: string, fileId: string): Pro
 
 /** Download a file's bytes as JSON. Null = the file is gone. */
 export async function driveDownloadJson(accessToken: string, fileId: string): Promise<unknown | null> {
-  const res = await fetch(`${DRIVE}/files/${fileId}?alt=media`, { headers: auth(accessToken) });
+  const res = await fetch(`${DRIVE_API}/files/${fileId}?alt=media`, { headers: auth(accessToken) });
   if (res.status === 404) return null;
   if (!res.ok) await fail('read', res);
   const text = await res.text();

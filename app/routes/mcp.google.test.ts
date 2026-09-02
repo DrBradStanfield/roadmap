@@ -18,10 +18,9 @@ import crypto from 'node:crypto';
 vi.mock('node:dns/promises', () => ({ default: { lookup: async () => [{ address: '1.1.1.1', family: 4 }] } }));
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
-import { DriveAdapter, DRIVE_FOLDER_NAME } from '../../packages/health-core/src/drive-rest';
-import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
+import { DRIVE_FOLDER_NAME } from '../../packages/health-core/src/drive-rest';
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { packSealed, resetMcpMemory, unpackSealed, type AccessPayload, type McpProvider } from '../lib/mcp-auth.server';
+import { resetMcpMemory, unpackSealed, type AccessPayload, type McpProvider } from '../lib/mcp-auth.server';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
 
@@ -280,28 +279,21 @@ describe('a Google connection, end to end (US-32 phase 2)', () => {
 // ---------------------------------------------------------------------------
 
 describe('the provider is sealed, not asserted (US-32 phase 2)', () => {
-  it('builds a Dropbox adapter for a Dropbox token and a Drive adapter for a Google one', async () => {
-    setAdapterFactory(null); // the real factory
-    const dropbox = packSealed('access', 'client', {
-      clientId: 'client',
-      provider: 'dropbox',
-      rt: 'rt',
-      exp: Math.floor(Date.now() / 1000) + 60,
-    });
-    const google = packSealed('access', 'client', {
-      clientId: 'client',
-      provider: 'google',
-      rt: 'rt',
-      exp: Math.floor(Date.now() / 1000) + 60,
-    });
-    // The factory is a pure function of the sealed provider; asserting on the
-    // adapter it returns is asserting on the only thing that chooses a cloud.
-    const built = (token: string) =>
-      (unpackSealed<AccessPayload>('access', token)!.provider === 'google'
-        ? new DriveAdapter('t')
-        : new DropboxAdapter('t')).id;
-    expect(built(dropbox)).toBe('dropbox');
-    expect(built(google)).toBe('google-drive');
+  it('a Dropbox token reaches Dropbox and never Google', async () => {
+    const { access } = await connect('Dropbox');
+    setAdapterFactory(null); // the real factory, chosen by the sealed provider
+
+    const hosts: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (input: string | URL) => {
+      const url = new URL(String(input));
+      hosts.push(url.host);
+      if (url.host === 'api.dropboxapi.com') return Response.json({ access_token: 'dropbox-access' });
+      return new Response('{}', { status: 200, headers: { 'dropbox-api-result': '{"rev":"1"}' } });
+    }));
+
+    await callTool(access, 'read_record', {});
+    expect(hosts).toContain('content.dropboxapi.com');
+    expect(hosts.some((h) => h.endsWith('googleapis.com'))).toBe(false);
   });
 
   it('refuses a token whose sealed provider was edited', async () => {
