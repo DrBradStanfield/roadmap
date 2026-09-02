@@ -365,6 +365,93 @@ describe('a pinned vendor client connects without DCR and without a fetch (US-32
   });
 });
 
+/**
+ * A command-line client has no callback host: it binds an ephemeral port on the
+ * user's own machine (RFC 8252 §7.3). The port is therefore unknown at
+ * registration, and only the port may differ.
+ */
+describe('loopback redirects let a command-line client connect (US-32 AC21)', () => {
+  const CLAUDE_CODE = 'https://claude.ai/oauth/claude-code-client-metadata';
+
+  async function registerLoopback(redirect: string): Promise<Response> {
+    return post('/mcp/register', {
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ client_name: 'Gemini CLI', redirect_uris: [redirect] }),
+    });
+  }
+
+  function authorize(clientId: string, redirect: string): Promise<Response> {
+    return get(`/mcp/authorize?${new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirect,
+      response_type: 'code',
+      code_challenge: CHALLENGE,
+      code_challenge_method: 'S256',
+    })}`);
+  }
+
+  it('registers a loopback redirect and then authorizes on a different port', async () => {
+    const registered = await registerLoopback('http://localhost:12345/oauth/callback');
+    expect(registered.status).toBe(201);
+    const clientId = (await registered.json()).client_id as string;
+
+    const consent = await authorize(clientId, 'http://localhost:54321/oauth/callback');
+    expect(consent.status).toBe(200);
+    expect(await consent.text()).toContain('Gemini CLI');
+  });
+
+  it('refuses a path the client never registered, however loopback it looks', async () => {
+    const clientId = (await (await registerLoopback('http://localhost:12345/oauth/callback')).json()).client_id as string;
+    const res = await authorize(clientId, 'http://localhost:54321/steal');
+    expect(res.status).toBe(400);
+    expect(res.headers.get('location')).toBeNull();
+  });
+
+  it('refuses https://localhost and any non-loopback http at registration', async () => {
+    for (const redirect of [
+      'https://localhost:1234/cb',
+      'http://example.com/cb',
+      'http://localhost.evil.com/cb',
+      'http://127.0.0.1.evil.com/cb',
+    ]) {
+      const res = await registerLoopback(redirect);
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toBe('invalid_redirect_uri');
+    }
+  });
+
+  it('answers the pinned Claude Code client on a loopback port without a fetch', async () => {
+    const consent = await authorize(CLAUDE_CODE, 'http://127.0.0.1:61234/callback');
+    expect(consent.status).toBe(200);
+    expect(await consent.text()).toContain('Claude Code');
+    const targets = (fetch as unknown as { mock: { calls: Array<[unknown]> } }).mock.calls;
+    expect(targets.some(([to]) => String(to).includes('claude.ai'))).toBe(false);
+  });
+
+  it('carries the loopback redirect through consent, callback and /token', async () => {
+    seedRecord();
+    const registered = await registerLoopback('http://127.0.0.1:12345/oauth/callback');
+    const clientId = (await registered.json()).client_id as string;
+    const consent = await authorize(clientId, 'http://127.0.0.1:54321/oauth/callback');
+    const sealed = unescapeHtml(/name="state" value="([^"]+)"/.exec(await consent.text())![1]);
+    const { nonce, cookie } = await pressConnect(sealed);
+
+    const back = await get(`/mcp/callback?code=dropbox-code&state=${encodeURIComponent(nonce)}`, { cookie });
+    expect(back.status).toBe(302);
+    const returned = new URL(back.headers.get('location')!);
+    expect(returned.origin + returned.pathname).toBe('http://127.0.0.1:54321/oauth/callback');
+
+    const tokens = await redeem({
+      grant_type: 'authorization_code',
+      code: returned.searchParams.get('code')!,
+      redirect_uri: 'http://127.0.0.1:54321/oauth/callback',
+      code_verifier: VERIFIER,
+      client_id: clientId,
+    });
+    expect((await callTool(tokens.access_token, 'read_record', {})).isError).toBe(false);
+  });
+});
+
 describe('the authorization server refuses what it must (US-32, design §4)', () => {
   it('rejects an unknown client rather than redirecting anywhere', async () => {
     const res = await get(`/mcp/authorize?client_id=https%3A%2F%2Fevil.test%2Fc&redirect_uri=${encodeURIComponent(REDIRECT)}&response_type=code&code_challenge=${CHALLENGE}&code_challenge_method=S256`);

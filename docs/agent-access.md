@@ -160,6 +160,11 @@ user connects once and then asks in words. It offers seven tools — `read_recor
 over the user's own Dropbox or Google Drive folder, and it enforces the rules above in
 code rather than asking you to keep them.
 
+A command-line assistant can connect to the same server: `claude mcp add --transport http
+drstanfield https://mcp.drstanfield.com/mcp`, or `gemini mcp add -s user --transport http
+drstanfield https://mcp.drstanfield.com/mcp`. Either opens a browser once for the consent
+screen and your cloud provider, then holds the token itself.
+
 Both backends are available: the consent screen offers Dropbox and Google Drive, and the
 choice is sealed into the token. Drive has no conditional write, so the server re-checks
 the file version before and after each save and retries on a conflict; concurrent writers

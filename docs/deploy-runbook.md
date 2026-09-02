@@ -370,7 +370,7 @@ document that answers with a challenge gets PINNED in `KNOWN_CLIENTS`
 User-Agent, no third-party fetcher: those all mean trusting a document we could not
 authenticate anyway. Pinning is the spec's own sanctioned mechanism
 (draft-ietf-oauth-client-id-metadata-document-00 §4), it is two lines and a test, and
-the pinned redirect URI must also be in `ALLOWED_REDIRECTS`.
+the pinned redirect URI must also pass `isAllowedRedirect`.
 
 **Known follow-up, NOT this branch.** `app/lib/route-helpers.server.ts` carries a second,
 `X-Forwarded-For`-only `getClientIp`, used by `api.chat` and `api.feedback`. Those limits
@@ -414,6 +414,22 @@ retroactive over every blob ever issued. `MCP_CLIENT_HMAC_KEY` is different and
 user-visible: rotating it forces every affected user to REMOVE AND RE-ADD the connector,
 because Anthropic freezes a connector's auth settings once it is added. Rotate that one
 only with a comms plan.
+
+### Other assistants: Claude Code and Gemini CLI
+
+Both connect to the hosted server as of 2026-09-02, when loopback redirects were turned
+on (RFC 8252 §7.3, US-32 AC21). A command-line client listens on an ephemeral port on the
+user's own machine, so the port cannot be registered in advance; `redirectMatches` ignores
+the port and nothing else. Claude Code's metadata document is pinned in `KNOWN_CLIENTS`
+alongside the web one, for the same Cloudflare reason. Gemini CLI registers dynamically.
+
+```bash
+claude mcp add --transport http drstanfield https://mcp.drstanfield.com/mcp
+gemini mcp add -s user --transport http drstanfield https://mcp.drstanfield.com/mcp
+```
+
+Each opens a browser once for our consent screen and the cloud provider, then keeps the
+sealed token. Nothing per user is stored on our side either way.
 
 ### Publishing the ChatGPT app
 

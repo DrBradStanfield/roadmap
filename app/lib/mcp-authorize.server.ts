@@ -8,7 +8,7 @@
  */
 import crypto from 'node:crypto';
 import { resourceUrl } from './mcp-config.server';
-import { isAllowedRedirect, type McpClient } from './mcp-clients.server';
+import { isAllowedRedirect, redirectMatches, type McpClient } from './mcp-clients.server';
 import { nowSeconds, type StatePayload } from './mcp-grants.server';
 import type { McpProvider } from './mcp-providers.server';
 import { packSealed } from './mcp-seal.server';
@@ -60,7 +60,7 @@ export type AuthorizeCheck =
  */
 export function checkAuthorize(params: URLSearchParams, client: McpClient): AuthorizeCheck {
   const redirectUri = params.get('redirect_uri') ?? '';
-  if (!client.redirectUris.includes(redirectUri) || !isAllowedRedirect(redirectUri)) {
+  if (!client.redirectUris.some((registered) => redirectMatches(registered, redirectUri)) || !isAllowedRedirect(redirectUri)) {
     // The HOST only, never the URL or the query — this file may not log a URL.
     // A vendor quietly changing its callback shows up in Sentry as this line
     // with its own hostname; anything else is someone probing us.

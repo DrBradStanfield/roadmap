@@ -20,21 +20,65 @@ export interface McpClient {
  * authorization code. Client metadata is written by the client, so it can
  * claim any redirect it likes; this list is what actually decides.
  *
- * RFC 8252 loopback is implemented below but OFF. CLAUDE.md's hard rule —
- * localhost is never on an allow-list — and design §4's "loopback with port
- * ignored" genuinely disagree, and the stricter reading is the one that ships.
- * A local client has the stdio server (US-32 Phase 0) and needs no OAuth.
- * Turning it on is this constant plus a redeploy.
+ * Loopback is the second entry route, per RFC 8252 §7.3: a command-line client
+ * has no callback host of its own, so it listens on an ephemeral port on the
+ * user's own machine. Enabled 2026-09-02 so Claude Code and Gemini CLI can
+ * connect. It is not the CORS allow-list — nothing here grants a browser
+ * origin anything — and the code that reaches such a URL is worthless without
+ * the PKCE verifier, which never left the process that asked.
  */
 const ALLOWED_REDIRECTS = [
   'https://claude.ai/api/mcp/auth_callback',
   'https://chatgpt.com/connector_platform_oauth_redirect',
   'https://chatgpt.com/backend-api/aip/connectors/links/oauth/callback',
 ];
-const ALLOW_LOOPBACK_REDIRECT = false;
+
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
 /**
- * The two canonical vendor clients, consulted BEFORE any network fetch.
+ * Parse a redirect that may only be reached over loopback. `http:` is allowed
+ * ONLY here, and the host is matched exactly — `localhost.evil.test` and
+ * `127.0.0.1.evil.test` are ordinary public names and get nothing. Userinfo
+ * and a fragment are refused outright: both are ways to make one URL read as
+ * another.
+ */
+function parseLoopback(uri: string): URL | null {
+  let url: URL;
+  try {
+    url = new URL(uri);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'http:') return null;
+  if (url.username || url.password || url.hash) return null;
+  return LOOPBACK_HOSTS.has(url.hostname) ? url : null;
+}
+
+/** RFC 8252 §7.3 — a loopback redirect matches on everything but the port. */
+export function isLoopbackRedirect(uri: string): boolean {
+  return parseLoopback(uri) !== null;
+}
+
+/**
+ * The one comparison for "is this the redirect the client registered?" — used
+ * at `/authorize`, at `/token`, and nowhere else. Exact string first; a
+ * loopback pair may then differ in the port and in NOTHING else, because the
+ * port is the one part the client cannot know until it binds.
+ */
+export function redirectMatches(registered: string, requested: string): boolean {
+  if (registered === requested) return true;
+  const a = parseLoopback(registered);
+  const b = parseLoopback(requested);
+  if (!a || !b) return false;
+  return a.hostname === b.hostname && a.pathname === b.pathname && a.search === b.search;
+}
+
+export function isAllowedRedirect(uri: string): boolean {
+  return ALLOWED_REDIRECTS.includes(uri) || isLoopbackRedirect(uri);
+}
+
+/**
+ * The canonical vendor clients, consulted BEFORE any network fetch.
  *
  * 2026-09-02: `https://claude.ai/oauth/mcp-oauth-client-metadata` answers a
  * datacenter fetch with a Cloudflare managed challenge — 403, `text/html`,
@@ -48,8 +92,13 @@ const ALLOW_LOOPBACK_REDIRECT = false;
  * spec's own sanctioned mechanisms: IETF draft-ietf-oauth-client-id-metadata-
  * document-00 §4 says a server SHOULD fetch the document and MAY apply its own
  * policy about which clients it accepts. This IS that policy. The redirect URIs
- * here are the vendors' published ones and must also be in ALLOWED_REDIRECTS —
- * a test asserts that, so the two lists cannot drift apart.
+ * here are copied verbatim from the vendors' published documents, and every one
+ * must pass `isAllowedRedirect` — a test asserts that, so the pins and the
+ * policy cannot drift apart.
+ *
+ * Claude Code publishes a SECOND document, `claude-code-client-metadata`,
+ * behind the same challenge. Its redirects are loopback: the port belongs to
+ * the CLI and is not known until it binds one (RFC 8252 §7.3).
  */
 export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<McpClient>> = new Map([
   [
@@ -61,6 +110,14 @@ export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<McpClient>> = new Map([
     },
   ],
   [
+    'https://claude.ai/oauth/claude-code-client-metadata',
+    {
+      clientId: 'https://claude.ai/oauth/claude-code-client-metadata',
+      name: 'Claude Code',
+      redirectUris: Object.freeze(['http://localhost/callback', 'http://127.0.0.1/callback']),
+    },
+  ],
+  [
     'https://chatgpt.com/oauth/client.json',
     {
       clientId: 'https://chatgpt.com/oauth/client.json',
@@ -69,23 +126,6 @@ export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<McpClient>> = new Map([
     },
   ],
 ]);
-
-/** RFC 8252 §7.3 — a loopback redirect matches on everything but the port. */
-export function isLoopbackRedirect(uri: string): boolean {
-  try {
-    const url = new URL(uri);
-    // `localhost` resolves through DNS and is explicitly not allowed anywhere
-    // in this codebase; the literal addresses are the RFC's own form.
-    return url.protocol === 'http:' && (url.hostname === '127.0.0.1' || url.hostname === '[::1]' || url.hostname === '::1');
-  } catch {
-    return false;
-  }
-}
-
-export function isAllowedRedirect(uri: string): boolean {
-  if (ALLOWED_REDIRECTS.includes(uri)) return true;
-  return ALLOW_LOOPBACK_REDIRECT && isLoopbackRedirect(uri);
-}
 
 interface ClientMetadata {
   client_name: string;
