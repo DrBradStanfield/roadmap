@@ -220,45 +220,43 @@ export function dueSplit(plan: Plan): { overdue: ReminderScheduleItem[]; upcomin
 }
 
 /** The agent-facing shape. Field names are stable; add, never rename. */
-export function planPayload(plan: Plan): Record<string, unknown> {
+export function planPayload(plan: Plan) {
   const { overdue, upcoming } = dueSplit(plan);
-  return (
-    {
-      instruction: PLAN_INSTRUCTION,
-      schemaVersion: CURRENT_SCHEMA_VERSION,
-      generatedAt: plan.generatedAt,
-      today: plan.today,
-      unitSystem: plan.unitSystem,
-      profile: {
-        sex: plan.inputs.sex,
-        age: plan.results.age ?? null,
-        heightCm: plan.results.heightCm,
-        bmi: plan.results.bmi ?? null,
-        bmiCategory: plan.results.bmiCategory ?? null,
-        eGFR: plan.results.eGFR ?? null,
-        idealBodyWeightKg: plan.results.idealBodyWeight,
-        proteinTargetG: plan.results.proteinTarget,
-      },
-      inputs: plan.inputs,
-      currentValues: currentValues(plan),
-      labValues: plan.labs,
-      medications: plan.medications,
-      screenings: plan.screenings,
-      due: { overdue, upcoming },
-      suggestions: plan.results.suggestions.map((s) => ({
-        id: s.id,
-        category: s.category,
-        priority: s.priority,
-        title: s.title,
-        description: s.description,
-        ingredients: s.ingredients ?? [],
-        reason: s.reason ?? null,
-        guidelines: s.guidelines ?? [],
-        references: s.references ?? [],
-      })),
-      source: { schema: SCHEMA_URL, tool: 'tools/get-plan.ts', docs: 'docs/agent-access.md' },
-    }
-  );
+  return {
+    instruction: PLAN_INSTRUCTION,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    generatedAt: plan.generatedAt,
+    today: plan.today,
+    unitSystem: plan.unitSystem,
+    profile: {
+      sex: plan.inputs.sex,
+      age: plan.results.age ?? null,
+      heightCm: plan.results.heightCm,
+      bmi: plan.results.bmi ?? null,
+      bmiCategory: plan.results.bmiCategory ?? null,
+      eGFR: plan.results.eGFR ?? null,
+      idealBodyWeightKg: plan.results.idealBodyWeight,
+      proteinTargetG: plan.results.proteinTarget,
+    },
+    inputs: plan.inputs,
+    currentValues: currentValues(plan),
+    labValues: plan.labs,
+    medications: plan.medications,
+    screenings: plan.screenings,
+    due: { overdue, upcoming },
+    suggestions: plan.results.suggestions.map((s) => ({
+      id: s.id,
+      category: s.category,
+      priority: s.priority,
+      title: s.title,
+      description: s.description,
+      ingredients: s.ingredients ?? [],
+      reason: s.reason ?? null,
+      guidelines: s.guidelines ?? [],
+      references: s.references ?? [],
+    })),
+    source: { schema: SCHEMA_URL, tool: 'tools/get-plan.ts', docs: 'docs/agent-access.md' },
+  };
 }
 
 /** The same shape, serialized — what a CLI prints and a tool puts in `content`. */

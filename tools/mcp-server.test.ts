@@ -441,8 +441,6 @@ describe('US-32 — structured results reach the client unchanged', () => {
     expect(refused.result!.isError).toBe(true);
     expect(refused.result!.structuredContent).toBeUndefined();
 
-    // Every tool publishes the schema those results are checked against.
-    for (const tool of MCP_TOOLS) expect(tool.outputSchema.type, tool.name).toBe('object');
     rmSync(dir, { recursive: true, force: true });
   });
 });

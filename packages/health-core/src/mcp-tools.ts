@@ -284,14 +284,13 @@ export function readRecord(file: RoadmapFile, request: z.infer<typeof readRecord
     measurements: record.measurements.filter((m) => (!metric || matchesMetric(m.metricType, metric)) && keep(m)),
     labValues: record.labValues.filter((l) => (!metric || matchesMetric(l.metricName, metric)) && keep(l)),
   };
-  return { status: 'ok', text: JSON.stringify(filtered, null, 2), data: filtered };
+  return okJson(filtered);
 }
 
 /** The plan, in the same JSON shape `get-plan.ts --json` prints (US-30 AC3). */
 export function getPlan(file: RoadmapFile, now: string): ToolOutcome {
   try {
-    const payload = planPayload(computePlan(file, new Date(now)));
-    return { status: 'ok', text: JSON.stringify(payload, null, 2), data: payload };
+    return okJson(planPayload(computePlan(file, new Date(now))));
   } catch (error) {
     if (error instanceof PlanError) return { status: 'rejected', text: `${error.message}. ${error.hint}` };
     throw error;
@@ -316,6 +315,11 @@ function rejection(result: EditRejection): ToolOutcome {
   return { status: 'rejected', text: `${oneLine(result.message)}. Nothing was written.` };
 }
 
+/** A read's answer: the same payload as data, and as the JSON older clients read. */
+function okJson(data: unknown): ToolOutcome {
+  return { status: 'ok', text: JSON.stringify(data, null, 2), data };
+}
+
 /** One core metric, SI canonical, validated by health-core. */
 export function addMeasurement(
   file: RoadmapFile,
@@ -329,15 +333,7 @@ export function addMeasurement(
     status: 'ok',
     file: result.file,
     text: describe('Added', [row]),
-    data: {
-      id: row.id,
-      metricType: row.metricType,
-      value: row.value,
-      // The row is stored SI canonical, so the unit is the metric's, not the
-      // caller's: a call that passed mg/dL gets back what was written.
-      unit: canonicalUnit(row.metricType),
-      recordedAt: dayOf(row.recordedAt ?? ''),
-    },
+    data: { id: row.id, metricType: row.metricType, ...rowValue(row) },
   };
 }
 
@@ -367,13 +363,7 @@ export function addLabValues(
     file: next,
     text: describe('Added', rows),
     data: {
-      rows: rows.map((row) => ({
-        id: row.id,
-        metricName: row.metricName,
-        value: row.value,
-        unit: row.unit,
-        recordedAt: dayOf(row.recordedAt ?? ''),
-      })),
+      rows: rows.map((row) => ({ id: row.id, metricName: row.metricName, ...rowValue(row) })),
     },
   };
 }
@@ -396,7 +386,6 @@ export function correctValueTool(
   const result = correctValue(file, { ...request, now });
   if (!result.ok) return rejection(result);
   const row = result.row;
-  const measurement = 'metricType' in row;
   return {
     status: 'ok',
     file: result.file,
@@ -404,10 +393,8 @@ export function correctValueTool(
     data: {
       id: row.id,
       correctsId: request.id,
-      metric: measurement ? row.metricType : row.metricName,
-      value: row.value,
-      unit: measurement ? canonicalUnit(row.metricType) : row.unit,
-      recordedAt: dayOf(row.recordedAt ?? ''),
+      metric: 'metricType' in row ? row.metricType : row.metricName,
+      ...rowValue(row),
     },
   };
 }
@@ -475,6 +462,19 @@ export function updateProfile(
     data: {
       changed: changed.map((field) => ({ field, from: stored[field] ?? null, to: request[field] as string | number })),
     },
+  };
+}
+
+/**
+ * The half of a written row every writing tool answers with. The row is stored
+ * SI canonical, so a measurement's unit is the metric's, not the caller's: a
+ * call that passed mg/dL gets back what was written. A lab keeps its own.
+ */
+function rowValue(row: FileMeasurement | FileLabValue): { value: number; unit: string | null; recordedAt: string } {
+  return {
+    value: row.value,
+    unit: 'metricType' in row ? canonicalUnit(row.metricType) : row.unit,
+    recordedAt: dayOf(row.recordedAt ?? ''),
   };
 }
 
@@ -593,6 +593,42 @@ const ROW_FIELDS = {
   recordedAt: { ...DAY_SCHEMA, description: 'The clinical day the row is filed under.' },
 } as const;
 
+/** Every section `readRecord` returns. `reminderOptIn` is the only optional one. */
+const RECORD_SECTIONS = {
+  schemaVersion: { type: 'number' },
+  meta: OBJECT,
+  profile: OBJECT,
+  measurements: OBJECT_ARRAY,
+  medications: OBJECT_ARRAY,
+  medicationHistory: OBJECT_ARRAY,
+  supplements: OBJECT_ARRAY,
+  supplementHistory: OBJECT_ARRAY,
+  screenings: OBJECT,
+  labValues: OBJECT_ARRAY,
+  documents: OBJECT_ARRAY,
+  reminderPreferences: OBJECT_ARRAY,
+  recommendationSnapshots: OBJECT_ARRAY,
+  reminderOptIn: OBJECT,
+} as const;
+
+/** Every section `planPayload` builds. All of them are always present. */
+const PLAN_SECTIONS = {
+  instruction: { type: 'string', description: 'How this plan must be presented. Follow it.' },
+  schemaVersion: { type: 'number' },
+  generatedAt: { type: 'string' },
+  today: { type: 'string' },
+  unitSystem: { type: 'string' },
+  profile: OBJECT,
+  inputs: OBJECT,
+  currentValues: OBJECT_ARRAY,
+  labValues: OBJECT_ARRAY,
+  medications: OBJECT,
+  screenings: OBJECT,
+  due: OBJECT,
+  suggestions: OBJECT_ARRAY,
+  source: OBJECT,
+} as const;
+
 /**
  * The seven tools, as an MCP client lists them. Annotations are HINTS — the
  * spec says a client must not trust them and "always allow" is one click — so
@@ -619,27 +655,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     },
     outputSchema: {
       type: 'object',
-      properties: {
-        schemaVersion: { type: 'number' },
-        meta: OBJECT,
-        profile: OBJECT,
-        measurements: OBJECT_ARRAY,
-        medications: OBJECT_ARRAY,
-        medicationHistory: OBJECT_ARRAY,
-        supplements: OBJECT_ARRAY,
-        supplementHistory: OBJECT_ARRAY,
-        screenings: OBJECT,
-        labValues: OBJECT_ARRAY,
-        documents: OBJECT_ARRAY,
-        reminderPreferences: OBJECT_ARRAY,
-        recommendationSnapshots: OBJECT_ARRAY,
-        reminderOptIn: OBJECT,
-      },
-      required: [
-        'schemaVersion', 'meta', 'profile', 'measurements', 'medications', 'medicationHistory',
-        'supplements', 'supplementHistory', 'screenings', 'labValues', 'documents',
-        'reminderPreferences', 'recommendationSnapshots',
-      ],
+      properties: RECORD_SECTIONS,
+      required: Object.keys(RECORD_SECTIONS).filter((key) => key !== 'reminderOptIn'),
       additionalProperties: false,
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -654,26 +671,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     outputSchema: {
       type: 'object',
-      properties: {
-        instruction: { type: 'string', description: 'How this plan must be presented. Follow it.' },
-        schemaVersion: { type: 'number' },
-        generatedAt: { type: 'string' },
-        today: { type: 'string' },
-        unitSystem: { type: 'string' },
-        profile: OBJECT,
-        inputs: OBJECT,
-        currentValues: OBJECT_ARRAY,
-        labValues: OBJECT_ARRAY,
-        medications: OBJECT,
-        screenings: OBJECT,
-        due: OBJECT,
-        suggestions: OBJECT_ARRAY,
-        source: OBJECT,
-      },
-      required: [
-        'instruction', 'schemaVersion', 'generatedAt', 'today', 'unitSystem', 'profile', 'inputs',
-        'currentValues', 'labValues', 'medications', 'screenings', 'due', 'suggestions', 'source',
-      ],
+      properties: PLAN_SECTIONS,
+      required: Object.keys(PLAN_SECTIONS),
       additionalProperties: false,
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -972,6 +971,19 @@ export interface ToolAnswer {
   isError: boolean;
   /** The same answer, typed to the tool's `outputSchema`. Absent on a refusal. */
   structured?: unknown;
+}
+
+/**
+ * That answer as an MCP `tools/call` result payload, which both servers wrap in
+ * their own envelope. Declared `outputSchema` obliges an OK result to carry the
+ * structured answer too; a refusal is an error result and carries none.
+ */
+export function toolContent(answer: ToolAnswer): Record<string, unknown> {
+  return {
+    content: [{ type: 'text', text: answer.text }],
+    ...(answer.structured === undefined ? null : { structuredContent: answer.structured }),
+    ...(answer.isError ? { isError: true } : null),
+  };
 }
 
 /** A tool broke its own contract. Not the user's to fix, so never a refusal. */

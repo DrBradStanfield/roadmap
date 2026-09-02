@@ -17,7 +17,7 @@
  */
 import { pathToFileURL } from 'node:url';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
-import { MCP_TOOLS, runToolOverSync, SERVER_VERSION, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
+import { MCP_TOOLS, runToolOverSync, SERVER_VERSION, toolContent, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
 import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
 
@@ -85,17 +85,9 @@ function failure(id: Id, code: number, message: string) {
   return { jsonrpc: '2.0', id, error: { code, message } };
 }
 
-/**
- * A tool's answer, as MCP carries it: text content, the same answer structured
- * when the tool declares an output schema, plus a flag if it refused. A refusal
- * carries no structured content — it is an error result, not a result.
- */
-function toolResult(id: Id, text: string, isError = false, structured?: unknown) {
-  return result(id, {
-    content: [{ type: 'text', text }],
-    ...(structured === undefined ? null : { structuredContent: structured }),
-    ...(isError ? { isError: true } : null),
-  });
+/** A tool's answer in this transport's envelope. `toolContent` owns the payload. */
+function toolResult(id: Id, answer: ToolAnswer) {
+  return result(id, toolContent(answer));
 }
 
 // ---------------------------------------------------------------------------
@@ -155,15 +147,14 @@ export async function handle(incoming: unknown, path: string): Promise<object | 
       const name = typeof params.name === 'string' ? params.name : '';
       if (!name) return failure(id, INVALID_PARAMS, 'tools/call needs a tool name');
       try {
-        const { text, isError, structured } = await callAgainstFile(path, name, params.arguments);
-        return toolResult(id, text, isError, structured);
+        return toolResult(id, await callAgainstFile(path, name, params.arguments));
       } catch (error) {
         // The record is the problem — unreadable, moved, not a record, or a
         // write that would not settle. That is the user's to fix, so it reaches
         // the assistant as a refusal it can read out.
         if (isStorageFailure(error)) {
           const told = describeStorageFailure(error, path);
-          return toolResult(id, `${told.message}. ${told.hint}`, true);
+          return toolResult(id, { text: `${told.message}. ${told.hint}`, isError: true });
         }
         // Anything else is a bug in us. Not a refusal — the user can do
         // nothing about it — but still an answer ON THIS REQUEST: a null id is

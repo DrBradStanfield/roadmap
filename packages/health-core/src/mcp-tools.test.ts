@@ -19,6 +19,7 @@ import {
   correctValueTool,
   getPlan,
   getPlanInput,
+  labRowOutput,
   labValueInput,
   MAX_LAB_ROWS_PER_CALL,
   MCP_TOOLS,
@@ -31,6 +32,7 @@ import {
   reportFeedbackInput,
   updateProfile,
   updateProfileInput,
+  updateProfileOutput,
   SERVER_VERSION,
   TOOL_LAYER_VERSION,
 } from './mcp-tools';
@@ -368,6 +370,28 @@ describe('US-34 — update_profile changes who the record is about', () => {
   });
 });
 
+/** A client obeys the schema; zod is what actually refuses. Drift is a lie. */
+function expectParity(
+  shape: z.ZodRawShape,
+  schema: { properties: Record<string, unknown>; required?: string[] },
+  where: string,
+) {
+  expect(Object.keys(schema.properties).sort(), where).toEqual(Object.keys(shape).sort());
+  expect([...(schema.required ?? [])].sort(), `${where} required`)
+    .toEqual(Object.keys(shape).filter((key) => !shape[key].isOptional()).sort());
+}
+
+/** One level down: the item schema of an array property, against its zod element. */
+function expectItemParity(
+  schema: { properties: Record<string, unknown> },
+  property: string,
+  element: z.ZodObject<z.ZodRawShape>,
+  where: string,
+) {
+  const array = schema.properties[property] as { items: { properties: Record<string, unknown>; required?: string[] } };
+  expectParity(element.shape, array.items, where);
+}
+
 describe('US-32 — the published JSON Schema and the zod gate say the same thing', () => {
   const ZOD: Record<string, z.ZodObject<z.ZodRawShape>> = {
     read_record: readRecordInput,
@@ -378,17 +402,6 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
     update_profile: updateProfileInput,
     report_feedback: reportFeedbackInput,
   };
-
-  /** A client obeys the schema; zod is what actually refuses. Drift is a lie. */
-  function expectParity(
-    shape: z.ZodRawShape,
-    schema: { properties: Record<string, unknown>; required?: string[] },
-    where: string,
-  ) {
-    expect(Object.keys(schema.properties).sort(), where).toEqual(Object.keys(shape).sort());
-    expect([...(schema.required ?? [])].sort(), `${where} required`)
-      .toEqual(Object.keys(shape).filter((key) => !shape[key].isOptional()).sort());
-  }
 
   it('agrees on every property and every required field, nested rows included', () => {
     for (const tool of MCP_TOOLS) expectParity(ZOD[tool.name].shape, tool.inputSchema, tool.name);
@@ -654,13 +667,21 @@ describe('US-32 — every tool answers with structured content that fits its out
 
   it('publishes an outputSchema on every tool that says what the zod schema says', () => {
     for (const tool of MCP_TOOLS) {
-      const shape = OUTPUTS[tool.name as keyof typeof OUTPUTS].shape;
-      expect(Object.keys(tool.outputSchema.properties).sort(), tool.name).toEqual(Object.keys(shape).sort());
-      expect([...(tool.outputSchema.required ?? [])].sort(), `${tool.name} required`)
-        .toEqual(Object.keys(shape).filter((key) => !shape[key].isOptional()).sort());
+      expectParity(OUTPUTS[tool.name as keyof typeof OUTPUTS].shape, tool.outputSchema, tool.name);
       expect(tool.outputSchema.type, tool.name).toBe('object');
       expect(tool.outputSchema.additionalProperties, tool.name).toBe(false);
     }
+
+    // The nested item schemas too: a field added to a row is exactly where the
+    // published schema can go stale while every top-level key still agrees.
+    const byName = (name: string) => MCP_TOOLS.find((t) => t.name === name)!.outputSchema;
+    expectItemParity(byName('add_lab_values'), 'rows', labRowOutput, 'add_lab_values.rows[]');
+    expectItemParity(
+      byName('update_profile'),
+      'changed',
+      updateProfileOutput.shape.changed.element as z.ZodObject<z.ZodRawShape>,
+      'update_profile.changed[]',
+    );
   });
 
   it('publishes the record’s own keys, so a new section cannot go unannounced', () => {
