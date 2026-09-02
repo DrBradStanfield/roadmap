@@ -11,11 +11,10 @@
  * public, so what leaves is only what the tool already allowed: the assistant's
  * own description of the problem.
  */
-import type { FeedbackFiler, FeedbackIssue } from '../../packages/health-core/src/mcp-tools';
+import { FEEDBACK_REPO, type FeedbackFiler, type FeedbackIssue } from '../../packages/health-core/src/mcp-tools';
 import type { McpProvider } from './mcp-providers.server';
 
-const REPO = 'DrBradStanfield/roadmap';
-const API = `https://api.github.com/repos/${REPO}/issues`;
+const API = `https://api.github.com/repos/${FEEDBACK_REPO}/issues`;
 
 /**
  * Issues this machine will file in an hour, over every connection there is.
@@ -32,6 +31,9 @@ const WINDOW_MS = 60 * 60 * 1000;
  */
 const DEDUPE_MS = 24 * 60 * 60 * 1000;
 const DEDUPE_CAP = 256;
+
+/** One wording for every way GitHub can fail us: the agent can only retry. */
+const UNAVAILABLE = { ok: false, refusal: 'GitHub did not answer. Nothing was filed. Try again later.' } as const;
 
 const filedAt: number[] = [];
 const recent = new Map<string, { url: string; number: number; at: number }>();
@@ -52,10 +54,10 @@ function dedupeKey(title: string): string {
  * is configured — which is how the tool falls back to a URL the user submits.
  * `fetch` is read at call time so the suite can stub it.
  */
-export function githubFiler(provider: McpProvider, nowMs = () => Date.now()): FeedbackFiler | null {
+export function githubFiler(provider: McpProvider): FeedbackFiler | null {
   const token = process.env.GITHUB_ISSUES_TOKEN;
   if (!token) return null;
-  return (issue) => fileIssue(issue, token, provider, nowMs());
+  return (issue) => fileIssue(issue, token, provider, Date.now());
 }
 
 async function fileIssue(
@@ -67,9 +69,7 @@ async function fileIssue(
   const key = dedupeKey(issue.title);
   for (const [id, entry] of recent) if (now - entry.at > DEDUPE_MS) recent.delete(id);
   const already = recent.get(key);
-  if (already) {
-    return { ok: true, url: already.url, number: already.number };
-  }
+  if (already) return { ok: true, url: already.url, number: already.number };
 
   while (filedAt.length && now - filedAt[0] > WINDOW_MS) filedAt.shift();
   if (filedAt.length >= ISSUES_PER_HOUR) {
@@ -94,22 +94,21 @@ async function fileIssue(
       body: JSON.stringify({ title: issue.title, body, labels: issue.labels }),
     });
   } catch {
-    return { ok: false, refusal: 'GitHub did not answer. Nothing was filed. Try again later.' };
+    return UNAVAILABLE;
   }
 
   if (!response.ok) {
     // The status alone: a GitHub error body can quote the report back at us.
     console.error('[mcp] github issue refused', response.status);
-    return { ok: false, refusal: 'GitHub did not answer. Nothing was filed. Try again later.' };
+    return UNAVAILABLE;
   }
 
   const created = (await response.json().catch(() => null)) as { html_url?: unknown; number?: unknown } | null;
-  const url = typeof created?.html_url === 'string' ? created.html_url : '';
-  const number = typeof created?.number === 'number' ? created.number : 0;
-  if (!url || !number) {
+  if (typeof created?.html_url !== 'string' || !created.html_url || typeof created.number !== 'number' || !created.number) {
     console.error('[mcp] github issue answered without a url');
-    return { ok: false, refusal: 'GitHub did not answer. Nothing was filed. Try again later.' };
+    return UNAVAILABLE;
   }
+  const { html_url: url, number } = created;
 
   filedAt.push(now);
   if (recent.size >= DEDUPE_CAP) recent.delete(recent.keys().next().value as string);

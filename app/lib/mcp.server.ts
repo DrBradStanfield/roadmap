@@ -99,9 +99,10 @@ function refuse(text: string): ToolAnswer {
 /**
  * What each write costs the hourly allowance, read off the tool table itself
  * rather than kept by hand: a tool that is not read-only spends, and one that
- * declares itself destructive spends a correction's five. Both `correct_value`
- * and `update_profile` overwrite what the record says now, which is what a
- * falsification attempt would use — so both cost the five. A new tool is
+ * declares itself destructive OR open-world spends a correction's five. Both
+ * `correct_value` and `update_profile` overwrite what the record says now,
+ * which is what a falsification attempt would use; `report_feedback` reaches a
+ * public issue tracker. All three cost the five. A new tool is
  * charged the moment it is published; there is no second list to forget.
  */
 const WRITE_COSTS = new Map(
@@ -241,7 +242,7 @@ async function callHostedTool(
       savedNote: () => `Saved to the user’s ${provider}.`,
       // With no GitHub token configured the tool falls back to a prefilled URL
       // the user submits — which is all the stdio server can ever do.
-      fileFeedback: githubFiler(token.provider) ?? undefined,
+      fileFeedback: name === 'report_feedback' ? (githubFiler(token.provider) ?? undefined) : undefined,
     });
   } catch (error) {
     // Storage is allowed to fail, and the user can act on that, so it is worded

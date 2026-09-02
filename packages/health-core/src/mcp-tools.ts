@@ -53,7 +53,7 @@ export const MAX_ID_LENGTH = 100;
 export const MAX_FEEDBACK_URL_LENGTH = 8000;
 
 /** Where a prepared report goes. The only place this repo's name is written. */
-const FEEDBACK_REPO = 'DrBradStanfield/roadmap';
+export const FEEDBACK_REPO = 'DrBradStanfield/roadmap';
 
 /** The version the server announces, and the one a report is stamped with. */
 export const SERVER_VERSION = '1.0.0';
@@ -547,7 +547,8 @@ const FEEDBACK_TITLE_PREFIX = '[connector] ';
  * about code cannot end it early.
  */
 function fenced(text: string): string {
-  const longest = Math.max(0, ...[...text.matchAll(/`+/g)].map((run) => run[0].length));
+  let longest = 0;
+  for (const run of text.matchAll(/`+/g)) longest = Math.max(longest, run[0].length);
   const fence = '`'.repeat(Math.max(3, longest + 1));
   return `${fence}\n${text}\n${fence}`;
 }
@@ -1135,11 +1136,11 @@ export async function runToolOverSync(
   if (!isToolName(name)) return { text: `No tool named ${name}.`, isError: true };
 
   if (RECORD_FREE_TOOLS.has(name)) {
-    const parsed = name === 'report_feedback' && options.fileFeedback ? INPUTS[name].safeParse(args ?? {}) : undefined;
-    const outcome = parsed
-      ? parsed.success
-        ? await fileFeedback(parsed.data, now, options.fileFeedback!)
-        : callTool(name, args, { file: undefined, now }) // one place words a malformed call
+    const filer = name === 'report_feedback' ? options.fileFeedback : undefined;
+    const parsed = filer ? reportFeedbackInput.safeParse(args ?? {}) : undefined;
+    // A malformed call is worded in one place: `callTool` parses and refuses.
+    const outcome = filer && parsed?.success
+      ? await fileFeedback(parsed.data, now, filer)
       : callTool(name, args, { file: undefined, now });
     // A file to save with nothing opened would be a write dropped in silence.
     if (outcome.status === 'ok' && outcome.file) {
