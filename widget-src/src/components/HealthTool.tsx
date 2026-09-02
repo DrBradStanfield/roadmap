@@ -81,6 +81,7 @@ import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiDocument } from '../lib/api-types';
 import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
 import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
+import { createRemoteChangeRelay } from '../lib/remote-replay';
 
 // Auth state from Liquid template
 interface AuthState {
@@ -144,6 +145,16 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   const [supplements, setSupplements] = useState<ApiSupplement[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [hasApiResponse, setHasApiResponse] = useState(false);
+  // The relay is created once; the load path it calls changes identity on
+  // most renders, so it is reached through a ref (US-34 AC4).
+  const applyRemoteRef = useRef<() => void>(() => {});
+  const remoteRelay = useRef(
+    createRemoteChangeRelay(() => {
+      trackProductEvent('remote_change_applied');
+      void applyRemoteRef.current();
+    }),
+  ).current;
+
   // Filled by BloodTestTimeline on mount so we can flush its in-flight typed
   // values (draft + backfills) before kicking off the upload-modal flow.
   // `handleSaveLongitudinal` (legacy path) skips blood-test metrics, so without
@@ -543,6 +554,9 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
       for (const field of autoSaveFields) {
         (previousInputsRef.current as any)[field] = inputs[field];
       }
+      // The form is clean again — apply any remote change held back while it
+      // was dirty (US-34 AC4).
+      remoteRelay.saved();
     }
     return success;
   }
@@ -836,19 +850,16 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // re-run the same load path an upload finishes with, so the page shows the
   // new profile and values without a reload.
   useEffect(() => {
-    const onRemoteChange = () => {
-      // Not while the user is mid-typing: the load path below replaces the
-      // form's inputs, and a remote change landing on a half-entered height
-      // would take those keystrokes with it. The store has kept the merge, so
-      // nothing is lost — the next save carries the edit up and the page
-      // catches up on the re-read after it.
-      if (hasUnsavedProfileEdits(inputsRef.current, previousInputsRef.current)) return;
-      trackProductEvent('remote_change_applied');
-      void handleUploadComplete();
-    };
+    applyRemoteRef.current = handleUploadComplete;
+    // Not while the user is mid-typing: the load path replaces the form's
+    // inputs, and a remote change landing on a half-entered height would take
+    // those keystrokes with it. The relay HOLDS it — the next profile save
+    // carries the edit up and then replays the change.
+    const onRemoteChange = () =>
+      remoteRelay.arrived(hasUnsavedProfileEdits(inputsRef.current, previousInputsRef.current));
     window.addEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
     return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
-  }, [handleUploadComplete]);
+  }, [remoteRelay, handleUploadComplete]);
 
   // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel
   const metricUnitOverrides = useMemo(() => {

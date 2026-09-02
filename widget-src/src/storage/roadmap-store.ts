@@ -909,17 +909,25 @@ export class RoadmapStore {
       return true; // the in-flight loop will pick the changes up
     }
     this.persisting = true;
+    // A remote change this save folds in is one refreshFromRemote() will never
+    // find: it stands aside while a write is pending, and the merge below has
+    // already taken the change into the working copy (US-34 AC1). Announce it
+    // here or the screen stays stale until a reload.
+    let remoteFolded = false;
     try {
       do {
         this.dirtyDuringPersist = false;
         const result = await this.sync.save(this.file);
         // Fold remote changes back in without dropping mutations made during the
         // await; merge is the source of truth for combining the two.
+        const beforeMerge = contentOf(this.file);
         this.file = mergeFiles(this.file, result.file, {
           deviceId: this.deviceId,
           now: new Date().toISOString(),
         });
+        if (contentOf(this.file) !== beforeMerge) remoteFolded = true;
       } while (this.dirtyDuringPersist);
+      if (remoteFolded) notify(REMOTE_CHANGED_EVENT);
       // A skipped (unreadable) mirror holds data this save did NOT include —
       // keep its marker so the next load retries it.
       if (this.adapter.id !== 'local' && !this.mirrorSkipped) clearSyncPending();

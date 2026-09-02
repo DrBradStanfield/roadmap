@@ -194,9 +194,10 @@ export class DropboxAdapter implements StorageAdapter {
    * Tell the store when the app folder moved, within about a second, by
    * holding a long-poll open against it. The cursor covers the app folder
    * root, not one file: the record lives there, and a cursor per file would be
-   * a second held connection to learn the same thing. Uploaded documents sit
-   * in subfolders and are deliberately outside it (`recursive: false`) — the
-   * page does not re-render for a PDF.
+   * a second held connection to learn the same thing. Uploaded documents are
+   * written at that same root, so a document write wakes the poll too; the
+   * re-read it triggers announces nothing unless the record's own content
+   * changed. `recursive: false` keeps the cursor to the root itself.
    */
   watch(_fileName: string, onChange: () => void, signal: AbortSignal): void {
     void this.watchLoop(onChange, signal);

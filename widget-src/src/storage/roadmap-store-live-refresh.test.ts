@@ -256,3 +256,39 @@ describe('US-34 AC1 — the provider’s own change signal replaces the timer', 
     expect(adapter.watching).toBe(0);
   });
 });
+
+describe('US-34 AC1 — a change the save itself folded in is still announced', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  // refreshFromRemote() stands aside while a save is pending, and the save's
+  // own post-write merge then folds the remote change into the working copy.
+  // Nothing was left to find on the next re-read, so without this the screen
+  // stayed stale until a reload.
+  it('announces a remote change the in-flight save merged in', async () => {
+    const cloud = new MemoryCloud();
+    const store = await connected(cloud);
+    const heard = vi.fn();
+    window.addEventListener(REMOTE_CHANGED_EVENT, heard);
+
+    writeProfileToCloud(cloud, 165);
+    store.saveChangedMeasurements({ weightKg: 80 }, {});
+    await store.flush();
+
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(store.loadLatestMeasurements().inputs.heightCm).toBe(165);
+  });
+
+  it('says nothing when the save had no remote change to fold in', async () => {
+    const cloud = new MemoryCloud();
+    const store = await connected(cloud);
+    const heard = vi.fn();
+    window.addEventListener(REMOTE_CHANGED_EVENT, heard);
+
+    store.saveChangedMeasurements({ weightKg: 80 }, {});
+    await store.flush();
+
+    expect(heard).not.toHaveBeenCalled();
+  });
+});
