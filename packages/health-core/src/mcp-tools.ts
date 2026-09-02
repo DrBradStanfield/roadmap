@@ -106,25 +106,24 @@ export const correctValueInput = z.object({
  * about the person, and nobody asks an assistant to change them.
  */
 export const PROFILE_FIELDS = ['sex', 'birthYear', 'birthMonth', 'heightCm'] as const;
-export type ProfileField = (typeof PROFILE_FIELDS)[number];
 
-const PROFILE_VALUES = {
-  sex: z.enum(['male', 'female']),
-  birthYear: z.number().int(),
-  birthMonth: z.number().int(),
-  heightCm: z.number().finite(),
-};
-
-/** The same four fields, all optional, on the change and on the claim. */
-function profileShape<T extends z.ZodTypeAny>(wrap: (schema: z.ZodTypeAny) => T) {
-  return Object.fromEntries(PROFILE_FIELDS.map((field) => [field, wrap(PROFILE_VALUES[field])])) as Record<ProfileField, T>;
-}
-
+/**
+ * Shape only — the app's own ranges are checked in `updateProfile` below,
+ * against `healthInputSchema`, so a refusal quotes the message a person would
+ * see. `null` in `expected` is a claim too: "I believe the record has no value
+ * for this yet", the only way to state one about a field that is unset.
+ */
 export const updateProfileInput = z.object({
-  ...profileShape((schema) => schema.optional()),
-  // `null` is a claim too: "I believe the record has no value for this yet",
-  // which is the only way to state one about a field that is unset.
-  expected: z.object(profileShape((schema) => schema.nullable().optional())).strict().optional(),
+  sex: z.enum(['male', 'female']).optional(),
+  birthYear: z.number().int().optional(),
+  birthMonth: z.number().int().optional(),
+  heightCm: z.number().finite().optional(),
+  expected: z.object({
+    sex: z.enum(['male', 'female']).nullable().optional(),
+    birthYear: z.number().int().nullable().optional(),
+    birthMonth: z.number().int().nullable().optional(),
+    heightCm: z.number().finite().nullable().optional(),
+  }).strict().optional(),
 }).strict();
 
 export const reportFeedbackInput = z.object({
@@ -293,11 +292,12 @@ export function updateProfile(
     return { status: 'rejected', text: `Name at least one of ${PROFILE_FIELDS.join(', ')}. Nothing was written.` };
   }
 
-  const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean; error?: { issues: Array<{ message: string }> } } }>;
+  // The app's own ranges, with the app's own words: a connector cannot write
+  // what a person sitting at the form could not type.
   for (const field of named) {
-    const parsed = shape[field].safeParse(request[field]);
+    const parsed = healthInputSchema.shape[field].safeParse(request[field]);
     if (!parsed.success) {
-      return { status: 'rejected', text: `${field}: ${oneLine(parsed.error?.issues[0]?.message ?? 'out of range')}. Nothing was written.` };
+      return { status: 'rejected', text: `${field}: ${oneLine(parsed.error.issues[0]?.message ?? 'out of range')}. Nothing was written.` };
     }
   }
 

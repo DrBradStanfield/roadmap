@@ -95,13 +95,18 @@ function refuse(text: string): ToolAnswer {
   return { text, isError: true };
 }
 
-const WRITE_TOOLS = new Set(['add_measurement', 'add_lab_values', 'correct_value', 'update_profile']);
-
-/** A profile write carries a correction's weight: like a correction it
- *  overwrites current state, so it is what a falsification attempt would use. */
-function writeCost(name: string): number {
-  return name === 'correct_value' || name === 'update_profile' ? WRITE_COST.correct : WRITE_COST.add;
-}
+/**
+ * What each write costs the hourly allowance, read off the tool table itself
+ * rather than kept by hand: a tool that is not read-only spends, and one that
+ * declares itself destructive spends a correction's five. Both `correct_value`
+ * and `update_profile` overwrite what the record says now, which is what a
+ * falsification attempt would use — so both cost the five. A new tool is
+ * charged the moment it is published; there is no second list to forget.
+ */
+const WRITE_COSTS = new Map(
+  MCP_TOOLS.filter((tool) => !tool.annotations.readOnlyHint)
+    .map((tool) => [tool.name, tool.annotations.destructiveHint ? WRITE_COST.correct : WRITE_COST.add]),
+);
 
 function findRow(file: RoadmapFile, id: string): FileMeasurement | FileLabValue | undefined {
   return file.measurements.find((m) => m.id === id) ?? file.labValues.find((l) => l.id === id);
@@ -172,7 +177,8 @@ function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile,
     const refusal = checkProfileUpdate(args);
     if (refusal) return refusal;
   }
-  if (WRITE_TOOLS.has(name) && !spendWrites(connectionKey(token.rt), writeCost(name))) {
+  const cost = WRITE_COSTS.get(name);
+  if (cost !== undefined && !spendWrites(connectionKey(token.rt), cost)) {
     return (
       `This connection has spent its write allowance for the hour — ${WRITES_PER_HOUR} weighted writes an hour, ` +
       `where a correction counts as ${WRITE_COST.correct}. Reading still works. The allowance comes back with ` +

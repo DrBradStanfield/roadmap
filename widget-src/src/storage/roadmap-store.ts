@@ -39,6 +39,7 @@ import {
   PREFILL_FIELDS,
   SchemaTooNewError,
   screeningFieldName,
+  stableStringify,
   type ApiMeasurement,
   type ApiMedication,
   type ApiScreening,
@@ -213,10 +214,12 @@ function activeOnly<T extends { status: string }>(rows: T[]): T[] {
   return rows.filter((r) => r.status === 'active');
 }
 
-/** The record minus its own clocks — what a person would call a change. */
+/** The record minus its own clocks — what a person would call a change. Keys
+ *  are sorted, as everywhere else content is compared: a merge rebuilds the
+ *  objects it touches, and a reordered key is not a change anyone made. */
 function contentOf(file: RoadmapFile): string {
   const { meta: _clocks, ...rest } = file;
-  return JSON.stringify(rest);
+  return stableStringify(rest);
 }
 
 export class RoadmapStore {
@@ -716,6 +719,12 @@ export class RoadmapStore {
     }
   }
 
+  /** True while the working copy is AHEAD of the cloud: a save in flight, or
+   *  one still sitting on the debounce. */
+  private get writePending(): boolean {
+    return this.persisting || this.persistTimer !== null;
+  }
+
   /**
    * Re-read the record and merge what came back (US-34). Answers false when
    * nothing changed — including every case where re-reading would be wrong:
@@ -725,7 +734,7 @@ export class RoadmapStore {
    * backend has no second writer to hear from.
    */
   async refreshFromRemote(): Promise<boolean> {
-    if (this.adapter.id === 'local' || this.persisting || this.persistTimer) return false;
+    if (this.adapter.id === 'local' || this.writePending) return false;
     const at = Date.now();
     if (at - this.lastRefresh < REMOTE_THROTTLE_MS) return false;
     this.lastRefresh = at;
@@ -741,7 +750,7 @@ export class RoadmapStore {
     if (contentOf(merged) === before) return false;
     // A local edit that landed during the read would be lost by taking the
     // merge — it merged against bytes read before the edit existed.
-    if (this.persisting || this.persistTimer) return false;
+    if (this.writePending) return false;
     this.file = merged;
     // The counting is HealthTool's: it fires `remote_change_applied` when it
     // has actually re-rendered. The store cannot import the API layer — the
