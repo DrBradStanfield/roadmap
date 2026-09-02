@@ -100,7 +100,9 @@ export async function dropboxWrite(
   });
   if (res.status === 409) throw new ConflictError(`${PROVIDER} write conflict: ${await res.text()}`);
   if (!res.ok) throw new StorageError(`${PROVIDER} write failed (${res.status}): ${await res.text()}`);
-  const meta = (await res.json()) as { rev?: string };
+  // A 2xx whose body is not JSON is a broken answer, not a crash: it falls
+  // into the "no rev" check below and is reported as a failed write.
+  const meta = (await res.json().catch(() => ({}))) as { rev?: string };
   if (!meta.rev) throw new StorageError(`${PROVIDER} write returned no rev.`);
   return { version: meta.rev };
 }

@@ -68,6 +68,12 @@ const PROVIDER = 'Google Drive';
  *  hand `fetchOrFail` the wrong one. Reach for this, never the bare global. */
 const request = (url: string | URL, init?: RequestInit): Promise<Response> => fetchOrFail(PROVIDER, url, init);
 
+/** A 2xx whose body is not JSON is a broken answer, not a crash: an empty
+ *  object drops each caller into its own "returned no id/version" path. */
+async function jsonBody<T>(res: Response): Promise<T> {
+  return (await res.json().catch(() => ({}))) as T;
+}
+
 async function fail(what: string, res: Response): Promise<never> {
   throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${await res.text()}`);
 }
@@ -85,7 +91,7 @@ export async function driveFindFileId(
     headers: auth(accessToken),
   });
   if (!res.ok) await fail('lookup', res);
-  return ((await res.json()) as { files?: Array<{ id: string }> }).files?.[0]?.id;
+  return (await jsonBody<{ files?: Array<{ id: string }> }>(res)).files?.[0]?.id;
 }
 
 /**
@@ -105,7 +111,7 @@ export async function driveFindFolder(
     headers: auth(accessToken),
   });
   if (!res.ok) await fail('folder lookup', res);
-  return ((await res.json()) as { files?: Array<{ id: string; name: string }> }).files?.[0];
+  return (await jsonBody<{ files?: Array<{ id: string; name: string }> }>(res)).files?.[0];
 }
 
 export async function driveCreateFolder(accessToken: string, name: string, parentId?: string): Promise<string> {
@@ -115,7 +121,9 @@ export async function driveCreateFolder(accessToken: string, name: string, paren
     body: JSON.stringify({ name, mimeType: DRIVE_FOLDER_MIME, ...(parentId ? { parents: [parentId] } : null) }),
   });
   if (!res.ok) await fail('folder create', res);
-  return ((await res.json()) as { id: string }).id;
+  const id = (await jsonBody<{ id?: string }>(res)).id;
+  if (!id) throw new StorageError(`${PROVIDER} folder create returned no id.`);
+  return id;
 }
 
 /** Create a file inside `parentId` — metadata and content in one multipart POST. */
@@ -148,7 +156,7 @@ export async function driveUpdateFile(accessToken: string, fileId: string, json:
     body: json,
   });
   if (!res.ok) await fail('write', res);
-  return String(((await res.json()) as { version?: string }).version ?? '');
+  return String((await jsonBody<{ version?: string }>(res)).version ?? '');
 }
 
 /**
@@ -160,7 +168,7 @@ export async function driveFileVersion(accessToken: string, fileId: string): Pro
   const res = await request(`${DRIVE_API}/files/${fileId}?fields=version`, { headers: auth(accessToken) });
   if (res.status === 404) return null;
   if (!res.ok) await fail('version read', res);
-  return ((await res.json()) as { version?: string }).version ?? null;
+  return (await jsonBody<{ version?: string }>(res)).version ?? null;
 }
 
 /** Download a file's bytes as JSON. Null = the file is gone. */
@@ -240,7 +248,7 @@ export class DriveAdapter implements StorageAdapter {
       const parentId = await this.folderId();
       const res = await driveCreateFile(this.accessToken, fileName, 'application/json', json, parentId);
       if (!res.ok) await fail('create', res);
-      const created = (await res.json()) as { id?: string; version?: string };
+      const created = await jsonBody<{ id?: string; version?: string }>(res);
       if (!created.id) throw new StorageError(`${PROVIDER} create returned no file id.`);
       this.fileIds.set(fileName, created.id);
       return { version: String(created.version ?? '') };

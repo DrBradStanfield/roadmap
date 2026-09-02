@@ -15,7 +15,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConflictError, LostUpdateError, ROADMAP_FILE_NAME, StorageError } from './adapter';
-import { DriveAdapter, DRIVE_FOLDER_NAME, DRIVE_LEGACY_FOLDER_NAME } from './drive-rest';
+import { DriveAdapter, driveCreateFolder, DRIVE_FOLDER_NAME, DRIVE_LEGACY_FOLDER_NAME } from './drive-rest';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { SyncManager } from './sync-manager';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
@@ -368,5 +368,14 @@ describe('a network outage is the adapter’s failure, not an unknown one (US-32
     expect(failure).toBeInstanceOf(StorageError);
     expect((failure as StorageError).message).toContain('Google Drive did not answer');
     expect((failure as StorageError).hint).toContain('Try once more');
+  });
+});
+
+describe('a 2xx with a body that is not JSON is a failed call, not a crash', () => {
+  it('reports “returned no id” when the folder create answers 200 with garbage', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>maintenance</html>', { status: 200 })));
+    const failure = await driveCreateFolder('token', 'Health Roadmap').catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as StorageError).message).toContain('returned no id');
   });
 });

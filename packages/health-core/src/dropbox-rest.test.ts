@@ -31,3 +31,39 @@ describe('a network outage is the adapter’s failure, not an unknown one (US-32
     }
   });
 });
+
+describe('a truncated answer is the adapter’s failure too (US-32 AC17)', () => {
+  it('turns a body that dies mid-stream into the same StorageError', async () => {
+    // undici's `TypeError: terminated`: `fetch` resolved, the socket died while
+    // the body was still arriving. The rejection lands on the body read, not on
+    // `fetch`, so it only becomes a StorageError if `fetchOrFail` buffers.
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(
+      new ReadableStream({ start: (c) => c.error(new TypeError('terminated')) }),
+      { status: 200 },
+    )));
+    const failure = await new DropboxAdapter('token').read(ROADMAP_FILE_NAME).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as StorageError).message).toBe('Dropbox did not answer');
+    expect((failure as StorageError).hint).toContain('Try once more');
+  });
+
+  it('keeps status, headers and bytes intact when the body arrives whole', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ weight_kg: 80 }), {
+      status: 200,
+      headers: { 'Dropbox-API-Result': JSON.stringify({ rev: 'rev9' }) },
+    })));
+    expect(await new DropboxAdapter('token').read(ROADMAP_FILE_NAME))
+      .toEqual({ body: { weight_kg: 80 }, version: 'rev9' });
+  });
+});
+
+describe('a 2xx with a body that is not JSON is a failed write, not a crash', () => {
+  it('reports “returned no rev” when Dropbox answers 200 with garbage', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>maintenance</html>', { status: 200 })));
+    const failure = await new DropboxAdapter('token')
+      .write(ROADMAP_FILE_NAME, { a: 1 }, 'rev1')
+      .catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as StorageError).message).toContain('returned no rev');
+  });
+});

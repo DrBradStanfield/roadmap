@@ -124,6 +124,11 @@ export function initSentry() {
       /Load failed/,
       // Firefox's equivalent of "Failed to fetch" — network unavailable or blocked.
       /NetworkError when attempting to fetch resource/,
+      // The same outage, re-worded by the storage adapters: a dead network now
+      // reaches us as StorageError('Dropbox did not answer'), with the browser
+      // TypeError only as its `cause`. Listed by message so it is dropped
+      // whether or not linkedErrors matching reaches the cause.
+      /did not answer/,
       // iOS WebKit DOMException SYNTAX_ERR (code 12) — browser-level DOM noise
       // observed on iPad/Chrome Mobile iOS. Not caused by our code.
       /The string did not match the expected pattern/,

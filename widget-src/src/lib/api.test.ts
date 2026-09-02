@@ -70,6 +70,12 @@ describe('Sentry ignoreErrors patterns', () => {
     expect(pattern.test('TypeError: Load failed')).toBe(true);
   });
 
+  it('matches the storage adapters’ outage wording', () => {
+    const pattern = /did not answer/;
+    expect(pattern.test('Dropbox did not answer')).toBe(true);
+    expect(pattern.test('Google Drive did not answer')).toBe(true);
+  });
+
   it('matches AbortError message', () => {
     const pattern = /The operation was aborted/;
     expect(pattern.test('The operation was aborted.')).toBe(true);
@@ -82,6 +88,7 @@ describe('Sentry ignoreErrors patterns', () => {
       /Load failed/,
       /The string did not match the expected pattern/,
       /The operation was aborted/,
+      /did not answer/,
     ];
     const unrelated = [
       'TypeError: Cannot read property of undefined',
