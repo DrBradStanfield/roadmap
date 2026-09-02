@@ -20,7 +20,7 @@ import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memor
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
-import { ISSUES_PER_HOUR } from '../lib/github-issues.server';
+import { ISSUES_PER_HOUR, REPORTS_PER_DAY } from '../lib/github-issues.server';
 import { MCP_TOOLS, OUTPUTS } from '../../packages/health-core/src/mcp-tools';
 import { MAX_CORRECTION_AGE_DAYS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
@@ -334,10 +334,18 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
   it('charges the write allowance a correction’s worth, because it writes in public', async () => {
     stubGithub(() => created(12));
     const { access } = await connect();
-    for (let i = 0; i < WRITES_PER_HOUR / WRITE_COST.correct; i++) {
+    // Three file; the fourth is refused by the daily cap and is charged anyway,
+    // which is what spends the last of the allowance.
+    for (let i = 0; i < REPORTS_PER_DAY; i++) {
       const answer = await callTool(access, 'report_feedback', { ...REPORT, title: `report number ${i}` });
       expect(answer.isError, `call ${i}`).toBe(false);
     }
+    for (let i = REPORTS_PER_DAY; i < WRITES_PER_HOUR / WRITE_COST.correct; i++) {
+      const daily = await callTool(access, 'report_feedback', { ...REPORT, title: `report number ${i}` });
+      expect(daily.isError, `call ${i}`).toBe(true);
+      expect(daily.text).toContain('You have filed three reports today. Nothing was filed.');
+    }
+
     const spent = await callTool(access, 'report_feedback', { ...REPORT, title: 'one report too many' });
     expect(spent.isError).toBe(true);
     expect(spent.text).toContain('write allowance');
@@ -372,18 +380,19 @@ describe('US-32 AC9 — the hosted server files the issue itself', () => {
   it('stops at twenty issues an hour for the whole server, whoever is asking', async () => {
     let n = 0;
     const posts = stubGithub(() => created(++n));
-    // Two connections, ten issues each: the cap is the server's, not a user's,
-    // and neither connection comes near its own hourly allowance.
-    const { access } = await connect();
-    const other = await connect();
+    // Seven connections, three issues each until the machine cap: the cap is the
+    // server's, not a user's, and no connection passes its own daily three.
+    const connections = [];
+    for (let i = 0; i < Math.ceil(ISSUES_PER_HOUR / REPORTS_PER_DAY); i++) connections.push((await connect()).access);
     for (let i = 0; i < ISSUES_PER_HOUR; i++) {
-      const who = i % 2 === 0 ? access : other.access;
+      const who = connections[Math.floor(i / REPORTS_PER_DAY)];
       const answer = await callTool(who, 'report_feedback', { ...REPORT, title: `distinct report ${i}` });
       expect(answer.isError, `issue ${i}`).toBe(false);
     }
     expect(posts).toHaveLength(ISSUES_PER_HOUR);
 
-    const capped = await callTool(access, 'report_feedback', { ...REPORT, title: 'the twenty-first report' });
+    // From the last connection, which still has a report left of its own three.
+    const capped = await callTool(connections[connections.length - 1], 'report_feedback', { ...REPORT, title: 'the twenty-first report' });
     expect(capped.isError).toBe(true);
     expect(capped.text).toContain('Feedback is paused for an hour. Nothing was filed.');
     expect(posts).toHaveLength(ISSUES_PER_HOUR); // nothing left the machine

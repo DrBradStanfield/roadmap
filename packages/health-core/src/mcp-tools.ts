@@ -600,7 +600,7 @@ export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now
   if (!prepared.ok) return { status: 'rejected', text: prepared.text };
 
   const body = `${prepared.detail}\n\n---\nReported via health-roadmap MCP ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, ${dayOf(now)}`;
-  const url = `https://github.com/${FEEDBACK_REPO}/issues/new?labels=agent-feedback,${request.kind}`
+  const url = `https://github.com/${FEEDBACK_REPO}/issues/new?labels=from-connector,${request.kind}`
     + `&title=${encodeURIComponent(prepared.title)}&body=${encodeURIComponent(body)}`;
   if (url.length > MAX_FEEDBACK_URL_LENGTH) {
     return {

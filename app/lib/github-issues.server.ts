@@ -32,16 +32,29 @@ const WINDOW_MS = 60 * 60 * 1000;
 const DEDUPE_MS = 24 * 60 * 60 * 1000;
 const DEDUPE_CAP = 256;
 
+/**
+ * Reports one CONNECTION will file in a day. The hourly machine cap bounds the
+ * repository; this bounds one talkative assistant, which could otherwise spend
+ * the whole machine's hour by itself.
+ */
+export const REPORTS_PER_DAY = 3;
+const CONNECTION_CAP = 512;
+
+/** How long we wait on GitHub before calling it unanswered. */
+const GITHUB_TIMEOUT_MS = 8000;
+
 /** One wording for every way GitHub can fail us: the agent can only retry. */
 const UNAVAILABLE = { ok: false, refusal: 'GitHub did not answer. Nothing was filed. Try again later.' } as const;
 
 const filedAt: number[] = [];
 const recent = new Map<string, { url: string; number: number; at: number }>();
+const perConnection = new Map<string, number[]>();
 
 /** Test seam — both are process-global and would leak between cases. */
 export function resetGithubIssues(): void {
   filedAt.length = 0;
   recent.clear();
+  perConnection.clear();
 }
 
 /** Same words, same report. Case and spacing are not a difference worth filing. */
@@ -52,24 +65,31 @@ function dedupeKey(title: string): string {
 /**
  * The filer the hosted server hands to the tool layer, or `null` when no token
  * is configured — which is how the tool falls back to a URL the user submits.
- * `fetch` is read at call time so the suite can stub it.
+ * `fetch` is read at call time so the suite can stub it. `connection` is the
+ * hashed refresh token — a connection, never a user.
  */
-export function githubFiler(provider: McpProvider): FeedbackFiler | null {
+export function githubFiler(provider: McpProvider, connection: string): FeedbackFiler | null {
   const token = process.env.GITHUB_ISSUES_TOKEN;
   if (!token) return null;
-  return (issue) => fileIssue(issue, token, provider, Date.now());
+  return (issue) => fileIssue(issue, token, provider, connection, Date.now());
 }
 
 async function fileIssue(
   issue: FeedbackIssue,
   token: string,
   provider: McpProvider,
+  connection: string,
   now: number,
 ): Promise<{ ok: true; url: string; number: number } | { ok: false; refusal: string }> {
   const key = dedupeKey(issue.title);
   for (const [id, entry] of recent) if (now - entry.at > DEDUPE_MS) recent.delete(id);
   const already = recent.get(key);
   if (already) return { ok: true, url: already.url, number: already.number };
+
+  const mine = (perConnection.get(connection) ?? []).filter((at) => now - at <= DEDUPE_MS);
+  if (mine.length >= REPORTS_PER_DAY) {
+    return { ok: false, refusal: 'You have filed three reports today. Nothing was filed.' };
+  }
 
   while (filedAt.length && now - filedAt[0] > WINDOW_MS) filedAt.shift();
   if (filedAt.length >= ISSUES_PER_HOUR) {
@@ -92,6 +112,7 @@ async function fileIssue(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ title: issue.title, body, labels: issue.labels }),
+      signal: AbortSignal.timeout(GITHUB_TIMEOUT_MS),
     });
   } catch {
     return UNAVAILABLE;
@@ -111,6 +132,11 @@ async function fileIssue(
   const { html_url: url, number } = created;
 
   filedAt.push(now);
+  mine.push(now);
+  if (perConnection.size >= CONNECTION_CAP && !perConnection.has(connection)) {
+    perConnection.delete(perConnection.keys().next().value as string);
+  }
+  perConnection.set(connection, mine);
   if (recent.size >= DEDUPE_CAP) recent.delete(recent.keys().next().value as string);
   recent.set(key, { url, number, at: now });
   return { ok: true, url, number };

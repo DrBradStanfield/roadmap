@@ -573,7 +573,7 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
     const link = new URL(outcome.text.split('\n')[0]);
 
     expect(link.origin + link.pathname).toBe('https://github.com/DrBradStanfield/roadmap/issues/new');
-    expect(link.searchParams.get('labels')).toBe('agent-feedback,bug');
+    expect(link.searchParams.get('labels')).toBe('from-connector,bug');
     expect(link.searchParams.get('title')).toBe(GOOD.title);
     expect(link.searchParams.get('body')).toBe(
       `${GOOD.detail}\n\n---\nReported via health-roadmap MCP ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, 2026-09-01`,
@@ -585,7 +585,7 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
   });
 
   it('labels a feature request as one', () => {
-    expect(url({ ...GOOD, kind: 'feature' }).searchParams.get('labels')).toBe('agent-feedback,feature');
+    expect(url({ ...GOOD, kind: 'feature' }).searchParams.get('labels')).toBe('from-connector,feature');
   });
 
   it('encodes what would otherwise break the URL, and strips control characters', () => {

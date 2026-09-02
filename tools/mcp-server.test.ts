@@ -354,7 +354,7 @@ describe('US-32 AC9 — report_feedback over the wire', () => {
     }));
 
     const link = text(response).split('\n')[0];
-    expect(link).toContain('https://github.com/DrBradStanfield/roadmap/issues/new?labels=agent-feedback,feature');
+    expect(link).toContain('https://github.com/DrBradStanfield/roadmap/issues/new?labels=from-connector,feature');
     expect(response.result!.isError).toBeUndefined();
     // No write, no backup: the file is only the thing being reported about.
     expect(statSync(path).mtimeMs).toBe(before.mtimeMs);

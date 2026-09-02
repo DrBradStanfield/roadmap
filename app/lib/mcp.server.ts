@@ -242,7 +242,7 @@ async function callHostedTool(
       savedNote: () => `Saved to the user’s ${provider}.`,
       // With no GitHub token configured the tool falls back to a prefilled URL
       // the user submits — which is all the stdio server can ever do.
-      fileFeedback: name === 'report_feedback' ? (githubFiler(token.provider) ?? undefined) : undefined,
+      fileFeedback: name === 'report_feedback' ? (githubFiler(token.provider, connectionKey(token.rt)) ?? undefined) : undefined,
     });
   } catch (error) {
     // Storage is allowed to fail, and the user can act on that, so it is worded
