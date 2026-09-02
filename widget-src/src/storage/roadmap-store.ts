@@ -46,6 +46,7 @@ import {
   type DocumentType,
   type FileDocument,
   type FileLabValue,
+  type FileMeasurement,
   type FileReminderOptIn,
   type FileSupplement,
   type HealthInputs,
@@ -190,6 +191,17 @@ export interface BulkLabValuesResult {
   saved: ApiLabValue[];
   skippedDuplicates: number;
   errorCount: number;
+}
+/** One reviewed upload row. `correctsId` is set only when the reviewer ticked
+ *  "Replace" on a slot another writer (a connector, another device) already
+ *  holds — it turns the write into a FHIR correction instead of a skip. */
+export interface BulkMeasurementInput {
+  metricType: string; value: number; recordedAt: string; source: MeasurementSource; correctsId?: string;
+}
+export interface BulkLabValueInput {
+  metricName: string; value: number; unit: string;
+  referenceLow?: number | null; referenceHigh?: number | null;
+  recordedAt: string; source?: string; correctsId?: string;
 }
 
 const PERSIST_DEBOUNCE_MS = 800;
@@ -362,9 +374,11 @@ export class RoadmapStore {
     return { status: 'inserted', row: row as ApiMeasurement };
   }
 
-  correctMeasurement(oldId: string, newValueSI: number): CorrectMeasurementResult {
-    const old = this.file.measurements.find((m) => m.id === oldId);
-    if (!old || old.status !== 'active') return { status: 'not_found' };
+  /** The one correction primitive: flip the old row (never mutate its value)
+   *  and append the replacement on the SAME date with `correctsId`. Shared by
+   *  the click-to-correct path and the upload conflict path, which differ only
+   *  in the source they stamp. Caller touches. */
+  private supersedeMeasurement(old: FileMeasurement, newValueSI: number, source: MeasurementSource): FileMeasurement {
     old.status = 'entered-in-error';
     const row = createMeasurement({
       id: newId(),
@@ -372,10 +386,34 @@ export class RoadmapStore {
       value: newValueSI,
       recordedAt: old.recordedAt, // a correction keeps the original date
       createdAt: new Date().toISOString(),
-      source: 'manual_correction',
-      correctsId: oldId,
+      source,
+      correctsId: old.id,
     });
     this.file.measurements.push(row);
+    return row;
+  }
+
+  /** The lab-value twin of `supersedeMeasurement`: flip the old row and append
+   *  the replacement on the old row's own date with `correctsId`. Caller
+   *  touches. */
+  private supersedeLabValue(old: FileLabValue, value: BulkLabValueInput): FileLabValue {
+    old.status = 'entered-in-error';
+    const row: FileLabValue = {
+      id: newId(), metricName: value.metricName, value: value.value, unit: value.unit,
+      referenceLow: value.referenceLow ?? null, referenceHigh: value.referenceHigh ?? null,
+      recordedAt: old.recordedAt, // a correction keeps the original date
+      createdAt: new Date().toISOString(),
+      source: (value.source as MeasurementSource) ?? 'lab_import', status: 'active',
+      correctsId: old.id,
+    };
+    this.file.labValues.push(row);
+    return row;
+  }
+
+  correctMeasurement(oldId: string, newValueSI: number): CorrectMeasurementResult {
+    const old = this.file.measurements.find((m) => m.id === oldId);
+    if (!old || old.status !== 'active') return { status: 'not_found' };
+    const row = this.supersedeMeasurement(old, newValueSI, 'manual_correction');
     this.touch();
     return { status: 'ok', newId: row.id };
   }
@@ -457,13 +495,26 @@ export class RoadmapStore {
     return true;
   }
 
-  bulkSaveMeasurements(measurements: Array<{ metricType: string; value: number; recordedAt: string; source: MeasurementSource }>): BulkSaveResult {
+  bulkSaveMeasurements(measurements: BulkMeasurementInput[]): BulkSaveResult {
     const saved: ApiMeasurement[] = [];
     let skippedDuplicates = 0;
-    // One Set of taken (metric, day) slots → O(N+M), and intra-batch dedup too.
-    const taken = new Set(activeOnly(this.file.measurements).map((m) => `${m.metricType}@${dayOf(m.recordedAt)}`));
+    // One pass over the active rows: a Set of taken (metric, day) slots for
+    // dedup, and a Map by id for the correctsId lookups → O(N+M) either way.
+    const active = activeOnly(this.file.measurements);
+    const taken = new Set(active.map((m) => `${m.metricType}@${dayOf(m.recordedAt)}`));
+    const activeById = new Map(active.map((m) => [m.id, m]));
     for (const m of measurements) {
       const slot = `${m.metricType}@${dayOf(m.recordedAt)}`;
+      // `correctsId` = the reviewer chose "Replace" on an occupied slot.
+      // A stale id (superseded on another device since review) is skipped,
+      // never appended — two active rows in one slot must not exist.
+      if (m.correctsId) {
+        const old = activeById.get(m.correctsId);
+        if (!old || `${old.metricType}@${dayOf(old.recordedAt)}` !== slot) { skippedDuplicates++; continue; }
+        activeById.delete(m.correctsId); // superseded once: a second row naming it is stale, not a second active
+        saved.push(this.supersedeMeasurement(old, m.value, m.source) as ApiMeasurement);
+        continue;
+      }
       if (taken.has(slot)) { skippedDuplicates++; continue; }
       taken.add(slot);
       const row = createMeasurement({
@@ -477,7 +528,7 @@ export class RoadmapStore {
     return { saved, skippedDuplicates, errorCount: 0 };
   }
 
-  bulkSaveLabValues(values: Array<{ metricName: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string; source?: string }>): BulkLabValuesResult {
+  bulkSaveLabValues(values: BulkLabValueInput[]): BulkLabValuesResult {
     const saved: ApiLabValue[] = [];
     let skippedDuplicates = 0;
     // Slot on `labSlotKey` — the same key the merge uses — so spelling
@@ -485,16 +536,29 @@ export class RoadmapStore {
     // dedup against each other.
     const labSlot = (name: string, recordedAt: string) =>
       `${labSlotKey(name)}@${dayOf(recordedAt)}`;
-    const taken = new Set(activeOnly(this.file.labValues).map((l) => labSlot(l.metricName, l.recordedAt)));
+    const active = activeOnly(this.file.labValues);
+    const taken = new Set(active.map((l) => labSlot(l.metricName, l.recordedAt)));
+    const activeById = new Map(active.map((l) => [l.id, l]));
     for (const v of values) {
       const slot = labSlot(v.metricName, v.recordedAt);
+      // Same replace-on-conflict rule as bulkSaveMeasurements: flip the old
+      // row, append with correctsId on the old row's date. A stale id is
+      // skipped, never appended.
+      if (v.correctsId) {
+        const old = activeById.get(v.correctsId);
+        if (!old || labSlot(old.metricName, old.recordedAt) !== slot) { skippedDuplicates++; continue; }
+        activeById.delete(v.correctsId);
+        saved.push(this.supersedeLabValue(old, v) as ApiLabValue);
+        continue;
+      }
       if (taken.has(slot)) { skippedDuplicates++; continue; }
       taken.add(slot);
       const row: FileLabValue = {
         id: newId(), metricName: v.metricName, value: v.value, unit: v.unit,
         referenceLow: v.referenceLow ?? null, referenceHigh: v.referenceHigh ?? null,
         recordedAt: v.recordedAt, createdAt: new Date().toISOString(),
-        source: (v.source as MeasurementSource) ?? 'lab_import', status: 'active', correctsId: null,
+        source: (v.source as MeasurementSource) ?? 'lab_import', status: 'active',
+        correctsId: null,
       };
       this.file.labValues.push(row);
       saved.push(row as ApiLabValue);

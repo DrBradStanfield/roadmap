@@ -2,16 +2,19 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
+import { MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
+import { MCP_CLIENT_LABELS } from './mcp-clients.server';
 import { supabaseAdmin } from './supabase.server';
 
-// Metadata is a closed allow-list: no free text, no health values. `provider`
-// mirrors the storage backendId; `count` is a small integer (e.g. files in an
-// upload batch). Anything else is rejected by .strict().
+// Metadata is a closed allow-list: no free text, no health values, everything
+// else rejected by .strict().
 const metadataSchema = z
   .object({
     provider: z.enum(['google-drive', 'dropbox', 'github', 'webdav', 'local', 'typed']).optional(),
     count: z.number().int().min(0).max(1000).optional(),
+    tool: z.enum(MCP_TOOL_NAMES).optional(),
+    client: z.enum(MCP_CLIENT_LABELS).optional(),
+    outcome: z.enum(['ok', 'refused', 'error']).optional(),
   })
   .strict();
 

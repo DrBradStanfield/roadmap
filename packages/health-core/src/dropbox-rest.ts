@@ -53,7 +53,7 @@ export async function dropboxRead(accessToken: string, fileName: string): Promis
     },
   });
   if (res.status === 409) return { body: null, version: null }; // path/not_found
-  if (!res.ok) throw new StorageError(`${PROVIDER} read failed (${res.status}): ${await res.text()}`);
+  if (!res.ok) throw new StorageError(`${PROVIDER} read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
   const meta = parseApiResult(res);
   const text = await res.text();
   let body: unknown;
@@ -99,7 +99,7 @@ export async function dropboxWrite(
     body: JSON.stringify(body),
   });
   if (res.status === 409) throw new ConflictError(`${PROVIDER} write conflict: ${await res.text()}`);
-  if (!res.ok) throw new StorageError(`${PROVIDER} write failed (${res.status}): ${await res.text()}`);
+  if (!res.ok) throw new StorageError(`${PROVIDER} write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
   const meta = await jsonBody<{ rev?: string }>(res);
   if (!meta.rev) throw new StorageError(`${PROVIDER} write returned no rev.`);
   return { version: meta.rev };

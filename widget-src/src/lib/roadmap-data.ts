@@ -23,10 +23,9 @@ import {
   type ApiScreening,
   type FileReminderOptIn,
   type HealthInputs,
-  type MeasurementSource,
   type ReminderScheduleItem,
 } from '@roadmap/health-core';
-import { RoadmapStore } from '../storage/roadmap-store';
+import { RoadmapStore, type BulkLabValueInput, type BulkMeasurementInput } from '../storage/roadmap-store';
 import { ChatHistoryStore } from '../storage/chat-history-store';
 import { setChatHistoryFactory } from './chat-history-access';
 import { PROXY_PATH, parseJsonResponse } from './api';
@@ -152,14 +151,10 @@ export async function deleteSupplementApi(supplementKey: string): Promise<boolea
 export async function saveScreening(screeningKey: string, value: string): Promise<boolean> {
   return store ? store.saveScreening(screeningKey, value) : false;
 }
-export async function bulkSaveMeasurements(
-  measurements: Array<{ metricType: string; value: number; recordedAt: string; source: MeasurementSource }>,
-): Promise<BulkSaveResult> {
+export async function bulkSaveMeasurements(measurements: BulkMeasurementInput[]): Promise<BulkSaveResult> {
   return store ? store.bulkSaveMeasurements(measurements) : { saved: [], skippedDuplicates: 0, errorCount: measurements.length };
 }
-export async function bulkSaveLabValues(
-  values: Array<{ metricName: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string; source?: string }>,
-): Promise<BulkLabValuesResult> {
+export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<BulkLabValuesResult> {
   return store ? store.bulkSaveLabValues(values) : { saved: [], skippedDuplicates: 0, errorCount: values.length };
 }
 export async function bulkSaveDocuments(

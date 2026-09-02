@@ -218,6 +218,15 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
       hint: 'Nothing was written. Read the record again, then retry.',
     };
   }
+  // A rejected token is not an unreachable folder: the connection is alive but
+  // buys nothing — a scope change, or the folder removed. Sending the user to
+  // check a folder that is fine never gets them anywhere; reconnecting does.
+  if (error instanceof StorageError && (error.status === 401 || error.status === 403)) {
+    return {
+      message: `${provider} refused this connection’s access. Nothing was read and nothing was written`,
+      hint: 'Reconnect the provider, which grants access again.',
+    };
+  }
   if (error instanceof StorageError && error.hint) {
     return { message: error.message, hint: error.hint };
   }

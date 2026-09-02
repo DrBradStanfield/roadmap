@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { UnitSystem, MeasurementSource, MetricType } from '@roadmap/health-core';
+import type { UnitSystem, MetricType } from '@roadmap/health-core';
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, trackProductEvent } from '../lib/api';
 import type { PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
-import { ReviewTable, type FileResult, type DocumentToSave } from './ReviewTable';
+import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
 import { synthesizeLabArchiveEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
@@ -544,9 +544,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
   };
 
   const handleSave = useCallback(async ({ values: selectedValues, documents, labValues }: {
-    values: Array<{ metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource }>;
+    values: ReviewedValue[];
     documents: DocumentToSave[];
-    labValues: Array<{ name: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string }>;
+    labValues: ReviewedLabValue[];
   }) => {
     setIsSaving(true);
     try {
@@ -559,6 +559,9 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         // so we can distinguish LLM-extracted-then-user-corrected from
         // pure LLM extraction in audit analytics. Falls back to 'lab_import'.
         source: v.source ?? 'lab_import',
+        // Set only when the reviewer ticked "Replace" on an occupied slot —
+        // the store then corrects that row instead of skipping the upload.
+        correctsId: v.correctsId,
       }));
       // Blobs travel INSIDE the payload (attached at processing time, and only
       // when the backend can archive them) — no name-keyed re-join here.
@@ -580,6 +583,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         referenceHigh: lv.referenceHigh,
         recordedAt: lv.recordedAt,
         source: 'lab_import' as const,
+        correctsId: lv.correctsId,
       }));
 
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
@@ -732,7 +736,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               </p>
               {skippedMeasurements > 0 && (
                 <p className="upload-done-skipped">
-                  {skippedMeasurements} blood test value{skippedMeasurements !== 1 ? 's were' : ' was'} already saved at the same date. Close this dialog and click the existing value in the Blood Test Results table to correct it.
+                  {skippedMeasurements} blood test value{skippedMeasurements !== 1 ? 's were' : ' was'} already saved at the same date.
                 </p>
               )}
               {skippedLabValues > 0 && (

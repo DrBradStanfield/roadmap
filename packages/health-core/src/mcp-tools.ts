@@ -17,6 +17,7 @@ import { computePlan, oneLine, PlanError, planPayload, printable } from './plan'
 import {
   appendLabValue,
   appendMeasurement,
+  type EditContext,
   correctValue,
   stampUpdatedAt,
   type EditRejection,
@@ -75,7 +76,7 @@ export const addMeasurementInput = z.object({
   metricType: z.string().min(1).max(MAX_NAME_LENGTH),
   value: z.number().finite(),
   unit: z.string().min(1).max(MAX_NAME_LENGTH).optional(),
-  recordedAt: DAY.optional(),
+  recordedAt: DAY,
 }).strict();
 
 /** One row of a panel. Exported so the parity test can read the nested shape. */
@@ -85,7 +86,7 @@ export const labValueInput = z.object({
   unit: z.string().min(1).max(MAX_NAME_LENGTH),
   referenceLow: z.number().finite().nullable().optional(),
   referenceHigh: z.number().finite().nullable().optional(),
-  recordedAt: DAY.optional(),
+  recordedAt: DAY,
 }).strict();
 
 export const addLabValuesInput = z.object({
@@ -175,6 +176,7 @@ export const getPlanOutput = z.object({
   unitSystem: z.string(),
   profile: LOOSE,
   inputs: LOOSE,
+  missingInputs: z.array(z.string()),
   currentValues: ROWS,
   labValues: ROWS,
   medications: LOOSE,
@@ -289,6 +291,9 @@ export function readRecord(file: RoadmapFile, request: z.infer<typeof readRecord
     ...record,
     measurements: record.measurements.filter((m) => (!metric || matchesMetric(m.metricType, metric)) && keep(m)),
     labValues: record.labValues.filter((l) => (!metric || matchesMetric(l.metricName, metric)) && keep(l)),
+    // A question about one metric is not a question about the user's documents,
+    // and a lab PDF's row list is the biggest thing in the record.
+    documents: metric ? [] : record.documents,
   };
   return okJson(filtered);
 }
@@ -330,9 +335,9 @@ function okJson(data: unknown): ToolOutcome {
 export function addMeasurement(
   file: RoadmapFile,
   request: z.infer<typeof addMeasurementInput>,
-  now: string,
+  ctx: EditContext,
 ): ToolOutcome {
-  const result = appendMeasurement(file, { ...request, now });
+  const result = appendMeasurement(file, { ...request, ...ctx });
   if (!result.ok) return rejection(result);
   const row = result.row;
   return {
@@ -351,12 +356,12 @@ export function addMeasurement(
 export function addLabValues(
   file: RoadmapFile,
   request: z.infer<typeof addLabValuesInput>,
-  now: string,
+  ctx: EditContext,
 ): ToolOutcome {
   let next = file;
   const rows: FileLabValue[] = [];
   for (const [index, value] of request.values.entries()) {
-    const result = appendLabValue(next, { ...value, now });
+    const result = appendLabValue(next, { ...value, ...ctx });
     if (!result.ok) {
       const refusal = rejection(result);
       return { ...refusal, text: `values[${index}] (${oneLine(value.metricName)}): ${refusal.text} No row from this call was written.` };
@@ -653,10 +658,19 @@ export interface ToolInputSchema {
   additionalProperties: false;
 }
 
+/**
+ * What one call costs the hosted server's hourly write allowance. Stated per
+ * tool, never derived from `annotations`: those are HINTS a client may not
+ * trust and are tuned for approval prompts, so a kinder prompt must not be
+ * able to loosen a security budget (audit C4).
+ */
+export type ToolCost = 'none' | 'add' | 'correct';
+
 export interface McpToolDefinition {
   name: string;
   title: string;
   description: string;
+  cost: ToolCost;
   inputSchema: ToolInputSchema;
   /**
    * The shape of the structured result. Declaring it obliges every OK result to
@@ -670,6 +684,19 @@ export interface McpToolDefinition {
     idempotentHint: boolean;
     openWorldHint: boolean;
   };
+  /**
+   * ChatGPT reads these two to say what the call is doing instead of showing a
+   * raw tool name. Ignored by every other client, and ≤64 characters each.
+   */
+  _meta: {
+    'openai/toolInvocation/invoking': string;
+    'openai/toolInvocation/invoked': string;
+  };
+}
+
+/** The two ChatGPT strings, in one line per tool instead of four. */
+function invocation(invoking: string, invoked: string): McpToolDefinition['_meta'] {
+  return { 'openai/toolInvocation/invoking': invoking, 'openai/toolInvocation/invoked': invoked };
 }
 
 const DAY_SCHEMA = { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' } as const;
@@ -712,6 +739,11 @@ const PLAN_SECTIONS = {
   unitSystem: { type: 'string' },
   profile: OBJECT,
   inputs: OBJECT,
+  missingInputs: {
+    type: 'array',
+    items: { type: 'string' },
+    description: 'Inputs the record does not hold that would change this plan. Ask the user for these, then add them.',
+  },
   currentValues: OBJECT_ARRAY,
   labValues: OBJECT_ARRAY,
   medications: OBJECT,
@@ -731,6 +763,8 @@ const PLAN_SECTIONS = {
 export const MCP_TOOLS: McpToolDefinition[] = [
   {
     name: 'read_record',
+    cost: 'none',
+    _meta: invocation('Reading your record…', 'Read your record'),
     title: 'Read the health record',
     description:
       'Return the user’s health-roadmap.json: profile, measurements, lab values, medications, supplements, ' +
@@ -756,6 +790,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'get_plan',
+    cost: 'none',
+    _meta: invocation('Computing your plan…', 'Computed your plan'),
     title: 'Compute the health plan',
     description:
       'Compute the user’s plan from their record — current values, what screening or test is due, and ' +
@@ -772,6 +808,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'add_measurement',
+    cost: 'add',
+    _meta: invocation('Adding your measurement…', 'Added your measurement'),
     title: 'Add a core measurement',
     description:
       `Append one core-metric measurement (${METRIC_TYPES.join(', ')}). Give the value in SI units, or pass ` +
@@ -783,9 +821,9 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         metricType: { type: 'string', enum: [...METRIC_TYPES], maxLength: MAX_NAME_LENGTH, description: 'The core metric.' },
         value: { type: 'number', description: 'The number, in SI units unless `unit` says otherwise.' },
         unit: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The unit `value` is in, e.g. "mg/dL". Omit if it is already SI.' },
-        recordedAt: { ...DAY_SCHEMA, description: 'The clinical date. Defaults to today; a future date is refused.' },
+        recordedAt: { ...DAY_SCHEMA, description: 'The user’s local calendar date, YYYY-MM-DD. Ask if you do not know it.' },
       },
-      required: ['metricType', 'value'],
+      required: ['metricType', 'value', 'recordedAt'],
       additionalProperties: false,
     },
     outputSchema: {
@@ -802,6 +840,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'add_lab_values',
+    cost: 'add',
+    _meta: invocation('Adding your lab results…', 'Added your lab results'),
     title: 'Add lab results',
     description:
       'Append blood tests that are not core metrics (ferritin, TSH, ALT, …) — a whole lab panel in one call, ' +
@@ -822,9 +862,9 @@ export const MCP_TOOLS: McpToolDefinition[] = [
               unit: { type: 'string', maxLength: MAX_NAME_LENGTH, description: 'The lab’s unit, exactly as reported.' },
               referenceLow: { type: ['number', 'null'], description: 'Lower reference bound, if the report gives one.' },
               referenceHigh: { type: ['number', 'null'], description: 'Upper reference bound, if the report gives one.' },
-              recordedAt: { ...DAY_SCHEMA, description: 'The clinical date. Defaults to today.' },
+              recordedAt: { ...DAY_SCHEMA, description: 'The user’s local calendar date, YYYY-MM-DD. Ask if you do not know it.' },
             },
-            required: ['metricName', 'value', 'unit'],
+            required: ['metricName', 'value', 'unit', 'recordedAt'],
             additionalProperties: false,
           },
         },
@@ -857,6 +897,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'correct_value',
+    cost: 'correct',
+    _meta: invocation('Correcting that value…', 'Corrected that value'),
     title: 'Correct a recorded value',
     description:
       'Fix a value that was recorded wrongly. This appends a new row with the corrected number and the ' +
@@ -889,6 +931,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'update_profile',
+    cost: 'correct',
+    _meta: invocation('Updating your profile…', 'Updated your profile'),
     title: 'Change the profile the plan is computed from',
     description:
       'Change who the record is about: sex, birth year, birth month, height in cm. Every suggestion is derived ' +
@@ -942,6 +986,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'report_feedback',
+    cost: 'correct',
+    _meta: invocation('Preparing your report…', 'Prepared your report'),
     title: 'File a bug report or feature request',
     description:
       'Report a bug or request a feature for the health-roadmap project. On this server the report is filed for ' +
@@ -976,6 +1022,40 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     // and writes something public on someone else's system. Not destructive —
     // it takes nothing away — and not idempotent: two calls file two issues.
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  },
+];
+
+/**
+ * The three starting points a client offers by name (MCP `prompts`). Claude
+ * shows a connector's prompts in its own menu, so these are for the person who
+ * has connected the record and does not know what to type. Static text: a
+ * prompt names a tool, it never carries a value.
+ */
+export interface McpPrompt {
+  name: string;
+  title: string;
+  /** The words the client puts in the user's message when they pick it. */
+  text: string;
+}
+
+export const MCP_PROMPTS: McpPrompt[] = [
+  {
+    name: 'summarise_my_plan',
+    title: 'Summarise my plan',
+    text: 'Call get_plan, then summarise my plan in plain words — keep its hedged wording and citations — and '
+      + 'tell me which inputs it lists as missing.',
+  },
+  {
+    name: 'add_todays_results',
+    title: 'Add today’s results',
+    text: 'I have blood test results to add. Ask me for the date they were taken and each test with its value and '
+      + 'unit, then read my record and add them.',
+  },
+  {
+    name: 'whats_missing',
+    title: 'What is missing?',
+    text: 'Call get_plan and tell me which inputs my record is missing that would change the plan, and how I could '
+      + 'get each one.',
   },
 ];
 
@@ -1027,7 +1107,7 @@ export const RECORD_FREE_TOOLS: ReadonlySet<ToolName> = new Set(['report_feedbac
 export function callTool(
   name: ToolName,
   args: unknown,
-  context: { file: RoadmapFile | undefined; now: string },
+  context: EditContext & { file: RoadmapFile | undefined },
 ): ToolOutcome {
   const parsed = INPUTS[name].safeParse(args ?? {});
   if (!parsed.success) {
@@ -1050,9 +1130,9 @@ export function callTool(
     case 'get_plan':
       return getPlan(record, now);
     case 'add_measurement':
-      return addMeasurement(record, parsed.data as z.infer<typeof addMeasurementInput>, now);
+      return addMeasurement(record, parsed.data as z.infer<typeof addMeasurementInput>, context);
     case 'add_lab_values':
-      return addLabValues(record, parsed.data as z.infer<typeof addLabValuesInput>, now);
+      return addLabValues(record, parsed.data as z.infer<typeof addLabValuesInput>, context);
     case 'correct_value':
       return correctValueTool(record, parsed.data as z.infer<typeof correctValueInput>, now);
     case 'update_profile':
@@ -1110,6 +1190,12 @@ export interface RunToolOptions {
    * tool falls back to the prefilled URL the user submits (US-32 AC9).
    */
   fileFeedback?: FeedbackFiler;
+  /**
+   * The latest calendar day this surface accepts as not-future. The hosted
+   * server, which runs in UTC and cannot know the user's timezone, passes
+   * `latestDayOnEarth(now)`; a local surface omits it and gets its own day.
+   */
+  latestDay?: string;
 }
 
 /**
@@ -1141,7 +1227,7 @@ export async function runToolOverSync(
     // A malformed call is worded in one place: `callTool` parses and refuses.
     const outcome = filer && parsed?.success
       ? await fileFeedback(parsed.data, now, filer)
-      : callTool(name, args, { file: undefined, now });
+      : callTool(name, args, { file: undefined, now, latestDay: options.latestDay });
     // A file to save with nothing opened would be a write dropped in silence.
     if (outcome.status === 'ok' && outcome.file) {
       throw new ToolContractError(`${name} produced a file without opening one`);
@@ -1155,7 +1241,7 @@ export async function runToolOverSync(
   const refusal = options.beforeCall?.(file);
   if (refusal) return { text: refusal, isError: true };
 
-  const outcome = callTool(name, args, { file, now });
+  const outcome = callTool(name, args, { file, now, latestDay: options.latestDay });
   if (outcome.status !== 'ok') return { text: outcome.text, isError: true };
   if (!outcome.file) return { text: outcome.text, isError: false, structured: outcome.data };
 

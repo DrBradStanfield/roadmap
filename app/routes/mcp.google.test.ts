@@ -33,6 +33,7 @@ const REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
 const VERIFIER = 'v'.repeat(64);
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('base64url');
 const NOW = '2026-09-02T10:00:00.000Z';
+const TODAY = new Date().toISOString().slice(0, 10);
 
 let cloud: MemoryCloud;
 /** Which provider the factory was asked for, per call. */
@@ -252,7 +253,7 @@ describe('a Google connection, end to end (US-32 phase 2)', () => {
     const read = await callTool(access, 'read_record', {});
     expect(read.isError).toBe(false);
 
-    const added = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2 });
+    const added = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
     expect(added.isError).toBe(false);
     expect(added.text).toContain('Saved to the user’s Google Drive');
     expect(storedRecord().measurements.find((m) => m.status === 'active')!.value).toBe(3.2);
@@ -457,7 +458,7 @@ describe('an internal failure is an error with an id, never a 500 (US-32 phase 2
           jsonrpc: '2.0',
           id: 'zed',
           method: 'tools/call',
-          params: { name: 'add_measurement', arguments: { metricType: 'weight', value: 80 } },
+          params: { name: 'add_measurement', arguments: { metricType: 'weight', value: 80, recordedAt: TODAY } },
         }),
       }),
       NOW,

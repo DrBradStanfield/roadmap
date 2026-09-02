@@ -24,7 +24,9 @@ Add lab results. A whole panel in one call, up to 50 tests, in the lab's own num
 
 Correct a value. Fix a number that went in wrong.
 
-Report a problem. If a tool refuses something you reasonably expected, ask Claude to file a bug report and it will — a public issue on the project's GitHub, carrying its description of the problem and nothing about you.
+Change four things about you. Your sex, your birth year, your birth month and your height, because your plan is worked out from those. Nothing else about you is writable.
+
+Report a problem. If a tool refuses something you reasonably expected, ask Claude to report it. The program on your computer holds no key to anything, so it cannot file anything itself: it hands you a prefilled link to a public issue on the project's GitHub, carrying its description of the problem and nothing about you. Nothing is filed until you open that link and press the button. (The hosted connectors, Claude on the web and ChatGPT, do file it themselves. Their guides say so.)
 
 The file stays where it is. Nothing is uploaded, no account is created, no key is needed. The program opens no network connection at all: it reads your file, changes it, and writes it back.
 

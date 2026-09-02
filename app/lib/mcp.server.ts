@@ -14,17 +14,20 @@
  * Deep imports into health-core, never `@roadmap/health-core`: the Fly Docker
  * build has no workspace symlink, and the package name only breaks at deploy.
  */
-import { dayOf } from '../../packages/health-core/src/merge';
+import { dayOf, latestDayOnEarth } from '../../packages/health-core/src/merge';
 import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
-import type { StorageAdapter } from '../../packages/health-core/src/adapter';
+import { StorageError, type StorageAdapter } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, toolContent, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
+import { MCP_TOOL_NAMES, type McpToolName } from '../../packages/health-core/src/product-events';
+import { KNOWN_CLIENTS, readCapped, type McpClientLabel } from './mcp-clients.server';
+import { recordServerEvent } from './product-events.server';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { githubFiler } from './github-issues.server';
-import { readCapped } from './mcp-clients.server';
 import { isMcpEnabled, issuer } from './mcp-config.server';
 import {
   type AccessPayload,
@@ -37,8 +40,6 @@ import {
 import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
 import { unpackSealed } from './mcp-seal.server';
 
-const PROTOCOL_VERSION = '2025-11-25';
-
 /** One JSON-RPC message. A lab panel of 50 rows is a few KB; this is slack. */
 const RPC_BODY_CAP = 1024 * 1024;
 
@@ -47,9 +48,7 @@ const RPC_BODY_CAP = 1024 * 1024;
  * `Last-Event-ID` — every stateful mechanism, none of which we built. A
  * client announcing it may therefore skip `initialize`, and is served anyway.
  */
-const SUPPORTED_PROTOCOLS = new Set([PROTOCOL_VERSION, '2026-07-28', '2025-06-18', '2025-03-26']);
-
-const SERVER_INFO = { name: 'health-roadmap', title: 'Health Roadmap', version: '1.0.0' };
+const SUPPORTED_PROTOCOLS = new Set([PROTOCOL_VERSION, '2025-06-18', '2025-03-26']);
 
 const INSTRUCTIONS =
   'These tools read and write ONE health record — the user’s own file in their own cloud folder. Read before ' +
@@ -96,20 +95,10 @@ function refuse(text: string): ToolAnswer {
   return { text, isError: true };
 }
 
-/**
- * What each write costs the hourly allowance, read off the tool table itself
- * rather than kept by hand: a tool that is not read-only spends, and one that
- * declares itself destructive OR open-world spends a correction's five. Both
- * `correct_value` and `update_profile` overwrite what the record says now,
- * which is what a falsification attempt would use; `report_feedback` reaches a
- * public issue tracker. All three cost the five. A new tool is
- * charged the moment it is published; there is no second list to forget.
- */
+/** What each write costs the hourly allowance, read off each tool's own
+ *  `cost` — never `annotations`, which are hints a client may not trust (C4). */
 const WRITE_COSTS = new Map(
-  MCP_TOOLS.filter((tool) => !tool.annotations.readOnlyHint).map((tool) => [
-    tool.name,
-    tool.annotations.destructiveHint || tool.annotations.openWorldHint ? WRITE_COST.correct : WRITE_COST.add,
-  ]),
+  MCP_TOOLS.flatMap((tool) => (tool.cost === 'none' ? [] : [[tool.name, WRITE_COST[tool.cost]] as const])),
 );
 
 function findRow(file: RoadmapFile, id: string): FileMeasurement | FileLabValue | undefined {
@@ -239,6 +228,9 @@ async function callHostedTool(
   try {
     return await runToolOverSync(recordSync(makeAdapter(token.provider, accessToken), 'mcp', now), name, args, now, {
       beforeCall: (file) => beforeHostedCall(token, name, file, args, now),
+      // This server runs in UTC and cannot know the user's timezone, so the
+      // future check is the widest day anyone has reached (US-31 AC6/AC11).
+      latestDay: latestDayOnEarth(now),
       savedNote: () => `Saved to the user’s ${provider}.`,
       // With no GitHub token configured the tool falls back to a prefilled URL
       // the user submits — which is all the stdio server can ever do.
@@ -248,13 +240,20 @@ async function callHostedTool(
     // Storage is allowed to fail, and the user can act on that, so it is worded
     // as a refusal. Anything else is a bug in us: dressing one up as "the
     // record did not answer" sends the user to check a cloud folder that is
-    // perfectly fine. It is rethrown instead, and `handleRpc` turns it into
-    // -32603 on this request's id — exactly what the stdio server does.
-    if (!isStorageFailure(error)) {
-      // The name alone. No args, no values, no message: health data never
-      // enters a log.
-      console.error('[mcp] tool failed', name, error instanceof Error ? error.name : 'unknown');
-      throw error;
+    // perfectly fine. It is rethrown instead, and the dispatch turns it into
+    // -32603 on this request's id — exactly what the stdio server does. The
+    // failure is counted there, as `outcome: 'error'`; nothing is logged,
+    // because health data never enters a log.
+    if (!isStorageFailure(error)) throw error;
+    // A rejected access token is not an unreachable folder: the refresh
+    // worked, so the grant is alive, but this token buys nothing — a scope
+    // change, or the app folder removed. Read off the status the adapter kept,
+    // never the message text.
+    if (error instanceof StorageError && (error.status === 401 || error.status === 403)) {
+      return refuse(
+        `${provider} refused this connection’s access to the record. Nothing was read and nothing was written. ` +
+          'Ask the user to reconnect the connector, which grants it again.',
+      );
     }
     const failed = describeStorageFailure(error, `The record in ${provider}`);
     return refuse(`${failed.message}. ${failed.hint}`);
@@ -262,80 +261,66 @@ async function callHostedTool(
 }
 
 // ---------------------------------------------------------------------------
+// Telemetry — how much the connector is used, never what it holds
+// ---------------------------------------------------------------------------
+
+/** Which assistant is calling, read off the pinned client table's own label. */
+export function mcpClientLabel(clientId: string): McpClientLabel {
+  return KNOWN_CLIENTS.get(clientId)?.label ?? 'other';
+}
+
+/** One counter row per tool call: which tool, which assistant, whether it
+ *  worked. Why it carries nothing else: docs/mcp-architecture.md §8. */
+function countToolCall(clientId: string, tool: string, outcome: 'ok' | 'refused' | 'error'): void {
+  // A name that is not a published tool was never a tool call, and free text
+  // in a counter is how a counter becomes a log.
+  if (!(MCP_TOOL_NAMES as readonly string[]).includes(tool)) return;
+  void recordServerEvent('mcp_tool_call', { tool: tool as McpToolName, client: mcpClientLabel(clientId), outcome });
+}
+
+// ---------------------------------------------------------------------------
 // JSON-RPC
 // ---------------------------------------------------------------------------
 
-type Id = string | number | null;
-
-const INVALID_REQUEST = -32600;
-const METHOD_NOT_FOUND = -32601;
-const INVALID_PARAMS = -32602;
-const INTERNAL_ERROR = -32603;
-
-function ok(id: Id, value: unknown) {
-  return { jsonrpc: '2.0', id, result: value };
-}
-
-function failure(id: Id, code: number, message: string) {
-  return { jsonrpc: '2.0', id, error: { code, message } };
-}
-
 /**
- * Answer one JSON-RPC message, or `null` for a notification. Nothing is
- * remembered between messages: a client that skips `initialize` is served,
- * which is what the next protocol revision expects anyway.
+ * The hosted surface's half of the shared dispatch (`mcp-rpc.ts`): a
+ * negotiated protocol version, this server's identity, and a tool call with
+ * the per-connection rate limit around it. Everything else — the method
+ * switch, the envelopes, the error codes — is the same code the stdio server
+ * runs, so the two cannot answer differently.
  */
-async function handleRpc(incoming: unknown, token: AccessPayload, now: string): Promise<object | null> {
-  if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
-    return failure(null, INVALID_REQUEST, 'A request must be a JSON object');
-  }
-  const message = incoming as { id?: Id; method?: unknown; params?: unknown };
-  const id = message.id ?? null;
-  const isNotification = message.id === undefined;
-  const method = typeof message.method === 'string' ? message.method : '';
-  const params = (message.params ?? {}) as Record<string, unknown>;
-  if (!method) return isNotification ? null : failure(id, INVALID_REQUEST, 'A request needs a method');
-
-  switch (method) {
-    case 'initialize': {
-      const asked = typeof params.protocolVersion === 'string' ? params.protocolVersion : '';
-      return ok(id, {
-        protocolVersion: SUPPORTED_PROTOCOLS.has(asked) ? asked : PROTOCOL_VERSION,
-        capabilities: { tools: { listChanged: false } },
-        serverInfo: SERVER_INFO,
-        instructions: INSTRUCTIONS,
-      });
-    }
-    case 'ping':
-      return ok(id, {});
-    case 'tools/list':
-      return ok(id, { tools: MCP_TOOLS });
-    case 'tools/call': {
-      const name = typeof params.name === 'string' ? params.name : '';
-      if (!name) return failure(id, INVALID_PARAMS, 'tools/call needs a tool name');
+function hostedSurface(token: AccessPayload, now: string) {
+  return {
+    protocolVersion: (asked: string) => (SUPPORTED_PROTOCOLS.has(asked) ? asked : PROTOCOL_VERSION),
+    serverInfo: SERVER_INFO,
+    instructions: INSTRUCTIONS,
+    async callTool(name: string, args: unknown): Promise<RpcToolOutcome> {
       // Per connection: every tool call refreshes a provider access token under
       // our one shared app identity, so a loop here is a loop at the provider.
+      // Not counted: a client stuck in a loop would otherwise write the
+      // counter thousands of times and drown the tool it is looping on.
       if (!allowToolCall(connectionKey(token.rt))) {
-        return ok(id, {
-          content: [{ type: 'text', text: 'Too many tool calls from this connection in the last minute. Wait a moment, then try again.' }],
-          isError: true,
-        });
+        return {
+          answer: {
+            text: 'Too many tool calls from this connection in the last minute. Wait a moment, then try again.',
+            isError: true,
+          },
+        };
       }
       // A bug in us must reach the client as an error carrying THIS request's
       // id, never as a 500 the vendor cannot match to anything — the stdio
       // server has answered this way since phase 0. Storage failures are
       // already words by here; what lands in this catch is ours.
-      let answer: ToolAnswer;
       try {
-        answer = await callHostedTool(token, name, params.arguments, now);
+        const answer = await callHostedTool(token, name, args, now);
+        countToolCall(token.clientId, name, answer.isError ? 'refused' : 'ok');
+        return { answer };
       } catch {
-        return failure(id, INTERNAL_ERROR, 'That tool failed inside this server. Nothing was written.');
+        countToolCall(token.clientId, name, 'error');
+        return { errorMessage: 'That tool failed inside this server. Nothing was written.' };
       }
-      return ok(id, toolContent(answer));
-    }
-    default:
-      return isNotification ? null : failure(id, METHOD_NOT_FOUND, `Unknown method ${method}`);
-  }
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -395,16 +380,16 @@ export async function mcpEndpoint(request: Request, now = new Date().toISOString
   try {
     text = await readCapped(request, RPC_BODY_CAP);
   } catch {
-    return Response.json(failure(null, INVALID_REQUEST, 'That request body is too large'), { status: 413 });
+    return Response.json(rpcFailure(null, INVALID_REQUEST, 'That request body is too large'), { status: 413 });
   }
   let body: unknown;
   try {
     body = JSON.parse(text);
   } catch {
-    return Response.json(failure(null, INVALID_REQUEST, 'Not valid JSON'), { status: 400 });
+    return Response.json(rpcFailure(null, INVALID_REQUEST, 'Not valid JSON'), { status: 400 });
   }
 
-  const answer = await handleRpc(body, token, now);
+  const answer = await dispatchRpc(body, hostedSurface(token, now));
   if (!answer) return new Response(null, { status: 202 });
   return Response.json(answer);
 }

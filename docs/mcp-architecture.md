@@ -34,6 +34,8 @@ Closes the gap `docs/guides/getting-started.md` admits: "A web AI cannot write t
 
 **What we never store.** Health values at rest, in logs, in Sentry, in `product_events`. `reminderOptIn.token` is stripped from every read (`docs/agent-access.md` rule 12).
 
+**Why the counters are closed enums.** `mcp_tool_call` carries a tool name, an assistant label and an outcome, each read off a fixed list. A DCR client's id and name are attacker-chosen text, and free text in a counter is how a counter becomes a log. Nothing in the source files repeats this — they point here.
+
 **What is genuinely new and worse.** Today Brad's server *cannot* read a record. After this, a live bearer token is a standing capability over one folder in a user's cloud, and **our server reads health values in memory on every call.** Statelessness removes our breach surface; it does not remove the capability.
 
 **Revocation.**
@@ -95,13 +97,15 @@ Reuse otherwise: `mergeFiles`, `migrateFile`, `SyncManager`, `createRateLimiter`
 | `update_profile` | overwrite (**guarded**) | Sex, birth year, birth month, height — the four fields the plan is computed from. Read-modify-write of the one last-write-wins profile object; `expected` per changed field is required hosted, optional locally. See the 2026-09-02 revision below. |
 | `correct_value` | append (**separate pathway**) | Mirrors `record-edits.correctValue` / `RoadmapStore.correctMeasurement` exactly: append a new row carrying `correctsId` and the **original `recordedAt`**, then flip the old row to `entered-in-error`. **Never folded into an add** — a slot-occupied add is *rejected*, and the rejection names the held row and points the agent at `correct_value`, mirroring the `refuse()` hint in `tools/edit-record.ts`. |
 
+**Both servers answer the same five methods from one dispatch** (`packages/health-core/src/mcp-rpc.ts`): `initialize`, `ping`, `tools/list`, `tools/call`, and the `prompts/*` pair, which publishes three static starting points (`MCP_PROMPTS`: summarise my plan, add today's results, what is missing). Each tool definition also carries `_meta['openai/toolInvocation/*']` (the two ≤64-char strings ChatGPT shows while a call runs) and a `cost` (`none|add|correct`) the write budget reads; `cost` is stripped from `tools/list`, so the budget never depends on `annotations`, which are hints a client may not trust. `recordedAt` is REQUIRED on both add tools — the server runs in UTC and cannot know the user's day (US-31 AC11); the future check is UTC+14, the latest day anyone has reached.
+
 **Corrections ship hosted, as their own pathway** (Brad's ruling, 2026-09-01, overruling the interim removal). A correction *is* an append under this data model — the protocol is append-with-`correctsId` plus a status flip on the superseded row — so withholding it would ship an incomplete protocol and push agents toward improvising something worse. The pathway stays distinct from `add_*` at every level: separate tool, separate arguments, separate rejection path.
 
 Read and write tools are separate by construction — no catch-all with a `method` argument.
 
 The hosted surface exposes **every tool in `MCP_TOOLS`**, the shared list the local stdio server and the CLI use — including `report_feedback`, which touches no record: it files a public GitHub issue for the user, under a server-held fine-grained token (`GITHUB_ISSUES_TOKEN`, Issues read/write on `DrBradStanfield/roadmap` only). The tool layer builds the issue — `[connector]` title, `from-connector` plus `bug`/`enhancement` labels, the report fenced so its markdown is inert and its `@names` ping nobody, a footer naming the kind, the server version and the provider — and the server is the only half that holds a token and a network, so the stdio server and the CLI stay tokenless and fall back to a prefilled URL the user submits. It is charged a correction's five against the connection's write allowance because it writes to someone else's system; the machine files at most 20 issues an hour, one connection files at most three in a rolling 24 hours, and the same title inside 24 hours returns the first issue rather than a second. The GitHub call is abandoned after 8 seconds so a hung API becomes the ordinary "GitHub did not answer" refusal rather than a stalled tool call. The hosted dispatcher runs `RECORD_FREE_TOOLS` before it opens the folder at all, exactly as the stdio server does, so a user whose record will not load can still report that. One list, one surface, no hosted-only subset to drift.
 
-**VERIFIED HOLDS (review):** the write surface is restricted to **append-only arrays only**. `packages/health-core/src/merge.ts` (lines 24–43) enforces row immutability there via `unionRows`, while current-state lists and singletons are last-write-wins where a second writer can overwrite the user. So v1 never writes medications, supplements, screenings, profile, documents or reminders, and never deletes. Corrections stay inside the append-only arrays the merge protects.
+**VERIFIED HOLDS (review):** the write surface is restricted to **append-only arrays only**. `unionRows` in `packages/health-core/src/merge.ts` enforces row immutability there, while current-state lists and singletons are last-write-wins where a second writer can overwrite the user. So v1 never writes medications, supplements, screenings, profile, documents or reminders, and never deletes. Corrections stay inside the append-only arrays the merge protects.
 
 **Revised 2026-09-02 (Brad's ruling, US-34): the profile is now writable — sex, birth year, birth month, height, and nothing else.** The boundary above was drawn around the MERGE, not around the risk, and it drew the line in the wrong place for these four fields: they are what the plan is computed from, a user who asks their assistant to fix their height means it, and a wrong one is visible on the screen the moment it lands. `update_profile` is a read-modify-write of the whole profile object (last-write-wins, one stamp), so every field it does not name survives — including fields a newer app added. Two things carry the risk the append-only rule used to: **`expected` is REQUIRED on the hosted surface for every field being changed** (the `correct_value` guard, applied to a record with no superseded copy to read back), and a profile change **costs a correction's weight** in the hourly allowance. Still out of reach and staying there: display preferences (`unitSystem`, `unitOverrides`), medications, supplements, screenings, documents, reminders, and any delete.
 
@@ -110,7 +114,7 @@ The hosted surface exposes **every tool in `MCP_TOOLS`**, the shared list the lo
 **Blast radius, stated honestly.** A prompt-injected agent **reads first**, so it knows every row id and value. With `correct_value` it can therefore *silently falsify every current clinical value* in roughly 30–100 calls. Each original flips to `entered-in-error`, which is **irreversible**. `get_plan` then generates a plan from the falsified record, and the user sees a coherent, wrong protocol. Append-only prevents data *loss*; it does not prevent data *corruption*. **Brad accepted this residual knowingly on 2026-09-01, choosing protocol completeness over the smaller surface.**
 
 **Mitigations — MANDATORY for the hosted corrections pathway, not optional hardening.** Shipping `correct_value` hosted without all four is not the decision Brad approved.
-1. **`expectedValue` on `CorrectValueRequest`.** Today it is `{id, newValue, now}` (`packages/health-core/src/record-edits.ts:57`) with no check. Hosted calls must state the value they expect to find, and a mismatch rejects — an agent working from a stale or hallucinated read writes nothing. Work item returns: `record-edits.ts`, an **optional** flag in `tools/edit-record.ts`, and tests. **Must not break the shipped CLI path (US-31)** — optional there, required on the hosted surface.
+1. **`expectedValue` on `CorrectValueRequest`.** **Shipped:** `CorrectValueRequest` carries `expectedValue`, and `correctValue` refuses a mismatch without echoing the stored number. Hosted calls must state the value they expect to find, and a mismatch rejects — an agent working from a stale or hallucinated read writes nothing. Work item returns: `record-edits.ts`, an **optional** flag in `tools/edit-record.ts`, and tests. **Must not break the shipped CLI path (US-31)** — optional there, required on the hosted surface.
 2. **Age limit — refuse `correct_value` on rows older than N days; N = 90, tunable.** Corrections fix recent mistakes; a lab result from three years ago is history, not a typo. 90 days covers a quarterly test cadence with room to spare, and puts the bulk of the record permanently out of reach of an injected agent.
 3. **Per-call caps** on rows written, `add_lab_values` included.
 4. **Weighted write allowance: N weighted writes per connection per hour, per machine** (N = 60), keyed on `sha256(provider refresh token)` — the connection, not the access token, so minting extra access tokens buys no extra writes. **A correction costs 5× an add.** Justification: the falsification attack needs one correction per metric, so weighting corrections is what actually bounds it, while a legitimate session corrects rarely and adds in batches — a lab-report import is many adds and zero corrections.
@@ -146,6 +150,17 @@ Every write: read → `migrateFile` → apply → `mergeFiles` → conditional w
 **Stateless flow.** `/mcp/authorize` validates client, PKCE `S256` only, and `resource`, then shows **our** consent screen — required anyway by the confused-deputy rule, since we forward to a static upstream client id. Sealed `state` carries {client_id, redirect_uri, code_challenge, clientState, nonce, exp +10 min}.
 
 **The consent POST's CSRF defence is the `Origin` check, not the cookie.** The cookie is SET by that POST, so `SameSite=Lax` protects nothing there; what does is §6's rule that a present-and-foreign `Origin` gets 403. Browsers attach an `Origin` to every cross-site POST — as the literal string `null` when the referrer is suppressed — which is why the consent page is served `Referrer-Policy: same-origin` and not `no-referrer`: under `no-referrer` a real browser posted the form with `Origin: null`, our own check refused it, and the consent step could not complete at all.
+
+**What the consent screen must SAY (2026-09-03).** The screen is the one place the user
+grants this, so it is the one place the whole grant has to be visible — a guide they may
+never read does not count. It names all **seven** tools, not the four the copy was
+written around; it says that changing the profile means sex, birth year, birth month and
+height, last-write-wins with no superseded copy; it says that asking for a bug report
+files a **public** GitHub issue, the user's words and never their health values, with no
+further step; and it says we **count calls** — which tool, which assistant, which
+provider, success or not, no values and nothing that names a person. Two of those three
+were true in the code and absent from the screen, which is a disclosure gap and not a
+cosmetic one. A tool added later without a line here is the same bug again.
 
 **The consent screen is enforced by a cookie, not by convention** (added 2026-09-02, security review). Pressing Connect is what mints a 32-byte CSPRNG nonce; the sealed state naming it goes into a first-party `__Host-mcp-state` cookie (Secure, HttpOnly, SameSite=Lax, Path=/, 10 min) and **Dropbox is handed the nonce alone** as its `state`. `/mcp/callback` requires the cookie, unseals it, compares Dropbox's echoed `state` to the sealed nonce timing-safely, and clears the cookie. Without the cookie it is a 400 page and no redirect. This closes two things at once: a state blob obtained from an unauthenticated `GET /mcp/authorize` could otherwise be replayed straight into a forged callback, skipping consent entirely; and the sealed state was ~1 KB against Dropbox's documented 500-byte `state` limit. Still no server-side state — the cookie is the browser's copy, sealed. **Ceiling:** the sealed state carries the client id, and browsers cap a cookie near 4 KB, so a CIMD client id of a few thousand characters would make the consent step fail. Real ids are far short of it (`resolveClient` caps at 4096 chars, and a vendor's is ~50), but the limit is the cookie's, not ours. **That ceiling is also what caps the client's `state` (2026-09-02).** `state` was being truncated at 512 characters, which broke every ChatGPT connection — OpenAI sends 521 — so it is now bounded and REFUSED at `MAX_STATE_LENGTH = 1024` rather than shortened. 1024 was measured, not chosen: it keeps the sealed state inside the 2048 padding bucket and the Set-Cookie line near 3.1 KB, where 2048 would reach the 4096 bucket and a ~5.8 KB cookie the browser silently drops. (The bucket list in the seal spec above omits the 4096 rung the code actually has.) Provider callback exchanges for the provider refresh token and mints an auth-code blob (exp **+60 s**). `/mcp/token` unseals, verifies PKCE/client/redirect/expiry, issues access (1 h) and refresh (90 d) blobs. `/token` is `application/x-www-form-urlencoded`; `/register` is `application/json` — two parsers in one route file, a real trap. A dead grant returns `invalid_grant`, never a custom code, or Claude never recovers.
 
@@ -246,7 +261,7 @@ Residual, disclosed and unchanged: our write is **durable-by-retry**, but the **
 
 Brad's ruling: build the full thing. The recruitment gate is removed. The phase structure remains as **build order**, because Phase 0 is the tool layer Phase 1 wraps, and it delivers working Claude Desktop support on day one.
 
-**Phase 0 — local stdio MCP server (~1 day).** All six tools over a local file path (`expectedValue` optional here; the hosted surface is where it is required). No server, no OAuth, no keys, no promise change. Ships value immediately to Claude Desktop and Claude Code users.
+**Phase 0 — local stdio MCP server (~1 day).** Every tool in `MCP_TOOLS` over a local file path — six when this was written, seven since `update_profile` (`expectedValue` optional here; the hosted surface is where it is required). No server, no OAuth, no keys, no promise change. Ships value immediately to Claude Desktop and Claude Code users.
 - [x] `packages/health-core/src/plan.ts` — move `derivePlanInputs`/`computePlan`/`renderJson` out of `tools/get-plan.ts`; CLI keeps argv, `fs`, HTML renderer; US-30 AC1 import guard still passes.
 - [x] `get_plan` JSON gains the top-level `instruction` field (preserve hedging + citations).
 - [x] Tool layer: `read_record` (strips `reminderOptIn.token`, `metric`/`since` filters), `get_plan`, `add_measurement`, `add_lab_values` — over `migrateFile` + `record-edits.ts`.
@@ -284,7 +299,7 @@ Brad's ruling: build the full thing. The recruitment gate is removed. The phase 
 
 ## 9. What this does not do
 
-No health data in Supabase — and no *anything* in Supabase. No accounts, no passwords, no stored email. No analytics on health content. No delete tool, no `eraseEpoch`, no reminder-token access. No WebDAV, GitHub or self-host in v1, and §4's rotation finding closes generic providers entirely. No per-user revocation, no connection list, no audit trail. **No Gemini promise:** consumer custom MCP exists only inside Spark tasks, personal accounts, US-only, English-only, 18+.
+No health data in Supabase — and no *anything* in Supabase. No accounts, no passwords, no stored email. No analytics on health content. No delete tool, no `eraseEpoch`, no reminder-token access. No WebDAV, GitHub or self-host in v1, and §4's rotation finding closes generic providers entirely. No per-user revocation, no connection list, no per-user audit trail — a value-free call counter (`product_events`: tool name, assistant, provider, success) and nothing that identifies a user. **No Gemini promise:** consumer custom MCP exists only inside Spark tasks, personal accounts, US-only, English-only, 18+.
 
 ---
 
@@ -318,218 +333,8 @@ Nothing here touches `health_roadmap_algorithm.md`, `evidence.ts`, or `roadmap_t
 
 ---
 
-## Build notes — Phase 1, 2026-09-02
+## Build notes
 
-Written by the implementation, not by the decision. Four places where the build
-departed from the text above, each toward the stricter reading.
-
-**`kid` is a key fingerprint, not an index.** §2 says "`kid` = index" and, in the same
-row, that rotation PREPENDS the new key. Those cannot both hold: prepending renumbers
-every key, so every blob already issued would decrypt under the wrong one and every
-active connection would break at the moment rotation was supposed to preserve them. The
-`kid` is now a short SHA-256 fingerprint of the key itself. Prepend and append both
-work, and "seal with the first, accept any" is literally true. A rotation test is what
-found it.
-
-**Every issued value carries its client id in front of the sealed blob.** The AAD binds
-a blob to one client (§4), and unsealing therefore needs to know which client — but a
-bearer token arrives alone and Dropbox echoes exactly one opaque `state`. The id travels
-with the blob as `<client id>~<blob>`. It feeds the AAD, so it is bound rather than
-trusted; at `/token`, where the request states `client_id` independently, the two are
-compared, and that comparison is a real check. On `/mcp` there is nothing to compare
-against, so the binding is only carried. Stated plainly: a stolen bearer token is a
-stolen bearer token, and no framing fixes that.
-
-**RFC 8252 loopback redirects are ON (2026-09-02, owner decision).** A command-line
-client has no callback host of its own: it listens on an ephemeral port on the user's own
-machine, and cannot know the port until it binds one. So `redirectMatches(registered,
-requested)` in `app/lib/mcp-clients.server.ts` tries an exact string first, then allows a
-loopback pair to differ in the PORT and in nothing else — both `http:`, host exactly
-`127.0.0.1`, `[::1]` or `localhost` and identical on both sides, same path, same query, no
-userinfo, no fragment. It is the only redirect comparison in the codebase, used at
-`/authorize` and at `/token`. `https://localhost` is refused: the exemption exists because
-a local listener cannot hold a certificate, so a URL that claims one is not it. The host
-match is exact, so `localhost.evil.com` and `127.0.0.1.evil.com` are ordinary public names
-and get nothing.
-
-Why this is safe, and why it does not contradict CLAUDE.md's "localhost is never on an
-allow-list": that rule is about CORS — granting a browser origin access to our endpoints.
-This grants nothing. It is where the user's own browser carries an authorization code back
-to a process on the user's own machine, and that code is worthless without the PKCE
-verifier, which never left the process that asked for it. PKCE S256 is mandatory on every
-authorization, and our consent screen names the client before anything is granted.
-
-Claude Code publishes a second metadata document,
-`https://claude.ai/oauth/claude-code-client-metadata`, behind the same Cloudflare challenge
-as the web one, so it is pinned in `KNOWN_CLIENTS` too — `client_name` "Claude Code",
-redirects `http://localhost/callback` and `http://127.0.0.1/callback`, copied verbatim.
-Gemini CLI registers dynamically with `http://localhost:<port>/oauth/callback`.
-
-**A fifth padding bucket, 4096.** §4 names 256/512/1024/2048. A provider refresh token
-longer than the 2048 rung would otherwise fail to seal at all; the extra rung means it
-fails to leak instead of failing to work.
-
-**Guide buttons.** They stayed `soon` until the DNS and the operator steps landed, so no
-guide ever pointed a reader at a 404. They flipped when the connector went live.
-
-**Second review pass, 2026-09-02.** A fresh adversarial review found nine issues; all are
-fixed on this branch, and the paragraphs above are corrected rather than annotated.
-The behaviour changes worth naming here:
-
-- **The `max_writes` pool is gone** (§3 mitigation 4, rewritten). It locked honest users
-  out and bounded no attacker. The allowance is now per connection per hour, keyed on the
-  hash of the provider refresh token.
-- **The refresh lifetime is absolute.** It used to slide: every refresh set `exp` to 90
-  days out, so a client refreshing hourly never expired. The original expiry now travels
-  through the refresh grant.
-- **Consent is cookie-bound and Dropbox gets a nonce** (§4). Reproduced before the fix: a
-  sealed state from an unauthenticated `GET /mcp/authorize` plus a forged
-  `GET /mcp/callback` minted an authorization code with no consent step at all.
-- **`getClientIp` prefers `Fly-Client-IP`.** It preferred the first hop of
-  `X-Forwarded-For`, which a client sets itself, so every per-IP limiter in the app was
-  bypassable by one header. Fly's proxy writes `Fly-Client-IP` itself
-  (https://fly.io/docs/networking/request-headers/). It now takes a second argument,
-  `getClientIp(request, 'fly' | 'shopify')`, so the storefront's own app-proxy callers
-  keep trusting `X-Forwarded-For` and only the MCP routes trust `Fly-Client-IP`.
-- **`providerRevokeUrl()` is surfaced on the consent and callback pages**
-  (`app/routes/mcp.$.tsx`), not just documented here — the page that grants access also
-  names the exact provider page that revokes it.
-- **Bodies are capped** — 64 KB at the OAuth doors, 1 MB at `/mcp`, 413 over — and
-  `/token` (per IP) and `tools/call` (per connection) are rate-limited. The limits are
-  deliberately generous: a whole vendor's users share one egress range, so a tight per-IP
-  limit would lock out honest traffic rather than an attacker.
-- **A malformed `MCP_SEAL_KEYS` or `MCP_CLIENT_HMAC_KEY` now disables the feature**
-  (404, plus one log line naming the variable and never its value) instead of turning
-  every route into a 500.
-- **Not done, deliberately: no Dropbox access-token cache.** Every `tools/call` refreshes
-  one. A memory cache keyed by connection would cut that to one per four hours, but it
-  would put live provider credentials in a process-wide map — a new thing to leak, and a
-  new line in §1's inventory of what we hold. The per-connection rate limit bounds the
-  refresh rate instead.
-
-**The canonical vendor clients are pinned (2026-09-02, first live connections).** ChatGPT
-connected end to end over CIMD. Claude did not: `https://claude.ai/oauth/mcp-oauth-client-metadata`
-is served behind a Cloudflare managed challenge that answers any datacenter fetch with a
-403 `text/html` and `cf-mitigated: challenge`, reproduced from inside the Fly machine, so
-`resolveClient` returned null and the consent page said "We do not recognise the app". Both
-canonical ids now resolve from `KNOWN_CLIENTS` before any fetch, which the draft's §4 "MAY
-apply its own policy" explicitly allows. Two things follow. The pinned redirect URIs must
-also pass `isAllowedRedirect`, and a test asserts that so the pins and the policy cannot drift.
-And the failure mode of pinning is a vendor changing its callback: the user sees a plain
-refusal at `/mcp/authorize` — never a redirect, because that would make us an open
-redirector — and we see one `console.error` naming the reason and the client HOST only, no
-URL and no query. That log line is the whole detection mechanism, and it is enough,
-because the user's report and Sentry's line arrive together.
-
-**Residual risks noticed during the build that this document does not name.**
-- **DNS rebinding on the CIMD fetch has a real window.** We resolve, check every address
-  is public, then call `fetch`, which resolves again. `fetch` offers no way to pin the
-  connection to the address we checked. §4 asks for the re-check at connect time and
-  that is implemented; the TOCTOU gap is not closed, only narrowed.
-- **The hourly write allowance is per machine.** It is an in-memory map, so N Fly
-  machines multiply it by N. The 5× weighting still bounds the falsification attack, but
-  by 5×-per-machine-per-hour. Stated in §3 rather than only here.
-- **Dropbox's 500-byte `state` limit is believed, not verified.** The nonce is 43 chars,
-  so the constraint no longer binds, but the first live connection is still the test —
-  the runbook asks for it explicitly.
-
----
-
-## Build notes — Phase 2, 2026-09-02
-
-Two places where the build departed from the text above.
-
-**`prompt=consent` is unconditional, and "only when needed" was the wrong shape.** The
-brief asked for the prompt only when a refresh token is actually needed. For a stateless
-server it is needed every time: Google issues a refresh token on a first authorization or
-an explicit re-consent, and never on a silent re-authorization — and a connection with no
-refresh token cannot be sealed, so it cannot exist. Omitting the prompt would fail for
-every user who has ever connected the widget, and then need a second trip through Google
-with the prompt anyway: two redirects for the same token. So we ask once. What that costs
-is one of the account's 100 refresh-token slots per connection, shared with the widget,
-and §4 already says never to mint a SPARE — which we do not: one token, inside a flow the
-user just consented to. The runbook says what to check if a user reports the website
-quietly disconnecting.
-
-**A failed verify is now retryable for EVERY backend, not just Drive.** §7 step 3 is
-`SyncManager.verifyAfterWrite`, which detected a lost update and then threw a fatal
-error — detection with no step 4. It now throws `LostUpdateError extends ConflictError`,
-so the existing retry loop re-reads, re-merges and writes again; the arrays are
-append-only, so writing the same rows twice is the same as writing them once. Dropbox and
-the local file adapter inherit this and are better for it. The one thing that changed for
-them is the give-up message, which no longer says "nothing was written" for a loss where
-something plainly was.
-
-**Phase-1 blobs default to Dropbox.** `provider` is sealed into every blob phase 2 mints,
-but the blobs phase 1 already handed out carry no such field, and a blob in a vendor's
-token store can never be updated by us (§7). Reading `undefined` as a provider would have
-500ed every tool call on Brad's own live connections the moment this deployed. So
-`unpackSealed` — the one place a sealed payload is ever opened — defaults a missing or
-invalid provider to `dropbox`, which is what every one of those connections is. Two tests
-pin it: an old access blob works, and an old refresh blob mints an access blob that names
-Dropbox. It is not migration code; it is the only honest reading of a credential we
-cannot re-issue.
-
-**And a bug is now an error with an id.** `tools/call` wraps the tool run and answers
-JSON-RPC `-32603` on the failed request, the way the stdio server has since phase 0. A
-`ToolContractError` used to escape the endpoint and become a 500 that a vendor could not
-match to anything it had sent.
-
-**The `-32603` gate got narrower, and a real bug used to hide as a refusal (commit
-`b4fbf49`).** `callHostedTool`'s catch ran everything except `ToolContractError` through
-`describeStorageFailure`, whose fallback message is "The record did not answer. Nothing
-was written." A `TypeError` inside a tool, inside the corrections guards, or inside merge
-therefore reached the assistant worded as a refusal against a cloud folder that was fine
-— and nothing was logged. The nuance that hid it: both REST adapters called bare `fetch`,
-which throws a raw `TypeError` on a dead network, so the catch-all was also the only thing
-correctly turning a real provider outage into "did not answer." Deleting the catch-all
-outright would have mislabelled every outage as a bug. The fix is `fetchOrFail()`
-(`packages/health-core/src/adapter.ts`) — one function the adapters' own network calls go
-through, so a dead connection becomes a typed storage failure at the source rather than
-an ordinary exception at the top. `callHostedTool` now checks `isStorageFailure(error)`
-before deciding: true still becomes a worded refusal, false is logged (tool name and error
-name only, no health values) and rethrown as `-32603`.
-
-**And a provider that never answers is now bounded.** `fetchOrFail` had no timeout, so a
-cloud provider that accepted the socket and then went silent hung the tool call until the
-platform killed it — no error, no id, nothing for the assistant to say. It now runs every
-provider call under `AbortSignal.timeout(FETCH_TIMEOUT_MS)` (30 s), merged with any
-caller signal via `AbortSignal.any`, with the body read inside the same bound. The abort
-throws the same `StorageError('<Provider> did not answer', UNREACHABLE_HINT)`, so silence
-lands where an outage lands: a worded refusal past the `-32603` gate, and still inside the
-widget's Sentry `/did not answer/` ignore.
-
-**`fetchOrFail`'s bound is feature-detected, and document uploads get a longer one.**
-`fetchOrFail` also runs in the browser (the widget's Drive and Dropbox adapters import it
-through the health-core barrel), where the Vite target is `modules` — Safari 14/15 has no
-`AbortSignal.timeout` and 16–17.3 no `AbortSignal.any`, so calling either unguarded made
-the bound itself the outage and killed every read and save there. Both are now
-feature-detected; missing either, the call runs unbounded as it did before. And the flat
-30 s is a record-file bound: `driveCreateFile` scales it with the body size (30 s + 1 s
-per 10 KB, capped at 5 min) so a 10 MB upload is not aborted mid-send on a slow uplink.
-
-## Build note — the widget's end of the loop, 2026-09-02
-
-**A connector's write is now pushed to the open page, not polled for** (US-34). The
-60-second timer was the visible half of the round trip: an assistant wrote, and the user
-waited up to a minute or reloaded. `StorageAdapter` gained an OPTIONAL
-`watch(fileName, onChange, signal)`, and `RoadmapStore.startLiveRefresh` uses it in place
-of the poll wherever an adapter has one — Dropbox through `files/list_folder/longpoll` on
-the `notify` host (no access token: the cursor is the credential), Google Drive through
-`changes.list` on a 3-second beat, because a browser cannot receive Drive's push channel.
-The poll survives only for adapters with no watch. The tab's visibility still governs
-everything: hidden aborts the watch, visible takes it up again. Nothing about the hosted
-server changed — this is the widget hearing what the server already writes.
-
-## Build note — structured tool results, 2026-09-03
-
-**Every tool now declares an `outputSchema` and answers with `structuredContent`**
-(spec 2025-06-18 §Tools). The words each tool returns are unchanged — guides and tests
-pin them, and they stay in `content` as the serialized JSON the spec asks for on
-compatibility grounds. What is new is the same answer typed: `mcp-tools.ts` holds a zod
-output schema beside each input one, and the published JSON Schema mirrors it, checked by
-the same parity test that already guards the inputs. A record and a plan keep their shape
-loosely — both are published in full elsewhere, and restating them here would be a second
-definition to drift. Both servers pass the structure through untouched; the stdio
-server's saved-backup note stays in the text, where it belongs. A refusal is an error
-result and carries no structure.
+The dated build logs — phase 1, phase 2, the widget's end of the loop, and structured
+tool results — moved to [mcp-build-notes.md](mcp-build-notes.md) on 2026-09-03, when
+this file passed the 500-line cap. This file is the map; that one is the receipts.

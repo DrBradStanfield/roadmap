@@ -6,7 +6,8 @@
  * provider's failure from its own (AC17).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchOrFail, ROADMAP_FILE_NAME, StorageError } from './adapter';
+import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, StorageError } from './adapter';
+import { describeStorageFailure } from './sync-manager';
 import { DropboxAdapter } from './dropbox-rest';
 
 afterEach(() => {
@@ -104,5 +105,53 @@ describe('a runtime without `AbortSignal.timeout` still saves (US-32 AC17)', () 
     const res = await fetchOrFail('Dropbox', 'https://example.test/x');
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
+  });
+});
+
+/**
+ * `strict_conflict` is what US-32 AC16 rests on: without it Dropbox ACCEPTS a
+ * rev-conditional update whose rev does not match because the file was DELETED,
+ * silently re-creating a record the user erased. Drive's half of this is covered
+ * in `drive-rest.test.ts`; Dropbox is the live provider and had nothing.
+ */
+describe('a rev-conditional write refuses to re-create a deleted record (US-32 AC16)', () => {
+  /** The `Dropbox-API-Arg` header of the last upload, parsed. */
+  function uploadArg(fetchSpy: ReturnType<typeof vi.fn>): Record<string, unknown> {
+    const init = fetchSpy.mock.calls.at(-1)![1] as RequestInit;
+    return JSON.parse((init.headers as Record<string, string>)['Dropbox-API-Arg']);
+  }
+
+  it('asks for update + strict_conflict when it knows the rev it is replacing', async () => {
+    const fetchSpy = vi.fn(async () => Response.json({ rev: 'rev2' }));
+    vi.stubGlobal('fetch', fetchSpy);
+    await new DropboxAdapter('token').write(ROADMAP_FILE_NAME, { a: 1 }, 'rev1');
+    const arg = uploadArg(fetchSpy);
+    expect(arg.mode).toEqual({ '.tag': 'update', update: 'rev1' });
+    expect(arg.strict_conflict).toBe(true);
+    expect(arg.autorename).toBe(false); // a second file is not a save
+  });
+
+  it('asks for add — never strict_conflict — on a first-ever create', async () => {
+    const fetchSpy = vi.fn(async () => Response.json({ rev: 'rev1' }));
+    vi.stubGlobal('fetch', fetchSpy);
+    await new DropboxAdapter('token').write(ROADMAP_FILE_NAME, { a: 1 }, null);
+    const arg = uploadArg(fetchSpy);
+    expect(arg.mode).toEqual({ '.tag': 'add' });
+    expect(arg.strict_conflict).toBe(false);
+  });
+
+  it('turns Dropbox’s 409 into a ConflictError, so SyncManager re-reads instead of clobbering', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(
+      JSON.stringify({ error_summary: 'path/conflict/file/..' }),
+      { status: 409 },
+    )));
+    const failure = await new DropboxAdapter('token')
+      .write(ROADMAP_FILE_NAME, { a: 1 }, 'stale-rev')
+      .catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(ConflictError);
+    // A conflict is not a storage outage: the caller must retry the merge, not
+    // tell the user their provider is down.
+    expect(failure).not.toBeInstanceOf(StorageError);
+    expect(describeStorageFailure(failure, 'The record in Dropbox').hint).toContain('Read the record again');
   });
 });

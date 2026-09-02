@@ -58,10 +58,13 @@ export class LostUpdateError extends ConflictError {
 /**
  * Any other storage failure (network, auth, corruption, verify mismatch).
  * `hint` is the user's next move, when the thrower knows one — the shared
- * `describeStorageFailure` mapping prints it as the second line.
+ * `describeStorageFailure` mapping prints it as the second line. `status` is
+ * the provider's HTTP status when there was one, so a surface can tell a
+ * rejected token (401/403) from an unreachable folder without reading the
+ * message text.
  */
 export class StorageError extends Error {
-  constructor(message: string, readonly hint?: string, readonly cause?: unknown) {
+  constructor(message: string, readonly hint?: string, readonly cause?: unknown, readonly status?: number) {
     super(message);
     this.name = 'StorageError';
   }

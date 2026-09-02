@@ -36,6 +36,11 @@ export const PRODUCT_EVENT_NAMES = [
   'report_email_bounced',
   'report_email_complained',
   'report_email_clicked',
+  // US-32 hosted connector. Value-free counters: which tool, which assistant,
+  // whether it worked (mcp_tool_call), and one row per completed connection
+  // (mcp_connect). Never a value, never an identifier, never a connection key.
+  'mcp_tool_call',
+  'mcp_connect',
 ] as const;
 
 export type ProductEventName = (typeof PRODUCT_EVENT_NAMES)[number];
@@ -52,4 +57,24 @@ export const SERVER_ONLY_EVENT_NAMES = [
   'report_email_bounced',
   'report_email_complained',
   'report_email_clicked',
+  'mcp_tool_call',
+  'mcp_connect',
 ] as const satisfies readonly ProductEventName[];
+
+/**
+ * The hosted connector's tool names, as a counter may name them. They live in
+ * this leaf, not in `mcp-tools.ts`: the events layer must not drag the tool
+ * layer (and the whole clinical engine under it) into a server route. A test
+ * in mcp-tools.test.ts asserts the two lists are the same.
+ */
+export const MCP_TOOL_NAMES = [
+  'read_record',
+  'get_plan',
+  'add_measurement',
+  'add_lab_values',
+  'correct_value',
+  'update_profile',
+  'report_feedback',
+] as const;
+
+export type McpToolName = (typeof MCP_TOOL_NAMES)[number];

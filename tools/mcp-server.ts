@@ -17,14 +17,10 @@
  */
 import { pathToFileURL } from 'node:url';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
-import { MCP_TOOLS, runToolOverSync, SERVER_VERSION, toolContent, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
+import { MCP_TOOLS, runToolOverSync, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
+import { dispatchRpc, INVALID_REQUEST, PARSE_ERROR, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../packages/health-core/src/mcp-rpc';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
 import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
-
-/** The revision this speaks. Clients that ask for another get told this one. */
-const PROTOCOL_VERSION = '2025-11-25';
-
-const SERVER_INFO = { name: 'health-roadmap', title: 'Health Roadmap', version: SERVER_VERSION };
 
 /** What the assistant is told once, at connect. */
 const INSTRUCTIONS =
@@ -59,38 +55,6 @@ over a cloud folder. No network, no model, no telemetry.
 `;
 
 // ---------------------------------------------------------------------------
-// JSON-RPC 2.0
-// ---------------------------------------------------------------------------
-
-type Id = string | number | null;
-
-interface RpcMessage {
-  jsonrpc?: unknown;
-  id?: Id;
-  method?: unknown;
-  params?: unknown;
-}
-
-const PARSE_ERROR = -32700;
-const INVALID_REQUEST = -32600;
-const METHOD_NOT_FOUND = -32601;
-const INVALID_PARAMS = -32602;
-const INTERNAL_ERROR = -32603;
-
-function result(id: Id, value: unknown) {
-  return { jsonrpc: '2.0', id, result: value };
-}
-
-function failure(id: Id, code: number, message: string) {
-  return { jsonrpc: '2.0', id, error: { code, message } };
-}
-
-/** A tool's answer in this transport's envelope. `toolContent` owns the payload. */
-function toolResult(id: Id, answer: ToolAnswer) {
-  return result(id, toolContent(answer));
-}
-
-// ---------------------------------------------------------------------------
 // Tool calls against the file
 // ---------------------------------------------------------------------------
 
@@ -107,65 +71,36 @@ async function callAgainstFile(path: string, name: string, args: unknown): Promi
   });
 }
 
+/**
+ * The same call, with this surface's two failure vocabularies: the record is
+ * the problem (unreadable, moved, not a record, a write that would not settle)
+ * and the assistant can read that out, or it is a bug in us, which the user can
+ * do nothing about and which answers -32603 on this request's own id.
+ */
+async function stdioTool(path: string, name: string, args: unknown): Promise<RpcToolOutcome> {
+  try {
+    return { answer: await callAgainstFile(path, name, args) };
+  } catch (error) {
+    if (isStorageFailure(error)) {
+      const told = describeStorageFailure(error, path);
+      return { answer: { text: `${told.message}. ${told.hint}`, isError: true } };
+    }
+    return { errorMessage: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Dispatch
 // ---------------------------------------------------------------------------
 
-/**
- * Answer one message, or `null` for a notification. Nothing here is stateful:
- * a client that skips `initialize` still gets served, which is what the next
- * protocol revision expects anyway.
- */
-export async function handle(incoming: unknown, path: string): Promise<object | null> {
-  // Valid JSON that is not an object is not a request, and must not fall
-  // through as a notification: a client that sent a batch — removed from MCP
-  // after 2025-03 — would wait forever on the silence.
-  if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
-    return failure(null, INVALID_REQUEST, 'A request must be a JSON object');
-  }
-  const message = incoming as RpcMessage;
-  const id = message.id ?? null;
-  const isNotification = message.id === undefined;
-  const method = typeof message.method === 'string' ? message.method : '';
-  const params = (message.params ?? {}) as Record<string, unknown>;
-
-  if (!method) return isNotification ? null : failure(id, INVALID_REQUEST, 'A request needs a method');
-
-  switch (method) {
-    case 'initialize':
-      return result(id, {
-        protocolVersion: PROTOCOL_VERSION,
-        capabilities: { tools: { listChanged: false } },
-        serverInfo: SERVER_INFO,
-        instructions: INSTRUCTIONS,
-      });
-    case 'ping':
-      return result(id, {});
-    case 'tools/list':
-      return result(id, { tools: MCP_TOOLS });
-    case 'tools/call': {
-      const name = typeof params.name === 'string' ? params.name : '';
-      if (!name) return failure(id, INVALID_PARAMS, 'tools/call needs a tool name');
-      try {
-        return toolResult(id, await callAgainstFile(path, name, params.arguments));
-      } catch (error) {
-        // The record is the problem — unreadable, moved, not a record, or a
-        // write that would not settle. That is the user's to fix, so it reaches
-        // the assistant as a refusal it can read out.
-        if (isStorageFailure(error)) {
-          const told = describeStorageFailure(error, path);
-          return toolResult(id, { text: `${told.message}. ${told.hint}`, isError: true });
-        }
-        // Anything else is a bug in us. Not a refusal — the user can do
-        // nothing about it — but still an answer ON THIS REQUEST: a null id is
-        // a reply the client cannot match, so it waits forever.
-        return failure(id, INTERNAL_ERROR, error instanceof Error ? error.message : String(error));
-      }
-    }
-    default:
-      if (isNotification) return null; // notifications/initialized and friends
-      return failure(id, METHOD_NOT_FOUND, `Unknown method ${method}`);
-  }
+/** Answer one message, or `null` for a notification. The switch is shared. */
+export function handle(incoming: unknown, path: string): Promise<object | null> {
+  return dispatchRpc(incoming, {
+    protocolVersion: () => PROTOCOL_VERSION,
+    serverInfo: SERVER_INFO,
+    instructions: INSTRUCTIONS,
+    callTool: (name, args) => stdioTool(path, name, args),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -217,14 +152,14 @@ export async function serve(input: NodeJS.ReadableStream, output: Output, path: 
         response = await handle(JSON.parse(line), path);
       } catch (error) {
         response = error instanceof SyntaxError
-          ? failure(null, PARSE_ERROR, 'Not valid JSON')
-          : failure(null, INVALID_REQUEST, error instanceof Error ? error.message : String(error));
+          ? rpcFailure(null, PARSE_ERROR, 'Not valid JSON')
+          : rpcFailure(null, INVALID_REQUEST, error instanceof Error ? error.message : String(error));
       }
       if (response) output.write(`${JSON.stringify(response)}\n`);
     }
     // Checked on the leftover part-line, after the complete ones are answered.
     if (buffer.length > MAX_LINE_BYTES) {
-      output.write(`${JSON.stringify(failure(null, INVALID_REQUEST, 'That line is too long to read'))}\n`);
+      output.write(`${JSON.stringify(rpcFailure(null, INVALID_REQUEST, 'That line is too long to read'))}\n`);
       buffer = '';
       overlong = true;
     }

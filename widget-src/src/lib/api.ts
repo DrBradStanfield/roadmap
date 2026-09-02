@@ -1,4 +1,7 @@
-import type { HealthInputs, MeasurementSource, ProductEventName } from '@roadmap/health-core';
+import type { HealthInputs, ProductEventName } from '@roadmap/health-core';
+// The one shape for a reviewed upload row. This transport ignores `correctsId`
+// — the server endpoints predate it — but the two callers must not drift.
+import type { BulkLabValueInput, BulkMeasurementInput } from '../storage/roadmap-store';
 import { safeGetItem, safeSetItem } from './storage';
 import { SHOPIFY_SURFACE } from './build-flags';
 import {
@@ -719,7 +722,7 @@ interface BulkSaveResponse {
  * "Saved X of Y" with an honest accounting of the gap.
  */
 export async function bulkSaveMeasurements(
-  measurements: Array<{ metricType: string; value: number; recordedAt: string; source: MeasurementSource }>,
+  measurements: BulkMeasurementInput[],
 ): Promise<BulkSaveResult> {
   const emptyResult = (errorCount: number): BulkSaveResult => ({ saved: [], skippedDuplicates: 0, errorCount });
   try {
@@ -883,15 +886,7 @@ export async function loadLabValues(
  * "saved / skipped / failed" honestly across both endpoints.
  */
 export async function bulkSaveLabValues(
-  values: Array<{
-    metricName: string;
-    value: number;
-    unit: string;
-    referenceLow?: number | null;
-    referenceHigh?: number | null;
-    recordedAt: string;
-    source?: string;
-  }>,
+  values: BulkLabValueInput[],
 ): Promise<BulkLabValuesResult> {
   const emptyResult = (errorCount: number): BulkLabValuesResult => ({ saved: [], skippedDuplicates: 0, errorCount });
   try {

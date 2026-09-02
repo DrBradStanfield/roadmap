@@ -18,8 +18,8 @@ length of that request and nowhere else.
 
 ## What we store
 
-No account, no health data, and no row about you. The server holds no database of
-users. When you connect, we hand your AI assistant an encrypted credential. Your
+No account, no health data, and no row that identifies you. The server holds no
+database of users. When you connect, we hand your AI assistant an encrypted credential. Your
 assistant stores it. We hold the encryption key and never the credential itself, so
 neither we nor your AI vendor can open your storage alone.
 
@@ -41,8 +41,18 @@ set `sendDefaultPii`. Your health values are never recorded as analytics.
 ## Retention
 
 Access credentials expire after one hour. The credential your assistant refreshes with
-expires 90 days after it is issued. Nothing else is retained, because nothing else is
-stored.
+expires 90 days after it is issued.
+
+One thing is kept: a count of connector activity. Each row says which tool was called,
+which assistant called it, whether it succeeded, and when; the one row that marks a
+new connection also says which storage provider it uses. No values, no metric names, no row ids, no identifier, and nothing
+that links two calls to one person. We keep it because a feature nobody uses should be
+retired rather than maintained, and we have no other way to know.
+
+Said plainly, because it is the honest version: value-free is not the same as
+person-free. While very few people use the connector, a timestamped row is a thin
+record of somebody's activity, and with one user it is a record of that user. It cannot
+say what they measured, only that they called a tool.
 
 ## How to disconnect
 

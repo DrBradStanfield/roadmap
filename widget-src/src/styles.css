@@ -5117,6 +5117,32 @@ input[type="number"] {
 .bt-cell-review {
   background: transparent;
 }
+
+/* Conflict cell: the saved value struck through, the uploaded value editable
+   below it, and a Replace tick the user must assert before it saves.
+   box-sizing + an explicit column direction are load-bearing — WebKit's flex
+   default is content-box, which blows the cell past the strip's column width. */
+.bt-cell-conflict {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+}
+.bt-cell-conflict-old {
+  opacity: 0.55;
+  text-decoration: line-through;
+  font-size: 0.85em;
+  text-align: center;
+}
+.bt-cell-conflict-replace {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 0.75em;
+}
 .bt-cell-low-confidence .bt-input {
   border-color: var(--color-warning);
 }

@@ -211,5 +211,8 @@ scope the folder to the app, not to the surface.
 Reading or writing this file DIRECTLY contacts none of our servers — no sync endpoint,
 no analytics hook on the file, by design. We cannot see that you did this, and we do not
 want to. The hosted path above is the one exception, and it is one by construction: it
-is a request to our server, so we see that a call happened. We never store the values
-in it.
+is a request to our server, so we see that a call happened, and we count it. What the
+count holds is which tool ran, which assistant asked, which provider holds the record,
+and whether it worked. Never the values, never a metric name, never anything that says
+which person it was. With very few users, a timestamped row is still a thin activity
+log of somebody; it just cannot say what they measured.

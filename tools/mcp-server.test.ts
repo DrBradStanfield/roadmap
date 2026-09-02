@@ -50,6 +50,9 @@ function text(response: { result?: { content: Array<{ text: string }> } }): stri
   return response.result!.content[0].text;
 }
 
+/** The stdio server runs on the real clock; a write states the real day. */
+const TODAY = new Date().toISOString().slice(0, 10);
+
 describe('US-32 — the JSON-RPC handshake', () => {
   it('answers initialize with the protocol revision, the tools capability and its instructions', async () => {
     const { dir, path } = writeFixture(fixture());
@@ -57,7 +60,7 @@ describe('US-32 — the JSON-RPC handshake', () => {
       { result: { protocolVersion: string; capabilities: object; serverInfo: { name: string }; instructions: string } };
 
     expect(response.result.protocolVersion).toBe('2025-11-25');
-    expect(response.result.capabilities).toEqual({ tools: { listChanged: false } });
+    expect(response.result.capabilities).toEqual({ tools: { listChanged: false }, prompts: { listChanged: false } });
     expect(response.result.serverInfo.name).toBe('health-roadmap');
     expect(response.result.instructions).toContain('not medical advice');
     expect(response.result.instructions).toContain('report_feedback');
@@ -135,7 +138,7 @@ describe('US-32 — tools/call against a real file', () => {
   it('writes an added measurement to disk, and names the backup it made', async () => {
     const { dir, path } = writeFixture(fixture());
 
-    const response = (await call(path, 'add_measurement', { metricType: 'hdl', value: 1.2 }));
+    const response = (await call(path, 'add_measurement', { metricType: 'hdl', value: 1.2, recordedAt: TODAY }));
 
     expect(response.result?.isError).toBeUndefined();
     const backup = /backup: ([^)]+)\)/.exec(text(response))![1];
@@ -185,7 +188,7 @@ describe('US-32 — the stdio transport', () => {
     await new Promise((resolve) => setImmediate(resolve));
     input.write('{"jsonrpc":"2.0","id":2,');
     await send('"method":"tools/list"}');
-    await send({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'add_measurement', arguments: { metricType: 'hdl', value: 1.2 } } });
+    await send({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'add_measurement', arguments: { metricType: 'hdl', value: 1.2, recordedAt: TODAY } } });
     await send({ jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'read_record', arguments: { metric: 'hdl' } } });
     await send('not json at all');
 
@@ -270,7 +273,7 @@ describe('US-32 — a storage failure reaches the client as a refusal, not silen
       const { handle: mocked } = await import('./mcp-server');
       const response = (await mocked({
         jsonrpc: '2.0', id: 77, method: 'tools/call',
-        params: { name: 'add_measurement', arguments: { metricType: 'hdl', value: 1.2 } },
+        params: { name: 'add_measurement', arguments: { metricType: 'hdl', value: 1.2, recordedAt: TODAY } },
       }, '/tmp/never-written.json')) as { id: number; result: { content: Array<{ text: string }>; isError?: boolean } };
 
       expect(response.id).toBe(77);
@@ -425,7 +428,7 @@ describe('US-32 — structured results reach the client unchanged', () => {
   it('carries the tool’s own structured answer beside the text, and none on a refusal', async () => {
     const { dir, path } = writeFixture(fixture());
 
-    const added = await call(path, 'add_measurement', { metricType: 'hdl', value: 1.2 });
+    const added = await call(path, 'add_measurement', { metricType: 'hdl', value: 1.2, recordedAt: TODAY });
     const structured = added.result!.structuredContent;
     // The tool built this; the server only passed it along. The saved-backup
     // note the surface adds belongs to the text, never to the structure.

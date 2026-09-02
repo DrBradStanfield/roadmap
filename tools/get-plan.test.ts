@@ -158,7 +158,7 @@ describe('US-30 AC1/AC3/AC4 — the three output modes', () => {
   it('AC3: --json is parseable and stable in shape', () => {
     const json = JSON.parse(renderJson(plan()));
     expect(Object.keys(json)).toEqual([
-      'instruction', 'schemaVersion', 'generatedAt', 'today', 'unitSystem', 'profile', 'inputs', 'currentValues',
+      'instruction', 'schemaVersion', 'generatedAt', 'today', 'unitSystem', 'profile', 'inputs', 'missingInputs', 'currentValues',
       'labValues', 'medications', 'screenings', 'due', 'suggestions', 'source',
     ]);
     expect(json.schemaVersion).toBe(1);

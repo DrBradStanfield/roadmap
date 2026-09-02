@@ -21,7 +21,8 @@
 import crypto from 'node:crypto';
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { getClientIp } from '../lib/local-first-route.server';
-import { mcpEndpoint, originRejected } from '../lib/mcp.server';
+import { mcpClientLabel, mcpEndpoint, originRejected } from '../lib/mcp.server';
+import { recordServerEvent } from '../lib/product-events.server';
 import { checkAuthorize, sealState, verifyPkce } from '../lib/mcp-authorize.server';
 import { readCapped, redirectMatches, registerClient, resolveClient } from '../lib/mcp-clients.server';
 import { isMcpEnabled, issuer } from '../lib/mcp-config.server';
@@ -225,6 +226,12 @@ async function providerCallback(request: Request, url: URL): Promise<Response> {
     exp: Math.floor(Date.now() / 1000) + CODE_LIFETIME_SECONDS,
   };
   back.searchParams.set('code', packSealed('code', state.clientId, payload));
+  // One value-free row per completed connection: which assistant, which cloud.
+  // Fire-and-forget — a counter never stands between the user and their record.
+  void recordServerEvent('mcp_connect', {
+    client: mcpClientLabel(state.clientId),
+    provider: state.provider === 'google' ? 'google-drive' : 'dropbox',
+  });
   return redirectTo(back.toString(), clear);
 }
 
@@ -413,6 +420,10 @@ assistant, and your assistant holds a sealed credential only we can open. We kee
 <ul>
 <li>It can read your record and compute your plan.</li>
 <li>It can add measurements and lab results, and correct a recent value. It cannot delete anything.</li>
+<li>It can change four things about you: your sex, birth year, birth month and height.</li>
+<li>If you ask it to report a problem, it files a public issue on the project’s GitHub — your words, never
+your health values, and without asking you again.</li>
+<li>We count calls (which tool, which assistant, whether it worked), never your values.</li>
 <li>You cancel it at <span>${escapeHtml(revoke)}</span>. That also disconnects this
 website from your folder, and you can reconnect in one click.</li>
 </ul>

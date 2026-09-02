@@ -32,7 +32,22 @@ import { createMeasurement, type FileLabValue, type FileMeasurement, type Roadma
 import { resolveUnitSystem, toCanonicalValue, UNIT_DEFS, type MetricType } from './units';
 import { healthInputSchema, METRIC_TYPES } from './validation';
 
-export interface AppendMeasurementRequest {
+/**
+ * What the writer's clock means. `now` stamps the row; `latestDay` is the
+ * latest calendar day this writer will accept as not-future, and defaults to
+ * the writer's own LOCAL day — right where the writer runs on the user's
+ * machine (the CLI, the widget). A server in UTC cannot know the user's
+ * timezone and passes `latestDayOnEarth(now)` instead, so it does not refuse
+ * the day an Auckland user is living in (US-31 AC6/AC11).
+ */
+export interface EditContext {
+  /** ISO 8601 write clock — stamped on the row AND on `meta.updatedAt`. */
+  now: string;
+  /** `YYYY-MM-DD`. Omit for the strict local-day check. */
+  latestDay?: string;
+}
+
+export interface AppendMeasurementRequest extends EditContext {
   /** One of METRIC_TYPES. */
   metricType: string;
   /** The number as typed, in `unit`; stored SI canonical (rule 8). */
@@ -45,11 +60,9 @@ export interface AppendMeasurementRequest {
   unit?: string;
   /** Clinical date, `YYYY-MM-DD` or a full timestamp. Defaults to `now`. */
   recordedAt?: string;
-  /** ISO 8601 write clock — stamped on the row AND on `meta.updatedAt`. */
-  now: string;
 }
 
-export interface AppendLabValueRequest {
+export interface AppendLabValueRequest extends EditContext {
   /** Reported test name; stored as the catalogue key when catalogued (rule 10). */
   metricName: string;
   /** The lab's own number, in the lab's own unit — never converted. */
@@ -58,10 +71,9 @@ export interface AppendLabValueRequest {
   referenceLow?: number | null;
   referenceHigh?: number | null;
   recordedAt?: string;
-  now: string;
 }
 
-export interface CorrectValueRequest {
+export interface CorrectValueRequest extends EditContext {
   /** Id of the active measurement or lab value being corrected. */
   id: string;
   newValue: number;
@@ -82,7 +94,6 @@ export interface CorrectValueRequest {
    * caller is an agent that may have been talked into this.
    */
   expectedValue?: number;
-  now: string;
 }
 
 export type EditRejectionReason =
@@ -133,22 +144,19 @@ function newId(): string {
 /**
  * Rule 9 — a clinical date that exists and has not happened yet, reduced to
  * the calendar day the slot is keyed on (the same shape a lab import writes).
- * "Today" is the writer's LOCAL day, for the default AND for the future check:
- * on a UTC day an evening write defaults to yesterday, and the date the user is
- * living in is refused as the future.
+ * How far "yet" reaches is the caller's to state: `EditContext.latestDay`.
  * Storing the day, not the caller's string, is what makes what is echoed back
  * and what lands on disk the same thing: `2026-02-30` rolls forward to March
  * in `Date`, and `'2026-08-14 <script>…'` would otherwise be stored whole.
  */
-function resolveRecordedAt(recordedAt: string | undefined, now: string): string | EditRejection {
-  const today = localDay(now);
-  const when = recordedAt ?? today;
+function resolveRecordedAt(recordedAt: string | undefined, ctx: EditContext): string | EditRejection {
+  const when = recordedAt ?? localDay(ctx.now);
   const day = dayOf(when);
   const parsed = new Date(day);
   if (!/^\d{4}-\d{2}-\d{2}([T ]|$)/.test(when) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day) {
     return reject('invalid-date', `"${when}" is not a date`);
   }
-  if (day > today) {
+  if (day > (ctx.latestDay ?? localDay(ctx.now))) {
     return reject('future-date', `${day} has not happened yet`);
   }
   return day;
@@ -217,7 +225,7 @@ export function appendMeasurement(file: RoadmapFile, request: AppendMeasurementR
   if (typeof value !== 'number') return value;
   const invalid = checkMeasurementValue(metricType, value);
   if (invalid) return invalid;
-  const recordedAt = resolveRecordedAt(request.recordedAt, now);
+  const recordedAt = resolveRecordedAt(request.recordedAt, request);
   if (typeof recordedAt !== 'string') return recordedAt;
 
   const taken = file.measurements.find(
@@ -255,7 +263,7 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
   }
   if (!Number.isFinite(value)) return reject('invalid-value', 'A value must be a finite number');
   if (!request.unit.trim()) return reject('invalid-value', 'A lab value needs the unit the lab reported it in');
-  const recordedAt = resolveRecordedAt(request.recordedAt, now);
+  const recordedAt = resolveRecordedAt(request.recordedAt, request);
   if (typeof recordedAt !== 'string') return recordedAt;
 
   const taken = file.labValues.find(

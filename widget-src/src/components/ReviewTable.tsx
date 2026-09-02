@@ -49,6 +49,18 @@ export interface DocumentToSave {
   file?: Blob;
 }
 
+/** A reviewed row on its way to the store. `correctsId` is set when the user
+ *  ticked "Replace" on a slot an earlier writer already holds — the store
+ *  turns it into a FHIR correction. */
+export interface ReviewedValue {
+  metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource; correctsId?: string;
+}
+export interface ReviewedLabValue {
+  name: string; value: number; unit: string;
+  referenceLow?: number | null; referenceHigh?: number | null;
+  recordedAt: string; correctsId?: string;
+}
+
 interface ReviewTableProps {
   results: FileResult[];
   history: UploadHistory;
@@ -58,9 +70,9 @@ interface ReviewTableProps {
   birthYear?: number;
   sex?: 'male' | 'female';
   onSave: (payload: {
-    values: Array<{ metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource }>;
+    values: ReviewedValue[];
     documents: DocumentToSave[];
-    labValues: Array<{ name: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string }>;
+    labValues: ReviewedLabValue[];
   }) => void;
   onCancel: () => void;
   isSaving: boolean;
@@ -182,19 +194,26 @@ type MatrixRow = CoreRow | AdditionalRow;
 /** Editable matrix cell. Discriminated by `kind` so the save logic can
  *  resolve back to the right source array (r.values[vi] vs
  *  r.additionalValues[ai]) without a sign-encoding trick. */
+/** The already-saved row an upload value collides with. Its presence IS the
+ *  conflict: the slot already holds an active row with a DIFFERENT value
+ *  (typically written by a connector). The cell edits like any other; it only
+ *  saves when the user ticks "Replace". `id` is what the save sends as
+ *  `correctsId`. */
+interface ExistingCell { id: string; display: string }
+
 type EditableMatrixCell =
-  | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; valueSI: number; displayUnit: string }
-  | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string };
+  | { state: 'editable'; kind: 'core'; fi: number; vi: number; initialDisplay: string; confidence: 'high' | 'medium' | 'low'; valueSI: number; displayUnit: string; existing?: ExistingCell }
+  | { state: 'editable'; kind: 'additional'; fi: number; ai: number; initialDisplay: string; valueSI: number; displayUnit: string; existing?: ExistingCell };
 
 type MatrixCell =
   | { state: 'empty' }
-  | { state: 'context'; displayValue: string }
+  | { state: 'context'; id: string; displayValue: string }
   | EditableMatrixCell;
 
-/** Build the matrix view. Existing rows win the cell (per-cell dedup — the
- *  LLM-extracted value at the same (metric, date) is discarded; user can
- *  click-to-correct in the live timeline if they want to update). */
-function buildMatrixModel(
+/** Build the matrix view. A saved row owns its cell: an upload value that
+ *  MATCHES it is already recorded (stays context), one that DIFFERS becomes a
+ *  `conflict` the user can accept as a correction. Exported for tests. */
+export function buildMatrixModel(
   results: FileResult[],
   fileDates: Record<number, FullDate>,
   bloodTestHistory: ApiMeasurement[],
@@ -209,6 +228,18 @@ function buildMatrixModel(
 
   /** Resolved display system for a core metric, honouring per-metric override. */
   const displayFor = (metric: MetricType): UnitSystem => metricUnitOverrides?.[metric] ?? unitSystem;
+
+  /** Resolve an upload value against whatever already holds the cell:
+   *  'skip' = leave the cell alone (equal value already saved, or an earlier
+   *  file in this batch already claimed it); an ExistingCell = conflict;
+   *  undefined = free slot. Equality is compared on the DISPLAYED string —
+   *  what the user would see — so float noise never manufactures a conflict. */
+  const collide = (cellKey: string, display: string): ExistingCell | 'skip' | undefined => {
+    const prev = cells.get(cellKey);
+    if (!prev) return undefined;
+    if (prev.state !== 'context') return 'skip';
+    return prev.displayValue === display ? 'skip' : { id: prev.id, display: prev.displayValue };
+  };
 
   const addColumn = (dateKey: DateKey, date: FullDate, fileIndex: number | null) => {
     let col = columnsByKey.get(dateKey);
@@ -234,7 +265,7 @@ function buildMatrixModel(
     const display = UNIT_DEFS[metric]
       ? formatDisplayValue(metric, m.value, displayFor(metric))
       : String(m.value);
-    cells.set(`${metric}|${dateKey}`, { state: 'context', displayValue: display });
+    cells.set(`${metric}|${dateKey}`, { state: 'context', id: m.id, displayValue: display });
   }
   for (const lv of labValueHistory) {
     const dateKey = lv.recordedAt.slice(0, 10);
@@ -252,12 +283,12 @@ function buildMatrixModel(
         referenceHigh: lv.referenceHigh,
       });
     }
-    cells.set(`${nameKey}|${dateKey}`, { state: 'context', displayValue: String(lv.value) });
+    cells.set(`${nameKey}|${dateKey}`, { state: 'context', id: lv.id, displayValue: String(lv.value) });
   }
 
-  // 2) Overlay upload values. Context already-saved cells win — discard the
-  //    LLM value at that (metric, date) silently (user can click-to-correct
-  //    in the live timeline if they want to update the saved value).
+  // 2) Overlay upload values. On an occupied slot: an equal value is already
+  //    recorded (leave the context cell), a differing one becomes a conflict
+  //    the user resolves in the table — never a silent drop (US-32).
   results.forEach((r, fi) => {
     const fdate = fileDates[fi];
     if (!fdate) return;
@@ -272,16 +303,18 @@ function buildMatrixModel(
       const metric = v.metric as MetricType;
       coreMetricsSeen.add(metric);
       const cellKey = `${metric}|${dateKey}`;
-      if (cells.has(cellKey)) return; // existing history wins
       const initialDisplay = UNIT_DEFS[metric]
         ? formatDisplayValue(metric, v.valueSI, displayFor(metric))
         : String(v.displayValue);
+      const existing = collide(cellKey, initialDisplay);
+      if (existing === 'skip') return;
       cells.set(cellKey, {
         state: 'editable', kind: 'core', fi, vi,
         initialDisplay,
         confidence: v.confidence,
         valueSI: v.valueSI,
         displayUnit: v.displayUnit,
+        existing,
       });
     });
 
@@ -300,7 +333,8 @@ function buildMatrixModel(
         });
       }
       const cellKey = `${nameKey}|${dateKey}`;
-      if (cells.has(cellKey)) return;
+      const existing = collide(cellKey, String(av.value));
+      if (existing === 'skip') return;
       cells.set(cellKey, {
         state: 'editable',
         kind: 'additional',
@@ -308,6 +342,7 @@ function buildMatrixModel(
         initialDisplay: String(av.value),
         valueSI: av.value,
         displayUnit: av.unit,
+        existing,
       });
     });
   });
@@ -450,6 +485,13 @@ export function ReviewTable({
   // *after* typing doesn't misconvert the typed value into the wrong SI.
   const touchedRef = useRef<Map<string, { display?: UnitSystem }>>(new Map());
 
+  // Conflict cells only: "Replace the saved value with this one". Default
+  // off — the record already holds a value, so replacing is the user's call.
+  const [replaceChecked, setReplaceChecked] = useState<Record<string, boolean>>({});
+  const toggleReplace = useCallback((cellKey: string, on: boolean) => {
+    setReplaceChecked(prev => ({ ...prev, [cellKey]: on }));
+  }, []);
+
   const updateEditedDisplayValue = useCallback((cellKey: string, value: string, display?: UnitSystem) => {
     const existing = touchedRef.current.get(cellKey);
     touchedRef.current.set(cellKey, { display: display ?? existing?.display });
@@ -488,8 +530,13 @@ export function ReviewTable({
     const out: CellPayload[] = [];
     for (const [cellKey, cell] of matrix.cells) {
       if (cell.state !== 'editable') continue;
+      // A conflicting cell saves only when the user asserts the replacement.
+      if (cell.existing && !replaceChecked[cellKey]) continue;
       const editedStr = (editedDisplayValues[cellKey] ?? cell.initialDisplay).trim();
       if (!editedStr) continue;
+      // A "replacement" that matches what is already saved would append a
+      // correction row that corrects nothing. The slot is already right.
+      if (cell.existing && editedStr === cell.existing.display) continue;
       const parsed = parseLocalisedNumber(editedStr);
       if (parsed === undefined) continue;
       // dateKey is the suffix after the LAST `|` — robust against the
@@ -500,7 +547,7 @@ export function ReviewTable({
     return out;
   };
 
-  const saveableCells = useMemo(collectSaveableCells, [matrix, editedDisplayValues]);
+  const saveableCells = useMemo(collectSaveableCells, [matrix, editedDisplayValues, replaceChecked]);
   const selectedCount = useMemo(() => saveableCells.filter(c => c.cell.kind === 'core').length, [saveableCells]);
   const selectedAdditionalCount = useMemo(() => saveableCells.filter(c => c.cell.kind === 'additional').length, [saveableCells]);
   const totalEditableCells = useMemo(() => {
@@ -540,8 +587,8 @@ export function ReviewTable({
 
   const handleSave = () => {
     // Collect core lab values
-    const selected: Array<{ metric: string; valueSI: number; recordedAt: string; source?: MeasurementSource }> = [];
-    const selectedLabValues: Array<{ name: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null; recordedAt: string }> = [];
+    const selected: ReviewedValue[] = [];
+    const selectedLabValues: ReviewedLabValue[] = [];
 
     // O(1) column lookup so save doesn't go quadratic on big uploads.
     const columnsByKey = new Map(matrix.columns.map(col => [col.dateKey, col]));
@@ -567,6 +614,7 @@ export function ReviewTable({
           valueSI,
           recordedAt,
           source: c.isEdited ? 'lab_import_edited' : undefined,
+          correctsId: cell.existing?.id,
         });
       } else {
         const av = results[cell.fi]?.additionalValues[cell.ai];
@@ -578,6 +626,7 @@ export function ReviewTable({
           referenceLow: av.referenceLow,
           referenceHigh: av.referenceHigh,
           recordedAt,
+          correctsId: cell.existing?.id,
         });
       }
     }
@@ -631,6 +680,8 @@ export function ReviewTable({
           editedDisplayValues={editedDisplayValues}
           onCellChange={updateEditedDisplayValue}
           onColumnDateChange={handleColumnDateChange}
+          replaceChecked={replaceChecked}
+          onReplaceToggle={toggleReplace}
         />
       )}
 
@@ -761,11 +812,13 @@ interface ReviewMatrixProps {
   editedDisplayValues: Record<string, string>;
   onCellChange: (cellKey: string, value: string, display?: UnitSystem) => void;
   onColumnDateChange: (col: MatrixColumn, update: Partial<FullDate>) => void;
+  replaceChecked: Record<string, boolean>;
+  onReplaceToggle: (cellKey: string, on: boolean) => void;
 }
 
 function ReviewMatrix({
   matrix, unitSystem, metricUnitOverrides, onToggleFieldUnit, sex,
-  editedDisplayValues, onCellChange, onColumnDateChange,
+  editedDisplayValues, onCellChange, onColumnDateChange, replaceChecked, onReplaceToggle,
 }: ReviewMatrixProps) {
   const scrollSync = useMatrixScrollSync(matrix.columns.length);
 
@@ -798,6 +851,8 @@ function ReviewMatrix({
             scrollSync={scrollSync}
             editedDisplayValues={editedDisplayValues}
             onCellChange={onCellChange}
+            replaceChecked={replaceChecked}
+            onReplaceToggle={onReplaceToggle}
           />
         ))}
 
@@ -818,6 +873,8 @@ function ReviewMatrix({
                 scrollSync={scrollSync}
                 editedDisplayValues={editedDisplayValues}
                 onCellChange={onCellChange}
+                replaceChecked={replaceChecked}
+                onReplaceToggle={onReplaceToggle}
               />
             ))}
           </>
@@ -872,11 +929,13 @@ interface MatrixRowViewProps {
   scrollSync: ReturnType<typeof useMatrixScrollSync>;
   editedDisplayValues: Record<string, string>;
   onCellChange: (cellKey: string, value: string, display?: UnitSystem) => void;
+  replaceChecked: Record<string, boolean>;
+  onReplaceToggle: (cellKey: string, on: boolean) => void;
 }
 
 function MatrixRowView({
   row, rowIdx, columns, cells, unitSystem, metricUnitOverrides, onToggleFieldUnit,
-  sex, scrollSync, editedDisplayValues, onCellChange,
+  sex, scrollSync, editedDisplayValues, onCellChange, replaceChecked, onReplaceToggle,
 }: MatrixRowViewProps) {
   const rowKey = matrixRowKey(row);
   const rowDisplay = row.kind === 'core' ? (metricUnitOverrides?.[row.metric] ?? unitSystem) : unitSystem;
@@ -907,6 +966,8 @@ function MatrixRowView({
                 sex={sex}
                 editedValue={editedDisplayValues[cellKey] ?? ''}
                 onCellChange={onCellChange}
+                replace={replaceChecked[cellKey] ?? false}
+                onReplaceToggle={onReplaceToggle}
               />
             );
           })}
@@ -945,10 +1006,12 @@ interface MatrixCellViewProps {
   sex?: 'male' | 'female';
   editedValue: string;
   onCellChange: (cellKey: string, value: string, display?: UnitSystem) => void;
+  replace: boolean;
+  onReplaceToggle: (cellKey: string, on: boolean) => void;
 }
 
 const MatrixCellView = memo(function MatrixCellView({
-  cell, cellKey, row, unitSystem, sex, editedValue, onCellChange,
+  cell, cellKey, row, unitSystem, sex, editedValue, onCellChange, replace, onReplaceToggle,
 }: MatrixCellViewProps) {
   if (cell.state === 'empty') {
     // NBSP keeps :empty from matching — the theme has a global
@@ -968,19 +1031,16 @@ const MatrixCellView = memo(function MatrixCellView({
   const handleChange = (v: string) => onCellChange(cellKey, v, isCore ? unitSystem : undefined);
   const lowConfClass = isCore && cell.confidence === 'low' ? ' bt-cell-low-confidence' : '';
 
-  if (isCore) {
-    return (
-      <NumericInputCell
-        metric={matrixRowKey(row) as MetricType}
-        display={unitSystem}
-        sex={sex}
-        value={editedValue}
-        onChange={handleChange}
-        wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
-      />
-    );
-  }
-  return (
+  const input = isCore ? (
+    <NumericInputCell
+      metric={matrixRowKey(row) as MetricType}
+      display={unitSystem}
+      sex={sex}
+      value={editedValue}
+      onChange={handleChange}
+      wrapperClass={`bt-cell-input bt-cell-review${lowConfClass}`}
+    />
+  ) : (
     <NumericInputCell
       value={editedValue}
       onChange={handleChange}
@@ -988,5 +1048,25 @@ const MatrixCellView = memo(function MatrixCellView({
       showStatusPreview={false}
       ariaLabel={`${matrixRowKey(row)} value`}
     />
+  );
+
+  if (!cell.existing) return input;
+
+  // Slot already holds a different saved value. Show it, show the file's, and
+  // let the user assert the replacement. Layout lives in styles.css.
+  return (
+    <div className="bt-cell-conflict">
+      <span className="bt-value-num num bt-cell-conflict-old">{cell.existing.display}</span>
+      {input}
+      <label className="bt-cell-conflict-replace">
+        <input
+          type="checkbox"
+          checked={replace}
+          onChange={(e) => onReplaceToggle(cellKey, e.target.checked)}
+          aria-label={`Replace the saved ${matrixRowKey(row)} value ${cell.existing.display} with ${editedValue || 'the uploaded value'}`}
+        />
+        <span aria-hidden="true">Replace</span>
+      </label>
+    </div>
   );
 });

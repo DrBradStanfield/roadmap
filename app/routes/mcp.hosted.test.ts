@@ -21,7 +21,7 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 import { ISSUES_PER_HOUR, REPORTS_PER_DAY } from '../lib/github-issues.server';
-import { MCP_TOOLS, OUTPUTS } from '../../packages/health-core/src/mcp-tools';
+import { MCP_PROMPTS, MCP_TOOLS, OUTPUTS, SERVER_VERSION } from '../../packages/health-core/src/mcp-tools';
 import { MAX_CORRECTION_AGE_DAYS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
 
@@ -30,6 +30,8 @@ const REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
 const VERIFIER = 'v'.repeat(64);
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('base64url');
 const NOW = '2026-09-02T10:00:00.000Z';
+/** The endpoint runs on the real clock, so a write states the real day. */
+const TODAY = new Date().toISOString().slice(0, 10);
 
 let cloud: MemoryCloud;
 /** A fresh Dropbox refresh token per test: the connection key is its hash. */
@@ -214,7 +216,7 @@ describe('the whole connection, end to end (US-32)', () => {
     expect(read.isError).toBe(false);
     expect(JSON.parse(read.text).measurements).toEqual([]);
 
-    const added = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2 });
+    const added = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
     expect(added.isError).toBe(false);
     // The tool declares an outputSchema, so the result carries the same answer
     // structured — passed through by the server, not rebuilt from the text.
@@ -244,7 +246,7 @@ describe('the whole connection, end to end (US-32)', () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { access } = await connect();
-    await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2 });
+    await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
     expect(spy).not.toHaveBeenCalled();
     expect(warn).not.toHaveBeenCalled();
   });
@@ -455,6 +457,27 @@ describe('the doors that must stay shut (US-32, design §6)', () => {
     expect((await post('/mcp/token', { body: '' })).status).toBe(404);
   });
 
+  it('announces the tool layer’s own version, and only revisions it speaks (US-32)', async () => {
+    seedRecord();
+    const { access } = await connect();
+    const initialized = await rpc(access, 'initialize', { protocolVersion: '2026-07-28' });
+    const result = initialized.result as { protocolVersion: string; serverInfo: { version: string }; capabilities: object };
+    // 2026-07-28 needs `server/discover`, `resultType` and the Mcp-Method
+    // headers, none of which exist here — claiming it would break the first
+    // client that adopted it.
+    expect(result.protocolVersion).toBe('2025-11-25');
+    expect(result.serverInfo.version).toBe(SERVER_VERSION);
+    expect(result.capabilities).toEqual({ tools: { listChanged: false }, prompts: { listChanged: false } });
+  });
+
+  it('offers the same three prompts the stdio server does (US-32)', async () => {
+    seedRecord();
+    const { access } = await connect();
+    const listed = await rpc(access, 'prompts/list');
+    expect((listed.result as { prompts: Array<{ name: string }> }).prompts.map((p) => p.name))
+      .toEqual(MCP_PROMPTS.map((p) => p.name));
+  });
+
   it('serves a client that skips initialize (the next revision expects it)', async () => {
     seedRecord();
     const { access } = await connect();
@@ -482,7 +505,13 @@ describe('a pinned vendor client connects without DCR and without a fetch (US-32
       resource: `${ISSUER}/mcp`,
     })}`);
     expect(consent.status).toBe(200);
-    expect(await consent.text()).toContain('Claude');
+    const screen = await consent.text();
+    expect(screen).toContain('Claude');
+    // Everything the grant actually carries, in the words the user reads: the
+    // two tools that shipped after the first copy was written, and the counters.
+    expect(screen).toContain('birth year');
+    expect(screen).toContain('public issue');
+    expect(screen).toContain('never your values');
     const targets = (fetch as unknown as { mock: { calls: Array<[unknown]> } }).mock.calls;
     expect(targets.some(([to]) => String(to).includes('claude.ai'))).toBe(false);
   });
@@ -797,7 +826,7 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
     for (let i = 0; i < 50; i++) {
       latest = await redeem({ grant_type: 'refresh_token', refresh_token: latest.refresh_token, client_id: clientId });
     }
-    expect((await callTool(latest.access_token, 'add_measurement', { metricType: 'ldl', value: 3.2 })).isError).toBe(false);
+    expect((await callTool(latest.access_token, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY })).isError).toBe(false);
   });
 
   it('a taken slot is refused and named, pointing at correct_value', async () => {
@@ -862,7 +891,7 @@ describe('a folder that does not hold a record is refused, never blanked (US-32)
       cloud.files.set(ROADMAP_FILE_NAME, { json, version: 1 });
       const { access } = await connect();
 
-      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2 });
+      const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
       expect(answer.isError, json).toBe(true);
       expect(answer.text, json).toContain('not a health-roadmap.json');
       expect(cloud.files.get(ROADMAP_FILE_NAME)!.json, json).toBe(json);
@@ -877,7 +906,7 @@ describe('a record from a newer app version is unreadable here (US-32, design §
       version: 1,
     });
     const { access } = await connect();
-    const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2 });
+    const answer = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2, recordedAt: TODAY });
     expect(answer.isError).toBe(true);
     expect(answer.text).toContain('newer version');
     expect(answer.text).not.toContain('READ-ONLY');

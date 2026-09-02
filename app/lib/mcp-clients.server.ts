@@ -9,10 +9,24 @@ import dns from 'node:dns/promises';
 import { clientHmacKey } from './mcp-config.server';
 import { b64url } from './mcp-seal.server';
 
+/**
+ * Which assistant is calling, as a closed enum. Free text in a counter is how
+ * a counter becomes a log, and a DCR client's name is attacker-chosen text —
+ * so only a pinned client gets a label, and everything else is 'other'.
+ */
+export const MCP_CLIENT_LABELS = ['claude', 'claude_code', 'chatgpt', 'other'] as const;
+
+export type McpClientLabel = (typeof MCP_CLIENT_LABELS)[number];
+
 export interface McpClient {
   clientId: string;
   name: string;
   readonly redirectUris: readonly string[];
+}
+
+/** A pinned client, which alone carries a counter label. */
+interface KnownClient extends McpClient {
+  label: McpClientLabel;
 }
 
 /**
@@ -100,12 +114,13 @@ export function isAllowedRedirect(uri: string): boolean {
  * behind the same challenge. Its redirects are loopback: the port belongs to
  * the CLI and is not known until it binds one (RFC 8252 §7.3).
  */
-export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<McpClient>> = new Map([
+export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<KnownClient>> = new Map([
   [
     'https://claude.ai/oauth/mcp-oauth-client-metadata',
     {
       clientId: 'https://claude.ai/oauth/mcp-oauth-client-metadata',
       name: 'Claude',
+      label: 'claude',
       redirectUris: Object.freeze(['https://claude.ai/api/mcp/auth_callback']),
     },
   ],
@@ -114,6 +129,7 @@ export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<McpClient>> = new Map([
     {
       clientId: 'https://claude.ai/oauth/claude-code-client-metadata',
       name: 'Claude Code',
+      label: 'claude_code',
       redirectUris: Object.freeze(['http://localhost/callback', 'http://127.0.0.1/callback']),
     },
   ],
@@ -122,6 +138,7 @@ export const KNOWN_CLIENTS: ReadonlyMap<string, Readonly<McpClient>> = new Map([
     {
       clientId: 'https://chatgpt.com/oauth/client.json',
       name: 'ChatGPT',
+      label: 'chatgpt',
       redirectUris: Object.freeze(['https://chatgpt.com/connector_platform_oauth_redirect']),
     },
   ],

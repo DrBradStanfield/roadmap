@@ -219,6 +219,19 @@ export function dueSplit(plan: Plan): { overdue: ReminderScheduleItem[]; upcomin
   };
 }
 
+/**
+ * The inputs whose absence silently removes plan content: the four the whole
+ * plan is computed from (sex, birth year, height, weight) and the four markers
+ * that each gate a group of suggestions. Naming them is the difference between
+ * a thin plan and a plan the assistant knows is thin (US-32).
+ */
+const GATING_INPUTS = ['sex', 'birthYear', 'heightCm', 'weightKg', 'waistCm', 'systolicBp', 'hba1c', 'apoB'] as const;
+
+/** Those of them the record does not hold. Empty when nothing is missing. */
+function missingPlanInputs(plan: Plan): Array<(typeof GATING_INPUTS)[number]> {
+  return GATING_INPUTS.filter((field) => plan.inputs[field] === undefined || plan.inputs[field] === null);
+}
+
 /** The agent-facing shape. Field names are stable; add, never rename. */
 export function planPayload(plan: Plan) {
   const { overdue, upcoming } = dueSplit(plan);
@@ -239,6 +252,7 @@ export function planPayload(plan: Plan) {
       proteinTargetG: plan.results.proteinTarget,
     },
     inputs: plan.inputs,
+    missingInputs: missingPlanInputs(plan),
     currentValues: currentValues(plan),
     labValues: plan.labs,
     medications: plan.medications,
@@ -251,6 +265,7 @@ export function planPayload(plan: Plan) {
       title: s.title,
       description: s.description,
       ingredients: s.ingredients ?? [],
+      link: s.link ?? null,
       reason: s.reason ?? null,
       guidelines: s.guidelines ?? [],
       references: s.references ?? [],

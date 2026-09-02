@@ -50,7 +50,7 @@ Claude needs no equivalent step. If you use both, [connecting Claude](/blogs/gui
 
 ## What it can do
 
-It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same one the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. And it corrects a value that went in wrong.
+It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same one the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. It corrects a value that went in wrong. It changes four things about you: your sex, your birth year, your birth month and your height, the four your plan is worked out from. And if a tool refuses something you reasonably expected, it reports the problem for you: a public issue on the project's GitHub, filed as you ask, carrying its description and nothing about you or your values.
 
 Paste in a lab report and ask it to file the results. Ask what your LDL has done over four tests. Ask what your plan says to do about it.
 
@@ -74,7 +74,7 @@ Your record still lives only in your Dropbox. Our server reads it, in memory, to
 
 Check what it files. An AI can misread a lab report the same way a person can, and the record is yours, so the last look at a new value should be yours too.
 
-Take care with the web tool open in another tab while ChatGPT is writing. The page now notices a change and re-reads your record within a minute, and sooner when you switch back to that tab, so what you are looking at catches up on its own. But there is still no lock: a value you are typing at that moment and a value ChatGPT is writing at that moment can still collide, and one of the two loses.
+Take care with the web tool open in another tab while ChatGPT is writing. The page now notices a change and re-reads your record within seconds, and sooner when you switch back to that tab, so what you are looking at catches up on its own. But there is still no lock: a value you are typing at that moment and a value ChatGPT is writing at that moment can still collide, and one of the two loses.
 
 ## How to cancel it
 

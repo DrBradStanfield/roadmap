@@ -93,6 +93,22 @@ export function localDay(instant: string | Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+/**
+ * How far ahead of UTC the earliest-rising timezone runs (Kiritimati, UTC+14).
+ */
+const MAX_UTC_OFFSET_MS = 14 * 3_600_000;
+
+/**
+ * The latest calendar day anyone on Earth has reached at `now`. A server in
+ * UTC cannot know the user's timezone, so this — not its own local day — is
+ * the only future check it can make without refusing the day an Auckland user
+ * is living in (US-31 AC6/AC11).
+ */
+export function latestDayOnEarth(now: string | Date): string {
+  const ms = now instanceof Date ? now.getTime() : Date.parse(now);
+  return dayOf(new Date(ms + MAX_UTC_OFFSET_MS).toISOString());
+}
+
 /** Stable string comparison (-1 | 0 | 1). */
 export function cmpStr(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;

@@ -417,6 +417,7 @@ describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () =>
     expect(await resolveClient(CLAUDE)).toEqual({
       clientId: CLAUDE,
       name: 'Claude',
+      label: 'claude',
       redirectUris: ['https://claude.ai/api/mcp/auth_callback'],
     });
     expect(await resolveClient(CHATGPT)).toMatchObject({ name: 'ChatGPT' });
@@ -454,6 +455,7 @@ describe('pinned clients (US-32, IETF CIMD draft §4 — our own policy)', () =>
     expect(client).toEqual({
       clientId: CLAUDE_CODE,
       name: 'Claude Code',
+      label: 'claude_code',
       redirectUris: ['http://localhost/callback', 'http://127.0.0.1/callback'],
     });
     const checked = checkAuthorize(new URLSearchParams({

@@ -70,7 +70,7 @@ const PROVIDER = 'Google Drive';
 const request = (url: string | URL, init?: RequestInit & { timeoutMs?: number }): Promise<Response> => fetchOrFail(PROVIDER, url, init);
 
 async function fail(what: string, res: Response): Promise<never> {
-  throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${await res.text()}`);
+  throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
 }
 
 /** Find one file by name, optionally inside one parent. Undefined = not there. */
