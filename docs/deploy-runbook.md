@@ -214,7 +214,7 @@ to both — deploy twice, see "Shopify app configs".**)
   This nearly produced a wrong report that `CHAT_SURFACE` was unset on the commerce app (it is set and Deployed). Treat an auth-failed command as *no information*: re-run it authenticated, then conclude.
 - **Use `fly deploy --strategy canary` for risky server deploys (framework/runtime/dep changes).** Fly's DEFAULT rolling deploy + the `/healthz` check does NOT protect against a boot crash — on 2026-06-14 the RR7 cutover crashed on boot (server never bound `:3000`) and the rolling strategy updated BOTH machines to the broken image anyway, taking production down (rolled back via `fly deploy --image <prev>`). Canary boots ONE throwaway machine, health-checks it FIRST, and leaves the serving machines untouched if it fails. The boot crash was `@supabase/realtime-js >=2.108` hard-throwing "Node.js 20 detected without native WebSocket support" — local Node was 22 so it only failed in the `node:*-alpine` container; that's why the Docker base is now `node:22`. **Lesson: anything that regenerates package-lock.json (a migration, a dep add/remove) can silently bump a runtime dep that only fails in the Docker Node version — canary-deploy it.**
 
-## Hosted MCP (health-tool-edu) — US-32 Phase 1
+## Hosted MCP (health-tool-edu) — US-32 Phases 1–2
 
 The code is deployed and INERT until these steps are done. Every `/mcp` path and both
 `.well-known` documents return 404 while `MCP_SEAL_KEYS` is unset, so there is no rush
@@ -244,6 +244,19 @@ fly secrets set -a health-tool-edu \
 The app key MUST be the one the widget already uses. Dropbox scopes the app folder to
 the app identity, so a second identity would see an empty folder (design §1).
 
+**Google Drive is a separate, later pair of secrets** (step 4b). Until they exist, the
+consent screen offers Dropbox alone and every Drive path is unreachable — that is the
+whole phase-2 gate, and it needs no deploy to open:
+
+```bash
+fly secrets set -a health-tool-edu \
+  GOOGLE_DRIVE_CLIENT_ID="<the client id the widget already uses>" \
+  GOOGLE_DRIVE_SECRET="<same OAuth client's secret>"
+```
+
+Same rule as Dropbox, for the same reason: `drive.file` shows an app only the files that
+app created, so a second OAuth client would open an empty Drive.
+
 **3. DNS and TLS.** `mcp.drstanfield.com` CNAME → the edu Fly app, then:
 
 ```bash
@@ -259,6 +272,34 @@ breaks the flow.
 Scopes: `files.content.read`, `files.content.write`, `files.metadata.read`. Leave the
 app type as **App folder**. Watch the ceiling: Dropbox freezes new links two weeks after
 the 50th user without production approval.
+
+**4b. Google Cloud console — Drive (Phase 2).** The code is merged and tested; these
+steps are what turn it on. Same project and same OAuth client the widget uses
+(`api.google-token.ts`).
+
+1. **APIs & Services → Credentials →** the existing OAuth 2.0 Client ID → **Authorized
+   redirect URIs → Add** `https://mcp.drstanfield.com/mcp/callback`. Exact string; Google
+   matches it literally.
+2. **OAuth consent screen → Publishing status must be "In production."** If it says
+   "Testing", **every refresh token dies after 7 days** and every connection breaks at
+   once, with no server-side remedy — we hold no row to update. This is the single most
+   important line in this section.
+3. **Scopes: `https://www.googleapis.com/auth/drive.file` only.** It is a non-sensitive
+   scope, so the requirement is **brand verification** (app name, logo, homepage, privacy
+   policy, authorized domain) — not a CASA security assessment, and the 100-user
+   unverified cap does not apply. Verification is what stops users seeing the "unverified
+   app" interstitial.
+4. **Nothing else changes.** Do not add scopes, do not create a second client, do not
+   touch the widget's own redirect URIs.
+
+**The cost of connecting, stated once.** Google caps refresh tokens at **100 per account
+per client id**, and that pool is SHARED with the widget. Each MCP connection mints one
+(`prompt=consent` — a stateless server has nowhere to keep a token it did not just
+receive, and Google issues one only on a first authorization or an explicit re-consent).
+Reconnecting orphans the previous one. Past 100, Google silently drops the OLDEST, which
+can be the widget's — the user's website login then quietly needs reconnecting. Nobody
+should reach 100, and if support reports "my Drive keeps disconnecting", this is the first
+thing to check.
 
 **5. Check Fly's proxy access log before announcing anything.** OAuth secrets travel in
 query strings, so a proxy that logs request URLs would write `code` and `state` to a log
@@ -323,8 +364,9 @@ own change and its own tests.
 **7. Add the connector, as a user would.** Claude: Settings → Connectors → Add custom
 connector → `https://mcp.drstanfield.com/mcp`. ChatGPT: Settings → Connectors →
 Advanced → Developer mode → Create, same URL. Both then run the OAuth flow: our consent
-screen, then Dropbox, then back. Time the token exchange — Claude allows 10 seconds and
-ours does a live Dropbox code exchange inside that budget (design §7).
+screen, then the provider the user picks, then back. Time the token exchange — Claude
+allows 10 seconds and ours does a live provider code exchange inside that budget
+(design §7).
 
 **Watch two things on that first connection.** (a) **Dropbox's `state` limit is believed,
 not verified** — documented as 500 bytes, never confirmed by us. We now send a 43-char
@@ -334,10 +376,16 @@ The consent step is load-bearing: the callback needs the `__Host-mcp-state` cook
 consent POST sets, so a browser blocking first-party cookies for the domain will land on
 "that sign-in did not start here" rather than connecting.
 
-**8. Verify against a real record**, in this order, and check the Dropbox file after
+**8. Verify against a real record**, in this order, and check the provider's file after
 each write: `read_record` → `get_plan` → `add_measurement` → a correction with
 `expectedValue` → a correction WITHOUT it (must refuse) → a correction on a row older
 than 90 days (must refuse).
+
+**Run step 8 again over Drive once step 4b is done**, and check one extra thing: the
+server must write the SAME `health-roadmap.json` the website uses, inside **Health Plan
+by Dr Brad**. A second file of that name anywhere in the user's Drive means discovery
+diverged, and it is a stop-everything bug — the user would have two records and see
+neither whole.
 
 **Rotation, when it is needed.** `MCP_SEAL_KEYS` is a comma-separated list; PREPEND the
 new key to keep existing connections alive, or REPLACE it outright to kill every

@@ -56,6 +56,8 @@ ChatGPT and Claude in a browser cannot reach a file on your computer, and we are
 
 Dropbox connects first. Google Drive comes after. These buttons switch on when it ships.
 
+Google Drive has one limit worth knowing. It gives us no way to hold the file while we write it, so if the website and your assistant save at the very same moment, one of those changes can be lost. Your assistant notices and writes again. The website cannot notice. In normal use nobody meets this, because you are rarely doing both at once. Dropbox does not have the limit.
+
 [connect:chatgpt]
 [connect:claude]
 

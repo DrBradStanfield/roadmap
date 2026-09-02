@@ -11,9 +11,10 @@ Hosted-server design: **rev 4, DECIDED — FINAL**. 2026-09-01. Brad has ruled o
 | `edit-record` CLI (US-31) | Contract-enforcing writes from the shell | `tools/edit-record.ts` + [guides/command-line.md](guides/command-line.md) | shipped |
 | Local stdio MCP (US-32 phase 0) | The same tools over a local file path | `tools/mcp-server.ts` + [guides/connect-claude-desktop.md](guides/connect-claude-desktop.md) | shipped; verified with MCP Inspector and Claude Code 2026-09-02 |
 | Hosted MCP (US-32 phase 1) | The same tools behind a connector, sealed-token stateless | this doc + `app/lib/mcp*.server.ts` + [deploy-runbook.md](deploy-runbook.md) "Hosted MCP" | merged 2026-09-02, inert until the Fly secrets are set |
+| Hosted MCP over Drive (US-32 phase 2) | The same server, against Google Drive | this doc §7 + `packages/health-core/src/drive-rest.ts` | built and tested 2026-09-02; unreachable until the Google console steps and the `GOOGLE_DRIVE_*` secrets |
 | `report_feedback` tool | Prepares a prefilled GitHub issue; sends nothing itself | `packages/health-core/src/mcp-tools.ts` | shipped |
 
-**One write path.** Every surface in this table that writes reads and saves the record through `SyncManager` over a `StorageAdapter` — read, migrate, merge, conditional write on `expectedVersion`, verify. The CLI and the stdio server hand it `FileAdapter` (one local file); the hosted server hands it the Dropbox adapter. The database of record is a constructor argument, not a second code path.
+**One write path.** Every surface in this table that writes reads and saves the record through `SyncManager` over a `StorageAdapter` — read, migrate, merge, conditional write on `expectedVersion`, verify. The CLI and the stdio server hand it `FileAdapter` (one local file); the hosted server hands it `DropboxAdapter` or `DriveAdapter`, chosen by the provider sealed into the bearer token. The database of record is a constructor argument, not a second code path.
 
 **Intent:** a web ChatGPT/Claude user clicks connect, authorizes, and their AI reads and saves their health record in THEIR cloud. **Architecture:** fully stateless — no token table, nothing per-user in Supabase. The provider refresh token is sealed into the bearer token we issue.
 
@@ -189,13 +190,21 @@ Three pieces make that one path rather than three copies of it, and each lives a
 
 > **Accepted residual (surfaced by that work).** An **out-of-band RAW deletion** — the user deleting `health-roadmap.json` in the Dropbox UI rather than using the app's erase flow — carries **no `eraseEpoch` signal**, so a stale writer legitimately re-creates the content. This applies equally to the MCP server. The app's own erase flow (which rewrites rather than deletes) remains fully protected. **Future work:** a tombstone the erase flow leaves behind, so a raw deletion is distinguishable from a first-ever create. Not in v1.
 
-**Drive — DEFERRED.** Drive v3 removed `etag` from every resource, so there is no conditional write. Phase 2 requires this algorithm, implemented and tested:
-1. Read with `fields=version`.
-2. **Re-fetch `version` immediately before upload**; if it moved, abort and re-merge.
-3. After writing, re-read and assert **every pre-read row id is still present** and the new rows landed.
-4. Bounded retry.
+**Drive — BUILT (2026-09-02).** Drive v3 removed `etag` from every resource, so there is no conditional write. The specified algorithm is implemented in `packages/health-core/src/drive-rest.ts` (`DriveAdapter`) and tested step by step in `drive-rest.test.ts`:
+1. Read with `fields=version`. — `DriveAdapter.read`, one metadata call beside the `alt=media` download.
+2. **Re-fetch `version` immediately before upload**; if it moved, abort and re-merge. — `DriveAdapter.write` raises `ConflictError`, which `SyncManager.save` already catches, re-reads and re-merges.
+3. After writing, re-read and assert **every pre-read row id is still present** and the new rows landed. — `SyncManager.verifyAfterWrite`, unchanged and shared with every other backend: the ids it checks are the MERGED file's, which is the pre-read rows plus the new ones.
+4. Bounded retry. — the same `MAX_SAVE_ATTEMPTS = 5` loop.
 
-Residual, disclosed: our write becomes **durable-by-retry**, but the **browser cannot detect being clobbered** — `sync-manager.ts:128` only fails when lamport *regresses*, and a competing merge passes that check. On Drive, concurrent writers are **best-effort**, and the guide must say so. **Phase-2 gate: the algorithm implemented and tested first; Google brand verification second.**
+Step 3 needed one change above the adapters, and it is the only behaviour phase 2 altered for other backends: a failed verify used to be a fatal `StorageError`, so step 3 detected a lost update and then gave up. It is now a `LostUpdateError extends ConflictError`, which the existing loop retries — re-read, re-merge, write again, which is safe because the arrays are append-only. When the retries run out, the error says *some of it may have landed* rather than the comfortable falsehood *nothing was written*.
+
+**Two writers, honestly.** Step 2 narrows the window; it does not close it, because a check is not a precondition. A writer landing between our check and our upload is invisible to step 2 and invisible to lamport (their write advances it). Step 3 is the only thing that sees it, and it sees it by noticing OUR rows are gone. It cannot see rows written by someone else after our read and dropped by our own upload — that loss is undetectable from here, and their next save re-merges it back.
+
+Residual, disclosed and unchanged: our write is **durable-by-retry**, but the **browser cannot detect being clobbered** — it neither re-checks the version nor consumes one (`widget-src/src/storage/drive.ts` returns `version: null` deliberately, to save a round trip on every load and save). On Drive, concurrent writers are **best-effort**, and the guide must say so.
+
+**Same file, or nothing.** Drive has no app folder, so "the record" is a name inside a folder we created. If the server discovered it differently from the browser, a user would end up with two records and see neither whole. So folder and file discovery moved into `drive-rest.ts` and the browser adapter's copies were deleted — one implementation, two callers.
+
+**Phase-2 gate: the algorithm implemented and tested first (done); Google brand verification and the console steps second (Brad — deploy-runbook.md step 4b).**
 
 | Other cases | Behaviour |
 | --- | --- |
@@ -238,6 +247,14 @@ Brad's ruling: build the full thing. The recruitment gate is removed. The phase 
 - [x] `npm run test:all` green (83 files, 1692 tests). [ ] **OPERATOR (Brad).** Live verify against both vendors — impossible before deployment.
 
 **Phase 2 — Drive.** §7's algorithm implemented and tested first, Google brand verification second.
+- [x] `packages/health-core/src/drive-rest.ts` — Drive v3 as plain fetch calls, plus `DriveAdapter` carrying §7 steps 1–2. Folder/file discovery moved out of the browser adapter; the widget copies deleted in the same commit.
+- [x] `SyncManager`: a failed verify becomes a retryable `LostUpdateError`, so §7 step 3 feeds step 4 instead of giving up. The give-up message stops claiming nothing was written.
+- [x] `provider` sealed into the state, code, access and refresh payloads (AAD unchanged); the consent screen offers one button per configured provider; `/mcp` builds the adapter from the token alone.
+- [x] Google as a confidential client: `drive.file` only, `access_type=offline`, `prompt=consent`, no `include_granted_scopes`. Reuses `GOOGLE_DRIVE_CLIENT_ID`/`GOOGLE_DRIVE_SECRET` (§1's shared-identity finding).
+- [x] Tests citing US-32 phase 2: the four algorithm steps separately, the Google OAuth chain, the feature gate, and provider isolation (an edited provider dies at the GCM tag).
+- [x] Feature gate: no `GOOGLE_DRIVE_*` secrets → the consent screen shows Dropbox only. Merging is inert.
+- [ ] **OPERATOR (Brad).** Google console: redirect URI, publishing status **In production** (or refresh tokens die after 7 days), brand verification for `drive.file`; then the two Fly secrets on `health-tool-edu`. Runbook step 4b.
+- [ ] **OPERATOR (Brad).** Live verify over Drive, and the getting-started guide's Drive wording — concurrent writers are best-effort there.
 
 `[connect:gemini]` stays a prompt link at every phase.
 
@@ -262,6 +279,9 @@ No health data in Supabase — and no *anything* in Supabase. No accounts, no pa
 | Google `drive.file` non-sensitive → brand verification only, no CASA, **100-user unverified cap does not apply** | **Verified in our favour.** |
 | **Bearer-token length limits at either vendor** | **UNVERIFIED — none documented.** Absence of docs is not absence of a cap. |
 | **Vendor durable token persistence across sessions/devices** | **UNVERIFIED.** Open issues report tokens failing to persist and refresh failing. Expect support traffic. |
+| **Drive v3 has no conditional write (no `etag`, no rev)** | **Verified.** `DriveAdapter` substitutes §7's four steps; step 2 is a check, not a precondition, and §7 says what that costs. |
+| **Google `drive.file` is per-app, so the server and the widget share one identity and one folder** | **Verified in design (§1) and pinned by tests:** discovery lives once in `drive-rest.ts`, and the browser adapter calls it rather than copying it. |
+| **Google testing-status refresh tokens expire after 7 days** | **Load-bearing operator step**, in the runbook (4b). Not something the code can detect or work around. |
 | Refresh-token size: Google ≤512 B; Dropbox variable, ">1 KB" | Sealed blob ≈500 chars typical, ~1.8 KB worst case **plus padding** — inside Node's 16 KB header limit. |
 | Dropbox refresh tokens have no idle expiry | Blog and staff forum, not a formal reference clause. High-confidence, not contractual. |
 
