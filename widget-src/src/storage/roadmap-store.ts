@@ -778,7 +778,7 @@ export class RoadmapStore {
    * spend the day holding a connection open. Returns the stop.
    */
   startLiveRefresh(): () => void {
-    const watchable = !!this.adapter.watch && this.adapter.id !== 'local';
+    const watchable = !!this.adapter.watch;
     let watching: AbortController | null = null;
     // The push a throttled window swallowed. A watch fires once per remote
     // change and then goes quiet — the cursor has moved past it — so dropping
