@@ -433,6 +433,9 @@ sealed token. Nothing per user is stored on our side either way.
 
 ### Publishing the ChatGPT app
 
+Only OpenAI gates *connection* behind review; what every other assistant requires (Claude's
+directory, Gemini, Perplexity, Le Chat, Copilot) is in **[assistant-landscape.md](assistant-landscape.md)**.
+
 Today a user needs **developer mode** to add our connector to ChatGPT, because OpenAI
 keeps unreviewed connectors behind it. Claude needs no equivalent: a custom connector is
 available on any plan. Publishing through OpenAI's review is what removes that step.
@@ -465,29 +468,16 @@ proved before the connector is switched on. Rotate by setting the secret again.
 
 ### Listing in Anthropic's Connectors Directory
 
-Claude's custom-connector path already works for every user, so a directory listing buys
-discovery, a named card with a logo, Suggested Connectors, and Anthropic-held client
-credentials. It is not needed for anyone to connect. Researched 2026-09-02 from
-`claude.com/docs/connectors/building/submission`.
-
-**The blocker is the account, and it is Brad's.** Submission happens in
-`claude.ai/admin-settings/directory/submissions/new`, which is part of **organization
-settings**: it needs a **Team or Enterprise** organization, and only an Owner or Primary
-owner can submit. An individual Pro or Max plan has no such page.
-
-If that is worth doing, the portal wants: the server URL and transport; tools synced
-live from the running server, each with a title and a read-only or write annotation;
-name, tagline (55 chars), description, categories, documentation URL, **privacy policy
-URL**, support contact, icon, and a permanent slug; the authentication mode (ours is
-CIMD, which the portal lists); a **data-handling answer that explicitly asks whether the
-connector handles personal health data** (yes, and say how); reviewer test-account
-credentials good enough to drive every tool end to end; and seven policy
-acknowledgements, one of them on prompt injection — where the honest answer is
-`mcp-architecture.md` §3's stated residual, not a reassurance.
-
-Also worth knowing: publishing to the open MCP Registry or the
-`modelcontextprotocol/servers` repo does **nothing** for visibility inside Claude. Only
-the directory does.
+Claude's custom-connector path already works on every plan, so a listing buys discovery, a
+named card, Suggested Connectors and Anthropic-held credentials, not access.
+**The blocker is the account:** the portal at
+`claude.ai/admin-settings/directory/submissions/new` is part of organization settings, so it
+needs a **Team or Enterprise** org and an Owner; an individual plan has no such page. Field
+list, plan quotes and our CIMD status are in
+[assistant-landscape.md](assistant-landscape.md). The prompt-injection acknowledgement gets
+`mcp-architecture.md` §3's stated residual, not a reassurance. Publishing to the open MCP
+Registry or the `modelcontextprotocol/servers` repo does **nothing** for visibility inside
+Claude; only the directory does.
 
 ## Scalability & DDoS
 
