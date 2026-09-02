@@ -75,6 +75,11 @@ export class StorageError extends Error {
  */
 export const UNREACHABLE_HINT = 'Try once more; if it keeps failing, check that the record is reachable.';
 
+/** How long a provider gets to answer, body included, before the call is
+ *  abandoned as unreachable. Long enough for a slow phone on a slow network,
+ *  short enough that a hosted tool call fails rather than hangs. */
+export const FETCH_TIMEOUT_MS = 30_000;
+
 /**
  * `fetch`, with the network outage it can have owned by the adapter that made
  * the call. A dead network, a DNS miss or a severed socket rejects with a bare
@@ -84,7 +89,20 @@ export const UNREACHABLE_HINT = 'Try once more; if it keeps failing, check that 
  * adapter goes through here (the disk adapter does the same in
  * `file-adapter.ts`). `provider` is its user-facing name: 'Dropbox'.
  */
-export async function fetchOrFail(provider: string, url: string | URL, init?: RequestInit): Promise<Response> {
+export async function fetchOrFail(
+  provider: string,
+  url: string | URL,
+  init?: RequestInit & { timeoutMs?: number },
+): Promise<Response> {
+  // A provider that accepts the socket and then says nothing is not an error
+  // any layer above can see: the hosted tool call, or the widget's save, waits
+  // until the platform kills it. Bounded here, that silence arrives as the same
+  // failure a dead network does. `AbortSignal.any` is Node 20+/modern-browser
+  // only; without it a caller's own signal still wins, as it did before.
+  const timeout = AbortSignal.timeout(init?.timeoutMs ?? FETCH_TIMEOUT_MS);
+  const signal = !init?.signal ? timeout
+    : typeof AbortSignal.any === 'function' ? AbortSignal.any([init.signal, timeout])
+    : init.signal;
   try {
     // The body is drained HERE, inside the try: a socket that dies mid-download
     // rejects the body read, not `fetch` (undici's `TypeError: terminated`), so
@@ -93,7 +111,7 @@ export async function fetchOrFail(provider: string, url: string | URL, init?: Re
     // statusText and headers without asking a browser to coerce a Response
     // into a ResponseInit dictionary; a null-body status (204/304) must stay
     // bodiless.
-    const res = await fetch(url, init);
+    const res = await fetch(url, { ...init, signal });
     const bytes = await res.arrayBuffer();
     return new Response(bytes.byteLength ? bytes : null, { status: res.status, statusText: res.statusText, headers: res.headers });
   } catch (error) {

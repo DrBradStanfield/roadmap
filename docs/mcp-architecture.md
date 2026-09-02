@@ -467,3 +467,12 @@ through, so a dead connection becomes a typed storage failure at the source rath
 an ordinary exception at the top. `callHostedTool` now checks `isStorageFailure(error)`
 before deciding: true still becomes a worded refusal, false is logged (tool name and error
 name only, no health values) and rethrown as `-32603`.
+
+**And a provider that never answers is now bounded.** `fetchOrFail` had no timeout, so a
+cloud provider that accepted the socket and then went silent hung the tool call until the
+platform killed it — no error, no id, nothing for the assistant to say. It now runs every
+provider call under `AbortSignal.timeout(FETCH_TIMEOUT_MS)` (30 s), merged with any
+caller signal via `AbortSignal.any`, with the body read inside the same bound. The abort
+throws the same `StorageError('<Provider> did not answer', UNREACHABLE_HINT)`, so silence
+lands where an outage lands: a worded refusal past the `-32603` gate, and still inside the
+widget's Sentry `/did not answer/` ignore.

@@ -6,7 +6,7 @@
  * provider's failure from its own (AC17).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ROADMAP_FILE_NAME, StorageError } from './adapter';
+import { fetchOrFail, ROADMAP_FILE_NAME, StorageError } from './adapter';
 import { DropboxAdapter } from './dropbox-rest';
 
 afterEach(() => {
@@ -65,5 +65,28 @@ describe('a 2xx with a body that is not JSON is a failed write, not a crash', ()
       .catch((error: unknown) => error);
     expect(failure).toBeInstanceOf(StorageError);
     expect((failure as StorageError).message).toContain('returned no rev');
+  });
+});
+
+describe('a provider that never answers is bounded, not eternal (US-32 AC17)', () => {
+  it('aborts after the timeout and words it as the provider not answering', async () => {
+    // Faithful to `fetch`: it hangs until its signal aborts, then rejects.
+    vi.stubGlobal('fetch', vi.fn((_url: unknown, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(init.signal!.reason));
+    })));
+    const started = Date.now();
+    const failure = await fetchOrFail('Dropbox', 'https://example.test/x', { timeoutMs: 20 })
+      .catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as StorageError).message).toBe('Dropbox did not answer');
+    expect((failure as StorageError).hint).toContain('Try once more');
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
+  it('leaves a fast answer alone', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"ok":true}', { status: 200 })));
+    const res = await fetchOrFail('Dropbox', 'https://example.test/x', { timeoutMs: 20_000 });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
   });
 });

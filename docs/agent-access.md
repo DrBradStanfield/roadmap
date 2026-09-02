@@ -164,7 +164,7 @@ Google Drive is built and tested but not live: it appears as a connect option on
 Dropbox is the only backend the hosted path offers. A user revokes a Drive connection at
 `myaccount.google.com/connections`, a Dropbox one at `dropbox.com/account/connected_apps`.
 
-Four things differ from the local path, and they are differences you will hit:
+Five things differ from the local path, and they are differences you will hit:
 
 - **`correct_value` requires `expectedValue`** — the number you believe the row holds
   right now. It is optional locally. A mismatch refuses the call and writes nothing, so
@@ -176,6 +176,9 @@ Four things differ from the local path, and they are differences you will hit:
   also carries its own per-call cap of 50 rows, regardless of budget.
 - **A record whose `schemaVersion` is newer than the server understands is out of reach
   entirely — reads refuse too**, because the record is migrated before any tool sees it.
+- **Provider calls time out after 30 s and surface as "did not answer".** A cloud
+  provider that accepts the connection and then goes quiet fails the call rather than
+  hanging it. Nothing was written; ask again.
 
 Trust model, revocation, and the residual risks we accepted knowingly:
 [mcp-architecture.md](mcp-architecture.md). The short version: your record
