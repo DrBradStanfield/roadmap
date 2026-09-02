@@ -310,7 +310,13 @@ async function handleRpc(incoming: unknown, token: AccessPayload, now: string): 
       } catch {
         return failure(id, INTERNAL_ERROR, 'That tool failed inside this server. Nothing was written.');
       }
-      return ok(id, { content: [{ type: 'text', text: answer.text }], ...(answer.isError ? { isError: true } : null) });
+      return ok(id, {
+        content: [{ type: 'text', text: answer.text }],
+        // Declared `outputSchema` obliges an OK result to carry the structured
+        // answer too; a refusal is an error result and carries none.
+        ...(answer.structured === undefined ? null : { structuredContent: answer.structured }),
+        ...(answer.isError ? { isError: true } : null),
+      });
     }
     default:
       return isNotification ? null : failure(id, METHOD_NOT_FOUND, `Unknown method ${method}`);

@@ -220,9 +220,9 @@ export function dueSplit(plan: Plan): { overdue: ReminderScheduleItem[]; upcomin
 }
 
 /** The agent-facing shape. Field names are stable; add, never rename. */
-export function renderJson(plan: Plan): string {
+export function planPayload(plan: Plan): Record<string, unknown> {
   const { overdue, upcoming } = dueSplit(plan);
-  return JSON.stringify(
+  return (
     {
       instruction: PLAN_INSTRUCTION,
       schemaVersion: CURRENT_SCHEMA_VERSION,
@@ -257,8 +257,11 @@ export function renderJson(plan: Plan): string {
         references: s.references ?? [],
       })),
       source: { schema: SCHEMA_URL, tool: 'tools/get-plan.ts', docs: 'docs/agent-access.md' },
-    },
-    null,
-    2,
+    }
   );
+}
+
+/** The same shape, serialized — what a CLI prints and a tool puts in `content`. */
+export function renderJson(plan: Plan): string {
+  return JSON.stringify(planPayload(plan), null, 2);
 }

@@ -13,7 +13,7 @@
  */
 import { dayOf } from './merge';
 import { labSlotKey } from './lab-catalog';
-import { computePlan, oneLine, PlanError, printable, renderJson } from './plan';
+import { computePlan, oneLine, PlanError, planPayload, printable } from './plan';
 import {
   appendLabValue,
   appendMeasurement,
@@ -23,7 +23,7 @@ import {
 } from './record-edits';
 import type { FileLabValue, FileMeasurement, FileReminderOptIn, RoadmapFile } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
-import { UNIT_DEFS } from './units';
+import { UNIT_DEFS, type MetricType } from './units';
 import { healthInputSchema, METRIC_TYPES } from './validation';
 import { z } from 'zod';
 
@@ -132,14 +132,113 @@ export const reportFeedbackInput = z.object({
   detail: z.string().min(1).max(2000),
 }).strict();
 
+// ---------------------------------------------------------------------------
+// What each tool answers with, typed (MCP `outputSchema`)
+// ---------------------------------------------------------------------------
+
+/**
+ * The structured half of every answer. The words a tool returns do not change —
+ * guides and tests pin them — this is the same answer as data, so a client can
+ * take a row id without parsing prose.
+ *
+ * A record and a plan keep their own shape loosely: both are published in full
+ * elsewhere (the file schema, `renderJson`), and restating them here would be a
+ * second definition to keep in sync, which is how a schema starts lying.
+ */
+const LOOSE = z.record(z.unknown());
+const ROWS = z.array(LOOSE);
+
+/** The record as `readRecord` filters it — the file's own keys, minus the token. */
+export const readRecordOutput = z.object({
+  schemaVersion: z.number(),
+  meta: LOOSE,
+  profile: LOOSE,
+  measurements: ROWS,
+  medications: ROWS,
+  medicationHistory: ROWS,
+  supplements: ROWS,
+  supplementHistory: ROWS,
+  screenings: LOOSE,
+  labValues: ROWS,
+  documents: ROWS,
+  reminderPreferences: ROWS,
+  recommendationSnapshots: ROWS,
+  reminderOptIn: LOOSE.optional(),
+}).strict();
+
+/** The plan, in the shape `planPayload` builds and `get-plan.ts --json` prints. */
+export const getPlanOutput = z.object({
+  instruction: z.string(),
+  schemaVersion: z.number(),
+  generatedAt: z.string(),
+  today: z.string(),
+  unitSystem: z.string(),
+  profile: LOOSE,
+  inputs: LOOSE,
+  currentValues: ROWS,
+  labValues: ROWS,
+  medications: LOOSE,
+  screenings: LOOSE,
+  due: LOOSE,
+  suggestions: ROWS,
+  source: LOOSE,
+}).strict();
+
+/** A written row, named the way the tool that wrote it names its subject. */
+export const addMeasurementOutput = z.object({
+  id: z.string(),
+  metricType: z.string(),
+  value: z.number(),
+  unit: z.string().nullable(),
+  recordedAt: z.string(),
+}).strict();
+
+export const labRowOutput = z.object({
+  id: z.string(),
+  metricName: z.string(),
+  value: z.number(),
+  unit: z.string(),
+  recordedAt: z.string(),
+}).strict();
+
+export const addLabValuesOutput = z.object({ rows: z.array(labRowOutput) }).strict();
+
+/** The new row, and the row it supersedes. */
+export const correctValueOutput = z.object({
+  id: z.string(),
+  correctsId: z.string(),
+  metric: z.string(),
+  value: z.number(),
+  unit: z.string().nullable(),
+  recordedAt: z.string(),
+}).strict();
+
+/** Every field that moved, and what it moved from. Empty when nothing changed. */
+export const updateProfileOutput = z.object({
+  changed: z.array(z.object({
+    field: z.enum(PROFILE_FIELDS),
+    from: z.union([z.string(), z.number()]).nullable(),
+    to: z.union([z.string(), z.number()]),
+  }).strict()),
+}).strict();
+
+/** The prepared issue — nothing is sent; the URL is the whole result. */
+export const reportFeedbackOutput = z.object({
+  url: z.string(),
+  kind: z.enum(['bug', 'feature']),
+  title: z.string(),
+}).strict();
+
 /**
  * What a tool call did. `rejected` is a refusal the agent should read and act
  * on — a taken slot, a value out of range — and nothing was written;
  * `invalid-args` is a malformed call, which is the protocol's problem, not the
- * record's. Only `ok` with a `file` asks the caller to save anything.
+ * record's. Only `ok` with a `file` asks the caller to save anything. A refusal
+ * carries no `data`: the spec asks for structured content on a result, and a
+ * refusal is an error result (`isError`), not one.
  */
 export type ToolOutcome =
-  | { status: 'ok'; text: string; file?: RoadmapFile }
+  | { status: 'ok'; text: string; data: unknown; file?: RoadmapFile }
   | { status: 'rejected'; text: string }
   | { status: 'invalid-args'; text: string };
 
@@ -185,13 +284,14 @@ export function readRecord(file: RoadmapFile, request: z.infer<typeof readRecord
     measurements: record.measurements.filter((m) => (!metric || matchesMetric(m.metricType, metric)) && keep(m)),
     labValues: record.labValues.filter((l) => (!metric || matchesMetric(l.metricName, metric)) && keep(l)),
   };
-  return { status: 'ok', text: JSON.stringify(filtered, null, 2) };
+  return { status: 'ok', text: JSON.stringify(filtered, null, 2), data: filtered };
 }
 
 /** The plan, in the same JSON shape `get-plan.ts --json` prints (US-30 AC3). */
 export function getPlan(file: RoadmapFile, now: string): ToolOutcome {
   try {
-    return { status: 'ok', text: renderJson(computePlan(file, new Date(now))) };
+    const payload = planPayload(computePlan(file, new Date(now)));
+    return { status: 'ok', text: JSON.stringify(payload, null, 2), data: payload };
   } catch (error) {
     if (error instanceof PlanError) return { status: 'rejected', text: `${error.message}. ${error.hint}` };
     throw error;
@@ -224,7 +324,21 @@ export function addMeasurement(
 ): ToolOutcome {
   const result = appendMeasurement(file, { ...request, now });
   if (!result.ok) return rejection(result);
-  return { status: 'ok', file: result.file, text: describe('Added', [result.row]) };
+  const row = result.row;
+  return {
+    status: 'ok',
+    file: result.file,
+    text: describe('Added', [row]),
+    data: {
+      id: row.id,
+      metricType: row.metricType,
+      value: row.value,
+      // The row is stored SI canonical, so the unit is the metric's, not the
+      // caller's: a call that passed mg/dL gets back what was written.
+      unit: canonicalUnit(row.metricType),
+      recordedAt: dayOf(row.recordedAt ?? ''),
+    },
+  };
 }
 
 /**
@@ -248,7 +362,20 @@ export function addLabValues(
     next = result.file;
     rows.push(result.row);
   }
-  return { status: 'ok', file: next, text: describe('Added', rows) };
+  return {
+    status: 'ok',
+    file: next,
+    text: describe('Added', rows),
+    data: {
+      rows: rows.map((row) => ({
+        id: row.id,
+        metricName: row.metricName,
+        value: row.value,
+        unit: row.unit,
+        recordedAt: dayOf(row.recordedAt ?? ''),
+      })),
+    },
+  };
 }
 
 /**
@@ -268,7 +395,21 @@ export function correctValueTool(
 ): ToolOutcome {
   const result = correctValue(file, { ...request, now });
   if (!result.ok) return rejection(result);
-  return { status: 'ok', file: result.file, text: describe('Corrected', [result.row]) };
+  const row = result.row;
+  const measurement = 'metricType' in row;
+  return {
+    status: 'ok',
+    file: result.file,
+    text: describe('Corrected', [row]),
+    data: {
+      id: row.id,
+      correctsId: request.id,
+      metric: measurement ? row.metricType : row.metricName,
+      value: row.value,
+      unit: measurement ? canonicalUnit(row.metricType) : row.unit,
+      recordedAt: dayOf(row.recordedAt ?? ''),
+    },
+  };
 }
 
 /**
@@ -313,7 +454,7 @@ export function updateProfile(
 
   const changed = named.filter((field) => request[field] !== stored[field]);
   if (changed.length === 0) {
-    return { status: 'ok', text: 'The record already says that. Nothing was written.' };
+    return { status: 'ok', text: 'The record already says that. Nothing was written.', data: { changed: [] } };
   }
 
   const profile = {
@@ -331,7 +472,15 @@ export function updateProfile(
     status: 'ok',
     file: stampUpdatedAt({ ...file, profile }, now),
     text: changed.map((field) => `${field}: ${stored[field] ?? 'not set'} → ${request[field]}`).join('\n'),
+    data: {
+      changed: changed.map((field) => ({ field, from: stored[field] ?? null, to: request[field] as string | number })),
+    },
   };
+}
+
+/** The unit a stored measurement is in — SI canonical, or null off-catalogue. */
+function canonicalUnit(metricType: string): string | null {
+  return UNIT_DEFS[metricType as MetricType]?.canonical ?? null;
 }
 
 /** One line per row written: what it is, what it says, and the id to cite. */
@@ -396,6 +545,7 @@ export function reportFeedback(request: z.infer<typeof reportFeedbackInput>, now
     text: `${url}\n\nShow the user this link. Ask them to read the title and body first — they must contain no ` +
       'health values, no names and no file paths — and to submit it themselves; it needs a GitHub account. ' +
       'Nothing has been sent anywhere.',
+    data: { url, kind: request.kind, title },
   };
 }
 
@@ -416,6 +566,12 @@ export interface McpToolDefinition {
   title: string;
   description: string;
   inputSchema: ToolInputSchema;
+  /**
+   * The shape of the structured result. Declaring it obliges every OK result to
+   * carry `structuredContent` that fits (spec §Output Schema); a refusal is an
+   * error result and carries none.
+   */
+  outputSchema: ToolInputSchema;
   annotations: {
     readOnlyHint: boolean;
     destructiveHint: boolean;
@@ -425,6 +581,17 @@ export interface McpToolDefinition {
 }
 
 const DAY_SCHEMA = { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' } as const;
+
+/** The two shapes a record or plan section takes, unexpanded on purpose. */
+const OBJECT = { type: 'object' } as const;
+const OBJECT_ARRAY = { type: 'array', items: { type: 'object' } } as const;
+
+/** A written row's fields, shared by the three tools that answer with one. */
+const ROW_FIELDS = {
+  id: { type: 'string', description: 'The row id — cite this to correct the row later.' },
+  value: { type: 'number', description: 'The number as stored.' },
+  recordedAt: { ...DAY_SCHEMA, description: 'The clinical day the row is filed under.' },
+} as const;
 
 /**
  * The seven tools, as an MCP client lists them. Annotations are HINTS — the
@@ -450,6 +617,31 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       },
       additionalProperties: false,
     },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        schemaVersion: { type: 'number' },
+        meta: OBJECT,
+        profile: OBJECT,
+        measurements: OBJECT_ARRAY,
+        medications: OBJECT_ARRAY,
+        medicationHistory: OBJECT_ARRAY,
+        supplements: OBJECT_ARRAY,
+        supplementHistory: OBJECT_ARRAY,
+        screenings: OBJECT,
+        labValues: OBJECT_ARRAY,
+        documents: OBJECT_ARRAY,
+        reminderPreferences: OBJECT_ARRAY,
+        recommendationSnapshots: OBJECT_ARRAY,
+        reminderOptIn: OBJECT,
+      },
+      required: [
+        'schemaVersion', 'meta', 'profile', 'measurements', 'medications', 'medicationHistory',
+        'supplements', 'supplementHistory', 'screenings', 'labValues', 'documents',
+        'reminderPreferences', 'recommendationSnapshots',
+      ],
+      additionalProperties: false,
+    },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
@@ -460,6 +652,30 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'suggestions with the reason and citations behind each one. This is the app’s own protocol, computed ' +
       'offline from the file; it is educational, not medical advice.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        instruction: { type: 'string', description: 'How this plan must be presented. Follow it.' },
+        schemaVersion: { type: 'number' },
+        generatedAt: { type: 'string' },
+        today: { type: 'string' },
+        unitSystem: { type: 'string' },
+        profile: OBJECT,
+        inputs: OBJECT,
+        currentValues: OBJECT_ARRAY,
+        labValues: OBJECT_ARRAY,
+        medications: OBJECT,
+        screenings: OBJECT,
+        due: OBJECT,
+        suggestions: OBJECT_ARRAY,
+        source: OBJECT,
+      },
+      required: [
+        'instruction', 'schemaVersion', 'generatedAt', 'today', 'unitSystem', 'profile', 'inputs',
+        'currentValues', 'labValues', 'medications', 'screenings', 'due', 'suggestions', 'source',
+      ],
+      additionalProperties: false,
+    },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
   {
@@ -478,6 +694,16 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         recordedAt: { ...DAY_SCHEMA, description: 'The clinical date. Defaults to today; a future date is refused.' },
       },
       required: ['metricType', 'value'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        ...ROW_FIELDS,
+        metricType: { type: 'string', description: 'The core metric written.' },
+        unit: { type: ['string', 'null'], description: 'The SI unit the value is stored in.' },
+      },
+      required: ['id', 'metricType', 'value', 'unit', 'recordedAt'],
       additionalProperties: false,
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
@@ -514,6 +740,27 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       required: ['values'],
       additionalProperties: false,
     },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        rows: {
+          type: 'array',
+          description: 'One entry per row written, in the order they were given.',
+          items: {
+            type: 'object',
+            properties: {
+              ...ROW_FIELDS,
+              metricName: { type: 'string', description: 'The test name written.' },
+              unit: { type: 'string', description: 'The lab’s own unit, unconverted.' },
+            },
+            required: ['id', 'metricName', 'value', 'unit', 'recordedAt'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['rows'],
+      additionalProperties: false,
+    },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   },
   {
@@ -533,6 +780,17 @@ export const MCP_TOOLS: McpToolDefinition[] = [
         expectedValue: { type: 'number', description: 'The value you believe the row holds now. Mismatch refuses the call.' },
       },
       required: ['id', 'newValue'],
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        ...ROW_FIELDS,
+        correctsId: { type: 'string', description: 'The row now marked "entered-in-error".' },
+        metric: { type: 'string', description: 'The metric or test the row is for.' },
+        unit: { type: ['string', 'null'], description: 'The unit the corrected value is stored in.' },
+      },
+      required: ['id', 'correctsId', 'metric', 'value', 'unit', 'recordedAt'],
       additionalProperties: false,
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
@@ -567,6 +825,27 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       },
       additionalProperties: false,
     },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        changed: {
+          type: 'array',
+          description: 'Every field that moved. Empty when the record already said that.',
+          items: {
+            type: 'object',
+            properties: {
+              field: { type: 'string', enum: [...PROFILE_FIELDS] },
+              from: { type: ['string', 'number', 'null'], description: 'What the record held. `null` if unset.' },
+              to: { type: ['string', 'number'], description: 'What it holds now.' },
+            },
+            required: ['field', 'from', 'to'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['changed'],
+      additionalProperties: false,
+    },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
   },
   {
@@ -588,6 +867,16 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       required: ['kind', 'title', 'detail'],
       additionalProperties: false,
     },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'The prefilled issue URL. Show it; the user submits it.' },
+        kind: { type: 'string', enum: ['bug', 'feature'] },
+        title: { type: 'string' },
+      },
+      required: ['url', 'kind', 'title'],
+      additionalProperties: false,
+    },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   },
 ];
@@ -601,6 +890,17 @@ const INPUTS = {
   correct_value: correctValueInput,
   update_profile: updateProfileInput,
   report_feedback: reportFeedbackInput,
+} as const;
+
+/** Zod schema per tool result — what `outputSchema` promises, checkable. */
+export const OUTPUTS = {
+  read_record: readRecordOutput,
+  get_plan: getPlanOutput,
+  add_measurement: addMeasurementOutput,
+  add_lab_values: addLabValuesOutput,
+  correct_value: correctValueOutput,
+  update_profile: updateProfileOutput,
+  report_feedback: reportFeedbackOutput,
 } as const;
 
 export type ToolName = keyof typeof INPUTS;
@@ -670,6 +970,8 @@ export function callTool(
 export interface ToolAnswer {
   text: string;
   isError: boolean;
+  /** The same answer, typed to the tool's `outputSchema`. Absent on a refusal. */
+  structured?: unknown;
 }
 
 /** A tool broke its own contract. Not the user's to fix, so never a refusal. */
@@ -722,7 +1024,9 @@ export async function runToolOverSync(
     if (outcome.status === 'ok' && outcome.file) {
       throw new ToolContractError(`${name} produced a file without opening one`);
     }
-    return { text: outcome.text, isError: outcome.status !== 'ok' };
+    return outcome.status === 'ok'
+      ? { text: outcome.text, isError: false, structured: outcome.data }
+      : { text: outcome.text, isError: true };
   }
 
   const file = await sync.load();
@@ -731,8 +1035,14 @@ export async function runToolOverSync(
 
   const outcome = callTool(name, args, { file, now });
   if (outcome.status !== 'ok') return { text: outcome.text, isError: true };
-  if (!outcome.file) return { text: outcome.text, isError: false };
+  if (!outcome.file) return { text: outcome.text, isError: false, structured: outcome.data };
 
   await sync.save(outcome.file);
-  return { text: options.savedNote ? `${outcome.text}\n${options.savedNote()}` : outcome.text, isError: false };
+  // The note is for the person reading along; the structured answer is the
+  // tool's own, and where the bytes landed is not part of what it returns.
+  return {
+    text: options.savedNote ? `${outcome.text}\n${options.savedNote()}` : outcome.text,
+    isError: false,
+    structured: outcome.data,
+  };
 }

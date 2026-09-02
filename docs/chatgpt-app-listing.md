@@ -89,10 +89,6 @@ credential. Never the open web, never another user's record. `report_feedback` t
   - *Read-only:* Read-only. It never opens the health record. It builds a prefilled GitHub issue URL for the user to review, and files nothing itself.
   - *Destructive:* Not destructive. Nothing is written, in the record or anywhere else.
 
-**Follow-up.** The portal advises, without requiring, an `outputSchema` per tool. Ours return
-prose, so it is deferred: adding one means declaring the shape of every tool result and pinning it
-in `mcp-tools.test.ts`.
-
 ## Starter prompts
 
 1. Add my blood test results from today.

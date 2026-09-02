@@ -160,6 +160,9 @@ user connects once and then asks in words. It offers seven tools — `read_recor
 `report_feedback` —
 over the user's own Dropbox or Google Drive folder, and it enforces the rules above in
 code rather than asking you to keep them.
+Every tool declares an `outputSchema` and answers with `structuredContent` beside the
+text: the same answer typed, so a row id is read, not parsed out of a sentence. A refusal
+carries none — it is an error result.
 
 A command-line assistant can connect to the same server: `claude mcp add --transport http
 drstanfield https://mcp.drstanfield.com/mcp`, or `gemini mcp add -s user --transport http

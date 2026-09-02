@@ -23,6 +23,7 @@ import {
   MAX_LAB_ROWS_PER_CALL,
   MCP_TOOLS,
   MAX_FEEDBACK_URL_LENGTH,
+  OUTPUTS,
   readRecord,
   readRecordInput,
   redactRecord,
@@ -33,7 +34,7 @@ import {
   SERVER_VERSION,
   TOOL_LAYER_VERSION,
 } from './mcp-tools';
-import { mergeFiles } from './merge';
+import { dayOf, mergeFiles } from './merge';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { METRIC_TYPES } from './validation';
 
@@ -570,5 +571,101 @@ describe('US-32 AC9 — report_feedback prepares an issue the user submits', () 
   it('lets a bare number through — a page number is not a lab result', () => {
     expect(url({ ...GOOD, detail: 'See page 2 of the guide; it failed 3 times in a row.' })
       .searchParams.get('body')).toContain('page 2');
+  });
+});
+
+
+describe('US-32 — every tool answers with structured content that fits its outputSchema', () => {
+  /**
+   * A declared `outputSchema` is a promise: the spec says a server MUST return
+   * structured results that conform to it. `OUTPUTS` is that promise as zod,
+   * so a tool whose answer drifts from what it publishes fails here.
+   */
+  function structured(outcome: ReturnType<typeof readRecord>, tool: keyof typeof OUTPUTS) {
+    expect(outcome.status, tool).toBe('ok');
+    const parsed = OUTPUTS[tool].safeParse((outcome as { data: unknown }).data);
+    expect(parsed.success ? null : parsed.error.issues, tool).toBeNull();
+    return (outcome as { data: Record<string, unknown> }).data;
+  }
+
+  it('read_record answers with the filtered record, token stripped', () => {
+    const data = structured(readRecord(base(), {}), 'read_record');
+    expect(JSON.stringify(data)).not.toContain('SECRET');
+    expect((data.reminderOptIn as Record<string, unknown>).token).toBeUndefined();
+  });
+
+  it('get_plan answers with the plan object, and it is the same object as the text', () => {
+    const outcome = getPlan(base(), NOW);
+    const data = structured(outcome, 'get_plan');
+    expect(JSON.parse(outcome.status === 'ok' ? outcome.text : '')).toEqual(data);
+  });
+
+  it('add_measurement names the row it wrote, in the unit it stored', () => {
+    const data = structured(addMeasurement(base(), { metricType: 'ldl', value: 100, unit: 'mg/dL' }, NOW), 'add_measurement');
+    expect(data.metricType).toBe('ldl');
+    expect(data.unit).toBe('mmol/L'); // stored SI, not the mg/dL that was sent
+    expect(data.recordedAt).toBe(dayOf(NOW));
+    expect(typeof data.id).toBe('string');
+  });
+
+  it('add_lab_values names every row, in the order they were given', () => {
+    const values = [
+      { metricName: 'ferritin', value: 210, unit: 'µg/L' },
+      { metricName: 'tsh', value: 1.4, unit: 'mIU/L' },
+    ];
+    const data = structured(addLabValues(base(), { values }, NOW), 'add_lab_values');
+    expect((data.rows as Array<{ metricName: string }>).map((r) => r.metricName)).toEqual(['ferritin', 'tsh']);
+  });
+
+  it('correct_value names the new row and the one it superseded', () => {
+    const file = addMeasurement(base(), { metricType: 'ldl', value: 3.1 }, NOW);
+    expect(file.status).toBe('ok');
+    const written = file.status === 'ok' ? file.file! : base();
+    const original = written.measurements[written.measurements.length - 1].id;
+    const data = structured(correctValueTool(written, { id: original, newValue: 2.4 }, NOW), 'correct_value');
+    expect(data.correctsId).toBe(original);
+    expect(data.id).not.toBe(original);
+    expect(data.value).toBe(2.4);
+  });
+
+  it('update_profile names each field that moved, and nothing when none did', () => {
+    const changed = structured(updateProfile(base(), { heightCm: 181 }, NOW), 'update_profile');
+    expect(changed.changed).toEqual([{ field: 'heightCm', from: base().profile.heightCm ?? null, to: 181 }]);
+
+    const same = structured(updateProfile(base(), { heightCm: base().profile.heightCm! }, NOW), 'update_profile');
+    expect(same.changed).toEqual([]);
+  });
+
+  it('report_feedback answers with the URL it prepared', () => {
+    const data = structured(reportFeedback({ kind: 'bug', title: 'Tool refused a valid day', detail: 'Steps here.' }, NOW), 'report_feedback');
+    expect(data.kind).toBe('bug');
+    expect(String(data.url)).toContain('github.com');
+  });
+
+  it('carries no structured content on a refusal — an error result is not a result', () => {
+    const taken = addMeasurement(base(), { metricType: 'ldl', value: 2.1, recordedAt: dayOf(NOW) }, NOW);
+    const twice = taken.status === 'ok'
+      ? addMeasurement(taken.file!, { metricType: 'ldl', value: 2.2, recordedAt: dayOf(NOW) }, NOW)
+      : taken;
+    expect(twice.status).toBe('rejected');
+    expect(twice).not.toHaveProperty('data');
+    expect(callTool('add_measurement', { metricType: 'ldl' }, { file: base(), now: NOW })).not.toHaveProperty('data');
+  });
+
+  it('publishes an outputSchema on every tool that says what the zod schema says', () => {
+    for (const tool of MCP_TOOLS) {
+      const shape = OUTPUTS[tool.name as keyof typeof OUTPUTS].shape;
+      expect(Object.keys(tool.outputSchema.properties).sort(), tool.name).toEqual(Object.keys(shape).sort());
+      expect([...(tool.outputSchema.required ?? [])].sort(), `${tool.name} required`)
+        .toEqual(Object.keys(shape).filter((key) => !shape[key].isOptional()).sort());
+      expect(tool.outputSchema.type, tool.name).toBe('object');
+      expect(tool.outputSchema.additionalProperties, tool.name).toBe(false);
+    }
+  });
+
+  it('publishes the record’s own keys, so a new section cannot go unannounced', () => {
+    const keys = Object.keys(createEmptyFile({ deviceId: 'd', now: NOW }));
+    const published = Object.keys(OUTPUTS.read_record.shape);
+    expect(published.filter((k) => k !== 'reminderOptIn').sort()).toEqual(keys.sort());
   });
 });

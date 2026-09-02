@@ -519,3 +519,16 @@ the `notify` host (no access token: the cursor is the credential), Google Drive 
 The poll survives only for adapters with no watch. The tab's visibility still governs
 everything: hidden aborts the watch, visible takes it up again. Nothing about the hosted
 server changed — this is the widget hearing what the server already writes.
+
+## Build note — structured tool results, 2026-09-03
+
+**Every tool now declares an `outputSchema` and answers with `structuredContent`**
+(spec 2025-06-18 §Tools). The words each tool returns are unchanged — guides and tests
+pin them, and they stay in `content` as the serialized JSON the spec asks for on
+compatibility grounds. What is new is the same answer typed: `mcp-tools.ts` holds a zod
+output schema beside each input one, and the published JSON Schema mirrors it, checked by
+the same parity test that already guards the inputs. A record and a plan keep their shape
+loosely — both are published in full elsewhere, and restating them here would be a second
+definition to drift. Both servers pass the structure through untouched; the stdio
+server's saved-backup note stays in the text, where it belongs. A refusal is an error
+result and carries no structure.

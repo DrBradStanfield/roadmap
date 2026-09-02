@@ -17,7 +17,7 @@
  */
 import { pathToFileURL } from 'node:url';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
-import { MCP_TOOLS, runToolOverSync, SERVER_VERSION } from '../packages/health-core/src/mcp-tools';
+import { MCP_TOOLS, runToolOverSync, SERVER_VERSION, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
 import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
 
@@ -85,9 +85,17 @@ function failure(id: Id, code: number, message: string) {
   return { jsonrpc: '2.0', id, error: { code, message } };
 }
 
-/** A tool's answer, as MCP carries it: text content, plus a flag if it refused. */
-function toolResult(id: Id, text: string, isError = false) {
-  return result(id, { content: [{ type: 'text', text }], ...(isError ? { isError: true } : null) });
+/**
+ * A tool's answer, as MCP carries it: text content, the same answer structured
+ * when the tool declares an output schema, plus a flag if it refused. A refusal
+ * carries no structured content — it is an error result, not a result.
+ */
+function toolResult(id: Id, text: string, isError = false, structured?: unknown) {
+  return result(id, {
+    content: [{ type: 'text', text }],
+    ...(structured === undefined ? null : { structuredContent: structured }),
+    ...(isError ? { isError: true } : null),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -99,7 +107,7 @@ function toolResult(id: Id, text: string, isError = false) {
  * which the hosted server runs too; what is local is the adapter under it and
  * the backup line the user gets back (why: docs/mcp-architecture.md §7).
  */
-async function callAgainstFile(path: string, name: string, args: unknown): Promise<{ text: string; isError: boolean }> {
+async function callAgainstFile(path: string, name: string, args: unknown): Promise<ToolAnswer> {
   const now = new Date().toISOString();
   const adapter = new FileAdapter(path);
   return runToolOverSync(recordSync(adapter, 'mcp-stdio', now), name, args, now, {
@@ -147,8 +155,8 @@ export async function handle(incoming: unknown, path: string): Promise<object | 
       const name = typeof params.name === 'string' ? params.name : '';
       if (!name) return failure(id, INVALID_PARAMS, 'tools/call needs a tool name');
       try {
-        const { text, isError } = await callAgainstFile(path, name, params.arguments);
-        return toolResult(id, text, isError);
+        const { text, isError, structured } = await callAgainstFile(path, name, params.arguments);
+        return toolResult(id, text, isError, structured);
       } catch (error) {
         // The record is the problem — unreadable, moved, not a record, or a
         // write that would not settle. That is the user's to fix, so it reaches

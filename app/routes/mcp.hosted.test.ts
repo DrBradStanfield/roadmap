@@ -20,7 +20,7 @@ import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memor
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
-import { MCP_TOOLS } from '../../packages/health-core/src/mcp-tools';
+import { MCP_TOOLS, OUTPUTS } from '../../packages/health-core/src/mcp-tools';
 import { MAX_CORRECTION_AGE_DAYS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
 
@@ -159,12 +159,18 @@ async function rpc(access: string, method: string, params: unknown = {}, now = N
     now,
   );
   expect(res.status).toBe(200);
-  return (await res.json()) as { result?: { content?: Array<{ text: string }>; isError?: boolean; tools?: unknown[] } };
+  return (await res.json()) as {
+    result?: { content?: Array<{ text: string }>; structuredContent?: unknown; isError?: boolean; tools?: unknown[] };
+  };
 }
 
 async function callTool(access: string, name: string, args: unknown, now = NOW) {
   const answer = await rpc(access, 'tools/call', { name, arguments: args }, now);
-  return { text: answer.result!.content![0].text, isError: answer.result!.isError === true };
+  return {
+    text: answer.result!.content![0].text,
+    structured: answer.result!.structuredContent,
+    isError: answer.result!.isError === true,
+  };
 }
 
 /** Distinct days, so every add lands in a free slot. */
@@ -209,6 +215,10 @@ describe('the whole connection, end to end (US-32)', () => {
 
     const added = await callTool(access, 'add_measurement', { metricType: 'ldl', value: 3.2 });
     expect(added.isError).toBe(false);
+    // The tool declares an outputSchema, so the result carries the same answer
+    // structured — passed through by the server, not rebuilt from the text.
+    expect(added.structured).toEqual(OUTPUTS.add_measurement.parse(added.structured));
+    expect((added.structured as { value: number }).value).toBe(3.2);
     expect(added.text).toContain('Saved to the user’s Dropbox');
     const row = storedRecord().measurements.find((m) => m.status === 'active')!;
     expect(row.value).toBe(3.2);
@@ -258,7 +268,9 @@ describe('a record-free tool needs no record and no Dropbox (US-32)', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('no', { status: 400 })));
     const offline = await callTool(access, 'report_feedback', { kind: 'feature', title: 'a', detail: 'b' });
     expect(offline.isError).toBe(false);
-    expect((await callTool(access, 'read_record', {})).isError).toBe(true);
+    const refused = await callTool(access, 'read_record', {});
+    expect(refused.isError).toBe(true);
+    expect(refused.structured).toBeUndefined(); // a refusal carries no structured content
   });
 });
 

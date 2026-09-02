@@ -13,7 +13,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PassThrough } from 'node:stream';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '@roadmap/health-core';
-import { MCP_TOOLS } from '../packages/health-core/src/mcp-tools';
+import { MCP_TOOLS, OUTPUTS } from '../packages/health-core/src/mcp-tools';
 import { run as runCli } from './edit-record';
 import { handle, MAX_LINE_BYTES, serve } from './mcp-server';
 
@@ -43,7 +43,7 @@ function writeFixture(file: RoadmapFile): { dir: string; path: string } {
 /** One tools/call, as the protocol carries it. */
 async function call(path: string, name: string, args: unknown = {}, id = 1) {
   return (await handle({ jsonrpc: '2.0', id, method: 'tools/call', params: { name, arguments: args } }, path)) as
-    { result?: { content: Array<{ text: string }>; isError?: boolean }; error?: { code: number } };
+    { result?: { content: Array<{ text: string }>; structuredContent?: unknown; isError?: boolean }; error?: { code: number } };
 }
 
 function text(response: { result?: { content: Array<{ text: string }> } }): string {
@@ -417,5 +417,32 @@ describe('US-31 AC8/AC9, US-32 AC6 — the CLI and the stdio server share one wr
     expect(fromMcp.endsWith('\n') && fromCli.endsWith('\n')).toBe(true);
     rmSync(cli.dir, { recursive: true, force: true });
     rmSync(mcp.dir, { recursive: true, force: true });
+  });
+});
+
+
+describe('US-32 — structured results reach the client unchanged', () => {
+  it('carries the tool’s own structured answer beside the text, and none on a refusal', async () => {
+    const { dir, path } = writeFixture(fixture());
+
+    const added = await call(path, 'add_measurement', { metricType: 'hdl', value: 1.2 });
+    const structured = added.result!.structuredContent;
+    // The tool built this; the server only passed it along. The saved-backup
+    // note the surface adds belongs to the text, never to the structure.
+    expect(OUTPUTS.add_measurement.parse(structured)).toEqual(structured);
+    expect((structured as { value: number }).value).toBe(1.2);
+    expect(added.result!.content[0].text).toContain('Saved (backup:');
+
+    const read = await call(path, 'read_record');
+    expect(OUTPUTS.read_record.parse(read.result!.structuredContent)).toBeTruthy();
+    expect(JSON.stringify(read.result!.structuredContent)).not.toContain('SECRET-CAPABILITY-TOKEN');
+
+    const refused = await call(path, 'add_measurement', { metricType: 'hdl' });
+    expect(refused.result!.isError).toBe(true);
+    expect(refused.result!.structuredContent).toBeUndefined();
+
+    // Every tool publishes the schema those results are checked against.
+    for (const tool of MCP_TOOLS) expect(tool.outputSchema.type, tool.name).toBe('object');
+    rmSync(dir, { recursive: true, force: true });
   });
 });
