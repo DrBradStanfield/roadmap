@@ -126,6 +126,7 @@ Validate your result against the schema before you write it back.
 
 ## Caveats — read these before you automate anything
 
+- **A write you make is now visible almost at once in an open browser tab** (US-34, 2026-09-02). The widget no longer waits for a timer: on Dropbox it holds a `list_folder/longpoll` open on the app folder and re-reads within about a second of your write; on Google Drive it walks the changes feed every 3 seconds. That is a reason to write the whole record in one go rather than in pieces — a half-finished sequence is on the user's screen while you are still writing it.
 - **There is no lock and no version guard on a filesystem write.** The web app writes
   with an optimistic-concurrency check; you do not have one. Read, modify, and write back
   promptly. Do not hold the file open across a long task, and do not write while the user

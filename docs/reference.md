@@ -129,7 +129,7 @@ Stored values are **never mutated**. The file's `measurements`/`labValues` array
 - `lib/storage.ts` — localStorage helpers (guest cache + provider-connection state)
 - `lib/api.ts` — legacy API client; **in v2 builds it is module-swapped to `lib/roadmap-data.ts`** (vite `resolveId`), so the live data path is the local file, not this.
 - `lib/roadmap-data.ts` — local-first data shim: implements the api.ts surface against the user's file via `RoadmapStore` (the live read/write path on every v2 build).
-- `storage/roadmap-store.ts` — `RoadmapStore`: the in-memory file model + `flush()` (read-merge-write), `addMeasurement`/`correctMeasurement`/`deleteUserData`, cloud-adapter wiring (Drive/Dropbox/GitHub/local).
+- `storage/roadmap-store.ts` — `RoadmapStore`: the in-memory file model + `flush()` (read-merge-write), `addMeasurement`/`correctMeasurement`/`deleteUserData`, cloud-adapter wiring (Drive/Dropbox/GitHub/local), and `refreshFromRemote()`/`startLiveRefresh()` (US-34) — the provider's change signal where the adapter has one, the 60-second poll only where it does not. The signals themselves are the adapters': `storage/dropbox.ts` `watch()` holds a `list_folder/longpoll` open on the app folder root, `storage/drive.ts` `watch()` walks `changes.list` on a 3-second beat.
 - `packages/health-core/src/roadmap-file.ts` — the `health-roadmap.json` schema (FileMeasurement/FileLabValue with FHIR `status`/`correctsId`/`source`). `merge.ts` — `mergeFiles()` conflict-free cross-device merge.
 - `standalone/app.tsx` — shared entry for BOTH the Shopify-prod and Pages builds (mounts the app + `HistoryLightboxHost`). `site-chat.tsx` / `chatbot-embed.tsx` — the side-bundle chat entries.
 

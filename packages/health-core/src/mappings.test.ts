@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  hasUnsavedProfileEdits,
   FIELD_TO_METRIC,
   METRIC_TO_FIELD,
   FIELD_METRIC_MAP,
@@ -673,5 +674,26 @@ describe('resolveEmailConfirmStatus', () => {
 
   it('returns error for unexpected flag values', () => {
     expect(resolveEmailConfirmStatus('garbage')).toBe('error');
+  });
+});
+
+describe('US-34 — hasUnsavedProfileEdits (the mid-typing guard)', () => {
+  it('says nothing is unsaved when the form matches what was saved', () => {
+    const saved = { heightCm: 178, sex: 'male' as const, birthYear: 1985, birthMonth: 4 };
+    expect(hasUnsavedProfileEdits({ ...saved }, saved)).toBe(false);
+  });
+
+  it('sees a half-typed birth year the remote change must not overwrite', () => {
+    const saved = { heightCm: 178, birthYear: 1985 };
+    expect(hasUnsavedProfileEdits({ heightCm: 178, birthYear: 198 }, saved)).toBe(true);
+  });
+
+  it('sees every demographics field, and ignores a measurement', () => {
+    expect(hasUnsavedProfileEdits({ heightCm: 180 }, { heightCm: 178 })).toBe(true);
+    expect(hasUnsavedProfileEdits({ sex: 'female' }, { sex: 'male' })).toBe(true);
+    expect(hasUnsavedProfileEdits({ birthMonth: 5 }, { birthMonth: 4 })).toBe(true);
+    // Weight is a longitudinal row with its own save path — a remote change
+    // arriving while one is typed is not a keystroke the reload would eat.
+    expect(hasUnsavedProfileEdits({ weightKg: 81 }, { weightKg: 80 })).toBe(false);
   });
 });

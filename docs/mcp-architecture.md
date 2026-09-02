@@ -506,3 +506,16 @@ the bound itself the outage and killed every read and save there. Both are now
 feature-detected; missing either, the call runs unbounded as it did before. And the flat
 30 s is a record-file bound: `driveCreateFile` scales it with the body size (30 s + 1 s
 per 10 KB, capped at 5 min) so a 10 MB upload is not aborted mid-send on a slow uplink.
+
+## Build note — the widget's end of the loop, 2026-09-02
+
+**A connector's write is now pushed to the open page, not polled for** (US-34). The
+60-second timer was the visible half of the round trip: an assistant wrote, and the user
+waited up to a minute or reloaded. `StorageAdapter` gained an OPTIONAL
+`watch(fileName, onChange, signal)`, and `RoadmapStore.startLiveRefresh` uses it in place
+of the poll wherever an adapter has one — Dropbox through `files/list_folder/longpoll` on
+the `notify` host (no access token: the cursor is the credential), Google Drive through
+`changes.list` on a 3-second beat, because a browser cannot receive Drive's push channel.
+The poll survives only for adapters with no watch. The tab's visibility still governs
+everything: hidden aborts the watch, visible takes it up again. Nothing about the hosted
+server changed — this is the widget hearing what the server already writes.

@@ -21,6 +21,7 @@ import {
   dropboxRead,
   dropboxWrite,
   DROPBOX_TOKEN_URL,
+  sleepUntilAborted,
   StorageError,
   type ReadResult,
   type StorageAdapter,
@@ -36,6 +37,18 @@ const AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize';
 const TOKEN_URL = DROPBOX_TOKEN_URL;
 const DOWNLOAD_URL = 'https://content.dropboxapi.com/2/files/download';
 const UPLOAD_URL = 'https://content.dropboxapi.com/2/files/upload';
+const LIST_FOLDER_URL = 'https://api.dropboxapi.com/2/files/list_folder';
+const LIST_FOLDER_CONTINUE_URL = 'https://api.dropboxapi.com/2/files/list_folder/continue';
+/** The long-poll lives on its own host BECAUSE it holds the connection open —
+ *  Dropbox keeps those off the API host, and takes no Authorization header
+ *  there (spec: `host = "notify"`, `auth = "noauth"`; the cursor is the
+ *  credential). It is CORS-enabled, so the browser can call it directly. */
+const LONGPOLL_URL = 'https://notify.dropboxapi.com/2/files/list_folder/longpoll';
+/** Dropbox's own minimum, and its default. Seconds. */
+const LONGPOLL_TIMEOUT_S = 30;
+/** First retry after a failed poll, doubling to this ceiling. */
+const RETRY_MIN_MS = 1_000;
+const RETRY_MAX_MS = 60_000;
 
 export interface DropboxConfig {
   /** Dropbox app key (client id). No secret — PKCE only. */
@@ -173,6 +186,84 @@ export class DropboxAdapter implements StorageAdapter {
       body: bytes,
     });
     if (!res.ok) throw new StorageError(`Dropbox document write failed (${res.status}): ${ref}`);
+  }
+
+  // --- change signal (US-34) -------------------------------------------------
+
+  /**
+   * Tell the store when the app folder moved, within about a second, by
+   * holding a long-poll open against it. The cursor covers the app folder
+   * root, not one file: the record lives there, and a cursor per file would be
+   * a second held connection to learn the same thing. Uploaded documents sit
+   * in subfolders and are deliberately outside it (`recursive: false`) — the
+   * page does not re-render for a PDF.
+   */
+  watch(_fileName: string, onChange: () => void, signal: AbortSignal): void {
+    void this.watchLoop(onChange, signal);
+  }
+
+  private async watchLoop(onChange: () => void, signal: AbortSignal): Promise<void> {
+    let cursor: string | null = null;
+    let retryMs = 0;
+    while (!signal.aborted) {
+      try {
+        // A cursor is dropped on every failure, so this re-establishes it: the
+        // one Dropbox refused may be expired, and re-listing is cheap.
+        if (!cursor) cursor = await this.folderCursor(signal);
+        const poll = await this.rpc(LONGPOLL_URL, { cursor, timeout: LONGPOLL_TIMEOUT_S }, signal);
+        const result = (await poll.json()) as { changes?: boolean; backoff?: number };
+        // Dropbox asking for room comes before anything else we do with it.
+        if (result.backoff) await sleepUntilAborted(result.backoff * 1000, signal);
+        if (result.changes) {
+          // Advancing the cursor first is what keeps the next poll from
+          // returning the same change forever.
+          cursor = await this.continueCursor(cursor, signal);
+          if (!signal.aborted) onChange();
+        }
+        retryMs = 0;
+      } catch {
+        // A dropped connection, an expired cursor, a 429: all the same answer
+        // — wait longer each time, then start over with a fresh cursor. An
+        // abort is not a failure; the loop condition catches it.
+        cursor = null;
+        retryMs = Math.min(retryMs ? retryMs * 2 : RETRY_MIN_MS, RETRY_MAX_MS);
+        await sleepUntilAborted(retryMs, signal);
+      }
+    }
+  }
+
+  /** A cursor for the app folder root as it stands now. */
+  private async folderCursor(signal: AbortSignal): Promise<string> {
+    const res = await this.rpc(LIST_FOLDER_URL, { path: '', recursive: false }, signal, true);
+    return this.cursorOf(res);
+  }
+
+  private async continueCursor(cursor: string, signal: AbortSignal): Promise<string> {
+    const res = await this.rpc(LIST_FOLDER_CONTINUE_URL, { cursor }, signal, true);
+    return this.cursorOf(res);
+  }
+
+  private async cursorOf(res: Response): Promise<string> {
+    const json = (await res.json()) as { cursor?: string };
+    if (!json.cursor) throw new StorageError('Dropbox returned no cursor.');
+    return json.cursor;
+  }
+
+  /** One JSON-in/JSON-out Dropbox call. Not `fetchOrFail`: its 30-second cap
+   *  is exactly the long-poll's own timeout, and it would abort every poll a
+   *  moment before Dropbox answered it. */
+  private async rpc(url: string, body: object, signal: AbortSignal, authed = false): Promise<Response> {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authed ? { Authorization: `Bearer ${await this.accessToken()}` } : {}),
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+    if (!res.ok) throw new StorageError(`Dropbox watch failed (${res.status}).`);
+    return res;
   }
 
   // --- auth helpers ---------------------------------------------------------

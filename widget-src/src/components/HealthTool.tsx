@@ -7,6 +7,7 @@ import {
   convertValidationErrorsToUnits,
   detectUnitSystem,
   PREFILL_FIELDS,
+  hasUnsavedProfileEdits,
   LONGITUDINAL_FIELDS,
   BLOOD_TEST_METRICS,
   FIELD_TO_METRIC,
@@ -836,6 +837,12 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
   // new profile and values without a reload.
   useEffect(() => {
     const onRemoteChange = () => {
+      // Not while the user is mid-typing: the load path below replaces the
+      // form's inputs, and a remote change landing on a half-entered height
+      // would take those keystrokes with it. The store has kept the merge, so
+      // nothing is lost — the next save carries the edit up and the page
+      // catches up on the re-read after it.
+      if (hasUnsavedProfileEdits(inputsRef.current, previousInputsRef.current)) return;
       trackProductEvent('remote_change_applied');
       void handleUploadComplete();
     };

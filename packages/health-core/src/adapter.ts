@@ -189,4 +189,38 @@ export interface StorageAdapter {
    * last-write-on-this-device path.
    */
   writeSync?(fileName: string, body: object): void;
+
+  /**
+   * OPTIONAL change signal (US-34): call `onChange` whenever the provider says
+   * this file may have moved — a Dropbox long-poll returning, a Drive changes
+   * page naming our id. It is a HINT, never data: the store answers it by
+   * re-reading through the ordinary path, so a spurious call costs one read
+   * and a missed one is caught by the next visibility/focus re-read.
+   *
+   * Returns nothing and never rejects — the loop owns its own errors and its
+   * own backoff. `signal` is the only way it ends; an aborted signal must stop
+   * every request. Backends with no push (localStorage has no second writer;
+   * GitHub and WebDAV have no cheap watch) omit it and the store falls back to
+   * its slow poll.
+   */
+  watch?(fileName: string, onChange: () => void, signal: AbortSignal): void;
+}
+
+/**
+ * `setTimeout` that an abort cuts short, for the watch loops' backoff. It
+ * resolves either way — a caller waits, then re-checks `signal.aborted` at the
+ * top of its loop, so an abort mid-wait costs one tick and not a rejection to
+ * catch.
+ */
+export function sleepUntilAborted(ms: number, signal: AbortSignal): Promise<void> {
+  if (signal.aborted) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', done);
+      resolve();
+    };
+    const timer = setTimeout(done, ms);
+    signal.addEventListener('abort', done);
+  });
 }

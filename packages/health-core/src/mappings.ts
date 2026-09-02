@@ -102,6 +102,20 @@ export const PREFILL_FIELDS: ReadonlyArray<keyof HealthInputs> = [
 ];
 
 /**
+ * Does the form hold a demographics edit that has not been saved yet? US-34's
+ * remote-change listener asks before it re-runs its load path: a record
+ * arriving mid-typing would otherwise replace a half-entered birth year with
+ * the stored one and take the keystrokes with it. The store keeps the merge
+ * either way — the next save carries the edit up, and the page catches up then.
+ */
+export function hasUnsavedProfileEdits(
+  current: Partial<HealthInputs>,
+  saved: Partial<HealthInputs>,
+): boolean {
+  return PREFILL_FIELDS.some((f) => current[f] !== saved[f]);
+}
+
+/**
  * Fields that use longitudinal UX: empty input + "Previous: value (date)" label.
  * These are immutable time-series measurements that accumulate over time.
  */

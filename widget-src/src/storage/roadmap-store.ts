@@ -196,9 +196,12 @@ const PERSIST_DEBOUNCE_MS = 800;
 
 /**
  * How the open page keeps up with a record something else is writing (US-34).
- * A poll while the tab is visible, plus the two moments a user comes back to
- * it; the throttle stops focus and visibilitychange (which fire together on a
- * tab switch) from making two round trips out of one return.
+ * The provider says so when it can — the adapter's `watch` — and the two
+ * moments a user comes back to the tab catch whatever a watch missed. The
+ * slow poll is the fallback for backends with no change signal at all; a
+ * watch-capable one never runs it. The throttle stops focus and
+ * visibilitychange (which fire together on a tab switch) from making two round
+ * trips out of one return.
  */
 const REMOTE_POLL_MS = 60_000;
 const REMOTE_THROTTLE_MS = 5_000;
@@ -740,7 +743,12 @@ export class RoadmapStore {
     this.lastRefresh = at;
 
     const before = contentOf(this.file);
-    const merged = mergeFiles(this.file, await this.sync.load(), {
+    // The copy this merge is based on. A save can start AND finish while the
+    // read is in the air, and `writePending` is false again by the time it
+    // lands — so the test that the working copy did not move is the working
+    // copy itself, not whether a write happens to be in flight now.
+    const local = this.file;
+    const merged = mergeFiles(local, await this.sync.load(), {
       deviceId: this.deviceId,
       now: new Date().toISOString(),
     });
@@ -749,8 +757,8 @@ export class RoadmapStore {
     // count a change nobody made.
     if (contentOf(merged) === before) return false;
     // A local edit that landed during the read would be lost by taking the
-    // merge — it merged against bytes read before the edit existed.
-    if (this.writePending) return false;
+    // merge — it merged against a copy taken before the edit existed.
+    if (this.file !== local) return false;
     this.file = merged;
     // The counting is HealthTool's: it fires `remote_change_applied` when it
     // has actually re-rendered. The store cannot import the API layer — the
@@ -761,22 +769,61 @@ export class RoadmapStore {
   }
 
   /**
-   * Start the live re-read: whenever the tab becomes visible, whenever the
-   * window takes focus, and once a minute while it stays visible. A hidden tab
-   * polls nothing — it has no screen to keep up to date, and a phone left on a
-   * background tab would spend the day making requests. Returns the stop.
+   * Start the live re-read: the provider's own change signal where there is
+   * one, plus the two moments a user comes back to the tab. A backend with no
+   * `watch` keeps the minute poll; one with a watch does not need it, and
+   * paying for it anyway would be a round trip a second apart from a push that
+   * already happened. A hidden tab watches and polls nothing — it has no
+   * screen to keep up to date, and a phone left on a background tab would
+   * spend the day holding a connection open. Returns the stop.
    */
   startLiveRefresh(): () => void {
-    const run = () => {
-      // A failed re-read is not the user's problem and not a lost write: the
-      // next trigger tries again, and nothing here is waiting on the answer.
-      if (document.visibilityState !== 'hidden') void this.refreshFromRemote().catch(() => {});
+    const watchable = !!this.adapter.watch && this.adapter.id !== 'local';
+    let watching: AbortController | null = null;
+    // The push a throttled window swallowed. A watch fires once per remote
+    // change and then goes quiet — the cursor has moved past it — so dropping
+    // one on the throttle would lose that change until the user next came
+    // back to the tab. It waits out the window instead.
+    let trailing: ReturnType<typeof setTimeout> | null = null;
+
+    // A failed re-read is not the user's problem and not a lost write: the
+    // next trigger tries again, and nothing here is waiting on the answer.
+    const reread = () => void this.refreshFromRemote().catch(() => {});
+    const pushed = () => {
+      if (trailing) return;
+      const wait = REMOTE_THROTTLE_MS - (Date.now() - this.lastRefresh);
+      if (wait <= 0) {
+        reread();
+        return;
+      }
+      trailing = setTimeout(() => {
+        trailing = null;
+        reread();
+      }, wait);
     };
-    const timer = setInterval(run, REMOTE_POLL_MS);
+
+    const startWatch = () => {
+      if (!watchable || watching) return;
+      watching = new AbortController();
+      this.adapter.watch!(ROADMAP_DOC.fileName, pushed, watching.signal);
+    };
+    const run = () => {
+      if (document.visibilityState === 'hidden') {
+        watching?.abort();
+        watching = null;
+        return;
+      }
+      startWatch();
+      reread();
+    };
+    const timer = watchable ? null : setInterval(run, REMOTE_POLL_MS);
     document.addEventListener('visibilitychange', run);
     window.addEventListener('focus', run);
+    if (document.visibilityState !== 'hidden') startWatch();
     return () => {
-      clearInterval(timer);
+      if (timer) clearInterval(timer);
+      if (trailing) clearTimeout(trailing);
+      watching?.abort();
       document.removeEventListener('visibilitychange', run);
       window.removeEventListener('focus', run);
     };
