@@ -386,7 +386,21 @@ describe('US-32 — the dispatcher', () => {
     expect(MCP_TOOLS.filter((t) => t.annotations.destructiveHint).map((t) => t.name)).toEqual(['correct_value']);
     for (const tool of MCP_TOOLS) {
       expect(tool.inputSchema.additionalProperties, tool.name).toBe(false);
+      // Nothing here reaches outside the one user's own file, so no tool is open-world.
       expect(tool.annotations.openWorldHint, tool.name).toBe(false);
+    }
+  });
+
+  // OpenAI's app submission requires all three hints DECLARED on every tool, plus
+  // a title: an omitted hint is a rejection, not a default.
+  it('declares a title and all three required hints on every tool', () => {
+    for (const tool of MCP_TOOLS) {
+      expect(tool.title.length, tool.name).toBeGreaterThan(0);
+      for (const hint of ['readOnlyHint', 'destructiveHint', 'openWorldHint', 'idempotentHint'] as const) {
+        expect(typeof tool.annotations[hint], `${tool.name}.${hint}`).toBe('boolean');
+      }
+      // A read-only tool that also claimed to destroy would be incoherent.
+      expect(tool.annotations.readOnlyHint && tool.annotations.destructiveHint, tool.name).toBe(false);
     }
   });
 });

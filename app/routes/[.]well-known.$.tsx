@@ -14,7 +14,13 @@
  * `client_id_metadata_document_supported` and `"none"` in
  * `token_endpoint_auth_methods_supported`, or Claude silently drops to DCR.
  *
- * These are the only two unauthenticated documents this server publishes.
+ * A third, unrelated document rides here because it must also sit at the host
+ * root: `/.well-known/openai-apps-challenge`, the token OpenAI fetches to prove
+ * we own `mcp.drstanfield.com` (docs/chatgpt-app-listing.md). It answers from
+ * its own secret, NOT from `isMcpEnabled()`, so domain ownership can be proved
+ * before the connector itself is switched on.
+ *
+ * These are the only unauthenticated documents this server publishes.
  */
 import { type LoaderFunctionArgs } from 'react-router';
 import { isMcpEnabled, issuer, resourceUrl } from '../lib/mcp-config.server';
@@ -23,8 +29,20 @@ import { isMcpEnabled, issuer, resourceUrl } from '../lib/mcp-config.server';
 const HEADERS = { 'Cache-Control': 'public, max-age=3600' };
 
 export async function loader({ params }: LoaderFunctionArgs) {
-  if (!isMcpEnabled()) return new Response('Not found', { status: 404 });
   const path = (params['*'] ?? '').replace(/^\/+|\/+$/g, '');
+
+  // "must return only that plugin's verification token. Do not return JSON, a
+  // list of tokens, or multiple tokens" — so: one trimmed line, text/plain, and
+  // no caching, because rotating the secret has to take effect on the next GET.
+  if (path === 'openai-apps-challenge') {
+    const token = (process.env.OPENAI_APPS_CHALLENGE ?? '').trim();
+    if (!token) return new Response('Not found', { status: 404 });
+    return new Response(token, {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+    });
+  }
+
+  if (!isMcpEnabled()) return new Response('Not found', { status: 404 });
 
   if (path === 'oauth-protected-resource' || path === 'oauth-protected-resource/mcp') {
     return Response.json(
