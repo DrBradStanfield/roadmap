@@ -64,7 +64,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (!verifyAppProxySignature(request)) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
-  const ip = getClientIp(request);
+  const ip = getClientIp(request, 'shopify');
   const url = new URL(request.url);
   const batchId = url.searchParams.get('batchId');
 
@@ -92,7 +92,7 @@ export async function action({ request }: ActionFunctionArgs) {
   if (!verifyAppProxySignature(request)) {
     return Response.json({ success: false, error: 'Forbidden' }, { status: 403 });
   }
-  const ip = getClientIp(request);
+  const ip = getClientIp(request, 'shopify');
 
   try {
     const contentLength = Number(request.headers.get('content-length') || 0);

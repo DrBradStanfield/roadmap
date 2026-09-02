@@ -69,7 +69,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ error: 'Origin not allowed' }, { status: 403, headers });
   }
 
-  if (!allowRequest(getClientIp(request))) {
+  if (!allowRequest(getClientIp(request, 'fly'))) {
     return Response.json({ error: 'Too many requests' }, { status: 429, headers });
   }
 

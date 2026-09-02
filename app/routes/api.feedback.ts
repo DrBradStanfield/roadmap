@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { authenticate } from '../shopify.server';
 import { sendFeedbackEmail } from '../lib/email.server';
 import { recordFeedbackSubmission } from '../lib/product-events.server';
-import { getClientIp } from '../lib/route-helpers.server';
+import { getClientIp } from '../lib/local-first-route.server';
 
 // Rate limit: 3 submissions per hour per IP
 const RATE_LIMIT_WINDOW_MS = 60 * 60_000;
@@ -49,7 +49,7 @@ export async function action({ request }: ActionFunctionArgs) {
   // HMAC verification — proves request came through Shopify app proxy
   await authenticate.public.appProxy(request);
 
-  const ip = getClientIp(request);
+  const ip = getClientIp(request, 'shopify');
   if (isRateLimited(ip)) {
     return Response.json({ success: false, error: 'Too many requests. Please try again later.' }, { status: 429 });
   }

@@ -4,7 +4,7 @@
  * Read-only: no editing, no unit conversion — values render as-reported
  * (see decisions in docs/user-stories.md § US-21).
  */
-import { LAB_GROUPS, resolveLabCatalogEntry, displayLabUnit, type LabGroupId } from '@roadmap/health-core';
+import { LAB_GROUPS, labSlotKey, resolveLabCatalogEntry, displayLabUnit, type LabGroupId } from '@roadmap/health-core';
 import { labValueLabel } from './lab-value-labels';
 import type { ApiLabValue } from './api-types';
 
@@ -26,8 +26,7 @@ export interface LabSeriesPoint {
 }
 
 export interface LabSeries {
-  /** Stable series identity: catalogue key when resolved, else the
-   *  normalized reported name. */
+  /** Stable series identity — `labSlotKey`, the same key the merge slots on. */
   seriesKey: string;
   label: string;
   /** Display unit for the group's UnitChip — the most recent point's unit.
@@ -62,7 +61,7 @@ export function groupLabValues(rows: LabValueRow[]): LabValueGroup[] {
     if (row.status && row.status !== 'active') continue;
     const entry = resolveLabCatalogEntry(row.metricName);
     const groupId: LabRowsGroupId = entry ? entry.group : 'other';
-    const seriesKey = entry ? entry.key : row.metricName.trim().toLowerCase().replace(/\s+/g, '_');
+    const seriesKey = labSlotKey(row.metricName);
     const label = entry ? entry.label : labValueLabel(row.metricName);
 
     let groupMap = seriesByGroup.get(groupId);
@@ -123,4 +122,23 @@ export function labGroupMatrix(group: LabValueGroup): {
 /** Total value-points across all groups/series — the `lab_rows_viewed` count. */
 export function countLabValuePoints(groups: LabValueGroup[]): number {
   return groups.reduce((sum, g) => sum + g.series.reduce((s2, ser) => s2 + ser.points.length, 0), 0);
+}
+
+/** One history series per lab SLOT (US-10) — "Vitamin D" and `vitamin_d` are
+ *  one chart, not two — labelled from the catalogue when the test is known.
+ *  Series come back sorted by label; rows keep their loaded order. */
+export function groupLabHistory(rows: LabValueRow[]): {
+  keys: string[];
+  series: Record<string, { label: string; rows: LabValueRow[] }>;
+} {
+  const series: Record<string, { label: string; rows: LabValueRow[] }> = {};
+  for (const row of rows) {
+    const key = labSlotKey(row.metricName);
+    if (!series[key]) {
+      series[key] = { label: resolveLabCatalogEntry(row.metricName)?.label ?? labValueLabel(row.metricName), rows: [] };
+    }
+    series[key].rows.push(row);
+  }
+  const keys = Object.keys(series).sort((a, b) => series[a].label.localeCompare(series[b].label));
+  return { keys, series };
 }

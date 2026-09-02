@@ -98,11 +98,29 @@ Two more habits worth keeping. Do not leave the web tool open in another tab whi
 
 Dates come from the clock in UTC, not your local timezone. If you are well ahead of UTC, "today" can land on yesterday's date. Say the date you mean and Claude will pass it through.
 
-## Claude on the web cannot do this
+## Claude on the web
 
-The Claude app in your browser, and ChatGPT in your browser, cannot reach a file on your computer. Nothing in this guide will change that. What is described here runs on your machine, between a program on your disk and an app on your disk.
+Claude in a browser cannot open a file on your computer, and nothing in the sections above changes that. What it can do is connect to a small server we run, which opens your Dropbox folder for the length of one call. Same tools, same rules, no software on your machine.
 
-We are building a hosted connector so a web user can grant access to their cloud folder and take it back whenever they want. It is designed and not built. When it ships it will do the same things this does. Until then, this is the honest answer: a desktop app or a terminal, or nothing.
+Dropbox is the only cloud this works with today. Google Drive is being built.
+
+1. In claude.ai, open Settings, then Connectors, then Add custom connector. Or follow [this link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Health%20Roadmap&connectorUrl=https%3A%2F%2Fmcp.drstanfield.com%2Fmcp), which opens that dialog with the name and the address already in it and waits for you to confirm.
+
+2. Name it Health Roadmap, with this address:
+
+```copy-box
+https://mcp.drstanfield.com/mcp
+```
+
+3. Press Add, then Connect. Our own page opens and says what the connector does. Press Continue to Dropbox and approve it there.
+
+4. In a chat, open the + menu, switch Health Roadmap on, and say "read my record".
+
+The hosted version is append-only, like this one, with two extra limits: a correction on a row older than 90 days is refused, and Claude has to state the value it believes it is replacing, so a correction written from a stale read changes nothing.
+
+You cancel it at [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps). That also disconnects this website from the folder, and reconnecting in the tool is one click.
+
+ChatGPT connects the same way, with one extra step: [connect ChatGPT to your health record](/blogs/guides/connect-chatgpt).
 
 ## If something goes wrong
 

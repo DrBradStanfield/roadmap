@@ -8,7 +8,7 @@
  */
 import { calculateHealthResults } from './calculations';
 import { fileProfileToApi, fileScreeningRows } from './file-inputs';
-import { displayLabUnit, resolveLabCatalogEntry } from './lab-catalog';
+import { displayLabUnit, labSlotKey, resolveLabCatalogEntry } from './lab-catalog';
 import {
   METRIC_LABELS,
   METRIC_TO_FIELD,
@@ -116,13 +116,13 @@ export interface PlanLab {
 /** Latest active row per lab test, named and unit-labelled from the catalogue. */
 function derivePlanLabs(file: RoadmapFile): PlanLab[] {
   const active = file.labValues.filter((l) => l.status === 'active');
-  const rows = latestActivePerMetric(active.map((l) => ({ ...l, metricType: l.metricName }))) as FileLabValue[];
+  const rows = latestActivePerMetric(active.map((l) => ({ ...l, metricType: labSlotKey(l.metricName) }))) as FileLabValue[];
   return rows
     .map((l) => {
       const entry = resolveLabCatalogEntry(l.metricName);
       return {
         id: l.id,
-        key: l.metricName,
+        key: labSlotKey(l.metricName),
         label: entry?.label ?? l.metricName,
         value: l.value,
         unit: displayLabUnit(l.unit, entry),

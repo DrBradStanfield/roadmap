@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LAB_CATALOG, LAB_GROUPS, resolveLabCatalogEntry, normalizeLabUnit } from './lab-catalog';
+import { LAB_CATALOG, LAB_GROUPS, resolveLabCatalogEntry, normalizeLabUnit, labSlotKey } from './lab-catalog';
 
 // US-21 · Additional blood tests — catalogue integrity (phase-1 scaffold).
 describe('lab catalogue integrity (US-21)', () => {
@@ -38,6 +38,11 @@ describe('lab catalogue integrity (US-21)', () => {
   it('resolves underscore-vs-space LLM extractor variance (free_t4 -> ft4)', () => {
     expect(resolveLabCatalogEntry('free_t4')?.key).toBe('ft4');
     expect(resolveLabCatalogEntry('vitamin_d')?.key).toBe('vitamin_d');
+    // Whitespace runs and mixed separators fold the same way labSlotKey's
+    // uncatalogued fallback folds them, so both paths agree on one slot.
+    expect(resolveLabCatalogEntry('vitamin  d')?.key).toBe('vitamin_d');
+    expect(resolveLabCatalogEntry('vitamin_ d')?.key).toBe('vitamin_d');
+    expect(resolveLabCatalogEntry('Vitamin\tD')?.key).toBe('vitamin_d');
   });
 
   it('every group has at least one entry', () => {
@@ -117,5 +122,48 @@ describe('US-21 units fix: normalizeLabUnit (spelling only — NEVER value conve
     expect(normalizeLabUnit('pg')).toBe('pg');
     expect(normalizeLabUnit('%')).toBe('%');
     expect(normalizeLabUnit('')).toBe('');
+  });
+});
+
+// US-31 AC5 / US-10 — every written spelling of a catalogued test resolves.
+// The spaced and Title-cased forms of a snake_case key ("Vitamin D" for
+// `vitamin_d`) are what an assistant and a person actually type.
+const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
+
+/** Every spelling this entry owns: key, spaced key, Title-cased spaced key,
+ *  label, and each alias in both spaced and underscored form. */
+const formsOf = (e: (typeof LAB_CATALOG)[number]) => {
+  const spacedKey = e.key.replace(/_/g, ' ');
+  return new Set([
+    e.key,
+    spacedKey,
+    titleCase(spacedKey),
+    e.label,
+    ...e.aliases.flatMap((a) => [a, a.replace(/ /g, '_')]),
+  ]);
+};
+
+describe('every catalogue spelling resolves (US-31 AC5)', () => {
+  it.each(LAB_CATALOG)('$key resolves from key, spaced key, label and aliases', (entry) => {
+    for (const form of formsOf(entry)) {
+      expect(resolveLabCatalogEntry(form)?.key, form).toBe(entry.key);
+      expect(labSlotKey(form), form).toBe(entry.key);
+    }
+  });
+
+  it('no spelling — spaced or underscored — is claimed by two entries', () => {
+    const owner = new Map<string, string>();
+    for (const e of LAB_CATALOG) {
+      for (const form of formsOf(e)) {
+        const f = form.toLowerCase();
+        expect(owner.get(f) ?? e.key, f).toBe(e.key);
+        owner.set(f, e.key);
+      }
+    }
+  });
+
+  it('slots an uncatalogued name on its folded spelling, spaces and underscores alike', () => {
+    expect(labSlotKey('  Some Novel Assay ')).toBe('some novel assay');
+    expect(labSlotKey('some_novel_assay')).toBe('some novel assay');
   });
 });

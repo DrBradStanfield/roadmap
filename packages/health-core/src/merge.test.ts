@@ -202,6 +202,30 @@ describe('mergeFiles — labValues slot resolution (keyed by metricName)', () =>
     expect(actives).toHaveLength(1);
     expect(actives[0].id).toBe('l_B');
   });
+
+  it('slots spelling variants of one test together (US-03 AC3 / US-10)', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.labValues = [labValue({ id: 'l_A', metricName: 'vitamin d', value: 80, recordedAt: '2026-08-14', createdAt: '2026-08-14T08:00:00Z' })];
+    b.labValues = [labValue({ id: 'l_B', metricName: 'vitamin_d', value: 88, recordedAt: '2026-08-14', createdAt: '2026-08-14T10:00:00Z' })];
+    const merged = mergeFiles(a, b, OPTS);
+
+    expect(merged.labValues.map((l) => l.id).sort()).toEqual(['l_A', 'l_B']);
+    const actives = merged.labValues.filter((l) => l.status === 'active');
+    expect(actives).toHaveLength(1);
+    expect(actives[0].id).toBe('l_B');
+    expect(merged.labValues.find((l) => l.id === 'l_A')!.status).toBe('entered-in-error');
+  });
+
+  it('leaves spelling variants on different days both active', () => {
+    const a = emptyFile();
+    const b = emptyFile();
+    a.labValues = [labValue({ id: 'l_A', metricName: 'Vitamin D', value: 80, recordedAt: '2026-08-14' })];
+    b.labValues = [labValue({ id: 'l_B', metricName: 'vitamin_d', value: 88, recordedAt: '2026-08-15' })];
+    const merged = mergeFiles(a, b, OPTS);
+
+    expect(merged.labValues.filter((l) => l.status === 'active')).toHaveLength(2);
+  });
 });
 
 describe('mergeFiles — current-state by logical clock (skew-proof LWW)', () => {

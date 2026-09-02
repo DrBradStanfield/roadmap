@@ -147,7 +147,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 async function authorizeScreen(request: Request, url: URL): Promise<Response> {
   // Rate-limit BEFORE resolving the client: resolving may fetch a URL the
   // caller chose, which is the expensive and abusable half (design §4).
-  if (!allowAuthorize(getClientIp(request))) {
+  if (!allowAuthorize(getClientIp(request, 'fly'))) {
     return new Response('Too many requests', { status: 429 });
   }
   // Only providers whose secrets exist are offered, so Drive stays invisible
@@ -283,7 +283,7 @@ async function consentGiven(request: Request): Promise<Response> {
 async function tokenEndpoint(request: Request): Promise<Response> {
   // A flood brake only: a whole vendor's users share one egress range, so this
   // limit is generous by design (design §4, "useless when distributed").
-  if (!allowToken(getClientIp(request))) return new Response('Too many requests', { status: 429 });
+  if (!allowToken(getClientIp(request, 'fly'))) return new Response('Too many requests', { status: 429 });
   const type = request.headers.get('content-type') ?? '';
   if (!type.includes('application/x-www-form-urlencoded')) {
     return oauthError('invalid_request', 'Send application/x-www-form-urlencoded');

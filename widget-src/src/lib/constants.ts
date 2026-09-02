@@ -77,3 +77,19 @@ export function formatShortDate(date: string | Date | number): string {
     timeZone: slot ? 'UTC' : undefined,
   });
 }
+
+/**
+ * Epoch ms to PLOT a stored date at.
+ *
+ * A chart.js time axis renders its ticks through the reader's own timezone, so
+ * a slot widened to UTC midnight labels the axis a day early west of Greenwich
+ * while `formatShortDate` (UTC for slots) labels the tooltip correctly — the
+ * same point named two different days. Anchoring a slot to LOCAL midnight of
+ * its own day makes both read the day it is filed under. A real instant is a
+ * moment and is plotted unchanged.
+ */
+export function chartTimestamp(date: string): number {
+  const day = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.000)?Z)?$/.exec(date);
+  if (!day) return new Date(date).getTime();
+  return new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])).getTime();
+}

@@ -25,8 +25,8 @@ import 'chartjs-adapter-date-fns';
 import { loadAllHistory, loadLabValues, loadMedicationHistory } from '../lib/api';
 import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
-import { labValueLabel } from '../lib/lab-value-labels';
-import { formatShortDate } from '../lib/constants';
+import { groupLabHistory } from '../lib/lab-rows';
+import { chartTimestamp, formatShortDate } from '../lib/constants';
 
 // Register only what we need
 Chart.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Filler, annotationPlugin);
@@ -277,8 +277,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
     }
 
     // Initialize lab value metrics — all selected by default
-    const allLabMetrics = [...new Set(labVals.map((lv) => lv.metricName))];
-    setSelectedLabMetrics(new Set(allLabMetrics));
+    setSelectedLabMetrics(new Set(groupLabHistory(labVals).keys));
 
     setInitialized(true);
   }, [measurements, labVals, initialized, initialMetric]);
@@ -322,7 +321,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
         ? `Stopped ${displayName}`
         : `${displayName}${dose}`;
       const ann: ChartAnnotation = {
-        date: new Date(h.effectiveStart).getTime(),
+        date: chartTimestamp(h.effectiveStart),
         label,
         color: MED_ANNOTATION_COLOR,
       };
@@ -359,19 +358,14 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
     return { grouped: g, metricTypes: Object.keys(g).sort() };
   }, [measurements]);
 
-  // Group lab values by metricName (memoized)
-  const { labGrouped, labMetricNames, labColorMap } = useMemo(() => {
-    const grouped: Record<string, ApiLabValue[]> = {};
-    for (const lv of labVals) {
-      if (!grouped[lv.metricName]) grouped[lv.metricName] = [];
-      grouped[lv.metricName].push(lv);
-    }
-    const names = Object.keys(grouped).sort();
+  // One series per lab slot key, so spelling variants share a chart (US-10).
+  const { labSeries, labMetricNames, labColorMap } = useMemo(() => {
+    const { keys, series } = groupLabHistory(labVals);
     const colors: Record<string, string> = {};
-    names.forEach((name, i) => {
-      colors[name] = LAB_VALUE_PALETTE[i % LAB_VALUE_PALETTE.length];
+    keys.forEach((key, i) => {
+      colors[key] = LAB_VALUE_PALETTE[i % LAB_VALUE_PALETTE.length];
     });
-    return { labGrouped: grouped, labMetricNames: names, labColorMap: colors };
+    return { labSeries: series, labMetricNames: keys, labColorMap: colors };
   }, [labVals]);
 
   return (
@@ -420,7 +414,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
                 key={mt}
                 title={METRIC_LABELS[mt] || mt}
                 data={grouped[mt].map((m) => ({
-                  x: new Date(m.recordedAt).getTime(),
+                  x: chartTimestamp(m.recordedAt),
                   y: toDisplayValue(mt, m.value, unitSystem),
                 }))}
                 unit={getUnitLabel(mt, unitSystem)}
@@ -455,7 +449,7 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
                       className="metric-color-dot"
                       style={{ background: labColorMap[name] }}
                     />
-                    {labValueLabel(name)}
+                    {labSeries[name].label}
                   </label>
                 ))}
               </div>
@@ -464,13 +458,13 @@ export function HistoryPanel({ isLoggedIn, loginUrl, initialMetric }: HistoryPan
                 .filter((name) => selectedLabMetrics.has(name))
                 .map((name) => {
                   // Use the unit from the first value (consistent per metric)
-                  const unit = labGrouped[name][0]?.unit || '';
+                  const unit = labSeries[name].rows[0]?.unit || '';
                   return (
                     <TimeSeriesChart
                       key={name}
-                      title={labValueLabel(name)}
-                      data={labGrouped[name].map((v) => ({
-                        x: new Date(v.recordedAt).getTime(),
+                      title={labSeries[name].label}
+                      data={labSeries[name].rows.map((v) => ({
+                        x: chartTimestamp(v.recordedAt),
                         y: v.value,
                       }))}
                       unit={unit}

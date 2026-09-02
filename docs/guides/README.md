@@ -32,9 +32,11 @@ A marker on a line of its own is replaced by the build. Markers keep the `.md` r
 [diagram:local-first]    a named inline SVG from the build's diagram set
 ```
 
-`connect:` buttons are links to our own connector flow, and each provider carries a state: live, or a disabled coming-soon button where we cannot support it yet. **A button must never promise what does not work today**: disabled and honest beats live and broken. A provider we have no plan for gets no button at all, not a greyed one.
+`connect:` button states live in `assets/providers.json`: `soon` renders a disabled greyed span, `live` renders a link to that provider's `url`. **A button must never promise what does not work today**: disabled and honest beats live and broken. A provider we have no plan for gets no button at all, not a greyed one.
 
-A prompt a reader is meant to paste somewhere lives **once**, in a fenced block tagged `bootstrap-prompt`, and the build renders it into the copy box. It feeds the copy box only; it is never encoded into a button href. If that ever changes, the prompt block stays the single source both are generated from, so the button and the copy box cannot drift apart.
+**A button never adds a connector on the reader's behalf, because no vendor lets it.** Anthropic publishes a link that PREFILLS the Add custom connector dialog for the user to confirm; OpenAI publishes nothing equivalent. So a live `url` is `#`-anchored at a step list further down the same page, and the build's shipped-guides test fails if the heading that anchor names is gone. A vendor link belongs inside those steps, in prose that says what it does.
+
+**Copy boxes.** A block the reader is meant to take whole goes in a fence tagged `bootstrap-prompt` (a setup prompt) or `copy-box` (an address, a config block). Each renders a box with its own Copy button, which copies its own `<pre>`, so a guide can hold several and none can serve another's text. Under `--no-script` every box degrades to a plain block with a select-all hint.
 
 ## Stories
 
