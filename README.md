@@ -21,8 +21,7 @@ The same file, the same write path, three ways in.
    file. See [docs/guides/command-line.md](docs/guides/command-line.md) and
    [docs/guides/connect-claude-desktop.md](docs/guides/connect-claude-desktop.md).
 3. **Hosted MCP** — `https://mcp.drstanfield.com/mcp`, live since 2026-09-02 on
-   the Fly app `health-tool-edu`. Dropbox today; Google Drive is built and
-   switches on when its secrets are set.
+   the Fly app `health-tool-edu`, over Dropbox and Google Drive.
 
 Every non-browser writer goes through the same `SyncManager`
 (`packages/health-core/src/sync-manager.ts`), which merges on conflict and

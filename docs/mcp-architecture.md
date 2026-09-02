@@ -10,7 +10,7 @@ Hosted-server design: **rev 4, DECIDED — FINAL**. 2026-09-01. Brad has ruled o
 | `get-plan` CLI (US-30) | Computes the plan from a file, offline, no model | `tools/get-plan.ts` + [guides/command-line.md](guides/command-line.md) | shipped |
 | `edit-record` CLI (US-31) | Contract-enforcing writes from the shell | `tools/edit-record.ts` + [guides/command-line.md](guides/command-line.md) | shipped |
 | Local stdio MCP (US-32 phase 0) | The same tools over a local file path | `tools/mcp-server.ts` + [guides/connect-claude-desktop.md](guides/connect-claude-desktop.md) | shipped; verified with MCP Inspector and Claude Code 2026-09-02 |
-| Hosted MCP (US-32 phase 1) | The same tools behind a connector, sealed-token stateless | this doc + `app/lib/mcp*.server.ts` + [deploy-runbook.md](deploy-runbook.md) "Hosted MCP" | LIVE 2026-09-02 at `https://mcp.drstanfield.com/mcp`; Dropbox only; verified from Claude and ChatGPT on the web |
+| Hosted MCP (US-32 phase 1) | The same tools behind a connector, sealed-token stateless | this doc + `app/lib/mcp*.server.ts` + [deploy-runbook.md](deploy-runbook.md) "Hosted MCP" | LIVE 2026-09-02 at `https://mcp.drstanfield.com/mcp`; verified from Claude and ChatGPT on the web |
 | Hosted MCP over Drive (US-32 phase 2) | The same server, against Google Drive | this doc §7 + `packages/health-core/src/drive-rest.ts` | VERIFIED LIVE 2026-09-02: the `GOOGLE_DRIVE_*` secrets are on `health-tool-edu`, the consent screen offers Drive with brand verification approved (no unverified-app interstitial), and runbook step 8 passed over Drive |
 | `report_feedback` tool | Prepares a prefilled GitHub issue; sends nothing itself | `packages/health-core/src/mcp-tools.ts` | shipped |
 
@@ -344,11 +344,8 @@ reverse, if Brad wants it.
 longer than the 2048 rung would otherwise fail to seal at all; the extra rung means it
 fails to leak instead of failing to work.
 
-**Guide buttons stay `soon`.** `docs/guides/getting-started.md` promises the connector
-buttons "switch on when it ships". They have not shipped: the code is deployed inert and
-the DNS does not exist. Flipping them in this commit would point a user at a 404 —
-exactly the failure mode the "promise ships with the code, never before" rule exists to
-prevent, in the other direction. They flip with the operator steps.
+**Guide buttons.** They stayed `soon` until the DNS and the operator steps landed, so no
+guide ever pointed a reader at a 404. They flipped when the connector went live.
 
 **Second review pass, 2026-09-02.** A fresh adversarial review found nine issues; all are
 fixed on this branch, and the paragraphs above are corrected rather than annotated.
