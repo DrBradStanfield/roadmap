@@ -78,7 +78,7 @@ export const UNREACHABLE_HINT = 'Try once more; if it keeps failing, check that 
 /** How long a provider gets to answer, body included, before the call is
  *  abandoned as unreachable. Long enough for a slow phone on a slow network,
  *  short enough that a hosted tool call fails rather than hangs. */
-export const FETCH_TIMEOUT_MS = 30_000;
+const FETCH_TIMEOUT_MS = 30_000;
 
 /**
  * `fetch`, with the network outage it can have owned by the adapter that made
@@ -97,12 +97,10 @@ export async function fetchOrFail(
   // A provider that accepts the socket and then says nothing is not an error
   // any layer above can see: the hosted tool call, or the widget's save, waits
   // until the platform kills it. Bounded here, that silence arrives as the same
-  // failure a dead network does. `AbortSignal.any` is Node 20+/modern-browser
-  // only; without it a caller's own signal still wins, as it did before.
-  const timeout = AbortSignal.timeout(init?.timeoutMs ?? FETCH_TIMEOUT_MS);
-  const signal = !init?.signal ? timeout
-    : typeof AbortSignal.any === 'function' ? AbortSignal.any([init.signal, timeout])
-    : init.signal;
+  // failure a dead network does. A caller's own signal still aborts the call.
+  const { timeoutMs, signal: callerSignal, ...rest } = init ?? {};
+  const timeout = AbortSignal.timeout(timeoutMs ?? FETCH_TIMEOUT_MS);
+  const signal = callerSignal ? AbortSignal.any([callerSignal, timeout]) : timeout;
   try {
     // The body is drained HERE, inside the try: a socket that dies mid-download
     // rejects the body read, not `fetch` (undici's `TypeError: terminated`), so
@@ -111,7 +109,7 @@ export async function fetchOrFail(
     // statusText and headers without asking a browser to coerce a Response
     // into a ResponseInit dictionary; a null-body status (204/304) must stay
     // bodiless.
-    const res = await fetch(url, { ...init, signal });
+    const res = await fetch(url, { ...rest, signal });
     const bytes = await res.arrayBuffer();
     return new Response(bytes.byteLength ? bytes : null, { status: res.status, statusText: res.statusText, headers: res.headers });
   } catch (error) {
