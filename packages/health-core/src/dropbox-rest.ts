@@ -21,6 +21,14 @@ const DOWNLOAD_URL = 'https://content.dropboxapi.com/2/files/download';
 const UPLOAD_URL = 'https://content.dropboxapi.com/2/files/upload';
 
 /** Parse the `dropbox-api-result` response header (file metadata incl. rev). */
+/** The provider's user-facing name. One copy: the adapter's `label` and every
+ *  message below read it from here. */
+const PROVIDER = 'Dropbox';
+
+/** `fetch` with this module's provider name already bound, so no call site can
+ *  hand `fetchOrFail` the wrong one. Reach for this, never the bare global. */
+const request = (url: string | URL, init?: RequestInit): Promise<Response> => fetchOrFail(PROVIDER, url, init);
+
 function parseApiResult(res: Response): Record<string, unknown> | null {
   const header = res.headers.get('dropbox-api-result');
   if (!header) return null;
@@ -37,7 +45,7 @@ function parseApiResult(res: Response): Record<string, unknown> | null {
  * caller's `migrate()` turns it into a fresh record.
  */
 export async function dropboxRead(accessToken: string, fileName: string): Promise<ReadResult> {
-  const res = await fetchOrFail('Dropbox', DOWNLOAD_URL, {
+  const res = await request(DOWNLOAD_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -45,14 +53,14 @@ export async function dropboxRead(accessToken: string, fileName: string): Promis
     },
   });
   if (res.status === 409) return { body: null, version: null }; // path/not_found
-  if (!res.ok) throw new StorageError(`Dropbox read failed (${res.status}): ${await res.text()}`);
+  if (!res.ok) throw new StorageError(`${PROVIDER} read failed (${res.status}): ${await res.text()}`);
   const meta = parseApiResult(res);
   const text = await res.text();
   let body: unknown;
   try {
     body = text ? JSON.parse(text) : null;
   } catch (error) {
-    throw new StorageError('Dropbox read failed: file is not valid JSON (possible corruption).', undefined, error);
+    throw new StorageError(`${PROVIDER} read failed: file is not valid JSON (possible corruption).`, undefined, error);
   }
   return { body, version: (meta?.rev as string) ?? null };
 }
@@ -81,7 +89,7 @@ export async function dropboxWrite(
     mute: true,
     strict_conflict: expectedVersion != null,
   };
-  const res = await fetchOrFail('Dropbox', UPLOAD_URL, {
+  const res = await request(UPLOAD_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -90,10 +98,10 @@ export async function dropboxWrite(
     },
     body: JSON.stringify(body),
   });
-  if (res.status === 409) throw new ConflictError(`Dropbox write conflict: ${await res.text()}`);
-  if (!res.ok) throw new StorageError(`Dropbox write failed (${res.status}): ${await res.text()}`);
+  if (res.status === 409) throw new ConflictError(`${PROVIDER} write conflict: ${await res.text()}`);
+  if (!res.ok) throw new StorageError(`${PROVIDER} write failed (${res.status}): ${await res.text()}`);
   const meta = (await res.json()) as { rev?: string };
-  if (!meta.rev) throw new StorageError('Dropbox write returned no rev.');
+  if (!meta.rev) throw new StorageError(`${PROVIDER} write returned no rev.`);
   return { version: meta.rev };
 }
 
@@ -109,7 +117,7 @@ export async function dropboxWrite(
  */
 export class DropboxAdapter implements StorageAdapter {
   readonly id = 'dropbox' as const;
-  readonly label = 'Dropbox';
+  readonly label = PROVIDER;
 
   constructor(private readonly accessToken: string) {}
 

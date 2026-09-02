@@ -68,6 +68,14 @@ export class StorageError extends Error {
 }
 
 /**
+ * The next move when a provider simply did not answer. One string: the adapter
+ * raises it here, and `describeStorageFailure` prints the same words when it
+ * meets an unrecognised failure. Two copies would drift, and the wording is
+ * what the user is told to act on.
+ */
+export const UNREACHABLE_HINT = 'Try once more; if it keeps failing, check that the record is reachable.';
+
+/**
  * `fetch`, with the network outage it can have owned by the adapter that made
  * the call. A dead network, a DNS miss or a severed socket rejects with a bare
  * `TypeError`, which is not a `StorageError` — so a surface above would have to
@@ -80,11 +88,7 @@ export async function fetchOrFail(provider: string, url: string | URL, init?: Re
   try {
     return await fetch(url, init);
   } catch (error) {
-    throw new StorageError(
-      `${provider} did not answer`,
-      'Try once more; if it keeps failing, check that the record is reachable.',
-      error,
-    );
+    throw new StorageError(`${provider} did not answer`, UNREACHABLE_HINT, error);
   }
 }
 

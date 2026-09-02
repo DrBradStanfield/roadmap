@@ -60,8 +60,16 @@ function quoted(name: string): string {
   return name.replace(/'/g, "\\'");
 }
 
+/** The provider's user-facing name. One copy: the adapter's `label`, the
+ *  non-ok message below, and every `request()` failure all read it from here. */
+const PROVIDER = 'Google Drive';
+
+/** `fetch` with this module's provider name already bound, so no call site can
+ *  hand `fetchOrFail` the wrong one. Reach for this, never the bare global. */
+const request = (url: string | URL, init?: RequestInit): Promise<Response> => fetchOrFail(PROVIDER, url, init);
+
 async function fail(what: string, res: Response): Promise<never> {
-  throw new StorageError(`Google Drive ${what} failed (${res.status}): ${await res.text()}`);
+  throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${await res.text()}`);
 }
 
 /** Find one file by name, optionally inside one parent. Undefined = not there. */
@@ -73,7 +81,7 @@ export async function driveFindFileId(
   const q = encodeURIComponent(
     `name='${quoted(name)}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
   );
-  const res = await fetchOrFail('Google Drive', `${DRIVE_API}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`, {
+  const res = await request(`${DRIVE_API}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`, {
     headers: auth(accessToken),
   });
   if (!res.ok) await fail('lookup', res);
@@ -93,7 +101,7 @@ export async function driveFindFolder(
   const q = encodeURIComponent(
     `(${anyName}) and mimeType='${DRIVE_FOLDER_MIME}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
   );
-  const res = await fetchOrFail('Google Drive', `${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=1`, {
+  const res = await request(`${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=1`, {
     headers: auth(accessToken),
   });
   if (!res.ok) await fail('folder lookup', res);
@@ -101,7 +109,7 @@ export async function driveFindFolder(
 }
 
 export async function driveCreateFolder(accessToken: string, name: string, parentId?: string): Promise<string> {
-  const res = await fetchOrFail('Google Drive', `${DRIVE_API}/files?fields=id`, {
+  const res = await request(`${DRIVE_API}/files?fields=id`, {
     method: 'POST',
     headers: { ...auth(accessToken), 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, mimeType: DRIVE_FOLDER_MIME, ...(parentId ? { parents: [parentId] } : null) }),
@@ -125,7 +133,7 @@ export function driveCreateFile(
     content,
     `\r\n--${boundary}--`,
   ]);
-  return fetchOrFail('Google Drive', `${UPLOAD}/files?uploadType=multipart&fields=id,version`, {
+  return request(`${UPLOAD}/files?uploadType=multipart&fields=id,version`, {
     method: 'POST',
     headers: { ...auth(accessToken), 'Content-Type': `multipart/related; boundary=${boundary}` },
     body,
@@ -134,7 +142,7 @@ export function driveCreateFile(
 
 /** Overwrite a file's bytes. Unconditional — Drive offers no precondition. */
 export async function driveUpdateFile(accessToken: string, fileId: string, json: string): Promise<string> {
-  const res = await fetchOrFail('Google Drive', `${UPLOAD}/files/${fileId}?uploadType=media&fields=id,version`, {
+  const res = await request(`${UPLOAD}/files/${fileId}?uploadType=media&fields=id,version`, {
     method: 'PATCH',
     headers: { ...auth(accessToken), 'Content-Type': 'application/json' },
     body: json,
@@ -149,7 +157,7 @@ export async function driveUpdateFile(accessToken: string, fileId: string, json:
  * compared and never sent as a precondition.
  */
 export async function driveFileVersion(accessToken: string, fileId: string): Promise<string | null> {
-  const res = await fetchOrFail('Google Drive', `${DRIVE_API}/files/${fileId}?fields=version`, { headers: auth(accessToken) });
+  const res = await request(`${DRIVE_API}/files/${fileId}?fields=version`, { headers: auth(accessToken) });
   if (res.status === 404) return null;
   if (!res.ok) await fail('version read', res);
   return ((await res.json()) as { version?: string }).version ?? null;
@@ -157,7 +165,7 @@ export async function driveFileVersion(accessToken: string, fileId: string): Pro
 
 /** Download a file's bytes as JSON. Null = the file is gone. */
 export async function driveDownloadJson(accessToken: string, fileId: string): Promise<unknown | null> {
-  const res = await fetchOrFail('Google Drive', `${DRIVE_API}/files/${fileId}?alt=media`, { headers: auth(accessToken) });
+  const res = await request(`${DRIVE_API}/files/${fileId}?alt=media`, { headers: auth(accessToken) });
   if (res.status === 404) return null;
   if (!res.ok) await fail('read', res);
   const text = await res.text();
@@ -165,7 +173,7 @@ export async function driveDownloadJson(accessToken: string, fileId: string): Pr
   try {
     return JSON.parse(text) as unknown;
   } catch (error) {
-    throw new StorageError('Google Drive read failed: file is not valid JSON (possible corruption).', undefined, error);
+    throw new StorageError(`${PROVIDER} read failed: file is not valid JSON (possible corruption).`, undefined, error);
   }
 }
 
@@ -180,7 +188,7 @@ export async function driveDownloadJson(accessToken: string, fileId: string): Pr
  */
 export class DriveAdapter implements StorageAdapter {
   readonly id = 'google-drive' as const;
-  readonly label = 'Google Drive';
+  readonly label = PROVIDER;
   private readonly fileIds = new Map<string, string>();
 
   constructor(private readonly accessToken: string) {}
@@ -228,12 +236,12 @@ export class DriveAdapter implements StorageAdapter {
       // A first-ever create. If the caller thought there was a version, the
       // file it read has since been deleted or trashed — never silently
       // re-create it here: re-reading is what turns that into a decision.
-      if (expectedVersion !== null) throw new ConflictError('Google Drive no longer holds that file');
+      if (expectedVersion !== null) throw new ConflictError(`${PROVIDER} no longer holds that file`);
       const parentId = await this.folderId();
       const res = await driveCreateFile(this.accessToken, fileName, 'application/json', json, parentId);
       if (!res.ok) await fail('create', res);
       const created = (await res.json()) as { id?: string; version?: string };
-      if (!created.id) throw new StorageError('Google Drive create returned no file id.');
+      if (!created.id) throw new StorageError(`${PROVIDER} create returned no file id.`);
       this.fileIds.set(fileName, created.id);
       return { version: String(created.version ?? '') };
     }
@@ -241,7 +249,7 @@ export class DriveAdapter implements StorageAdapter {
     const current = await driveFileVersion(this.accessToken, fileId);
     if (current !== expectedVersion) {
       throw new ConflictError(
-        `Google Drive changed since it was read (version ${expectedVersion ?? 'none'} → ${current ?? 'none'})`,
+        `${PROVIDER} changed since it was read (version ${expectedVersion ?? 'none'} → ${current ?? 'none'})`,
       );
     }
     return { version: await driveUpdateFile(this.accessToken, fileId, json) };

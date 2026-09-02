@@ -18,11 +18,13 @@ describe('a network outage is the adapter’s failure, not an unknown one (US-32
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('fetch failed'); }));
     const adapter = new DropboxAdapter('token');
 
+    // Thunks, not promises: built eagerly, the second one rejects before the
+    // loop reaches it and Node calls that an unhandled rejection.
     for (const attempt of [
-      adapter.read(ROADMAP_FILE_NAME),
-      adapter.write(ROADMAP_FILE_NAME, { a: 1 }, 'rev1'),
+      () => adapter.read(ROADMAP_FILE_NAME),
+      () => adapter.write(ROADMAP_FILE_NAME, { a: 1 }, 'rev1'),
     ]) {
-      const failure = await attempt.catch((error: unknown) => error);
+      const failure = await attempt().catch((error: unknown) => error);
       expect(failure).toBeInstanceOf(StorageError);
       expect((failure as StorageError).message).toBe('Dropbox did not answer');
       expect((failure as StorageError).hint).toContain('Try once more');

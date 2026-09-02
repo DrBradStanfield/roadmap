@@ -23,6 +23,7 @@ import {
   ConflictError,
   LostUpdateError,
   StorageError,
+  UNREACHABLE_HINT,
   type StorageAdapter,
   type StorageBackendId,
 } from './adapter';
@@ -222,7 +223,7 @@ export function describeStorageFailure(error: unknown, provider: string): Storag
   }
   return {
     message: `${provider} did not answer. Nothing was written`,
-    hint: 'Try once more; if it keeps failing, check that the record is reachable.',
+    hint: UNREACHABLE_HINT,
   };
 }
 
