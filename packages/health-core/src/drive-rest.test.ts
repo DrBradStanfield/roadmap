@@ -15,7 +15,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ConflictError, LostUpdateError, ROADMAP_FILE_NAME, StorageError } from './adapter';
-import { DriveAdapter, driveCreateFolder, DRIVE_FOLDER_NAME, DRIVE_LEGACY_FOLDER_NAME } from './drive-rest';
+import { DriveAdapter, driveCreateFile, driveCreateFolder, DRIVE_FOLDER_NAME, DRIVE_LEGACY_FOLDER_NAME } from './drive-rest';
 import { ROADMAP_DOC } from './roadmap-doc';
 import { SyncManager } from './sync-manager';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
@@ -377,5 +377,28 @@ describe('a 2xx with a body that is not JSON is a failed call, not a crash', () 
     const failure = await driveCreateFolder('token', 'Health Roadmap').catch((error: unknown) => error);
     expect(failure).toBeInstanceOf(StorageError);
     expect((failure as StorageError).message).toContain('returned no id');
+  });
+});
+
+describe('a document upload gets more than the 30 s a record save does', () => {
+  /** The bound `driveCreateFile` asks for, in ms. */
+  async function boundFor(content: Blob | string): Promise<number> {
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"id":"f1","version":"1"}', { status: 200 })));
+    await driveCreateFile('token', 'x', 'application/octet-stream', content, 'folder');
+    const ms = timeout.mock.calls[0][0];
+    timeout.mockRestore();
+    return ms;
+  }
+
+  it('keeps a record-file create at 30 s', async () => {
+    expect(await boundFor(JSON.stringify({ measurements: [] }))).toBe(30_000);
+  });
+
+  it('scales the bound with the bytes, so a 10 MB PDF is not aborted mid-upload', async () => {
+    // 10 MB (the UploadModal cap) at 1 Mbps is ~80 s of uplink; under the flat
+    // 30 s bound every slow-connection upload aborted as “Drive did not answer”.
+    expect(await boundFor(new Blob([new Uint8Array(10 * 1024 * 1024)]))).toBe(300_000);
+    expect(await boundFor(new Blob([new Uint8Array(600 * 1024)]))).toBeGreaterThan(80_000);
   });
 });

@@ -90,3 +90,19 @@ describe('a provider that never answers is bounded, not eternal (US-32 AC17)', (
     expect(await res.json()).toEqual({ ok: true });
   });
 });
+
+describe('a runtime without `AbortSignal.timeout` still saves (US-32 AC17)', () => {
+  it('runs the call unbounded rather than throwing a TypeError', async () => {
+    // Safari 14/15 has no `AbortSignal.timeout`, and the widget's build target
+    // ships untranspiled to it. Called unguarded, every Drive/Dropbox read and
+    // save there died on a bare TypeError before `fetch` was ever reached.
+    vi.stubGlobal('AbortSignal', {});
+    vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init?: RequestInit) => {
+      expect(init?.signal).toBeUndefined();
+      return new Response('{"ok":true}', { status: 200 });
+    }));
+    const res = await fetchOrFail('Dropbox', 'https://example.test/x');
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+  });
+});

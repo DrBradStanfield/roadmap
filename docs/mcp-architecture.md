@@ -11,7 +11,7 @@ Hosted-server design: **rev 4, DECIDED — FINAL**. 2026-09-01. Brad has ruled o
 | `edit-record` CLI (US-31) | Contract-enforcing writes from the shell | `tools/edit-record.ts` + [guides/command-line.md](guides/command-line.md) | shipped |
 | Local stdio MCP (US-32 phase 0) | The same tools over a local file path | `tools/mcp-server.ts` + [guides/connect-claude-desktop.md](guides/connect-claude-desktop.md) | shipped; verified with MCP Inspector and Claude Code 2026-09-02 |
 | Hosted MCP (US-32 phase 1) | The same tools behind a connector, sealed-token stateless | this doc + `app/lib/mcp*.server.ts` + [deploy-runbook.md](deploy-runbook.md) "Hosted MCP" | LIVE 2026-09-02 at `https://mcp.drstanfield.com/mcp`; Dropbox only; verified from Claude and ChatGPT on the web |
-| Hosted MCP over Drive (US-32 phase 2) | The same server, against Google Drive | this doc §7 + `packages/health-core/src/drive-rest.ts` | ENABLED 2026-09-02: the `GOOGLE_DRIVE_*` secrets are on `health-tool-edu` and the consent screen offers Drive. Brand verification not yet submitted; live verify over Drive (runbook step 8) not yet run |
+| Hosted MCP over Drive (US-32 phase 2) | The same server, against Google Drive | this doc §7 + `packages/health-core/src/drive-rest.ts` | VERIFIED LIVE 2026-09-02: the `GOOGLE_DRIVE_*` secrets are on `health-tool-edu`, the consent screen offers Drive with brand verification approved (no unverified-app interstitial), and runbook step 8 passed over Drive |
 | `report_feedback` tool | Prepares a prefilled GitHub issue; sends nothing itself | `packages/health-core/src/mcp-tools.ts` | shipped |
 
 **One write path.** Every surface in this table that writes reads and saves the record through `SyncManager` over a `StorageAdapter` — read, migrate, merge, conditional write on `expectedVersion`, verify. The CLI and the stdio server hand it `FileAdapter` (one local file); the hosted server hands it `DropboxAdapter` or `DriveAdapter`, chosen by the provider sealed into the bearer token. The database of record is a constructor argument, not a second code path.
@@ -269,8 +269,8 @@ Brad's ruling: build the full thing. The recruitment gate is removed. The phase 
 - [x] Google as a confidential client: `drive.file` only, `access_type=offline`, `prompt=consent`, no `include_granted_scopes`. Reuses `GOOGLE_DRIVE_CLIENT_ID`/`GOOGLE_DRIVE_SECRET` (§1's shared-identity finding).
 - [x] Tests citing US-32 phase 2: the four algorithm steps separately, the Google OAuth chain, the feature gate, and provider isolation (an edited provider dies at the GCM tag).
 - [x] Feature gate: no `GOOGLE_DRIVE_*` secrets → the consent screen shows Dropbox only. Held phase 2 inert until the secrets landed 2026-09-02.
-- [x] **OPERATOR (Brad), 2026-09-02.** Google console: redirect URI added, publishing status **In production** (or refresh tokens die after 7 days), and the two Fly secrets on `health-tool-edu`. Drive now appears on the live consent screen. Runbook step 4b. **Still open:** brand verification for `drive.file` — until it lands, users may meet Google's "unverified app" interstitial.
-- [ ] **OPERATOR (Brad).** Live verify over Drive (runbook step 8). The guides now say concurrent writers are best-effort there.
+- [x] **OPERATOR (Brad), 2026-09-02.** Google console: redirect URI added, publishing status **In production** (or refresh tokens die after 7 days), and the two Fly secrets on `health-tool-edu`. Drive now appears on the live consent screen. Runbook step 4b. Brand verification for `drive.file` approved 2026-09-02 — the consent screen shows the branded "Dr Brad" screen, no unverified-app interstitial.
+- [x] **OPERATOR (Brad), 2026-09-02, ~14:25 NZ.** Live verify over Drive (runbook step 8): PASSED. The hosted MCP via Claude.ai wrote a measurement to `My Drive / Health Plan by Dr Brad / health-roadmap.json` — exactly one file of that name found by Drive search — the website (same account) loaded that row, and a correction made on the website was read back by Claude. The guides still say concurrent writers are best-effort there.
 
 `[connect:gemini]` stays a prompt link at every phase.
 
@@ -476,3 +476,12 @@ caller signal via `AbortSignal.any`, with the body read inside the same bound. T
 throws the same `StorageError('<Provider> did not answer', UNREACHABLE_HINT)`, so silence
 lands where an outage lands: a worded refusal past the `-32603` gate, and still inside the
 widget's Sentry `/did not answer/` ignore.
+
+**`fetchOrFail`'s bound is feature-detected, and document uploads get a longer one.**
+`fetchOrFail` also runs in the browser (the widget's Drive and Dropbox adapters import it
+through the health-core barrel), where the Vite target is `modules` — Safari 14/15 has no
+`AbortSignal.timeout` and 16–17.3 no `AbortSignal.any`, so calling either unguarded made
+the bound itself the outage and killed every read and save there. Both are now
+feature-detected; missing either, the call runs unbounded as it did before. And the flat
+30 s is a record-file bound: `driveCreateFile` scales it with the body size (30 s + 1 s
+per 10 KB, capped at 5 min) so a 10 MB upload is not aborted mid-send on a slow uplink.

@@ -98,9 +98,17 @@ export async function fetchOrFail(
   // any layer above can see: the hosted tool call, or the widget's save, waits
   // until the platform kills it. Bounded here, that silence arrives as the same
   // failure a dead network does. A caller's own signal still aborts the call.
+  // Safari 14/15 has no `AbortSignal.timeout` and 16–17.3 no `AbortSignal.any`,
+  // and the widget ships untranspiled to them: called unguarded, the bound
+  // itself would be the outage, killing every read and save on those browsers.
+  // Missing either one, the call runs unbounded — as it did before the bound.
   const { timeoutMs, signal: callerSignal, ...rest } = init ?? {};
-  const timeout = AbortSignal.timeout(timeoutMs ?? FETCH_TIMEOUT_MS);
-  const signal = callerSignal ? AbortSignal.any([callerSignal, timeout]) : timeout;
+  const timeout = typeof AbortSignal.timeout === 'function'
+    ? AbortSignal.timeout(timeoutMs ?? FETCH_TIMEOUT_MS)
+    : undefined;
+  const signal = callerSignal && timeout && typeof AbortSignal.any === 'function'
+    ? AbortSignal.any([callerSignal, timeout])
+    : callerSignal ?? timeout;
   try {
     // The body is drained HERE, inside the try: a socket that dies mid-download
     // rejects the body read, not `fetch` (undici's `TypeError: terminated`), so

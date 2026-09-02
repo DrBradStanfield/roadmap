@@ -67,7 +67,7 @@ const PROVIDER = 'Google Drive';
 
 /** `fetch` with this module's provider name already bound, so no call site can
  *  hand `fetchOrFail` the wrong one. Reach for this, never the bare global. */
-const request = (url: string | URL, init?: RequestInit): Promise<Response> => fetchOrFail(PROVIDER, url, init);
+const request = (url: string | URL, init?: RequestInit & { timeoutMs?: number }): Promise<Response> => fetchOrFail(PROVIDER, url, init);
 
 async function fail(what: string, res: Response): Promise<never> {
   throw new StorageError(`${PROVIDER} ${what} failed (${res.status}): ${await res.text()}`);
@@ -140,6 +140,11 @@ export function driveCreateFile(
     method: 'POST',
     headers: { ...auth(accessToken), 'Content-Type': `multipart/related; boundary=${boundary}` },
     body,
+    // A record file is a few KB and answers inside the default bound; an
+    // uploaded document is up to 10 MB, which a slow phone uplink spends
+    // minutes sending. Scale the bound with the bytes so the upload is judged
+    // on the provider's silence, not on the user's connection.
+    timeoutMs: Math.min(300_000, 30_000 + Math.round(body.size / 10_000) * 1_000),
   });
 }
 
