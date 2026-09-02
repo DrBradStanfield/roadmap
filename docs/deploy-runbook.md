@@ -354,7 +354,7 @@ On 2026-09-02 `https://claude.ai/oauth/mcp-oauth-client-metadata` answered `403
 challenge` from the Fly machine (User-Agent made no difference) and
 `https://chatgpt.com/oauth/client.json` answered `200 null`. **The rule: a vendor
 document that answers with a challenge gets PINNED in `KNOWN_CLIENTS`
-(`app/lib/mcp-auth.server.ts`) — never worked around.** No proxy, no scraped
+(`app/lib/mcp-clients.server.ts`) — never worked around.** No proxy, no scraped
 User-Agent, no third-party fetcher: those all mean trusting a document we could not
 authenticate anyway. Pinning is the spec's own sanctioned mechanism
 (draft-ietf-oauth-client-id-metadata-document-00 §4), it is two lines and a test, and

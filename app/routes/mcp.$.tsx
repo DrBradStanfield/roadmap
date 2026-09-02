@@ -22,33 +22,29 @@ import crypto from 'node:crypto';
 import { type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { getClientIp } from '../lib/local-first-route.server';
 import { mcpEndpoint, originRejected } from '../lib/mcp.server';
+import { checkAuthorize, sealState, verifyPkce } from '../lib/mcp-authorize.server';
+import { readCapped, registerClient, resolveClient } from '../lib/mcp-clients.server';
+import { isMcpEnabled, issuer } from '../lib/mcp-config.server';
 import {
   allowAuthorize,
   allowToken,
-  availableProviders,
-  checkAuthorize,
   claimCode,
   CODE_LIFETIME_SECONDS,
-  isMcpEnabled,
-  isProvider,
-  issuer,
+  type CodePayload,
   issueTokens,
-  packSealed,
+  type RefreshPayload,
+  type StatePayload,
+} from '../lib/mcp-grants.server';
+import {
+  availableProviders,
+  isProvider,
+  type McpProvider,
   providerAuthorizeUrl,
   providerExchange,
   providerLabel,
   providerRevokeUrl,
-  readCapped,
-  registerClient,
-  resolveClient,
-  sealState,
-  unpackSealed,
-  verifyPkce,
-  type CodePayload,
-  type McpProvider,
-  type RefreshPayload,
-  type StatePayload,
-} from '../lib/mcp-auth.server';
+} from '../lib/mcp-providers.server';
+import { packSealed, unpackSealed } from '../lib/mcp-seal.server';
 
 /**
  * The consent screen is the only place a provider trip may start, and this

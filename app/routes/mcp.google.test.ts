@@ -21,7 +21,9 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { DRIVE_FOLDER_NAME } from '../../packages/health-core/src/drive-rest';
 import { ToolContractError } from '../../packages/health-core/src/mcp-tools';
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
-import { packSealed, resetMcpMemory, unpackSealed, type AccessPayload, type McpProvider } from '../lib/mcp-auth.server';
+import { type AccessPayload, resetMcpMemory } from '../lib/mcp-grants.server';
+import { type McpProvider } from '../lib/mcp-providers.server';
+import { packSealed, unpackSealed } from '../lib/mcp-seal.server';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
 

@@ -6,6 +6,9 @@
  * blob types, binding to one client and one audience, a length that says
  * nothing, and rotation without a flag day — is a test here rather than a
  * paragraph in the design.
+ *
+ * It spans the whole auth layer — `mcp-config`, `mcp-seal`, `mcp-clients`,
+ * `mcp-grants` and `mcp-authorize` — which is why it keeps the older name.
  */
 import crypto from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,31 +18,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('node:dns/promises', () => ({
   default: { lookup: async () => [{ address: '1.1.1.1', family: 4 }] },
 }));
+import { checkAuthorize, verifyPkce } from './mcp-authorize.server';
 import {
-  ACCESS_LIFETIME_SECONDS,
-  checkAuthorize,
-  connectionKey,
-  KNOWN_CLIENTS,
   isAllowedRedirect,
   isLoopbackRedirect,
-  isMcpEnabled,
   isPublicAddress,
-  issueTokens,
-  packSealed,
+  KNOWN_CLIENTS,
   registerClient,
   resolveClient,
+} from './mcp-clients.server';
+import { isMcpEnabled } from './mcp-config.server';
+import {
+  ACCESS_LIFETIME_SECONDS,
+  type AccessPayload,
+  connectionKey,
+  issueTokens,
+  type RefreshPayload,
   resetMcpMemory,
-  seal,
   spendWrites,
-  typeKey,
-  unpackSealed,
-  unseal,
-  verifyPkce,
   WRITE_COST,
   WRITES_PER_HOUR,
-  type AccessPayload,
-  type RefreshPayload,
-} from './mcp-auth.server';
+} from './mcp-grants.server';
+import { packSealed, seal, typeKey, unpackSealed, unseal } from './mcp-seal.server';
 
 const KEY_A = Buffer.alloc(32, 1).toString('base64');
 const KEY_B = Buffer.alloc(32, 2).toString('base64');
