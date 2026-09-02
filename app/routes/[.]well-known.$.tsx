@@ -17,7 +17,7 @@
  * These are the only two unauthenticated documents this server publishes.
  */
 import { type LoaderFunctionArgs } from 'react-router';
-import { isMcpEnabled, issuer, resourceUrl } from '../lib/mcp-auth.server';
+import { isMcpEnabled, issuer, resourceUrl } from '../lib/mcp-config.server';
 
 /** Public, cacheable, and identical for everyone — no `Vary`, no CORS. */
 const HEADERS = { 'Cache-Control': 'public, max-age=3600' };

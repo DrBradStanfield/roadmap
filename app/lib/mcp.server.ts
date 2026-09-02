@@ -23,21 +23,18 @@ import type { StorageAdapter } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
 import { isToolName, MCP_TOOLS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
+import { readCapped } from './mcp-clients.server';
+import { isMcpEnabled, issuer } from './mcp-config.server';
 import {
+  type AccessPayload,
   allowToolCall,
   connectionKey,
-  isMcpEnabled,
-  issuer,
-  providerAccessToken,
-  providerLabel,
-  readCapped,
   spendWrites,
-  unpackSealed,
   WRITE_COST,
   WRITES_PER_HOUR,
-  type AccessPayload,
-  type McpProvider,
-} from './mcp-auth.server';
+} from './mcp-grants.server';
+import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
+import { unpackSealed } from './mcp-seal.server';
 
 const PROTOCOL_VERSION = '2025-11-25';
 
