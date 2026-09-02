@@ -33,6 +33,7 @@ import {
   DRIVE_FOLDER_NAME,
   ROADMAP_FILE_NAME,
   StorageError,
+  jsonBody,
   type ReadResult,
   type StorageAdapter,
   type WriteResult,
@@ -340,7 +341,7 @@ export class GoogleDriveAdapter implements StorageAdapter {
     // First write — create the file (multipart: metadata + content).
     const res = await this.createMultipart(fileName, 'application/json', json);
     if (!res.ok) throw new StorageError(`Google Drive create failed (${res.status}): ${await res.text()}`);
-    const created = (await res.json()) as { id?: string; version?: string };
+    const created = await jsonBody<{ id?: string; version?: string }>(res);
     if (!created.id) throw new StorageError('Google Drive create returned no file id.');
     this.rememberFileId(fileName, created.id);
     return { version: String(created.version ?? '') };

@@ -329,6 +329,7 @@ export {
   ConflictError,
   LostUpdateError,
   StorageError,
+  jsonBody,
   type StorageAdapter,
   type StorageBackendId,
   type ReadResult,

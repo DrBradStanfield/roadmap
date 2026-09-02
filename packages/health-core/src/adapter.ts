@@ -89,11 +89,13 @@ export async function fetchOrFail(provider: string, url: string | URL, init?: Re
     // The body is drained HERE, inside the try: a socket that dies mid-download
     // rejects the body read, not `fetch` (undici's `TypeError: terminated`), so
     // reading it at the call site would let the outage escape as an unknown
-    // error again. `new Response(bytes, res)` keeps status, statusText and
-    // headers; a null-body status (204/304) must stay bodiless.
+    // error again. Rebuilding with an explicit ResponseInit keeps status,
+    // statusText and headers without asking a browser to coerce a Response
+    // into a ResponseInit dictionary; a null-body status (204/304) must stay
+    // bodiless.
     const res = await fetch(url, init);
     const bytes = await res.arrayBuffer();
-    return new Response(bytes.byteLength ? bytes : null, res);
+    return new Response(bytes.byteLength ? bytes : null, { status: res.status, statusText: res.statusText, headers: res.headers });
   } catch (error) {
     throw new StorageError(`${provider} did not answer`, UNREACHABLE_HINT, error);
   }
