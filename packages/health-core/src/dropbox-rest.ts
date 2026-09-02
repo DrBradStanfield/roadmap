@@ -14,7 +14,7 @@
  * browser refreshes with PKCE and the server refreshes as a confidential
  * client.
  */
-import { ConflictError, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
+import { ConflictError, fetchOrFail, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
 
 export const DROPBOX_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
 const DOWNLOAD_URL = 'https://content.dropboxapi.com/2/files/download';
@@ -37,7 +37,7 @@ function parseApiResult(res: Response): Record<string, unknown> | null {
  * caller's `migrate()` turns it into a fresh record.
  */
 export async function dropboxRead(accessToken: string, fileName: string): Promise<ReadResult> {
-  const res = await fetch(DOWNLOAD_URL, {
+  const res = await fetchOrFail('Dropbox', DOWNLOAD_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -81,7 +81,7 @@ export async function dropboxWrite(
     mute: true,
     strict_conflict: expectedVersion != null,
   };
-  const res = await fetch(UPLOAD_URL, {
+  const res = await fetchOrFail('Dropbox', UPLOAD_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,

@@ -20,6 +20,7 @@ import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memor
 import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { DRIVE_FOLDER_NAME } from '../../packages/health-core/src/drive-rest';
 import { ToolContractError } from '../../packages/health-core/src/mcp-tools';
+import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { createEmptyFile, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { packSealed, resetMcpMemory, unpackSealed, type AccessPayload, type McpProvider } from '../lib/mcp-auth.server';
 import { mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
@@ -431,5 +432,56 @@ describe('an internal failure is an error with an id, never a 500 (US-32 phase 2
     expect(body.id).toBe('abc');
     expect(body.error.code).toBe(-32603);
     expect(body.error.message).toContain('Nothing was written');
+  });
+
+  it('reports a TypeError from inside the tool run as -32603, not as a storage refusal (US-32 AC17)', async () => {
+    const { access } = await connect('Dropbox');
+    seedRecord();
+    // A bug of ours, thrown where the record is written. It used to fall into
+    // the catch-all and come back worded as "the record in Dropbox did not
+    // answer" — sending the user to check a cloud folder that was fine.
+    setAdapterFactory(() => {
+      const adapter = new MemoryAdapter(cloud);
+      adapter.write = () => {
+        throw new TypeError('boom');
+      };
+      return adapter;
+    });
+    const res = await mcpEndpoint(
+      new Request(`${ISSUER}/mcp`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${access}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 'zed',
+          method: 'tools/call',
+          params: { name: 'add_measurement', arguments: { metricType: 'weight', value: 80 } },
+        }),
+      }),
+      NOW,
+    );
+    const body = (await res.json()) as { id: string; result?: unknown; error: { code: number; message: string } };
+    expect(body.result).toBeUndefined();
+    expect(body.id).toBe('zed');
+    expect(body.error.code).toBe(-32603);
+    expect(body.error.message).not.toContain('did not answer');
+  });
+
+  it('still words a real network outage as a refusal the user can act on (US-32 AC17)', async () => {
+    const { access } = await connect('Dropbox');
+    // The nuance the rethrow must not swallow: `fetch` rejects with a bare
+    // TypeError when the network is down, so the ADAPTER owns it and raises a
+    // StorageError. Real DropboxAdapter here, not the memory one.
+    setAdapterFactory(() => new DropboxAdapter('dropbox-access'));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string | URL) => {
+        if (String(input).includes('content.dropboxapi.com')) throw new TypeError('fetch failed');
+        return Response.json({ access_token: 'dropbox-access', expires_in: 14400 });
+      }),
+    );
+    const answer = await callTool(access, 'read_record', {});
+    expect(answer.isError).toBe(true);
+    expect(answer.text).toContain('did not answer');
   });
 });

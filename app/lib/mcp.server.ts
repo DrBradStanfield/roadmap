@@ -20,8 +20,8 @@ import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
 import type { StorageAdapter } from '../../packages/health-core/src/adapter';
-import { describeStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { isToolName, MCP_TOOLS, RECORD_FREE_TOOLS, runToolOverSync, ToolContractError, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
+import { isToolName, MCP_TOOLS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import {
   allowToolCall,
@@ -198,7 +198,17 @@ async function callHostedTool(
       savedNote: () => `Saved to the user’s ${provider}.`,
     });
   } catch (error) {
-    if (error instanceof ToolContractError) throw error;
+    // Storage is allowed to fail, and the user can act on that, so it is worded
+    // as a refusal. Anything else is a bug in us: dressing one up as "the
+    // record did not answer" sends the user to check a cloud folder that is
+    // perfectly fine. It is rethrown instead, and `handleRpc` turns it into
+    // -32603 on this request's id — exactly what the stdio server does.
+    if (!isStorageFailure(error)) {
+      // The name alone. No args, no values, no message: health data never
+      // enters a log.
+      console.error('[mcp] tool failed', name, error instanceof Error ? error.name : 'unknown');
+      throw error;
+    }
     const failed = describeStorageFailure(error, `The record in ${provider}`);
     return refuse(`${failed.message}. ${failed.hint}`);
   }

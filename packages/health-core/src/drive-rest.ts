@@ -29,6 +29,7 @@
  */
 import {
   ConflictError,
+  fetchOrFail,
   StorageError,
   type ReadResult,
   type StorageAdapter,
@@ -72,7 +73,7 @@ export async function driveFindFileId(
   const q = encodeURIComponent(
     `name='${quoted(name)}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
   );
-  const res = await fetch(`${DRIVE_API}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`, {
+  const res = await fetchOrFail('Google Drive', `${DRIVE_API}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`, {
     headers: auth(accessToken),
   });
   if (!res.ok) await fail('lookup', res);
@@ -92,7 +93,7 @@ export async function driveFindFolder(
   const q = encodeURIComponent(
     `(${anyName}) and mimeType='${DRIVE_FOLDER_MIME}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
   );
-  const res = await fetch(`${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=1`, {
+  const res = await fetchOrFail('Google Drive', `${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=1`, {
     headers: auth(accessToken),
   });
   if (!res.ok) await fail('folder lookup', res);
@@ -100,7 +101,7 @@ export async function driveFindFolder(
 }
 
 export async function driveCreateFolder(accessToken: string, name: string, parentId?: string): Promise<string> {
-  const res = await fetch(`${DRIVE_API}/files?fields=id`, {
+  const res = await fetchOrFail('Google Drive', `${DRIVE_API}/files?fields=id`, {
     method: 'POST',
     headers: { ...auth(accessToken), 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, mimeType: DRIVE_FOLDER_MIME, ...(parentId ? { parents: [parentId] } : null) }),
@@ -124,7 +125,7 @@ export function driveCreateFile(
     content,
     `\r\n--${boundary}--`,
   ]);
-  return fetch(`${UPLOAD}/files?uploadType=multipart&fields=id,version`, {
+  return fetchOrFail('Google Drive', `${UPLOAD}/files?uploadType=multipart&fields=id,version`, {
     method: 'POST',
     headers: { ...auth(accessToken), 'Content-Type': `multipart/related; boundary=${boundary}` },
     body,
@@ -133,7 +134,7 @@ export function driveCreateFile(
 
 /** Overwrite a file's bytes. Unconditional — Drive offers no precondition. */
 export async function driveUpdateFile(accessToken: string, fileId: string, json: string): Promise<string> {
-  const res = await fetch(`${UPLOAD}/files/${fileId}?uploadType=media&fields=id,version`, {
+  const res = await fetchOrFail('Google Drive', `${UPLOAD}/files/${fileId}?uploadType=media&fields=id,version`, {
     method: 'PATCH',
     headers: { ...auth(accessToken), 'Content-Type': 'application/json' },
     body: json,
@@ -148,7 +149,7 @@ export async function driveUpdateFile(accessToken: string, fileId: string, json:
  * compared and never sent as a precondition.
  */
 export async function driveFileVersion(accessToken: string, fileId: string): Promise<string | null> {
-  const res = await fetch(`${DRIVE_API}/files/${fileId}?fields=version`, { headers: auth(accessToken) });
+  const res = await fetchOrFail('Google Drive', `${DRIVE_API}/files/${fileId}?fields=version`, { headers: auth(accessToken) });
   if (res.status === 404) return null;
   if (!res.ok) await fail('version read', res);
   return ((await res.json()) as { version?: string }).version ?? null;
@@ -156,7 +157,7 @@ export async function driveFileVersion(accessToken: string, fileId: string): Pro
 
 /** Download a file's bytes as JSON. Null = the file is gone. */
 export async function driveDownloadJson(accessToken: string, fileId: string): Promise<unknown | null> {
-  const res = await fetch(`${DRIVE_API}/files/${fileId}?alt=media`, { headers: auth(accessToken) });
+  const res = await fetchOrFail('Google Drive', `${DRIVE_API}/files/${fileId}?alt=media`, { headers: auth(accessToken) });
   if (res.status === 404) return null;
   if (!res.ok) await fail('read', res);
   const text = await res.text();

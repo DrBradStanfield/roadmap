@@ -353,3 +353,20 @@ describe('step 4: bounded retry (US-32 phase 2)', () => {
     expect(round).toBe(5); // MAX_SAVE_ATTEMPTS, then it stops
   });
 });
+
+// ---------------------------------------------------------------------------
+// The network going away (US-32 AC17)
+// ---------------------------------------------------------------------------
+
+describe('a network outage is the adapter’s failure, not an unknown one (US-32 AC17)', () => {
+  it('turns `fetch`’s bare TypeError into a StorageError with a hint', async () => {
+    // `fetch` rejects with a TypeError when there is no network. Left raw it
+    // is indistinguishable from a bug in us, and the surfaces above have to
+    // guess — so the adapter owns it here.
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('fetch failed'); }));
+    const failure = await new DriveAdapter('token').read(ROADMAP_FILE_NAME).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as StorageError).message).toContain('Google Drive did not answer');
+    expect((failure as StorageError).hint).toContain('Try once more');
+  });
+});

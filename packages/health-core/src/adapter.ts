@@ -68,6 +68,27 @@ export class StorageError extends Error {
 }
 
 /**
+ * `fetch`, with the network outage it can have owned by the adapter that made
+ * the call. A dead network, a DNS miss or a severed socket rejects with a bare
+ * `TypeError`, which is not a `StorageError` — so a surface above would have to
+ * guess whether an unrecognised error was the provider's or a bug of ours, and
+ * guessing wrong words our own bug as something the user could fix. Every REST
+ * adapter goes through here (the disk adapter does the same in
+ * `file-adapter.ts`). `provider` is its user-facing name: 'Dropbox'.
+ */
+export async function fetchOrFail(provider: string, url: string | URL, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (error) {
+    throw new StorageError(
+      `${provider} did not answer`,
+      'Try once more; if it keeps failing, check that the record is reachable.',
+      error,
+    );
+  }
+}
+
+/**
  * Result of reading a record file. `body` is the JSON-parsed object WITHOUT
  * normalisation — the SyncManager runs it through the document's `migrate()`
  * to fill defaults + gate the schema version. `version` is the backend's
