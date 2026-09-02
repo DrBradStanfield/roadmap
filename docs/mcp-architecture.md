@@ -389,3 +389,30 @@ because the user's report and Sentry's line arrive together.
 - **Dropbox's 500-byte `state` limit is believed, not verified.** The nonce is 43 chars,
   so the constraint no longer binds, but the first live connection is still the test —
   the runbook asks for it explicitly.
+
+---
+
+## Build notes — Phase 2, 2026-09-02
+
+Two places where the build departed from the text above.
+
+**`prompt=consent` is unconditional, and "only when needed" was the wrong shape.** The
+brief asked for the prompt only when a refresh token is actually needed. For a stateless
+server it is needed every time: Google issues a refresh token on a first authorization or
+an explicit re-consent, and never on a silent re-authorization — and a connection with no
+refresh token cannot be sealed, so it cannot exist. Omitting the prompt would fail for
+every user who has ever connected the widget, and then need a second trip through Google
+with the prompt anyway: two redirects for the same token. So we ask once. What that costs
+is one of the account's 100 refresh-token slots per connection, shared with the widget,
+and §4 already says never to mint a SPARE — which we do not: one token, inside a flow the
+user just consented to. The runbook says what to check if a user reports the website
+quietly disconnecting.
+
+**A failed verify is now retryable for EVERY backend, not just Drive.** §7 step 3 is
+`SyncManager.verifyAfterWrite`, which detected a lost update and then threw a fatal
+error — detection with no step 4. It now throws `LostUpdateError extends ConflictError`,
+so the existing retry loop re-reads, re-merges and writes again; the arrays are
+append-only, so writing the same rows twice is the same as writing them once. Dropbox and
+the local file adapter inherit this and are better for it. The one thing that changed for
+them is the give-up message, which no longer says "nothing was written" for a loss where
+something plainly was.
