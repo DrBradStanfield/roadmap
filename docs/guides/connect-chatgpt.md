@@ -36,6 +36,10 @@ https://mcp.drstanfield.com/mcp
 
 Then say "read my record".
 
+## After an update
+
+When we add a tool, ChatGPT does not see it straight away: it keeps the connector's list of tools from the last time it looked. Open Settings, then Plugins (called Connectors on some accounts), pick Health Roadmap, and press Refresh. Then reload the page. The new tool is there in your next chat.
+
 ## Why developer mode
 
 OpenAI keeps a connector nobody has reviewed behind developer mode. Ours has not been through their review, so that is where it lives today. Developer mode is a setting on your own account. It does not change how ChatGPT answers you, and it does not give this connector anything beyond what you approve in Dropbox.
