@@ -1,8 +1,8 @@
 /**
- * The six MCP tools, as pure functions (US-32).
+ * The seven MCP tools, as pure functions (US-32, US-34).
  *
  * `record-edits.ts` holds the rules a write must keep and `plan.ts` holds the
- * derivation; this layer is what an AI assistant is actually offered — five
+ * derivation; this layer is what an AI assistant is actually offered — seven
  * named tools, their argument schemas, and the words they answer in. It takes
  * a `RoadmapFile` and returns a new one; opening the file, backing it up and
  * putting bytes back on disk belong to the caller (`tools/mcp-server.ts`
@@ -18,12 +18,13 @@ import {
   appendLabValue,
   appendMeasurement,
   correctValue,
+  stampUpdatedAt,
   type EditRejection,
 } from './record-edits';
 import type { FileLabValue, FileMeasurement, FileReminderOptIn, RoadmapFile } from './roadmap-file';
 import type { SyncManager } from './sync-manager';
 import { UNIT_DEFS } from './units';
-import { METRIC_TYPES } from './validation';
+import { healthInputSchema, METRIC_TYPES } from './validation';
 import { z } from 'zod';
 
 /**
@@ -96,6 +97,34 @@ export const correctValueInput = z.object({
   newValue: z.number().finite(),
   unit: z.string().min(1).max(MAX_NAME_LENGTH).optional(),
   expectedValue: z.number().finite().optional(),
+}).strict();
+
+/**
+ * The profile fields a connector may change (US-34). Display preferences —
+ * `unitSystem`, `unitOverrides`, `reportEmailCaptured` — are deliberately out
+ * of reach: they are how the app draws the screen, not what the record says
+ * about the person, and nobody asks an assistant to change them.
+ */
+export const PROFILE_FIELDS = ['sex', 'birthYear', 'birthMonth', 'heightCm'] as const;
+export type ProfileField = (typeof PROFILE_FIELDS)[number];
+
+const PROFILE_VALUES = {
+  sex: z.enum(['male', 'female']),
+  birthYear: z.number().int(),
+  birthMonth: z.number().int(),
+  heightCm: z.number().finite(),
+};
+
+/** The same four fields, all optional, on the change and on the claim. */
+function profileShape<T extends z.ZodTypeAny>(wrap: (schema: z.ZodTypeAny) => T) {
+  return Object.fromEntries(PROFILE_FIELDS.map((field) => [field, wrap(PROFILE_VALUES[field])])) as Record<ProfileField, T>;
+}
+
+export const updateProfileInput = z.object({
+  ...profileShape((schema) => schema.optional()),
+  // `null` is a claim too: "I believe the record has no value for this yet",
+  // which is the only way to state one about a field that is unset.
+  expected: z.object(profileShape((schema) => schema.nullable().optional())).strict().optional(),
 }).strict();
 
 export const reportFeedbackInput = z.object({
@@ -243,6 +272,68 @@ export function correctValueTool(
   return { status: 'ok', file: result.file, text: describe('Corrected', [result.row]) };
 }
 
+/**
+ * Change who the record is about: sex, birth year, birth month, height (US-34).
+ *
+ * The profile is ONE last-write-wins object — `mergeFiles` picks the whole
+ * newer copy, never a field of it — so this is a read-modify-write of the
+ * object the record already holds: every field it carries survives, named or
+ * not, known to this version or not. What makes that safe against a second
+ * writer is `expected`: the agent states what it believes it is replacing, and
+ * a mismatch writes nothing. Optional here (a person watching their own file),
+ * REQUIRED on the hosted server, exactly as `expectedValue` is.
+ */
+export function updateProfile(
+  file: RoadmapFile,
+  request: z.infer<typeof updateProfileInput>,
+  now: string,
+): ToolOutcome {
+  const named = PROFILE_FIELDS.filter((field) => request[field] !== undefined);
+  if (named.length === 0) {
+    return { status: 'rejected', text: `Name at least one of ${PROFILE_FIELDS.join(', ')}. Nothing was written.` };
+  }
+
+  const shape = healthInputSchema.shape as Record<string, { safeParse: (v: unknown) => { success: boolean; error?: { issues: Array<{ message: string }> } } }>;
+  for (const field of named) {
+    const parsed = shape[field].safeParse(request[field]);
+    if (!parsed.success) {
+      return { status: 'rejected', text: `${field}: ${oneLine(parsed.error?.issues[0]?.message ?? 'out of range')}. Nothing was written.` };
+    }
+  }
+
+  const stored = file.profile;
+  for (const field of PROFILE_FIELDS) {
+    const claim = request.expected?.[field] ?? undefined;
+    if (request.expected && field in request.expected && claim !== (stored[field] ?? undefined)) {
+      // The refusal must not become a read: an agent that guessed wrong learns
+      // nothing about what the record actually holds (design §3).
+      return { status: 'rejected', text: `The record does not hold the ${field} you expected. Read the record, then update. Nothing was written.` };
+    }
+  }
+
+  const changed = named.filter((field) => request[field] !== stored[field]);
+  if (changed.length === 0) {
+    return { status: 'ok', text: 'The record already says that. Nothing was written.' };
+  }
+
+  const profile = {
+    ...stored,
+    ...Object.fromEntries(changed.map((field) => [field, request[field]])),
+    updatedAt: now,
+    // One past the copy it read, which is exactly what the app does on its own
+    // profile writes. Jumping to the FILE's clock instead would make every
+    // connector write beat a concurrent one made in the app, whenever it was
+    // made; tied lamports fall through to wall-clock time, which is the honest
+    // answer to "who wrote last".
+    lamport: (stored.lamport ?? 0) + 1,
+  };
+  return {
+    status: 'ok',
+    file: stampUpdatedAt({ ...file, profile }, now),
+    text: changed.map((field) => `${field}: ${stored[field] ?? 'not set'} → ${request[field]}`).join('\n'),
+  };
+}
+
 /** One line per row written: what it is, what it says, and the id to cite. */
 function describe(verb: string, rows: Array<FileMeasurement | FileLabValue>): string {
   return rows
@@ -336,7 +427,7 @@ export interface McpToolDefinition {
 const DAY_SCHEMA = { type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}$' } as const;
 
 /**
- * The six tools, as an MCP client lists them. Annotations are HINTS — the
+ * The seven tools, as an MCP client lists them. Annotations are HINTS — the
  * spec says a client must not trust them and "always allow" is one click — so
  * they describe the tool honestly rather than standing in for a check: the two
  * reads never write, the two adds only append, and `correct_value` is marked
@@ -447,6 +538,38 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
   },
   {
+    name: 'update_profile',
+    title: 'Change the profile the plan is computed from',
+    description:
+      'Change who the record is about: sex, birth year, birth month, height in cm. Every suggestion is derived ' +
+      'from them, so a wrong one makes the whole plan wrong. Read the record first and pass `expected` with the ' +
+      'value you believe each field holds now (null if it holds none) — a mismatch refuses the call and writes ' +
+      'nothing. This overwrites: the profile is one last-write-wins object, so unlike a measurement there is no ' +
+      'earlier version to read back. Display preferences (units) are not yours to change.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        sex: { type: 'string', enum: ['male', 'female'], description: 'The sex the plan is computed for.' },
+        birthYear: { type: 'integer', description: 'Year of birth, e.g. 1971.' },
+        birthMonth: { type: 'integer', description: 'Month of birth, 1–12.' },
+        heightCm: { type: 'number', description: 'Height in centimetres.' },
+        expected: {
+          type: 'object',
+          description: 'What you believe the record holds now, per field you are changing. `null` claims the field is unset.',
+          properties: {
+            sex: { type: ['string', 'null'], enum: ['male', 'female', null] },
+            birthYear: { type: ['integer', 'null'] },
+            birthMonth: { type: ['integer', 'null'] },
+            heightCm: { type: ['number', 'null'] },
+          },
+          additionalProperties: false,
+        },
+      },
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+  },
+  {
     name: 'report_feedback',
     title: 'Prepare a bug report or feature request',
     description:
@@ -476,6 +599,7 @@ const INPUTS = {
   add_measurement: addMeasurementInput,
   add_lab_values: addLabValuesInput,
   correct_value: correctValueInput,
+  update_profile: updateProfileInput,
   report_feedback: reportFeedbackInput,
 } as const;
 
@@ -533,6 +657,8 @@ export function callTool(
       return addLabValues(record, parsed.data as z.infer<typeof addLabValuesInput>, now);
     case 'correct_value':
       return correctValueTool(record, parsed.data as z.infer<typeof correctValueInput>, now);
+    case 'update_profile':
+      return updateProfile(record, parsed.data as z.infer<typeof updateProfileInput>, now);
   }
 }
 

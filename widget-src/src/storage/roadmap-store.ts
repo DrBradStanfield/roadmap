@@ -79,9 +79,17 @@ export const PENDING_MIRROR_KEY = 'health_roadmap_pending_cloud_sync';
  *  the standalone hr:* events). Dispatch is best-effort — absent in tests. */
 export const SYNC_PENDING_EVENT = 'hr:sync-pending-changed';
 
-function notifySyncPending(): void {
+/**
+ * Fired when a re-read brought something new into the working copy — another
+ * device, or an AI connector writing to the same file (US-34). HealthTool
+ * listens and re-runs its own load path, so an open page shows the change
+ * without a reload.
+ */
+export const REMOTE_CHANGED_EVENT = 'hr:remote-changed';
+
+function notify(name: string): void {
   try {
-    window.dispatchEvent(new Event(SYNC_PENDING_EVENT));
+    window.dispatchEvent(new Event(name));
   } catch {
     /* non-browser environment (tests) */
   }
@@ -90,12 +98,12 @@ function notifySyncPending(): void {
 /** Record that on-device data is ahead of the cloud (see PENDING_MIRROR_KEY). */
 export function markSyncPending(): void {
   safeSetItem(PENDING_MIRROR_KEY, new Date().toISOString());
-  notifySyncPending();
+  notify(SYNC_PENDING_EVENT);
 }
 
 function clearSyncPending(): void {
   safeRemoveItem(PENDING_MIRROR_KEY);
-  notifySyncPending();
+  notify(SYNC_PENDING_EVENT);
 }
 
 /** True while on-device data is still waiting to reach the cloud. */
@@ -185,6 +193,15 @@ export interface BulkLabValuesResult {
 
 const PERSIST_DEBOUNCE_MS = 800;
 
+/**
+ * How the open page keeps up with a record something else is writing (US-34).
+ * A poll while the tab is visible, plus the two moments a user comes back to
+ * it; the throttle stops focus and visibilitychange (which fire together on a
+ * tab switch) from making two round trips out of one return.
+ */
+const REMOTE_POLL_MS = 60_000;
+const REMOTE_THROTTLE_MS = 5_000;
+
 // --- small pure helpers ---
 
 const NUMERIC_SCREENING_KEYS = new Set(['lung_pack_years', 'prostate_psa_value']);
@@ -196,6 +213,12 @@ function activeOnly<T extends { status: string }>(rows: T[]): T[] {
   return rows.filter((r) => r.status === 'active');
 }
 
+/** The record minus its own clocks — what a person would call a change. */
+function contentOf(file: RoadmapFile): string {
+  const { meta: _clocks, ...rest } = file;
+  return JSON.stringify(rest);
+}
+
 export class RoadmapStore {
   private file: RoadmapFile;
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -205,6 +228,8 @@ export class RoadmapStore {
    *  create() — persist success must then LEAVE the marker so the mirror is
    *  retried next load (e.g. once updated assets can parse its newer schema). */
   private mirrorSkipped = false;
+  /** Leading-edge throttle for refreshFromRemote(), in epoch millis. */
+  private lastRefresh = 0;
   private readonly deviceId: string;
 
   private constructor(
@@ -692,6 +717,63 @@ export class RoadmapStore {
   }
 
   /**
+   * Re-read the record and merge what came back (US-34). Answers false when
+   * nothing changed — including every case where re-reading would be wrong:
+   * a local edit is waiting to go up (the debounce timer, or a save in
+   * flight), so the working copy is AHEAD of the cloud and merging a stale
+   * read over it would fight the pending write; and a localStorage-only
+   * backend has no second writer to hear from.
+   */
+  async refreshFromRemote(): Promise<boolean> {
+    if (this.adapter.id === 'local' || this.persisting || this.persistTimer) return false;
+    const at = Date.now();
+    if (at - this.lastRefresh < REMOTE_THROTTLE_MS) return false;
+    this.lastRefresh = at;
+
+    const before = contentOf(this.file);
+    const merged = mergeFiles(this.file, await this.sync.load(), {
+      deviceId: this.deviceId,
+      now: new Date().toISOString(),
+    });
+    // A merge always bumps the file's own clock, so the comparison is on the
+    // CONTENT: Drive returns no version, and re-rendering on every poll would
+    // count a change nobody made.
+    if (contentOf(merged) === before) return false;
+    // A local edit that landed during the read would be lost by taking the
+    // merge — it merged against bytes read before the edit existed.
+    if (this.persisting || this.persistTimer) return false;
+    this.file = merged;
+    // The counting is HealthTool's: it fires `remote_change_applied` when it
+    // has actually re-rendered. The store cannot import the API layer — the
+    // v2 builds alias `lib/api` to `lib/roadmap-data`, which imports this
+    // module, and the cycle would be real.
+    notify(REMOTE_CHANGED_EVENT);
+    return true;
+  }
+
+  /**
+   * Start the live re-read: whenever the tab becomes visible, whenever the
+   * window takes focus, and once a minute while it stays visible. A hidden tab
+   * polls nothing — it has no screen to keep up to date, and a phone left on a
+   * background tab would spend the day making requests. Returns the stop.
+   */
+  startLiveRefresh(): () => void {
+    const run = () => {
+      // A failed re-read is not the user's problem and not a lost write: the
+      // next trigger tries again, and nothing here is waiting on the answer.
+      if (document.visibilityState !== 'hidden') void this.refreshFromRemote().catch(() => {});
+    };
+    const timer = setInterval(run, REMOTE_POLL_MS);
+    document.addEventListener('visibilitychange', run);
+    window.addEventListener('focus', run);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', run);
+      window.removeEventListener('focus', run);
+    };
+  }
+
+  /**
    * Synchronous last-ditch persist for tab-close / visibilitychange, where an
    * async flush may not finish (esp. mobile). Uses the adapter's synchronous
    * write when available (local tier); cloud backends fall back to a best-effort
@@ -728,7 +810,10 @@ export class RoadmapStore {
     if (current.birthMonth !== undefined && current.birthMonth !== previous.birthMonth) { p.birthMonth = current.birthMonth; changed = true; }
     if (current.heightCm !== undefined && current.heightCm !== previous.heightCm) { p.heightCm = current.heightCm; changed = true; }
     if (current.unitSystem !== undefined && current.unitSystem !== previous.unitSystem) { p.unitSystem = current.unitSystem; changed = true; }
-    if (changed) { p.updatedAt = new Date().toISOString(); p.lamport = (p.lamport ?? 0) + 1; }
+    // touch() as every other mutation does: a profile-only edit (sex, height,
+    // birth date — no measurement changed with it) scheduled no save at all,
+    // so it sat in memory until the next unrelated edit carried it up.
+    if (changed) { p.updatedAt = new Date().toISOString(); p.lamport = (p.lamport ?? 0) + 1; this.touch(); }
   }
 
   /** Upsert a current-state row keyed by `keyField`, stamping the sync clock. */

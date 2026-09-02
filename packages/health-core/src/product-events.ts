@@ -24,6 +24,9 @@ export const PRODUCT_EVENT_NAMES = [
   // were invisible until the first real one (2026-08-28) surfaced the gap.
   'reminder_sent',
   'chat_opened',
+  // US-34: the open page re-read the record and something had changed under it
+  // (another device, or an AI connector). Name only — never what changed.
+  'remote_change_applied',
   // US-21 additional blood tests: phase-1 surfacing + phase-2 manual add.
   'lab_rows_viewed',
   'lab_row_added',

@@ -154,8 +154,9 @@ Validate your result against the schema before you write it back.
 
 Everything above describes an agent holding the FILE. There is a second way in: a
 hosted MCP server at `https://mcp.drstanfield.com/mcp`, which a web ChatGPT or Claude
-user connects once and then asks in words. It offers six tools — `read_record`,
-`get_plan`, `add_measurement`, `add_lab_values`, `correct_value`, `report_feedback` —
+user connects once and then asks in words. It offers seven tools — `read_record`,
+`get_plan`, `add_measurement`, `add_lab_values`, `correct_value`, `update_profile`,
+`report_feedback` —
 over the user's own Dropbox or Google Drive folder, and it enforces the rules above in
 code rather than asking you to keep them.
 
@@ -165,14 +166,19 @@ the file version before and after each save and retries on a conflict; concurren
 there are best-effort. A user revokes a Drive connection at
 `myaccount.google.com/connections`, a Dropbox one at `dropbox.com/account/connected_apps`.
 
-Five things differ from the local path, and they are differences you will hit:
+Six things differ from the local path, and they are differences you will hit:
 
 - **`correct_value` requires `expectedValue`** — the number you believe the row holds
   right now. It is optional locally. A mismatch refuses the call and writes nothing, so
   read the record immediately before correcting.
+- **`update_profile` requires `expected` for every field it changes** — the value you
+  believe the record holds now, or `null` if you believe it holds none. Optional locally,
+  for the same reason. A profile field is not append-only: there is no superseded copy to
+  read back, so the claim is what stands between a stale read and a wrong plan. A profile
+  change costs the same as a correction.
 - **A row older than 90 days cannot be corrected there.** Corrections fix recent
   mistakes; older history is out of reach and the user changes it in the app.
-- **Writes are budgeted, and a correction costs five adds.** Reads are never budgeted.
+- **Writes are budgeted, and a correction or a profile change costs five adds.** Reads are never budgeted.
   When the budget runs out the refusal says so and reading still works. `add_lab_values`
   also carries its own per-call cap of 50 rows, regardless of budget.
 - **A record whose `schemaVersion` is newer than the server understands is out of reach

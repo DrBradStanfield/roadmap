@@ -64,13 +64,13 @@ describe('US-32 — the JSON-RPC handshake', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('lists the six tools with their schemas, and stays quiet on a notification', async () => {
+  it('lists the seven tools with their schemas, and stays quiet on a notification', async () => {
     const { dir, path } = writeFixture(fixture());
     const listed = (await handle({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, path)) as
       { result: { tools: Array<{ name: string; inputSchema: object }> } };
 
     expect(listed.result.tools.map((t) => t.name)).toEqual([
-      'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'report_feedback',
+      'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'update_profile', 'report_feedback',
     ]);
     expect(listed.result.tools[0].inputSchema).toMatchObject({ type: 'object' });
     expect((await handle({ jsonrpc: '2.0', method: 'notifications/initialized' }, path))).toBeNull();

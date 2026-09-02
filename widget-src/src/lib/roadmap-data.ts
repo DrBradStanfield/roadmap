@@ -51,6 +51,9 @@ let store: RoadmapStore | null = null;
 /** Initialise the data layer with a backend. Call once before rendering the app. */
 export async function initRoadmapStore(adapter: StorageAdapter): Promise<void> {
   store = await RoadmapStore.create(adapter);
+  // Both surfaces init here, so this is the one place the live re-read starts
+  // (US-34). It runs for the life of the page; nothing unmounts the data layer.
+  store.startLiveRefresh();
   // Chat history (chat-history.json) syncs over the SAME adapter, created
   // lazily on first chat use (see chat-history-access.ts for the policy).
   setChatHistoryFactory(() => ChatHistoryStore.create(adapter));

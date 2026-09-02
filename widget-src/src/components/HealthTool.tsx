@@ -79,6 +79,7 @@ import {
 import type { CorrectFn } from '../lib/matrix-save';
 import type { ApiDocument } from '../lib/api-types';
 import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
+import { REMOTE_CHANGED_EVENT } from '../storage/roadmap-store';
 
 // Auth state from Liquid template
 interface AuthState {
@@ -828,6 +829,19 @@ export function HealthTool({ syncControl, remindersSection }: { syncControl?: (c
     // Refresh full blood-test history so the matrix reflects newly extracted lab rows.
     loadBloodTestHistory();
   }, [refreshLabValues]);
+
+  // Something wrote to the record under us — another device, or an AI
+  // connector through MCP (US-34). The store has already re-read and merged;
+  // re-run the same load path an upload finishes with, so the page shows the
+  // new profile and values without a reload.
+  useEffect(() => {
+    const onRemoteChange = () => {
+      trackProductEvent('remote_change_applied');
+      void handleUploadComplete();
+    };
+    window.addEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
+    return () => window.removeEventListener(REMOTE_CHANGED_EVENT, onRemoteChange);
+  }, [handleUploadComplete]);
 
   // Convert field-keyed overrides to MetricType-keyed for health-core + ResultsPanel
   const metricUnitOverrides = useMemo(() => {

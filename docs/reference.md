@@ -106,7 +106,7 @@ Stored values are **never mutated**. The file's `measurements`/`labValues` array
 - `dropbox-rest.ts` — Dropbox content-API calls (three `fetch`s), shared byte-for-byte by the browser adapter and the hosted MCP server, including the `strict_conflict` conditional write.
 - `drive-rest.ts` — Google Drive v3 calls + adapter, shared by the browser adapter and the hosted MCP server. `drive.file` scope only.
 - `lab-catalog.ts` — the additional blood-test catalogue (US-21): stable-ID registry, canonical units, aliases, no clinical thresholds.
-- `mcp-tools.ts` — the six MCP tools as pure functions (US-32): takes a `RoadmapFile`, returns a new one. I/O (open/backup/write) belongs to the caller.
+- `mcp-tools.ts` — the seven MCP tools as pure functions (US-32, US-34): takes a `RoadmapFile`, returns a new one. I/O (open/backup/write) belongs to the caller. `update_profile` is the one that overwrites rather than appends (sex, birth year, birth month, height), guarded by `expected`.
 
 **Widget Source (`widget-src/src/`):**
 - `components/HealthTool.tsx` — Main widget (auth, unit system, measurement sync, mobile tabs)

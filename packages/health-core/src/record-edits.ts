@@ -189,8 +189,18 @@ function checkMeasurementValue(metricType: string, value: number): EditRejection
  * slot tie-breaks to a UUID comparison. The row itself keeps the real `now`.
  */
 function withRow(file: RoadmapFile, key: 'measurements' | 'labValues', rows: Array<FileMeasurement | FileLabValue>, now: string): RoadmapFile {
-  const updatedAt = now > file.meta.updatedAt ? now : file.meta.updatedAt;
-  return { ...file, [key]: rows, meta: { ...file.meta, updatedAt } };
+  return stampUpdatedAt({ ...file, [key]: rows }, now);
+}
+
+/**
+ * Rule 6 on its own, for a write that is not a row: `meta.updatedAt` moved to
+ * the write clock, FORWARD only. `update_profile` (mcp-tools.ts) writes the
+ * profile object rather than an array, and `migrate.ts` rewinds any stamp
+ * newer than this anchor — so a profile write that skipped it would lose the
+ * merge it just won.
+ */
+export function stampUpdatedAt(file: RoadmapFile, now: string): RoadmapFile {
+  return now > file.meta.updatedAt ? { ...file, meta: { ...file.meta, updatedAt: now } } : file;
 }
 
 /**

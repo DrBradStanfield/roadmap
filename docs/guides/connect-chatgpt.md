@@ -56,7 +56,9 @@ It cannot delete anything. There is no delete tool, and no call it can make remo
 
 It cannot erase a mistake either. A correction adds a new row with the right number and marks the old row "entered-in-error", and both stay in your file for good. That is how a hospital record works, and it is why you can always see what you were told and when. A correction on a row older than 90 days is refused: old results are history, not typos.
 
-It cannot touch your medications, supplements, screenings, documents or profile. Those are current state that another device can overwrite, so for now only clinical values are writable this way.
+It cannot touch your medications, supplements, screenings or documents. Those are current state that another device can overwrite, so for now only clinical values are writable this way.
+
+It can change four things about you: your sex, your birth year, your birth month and your height. Your plan is worked out from those, so a wrong one makes the whole plan wrong, and "my height is 165, not 178" should not need a trip to the website. These four are not kept in history the way a blood test is: the newest write is the one your record keeps, so if you change your height on the website and ask ChatGPT to change it in the same minute, the later of the two is what you end up with. Before it changes one, ChatGPT has to say what it believes the field holds now, and it is refused if it has that wrong. It cannot change how the site displays units.
 
 It cannot add a second value for a test on a day that already has one. That call is refused by name, and the refusal tells ChatGPT to make a correction instead of an overwrite.
 
@@ -68,7 +70,7 @@ Your record still lives only in your Dropbox. Our server reads it, in memory, to
 
 Check what it files. An AI can misread a lab report the same way a person can, and the record is yours, so the last look at a new value should be yours too.
 
-Do not leave the web tool open in another tab while ChatGPT is writing. There is no lock, and one of the two writers loses.
+Take care with the web tool open in another tab while ChatGPT is writing. The page now notices a change and re-reads your record within a minute, and sooner when you switch back to that tab, so what you are looking at catches up on its own. But there is still no lock: a value you are typing at that moment and a value ChatGPT is writing at that moment can still collide, and one of the two loses.
 
 ## How to cancel it
 

@@ -28,9 +28,12 @@ import {
   redactRecord,
   reportFeedback,
   reportFeedbackInput,
+  updateProfile,
+  updateProfileInput,
   SERVER_VERSION,
   TOOL_LAYER_VERSION,
 } from './mcp-tools';
+import { mergeFiles } from './merge';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from './roadmap-file';
 import { METRIC_TYPES } from './validation';
 
@@ -272,6 +275,98 @@ describe('US-32 — correct_value', () => {
   });
 });
 
+describe('US-34 — update_profile changes who the record is about', () => {
+  it('AC1 — writes each field, one line per change, and leaves the rest of the profile alone', () => {
+    const file = base();
+    file.profile.unitOverrides = { ldl: 'conventional' };
+    (file.profile as unknown as Record<string, unknown>).somethingNewerAppsKnow = 'keep me';
+
+    const outcome = ok(updateProfile(file, { sex: 'female', birthYear: 1972, birthMonth: 4, heightCm: 165 }, NOW));
+
+    expect(outcome.file!.profile).toMatchObject({
+      sex: 'female', birthYear: 1972, birthMonth: 4, heightCm: 165,
+      // Untouched: display preferences are out of reach, and a field this
+      // version has never heard of survives a read-modify-write of the object.
+      unitSystem: 'si', unitOverrides: { ldl: 'conventional' }, somethingNewerAppsKnow: 'keep me',
+    });
+    expect(outcome.text.split('\n')).toEqual([
+      'sex: male → female', 'birthYear: 1971 → 1972', 'birthMonth: not set → 4', 'heightCm: 178 → 165',
+    ]);
+  });
+
+  it('AC1 — moves meta.updatedAt forward and stamps a lamport past the copy it read', () => {
+    const file = base();
+    file.meta.lamport = 9;
+    file.profile.lamport = 2;
+    file.meta.updatedAt = '2026-08-01T00:00:00Z';
+
+    const profile = ok(updateProfile(file, { heightCm: 180 }, NOW)).file!.profile;
+    expect(profile.updatedAt).toBe(NOW);
+    expect(profile.lamport).toBe(3);
+    // meta.updatedAt is the anchor migrate.ts clamps stamps to: leave it
+    // behind the profile's own stamp and the next load rewinds this write.
+    expect(ok(updateProfile(file, { heightCm: 180 }, NOW)).file!.meta.updatedAt).toBe(NOW);
+    // The record it read is untouched — every tool here is a pure function.
+    expect(file.profile.heightCm).toBe(178);
+  });
+
+  it('AC2 — refuses a call that names no field, and one outside the app\u2019s own range', () => {
+    const empty = updateProfile(base(), {}, NOW);
+    expect(empty.status).toBe('rejected');
+    expect(empty.text).toContain('Nothing was written');
+
+    for (const [request, bound] of [
+      [{ heightCm: 20 }, '50'],
+      [{ heightCm: 300 }, '250'],
+      [{ birthYear: 1800 }, '1900'],
+      [{ birthMonth: 13 }, '12'],
+    ] as const) {
+      const refused = updateProfile(base(), request, NOW);
+      expect(refused.status, JSON.stringify(request)).toBe('rejected');
+      expect(refused.text, JSON.stringify(request)).toContain(bound);
+      expect((refused as { file?: RoadmapFile }).file).toBeUndefined();
+    }
+  });
+
+  it('AC3 — refuses a wrong `expected` without saying what the record holds', () => {
+    const stale = updateProfile(base(), { heightCm: 180, expected: { heightCm: 170 } }, NOW);
+    expect(stale.status).toBe('rejected');
+    expect(stale.text).toContain('Nothing was written');
+    expect(stale.text).not.toContain('178');
+    expect((stale as { file?: RoadmapFile }).file).toBeUndefined();
+
+    // A right one writes, and `null` is how an agent claims a field is unset.
+    expect(ok(updateProfile(base(), { heightCm: 180, expected: { heightCm: 178 } }, NOW)).file).toBeDefined();
+    expect(ok(updateProfile(base(), { birthMonth: 4, expected: { birthMonth: null } }, NOW)).file).toBeDefined();
+    const wrongNull = updateProfile(base(), { heightCm: 180, expected: { heightCm: null } }, NOW);
+    expect(wrongNull.status).toBe('rejected');
+  });
+
+  it('AC3 — a call that changes nothing writes nothing', () => {
+    const same = ok(updateProfile(base(), { sex: 'male', heightCm: 178 }, NOW));
+    expect(same.file).toBeUndefined();
+    expect(same.text).toContain('Nothing was written');
+  });
+
+  it('AC4 — the written profile wins a merge against an older copy and loses to a newer one', () => {
+    const website = base();
+    const agent = ok(updateProfile(website, { heightCm: 165 }, NOW)).file!;
+    const ctx = { deviceId: 'website', now: '2026-09-01T10:00:00Z' };
+
+    // The website copy the agent read from is now the older one, either way round.
+    expect(mergeFiles(website, agent, ctx).profile.heightCm).toBe(165);
+    expect(mergeFiles(agent, website, ctx).profile.heightCm).toBe(165);
+
+    // Then the user changes it in the app: a later write still wins.
+    const later: RoadmapFile = {
+      ...agent,
+      profile: { ...agent.profile, heightCm: 170, updatedAt: '2026-09-01T11:00:00Z', lamport: (agent.profile.lamport ?? 0) + 1 },
+    };
+    expect(mergeFiles(agent, later, ctx).profile.heightCm).toBe(170);
+    expect(mergeFiles(later, agent, ctx).profile.heightCm).toBe(170);
+  });
+});
+
 describe('US-32 — the published JSON Schema and the zod gate say the same thing', () => {
   const ZOD: Record<string, z.ZodObject<z.ZodRawShape>> = {
     read_record: readRecordInput,
@@ -279,6 +374,7 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
     add_measurement: addMeasurementInput,
     add_lab_values: addLabValuesInput,
     correct_value: correctValueInput,
+    update_profile: updateProfileInput,
     report_feedback: reportFeedbackInput,
   };
 
@@ -339,6 +435,9 @@ describe('US-32 — the dispatcher', () => {
       ['add_measurement', { metricType: 'ldl', value: 2.1, wat: true }],
       ['add_measurement', { metricType: 'ldl', value: 2.1, recordedAt: 'yesterday' }],
       ['correct_value', { id: 'm1' }],
+      ['update_profile', { sex: 'other' }],
+      ['update_profile', { sex: 'female', wat: true }],
+      ['update_profile', { expected: { sex: 'male', wat: 1 } }],
       ['read_record', { since: '14/07/2026' }],
     ];
     for (const [name, args] of cases) {
@@ -355,6 +454,7 @@ describe('US-32 — the dispatcher', () => {
       add_measurement: { metricType: 'ldl', value: 2.1 },
       add_lab_values: { values: [{ metricName: 'ferritin', value: 210, unit: 'µg/L' }] },
       correct_value: { id: 'm1', newValue: 2.1 },
+      update_profile: { sex: 'female' },
     } as const;
     for (const [name, args] of Object.entries(wellFormed)) {
       // A missing record is the user's to fix; it must reach the agent as a
@@ -375,15 +475,17 @@ describe('US-32 — the dispatcher', () => {
     expect(outcome.status === 'ok' && outcome.file).toBeUndefined();
   });
 
-  it('publishes six tools, and marks only the reads read-only', () => {
+  it('publishes seven tools, and marks only the reads read-only', () => {
     expect(MCP_TOOLS.map((t) => t.name)).toEqual([
-      'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'report_feedback',
+      'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'update_profile', 'report_feedback',
     ]);
     // report_feedback reads nothing and writes nothing — it returns a URL.
     expect(MCP_TOOLS.filter((t) => t.annotations.readOnlyHint).map((t) => t.name))
       .toEqual(['read_record', 'get_plan', 'report_feedback']);
-    // A correction supersedes a row for good; only that tool claims to destroy.
-    expect(MCP_TOOLS.filter((t) => t.annotations.destructiveHint).map((t) => t.name)).toEqual(['correct_value']);
+    // A correction supersedes a row for good, and a profile write overwrites
+    // the only copy there is; both claim to destroy, and nothing else does.
+    expect(MCP_TOOLS.filter((t) => t.annotations.destructiveHint).map((t) => t.name))
+      .toEqual(['correct_value', 'update_profile']);
     for (const tool of MCP_TOOLS) {
       expect(tool.inputSchema.additionalProperties, tool.name).toBe(false);
       // Nothing here reaches outside the one user's own file, so no tool is open-world.

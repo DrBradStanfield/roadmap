@@ -67,7 +67,7 @@ The longer version, including what to do when a step goes wrong, is in [connect 
 
 It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same plan the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. And it corrects a value that went in wrong. If a tool refuses something you reasonably expected, it can hand you a prefilled GitHub issue link to report it; nothing is filed until you click it.
 
-It cannot delete anything, because there is no delete tool. A correction never erases either: the assistant adds a new row with the right number and marks the old row "entered-in-error", so both stay in your file for good. That is how a hospital record works, and it is why you can always see what you were told and when. It also cannot touch your medications, supplements, screenings, documents or profile.
+It cannot delete anything, because there is no delete tool. A correction never erases either: the assistant adds a new row with the right number and marks the old row "entered-in-error", so both stay in your file for good. That is how a hospital record works, and it is why you can always see what you were told and when. It also cannot touch your medications, supplements, screenings or documents. It can change four things about you: your sex, your birth year, your birth month and your height. Your plan is worked out from those. Those four are not kept in history the way a blood test is: the newest write is the one your record keeps, so of two changes made in the same minute, the later one is what you end up with. The assistant has to state what it believes a field holds before it changes it, and is refused if it has that wrong.
 
 Your record holds one value per test per day. Ask for a second weight on a day that already has one and the call is refused by name, and the refusal points the assistant at a correction instead of an overwrite.
 
@@ -145,7 +145,7 @@ Open the tool and correct the value there. The app appends the correction and ma
 
 If your record lives in GitHub, the web connector cannot reach it, and the setup prompt on your own computer is the way in.
 
-Do not leave the tool open in another tab while an AI is writing the file. The writer on your computer takes a lock and merges in a conflicting edit. A browser tab writing through your cloud provider's own API sits outside that lock, so the two can still collide. On Google Drive this is looser still: Drive has no conditional write, so our server checks the file version before and after each save rather than reserving it, and two writers landing at the same instant can still race.
+The tool now keeps up with a file an AI is writing: it re-reads your record within a minute, and as soon as you switch back to its tab. That is catching up, not a lock. Take care with it open while an AI writes. The writer on your computer takes a lock and merges in a conflicting edit. A browser tab writing through your cloud provider's own API sits outside that lock, so the two can still collide. On Google Drive this is looser still: Drive has no conditional write, so our server checks the file version before and after each save rather than reserving it, and two writers landing at the same instant can still race.
 
 ## Why it works this way
 

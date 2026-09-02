@@ -90,7 +90,9 @@ That is the design, not a fault. Two weights for one day and nothing downstream 
 
 A correction is its own step, and it never erases anything. Claude adds a new row with the corrected number and the original date, and marks the old row "entered-in-error". Both rows stay in the file for good. That is how a hospital record works, and it is why you can always see what you were told and when.
 
-There is no delete tool. Nothing Claude can call removes a row. It also cannot touch your medications, supplements, screenings, documents or profile: those are current state that a second device could overwrite, so for now only clinical values are writable this way.
+There is no delete tool. Nothing Claude can call removes a row. It also cannot touch your medications, supplements, screenings or documents: those are current state that a second device could overwrite, so for now only clinical values are writable this way.
+
+It can change four things about you: your sex, your birth year, your birth month and your height, because your plan is worked out from those. Unlike a blood test, they are not kept in history: the newest write is the one your record keeps, so the later of two changes made in the same minute is what you end up with. Claude states what it believes the field holds before it changes one, and is refused if it has that wrong. How the site displays units is not Claude's to change.
 
 Every write copies your record to a backup beside it first, named `health-roadmap.json.bak-` and the time. The last three are kept. If a write goes wrong, that file is your record from the moment before it.
 

@@ -21,7 +21,7 @@ import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
 import type { StorageAdapter } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { isToolName, MCP_TOOLS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { readCapped } from './mcp-clients.server';
 import { isMcpEnabled, issuer } from './mcp-config.server';
@@ -95,10 +95,12 @@ function refuse(text: string): ToolAnswer {
   return { text, isError: true };
 }
 
-const WRITE_TOOLS = new Set(['add_measurement', 'add_lab_values', 'correct_value']);
+const WRITE_TOOLS = new Set(['add_measurement', 'add_lab_values', 'correct_value', 'update_profile']);
 
+/** A profile write carries a correction's weight: like a correction it
+ *  overwrites current state, so it is what a falsification attempt would use. */
 function writeCost(name: string): number {
-  return name === 'correct_value' ? WRITE_COST.correct : WRITE_COST.add;
+  return name === 'correct_value' || name === 'update_profile' ? WRITE_COST.correct : WRITE_COST.add;
 }
 
 function findRow(file: RoadmapFile, id: string): FileMeasurement | FileLabValue | undefined {
@@ -131,6 +133,23 @@ function checkCorrection(file: RoadmapFile, args: unknown, now: string): string 
   return null;
 }
 
+/**
+ * The same guard for `update_profile` (US-34): every field the call changes
+ * must come with the value the agent believes it is replacing. The profile is
+ * last-write-wins, so there is no superseded copy to read back — the claim is
+ * the only thing standing between a stale read and a silently wrong plan.
+ */
+function checkProfileUpdate(args: unknown): string | null {
+  const request = (args ?? {}) as Record<string, unknown>;
+  const expected = (request.expected ?? {}) as Record<string, unknown>;
+  const missing = PROFILE_FIELDS.filter((field) => request[field] !== undefined && expected[field] === undefined);
+  if (missing.length === 0) return null;
+  return (
+    `update_profile needs expected.${missing.join(', expected.')} on this server: the value you believe the record ` +
+    'holds now, or null if it holds none. Read the record, then update. Nothing was written.'
+  );
+}
+
 function daysBetween(from: string, to: string): number {
   const ms = Date.parse(to) - Date.parse(from);
   return Number.isFinite(ms) ? Math.floor(ms / 86_400_000) : 0;
@@ -147,6 +166,10 @@ function daysBetween(from: string, to: string): number {
 function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile, args: unknown, now: string): string | null {
   if (name === 'correct_value') {
     const refusal = checkCorrection(file, args, now);
+    if (refusal) return refusal;
+  }
+  if (name === 'update_profile') {
+    const refusal = checkProfileUpdate(args);
     if (refusal) return refusal;
   }
   if (WRITE_TOOLS.has(name) && !spendWrites(connectionKey(token.rt), writeCost(name))) {

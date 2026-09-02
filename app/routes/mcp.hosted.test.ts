@@ -578,6 +578,45 @@ describe('the four mandatory corrections mitigations (US-32, design §3)', () =>
   });
 });
 
+describe('update_profile on the hosted surface (US-34)', () => {
+  it('refuses a change that does not state `expected` for the field it changes', async () => {
+    seedRecord((file) => ({ ...file, profile: { ...file.profile, sex: 'male', heightCm: 178 } }));
+    const { access } = await connect();
+
+    const bare = await callTool(access, 'update_profile', { heightCm: 165 });
+    expect(bare.isError).toBe(true);
+    expect(bare.text).toContain('expected.heightCm');
+    expect(storedRecord().profile.heightCm).toBe(178);
+
+    // A claim about a DIFFERENT field is not a claim about this one.
+    const wrongField = await callTool(access, 'update_profile', { heightCm: 165, expected: { sex: 'male' } });
+    expect(wrongField.isError).toBe(true);
+    expect(wrongField.text).toContain('expected.heightCm');
+
+    const stated = await callTool(access, 'update_profile', { heightCm: 165, expected: { heightCm: 178 } });
+    expect(stated.isError).toBe(false);
+    expect(storedRecord().profile.heightCm).toBe(165);
+    expect(storedRecord().profile.sex).toBe('male');
+  });
+
+  it('costs a correction, and a refused one spends it too', async () => {
+    seedRecord((file) => ({ ...file, profile: { ...file.profile, heightCm: 178 } }));
+    const { access } = await connect();
+
+    // Same weight as a correction: both overwrite what the record says now.
+    const attempts = WRITES_PER_HOUR / WRITE_COST.correct;
+    for (let i = 0; i < attempts; i++) {
+      const wrong = await callTool(access, 'update_profile', { heightCm: 165, expected: { heightCm: 99 } });
+      expect(wrong.isError, `attempt ${i}`).toBe(true);
+      expect(wrong.text, `attempt ${i}`).not.toContain('allowance');
+    }
+    const spent = await callTool(access, 'update_profile', { heightCm: 165, expected: { heightCm: 178 } });
+    expect(spent.isError).toBe(true);
+    expect(spent.text).toContain('allowance');
+    expect(storedRecord().profile.heightCm).toBe(178);
+  });
+});
+
 describe('a folder that does not hold a record is refused, never blanked (US-32)', () => {
   it('refuses the call and leaves the bytes exactly as they were', async () => {
     // migrateFile rebuilds unrecognised bytes as a BLANK record, so without a
