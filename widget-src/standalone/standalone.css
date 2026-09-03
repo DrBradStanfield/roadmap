@@ -46,7 +46,7 @@
   background: none; border: 0; padding: 0; cursor: pointer;
   font: inherit; color: var(--color-brand, #00a38b); text-decoration: underline;
 }
-.hr-sync-detail { color: #5a6b73; font-size: 12.5px; flex-basis: 100%; }
+.hr-sync-detail { color: #5a6b73; font-size: 12.5px; flex-basis: 100%; margin: 0; }
 .hr-sync-btn {
   margin-left: auto; background: #00a38b; color: #fff; border: 0; border-radius: 8px;
   font-size: 13px; font-weight: 600; padding: 7px 13px; cursor: pointer;
@@ -141,3 +141,6 @@
 @media (max-width: 600px) {
   .hr-modal { max-width: none; width: 100vw; border-radius: 0; max-height: 100dvh; height: 100dvh; margin: 0; }
 }
+/* US-09 AC5 — "Where do you want to keep your health record?" leads the local
+   state, so it spans the card instead of sitting right-aligned beside a status. */
+.hr-sync-btn-full { margin-left: 0; width: 100%; box-sizing: border-box; }

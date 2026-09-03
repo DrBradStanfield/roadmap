@@ -4,6 +4,7 @@ import {
   LOCAL_FIRST_EMAIL_HELPER,
   GUEST_CAPTURE_BUTTON_LABEL,
 } from './ResultsPanel';
+import { EMAIL_STORAGE_NOTICE } from '../lib/storage-notice';
 
 // Brad locked this copy on 2026-06-15. On every LIVE (LOCAL_FIRST) surface the
 // guest plan-capture CTA opens the browser save-as-PDF window — the email field
@@ -30,8 +31,14 @@ describe('guest plan-capture CTA copy (PDF, not email)', () => {
     expect(GUEST_CAPTURE_BUTTON_LABEL).toBe('Get My Health Plan');
   });
 
+  it('US-09 AC5: the storage line under the helper says where the record lives', () => {
+    expect(EMAIL_STORAGE_NOTICE).toBe(
+      'Your health record stays in your browser until you choose to keep it in your Dropbox or Google Drive.',
+    );
+  });
+
   it('no CTA copy mentions email/emailed/sent (the framing is now inaccurate)', () => {
-    for (const copy of [LOCAL_FIRST_EMAIL_HELPER, DEFAULT_EMAIL_HELPER, GUEST_CAPTURE_BUTTON_LABEL]) {
+    for (const copy of [LOCAL_FIRST_EMAIL_HELPER, DEFAULT_EMAIL_HELPER, GUEST_CAPTURE_BUTTON_LABEL, EMAIL_STORAGE_NOTICE]) {
       expect(copy.toLowerCase()).not.toMatch(/email|sent/);
     }
   });

@@ -7,6 +7,7 @@ import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, 
 import { synthesizeLabArchiveEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
+import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
 
 class UploadError extends Error {
   constructor(message: string, public code: UploadErrorCode) {
@@ -637,20 +638,16 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
           {state === 'select' && archiveMode === 'device-only' && !skipArchive && (
             <div className="upload-select upload-connect-first">
               <h3 className="upload-connect-title">Keep your original documents</h3>
-              <p className="upload-connect-text">
-                Connect your cloud so the files themselves are saved — organised into
-                Lab&nbsp;results / Clinic&nbsp;letters / Scans — in <strong>your</strong> Google
-                Drive or Dropbox. Dr&nbsp;Brad's servers never store them.
-              </p>
+              <p className="upload-connect-text">{UPLOAD_STORAGE_NOTICE}</p>
               <button
                 type="button"
                 className="upload-btn-primary"
                 onClick={() => {
                   onClose();
-                  window.dispatchEvent(new Event('hr:open-backend-picker'));
+                  openBackendPicker();
                 }}
               >
-                Choose where to save
+                Choose where to keep it
               </button>
               <button type="button" className="upload-connect-skip" onClick={() => setSkipArchive(true)}>
                 Continue without keeping my files ›

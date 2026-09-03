@@ -24,6 +24,7 @@ import { sendReportEmail, getReportHtml, sendGuestReport, trackABConversion, get
 import { EMAIL_REGEX } from '../lib/email';
 import { LOCAL_FIRST, SHOPIFY_SURFACE } from '../lib/build-flags';
 import { ColumnHeader } from './ColumnHeader';
+import { StorageNotice } from '../lib/storage-notice';
 import { FeedbackForm } from './FeedbackForm';
 // @ts-ignore — JSON import for blog post cards
 import blogIndex from '../../../docs/blog/index.json';
@@ -543,6 +544,7 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
   return (
     <div className={`email-capture no-print${formStage === 3 ? ' field-attention' : ''}`}>
       <p className="email-guest-helper">{helperText}</p>
+      <StorageNotice surface="email" className="email-guest-helper" />
       <div className="email-capture-row">
         <input
           type="email"

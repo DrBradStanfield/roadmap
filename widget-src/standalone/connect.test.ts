@@ -51,7 +51,7 @@ function makeStorage(): Storage {
   return s as unknown as Storage;
 }
 
-import { logOff, BACKEND_KEY } from './connect';
+import { logOff, storageState, BACKEND_KEY, type Backend } from './connect';
 
 const FILE_KEY = 'health_roadmap_file_v2';
 const REV_KEY = 'health_roadmap_file_v2_rev';
@@ -141,5 +141,27 @@ describe('logOff teardown', () => {
     expect(store.getItem(BACKEND_KEY)).toBeNull();
     expect(reloadSpy).toHaveBeenCalledTimes(1);
     expect(remoteDeleteSpy).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * US-09 AC5 — one definition of "guest, no provider". app.tsx gates the storage
+ * notices on it and sync-control.tsx picks its branch from it, so this pins the
+ * one state in which the notices may show.
+ */
+describe('storageState', () => {
+  const backends: Backend[] = ['local', 'dropbox', 'google-drive', 'github', 'self-host'];
+
+  it('is guest exactly in the local, non-reconnect state', () => {
+    for (const backend of backends) {
+      expect(storageState(backend) === 'guest').toBe(backend === 'local');
+      expect(storageState(backend, 'google-drive')).toBe('reconnect');
+    }
+  });
+
+  it('is cloud for every connected provider', () => {
+    for (const backend of backends.filter((b) => b !== 'local')) {
+      expect(storageState(backend)).toBe('cloud');
+    }
   });
 });

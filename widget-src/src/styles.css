@@ -5507,3 +5507,23 @@ input[type="number"] {
 .doc-view-original-btn:hover { background: #f0faf8; }
 .doc-view-original-btn:disabled { opacity: 0.5; cursor: default; }
 .doc-view-original-error { color: #b91c1c; font-size: 12.5px; }
+
+/* US-09 AC5 — the storage promise, one line per surface. */
+.hr-storage-notice {
+  color: #5a6b73;
+  font-size: 12.5px;
+  line-height: 1.45;
+  margin: 8px 0 0;
+}
+/* The provider names are a real button (keyboard focusable) that inherits the
+   sentence's type, so the line still reads as a sentence. */
+.hr-storage-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: #00806e;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.hr-storage-link:hover { color: #006355; }

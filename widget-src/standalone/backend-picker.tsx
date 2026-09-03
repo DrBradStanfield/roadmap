@@ -1,16 +1,14 @@
 /**
- * "Where should your health plan live?" lightbox — the one surface for choosing
+ * "Where do you want to keep your health record?" lightbox — the one surface for choosing
  * or switching the storage backend (Brad's design call, 2026-06-10):
  *  - Neutral ordering, NO "recommended" badge (no pushing): Google Drive,
- *    Dropbox, then Advanced: GitHub, self-host. "Just this browser" last as the
+ *    Dropbox, then Advanced: GitHub, self-host. "This browser only" last as the
  *    explicit no-wall escape hatch.
  *  - Switching while connected copies the current cloud's data down to this
  *    device first and drops the old connection's tokens (prepareSwitch), then
  *    the new connect lifts the data up — never stranded, nothing left behind.
- *  - On the website (Phase 5), this modal auto-opens once after the
- *    "Get Your Personalized Plan" email step by firing
- *    `window.dispatchEvent(new Event('hr:open-backend-picker'))` — the listener
- *    already lives in SyncControl.
+ *  - Opened only via openBackendPicker() (src/lib/storage-notice.tsx); the
+ *    listener lives in SyncControl.
  *  - Native <dialog>/showModal(): real focus trap + Escape + top-layer for
  *    free (converted pre-Phase-5, before the modal auto-opens on the website).
  */
@@ -20,6 +18,7 @@ import { GitHubAdapter, WebDavAdapter } from '../src/storage';
 import { adapterFor, BACKEND_KEY, copyDownToDevice, finishFormConnect, logOff, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
 import { trackProductEvent } from '../src/lib/api';
 import { useModalDialog } from './use-dialog';
+import { PLAN_STORAGE_CTA, PLAN_STORAGE_NOTICE } from '../src/lib/storage-notice';
 
 /* Minimal brand marks (Brad OK'd logos). Inline so no asset fetches. */
 const LOGOS: Record<string, React.ReactNode> = {
@@ -73,29 +72,29 @@ const OPTIONS: Option[] = [
   {
     id: 'google-drive',
     name: 'Google Drive',
-    blurb: "A private 'Health Plan by Dr Brad' folder in your Google Drive.",
+    blurb: 'One file in your own Google Drive, in a private "Health Plan by Dr Brad" folder.',
   },
   {
     id: 'dropbox',
     name: 'Dropbox',
-    blurb: "A private 'Health Plan by Dr Brad' folder in your Dropbox.",
+    blurb: 'One file in your own Dropbox, in a private "Health Plan by Dr Brad" folder.',
   },
   {
     id: 'github',
     name: 'GitHub',
-    blurb: 'A private GitHub repository you own — with full version history.',
+    blurb: 'A private GitHub repository you own. Every change is kept in its history.',
     advanced: true,
   },
   {
     id: 'self-host',
     name: 'Your own server',
-    blurb: 'Any WebDAV server you run (Nextcloud, ownCloud, …).',
+    blurb: 'Any WebDAV server you run, such as Nextcloud or ownCloud.',
     advanced: true,
   },
   {
     id: 'local',
-    name: 'Just this browser',
-    blurb: 'No account needed. Data stays on this device only.',
+    name: 'This browser only',
+    blurb: 'No account needed. Your record stays in this browser. Clear your browsing data and it is gone.',
     local: true,
   },
 ];
@@ -158,7 +157,7 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
   return createPortal(
     <dialog
       className="hr-modal"
-      aria-label="Choose where to save your data"
+      aria-label={PLAN_STORAGE_CTA}
       ref={dialogRef}
       onCancel={(e) => { e.preventDefault(); onCloseRef.current(); }}
       onClick={(e) => { if (e.target === e.currentTarget) onCloseRef.current(); }}
@@ -170,10 +169,8 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
 
         {step === 'list' && (
           <>
-            <h2>Where should your health plan live?</h2>
-            <p className="hr-modal-sub">
-              Your health data saves to a place <strong>you</strong> control — never to Dr Brad's servers.
-            </p>
+            <h2>{PLAN_STORAGE_CTA}</h2>
+            <p className="hr-modal-sub">{PLAN_STORAGE_NOTICE}</p>
             {OPTIONS.map((o, i) => (
               <React.Fragment key={o.id}>
                 {o.advanced && !OPTIONS[i - 1]?.advanced && <div className="hr-opt-divider">Advanced</div>}
@@ -210,8 +207,8 @@ export function BackendPickerModal({ current, onClose }: { current: Backend; onC
             <button className="hr-modal-back" onClick={() => setStep('list')}>← Back</button>
             <h2>Log off this device?</h2>
             <p className="hr-modal-sub">
-              Your data stays safe in your {PROVIDER_LABELS[current]} — this just signs you out and
-              clears your health plan from this device. Sign back in with the same account to
+              Your data stays safe in your {PROVIDER_LABELS[current]}. This just signs you out and
+              clears your health record from this browser. Sign back in with the same account to
               restore everything.
             </p>
             <div className="hr-sync-form">

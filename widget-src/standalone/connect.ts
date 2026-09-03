@@ -28,6 +28,16 @@ export type Backend = 'dropbox' | 'google-drive' | 'github' | 'self-host' | 'loc
 
 export const BACKEND_KEY = 'health_roadmap_backend';
 
+/** Which storage state the UI is in. Defined once so app.tsx (the storage-notice
+ *  gate) and sync-control.tsx (the branch it renders) cannot disagree about what
+ *  "guest, no provider" means. */
+export type StorageState = 'reconnect' | 'cloud' | 'guest';
+
+export function storageState(backend: Backend, reconnect?: 'google-drive'): StorageState {
+  if (reconnect) return 'reconnect';
+  return backend === 'local' ? 'guest' : 'cloud';
+}
+
 /** Human-readable provider names. Shared by the sync status line and the
  *  backend picker's log-off copy so the two surfaces never drift. */
 export const PROVIDER_LABELS: Record<Exclude<Backend, 'local'>, string> = {

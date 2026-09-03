@@ -110,6 +110,6 @@ describe('RoadmapStore.bulkSaveLabValues with correctsId (US-32)', () => {
     ]);
     expect(result.saved).toHaveLength(1);
     expect(result.skippedDuplicates).toBe(1);
-    expect(store.loadLabValues().filter((l) => l.status === 'active')).toHaveLength(1);
+    expect(store.loadLabValues()).toHaveLength(1); // loadLabValues() is already active-only
   });
 });

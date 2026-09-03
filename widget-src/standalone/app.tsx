@@ -29,8 +29,9 @@ import {
 import { dropboxConfig } from './dropbox-config';
 import { googleDriveConfig } from './google-config';
 import { SyncControl, RemindersSection } from './sync-control';
+import { StorageNoticeContext } from '../src/lib/storage-notice';
 import { HistoryLightboxHost } from './history-lightbox';
-import { liftLocalInto, BACKEND_KEY, type Backend } from './connect';
+import { liftLocalInto, storageState, BACKEND_KEY, type Backend } from './connect';
 import { trackProductEvent } from '../src/lib/api';
 
 interface ResolvedBackend {
@@ -130,10 +131,12 @@ async function main() {
             every connect path reloads onto slide 1, so a notice inside it would
             be announced to an off-screen panel. */}
         <RemindersEnrolledNotice backend={backend} />
-        <HealthTool
-          syncControl={({ hasData }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} />}
-          remindersSection={<RemindersSection backend={backend} />}
-        />
+        <StorageNoticeContext.Provider value={storageState(backend, reconnect) === 'guest'}>
+          <HealthTool
+            syncControl={({ hasData }) => <SyncControl backend={backend} reconnect={reconnect} hasData={hasData} />}
+            remindersSection={<RemindersSection backend={backend} />}
+          />
+        </StorageNoticeContext.Provider>
         <HistoryLightboxHost />
       </ErrorBoundary>
     </React.StrictMode>,

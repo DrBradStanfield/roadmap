@@ -66,6 +66,7 @@ import { BloodTestTimeline, type BloodTestPrefillFn } from './BloodTestTimeline'
 import { AdditionalLabRows } from './AdditionalLabRows';
 import { StartingInfoVitals, type VitalsPrefillFn } from './StartingInfoVitals';
 import { CommitTickButton } from './CommitTickButton';
+import { StorageNotice } from '../lib/storage-notice';
 
 interface FieldConfig {
   field: keyof HealthInputs;
@@ -2394,6 +2395,8 @@ export function InputPanel({
       {healthDocuments && healthDocuments.length > 0 && (
         <HealthRecordsSection documents={healthDocuments} onDeleted={onDocumentDeleted} />
       )}
+      {/* US-09 AC5: stage 2 is the first moment a value exists. */}
+      {formStage >= 2 && <StorageNotice surface="input" />}
     </div>
   );
 }

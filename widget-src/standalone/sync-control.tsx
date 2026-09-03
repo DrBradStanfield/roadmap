@@ -6,17 +6,17 @@
  * The Drive "signed out" state keeps its own inline Reconnect button (GIS popup
  * fallback — one click, no modal).
  *
- * Phase 5 (website): after the "Get Your Personalized Plan" email step, fire
- * `window.dispatchEvent(new Event('hr:open-backend-picker'))` to auto-open the
- * picker once — the listener below already handles it.
+ * openBackendPicker() (src/lib/storage-notice.tsx) is the only way in; the
+ * listener below is the only listener.
  */
 import React, { useEffect, useState } from 'react';
 import { GoogleDriveAdapter, isSyncPending, SYNC_PENDING_EVENT } from '../src/storage';
 import { googleDriveConfig } from './google-config';
-import { BACKEND_KEY, liftLocalInto, PROVIDER_LABELS, useBusyRun, type Backend } from './connect';
+import { BACKEND_KEY, liftLocalInto, PROVIDER_LABELS, storageState, useBusyRun, type Backend } from './connect';
 import { BackendPickerModal } from './backend-picker';
 import { RemindersControl } from './reminders-control';
 import { remindersSupported } from './reminders';
+import { openBackendPicker, OPEN_PICKER_EVENT, PLAN_STORAGE_CTA, StorageSentence } from '../src/lib/storage-notice';
 
 export function SyncControl({ backend, reconnect, hasData = true }: {
   backend: Backend;
@@ -31,8 +31,8 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
 
   useEffect(() => {
     const open = () => setPickerOpen(true);
-    window.addEventListener('hr:open-backend-picker', open);
-    return () => window.removeEventListener('hr:open-backend-picker', open);
+    window.addEventListener(OPEN_PICKER_EVENT, open);
+    return () => window.removeEventListener(OPEN_PICKER_EVENT, open);
   }, []);
 
   // "Still waiting to sync" indicator — driven by the store's pending-sync
@@ -71,27 +71,29 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
       location.reload();
     });
 
+  const state = storageState(backend, reconnect);
+  const provider = backend === 'local' ? '' : PROVIDER_LABELS[backend];
   let content: React.ReactNode;
-  if (reconnect === 'google-drive') {
+  if (state === 'reconnect') {
     // Google Drive remembered but its short-lived token is gone (endpoint down /
     // revoked). Re-auth needs a user click (browsers block popups at page load).
     content = (
       <div className="hr-sync hr-sync-local">
-        <span className="hr-sync-status">Google Drive — signed out</span>
+        <span className="hr-sync-status">Google Drive is signed out</span>
         <button className="hr-sync-btn" disabled={busy} onClick={() => void reconnectDrive()}>
           {busy ? 'Reconnecting…' : 'Reconnect Google Drive'}
         </button>
         <span className="hr-sync-detail">
-          Your data is safe in your Google Drive. Sign in again to keep syncing — anything you change
-          meanwhile is saved on this device and merges when you reconnect.
+          Your record is safe in your Google Drive. Sign in again to keep it in step. Anything you
+          change meanwhile is kept in this browser and merges when you reconnect.
         </span>
         <div className="hr-sync-more">
-          <button type="button" className="hr-sync-link" onClick={() => void forgetDrive()}>Use this device only</button>
+          <button type="button" className="hr-sync-link" onClick={() => void forgetDrive()}>Use this browser only</button>
         </div>
         {error && <span className="hr-sync-error">{error}</span>}
       </div>
     );
-  } else if (backend !== 'local') {
+  } else if (state === 'cloud') {
     // Single clean line: the privacy promise IS the status (the ✓ now leads it).
     // The reminders toggle moved out to its own plan section (RemindersSection,
     // wired via the remindersSection prop in app.tsx). The provider NAME is the
@@ -102,29 +104,29 @@ export function SyncControl({ backend, reconnect, hasData = true }: {
     content = (
       <div className="hr-sync hr-sync-cloud">
         <span className="hr-sync-status">
-          ✓ Your health data is yours alone — it never leaves your{' '}
-          <button type="button" className="hr-sync-status-link" onClick={() => setPickerOpen(true)}>
-            {PROVIDER_LABELS[backend]}
+          ✓ Your health record is yours alone. It lives in your{' '}
+          <button type="button" className="hr-sync-status-link" onClick={openBackendPicker}>
+            {provider}
           </button>
         </span>
         {pendingSync && (
           <span className="hr-sync-detail">
-            Some data on this device is still waiting to sync to your {PROVIDER_LABELS[backend]} —
-            it will upload automatically. Your data is safe on this device meanwhile.
+            Some data in this browser is still waiting to sync to your {provider}.
+            It will upload automatically. Your data is safe in this browser meanwhile.
           </span>
         )}
       </div>
     );
   } else if (!hasData) {
     // Brand-new user, nothing entered yet — no storage pitch (the picker stays
-    // reachable via the hr:open-backend-picker event, e.g. the email step).
+    // reachable via openBackendPicker(), e.g. the email step).
     content = null;
   } else {
     content = (
       <div className="hr-sync hr-sync-local">
-        <span className="hr-sync-status">Saved on this device only</span>
-        <button className="hr-sync-btn" onClick={() => setPickerOpen(true)}>Save to your cloud</button>
-        <span className="hr-sync-detail">Connect your own Google Drive or Dropbox so your plan is backed up and you can track changes over time — Dr Brad never stores your health data.</span>
+        <button className="hr-sync-btn hr-sync-btn-full" onClick={openBackendPicker}>{PLAN_STORAGE_CTA}</button>
+        {/* Gate-free: this branch is already the guest, no-provider state. */}
+        <StorageSentence surface="plan" className="hr-sync-detail" />
       </div>
     );
   }
