@@ -12,7 +12,8 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   errors with frames only in theme assets are not ours; same for
   native-frames-only unhandled rejections (in-app-browser injected scripts:
   GSA/Facebook webviews) when the minified symbol greps to nothing in our
-  bundles (confirmed again 2026-08-25, "Ba`prod").
+  bundles — ledger-on-sight (confirmed 2026-08-25 "Ba`prod"; again 2026-09-03
+  "Ka`prod", GSA webview iOS 18.3.2).
 - `[prior][widget]` iOS WebKit-only layout/interaction bugs are a known class
   (CLAUDE.md list: content-box flex default, 280px input min-content, sticky
   in max-content parents). If a fix touches layout, the escape analysis should
