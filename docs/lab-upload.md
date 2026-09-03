@@ -4,9 +4,7 @@
 
 **Status**: Shipped (v341 March 2026 · FHIR `replaces` redesign May 2026 · **v2 local-first extension June 2026**). **Production cutover done 2026-06-12** — `/pages/roadmap` now serves the v2 local-first build (`health-roadmap-727`); the v1 Supabase path described in the first part of this doc is **rollback-only**. The current architecture map is [`architecture-v2.html`](architecture-v2.html); the live behaviour is the **"v2: Local-first lab uploads"** section below.
 
-**Commits**: `296d9ab`, `dee69c2`, `06aa627` (initial) · `052ada1`, `5ab25ad`, `8f428cb`, `0f795d7`, `6a56814`, `2bce3bf` (May 2026 redesign)
-
-> **Visual architecture reference:** [`lab-upload-overview.html`](lab-upload-overview.html) — pipeline diagrams, FHIR schema, RPC walkthrough, defence-in-depth tables. Start here if you're new to the system.
+> **Visual architecture reference:** [`lab-upload-overview.html`](lab-upload-overview.html) — pipeline diagrams, the storage map, the upload-conflict rule, defence-in-depth tables. Start here if you're new to the system.
 
 ---
 
@@ -38,33 +36,41 @@ health-upload.js (543 KB gzip) — Processing bundle. Contains pdfjs-dist + JSZi
                                   Exposes window.HealthUpload API.
 ```
 
-**Why two bundles instead of one?** If we put pdfjs-dist and JSZip in the main bundle, every visitor pays ~400KB extra on initial load for a feature most won't use on that visit. If we put the UI in the upload bundle, we'd need a second copy of React (~40KB) since Vite IIFE bundles can't share modules across entry points.
-
-**Why not dynamic import?** Vite IIFE format doesn't support code splitting. Shopify theme extensions serve static assets from their CDN — no control over import maps or module resolution. A separate IIFE with `window.HealthUpload` is the simplest pattern that works.
+**Why two bundles?** One bundle would make every visitor pay ~400KB on initial load for a feature most won't use; putting the UI in the upload bundle would need a second copy of React, since Vite IIFE bundles can't share modules across entry points. Dynamic import isn't an option either — IIFE format has no code splitting, and Shopify theme extensions give us no control over import maps. A separate IIFE exposing `window.HealthUpload` is the simplest thing that works.
 
 **Script loading**: The Shopify CDN URL for `health-upload.js` is passed via `data-upload-url` attribute on `#health-tool-root` in `app-block.liquid`. The widget reads this attribute and injects a `<script>` tag on demand. A promise cache (`loadPromiseRef`) prevents duplicate script injection if the user opens the modal multiple times.
 
 ### Data Flow
+
+Today's flow (v2 local-first — what the live widget does):
 
 ```
 User drops file(s) or ZIP
   ↓
 health-upload.js extracts text/images from PDF (client-side, pdfjs-dist)
   ↓
-POST extracted content to /api/lab-import (one API call per file)
+POST extracted content through the Shopify app proxy to api.lab-import-v2
+  (BYOK build: browser → api.anthropic.com direct)
   ↓
-Backend constructs system prompt server-side + calls Claude Haiku 4.5
+extractOrClassify() builds the system prompt server-side, calls Claude Haiku 4.5,
+  and retries transient failures (2 outer attempts × 2 calls; see CLAUDE.md)
   ↓
-Backend resolves units to SI canonical (deterministic lookup + range fallback)
+Server resolves units to SI canonical (deterministic lookup + range fallback)
+  and returns SI plus the original display value/unit
   ↓
-Returns values with both SI canonical and original display value/unit
+Review table (client-side) shows the values in a date × metric matrix — the user
+  edits, unticks, dates them, and resolves conflicts (see "Upload conflicts")
   ↓
-Review UI shows extracted values — user confirms, edits, or removes
+RoadmapStore.bulkSaveMeasurements / bulkSaveLabValues / bulkSaveDocuments write
+  into the local-first file: one active row per (metric, day); documents dedup on
+  content hash + sourceFileName; source 'lab_import' ('lab_import_edited' if edited)
   ↓
-Bulk POST confirmed values to /api/measurements (source: 'lab_import')
-  ↓
-Widget refreshes previousMeasurements from API, suggestions recalculate
+SyncManager writes the file to the user's own cloud; suggestions recalculate
 ```
+
+Nothing about a save touches Brad's server. There are no health-data CRUD
+endpoints, no per-user tables, and no HTTP status codes in the save path — the
+only server call an upload makes is the extraction call.
 
 ### Privacy Model
 
@@ -85,11 +91,9 @@ Blood test extraction is structured parsing (find metric names, read adjacent nu
 
 ### Why One LLM Call Per File?
 
-Each file (PDF or image) gets its own LLM call. No cross-file batching. Reasons:
-- Prevents cross-contamination between files from different dates, labs, or patients
-- Lab reports are small (1-5 pages) — cost per call is negligible
-- Simpler error handling: one file fails, others unaffected
-- 20 files max = 20 calls, well within rate limits
+Each file gets its own call, no cross-file batching: it prevents contamination
+between files from different dates, labs or patients; reports are small so the
+per-call cost is negligible; and one failure leaves the others unaffected.
 
 ### Why Server-Side System Prompt?
 
@@ -99,11 +103,7 @@ The system prompt (metric aliases, disambiguation rules, output schema) is hardc
 
 After the LLM returns `{ metric: "ldl", value: 130, unit: "mg/dL" }`, the server resolves this to SI canonical (`valueSI: 3.36 mmol/L`) before returning to the client. This keeps all unit logic centralized in `units.ts` and `anthropic.server.ts` rather than duplicating it client-side. The client receives values ready to save.
 
-**Resolution approach**: Deterministic lookup table keyed by `(metric, normalized_unit_string)`, auto-populated from `UNIT_DEFS` labels plus manual aliases for common variations (e.g. `"umol/l"` → `"µmol/L"`). Fallback: if the unit string isn't recognized, check which validation range the value fits (SI vs conventional). If it fits one but not the other, use that. If ambiguous, mark `confidence: 'low'`.
-
-### Why Promise.all for Bulk Save (Not Sequential)?
-
-The bulk save endpoint uses `Promise.all` to save all measurements concurrently. Supabase JS client uses HTTP/REST via PostgREST (not a connection pool), so parallel requests don't exhaust connections. Sequential saves would add ~750ms latency (50 measurements × 15ms each) for no benefit.
+**Resolution approach**: a deterministic lookup keyed by `(metric, normalized_unit_string)`, auto-populated from `UNIT_DEFS` labels plus aliases (`"umol/l"` → `"µmol/L"`). Unrecognised unit? Check which validation range the value fits; if it fits one and not the other, use that, else mark `confidence: 'low'`.
 
 ### Why pdf.js Worker as Blob URL?
 
@@ -117,13 +117,11 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
 
 ### Why Not Existing PDF-to-Markdown Tools?
 
-Researched: Microsoft MarkItDown (Python-only), Marker (Python/GPL), Zerox (Node.js/MIT, requires ghostscript), Docling (Python/MIT), pdf2md (browser/MIT but no OCR), Scribe.js (browser/AGPL), pdf-parse (browser/MIT but no OCR), Tesseract.js.
-
-**Finding**: No client-side tool handles both text AND scanned PDFs with accurate table extraction. MarkItDown's OCR plugin just sends images to an LLM (same approach we're taking). Our hybrid approach (pdf.js for text extraction + Claude Haiku vision for scanned pages) is the simplest path that handles all document types.
+Researched MarkItDown, Marker, Zerox, Docling, pdf2md, Scribe.js, pdf-parse and Tesseract.js. No client-side tool handles both text AND scanned PDFs with accurate table extraction, and MarkItDown's OCR plugin just sends images to an LLM anyway. Our hybrid (pdf.js text extraction + Haiku vision for scanned pages) is the simplest path that covers every document type.
 
 ### Review UI: Never Auto-Save
 
-Health data must never be auto-saved without explicit user confirmation. The review table always shows extracted values with checkboxes, confidence indicators, and a "Save N Values" button. Low-confidence values are unchecked by default. Duplicates (matching metric + date) are flagged as "Already saved" and unchecked.
+Health data must never be auto-saved without explicit user confirmation. The review table always shows extracted values with editable cells and confidence indicators before a "Save" button. Low-confidence values are flagged. A value whose `(metric, day)` slot is already filled is never saved silently — see "Upload conflicts" below.
 
 ---
 
@@ -174,12 +172,7 @@ JPG/PNG uploaded directly → resize to max 1500px dimension (canvas, preserving
 
 ### ZIP Handling (`zip-extract.ts`)
 
-- `JSZip.loadAsync(file)` → enumerate all entries recursively
-- Filter to supported extensions: `.pdf`, `.jpg`, `.jpeg`, `.png`
-- Skip junk: `__MACOSX/`, `.DS_Store`, `Thumbs.db`, dotfiles
-- Process files sequentially (not all at once) to manage memory
-- Progress callback for UI updates
-- Cancellable via AbortController
+`JSZip.loadAsync(file)` enumerates entries recursively, filtered to `.pdf`, `.jpg`, `.jpeg`, `.png` and skipping junk (`__MACOSX/`, `.DS_Store`, `Thumbs.db`, dotfiles). Files process sequentially to manage memory, with a progress callback and AbortController cancellation.
 
 ---
 
@@ -200,12 +193,11 @@ The upload modal (`UploadModal.tsx`) is a 4-state machine:
 - Cancel button (AbortController) preserves already-extracted results
 
 ### State 3: Review (`ReviewTable.tsx`)
-- Grouped by file, each with a day/month/year date picker
-- Per-row: checkbox, metric name, value in user's unit system, confidence dot (green/yellow/red)
-- Low-confidence rows show `question` text below
-- Duplicate detection against `previousMeasurements` — flagged as "Already saved", unchecked by default
-- Unrecognized values shown at bottom per file (informational only)
-- "Save N Values" button — disabled until all files have dates
+- A date × metric matrix: existing saved values as greyed context, upload values as editable cells, conflicts as conflict cells (see "Upload conflicts")
+- Column-level day/month/year date picker for each new column
+- Confidence dot (green/yellow/red); low-confidence rows show the `question` text
+- Documents (scans, clinic letters) get their own per-file card below the matrix
+- "Save" is disabled until every new column has a full date
 
 ### State 4: Complete
 - "Saved N blood test values" confirmation
@@ -217,9 +209,9 @@ The upload modal (`UploadModal.tsx`) is a 4-state machine:
 
 ### Post-Save Behavior
 
-`handleUploadComplete` calls `loadLatestMeasurements()` to refresh widget state from the API. New values appear as "Previous:" labels on longitudinal fields and suggestions recalculate with updated effective inputs.
+`handleUploadComplete` calls `loadLatestMeasurements()` to re-read the store. New values appear as "Previous:" labels on longitudinal fields and suggestions recalculate with updated effective inputs.
 
-**Important**: Before extraction starts, `onStart` calls `handleSaveLongitudinal()` to persist any unsaved form values (weight, BP, etc.) to Supabase. Without this, the post-save refresh would wipe unsaved form state. This was a bug caught during E2E testing.
+**Important**: Before extraction starts, `onStart` calls `handleSaveLongitudinal()` to persist any unsaved form values (weight, BP, etc.). Without this, the post-save refresh would wipe unsaved form state. This was a bug caught during E2E testing.
 
 ---
 
@@ -240,18 +232,12 @@ The review table uses a `FullDate` type (`{ day: string | null, month: string, y
 - With day: `"2024-11-21T00:00:00.000Z"` (full precision)
 - Without day: `"2024-11-01T00:00:00.000Z"` (first of month fallback)
 
-### Duplicate Detection
+### Why the day is required
 
-`isDuplicate()` uses the most precise date available:
-- With day: matches `"2024-11-21"` prefix (exact day)
-- Without day: matches `"2024-11"` prefix (any record in that month)
-
-### Evolution of This Approach
-
-The initial implementation only had a month/year picker and lost the day entirely. E2E testing revealed that `"2024-11-21"` was being saved as `"2024-11-01"`, and duplicate detection was broken for single-digit months (`"2024-3"` vs `"2024-03"`). We went through several iterations:
-1. First attempt: just pad months with `padStart(2, '0')` — fixed duplicate detection but still lost the day
-2. Second attempt: preserve full LLM date string alongside DatePicker, use `dateOverridden` flag to track whether the user changed the month/year — correct but complex
-3. Final approach: `FullDate` type with explicit `day` field, day/month/year picker in the UI, direct state-based date construction — simpler and gives the user control over all three components
+A new upload column saves only when day, month and year are all set. A month-only
+date would synthesise day 01 and either duplicate an existing row or miss a match
+that should have been a conflict. (The first implementation had a month/year
+picker and lost the day; `FullDate` with an explicit `day` field fixed it.)
 
 ---
 
@@ -273,7 +259,7 @@ Also added `mg/l` alias in `anthropic.server.ts` UNIT_LOOKUP for lpa.
 
 ### Why ~2.4 and Not Exact?
 
-Lp(a) has a variable molecular weight (300-800 kDa) due to the variable number of kringle IV repeats in apo(a). The WHO and IFCC recommend reporting in nmol/L precisely because mg/L conversion varies per individual. The 2.4 factor is an approximation based on average molecular weight (~417 kDa) used by most clinical labs. This is a known limitation documented in the clinical literature.
+Lp(a) molecular weight varies (300-800 kDa) with the number of kringle IV repeats in apo(a) — which is why WHO and IFCC recommend reporting nmol/L. The 2.4 factor is the average-molecular-weight approximation most clinical labs use: a known limitation, documented in the literature.
 
 ---
 
@@ -281,8 +267,8 @@ Lp(a) has a variable molecular weight (300-800 kDa) due to the variable number o
 
 | Control | Value | Rationale |
 |---------|-------|-----------|
-| Login required | Guests can't upload | Prevents anonymous abuse |
-| Rate limit | 200 LLM calls/day per customer | In-memory Map with 24h window, same pattern as measurements endpoint |
+| App-proxy HMAC | Every extraction call is signed by Shopify | No login exists in v2; the proxy signature is the anti-abuse front door |
+| Per-IP quota | 60 files/day, weighted by file count | In-memory `createQuotaCounter`; plus a hard per-machine daily file cap |
 | Max files | 20 per upload session | Covers 99% of use cases |
 | Max pages | 20 per PDF | Lab reports are 1-5 pages |
 | Max file size | 10MB per file | Client + server enforced |
@@ -305,28 +291,18 @@ Thin wrapper around Anthropic API using direct `fetch` (no SDK — keeps deps mi
 
 **Note**: Uses relative import path (`../../packages/health-core/src/units`) not `@roadmap/health-core` alias because the Remix/esbuild backend doesn't resolve Vite aliases.
 
-### `app/routes/api.lab-import.ts`
+### Routes (v2)
 
-LLM proxy endpoint. Same auth pattern as `api.measurements.ts`:
-- HMAC auth via `authenticate.public.appProxy()`
-- Rate limit: 200/day per customer (exempt customers via `RATE_LIMIT_EXEMPT_CUSTOMERS` env var)
-- Zod validation of request body
-- 10MB body size check
-- Sentry error reporting tagged `{ feature: 'lab_import' }`
-
-### `app/routes/api.measurements.ts` — Bulk Save
-
-New `bulkMeasurements` branch in the existing `action()`:
-- Validates array with `bulkMeasurementSchema` (max 50)
-- Saves via `Promise.all` using existing `addMeasurement()`
-- `source: 'lab_import'` enables future filtering
-- Returns array of saved measurements
+`app/routes/api.lab-import-v2.ts` is the only endpoint an upload calls. App-proxy
+HMAC, per-IP + per-machine file quotas, Zod validation, 10MB body check, Sentry
+tagged `{ feature: 'lab_import' }`. The v1 `api.lab-import.ts` and the
+`bulkMeasurements` branch of `api.measurements.ts` were deleted in the 2026-06-12
+teardown; there is no server save path.
 
 ### `packages/health-core/src/validation.ts` — Schemas
 
 - `labImportPageSchema` — `{ type: 'text'|'image', content: string, mimeType?: string }`
 - `labImportRequestSchema` — `{ pages: [...], unitSystem?: 'si'|'conventional' }`
-- `bulkMeasurementSchema` — `{ bulkMeasurements: measurementSchema[].max(50) }`
 
 ---
 
@@ -334,98 +310,53 @@ New `bulkMeasurements` branch in the existing `action()`:
 
 ### Upload Modal (`UploadModal.tsx`)
 
-4-state machine. Key implementation details:
-- **Lazy script loading**: Promise cache (`loadPromiseRef`) prevents duplicate `<script>` injection
-- **`onStart` callback**: Saves unsaved longitudinal values before extraction starts (prevents data loss on refresh)
-- **`handleSave` in `useCallback` with `try/finally`**: Ensures `setIsSaving(false)` runs even on error
-- **Two-phase ZIP progress**: "Extracting files..." when total=0, then "Processing file X of Y..." with actual count
-- **`allFilesToProcess` union type**: `Array<{ fileName, pages } | { file }>` — pre-extracted ZIP files and individual files processed uniformly in Phase 2
+4-state machine. A promise cache (`loadPromiseRef`) prevents duplicate `<script>` injection; `onStart` persists unsaved longitudinal values before extraction; `handleSave` uses `try/finally` so `setIsSaving(false)` always runs; ZIP progress is two-phase; `allFilesToProcess` is a union type so pre-extracted ZIP entries and individual files process uniformly.
 
 ### Review Table (`ReviewTable.tsx`)
 
-Key implementation details:
-- **`FullDate` type**: `{ day: string | null, month: string, year: string }` — preserves day from LLM
-- **`InlineDatePicker`**: Used instead of `DatePicker` to avoid `.health-field` wrapper that caused year dropdown cutoff
-- **Day select**: Generated dynamically with `getDaysInMonth()`, clamped on month/year changes
-- **`isDuplicate()`**: Uses most precise date available (day or month prefix)
-- **Checked state**: Defaults to checked unless duplicate or low-confidence
+- **`FullDate`**: `{ day: string | null, month: string, year: string }` — preserves the day the LLM extracted
+- **`InlineDatePicker`**: avoids the `.health-field` wrapper that cut off the year dropdown
+- **Day select**: built with `getDaysInMonth()`, clamped on month/year change
+- **`buildMatrixModel()`**: resolves each upload value against the slot it lands on (free / equal / conflict) — the one place that decision lives
 
-### API Client (`api.ts`)
+### Transport + store
 
-- `labImport(pages, unitSystem)` — POST to `/api/lab-import`
-- `bulkSaveMeasurements(measurements)` — POST to `/api/measurements` with `bulkMeasurements` body
+- `widget-src/src/lib/upload-api.ts` — `labImport(pages, unitSystem)` POSTs to `${PROXY_PATH}/api/lab-import-v2` (swapped for `byok-upload.ts` in the Pages build)
+- Saving goes to `RoadmapStore` (`bulkSaveMeasurements`, `bulkSaveLabValues`, `bulkSaveDocuments`) — no network call
 
 ---
 
 ## Files
 
-### New Files
-
-```
-app/lib/anthropic.server.ts               — Anthropic API wrapper, system prompt, unit resolution
-app/routes/api.lab-import.ts              — LLM proxy endpoint (HMAC auth, rate limit)
-widget-src/vite.config.upload.ts          — Third Vite IIFE config
-widget-src/src/upload-entry.ts            — Bundle entry, exposes window.HealthUpload
-widget-src/src/lib/pdf-extract.ts         — pdf.js text extraction + scanned page rendering
-widget-src/src/lib/zip-extract.ts         — JSZip iteration with progress + cancellation
-widget-src/src/lib/image-resize.ts        — Canvas-based image resize
-widget-src/src/components/UploadModal.tsx  — Modal shell + 4-state machine
-widget-src/src/components/ReviewTable.tsx  — Review table with date picker + confidence badges
-```
-
-### Modified Files
-
-```
-packages/health-core/src/validation.ts    — labImportRequestSchema, bulkMeasurementSchema
-packages/health-core/src/units.ts         — Lp(a) dual-unit definition (nmol/L ↔ mg/L)
-packages/health-core/src/mappings.ts      — METRIC_LABELS export (deduplicated from 3 files)
-app/routes/api.measurements.ts            — bulkMeasurements branch in action()
-widget-src/src/components/HealthTool.tsx   — Upload modal state, onStart/onComplete handlers, formStage override
-widget-src/src/components/InputPanel.tsx   — "Upload Lab Results" button + guest tooltip
-widget-src/src/lib/api.ts                 — labImport() + bulkSaveMeasurements()
-widget-src/src/styles.css                 — Upload modal, review table, confidence badges (~400 lines)
-widget-src/package.json                   — pdfjs-dist + jszip deps, build:upload script
-extensions/.../blocks/app-block.liquid    — data-upload-url attribute
-```
+Current file-by-file inventory: docs/reference.md. The upload feature spans
+`app/routes/api.lab-import-v2.ts`, `app/lib/anthropic.server.ts`,
+`packages/health-core/src/lab-extraction.ts` + `document-path.ts`,
+`widget-src/src/lib/{pdf-extract,zip-extract,image-resize,upload-api,byok-upload}.ts`,
+`widget-src/src/components/{UploadModal,ReviewTable}.tsx`, and
+`widget-src/src/storage/roadmap-store.ts`.
 
 ---
 
 ## Bugs Found During E2E Testing
 
-These bugs were discovered during real-world testing with Brad's actual lab reports and fixed before shipping:
+Found with Brad's real lab reports and fixed before shipping:
 
-### 1. Unsaved Weight Wiped After Upload
-**Symptom**: User types weight=82 → clicks Upload → saves extracted values → widget refreshes → weight is gone.
-**Cause**: `handleUploadComplete` calls `loadLatestMeasurements()` which overwrites form state. The weight was never saved to Supabase.
-**Fix**: `onStart` prop on UploadModal calls `handleSaveLongitudinal()` before extraction starts, persisting unsaved form values first.
-
-### 2. Blood Test Section Hidden After Upload
-**Symptom**: After saving uploaded blood tests, the blood test section disappears because `computeFormStage()` requires weight for stage 4.
-**Cause**: No saved weight measurement → stage stays at 3 → blood tests hidden.
-**Fix**: In HealthTool.tsx, override `formStage` to 4 when `previousMeasurements` contains blood test metrics. A user with saved blood test data should always see the blood test section.
-
-### 3. Lp(a) Units Wrong (93 mg/L Stored as 93 nmol/L)
-See "Lp(a) Unit Conversion" section above.
-
-### 4. Full Date Precision Lost (Day Always Saved as 01)
-**Symptom**: LLM extracts `"2024-11-21"` but the saved date is `"2024-11-01T00:00:00.000Z"`.
-**Cause**: `parseReportDate` stripped the day, keeping only month/year. `dateValueToISO` hardcoded day to `01`.
-**Fix**: Added `FullDate` type with day field, day/month/year picker in UI, and `buildRecordedAt()` that preserves day precision. Also fixed single-digit month padding for duplicate detection.
-
-### 5. ZIP Progress Bar Stuck at 100%
-**Symptom**: Uploading a ZIP shows "Processing file 1 of 1..." immediately at 100% while extracting many inner files.
-**Cause**: `totalEstimate` counted the ZIP as 1 file instead of its contents.
-**Fix**: Two-phase progress — "Extracting files..." (total=0) during ZIP extraction, then accurate count for LLM processing phase.
+| # | Symptom | Fix |
+|---|---|---|
+| 1 | Unsaved weight wiped after upload | `onStart` persists longitudinal form values before extraction |
+| 2 | Blood-test section hidden after upload | `formStage` forced to 4 when saved blood-test metrics exist |
+| 3 | Lp(a) 93 mg/L stored as 93 nmol/L | dual-unit `lpa` definition (see above) |
+| 4 | Day precision lost (always saved as 01) | `FullDate` with a day field + `buildRecordedAt()` |
+| 5 | ZIP progress stuck at 100% | two-phase progress (extract, then process) |
 
 ---
 
-## Future Extensions (v2)
+## Future Extensions
 
-- **Scan report storage** (MRI, ultrasound) — same upload pipeline, different output (markdown/structured data instead of metrics) — **shipped via the unified extraction path**
-- **Apple Health import** — `source: 'apple_health'` already in schema, `externalId` for dedup
-- **Batch history upload** — extend to non-blood-test metrics (weight, BP over time)
-- **OCR confidence preview** — show rendered PDF page alongside extracted values for visual verification — *open question in [redesign spec](lab-upload-redesign.html) §3, Q1*
-- **Additional metrics** — as new metrics are added to the widget, add aliases to the LLM system prompt
+Scan-report storage shipped via the unified extraction path. Still open: Apple
+Health import (`source: 'apple_health'`, `externalId` for dedup), batch history
+upload for non-blood-test metrics, an OCR preview of the rendered page beside each
+row, and new metric aliases as metrics are added.
 
 ---
 
@@ -436,41 +367,32 @@ Triggered by a customer report of a wrong ApoB extraction (`0.5 g/L` misread as 
 | # | Decision | Implementation |
 |---|---|---|
 | **D1** | Inline-edit the value at review time | `ReviewTable.tsx` value cell is now a numeric input (`type="text"`, `inputMode="decimal"`, locale-aware so `0,5` and `0.5` both parse). Edited rows save with `source: 'lab_import_edited'`; unedited rows fall through to the server default `'lab_import'`. |
-| **D2** | FHIR `replaces` for post-save corrections | `health_measurements` gained `status` (`'active' \| 'entered-in-error'`) and `corrects_id` (self-FK). Corrections route exclusively through the `correct_measurement` `SECURITY DEFINER` RPC — no user-facing UPDATE grant, no UPDATE policy. The RPC atomically flips the old row's status and inserts a new active row with `source='manual_correction'` + `corrects_id`. A `BEFORE UPDATE` trigger using `to_jsonb(NEW) - 'status'` is the final safety net; an `entered-in-error → active` revert is blocked. Partial `UNIQUE` index `uniq_measurements_user_metric_active` enforces at most one active row per `(user, metric, recorded_at)`. |
+| **D2** | FHIR `replaces` for post-save corrections (**v1 mechanics, superseded**: the RPC and its tables are gone; v2 does the same flip-and-append inside `RoadmapStore`) | `health_measurements` gained `status` (`'active' \| 'entered-in-error'`) and `corrects_id` (self-FK). Corrections route exclusively through the `correct_measurement` `SECURITY DEFINER` RPC — no user-facing UPDATE grant, no UPDATE policy. The RPC atomically flips the old row's status and inserts a new active row with `source='manual_correction'` + `corrects_id`. A `BEFORE UPDATE` trigger using `to_jsonb(NEW) - 'status'` is the final safety net; an `entered-in-error → active` revert is blocked. Partial `UNIQUE` index `uniq_measurements_user_metric_active` enforces at most one active row per `(user, metric, recorded_at)`. |
 | **D3** | Concurrency 5 LLM × 3 extractors | `LLM_CONCURRENCY = 5` + `EXTRACT_CONCURRENCY = 3` in `UploadModal.tsx`. Wall-clock for a 12-file ZIP: ~12s (down from ~50s pre-redesign). Tier 2 cap (80K output tokens/min) absorbs 5 concurrent extractions; 3 parallel pdf.js workers keep the LLM queue fed without UI jank. |
 | **D4** | No dual-OCR / second-engine consensus | Two correction surfaces (review-time edit + click-to-correct after save) give the user the verification step the customer actually wanted, without doubling LLM cost. Revisit if production correction frequency stays high. |
 
 ### Click-to-correct UX (`BloodTestTimeline.tsx`)
 
-Every saved blood-test value renders as a clickable button (`bt-cell-clickable`). Click → inline edit form opens with the value pre-filled. Enter or click-away saves (if validation passes); Escape discards. Failure modes surface inline:
+Every saved blood-test value renders as a clickable button (`bt-cell-clickable`). Click → inline edit form opens with the value pre-filled. Enter or click-away saves (if validation passes); Escape discards. The correction is a local store write: the old row flips to `entered-in-error`, the new row carries `correctsId` and `source='manual_correction'`, and the file syncs to the user's cloud. There are no HTTP failure modes — no 409, no 404, no RPC. (The v1 wording described a server round trip; that path is gone.)
 
-- **409 conflict** — "Another value was saved at this date. Refresh and try again." (someone else / another tab wrote between click and RPC reaching INSERT)
-- **404 not found** — "This value was deleted or already updated. Refresh to see the latest."
-- **Network error** — "Could not save. Check your connection and try again." (form stays open, user can retry)
+### Re-uploading the same data
 
-### Duplicate detection
-
-Re-uploading the same lab data shows an "Already saved" badge on every row whose `(metric, recorded_at)` matches an existing active row. Checkbox pre-unchecked. If the user force-re-checks and saves, the partial UNIQUE index rejects the dupe (`23505`); the bulk handler counts skips in `skippedDuplicates`. Done screen reads: *"N values were already saved at the same date. Close this dialog and click the existing value in the Blood Test Results table to correct it."*
+A value whose `(metric, day)` slot already holds an ACTIVE row with the same
+displayed number is already recorded: the matrix shows it as greyed context and
+saves nothing. A DIFFERING value is a conflict — see below.
 
 ### What's preserved (don't overturn)
 
-- Server-side hardcoded system prompt (prevents prompt injection)
-- HMAC auth on every endpoint
-- Never auto-save without explicit user confirmation
-- No raw PDF storage on the server
-- One LLM call per page-list (no cross-file batching in the prompt)
-- Claude Haiku 4.5 as the model (Sonnet fallback remains a one-constant change)
-- Confidence is advisory, not gating
+Server-side hardcoded system prompt (prevents prompt injection); HMAC auth on
+every endpoint; never auto-save without explicit confirmation; no raw PDF on
+Brad's server; one LLM call per page-list; Haiku 4.5 (a Sonnet swap is one
+constant); confidence is advisory, not gating.
 
 ### Deferred (not blockers)
 
-- Thumbnail of the rendered PDF page next to each review row
-- Edit `recorded_at` as part of a post-save correction
-- Audit-mode toggle in history view to show corrected rows with strikethrough
-- Dual-OCR consensus — revisit if correction frequency stays high
-- Validation-range "double-check this" prompts at review time
-
-All three are addressed with current recommendations in the spec but not yet locked in.
+A page thumbnail beside each review row, editing `recorded_at` during a
+correction, an audit-mode toggle showing corrected rows struck through,
+dual-OCR consensus, and validation-range "double-check this" prompts.
 
 
 ---
@@ -532,3 +454,43 @@ Approved by Brad ahead of the website launch, where multi-file uploads on slow c
 - **No pre-write existence check on Drive creates** — `writeDocument` previously did a lookup GET before every create, half its round trips, for a case that can't happen: refs are unique by construction (collision-suffixed against the file's refs + content-hash dedup means an already-archived file never reaches the write). The one exception — retrying after an interrupted save left an orphan blob — now produces a same-named duplicate with identical bytes, which Drive permits and `readDocument` resolves by name; accepted orphan semantics (§5.3 commit order already treats orphans as harmless).
 
 Remaining (acceptable): per-IP/per-machine extraction quotas are in-memory (reset on deploy; ×2 with two Fly machines).
+
+### 5. Upload conflicts — the document vs. the record (US-32 AC24)
+
+An upload can land on a `(metric, day)` slot an active row already holds. The
+usual writer of that row is a connected AI assistant through the MCP connector,
+which slots one value per metric per day the same way. v1 dropped the document's
+number and showed "Already saved"; v2 never drops it before the user has seen it.
+
+The review table is a date × metric matrix (`buildMatrixModel` in
+`ReviewTable.tsx`). Each upload value meets whatever already holds its cell:
+
+| Slot state | What the reviewer sees | What saves |
+|---|---|---|
+| Free | An editable cell | A new active row, `source: 'lab_import'` (`'lab_import_edited'` if the reviewer typed over it) |
+| Held, same value | Greyed context cell | Nothing — the record already says this |
+| Held, different value | **Conflict cell**: the saved value struck through, the document's value in an editable input, and an **unchecked `Replace` box** | Nothing unless Replace is ticked |
+
+Equality is compared on the DISPLAYED string, so float noise never manufactures
+a conflict.
+
+Ticking Replace asserts that the saved value was wrong, so it is written as a
+correction, not an append. `RoadmapStore.bulkSaveMeasurements` (and
+`bulkSaveLabValues`, identically) flips the old row to `entered-in-error` and
+appends the new row with `correctsId` pointing at it, on the OLD row's own date,
+`source: 'lab_import'`. The slot invariant holds: still one active row.
+
+Rules worth not overturning:
+
+- **Unticked means the existing value wins.** Silence is not consent to overwrite.
+- **Nothing auto-supersedes on source rank.** A correction asserts the old value
+  was wrong, and only a person can assert that — the connector's row is not
+  automatically less trustworthy than the PDF, or more.
+- **A "replacement" equal to what is saved writes nothing** — it would correct
+  nothing.
+- **A stale `correctsId`** (the row was superseded on another device between
+  review and save) is skipped and counted in `skippedDuplicates`, never appended.
+  Two active rows in one slot must not exist.
+
+Tests: `ReviewTable.conflict.test.ts` (the conflict cell) and
+`roadmap-store-upload-conflict.test.ts` (the correction the store writes).

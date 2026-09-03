@@ -6,7 +6,7 @@ updated: "2026-09-02"
 stories: ["US-30", "US-31", "US-33"]
 ---
 
-Your record from the Health Roadmap tool is one file, `health-roadmap.json`, in your own cloud storage. This repo carries two commands that work on it directly. `get-plan` reads the file and prints the same plan the web tool would, on your machine, with no network call and no AI model in the loop. `edit-record` files a new value into it, keeping the rules that stop a health record from being quietly rewritten.
+Your record from the Health by Dr Brad tool is one file, `health-roadmap.json`, in your own cloud storage. This repo carries two commands that work on it directly. `get-plan` reads the file and prints the same plan the web tool would, on your machine, with no network call and no AI model in the loop. `edit-record` files a new value into it, keeping the rules that stop a health record from being quietly rewritten.
 
 This guide is for someone comfortable in a terminal. It also reads as instructions for an AI coding agent working on your behalf: point it here and it can run every command below.
 

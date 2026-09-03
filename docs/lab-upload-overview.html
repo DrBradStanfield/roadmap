@@ -290,13 +290,17 @@
   <section style="border:1px solid #c8c8c8;border-left:5px solid #0066cc;background:#e8f1fb;border-radius:10px;padding:18px 22px;margin:0 0 36px;">
     <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#0052a3;font-weight:700;margin-bottom:6px;">Read this first · v2 local-first is now live</div>
     <p style="color:#1a1a1a;margin:6px 0;">
-      The diagrams below depict the original <strong>v1 path, where extracted values were saved to Brad's Supabase</strong>. That is no longer how the live tool works. Since the
-      <strong>2026-06-12 production cutover</strong>, <code>/pages/roadmap</code> serves the v2 <strong>local-first</strong> build (<code>health-roadmap-727</code>), and the Supabase widget is kept only as a rollback asset.
+      Since the <strong>2026-06-12 production cutover</strong>, <code>/pages/roadmap</code> serves the v2
+      <strong>local-first</strong> build (<code>health-roadmap-727</code>); the Supabase widget is kept only as a
+      rollback asset. §§1 and 7–10 describe the live v2 behaviour. Anything still naming a Supabase table, an
+      RPC, or an HTTP status code — the appendix trace, parts of §11 — is <strong>historical v1</strong> and
+      labelled as such.
     </p>
     <p style="color:#1a1a1a;margin:6px 0;"><strong>What changed (the extraction/review/FHIR-correction pipeline itself is unchanged):</strong></p>
     <ul style="margin:6px 0 4px;">
       <li><strong>Storage</strong> — extracted values <em>and</em> the original files are written to the <strong>user's own cloud</strong> (Google Drive / Dropbox / GitHub / self-host) as plain JSON + archived documents, not Supabase. Corrections use the same <code>entered-in-error</code> + <code>correctsId</code> shape, now applied <em>in the file</em> (not the <code>correct_measurement</code> RPC).</li>
       <li><strong>Endpoint</strong> — extraction goes to <code>app/routes/api.lab-import-v2.ts</code> via the Shopify app proxy (<code>/apps/health-tool-1/api/lab-import-v2</code>), authenticated by an <strong>app-proxy HMAC signature</strong> (<code>verifyAppProxySignature()</code>), not the old <code>api.lab-import.ts</code> (deleted) or an <code>AI_ALLOWED_ORIGINS</code> Origin allow-list (superseded).</li>
+      <li><strong>Upload conflicts</strong> — an uploaded value that disagrees with a saved one (usually written by a connected assistant through the MCP connector) is shown as a conflict with an unchecked <strong>Replace</strong> box, never dropped and never auto-applied — <a href="#conflict">§9</a>, US-32 AC24.</li>
       <li><strong>BYOK option</strong> — the GitHub Pages / self-host build runs extraction <strong>browser → Anthropic direct</strong> with the user's own key (<code>byok-upload.ts</code>); no Brad server in the path.</li>
     </ul>
     <p style="color:#1a1a1a;margin:8px 0 0;">
@@ -334,10 +338,10 @@
       <li><a href="#contract">4 · LLM extraction contract</a></li>
       <li><a href="#units">5 · Unit resolution decision tree</a></li>
       <li><a href="#confidence">6 · Confidence semantics</a></li>
-      <li><a href="#storage">7 · Storage map (FHIR Observation)</a></li>
+      <li><a href="#storage">7 · Storage map (the local-first file)</a></li>
       <li><a href="#corrections">8 · Corrections — review-edit + click-to-correct</a></li>
-      <li><a href="#schema">9 · FHIR schema (status, corrects_id, partial UNIQUE)</a></li>
-      <li><a href="#rpc">10 · The <code>correct_measurement</code> RPC</a></li>
+      <li><a href="#conflict">9 · Upload conflicts — the document vs. the record</a></li>
+      <li><a href="#schema">10 · FHIR invariants (status, correctsId, one active row)</a></li>
       <li><a href="#decisions">11 · Design decisions (post-ship)</a></li>
     </ol>
   </nav>
@@ -347,9 +351,11 @@
   <!-- ============================================================== -->
   <h2 id="flow">1 · End-to-end data flow</h2>
   <p>
-    Three trust zones: the browser (file parsing), the Remix backend (LLM proxy + unit resolution),
-    and Supabase (storage). Raw PDFs never leave the browser — only extracted text or page images
-    are sent to the LLM. The backend never persists the file.
+    Two trust zones: the browser (file parsing, review, and <strong>all storage</strong>) and the
+    Remix backend (LLM proxy + unit resolution). Raw PDFs never leave the browser — only extracted
+    text or page images are sent to the LLM, and the backend never persists them.
+    <strong>Since the 2026-06-12 local-first cutover the save path has no server in it at all:</strong>
+    reviewed values go into <code>RoadmapStore</code> and sync to the user's own cloud.
   </p>
 
   <div class="diagram">
@@ -406,22 +412,22 @@
         <text x="490" y="242" font-size="10" fill="#767676">unit lookup + range fallback</text>
 
         <rect x="370" y="274" width="240" height="46" rx="6" fill="#fff" stroke="#c9a85b"/>
-        <text x="490" y="296">api.measurements (bulk)</text>
-        <text x="490" y="310" font-size="10" fill="#767676">source: 'lab_import'</text>
+        <text x="490" y="296">RoadmapStore bulk save</text>
+        <text x="490" y="310" font-size="10" fill="#767676">in the browser · source: 'lab_import'</text>
       </g>
 
-      <!-- Boxes (DB) -->
+      <!-- Boxes (the user's health-roadmap.json, in their own cloud) -->
       <g font-size="12.5" fill="#1a1a1a" text-anchor="middle">
         <rect x="700" y="138" width="260" height="46" rx="6" fill="#fff" stroke="#7eaa7e"/>
-        <text x="830" y="160">health_measurements</text>
+        <text x="830" y="160">measurements[]</text>
         <text x="830" y="174" font-size="10" fill="#767676">11 core metrics, SI values</text>
 
         <rect x="700" y="206" width="260" height="46" rx="6" fill="#fff" stroke="#7eaa7e"/>
-        <text x="830" y="228">lab_values</text>
+        <text x="830" y="228">labValues[]</text>
         <text x="830" y="242" font-size="10" fill="#767676">extras (sodium, alt, ferritin…)</text>
 
         <rect x="700" y="274" width="260" height="46" rx="6" fill="#fff" stroke="#7eaa7e"/>
-        <text x="830" y="296">health_documents</text>
+        <text x="830" y="296">documents[] + cloud blob</text>
         <text x="830" y="310" font-size="10" fill="#767676">scans / letters as markdown</text>
       </g>
 
@@ -444,6 +450,7 @@
       <line x1="610" y1="297" x2="700" y2="297" stroke="#4a4a4a" stroke-width="1.5" marker-end="url(#arrow)"/>
     </svg>
     <div class="diagram-caption">
+      The three right-hand boxes are arrays in the user's own <code>health-roadmap.json</code>, not server tables.
       Hardcoded system prompt + server-side unit resolution mean the client never sees extraction logic.
       The dashed return arrow carries <code>{ metric, valueSI, displayValue, displayUnit, confidence, question? }</code>.
     </div>
@@ -748,57 +755,60 @@
   <!-- ============================================================== -->
   <!-- SECTION 6 — STORAGE                                             -->
   <!-- ============================================================== -->
-  <h2 id="storage">7 · Storage map (FHIR Observation)</h2>
-  <p>Three tables receive data from one upload. <code>health_measurements</code> follows the FHIR R4 <code>Observation</code> shape: rows are immutable except for the <code>status</code> column, which is mutated only by the <code>correct_measurement</code> RPC (§10).</p>
+  <h2 id="storage">7 · Storage map (the local-first file)</h2>
+  <p>One upload writes into three arrays of the user's own <code>health-roadmap.json</code> — the file
+  that lives in their Google Drive, Dropbox, GitHub or localStorage. There are no server tables and no
+  save endpoint. FHIR <code>Observation</code> semantics are enforced in
+  <code>RoadmapStore</code> + <code>merge.ts</code>: rows are never mutated except for the sticky
+  <code>status</code> flip that a correction performs.</p>
 
   <table>
-    <thead><tr><th>Table</th><th>Receives</th><th>Schema highlights</th><th>Mutability</th></tr></thead>
+    <thead><tr><th>Array</th><th>Receives</th><th>Shape highlights</th><th>Mutability</th></tr></thead>
     <tbody>
       <tr>
-        <td><code>health_measurements</code></td>
-        <td>The 11 core metrics — converted to SI canonical</td>
-        <td><code>metric_type</code>, <code>value</code> (SI), <code>recorded_at</code>, <code>source</code>, <code>external_id</code>, <strong><code>status</code></strong> (<code>'active'</code> | <code>'entered-in-error'</code>), <strong><code>corrects_id</code></strong> (self-FK)</td>
-        <td><span class="pill pill-warn">Status-only via RPC</span></td>
+        <td><code>measurements[]</code></td>
+        <td>The core metrics — converted to SI canonical</td>
+        <td><code>metricType</code>, <code>value</code> (SI), <code>recordedAt</code>, <code>source</code>, <strong><code>status</code></strong> (<code>'active'</code> | <code>'entered-in-error'</code>), <strong><code>correctsId</code></strong></td>
+        <td><span class="pill pill-warn">Status flip only</span></td>
       </tr>
       <tr>
-        <td><code>lab_values</code></td>
-        <td>Everything else numeric (sodium, ferritin, alt, etc.) — stored as-is</td>
-        <td><code>metric_name</code>, <code>value</code>, <code>unit</code>, <code>reference_low/high</code></td>
-        <td><span class="pill pill-bad">No</span> append-only</td>
+        <td><code>labValues[]</code></td>
+        <td>Everything else numeric (sodium, ferritin, alt…) — stored as reported</td>
+        <td><code>metricName</code>, <code>value</code>, <code>unit</code>, <code>referenceLow/High</code>, same <code>status</code>/<code>correctsId</code> pair</td>
+        <td><span class="pill pill-warn">Status flip only</span></td>
       </tr>
       <tr>
-        <td><code>health_documents</code></td>
-        <td>Non-lab classifications (scans, clinic letters, discharge summaries…)</td>
-        <td><code>document_type</code>, <code>title</code>, <code>content_md</code>, <code>metadata</code> JSON</td>
-        <td><span class="pill pill-warn">Delete-only</span></td>
+        <td><code>documents[]</code> (+ the original blob)</td>
+        <td>Non-lab classifications (scans, clinic letters, discharge summaries…) and the archived original file</td>
+        <td><code>type</code>, <code>title</code>, <code>date</code>, <code>extractedText</code>, <code>metadata</code>, <code>fileRef</code>, <code>contentHash</code>, <code>sourceFileName</code>, <code>deleted</code> tombstone</td>
+        <td><span class="pill pill-warn">Tombstone-only</span></td>
       </tr>
     </tbody>
   </table>
 
-  <h3><code>source</code> enum values (<code>MEASUREMENT_SOURCES</code> in <code>validation.ts</code>)</h3>
+  <h3><code>source</code> values</h3>
   <table>
     <thead><tr><th>Value</th><th>When it's used</th></tr></thead>
     <tbody>
       <tr><td><code>manual</code></td><td>User typed into the form (default)</td></tr>
-      <tr><td><code>lab_import</code></td><td>LLM-extracted, not edited at review time</td></tr>
-      <tr><td><code>lab_import_edited</code></td><td>LLM-extracted then user-corrected at review time (tracks digit misreads caught early)</td></tr>
-      <tr><td><code>manual_correction</code></td><td>Inserted by the <code>correct_measurement</code> RPC (post-save correction)</td></tr>
+      <tr><td><code>lab_import</code></td><td>LLM-extracted, not edited at review time — including a Replace that supersedes an existing row</td></tr>
+      <tr><td><code>lab_import_edited</code></td><td>LLM-extracted then user-corrected at review time</td></tr>
+      <tr><td><code>manual_correction</code></td><td>A post-save click-to-correct in the timeline</td></tr>
       <tr><td><code>apple_health</code>, <code>fitbit</code></td><td>Future HealthKit-style imports</td></tr>
     </tbody>
   </table>
 
   <p style="font-size: 13.5px;">
-    <strong>Partial UNIQUE index</strong> <code>uniq_measurements_user_metric_active</code> on
-    <code>(user_id, metric_type, recorded_at) WHERE status = 'active'</code> — guarantees at most
-    one active row per slot. Historical <code>entered-in-error</code> rows coexist freely.
-    A duplicate active insert surfaces as Postgres <code>23505</code> → mapped to HTTP <code>409</code> with
-    "Use the correction UI to update it."
+    <strong>Dedup keys are stable, never LLM text.</strong> Values slot on
+    <code>(metric, day)</code> — one active row per slot. Lab extras slot on
+    <code>labSlotKey(name)</code> + day, so "Gamma GT" and "ggt" collapse. Originals dedup on the
+    file's <strong>content hash</strong>, with <code>sourceFileName</code> carried on the document row.
   </p>
   <p style="font-size: 13.5px;">
-    <strong>What is <em>not</em> stored:</strong> the original PDF, the LLM response, the
-    extracted text/images, the <code>displayValue</code>/<code>displayUnit</code> pair, or the
-    confidence rating. After save, all we have is the SI value, the date, the
-    <code>source</code> tag, the <code>status</code>, and any <code>corrects_id</code> link.
+    <strong>What is <em>not</em> kept:</strong> nothing at all on Brad's server — no PDF, no LLM
+    response, no extracted text. In the user's own file we keep the SI value, the date, the
+    <code>source</code>, the <code>status</code>, any <code>correctsId</code>, and (when they have a
+    cloud connected) the original document itself.
   </p>
 
   <!-- ============================================================== -->
@@ -816,173 +826,134 @@
         In <code>ReviewTable.tsx</code>, each value cell is a numeric input (<code>type="text"</code>,
         <code>inputMode="decimal"</code>, locale-aware so <code>0,5</code> and <code>0.5</code>
         both parse). User types over the LLM's extraction before clicking
-        <strong>Save</strong>. An "edited from 1.5" badge renders inline so the change is visible.
+        <strong>Save</strong>.
       </p>
       <ul style="font-size: 13px; color: var(--ink-3);">
         <li>Edited rows save with <code>source: 'lab_import_edited'</code>.</li>
-        <li>Unedited rows save with <code>source: 'lab_import'</code> (server default).</li>
+        <li>Unedited rows save with <code>source: 'lab_import'</code>.</li>
         <li>Catches the bug at the strongest moment: user is looking at the PDF and the extracted value side-by-side.</li>
       </ul>
     </div>
     <div class="card" style="border-left: 3px solid var(--brand);">
       <h3>② Click-to-correct after save</h3>
       <p style="font-size: 13.5px;">
-        In <code>BloodTestTimeline.tsx</code>, every saved value is a clickable button
-        (<code>bt-cell-clickable</code>, <code>title="Click to correct this value"</code>).
-        Clicking opens an inline edit form. Enter or click-away saves (if validation passes);
-        Escape discards. Behind the scenes:
+        In the blood-test matrix, every saved value is a clickable button
+        (<code>bt-cell-clickable</code>). Clicking opens an inline edit form. Enter or click-away
+        saves (if validation passes); Escape discards. Behind the scenes it is a local write:
       </p>
       <ol style="font-size: 13px;">
-        <li>Widget calls <code>correctMeasurement(oldId, newValueSI)</code> → POST <code>/api/measurements</code>.</li>
-        <li>The <code>correct_measurement</code> RPC (§10) flips the old row's <code>status</code> to <code>entered-in-error</code> AND inserts a new row with <code>source='manual_correction'</code> + <code>corrects_id=oldId</code>.</li>
-        <li>Audit log records <code>MEASUREMENT_CORRECTED</code> with <code>{oldId}</code>.</li>
-        <li>Widget optimistically patches local state — no refetch unless the row vanished mid-flight (rare).</li>
+        <li><code>RoadmapStore</code> flips the old row's <code>status</code> to <code>entered-in-error</code>.</li>
+        <li>It appends a new active row with <code>source='manual_correction'</code> + <code>correctsId</code>, on the old row's date.</li>
+        <li>The file syncs to the user's cloud; merge keeps the flip sticky across devices.</li>
       </ol>
+      <p style="font-size: 13px; color: var(--ink-3);">
+        No RPC, no 409/404 — the v1 wording described a server round trip that no longer exists.
+      </p>
     </div>
   </div>
 
-  <h3>Failure modes the UI surfaces</h3>
-  <ul style="font-size: 14px;">
-    <li><strong>409 conflict.</strong> Another value was saved at this (metric, date) during the round-trip. Server returns 409; widget shows <em>"Another value was saved at this date. Refresh and try again."</em></li>
-    <li><strong>404 not found.</strong> Row missing, not owned, or already corrected. Widget shows <em>"This value was deleted or already updated. Refresh to see the latest."</em></li>
-    <li><strong>Network error.</strong> Form stays open with <em>"Could not save. Check your connection and try again."</em> — user can retry without re-typing.</li>
-  </ul>
-
-  <h3>Re-upload behaviour (idempotent)</h3>
+  <h3>Re-uploading the same data</h3>
   <p style="font-size: 14px;">
-    Re-uploading the same ZIP shows an <strong>"Already saved"</strong> badge on every row whose
-    <code>(metric, recorded_at)</code> matches an existing active row. The checkbox is pre-unchecked.
-    If the user force-re-checks and clicks Save, the server's partial UNIQUE index rejects the dupe
-    (Postgres <code>23505</code>) and the bulk handler reports it in <code>skippedDuplicates</code>.
-    The done screen reads: <em>"N values were already saved at the same date. Close this dialog and click
-    the existing value in the Blood Test Results table to correct it."</em>
+    A slot that already holds an active row with the <em>same displayed value</em> is already
+    recorded: the matrix greys it out as context and saves nothing. A <em>differing</em> value is a
+    conflict — §9. The original file itself dedups on content hash, so re-uploading a PDF the archive
+    already holds is a no-op.
   </p>
 
   <!-- ============================================================== -->
-  <!-- SECTION 9 — Schema migration                                    -->
+  <!-- SECTION 9 — UPLOAD CONFLICTS                                    -->
   <!-- ============================================================== -->
-  <h2 id="schema">9 · FHIR schema (<code>status</code>, <code>corrects_id</code>, partial UNIQUE)</h2>
+  <h2 id="conflict">9 · Upload conflicts — the document vs. the record</h2>
   <p>
-    Three additions to <code>health_measurements</code> + two triggers + a partial UNIQUE index.
-    See <code>supabase/rls-policies.sql</code> for the canonical text (with <code>COMMENT ON</code>
-    annotations).
+    An upload can land on a <code>(metric, day)</code> slot that an active row already holds. The
+    usual author of that row is a <strong>connected AI assistant writing through the MCP
+    connector</strong>, which slots one value per metric per day the same way. v1 dropped the
+    document's number and showed an "Already saved" badge; v2 shows the disagreement and lets the
+    person settle it (<strong>US-32 AC24</strong>).
+  </p>
+  <p>
+    The review table is a date × metric matrix (<code>buildMatrixModel()</code> in
+    <code>ReviewTable.tsx</code>). Each upload value meets whatever holds its cell:
   </p>
 
-  <h3>Columns</h3>
   <table>
-    <thead><tr><th>Column</th><th>Type</th><th>Semantics</th></tr></thead>
+    <thead><tr><th style="width: 22%;">Slot state</th><th>What the reviewer sees</th><th style="width: 34%;">What saves</th></tr></thead>
     <tbody>
       <tr>
-        <td><code>status</code></td>
-        <td><code>TEXT NOT NULL DEFAULT 'active' CHECK IN ('active', 'entered-in-error')</code></td>
-        <td>FHIR R4 Observation status. Only <code>active</code> rows feed reads. Sticky forward (no revert).</td>
+        <td>Free</td>
+        <td>An editable cell</td>
+        <td>A new active row, <code>source: 'lab_import'</code> (<code>'lab_import_edited'</code> if typed over)</td>
       </tr>
       <tr>
-        <td><code>corrects_id</code></td>
-        <td><code>UUID REFERENCES health_measurements(id) ON DELETE SET NULL</code></td>
-        <td>Self-FK: this row replaces <code>corrects_id</code>. NULL on originals. <code>SET NULL</code> on delete so a hard-deleted old row doesn't cascade.</td>
+        <td>Held, same value</td>
+        <td>Greyed context cell — "Already saved at this date"</td>
+        <td><span class="pill pill-warn">Nothing</span> the record already says this</td>
       </tr>
       <tr>
-        <td colspan="3">
-          <strong>Partial UNIQUE index</strong> <code>uniq_measurements_user_metric_active</code> ON
-          <code>(user_id, metric_type, recorded_at) WHERE status = 'active'</code> — at most one active row per slot.
-        </td>
+        <td>Held, different value</td>
+        <td><strong>Conflict cell</strong>: the saved value <span style="text-decoration: line-through;">struck through</span>, the document's value in an editable input, and an <strong>unchecked <code>Replace</code></strong> box</td>
+        <td><span class="pill pill-good">Only if Replace is ticked</span> — the old row flips to <code>entered-in-error</code>, the new row appends with <code>correctsId</code> on the old row's date, <code>source: 'lab_import'</code></td>
       </tr>
     </tbody>
   </table>
 
-  <h3>Defence-in-depth (4 layers)</h3>
+  <p style="font-size: 13.5px;">
+    Equality is compared on the <strong>displayed string</strong> — what the user would actually see —
+    so float noise never manufactures a conflict.
+  </p>
+
+  <h3>Rules worth not overturning</h3>
+  <ul style="font-size: 14px;">
+    <li><strong>Unticked means the existing value wins.</strong> Silence is not consent to overwrite.</li>
+    <li><strong>Nothing auto-supersedes on source rank.</strong> A correction asserts the old value was
+      <em>wrong</em>, and only a person can assert that. The connector's row is not automatically less
+      trustworthy than the PDF, or more.</li>
+    <li><strong>A "replacement" equal to what is saved writes nothing</strong> — it would correct nothing.</li>
+    <li><strong>A stale <code>correctsId</code></strong> (the row was superseded on another device
+      between review and save) is skipped and counted in <code>skippedDuplicates</code>, never
+      appended. Two active rows in one slot must not exist.</li>
+  </ul>
+  <p style="font-size: 13px; color: var(--ink-3);">
+    Tests: <code>ReviewTable.conflict.test.ts</code> (the conflict cell) ·
+    <code>roadmap-store-upload-conflict.test.ts</code> (the correction the store writes).
+  </p>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 10 — FHIR invariants                                    -->
+  <!-- ============================================================== -->
+  <h2 id="schema">10 · FHIR invariants (<code>status</code>, <code>correctsId</code>, one active row)</h2>
+  <p>
+    The v1 enforcement — Postgres grants, a <code>SECURITY DEFINER</code>
+    <code>correct_measurement</code> RPC, two triggers and a partial UNIQUE index — went away with the
+    tables on 2026-06-12. The invariants did not; they are now enforced in code, on the client.
+  </p>
+
   <table>
-    <thead><tr><th style="width: 30%;">Layer</th><th>What it catches</th></tr></thead>
+    <thead><tr><th style="width: 30%;">Invariant</th><th>Where it lives now</th></tr></thead>
     <tbody>
       <tr>
-        <td><strong>L1 · Postgres grants</strong><br><code>REVOKE UPDATE ON health_measurements FROM authenticated</code></td>
-        <td>Users have no direct UPDATE permission via PostgREST, raw SQL, or the Supabase JS client. The RPC is the only writer.</td>
+        <td><strong>Rows are never mutated</strong> (except a sticky <code>status</code> flip)</td>
+        <td>Every writer goes through <code>RoadmapStore</code>; corrections append with
+          <code>correctsId</code>. Non-browser writers (CLI, stdio MCP, hosted MCP) share the same
+          <code>SyncManager</code>, so no path bypasses it.</td>
       </tr>
       <tr>
-        <td><strong>L2 · RPC ownership check</strong><br><code>WHERE user_id = auth.uid()</code></td>
-        <td>The <code>correct_measurement</code> RPC is <code>SECURITY DEFINER</code> but explicitly checks <code>auth.uid()</code> against the row's <code>user_id</code> in the UPDATE step. Forged <code>oldId</code> values are rejected.</td>
+        <td><strong>One active row per <code>(metric, day)</code></strong></td>
+        <td><code>bulkSaveMeasurements</code> / <code>bulkSaveLabValues</code> hold a taken-slot Set and
+          skip anything that would double-fill it; a Replace supersedes exactly once.</td>
       </tr>
       <tr>
-        <td><strong>L3 · BEFORE UPDATE trigger</strong><br><code>enforce_measurement_correction_only()</code></td>
-        <td>Schema-resilient guard using <code>to_jsonb(NEW) - 'status' IS DISTINCT FROM to_jsonb(OLD) - 'status'</code>. Any column change other than <code>status</code> raises. Also blocks reverts away from <code>entered-in-error</code>.</td>
+        <td><strong>The flip survives sync</strong></td>
+        <td><code>mergeFiles()</code> — <code>entered-in-error</code> is sticky, arrays are
+          append-only, so two devices converge on the same active row.</td>
       </tr>
       <tr>
-        <td><strong>L4 · BEFORE INSERT trigger</strong><br><code>validate_corrects_id_ownership()</code></td>
-        <td>Rejects any INSERT whose <code>corrects_id</code> references another user's row. Closes the cross-user FK-forge gap that RLS alone can't catch on insert.</td>
+        <td><strong>No revert to <code>active</code></strong></td>
+        <td>Status is monotonic in both the store and the merge. A revert is not expressible.</td>
       </tr>
     </tbody>
   </table>
 
-  <!-- ============================================================== -->
-  <!-- SECTION 10 — RPC                                                -->
-  <!-- ============================================================== -->
-  <h2 id="rpc">10 · The <code>correct_measurement</code> RPC</h2>
-  <p>
-    Atomic UPDATE-first-then-INSERT, <code>SECURITY DEFINER</code> with explicit
-    <code>auth.uid()</code> ownership check.
-    <strong>Race-safe:</strong> two concurrent corrections on the same row serialise via Postgres
-    row-locking. The loser sees <code>ROW_COUNT = 0</code> and raises "not correctable". A naïve
-    SELECT-then-UPDATE would let both calls observe <code>status = 'active'</code> under MVCC and
-    produce two active replacements.
-  </p>
-
-  <pre><span class="c">CREATE OR REPLACE FUNCTION correct_measurement(
-  old_measurement_id UUID,
-  new_value          NUMERIC,
-  new_recorded_at    TIMESTAMPTZ DEFAULT NULL
-) RETURNS UUID AS $$
-DECLARE
-  old_row    public.health_measurements%ROWTYPE;
-  rows_affected INTEGER;
-  new_id     UUID;
-BEGIN
-  -- 1. Atomic lock-and-check: flip status to entered-in-error
-  --    only if (a) the row is the caller's, (b) status is still 'active'.
-  --    Concurrent callers serialise here — the loser gets rows_affected=0.
-  UPDATE public.health_measurements
-     SET status = 'entered-in-error'
-   WHERE id = old_measurement_id
-     AND user_id = auth.uid()
-     AND status = 'active'
-   RETURNING * INTO old_row;
-
-  GET DIAGNOSTICS rows_affected = ROW_COUNT;
-  IF rows_affected = 0 THEN
-    RAISE EXCEPTION 'Measurement not found or not correctable';
-  END IF;
-
-  -- 2. Insert the corrected row, linked to the now-flagged old row.
-  BEGIN
-    INSERT INTO public.health_measurements
-      (user_id, metric_type, value, recorded_at, source, corrects_id)
-    VALUES
-      (old_row.user_id, old_row.metric_type, new_value,
-       COALESCE(new_recorded_at, old_row.recorded_at),
-       'manual_correction', old_measurement_id)
-    RETURNING id INTO new_id;
-  EXCEPTION WHEN unique_violation THEN
-    -- Another active row was inserted at this (metric, recorded_at)
-    -- between our UPDATE and our INSERT. Re-raise so the route maps to 409.
-    RAISE EXCEPTION 'Conflict: another value was saved at this date while you were correcting. Refresh and try again.'
-      USING ERRCODE = '23505';
-  END;
-
-  RETURN new_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';</span></pre>
-
-  <p style="font-size: 14px;">
-    <strong>Result mapping at the API boundary</strong> (<code>api.measurements.ts</code>):
-  </p>
-  <ul style="font-size: 14px;">
-    <li><code>'ok'</code> → HTTP 200, <code>{ success: true, newId }</code> + audit log <code>MEASUREMENT_CORRECTED</code> with <code>{ oldId }</code>.</li>
-    <li><code>'conflict'</code> (23505) → HTTP 409 with <em>"Another value was saved at this date while you were correcting. Refresh and try again."</em></li>
-    <li><code>'not_found'</code> → HTTP 404 with <em>"Measurement not found or not correctable"</em> — same message regardless of which of (missing / not owned / already corrected) so we don't leak ownership.</li>
-  </ul>
-
-  <!-- ============================================================== -->
-  <!-- LEGACY: TRACE of Michael's failure (kept as historical context) -->
   <!-- ============================================================== -->
   <h2 id="trace" style="color: var(--ink-3);">Appendix · Tracing Michael's ApoB failure (historical)</h2>
   <p style="font-size: 13.5px; color: var(--ink-3);">
@@ -1110,13 +1081,18 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';</span></pre>
       </tr>
       <tr>
         <td><strong>D2 · FHIR <code>replaces</code> for post-save corrections</strong></td>
-        <td>Append-only data with status mutation only via the <code>correct_measurement</code> RPC. Old values preserved as <code>entered-in-error</code>; new values link via <code>corrects_id</code>. Matches FHIR R4 <code>Observation</code> semantics and plays nicely with future EHR/Apple HealthKit export.</td>
+        <td>Append-only data; the only mutation is the sticky <code>status</code> flip. Old values preserved as <code>entered-in-error</code>; new values link via <code>correctsId</code>. Matches FHIR R4 <code>Observation</code> semantics and plays nicely with future EHR/Apple HealthKit export. (The v1 RPC that enforced this is gone — §10.)</td>
         <td>Alternative was true-UPDATE (loses prior value) or delete-and-re-add (loses correction semantics). Either weakens the audit trail.</td>
       </tr>
       <tr>
         <td><strong>D3 · Concurrency 5 LLM × 3 extractors</strong></td>
         <td>Tier 2 absorbs 5 concurrent ~1.5K-token extractions. 3 parallel pdf.js workers keep the queue feeding the LLM workers without UI jank.</td>
         <td>Bumping further hits Anthropic Tier 2's 80K/min output cap on scan-heavy uploads. Increasing extractor count hurts main-thread responsiveness.</td>
+      </tr>
+      <tr>
+        <td><strong>D5 · The reviewer settles an upload conflict</strong></td>
+        <td>An upload that disagrees with a saved value is shown, not dropped, and replaces only when the person ticks Replace. Ranking sources automatically would let a document silently overwrite what an assistant wrote, or the reverse.</td>
+        <td>Either a silent data loss (drop the document's number) or a silent overwrite. Don't overturn — US-32 AC24.</td>
       </tr>
       <tr>
         <td><strong>D4 · No dual-OCR / second-engine consensus</strong></td>
@@ -1169,14 +1145,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = '';</span></pre>
   <p style="margin-top: 32px; font-size: 12.5px; color: var(--ink-3); border-top: 1px solid var(--line); padding-top: 16px;">
     Canonical sources:
     <code>docs/lab-upload.md</code>,
-    <code>supabase/rls-policies.sql</code> (FHIR schema + RPC + triggers),
-    <code>app/lib/anthropic.server.ts</code> (extraction + unit resolution),
-    <code>app/lib/supabase.server.ts</code> (<code>addMeasurementWithStatus</code>, <code>correctMeasurement</code>),
-    <code>app/routes/api.measurements.ts</code> (bulk save + correction routes),
+    <code>docs/user-stories.md</code> (US-32 AC24, the upload conflict),
+    <code>app/routes/api.lab-import-v2.ts</code> (the only endpoint an upload calls),
+    <code>app/lib/anthropic.server.ts</code> + <code>packages/health-core/src/lab-extraction.ts</code> (extraction + unit resolution),
+    <code>widget-src/src/storage/roadmap-store.ts</code> (bulk saves, supersede, document archive),
+    <code>packages/health-core/src/{merge,roadmap-file,document-path,validation,units}.ts</code>,
     <code>widget-src/src/components/UploadModal.tsx</code> (pipeline + done-screen),
-    <code>widget-src/src/components/ReviewTable.tsx</code> (inline-edit at review),
-    <code>widget-src/src/components/BloodTestTimeline.tsx</code> (click-to-correct),
-    <code>packages/health-core/src/{validation,units,parseNumber}.ts</code>.
+    <code>widget-src/src/components/ReviewTable.tsx</code> (matrix, inline-edit, conflict cell).
   </p>
 
 </div>

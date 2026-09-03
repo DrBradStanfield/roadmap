@@ -68,7 +68,7 @@ const html = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Health Roadmap — User Stories</title>
+<title>Health by Dr Brad — User Stories</title>
 <style>
   :root {
     --bg: #f8f9fa; --card: #ffffff; --ink: #1a1a2e; --muted: #6b7280;

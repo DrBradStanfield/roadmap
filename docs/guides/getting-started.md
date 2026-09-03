@@ -6,7 +6,7 @@ updated: "2026-09-02"
 stories: ["US-29", "US-30", "US-31", "US-32"]
 ---
 
-Your record from the Health Roadmap tool is one file: `health-roadmap.json`, sitting in your own Dropbox, Google Drive or GitHub. We published the format of that file, and the rules for changing it safely, so any AI that can reach the file can read your results and file new ones.
+Your record from the Health by Dr Brad tool is one file: `health-roadmap.json`, sitting in your own Dropbox, Google Drive or GitHub. We published the format of that file, and the rules for changing it safely, so any AI that can reach the file can read your results and file new ones.
 
 There are two ways to give an AI that reach. Connect ChatGPT or Claude on the web to your Dropbox, which takes a couple of minutes and installs nothing: [from the web](#from-the-web). Or point an AI running on your own computer at the file: [on your own computer](#on-your-own-computer).
 
@@ -41,11 +41,11 @@ Four steps, on any Claude plan. Nothing to install and no special mode to turn o
 
 1. Open the add-connector dialog. In claude.ai, open Settings, then Connectors, then Add custom connector. Or follow [this link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Health%20Roadmap&connectorUrl=https%3A%2F%2Fmcp.drstanfield.com%2Fmcp), which Anthropic supports for exactly this: it opens the same dialog with the name and the address already in it, tells you the values came from an outside link, and waits for you to confirm. It adds nothing on its own and grants nothing on its own.
 
-2. Fill it in and add it. Name it Health Roadmap. Paste `https://mcp.drstanfield.com/mcp` as the server address. Press Add.
+2. Fill it in and add it. Name it Health by Dr Brad. Paste `https://mcp.drstanfield.com/mcp` as the server address. Press Add.
 
 3. Connect it. Press Connect. Our own page opens and says what the connector does and what it cannot do. Press Continue to Dropbox, and Dropbox asks whether to link the app. Approve it, and you land back in Claude, connected.
 
-4. Turn it on in a chat. Open the + menu in the conversation, switch Health Roadmap on, and say "read my record".
+4. Turn it on in a chat. Open the + menu in the conversation, switch Health by Dr Brad on, and say "read my record".
 
 ## Connect ChatGPT on the web
 
@@ -55,11 +55,11 @@ Five steps, on a paid ChatGPT plan, on the web. There is one extra step compared
 
 2. Create the app. Go to Plugins and choose Create app.
 
-3. Fill it in. Name it Health Roadmap. Paste `https://mcp.drstanfield.com/mcp` as the server URL. Set Authentication to OAuth. Tick the box acknowledging the risk of connecting a server, which OpenAI asks for on anything added this way. Press Create.
+3. Fill it in. Name it Health by Dr Brad. Paste `https://mcp.drstanfield.com/mcp` as the server URL. Set Authentication to OAuth. Tick the box acknowledging the risk of connecting a server, which OpenAI asks for on anything added this way. Press Create.
 
-4. Sign in. Press Sign in with Health Roadmap. Our own page opens, then Continue to Dropbox, then approve it in Dropbox. The app shows as installed.
+4. Sign in. Press Sign in with Health by Dr Brad. Our own page opens, then Continue to Dropbox, then approve it in Dropbox. The app shows as installed.
 
-5. Turn it on in a chat. Open the + menu, then More, then Developer mode, and pick Health Roadmap for that conversation. ChatGPT asks each conversation separately.
+5. Turn it on in a chat. Open the + menu, then More, then Developer mode, and pick Health by Dr Brad for that conversation. ChatGPT asks each conversation separately.
 
 The longer version, including what to do when a step goes wrong, is in [connect ChatGPT to your health record](/blogs/guides/connect-chatgpt).
 

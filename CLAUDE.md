@@ -8,7 +8,7 @@ A/B, endpoints, gotcha archive) · [docs/deploy-runbook.md](docs/deploy-runbook.
 
 ## Project Overview
 
-**Health Roadmap Tool** — a Shopify app: health-metric tracking + suggestions +
+**Health by Dr Brad (the roadmap tool)** — a Shopify app: health-metric tracking + suggestions +
 a chatbot, as a storefront theme extension. **Local-first (v2):** health data
 lives in THEIR cloud (Google Drive / Dropbox / GitHub) or localStorage as one
 `health-roadmap.json` file — never on Brad's server. "Logged in" = connected a

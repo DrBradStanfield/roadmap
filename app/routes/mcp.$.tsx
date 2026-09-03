@@ -380,20 +380,77 @@ function html(body: string, status = 200, headers: Record<string, string> = {}):
   });
 }
 
-function htmlError(message: string, headers: Record<string, string> = {}): Response {
-  return html(page('Something went wrong', `<p>${escapeHtml(message)}</p>`), 400, headers);
-}
-
+/**
+ * One shell for every state the connect flow renders: the consent screen and
+ * every error. Self-contained — inline styles only, so the `default-src 'none';
+ * style-src 'unsafe-inline'` policy above needs no widening, and no webfont.
+ */
 function page(title: string, inner: string): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>${escapeHtml(title)}</title>
-<style>body{font:16px/1.6 system-ui,sans-serif;margin:0;padding:2.5rem 1.25rem;max-width:34rem;
-margin-inline:auto;color:#1b1b1b;background:#fbfbf9}h1{font-size:1.4rem}
-ul{padding-left:1.1rem}button{font:inherit;padding:.7rem 1.4rem;border:0;border-radius:.4rem;
-background:#1b5e4b;color:#fff;cursor:pointer}small{color:#555}</style>
-</head><body><h1>${escapeHtml(title)}</h1>${inner}</body></html>`;
+<style>
+:root{--bg:#f7f7f5;--card:#fff;--line:#e6e5e0;--ink:#16302a;--dim:#5f6b66;
+--brand:#00a38b;--brand-ink:#00806d;--radius:14px}
+@media (prefers-color-scheme:dark){:root{--bg:#101413;--card:#181d1c;--line:#2a3230;
+--ink:#eef2f0;--dim:#9aa8a3;--brand:#26bfa6;--brand-ink:#26bfa6}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,
+BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+-webkit-font-smoothing:antialiased;
+padding:calc(env(safe-area-inset-top) + 28px) calc(env(safe-area-inset-right) + 16px)
+calc(env(safe-area-inset-bottom) + 40px) calc(env(safe-area-inset-left) + 16px)}
+main{max-width:30rem;margin-inline:auto}
+.mark{display:flex;align-items:center;gap:8px;font-size:14px;letter-spacing:.02em;
+color:var(--dim);margin-bottom:22px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--brand);flex:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+padding:26px 22px}
+h1{margin:0 0 10px;font-size:1.5rem;line-height:1.25;letter-spacing:-.015em}
+p{margin:0 0 14px}
+.lede{color:var(--dim)}
+.who{font-weight:600;color:var(--ink)}
+form{margin:0}
+.pick{display:flex;flex-direction:column;gap:10px;margin:22px 0 4px}
+button{display:flex;width:100%;min-height:52px;align-items:center;gap:12px;
+font:600 16px/1.2 inherit;color:#fff;background:var(--brand);border:0;
+border-radius:12px;padding:14px 18px;cursor:pointer;text-align:left}
+button:hover{background:var(--brand-ink)}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+button svg{flex:none}
+h2{margin:26px 0 10px;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;
+color:var(--dim)}
+ul{margin:0;padding:0;list-style:none}
+li{position:relative;padding:0 0 0 20px;margin-bottom:9px;color:var(--ink)}
+li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;
+border-radius:50%;background:var(--brand)}
+.fine{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);
+font-size:14px;color:var(--dim)}
+.fine p{margin:0 0 10px}
+.fine p:last-child{margin:0}
+a{color:var(--brand-ink);text-decoration:underline;text-underline-offset:2px}
+.rev{overflow-wrap:anywhere}
+</style>
+</head><body><main>
+<div class="mark"><span class="dot"></span>Health by Dr Brad</div>
+<div class="card"><h1>${escapeHtml(title)}</h1>${inner}</div>
+</main></body></html>`;
+}
+
+function htmlError(message: string, headers: Record<string, string> = {}): Response {
+  return html(page('Something went wrong', `<p class="lede">${escapeHtml(message)}</p>`), 400, headers);
+}
+
+/** A provider's own glyph, drawn inline: no image request, no CSP widening. */
+function providerMark(provider: McpProvider): string {
+  if (provider === 'dropbox') {
+    return `<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="#fff">
+<path d="M6 2 0 6l6 4 6-4-6-4Zm12 0-6 4 6 4 6-4-6-4ZM0 14l6 4 6-4-6-4-6 4Zm18-4-6 4 6 4 6-4-6-4ZM6 19.5 12 23.5l6-4-6-4-6 4Z"/></svg>`;
+  }
+  return `<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="#fff">
+<path d="M8.7 2.2h6.6l6.6 11.4h-6.6L8.7 2.2Z"/><path d="M7.1 4 .5 15.4l3.3 5.7 6.6-11.4L7.1 4Z"/>
+<path d="M5.6 15.9h16.3l-3.3 5.7H2.3l3.3-5.7Z"/></svg>`;
 }
 
 /**
@@ -407,28 +464,35 @@ function consentPage(clientName: string, offers: Array<{ provider: McpProvider; 
     .map(
       ({ provider, state }) => `<form method="post">
 <input type="hidden" name="state" value="${escapeHtml(state)}">
-<button type="submit">Continue to ${escapeHtml(providerLabel(provider))}</button>
+<button type="submit">${providerMark(provider)}<span>Continue to ${escapeHtml(providerLabel(provider))}</span></button>
 </form>`,
     )
     .join('\n');
   const revoke = offers.map(({ provider }) => providerRevokeUrl(provider)).join(' or ');
+  // Name only the clouds actually on offer: the sentence follows the buttons.
+  const clouds = offers.map(({ provider }) => providerLabel(provider)).join(' or ');
   return page(
-    'Connect your health record',
-    `<p><strong>${escapeHtml(clientName)}</strong> is asking to read and add to your health record.</p>
-<p>Your record still lives only in your own storage. Our server reads it, in memory, to answer your
-assistant, and your assistant holds a sealed credential only we can open. We keep no copy.</p>
+    'Where do you want to keep your health record?',
+    `<p class="lede"><span class="who">${escapeHtml(clientName)}</span> wants to connect to your health record.</p>
+<p class="lede">Your health record is yours, and yours alone. Keep it in your own ${escapeHtml(clouds)}. Your assistant reads and writes one file there. Nothing is stored on our server.</p>
+<div class="pick">${buttons}</div>
+<h2>What the assistant can do</h2>
 <ul>
-<li>It can read your record and compute your plan.</li>
-<li>It can add measurements and lab results, and correct a recent value. It cannot delete anything.</li>
-<li>It can change four things about you: your sex, birth year, birth month and height.</li>
-<li>If you ask it to report a problem, it files a public issue on the project’s GitHub — your words, never
-your health values, and without asking you again.</li>
-<li>We count calls (which tool, which assistant, whether it worked), never your values.</li>
-<li>You cancel it at <span>${escapeHtml(revoke)}</span>. That also disconnects this
-website from your folder, and you can reconnect in one click.</li>
+<li>Read your record and produce your plan.</li>
+<li>Add measurements and lab results.</li>
+<li>Correct a recent value. Nothing is ever deleted.</li>
+<li>Update your sex, birth year, birth month and height.</li>
+<li>File a bug report as a public issue on GitHub, in your words, without your health values, and
+without asking again.</li>
 </ul>
-${buttons}
-<p><small>Educational, not medical advice.</small></p>`,
+<div class="fine">
+<p>We count calls, never your values.
+<a href="https://drstanfield.com/pages/connector-privacy">Privacy notice</a> ·
+<a href="https://drstanfield.com/pages/roadmap">Setup guide</a></p>
+<p>Your record stays in your own storage. Our server reads it in memory to answer your assistant and
+keeps no copy.</p>
+<p class="rev">Disconnect any time at ${escapeHtml(revoke)}.</p>
+<p>Educational, not medical advice.</p>
+</div>`,
   );
 }
-

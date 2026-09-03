@@ -122,7 +122,7 @@ export function ChatSection({ isLoggedIn, startExpanded, inline, onClose, onExpa
 
   // ----- EXPANDED STATE -----
   return (
-    <div className={`chat-section chat-expanded${inline ? ' chat-expanded--inline' : ''} no-print`} role="dialog" aria-label="Health Roadmap Chat">
+    <div className={`chat-section chat-expanded${inline ? ' chat-expanded--inline' : ''} no-print`} role="dialog" aria-label="Health by Dr Brad Chat">
       <div className="chat-header">
         <button className="chat-threads-btn" onClick={() => setShowThreads(!showThreads)}>
           {showThreads ? 'Back' : 'History'}

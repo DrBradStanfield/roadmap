@@ -16,7 +16,7 @@ import { MCP_PROMPTS, MCP_TOOLS, SERVER_VERSION, toolContent, type ToolAnswer } 
 export const PROTOCOL_VERSION = '2025-11-25';
 
 /** What both servers call themselves. One name, one version, one place. */
-export const SERVER_INFO = { name: 'health-roadmap', title: 'Health Roadmap', version: SERVER_VERSION };
+export const SERVER_INFO = { name: 'health-roadmap', title: 'Health by Dr Brad', version: SERVER_VERSION };
 
 export type RpcId = string | number | null;
 

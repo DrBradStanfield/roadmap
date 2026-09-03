@@ -507,6 +507,7 @@ describe('a pinned vendor client connects without DCR and without a fetch (US-32
     expect(consent.status).toBe(200);
     const screen = await consent.text();
     expect(screen).toContain('Claude');
+    expect(screen).toContain('<h1>Where do you want to keep your health record?</h1>');
     // Everything the grant actually carries, in the words the user reads: the
     // two tools that shipped after the first copy was written, and the counters.
     expect(screen).toContain('birth year');

@@ -1,12 +1,12 @@
 ---
 title: "Connect ChatGPT to your health record"
-description: "Add the Health Roadmap connector to ChatGPT on the web, and it can read your blood tests, work out your plan and file new results."
+description: "Add the Health by Dr Brad connector to ChatGPT on the web, and it can read your blood tests, work out your plan and file new results."
 slug: "connect-chatgpt"
 updated: "2026-09-02"
 stories: ["US-32"]
 ---
 
-Your record from the Health Roadmap tool is one file, `health-roadmap.json`, in your own Dropbox. ChatGPT in a browser cannot open a file on your computer, so we run a small connector between the two. You authorize it once and ChatGPT can then read your results, work out your plan and add new values, from your phone or any browser.
+Your record from the Health by Dr Brad tool is one file, `health-roadmap.json`, in your own Dropbox. ChatGPT in a browser cannot open a file on your computer, so we run a small connector between the two. You authorize it once and ChatGPT can then read your results, work out your plan and add new values, from your phone or any browser.
 
 This takes about five minutes. Everything happens in ChatGPT's own settings; there is nothing to install.
 
@@ -28,17 +28,17 @@ https://mcp.drstanfield.com/mcp
 
 2. Create the app. Go to Plugins and choose Create app.
 
-3. Fill it in. Name it Health Roadmap. Paste the address above as the server URL. Set Authentication to OAuth. Tick the box acknowledging the risk of connecting a server, which OpenAI asks for on anything added this way. Press Create.
+3. Fill it in. Name it Health by Dr Brad. Paste the address above as the server URL. Set Authentication to OAuth. Tick the box acknowledging the risk of connecting a server, which OpenAI asks for on anything added this way. Press Create.
 
-4. Sign in. Press Sign in with Health Roadmap. Our own page opens and says what the connector does. Press Continue to Dropbox. Dropbox asks whether to link the app. Approve it, and the app shows as installed.
+4. Sign in. Press Sign in with Health by Dr Brad. Our own page opens and says what the connector does. Press Continue to Dropbox. Dropbox asks whether to link the app. Approve it, and the app shows as installed.
 
-5. Turn it on in a chat. Open the + menu, then More, then Developer mode, and pick Health Roadmap. ChatGPT asks for this in each conversation, so do it again in the next chat.
+5. Turn it on in a chat. Open the + menu, then More, then Developer mode, and pick Health by Dr Brad. ChatGPT asks for this in each conversation, so do it again in the next chat.
 
 Then say "read my record".
 
 ## After an update
 
-When we add a tool, ChatGPT does not see it straight away: it keeps the connector's list of tools from the last time it looked. Open Settings, then Plugins (called Connectors on some accounts), pick Health Roadmap, and press Refresh. Then reload the page. The new tool is there in your next chat.
+When we add a tool, ChatGPT does not see it straight away: it keeps the connector's list of tools from the last time it looked. Open Settings, then Plugins (called Connectors on some accounts), pick Health by Dr Brad, and press Refresh. Then reload the page. The new tool is there in your next chat.
 
 ## Why developer mode
 
@@ -78,7 +78,7 @@ Take care with the web tool open in another tab while ChatGPT is writing. The pa
 
 ## How to cancel it
 
-Go to [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) and unlink Health Roadmap. That is the real switch, and it is yours, not ours. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing, and how to disconnect.
+Go to [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) and unlink Health by Dr Brad. That is the real switch, and it is yours, not ours. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing, and how to disconnect.
 
 One thing to know before you press it: Dropbox ties the folder to the app, so unlinking also disconnects this website from your record. The tool will ask you to connect Dropbox again next time you open it, which is one click.
 

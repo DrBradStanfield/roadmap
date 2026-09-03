@@ -51,7 +51,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
         authorization_servers: [issuer()],
         bearer_methods_supported: ['header'],
         scopes_supported: ['health.read', 'health.append'],
-        resource_name: 'Health Roadmap',
+        resource_name: 'Health by Dr Brad',
         resource_documentation: 'https://drstanfield.com/pages/health-roadmap',
       },
       { headers: HEADERS },

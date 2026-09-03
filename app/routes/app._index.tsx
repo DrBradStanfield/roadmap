@@ -60,7 +60,7 @@ export default function Index() {
 
   if (error || !stats) {
     return (
-      <s-page heading="Health Roadmap">
+      <s-page heading="Health by Dr Brad">
         <s-section>
           <s-text tone="critical">{error || "Failed to load dashboard."}</s-text>
         </s-section>
@@ -71,7 +71,7 @@ export default function Index() {
   const { chat, reminders, ab, klaviyo } = stats;
 
   return (
-    <s-page heading="Health Roadmap">
+    <s-page heading="Health by Dr Brad">
       <s-stack gap="large">
         <s-banner tone="info">
           <s-text>

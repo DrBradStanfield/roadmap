@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Health Roadmap — Architecture (v2, local-first)</title>
+<title>Health by Dr Brad — Architecture (v2, local-first)</title>
 <style>
   :root {
     --brand: #00a38b;
@@ -279,7 +279,7 @@
 
 <main>
 
-<h1 id="intro">Health Roadmap — Architecture (v2, local-first)</h1>
+<h1 id="intro">Health by Dr Brad — Architecture (v2, local-first)</h1>
 <div class="meta">
   Last updated 2026-09-02. <span class="pill">Live in production</span> — both storefronts serve the v2 local-first build on <code>/pages/roadmap</code>, and the thin server runs React Router 7 on Fly (<code>v361+</code>). As of the <strong>§12 split (2026-06-24)</strong> the tool runs on <strong>two domains / two Shopify apps / two Fly apps from one codebase &amp; one widget bundle</strong>: <code>drstanfield.com</code> is the <strong>education</strong> store (app <code>shopify.app.edu.toml</code>, Fly <code>health-tool-edu</code>) and <code>microvitamin.com</code> is the <strong>commerce</strong> store (app <code>shopify.app.toml</code>, Fly <code>health-tool-app</code>). This page is the single, self-contained source of truth for v2 architecture. The legacy v1 (Supabase-backed) shape is preserved at <a href="architecture.html">architecture.html</a> for historical reference; the blow-by-blow of the migration (dated decisions, deviations, build log) lives in <strong>git history</strong>, not in a companion doc.
 </div>
@@ -873,7 +873,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 <p class="meta">Executed 2026-06-12/13 via <a class="file-link" href="../supabase/data-purge-2026-06.sql">supabase/data-purge-2026-06.sql</a> in one verified transaction (back up → assert KEEP tables unchanged + health tables zero → commit). Verified afterward: 155 conversations / 540 messages preserved, all 11 health tables at 0, production chat answers end-to-end. The HIPAA audit-log table exists as a stub but its custodial purpose is gone — the user's own append-only file is now their record.</p>
 
 <h2 id="deployment-topology">Deployment topology — two domains, two apps, one bundle</h2>
-<p>The <strong>§12 split went live 2026-06-24.</strong> The Health Roadmap tool now runs on <strong>two storefronts</strong> from <strong>one codebase and one widget bundle</strong>. Each storefront is a separate Shopify app registration and a separate Fly app, but the prod-built widget extension deployed to both is byte-identical — per-store behaviour comes from shop metafields and per-Fly-app secrets, never from a forked build.</p>
+<p>The <strong>§12 split went live 2026-06-24.</strong> The Health by Dr Brad tool now runs on <strong>two storefronts</strong> from <strong>one codebase and one widget bundle</strong>. Each storefront is a separate Shopify app registration and a separate Fly app, but the prod-built widget extension deployed to both is byte-identical — per-store behaviour comes from shop metafields and per-Fly-app secrets, never from a forked build.</p>
 
 <table>
   <thead><tr><th></th><th>Education</th><th>Commerce</th></tr></thead>
@@ -936,7 +936,7 @@ export const SHOPIFY_SURFACE = import.meta.env.VITE_SHOPIFY_SURFACE === 'true';<
 </div>
 
 <h2 id="edu-store">Education / commerce split — two app instances, not a second tenant</h2>
-<p>Brad's <strong>education</strong> Shopify store (<code>sz5utw-1r.myshopify.com</code>, served at <code>drstanfield.com</code>, in the <strong>"Dr Brad Stanfield" org 222927919</strong> — a <em>different</em> org than the commerce/microvitamin store) runs the same Health Roadmap tool. The chosen shape (<strong>Option B</strong>) runs it as a <strong>separate private app + separate Fly app</strong> from the <em>same codebase</em>, rather than turning the commerce server into a multi-tenant host.</p>
+<p>Brad's <strong>education</strong> Shopify store (<code>sz5utw-1r.myshopify.com</code>, served at <code>drstanfield.com</code>, in the <strong>"Dr Brad Stanfield" org 222927919</strong> — a <em>different</em> org than the commerce/microvitamin store) runs the same Health by Dr Brad tool. The chosen shape (<strong>Option B</strong>) runs it as a <strong>separate private app + separate Fly app</strong> from the <em>same codebase</em>, rather than turning the commerce server into a multi-tenant host.</p>
 
 <div class="card">
   <strong>The decision in one sentence:</strong> deploy the same Docker image a second time as <code>health-tool-edu</code>, pointed at a <em>new</em> private Shopify app registered in org 222927919, so the commerce auth path stays byte-identical and the live microvitamin.com roadmap cannot be affected by anything the education store does (and vice versa).

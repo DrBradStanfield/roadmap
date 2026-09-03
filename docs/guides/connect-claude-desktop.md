@@ -6,7 +6,7 @@ updated: "2026-09-02"
 stories: ["US-32"]
 ---
 
-Your record from the Health Roadmap tool is one file: `health-roadmap.json`, in your own Dropbox, Google Drive or GitHub folder. This repo ships a small program that hands that file to Claude as a set of named tools. Once it is connected you can say "add my new blood panel" or "what does my plan say about my LDL" and Claude does it, in your file, on your machine.
+Your record from the Health by Dr Brad tool is one file: `health-roadmap.json`, in your own Dropbox, Google Drive or GitHub folder. This repo ships a small program that hands that file to Claude as a set of named tools. Once it is connected you can say "add my new blood panel" or "what does my plan say about my LDL" and Claude does it, in your file, on your machine.
 
 This guide is for people who have the tool installed on a computer and are comfortable pasting a line into a terminal or editing one settings file. It takes about five minutes.
 
@@ -108,7 +108,7 @@ This works with Dropbox and Google Drive today. On Drive, Google offers no condi
 
 1. In claude.ai, open Settings, then Connectors, then Add custom connector. Or follow [this link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Health%20Roadmap&connectorUrl=https%3A%2F%2Fmcp.drstanfield.com%2Fmcp), which opens that dialog with the name and the address already in it and waits for you to confirm.
 
-2. Name it Health Roadmap, with this address:
+2. Name it Health by Dr Brad, with this address:
 
 ```copy-box
 https://mcp.drstanfield.com/mcp
@@ -116,7 +116,7 @@ https://mcp.drstanfield.com/mcp
 
 3. Press Add, then Connect. Our own page opens and says what the connector does. Press Continue to Dropbox and approve it there.
 
-4. In a chat, open the + menu, switch Health Roadmap on, and say "read my record".
+4. In a chat, open the + menu, switch Health by Dr Brad on, and say "read my record".
 
 The hosted version is append-only, like this one, with two extra limits: a correction on a row older than 90 days is refused, and Claude has to state the value it believes it is replacing, so a correction written from a stale read changes nothing.
 

@@ -581,7 +581,7 @@ function prepareFeedback(
         'they submit it: say which tool or screen was wrong and what you expected, not what the record holds.',
     };
   }
-  const stamp = `Health Roadmap connector, server ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, ${dayOf(now)}`;
+  const stamp = `Health by Dr Brad connector, server ${SERVER_VERSION}, tool layer v${TOOL_LAYER_VERSION}, ${dayOf(now)}`;
   return {
     ok: true,
     title,
@@ -589,7 +589,7 @@ function prepareFeedback(
     issue: {
       title: `${FEEDBACK_TITLE_PREFIX}${title}`.slice(0, MAX_NAME_LENGTH),
       body: `${fenced(detail)}\n\n---\nkind: ${request.kind}\n${stamp}\n` +
-        'Filed by the user’s AI assistant through the Health Roadmap connector; no health values are included by policy.',
+        'Filed by the user’s AI assistant through the Health by Dr Brad connector; no health values are included by policy.',
       labels: ['from-connector', request.kind === 'bug' ? 'bug' : 'enhancement'],
     },
   };

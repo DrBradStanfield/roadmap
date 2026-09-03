@@ -12,7 +12,7 @@ import { MCP_PROMPTS, MCP_TOOLS } from './mcp-tools';
 
 const surface: RpcSurface = {
   protocolVersion: (asked) => (asked === '2025-06-18' ? asked : '2025-11-25'),
-  serverInfo: { name: 'health-roadmap', title: 'Health Roadmap', version: '1.0.0' },
+  serverInfo: { name: 'health-roadmap', title: 'Health by Dr Brad', version: '1.0.0' },
   instructions: 'Read before you write.',
   callTool: async (name) =>
     name === 'boom' ? { errorMessage: 'That tool failed inside this server.' } : { answer: { text: 'done', isError: false } },

@@ -1,4 +1,8 @@
-# ChatGPT app listing: Health Roadmap
+# ChatGPT app listing: Health by Dr Brad
+
+> **Name change pending.** The connector is renamed from "Health Roadmap" to "Health by Dr Brad".
+> The listing below already uses the new name; it ships with the NEXT submitted version. Nothing
+> submitted so far carries it.
 
 Everything the OpenAI submission form asks for, so Brad only fills in fields. Nothing here has been
 submitted. Requirements read 2026-09-02 from `developers.openai.com/plugins/deploy/submission`,
@@ -9,7 +13,7 @@ submitted. Requirements read 2026-09-02 from `developers.openai.com/plugins/depl
 
 | Field | Value |
 | --- | --- |
-| Name | Health Roadmap |
+| Name | Health by Dr Brad |
 | Website | https://drstanfield.com |
 | Support | https://drstanfield.com/pages/contact (live, contact form) |
 | Privacy policy | `[PRIVACY_URL]` |
@@ -21,7 +25,7 @@ submitted. Requirements read 2026-09-02 from `developers.openai.com/plugins/depl
 **Short description.** Keep your blood tests and measurements in your own
 Dropbox or Google Drive, and let ChatGPT read and update them.
 
-**Long description.** Health Roadmap stores your health record as a single
+**Long description.** Health by Dr Brad stores your health record as a single
 `health-roadmap.json` file in your own Dropbox or Google Drive. Connect it and ChatGPT can read that
 record, add measurements and lab results, correct a value you entered wrongly, and compute a plan
 from it: what is due for screening, and evidence-based suggestions with the citation behind each
@@ -96,7 +100,7 @@ is marked open-world: it touches no health record, and it files an issue on GitH
 ## Starter prompts
 
 1. Add my blood test results from today.
-2. What does my health roadmap say I should do next?
+2. What does my plan say I should do next?
 3. Show me how my LDL has changed over the past year.
 4. My last weight entry was wrong. Fix it to 78 kg.
 5. What screening am I due for?

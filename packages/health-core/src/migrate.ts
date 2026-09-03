@@ -39,7 +39,7 @@ import {
 export class SchemaTooNewError extends Error {
   constructor(public fileVersion: number, public appVersion: number) {
     super(
-      `Health Roadmap file is schema v${fileVersion}, but this app only understands v${appVersion}. ` +
+      `Health by Dr Brad file is schema v${fileVersion}, but this app only understands v${appVersion}. ` +
         `Update the app before writing, or your newer data could be lost.`,
     );
     this.name = 'SchemaTooNewError';
