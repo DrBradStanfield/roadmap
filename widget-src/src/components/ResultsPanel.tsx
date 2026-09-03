@@ -492,7 +492,7 @@ function useGuestEmailCapture(guestReportData: GuestReportData): GuestEmailHook 
   return { email, setEmail, emailError, setEmailError, state, setState, helperText, handleSubmit };
 }
 
-function GuestEmailCapture({ hook, loginUrl, formStage }: {
+export function GuestEmailCapture({ hook, loginUrl, formStage }: {
   hook: GuestEmailHook;
   loginUrl?: string;
   formStage?: number;
@@ -544,7 +544,6 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
   return (
     <div className={`email-capture no-print${formStage === 3 ? ' field-attention' : ''}`}>
       <p className="email-guest-helper">{helperText}</p>
-      <StorageNotice surface="email" className="email-guest-helper" />
       <div className="email-capture-row">
         <input
           type="email"
@@ -572,6 +571,7 @@ function GuestEmailCapture({ hook, loginUrl, formStage }: {
         We'll also email you when a check-up or blood test comes due — only the check-up names and
         dates are stored, never your results. One-click unsubscribe in every email.
       </p>
+      <StorageNotice surface="email" className="email-guest-helper" />
     </div>
   );
 }

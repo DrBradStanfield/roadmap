@@ -167,6 +167,13 @@ input[type="number"] {
     margin-right: 10px;
   }
 
+  /* US-09 AC5 — the storage line is a sibling of the cards, not a child, so it
+     needs their gutter; without it the sentence runs to the screen edge. */
+  .health-input-panel > .hr-storage-notice {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+
   .field-hint-attention--centered {
     margin-top: 15px !important;
   }
