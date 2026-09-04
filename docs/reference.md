@@ -137,6 +137,7 @@ Stored values are **never mutated**. The file's `measurements`/`labValues` array
 - `mcp-server.ts` — the health record as a local stdio MCP server (US-32 phase 0): one file path, no server, no OAuth, no network.
 - `edit-record.ts` — `edit_record` CLI: add/correct values in a record file. Thin shell; the write rules live in `record-edits.ts`, shared with the hosted MCP server.
 - `get-plan.ts` — `get_plan` CLI: turns `health-roadmap.json` into suggestions/evidence/citations, offline, read-only.
+- `demo-video/` — Remotion project rendering a code-drawn, ChatGPT-style demo of the hosted MCP connector; `renders/` holds the last mp4, `node_modules`/`out/` gitignored (see `demo-video/README.md`).
 
 **Build scripts (`scripts/`):**
 - `build-guide-html.mjs` — builds a Shopify article body from a guide markdown master; copy-box fences get a clipboard button, `--no-script` degrades to select-all.

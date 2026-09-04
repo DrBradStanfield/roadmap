@@ -1,0 +1,772 @@
+{
+  "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor.",
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-04T01:23:20.786Z",
+  "today": "2026-09-04",
+  "unitSystem": "si",
+  "profile": {
+    "sex": "male",
+    "age": 55,
+    "heightCm": 178,
+    "bmi": 29.2,
+    "bmiCategory": "Overweight",
+    "eGFR": 89,
+    "idealBodyWeightKg": 76.3,
+    "proteinTargetG": 92
+  },
+  "inputs": {
+    "waistCm": 103,
+    "diastolicBp": 86,
+    "hdlC": 1.2,
+    "lpa": 42,
+    "hba1c": 41,
+    "triglycerides": 1.9,
+    "totalCholesterol": 4.4,
+    "creatinine": 88,
+    "apoB": 0.92,
+    "systolicBp": 138,
+    "ldlC": 2.1,
+    "weightKg": 92.4,
+    "sex": "male",
+    "birthYear": 1971,
+    "birthMonth": 3,
+    "unitSystem": "si",
+    "heightCm": 178
+  },
+  "missingInputs": [],
+  "currentValues": [
+    {
+      "id": "b3b2ff64-ada5-4095-b49c-4cb949196d23",
+      "metric": "apob",
+      "label": "ApoB",
+      "value": "0.92",
+      "unit": "g/L",
+      "date": "2026-07-14"
+    },
+    {
+      "id": "9fe41908-d45c-46fd-98da-9de29446e82d",
+      "metric": "creatinine",
+      "label": "Creatinine",
+      "value": "88",
+      "unit": "µmol/L",
+      "date": "2026-07-14"
+    },
+    {
+      "id": "5a905170-ae68-49a5-8c85-7b4cc7e1e4ff",
+      "metric": "diastolic_bp",
+      "label": "Diastolic BP",
+      "value": "86",
+      "unit": "mmHg",
+      "date": "2026-08-20"
+    },
+    {
+      "id": "ca8fba93-eb47-403c-b51b-6c0d833877bf",
+      "metric": "hdl",
+      "label": "HDL Cholesterol",
+      "value": "1.2",
+      "unit": "mmol/L",
+      "date": "2026-07-14"
+    },
+    {
+      "id": "9c1f160a-b0f8-49a1-95d1-9b88b0783440",
+      "metric": "hba1c",
+      "label": "HbA1c",
+      "value": "41",
+      "unit": "mmol/mol",
+      "date": "2026-07-14"
+    },
+    {
+      "id": "c776255a-0434-45d4-b002-fed246e00a8d",
+      "metric": "ldl",
+      "label": "LDL Cholesterol",
+      "value": "2.1",
+      "unit": "mmol/L",
+      "date": "2026-07-14"
+    },
+    {
+      "id": "9b09e77c-f355-47fc-b4b8-32eeb1ac0972",
+      "metric": "lpa",
+      "label": "Lp(a)",
+      "value": "42",
+      "unit": "nmol/L",
+      "date": "2026-07-14"
+    },
+    {
+      "id": "bc0d56a0-c046-4ba7-9a61-d7f0b3aad492",
+      "metric": "systolic_bp",
+      "label": "Systolic BP",
+      "value": "138",
+      "unit": "mmHg",
+      "date": "2026-08-20"
+    },
+    {
+      "id": "9f845598-0868-4637-b0a6-0dd16f133996",
+      "metric": "total_cholesterol",
+      "label": "Total Cholesterol",
+      "value": "4.4",
+      "unit": "mmol/L",
+      "date": "2026-07-14"
+    },
+    {
+      "id": "9f7c2ba3-185a-40b8-bc27-8e06ff407d94",
+      "metric": "triglycerides",
+      "label": "Triglycerides",
+      "value": "1.9",
+      "unit": "mmol/L",
+      "date": "2026-07-14"
+    },
+    {
+      "id": "492dd100-d3e2-4091-b1d4-5a2e934b9cb7",
+      "metric": "waist",
+      "label": "Waist",
+      "value": "103",
+      "unit": "cm",
+      "date": "2026-08-20"
+    },
+    {
+      "id": "dbdcc873-925f-42da-b672-fcb2dcdd6118",
+      "metric": "weight",
+      "label": "Weight",
+      "value": "92.4",
+      "unit": "kg",
+      "date": "2026-08-20"
+    }
+  ],
+  "labValues": [
+    {
+      "id": "1ad5d784-602e-43de-b883-35131a7f5e34",
+      "key": "alt",
+      "label": "ALT",
+      "value": 34,
+      "unit": "U/L",
+      "date": "2026-07-14"
+    },
+    {
+      "id": "32b505bc-fa68-4ff7-a12c-2359fa62b54e",
+      "key": "ferritin",
+      "label": "Ferritin",
+      "value": 210,
+      "unit": "µg/L",
+      "date": "2026-07-14"
+    },
+    {
+      "id": "e20a3e4e-3586-4e49-8c89-46f578a36f1f",
+      "key": "tsh",
+      "label": "TSH",
+      "value": 2.3,
+      "unit": "mIU/L",
+      "date": "2026-07-14"
+    }
+  ],
+  "medications": {
+    "ezetimibe": "not_yet",
+    "statin": {
+      "drug": "atorvastatin",
+      "dose": 20
+    }
+  },
+  "screenings": {
+    "colorectalLastDate": "2023-05-02",
+    "colorectalResult": "normal",
+    "prostatePsaValue": 1.4,
+    "prostateLastDate": "2026-07-14"
+  },
+  "due": {
+    "overdue": [
+      {
+        "category": "screening_colorectal",
+        "group": "screening",
+        "label": "Colorectal screening",
+        "dueAt": "2024-05-01"
+      }
+    ],
+    "upcoming": [
+      {
+        "category": "blood_test_lipids",
+        "group": "blood_test",
+        "label": "Lipid panel blood test",
+        "dueAt": "2027-07-14"
+      },
+      {
+        "category": "blood_test_hba1c",
+        "group": "blood_test",
+        "label": "HbA1c blood test",
+        "dueAt": "2027-07-14"
+      },
+      {
+        "category": "blood_test_creatinine",
+        "group": "blood_test",
+        "label": "Creatinine blood test",
+        "dueAt": "2027-07-14"
+      },
+      {
+        "category": "medication_review",
+        "group": "medication_review",
+        "label": "Medication review",
+        "dueAt": "2027-07-20"
+      }
+    ]
+  },
+  "suggestions": [
+    {
+      "id": "protein-target",
+      "category": "nutrition",
+      "priority": "info",
+      "title": "Daily protein target: 92g",
+      "description": "Based on your ideal body weight of 76.3 kg, aim for 92g of protein daily. This supports muscle maintenance and metabolic health.",
+      "ingredients": [],
+      "link": null,
+      "reason": "Higher protein intake supports muscle maintenance, metabolic health, and healthy aging. Research shows that 1.2g per kg of ideal body weight optimises muscle protein synthesis. If kidney function is reduced (eGFR below 45), a lower target of 1.0g/kg is recommended to reduce kidney workload.",
+      "guidelines": [
+        "ISSN 2017"
+      ],
+      "references": [
+        {
+          "label": "Naghshi 2020 – Protein & all-cause mortality (BMJ meta-analysis)",
+          "url": "https://doi.org/10.1136/bmj.m2412"
+        },
+        {
+          "label": "Morton 2018 – Protein & muscle gains (Br J Sports Med meta-analysis)",
+          "url": "https://doi.org/10.1136/bjsports-2017-097608"
+        },
+        {
+          "label": "Jäger 2017 – ISSN position stand: protein & exercise",
+          "url": "https://doi.org/10.1186/s12970-017-0177-8"
+        },
+        {
+          "label": "Tagawa 2021 – Protein dose-response for muscle mass (Nutr Rev)",
+          "url": "https://doi.org/10.1093/nutrit/nuaa104"
+        }
+      ]
+    },
+    {
+      "id": "low-salt",
+      "category": "nutrition",
+      "priority": "info",
+      "title": "Reduce sodium intake",
+      "description": "Aim for less than 1,500mg of sodium daily. Most excess sodium comes from processed foods. Reducing sodium can help lower blood pressure.",
+      "ingredients": [],
+      "link": null,
+      "reason": "Excess sodium raises blood pressure by increasing fluid retention. The ACC/AHA guidelines recommend an ideal sodium intake of less than 1,500mg per day for most adults. Meta-analyses confirm that reducing sodium intake produces meaningful blood pressure reductions, with greater benefit in those who already have elevated blood pressure.",
+      "guidelines": [
+        "ISH/ESH 2023",
+        "ACC/AHA 2017"
+      ],
+      "references": [
+        {
+          "label": "Filippini 2021 – Sodium reduction & blood pressure (Circulation)",
+          "url": "https://doi.org/10.1161/CIRCULATIONAHA.120.050371"
+        },
+        {
+          "label": "Huang 2020 – Dietary sodium reduction & BP (BMJ)",
+          "url": "https://doi.org/10.1136/bmj.m315"
+        },
+        {
+          "label": "Charchar 2023 – ISH lifestyle management of hypertension",
+          "url": "https://doi.org/10.1097/HJH.0000000000003563"
+        },
+        {
+          "label": "Whelton 2017 – ACC/AHA Blood Pressure Guideline (Hypertension)",
+          "url": "https://doi.org/10.1161/HYP.0000000000000065"
+        }
+      ]
+    },
+    {
+      "id": "high-potassium",
+      "category": "nutrition",
+      "priority": "info",
+      "title": "Increase potassium-rich foods",
+      "description": "Aim for 3,500–5,000mg of potassium daily from fruits, vegetables, and legumes. High potassium intake supports healthy blood pressure and cardiovascular function.",
+      "ingredients": [],
+      "link": null,
+      "reason": "Potassium helps counteract the blood-pressure-raising effects of sodium. The ISH recommends 3,500–5,000mg/day from food sources. This recommendation only applies when kidney function is adequate (eGFR ≥45), as impaired kidneys may not excrete excess potassium safely.",
+      "guidelines": [
+        "ISH/ESH 2023"
+      ],
+      "references": [
+        {
+          "label": "Charchar 2023 – ISH lifestyle management of hypertension",
+          "url": "https://doi.org/10.1097/HJH.0000000000003563"
+        }
+      ]
+    },
+    {
+      "id": "lipid-diet",
+      "category": "nutrition",
+      "priority": "info",
+      "title": "Foods that lower cholesterol",
+      "description": "Specific foods can lower LDL cholesterol: oats, walnuts, almonds, ground flaxseed, edamame, and replacing butter with extra-virgin olive oil. If you don't have IBS or IBD, beans, lentils, chickpeas, and mixed vegetables are also great options. Psyllium husk is a soluble fibre that is well-tolerated even with IBS or IBD; discuss with your doctor whether it fits your routine.",
+      "ingredients": [],
+      "link": null,
+      "reason": "These foods lower LDL cholesterol through complementary mechanisms: beta-glucan (oats) and soluble fibre (psyllium, flaxseed) bind bile acids, reducing cholesterol reabsorption. Nuts (walnuts, almonds) provide unsaturated fats that improve the LDL-to-HDL ratio. Replacing saturated fat (butter) with monounsaturated fat (extra-virgin olive oil) directly lowers LDL. Soy protein (edamame) modestly reduces LDL when replacing animal protein. Combined, these dietary changes can reduce LDL cholesterol by 15–25%.",
+      "guidelines": [
+        "ACC/AHA 2026 Dyslipidemia"
+      ],
+      "references": [
+        {
+          "label": "Jenkins 2011 – Portfolio Diet effect on LDL cholesterol (JAMA)",
+          "url": "https://doi.org/10.1001/jama.2011.1202"
+        },
+        {
+          "label": "Sabaté 2010 – Nut consumption and blood lipid levels (Arch Intern Med)",
+          "url": "https://doi.org/10.1001/archinternmed.2010.79"
+        },
+        {
+          "label": "Wei 2009 – Psyllium fibre lowers cholesterol: meta-analysis (Eur J Clin Nutr)",
+          "url": "https://doi.org/10.1038/ejcn.2008.49"
+        }
+      ]
+    },
+    {
+      "id": "trig-nutrition",
+      "category": "nutrition",
+      "priority": "attention",
+      "title": "Reduce triglycerides with diet",
+      "description": "Blood triglycerides are very diet-sensitive—improvements can be seen within 2-3 weeks. Key measures: limit alcohol, reduce sugar intake, and reduce total fat and calorie intake.",
+      "ingredients": [],
+      "link": null,
+      "reason": "Blood triglycerides are highly responsive to dietary changes — improvements can be seen within 2–3 weeks. The most effective dietary measures are reducing alcohol, sugar, and total calorie intake. Mendelian randomisation studies confirm that triglyceride-lowering reduces coronary heart disease risk.",
+      "guidelines": [],
+      "references": [
+        {
+          "label": "Ference 2019 – Triglyceride-lowering & coronary risk: Mendelian randomisation (JAMA)",
+          "url": "https://doi.org/10.1001/jama.2018.20045"
+        }
+      ]
+    },
+    {
+      "id": "reduce-alcohol",
+      "category": "nutrition",
+      "priority": "attention",
+      "title": "Reduce alcohol intake",
+      "description": "Reduce and ideally completely stop alcohol intake. Alcohol contributes to weight gain, elevated triglycerides, and increased blood pressure.",
+      "ingredients": [],
+      "link": null,
+      "reason": "Alcohol contributes to weight gain (7 calories per gram), raises triglycerides, and elevates blood pressure. The International Society of Hypertension recommends reducing or eliminating alcohol intake for blood pressure management and metabolic health.",
+      "guidelines": [
+        "ISH/ESH 2023"
+      ],
+      "references": [
+        {
+          "label": "Charchar 2023 – ISH lifestyle management of hypertension",
+          "url": "https://doi.org/10.1097/HJH.0000000000003563"
+        }
+      ]
+    },
+    {
+      "id": "exercise",
+      "category": "exercise",
+      "priority": "info",
+      "title": "Regular cardio and resistance training",
+      "description": "Aim for at least 150 minutes of moderate-intensity cardio plus 2-3 resistance training sessions per week. This combination supports cardiovascular health, muscle mass, and metabolic function.",
+      "ingredients": [],
+      "link": null,
+      "reason": "The Physical Activity Guidelines for Americans recommend at least 150 minutes of moderate-intensity aerobic activity plus 2–3 resistance training sessions per week. Large studies (PURE, 130,000 people across 17 countries) show that higher physical activity reduces all-cause mortality regardless of income level or country. Cardiorespiratory fitness is one of the strongest predictors of longevity.",
+      "guidelines": [
+        "Physical Activity Guidelines 2018"
+      ],
+      "references": [
+        {
+          "label": "Piercy 2018 – Physical Activity Guidelines for Americans (JAMA)",
+          "url": "https://doi.org/10.1001/jama.2018.14854"
+        },
+        {
+          "label": "Lear 2017 – Physical activity & mortality in 130,000 people (Lancet PURE)",
+          "url": "https://doi.org/10.1016/S0140-6736(17)31634-3"
+        },
+        {
+          "label": "Kodama 2009 – Cardiorespiratory fitness & mortality (JAMA)",
+          "url": "https://doi.org/10.1001/jama.2009.681"
+        }
+      ]
+    },
+    {
+      "id": "sleep",
+      "category": "sleep",
+      "priority": "info",
+      "title": "Prioritize quality sleep",
+      "description": "Aim for 7-9 hours of sleep per night. Maintain a consistent sleep schedule, limit screens before bed, and keep your bedroom cool and dark.",
+      "ingredients": [],
+      "link": null,
+      "reason": "Consistent sleep of 7–9 hours per night is essential for cardiovascular health, immune function, and cognitive performance. A large meta-analysis of over 1.3 million participants found that both short sleep (<6 hours) and long sleep (>8–9 hours) are associated with significantly increased mortality risk.",
+      "guidelines": [],
+      "references": [
+        {
+          "label": "Cappuccio 2010 – Sleep duration & all-cause mortality: meta-analysis (Sleep)",
+          "url": "https://doi.org/10.1093/sleep/33.5.585"
+        }
+      ]
+    },
+    {
+      "id": "weight-med-glp1",
+      "category": "medication",
+      "priority": "attention",
+      "title": "Consider a GLP-1 medication",
+      "description": "With an elevated BMI and prediabetic HbA1c, elevated triglycerides, elevated blood pressure, elevated waist-to-height ratio, you may benefit from discussing Tirzepatide (preferred) or Semaglutide with your doctor. These medications support weight management and metabolic health.",
+      "ingredients": [],
+      "link": null,
+      "reason": "GLP-1 receptor agonists like tirzepatide and semaglutide have been shown in large randomised trials to produce significant, sustained weight loss alongside improvements in blood sugar, blood pressure, and triglycerides. Tirzepatide is preferred due to its dual GIP/GLP-1 mechanism, which may provide greater weight loss. These medications work best alongside diet, exercise, and sleep optimisation.",
+      "guidelines": [],
+      "references": [
+        {
+          "label": "Wilding 2021 – Semaglutide for overweight/obesity: STEP 1 trial (NEJM)",
+          "url": "https://doi.org/10.1056/NEJMoa2032183"
+        },
+        {
+          "label": "Wilding 2022 – Weight regain after semaglutide withdrawal (Diabetes Obes Metab)",
+          "url": "https://doi.org/10.1111/dom.14725"
+        }
+      ]
+    },
+    {
+      "id": "hba1c-prediabetic",
+      "category": "bloodwork",
+      "priority": "attention",
+      "title": "HbA1c indicates prediabetes",
+      "description": "Your HbA1c of 41 mmol/mol is in the prediabetic range. Lifestyle changes now can prevent progression to diabetes.",
+      "ingredients": [],
+      "link": null,
+      "reason": "An HbA1c in the prediabetic range (5.7–6.4% / 38.8–47.4 mmol/mol) means your blood sugar is higher than normal but not yet diabetic. This is a critical window — lifestyle changes at this stage can prevent or significantly delay progression to type 2 diabetes.",
+      "guidelines": [
+        "ADA Standards of Care"
+      ],
+      "references": [
+        {
+          "label": "ADA – Standards of Medical Care in Diabetes",
+          "url": "https://diabetesjournals.org/care/issue/47/Supplement_1"
+        }
+      ]
+    },
+    {
+      "id": "lpa-normal",
+      "category": "bloodwork",
+      "priority": "info",
+      "title": "Lp(a): 42 nmol/L",
+      "description": "Your Lp(a) is in the normal range (<75 nmol/L). This is a one-time test — Lp(a) is genetically determined and does not change significantly over time.",
+      "ingredients": [],
+      "link": null,
+      "reason": "Your Lp(a) is in the normal range. Since Lp(a) is genetically determined and does not change significantly over time, this is typically a one-time test. The 2026 ACC/AHA guideline recommends measuring Lp(a) at least once in all adults.",
+      "guidelines": [
+        "ACC/AHA 2026",
+        "EAS 2022"
+      ],
+      "references": [
+        {
+          "label": "2026 ACC/AHA Dyslipidemia Guideline (JACC)",
+          "url": "https://doi.org/10.1016/j.jacc.2025.11.016"
+        },
+        {
+          "label": "Kronenberg 2022 – Lp(a) in cardiovascular disease: EAS consensus (Eur Heart J)",
+          "url": "https://doi.org/10.1093/eurheartj/ehac361"
+        }
+      ]
+    },
+    {
+      "id": "bp-stage1",
+      "category": "blood_pressure",
+      "priority": "attention",
+      "title": "Stage 1 hypertension",
+      "description": "Your BP of 138/86 mmHg indicates stage 1 hypertension. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nIncrease potassium-rich foods (3,500–5,000mg/day).\n\nWeight loss is one of the most effective ways to lower blood pressure — even a 5% reduction can make a meaningful difference. GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.",
+      "ingredients": [],
+      "link": null,
+      "reason": "Stage 1 hypertension (130–139/80–89 mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
+      "guidelines": [
+        "ISH/ESH 2023",
+        "SPRINT 2015",
+        "ESPRIT 2024"
+      ],
+      "references": [
+        {
+          "label": "Charchar 2023 – ISH lifestyle management of hypertension",
+          "url": "https://doi.org/10.1097/HJH.0000000000003563"
+        },
+        {
+          "label": "Filippini 2021 – Sodium reduction & blood pressure (Circulation)",
+          "url": "https://doi.org/10.1161/CIRCULATIONAHA.120.050371"
+        },
+        {
+          "label": "Huang 2020 – Dietary sodium reduction & BP (BMJ)",
+          "url": "https://doi.org/10.1136/bmj.m315"
+        },
+        {
+          "label": "SPRINT 2015 – Intensive BP lowering <120 mmHg (NEJM)",
+          "url": "https://doi.org/10.1056/NEJMoa1511939"
+        },
+        {
+          "label": "Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)",
+          "url": "https://doi.org/10.1016/S0140-6736(24)01028-6"
+        }
+      ]
+    },
+    {
+      "id": "med-ezetimibe",
+      "category": "medication",
+      "priority": "attention",
+      "title": "Consider adding Ezetimibe",
+      "description": "Your ApoB of 0.92 g/L is above target (≤0.50 g/L). Discuss adding Ezetimibe 10mg with your doctor.",
+      "ingredients": [],
+      "link": null,
+      "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.",
+      "guidelines": [
+        "ACC/AHA 2026",
+        "ESC/EAS 2019"
+      ],
+      "references": [
+        {
+          "label": "2026 ACC/AHA Dyslipidemia Guideline (JACC)",
+          "url": "https://doi.org/10.1016/j.jacc.2025.11.016"
+        },
+        {
+          "label": "Mach 2020 – ESC/EAS Dyslipidaemia Guidelines (Eur Heart J)",
+          "url": "https://doi.org/10.1093/eurheartj/ehz455"
+        },
+        {
+          "label": "Leosdottir 2025 – Early vs late ezetimibe initiation (JACC)",
+          "url": "https://doi.org/10.1016/j.jacc.2025.02.007"
+        }
+      ]
+    },
+    {
+      "id": "screening-colorectal",
+      "category": "screening",
+      "priority": "attention",
+      "title": "Start colorectal cancer screening",
+      "description": "Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.",
+      "ingredients": [],
+      "link": null,
+      "reason": "The American Cancer Society recommends colorectal screening starting at age 45 for average-risk adults. Some doctors recommend starting at age 35 due to rising rates of early-onset colorectal cancer, particularly in adults under 50 — a global trend documented across multiple countries over recent decades. Screening options include annual stool-based testing (FIT) or colonoscopy every 10 years.",
+      "guidelines": [
+        "ACS"
+      ],
+      "references": [
+        {
+          "label": "American Cancer Society – Screening Guidelines",
+          "url": "https://www.cancer.org/cancer/screening/american-cancer-society-guidelines-for-the-early-detection-of-cancer.html"
+        },
+        {
+          "label": "Siegel 2019 – Rising early-onset colorectal cancer globally (Gut)",
+          "url": "https://doi.org/10.1136/gutjnl-2019-319511"
+        }
+      ]
+    },
+    {
+      "id": "screening-prostate",
+      "category": "screening",
+      "priority": "info",
+      "title": "Discuss prostate cancer screening",
+      "description": "PSA testing is an option after an informed discussion with your doctor. Benefits and risks vary by individual.",
+      "ingredients": [],
+      "link": null,
+      "reason": "Prostate cancer screening via PSA testing is a shared decision between patient and doctor. The benefits (early detection) must be weighed against the risks (overdiagnosis and overtreatment of slow-growing cancers). Long-term follow-up of the Prostate Cancer Prevention Trial showed that 5-alpha reductase inhibitors can reduce prostate cancer incidence.",
+      "guidelines": [],
+      "references": [
+        {
+          "label": "American Cancer Society – Screening Guidelines",
+          "url": "https://www.cancer.org/cancer/screening/american-cancer-society-guidelines-for-the-early-detection-of-cancer.html"
+        },
+        {
+          "label": "Goodman 2019 – Finasteride & prostate cancer mortality (NEJM)",
+          "url": "https://doi.org/10.1056/NEJMc1809961"
+        }
+      ]
+    },
+    {
+      "id": "supplement-micronutrient-base",
+      "category": "supplements",
+      "priority": "info",
+      "title": "Micronutrient base",
+      "description": "A COSMOS trial sub-study (2023) found that a daily multivitamin improved cognitive function in older adults — evidence that broad micronutrient support may benefit brain health alongside filling common dietary gaps.",
+      "ingredients": [
+        "Methylated B-complex",
+        "Vitamin D3 with K2",
+        "Magnesium taurate",
+        "Trace minerals in glycinate form",
+        "Lutein and zeaxanthin",
+        "TMG (trimethylglycine)",
+        "Lycopene"
+      ],
+      "link": null,
+      "reason": null,
+      "guidelines": [],
+      "references": [
+        {
+          "label": "Baker 2023 – Multivitamin & cognitive function: COSMOS trial (Alzheimers Dement)",
+          "url": "https://doi.org/10.1002/alz.12767"
+        }
+      ]
+    },
+    {
+      "id": "supplement-creatine",
+      "category": "supplements",
+      "priority": "info",
+      "title": "Creatine",
+      "description": "One of the most-studied supplements: a meta-analysis found creatine (3–5 g/day) significantly increases muscle strength and lean mass with resistance training, with emerging evidence for cognitive benefits.",
+      "ingredients": [],
+      "link": null,
+      "reason": null,
+      "guidelines": [],
+      "references": [
+        {
+          "label": "Kreider 2017 – ISSN position stand: creatine safety & efficacy (J Int Soc Sports Nutr)",
+          "url": "https://doi.org/10.1186/s12970-017-0173-z"
+        },
+        {
+          "label": "Avgerinos 2018 – Creatine & cognition: systematic review (Exp Gerontol)",
+          "url": "https://doi.org/10.1016/j.exger.2018.04.013"
+        }
+      ]
+    },
+    {
+      "id": "supplement-collagen",
+      "category": "supplements",
+      "priority": "info",
+      "title": "Collagen peptides",
+      "description": "A 2023 meta-analysis of 26 randomised controlled trials found collagen peptides (10–15 g/day) improve skin hydration and elasticity compared with placebo.",
+      "ingredients": [],
+      "link": null,
+      "reason": null,
+      "guidelines": [],
+      "references": [
+        {
+          "label": "Pu 2023 – Collagen peptides & skin: meta-analysis of 26 RCTs (Nutrients)",
+          "url": "https://doi.org/10.3390/nu15092080"
+        }
+      ]
+    },
+    {
+      "id": "supplement-omega3",
+      "category": "supplements",
+      "priority": "info",
+      "title": "Omega-3",
+      "description": "A meta-analysis of interventional trials found omega-3 (EPA/DHA) reduces cardiovascular events and cardiac death, with dose-dependent benefits strongest for EPA-rich formulations. Randomised trials also show omega-3 is needed for B vitamins to slow age-related brain atrophy.",
+      "ingredients": [],
+      "link": null,
+      "reason": null,
+      "guidelines": [],
+      "references": [
+        {
+          "label": "Bernasconi 2021 – Omega-3 dose & cardiovascular outcomes (Mayo Clin Proc)",
+          "url": "https://doi.org/10.1016/j.mayocp.2020.08.034"
+        },
+        {
+          "label": "Jernerén 2015 – B vitamins + omega-3 slow brain atrophy (Am J Clin Nutr)",
+          "url": "https://doi.org/10.3945/ajcn.114.103283"
+        },
+        {
+          "label": "Oulhaj 2016 – Omega-3 enhances B vitamin cognitive protection (J Alzheimers Dis)",
+          "url": "https://doi.org/10.3233/JAD-150777"
+        }
+      ]
+    },
+    {
+      "id": "supplement-sleep",
+      "category": "supplements",
+      "priority": "info",
+      "title": "Sleep support",
+      "description": "An umbrella review of meta-analyses found melatonin reduces the time taken to fall asleep and improves sleep quality, with a good safety profile — useful as part of a good sleep-hygiene routine.",
+      "ingredients": [
+        "Low-dose melatonin",
+        "Glycine",
+        "Magnesium glycinate"
+      ],
+      "link": null,
+      "reason": null,
+      "guidelines": [],
+      "references": [
+        {
+          "label": "Low 2020 – Melatonin efficacy for insomnia (J Psychiatr Res)",
+          "url": "https://doi.org/10.1016/j.jpsychires.2019.10.022"
+        }
+      ]
+    },
+    {
+      "id": "skin-moisturizer",
+      "category": "skin",
+      "priority": "info",
+      "title": "Daily moisturizer with ceramides",
+      "description": "Use a moisturizer containing ceramides and nicotinamide (vitamin B3) daily. Ceramides restore the skin barrier and reduce wrinkles, while nicotinamide improves hydration and reduces pigmentation.",
+      "ingredients": [],
+      "link": "https://amzn.to/47pGGmj",
+      "reason": "Ceramides are the primary lipids in the skin barrier — a randomised trial showed ceramide-containing moisturisers significantly improved skin hydration and barrier function for up to 7 days. Niacinamide (vitamin B3) is a well-studied ingredient that reduces pigmentation, improves skin texture, and enhances the skin barrier.",
+      "guidelines": [],
+      "references": [
+        {
+          "label": "Lueangarun 2019 – Ceramide moisturiser efficacy (Dermatol Ther)",
+          "url": "https://doi.org/10.1111/dth.13090"
+        },
+        {
+          "label": "Hakozaki 2002 – Niacinamide reduces pigmentation (Br J Dermatol)",
+          "url": "https://doi.org/10.1046/j.1365-2133.2002.04834.x"
+        }
+      ]
+    },
+    {
+      "id": "skin-sunscreen",
+      "category": "skin",
+      "priority": "info",
+      "title": "Daily broad-spectrum sunscreen",
+      "description": "Apply broad-spectrum SPF 50+ sunscreen daily to exposed skin. Beauty of Joseon Relief Sun SPF50+ PA++++ uses newer-generation chemical filters (Tinosorb S, Uvinul A Plus) that are photostable and do not absorb into the bloodstream.",
+      "ingredients": [],
+      "link": "https://beautyofjoseon.com/products/relief-sun-rice-probiotics",
+      "reason": "A landmark randomised trial (Hughes 2013) proved that daily sunscreen use prevents skin aging — not just sunburn, but the wrinkles, texture changes, and pigmentation caused by UV exposure. Daily broad-spectrum SPF 50+ sunscreen applied to exposed skin is one of the most evidence-backed anti-aging interventions available.",
+      "guidelines": [],
+      "references": [
+        {
+          "label": "Hughes 2013 – Sunscreen prevents skin aging: randomised trial (Ann Intern Med)",
+          "url": "https://doi.org/10.7326/0003-4819-158-11-201306040-00002"
+        },
+        {
+          "label": "Randhawa 2016 – Daily sunscreen improves photoaging (Dermatol Surg)",
+          "url": "https://doi.org/10.1097/DSS.0000000000000879"
+        }
+      ]
+    },
+    {
+      "id": "skin-retinoid",
+      "category": "skin",
+      "priority": "info",
+      "title": "Topical retinoid",
+      "description": "A topical retinoid (adapalene 0.3% or tretinoin 0.05%) applied at night stimulates collagen production and improves skin texture. Start with 2–3 nights per week and increase as tolerated. Always use sunscreen when using retinoids. Caution: retinoids must not be used during pregnancy.",
+      "ingredients": [],
+      "link": null,
+      "reason": "Retinoids (vitamin A derivatives) are the most studied topical anti-aging treatment. They stimulate collagen production, accelerate cell turnover, and improve skin texture. A randomised trial found adapalene 0.3% comparable in efficacy to tretinoin 0.05% for treating photoaging, with better tolerability. Caution: retinoids must not be used during pregnancy.",
+      "guidelines": [],
+      "references": [
+        {
+          "label": "Bagatin 2018 – Adapalene vs tretinoin for photoaging (Eur J Dermatol)",
+          "url": "https://doi.org/10.1684/ejd.2018.3320"
+        },
+        {
+          "label": "Zasada 2019 – Retinoids in skin treatments (Postepy Dermatol Alergol)",
+          "url": "https://doi.org/10.5114/ada.2019.87443"
+        }
+      ]
+    },
+    {
+      "id": "skin-advanced",
+      "category": "skin",
+      "priority": "info",
+      "title": "Advanced skin treatments",
+      "description": "For further skin rejuvenation, consider discussing these options with a dermatologist: red light therapy (LED, 630–850nm), fractional laser resurfacing, intense pulsed light (IPL) for pigmentation, and microneedling for collagen induction.",
+      "ingredients": [],
+      "link": null,
+      "reason": "For those seeking additional skin rejuvenation, several evidence-based professional treatments exist. Red light therapy (630–850nm) was shown in a controlled trial to significantly reduce wrinkles and increase collagen density. Resistance training has also been shown to improve dermal structure. Other professional options include fractional laser, IPL, and microneedling.",
+      "guidelines": [],
+      "references": [
+        {
+          "label": "Wunsch 2014 – Red light therapy for skin rejuvenation (Photomed Laser Surg)",
+          "url": "https://doi.org/10.1089/pho.2013.3616"
+        },
+        {
+          "label": "Nishikori 2023 – Resistance training rejuvenates skin (Sci Rep)",
+          "url": "https://doi.org/10.1038/s41598-023-37207-9"
+        }
+      ]
+    }
+  ],
+  "source": {
+    "schema": "https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json",
+    "tool": "tools/get-plan.ts",
+    "docs": "docs/agent-access.md"
+  }
+}

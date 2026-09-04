@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "createdAt": "2026-09-01T09:00:00Z",
+    "updatedAt": "2026-09-04T01:23:48.016Z",
+    "lastDeviceId": "edit-record-cli",
+    "lamport": 5,
+    "eraseEpoch": 0
+  },
+  "profile": {
+    "updatedAt": "2026-08-20T09:00:00Z",
+    "lamport": 4,
+    "sex": "male",
+    "birthYear": 1971,
+    "birthMonth": 3,
+    "heightCm": 178,
+    "unitSystem": "si"
+  },
+  "measurements": [
+    {
+      "source": "manual",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "2b0fa5b3-a676-405b-a07c-b09d6aa90c03",
+      "metricType": "apob",
+      "value": 0.98,
+      "recordedAt": "2026-01-22",
+      "createdAt": "2026-09-04T01:23:48.016Z"
+    },
+    {
+      "source": "manual",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "47764734-ab6f-427b-a758-2894adb3fab4",
+      "metricType": "apob",
+      "value": 1.06,
+      "recordedAt": "2025-06-18",
+      "createdAt": "2026-09-04T01:23:47.441Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "492dd100-d3e2-4091-b1d4-5a2e934b9cb7",
+      "metricType": "waist",
+      "value": 103,
+      "recordedAt": "2026-08-20",
+      "createdAt": "2026-08-20T08:00:00Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "5a905170-ae68-49a5-8c85-7b4cc7e1e4ff",
+      "metricType": "diastolic_bp",
+      "value": 86,
+      "recordedAt": "2026-08-20",
+      "createdAt": "2026-08-20T08:00:00Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "8d712622-f525-4b7a-8b14-7559c29eb917",
+      "metricType": "hdl",
+      "value": 1.1,
+      "recordedAt": "2024-02-11",
+      "createdAt": "2024-02-11T08:00:00Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "9b09e77c-f355-47fc-b4b8-32eeb1ac0972",
+      "metricType": "lpa",
+      "value": 42,
+      "recordedAt": "2026-07-14",
+      "createdAt": "2026-07-14T08:00:00Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "9c1f160a-b0f8-49a1-95d1-9b88b0783440",
+      "metricType": "hba1c",
+      "value": 41,
+      "recordedAt": "2026-07-14",
+      "createdAt": "2026-07-14T08:00:00Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "9f7c2ba3-185a-40b8-bc27-8e06ff407d94",
+      "metricType": "triglycerides",
+      "value": 1.9,
+      "recordedAt": "2026-07-14",
+      "createdAt": "2026-07-14T08:00:00Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "9f845598-0868-4637-b0a6-0dd16f133996",
+      "metricType": "total_cholesterol",
+      "value": 4.4,
+      "recordedAt": "2026-07-14",
+      "createdAt": "2026-07-14T08:00:00Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "9fe41908-d45c-46fd-98da-9de29446e82d",
+      "metricType": "creatinine",
+      "value": 88,
+      "recordedAt": "2026-07-14",
+      "createdAt": "2026-07-14T08:00:00Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "b3b2ff64-ada5-4095-b49c-4cb949196d23",
+      "metricType": "apob",
+      "value": 0.92,
+      "recordedAt": "2026-07-14",
+      "createdAt": "2026-07-14T08:00:00Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "bc0d56a0-c046-4ba7-9a61-d7f0b3aad492",
+      "metricType": "systolic_bp",
+      "value": 138,
+      "recordedAt": "2026-08-20",
+      "createdAt": "2026-08-20T08:00:00Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "c776255a-0434-45d4-b002-fed246e00a8d",
+      "metricType": "ldl",
+      "value": 2.1,
+      "recordedAt": "2026-07-14",
+      "createdAt": "2026-07-14T08:00:00Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "ca8fba93-eb47-403c-b51b-6c0d833877bf",
+      "metricType": "hdl",
+      "value": 1.2,
+      "recordedAt": "2026-07-14",
+      "createdAt": "2026-07-14T08:00:00Z"
+    },
+    {
+      "source": "manual",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "ce13d384-152f-4770-a9de-2bff6c4068fa",
+      "metricType": "apob",
+      "value": 1.28,
+      "recordedAt": "2024-02-11",
+      "createdAt": "2026-09-04T01:23:46.276Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "dbdcc873-925f-42da-b672-fcb2dcdd6118",
+      "metricType": "weight",
+      "value": 92.4,
+      "recordedAt": "2026-08-20",
+      "createdAt": "2026-08-20T08:00:00Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "de9bf59c-0f65-43f2-bf52-137f8d0fda10",
+      "metricType": "total_cholesterol",
+      "value": 5.9,
+      "recordedAt": "2024-02-11",
+      "createdAt": "2024-02-11T08:00:00Z"
+    },
+    {
+      "source": "manual",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "ebe98c1e-f078-4b5e-b453-f749139ea0f0",
+      "metricType": "apob",
+      "value": 1.15,
+      "recordedAt": "2024-11-06",
+      "createdAt": "2026-09-04T01:23:46.860Z"
+    },
+    {
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null,
+      "externalId": null,
+      "id": "edaaa077-c889-4d71-92e5-f2c448135b01",
+      "metricType": "ldl",
+      "value": 3.4,
+      "recordedAt": "2024-02-11",
+      "createdAt": "2024-02-11T08:00:00Z"
+    }
+  ],
+  "medications": [
+    {
+      "id": "bc13b61c-822a-4361-9760-4180db473832",
+      "medicationKey": "ezetimibe",
+      "drugName": "not_yet",
+      "doseValue": null,
+      "doseUnit": null,
+      "updatedAt": "2026-07-20T09:00:00Z",
+      "lamport": 1
+    },
+    {
+      "id": "8ec76538-fa48-45f4-be57-01872d6e70fa",
+      "medicationKey": "statin",
+      "drugName": "atorvastatin",
+      "doseValue": 20,
+      "doseUnit": "mg",
+      "updatedAt": "2026-07-20T09:00:00Z",
+      "lamport": 1
+    }
+  ],
+  "medicationHistory": [],
+  "supplements": [],
+  "supplementHistory": [],
+  "screenings": {
+    "updatedAt": "2026-08-20T09:00:00Z",
+    "lamport": 2,
+    "colorectalMethod": "fit",
+    "colorectalLastDate": "2023-05-02",
+    "colorectalResult": "normal",
+    "prostateDiscussion": "yes",
+    "prostatePsaValue": 1.4,
+    "prostateLastDate": "2026-07-14"
+  },
+  "labValues": [
+    {
+      "id": "1ad5d784-602e-43de-b883-35131a7f5e34",
+      "metricName": "alt",
+      "value": 34,
+      "unit": "U/L",
+      "referenceLow": 0,
+      "referenceHigh": 40,
+      "recordedAt": "2026-07-14",
+      "createdAt": "2026-07-14T08:00:00Z",
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null
+    },
+    {
+      "id": "32b505bc-fa68-4ff7-a12c-2359fa62b54e",
+      "metricName": "ferritin",
+      "value": 210,
+      "unit": "ug/L",
+      "referenceLow": 30,
+      "referenceHigh": 400,
+      "recordedAt": "2026-07-14",
+      "createdAt": "2026-07-14T08:00:00Z",
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null
+    },
+    {
+      "id": "e0921715-8a57-4441-a49b-afa0c4228406",
+      "metricName": "ferritin",
+      "value": 96,
+      "unit": "ug/L",
+      "referenceLow": 30,
+      "referenceHigh": 400,
+      "recordedAt": "2024-02-11",
+      "createdAt": "2024-02-11T08:00:00Z",
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null
+    },
+    {
+      "id": "e20a3e4e-3586-4e49-8c89-46f578a36f1f",
+      "metricName": "tsh",
+      "value": 2.3,
+      "unit": "mIU/L",
+      "referenceLow": 0.4,
+      "referenceHigh": 4,
+      "recordedAt": "2026-07-14",
+      "createdAt": "2026-07-14T08:00:00Z",
+      "source": "lab_import",
+      "status": "active",
+      "correctsId": null
+    }
+  ],
+  "documents": [],
+  "reminderPreferences": [],
+  "recommendationSnapshots": []
+}

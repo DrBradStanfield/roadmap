@@ -22,4 +22,6 @@ examples: `webkit-verify.mjs` and its siblings drive real WebKit for layout
 regressions; `test-queries.json` and `test-chatbot-matching.ts` are chatbot
 router fixtures; `chat-audit-pull.ts` and `youtube-comment-dryrun.ts` are
 one-off ops scripts. Each `*.test.ts` file is Vitest coverage for the file
-next to it.
+next to it. `demo-video/` is a standalone Remotion project (own
+`package.json`, gitignored `node_modules`/`out/`) for the ChatGPT-style
+connector demo video — see its own README.

@@ -1,0 +1,125 @@
+{
+  "apobSeries": [
+    {
+      "date": "2024-02-11",
+      "value": 1.28
+    },
+    {
+      "date": "2024-11-06",
+      "value": 1.15
+    },
+    {
+      "date": "2025-06-18",
+      "value": 1.06
+    },
+    {
+      "date": "2026-01-22",
+      "value": 0.98
+    },
+    {
+      "date": "2026-07-14",
+      "value": 0.92
+    }
+  ],
+  "apobUnit": "g/L",
+  "apobCurrent": 0.92,
+  "beat2": {
+    "id": "med-ezetimibe",
+    "title": "Consider adding Ezetimibe",
+    "description": "Your ApoB of 0.92 g/L is above target (≤0.50 g/L). Discuss adding Ezetimibe 10mg with your doctor.",
+    "reason": "Ezetimibe works differently from statins — it blocks cholesterol absorption in the intestine. Adding ezetimibe to a statin typically lowers LDL by an additional 15–20%. Recent evidence shows that starting ezetimibe early alongside a statin produces better cardiovascular outcomes than adding it later.",
+    "guidelines": [
+      "ACC/AHA 2026",
+      "ESC/EAS 2019"
+    ],
+    "references": [
+      {
+        "label": "2026 ACC/AHA Dyslipidemia Guideline (JACC)",
+        "url": "https://doi.org/10.1016/j.jacc.2025.11.016"
+      },
+      {
+        "label": "Mach 2020 – ESC/EAS Dyslipidaemia Guidelines (Eur Heart J)",
+        "url": "https://doi.org/10.1093/eurheartj/ehz455"
+      },
+      {
+        "label": "Leosdottir 2025 – Early vs late ezetimibe initiation (JACC)",
+        "url": "https://doi.org/10.1016/j.jacc.2025.02.007"
+      }
+    ],
+    "priority": "attention"
+  },
+  "beat3": [
+    {
+      "id": "screening-colorectal",
+      "title": "Start colorectal cancer screening",
+      "description": "Colorectal screening is recommended. Options include annual FIT testing or colonoscopy every 10 years. Discuss with your doctor.",
+      "reason": "The American Cancer Society recommends colorectal screening starting at age 45 for average-risk adults. Some doctors recommend starting at age 35 due to rising rates of early-onset colorectal cancer, particularly in adults under 50 — a global trend documented across multiple countries over recent decades. Screening options include annual stool-based testing (FIT) or colonoscopy every 10 years.",
+      "guidelines": [
+        "ACS"
+      ],
+      "references": [
+        {
+          "label": "American Cancer Society – Screening Guidelines",
+          "url": "https://www.cancer.org/cancer/screening/american-cancer-society-guidelines-for-the-early-detection-of-cancer.html"
+        },
+        {
+          "label": "Siegel 2019 – Rising early-onset colorectal cancer globally (Gut)",
+          "url": "https://doi.org/10.1136/gutjnl-2019-319511"
+        }
+      ],
+      "priority": "attention"
+    },
+    {
+      "id": "bp-stage1",
+      "title": "Stage 1 hypertension",
+      "description": "Your BP of 138/86 mmHg indicates stage 1 hypertension. Target is <120/80.\n\nKey lifestyle measures: reduce sodium intake (<1,500mg/day), exercise regularly (150+ min/week), and prioritize quality sleep (7-9 hours).\n\nIncrease potassium-rich foods (3,500–5,000mg/day).\n\nWeight loss is one of the most effective ways to lower blood pressure — even a 5% reduction can make a meaningful difference. GLP-1 medications (tirzepatide, semaglutide) can assist with both weight loss and blood pressure reduction.",
+      "reason": "Stage 1 hypertension (130–139/80–89 mmHg) is the point at which blood pressure starts to cause meaningful cardiovascular damage over time. Lifestyle measures are the first-line treatment: reduce sodium, increase potassium-rich foods, exercise regularly, prioritise sleep, and manage weight.\n\nSome doctors target <120/80 mmHg for adults under 65. The SPRINT trial showed that targeting <120 mmHg (vs <140 mmHg) reduced cardiovascular events by 25% and all-cause mortality by 27%. The ESPRIT trial extended these findings to a broader population including those with diabetes.",
+      "guidelines": [
+        "ISH/ESH 2023",
+        "SPRINT 2015",
+        "ESPRIT 2024"
+      ],
+      "references": [
+        {
+          "label": "Charchar 2023 – ISH lifestyle management of hypertension",
+          "url": "https://doi.org/10.1097/HJH.0000000000003563"
+        },
+        {
+          "label": "Filippini 2021 – Sodium reduction & blood pressure (Circulation)",
+          "url": "https://doi.org/10.1161/CIRCULATIONAHA.120.050371"
+        },
+        {
+          "label": "Huang 2020 – Dietary sodium reduction & BP (BMJ)",
+          "url": "https://doi.org/10.1136/bmj.m315"
+        },
+        {
+          "label": "SPRINT 2015 – Intensive BP lowering <120 mmHg (NEJM)",
+          "url": "https://doi.org/10.1056/NEJMoa1511939"
+        },
+        {
+          "label": "Liu 2024 – ESPRIT: intensive BP lowering incl. diabetes (Lancet)",
+          "url": "https://doi.org/10.1016/S0140-6736(24)01028-6"
+        }
+      ],
+      "priority": "attention"
+    },
+    {
+      "id": "hba1c-prediabetic",
+      "title": "HbA1c indicates prediabetes",
+      "description": "Your HbA1c of 41 mmol/mol is in the prediabetic range. Lifestyle changes now can prevent progression to diabetes.",
+      "reason": "An HbA1c in the prediabetic range (5.7–6.4% / 38.8–47.4 mmol/mol) means your blood sugar is higher than normal but not yet diabetic. This is a critical window — lifestyle changes at this stage can prevent or significantly delay progression to type 2 diabetes.",
+      "guidelines": [
+        "ADA Standards of Care"
+      ],
+      "references": [
+        {
+          "label": "ADA – Standards of Medical Care in Diabetes",
+          "url": "https://diabetesjournals.org/care/issue/47/Supplement_1"
+        }
+      ],
+      "priority": "attention"
+    }
+  ],
+  "planLink": "https://drstanfield.com/pages/roadmap",
+  "generatedAt": "2026-09-04T01:23:55.557Z"
+}
