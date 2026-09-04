@@ -88,8 +88,8 @@ export class SyncManager<T extends SyncedFile> {
   }
 
   /** Load the document, normalising whatever is in the cloud (or empty). */
-  async load(): Promise<T> {
-    const { body } = await this.adapter.read(this.doc.fileName);
+  async load(signal?: AbortSignal): Promise<T> {
+    const { body } = await this.adapter.read(this.doc.fileName, signal);
     return this.doc.migrate(body, this.ctx());
   }
 
@@ -97,15 +97,15 @@ export class SyncManager<T extends SyncedFile> {
    * Persist `local`, merging in any concurrent remote changes. Returns the
    * merged file actually written (the new source of truth for this device).
    */
-  async save(local: T): Promise<SaveResult<T>> {
+  async save(local: T, signal?: AbortSignal): Promise<SaveResult<T>> {
     let lastError: unknown;
     for (let attempt = 0; attempt < MAX_SAVE_ATTEMPTS; attempt++) {
-      const { body: remoteRaw, version } = await this.adapter.read(this.doc.fileName);
+      const { body: remoteRaw, version } = await this.adapter.read(this.doc.fileName, signal);
       const base = this.doc.migrate(remoteRaw, this.ctx());
       const merged = this.doc.merge(local, base, this.ctx());
       try {
-        const { version: newVersion } = await this.adapter.write(this.doc.fileName, merged, version);
-        if (this.doc.verify !== false) await this.verifyAfterWrite(merged);
+        const { version: newVersion } = await this.adapter.write(this.doc.fileName, merged, version, signal);
+        if (this.doc.verify !== false) await this.verifyAfterWrite(merged, signal);
         return { file: merged, version: newVersion, attempts: attempt };
       } catch (error) {
         lastError = error;
@@ -130,8 +130,8 @@ export class SyncManager<T extends SyncedFile> {
    * concurrent newer write (lamport advanced) — that's not corruption. Throws
    * only if the file is gone, unparseable, or its lamport regressed below ours.
    */
-  private async verifyAfterWrite(expected: T): Promise<void> {
-    const { body } = await this.adapter.read(this.doc.fileName);
+  private async verifyAfterWrite(expected: T, signal?: AbortSignal): Promise<void> {
+    const { body } = await this.adapter.read(this.doc.fileName, signal);
     if (body == null) {
       throw new StorageError(
         'Verify-after-write failed: the file is missing after a successful write',

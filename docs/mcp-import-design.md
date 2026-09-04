@@ -31,9 +31,16 @@ of truth for acceptance criteria and the schemas live in
    the connector's metadata-only row and archives the blob into a new row,
    tombstoning the old one, when the user uploads the same PDF there.
 4. Time: 40 s budget per call (`MCP_IMPORT_BUDGET_MS`; ChatGPT cuts tool
-   calls at 60 s), 5 folder files per call by default with `remaining` naming
-   the rest, per-file partial results, extraction HTTP timeout 20 s and no
-   outer retry on this path. PDFs/images ≤5 MB, ZIP ≤20 MB, ≤20 entries,
+   calls at 60 s), started by `runImport` before the record is read and
+   handed to every phase as one `deadline`. Every I/O honours it and is
+   ABORTED at it, not abandoned: a `deadlineSignal` rides each adapter call
+   — record read/write via `SyncManager`, folder listing, downloads, the
+   sweep, the ChatGPT fetch, the pending-file write, the commit's pending
+   read and delete — and the REST adapters hand it to `fetch`. 5 folder
+   files per call by default with `remaining` naming the rest, per-file
+   partial results, extraction HTTP timeout min(20 s, what is left) with no
+   retry, inner or outer, on this path; an extract's I/O ends 4 s before
+   the deadline so slotting and the stash fit inside it. PDFs/images ≤5 MB, ZIP ≤20 MB, ≤20 entries,
    inflate counted on the stream, type by magic bytes per entry, entries by
    position. Dropbox: list the root, download by `id`, files only, names
    control-stripped.

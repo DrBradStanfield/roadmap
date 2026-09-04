@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createEmptyFile, createMeasurement } from './roadmap-file';
 import type { RoadmapFile } from './roadmap-file';
 import { SyncManager } from './sync-manager';
-import { StorageError } from './adapter';
+import { ROADMAP_FILE_NAME, StorageError } from './adapter';
 import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { ROADMAP_DOC } from './roadmap-doc';
 
@@ -192,5 +192,28 @@ describe('describeStorageFailure — a rejected token is a reconnect, not a fold
     }
     const other = describeStorageFailure(new StorageError('Dropbox read failed (503): down', undefined, undefined, 503), 'Dropbox');
     expect(other.hint).not.toContain('Reconnect');
+  });
+});
+
+describe('a caller’s signal reaches every adapter call (US-35 AC5)', () => {
+  it('load and save read and write under it; once aborted, nothing starts and nothing is written', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const seen: Array<AbortSignal | undefined> = [];
+    const read = adapter.read.bind(adapter);
+    const write = adapter.write.bind(adapter);
+    adapter.read = (name, signal) => { seen.push(signal); return read(name, signal); };
+    adapter.write = (name, body, version, signal) => { seen.push(signal); return write(name, body, version, signal); };
+    const sync = new SyncManager(adapter, 'device-a', ROADMAP_DOC);
+    const controller = new AbortController();
+    const file = await sync.load(controller.signal);
+    await sync.save(file, controller.signal);
+    expect(seen).toHaveLength(4); // load's read; save's read, write, verify read
+    expect(seen.every((s) => s === controller.signal)).toBe(true);
+    const version = cloud.files.get(ROADMAP_FILE_NAME)!.version;
+    controller.abort();
+    await expect(sync.save(file, controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(sync.load(controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(version);
   });
 });

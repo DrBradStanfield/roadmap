@@ -48,13 +48,14 @@ function pathArg(ref: string): string {
 }
 
 /** One `files/download`. The two readers below parse its body their own way. */
-function download(accessToken: string, ref: string): Promise<Response> {
+function download(accessToken: string, ref: string, signal?: AbortSignal): Promise<Response> {
   return request(DOWNLOAD_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Dropbox-API-Arg': JSON.stringify({ path: pathArg(ref) }),
     },
+    signal,
   });
 }
 
@@ -63,8 +64,8 @@ function download(accessToken: string, ref: string): Promise<Response> {
  * is a user who has not saved yet — so it comes back as an empty read and the
  * caller's `migrate()` turns it into a fresh record.
  */
-export async function dropboxRead(accessToken: string, fileName: string): Promise<ReadResult> {
-  const res = await download(accessToken, fileName);
+export async function dropboxRead(accessToken: string, fileName: string, signal?: AbortSignal): Promise<ReadResult> {
+  const res = await download(accessToken, fileName, signal);
   if (res.status === 409) return { body: null, version: null }; // path/not_found
   if (!res.ok) throw new StorageError(`${PROVIDER} read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
   const meta = parseApiResult(res);
@@ -84,8 +85,8 @@ export async function dropboxRead(accessToken: string, fileName: string): Promis
  * entry's `id:…` — the connector downloads by id, so a name an assistant
  * supplied only ever SELECTS from the listing and never forms a path.
  */
-export async function dropboxDownload(accessToken: string, ref: string): Promise<Uint8Array<ArrayBuffer>> {
-  const res = await download(accessToken, ref);
+export async function dropboxDownload(accessToken: string, ref: string, signal?: AbortSignal): Promise<Uint8Array<ArrayBuffer>> {
+  const res = await download(accessToken, ref, signal);
   if (!res.ok) throw new StorageError(`${PROVIDER} download failed (${res.status})`, undefined, undefined, res.status);
   return new Uint8Array(await res.arrayBuffer());
 }
@@ -105,7 +106,7 @@ interface DropboxEntry {
  * is not something an import reads. A folder that does not exist lists as
  * empty, which is what an app folder with no `imports/` yet is.
  */
-export async function dropboxListFolder(accessToken: string, folder: string): Promise<DropboxEntry[]> {
+export async function dropboxListFolder(accessToken: string, folder: string, signal?: AbortSignal): Promise<DropboxEntry[]> {
   const entries: DropboxEntry[] = [];
   let url = LIST_URL;
   let body: object = { path: folder ? `/${folder}` : '', recursive: false, include_deleted: false };
@@ -114,6 +115,7 @@ export async function dropboxListFolder(accessToken: string, folder: string): Pr
       method: 'POST',
       headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal,
     });
     if (res.status === 409 && url === LIST_URL) return []; // path/not_found
     if (!res.ok) throw new StorageError(`${PROVIDER} list failed (${res.status})`, undefined, undefined, res.status);
@@ -134,11 +136,12 @@ export async function dropboxListFolder(accessToken: string, folder: string): Pr
 }
 
 /** Remove one folder-relative file. Already gone is not a failure. */
-async function dropboxDelete(accessToken: string, fileName: string): Promise<void> {
+async function dropboxDelete(accessToken: string, fileName: string, signal?: AbortSignal): Promise<void> {
   const res = await request(DELETE_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ path: `/${fileName}` }),
+    signal,
   });
   if (!res.ok && res.status !== 409) throw new StorageError(`${PROVIDER} delete failed (${res.status})`, undefined, undefined, res.status);
 }
@@ -159,6 +162,7 @@ export async function dropboxWrite(
   fileName: string,
   body: object,
   expectedVersion: string | null,
+  signal?: AbortSignal,
 ): Promise<WriteResult> {
   const arg = {
     path: `/${fileName}`,
@@ -175,6 +179,7 @@ export async function dropboxWrite(
       'Dropbox-API-Arg': JSON.stringify(arg),
     },
     body: JSON.stringify(body),
+    signal,
   });
   if (res.status === 409) throw new ConflictError(`${PROVIDER} write conflict: ${await res.text()}`);
   if (!res.ok) throw new StorageError(`${PROVIDER} write failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
@@ -206,29 +211,29 @@ export class DropboxAdapter implements StorageAdapter {
   }
   async disconnect(): Promise<void> {}
 
-  read(fileName: string): Promise<ReadResult> {
-    return dropboxRead(this.accessToken, fileName);
+  read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
+    return dropboxRead(this.accessToken, fileName, signal);
   }
 
-  write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
-    return dropboxWrite(this.accessToken, fileName, body, expectedVersion);
+  write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
+    return dropboxWrite(this.accessToken, fileName, body, expectedVersion, signal);
   }
 
-  async readDocument(ref: string): Promise<Blob> {
-    return new Blob([await dropboxDownload(this.accessToken, ref)]);
+  async readDocument(ref: string, signal?: AbortSignal): Promise<Blob> {
+    return new Blob([await dropboxDownload(this.accessToken, ref, signal)]);
   }
 
   async writeDocument(): Promise<void> {
     throw new StorageError('The hosted server does not write uploaded documents.');
   }
 
-  async list(folder: string): Promise<StoredFile[]> {
-    return (await dropboxListFolder(this.accessToken, folder)).map((e) => ({
+  async list(folder: string, signal?: AbortSignal): Promise<StoredFile[]> {
+    return (await dropboxListFolder(this.accessToken, folder, signal)).map((e) => ({
       name: folder ? `${folder}/${e.name}` : e.name, ref: e.id, size: e.size, modified: e.modified,
     }));
   }
 
-  remove(fileName: string): Promise<void> {
-    return dropboxDelete(this.accessToken, fileName);
+  remove(fileName: string, signal?: AbortSignal): Promise<void> {
+    return dropboxDelete(this.accessToken, fileName, signal);
   }
 }

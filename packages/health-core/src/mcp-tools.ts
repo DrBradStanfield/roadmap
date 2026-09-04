@@ -11,6 +11,7 @@
  *
  * Nothing here reads the clock, the filesystem or the network.
  */
+import { deadlineSignal } from './adapter';
 import { dayOf, daysBetween } from './merge';
 import { labSlotKey } from './lab-catalog';
 import { type UnifiedExtractionResult, VALID_METRICS } from './lab-extraction';
@@ -826,10 +827,18 @@ export type ImportRefusal = { refusal: string };
 export interface ImportSurface {
   /** The oldest value a `replace` may correct, in days — the hosted 90-day rule. Absent: no limit. */
   maxCorrectionAgeDays?: number;
-  extract(request: ImportRequest, file: RoadmapFile, now: string): Promise<ImportBundle | ImportRefusal>;
-  stash(payload: ImportPayload): Promise<{ receipt: string; expiresAt: string } | ImportRefusal>;
-  open(commit: ImportCommit, file: RoadmapFile, now: string): Promise<ImportPayload | ImportRefusal>;
-  discard(payload: ImportPayload): Promise<void>;
+  /**
+   * One call's whole budget, ms (AC5). `runImport` starts the clock before the
+   * record is read and hands every phase the same `deadline` (epoch ms): the
+   * record's read and write go through `SyncManager` under `deadlineSignal`,
+   * and the surface bounds its own I/O the same way. Nothing an import does
+   * runs past it.
+   */
+  budgetMs: number;
+  extract(request: ImportRequest, file: RoadmapFile, now: string, deadline: number): Promise<ImportBundle | ImportRefusal>;
+  stash(payload: ImportPayload, deadline: number): Promise<{ receipt: string; expiresAt: string } | ImportRefusal>;
+  open(commit: ImportCommit, file: RoadmapFile, now: string, deadline: number): Promise<ImportPayload | ImportRefusal>;
+  discard(payload: ImportPayload, deadline: number): Promise<void>;
 }
 
 export const IMPORT_HOSTED_ONLY =
@@ -1124,16 +1133,19 @@ async function runImport(
   if (request.commit && (request.file || request.fileNames)) {
     return { text: 'import_documents: pass commit on its own, without file or fileNames. Nothing was written.', isError: true };
   }
-  const file = await sync.load();
+  // One clock for the call: the record's own read and write are I/O too (AC5).
+  const deadline = Date.now() + surface.budgetMs;
+  const signal = deadlineSignal(deadline);
+  const file = await sync.load(signal);
   const latestDay = options.latestDay ?? dayOf(now);
 
   if (request.commit) {
-    const opened = await surface.open(request.commit, file, now);
+    const opened = await surface.open(request.commit, file, now, deadline);
     if ('refusal' in opened) return { text: opened.refusal, isError: true };
     const outcome = importDocumentsCommit(file, opened, request.commit, now);
     if (outcome.status !== 'ok') return { text: outcome.text, isError: true };
-    if (outcome.file) await sync.save(outcome.file);
-    await surface.discard(opened);
+    if (outcome.file) await sync.save(outcome.file, signal);
+    await surface.discard(opened, deadline);
     return {
       text: outcome.file && options.savedNote ? `${outcome.text}\n${options.savedNote()}` : outcome.text,
       isError: false,
@@ -1143,7 +1155,7 @@ async function runImport(
 
   const refusal = options.beforeCall?.(file);
   if (refusal) return { text: refusal, isError: true };
-  const bundle = await surface.extract(request, file, now);
+  const bundle = await surface.extract(request, file, now, deadline);
   if ('refusal' in bundle) return { text: bundle.refusal, isError: true };
   const prepared = prepareImport(file, bundle, { now, latestDay, maxCorrectionAgeDays: surface.maxCorrectionAgeDays, payloadId: crypto.randomUUID() });
   const data: z.infer<typeof importDocumentsOutput> = {
@@ -1152,7 +1164,7 @@ async function runImport(
     next: extractNext(prepared.payload, prepared.files, bundle.remaining),
   };
   if (prepared.payload.candidates.length || prepared.payload.documents.length) {
-    const stashed = await surface.stash(prepared.payload);
+    const stashed = await surface.stash(prepared.payload, deadline);
     if ('refusal' in stashed) return { text: stashed.refusal, isError: true };
     data.receipt = stashed.receipt;
     data.receiptExpiresAt = stashed.expiresAt;

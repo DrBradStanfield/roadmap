@@ -172,18 +172,26 @@ export interface StorageAdapter {
   isConnected(): boolean;
   disconnect(): Promise<void>;
 
-  /** Read the named record file. Returns {body:null, version:null} if it doesn't exist yet. */
-  read(fileName: string): Promise<ReadResult>;
+  /**
+   * Read the named record file. Returns {body:null, version:null} if it doesn't exist yet.
+   *
+   * `signal`, here and on the other methods below, is OPTIONAL and belongs to
+   * a caller with a deadline of its own — the hosted import's 40 s tool call
+   * (US-35 AC5). A REST adapter hands it to `fetch`, so the request is aborted
+   * at the deadline, not abandoned; a local adapter need only refuse to start
+   * once it is aborted. Absent, the adapter's own bound applies.
+   */
+  read(fileName: string, signal?: AbortSignal): Promise<ReadResult>;
 
   /**
    * Write the named record file with an optimistic-concurrency precondition.
    * @param expectedVersion the `version` from the read this write is based on,
    *   or null for a first-ever create. Throws ConflictError if the remote moved.
    */
-  write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult>;
+  write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult>;
 
   /** Read an uploaded document blob (e.g. 'documents/doc_1.pdf'). */
-  readDocument(ref: string): Promise<Blob>;
+  readDocument(ref: string, signal?: AbortSignal): Promise<Blob>;
 
   /**
    * Write an uploaded document blob. Per §5.3, callers write the blob FIRST,
@@ -200,8 +208,8 @@ export interface StorageAdapter {
    * record's deletion is an `eraseEpoch` bump, a document's is a tombstone —
    * never this.
    */
-  list?(folder: string): Promise<StoredFile[]>;
-  remove?(fileName: string): Promise<void>;
+  list?(folder: string, signal?: AbortSignal): Promise<StoredFile[]>;
+  remove?(fileName: string, signal?: AbortSignal): Promise<void>;
 
   /**
    * OPTIONAL synchronous last-ditch write, used only on tab-close /
@@ -246,4 +254,20 @@ export function sleepUntilAborted(ms: number, signal: AbortSignal): Promise<void
     const timer = setTimeout(done, ms);
     signal.addEventListener('abort', done);
   });
+}
+
+/**
+ * A signal that aborts at `deadline` (epoch ms) — already aborted when the
+ * deadline has passed, so a call that starts late never starts at all. The
+ * reason is the same `TimeoutError` `AbortSignal.timeout` raises. Built on
+ * the global timer, not `AbortSignal.timeout`, so a test's fake clock drives
+ * it; unref'd, so it never holds a process open.
+ */
+export function deadlineSignal(deadline: number): AbortSignal {
+  const controller = new AbortController();
+  const reason = new DOMException('The deadline has passed', 'TimeoutError');
+  const left = deadline - Date.now();
+  if (left <= 0) controller.abort(reason);
+  else (setTimeout(() => controller.abort(reason), left) as { unref?(): void }).unref?.();
+  return controller.signal;
 }

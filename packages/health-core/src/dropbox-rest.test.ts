@@ -216,3 +216,30 @@ describe('US-35 AC2 — dropboxListFolder lists files only, and follows has_more
     expect((failure as StorageError).status).toBe(409);
   });
 });
+
+describe('a caller’s signal reaches `fetch` on every call the import makes (US-35 AC5)', () => {
+  it('aborts the request in flight when the caller aborts, and reports the abort as the adapter’s failure', async () => {
+    const fetchSpy = vi.fn((_url: unknown, init: RequestInit) => new Promise<Response>((_, reject) => {
+      init.signal!.addEventListener('abort', () => reject(init.signal!.reason));
+    }));
+    vi.stubGlobal('fetch', fetchSpy);
+    const adapter = new DropboxAdapter('token');
+    const calls: Array<(signal: AbortSignal) => Promise<unknown>> = [
+      (s) => adapter.read(ROADMAP_FILE_NAME, s),
+      (s) => adapter.write(ROADMAP_FILE_NAME, { a: 1 }, 'rev1', s),
+      (s) => adapter.readDocument('id:abc', s),
+      (s) => adapter.list('', s),
+      (s) => adapter.remove('imports/pending-x.json', s),
+    ];
+    for (const call of calls) {
+      const controller = new AbortController();
+      const pending = call(controller.signal);
+      controller.abort();
+      const failure = await pending.catch((error: unknown) => error);
+      expect(failure).toBeInstanceOf(StorageError);
+      expect((failure as StorageError).cause).toMatchObject({ name: 'AbortError' });
+      expect((fetchSpy.mock.calls.at(-1)![1] as RequestInit).signal!.aborted).toBe(true);
+    }
+    expect(fetchSpy).toHaveBeenCalledTimes(calls.length);
+  });
+});

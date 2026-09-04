@@ -114,7 +114,8 @@ export class FileAdapter implements StorageAdapter {
     }
   }
 
-  async read(fileName: string): Promise<ReadResult> {
+  async read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
+    signal?.throwIfAborted();
     this.only(fileName);
     const text = this.bytes();
     let body: unknown;
@@ -143,7 +144,8 @@ export class FileAdapter implements StorageAdapter {
    * against was returned by a `read()` the document spec has already vetted, so
    * bytes that still hash the same are the bytes that passed.
    */
-  async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
+  async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
+    signal?.throwIfAborted();
     this.only(fileName);
     await this.lock();
     try {

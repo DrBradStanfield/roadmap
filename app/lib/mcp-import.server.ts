@@ -31,7 +31,7 @@ import { type AccessPayload, chargeWrites, connectionKey, importFiles, nowSecond
 import { hash, seal, unseal } from './mcp-seal.server';
 import { recordServerEvent } from './product-events.server';
 import { DAY_MS, machineFiles } from './rate-limiter';
-import type { StorageAdapter } from '../../packages/health-core/src/adapter';
+import { deadlineSignal, type StorageAdapter } from '../../packages/health-core/src/adapter';
 import {
   IMPORTABLE_EXTENSIONS,
   isImportableEntryName,
@@ -59,11 +59,15 @@ import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 // ---------------------------------------------------------------------------
 
 /**
- * The whole call, listing to answer. ChatGPT cuts a tool call off at 60 s
- * (OpenAI staff, 2026-04), so 40 s leaves room for transport and the receipt.
+ * The whole call, record read to answer — an extract or a commit. ChatGPT
+ * cuts a tool call off at 60 s (OpenAI staff, 2026-04), so 40 s leaves room
+ * for transport and the receipt. `runImport` starts the clock and hands this
+ * surface the deadline; every read, write, download and model call below is
+ * ABORTED at it (AC5) — a `deadlineSignal` on each adapter call, and what is
+ * left of it as the model call's timeout.
  */
 export const MCP_IMPORT_BUDGET_MS = Number(process.env.MCP_IMPORT_BUDGET_MS || 40_000);
-/** Time kept back at the end of the budget to slot, stash and answer. */
+/** Time kept back at the end of an extract's budget to slot, park the payload and answer. */
 const BUDGET_RESERVE_MS = 4_000;
 /** Folder files one call attempts by default; the rest come back as `remaining`. */
 export const IMPORT_FILES_PER_CALL = 5;
@@ -216,7 +220,7 @@ function contentHashOf(bytes: Uint8Array): string {
  * host is warned by hostname only, which is how a second legitimate host
  * would ever be learned.
  */
-export async function fetchChatgptFile(downloadUrl: string): Promise<{ bytes: Uint8Array } | ImportRefusal> {
+export async function fetchChatgptFile(downloadUrl: string, signal?: AbortSignal): Promise<{ bytes: Uint8Array } | ImportRefusal> {
   let url: URL;
   try {
     url = new URL(downloadUrl);
@@ -228,7 +232,8 @@ export async function fetchChatgptFile(downloadUrl: string): Promise<{ bytes: Ui
     return { refusal: 'That file is not on a host this server will fetch from. Drag the file in from a browser, or put it in the connected folder. Nothing was read.' };
   }
   try {
-    const res = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(CHATGPT_FETCH_TIMEOUT_MS) });
+    const timeout = AbortSignal.timeout(CHATGPT_FETCH_TIMEOUT_MS);
+    const res = await fetch(url, { redirect: 'error', signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
     if (!res.ok) return { refusal: `The file host answered ${res.status}, so the file could not be read. Ask the user to drag it in again.` };
     return { bytes: await readCappedBytes(res, MAX_IMPORT_ZIP_BYTES) };
   } catch (error) {
@@ -257,21 +262,6 @@ function pendingName(id: string): string {
 }
 /** The sweep's own files, by name: never another file the user keeps in the folder. */
 const PENDING_NAME = /(^|\/)pending-[^/]+\.json$/;
-
-/**
- * A promise, or a timeout, whichever comes first — the adapter's own bound
- * (30 s) sits outside the budget arithmetic, so a listing or a download that
- * hangs is abandoned at the deadline and the call still answers (AC10). The
- * abandoned call runs on to the adapter's bound; its rejection is swallowed.
- */
-function withinDeadline<T>(work: Promise<T>, deadline: number): Promise<T> {
-  const left = deadline - Date.now();
-  if (left <= 0) return Promise.reject(new Error('deadline'));
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('deadline')), left);
-    work.then((value) => { clearTimeout(timer); resolve(value); }, (error) => { clearTimeout(timer); reject(error); });
-  });
-}
 
 /** A `crypto.randomUUID()` and nothing else — the only id that may name a pending file. (`route-helpers`' `isValidUuid` sits behind the Shopify session store, which this layer must not load.) */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -315,13 +305,13 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
   const connection = connectionKey(token.rt);
   const audience = { clientId: token.clientId, resource: resourceUrl() };
 
-  async function sweepStale(nowMs: number): Promise<void> {
+  async function sweepStale(nowMs: number, signal: AbortSignal): Promise<void> {
     if (!adapter.list || !adapter.remove) return;
     try {
-      for (const stale of await adapter.list(PENDING_FOLDER)) {
+      for (const stale of await adapter.list(PENDING_FOLDER, signal)) {
         if (!PENDING_NAME.test(stale.name)) continue;
         const at = Date.parse(stale.modified);
-        if (Number.isFinite(at) && nowMs - at > PENDING_STALE_MS) await adapter.remove(stale.name);
+        if (Number.isFinite(at) && nowMs - at > PENDING_STALE_MS) await adapter.remove(stale.name, signal);
       }
     } catch {
       // A sweep that fails costs a stale file, not the import.
@@ -334,17 +324,20 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
 
   return {
     maxCorrectionAgeDays: options.maxCorrectionAgeDays,
+    budgetMs: MCP_IMPORT_BUDGET_MS,
 
-    async extract(request: ImportRequest, file: RoadmapFile, now: string): Promise<ImportBundle | ImportRefusal> {
+    async extract(request: ImportRequest, file: RoadmapFile, now: string, deadline: number): Promise<ImportBundle | ImportRefusal> {
       const started = Date.now();
-      const deadline = started + MCP_IMPORT_BUDGET_MS - BUDGET_RESERVE_MS;
+      // Every listing, download and model call ends by here; the reserve is for slotting and the stash.
+      const ioDeadline = deadline - BUDGET_RESERVE_MS;
+      const signal = deadlineSignal(ioDeadline);
       let route: McpImportRoute;
       const units: Unit[] = [];
       const remaining: string[] = [];
 
       if (request.file) {
         route = 'chatgpt_file';
-        const fetched = await fetchChatgptFile(request.file.download_url);
+        const fetched = await fetchChatgptFile(request.file.download_url, signal);
         if ('refusal' in fetched) return fetched;
         units.push({ name: cleanName(request.file.file_name ?? 'file'), fetch: async () => fetched.bytes });
       } else {
@@ -355,9 +348,9 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         route = 'dropbox';
         let listed: Awaited<ReturnType<NonNullable<StorageAdapter['list']>>>;
         try {
-          listed = await withinDeadline(adapter.list(''), deadline);
+          listed = await adapter.list('', signal);
         } catch (error) {
-          if (!(error instanceof Error && error.message === 'deadline')) throw error;
+          if (!signal.aborted) throw error;
           return { refusal: 'The folder did not list in time, so nothing was read. Try once more.' };
         }
         const listing = listed
@@ -377,17 +370,17 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         }
         for (const entry of chosen.slice(0, IMPORT_FILES_PER_CALL)) {
           // By the listing's own ref, never by a name an assistant supplied.
-          units.push({ name: entry.name, size: entry.size, fetch: async () => new Uint8Array(await (await adapter.readDocument(entry.ref)).arrayBuffer()) });
+          units.push({ name: entry.name, size: entry.size, fetch: async () => new Uint8Array(await (await adapter.readDocument(entry.ref, signal)).arrayBuffer()) });
         }
         remaining.push(...chosen.slice(IMPORT_FILES_PER_CALL).map((entry) => entry.name));
       }
 
       // Off the critical path: it overlaps the reads below and is awaited at the end.
-      const sweep = sweepStale(started);
+      const sweep = sweepStale(started, signal);
 
       /** One file through the model, inside what is left of the budget. */
       const extractOne = async (name: string, bytes: Uint8Array, mimeType: SniffedType): Promise<ExtractedFile> => {
-        const left = deadline - Date.now();
+        const left = ioDeadline - Date.now();
         if (left <= 0) return fail(name, 'skipped', 'time');
         const contentHash = contentHashOf(bytes);
         const base = { name, contentHash, mimeType };
@@ -413,7 +406,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       // queue so idle runners share them. Results keep the listing's order.
       const results: Array<ExtractedFile | ExtractedFile[]> = [];
       const queue: Array<() => Promise<void>> = units.map((unit, i) => async () => {
-        if (Date.now() > deadline) {
+        if (signal.aborted) {
           if (route === 'dropbox') remaining.push(unit.name);
           else results[i] = fail(unit.name, 'skipped', 'time');
           return;
@@ -425,10 +418,9 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         }
         let bytes: Uint8Array;
         try {
-          bytes = await withinDeadline(unit.fetch(), deadline);
-        } catch (error) {
-          const timedOut = error instanceof Error && error.message === 'deadline';
-          results[i] = timedOut ? fail(unit.name, 'skipped', 'time') : fail(unit.name, 'failed', 'unreadable');
+          bytes = await unit.fetch();
+        } catch {
+          results[i] = signal.aborted ? fail(unit.name, 'skipped', 'time') : fail(unit.name, 'failed', 'unreadable');
           return;
         }
         const mimeType = sniff(bytes);
@@ -471,25 +463,32 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       return { route, files, remaining };
     },
 
-    async stash(payload: ImportPayload) {
+    async stash(payload: ImportPayload, deadline: number) {
       const exp = nowSeconds(Date.parse(payload.createdAt)) + RECEIPT_LIFETIME_SECONDS;
       const claims: ReceiptClaims = { id: payload.id, exp, conn: hash(connection), sha256: sha256Hex(JSON.stringify(payload)) };
       try {
-        await adapter.write(pendingName(payload.id), payload, null);
+        await adapter.write(pendingName(payload.id), payload, null, deadlineSignal(deadline));
       } catch {
         return { refusal: 'The candidates could not be parked in the user’s folder, so there is nothing to commit. Try the import again.' };
       }
       return { receipt: seal('import', claims, audience), expiresAt: new Date(exp * 1000).toISOString() };
     },
 
-    async open(commit: ImportCommit, _file: RoadmapFile, now: string): Promise<ImportPayload | ImportRefusal> {
+    async open(commit: ImportCommit, _file: RoadmapFile, now: string, deadline: number): Promise<ImportPayload | ImportRefusal> {
       // Verified BEFORE anything is charged: a forged receipt costs nothing.
       // A claims block sealed by us but naming a non-UUID id can never form a path.
       const claims = unseal<ReceiptClaims>('import', commit.receipt, audience, Date.parse(now));
       if (!claims || typeof claims.id !== 'string' || !UUID.test(claims.id) || claims.conn !== hash(connection) || typeof claims.sha256 !== 'string') {
         return { refusal: 'That receipt is not valid for this connection, or has expired. Nothing was written. Extract again and show the user the fresh candidates.' };
       }
-      const { body } = await adapter.read(pendingName(claims.id));
+      const signal = deadlineSignal(deadline);
+      let body: unknown;
+      try {
+        ({ body } = await adapter.read(pendingName(claims.id), signal));
+      } catch (error) {
+        if (!signal.aborted) throw error;
+        return { refusal: 'The pending import did not read in time. Nothing was written. Try the commit once more.' };
+      }
       if (body == null) return { refusal: 'That import was already committed or discarded. Nothing was written. Extract again if the user still wants it.' };
       if (sha256Hex(JSON.stringify(body)) !== claims.sha256) {
         return { refusal: 'The pending import does not match its receipt. Nothing was written. Extract again.' };
@@ -508,9 +507,9 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       return payload;
     },
 
-    async discard(payload: ImportPayload): Promise<void> {
+    async discard(payload: ImportPayload, deadline: number): Promise<void> {
       try {
-        await adapter.remove?.(pendingName(payload.id));
+        await adapter.remove?.(pendingName(payload.id), deadlineSignal(deadline));
       } catch {
         // A pending file that outlives its commit is swept on the next extract.
       }

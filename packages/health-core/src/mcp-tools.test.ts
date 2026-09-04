@@ -1175,6 +1175,7 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
   const discarded: string[] = [];
   const surface: ImportSurface = {
     maxCorrectionAgeDays: 90,
+    budgetMs: 40_000,
     async extract() {
       return { route: 'dropbox', remaining: ['later.pdf'], files: [extracted('new.pdf', labReport())] };
     },
@@ -1239,6 +1240,22 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     const bad = await runToolOverSync(sync, 'import_documents', { commit: { receipt: 'forged', accept: ['c1'], replace: [] } }, NOW, { importer: surface });
     expect(bad).toMatchObject({ isError: true, text: expect.stringContaining('not valid') });
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
+  });
+
+  it('the record’s own read runs under the call’s budget: a read that hangs is aborted at it, not abandoned (AC5)', async () => {
+    const cloud = new MemoryCloud();
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(base()), version: 1 });
+    const adapter = new MemoryAdapter(cloud);
+    const seen: AbortSignal[] = [];
+    adapter.read = (_name, signal) => new Promise((_, reject) => {
+      seen.push(signal!);
+      signal!.addEventListener('abort', () => reject(signal!.reason));
+    });
+    const sync = recordSync(adapter, 'test', NOW);
+    const failure = await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: { ...surface, budgetMs: 20 }, latestDay: TODAY }).catch((e: unknown) => e);
+    expect(failure).toMatchObject({ name: 'TimeoutError' });
+    expect(seen).toHaveLength(1);
+    expect(seen[0].aborted).toBe(true);
   });
 
   it('with no importer — the stdio server — both phases refuse in one sentence (AC11)', async () => {

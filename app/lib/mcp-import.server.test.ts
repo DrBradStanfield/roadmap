@@ -159,13 +159,14 @@ describe('US-35 AC7 — the receipt names the payload and binds it to one connec
   function surfaceFor(rt: string, cloud = new MemoryCloud()) {
     return hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt, exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90 });
   }
+  const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
   async function stashed(surface: ReturnType<typeof surfaceFor>) {
-    const answer = await surface.stash(PAYLOAD);
+    const answer = await surface.stash(PAYLOAD, deadline());
     if ('refusal' in answer) throw new Error(answer.refusal);
     return answer;
   }
   async function refusalOf(surface: ReturnType<typeof surfaceFor>, receipt: string, now = NOW) {
-    const answer = await surface.open({ receipt, accept: [], replace: [] }, file, now);
+    const answer = await surface.open({ receipt, accept: [], replace: [] }, file, now, deadline());
     return 'refusal' in answer ? answer.refusal : null;
   }
 
@@ -178,7 +179,7 @@ describe('US-35 AC7 — the receipt names the payload and binds it to one connec
     expect(receipt.length).toBeLessThan(MAX_RECEIPT_LENGTH);
     expect(expiresAt).toBe('2026-09-02T11:00:00.000Z');
     expect(receipt).not.toContain(PAYLOAD.id); // sealed: the id is not readable off the wire
-    expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW)).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW, deadline())).toEqual(PAYLOAD);
   });
 
   it('fails closed: a changed byte, another connection, an expiry passed, an edited pending file, a shape that is not a receipt', async () => {
@@ -204,7 +205,7 @@ describe('US-35 AC7 — the receipt names the payload and binds it to one connec
     const surface = surfaceFor('connection-a');
     const { receipt } = await stashed(surface);
     const bogus = Array.from({ length: 300 }, (_, i) => `x${i}`);
-    const answer = await surface.open({ receipt, accept: [], replace: bogus }, file, NOW);
+    const answer = await surface.open({ receipt, accept: [], replace: bogus }, file, NOW, deadline());
     expect('refusal' in answer && answer.refusal).toMatch(/not a candidate/);
     // The whole hourly allowance is still there.
     expect(chargeWrites(connectionKey('connection-a'), WRITES_PER_HOUR)).toBeNull();
@@ -214,44 +215,121 @@ describe('US-35 AC7 — the receipt names the payload and binds it to one connec
     const surface = surfaceFor('connection-a');
     const { receipt } = await stashed(surface);
     process.env.MCP_SEAL_KEYS = `${Buffer.alloc(32, 8).toString('base64')},${Buffer.alloc(32, 7).toString('base64')}`;
-    expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW)).toEqual(PAYLOAD);
+    expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW, deadline())).toEqual(PAYLOAD);
     process.env.MCP_SEAL_KEYS = Buffer.alloc(32, 8).toString('base64');
     expect(await refusalOf(surface, receipt)).toMatch(/not valid/);
   });
 });
 
-describe('US-35 AC5/AC10 — the budget bounds a hung download and forbids the model call an inner retry', () => {
+describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not abandoned', () => {
   const NOW = '2026-09-02T10:00:00.000Z';
   const file = createEmptyFile({ deviceId: 'test', now: NOW });
+  const PAYLOAD: ImportPayload = { id: '11111111-2222-4333-8444-555555555555', route: 'dropbox', createdAt: NOW, candidates: [], documents: [] };
+  const token = { clientId: 'c.test', provider: 'dropbox' as const, rt: 'rt', exp: 0 };
+  const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
+
+  /** An adapter method that answers only when its signal aborts — a provider that took the socket and went quiet. */
+  function hang(seen: AbortSignal[]) {
+    return (...args: unknown[]) => new Promise<never>((_, reject) => {
+      const signal = args.at(-1) as AbortSignal;
+      seen.push(signal);
+      signal.throwIfAborted();
+      signal.addEventListener('abort', () => reject(signal.reason));
+    });
+  }
+  function surfaceOver(adapter: MemoryAdapter) {
+    return hostedImporter({ token, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+  }
+  /** The call, with the clock run to the deadline while it waits. */
+  async function atDeadline<T>(pending: Promise<T>): Promise<T> {
+    await vi.advanceTimersByTimeAsync(MCP_IMPORT_BUDGET_MS);
+    return pending;
+  }
+  /** The hung call was rejected by its own signal — aborted, not left running. */
+  function abortedOnce(seen: AbortSignal[]) {
+    expect(seen).toHaveLength(1);
+    expect(seen[0].aborted).toBe(true);
+    expect((seen[0].reason as Error).name).toBe('TimeoutError');
+  }
 
   beforeEach(() => { resetMcpMemory(); vi.useFakeTimers(); vi.setSystemTime(new Date(NOW)); });
   afterEach(() => { vi.useRealTimers(); setImportSeams(null); });
 
-  it('a download that never answers is skipped for time once the deadline passes; the call still returns', async () => {
-    const cloud = new MemoryCloud();
-    cloud.docs.set('labs.pdf', new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d])]));
-    const adapter = new MemoryAdapter(cloud);
-    adapter.readDocument = () => new Promise(() => {});
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+  it('a listing that never answers: refused at the deadline, the list call aborted, no model call', async () => {
+    const seen: AbortSignal[] = [];
+    const adapter = new MemoryAdapter(new MemoryCloud());
+    adapter.list = hang(seen);
     const seam = vi.fn();
     setImportSeams({ extract: seam });
-    const pending = surface.extract({}, file, NOW);
-    await vi.advanceTimersByTimeAsync(MCP_IMPORT_BUDGET_MS);
-    const bundle = await pending;
-    expect('files' in bundle && bundle.files).toEqual([{ name: 'labs.pdf', status: 'skipped', reason: 'time' }]);
+    const bundle = await atDeadline(surfaceOver(adapter).extract({}, file, NOW, deadline()));
+    expect(bundle).toEqual({ refusal: expect.stringMatching(/did not list in time/) });
+    abortedOnce(seen);
     expect(seam).not.toHaveBeenCalled();
   });
 
-  it('hands the model call what is left of the budget and no inner HTTP retry', async () => {
+  it('a download that never answers is skipped for time, the download aborted, no model call', async () => {
+    const seen: AbortSignal[] = [];
     const cloud = new MemoryCloud();
-    cloud.docs.set('labs.pdf', new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d])]));
-    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90 });
+    cloud.docs.set('labs.pdf', new Blob([PDF]));
+    const adapter = new MemoryAdapter(cloud);
+    adapter.readDocument = hang(seen);
+    const seam = vi.fn();
+    setImportSeams({ extract: seam });
+    const bundle = await atDeadline(surfaceOver(adapter).extract({}, file, NOW, deadline()));
+    expect('files' in bundle && bundle.files).toEqual([{ name: 'labs.pdf', status: 'skipped', reason: 'time' }]);
+    abortedOnce(seen);
+    expect(seam).not.toHaveBeenCalled();
+  });
+
+  it('a deadline already passed starts nothing and refuses', async () => {
+    const seam = vi.fn();
+    setImportSeams({ extract: seam });
+    const bundle = await surfaceOver(new MemoryAdapter(new MemoryCloud())).extract({}, file, NOW, Date.now());
+    expect(bundle).toEqual({ refusal: expect.stringMatching(/did not list in time/) });
+    expect(seam).not.toHaveBeenCalled();
+  });
+
+  it('the pending-file write is aborted at the deadline and the extract refused', async () => {
+    const seen: AbortSignal[] = [];
+    const adapter = new MemoryAdapter(new MemoryCloud());
+    adapter.write = hang(seen);
+    const answer = await atDeadline(surfaceOver(adapter).stash(PAYLOAD, deadline()));
+    expect(answer).toEqual({ refusal: expect.stringMatching(/could not be parked/) });
+    abortedOnce(seen);
+  });
+
+  it('the commit’s read of the pending file is aborted at the deadline and refused, nothing charged', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    const surface = surfaceOver(adapter);
+    const stashed = await surface.stash(PAYLOAD, deadline());
+    if ('refusal' in stashed) throw new Error(stashed.refusal);
+    const seen: AbortSignal[] = [];
+    adapter.read = hang(seen);
+    const answer = await atDeadline(surface.open({ receipt: stashed.receipt, accept: [], replace: [] }, file, NOW, deadline()));
+    expect(answer).toEqual({ refusal: expect.stringMatching(/did not read in time/) });
+    abortedOnce(seen);
+    expect(chargeWrites(connectionKey('rt'), WRITES_PER_HOUR)).toBeNull();
+  });
+
+  it('the commit’s delete is aborted at the deadline; the call still answers and the sweep takes the file later', async () => {
+    const seen: AbortSignal[] = [];
+    const adapter = new MemoryAdapter(new MemoryCloud());
+    adapter.remove = hang(seen);
+    await expect(atDeadline(surfaceOver(adapter).discard(PAYLOAD, deadline()))).resolves.toBeUndefined();
+    abortedOnce(seen);
+  });
+
+  it('hands the model call what is left of the budget and no retry, inner or outer', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('labs.pdf', new Blob([PDF]));
+    const surface = surfaceOver(new MemoryAdapter(cloud));
     const seen: Array<{ timeoutMs: number; attempts: number; httpAttempts: number }> = [];
     setImportSeams({ extract: async (_pages, opts) => {
       seen.push(opts);
       return { classification: 'other', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null };
     } });
-    await surface.extract({}, file, NOW);
+    await surface.extract({}, file, NOW, deadline());
     expect(seen).toHaveLength(1);
     expect(seen[0]).toMatchObject({ attempts: 1, httpAttempts: 1 });
     expect(seen[0].timeoutMs).toBeLessThanOrEqual(MCP_IMPORT_BUDGET_MS);

@@ -79,12 +79,14 @@ export async function driveFindFileId(
   accessToken: string,
   name: string,
   parentId?: string,
+  signal?: AbortSignal,
 ): Promise<string | undefined> {
   const q = encodeURIComponent(
     `name='${quoted(name)}' and trashed=false${parentId ? ` and '${parentId}' in parents` : ''}`,
   );
   const res = await request(`${DRIVE_API}/files?q=${q}&spaces=drive&fields=files(id)&pageSize=1`, {
     headers: auth(accessToken),
+    signal,
   });
   if (!res.ok) await fail('lookup', res);
   return (await jsonBody<{ files?: Array<{ id: string }> }>(res)).files?.[0]?.id;
@@ -98,6 +100,7 @@ export async function driveFindFolder(
   accessToken: string,
   names: readonly string[] = [DRIVE_FOLDER_NAME, DRIVE_LEGACY_FOLDER_NAME],
   parentId?: string,
+  signal?: AbortSignal,
 ): Promise<{ id: string; name: string } | undefined> {
   const anyName = names.map((name) => `name='${quoted(name)}'`).join(' or ');
   const q = encodeURIComponent(
@@ -105,16 +108,18 @@ export async function driveFindFolder(
   );
   const res = await request(`${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=1`, {
     headers: auth(accessToken),
+    signal,
   });
   if (!res.ok) await fail('folder lookup', res);
   return (await jsonBody<{ files?: Array<{ id: string; name: string }> }>(res)).files?.[0];
 }
 
-export async function driveCreateFolder(accessToken: string, name: string, parentId?: string): Promise<string> {
+export async function driveCreateFolder(accessToken: string, name: string, parentId?: string, signal?: AbortSignal): Promise<string> {
   const res = await request(`${DRIVE_API}/files?fields=id`, {
     method: 'POST',
     headers: { ...auth(accessToken), 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, mimeType: DRIVE_FOLDER_MIME, ...(parentId ? { parents: [parentId] } : null) }),
+    signal,
   });
   if (!res.ok) await fail('folder create', res);
   const id = (await jsonBody<{ id?: string }>(res)).id;
@@ -128,17 +133,17 @@ export async function driveCreateFolder(accessToken: string, name: string, paren
  * `imports/pending-x.json` is one flat name; `drive.file` already limits the
  * answer to files this app created.
  */
-async function driveListByPrefix(accessToken: string, prefix: string): Promise<StoredFile[]> {
+async function driveListByPrefix(accessToken: string, prefix: string, signal?: AbortSignal): Promise<StoredFile[]> {
   const q = encodeURIComponent(`name contains '${quoted(prefix)}' and trashed = false`);
-  const res = await request(`${DRIVE_API}/files?q=${q}&fields=files(id,name,size,modifiedTime)&pageSize=100`, { headers: auth(accessToken) });
+  const res = await request(`${DRIVE_API}/files?q=${q}&fields=files(id,name,size,modifiedTime)&pageSize=100`, { headers: auth(accessToken), signal });
   if (!res.ok) await fail('list', res);
   const files = (await jsonBody<{ files?: Array<{ id: string; name: string; size?: string; modifiedTime?: string }> }>(res)).files ?? [];
   return files.filter((f) => f.name.startsWith(prefix)).map((f) => ({ name: f.name, ref: f.id, size: Number(f.size ?? 0), modified: f.modifiedTime ?? '' }));
 }
 
 /** Delete one file by id. Already gone (404) is not a failure. */
-async function driveDelete(accessToken: string, fileId: string): Promise<void> {
-  const res = await request(`${DRIVE_API}/files/${encodeURIComponent(fileId)}`, { method: 'DELETE', headers: auth(accessToken) });
+async function driveDelete(accessToken: string, fileId: string, signal?: AbortSignal): Promise<void> {
+  const res = await request(`${DRIVE_API}/files/${encodeURIComponent(fileId)}`, { method: 'DELETE', headers: auth(accessToken), signal });
   if (!res.ok && res.status !== 404) await fail('delete', res);
 }
 
@@ -149,6 +154,7 @@ export function driveCreateFile(
   contentType: string,
   content: Blob | string,
   parentId: string,
+  signal?: AbortSignal,
 ): Promise<Response> {
   const metadata = { name, parents: [parentId] };
   const boundary = 'rm_boundary_health_roadmap';
@@ -166,15 +172,17 @@ export function driveCreateFile(
     // minutes sending. Scale the bound with the bytes so the upload is judged
     // on the provider's silence, not on the user's connection.
     timeoutMs: Math.min(300_000, 30_000 + Math.round(body.size / 10_000) * 1_000),
+    signal,
   });
 }
 
 /** Overwrite a file's bytes. Unconditional — Drive offers no precondition. */
-export async function driveUpdateFile(accessToken: string, fileId: string, json: string): Promise<string> {
+export async function driveUpdateFile(accessToken: string, fileId: string, json: string, signal?: AbortSignal): Promise<string> {
   const res = await request(`${UPLOAD}/files/${fileId}?uploadType=media&fields=id,version`, {
     method: 'PATCH',
     headers: { ...auth(accessToken), 'Content-Type': 'application/json' },
     body: json,
+    signal,
   });
   if (!res.ok) await fail('write', res);
   return String((await jsonBody<{ version?: string }>(res)).version ?? '');
@@ -185,16 +193,16 @@ export async function driveUpdateFile(accessToken: string, fileId: string, json:
  * closest thing to a rev — read-only, which is why it can only ever be
  * compared and never sent as a precondition.
  */
-export async function driveFileVersion(accessToken: string, fileId: string): Promise<string | null> {
-  const res = await request(`${DRIVE_API}/files/${fileId}?fields=version`, { headers: auth(accessToken) });
+export async function driveFileVersion(accessToken: string, fileId: string, signal?: AbortSignal): Promise<string | null> {
+  const res = await request(`${DRIVE_API}/files/${fileId}?fields=version`, { headers: auth(accessToken), signal });
   if (res.status === 404) return null;
   if (!res.ok) await fail('version read', res);
   return (await jsonBody<{ version?: string }>(res)).version ?? null;
 }
 
 /** Download a file's bytes as JSON. Null = the file is gone. */
-export async function driveDownloadJson(accessToken: string, fileId: string): Promise<unknown | null> {
-  const res = await request(`${DRIVE_API}/files/${fileId}?alt=media`, { headers: auth(accessToken) });
+export async function driveDownloadJson(accessToken: string, fileId: string, signal?: AbortSignal): Promise<unknown | null> {
+  const res = await request(`${DRIVE_API}/files/${fileId}?alt=media`, { headers: auth(accessToken), signal });
   if (res.status === 404) return null;
   if (!res.ok) await fail('read', res);
   const text = await res.text();
@@ -239,12 +247,12 @@ export class DriveAdapter implements StorageAdapter {
    * instead: worst case the version is stale, the check conflicts, and the
    * save retries. A wasted round trip beats a silent lost update.
    */
-  async read(fileName: string): Promise<ReadResult> {
-    const fileId = await this.findFile(fileName);
+  async read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
+    const fileId = await this.findFile(fileName, signal);
     if (!fileId) return { body: null, version: null };
-    const version = await driveFileVersion(this.accessToken, fileId);
+    const version = await driveFileVersion(this.accessToken, fileId, signal);
     if (version == null) return { body: null, version: null }; // deleted between the two calls
-    const body = await driveDownloadJson(this.accessToken, fileId);
+    const body = await driveDownloadJson(this.accessToken, fileId, signal);
     if (body == null) return { body: null, version: null };
     return { body, version };
   }
@@ -257,17 +265,17 @@ export class DriveAdapter implements StorageAdapter {
    * writer who landed inside it, and its `ConflictError` sends this whole
    * method round again.
    */
-  async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
+  async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
     const json = JSON.stringify(body);
-    const fileId = await this.findFile(fileName);
+    const fileId = await this.findFile(fileName, signal);
 
     if (!fileId) {
       // A first-ever create. If the caller thought there was a version, the
       // file it read has since been deleted or trashed — never silently
       // re-create it here: re-reading is what turns that into a decision.
       if (expectedVersion !== null) throw new ConflictError(`${PROVIDER} no longer holds that file`);
-      const parentId = await this.folderId();
-      const res = await driveCreateFile(this.accessToken, fileName, 'application/json', json, parentId);
+      const parentId = await this.folderId(signal);
+      const res = await driveCreateFile(this.accessToken, fileName, 'application/json', json, parentId, signal);
       if (!res.ok) await fail('create', res);
       const created = await jsonBody<{ id?: string; version?: string }>(res);
       if (!created.id) throw new StorageError(`${PROVIDER} create returned no file id.`);
@@ -275,13 +283,13 @@ export class DriveAdapter implements StorageAdapter {
       return { version: String(created.version ?? '') };
     }
 
-    const current = await driveFileVersion(this.accessToken, fileId);
+    const current = await driveFileVersion(this.accessToken, fileId, signal);
     if (current !== expectedVersion) {
       throw new ConflictError(
         `${PROVIDER} changed since it was read (version ${expectedVersion ?? 'none'} → ${current ?? 'none'})`,
       );
     }
-    return { version: await driveUpdateFile(this.accessToken, fileId, json) };
+    return { version: await driveUpdateFile(this.accessToken, fileId, json, signal) };
   }
 
   async readDocument(): Promise<Blob> {
@@ -292,32 +300,32 @@ export class DriveAdapter implements StorageAdapter {
     throw new StorageError('The hosted server does not write uploaded documents.');
   }
 
-  async list(folder: string): Promise<StoredFile[]> {
-    const files = await driveListByPrefix(this.accessToken, `${folder}/`);
+  async list(folder: string, signal?: AbortSignal): Promise<StoredFile[]> {
+    const files = await driveListByPrefix(this.accessToken, `${folder}/`, signal);
     for (const file of files) this.fileIds.set(file.name, file.ref); // so `remove` needs no second search
     return files;
   }
 
-  async remove(fileName: string): Promise<void> {
-    const fileId = await this.findFile(fileName);
+  async remove(fileName: string, signal?: AbortSignal): Promise<void> {
+    const fileId = await this.findFile(fileName, signal);
     if (!fileId) return;
-    await driveDelete(this.accessToken, fileId);
+    await driveDelete(this.accessToken, fileId, signal);
     this.fileIds.delete(fileName);
   }
 
-  private async findFile(fileName: string): Promise<string | undefined> {
+  private async findFile(fileName: string, signal?: AbortSignal): Promise<string | undefined> {
     const cached = this.fileIds.get(fileName);
     if (cached) return cached;
     // No parent filter, exactly as the browser adapter searches: `drive.file`
     // already limits the result set to this app's own files, and a record
     // created before the folder existed still lives at the Drive root.
-    const found = await driveFindFileId(this.accessToken, fileName);
+    const found = await driveFindFileId(this.accessToken, fileName, undefined, signal);
     if (found) this.fileIds.set(fileName, found);
     return found;
   }
 
-  private async folderId(): Promise<string> {
-    const found = await driveFindFolder(this.accessToken);
-    return found?.id ?? (await driveCreateFolder(this.accessToken, DRIVE_FOLDER_NAME));
+  private async folderId(signal?: AbortSignal): Promise<string> {
+    const found = await driveFindFolder(this.accessToken, undefined, undefined, signal);
+    return found?.id ?? (await driveCreateFolder(this.accessToken, DRIVE_FOLDER_NAME, undefined, signal));
   }
 }

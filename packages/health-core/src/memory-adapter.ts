@@ -41,13 +41,15 @@ export class MemoryAdapter implements StorageAdapter {
     this.connected = false;
   }
 
-  async read(fileName: string): Promise<ReadResult> {
+  async read(fileName: string, signal?: AbortSignal): Promise<ReadResult> {
+    signal?.throwIfAborted();
     const entry = this.cloud.files.get(fileName);
     if (entry == null) return { body: null, version: null };
     return { body: JSON.parse(entry.json), version: String(entry.version) };
   }
 
-  async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {
+  async write(fileName: string, body: object, expectedVersion: string | null, signal?: AbortSignal): Promise<WriteResult> {
+    signal?.throwIfAborted();
     const entry = this.cloud.files.get(fileName);
     const current = entry == null ? null : String(entry.version);
     if (expectedVersion !== current) {
@@ -58,7 +60,8 @@ export class MemoryAdapter implements StorageAdapter {
     return { version: String(version) };
   }
 
-  async readDocument(ref: string): Promise<Blob> {
+  async readDocument(ref: string, signal?: AbortSignal): Promise<Blob> {
+    signal?.throwIfAborted();
     const blob = this.cloud.docs.get(ref);
     if (!blob) throw new Error(`document not found: ${ref}`);
     return blob;
@@ -69,7 +72,8 @@ export class MemoryAdapter implements StorageAdapter {
   }
 
   /** Records and documents alike, one level deep — a folder root holds both, as a real one does. */
-  async list(folder: string): Promise<StoredFile[]> {
+  async list(folder: string, signal?: AbortSignal): Promise<StoredFile[]> {
+    signal?.throwIfAborted();
     const inFolder = (name: string) => (folder ? name.startsWith(`${folder}/`) : !name.includes('/'));
     const out: StoredFile[] = [];
     for (const [name, entry] of this.cloud.files) if (inFolder(name)) out.push({ name, ref: name, size: entry.json.length, modified: entry.modified ?? '' });
@@ -77,7 +81,8 @@ export class MemoryAdapter implements StorageAdapter {
     return out;
   }
 
-  async remove(fileName: string): Promise<void> {
+  async remove(fileName: string, signal?: AbortSignal): Promise<void> {
+    signal?.throwIfAborted();
     this.cloud.files.delete(fileName);
   }
 }
