@@ -407,3 +407,112 @@ describe('US-31 AC5 \u2014 unit labels resolve through the shared resolver (unit
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// US-35 — provenance, the shared slot rule, and the shared bulk save
+// ---------------------------------------------------------------------------
+import { bulkAppendValues, findActiveInSlot, slotState } from './record-edits';
+
+describe('US-35 AC8 — a writer states its source; the defaults stay what they were', () => {
+  it('appends carry the source they are given, and `manual` when none', () => {
+    const imported = ok(appendMeasurement(base(), { metricType: 'hdl', value: 1.4, recordedAt: '2026-08-01', now: NOW, source: 'lab_import' }));
+    expect(imported.row.source).toBe('lab_import');
+    expect(ok(appendMeasurement(base(), { metricType: 'hdl', value: 1.4, recordedAt: '2026-08-01', now: NOW })).row.source).toBe('manual');
+    const lab = ok(appendLabValue(base(), { metricName: 'tsh', value: 1.2, unit: 'mIU/L', recordedAt: '2026-08-01', now: NOW, source: 'lab_import' }));
+    expect(lab.row.source).toBe('lab_import');
+    expect(ok(appendLabValue(base(), { metricName: 'tsh', value: 1.2, unit: 'mIU/L', recordedAt: '2026-08-01', now: NOW })).row.source).toBe('manual');
+  });
+
+  it('a correction carries its source too, `manual_correction` by default', () => {
+    expect(ok(correctValue(base(), { id: 'm1', newValue: 3.0, now: NOW, source: 'lab_import' })).row.source).toBe('lab_import');
+    expect(ok(correctValue(base(), { id: 'l1', newValue: 200, now: NOW })).row.source).toBe('manual_correction');
+  });
+});
+
+describe('US-35 AC6 — one slot rule for the website and the connector', () => {
+  it('finds the active row in a slot by metric and day, labs by catalogue key', () => {
+    expect(findActiveInSlot(base(), 'measurement', 'ldl', '2026-07-14')?.id).toBe('m1');
+    expect(findActiveInSlot(base(), 'measurement', 'ldl', '2026-07-15')).toBeUndefined();
+    expect(findActiveInSlot(base(), 'lab', 'Ferritin', '2026-07-14T09:00:00Z')?.id).toBe('l1');
+    const flipped = base();
+    flipped.measurements[0].status = 'entered-in-error';
+    expect(findActiveInSlot(flipped, 'measurement', 'ldl', '2026-07-14')).toBeUndefined();
+  });
+
+  it('compares on the displayed string: free, equal, or different', () => {
+    expect(slotState(undefined, '3.4')).toBe('free');
+    expect(slotState('3.4', '3.4')).toBe('held_equal');
+    expect(slotState('3.4', '3.5')).toBe('held_different');
+  });
+});
+
+describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pure rule', () => {
+  const day = '2026-08-01';
+
+  it('appends free slots, skips taken ones, and never mutates the input', () => {
+    const file = base();
+    const before = JSON.stringify(file);
+    const result = bulkAppendValues(file, [
+      { kind: 'measurement', metricType: 'ldl', value: 3.0, recordedAt: day, source: 'lab_import' },
+      { kind: 'measurement', metricType: 'ldl', value: 3.1, recordedAt: '2026-07-14', source: 'lab_import' }, // m1 holds it
+      { kind: 'lab', metricName: 'tsh', value: 1.2, unit: 'mIU/L', recordedAt: day, source: 'lab_import' },
+      { kind: 'lab', metricName: 'Ferritin', value: 1, unit: 'ug/L', recordedAt: '2026-07-14', source: 'lab_import' }, // l1 holds it
+    ], NOW);
+    expect(JSON.stringify(file)).toBe(before);
+    expect(result.saved.map((r) => r.source)).toEqual(['lab_import', 'lab_import']);
+    expect(result.skippedDuplicates).toBe(2);
+    expect(result.file.measurements).toHaveLength(2);
+    expect(result.file.labValues).toHaveLength(2);
+    expect(result.file.meta.updatedAt).toBe(NOW);
+  });
+
+  it('a second row of the batch on the same slot is skipped, not doubled', () => {
+    const result = bulkAppendValues(base(), [
+      { kind: 'measurement', metricType: 'hdl', value: 1.4, recordedAt: day, source: 'lab_import' },
+      { kind: 'measurement', metricType: 'hdl', value: 1.5, recordedAt: day, source: 'lab_import' },
+    ], NOW);
+    expect(result.saved).toHaveLength(1);
+    expect(result.skippedDuplicates).toBe(1);
+  });
+
+  it('correctsId supersedes the row while it still holds the slot: flip, append on the OLD date, once', () => {
+    const result = bulkAppendValues(base(), [
+      { kind: 'measurement', metricType: 'ldl', value: 3.0, recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'm1' },
+      { kind: 'measurement', metricType: 'ldl', value: 2.9, recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'm1' }, // stale by now
+      { kind: 'lab', metricName: 'ferritin', value: 190, unit: 'ug/L', recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'l1' },
+    ], NOW);
+    expect(result.saved).toHaveLength(2);
+    expect(result.skippedDuplicates).toBe(1);
+    const m = result.file.measurements;
+    expect(m.find((r) => r.id === 'm1')!.status).toBe('entered-in-error');
+    const fresh = m.find((r) => r.correctsId === 'm1')!;
+    expect(fresh.value).toBe(3.0);
+    expect(fresh.recordedAt).toBe('2026-07-14');
+    expect(m.filter((r) => r.status === 'active' && r.metricType === 'ldl')).toHaveLength(1);
+    const l = result.file.labValues;
+    expect(l.find((r) => r.id === 'l1')!.status).toBe('entered-in-error');
+    expect(l.find((r) => r.correctsId === 'l1')!.value).toBe(190);
+  });
+
+  it('a correctsId naming a row in another slot, or an inactive one, is skipped', () => {
+    const wrongSlot = bulkAppendValues(base(), [
+      { kind: 'measurement', metricType: 'ldl', value: 3.0, recordedAt: '2026-08-01', source: 'lab_import', correctsId: 'm1' },
+    ], NOW);
+    expect(wrongSlot.saved).toHaveLength(0);
+    expect(wrongSlot.skippedDuplicates).toBe(1);
+    const flipped = base();
+    flipped.measurements[0].status = 'entered-in-error';
+    const inactive = bulkAppendValues(flipped, [
+      { kind: 'measurement', metricType: 'ldl', value: 3.0, recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'm1' },
+    ], NOW);
+    expect(inactive.saved).toHaveLength(0);
+  });
+
+  it('writes nothing and keeps the clock when every row is skipped', () => {
+    const file = base();
+    const result = bulkAppendValues(file, [
+      { kind: 'measurement', metricType: 'ldl', value: 3.1, recordedAt: '2026-07-14', source: 'lab_import' },
+    ], NOW);
+    expect(result.file).toBe(file);
+  });
+});

@@ -14,11 +14,14 @@
  * browser refreshes with PKCE and the server refreshes as a confidential
  * client.
  */
-import { ConflictError, fetchOrFail, jsonBody, StorageError, type ReadResult, type StorageAdapter, type WriteResult } from './adapter';
+import { ConflictError, fetchOrFail, jsonBody, StorageError, type ReadResult, type StorageAdapter, type StoredFile, type WriteResult } from './adapter';
 
 export const DROPBOX_TOKEN_URL = 'https://api.dropboxapi.com/oauth2/token';
 const DOWNLOAD_URL = 'https://content.dropboxapi.com/2/files/download';
 const UPLOAD_URL = 'https://content.dropboxapi.com/2/files/upload';
+const LIST_URL = 'https://api.dropboxapi.com/2/files/list_folder';
+const LIST_CONTINUE_URL = 'https://api.dropboxapi.com/2/files/list_folder/continue';
+const DELETE_URL = 'https://api.dropboxapi.com/2/files/delete_v2';
 
 /** The provider's user-facing name. One copy: the adapter's `label` and every
  *  message below read it from here. */
@@ -39,19 +42,29 @@ function parseApiResult(res: Response): Record<string, unknown> | null {
   }
 }
 
+/** A Dropbox `path` argument: an `id:…` from a listing as is, else a folder-relative name. */
+function pathArg(ref: string): string {
+  return ref.startsWith('id:') ? ref : `/${ref}`;
+}
+
+/** One `files/download`. The two readers below parse its body their own way. */
+function download(accessToken: string, ref: string): Promise<Response> {
+  return request(DOWNLOAD_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Dropbox-API-Arg': JSON.stringify({ path: pathArg(ref) }),
+    },
+  });
+}
+
 /**
  * Download one app-folder-relative file. A missing file is not an error — it
  * is a user who has not saved yet — so it comes back as an empty read and the
  * caller's `migrate()` turns it into a fresh record.
  */
 export async function dropboxRead(accessToken: string, fileName: string): Promise<ReadResult> {
-  const res = await request(DOWNLOAD_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Dropbox-API-Arg': JSON.stringify({ path: `/${fileName}` }),
-    },
-  });
+  const res = await download(accessToken, fileName);
   if (res.status === 409) return { body: null, version: null }; // path/not_found
   if (!res.ok) throw new StorageError(`${PROVIDER} read failed (${res.status}): ${await res.text()}`, undefined, undefined, res.status);
   const meta = parseApiResult(res);
@@ -63,6 +76,71 @@ export async function dropboxRead(accessToken: string, fileName: string): Promis
     throw new StorageError(`${PROVIDER} read failed: file is not valid JSON (possible corruption).`, undefined, error);
   }
   return { body, version: (meta?.rev as string) ?? null };
+}
+
+/**
+ * The bytes of one file: a document the widget views, or a lab file the
+ * connector imports (US-35 AC2). `ref` is a folder-relative path or a listing
+ * entry's `id:…` — the connector downloads by id, so a name an assistant
+ * supplied only ever SELECTS from the listing and never forms a path.
+ */
+export async function dropboxDownload(accessToken: string, ref: string): Promise<Uint8Array<ArrayBuffer>> {
+  const res = await download(accessToken, ref);
+  if (!res.ok) throw new StorageError(`${PROVIDER} download failed (${res.status})`, undefined, undefined, res.status);
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+/** One folder-relative entry of a listing, as the connector reads it. */
+export interface DropboxEntry {
+  id: string;
+  name: string;
+  size: number;
+  /** ISO 8601 `server_modified`. */
+  modified: string;
+}
+
+/**
+ * The FILES directly under one folder of the app folder (`''` for its root),
+ * following `has_more`. Folders are dropped: the record's own document tree
+ * is not something an import reads. A folder that does not exist lists as
+ * empty, which is what an app folder with no `imports/` yet is.
+ */
+export async function dropboxListFolder(accessToken: string, folder: string): Promise<DropboxEntry[]> {
+  const entries: DropboxEntry[] = [];
+  let url = LIST_URL;
+  let body: object = { path: folder ? `/${folder}` : '', recursive: false, include_deleted: false };
+  for (;;) {
+    const res = await request(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.status === 409 && url === LIST_URL) return []; // path/not_found
+    if (!res.ok) throw new StorageError(`${PROVIDER} list failed (${res.status})`, undefined, undefined, res.status);
+    const page = await jsonBody<{ entries?: Array<Record<string, unknown>>; cursor?: string; has_more?: boolean }>(res);
+    for (const entry of page.entries ?? []) {
+      if (entry['.tag'] !== 'file' || typeof entry.id !== 'string' || typeof entry.name !== 'string') continue;
+      entries.push({
+        id: entry.id,
+        name: entry.name,
+        size: typeof entry.size === 'number' ? entry.size : 0,
+        modified: typeof entry.server_modified === 'string' ? entry.server_modified : '',
+      });
+    }
+    if (!page.has_more || !page.cursor) return entries;
+    url = LIST_CONTINUE_URL;
+    body = { cursor: page.cursor };
+  }
+}
+
+/** Remove one folder-relative file. Already gone is not a failure. */
+export async function dropboxDelete(accessToken: string, fileName: string): Promise<void> {
+  const res = await request(DELETE_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: `/${fileName}` }),
+  });
+  if (!res.ok && res.status !== 409) throw new StorageError(`${PROVIDER} delete failed (${res.status})`, undefined, undefined, res.status);
 }
 
 /**
@@ -111,8 +189,9 @@ export async function dropboxWrite(
  * token and dies with the call; nothing is cached between requests, because
  * there is no per-user anything to cache in (design §1).
  *
- * Documents (the uploaded PDFs) are deliberately unreachable: the hosted write
- * surface is append-only clinical values and nothing else. `DriveAdapter` in
+ * Documents are read (a lab file the user asked the connector to import,
+ * US-35) and never written: the hosted write surface is clinical values, plus
+ * the import's own pending payload, and nothing else. `DriveAdapter` in
  * `drive-rest.ts` is the same shape for Google.
  */
 export class DropboxAdapter implements StorageAdapter {
@@ -135,11 +214,19 @@ export class DropboxAdapter implements StorageAdapter {
     return dropboxWrite(this.accessToken, fileName, body, expectedVersion);
   }
 
-  async readDocument(): Promise<Blob> {
-    throw new StorageError('The hosted server does not read uploaded documents.');
+  async readDocument(ref: string): Promise<Blob> {
+    return new Blob([await dropboxDownload(this.accessToken, ref)]);
   }
 
   async writeDocument(): Promise<void> {
     throw new StorageError('The hosted server does not write uploaded documents.');
+  }
+
+  async list(folder: string): Promise<StoredFile[]> {
+    return (await dropboxListFolder(this.accessToken, folder)).map((e) => ({ name: `${folder}/${e.name}`, modified: e.modified }));
+  }
+
+  remove(fileName: string): Promise<void> {
+    return dropboxDelete(this.accessToken, fileName);
   }
 }

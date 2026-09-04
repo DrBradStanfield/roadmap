@@ -18,6 +18,7 @@
  * Brad supplies the app key (client id) via DropboxConfig; there is no secret.
  */
 import {
+  dropboxDownload,
   dropboxRead,
   dropboxWrite,
   DROPBOX_TOKEN_URL,
@@ -35,7 +36,6 @@ const PKCE_KEY = 'health_roadmap_dropbox_pkce';
 
 const AUTHORIZE_URL = 'https://www.dropbox.com/oauth2/authorize';
 const TOKEN_URL = DROPBOX_TOKEN_URL;
-const DOWNLOAD_URL = 'https://content.dropboxapi.com/2/files/download';
 const UPLOAD_URL = 'https://content.dropboxapi.com/2/files/upload';
 const LIST_FOLDER_URL = 'https://api.dropboxapi.com/2/files/list_folder';
 const LIST_FOLDER_CONTINUE_URL = 'https://api.dropboxapi.com/2/files/list_folder/continue';
@@ -163,15 +163,7 @@ export class DropboxAdapter implements StorageAdapter {
   }
 
   async readDocument(ref: string): Promise<Blob> {
-    const res = await fetch(DOWNLOAD_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${await this.accessToken()}`,
-        'Dropbox-API-Arg': JSON.stringify({ path: `/${ref}` }),
-      },
-    });
-    if (!res.ok) throw new StorageError(`Dropbox document read failed (${res.status}): ${ref}`);
-    return res.blob();
+    return new Blob([await dropboxDownload(await this.accessToken(), ref)]);
   }
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {

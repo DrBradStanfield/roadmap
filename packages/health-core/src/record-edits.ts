@@ -30,7 +30,7 @@ import { METRIC_LABELS, METRIC_TO_FIELD } from './mappings';
 import { dayOf, localDay } from './merge';
 import { createMeasurement, type FileLabValue, type FileMeasurement, type RoadmapFile } from './roadmap-file';
 import { resolveUnitSystem, toCanonicalValue, UNIT_DEFS, type MetricType } from './units';
-import { healthInputSchema, METRIC_TYPES } from './validation';
+import { healthInputSchema, type MeasurementSource, METRIC_TYPES } from './validation';
 
 /**
  * What the writer's clock means. `now` stamps the row; `latestDay` is the
@@ -60,6 +60,8 @@ export interface AppendMeasurementRequest extends EditContext {
   unit?: string;
   /** Clinical date, `YYYY-MM-DD` or a full timestamp. Defaults to `now`. */
   recordedAt?: string;
+  /** Who wrote it. `manual` unless the caller is an import (US-35: `lab_import`). */
+  source?: MeasurementSource;
 }
 
 export interface AppendLabValueRequest extends EditContext {
@@ -71,6 +73,7 @@ export interface AppendLabValueRequest extends EditContext {
   referenceLow?: number | null;
   referenceHigh?: number | null;
   recordedAt?: string;
+  source?: MeasurementSource;
 }
 
 export interface CorrectValueRequest extends EditContext {
@@ -94,6 +97,8 @@ export interface CorrectValueRequest extends EditContext {
    * caller is an agent that may have been talked into this.
    */
   expectedValue?: number;
+  /** Who corrected it. `manual_correction` unless an import replaced the row. */
+  source?: MeasurementSource;
 }
 
 export type EditRejectionReason =
@@ -212,6 +217,37 @@ export function stampUpdatedAt(file: RoadmapFile, now: string): RoadmapFile {
 }
 
 /**
+ * The active row holding one (metric, day) slot, or none. Rule 3's question,
+ * asked in one place: the two appends refuse on it, `bulkAppendValues` skips
+ * on it, and `import_documents` slots its candidates against it. A lab slot is
+ * keyed on the catalogue key, so "Gamma GT" and `ggt` are one slot.
+ */
+export function findActiveInSlot(file: RoadmapFile, kind: 'measurement', metric: string, day: string): FileMeasurement | undefined;
+export function findActiveInSlot(file: RoadmapFile, kind: 'lab', metric: string, day: string): FileLabValue | undefined;
+export function findActiveInSlot(file: RoadmapFile, kind: 'measurement' | 'lab', metric: string, day: string): FileMeasurement | FileLabValue | undefined {
+  const at = dayOf(day);
+  if (kind === 'measurement') {
+    return file.measurements.find((m) => m.status === 'active' && m.metricType === metric && dayOf(m.recordedAt ?? '') === at);
+  }
+  const key = labSlotKey(metric);
+  return file.labValues.find((l) => l.status === 'active' && labSlotKey(l.metricName) === key && dayOf(l.recordedAt ?? '') === at);
+}
+
+/**
+ * What a new value finds in its slot. Equality is on the DISPLAYED string —
+ * what a person would see — so float noise from a unit conversion never
+ * manufactures a conflict. The website's review table and the connector's
+ * `import_documents` both answer the question here, so they cannot disagree
+ * about what "already recorded" means (US-35 AC6).
+ */
+export type SlotState = 'free' | 'held_equal' | 'held_different';
+
+export function slotState(existingDisplay: string | undefined, candidateDisplay: string): SlotState {
+  if (existingDisplay === undefined) return 'free';
+  return existingDisplay === candidateDisplay ? 'held_equal' : 'held_different';
+}
+
+/**
  * Append one core-metric measurement. Rejects an occupied slot rather than
  * choosing for the caller: overwriting means correcting, and that is
  * `correctValue`'s decision to make explicit.
@@ -228,14 +264,12 @@ export function appendMeasurement(file: RoadmapFile, request: AppendMeasurementR
   const recordedAt = resolveRecordedAt(request.recordedAt, request);
   if (typeof recordedAt !== 'string') return recordedAt;
 
-  const taken = file.measurements.find(
-    (m) => m.status === 'active' && m.metricType === metricType && dayOf(m.recordedAt ?? '') === dayOf(recordedAt),
-  );
+  const taken = findActiveInSlot(file, 'measurement', metricType, recordedAt);
   if (taken) {
     return reject('slot-occupied', `${metricType} already has a value on ${dayOf(recordedAt)}`, taken);
   }
 
-  const row = createMeasurement({ id: newId(), metricType, value, recordedAt, createdAt: now });
+  const row = createMeasurement({ id: newId(), metricType, value, recordedAt, createdAt: now, ...(request.source ? { source: request.source } : null) });
   return { ok: true, file: withRow(file, 'measurements', [...file.measurements, row], now), row };
 }
 
@@ -266,9 +300,7 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
   const recordedAt = resolveRecordedAt(request.recordedAt, request);
   if (typeof recordedAt !== 'string') return recordedAt;
 
-  const taken = file.labValues.find(
-    (l) => l.status === 'active' && labSlotKey(l.metricName) === metricName && dayOf(l.recordedAt ?? '') === dayOf(recordedAt),
-  );
+  const taken = findActiveInSlot(file, 'lab', metricName, recordedAt);
   if (taken) {
     return reject('slot-occupied', `${metricName} already has a value on ${dayOf(recordedAt)}`, taken);
   }
@@ -276,7 +308,7 @@ export function appendLabValue(file: RoadmapFile, request: AppendLabValueRequest
   const row: FileLabValue = {
     id: newId(), metricName, value, unit: request.unit,
     referenceLow: request.referenceLow ?? null, referenceHigh: request.referenceHigh ?? null,
-    recordedAt, createdAt: now, source: 'manual', status: 'active', correctsId: null,
+    recordedAt, createdAt: now, source: request.source ?? 'manual', status: 'active', correctsId: null,
   };
   return { ok: true, file: withRow(file, 'labValues', [...file.labValues, row], now), row };
 }
@@ -315,7 +347,7 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
     const row = createMeasurement({
       id: newId(), metricType: measurement.metricType, value: newValue,
       recordedAt: measurement.recordedAt, createdAt: now,
-      source: 'manual_correction', correctsId: id,
+      source: request.source ?? 'manual_correction', correctsId: id,
     });
     const rows = file.measurements.map((m) => (m.id === id ? { ...m, status: 'entered-in-error' as const } : m));
     return { ok: true, file: withRow(file, 'measurements', [...rows, row], now), row };
@@ -327,8 +359,101 @@ export function correctValue(file: RoadmapFile, request: CorrectValueRequest): E
   const row: FileLabValue = {
     ...(lab as FileLabValue),
     id: newId(), value: request.newValue, createdAt: now,
-    source: 'manual_correction', status: 'active', correctsId: id,
+    source: request.source ?? 'manual_correction', status: 'active', correctsId: id,
   };
   const rows = file.labValues.map((l) => (l.id === id ? { ...l, status: 'entered-in-error' as const } : l));
   return { ok: true, file: withRow(file, 'labValues', [...rows, row], now), row };
+}
+
+// ---------------------------------------------------------------------------
+// A reviewed batch, written at once
+// ---------------------------------------------------------------------------
+
+/**
+ * One reviewed row on its way into the record. `correctsId` is set when the
+ * reviewer chose "Replace" on a slot another writer already holds — it turns
+ * the write into a FHIR correction instead of a skip. Values are already the
+ * stored number (SI for a measurement, the lab's own for a lab value) and the
+ * date is already the day the reviewer confirmed: this is the save behind a
+ * review step, not a fresh claim to validate.
+ */
+export type BulkRow =
+  | { kind: 'measurement'; metricType: string; value: number; recordedAt: string; source: MeasurementSource; correctsId?: string }
+  | {
+      kind: 'lab'; metricName: string; value: number; unit: string; referenceLow?: number | null; referenceHigh?: number | null;
+      recordedAt: string; source: MeasurementSource; correctsId?: string;
+    };
+
+export interface BulkAppendResult {
+  file: RoadmapFile;
+  saved: Array<FileMeasurement | FileLabValue>;
+  /** Rows that found their slot taken, or named a `correctsId` that was no longer the slot's active row. */
+  skippedDuplicates: number;
+}
+
+/**
+ * The website's bulk save and the connector's import commit, as one rule
+ * (US-35 AC8): a row naming `correctsId` supersedes that row only if it is
+ * STILL the active row in the same slot — a stale id (superseded on another
+ * device since review) is skipped, never appended, because two active rows in
+ * one slot must not exist; a row without one is skipped if the slot is taken,
+ * including by an earlier row of this batch. Rows are appended on their own
+ * `recordedAt`; a correction keeps the old row's date, as `correctValue` does.
+ */
+export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string): BulkAppendResult {
+  let measurements = file.measurements;
+  let labValues = file.labValues;
+  const saved: Array<FileMeasurement | FileLabValue> = [];
+  let skippedDuplicates = 0;
+  const slotOf = (row: { metricType: string; recordedAt: string } | { metricName: string; recordedAt: string }) =>
+    'metricType' in row ? `m:${row.metricType}@${dayOf(row.recordedAt)}` : `l:${labSlotKey(row.metricName)}@${dayOf(row.recordedAt)}`;
+  const taken = new Set([...measurements, ...labValues].filter((r) => r.status === 'active').map(slotOf));
+
+  for (const input of rows) {
+    const slot = slotOf(input);
+    if (input.correctsId) {
+      const old = input.kind === 'measurement'
+        ? measurements.find((m) => m.id === input.correctsId)
+        : labValues.find((l) => l.id === input.correctsId);
+      if (!old || old.status !== 'active' || slotOf(old) !== slot) { skippedDuplicates++; continue; }
+      const flipped = { ...old, status: 'entered-in-error' as const };
+      if (input.kind === 'measurement') {
+        const row = createMeasurement({
+          id: newId(), metricType: input.metricType, value: input.value,
+          recordedAt: old.recordedAt, createdAt: now, source: input.source, correctsId: old.id,
+        });
+        measurements = [...measurements.map((m) => (m.id === old.id ? flipped as FileMeasurement : m)), row];
+        saved.push(row);
+      } else {
+        const row: FileLabValue = {
+          id: newId(), metricName: input.metricName, value: input.value, unit: input.unit,
+          referenceLow: input.referenceLow ?? null, referenceHigh: input.referenceHigh ?? null,
+          recordedAt: old.recordedAt, createdAt: now, source: input.source, status: 'active', correctsId: old.id,
+        };
+        labValues = [...labValues.map((l) => (l.id === old.id ? flipped as FileLabValue : l)), row];
+        saved.push(row);
+      }
+      continue;
+    }
+    if (taken.has(slot)) { skippedDuplicates++; continue; }
+    taken.add(slot);
+    if (input.kind === 'measurement') {
+      const row = createMeasurement({
+        id: newId(), metricType: input.metricType, value: input.value,
+        recordedAt: input.recordedAt, createdAt: now, source: input.source,
+      });
+      measurements = [...measurements, row];
+      saved.push(row);
+    } else {
+      const row: FileLabValue = {
+        id: newId(), metricName: input.metricName, value: input.value, unit: input.unit,
+        referenceLow: input.referenceLow ?? null, referenceHigh: input.referenceHigh ?? null,
+        recordedAt: input.recordedAt, createdAt: now, source: input.source, status: 'active', correctsId: null,
+      };
+      labValues = [...labValues, row];
+      saved.push(row);
+    }
+  }
+  const next = saved.length ? stampUpdatedAt({ ...file, measurements, labValues }, now) : file;
+  return { file: next, saved, skippedDuplicates };
 }

@@ -21,6 +21,7 @@
  */
 import {
   buildDocumentRef,
+  bulkAppendValues,
   splitDocumentRef,
   classifyMedicationChange,
   classifySupplementChange,
@@ -30,7 +31,6 @@ import {
   diffInputsToMeasurements,
   fileProfileToApi,
   fileScreeningRows,
-  labSlotKey,
   latestActivePerMetric,
   localDay,
   measurementsToInputs,
@@ -45,7 +45,6 @@ import {
   type ApiScreening,
   type DocumentType,
   type FileDocument,
-  type FileLabValue,
   type FileMeasurement,
   type FileReminderOptIn,
   type FileSupplement,
@@ -393,23 +392,6 @@ export class RoadmapStore {
     return row;
   }
 
-  /** The lab-value twin of `supersedeMeasurement`: flip the old row and append
-   *  the replacement on the old row's own date with `correctsId`. Caller
-   *  touches. */
-  private supersedeLabValue(old: FileLabValue, value: BulkLabValueInput): FileLabValue {
-    old.status = 'entered-in-error';
-    const row: FileLabValue = {
-      id: newId(), metricName: value.metricName, value: value.value, unit: value.unit,
-      referenceLow: value.referenceLow ?? null, referenceHigh: value.referenceHigh ?? null,
-      recordedAt: old.recordedAt, // a correction keeps the original date
-      createdAt: new Date().toISOString(),
-      source: (value.source as MeasurementSource) ?? 'lab_import', status: 'active',
-      correctsId: old.id,
-    };
-    this.file.labValues.push(row);
-    return row;
-  }
-
   correctMeasurement(oldId: string, newValueSI: number): CorrectMeasurementResult {
     const old = this.file.measurements.find((m) => m.id === oldId);
     if (!old || old.status !== 'active') return { status: 'not_found' };
@@ -495,76 +477,29 @@ export class RoadmapStore {
     return true;
   }
 
+  /** The reviewed batch, written by health-core's one bulk rule (shared with
+   *  the connector's import, US-35 AC8): replace-on-`correctsId` only while
+   *  that row still holds the slot, skip a taken slot, never two actives. */
   bulkSaveMeasurements(measurements: BulkMeasurementInput[]): BulkSaveResult {
-    const saved: ApiMeasurement[] = [];
-    let skippedDuplicates = 0;
-    // One pass over the active rows: a Set of taken (metric, day) slots for
-    // dedup, and a Map by id for the correctsId lookups → O(N+M) either way.
-    const active = activeOnly(this.file.measurements);
-    const taken = new Set(active.map((m) => `${m.metricType}@${dayOf(m.recordedAt)}`));
-    const activeById = new Map(active.map((m) => [m.id, m]));
-    for (const m of measurements) {
-      const slot = `${m.metricType}@${dayOf(m.recordedAt)}`;
-      // `correctsId` = the reviewer chose "Replace" on an occupied slot.
-      // A stale id (superseded on another device since review) is skipped,
-      // never appended — two active rows in one slot must not exist.
-      if (m.correctsId) {
-        const old = activeById.get(m.correctsId);
-        if (!old || `${old.metricType}@${dayOf(old.recordedAt)}` !== slot) { skippedDuplicates++; continue; }
-        activeById.delete(m.correctsId); // superseded once: a second row naming it is stale, not a second active
-        saved.push(this.supersedeMeasurement(old, m.value, m.source) as ApiMeasurement);
-        continue;
-      }
-      if (taken.has(slot)) { skippedDuplicates++; continue; }
-      taken.add(slot);
-      const row = createMeasurement({
-        id: newId(), metricType: m.metricType, value: m.value,
-        recordedAt: m.recordedAt, createdAt: new Date().toISOString(), source: m.source,
-      });
-      this.file.measurements.push(row);
-      saved.push(row as ApiMeasurement);
-    }
-    if (saved.length) this.touch();
-    return { saved, skippedDuplicates, errorCount: 0 };
+    const result = bulkAppendValues(
+      this.file,
+      measurements.map((m) => ({ kind: 'measurement' as const, ...m })),
+      new Date().toISOString(),
+    );
+    this.file = result.file;
+    if (result.saved.length) this.touch();
+    return { saved: result.saved as ApiMeasurement[], skippedDuplicates: result.skippedDuplicates, errorCount: 0 };
   }
 
   bulkSaveLabValues(values: BulkLabValueInput[]): BulkLabValuesResult {
-    const saved: ApiLabValue[] = [];
-    let skippedDuplicates = 0;
-    // Slot on `labSlotKey` — the same key the merge uses — so spelling
-    // variants of one test ("Gamma GT" from an upload, "ggt" from manual add)
-    // dedup against each other.
-    const labSlot = (name: string, recordedAt: string) =>
-      `${labSlotKey(name)}@${dayOf(recordedAt)}`;
-    const active = activeOnly(this.file.labValues);
-    const taken = new Set(active.map((l) => labSlot(l.metricName, l.recordedAt)));
-    const activeById = new Map(active.map((l) => [l.id, l]));
-    for (const v of values) {
-      const slot = labSlot(v.metricName, v.recordedAt);
-      // Same replace-on-conflict rule as bulkSaveMeasurements: flip the old
-      // row, append with correctsId on the old row's date. A stale id is
-      // skipped, never appended.
-      if (v.correctsId) {
-        const old = activeById.get(v.correctsId);
-        if (!old || labSlot(old.metricName, old.recordedAt) !== slot) { skippedDuplicates++; continue; }
-        activeById.delete(v.correctsId);
-        saved.push(this.supersedeLabValue(old, v) as ApiLabValue);
-        continue;
-      }
-      if (taken.has(slot)) { skippedDuplicates++; continue; }
-      taken.add(slot);
-      const row: FileLabValue = {
-        id: newId(), metricName: v.metricName, value: v.value, unit: v.unit,
-        referenceLow: v.referenceLow ?? null, referenceHigh: v.referenceHigh ?? null,
-        recordedAt: v.recordedAt, createdAt: new Date().toISOString(),
-        source: (v.source as MeasurementSource) ?? 'lab_import', status: 'active',
-        correctsId: null,
-      };
-      this.file.labValues.push(row);
-      saved.push(row as ApiLabValue);
-    }
-    if (saved.length) this.touch();
-    return { saved, skippedDuplicates, errorCount: 0 };
+    const result = bulkAppendValues(
+      this.file,
+      values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' })),
+      new Date().toISOString(),
+    );
+    this.file = result.file;
+    if (result.saved.length) this.touch();
+    return { saved: result.saved as ApiLabValue[], skippedDuplicates: result.skippedDuplicates, errorCount: 0 };
   }
 
   /**

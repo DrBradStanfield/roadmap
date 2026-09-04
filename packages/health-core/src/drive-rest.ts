@@ -34,6 +34,7 @@ import {
   StorageError,
   type ReadResult,
   type StorageAdapter,
+  type StoredFile,
   type WriteResult,
 } from './adapter';
 
@@ -119,6 +120,26 @@ export async function driveCreateFolder(accessToken: string, name: string, paren
   const id = (await jsonBody<{ id?: string }>(res)).id;
   if (!id) throw new StorageError(`${PROVIDER} folder create returned no id.`);
   return id;
+}
+
+/**
+ * The app's own files whose name starts with `prefix` — the connector's
+ * pending imports (US-35 AC7). Drive has no folders in a name, so
+ * `imports/pending-x.json` is one flat name; `drive.file` already limits the
+ * answer to files this app created.
+ */
+export async function driveListByPrefix(accessToken: string, prefix: string): Promise<Array<{ id: string; name: string; modified: string }>> {
+  const q = encodeURIComponent(`name contains '${quoted(prefix)}' and trashed = false`);
+  const res = await request(`${DRIVE_API}/files?q=${q}&fields=files(id,name,modifiedTime)&pageSize=100`, { headers: auth(accessToken) });
+  if (!res.ok) await fail('list', res);
+  const files = (await jsonBody<{ files?: Array<{ id: string; name: string; modifiedTime?: string }> }>(res)).files ?? [];
+  return files.filter((f) => f.name.startsWith(prefix)).map((f) => ({ id: f.id, name: f.name, modified: f.modifiedTime ?? '' }));
+}
+
+/** Delete one file by id. Already gone (404) is not a failure. */
+export async function driveDelete(accessToken: string, fileId: string): Promise<void> {
+  const res = await request(`${DRIVE_API}/files/${encodeURIComponent(fileId)}`, { method: 'DELETE', headers: auth(accessToken) });
+  if (!res.ok && res.status !== 404) await fail('delete', res);
 }
 
 /** Create a file inside `parentId` — metadata and content in one multipart POST. */
@@ -269,6 +290,17 @@ export class DriveAdapter implements StorageAdapter {
 
   async writeDocument(): Promise<void> {
     throw new StorageError('The hosted server does not write uploaded documents.');
+  }
+
+  async list(folder: string): Promise<StoredFile[]> {
+    return (await driveListByPrefix(this.accessToken, `${folder}/`)).map(({ name, modified }) => ({ name, modified }));
+  }
+
+  async remove(fileName: string): Promise<void> {
+    const fileId = await this.findFile(fileName);
+    if (!fileId) return;
+    await driveDelete(this.accessToken, fileId);
+    this.fileIds.delete(fileName);
   }
 
   private async findFile(fileName: string): Promise<string | undefined> {

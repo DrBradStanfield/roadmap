@@ -154,6 +154,13 @@ export interface WriteResult {
   version: string;
 }
 
+/** One file as `list` names it: folder-relative name, and when it last changed. */
+export interface StoredFile {
+  name: string;
+  /** ISO 8601, or '' when the provider does not say. */
+  modified: string;
+}
+
 export interface StorageAdapter {
   readonly id: StorageBackendId;
   readonly label: string;
@@ -182,6 +189,17 @@ export interface StorageAdapter {
    * the atomic commit point and orphan blobs are harmless.
    */
   writeDocument(ref: string, bytes: Blob): Promise<void>;
+
+  /**
+   * OPTIONAL: the JSON files under one folder of the app's own space, and the
+   * removal of one of them. Only the connector's import needs either (US-35
+   * AC7): a pending import lives as `imports/pending-<id>.json` until the
+   * commit reads it and removes it, and an extract sweeps the stale ones.
+   * Documents and the record itself are never removed through this — the
+   * record's deletion is an `eraseEpoch` bump, a document's is a tombstone.
+   */
+  list?(folder: string): Promise<StoredFile[]>;
+  remove?(fileName: string): Promise<void>;
 
   /**
    * OPTIONAL synchronous last-ditch write, used only on tab-close /

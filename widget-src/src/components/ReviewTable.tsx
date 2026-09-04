@@ -13,6 +13,7 @@ import {
   isScreeningEligible,
   displayLabUnit,
   resolveLabCatalogEntry,
+  slotState,
 } from '@roadmap/health-core';
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
@@ -232,13 +233,13 @@ export function buildMatrixModel(
   /** Resolve an upload value against whatever already holds the cell:
    *  'skip' = leave the cell alone (equal value already saved, or an earlier
    *  file in this batch already claimed it); an ExistingCell = conflict;
-   *  undefined = free slot. Equality is compared on the DISPLAYED string —
-   *  what the user would see — so float noise never manufactures a conflict. */
+   *  undefined = free slot. What "equal" means is health-core's `slotState`,
+   *  shared with the connector's import (US-35 AC6). */
   const collide = (cellKey: string, display: string): ExistingCell | 'skip' | undefined => {
     const prev = cells.get(cellKey);
     if (!prev) return undefined;
     if (prev.state !== 'context') return 'skip';
-    return prev.displayValue === display ? 'skip' : { id: prev.id, display: prev.displayValue };
+    return slotState(prev.displayValue, display) === 'held_equal' ? 'skip' : { id: prev.id, display: prev.displayValue };
   };
 
   const addColumn = (dateKey: DateKey, date: FullDate, fileIndex: number | null) => {

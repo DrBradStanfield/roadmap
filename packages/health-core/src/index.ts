@@ -346,7 +346,7 @@ export {
 } from './sync-manager';
 export { ROADMAP_DOC } from './roadmap-doc';
 export { MemoryAdapter, MemoryCloud } from './memory-adapter';
-export { dropboxRead, dropboxWrite, DropboxAdapter, DROPBOX_TOKEN_URL } from './dropbox-rest';
+export { dropboxDownload, dropboxRead, dropboxWrite, DropboxAdapter, DROPBOX_TOKEN_URL } from './dropbox-rest';
 // Google Drive v3 as plain fetch calls: the folder/file discovery the browser
 // adapter and the hosted MCP server MUST agree on, plus the server's adapter.
 export {
@@ -366,3 +366,7 @@ export {
   GOOGLE_TOKEN_URL,
   GOOGLE_DRIVE_SCOPE,
 } from './drive-rest';
+
+// US-35: the slot rule and the bulk save the website and the connector share.
+export { bulkAppendValues, slotState, type BulkRow, type SlotState } from './record-edits';
+export { isImportableEntryName } from './lab-extraction';

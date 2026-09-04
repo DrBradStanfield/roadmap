@@ -155,3 +155,64 @@ describe('a rev-conditional write refuses to re-create a deleted record (US-32 A
     expect(describeStorageFailure(failure, 'The record in Dropbox').hint).toContain('Read the record again');
   });
 });
+
+// ---------------------------------------------------------------------------
+// US-35 AC2 — the folder listing and the download by id
+// ---------------------------------------------------------------------------
+import { dropboxDownload, dropboxListFolder } from './dropbox-rest';
+
+describe('US-35 AC2 — dropboxListFolder lists files only, and follows has_more', () => {
+  it('drops folders and deleted entries, keeps id/name/size/modified, continues on the cursor', async () => {
+    const calls: Array<{ url: string; body: unknown }> = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
+      calls.push({ url, body: JSON.parse(String(init.body)) });
+      if (url.endsWith('/list_folder')) {
+        return Response.json({
+          entries: [
+            { '.tag': 'file', id: 'id:one', name: 'labs.pdf', size: 1234, server_modified: '2026-09-01T00:00:00Z' },
+            { '.tag': 'folder', id: 'id:dir', name: 'Lab results' },
+            { '.tag': 'deleted', name: 'gone.pdf' },
+          ],
+          cursor: 'c1', has_more: true,
+        });
+      }
+      return Response.json({ entries: [{ '.tag': 'file', id: 'id:two', name: 'health.zip', size: 99 }], cursor: 'c2', has_more: false });
+    }));
+    const entries = await dropboxListFolder('token', '');
+    expect(entries).toEqual([
+      { id: 'id:one', name: 'labs.pdf', size: 1234, modified: '2026-09-01T00:00:00Z' },
+      { id: 'id:two', name: 'health.zip', size: 99, modified: '' },
+    ]);
+    expect(calls[0].body).toEqual({ path: '', recursive: false, include_deleted: false });
+    expect(calls[1].url).toContain('/list_folder/continue');
+    expect(calls[1].body).toEqual({ cursor: 'c1' });
+  });
+
+  it('lists a folder that does not exist as empty, and a subfolder by name', async () => {
+    const paths: unknown[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init: RequestInit) => {
+      paths.push(JSON.parse(String(init.body)).path);
+      return new Response('{"error_summary":"path/not_found/"}', { status: 409 });
+    }));
+    expect(await dropboxListFolder('token', 'imports')).toEqual([]);
+    expect(paths).toEqual(['/imports']);
+  });
+
+  it('downloads by listing id as is, and by folder-relative name with a leading slash', async () => {
+    const args: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init: RequestInit) => {
+      args.push((init.headers as Record<string, string>)['Dropbox-API-Arg']);
+      return new Response(new Uint8Array([37, 80, 68, 70]));
+    }));
+    expect([...(await dropboxDownload('token', 'id:one'))]).toEqual([37, 80, 68, 70]);
+    await dropboxDownload('token', 'Lab results/x.pdf');
+    expect(args.map((a) => JSON.parse(a).path)).toEqual(['id:one', '/Lab results/x.pdf']);
+  });
+
+  it('a download that is refused is a StorageError carrying the status, not a silent empty file', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('nope', { status: 409 })));
+    const failure = await dropboxDownload('token', 'id:missing').catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(StorageError);
+    expect((failure as StorageError).status).toBe(409);
+  });
+});

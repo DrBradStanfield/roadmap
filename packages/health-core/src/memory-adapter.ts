@@ -13,13 +13,14 @@ import {
   ConflictError,
   type ReadResult,
   type StorageAdapter,
+  type StoredFile,
   type WriteResult,
 } from './adapter';
 
 /** The shared "cloud" — one per simulated user, shared by their devices. */
 export class MemoryCloud {
   /** Serialized record files, keyed by file name. */
-  files = new Map<string, { json: string; version: number }>();
+  files = new Map<string, { json: string; version: number; modified?: string }>();
   docs = new Map<string, Blob>();
 }
 
@@ -65,5 +66,15 @@ export class MemoryAdapter implements StorageAdapter {
 
   async writeDocument(ref: string, bytes: Blob): Promise<void> {
     this.cloud.docs.set(ref, bytes);
+  }
+
+  async list(folder: string): Promise<StoredFile[]> {
+    const prefix = `${folder}/`;
+    return [...this.cloud.files].filter(([name]) => name.startsWith(prefix))
+      .map(([name, entry]) => ({ name, modified: entry.modified ?? '' }));
+  }
+
+  async remove(fileName: string): Promise<void> {
+    this.cloud.files.delete(fileName);
   }
 }
