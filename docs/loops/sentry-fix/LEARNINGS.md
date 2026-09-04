@@ -9,11 +9,13 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   residue, not a bug signal — react-router-serve runs the dev build in prod
   (see memory/project_react_router_serve_dev_build.md). Don't chase.
 - `[noise][widget]` Foreign-origin errors: drstanfield.com runs Horizon —
-  errors with frames only in theme assets are not ours; same for
-  native-frames-only unhandled rejections (in-app-browser injected scripts:
-  GSA/Facebook webviews) when the minified symbol greps to nothing in our
-  bundles — ledger-on-sight (confirmed 2026-08-25 "Ba`prod"; again 2026-09-03
-  "Ka`prod", GSA webview iOS 18.3.2).
+  errors with frames only in theme assets are not ours; same for injected
+  scripts (in-app-browser/TV-browser overlays) in either shape:
+  native-frames-only unhandled rejections, or onerror with a single
+  `<anonymous>` frame (our bundles always load from real CDN URLs). When the
+  minified symbol/pattern greps to nothing in our bundles — ledger-on-sight
+  (2026-08-25 "Ba`prod"; 2026-09-03 "Ka`prod", GSA webview; 2026-09-04
+  "n.data.split", Samsung Internet 7.0 on a Tizen smart TV).
 - `[prior][widget]` iOS WebKit-only layout/interaction bugs are a known class
   (CLAUDE.md list: content-box flex default, 280px input min-content, sticky
   in max-content parents). If a fix touches layout, the escape analysis should
