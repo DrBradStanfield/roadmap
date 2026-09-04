@@ -168,7 +168,7 @@ export async function extractLabResults(
  */
 export async function extractOrClassify(
   pages: PageContent[],
-  opts: { timeoutMs?: number; attempts?: number } = {},
+  opts: { timeoutMs?: number; attempts?: number; httpAttempts?: number } = {},
 ): Promise<UnifiedExtractionResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -183,7 +183,7 @@ export async function extractOrClassify(
   const attempts = opts.attempts ?? 2;
   for (let attempt = 1; ; attempt++) {
     try {
-      return await extractOrClassifyOnce(apiKey, content, opts.timeoutMs);
+      return await extractOrClassifyOnce(apiKey, content, opts.timeoutMs, opts.httpAttempts);
     } catch (error) {
       if (attempt >= attempts) throw error;
       await sleep(1000);
@@ -195,6 +195,7 @@ async function extractOrClassifyOnce(
   apiKey: string,
   content: Array<Record<string, unknown>>,
   timeoutMs?: number,
+  httpAttempts?: number,
 ): Promise<UnifiedExtractionResult> {
   const body = {
     model: EXTRACTION_MODEL,
@@ -203,7 +204,7 @@ async function extractOrClassifyOnce(
     messages: [{ role: 'user', content }],
   };
 
-  let responseText = await callAnthropic(apiKey, body, timeoutMs);
+  let responseText = await callAnthropic(apiKey, body, timeoutMs, httpAttempts);
 
   let parsed: ReturnType<typeof parseUnifiedResult>;
   try {
@@ -287,10 +288,11 @@ export function isNetworkOrTimeoutError(err: unknown): boolean {
   return err instanceof TypeError && err.message === 'fetch failed';
 }
 
+/** `maxAttempts` below the default turns the inner retry off for a caller whose own deadline cannot absorb it (US-35 AC5). */
 async function fetchAnthropicRaw(
-  apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000,
+  apiKey: string, body: Record<string, unknown>, timeoutMs = 60_000, maxAttempts = RETRY_MAX_ATTEMPTS,
 ): Promise<{ content: string; usage: AnthropicUsage; contentBlocks: AnthropicContentBlock[] }> {
-  for (let attempt = 1; attempt <= RETRY_MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -306,8 +308,8 @@ async function fetchAnthropicRaw(
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Unknown error');
 
-        if (RETRYABLE_STATUSES.has(response.status) && attempt < RETRY_MAX_ATTEMPTS) {
-          console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${RETRY_MAX_ATTEMPTS}, retrying after ${RETRY_DELAY_MS}ms`);
+        if (RETRYABLE_STATUSES.has(response.status) && attempt < maxAttempts) {
+          console.warn(`Anthropic API ${response.status} on attempt ${attempt}/${maxAttempts}, retrying after ${RETRY_DELAY_MS}ms`);
           await sleep(RETRY_DELAY_MS);
           continue;
         }
@@ -342,9 +344,9 @@ async function fetchAnthropicRaw(
         },
       };
     } catch (err) {
-      if (isNetworkOrTimeoutError(err) && attempt < RETRY_MAX_ATTEMPTS) {
+      if (isNetworkOrTimeoutError(err) && attempt < maxAttempts) {
         const e = err as Error;
-        console.warn(`Anthropic API ${e.name} on attempt ${attempt}/${RETRY_MAX_ATTEMPTS}: ${e.message} — retrying after ${RETRY_DELAY_MS}ms`);
+        console.warn(`Anthropic API ${e.name} on attempt ${attempt}/${maxAttempts}: ${e.message} — retrying after ${RETRY_DELAY_MS}ms`);
         await sleep(RETRY_DELAY_MS);
         continue;
       }
@@ -359,8 +361,8 @@ async function fetchAnthropicRaw(
 }
 
 /** Text-only wrapper — existing callers unchanged. */
-async function callAnthropic(apiKey: string, body: Record<string, unknown>, timeoutMs?: number): Promise<string> {
-  const result = await fetchAnthropicRaw(apiKey, body, timeoutMs);
+async function callAnthropic(apiKey: string, body: Record<string, unknown>, timeoutMs?: number, maxAttempts?: number): Promise<string> {
+  const result = await fetchAnthropicRaw(apiKey, body, timeoutMs, maxAttempts);
   return result.content;
 }
 

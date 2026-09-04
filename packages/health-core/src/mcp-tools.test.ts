@@ -918,6 +918,7 @@ import {
   importDocumentsOutput,
   isAlreadyImported,
   MAX_DOCUMENT_TEXT,
+  MAX_UNRECOGNIZED_LINES,
   prepareImport,
   type ExtractedFile,
   type ImportPayload,
@@ -1019,6 +1020,13 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(unrecognized[0]).toMatch(/^ldl: /);
     expect(unrecognized[1]).toMatch(/core metric/);
     expect(files.slice(1).map((f) => [f.status, f.reason])).toEqual([['failed', 'no_date'], ['failed', 'no_date'], ['failed', 'unreadable']]);
+  });
+
+  it('caps the unrecognized lines a call carries, so a noisy file cannot flood the answer (AC10)', () => {
+    const noisy = labReport({ unrecognized: Array.from({ length: 200 }, (_, i) => `line ${i}`) });
+    const { unrecognized } = prepareImport(base(), bundleOf([extracted('a.pdf', noisy), extracted('b.pdf', noisy)]), IMPORT_CTX);
+    expect(unrecognized).toHaveLength(MAX_UNRECOGNIZED_LINES);
+    expect(unrecognized[0]).toBe('line 0');
   });
 
   it('a document lands as metadata only: type, bounded title, date — never its text or metadata (AC9)', () => {
@@ -1130,6 +1138,24 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     const outcome = importDocumentsCommit(file, payloadFor(file, [extracted('new.pdf', labReport())]), { receipt: 'r', accept: [], replace: [] }, NOW);
     expect(outcome).toMatchObject({ status: 'ok', text: expect.stringContaining('Nothing was selected') });
     expect(outcome.status === 'ok' && outcome.file).toBeUndefined();
+  });
+
+  it('AC8 — a document-only payload is filed by a commit with no candidates to select', () => {
+    // A clinic letter yields zero candidates; the only commit possible is an
+    // empty selection, and it must still land the document row.
+    const file = base();
+    const payload = payloadFor(file, [letter('Discharge summary')]);
+    expect(payload.candidates).toHaveLength(0);
+    expect(payload.documents).toHaveLength(1);
+    const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: [], replace: [] }, NOW);
+    expect(outcome.status).toBe('ok');
+    expect(outcome.status === 'ok' && outcome.file!.documents).toHaveLength(1);
+    expect(outcome.status === 'ok' && outcome.file!.documents[0]).toMatchObject({ title: 'Discharge summary', fileRef: '', contentHash: 'sha256-abc', metadata: { importedVia: 'connector' } });
+    expect((outcome as { data: { written: { documents: number } } }).data.written).toEqual({ measurements: 0, labValues: 0, corrections: 0, documents: 1 });
+    // Already filed: the same commit again writes nothing and says so.
+    const again = importDocumentsCommit(outcome.status === 'ok' ? outcome.file! : file, payload, { receipt: 'r', accept: [], replace: [] }, NOW);
+    expect(again).toMatchObject({ status: 'ok', text: expect.stringContaining('Nothing was selected') });
+    expect(again.status === 'ok' && again.file).toBeUndefined();
   });
 
   it('a document the record already holds by name or bytes is not filed twice', () => {

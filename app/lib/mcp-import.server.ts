@@ -89,7 +89,7 @@ function chatgptFileHosts(): Set<string> {
 // Test seam — the model call
 // ---------------------------------------------------------------------------
 
-type Extractor = (pages: PageContent[], opts: { timeoutMs: number; attempts: number }) => Promise<UnifiedExtractionResult>;
+type Extractor = (pages: PageContent[], opts: { timeoutMs: number; attempts: number; httpAttempts: number }) => Promise<UnifiedExtractionResult>;
 
 let extract: Extractor = extractOrClassify;
 
@@ -255,6 +255,23 @@ interface ReceiptClaims {
 function pendingName(id: string): string {
   return `${PENDING_FOLDER}/pending-${id}.json`;
 }
+/** The sweep's own files, by name: never another file the user keeps in the folder. */
+const PENDING_NAME = /(^|\/)pending-[^/]+\.json$/;
+
+/**
+ * A promise, or a timeout, whichever comes first — the adapter's own bound
+ * (30 s) sits outside the budget arithmetic, so a listing or a download that
+ * hangs is abandoned at the deadline and the call still answers (AC10). The
+ * abandoned call runs on to the adapter's bound; its rejection is swallowed.
+ */
+function withinDeadline<T>(work: Promise<T>, deadline: number): Promise<T> {
+  const left = deadline - Date.now();
+  if (left <= 0) return Promise.reject(new Error('deadline'));
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('deadline')), left);
+    work.then((value) => { clearTimeout(timer); resolve(value); }, (error) => { clearTimeout(timer); reject(error); });
+  });
+}
 
 /** A `crypto.randomUUID()` and nothing else — the only id that may name a pending file. (`route-helpers`' `isValidUuid` sits behind the Shopify session store, which this layer must not load.) */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -302,6 +319,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
     if (!adapter.list || !adapter.remove) return;
     try {
       for (const stale of await adapter.list(PENDING_FOLDER)) {
+        if (!PENDING_NAME.test(stale.name)) continue;
         const at = Date.parse(stale.modified);
         if (Number.isFinite(at) && nowMs - at > PENDING_STALE_MS) await adapter.remove(stale.name);
       }
@@ -335,7 +353,14 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
           return { refusal: driveRefusal(client) };
         }
         route = 'dropbox';
-        const listing = (await adapter.list(''))
+        let listed: Awaited<ReturnType<NonNullable<StorageAdapter['list']>>>;
+        try {
+          listed = await withinDeadline(adapter.list(''), deadline);
+        } catch (error) {
+          if (!(error instanceof Error && error.message === 'deadline')) throw error;
+          return { refusal: 'The folder did not list in time, so nothing was read. Try once more.' };
+        }
+        const listing = listed
           .map((entry) => ({ ...entry, name: cleanName(entry.name) }))
           .filter((entry) => isImportableEntryName(entry.name, [...IMPORTABLE_EXTENSIONS, '.zip']))
           .sort((a, b) => a.name.localeCompare(b.name));
@@ -372,7 +397,8 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         const content = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString('base64');
         const pages: PageContent[] = mimeType === 'application/pdf' ? [{ type: 'pdf', content }] : [{ type: 'image', content, mimeType }];
         try {
-          return { ...base, status: 'extracted', result: await extract(pages, { timeoutMs: Math.min(EXTRACT_TIMEOUT_MS, left), attempts: 1 }) };
+          // One HTTP attempt, inside what is left: no retry, inner or outer, can run past the deadline.
+          return { ...base, status: 'extracted', result: await extract(pages, { timeoutMs: Math.min(EXTRACT_TIMEOUT_MS, left), attempts: 1, httpAttempts: 1 }) };
         } catch (error) {
           const reason = failureReason(error);
           if (reason === 'unreadable') {
@@ -399,9 +425,10 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         }
         let bytes: Uint8Array;
         try {
-          bytes = await unit.fetch();
-        } catch {
-          results[i] = fail(unit.name, 'failed', 'unreadable');
+          bytes = await withinDeadline(unit.fetch(), deadline);
+        } catch (error) {
+          const timedOut = error instanceof Error && error.message === 'deadline';
+          results[i] = timedOut ? fail(unit.name, 'skipped', 'time') : fail(unit.name, 'failed', 'unreadable');
           return;
         }
         const mimeType = sniff(bytes);
@@ -471,6 +498,10 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       if (payload.id !== claims.id || !Array.isArray(payload.candidates) || !Array.isArray(payload.documents)) {
         return { refusal: 'The pending import is not readable. Nothing was written. Extract again.' };
       }
+      // Ids checked before the charge: a replace list of invented ids must not spend the hour.
+      const ids = new Set(payload.candidates.map((c) => c.id));
+      const unknown = [...commit.accept, ...commit.replace].find((id) => !ids.has(id));
+      if (unknown !== undefined) return { refusal: `${oneLine(unknown)} is not a candidate in this receipt. Nothing was written.` };
       const refusal = chargeWrites(connection, WRITE_COST.add + WRITE_COST.correct * commit.replace.length);
       if (refusal) return { refusal };
       count(payload.route, 'commit', new Set(payload.candidates.map((c) => c.sourceFileName)).size + payload.documents.length);

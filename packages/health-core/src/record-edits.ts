@@ -423,9 +423,9 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
   const saved: Array<FileMeasurement | FileLabValue> = [];
   let skippedDuplicates = 0;
   const taken = new Set(slotIndex(file).keys());
-  const at = new Map<string, number>();
-  measurements.forEach((m, i) => at.set(m.id, i));
-  labValues.forEach((l, i) => at.set(l.id, i));
+  // One index per list: a `correctsId` of the other kind must miss, not land on that list's row at the same position.
+  const atMeasurement = new Map(measurements.map((m, i) => [m.id, i]));
+  const atLab = new Map(labValues.map((l, i) => [l.id, i]));
 
   const makeRow = (input: BulkRow, recordedAt: string, correctsId: string | null) => input.kind === 'measurement'
     ? createMeasurement({ id: newId(), metricType: input.metricType, value: input.value, recordedAt, createdAt: now, source: input.source, correctsId })
@@ -439,7 +439,7 @@ export function bulkAppendValues(file: RoadmapFile, rows: BulkRow[], now: string
     const slot = input.kind === 'measurement' ? slotKey('measurement', input.metricType, input.recordedAt) : slotKey('lab', input.metricName, input.recordedAt);
     const list: Array<FileMeasurement | FileLabValue> = input.kind === 'measurement' ? measurements : labValues;
     if (input.correctsId) {
-      const index = at.get(input.correctsId);
+      const index = (input.kind === 'measurement' ? atMeasurement : atLab).get(input.correctsId);
       const old = index === undefined ? undefined : list[index];
       if (!old || old.status !== 'active' || slotOfRow(old) !== slot) { skippedDuplicates++; continue; }
       list[index!] = { ...old, status: 'entered-in-error' };

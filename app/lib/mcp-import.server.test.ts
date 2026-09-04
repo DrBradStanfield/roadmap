@@ -15,11 +15,13 @@ import {
   hostedImporter,
   MAX_IMPORT_FILE_BYTES,
   MAX_IMPORT_ZIP_BYTES,
+  MCP_IMPORT_BUDGET_MS,
+  setImportSeams,
   sniff,
   unzip,
 } from './mcp-import.server';
 import { resourceUrl } from './mcp-config.server';
-import { connectionKey, resetMcpMemory } from './mcp-grants.server';
+import { chargeWrites, connectionKey, resetMcpMemory, WRITES_PER_HOUR } from './mcp-grants.server';
 import { hash, seal } from './mcp-seal.server';
 import { type ImportPayload, MAX_IMPORT_FILES_PER_CALL, MAX_RECEIPT_LENGTH } from '../../packages/health-core/src/mcp-tools';
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
@@ -198,6 +200,16 @@ describe('US-35 AC7 — the receipt names the payload and binds it to one connec
     expect(await refusalOf(surface, receipt)).toMatch(/does not match/);
   });
 
+  it('refuses an id the receipt does not carry BEFORE charging, so bogus replace ids cost nothing (AC10)', async () => {
+    const surface = surfaceFor('connection-a');
+    const { receipt } = await stashed(surface);
+    const bogus = Array.from({ length: 300 }, (_, i) => `x${i}`);
+    const answer = await surface.open({ receipt, accept: [], replace: bogus }, file, NOW);
+    expect('refusal' in answer && answer.refusal).toMatch(/not a candidate/);
+    // The whole hourly allowance is still there.
+    expect(chargeWrites(connectionKey('connection-a'), WRITES_PER_HOUR)).toBeNull();
+  });
+
   it('survives a key rotation: a receipt sealed under the previous key still opens', async () => {
     const surface = surfaceFor('connection-a');
     const { receipt } = await stashed(surface);
@@ -205,5 +217,43 @@ describe('US-35 AC7 — the receipt names the payload and binds it to one connec
     expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW)).toEqual(PAYLOAD);
     process.env.MCP_SEAL_KEYS = Buffer.alloc(32, 8).toString('base64');
     expect(await refusalOf(surface, receipt)).toMatch(/not valid/);
+  });
+});
+
+describe('US-35 AC5/AC10 — the budget bounds a hung download and forbids the model call an inner retry', () => {
+  const NOW = '2026-09-02T10:00:00.000Z';
+  const file = createEmptyFile({ deviceId: 'test', now: NOW });
+
+  beforeEach(() => { resetMcpMemory(); vi.useFakeTimers(); vi.setSystemTime(new Date(NOW)); });
+  afterEach(() => { vi.useRealTimers(); setImportSeams(null); });
+
+  it('a download that never answers is skipped for time once the deadline passes; the call still returns', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('labs.pdf', new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d])]));
+    const adapter = new MemoryAdapter(cloud);
+    adapter.readDocument = () => new Promise(() => {});
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter, client: 'claude', maxCorrectionAgeDays: 90 });
+    const seam = vi.fn();
+    setImportSeams({ extract: seam });
+    const pending = surface.extract({}, file, NOW);
+    await vi.advanceTimersByTimeAsync(MCP_IMPORT_BUDGET_MS);
+    const bundle = await pending;
+    expect('files' in bundle && bundle.files).toEqual([{ name: 'labs.pdf', status: 'skipped', reason: 'time' }]);
+    expect(seam).not.toHaveBeenCalled();
+  });
+
+  it('hands the model call what is left of the budget and no inner HTTP retry', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('labs.pdf', new Blob([new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d])]));
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90 });
+    const seen: Array<{ timeoutMs: number; attempts: number; httpAttempts: number }> = [];
+    setImportSeams({ extract: async (_pages, opts) => {
+      seen.push(opts);
+      return { classification: 'other', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null };
+    } });
+    await surface.extract({}, file, NOW);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toMatchObject({ attempts: 1, httpAttempts: 1 });
+    expect(seen[0].timeoutMs).toBeLessThanOrEqual(MCP_IMPORT_BUDGET_MS);
   });
 });

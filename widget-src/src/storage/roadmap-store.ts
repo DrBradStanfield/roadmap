@@ -526,14 +526,12 @@ export class RoadmapStore {
 
     // Phase 1 (serial, order-dependent): dedup by hash, assign collision-safe
     // refs, build the metadata rows.
-    const writes: Array<{ doc: FileDocument; ref: string; file: Blob; hash: string }> = [];
+    const writes: Array<{ doc: FileDocument; ref: string; file: Blob; hash: string; supersedes?: FileDocument }> = [];
     for (const d of documents) {
       const hash = d.file ? await sha256Blob(d.file) : null;
       if (hash) {
         if (archived.has(hash)) continue; // identical original already archived
         archived.add(hash);
-        const superseded = metadataOnly.get(hash);
-        if (superseded) superseded.deleted = true; // the connector's metadata-only row, now archived by this upload
       }
       const doc: FileDocument = {
         id: newId(), title: d.title, type: d.documentType as DocumentType, date: d.documentDate,
@@ -549,7 +547,9 @@ export class RoadmapStore {
           existingRefs,
         });
         existingRefs.add(ref);
-        writes.push({ doc, ref, file: d.file, hash: hash! });
+        // The connector's metadata-only row for these bytes is tombstoned only
+        // once the blob lands: a failed write must not lose the hash key.
+        writes.push({ doc, ref, file: d.file, hash: hash!, supersedes: metadataOnly.get(hash!) });
       }
       out.push(doc);
     }
@@ -559,12 +559,13 @@ export class RoadmapStore {
     // each folder still runs alone (concurrent find-or-create of the same new
     // folder would create duplicates); the rest pool. A failed write degrades
     // to metadata-only, as before.
-    const writeOne = async (w: { doc: FileDocument; ref: string; file: Blob; hash: string }) => {
+    const writeOne = async (w: (typeof writes)[number]) => {
       try {
         await this.adapter.writeDocument(w.ref, w.file);
         w.doc.fileRef = w.ref;
         w.doc.contentHash = w.hash;
         w.doc.mimeType = w.file.type || '';
+        if (w.supersedes) w.supersedes.deleted = true;
       } catch (error) {
         console.warn(`Document file not stored (${w.ref})`, error);
         Sentry.captureException(error, {

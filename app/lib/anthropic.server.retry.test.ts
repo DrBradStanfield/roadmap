@@ -172,3 +172,25 @@ describe('US-12: extractOrClassify outer retry (extractOrClassifyOnce failure �
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 });
+
+describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request on a timeout', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+  afterEach(() => { global.fetch = REAL_FETCH; });
+
+  it('throws the TimeoutError after a single fetch, so a hung call cannot run past the import budget', async () => {
+    const timeout = new DOMException('signal timed out', 'TimeoutError');
+    const fetchMock = vi.fn().mockRejectedValue(timeout);
+    global.fetch = fetchMock as unknown as typeof fetch;
+    await expect(extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 100, attempts: 1, httpAttempts: 1 })).rejects.toBe(timeout);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the inner retry by default — the website path is unchanged', async () => {
+    const fetchMock = vi.fn()
+      .mockRejectedValueOnce(new DOMException('signal timed out', 'TimeoutError'))
+      .mockResolvedValueOnce(anthropicMessage(validUnifiedJson));
+    global.fetch = fetchMock as unknown as typeof fetch;
+    await extractOrClassify([{ type: 'text', content: 'x' }], { attempts: 1 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});

@@ -523,6 +523,18 @@ describe('US-35 AC8 — bulkAppendValues is the review table’s save, as one pu
     expect(inactive.saved).toHaveLength(0);
   });
 
+  it('a correctsId of the other kind is skipped, never resolved against the wrong list (US-35 AC8)', () => {
+    // m1 is measurements[0]; a lab row naming it must not flip labValues[0].
+    const crossed = bulkAppendValues(base(), [
+      { kind: 'lab', metricName: 'ferritin', value: 190, unit: 'ug/L', recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'm1' },
+      { kind: 'measurement', metricType: 'ldl', value: 3.0, recordedAt: '2026-07-14', source: 'lab_import', correctsId: 'l1' },
+    ], NOW);
+    expect(crossed.saved).toHaveLength(0);
+    expect(crossed.skippedDuplicates).toBe(2);
+    expect(crossed.file.labValues.every((l) => l.status === 'active')).toBe(true);
+    expect(crossed.file.measurements.every((m) => m.status === 'active')).toBe(true);
+  });
+
   it('writes nothing and keeps the clock when every row is skipped', () => {
     const file = base();
     const result = bulkAppendValues(file, [

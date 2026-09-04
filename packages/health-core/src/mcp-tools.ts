@@ -52,6 +52,8 @@ export const MAX_LAB_ROWS_PER_CALL = 50;
  * write megabytes of a string into a record that has to be read back whole.
  */
 export const MAX_NAME_LENGTH = 120;
+/** Unrecognized lines one extract answers with; the model's output cap would otherwise bound them at ~30 KB. */
+export const MAX_UNRECOGNIZED_LINES = 50;
 export const MAX_ID_LENGTH = 100;
 
 /**
@@ -999,7 +1001,7 @@ export function prepareImport(
   }
 
   const payload: ImportPayload = { id: ctx.payloadId, route: bundle.route, createdAt: ctx.now, candidates, documents };
-  return { payload, files, unrecognized };
+  return { payload, files, unrecognized: unrecognized.slice(0, MAX_UNRECOGNIZED_LINES) };
 }
 
 /**
@@ -1059,8 +1061,18 @@ export function importDocumentsCommit(
         });
   }
 
+  // Documents need no selection: a clinic letter yields no candidates, and
+  // the only commit it can get is an empty one. The no-op is "nothing chosen
+  // AND nothing left to file".
+  const docs: FileDocument[] = payload.documents
+    .filter((d) => !isAlreadyImported(file, d.sourceFileName, d.contentHash))
+    .map((d) => ({
+      id: crypto.randomUUID(), title: d.title, type: d.type, date: d.date,
+      fileRef: '', contentHash: d.contentHash, mimeType: d.mimeType, extractedText: '', addedAt: now,
+      metadata: { importedVia: 'connector' }, sourceFileName: d.sourceFileName,
+    }));
   const base = { phase: 'committed' as const, route: payload.route, files: [], candidates: [], unrecognized: [], remaining: [] };
-  if (chosen.size === 0) {
+  if (chosen.size === 0 && docs.length === 0) {
     return {
       status: 'ok',
       text: 'Nothing was selected, so nothing was written and the record is unchanged.',
@@ -1070,14 +1082,6 @@ export function importDocumentsCommit(
 
   const applied = bulkAppendValues(file, rows, now);
   if (applied.skippedDuplicates > 0) throw new ToolContractError('import commit skipped a row its own slot check accepted');
-
-  const docs: FileDocument[] = payload.documents
-    .filter((d) => !isAlreadyImported(applied.file, d.sourceFileName, d.contentHash))
-    .map((d) => ({
-      id: crypto.randomUUID(), title: d.title, type: d.type, date: d.date,
-      fileRef: '', contentHash: d.contentHash, mimeType: d.mimeType, extractedText: '', addedAt: now,
-      metadata: { importedVia: 'connector' }, sourceFileName: d.sourceFileName,
-    }));
   const next = docs.length ? stampUpdatedAt({ ...applied.file, documents: [...applied.file.documents, ...docs] }, now) : applied.file;
 
   const written = {

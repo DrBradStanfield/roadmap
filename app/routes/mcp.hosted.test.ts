@@ -1167,7 +1167,7 @@ function stubImport(files: Record<string, Uint8Array>, answer: (name: string) =>
 }
 
 function pendingFiles(): string[] {
-  return [...cloud.files.keys()].filter((name) => name.startsWith('imports/'));
+  return [...cloud.files.keys()].filter((name) => name.startsWith('imports/pending-'));
 }
 
 describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, AC9, AC10)', () => {
@@ -1183,6 +1183,8 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     const extracted = stubImport({ 'labs.pdf': PDF_BYTES, 'notes.txt': new Uint8Array(1) }, () => labReport());
     // A pending payload older than a day, left by an extract whose commit never came, is swept by this one.
     cloud.files.set('imports/pending-stale.json', { json: '{}', version: 1, modified: '2026-08-01T00:00:00.000Z' });
+    // The sweep owns only its own pending files: a user's own file in the folder, however old, stays.
+    cloud.files.set('imports/notes.json', { json: '{}', version: 1, modified: '2026-08-01T00:00:00.000Z' });
     const versionBefore = cloud.files.get(ROADMAP_FILE_NAME)!.version;
     const extract = await callTool(access, 'import_documents', {});
     expect(extract.isError).toBe(false);
@@ -1193,6 +1195,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(data.receipt!.length).toBeLessThan(MAX_RECEIPT_LENGTH);
     // The record was read, not written; the payload is parked in the user's folder, the stale one is gone.
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(versionBefore);
+    expect(cloud.files.has('imports/notes.json')).toBe(true);
     expect(pendingFiles()).toHaveLength(1);
     expect(pendingFiles()[0]).toMatch(/^imports\/pending-[0-9a-f-]{36}\.json$/);
 
