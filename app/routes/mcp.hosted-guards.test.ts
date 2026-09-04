@@ -5,7 +5,7 @@
  * `mcp.hosted.test.ts` proves the chain works. This file proves the refusals
  * refuse for the reason they claim: a mismatch refusal is distinguishable from
  * an outage, it teaches a guessing agent nothing, the 50-row cap is 50 and not
- * 1, a malformed body is a 400, and the tool list is the seven tools by NAME —
+ * 1, a malformed body is a 400, and the tool list is the eight tools by NAME —
  * a length assertion cannot see a tool being renamed or swapped.
  *
  * The harness is the same shape as `mcp.hosted.test.ts`'s: real Requests
@@ -30,13 +30,13 @@ const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('
 const NOW = '2026-09-02T10:00:00.000Z';
 
 /**
- * The seven tools, spelled out. Written by hand on purpose: comparing the
+ * The eight tools, spelled out. Written by hand on purpose: comparing the
  * server's list to `MCP_TOOLS` proves only that the server echoes itself, and
  * every doc, guide and consent screen in the repo counts to this list (D4–D9).
  */
-const SEVEN_TOOLS = [
+const EIGHT_TOOLS = [
   'read_record', 'get_plan', 'add_measurement', 'add_lab_values',
-  'correct_value', 'update_profile', 'report_feedback',
+  'correct_value', 'update_profile', 'report_feedback', 'import_documents',
 ];
 
 let cloud: MemoryCloud;
@@ -157,11 +157,11 @@ function storedRecord(): RoadmapFile {
 
 // ---------------------------------------------------------------------------
 
-describe('the tool list is seven tools, by name (US-32 AC1)', () => {
-  it('offers exactly the seven named tools, in order', async () => {
+describe('the tool list is eight tools, by name (US-32 AC1, US-35 AC12)', () => {
+  it('offers exactly the eight named tools, in order', async () => {
     seedEmpty();
     const listed = await rpc(await connect(), 'tools/list');
-    expect(listed.result!.tools!.map((t) => t.name)).toEqual(SEVEN_TOOLS);
+    expect(listed.result!.tools!.map((t) => t.name)).toEqual(EIGHT_TOOLS);
   });
 });
 

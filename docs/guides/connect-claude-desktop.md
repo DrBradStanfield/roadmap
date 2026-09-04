@@ -28,6 +28,8 @@ Change four things about you. Your sex, your birth year, your birth month and yo
 
 Report a problem. If a tool refuses something you reasonably expected, ask Claude to report it. The program on your computer holds no key to anything, so it cannot file anything itself: it hands you a prefilled link to a public issue on the project's GitHub, carrying its description of the problem and nothing about you. Nothing is filed until you open that link and press the button. (The hosted connectors, Claude on the web and ChatGPT, do file it themselves. Their guides say so.)
 
+Import lab files. This one is hosted-only, over Dropbox: the local program you run here has no model and no network, so it lists the tool and refuses it, pointing you at the website's upload or the hosted connector instead.
+
 The file stays where it is. Nothing is uploaded, no account is created, no key is needed. The program opens no network connection at all: it reads your file, changes it, and writes it back.
 
 One thing is held back on purpose. If you use email reminders, your record carries a token that manages that schedule on our server. It is stripped out of every read, so it can never end up in a chat transcript.
@@ -119,6 +121,8 @@ https://mcp.drstanfield.com/mcp
 4. In a chat, open the + menu, switch Health by Dr Brad on, and say "read my record".
 
 The hosted version is append-only, like this one, with two extra limits: a correction on a row older than 90 days is refused, and Claude has to state the value it believes it is replacing, so a correction written from a stale read changes nothing.
+
+It can also import lab files, but only from a connected Dropbox: ask it to import the lab files in your Dropbox folder and it reads the PDFs and images sitting there, showing you candidates before anything is saved. Claude has no way to take a file you drag into the conversation, so on a Google Drive connection there is no import route at all — use the website's own upload instead. The file you import goes through our server to Anthropic's API for extraction and is kept nowhere, a different path from the website's upload, which reads the PDF in your browser and sends only the extracted text to our server.
 
 You cancel it at [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps). That also disconnects this website from the folder, and reconnecting in the tool is one click. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing, and how to disconnect.
 

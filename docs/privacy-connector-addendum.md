@@ -16,6 +16,12 @@ question, our server at `mcp.drstanfield.com` opens that file from your cloud, a
 the one request, and drops it. The file's contents exist in server memory for the
 length of that request and nowhere else.
 
+If you ask your assistant to import a lab file, that file — not your record — is held
+in server memory for one request and sent to Anthropic's API for extraction, then kept
+nowhere. The candidate values it finds are written to YOUR folder, as
+`imports/pending-<id>.json`, until you confirm them or an hour passes, whichever comes
+first.
+
 ## What we store
 
 No account, no health data, and no row that identifies you. The server holds no
@@ -70,6 +76,8 @@ because both use the same app identity. You can reconnect in one click.
 - **Your AI vendor** (OpenAI or Anthropic, whichever you chose). Your questions and the
   answers pass through them under their own privacy policy. We do not choose them for
   you.
+- **Anthropic, again, only when you import a file through the connector.** The file
+  goes to their API for extraction, under our key and not yours, and is not kept there.
 - **Dropbox or Google.** Your storage, under your own account.
 - **Fly.io**, who run our server. It runs in Ashburn, Virginia, United States.
 - **Sentry**, for error reports, scrubbed as described above.

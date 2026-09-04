@@ -160,14 +160,20 @@ export async function extractLabResults(
 /**
  * Unified extraction: classifies the document and either extracts lab values
  * or converts to markdown + metadata, in a single LLM call.
+ *
+ * `timeoutMs` bounds each HTTP call and turns the outer retry off: the
+ * connector's import (US-35 AC10) runs inside a 40 s tool-call budget, where
+ * a second full attempt cannot fit and a hung call must fail fast.
  */
 export async function extractOrClassify(
   pages: PageContent[],
+  opts: { timeoutMs?: number } = {},
 ): Promise<UnifiedExtractionResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
 
   const content = pagesToContentBlocks(pages);
+  if (opts.timeoutMs) return extractOrClassifyOnce(apiKey, content, opts.timeoutMs);
 
   // One retry (2 attempts total) with 1s backoff. Catches schema-drift
   // failures (the LLM returned 200 but the JSON didn't match our shape) and
@@ -186,6 +192,7 @@ export async function extractOrClassify(
 async function extractOrClassifyOnce(
   apiKey: string,
   content: Array<Record<string, unknown>>,
+  timeoutMs?: number,
 ): Promise<UnifiedExtractionResult> {
   const body = {
     model: EXTRACTION_MODEL,
@@ -194,7 +201,7 @@ async function extractOrClassifyOnce(
     messages: [{ role: 'user', content }],
   };
 
-  let responseText = await callAnthropic(apiKey, body);
+  let responseText = await callAnthropic(apiKey, body, timeoutMs);
 
   let parsed: ReturnType<typeof parseUnifiedResult>;
   try {
@@ -208,7 +215,7 @@ async function extractOrClassifyOnce(
         { role: 'assistant', content: [{ type: 'text', text: '{' }] },
       ],
     };
-    responseText = await callAnthropic(apiKey, retryBody);
+    responseText = await callAnthropic(apiKey, retryBody, timeoutMs);
     parsed = parseUnifiedResult(JSON.parse(extractJsonObject('{' + responseText)));
   }
 
@@ -350,8 +357,8 @@ async function fetchAnthropicRaw(
 }
 
 /** Text-only wrapper — existing callers unchanged. */
-async function callAnthropic(apiKey: string, body: Record<string, unknown>): Promise<string> {
-  const result = await fetchAnthropicRaw(apiKey, body);
+async function callAnthropic(apiKey: string, body: Record<string, unknown>, timeoutMs?: number): Promise<string> {
+  const result = await fetchAnthropicRaw(apiKey, body, timeoutMs);
   return result.content;
 }
 

@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/react-router';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
 import { extractOrClassify, createBatch, pollBatch } from '../lib/anthropic.server';
 import { createQuotaCounter } from '../lib/rate-limiter';
+import { consumeMachineFiles } from '../lib/lab-import-quota.server';
 import { getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
 
 /**
@@ -21,33 +22,22 @@ import { getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '..
  *
  * Cost control (no identity to meter per-user):
  *  - per-IP daily file limit (anti-abuse, mirrors v1's per-customer limit)
- *  - a HARD per-machine daily file cap as the $-cap guardrail. In-memory, so
- *    the true global cap ≈ cap × machine count and resets on deploy — an
- *    accepted approximation until a shared counter is worth its DDL. Tune via
+ *  - a HARD per-machine daily file cap as the $-cap guardrail, shared with the
+ *    connector's import (`lab-import-quota.server.ts`, US-35 AC10). Tune via
  *    AI_DAILY_FILE_CAP (default 500/day/machine ≈ low tens of $ worst case).
  */
 
 const PER_IP_DAILY_LIMIT = 60;
-const MACHINE_DAILY_CAP = Number(process.env.AI_DAILY_FILE_CAP || 500);
 const DAY_MS = 24 * 60 * 60_000;
 
 // Per-IP daily file quota — same shared counter machinery the sibling
 // local-first routes use (rate-limiter.ts), weighted by file count.
 const ipQuota = createQuotaCounter(PER_IP_DAILY_LIMIT, DAY_MS, 30 * 60_000);
-let machineDay = '';
-let machineCount = 0;
 
 /** Consume `count` files against the per-IP quota AND the machine $-cap. */
 function consumeQuota(ip: string, count: number): boolean {
-  const today = new Date().toISOString().slice(0, 10);
-  if (machineDay !== today) {
-    machineDay = today;
-    machineCount = 0;
-  }
-  if (machineCount + count > MACHINE_DAILY_CAP) return false;
   if (!ipQuota.take(ip, count)) return false;
-  machineCount += count;
-  return true;
+  return consumeMachineFiles(count);
 }
 
 // Batch poll state — per-machine, like v1 (a poll landing on the other Fly

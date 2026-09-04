@@ -18,7 +18,9 @@ import crypto from 'node:crypto';
 import { resourceUrl, sealKeys } from './mcp-config.server';
 import { isProvider, type McpProvider } from './mcp-providers.server';
 
-export type BlobType = 'state' | 'code' | 'access' | 'refresh';
+/** `import` is an HKDF label only: an import receipt (US-35 AC7) is HMAC'd
+ *  under it, never sealed — its payload sits in the user's own folder. */
+export type BlobType = 'state' | 'code' | 'access' | 'refresh' | 'import';
 
 /**
  * Fixed-length buckets for the padded plaintext. Without padding the blob's

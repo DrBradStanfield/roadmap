@@ -10,7 +10,7 @@ Hosted-server design: **rev 4, DECIDED — FINAL**. 2026-09-01. Brad has ruled o
 | `get-plan` CLI (US-30) | Computes the plan from a file, offline, no model | `tools/get-plan.ts` + [guides/command-line.md](guides/command-line.md) | shipped |
 | `edit-record` CLI (US-31) | Contract-enforcing writes from the shell | `tools/edit-record.ts` + [guides/command-line.md](guides/command-line.md) | shipped |
 | Local stdio MCP (US-32 phase 0) | The same tools over a local file path | `tools/mcp-server.ts` + [guides/connect-claude-desktop.md](guides/connect-claude-desktop.md) | shipped; verified with MCP Inspector and Claude Code 2026-09-02 |
-| Hosted MCP (US-32 phase 1) | The same tools behind a connector, sealed-token stateless | this doc + `app/lib/mcp*.server.ts` + [deploy-runbook.md](deploy-runbook.md) "Hosted MCP" | LIVE 2026-09-02 at `https://mcp.drstanfield.com/mcp`; verified from Claude and ChatGPT on the web |
+| Hosted MCP (US-32 phase 1) | The same tools behind a connector, sealed-token stateless | this doc + `app/lib/mcp*.server.ts` + [deploy-runbook-mcp.md](deploy-runbook-mcp.md) | LIVE 2026-09-02 at `https://mcp.drstanfield.com/mcp`; verified from Claude and ChatGPT on the web |
 | Hosted MCP over Drive (US-32 phase 2) | The same server, against Google Drive | this doc §7 + `packages/health-core/src/drive-rest.ts` | VERIFIED LIVE 2026-09-02: the `GOOGLE_DRIVE_*` secrets are on `health-tool-edu`, the consent screen offers Drive with brand verification approved (no unverified-app interstitial), and runbook step 8 passed over Drive |
 | `report_feedback` tool | Hosted: files the GitHub issue itself. Tokenless surfaces: prepares a link the user submits | `packages/health-core/src/mcp-tools.ts` + `app/lib/github-issues.server.ts` | shipped |
 
@@ -96,6 +96,7 @@ Reuse otherwise: `mergeFiles`, `migrateFile`, `SyncManager`, `createRateLimiter`
 | `add_lab_values` | append | Batch — the lab-report case, which is the point. |
 | `update_profile` | overwrite (**guarded**) | Sex, birth year, birth month, height — the four fields the plan is computed from. Read-modify-write of the one last-write-wins profile object; `expected` per changed field is required hosted, optional locally. See the 2026-09-02 revision below. |
 | `correct_value` | append (**separate pathway**) | Mirrors `record-edits.correctValue` / `RoadmapStore.correctMeasurement` exactly: append a new row carrying `correctsId` and the **original `recordedAt`**, then flip the old row to `entered-in-error`. **Never folded into an add** — a slot-occupied add is *rejected*, and the rejection names the held row and points the agent at `correct_value`, mirroring the `refuse()` hint in `tools/edit-record.ts`. |
+| `import_documents` (US-35) | two-phase: extract (no write) then commit (append + guarded correct) | Reads lab PDFs/images or a ZIP of them from a Dropbox folder or a ChatGPT-supplied file, sends each to Anthropic's API for extraction, and returns candidates plus a signed receipt. A separate `commit` call, carrying that receipt, writes accepted values and files documents as metadata-only rows. See the receipt design below. |
 
 **Both servers answer the same five methods from one dispatch** (`packages/health-core/src/mcp-rpc.ts`): `initialize`, `ping`, `tools/list`, `tools/call`, and the `prompts/*` pair, which publishes three static starting points (`MCP_PROMPTS`: summarise my plan, add today's results, what is missing). Each tool definition also carries `_meta['openai/toolInvocation/*']` (the two ≤64-char strings ChatGPT shows while a call runs) and a `cost` (`none|add|correct`) the write budget reads; `cost` is stripped from `tools/list`, so the budget never depends on `annotations`, which are hints a client may not trust. `recordedAt` is REQUIRED on both add tools — the server runs in UTC and cannot know the user's day (US-31 AC11); the future check is UTC+14, the latest day anyone has reached.
 
@@ -131,6 +132,8 @@ The hosted surface exposes **every tool in `MCP_TOOLS`**, the shared list the lo
 
 **`get_plan` clinical surface — APPROVED.** `--json` already carries hedged reasons and citations inline per suggestion (US-30 AC3). Add a top-level `instruction` field asking the model to preserve the hedging and the citations when presenting. No threshold or citation changes, so the three-file rule is not triggered.
 
+**`import_documents` (US-35) is two calls, not one, because a write that follows an LLM read needs a human in between.** Extract never touches the record: it parks its candidates as `imports/pending-<id>.json` in the user's own folder and hands back a small HMAC-signed receipt (bound to the connection, ~1 hour expiry) instead of a row id. Commit re-reads the record fresh, verifies the receipt, and refuses the whole call if any slot the candidates named has moved since extract — so a receipt is a promise about a moment, not a token that can be redeemed against a record that has since changed. `accept` writes new rows; `replace` runs through the same `expectedValue` guard as `correct_value`, because a lab-import correction is exactly as permanent as a hand-typed one. All or nothing, then the pending file is deleted.
+
 Every write: read → `migrateFile` → apply → `mergeFiles` → conditional write, enforcing `docs/agent-access.md` in code: fresh UUIDs, `meta.updatedAt` now, `lamport`/`eraseEpoch`/`lastDeviceId` untouched, one active row per (metric, day), identical values dropped.
 
 ---
@@ -153,7 +156,7 @@ Every write: read → `migrateFile` → apply → `mergeFiles` → conditional w
 
 **What the consent screen must SAY (2026-09-03).** The screen is the one place the user
 grants this, so it is the one place the whole grant has to be visible — a guide they may
-never read does not count. It names all **seven** tools, not the four the copy was
+never read does not count. It names all **eight** tools, not the four the copy was
 written around; it says that changing the profile means sex, birth year, birth month and
 height, last-write-wins with no superseded copy; it says that asking for a bug report
 files a **public** GitHub issue, the user's words and never their health values, with no
@@ -239,7 +242,7 @@ Residual, disclosed and unchanged: our write is **durable-by-retry**, but the **
 
 **Same file, or nothing.** Drive has no app folder, so "the record" is a name inside a folder we created. If the server discovered it differently from the browser, a user would end up with two records and see neither whole. So folder and file discovery moved into `drive-rest.ts` and the browser adapter's copies were deleted — one implementation, two callers.
 
-**Phase-2 gate: the algorithm implemented and tested first (done); Google brand verification and the console steps second (Brad — deploy-runbook.md step 4b).**
+**Phase-2 gate: the algorithm implemented and tested first (done); Google brand verification and the console steps second (Brad — deploy-runbook-mcp.md step 4b).**
 
 **A provider outage costs a call, never a connection.** Google answers a dead grant with 400 `invalid_grant` and an outage with a 5xx, and `providerAccessToken` reads both the same way — null, and one worded tool refusal naming Google Drive. Telling them apart would only matter if we acted on it, and we do not: `/token` re-seals the refresh token we already hold without calling Google at all, so no outage and no misread error can burn a refresh token or force a reconnect. The user retries and it works.
 
@@ -261,7 +264,7 @@ Residual, disclosed and unchanged: our write is **durable-by-retry**, but the **
 
 Brad's ruling: build the full thing. The recruitment gate is removed. The phase structure remains as **build order**, because Phase 0 is the tool layer Phase 1 wraps, and it delivers working Claude Desktop support on day one.
 
-**Phase 0 — local stdio MCP server (~1 day).** Every tool in `MCP_TOOLS` over a local file path — six when this was written, seven since `update_profile` (`expectedValue` optional here; the hosted surface is where it is required). No server, no OAuth, no keys, no promise change. Ships value immediately to Claude Desktop and Claude Code users.
+**Phase 0 — local stdio MCP server (~1 day).** Every tool in `MCP_TOOLS` over a local file path — six when this was written, seven since `update_profile`, eight since `import_documents` (US-35), which the stdio server lists but refuses: "hosted only", since extraction needs a model and a network it does not have (`expectedValue` optional here; the hosted surface is where it is required). No server, no OAuth, no keys, no promise change. Ships value immediately to Claude Desktop and Claude Code users.
 - [x] `packages/health-core/src/plan.ts` — move `derivePlanInputs`/`computePlan`/`renderJson` out of `tools/get-plan.ts`; CLI keeps argv, `fs`, HTML renderer; US-30 AC1 import guard still passes.
 - [x] `get_plan` JSON gains the top-level `instruction` field (preserve hedging + citations).
 - [x] Tool layer: `read_record` (strips `reminderOptIn.token`, `metric`/`since` filters), `get_plan`, `add_measurement`, `add_lab_values` — over `migrateFile` + `record-edits.ts`.

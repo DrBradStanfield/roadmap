@@ -7,7 +7,9 @@ users and agents to run against their own `health-roadmap.json`:
 - **`mcp-server.ts`**: a stdio MCP server. Point Claude Desktop or Claude
   Code at it and it exposes the record as named tools (read, compute plan,
   add a value, add a lab panel, correct a value, change one of the four
-  profile fields, report a problem — seven in all). Setup:
+  profile fields, report a problem — eight in all). The eighth,
+  `import_documents`, is hosted-only: this local server lists it but refuses
+  it, having no model and no network. Setup:
   [docs/guides/connect-claude-desktop.md](../docs/guides/connect-claude-desktop.md).
 - **`edit-record.ts`**: the CLI that writes to the record, `add` and
   `correct`, one value per call.

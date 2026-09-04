@@ -21,7 +21,9 @@ The same file, the same write path, three ways in.
    file. See [docs/guides/command-line.md](docs/guides/command-line.md) and
    [docs/guides/connect-claude-desktop.md](docs/guides/connect-claude-desktop.md).
 3. **Hosted MCP** — `https://mcp.drstanfield.com/mcp`, live since 2026-09-02 on
-   the Fly app `health-tool-edu`, over Dropbox and Google Drive.
+   the Fly app `health-tool-edu`, over Dropbox and Google Drive. Eight tools as
+   of 2026-09-04, including the hosted-only `import_documents` (US-35), which
+   reads lab files from Dropbox or a dragged ChatGPT upload.
 
 Every non-browser writer goes through the same `SyncManager`
 (`packages/health-core/src/sync-manager.ts`), which merges on conflict and

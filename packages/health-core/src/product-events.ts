@@ -41,6 +41,10 @@ export const PRODUCT_EVENT_NAMES = [
   // (mcp_connect). Never a value, never an identifier, never a connection key.
   'mcp_tool_call',
   'mcp_connect',
+  // US-35 import_documents: which route people use (Dropbox folder, a file
+  // dragged into ChatGPT, or a Drive user refused), which phase, and how many
+  // files as a bucket. Never a file name, never a value.
+  'mcp_import',
 ] as const;
 
 export type ProductEventName = (typeof PRODUCT_EVENT_NAMES)[number];
@@ -59,6 +63,7 @@ export const SERVER_ONLY_EVENT_NAMES = [
   'report_email_clicked',
   'mcp_tool_call',
   'mcp_connect',
+  'mcp_import',
 ] as const satisfies readonly ProductEventName[];
 
 /**
@@ -75,6 +80,21 @@ export const MCP_TOOL_NAMES = [
   'correct_value',
   'update_profile',
   'report_feedback',
+  'import_documents',
 ] as const;
 
 export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
+
+/** The `mcp_import` counter's three closed vocabularies (US-35 usage signal). */
+export const MCP_IMPORT_ROUTES = ['dropbox', 'chatgpt_file', 'drive_refused'] as const;
+export const MCP_IMPORT_PHASES = ['extract', 'commit'] as const;
+export const MCP_IMPORT_FILE_BUCKETS = ['0', '1', '2-5', '6-20'] as const;
+export type McpImportRoute = (typeof MCP_IMPORT_ROUTES)[number];
+export type McpImportFileBucket = (typeof MCP_IMPORT_FILE_BUCKETS)[number];
+
+/** A file count as the counter names it: coarse enough to identify nobody. */
+export function importFilesBucket(files: number): McpImportFileBucket {
+  if (files <= 0) return '0';
+  if (files === 1) return '1';
+  return files <= 5 ? '2-5' : '6-20';
+}

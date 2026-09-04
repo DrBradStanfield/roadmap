@@ -484,6 +484,9 @@ function consentPage(clientName: string, offers: Array<{ provider: McpProvider; 
 <li>Update your sex, birth year, birth month and height.</li>
 <li>File a bug report as a public issue on GitHub, in your words, without your health values, and
 without asking again.</li>
+<li>Import lab PDFs, images or a ZIP you put in the folder root or drag into ChatGPT. The file passes
+through our server and the extraction model (Anthropic) and is not kept; nothing is filed until you
+confirm what it found. The website’s upload instead reads the PDF in your browser.</li>
 </ul>
 <div class="fine">
 <p>We count calls, never your values.

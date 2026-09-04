@@ -2,7 +2,7 @@
  * US-32 — the one JSON-RPC dispatch both MCP servers run.
  *
  * What is pinned here is the switch itself: the capabilities a client is told
- * about, the three prompts a person can pick without knowing what to type, and
+ * about, the four prompts a person can pick without knowing what to type, and
  * the two ways a tool call can end. Each server's own half — its guards, its
  * storage, its wording — is pinned in its own suite.
  */
@@ -42,9 +42,9 @@ describe('US-32 — the shared dispatch', () => {
     }
   });
 
-  it('offers the three prompts by name, and hands back the words behind one', async () => {
+  it('offers the four prompts by name, and hands back the words behind one', async () => {
     const listed = (await send('prompts/list'))!.result!.prompts as Array<{ name: string; title: string; text?: string }>;
-    expect(listed.map((p) => p.name)).toEqual(['summarise_my_plan', 'add_todays_results', 'whats_missing']);
+    expect(listed.map((p) => p.name)).toEqual(['summarise_my_plan', 'add_todays_results', 'whats_missing', 'import_my_lab_files']);
     // The list is a menu, not the message: the text arrives on prompts/get.
     expect(listed.every((p) => p.text === undefined)).toBe(true);
 

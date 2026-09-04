@@ -2,7 +2,7 @@ import { z } from 'zod';
 // Deep relative import (not '@roadmap/health-core'): the Docker build runs
 // `npm ci` before COPY, so the workspace symlink never exists in the image —
 // same reason chat.server.ts / email.server.ts import health-core this way.
-import { MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
+import { MCP_IMPORT_FILE_BUCKETS, MCP_IMPORT_PHASES, MCP_IMPORT_ROUTES, MCP_TOOL_NAMES, PRODUCT_EVENT_NAMES, SERVER_ONLY_EVENT_NAMES } from '../../packages/health-core/src/product-events';
 import { MCP_CLIENT_LABELS } from './mcp-clients.server';
 import { supabaseAdmin } from './supabase.server';
 
@@ -15,6 +15,9 @@ const metadataSchema = z
     tool: z.enum(MCP_TOOL_NAMES).optional(),
     client: z.enum(MCP_CLIENT_LABELS).optional(),
     outcome: z.enum(['ok', 'refused', 'error']).optional(),
+    route: z.enum(MCP_IMPORT_ROUTES).optional(),
+    phase: z.enum(MCP_IMPORT_PHASES).optional(),
+    files: z.enum(MCP_IMPORT_FILE_BUCKETS).optional(),
   })
   .strict();
 

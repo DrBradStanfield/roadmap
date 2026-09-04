@@ -52,6 +52,16 @@ Claude needs no equivalent step. If you use both, [connecting Claude](/blogs/gui
 
 It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same one the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. It corrects a value that went in wrong. It changes four things about you: your sex, your birth year, your birth month and your height, the four your plan is worked out from. And if a tool refuses something you reasonably expected, it reports the problem for you: a public issue on the project's GitHub, filed as you ask, carrying its description and nothing about you or your values.
 
+It can now import lab files, too. On the web, in a browser, ask it to import the lab
+files sitting in your Dropbox folder and it reads the PDFs and images there. On
+ChatGPT's desktop app you can instead drag a file straight into the conversation.
+Either way it shows you candidate values before anything is saved: accept the ones
+that look right and it writes them, filing the document itself as a record with no
+text or image kept, just its name and date. The file you import goes through our
+server to Anthropic's API for extraction and is kept nowhere — a different path from
+the website's own upload, which reads the PDF in your browser and sends only the
+extracted text to our server.
+
 Paste in a lab report and ask it to file the results. Ask what your LDL has done over four tests. Ask what your plan says to do about it.
 
 ## What it cannot do
@@ -60,7 +70,7 @@ It cannot delete anything. There is no delete tool, and no call it can make remo
 
 It cannot erase a mistake either. A correction adds a new row with the right number and marks the old row "entered-in-error", and both stay in your file for good. That is how a hospital record works, and it is why you can always see what you were told and when. A correction on a row older than 90 days is refused: old results are history, not typos.
 
-It cannot touch your medications, supplements, screenings or documents. Those are current state that another device can overwrite, so for now only clinical values are writable this way.
+It cannot touch your medications, supplements or screenings. Those are current state that another device can overwrite, so for now only clinical values are writable this way. Documents are the one exception, and only through import: it files what it imports as a record with a name and a date, never the text or the image itself, and the original file stays wherever you put it.
 
 It can change four things about you: your sex, your birth year, your birth month and your height. Your plan is worked out from those, so a wrong one makes the whole plan wrong, and "my height is 165, not 178" should not need a trip to the website. These four are not kept in history the way a blood test is: the newest write is the one your record keeps, so if you change your height on the website and ask ChatGPT to change it in the same minute, the later of the two is what you end up with. Before it changes one, ChatGPT has to say what it believes the field holds now, and it is refused if it has that wrong. It cannot change how the site displays units.
 

@@ -79,6 +79,8 @@ Stored values are **never mutated**. The file's `measurements`/`labValues` array
 - `mcp-config.server.ts` (secrets, on switch, URLs) · `mcp-seal.server.ts` (seal/unseal, per-type keys, AAD, kid) · `mcp-clients.server.ts` (`KNOWN_CLIENTS` pinning, CIMD, DCR, capped reads) — the hosted MCP server's OAuth 2.1 authorization server, no storage: every piece of state (code, access token, refresh token) is sealed into the value handed to the client.
 - `mcp-grants.server.ts` (blob payloads, `/token`, `WRITES_PER_HOUR`=60 allowance, rate limits) · `mcp-authorize.server.ts` (`/authorize` checks, consent state, PKCE) · `mcp-providers.server.ts` (Dropbox/Google confidential clients).
 - `mcp.server.ts` — the hosted MCP server: JSON-RPC over one `POST /mcp`, against the user's own Dropbox/Drive folder. Runs the same `mcp-tools.ts` pure functions as the local stdio server.
+- `mcp-import.server.ts` (US-35) — `import_documents`'s I/O: the Dropbox-folder and ChatGPT-file fetchers, the ZIP unpack + caps, the HMAC receipt mint/verify, the per-connection/per-machine quotas, and the `ImportSurface` the tool runs against.
+- `lab-import-quota.server.ts` — the machine-wide daily file cap (`AI_DAILY_FILE_CAP`), now shared between the website's own upload route and `import_documents`.
 - `klaviyo.server.ts` — Klaviyo profile subscribe (`subscribeToKlaviyo`), suppress (`suppressInKlaviyo`), and capture-stats helpers.
 - `anthropic.server.ts` — Anthropic wrapper for health-document processing: `extractLabResults()`, `processHealthDocument()`, and the unified `extractOrClassify()` that auto-classifies and routes to one in a single LLM call.
 
@@ -103,10 +105,10 @@ Stored values are **never mutated**. The file's `measurements`/`labValues` array
 - `memory-adapter.ts` — in-memory `StorageAdapter` simulating optimistic concurrency (version tokens, `ConflictError`) so two adapters can model two devices syncing through one cloud. Test-only, not a user-selectable backend.
 - `adapter.ts` — the cloud-storage adapter interface every backend implements. Also exports `fetchOrFail()`, a `fetch` wrapper that turns a provider's HTTP failure into a storage failure (so a bug doesn't get worded as an outage).
 - `document-path.ts` — the organised-archive path scheme for raw uploads: human folders by AI classification, date-first naming so cloud file listings sort chronologically.
-- `dropbox-rest.ts` — Dropbox content-API calls (three `fetch`s), shared byte-for-byte by the browser adapter and the hosted MCP server, including the `strict_conflict` conditional write.
+- `dropbox-rest.ts` — Dropbox content-API calls (three `fetch`s), shared byte-for-byte by the browser adapter and the hosted MCP server, including the `strict_conflict` conditional write. US-35 added `dropboxListFolder`, `dropboxDownload`, `dropboxDelete` for `import_documents`'s folder route; the adapter interfaces (`adapter.ts`) gained matching optional `list`/`remove` members.
 - `drive-rest.ts` — Google Drive v3 calls + adapter, shared by the browser adapter and the hosted MCP server. `drive.file` scope only.
 - `lab-catalog.ts` — the additional blood-test catalogue (US-21): stable-ID registry, canonical units, aliases, no clinical thresholds.
-- `mcp-tools.ts` — the seven MCP tools as pure functions (US-32, US-34): takes a `RoadmapFile`, returns a new one. I/O (open/backup/write) belongs to the caller. `update_profile` is the one that overwrites rather than appends (sex, birth year, birth month, height), guarded by `expected`.
+- `mcp-tools.ts` — the eight MCP tools as pure functions (US-32, US-34, US-35): takes a `RoadmapFile`, returns a new one. I/O (open/backup/write) belongs to the caller. `update_profile` is the one that overwrites rather than appends (sex, birth year, birth month, height), guarded by `expected`. `import_documents` is the two-phase one (extract, then a separate guarded commit) and the only one with I/O of its own — fetching and extracting files — that the caller does not do for it.
 
 **Widget Source (`widget-src/src/`):**
 - `components/HealthTool.tsx` — Main widget (auth, unit system, measurement sync, mobile tabs)
@@ -135,7 +137,7 @@ Stored values are **never mutated**. The file's `measurements`/`labValues` array
 
 **CLI + agent surfaces (`tools/`):**
 - `mcp-server.ts` — the health record as a local stdio MCP server (US-32 phase 0): one file path, no server, no OAuth, no network.
-- `edit-record.ts` — `edit_record` CLI: add/correct values in a record file. Thin shell; the write rules live in `record-edits.ts`, shared with the hosted MCP server.
+- `edit-record.ts` — `edit_record` CLI: add/correct values in a record file. Thin shell; the write rules live in `record-edits.ts`, shared with the hosted MCP server. US-35 added `source` to the three edit requests, plus `findActiveInSlot`, `slotState` and `bulkAppendValues` (the website's own bulk save now calls the last of these too). `lab-extraction.ts` gained a `pdf` page type — a whole PDF as one base64 `document` block — and `isImportableEntryName`, both for `import_documents`.
 - `get-plan.ts` — `get_plan` CLI: turns `health-roadmap.json` into suggestions/evidence/citations, offline, read-only.
 - `demo-video/` — Remotion project rendering a code-drawn, ChatGPT-style demo of the hosted MCP connector; `renders/` holds the last mp4, `node_modules`/`out/` gitignored (see `demo-video/README.md`).
 

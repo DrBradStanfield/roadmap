@@ -220,3 +220,27 @@ loosely — both are published in full elsewhere, and restating them here would 
 definition to drift. Both servers pass the structure through untouched; the stdio
 server's saved-backup note stays in the text, where it belongs. A refusal is an error
 result and carries no structure.
+
+## Build note — `import_documents`, 2026-09-04 (US-35)
+
+**Shipped.** The eighth tool, hosted-only: extract (read files, no write) and commit
+(write, guarded) as two calls sharing one signed receipt. Two sources — a Dropbox
+folder listing, and a ChatGPT-dragged file fetched from `files.oaiusercontent.com` —
+both landing in the same extraction pipeline the website's upload route already uses.
+A Google Drive connection refuses the folder route outright: `drive.file` cannot see a
+file the user did not create through this app, so there is nothing to list.
+
+**The Haiku PDF document-block check passed.** One real call, a 1-page PDF sent whole
+as a base64 `document` block rather than as extracted text or a page image: 3,369 input
+tokens. Confirms the `pdf` page type in `lab-extraction.ts` is viable cost-wise before
+it carries production traffic.
+
+**The 40 s budget (`MCP_IMPORT_BUDGET_MS`) is ChatGPT's constraint, not ours.** ChatGPT
+cuts a tool call at 60 s; 40 s leaves room for the round trip and the response to land
+inside that window rather than racing it. Files are extracted three at a time, and a
+file the budget does not reach comes back as `skipped: time` or in `remaining` for a
+follow-up call, so a slow connection loses time, not data.
+
+**What remains: live verification.** Runbook step 8a is written but not yet run against
+a real Dropbox account and a real ChatGPT drag — that needs a deployed server and a
+human at the keyboard, same as every other hosted-MCP verify step.

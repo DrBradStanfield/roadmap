@@ -76,6 +76,10 @@ only server call an upload makes is the extraction call.
 
 Raw files never leave the browser. Only extracted text (via `page.getTextContent()`) or page images (rendered to canvas, converted to JPEG base64) are sent to the LLM via the backend proxy. No files are stored on the server. The backend sees content but not the original file.
 
+**The hosted connector's `import_documents` (US-35) reaches this same pipeline**, but the whole
+file travels to Claude Haiku as a `pdf`/`image` block; the connector holds it for one request and
+keeps nothing, where the website keeps it in the browser and sends only what pdf.js extracted.
+
 ---
 
 ## Design Decisions

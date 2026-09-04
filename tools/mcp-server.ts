@@ -30,7 +30,8 @@ const INSTRUCTIONS =
   'not medical advice, and its hedged wording and citations are calibrated — pass them on as written. ' +
   'If a tool refuses something the user reasonably expected, the record cannot hold what they want to track, or a ' +
   'result looks wrong, offer report_feedback: it prepares a GitHub issue link, carrying no health values, that the ' +
-  'user reviews and submits themselves.';
+  'user reviews and submits themselves. import_documents is listed but refuses here: this server has no model and ' +
+  'no network; lab files go through the website’s upload or the hosted connector.';
 
 export const HELP = `mcp-server — your health record as an MCP server, over stdio.
 
@@ -51,7 +52,8 @@ In Claude Desktop, add this to claude_desktop_config.json:
 
 The file is read fresh on every call, backed up before every write, and
 replaced atomically — the same read-merge-write path the hosted server uses
-over a cloud folder. No network, no model, no telemetry.
+over a cloud folder. No network, no model, no telemetry — so import_documents
+refuses here; use the website's upload or the hosted connector for lab files.
 `;
 
 // ---------------------------------------------------------------------------

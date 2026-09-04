@@ -488,3 +488,26 @@ describe('an internal failure is an error with an id, never a 500 (US-32 phase 2
     expect(answer.text).toContain('did not answer');
   });
 });
+
+// ---------------------------------------------------------------------------
+// US-35 AC3 — the folder route on a Drive connection is refused, honestly
+// ---------------------------------------------------------------------------
+import { resetImportMemory } from '../lib/mcp-import.server';
+
+describe('US-35 AC3 — import_documents on Google Drive', () => {
+  afterEach(() => resetImportMemory());
+
+  it('refuses the folder route in words before any Drive call, naming the website (and the drag, for ChatGPT)', async () => {
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(createEmptyFile({ deviceId: 'd', now: NOW })), version: 1 });
+    const { access } = await connect('Google Drive');
+    const calls = () => (fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls.filter(([url]) => String(url).includes('googleapis.com/drive'));
+    const before = calls().length;
+    const answer = await callTool(access, 'import_documents', {});
+    expect(answer.isError).toBe(true);
+    expect(answer.text).toContain('Google Drive');
+    expect(answer.text).toContain('website');
+    expect(answer.text).not.toContain('Drag'); // a Claude-registered client is not told to drag
+    expect(calls().length).toBe(before);
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
+  });
+});

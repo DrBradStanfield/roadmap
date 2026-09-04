@@ -43,12 +43,15 @@ call, the server fetches the file over the user's own credential, holds it in me
 request, and writes it back if the call was a write. Nothing is persisted: no per-user row, no
 health table, no health data at rest on our infrastructure (the v1 tables were purged 2026-06-12).
 Nothing is logged: health values are excluded from logs, Sentry and product analytics, and the
-reminder capability token is stripped from every read. We send nothing to a model ourselves. The
-only model that sees the record is the user's own ChatGPT session.
+reminder capability token is stripped from every read. We send nothing to a model ourselves,
+except when the user asks to import a file: that file (never the record) then goes to
+Anthropic's API for extraction and is not kept there, subject to Anthropic's own
+data-retention terms. Otherwise the only model that sees the record is the user's own ChatGPT
+session.
 
 ## Tool annotations
 
-All seven tools in `packages/health-core/src/mcp-tools.ts` declare all four
+All eight tools in `packages/health-core/src/mcp-tools.ts` declare all four
 hints, pinned by `mcp-tools.test.ts`.
 
 | Tool | readOnly | destructive | openWorld |
@@ -60,6 +63,7 @@ hints, pinned by `mcp-tools.test.ts`.
 | `correct_value` | false | **true** | false |
 | `update_profile` | false | **true** | false |
 | `report_feedback` | false | false | **true** |
+| `import_documents` | false | **true** | **true** |
 
 **CSP and `_meta`.** None apply, so leave them blank. The server ships no widget, no UI resource
 and no iframe, so `_meta.ui.csp` (`connectDomains`, `resourceDomains`, `frameDomains`) and
@@ -69,10 +73,12 @@ and no iframe, so `_meta.ui.csp` (`connectDomains`, `resourceDomains`, `frameDom
 
 Three per tool, as the portal asks. Paste each line as written.
 
-**Open-world, six of the seven (`openWorldHint: false`).** Closed. The tool touches only the calling
+**Open-world, six of the eight (`openWorldHint: false`).** Closed. The tool touches only the calling
 user's own `health-roadmap.json`, in that user's own Dropbox or Google Drive, over that user's own
-credential. Never the open web, never another user's record. `report_feedback` is the exception and
-is marked open-world: it touches no health record, and it files an issue on GitHub.
+credential. Never the open web, never another user's record. Two are the exception. `report_feedback`
+is marked open-world: it touches no health record, and it files an issue on GitHub. `import_documents`
+is marked open-world too: it sends a file to Anthropic's API for extraction, and on the ChatGPT file
+route it first fetches that file from OpenAI's own file host, `files.oaiusercontent.com`.
 
 - **`read_record`**
   - *Read-only:* Reads only. It fetches the record, filters it and returns rows. Nothing is written back.
@@ -96,6 +102,10 @@ is marked open-world: it touches no health record, and it files an issue on GitH
   - *Read-only:* Not read-only. It never opens the health record, but it files a public GitHub issue on the project's repository for the user.
   - *Destructive:* Not destructive. It creates an issue and takes nothing away. Nothing in the health record is read or changed.
   - *Open-world:* Open-world. This is the one tool that reaches outside the user's own file: it posts to GitHub's API, on our own repository, under our own token. It carries the assistant's description of the problem and nothing about the user — no name, no email, no address, and any text that reads as a health value is refused before anything is sent.
+- **`import_documents`**
+  - *Read-only:* Not read-only. Its extract phase writes nothing to the record but does park candidate values in the user's own folder; its commit phase appends values and files documents, and can correct a value through the same guard as `correct_value`.
+  - *Destructive:* Destructive. A `replace` in commit flips a superseded row to `entered-in-error` permanently, exactly like `correct_value`, guarded the same way.
+  - *Open-world:* Open-world. It sends the user's file — never the record — to Anthropic's API for extraction under our key, and on the ChatGPT file route it first fetches that file from OpenAI's `files.oaiusercontent.com`. Nothing is kept after extraction.
 
 ## Starter prompts
 
@@ -104,11 +114,12 @@ is marked open-world: it touches no health record, and it files an issue on GitH
 3. Show me how my LDL has changed over the past year.
 4. My last weight entry was wrong. Fix it to 78 kg.
 5. What screening am I due for?
+6. Import the lab results in my Dropbox folder.
 
 ## Test cases
 
 Each needs a reviewer Dropbox account connected through the consent screen; the fixture is that
-account's own file, starting empty. Five positive:
+account's own file, starting empty. Seven positive:
 
 1. **"Record my weight today as 78 kg."** `add_measurement` confirms the metric, the converted SI
    value and the date.
@@ -118,6 +129,11 @@ account's own file, starting empty. Five positive:
 4. **"What should I do next about my health?"** `get_plan` returns current values, what is due, and suggestions with reasons and citations.
 5. **"That ferritin should have been 120, not 210."** `read_record` for the row id, then
    `correct_value`: a new row at the original date, old row `entered-in-error`.
+6. **"Import the lab results in my Dropbox folder."** `import_documents` lists the folder root,
+   extracts a test PDF, and returns candidates and a receipt; accepting them commits the values.
+7. **A file dragged into the ChatGPT conversation.** `import_documents` reads the descriptor's
+   `_meta["openai/fileParams"]` file, fetches it from `files.oaiusercontent.com`, and extracts it
+   the same way as the folder route.
 
 Three negative:
 

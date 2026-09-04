@@ -67,13 +67,14 @@ describe('US-32 — the JSON-RPC handshake', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('lists the seven tools with their schemas, and stays quiet on a notification', async () => {
+  it('lists the eight tools with their schemas, and stays quiet on a notification', async () => {
     const { dir, path } = writeFixture(fixture());
     const listed = (await handle({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, path)) as
       { result: { tools: Array<{ name: string; inputSchema: object }> } };
 
     expect(listed.result.tools.map((t) => t.name)).toEqual([
       'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'update_profile', 'report_feedback',
+      'import_documents',
     ]);
     expect(listed.result.tools[0].inputSchema).toMatchObject({ type: 'object' });
     expect((await handle({ jsonrpc: '2.0', method: 'notifications/initialized' }, path))).toBeNull();
@@ -444,6 +445,19 @@ describe('US-32 — structured results reach the client unchanged', () => {
     expect(refused.result!.isError).toBe(true);
     expect(refused.result!.structuredContent).toBeUndefined();
 
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('US-35 AC11 — import_documents is listed here and refuses here', () => {
+  it('points at the website or the hosted connector, and leaves the file exactly as it was', async () => {
+    const { dir, path } = writeFixture(fixture());
+    const before = readFileSync(path, 'utf8');
+    const response = await call(path, 'import_documents', {});
+    expect(response.result!.isError).toBe(true);
+    expect(text(response)).toMatch(/website|hosted connector/);
+    expect(text(response)).toContain('Nothing was read');
+    expect(readFileSync(path, 'utf8')).toBe(before);
     rmSync(dir, { recursive: true, force: true });
   });
 });

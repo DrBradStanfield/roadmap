@@ -25,6 +25,7 @@ import { isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSy
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
 import { MCP_TOOL_NAMES, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, readCapped, type McpClientLabel } from './mcp-clients.server';
+import { hostedImporter } from './mcp-import.server';
 import { recordServerEvent } from './product-events.server';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { githubFiler } from './github-issues.server';
@@ -56,7 +57,8 @@ const INSTRUCTIONS =
   'never added to twice. Nothing is ever deleted; a superseded row stays as "entered-in-error". Correcting a ' +
   'value is permanent and needs the value you expect to find, so read the record first and correct only what ' +
   'the user asked you to. The plan from get_plan is educational, not medical advice, and its hedged wording ' +
-  'and citations are calibrated — pass them on as written.';
+  'and citations are calibrated — pass them on as written. import_documents reads lab files and writes nothing ' +
+  'until its commit, which needs the user’s own confirmation of what it found.';
 
 /**
  * A correction fixes a recent mistake. A result from three years ago is
@@ -110,7 +112,7 @@ function findRow(file: RoadmapFile, id: string): FileMeasurement | FileLabValue 
  * (design §3). Neither belongs in the tool layer: the CLI (US-31) keeps
  * `expectedValue` optional, because there a human is watching their own file.
  */
-function checkCorrection(file: RoadmapFile, args: unknown, now: string): string | null {
+export function checkCorrection(file: RoadmapFile, args: unknown, now: string): string | null {
   const request = (args ?? {}) as { id?: unknown; expectedValue?: unknown };
   if (typeof request.expectedValue !== 'number') {
     return (
@@ -225,8 +227,9 @@ async function callHostedTool(
     accessToken = minted;
   }
 
+  const adapter = makeAdapter(token.provider, accessToken);
   try {
-    return await runToolOverSync(recordSync(makeAdapter(token.provider, accessToken), 'mcp', now), name, args, now, {
+    return await runToolOverSync(recordSync(adapter, 'mcp', now), name, args, now, {
       beforeCall: (file) => beforeHostedCall(token, name, file, args, now),
       // This server runs in UTC and cannot know the user's timezone, so the
       // future check is the widest day anyone has reached (US-31 AC6/AC11).
@@ -235,6 +238,11 @@ async function callHostedTool(
       // With no GitHub token configured the tool falls back to a prefilled URL
       // the user submits — which is all the stdio server can ever do.
       fileFeedback: name === 'report_feedback' ? (githubFiler(token.provider, connectionKey(token.rt)) ?? undefined) : undefined,
+      // The import reads files through the user's own folder and parks its
+      // candidates there; its guards and charges live inside (US-35).
+      importer: name === 'import_documents'
+        ? hostedImporter({ token, accessToken, adapter, client: mcpClientLabel(token.clientId), checkCorrection, maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS })
+        : undefined,
     });
   } catch (error) {
     // Storage is allowed to fail, and the user can act on that, so it is worded
