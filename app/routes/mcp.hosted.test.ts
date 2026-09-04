@@ -21,7 +21,7 @@ import { ROADMAP_FILE_NAME } from '../../packages/health-core/src/adapter';
 import { createEmptyFile, createMeasurement, type RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { resetMcpMemory, WRITE_COST, WRITES_PER_HOUR } from '../lib/mcp-grants.server';
 import { ISSUES_PER_HOUR, REPORTS_PER_DAY } from '../lib/github-issues.server';
-import { MCP_PROMPTS, MCP_TOOLS, OUTPUTS, SERVER_VERSION } from '../../packages/health-core/src/mcp-tools';
+import { MAX_RECEIPT_LENGTH, MCP_PROMPTS, MCP_TOOLS, OUTPUTS, SERVER_VERSION } from '../../packages/health-core/src/mcp-tools';
 import { MAX_CORRECTION_AGE_DAYS, mcpEndpoint, setAdapterFactory } from '../lib/mcp.server';
 import { action, loader } from './mcp.$';
 
@@ -1126,7 +1126,8 @@ describe('OpenAI domain verification (docs/chatgpt-app-listing.md)', () => {
 // ---------------------------------------------------------------------------
 // US-35 — import_documents over a folder, end to end
 // ---------------------------------------------------------------------------
-import { IMPORT_FILES_PER_DAY, resetImportMemory, setImportSeams } from '../lib/mcp-import.server';
+import { setImportSeams } from '../lib/mcp-import.server';
+import { IMPORT_FILES_PER_DAY } from '../lib/mcp-grants.server';
 import { recordServerEvent } from '../lib/product-events.server';
 import type { UnifiedExtractionResult } from '../../packages/health-core/src/lab-extraction';
 
@@ -1147,15 +1148,12 @@ function labReport(over: Partial<UnifiedExtractionResult> = {}): UnifiedExtracti
   };
 }
 
-/** A folder holding `files`, and an extractor that answers per file name. */
+/** `files` dropped in the folder root (the same in-memory cloud the record lives in), and an extractor that answers per file name. */
 function stubImport(files: Record<string, Uint8Array>, answer: (name: string) => UnifiedExtractionResult | Error) {
   const extracted: string[] = [];
   const names = Object.keys(files);
+  for (const name of names) cloud.docs.set(name, new Blob([files[name] as Uint8Array<ArrayBuffer>]));
   setImportSeams({
-    folder: () => ({
-      list: async () => names.map((name, i) => ({ id: `id:${i}`, name, size: files[name].byteLength })),
-      download: async (id) => files[names[Number(id.slice(3))]],
-    }),
     extract: async (pages) => {
       // The extractor sees base64 bytes; find which file they were.
       const name = names.find((n) => Buffer.from(files[n]).toString('base64') === pages[0].content)!;
@@ -1173,8 +1171,7 @@ function pendingFiles(): string[] {
 }
 
 describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, AC9, AC10)', () => {
-  beforeEach(() => resetImportMemory());
-  afterEach(() => resetImportMemory());
+  afterEach(() => setImportSeams(null));
 
   it('lists the tool with openai/fileParams, extracts without writing, then commits what was accepted', async () => {
     seedRecord();
@@ -1183,16 +1180,18 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     const tool = listed.result!.tools!.find((t) => (t as { name: string }).name === 'import_documents') as { _meta: Record<string, unknown> };
     expect(tool._meta['openai/fileParams']).toEqual(['file']);
 
-    const extracted = stubImport({ 'labs.pdf': PDF_BYTES, 'health-roadmap.json': new Uint8Array(2), 'notes.txt': new Uint8Array(1) }, () => labReport());
+    const extracted = stubImport({ 'labs.pdf': PDF_BYTES, 'notes.txt': new Uint8Array(1) }, () => labReport());
+    // A pending payload older than a day, left by an extract whose commit never came, is swept by this one.
+    cloud.files.set('imports/pending-stale.json', { json: '{}', version: 1, modified: '2026-08-01T00:00:00.000Z' });
     const versionBefore = cloud.files.get(ROADMAP_FILE_NAME)!.version;
     const extract = await callTool(access, 'import_documents', {});
     expect(extract.isError).toBe(false);
     const data = OUTPUTS.import_documents.parse(extract.structured);
-    expect(extracted).toEqual(['labs.pdf']); // the record and a text file are ignored, not refused
+    expect(extracted).toEqual(['labs.pdf']); // the record itself and a text file are ignored, not refused
     expect(data.files).toEqual([{ name: 'labs.pdf', status: 'extracted', classification: 'lab_report', documentDate: LAB_DAY }]);
     expect(data.candidates.map((c) => [c.id, c.metric, c.slot.state])).toEqual([['c1', 'ldl', 'free'], ['c2', 'ferritin', 'free']]);
-    expect(data.receipt!.length).toBeLessThan(400);
-    // The record was read, not written; the payload is parked in the user's folder.
+    expect(data.receipt!.length).toBeLessThan(MAX_RECEIPT_LENGTH);
+    // The record was read, not written; the payload is parked in the user's folder, the stale one is gone.
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(versionBefore);
     expect(pendingFiles()).toHaveLength(1);
     expect(pendingFiles()[0]).toMatch(/^imports\/pending-[0-9a-f-]{36}\.json$/);
@@ -1248,7 +1247,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(missing.text).toContain('nope.pdf');
   });
 
-  it('a replace goes through the hosted correction guard: too old refuses, recent corrects (AC8)', async () => {
+  it('a replace is refused past the 90-day rule and corrects inside it (AC8)', async () => {
     seedRecord((file) => {
       file.measurements.push(createMeasurement({ id: 'old', metricType: 'ldl', value: 3.4, recordedAt: '2024-01-01', createdAt: '2024-01-01T00:00:00Z' }));
       file.measurements.push(createMeasurement({ id: 'recent', metricType: 'ldl', value: 3.4, recordedAt: TODAY, createdAt: NOW }));
@@ -1267,7 +1266,8 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
 
     const refused = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [old.id] } });
     expect(refused.isError).toBe(true);
-    expect(refused.text).toContain(`${MAX_CORRECTION_AGE_DAYS} days`);
+    expect(refused.text).toContain('too old');
+    expect(MAX_CORRECTION_AGE_DAYS).toBe(90); // the rule `replaceable` was computed against
 
     const corrected = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [recent.id] } });
     expect(corrected.isError).toBe(false);
@@ -1321,7 +1321,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(data.candidates).toEqual([]);
     // The pending payload in the folder is metadata only too.
     const pending = JSON.parse(cloud.files.get(pendingFiles()[0])!.json) as { documents: Array<Record<string, unknown>> };
-    expect(Object.keys(pending.documents[0]).sort()).toEqual(['date', 'mimeType', 'sha256', 'sourceFileName', 'title', 'type']);
+    expect(Object.keys(pending.documents[0]).sort()).toEqual(['contentHash', 'date', 'mimeType', 'sourceFileName', 'title', 'type']);
   });
 
   it('never logs a file name or a value during an import', async () => {

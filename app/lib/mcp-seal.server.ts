@@ -18,8 +18,8 @@ import crypto from 'node:crypto';
 import { resourceUrl, sealKeys } from './mcp-config.server';
 import { isProvider, type McpProvider } from './mcp-providers.server';
 
-/** `import` is an HKDF label only: an import receipt (US-35 AC7) is HMAC'd
- *  under it, never sealed — its payload sits in the user's own folder. */
+/** `import` is a receipt (US-35 AC7): the name and hash of a pending payload
+ *  that sits in the user's own folder, sealed like every other blob. */
 export type BlobType = 'state' | 'code' | 'access' | 'refresh' | 'import';
 
 /**

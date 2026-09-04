@@ -413,6 +413,36 @@ describe('RoadmapStore document archive (US-14)', () => {
     expect(file.documents.filter((d) => !d.deleted)).toHaveLength(1);
   });
 
+  it('archives the original behind a connector-imported row: same hash and no fileRef → blob written, old row tombstoned (US-35 AC6)', async () => {
+    // `import_documents` lands a document metadata-only with the bytes' own
+    // contentHash and fileRef ''. The user then uploads the same PDF here to
+    // archive it: the hash must not read as "already archived".
+    const blob = new Blob(['connector bytes'], { type: 'application/pdf' });
+    const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+    const hash = `sha256-${[...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')}`;
+    const seeded = createEmptyFile({ deviceId: 'phone', now: '2026-01-01T00:00:00.000Z' });
+    seeded.documents.push({
+      id: 'imported', title: 'Lipid panel', type: 'pathology_report', date: '2024-05-10', fileRef: '', contentHash: hash, mimeType: 'application/pdf',
+      extractedText: '', addedAt: '2026-01-01T00:00:00.000Z', metadata: { importedVia: 'connector' }, sourceFileName: 'results.pdf',
+    });
+    const cloud = new MemoryCloud();
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(seeded), version: 1 });
+    const store = await RoadmapStore.create(new MemoryAdapter(cloud));
+    const payload = { documentType: 'pathology_report', title: 'Lipid panel', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'results.pdf', file: blob };
+
+    const [saved] = await store.bulkSaveDocuments([payload]);
+    expect(saved.fileRef).not.toBe('');
+    await store.flush();
+    const file = readCloudFile(cloud);
+    expect(file.documents.find((d) => d.id === 'imported')!.deleted).toBe(true);
+    const live = file.documents.filter((d) => !d.deleted);
+    expect(live).toHaveLength(1);
+    expect(live[0]).toMatchObject({ contentHash: hash, fileRef: saved.fileRef, extractedText: 'md' });
+
+    // Now archived: the same bytes again are a no-op.
+    expect(await store.bulkSaveDocuments([payload])).toHaveLength(0);
+  });
+
   it('deleteDocument tombstones (keeps the row, flips deleted) and hides it from reads', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));

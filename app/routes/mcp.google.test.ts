@@ -492,11 +492,8 @@ describe('an internal failure is an error with an id, never a 500 (US-32 phase 2
 // ---------------------------------------------------------------------------
 // US-35 AC3 — the folder route on a Drive connection is refused, honestly
 // ---------------------------------------------------------------------------
-import { resetImportMemory } from '../lib/mcp-import.server';
 
 describe('US-35 AC3 — import_documents on Google Drive', () => {
-  afterEach(() => resetImportMemory());
-
   it('refuses the folder route in words before any Drive call, naming the website (and the drag, for ChatGPT)', async () => {
     cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(createEmptyFile({ deviceId: 'd', now: NOW })), version: 1 });
     const { access } = await connect('Google Drive');

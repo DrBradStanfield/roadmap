@@ -9,31 +9,29 @@
  * here keeps a byte between requests: the file is read into memory, extracted,
  * and dropped; the candidate payload lives in the USER's own folder as
  * `imports/pending-<id>.json` until its commit reads it and removes it (AC7).
- * The receipt the assistant carries is ~200 bytes — an id, an expiry, the
- * connection it belongs to and the payload's hash — under an HMAC keyed off
- * `MCP_SEAL_KEYS`, so a value the server did not extract cannot be committed.
+ * The receipt the assistant carries is small — an id, an expiry, the
+ * connection it belongs to and the payload's hash — sealed like every other
+ * credential this server hands out, so a value the server did not extract
+ * cannot be committed.
  *
- * Two fetch targets, ever: the user's own provider through the shared REST
- * modules, and OpenAI's file host for a file dragged into ChatGPT, under a
- * closed allow-list (AC4). Type is decided by magic bytes, never by a
- * declared mime type or a name.
+ * Two fetch targets, ever: the user's own folder through its `StorageAdapter`,
+ * and OpenAI's file host for a file dragged into ChatGPT, under a closed
+ * allow-list (AC4). Type is decided by magic bytes, never by a declared mime
+ * type or a name.
  *
  * NOTHING HERE MAY LOG A FILE NAME, A URL, A VALUE OR EXTRACTED TEXT (AC9).
  */
 import crypto from 'node:crypto';
 import JSZip from 'jszip';
 import * as Sentry from '@sentry/react-router';
-import { extractOrClassify } from './anthropic.server';
-import { consumeMachineFiles } from './lab-import-quota.server';
+import { extractOrClassify, isNetworkOrTimeoutError } from './anthropic.server';
 import { type McpClientLabel, readCappedBytes } from './mcp-clients.server';
-import { sealKeys } from './mcp-config.server';
-import { type AccessPayload, connectionKey, spendWrites, WRITE_COST, WRITES_PER_HOUR } from './mcp-grants.server';
-import { b64url, hash, typeKey } from './mcp-seal.server';
-import type { McpProvider } from './mcp-providers.server';
+import { resourceUrl } from './mcp-config.server';
+import { type AccessPayload, chargeWrites, connectionKey, importFiles, nowSeconds, WRITE_COST } from './mcp-grants.server';
+import { hash, seal, unseal } from './mcp-seal.server';
 import { recordServerEvent } from './product-events.server';
-import { createQuotaCounter } from './rate-limiter';
+import { DAY_MS, machineFiles } from './rate-limiter';
 import type { StorageAdapter } from '../../packages/health-core/src/adapter';
-import { dropboxDownload, dropboxListFolder } from '../../packages/health-core/src/dropbox-rest';
 import {
   IMPORTABLE_EXTENSIONS,
   isImportableEntryName,
@@ -44,6 +42,7 @@ import {
   type ExtractedFile,
   type ImportBundle,
   type ImportCommit,
+  type ImportFileStatus,
   type ImportPayload,
   type ImportRefusal,
   type ImportRequest,
@@ -51,6 +50,7 @@ import {
   isAlreadyImported,
   MAX_IMPORT_FILES_PER_CALL,
 } from '../../packages/health-core/src/mcp-tools';
+import { oneLine } from '../../packages/health-core/src/plan';
 import { importFilesBucket, type McpImportRoute } from '../../packages/health-core/src/product-events';
 import type { RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 
@@ -69,23 +69,16 @@ const BUDGET_RESERVE_MS = 4_000;
 export const IMPORT_FILES_PER_CALL = 5;
 /** One PDF or image. Pages reach the model as images, so 5 MB of scans is already many pages. */
 export const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
-/** One ZIP, as downloaded. */
+/** One ZIP, as downloaded — and the most one ChatGPT file may be. */
 export const MAX_IMPORT_ZIP_BYTES = 20 * 1024 * 1024;
-/** One file fetched from OpenAI's host — a ZIP at most. */
-export const MAX_CHATGPT_FILE_BYTES = MAX_IMPORT_ZIP_BYTES;
 export const CHATGPT_FETCH_TIMEOUT_MS = 10_000;
-/** Files one connection may extract in a day, per machine (×2 apps in production). */
-export const IMPORT_FILES_PER_DAY = 30;
 export const RECEIPT_LIFETIME_SECONDS = 60 * 60;
 /** Where a pending payload lives in the user's folder, and how long before an extract sweeps it. */
 export const PENDING_FOLDER = 'imports';
-const PENDING_STALE_MS = 24 * 60 * 60 * 1000;
+const PENDING_STALE_MS = DAY_MS;
 const EXTRACT_CONCURRENCY = 3;
 /** One model call, HTTP. Inside the budget by construction; a hung call fails, never waits. */
 const EXTRACT_TIMEOUT_MS = 20_000;
-
-const DAY_MS = 24 * 60 * 60_000;
-let perConnectionFiles = createQuotaCounter(IMPORT_FILES_PER_DAY, DAY_MS, 30 * 60_000);
 
 /** OpenAI's file host, from field reports — the docs name none. A second one shows up as a refusal count. */
 function chatgptFileHosts(): Set<string> {
@@ -93,44 +86,15 @@ function chatgptFileHosts(): Set<string> {
 }
 
 // ---------------------------------------------------------------------------
-// Test seams
+// Test seam — the model call
 // ---------------------------------------------------------------------------
 
-/** A folder the connector can list and download from — Dropbox, in production. */
-export interface FolderSource {
-  list(): Promise<Array<{ id: string; name: string; size: number }>>;
-  download(id: string): Promise<Uint8Array>;
-}
+type Extractor = (pages: PageContent[], opts: { timeoutMs: number; attempts: number }) => Promise<UnifiedExtractionResult>;
 
-type Extractor = (pages: PageContent[], opts: { timeoutMs: number }) => Promise<UnifiedExtractionResult>;
+let extract: Extractor = extractOrClassify;
 
-interface ImportSeams {
-  /** Null means the provider cannot list a folder — Google Drive under `drive.file` (AC3). */
-  folder?: (provider: McpProvider, accessToken: string) => FolderSource | null;
-  extract?: Extractor;
-}
-
-const REAL_SEAMS: Required<ImportSeams> = {
-  folder: (provider, accessToken) =>
-    provider === 'google'
-      ? null
-      : {
-          list: () => dropboxListFolder(accessToken, ''),
-          download: (id) => dropboxDownload(accessToken, id),
-        },
-  extract: (pages, opts) => extractOrClassify(pages, opts),
-};
-
-let seams: Required<ImportSeams> = REAL_SEAMS;
-
-export function setImportSeams(next: ImportSeams | null): void {
-  seams = { ...REAL_SEAMS, ...next };
-}
-
-/** Test seam — the per-connection counter is process-global. */
-export function resetImportMemory(): void {
-  seams = REAL_SEAMS;
-  perConnectionFiles = createQuotaCounter(IMPORT_FILES_PER_DAY, DAY_MS, 30 * 60_000);
+export function setImportSeams(next: { extract?: Extractor } | null): void {
+  extract = next?.extract ?? extractOrClassify;
 }
 
 // ---------------------------------------------------------------------------
@@ -141,17 +105,16 @@ export type SniffedType = 'application/pdf' | 'application/zip' | 'image/jpeg' |
 
 /** The type the bytes say they are. A declared mime type or a name is never consulted (AC4). */
 export function sniff(bytes: Uint8Array): SniffedType | null {
-  const at = (i: number) => bytes[i];
-  if (bytes.length >= 5 && at(0) === 0x25 && at(1) === 0x50 && at(2) === 0x44 && at(3) === 0x46 && at(4) === 0x2d) return 'application/pdf';
-  if (bytes.length >= 4 && at(0) === 0x50 && at(1) === 0x4b && at(2) === 0x03 && at(3) === 0x04) return 'application/zip';
-  if (bytes.length >= 3 && at(0) === 0xff && at(1) === 0xd8 && at(2) === 0xff) return 'image/jpeg';
-  if (bytes.length >= 4 && at(0) === 0x89 && at(1) === 0x50 && at(2) === 0x4e && at(3) === 0x47) return 'image/png';
+  if (bytes.length >= 5 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46 && bytes[4] === 0x2d) return 'application/pdf';
+  if (bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04) return 'application/zip';
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+  if (bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'image/png';
   return null;
 }
 
 /** A file's own name as `sourceFileName`: printable, bounded, never a path. */
 function cleanName(name: string): string {
-  return name.replace(/[\x00-\x1f\x7f]/g, '').slice(0, 255) || 'file';
+  return oneLine(name).slice(0, 255) || 'file';
 }
 
 export interface ZipEntryBytes {
@@ -163,7 +126,6 @@ export interface ZipEntryBytes {
 /**
  * Open a ZIP under the caps (AC5): at most `MAX_IMPORT_FILES_PER_CALL`
  * importable entries, each at most `MAX_IMPORT_FILE_BYTES` INFLATED — the
- * declared size is the archive's claim and is only a cheap first refusal; the
  * bytes are counted as they inflate and the stream is stopped past the cap,
  * so a bomb declaring 1 MB never fills memory. Entries are taken by position;
  * a name is a label, never a path. Nested zips and anything the junk filter
@@ -185,13 +147,6 @@ export async function unzip(bytes: Uint8Array): Promise<{ entries: ZipEntryBytes
     }
     if (entries.length >= MAX_IMPORT_FILES_PER_CALL) {
       skipped.push({ name, reason: 'too_many' });
-      continue;
-    }
-    // JSZip publishes no size; the central directory's claim sits on a
-    // private field. Read behind one line, typed loosely, as the cheap check.
-    const declared = (entry as unknown as { _data?: { uncompressedSize?: number } })._data?.uncompressedSize;
-    if (typeof declared === 'number' && declared > MAX_IMPORT_FILE_BYTES) {
-      skipped.push({ name, reason: 'too_large' });
       continue;
     }
     const inflated = await inflateCapped(entry, MAX_IMPORT_FILE_BYTES);
@@ -246,6 +201,11 @@ function sha256Hex(bytes: Uint8Array | string): string {
   return crypto.createHash('sha256').update(bytes).digest('hex');
 }
 
+/** The record's own document key for these bytes — `FileDocument.contentHash`'s shape. */
+function contentHashOf(bytes: Uint8Array): string {
+  return `sha256-${sha256Hex(bytes)}`;
+}
+
 // ---------------------------------------------------------------------------
 // The ChatGPT file route (AC4)
 // ---------------------------------------------------------------------------
@@ -270,78 +230,34 @@ export async function fetchChatgptFile(downloadUrl: string): Promise<{ bytes: Ui
   try {
     const res = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(CHATGPT_FETCH_TIMEOUT_MS) });
     if (!res.ok) return { refusal: `The file host answered ${res.status}, so the file could not be read. Ask the user to drag it in again.` };
-    return { bytes: await readCappedBytes(res, MAX_CHATGPT_FILE_BYTES) };
+    return { bytes: await readCappedBytes(res, MAX_IMPORT_ZIP_BYTES) };
   } catch (error) {
     if (error instanceof Error && error.message === 'body too large') {
-      return { refusal: `That file is larger than ${MAX_CHATGPT_FILE_BYTES / (1024 * 1024)} MB, so it was not read. Split it, or put smaller files in the connected folder.` };
+      return { refusal: `That file is larger than ${MAX_IMPORT_ZIP_BYTES / (1024 * 1024)} MB, so it was not read. Split it, or put smaller files in the connected folder.` };
     }
     return { refusal: 'The file host did not answer in time, so the file could not be read. Ask the user to drag it in again.' };
   }
 }
 
 // ---------------------------------------------------------------------------
-// The receipt (AC7)
+// The surface
 // ---------------------------------------------------------------------------
 
+/** What a receipt names (AC7). Sealed under `'import'`, bound to the client and resource as every blob is. */
 interface ReceiptClaims {
   id: string;
   exp: number;
+  /** The connection hash, so a receipt cannot be committed over another connection to the same client. */
   conn: string;
   sha256: string;
-}
-
-function receiptMac(key: Buffer, header: string): string {
-  return b64url(crypto.createHmac('sha256', typeKey(key, 'import')).update(header, 'utf8').digest());
-}
-
-export function mintReceipt(claims: ReceiptClaims): string {
-  const keys = sealKeys();
-  if (keys.length === 0) throw new Error('MCP_SEAL_KEYS is not configured');
-  const header = b64url(Buffer.from(JSON.stringify(claims), 'utf8'));
-  return `${header}.${receiptMac(keys[0], header)}`;
-}
-
-/**
- * The claims, or null — for a bad MAC, another connection, an expiry passed,
- * or a shape that is not a receipt, all alike. Every configured key is tried,
- * so a rotation inside the hour does not strand a receipt.
- */
-export function verifyReceipt(receipt: string, connection: string, nowMs: number): ReceiptClaims | null {
-  const [header, mac, ...rest] = receipt.split('.');
-  if (!header || !mac || rest.length > 0) return null;
-  const presented = Buffer.from(mac, 'base64url');
-  const valid = sealKeys().some((key) => {
-    const expected = Buffer.from(receiptMac(key, header), 'base64url');
-    return expected.length === presented.length && crypto.timingSafeEqual(expected, presented);
-  });
-  if (!valid) return null;
-  let claims: ReceiptClaims;
-  try {
-    claims = JSON.parse(Buffer.from(header, 'base64url').toString('utf8')) as ReceiptClaims;
-  } catch {
-    return null;
-  }
-  if (typeof claims.id !== 'string' || !/^[0-9a-f-]{36}$/.test(claims.id)) return null;
-  if (typeof claims.exp !== 'number' || claims.exp * 1000 <= nowMs) return null;
-  if (claims.conn !== hash(connection) || typeof claims.sha256 !== 'string') return null;
-  return claims;
 }
 
 function pendingName(id: string): string {
   return `${PENDING_FOLDER}/pending-${id}.json`;
 }
 
-// ---------------------------------------------------------------------------
-// The surface
-// ---------------------------------------------------------------------------
-
-function allowanceRefusal(): ImportRefusal {
-  return {
-    refusal:
-      `This connection has spent its write allowance for the hour — ${WRITES_PER_HOUR} weighted writes an hour, and an ` +
-      'import costs one plus one per file. Reading still works. The allowance comes back with the hour. Nothing was written.',
-  };
-}
+/** A `crypto.randomUUID()` and nothing else — the only id that may name a pending file. (`route-helpers`' `isValidUuid` sits behind the Shopify session store, which this layer must not load.) */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** AC3, per client: the way that works for THIS assistant comes first. */
 function driveRefusal(client: McpClientLabel): string {
@@ -353,32 +269,34 @@ function driveRefusal(client: McpClientLabel): string {
 
 /** Why one file could not be read, as a closed word the assistant can act on. */
 function failureReason(error: unknown): string {
-  if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) return 'time';
+  if (isNetworkOrTimeoutError(error)) return 'time';
   if (error instanceof Error && /status 400/.test(error.message)) return 'too_large';
   return 'unreadable';
 }
 
+function fail(name: string, status: ImportFileStatus, reason: string): ExtractedFile {
+  return { name, status, reason };
+}
+
+/** One file to read: its bytes come on demand, so a download overlaps another file's model call. */
 interface Unit {
   name: string;
   size?: number;
-  bytes?: Uint8Array;
-  fetch?: () => Promise<Uint8Array>;
+  fetch(): Promise<Uint8Array>;
 }
 
 export interface HostedImporterOptions {
   token: AccessPayload;
-  accessToken: string;
   adapter: StorageAdapter;
   client: McpClientLabel;
-  /** The hosted `correct_value` guard, run per `replace` (AC8, review 6). */
-  checkCorrection(file: RoadmapFile, args: { id: string; expectedValue: number }, now: string): string | null;
   maxCorrectionAgeDays: number;
 }
 
 /** The `ImportSurface` for one hosted call. Built per call, like the adapter; holds nothing after. */
 export function hostedImporter(options: HostedImporterOptions): ImportSurface {
-  const { token, accessToken, adapter, client } = options;
+  const { token, adapter, client } = options;
   const connection = connectionKey(token.rt);
+  const audience = { clientId: token.clientId, resource: resourceUrl() };
 
   async function sweepStale(nowMs: number): Promise<void> {
     if (!adapter.list || !adapter.remove) return;
@@ -402,27 +320,22 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
     async extract(request: ImportRequest, file: RoadmapFile, now: string): Promise<ImportBundle | ImportRefusal> {
       const started = Date.now();
       const deadline = started + MCP_IMPORT_BUDGET_MS - BUDGET_RESERVE_MS;
-      const overBudget = () => Date.now() > deadline;
-      if (!spendWrites(connection, WRITE_COST.add)) return allowanceRefusal();
-
       let route: McpImportRoute;
       const units: Unit[] = [];
       const remaining: string[] = [];
-      const files: ExtractedFile[] = [];
 
       if (request.file) {
         route = 'chatgpt_file';
         const fetched = await fetchChatgptFile(request.file.download_url);
         if ('refusal' in fetched) return fetched;
-        units.push({ name: cleanName(request.file.file_name ?? 'file'), bytes: fetched.bytes });
+        units.push({ name: cleanName(request.file.file_name ?? 'file'), fetch: async () => fetched.bytes });
       } else {
-        const source = seams.folder(token.provider, accessToken);
-        if (!source) {
+        if (token.provider === 'google' || !adapter.list) {
           count('drive_refused', 'extract', 0);
           return { refusal: driveRefusal(client) };
         }
         route = 'dropbox';
-        const listing = (await source.list())
+        const listing = (await adapter.list(''))
           .map((entry) => ({ ...entry, name: cleanName(entry.name) }))
           .filter((entry) => isImportableEntryName(entry.name, [...IMPORTABLE_EXTENSIONS, '.zip']))
           .sort((a, b) => a.name.localeCompare(b.name));
@@ -438,123 +351,117 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
           }
         }
         for (const entry of chosen.slice(0, IMPORT_FILES_PER_CALL)) {
-          units.push({ name: entry.name, size: entry.size, fetch: () => source.download(entry.id) });
+          // By the listing's own ref, never by a name an assistant supplied.
+          units.push({ name: entry.name, size: entry.size, fetch: async () => new Uint8Array(await (await adapter.readDocument(entry.ref)).arrayBuffer()) });
         }
         remaining.push(...chosen.slice(IMPORT_FILES_PER_CALL).map((entry) => entry.name));
       }
 
-      // Bytes, then type, then contents — one unit at a time, inside the budget.
-      const work: Array<{ name: string; bytes: Uint8Array; mimeType: SniffedType }> = [];
-      for (const unit of units) {
-        if (overBudget()) {
+      // Off the critical path: it overlaps the reads below and is awaited at the end.
+      const sweep = sweepStale(started);
+
+      /** One file through the model, inside what is left of the budget. */
+      const extractOne = async (name: string, bytes: Uint8Array, mimeType: SniffedType): Promise<ExtractedFile> => {
+        const left = deadline - Date.now();
+        if (left <= 0) return fail(name, 'skipped', 'time');
+        const contentHash = contentHashOf(bytes);
+        const base = { name, contentHash, mimeType };
+        if (isAlreadyImported(file, name, contentHash)) return { ...base, status: 'already_imported' };
+        if (!machineFiles.take('machine', 1) || !importFiles.take(connection, 1)) return { ...base, status: 'failed', reason: 'quota' };
+        if (chargeWrites(connection, WRITE_COST.add)) return { ...base, status: 'failed', reason: 'allowance' };
+        const content = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString('base64');
+        const pages: PageContent[] = mimeType === 'application/pdf' ? [{ type: 'pdf', content }] : [{ type: 'image', content, mimeType }];
+        try {
+          return { ...base, status: 'extracted', result: await extract(pages, { timeoutMs: Math.min(EXTRACT_TIMEOUT_MS, left), attempts: 1 }) };
+        } catch (error) {
+          const reason = failureReason(error);
+          if (reason === 'unreadable') {
+            Sentry.captureException(error, { tags: { feature: 'mcp_import', errorName: error instanceof Error ? error.name : 'unknown' }, extra: { kind: mimeType } });
+          }
+          return { ...base, status: 'failed', reason };
+        }
+      };
+
+      // Bytes, then type, then contents. A queue of three runners: a unit's
+      // download overlaps another's model call, and a ZIP's entries join the
+      // queue so idle runners share them. Results keep the listing's order.
+      const results: Array<ExtractedFile | ExtractedFile[]> = [];
+      const queue: Array<() => Promise<void>> = units.map((unit, i) => async () => {
+        if (Date.now() > deadline) {
           if (route === 'dropbox') remaining.push(unit.name);
-          else files.push({ name: unit.name, sha256: '', mimeType: '', status: 'skipped', reason: 'time' });
-          continue;
+          else results[i] = fail(unit.name, 'skipped', 'time');
+          return;
         }
         const isZip = unit.name.toLowerCase().endsWith('.zip');
         if (unit.size !== undefined && unit.size > (isZip ? MAX_IMPORT_ZIP_BYTES : MAX_IMPORT_FILE_BYTES)) {
-          files.push({ name: unit.name, sha256: '', mimeType: '', status: 'failed', reason: 'too_large' });
-          continue;
+          results[i] = fail(unit.name, 'failed', 'too_large');
+          return;
         }
         let bytes: Uint8Array;
         try {
-          bytes = unit.bytes ?? (await unit.fetch!());
+          bytes = await unit.fetch();
         } catch {
-          files.push({ name: unit.name, sha256: '', mimeType: '', status: 'failed', reason: 'unreadable' });
-          continue;
+          results[i] = fail(unit.name, 'failed', 'unreadable');
+          return;
         }
         const mimeType = sniff(bytes);
         if (mimeType === 'application/zip') {
           if (bytes.length > MAX_IMPORT_ZIP_BYTES) {
-            files.push({ name: unit.name, sha256: '', mimeType: '', status: 'failed', reason: 'too_large' });
-            continue;
+            results[i] = fail(unit.name, 'failed', 'too_large');
+            return;
           }
           let opened: Awaited<ReturnType<typeof unzip>>;
           try {
             opened = await unzip(bytes);
           } catch {
-            files.push({ name: unit.name, sha256: '', mimeType: '', status: 'failed', reason: 'unreadable' });
-            continue;
+            results[i] = fail(unit.name, 'failed', 'unreadable');
+            return;
           }
-          for (const entry of opened.entries) work.push({ name: entry.name, bytes: entry.bytes, mimeType: entry.mimeType });
-          for (const skip of opened.skipped) files.push({ name: skip.name, sha256: '', mimeType: '', status: 'skipped', reason: skip.reason });
-          continue;
+          const inside: ExtractedFile[] = new Array<ExtractedFile>(opened.entries.length);
+          results[i] = inside;
+          opened.entries.forEach((entry, k) => queue.push(async () => { inside[k] = await extractOne(entry.name, entry.bytes, entry.mimeType); }));
+          for (const skip of opened.skipped) inside.push(fail(skip.name, 'skipped', skip.reason));
+          return;
         }
         if (!mimeType) {
-          files.push({ name: unit.name, sha256: '', mimeType: '', status: 'failed', reason: 'unsupported' });
-          continue;
+          results[i] = fail(unit.name, 'failed', 'unsupported');
+          return;
         }
         if (bytes.length > MAX_IMPORT_FILE_BYTES) {
-          files.push({ name: unit.name, sha256: '', mimeType: '', status: 'failed', reason: 'too_large' });
-          continue;
+          results[i] = fail(unit.name, 'failed', 'too_large');
+          return;
         }
-        work.push({ name: unit.name, bytes, mimeType });
-      }
-
-      // Extraction, three at a time, each inside what is left of the budget.
-      const read: ExtractedFile[] = new Array(work.length);
-      let next = 0;
+        results[i] = await extractOne(unit.name, bytes, mimeType);
+      });
       const runner = async () => {
-        while (next < work.length) {
-          const index = next++;
-          const item = work[index];
-          const sha256 = sha256Hex(item.bytes);
-          const base = { name: item.name, sha256, mimeType: item.mimeType };
-          if (isAlreadyImported(file, item.name, sha256)) {
-            read[index] = { ...base, status: 'already_imported' };
-            continue;
-          }
-          const left = deadline - Date.now();
-          if (left <= 0) {
-            read[index] = { ...base, status: 'skipped', reason: 'time' };
-            continue;
-          }
-          if (!perConnectionFiles.take(connection, 1) || !consumeMachineFiles(1)) {
-            read[index] = { ...base, status: 'failed', reason: 'quota' };
-            continue;
-          }
-          if (!spendWrites(connection, WRITE_COST.add)) {
-            read[index] = { ...base, status: 'failed', reason: 'allowance' };
-            continue;
-          }
-          const content = Buffer.from(item.bytes).toString('base64');
-          const pages: PageContent[] = item.mimeType === 'application/pdf'
-            ? [{ type: 'pdf', content }]
-            : [{ type: 'image', content, mimeType: item.mimeType }];
-          try {
-            const result = await seams.extract(pages, { timeoutMs: Math.min(EXTRACT_TIMEOUT_MS, left) });
-            read[index] = { ...base, status: 'extracted', result };
-          } catch (error) {
-            const reason = failureReason(error);
-            if (reason === 'unreadable') {
-              Sentry.captureException(error, { tags: { feature: 'mcp_import', errorName: error instanceof Error ? error.name : 'unknown' }, extra: { kind: item.mimeType } });
-            }
-            read[index] = { ...base, status: 'failed', reason };
-          }
-        }
+        while (queue.length) await queue.shift()!();
       };
-      await Promise.all(Array.from({ length: Math.min(EXTRACT_CONCURRENCY, work.length) }, runner));
+      await Promise.all(Array.from({ length: Math.min(EXTRACT_CONCURRENCY, queue.length) }, runner));
+      await sweep;
 
-      await sweepStale(started);
-      count(route, 'extract', work.length);
-      return { route, files: [...read, ...files], remaining };
+      const files = results.flat();
+      count(route, 'extract', files.filter((f) => f.contentHash).length);
+      return { route, files, remaining };
     },
 
     async stash(payload: ImportPayload) {
-      const exp = Math.floor(Date.parse(payload.createdAt) / 1000) + RECEIPT_LIFETIME_SECONDS;
-      const sha256 = sha256Hex(JSON.stringify(payload));
+      const exp = nowSeconds(Date.parse(payload.createdAt)) + RECEIPT_LIFETIME_SECONDS;
+      const claims: ReceiptClaims = { id: payload.id, exp, conn: hash(connection), sha256: sha256Hex(JSON.stringify(payload)) };
       try {
         await adapter.write(pendingName(payload.id), payload, null);
       } catch {
         return { refusal: 'The candidates could not be parked in the user’s folder, so there is nothing to commit. Try the import again.' };
       }
-      return { receipt: mintReceipt({ id: payload.id, exp, conn: hash(connection), sha256 }), expiresAt: new Date(exp * 1000).toISOString() };
+      return { receipt: seal('import', claims, audience), expiresAt: new Date(exp * 1000).toISOString() };
     },
 
-    async open(commit: ImportCommit, file: RoadmapFile, now: string): Promise<ImportPayload | ImportRefusal> {
+    async open(commit: ImportCommit, _file: RoadmapFile, now: string): Promise<ImportPayload | ImportRefusal> {
       // Verified BEFORE anything is charged: a forged receipt costs nothing.
-      const claims = verifyReceipt(commit.receipt, connection, Date.parse(now));
-      if (!claims) return { refusal: 'That receipt is not valid for this connection, or has expired. Nothing was written. Extract again and show the user the fresh candidates.' };
+      // A claims block sealed by us but naming a non-UUID id can never form a path.
+      const claims = unseal<ReceiptClaims>('import', commit.receipt, audience, Date.parse(now));
+      if (!claims || typeof claims.id !== 'string' || !UUID.test(claims.id) || claims.conn !== hash(connection) || typeof claims.sha256 !== 'string') {
+        return { refusal: 'That receipt is not valid for this connection, or has expired. Nothing was written. Extract again and show the user the fresh candidates.' };
+      }
       const { body } = await adapter.read(pendingName(claims.id));
       if (body == null) return { refusal: 'That import was already committed or discarded. Nothing was written. Extract again if the user still wants it.' };
       if (sha256Hex(JSON.stringify(body)) !== claims.sha256) {
@@ -564,13 +471,8 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       if (payload.id !== claims.id || !Array.isArray(payload.candidates) || !Array.isArray(payload.documents)) {
         return { refusal: 'The pending import is not readable. Nothing was written. Extract again.' };
       }
-      for (const id of commit.replace) {
-        const candidate = payload.candidates.find((c) => c.id === id);
-        if (!candidate || candidate.slot.state !== 'held_different') continue; // the tool layer answers in its own words
-        const refusal = options.checkCorrection(file, { id: candidate.slot.existingRowId ?? '', expectedValue: candidate.slot.existingValue ?? NaN }, now);
-        if (refusal) return { refusal };
-      }
-      if (!spendWrites(connection, WRITE_COST.add + WRITE_COST.correct * commit.replace.length)) return allowanceRefusal();
+      const refusal = chargeWrites(connection, WRITE_COST.add + WRITE_COST.correct * commit.replace.length);
+      if (refusal) return { refusal };
       count(payload.route, 'commit', new Set(payload.candidates.map((c) => c.sourceFileName)).size + payload.documents.length);
       return payload;
     },

@@ -80,6 +80,12 @@ export function dayOf(iso: string): string {
   return iso.slice(0, 10);
 }
 
+/** Whole UTC days from one ISO day to another; 0 when either does not parse. The one age rule every surface reads. */
+export function daysBetween(from: string, to: string): number {
+  const ms = Date.parse(to) - Date.parse(from);
+  return Number.isFinite(ms) ? Math.floor(ms / 86_400_000) : 0;
+}
+
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /**

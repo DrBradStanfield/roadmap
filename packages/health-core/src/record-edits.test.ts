@@ -411,7 +411,7 @@ describe('US-31 AC5 \u2014 unit labels resolve through the shared resolver (unit
 // ---------------------------------------------------------------------------
 // US-35 — provenance, the shared slot rule, and the shared bulk save
 // ---------------------------------------------------------------------------
-import { bulkAppendValues, findActiveInSlot, slotState } from './record-edits';
+import { bulkAppendValues, findActiveInSlot, slotIndex, slotKey, slotState } from './record-edits';
 
 describe('US-35 AC8 — a writer states its source; the defaults stay what they were', () => {
   it('appends carry the source they are given, and `manual` when none', () => {
@@ -443,6 +443,21 @@ describe('US-35 AC6 — one slot rule for the website and the connector', () => 
     expect(slotState(undefined, '3.4')).toBe('free');
     expect(slotState('3.4', '3.4')).toBe('held_equal');
     expect(slotState('3.4', '3.5')).toBe('held_different');
+  });
+
+  it('spells the slot once: a metric on a day, a lab by catalogue key, and the index of every active row agrees', () => {
+    expect(slotKey('measurement', 'ldl', '2026-07-14T09:00:00Z')).toBe('m:ldl@2026-07-14');
+    expect(slotKey('lab', 'Ferritin', '2026-07-14')).toBe(slotKey('lab', 'ferritin', '2026-07-14T23:59:59Z'));
+    expect(slotKey('lab', 'ferritin', '2026-07-14')).not.toBe(slotKey('measurement', 'ferritin', '2026-07-14'));
+    const index = slotIndex(base());
+    expect(index.get(slotKey('measurement', 'ldl', '2026-07-14'))?.id).toBe('m1');
+    expect(index.get(slotKey('lab', 'FERRITIN', '2026-07-14'))?.id).toBe('l1');
+    expect([...index.keys()].sort()).toEqual(['l:ferritin@2026-07-14', 'm:ldl@2026-07-14']);
+    const flipped = base();
+    flipped.measurements[0].status = 'entered-in-error';
+    expect(slotIndex(flipped).has('m:ldl@2026-07-14')).toBe(false);
+    // `findActiveInSlot` is the same lookup, one at a time.
+    expect(findActiveInSlot(base(), 'lab', 'FERRITIN', '2026-07-14')).toEqual(index.get('l:ferritin@2026-07-14'));
   });
 });
 

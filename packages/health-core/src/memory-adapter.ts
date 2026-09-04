@@ -54,7 +54,7 @@ export class MemoryAdapter implements StorageAdapter {
       throw new ConflictError(`expected version ${expectedVersion}, but remote is ${current}`);
     }
     const version = (entry?.version ?? 0) + 1;
-    this.cloud.files.set(fileName, { json: JSON.stringify(body), version });
+    this.cloud.files.set(fileName, { json: JSON.stringify(body), version, modified: new Date().toISOString() });
     return { version: String(version) };
   }
 
@@ -68,10 +68,13 @@ export class MemoryAdapter implements StorageAdapter {
     this.cloud.docs.set(ref, bytes);
   }
 
+  /** Records and documents alike, one level deep — a folder root holds both, as a real one does. */
   async list(folder: string): Promise<StoredFile[]> {
-    const prefix = `${folder}/`;
-    return [...this.cloud.files].filter(([name]) => name.startsWith(prefix))
-      .map(([name, entry]) => ({ name, modified: entry.modified ?? '' }));
+    const inFolder = (name: string) => (folder ? name.startsWith(`${folder}/`) : !name.includes('/'));
+    const out: StoredFile[] = [];
+    for (const [name, entry] of this.cloud.files) if (inFolder(name)) out.push({ name, ref: name, size: entry.json.length, modified: entry.modified ?? '' });
+    for (const [name, blob] of this.cloud.docs) if (inFolder(name)) out.push({ name, ref: name, size: blob.size, modified: '' });
+    return out;
   }
 
   async remove(fileName: string): Promise<void> {

@@ -2,8 +2,7 @@ import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import * as Sentry from '@sentry/react-router';
 import { labImportRequestSchema, batchImportRequestSchema } from '../../packages/health-core/src/validation';
 import { extractOrClassify, createBatch, pollBatch } from '../lib/anthropic.server';
-import { createQuotaCounter } from '../lib/rate-limiter';
-import { consumeMachineFiles } from '../lib/lab-import-quota.server';
+import { createQuotaCounter, DAY_MS, machineFiles } from '../lib/rate-limiter';
 import { getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '../lib/local-first-route.server';
 
 /**
@@ -23,12 +22,11 @@ import { getClientIp, parseSimpleRequestJson, verifyAppProxySignature } from '..
  * Cost control (no identity to meter per-user):
  *  - per-IP daily file limit (anti-abuse, mirrors v1's per-customer limit)
  *  - a HARD per-machine daily file cap as the $-cap guardrail, shared with the
- *    connector's import (`lab-import-quota.server.ts`, US-35 AC10). Tune via
- *    AI_DAILY_FILE_CAP (default 500/day/machine ≈ low tens of $ worst case).
+ *    connector's import (`machineFiles` in rate-limiter.ts, US-35 AC10). Tune
+ *    via AI_DAILY_FILE_CAP (default 500/day/machine ≈ low tens of $ worst case).
  */
 
 const PER_IP_DAILY_LIMIT = 60;
-const DAY_MS = 24 * 60 * 60_000;
 
 // Per-IP daily file quota — same shared counter machinery the sibling
 // local-first routes use (rate-limiter.ts), weighted by file count.
@@ -37,7 +35,7 @@ const ipQuota = createQuotaCounter(PER_IP_DAILY_LIMIT, DAY_MS, 30 * 60_000);
 /** Consume `count` files against the per-IP quota AND the machine $-cap. */
 function consumeQuota(ip: string, count: number): boolean {
   if (!ipQuota.take(ip, count)) return false;
-  return consumeMachineFiles(count);
+  return machineFiles.take('machine', count);
 }
 
 // Batch poll state — per-machine, like v1 (a poll landing on the other Fly

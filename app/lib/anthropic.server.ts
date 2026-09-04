@@ -161,31 +161,33 @@ export async function extractLabResults(
  * Unified extraction: classifies the document and either extracts lab values
  * or converts to markdown + metadata, in a single LLM call.
  *
- * `timeoutMs` bounds each HTTP call and turns the outer retry off: the
- * connector's import (US-35 AC10) runs inside a 40 s tool-call budget, where
- * a second full attempt cannot fit and a hung call must fail fast.
+ * `timeoutMs` bounds each HTTP call; `attempts` is the outer retry. The
+ * connector's import (US-35 AC10) passes both — it runs inside a 40 s
+ * tool-call budget, where a second full attempt cannot fit and a hung call
+ * must fail fast.
  */
 export async function extractOrClassify(
   pages: PageContent[],
-  opts: { timeoutMs?: number } = {},
+  opts: { timeoutMs?: number; attempts?: number } = {},
 ): Promise<UnifiedExtractionResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
 
   const content = pagesToContentBlocks(pages);
-  if (opts.timeoutMs) return extractOrClassifyOnce(apiKey, content, opts.timeoutMs);
-
   // One retry (2 attempts total) with 1s backoff. Catches schema-drift
   // failures (the LLM returned 200 but the JSON didn't match our shape) and
   // anything that bubbles up from fetchAnthropicRaw despite its own retry.
   // Transient API failures (5xx, network) are mostly absorbed by the inner
   // retry in fetchAnthropicRaw; worst-case compound here is ~3s of backoff
   // on a persistent capacity event, acceptable for an async upload path.
-  try {
-    return await extractOrClassifyOnce(apiKey, content);
-  } catch {
-    await sleep(1000);
-    return await extractOrClassifyOnce(apiKey, content);
+  const attempts = opts.attempts ?? 2;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await extractOrClassifyOnce(apiKey, content, opts.timeoutMs);
+    } catch (error) {
+      if (attempt >= attempts) throw error;
+      await sleep(1000);
+    }
   }
 }
 
@@ -279,7 +281,7 @@ const TRANSIENT_CAPACITY_STATUSES = new Set([503, 529]); // silenced from Sentry
  * "No text in Anthropic response") are NOT in scope — those are status-coded
  * via the inner retry path or won't fix themselves.
  */
-function isNetworkOrTimeoutError(err: unknown): boolean {
+export function isNetworkOrTimeoutError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
   if (err.name === 'TimeoutError' || err.name === 'AbortError') return true;
   return err instanceof TypeError && err.message === 'fetch failed';

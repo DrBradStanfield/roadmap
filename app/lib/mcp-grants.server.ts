@@ -4,7 +4,7 @@
  *
  * NOTHING HERE MAY LOG A URL.
  */
-import { createRateLimiter } from './rate-limiter';
+import { createQuotaCounter, createRateLimiter, DAY_MS } from './rate-limiter';
 import { resetMcpWarnings } from './mcp-config.server';
 import { resetCimdCache } from './mcp-clients.server';
 import { resetGithubIssues } from './github-issues.server';
@@ -31,6 +31,8 @@ export const REFRESH_LIFETIME_SECONDS = 90 * 24 * 60 * 60;
 export const WRITES_PER_HOUR = 60;
 export const WRITE_COST = { add: 1, correct: 5 } as const;
 const WRITE_WINDOW_MS = 60 * 60 * 1000;
+/** Files one connection may send to the extraction model in a day, per machine (US-35 AC10). */
+export const IMPORT_FILES_PER_DAY = 30;
 
 export interface StatePayload {
   clientId: string;
@@ -152,10 +154,28 @@ export function spendWrites(connection: string, cost: number, nowMs = Date.now()
   return true;
 }
 
+/**
+ * The allowance charged and, when spent, refused in words — the ONE wording,
+ * whether the loop charges a tool's declared cost before it runs or the
+ * import charges per file and per replace as it goes (US-35 AC10).
+ */
+export function chargeWrites(connection: string, cost: number): string | null {
+  if (spendWrites(connection, cost)) return null;
+  return (
+    `This connection has spent its write allowance for the hour — ${WRITES_PER_HOUR} weighted writes an hour, ` +
+    `where a correction counts as ${WRITE_COST.correct} and an import one per file. Reading still works. The allowance comes back with ` +
+    'the hour; a new access token does not buy more. Ask the user to make this change in the app if it cannot wait.'
+  );
+}
+
+/** Files extracted per connection today, beside the writes — the same key, the same reset. */
+export const importFiles = createQuotaCounter(IMPORT_FILES_PER_DAY, DAY_MS, 30 * 60_000);
+
 /** Test seam — the maps are process-global and would leak between cases. */
 export function resetMcpMemory(): void {
   spentCodes.clear();
   spentWrites.clear();
+  importFiles.reset();
   resetCimdCache();
   resetGithubIssues();
   resetMcpWarnings();

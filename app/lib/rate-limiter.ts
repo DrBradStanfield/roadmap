@@ -1,5 +1,7 @@
 // In-memory rate limiter factory
 // Shared across routes (api.measurements, api.ab, etc.)
+export const DAY_MS = 24 * 60 * 60_000;
+
 export function createRateLimiter(max: number, windowMs: number, cleanupMs: number) {
   const map = new Map<string, { count: number; resetAt: number }>();
   const sweep = setInterval(() => {
@@ -47,6 +49,8 @@ export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: n
     return entry && Date.now() <= entry.resetAt ? entry : null;
   };
   return {
+    /** Test seam — the map is process-global. */
+    reset: () => map.clear(),
     /** Consume `n` units; false (and nothing consumed) when it would exceed the limit. */
     take(key: string, n: number): boolean {
       let entry = live(key);
@@ -64,3 +68,12 @@ export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: n
     },
   };
 }
+
+/**
+ * The per-machine daily file cap — the dollar ceiling on extraction. Spent by
+ * the website's upload route and the connector's `import_documents` alike
+ * (US-35 AC10), so the ceiling stays ONE number. In memory, so the true cap is
+ * `AI_DAILY_FILE_CAP × machines × 2 apps` and it resets on deploy — an
+ * accepted approximation until a shared counter is worth its DDL.
+ */
+export const machineFiles = createQuotaCounter(Number(process.env.AI_DAILY_FILE_CAP || 500), DAY_MS, 30 * 60_000);

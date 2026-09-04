@@ -242,6 +242,21 @@ export function createMeasurement(
   };
 }
 
+/** The lab-value twin of `createMeasurement`: one row shape for every writer. */
+export function createLabValue(
+  fields: Pick<FileLabValue, 'id' | 'metricName' | 'value' | 'unit' | 'recordedAt' | 'createdAt'> &
+    Partial<Pick<FileLabValue, 'referenceLow' | 'referenceHigh' | 'source' | 'status' | 'correctsId'>>,
+): FileLabValue {
+  return {
+    referenceLow: null,
+    referenceHigh: null,
+    source: 'manual',
+    status: 'active',
+    correctsId: null,
+    ...fields,
+  };
+}
+
 /**
  * Deterministic JSON stringify (object keys sorted recursively). Used as the
  * final, content-based tiebreak in merge so two devices converge identically.

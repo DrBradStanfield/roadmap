@@ -4,23 +4,26 @@
  * What is pinned here: the type of a file is its bytes (AC4), a ZIP is opened
  * under caps that a bomb cannot talk its way past (AC5), the ChatGPT fetch
  * refuses everything but https on the allow-list with no redirects (AC4), and
- * a receipt is small, bound to one connection, and fails closed on any tamper
- * (AC7). The whole flow over a folder is `mcp.hosted.test.ts`.
+ * a receipt is small, sealed, bound to one connection, and fails closed on
+ * any tamper (AC7). The whole flow over a folder is `mcp.hosted.test.ts`.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import JSZip from 'jszip';
 import {
   CHATGPT_FETCH_TIMEOUT_MS,
   fetchChatgptFile,
-  MAX_CHATGPT_FILE_BYTES,
+  hostedImporter,
   MAX_IMPORT_FILE_BYTES,
-  mintReceipt,
+  MAX_IMPORT_ZIP_BYTES,
   sniff,
   unzip,
-  verifyReceipt,
 } from './mcp-import.server';
-import { hash } from './mcp-seal.server';
-import { MAX_IMPORT_FILES_PER_CALL, MAX_RECEIPT_LENGTH } from '../../packages/health-core/src/mcp-tools';
+import { resourceUrl } from './mcp-config.server';
+import { connectionKey, resetMcpMemory } from './mcp-grants.server';
+import { hash, seal } from './mcp-seal.server';
+import { type ImportPayload, MAX_IMPORT_FILES_PER_CALL, MAX_RECEIPT_LENGTH } from '../../packages/health-core/src/mcp-tools';
+import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
+import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 
 const PDF = new TextEncoder().encode('%PDF-1.4\n1 0 obj\nendobj\n');
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0]);
@@ -126,7 +129,7 @@ describe('US-35 AC4 — the ChatGPT file fetch', () => {
     expect(init!.signal).toBeInstanceOf(AbortSignal);
     expect(CHATGPT_FETCH_TIMEOUT_MS).toBe(10_000);
 
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(new Uint8Array(MAX_CHATGPT_FILE_BYTES + 1))));
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(new Uint8Array(MAX_IMPORT_ZIP_BYTES + 1))));
     const tooBig = await fetchChatgptFile('https://files.oaiusercontent.com/file-big');
     expect('refusal' in tooBig && tooBig.refusal).toMatch(/larger than/);
   });
@@ -146,34 +149,61 @@ describe('US-35 AC4 — the ChatGPT file fetch', () => {
 });
 
 describe('US-35 AC7 — the receipt names the payload and binds it to one connection', () => {
-  const CLAIMS = { id: '11111111-2222-4333-8444-555555555555', exp: 2_000_000_000, conn: hash('connection-a'), sha256: 'ab'.repeat(32) };
+  const NOW = '2026-09-02T10:00:00.000Z';
+  const PAYLOAD: ImportPayload = { id: '11111111-2222-4333-8444-555555555555', route: 'dropbox', createdAt: NOW, candidates: [], documents: [] };
+  const file = createEmptyFile({ deviceId: 'test', now: NOW });
 
-  it('round-trips, stays under the cap, and carries no value', () => {
-    const receipt = mintReceipt(CLAIMS);
+  /** The surface for one connection over one in-memory folder — the receipt is minted and opened here and nowhere else. */
+  function surfaceFor(rt: string, cloud = new MemoryCloud()) {
+    return hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt, exp: 0 }, adapter: new MemoryAdapter(cloud), client: 'claude', maxCorrectionAgeDays: 90 });
+  }
+  async function stashed(surface: ReturnType<typeof surfaceFor>) {
+    const answer = await surface.stash(PAYLOAD);
+    if ('refusal' in answer) throw new Error(answer.refusal);
+    return answer;
+  }
+  async function refusalOf(surface: ReturnType<typeof surfaceFor>, receipt: string, now = NOW) {
+    const answer = await surface.open({ receipt, accept: [], replace: [] }, file, now);
+    return 'refusal' in answer ? answer.refusal : null;
+  }
+
+  beforeEach(() => resetMcpMemory());
+
+  it('round-trips, stays under the cap, is sealed, and expires an hour after the extract', async () => {
+    const cloud = new MemoryCloud();
+    const surface = surfaceFor('connection-a', cloud);
+    const { receipt, expiresAt } = await stashed(surface);
     expect(receipt.length).toBeLessThan(MAX_RECEIPT_LENGTH);
-    expect(receipt.length).toBeLessThan(400);
-    expect(verifyReceipt(receipt, 'connection-a', 1_000_000_000_000)).toEqual(CLAIMS);
+    expect(expiresAt).toBe('2026-09-02T11:00:00.000Z');
+    expect(receipt).not.toContain(PAYLOAD.id); // sealed: the id is not readable off the wire
+    expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW)).toEqual(PAYLOAD);
   });
 
-  it('fails closed: one changed byte, another connection, an expiry passed, a shape that is not a receipt', () => {
-    const receipt = mintReceipt(CLAIMS);
-    const [header, mac] = receipt.split('.');
-    const flipped = header.slice(0, -1) + (header.endsWith('A') ? 'B' : 'A');
-    expect(verifyReceipt(`${flipped}.${mac}`, 'connection-a', 1_000_000_000_000)).toBeNull();
-    expect(verifyReceipt(`${header}.${mac.slice(0, -2)}xx`, 'connection-a', 1_000_000_000_000)).toBeNull();
-    expect(verifyReceipt(receipt, 'connection-b', 1_000_000_000_000)).toBeNull();
-    expect(verifyReceipt(receipt, 'connection-a', CLAIMS.exp * 1000)).toBeNull();
-    expect(verifyReceipt('not.a.receipt', 'connection-a', 0)).toBeNull();
-    expect(verifyReceipt('', 'connection-a', 0)).toBeNull();
-    // A claims block signed by us but naming a non-UUID id can never form a path.
-    expect(verifyReceipt(mintReceipt({ ...CLAIMS, id: '../health-roadmap' }), 'connection-a', 0)).toBeNull();
+  it('fails closed: a changed byte, another connection, an expiry passed, an edited pending file, a shape that is not a receipt', async () => {
+    const cloud = new MemoryCloud();
+    const surface = surfaceFor('connection-a', cloud);
+    const { receipt } = await stashed(surface);
+    const [header, body] = receipt.split('.');
+    expect(await refusalOf(surface, `${header}.${body.slice(0, -2)}xx`)).toMatch(/not valid/);
+    expect(await refusalOf(surfaceFor('connection-b', cloud), receipt)).toMatch(/not valid/);
+    expect(await refusalOf(surface, receipt, '2026-09-02T11:00:00.000Z')).toMatch(/not valid/);
+    expect(await refusalOf(surface, 'not.a.receipt')).toMatch(/not valid/);
+    expect(await refusalOf(surface, '')).toMatch(/not valid/);
+    // A claims block sealed by us but naming a non-UUID id can never form a path.
+    const forged = seal('import', { id: '../health-roadmap', exp: 2_000_000_000, conn: hash(connectionKey('connection-a')), sha256: 'x' }, { clientId: 'c.test', resource: resourceUrl() });
+    expect(await refusalOf(surface, forged)).toMatch(/not valid/);
+    // The pending file edited in the folder no longer matches the hash the receipt carries.
+    const name = [...cloud.files.keys()].find((n) => n.startsWith('imports/'))!;
+    cloud.files.set(name, { ...cloud.files.get(name)!, json: JSON.stringify({ ...PAYLOAD, candidates: [{ id: 'c1' }] }) });
+    expect(await refusalOf(surface, receipt)).toMatch(/does not match/);
   });
 
-  it('survives a key rotation: a receipt minted under the previous key still verifies', () => {
-    const receipt = mintReceipt(CLAIMS);
+  it('survives a key rotation: a receipt sealed under the previous key still opens', async () => {
+    const surface = surfaceFor('connection-a');
+    const { receipt } = await stashed(surface);
     process.env.MCP_SEAL_KEYS = `${Buffer.alloc(32, 8).toString('base64')},${Buffer.alloc(32, 7).toString('base64')}`;
-    expect(verifyReceipt(receipt, 'connection-a', 0)).toEqual(CLAIMS);
+    expect(await surface.open({ receipt, accept: [], replace: [] }, file, NOW)).toEqual(PAYLOAD);
     process.env.MCP_SEAL_KEYS = Buffer.alloc(32, 8).toString('base64');
-    expect(verifyReceipt(receipt, 'connection-a', 0)).toBeNull();
+    expect(await refusalOf(surface, receipt)).toMatch(/not valid/);
   });
 });

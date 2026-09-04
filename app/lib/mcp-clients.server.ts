@@ -310,13 +310,13 @@ function cacheTtlMs(header: string | null): number {
  * never believed — a chunked body has none at all.
  */
 export async function readCapped(source: { body: ReadableStream<Uint8Array> | null }, cap: number): Promise<string> {
-  return Buffer.from(await readCappedBytes(source, cap)).toString('utf8');
+  return (await readCappedBytes(source, cap)).toString('utf8');
 }
 
 /** The same capped read, as bytes — a file the connector imports (US-35 AC4). */
-export async function readCappedBytes(source: { body: ReadableStream<Uint8Array> | null }, cap: number): Promise<Uint8Array> {
+export async function readCappedBytes(source: { body: ReadableStream<Uint8Array> | null }, cap: number): Promise<Buffer> {
   const reader = source.body?.getReader();
-  if (!reader) return new Uint8Array(0);
+  if (!reader) return Buffer.alloc(0);
   const chunks: Uint8Array[] = [];
   let size = 0;
   for (;;) {
@@ -329,7 +329,7 @@ export async function readCappedBytes(source: { body: ReadableStream<Uint8Array>
     }
     chunks.push(value);
   }
-  return Buffer.concat(chunks.map((c) => Buffer.from(c)));
+  return Buffer.concat(chunks);
 }
 
 /**

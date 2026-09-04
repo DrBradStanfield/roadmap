@@ -91,7 +91,7 @@ export async function dropboxDownload(accessToken: string, ref: string): Promise
 }
 
 /** One folder-relative entry of a listing, as the connector reads it. */
-export interface DropboxEntry {
+interface DropboxEntry {
   id: string;
   name: string;
   size: number;
@@ -134,7 +134,7 @@ export async function dropboxListFolder(accessToken: string, folder: string): Pr
 }
 
 /** Remove one folder-relative file. Already gone is not a failure. */
-export async function dropboxDelete(accessToken: string, fileName: string): Promise<void> {
+async function dropboxDelete(accessToken: string, fileName: string): Promise<void> {
   const res = await request(DELETE_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -223,7 +223,9 @@ export class DropboxAdapter implements StorageAdapter {
   }
 
   async list(folder: string): Promise<StoredFile[]> {
-    return (await dropboxListFolder(this.accessToken, folder)).map((e) => ({ name: `${folder}/${e.name}`, modified: e.modified }));
+    return (await dropboxListFolder(this.accessToken, folder)).map((e) => ({
+      name: folder ? `${folder}/${e.name}` : e.name, ref: e.id, size: e.size, modified: e.modified,
+    }));
   }
 
   remove(fileName: string): Promise<void> {

@@ -128,16 +128,16 @@ export async function driveCreateFolder(accessToken: string, name: string, paren
  * `imports/pending-x.json` is one flat name; `drive.file` already limits the
  * answer to files this app created.
  */
-export async function driveListByPrefix(accessToken: string, prefix: string): Promise<Array<{ id: string; name: string; modified: string }>> {
+async function driveListByPrefix(accessToken: string, prefix: string): Promise<StoredFile[]> {
   const q = encodeURIComponent(`name contains '${quoted(prefix)}' and trashed = false`);
-  const res = await request(`${DRIVE_API}/files?q=${q}&fields=files(id,name,modifiedTime)&pageSize=100`, { headers: auth(accessToken) });
+  const res = await request(`${DRIVE_API}/files?q=${q}&fields=files(id,name,size,modifiedTime)&pageSize=100`, { headers: auth(accessToken) });
   if (!res.ok) await fail('list', res);
-  const files = (await jsonBody<{ files?: Array<{ id: string; name: string; modifiedTime?: string }> }>(res)).files ?? [];
-  return files.filter((f) => f.name.startsWith(prefix)).map((f) => ({ id: f.id, name: f.name, modified: f.modifiedTime ?? '' }));
+  const files = (await jsonBody<{ files?: Array<{ id: string; name: string; size?: string; modifiedTime?: string }> }>(res)).files ?? [];
+  return files.filter((f) => f.name.startsWith(prefix)).map((f) => ({ name: f.name, ref: f.id, size: Number(f.size ?? 0), modified: f.modifiedTime ?? '' }));
 }
 
 /** Delete one file by id. Already gone (404) is not a failure. */
-export async function driveDelete(accessToken: string, fileId: string): Promise<void> {
+async function driveDelete(accessToken: string, fileId: string): Promise<void> {
   const res = await request(`${DRIVE_API}/files/${encodeURIComponent(fileId)}`, { method: 'DELETE', headers: auth(accessToken) });
   if (!res.ok && res.status !== 404) await fail('delete', res);
 }
@@ -293,7 +293,9 @@ export class DriveAdapter implements StorageAdapter {
   }
 
   async list(folder: string): Promise<StoredFile[]> {
-    return (await driveListByPrefix(this.accessToken, `${folder}/`)).map(({ name, modified }) => ({ name, modified }));
+    const files = await driveListByPrefix(this.accessToken, `${folder}/`);
+    for (const file of files) this.fileIds.set(file.name, file.ref); // so `remove` needs no second search
+    return files;
   }
 
   async remove(fileName: string): Promise<void> {

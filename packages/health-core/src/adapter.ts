@@ -154,9 +154,11 @@ export interface WriteResult {
   version: string;
 }
 
-/** One file as `list` names it: folder-relative name, and when it last changed. */
+/** One file as `list` names it. `ref` is what `readDocument` takes — a provider id where the provider has one, so a listed name never forms a path. */
 export interface StoredFile {
   name: string;
+  ref: string;
+  size: number;
   /** ISO 8601, or '' when the provider does not say. */
   modified: string;
 }
@@ -191,12 +193,12 @@ export interface StorageAdapter {
   writeDocument(ref: string, bytes: Blob): Promise<void>;
 
   /**
-   * OPTIONAL: the JSON files under one folder of the app's own space, and the
-   * removal of one of them. Only the connector's import needs either (US-35
-   * AC7): a pending import lives as `imports/pending-<id>.json` until the
-   * commit reads it and removes it, and an extract sweeps the stale ones.
-   * Documents and the record itself are never removed through this — the
-   * record's deletion is an `eraseEpoch` bump, a document's is a tombstone.
+   * OPTIONAL: the files directly under one folder of the app's own space
+   * (`''` for its root), and the removal of one. Only the connector's import
+   * needs either (US-35): it lists the root for lab files and parks a pending
+   * payload as `imports/pending-<id>.json` until the commit removes it. The
+   * record's deletion is an `eraseEpoch` bump, a document's is a tombstone —
+   * never this.
    */
   list?(folder: string): Promise<StoredFile[]>;
   remove?(fileName: string): Promise<void>;

@@ -14,7 +14,7 @@
  * Deep imports into health-core, never `@roadmap/health-core`: the Fly Docker
  * build has no workspace symlink, and the package name only breaks at deploy.
  */
-import { dayOf, latestDayOnEarth } from '../../packages/health-core/src/merge';
+import { dayOf, daysBetween, latestDayOnEarth } from '../../packages/health-core/src/merge';
 import { DropboxAdapter } from '../../packages/health-core/src/dropbox-rest';
 import { DriveAdapter } from '../../packages/health-core/src/drive-rest';
 import { recordSync } from '../../packages/health-core/src/roadmap-doc';
@@ -30,14 +30,7 @@ import { recordServerEvent } from './product-events.server';
 import type { FileLabValue, FileMeasurement, RoadmapFile } from '../../packages/health-core/src/roadmap-file';
 import { githubFiler } from './github-issues.server';
 import { isMcpEnabled, issuer } from './mcp-config.server';
-import {
-  type AccessPayload,
-  allowToolCall,
-  connectionKey,
-  spendWrites,
-  WRITE_COST,
-  WRITES_PER_HOUR,
-} from './mcp-grants.server';
+import { type AccessPayload, allowToolCall, chargeWrites, connectionKey, WRITE_COST } from './mcp-grants.server';
 import { type McpProvider, providerAccessToken, providerLabel } from './mcp-providers.server';
 import { unpackSealed } from './mcp-seal.server';
 
@@ -112,7 +105,7 @@ function findRow(file: RoadmapFile, id: string): FileMeasurement | FileLabValue 
  * (design §3). Neither belongs in the tool layer: the CLI (US-31) keeps
  * `expectedValue` optional, because there a human is watching their own file.
  */
-export function checkCorrection(file: RoadmapFile, args: unknown, now: string): string | null {
+function checkCorrection(file: RoadmapFile, args: unknown, now: string): string | null {
   const request = (args ?? {}) as { id?: unknown; expectedValue?: unknown };
   if (typeof request.expectedValue !== 'number') {
     return (
@@ -150,11 +143,6 @@ function checkProfileUpdate(args: unknown): string | null {
   );
 }
 
-function daysBetween(from: string, to: string): number {
-  const ms = Date.parse(to) - Date.parse(from);
-  return Number.isFinite(ms) ? Math.floor(ms / 86_400_000) : 0;
-}
-
 /**
  * Everything this surface adds before a tool runs: the two corrections guards
  * of design §3, and the weighted write budget. It is charged HERE, ahead of
@@ -172,7 +160,7 @@ function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile,
     const refusal = checkProfileUpdate(args);
     if (refusal) return refusal;
   }
-  return chargeWrites(token, name);
+  return chargeTool(token, name);
 }
 
 /**
@@ -182,16 +170,9 @@ function beforeHostedCall(token: AccessPayload, name: string, file: RoadmapFile,
  * `report_feedback` opens no record and so never reaches `beforeCall`, and an
  * uncharged tool that writes to a public issue tracker is a megaphone.
  */
-function chargeWrites(token: AccessPayload, name: string): string | null {
+function chargeTool(token: AccessPayload, name: string): string | null {
   const cost = WRITE_COSTS.get(name);
-  if (cost !== undefined && !spendWrites(connectionKey(token.rt), cost)) {
-    return (
-      `This connection has spent its write allowance for the hour — ${WRITES_PER_HOUR} weighted writes an hour, ` +
-      `where a correction counts as ${WRITE_COST.correct}. Reading still works. The allowance comes back with ` +
-      'the hour; a new access token does not buy more. Ask the user to make this change in the app if it cannot wait.'
-    );
-  }
-  return null;
+  return cost === undefined ? null : chargeWrites(connectionKey(token.rt), cost);
 }
 
 /**
@@ -214,7 +195,7 @@ async function callHostedTool(
   // so `report_feedback` must not need the provider — nor a token minted for it.
   let accessToken = '';
   if (RECORD_FREE_TOOLS.has(name)) {
-    const refusal = chargeWrites(token, name);
+    const refusal = chargeTool(token, name);
     if (refusal) return refuse(refusal);
   } else {
     const minted = await providerAccessToken(token.provider, token.rt);
@@ -239,10 +220,9 @@ async function callHostedTool(
       // the user submits — which is all the stdio server can ever do.
       fileFeedback: name === 'report_feedback' ? (githubFiler(token.provider, connectionKey(token.rt)) ?? undefined) : undefined,
       // The import reads files through the user's own folder and parks its
-      // candidates there; its guards and charges live inside (US-35).
-      importer: name === 'import_documents'
-        ? hostedImporter({ token, accessToken, adapter, client: mcpClientLabel(token.clientId), checkCorrection, maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS })
-        : undefined,
+      // candidates there (US-35). Built per call and holding nothing, so it
+      // is built for every call; which tool uses it is the tool's declaration.
+      importer: hostedImporter({ token, adapter, client: mcpClientLabel(token.clientId), maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS }),
     });
   } catch (error) {
     // Storage is allowed to fail, and the user can act on that, so it is worded

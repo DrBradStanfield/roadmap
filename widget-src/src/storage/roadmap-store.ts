@@ -21,6 +21,7 @@
  */
 import {
   buildDocumentRef,
+  type BulkRow,
   bulkAppendValues,
   splitDocumentRef,
   classifyMedicationChange,
@@ -481,25 +482,18 @@ export class RoadmapStore {
    *  the connector's import, US-35 AC8): replace-on-`correctsId` only while
    *  that row still holds the slot, skip a taken slot, never two actives. */
   bulkSaveMeasurements(measurements: BulkMeasurementInput[]): BulkSaveResult {
-    const result = bulkAppendValues(
-      this.file,
-      measurements.map((m) => ({ kind: 'measurement' as const, ...m })),
-      new Date().toISOString(),
-    );
-    this.file = result.file;
-    if (result.saved.length) this.touch();
-    return { saved: result.saved as ApiMeasurement[], skippedDuplicates: result.skippedDuplicates, errorCount: 0 };
+    return this.bulkSave(measurements.map((m) => ({ kind: 'measurement' as const, ...m }))) as BulkSaveResult;
   }
 
   bulkSaveLabValues(values: BulkLabValueInput[]): BulkLabValuesResult {
-    const result = bulkAppendValues(
-      this.file,
-      values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' })),
-      new Date().toISOString(),
-    );
+    return this.bulkSave(values.map((v) => ({ kind: 'lab' as const, ...v, source: (v.source as MeasurementSource) ?? 'lab_import' }))) as BulkLabValuesResult;
+  }
+
+  private bulkSave(rows: BulkRow[]): { saved: Array<ApiMeasurement | ApiLabValue>; skippedDuplicates: number; errorCount: number } {
+    const result = bulkAppendValues(this.file, rows, new Date().toISOString());
     this.file = result.file;
     if (result.saved.length) this.touch();
-    return { saved: result.saved as ApiLabValue[], skippedDuplicates: result.skippedDuplicates, errorCount: 0 };
+    return { saved: result.saved as Array<ApiMeasurement | ApiLabValue>, skippedDuplicates: result.skippedDuplicates, errorCount: 0 };
   }
 
   /**
@@ -510,6 +504,13 @@ export class RoadmapStore {
    * interrupted save leaves a harmless orphan blob, never a dangling ref.
    * A failed blob write (e.g. GitHub's ~1 MB cap, localStorage quota) degrades
    * to metadata-only: the extracted values are never lost with the file.
+   *
+   * `contentHash` is ONE key for the website and the connector (US-35 AC6): a
+   * live row that carries the hash AND a `fileRef` is the archived original,
+   * so the upload is a no-op; a row with the hash and no `fileRef` came in
+   * through the connector metadata-only, and THIS upload is the user archiving
+   * that original — the new row lands with the blob and the old one is
+   * tombstoned, never edited (documents are immutable under merge).
    */
   async bulkSaveDocuments(
     documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,
@@ -519,9 +520,9 @@ export class RoadmapStore {
     // Content-hash dedup: re-uploading a file the archive already holds (live,
     // not tombstoned) must not create a second entry or a " (2)" blob. The
     // review step dedups extracted VALUES but knows nothing about originals.
-    const existingHashes = new Set(
-      this.file.documents.filter((d) => !d.deleted && d.contentHash).map((d) => d.contentHash),
-    );
+    const hashed = this.file.documents.filter((d) => !d.deleted && d.contentHash);
+    const archived = new Set(hashed.filter((d) => d.fileRef).map((d) => d.contentHash));
+    const metadataOnly = new Map(hashed.filter((d) => !d.fileRef).map((d) => [d.contentHash, d]));
 
     // Phase 1 (serial, order-dependent): dedup by hash, assign collision-safe
     // refs, build the metadata rows.
@@ -529,8 +530,10 @@ export class RoadmapStore {
     for (const d of documents) {
       const hash = d.file ? await sha256Blob(d.file) : null;
       if (hash) {
-        if (existingHashes.has(hash)) continue; // identical original already archived
-        existingHashes.add(hash);
+        if (archived.has(hash)) continue; // identical original already archived
+        archived.add(hash);
+        const superseded = metadataOnly.get(hash);
+        if (superseded) superseded.deleted = true; // the connector's metadata-only row, now archived by this upload
       }
       const doc: FileDocument = {
         id: newId(), title: d.title, type: d.documentType as DocumentType, date: d.documentDate,

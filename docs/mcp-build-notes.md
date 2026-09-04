@@ -235,11 +235,8 @@ as a base64 `document` block rather than as extracted text or a page image: 3,36
 tokens. Confirms the `pdf` page type in `lab-extraction.ts` is viable cost-wise before
 it carries production traffic.
 
-**The 40 s budget (`MCP_IMPORT_BUDGET_MS`) is ChatGPT's constraint, not ours.** ChatGPT
-cuts a tool call at 60 s; 40 s leaves room for the round trip and the response to land
-inside that window rather than racing it. Files are extracted three at a time, and a
-file the budget does not reach comes back as `skipped: time` or in `remaining` for a
-follow-up call, so a slow connection loses time, not data.
+**The 40 s budget is ChatGPT's constraint, not ours** — bounds and the partial-result
+contract are US-35 AC10 in `docs/user-stories.md`.
 
 **What remains: live verification.** Runbook step 8a is written but not yet run against
 a real Dropbox account and a real ChatGPT drag — that needs a deployed server and a
