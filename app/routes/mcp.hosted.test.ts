@@ -30,8 +30,8 @@ const REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
 const VERIFIER = 'v'.repeat(64);
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('base64url');
 const NOW = '2026-09-02T10:00:00.000Z';
-/** The endpoint runs on the real clock, so a write states the real day. */
-const TODAY = new Date().toISOString().slice(0, 10);
+/** Derived from the pinned clock, not the real one — the server's "today" is NOW's day. */
+const TODAY = NOW.slice(0, 10);
 
 let cloud: MemoryCloud;
 /** A fresh Dropbox refresh token per test: the connection key is its hash. */

@@ -33,7 +33,7 @@ const REDIRECT = 'https://claude.ai/api/mcp/auth_callback';
 const VERIFIER = 'v'.repeat(64);
 const CHALLENGE = crypto.createHash('sha256').update(VERIFIER, 'ascii').digest('base64url');
 const NOW = '2026-09-02T10:00:00.000Z';
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = NOW.slice(0, 10);
 
 let cloud: MemoryCloud;
 /** Which provider the factory was asked for, per call. */
