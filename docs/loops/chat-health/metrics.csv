@@ -30,3 +30,12 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W35,router_cache_hit_rate_pct,27,34,-21,chat_match_events,"22/82; below W32's 39% baseline again — watch"
 2026-W35,yt_reply_median_words,67,66.5,1,chat_messages,"n=77; prompt cap ≤90 words holding"
 2026-W35,yt_reply_gt90w_count_7d,4,4,0,chat_messages,"4/77 (5.2%), max 104; >5-sentence breaches 1"
+2026-W36,empty_handle_turns,17,38,-55,chat_match_events,"prior slice re-measured 38 = published (no boundary drift); split shopify 1 / youtube 12 / discord 4; total match events 93 (YouTube ebb, cf product-health W36)"
+2026-W36,classifier_catchable_share_pct,0,0,0,manual categorisation,"0/17 — second consecutive zero week; classifier skipped 51 upstream (GREETING 39 / PRODUCT 5 / MEASUREMENT 4 / ACCOUNT 3)"
+2026-W36,routing_miss_share_pct,35.3,13.2,167,manual categorisation,"6/17: Lp(a) x2 (discord), K2 x3 (new cardiologists-K2 video), tirzepatide-start (web); every one consistent at baseline (∅ 3/3 or steal 3/3), 0 stochastic — first week with no noise in the miss bucket"
+2026-W36,router_errors_7d,0,0,0,chat_match_events,second clean week; fallbacks also 0
+2026-W36,router_latency_median_ms,1494,1322,13,chat_match_events,n=42
+2026-W36,router_latency_p90_ms,1920,1861,3,chat_match_events,n=42
+2026-W36,router_cache_hit_rate_pct,31,27,15,chat_match_events,13/42
+2026-W36,yt_reply_median_words,70,67,4,chat_messages,"n=27 incl 3 SKIP_NO_REPLY sentinel rows stored as 1-word assistant messages; excluding sentinels median 74.5 (n=24); cap ≤90 holding"
+2026-W36,yt_reply_gt90w_count_7d,2,4,-50,chat_messages,"2/27 (7.4%), max 123; >5-sentence breaches 0"
