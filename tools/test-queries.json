@@ -2728,7 +2728,7 @@
     ],
     "category": "cardiovascular",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real Discord turn. Mechanism question about a covered topic; lipoproteina summary shows Lp(a) verbatim; router returned empty in production."
+    "notes": "2026-09-04 chat-health loop (W36): real Discord turn. Mechanism question about a covered topic; lipoproteina summary shows Lp(a) verbatim; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (refusal, terms visible)."
   },
   {
     "query": "1. Does Lp(a) respond to diet, if the diet calms chronic bowl diseases? 2. Could you please explain this part more?: \"through areas of endothelial dysfunction or via transcytosis\"",
@@ -2737,7 +2737,7 @@
     ],
     "category": "cardiovascular",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real Discord follow-up (verbatim incl. 'bowl' typo). lipoproteina body says Lp(a) is genetic, not lifestyle-driven - directly answers part 1; router returned empty in production."
+    "notes": "2026-09-04 chat-health loop (W36): real Discord follow-up (verbatim incl. 'bowl' typo). lipoproteina body says Lp(a) is genetic, not lifestyle-driven - directly answers part 1; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: chronic-non-cancer-pain steal 3/3 in harness (∅ in production, which had conversation context)."
   },
   {
     "query": "Could there be other variables affected by K2 that would reduce risks of cardiac related incidents? CAC is only one and nit even the most reliable",
@@ -2748,7 +2748,7 @@
     ],
     "category": "supplement",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment on the cardiologists-K2 video (bare-comment path). Self-contained - names K2 and CAC; two K2 entries carry those terms; router returned empty in production."
+    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment on the cardiologists-K2 video (bare-comment path). Self-contained - names K2 and CAC; two K2 entries carry those terms; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: hyperlipidaemia steal 3/3 (selection-side)."
   },
   {
     "query": "Dr. Lily Johnston is a vascular surgeon YouTuber that recommends vitamin K2, so why do you two see things differently?",
@@ -2758,7 +2758,7 @@
     ],
     "category": "supplement",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment, bare-comment path. Third-party-recommender disagreement about K2 - the cardiologists-K2 blog is exactly this topic; router returned empty in production."
+    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment, bare-comment path. Third-party-recommender disagreement about K2 - the cardiologists-K2 blog is exactly this topic; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (third-party-recommender shape)."
   },
   {
     "query": "But I took natto almost everyday, that is like 350-600 mcg of vitamin k2. Should I stop my natto?",
@@ -2769,7 +2769,7 @@
     ],
     "category": "supplement",
     "source": "production",
-    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment, bare-comment path. Self-contained should-I-stop question naming K2 and dose; cardiologists-K2 summary carries MK-7 dosing verbatim; router returned empty in production."
+    "notes": "2026-09-04 chat-health loop (W36): real YouTube comment, bare-comment path. Self-contained should-I-stop question naming K2 and dose; cardiologists-K2 summary carries MK-7 dosing verbatim; router returned empty in production. KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (should-I-stop shape survives the Rule 6 fix)."
   },
   {
     "query": "I'd like to have microdose trazepatide. How do I start the process",
@@ -2780,6 +2780,6 @@
     ],
     "category": "medications",
     "source": "production",
-    "notes": "2026-09-05 chat-health loop (W36): real Shopify turn, misspelling verbatim (trazepatide). How-to-start ask about microdosing tirzepatide - the microdosing blog covers it; router returned empty in production. Same practical/consumer class as tirzepatide-company (W35)."
+    "notes": "2026-09-05 chat-health loop (W36): real Shopify turn, misspelling verbatim (trazepatide). How-to-start ask about microdosing tirzepatide - the microdosing blog covers it; router returned empty in production. Same practical/consumer class as tirzepatide-company (W35). KNOWN-FAIL at W36 baseline (see docs/loops/chat-health/2026-W36.md) pending a router-prompt change: ∅ 3/3 (how-do-I-start shape; same class as tirzepatide-company)."
   }
 ]

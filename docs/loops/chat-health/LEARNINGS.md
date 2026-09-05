@@ -93,7 +93,14 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   failure is selection-side, a summary edit can't fix it. Confirmed again
   2026-08-29: `medications-in-chronic-pain` also stole a compounded-
   tirzepatide safety probe 3/3 — it is a recurring wrong-attractor for
-  drug-safety queries (second documented steal).
+  drug-safety queries (second documented steal). W36 closed the question
+  from the other side: weakening the ATTRACTOR's summary (its generic
+  "drug selection… safety considerations" vocabulary) paired with re-adding
+  victim terms still left the steal at 3/3 — reverted. Steals are
+  summary-immune from both sides; the lever is the router prompt or model.
+  Same run: summary edits shift selection boundaries index-wide (two
+  unrelated fixtures flipped state under the edit pair and flipped back on
+  revert) — never attribute a distant fixture flip to your target edit.
 - **2026-08-10 [loop]** Baseline a production failure in the harness BEFORE
   editing anything: the 08-05 MSM miss already passed at baseline (the 08-07
   fix wave had fixed it). Production failures predating the last fix wave may
@@ -107,34 +114,28 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   **`ANTHROPIC_TEST_API_KEY`**, which they already check first. A missing key
   is a named data gap and a proposal-only run, never an excuse to fabricate
   harness numbers.
-- **2026-08-10 [meta]** W33 run graded **A** (build session, against the
-  constitution): exemplary measure-before/after (two flat-number edits
-  reverted; baseline check killed a third), real defect found with a
-  ready diff (router `.max(3)` self-sabotage — approved and shipped same
-  day), 2 production regression fixtures added, amendments within cap,
-  monthly pruning done. Dings: first-pass line-count vitals misreported
-  (needed a correction commit) and the Gmail draft (charter contradiction,
-  self-flagged as proposal #5, since reconciled to the constitution).
-- **2026-08-22, class measured 2026-08-29 [retrieval]** The router refuses
-  PRACTICAL/CONSUMER-shaped inputs while routing knowledge-shaped twins of
-  the same topics (W35 probe, same index, same minutes: "Should I take
-  magnesium? What form is best?" ∅ 3/3 vs "What are the health benefits of
-  magnesium and which forms are best absorbed?" ✓ 3/3; salt-substitute pair
-  likewise). Instances — every one ∅ 3/3 with the right terms visible in the
-  summary: claim/rebuttal (K2, W34), brand/sourcing (tirzepatide company,
-  KCl brand), ratio/how-to (salt pig), test-availability (lithium),
-  form-choice (magnesium — a fixture that PASSED on 08-22, so the boundary
-  also drifts). Best-supported mechanism: Rule 6's empty-list bullets
-  (products/pricing, own-measurements, PK/formulation) each over-match their
-  nearest consumer shape; bullet-level attribution needs a prompt ablation
-  (out of loop scope), and the prompt's "match on TOPIC, not input form"
-  line demonstrably loses to Rule 6. Lever = router prompt (Tier 0, W34+W35).
-  3/3-∅ on a practical-shaped input → skip the summary edit entirely.
-  RESOLVED 2026-08-30 (Brad-authorized edit, issue #39): a new top-level
-  "practical questions route" rule fixed all five known-fails plus four
-  Brad-product compliance guards (suite 89.3%→91.7%, adversarial-reviewed).
-  Position was the mechanism: carve-out sentences buried inside empty-list
-  bullets were inert; the same content as a top-level rule worked. Verify
-  each clause with the harness — two "obvious" clarifiers regressed other
-  fixtures before landing right. Still failing: tirzepatide-company
-  (selection-side). Verify the fix live post-deploy.
+- **2026-08-10 [meta]** W33 run graded **A** by a build session: exemplary
+  measure-before/after. Dings: misreported line-count vitals (correction
+  commit) and a Gmail draft contradicting the no-email rule (reconciled).
+- **2026-08-22 [retrieval]** The router refused PRACTICAL/CONSUMER-shaped
+  inputs while routing knowledge-shaped twins of the same topics (W35 shape
+  probe; every instance ∅ 3/3 with the right terms visible in the summary).
+  RESOLVED 2026-08-30 (Brad-authorized router-prompt edit, issue #39): a
+  top-level "practical questions route" rule fixed all five known-fails +
+  four compliance guards (suite 89.3%→91.7%). Position was the mechanism —
+  the same carve-outs buried inside Rule 7's empty-list bullets were inert.
+  W36 verified live: 4/5 fixtures pass and no practical-shape empty recurred
+  in production. Rule of thumb stands: 3/3-∅ with terms visible → router
+  territory, skip the summary edit. RESIDUE (W36, all fixtures): third-party-
+  recommender disagreement, should-I-stop-taking-X, how-do-I-start/obtain,
+  and pure mechanism-depth questions still refuse; tirzepatide-company still
+  fails selection-side.
+- **2026-09-05 [loop]** The cloud runner is uid 0 (root): chmod-based tests
+  can't fail writes, so health-core's US-31 AC8 (`file-adapter.test.ts`)
+  fails in this env on a CLEAN tree — verify on clean tree before blaming
+  your changes. Same class: `npm install` here strips `"dev": true` flags in
+  package-lock.json (npm-version artifact) — revert it, don't commit it.
+- **2026-09-05 [content]** The YouTube bot persists its skip decision as a
+  literal `SKIP_NO_REPLY` 1-word assistant message (3 rows in W36) —
+  exclude these sentinels when computing reply-length stats, or the median
+  reads low. Proposal filed W36 to stop persisting the sentinel as content.
