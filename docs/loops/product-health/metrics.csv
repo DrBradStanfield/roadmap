@@ -109,3 +109,4 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W36,sentry_new_issues,2,6,,"sentry","REMIX-69 'Ka`prod' (1 event, same minified class as REMIX-63) + REMIX-6A n.data.split (1 event); PGRST303 class quiet since 08-28 fix; NO errors from the live MCP/connector paths (single-project org, so both Fly apps report here)"
 2026-W36,clarity_roadmap_visits_3d,180,,,"clarity","GAP CLOSED after 2 flooded weeks: drstanfield 4,133 sessions/3d, organic shape (mobile/Google-led); /pages/roadmap rank 8 at 180 visits/3d — in line with pre-flood W32/W33 (216/178)"
 2026-W36,feedback_organic,0,0,,"gmail+supabase+github","no feedback emails 8d; 0 feedback_submissions; only from-connector issue ever is Brad's own path test (#53)"
+2026-W36,report_email_bounced,0,0,,"supabase","true zero; 0 complained (webhook verified W33); row restored after review finding #5 — series continuity"
