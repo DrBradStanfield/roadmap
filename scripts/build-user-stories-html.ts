@@ -5,14 +5,24 @@
  * the .html is the browser-readable companion linked from architecture-v2.html.
  * Regenerate after every .md edit:  npx tsx scripts/build-user-stories-html.ts
  * (Same derived-artifact pattern as rebuild-blog-index.ts.)
+ *
+ * It is also the spec's integrity gate. On 2026-09-01 a session read the .md
+ * through a truncating reader, wrote the whole file back, and silently dropped
+ * 17 stories (US-12–US-28); this script then regenerated the .html from the
+ * truncated source, so both copies agreed and nothing noticed for four days.
+ * Two checks now refuse that build: a story present in the previous .html but
+ * absent from the .md (removal needs ALLOW_STORY_REMOVAL=1), and a US-id the
+ * text references but never defines.
+ *
+ * Usage: npx tsx scripts/build-user-stories-html.ts [source.md] [out.html]
  */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = join(root, 'docs', 'user-stories.md');
-const OUT = join(root, 'docs', 'user-stories.html');
+const SRC = process.argv[2] ?? join(root, 'docs', 'user-stories.md');
+const OUT = process.argv[3] ?? join(root, 'docs', 'user-stories.html');
 
 const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -60,10 +70,45 @@ function render(md: string): { body: string; toc: string } {
   return { body: out.join('\n'), toc: toc.join('\n  ') };
 }
 
-const md = readFileSync(SRC, 'utf8');
-const { body, toc } = render(md);
+/** Story ids the markdown DEFINES (`### US-12 · …`). */
+const definedIds = (md: string) => new Set([...md.matchAll(/^### US-(\d+)\b/gm)].map((m) => Number(m[1])));
+/** Story ids the markdown MENTIONS anywhere (`US-12`, `US-12/US-15`, `US-12 AC3`). */
+const referencedIds = (md: string) => new Set([...md.matchAll(/\bUS-(\d+)\b/g)].map((m) => Number(m[1])));
+/** Story ids the previously generated html carried (`<h3 id="us-12-…">`). */
+const publishedIds = (html: string) => new Set([...html.matchAll(/<h3 id="us-(\d+)-/g)].map((m) => Number(m[1])));
 
-const html = `<!DOCTYPE html>
+/** The names of the checks that failed, or none. Pure, so the test can drive it without a filesystem. */
+export function integrityProblems(md: string, previousHtml: string | null, allowRemoval: boolean): string[] {
+  const defined = definedIds(md);
+  const problems: string[] = [];
+  const dangling = [...referencedIds(md)].filter((id) => !defined.has(id)).sort((a, b) => a - b);
+  if (dangling.length) {
+    problems.push(`references stories it never defines: ${dangling.map((id) => `US-${id}`).join(', ')}`);
+  }
+  if (previousHtml !== null && !allowRemoval) {
+    const dropped = [...publishedIds(previousHtml)].filter((id) => !defined.has(id)).sort((a, b) => a - b);
+    if (dropped.length) {
+      problems.push(
+        `drops stories the published html still carries: ${dropped.map((id) => `US-${id}`).join(', ')} ` +
+          '(a truncated read written back whole looks exactly like this; set ALLOW_STORY_REMOVAL=1 for a deliberate removal)',
+      );
+    }
+  }
+  return problems;
+}
+
+function main(): void {
+  const md = readFileSync(SRC, 'utf8');
+  const previousHtml = existsSync(OUT) ? readFileSync(OUT, 'utf8') : null;
+  const problems = integrityProblems(md, previousHtml, process.env.ALLOW_STORY_REMOVAL === '1');
+  if (problems.length) {
+    for (const p of problems) console.error(`user-stories.md ${p}`);
+    console.error(`Nothing written to ${OUT}.`);
+    process.exit(1);
+  }
+  const { body, toc } = render(md);
+
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -121,5 +166,9 @@ ${body}
 </html>
 `;
 
-writeFileSync(OUT, html);
-console.log(`Wrote ${OUT} (${(html.length / 1024).toFixed(1)} KB)`);
+  writeFileSync(OUT, html);
+  console.log(`Wrote ${OUT} (${(html.length / 1024).toFixed(1)} KB)`);
+}
+
+// Importable for its checks (the test), runnable as the build (everything else).
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main();

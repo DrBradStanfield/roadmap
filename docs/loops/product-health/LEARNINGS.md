@@ -92,10 +92,15 @@ duplicates.
   of the product spec: `2285724` (09-01, message describes only US-32 edits)
   removed US-12–US-28 + Epics D–G from `user-stories.md` (+18/−221) and
   regenerated the HTML in the same commit, so both copies agreed and nothing
-  errored for 4 days. Detection was dangling US-id references in prose/tests.
-  Tripwire worth building: the HTML generator failing on referenced-but-
-  undefined US-ids (W36 backlog #1 rider). Recovery: git archaeology via the
-  GitHub API — shallow session clones (this one starts 09-02) cannot see it.
+  errored for 4 days. **Mechanism (patch-verified 09-06):** the deletion was
+  the file's entire tail — a session's Read of this 110KB file is truncated
+  (the tool caps at ~25k tokens; this run's own Read showed "1–129 of 238"),
+  and a whole-file Write from that view drops everything past the cap. Any
+  file too big to Read whole must be edited with Edit, never rewritten with
+  Write. Detection was dangling US-id references; recovery was git
+  archaeology via the GitHub API (shallow session clones cannot see it).
+  Restored + gated 2026-09-06: the HTML build now refuses a source that
+  drops a published story or references an undefined one.
 - **2026-09-05 [usage]** First MCP-instrumented week (US-32/34/35 events live
   09-02/09-04): treat the counts as Brad's verification traffic, not adoption
   — `client` resolved to `other` on 45/50 tool calls because MCP Inspector /
