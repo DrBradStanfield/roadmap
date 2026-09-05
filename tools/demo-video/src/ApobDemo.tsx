@@ -10,30 +10,61 @@ import {
 } from 'remotion';
 import {T, COL_W, SIDEBAR_W, HEADER_H, STAGE_W, STAGE_H} from './theme';
 import {Sidebar, Header, Composer} from './Chrome';
-import {UserBubble, ToolRow, StreamText, Card, Refs, Pill} from './blocks';
+import {UserBubble, ToolRow, StreamText, Card, Refs, Pill, FileChip, ResultsTable, ResultRow} from './blocks';
 import {ApobChart} from './Chart';
 import data from './plan-data.json';
 
+// Beats A and B (import flows) lead; the original ApoB beats follow, shifted by OFF.
+const OFF = 440;
 const CUE = {
-  u1: 8,
-  t1: 26,
-  a1: 54,
-  c1: 118,
-  u2: 200,
-  t2: 218,
-  a2: 244,
-  c2: 254,
-  u3: 402,
-  t3: 420,
-  a3: 446,
-  c3a: 462,
-  c3b: 482,
-  c3c: 502,
-  note: 524,
+  fA: 8,
+  uA: 12,
+  tA: 30,
+  aA: 68,
+  cA: 88,
+  aA2: 140,
+  uA2: 184,
+  tA2: 200,
+  aA3: 236,
+  uB: 288,
+  tB: 306,
+  aB: 344,
+  cB: 364,
+  aB2: 396,
+  u1: 8 + OFF,
+  t1: 26 + OFF,
+  a1: 54 + OFF,
+  c1: 118 + OFF,
+  u2: 200 + OFF,
+  t2: 218 + OFF,
+  a2: 244 + OFF,
+  c2: 254 + OFF,
+  u3: 402 + OFF,
+  t3: 420 + OFF,
+  a3: 446 + OFF,
+  c3a: 462 + OFF,
+  c3b: 482 + OFF,
+  c3c: 502 + OFF,
+  note: 524 + OFF,
 };
 
 const ORDER: (keyof typeof CUE)[] = [
+  'fA', 'uA', 'tA', 'aA', 'cA', 'aA2', 'uA2', 'tA2', 'aA3', 'uB', 'tB', 'aB', 'cB', 'aB2',
   'u1', 't1', 'a1', 'c1', 'u2', 't2', 'a2', 'c2', 'u3', 't3', 'a3', 'c3a', 'c3b', 'c3c', 'note',
+];
+
+// Fictional file names and counts. Status wording mirrors the real import_documents
+// result: per-file status (extracted / already_imported), candidate slot state
+// (free / held_equal / held_different) and documents[] for filed letters.
+const ROWS_A: ResultRow[] = [
+  {file: 'Labs 2026-06-14.pdf', status: '12 values, 3 new', tone: 'new'},
+  {file: 'Lipid panel 2025-11-02.pdf', status: '8 values, already recorded', tone: 'same'},
+  {file: 'Renal clinic letter.pdf', status: 'Clinic letter, filed', tone: 'filed'},
+  {file: 'Labs 2024-02-11.pdf', status: '1 value differs', tone: 'differ'},
+];
+const ROWS_B: ResultRow[] = [
+  {file: 'Labs 2026-08-20.pdf', status: '10 values, 10 new', tone: 'new'},
+  {file: 'MRI report.pdf', status: 'Filed', tone: 'filed'},
 ];
 
 const VIEW_H = STAGE_H - HEADER_H; // scroll viewport
@@ -136,6 +167,57 @@ export const ApobDemo: React.FC = () => {
               willChange: 'transform',
             }}
           >
+            {/* ---------- beat A: drag route ---------- */}
+            <div ref={set('fA')}>
+              <FileChip name="health.zip" meta="Zip archive · 2.3 MB" frame={frame} at={CUE.fA} fps={fps} />
+            </div>
+            <div ref={set('uA')}>
+              <UserBubble text="Import this file into my health record." frame={frame} at={CUE.uA} fps={fps} style={{margin: '8px 0 4px'}} />
+            </div>
+            <div ref={set('tA')}>
+              <ToolRow tool="import_documents" args="file: health.zip" frame={frame} at={CUE.tA} fps={fps} spinFrames={30} />
+            </div>
+            <div ref={set('aA')}>
+              <StreamText frame={frame} at={CUE.aA} text="I read the four files in the zip. Nothing is saved yet." />
+            </div>
+            <div ref={set('cA')}>
+              <ResultsTable rows={ROWS_A} frame={frame} at={CUE.cA} fps={fps} />
+            </div>
+            <div ref={set('aA2')}>
+              <StreamText frame={frame} at={CUE.aA2} text="Save the 3 new values and file the letter?" />
+            </div>
+            <div ref={set('uA2')}>
+              <UserBubble text="Yes" frame={frame} at={CUE.uA2} fps={fps} />
+            </div>
+            <div ref={set('tA2')}>
+              <ToolRow tool="import_documents" args="commit" frame={frame} at={CUE.tA2} fps={fps} />
+            </div>
+            <div ref={set('aA3')}>
+              <StreamText frame={frame} at={CUE.aA3} text="Saved 3 values and 1 letter to your health record." />
+            </div>
+
+            {/* ---------- beat B: folder route ---------- */}
+            <div ref={set('uB')}>
+              <UserBubble
+                text="Import the lab files in my Health by Dr Brad folder in Dropbox."
+                frame={frame}
+                at={CUE.uB}
+                fps={fps}
+              />
+            </div>
+            <div ref={set('tB')}>
+              <ToolRow tool="import_documents" args="route: folder" frame={frame} at={CUE.tB} fps={fps} spinFrames={30} />
+            </div>
+            <div ref={set('aB')}>
+              <StreamText frame={frame} at={CUE.aB} text="Two files in that folder are new to your record." />
+            </div>
+            <div ref={set('cB')}>
+              <ResultsTable rows={ROWS_B} frame={frame} at={CUE.cB} fps={fps} />
+            </div>
+            <div ref={set('aB2')}>
+              <StreamText frame={frame} at={CUE.aB2} text="Nothing has been saved yet. Want me to save them?" />
+            </div>
+
             {/* ---------- beat 1 ---------- */}
             <div ref={set('u1')}>
               <UserBubble text="what's the trend in my ApoB?" frame={frame} at={CUE.u1} fps={fps} />

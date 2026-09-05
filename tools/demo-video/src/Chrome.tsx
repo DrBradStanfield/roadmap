@@ -77,7 +77,7 @@ export const Sidebar: React.FC = () => (
     </div>
     <div style={{height: 22}} />
     <div style={{padding: '0 10px 8px', fontSize: 12, color: T.ink3}}>Today</div>
-    <Row icon={<span />} label="ApoB trend" active />
+    <Row icon={<span />} label="Import my lab files" active />
     <Row icon={<span />} label="Lab panel from June" />
     <Row icon={<span />} label="Sleep and blood pressure" />
   </div>
@@ -107,7 +107,7 @@ export const Header: React.FC = () => (
         <path d="M6 9l6 6 6-6" />
       </svg>
     </div>
-    <div style={{flex: 1}} />
+    <div style={{flex: 1, textAlign: 'center', fontSize: 15, color: T.ink2}}>Import my lab files</div>
     <div
       style={{
         border: `1px solid ${T.line}`,
