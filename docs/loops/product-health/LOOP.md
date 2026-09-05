@@ -16,7 +16,11 @@ unacted for a quarter, say so in the retro and propose the fleet review.
 
 ## Orient (read yourself, not via workers)
 1. `docs/user-stories.md` — the product spec; anchor every finding to a US-id
-   (no covering story = a spec hole = itself a finding).
+   (no covering story = a spec hole = itself a finding). Count its `### US-`
+   sections against last week's report: a story that vanished is a CRITICAL
+   finding (2026-09-01: 17 stories lost to a truncated read written back
+   whole, invisible for 4 days). The build gate
+   (`scripts/build-user-stories-html.ts`) refuses such a source in CI now.
 2. The two most recent reports here + `LEARNINGS.md` + `metrics.csv`.
 3. `docs/usage-audit-2026-08.md` §6 — the baseline backlog.
 
@@ -29,9 +33,14 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   $SUPABASE_PRODUCT_HEALTH_KEY`. Check presence with `env | grep -c SUPABASE`,
   never print values): 7d vs prior-7d `chat_messages`; new
   `feedback_submissions`; `product_events` by `event_name` — the funnel:
-  results_viewed → upload_started/saved → cloud_connect_started/success →
-  chat_opened → correction_made → lab_rows_viewed/lab_row_added →
-  reminder_optin; `reminder_optin_v2` total.
+  results_viewed → upload_started/saved/extract_failed →
+  cloud_connect_started/success → chat_opened → correction_made →
+  lab_rows_viewed/lab_row_added → reminder_optin/optout → report_email_* →
+  reminder_sent (server; cross-check against `reminder_optin_v2.last_sent`
+  stamps) → the connector family `mcp_connect` / `mcp_tool_call` /
+  `mcp_import` / `remote_change_applied` (metadata breakdown by tool, client,
+  route; value-free by design — while n is tiny these are Brad's own
+  verification, not adoption); `reminder_optin_v2` total by `provider`.
 - **Sentry** (`SENTRY_AUTH_TOKEN`): issues first-seen last 7d + big movers,
   project `dr-brad-inc/javascript-remix`, `statsPeriod=14d`.
 - **Workflow integrity** (out-of-band backstop for the CI tripwire):
@@ -42,15 +51,21 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   `https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=3`,
   Bearer auth. Its window is ~1–3 days: a sample, not the week — trends come
   from metrics.csv, not any single pull.
-- **OpenAI plugin review status** (Gmail MCP + `platform.openai.com/plugins`):
+- **GitHub** (MCP, repo-scoped): issues labelled `from-connector` — the
+  connector files a user's bug report as a public issue (US-32 AC9, live
+  2026-09-03); organic ones are feedback, Brad's own path tests are not.
+- **OpenAI app review status** (Gmail MCP; the portal needs a login):
   search for a verdict on submission `C-Ggl3RkPf6el6` ("Health Roadmap"
-  v1.0.0). If it has moved out of Review (approved or rejected), surface
-  issue #60 as the next action in the report.
+  v1.0.0, in Review since 2026-09-02). If it has moved (approved or
+  rejected), surface issue #60 — the staged v1.0.1 resubmission — as the
+  next action in the report.
 
 Conventions: the report/metrics week label is the COMPLETED ISO data week (the
 7d window ending at run time). Any funnel event reporting 0 must be classified
 dead-instrumentation vs. true-zero (inspect its emit site) before it enters the
 report — a zero row without that classification is a fabricated conclusion.
+A metrics.csv series, once started, gets a row every week — zeros included;
+folding a zero into another row's note breaks the trend (W36 review catch).
 
 ## Report sections (file: `2026-'W'WW.md` here, ≤150 lines)
 TL;DR (3 bullets) · What changed per source · Funnel table w/ deltas (also

@@ -356,7 +356,7 @@ As a guest who handed over my email, I **receive an email** confirming my plan i
 
 ### US-19 · Sending feedback
 As a user, I can send Brad feedback from the widget; it reaches his inbox (Resend) AND the `feedback_submissions` table so it's never silently lost; bots are honeypotted; 3/hour/IP.
-- Third channel (2026-09-03, US-32 AC9/AC23): a user whose assistant is connected can ask it to report a bug, and the hosted connector files a PUBLIC GitHub issue on this repo (`[connector]` title, `from-connector` label) under a server-held token — no health values, no identifier, capped 20/hour server-wide and 3/day per connection. The product-health loop's W36 run read that label beside the inbox and the table (its charter does not name it yet — a charter amendment for Brad); as of 2026-W36 the only such issue is Brad's own path test (#53).
+- Third channel (2026-09-03, US-32 AC9/AC23): a user whose assistant is connected can ask it to report a bug, and the hosted connector files a PUBLIC GitHub issue on this repo (`[connector]` title, `from-connector` label) under a server-held token — no health values, no identifier, capped 20/hour server-wide and 3/day per connection. The product-health loop reads that label weekly beside the inbox and the table (charter Gather, since 2026-09-06); as of 2026-W36 the only such issue is Brad's own path test (#53).
 - Evidence: 2026-08 incident — edu app missing `RESEND_FROM_EMAIL` sent from the Resend sandbox address; fixed 2026-08-07, DB mirror added so submissions are provable. 2026-W32–W36: zero organic feedback on any channel (emails, table rows, connector issues).
 - Tests: 🟡 sendFeedbackEmail + route helpers tested; mirror insert untested (accepted — verified live).
 
