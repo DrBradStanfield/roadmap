@@ -8,7 +8,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -91,6 +91,32 @@ describe('build-user-stories-html.ts — the build itself', () => {
     const { html: published } = build(spec(1, 2, 3));
     expect(build(spec(1, 2), published!).ok).toBe(false);
     expect(build(spec(1, 2), published!, { ALLOW_STORY_REMOVAL: '1' }).ok).toBe(true);
+  });
+
+  it('still guards a story whose heading is only its id (no hyphen after the number in the html id)', () => {
+    const { html: published } = build(`${spec(1)}\n### US-36\nA bare heading.\n`);
+    expect(published).toContain('<h3 id="us-36">');
+    const { ok, stderr } = build(spec(1), published!);
+    expect(ok).toBe(false);
+    expect(stderr).toContain('US-36');
+  });
+
+  it('runs the build when invoked through a symlink, rather than silently doing nothing', () => {
+    // Node realpaths the entry module; a guard comparing import.meta.url to a
+    // symlinked argv[1] exited 0 with no output and no file (review catch, 2026-09-06).
+    const dir = mkdtempSync(join(tmpdir(), 'stories-link-'));
+    try {
+      const link = join(dir, 'link.ts');
+      symlinkSync(SCRIPT, link);
+      const src = join(dir, 'stories.md');
+      const out = join(dir, 'stories.html');
+      writeFileSync(src, spec(1, 2));
+      const run = spawnSync(TSX, [link, src, out], { encoding: 'utf8' });
+      expect(run.status).toBe(0);
+      expect(existsSync(out)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

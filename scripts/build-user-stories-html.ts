@@ -16,7 +16,7 @@
  *
  * Usage: npx tsx scripts/build-user-stories-html.ts [source.md] [out.html]
  */
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -75,7 +75,7 @@ const definedIds = (md: string) => new Set([...md.matchAll(/^### US-(\d+)\b/gm)]
 /** Story ids the markdown MENTIONS anywhere (`US-12`, `US-12/US-15`, `US-12 AC3`). */
 const referencedIds = (md: string) => new Set([...md.matchAll(/\bUS-(\d+)\b/g)].map((m) => Number(m[1])));
 /** Story ids the previously generated html carried (`<h3 id="us-12-…">`). */
-const publishedIds = (html: string) => new Set([...html.matchAll(/<h3 id="us-(\d+)-/g)].map((m) => Number(m[1])));
+const publishedIds = (html: string) => new Set([...html.matchAll(/<h3 id="us-(\d+)(?:-|")/g)].map((m) => Number(m[1])));
 
 /** The names of the checks that failed, or none. Pure, so the test can drive it without a filesystem. */
 export function integrityProblems(md: string, previousHtml: string | null, allowRemoval: boolean): string[] {
@@ -171,4 +171,7 @@ ${body}
 }
 
 // Importable for its checks (the test), runnable as the build (everything else).
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) main();
+// Node realpaths the entry module, so a symlinked invocation must be realpathed
+// too — a guard that silently does nothing is the failure class this file exists to kill.
+const entry = process.argv[1] && existsSync(process.argv[1]) ? realpathSync(process.argv[1]) : '';
+if (entry === realpathSync(fileURLToPath(import.meta.url))) main();
