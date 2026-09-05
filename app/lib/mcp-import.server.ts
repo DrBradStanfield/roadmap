@@ -517,7 +517,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       if (unknown !== undefined) return { refusal: `${oneLine(unknown)} is not a candidate in this receipt. Nothing was written.` };
       const refusal = chargeWrites(connection, WRITE_COST.add + WRITE_COST.correct * commit.replace.length);
       if (refusal) return { refusal };
-      count(payload.route, 'commit', new Set(payload.candidates.map((c) => c.sourceFileName)).size + payload.documents.length);
+      count(payload.route, 'commit', new Set([...payload.candidates, ...payload.documents].map((c) => c.sourceFileName)).size);
       return payload;
     },
 

@@ -42,7 +42,7 @@ Node.js 20.10 or newer, from [nodejs.org](https://nodejs.org). Check with `node 
 
 This repo on your computer: `git clone https://github.com/DrBradStanfield/roadmap.git`. Then `cd roadmap && npm install`.
 
-The path to your record. Your cloud folder has to be synced to disk, so the file is really there. Dropbox puts it at `~/Dropbox/Apps/Health Roadmap by Dr Brad/health-roadmap.json`. Google Drive for desktop mounts My Drive somewhere like `~/Library/CloudStorage/GoogleDrive-you@example.com/My Drive/Health Plan by Dr Brad/health-roadmap.json` on a Mac, and the folder has to be set "Available offline" or Drive streams the file instead of storing it. If you have never connected a cloud provider there is no file on disk at all, because the tool is holding your record in your browser. Connect a provider first, or export the file from the app.
+The path to your record. Your cloud folder has to be synced to disk, so the file is really there. Dropbox puts it at `~/Dropbox/Apps/Health Plan by Dr Brad/health-roadmap.json` for a new connection; a connection made before the app was renamed keeps `~/Dropbox/Apps/Health Roadmap by Dr Brad/`. Google Drive for desktop mounts My Drive somewhere like `~/Library/CloudStorage/GoogleDrive-you@example.com/My Drive/Health Plan by Dr Brad/health-roadmap.json` on a Mac, and the folder has to be set "Available offline" or Drive streams the file instead of storing it. If you have never connected a cloud provider there is no file on disk at all, because the tool is holding your record in your browser. Connect a provider first, or export the file from the app.
 
 ## Claude Code
 

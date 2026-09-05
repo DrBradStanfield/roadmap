@@ -29,7 +29,7 @@ so this is the whole footprint.
 
 | Backend | Location | Local path with desktop sync |
 | --- | --- | --- |
-| Dropbox | App-folder app, so everything sits under `Apps/Health Roadmap by Dr Brad/` | `~/Dropbox/Apps/Health Roadmap by Dr Brad/health-roadmap.json` |
+| Dropbox | App-folder app, so everything sits under `Apps/Health Plan by Dr Brad/` (a connection made before the app was renamed keeps `Apps/Health Roadmap by Dr Brad/`; Dropbox never renames an existing user's folder) | `~/Dropbox/Apps/Health Plan by Dr Brad/health-roadmap.json` (older connections: `…/Apps/Health Roadmap by Dr Brad/…`) |
 | Google Drive | Folder `Health Plan by Dr Brad` in My Drive | Wherever Drive for desktop mounts My Drive — on macOS usually `~/Library/CloudStorage/GoogleDrive-<email>/My Drive/`, elsewhere often `~/Google Drive/My Drive/`. Set the folder "Available offline", or Drive streams it rather than storing it |
 | GitHub | Default branch of the one repo the token is scoped to, at the repo root | your clone: `health-roadmap.json` |
 | WebDAV / self-host | Relative to the configured base URL | wherever you mounted it |

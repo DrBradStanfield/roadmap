@@ -1199,21 +1199,33 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(pendingFiles()).toHaveLength(1);
     expect(pendingFiles()[0]).toMatch(/^imports\/pending-[0-9a-f-]{36}\.json$/);
 
-    // An empty commit writes nothing and changes no version (the live-test safety property).
-    const empty = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [] } });
-    expect(empty.isError).toBe(false);
-    expect((empty.structured as { written: unknown }).written).toEqual({ measurements: 0, labValues: 0, corrections: 0, documents: 0 });
-    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(versionBefore);
+    // A commit that declines every value still files the PDF itself as a
+    // metadata-only document (AC8): the row records the file, not acceptance.
+    const declined = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [] } });
+    expect(declined.isError).toBe(false);
+    expect((declined.structured as { written: unknown }).written).toEqual({ measurements: 0, labValues: 0, corrections: 0, documents: 1 });
+    expect(storedRecord().measurements.filter((m) => m.source === 'lab_import')).toHaveLength(0);
+    expect(storedRecord().documents.map((d) => [d.sourceFileName, d.type, d.fileRef])).toEqual([['labs.pdf', 'pathology_report', '']]);
     expect(pendingFiles()).toHaveLength(0); // spent
 
-    // Extract again, then a real commit.
-    const again = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fileNames: ['labs.pdf'] })).structured);
+    // That row now answers for the file: the next extract is already_imported
+    // before any download or model call (AC6), and it carries no receipt.
+    const filed = await callTool(access, 'import_documents', { fileNames: ['labs.pdf'] });
+    const filedData = OUTPUTS.import_documents.parse(filed.structured);
+    expect(filedData).toMatchObject({ files: [{ name: 'labs.pdf', status: 'already_imported' }], candidates: [] });
+    expect(filedData.receipt).toBeUndefined();
+    expect(extracted).toEqual(['labs.pdf']); // still the one model call from the first extract
+
+    // A second lab file: extract, then a real commit.
+    stubImport({ 'labs-2.pdf': PDF_BYTES.map((b, i) => (i === PDF_BYTES.length - 1 ? b ^ 1 : b)) }, () => labReport({ reportDate: '2026-08-21' }));
+    const again = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fileNames: ['labs-2.pdf'] })).structured);
     const commit = await callTool(access, 'import_documents', { commit: { receipt: again.receipt, accept: ['c1', 'c2'], replace: [] } });
     expect(commit.isError).toBe(false);
     expect(commit.text).toContain('Saved to the user’s Dropbox');
     const stored = storedRecord();
-    expect(stored.measurements.find((m) => m.status === 'active')).toMatchObject({ metricType: 'ldl', value: 2.8, source: 'lab_import' });
+    expect(stored.measurements.find((m) => m.status === 'active' && m.source === 'lab_import')).toMatchObject({ metricType: 'ldl', value: 2.8, recordedAt: '2026-08-21' });
     expect(stored.labValues[0]).toMatchObject({ metricName: 'ferritin', value: 210, source: 'lab_import' });
+    expect(stored.documents.map((d) => d.sourceFileName).sort()).toEqual(['labs-2.pdf', 'labs.pdf']);
     expect(pendingFiles()).toHaveLength(0);
 
     // The counter is value-free: route, phase and a bucket, nothing else.
@@ -1221,6 +1233,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(events.map(([, meta]) => meta)).toEqual([
       { route: 'dropbox', phase: 'extract', files: '1' },
       { route: 'dropbox', phase: 'commit', files: '1' },
+      { route: 'dropbox', phase: 'extract', files: '1' },
       { route: 'dropbox', phase: 'extract', files: '1' },
       { route: 'dropbox', phase: 'commit', files: '1' },
     ]);

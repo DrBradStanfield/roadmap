@@ -78,7 +78,9 @@ breaks the flow.
 
 **4. Dropbox app console.** Add the redirect URI `https://mcp.drstanfield.com/mcp/callback`.
 Scopes: `files.content.read`, `files.content.write`, `files.metadata.read`. Leave the
-app type as **App folder**. Watch the ceiling: the app is approved for **500 users** as of
+app type as **App folder**. The folder is named after the app at the user's FIRST connect
+and Dropbox never renames it: a new connection gets `Apps/Health Plan by Dr Brad`, a
+connection made before the rename keeps `Apps/Health Roadmap by Dr Brad` (both live 2026-09-05). Watch the ceiling: the app is approved for **500 users** as of
 2026-09-02. Past that, Dropbox freezes new links and the app needs a higher limit, which
 is a request to Dropbox and Brad's to make.
 
@@ -204,8 +206,10 @@ records — extract-only, never write test data, never commit their contents.
 **8a. `import_documents` (US-35).** `tools/list` shows `import_documents` with
 `_meta["openai/fileParams"]`. With a test PDF sitting in a connected Dropbox account's
 folder root, `import_documents {}` returns candidates plus a receipt. Then
-`{commit:{receipt, accept:[], replace:[]}}` writes zeros and leaves the record's rev
-unchanged. On a Google Drive connection, the same call is refused, naming the website
+`{commit:{receipt, accept:[], replace:[]}}` writes no values but files the PDF itself as
+one metadata-only `documents[]` row (so the rev moves once); extracting the same file
+again is `already_imported`, and an empty commit of a file already on record is the
+true no-op. On a Google Drive connection, the same call is refused, naming the website
 upload or a ChatGPT drag as the way in.
 
 **Step 8 over Drive — PASSED 2026-09-02, ~14:25 NZ.** The hosted MCP, via Claude.ai,

@@ -30,6 +30,11 @@ of truth for acceptance criteria and the schemas live in
    hash; the website's `bulkSaveDocuments` reads a hash WITHOUT a `fileRef` as
    the connector's metadata-only row and archives the blob into a new row,
    tombstoning the old one, when the user uploads the same PDF there.
+   A lab report is a document too (defect A, live 2026-09-05: it landed
+   values and no row, so nothing dedup'd it and the website had no row to
+   archive behind): it lands as the website's own lab-archive shape,
+   `pathology_report` / "Blood test results", which the Documents list hides.
+   A row records the file, not acceptance: declining every value still files it.
 4. Time: 40 s budget per call (`MCP_IMPORT_BUDGET_MS`; ChatGPT cuts tool
    calls at 60 s), started by `runImport` before the record is read and
    handed to every phase as one `deadline`. Every I/O honours it and is

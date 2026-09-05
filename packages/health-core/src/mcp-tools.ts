@@ -861,6 +861,9 @@ export const IMPORT_HOSTED_ONLY =
  * count: a tombstoned document was deleted on purpose, and importing it again
  * is a decision, not a duplicate.
  */
+/** Title of the row the website's upload writes for a lab PDF it archives; the connector writes the same row without the blob. */
+const LAB_ARCHIVE_TITLE = 'Blood test results';
+
 export function isAlreadyImported(file: RoadmapFile, name: string, contentHash: string): boolean {
   return file.documents.some((d) => !d.deleted && (d.sourceFileName === name || (d.contentHash !== '' && d.contentHash === contentHash)));
 }
@@ -957,6 +960,11 @@ export function prepareImport(
     }
     const result = read.result;
     const report: z.infer<typeof importFileOutput> = { name, status: 'extracted', classification: result.classification };
+    // Every file read lands as a document: metadata only, its text left
+    // behind (AC8). `contentHash` names the bytes the user still holds; the
+    // website archives them on `fileRef` when the same file is uploaded there,
+    // and the row is what makes the next extract `already_imported` (AC6).
+    let doc: Pick<ImportDocument, 'type' | 'title' | 'date'>;
 
     if (result.classification === 'lab_report') {
       const day = validDay(result.reportDate, ctx);
@@ -1011,19 +1019,16 @@ export function prepareImport(
         });
       }
       for (const line of result.unrecognized) unrecognized.push(oneLine(line).slice(0, MAX_NAME_LENGTH));
-      files.push(report);
-      continue;
+      // The row the website writes for a lab PDF (`synthesizeLabArchiveEntries`),
+      // which its Documents list hides: the values are the record, the file is the archive.
+      doc = { type: 'pathology_report', title: LAB_ARCHIVE_TITLE, date: day };
+    } else {
+      const type = (DOCUMENT_TYPES as readonly string[]).includes(result.classification) ? result.classification as DocumentType : 'other';
+      doc = { type, title: fromDocument(result.document?.title) ?? name, date: validDay(result.document?.documentDate, ctx) };
+      report.title = doc.title;
+      report.documentDate = doc.date;
     }
-
-    // Any other classification is a document: metadata only, its text left
-    // behind (AC8). `contentHash` names the bytes the user still holds; the
-    // website archives them on `fileRef` when the same file is uploaded there.
-    const type = (DOCUMENT_TYPES as readonly string[]).includes(result.classification) ? result.classification as DocumentType : 'other';
-    const title = fromDocument(result.document?.title) ?? name;
-    const date = validDay(result.document?.documentDate, ctx);
-    report.title = title;
-    report.documentDate = date;
-    documents.push({ sourceFileName: name, contentHash: read.contentHash ?? '', mimeType: read.mimeType ?? '', type, title, date });
+    documents.push({ sourceFileName: name, contentHash: read.contentHash ?? '', mimeType: read.mimeType ?? '', ...doc });
     files.push(report);
   }
 

@@ -1068,6 +1068,12 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     return prepareImport(file, bundleOf(files), IMPORT_CTX).payload;
   }
 
+  /** A record that already holds the file's archive row, so a commit's only question is its values. */
+  function filed(file: RoadmapFile, name: string): RoadmapFile {
+    file.documents.push({ id: `d-${name}`, title: 'Blood test results', type: 'pathology_report', date: null, fileRef: '', contentHash: `sha256-${name}`, mimeType: 'application/pdf', extractedText: '', addedAt: NOW, sourceFileName: name, metadata: {} });
+    return file;
+  }
+
   it('files accepted free candidates with source lab_import, and documents as metadata rows', () => {
     const file = base();
     const payload = payloadFor(file, [extracted('new.pdf', labReport()), letter('Cardiology letter')]);
@@ -1076,20 +1082,52 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     const written = outcome.status === 'ok' ? outcome.file! : base();
     expect(written.measurements.find((m) => m.recordedAt === LAB_DAY)).toMatchObject({ metricType: 'ldl', value: 2.8, source: 'lab_import', status: 'active', correctsId: null });
     expect(written.labValues.find((l) => l.recordedAt === LAB_DAY)).toMatchObject({ metricName: 'ferritin', value: 210, unit: 'ug/L', referenceLow: 30, referenceHigh: 300, source: 'lab_import' });
-    expect(written.documents).toHaveLength(1);
+    expect(written.documents).toHaveLength(2);
     // Metadata-only, with the bytes' own `contentHash` and no `fileRef`: the
     // website archives the blob onto this hash when the same PDF is uploaded there.
-    expect(written.documents[0]).toMatchObject({
+    expect(written.documents[1]).toMatchObject({
       title: 'Cardiology letter', type: 'clinic_letter', date: '2026-05-01', fileRef: '', contentHash: 'sha256-abc', mimeType: 'application/pdf', extractedText: '',
       sourceFileName: 'letter.pdf', metadata: { importedVia: 'connector' },
     });
     expect(written.meta.updatedAt).toBe(NOW);
-    expect(OUTPUTS.import_documents.parse((outcome as { data: unknown }).data)).toMatchObject({ phase: 'committed', written: { measurements: 1, labValues: 1, corrections: 0, documents: 1 } });
+    expect(OUTPUTS.import_documents.parse((outcome as { data: unknown }).data)).toMatchObject({ phase: 'committed', written: { measurements: 1, labValues: 1, corrections: 0, documents: 2 } });
     expect(file.measurements).toHaveLength(2); // the input file is untouched
   });
 
-  it('cannot introduce a value the receipt does not carry, and held_equal accepts write nothing', () => {
+  it('AC6/AC8 — a lab report is a document too: the PDF lands as the website’s own archive row, so the next extract is already_imported', () => {
+    // Live 2026-09-05 (defect A): a lab PDF produced values and no documents[]
+    // row, so nothing carried its name or hash, every re-extract re-read it
+    // (model called, file charged), and the website had no connector row to
+    // archive the blob behind. The row is the same shape the website's
+    // synthesizeLabArchiveEntries writes, which its Documents list hides.
     const file = base();
+    const payload = payloadFor(file, [extracted('new.pdf', labReport())]);
+    expect(payload.documents).toEqual([{ sourceFileName: 'new.pdf', contentHash: 'sha256-new.pdf', mimeType: 'application/pdf', type: 'pathology_report', title: 'Blood test results', date: LAB_DAY }]);
+    const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: ['c1', 'c2'], replace: [] }, NOW);
+    expect(outcome.status).toBe('ok');
+    const written = outcome.status === 'ok' ? outcome.file! : base();
+    expect(written.documents).toHaveLength(1);
+    expect(written.documents[0]).toMatchObject({
+      title: 'Blood test results', type: 'pathology_report', date: LAB_DAY, fileRef: '', contentHash: 'sha256-new.pdf', mimeType: 'application/pdf', extractedText: '',
+      sourceFileName: 'new.pdf', metadata: { importedVia: 'connector' },
+    });
+    expect((outcome as { data: { written: unknown } }).data.written).toEqual({ measurements: 1, labValues: 1, corrections: 0, documents: 1 });
+    expect(isAlreadyImported(written, 'new.pdf', 'sha256-zzz')).toBe(true);
+    expect(isAlreadyImported(written, 'renamed.pdf', 'sha256-new.pdf')).toBe(true);
+
+    // Declining every value still files the document: a row records the
+    // file, not the user's acceptance of what was read from it.
+    const declined = importDocumentsCommit(file, payload, { receipt: 'r', accept: [], replace: [] }, NOW);
+    expect(declined.status).toBe('ok');
+    expect((declined as { data: { written: unknown } }).data.written).toEqual({ measurements: 0, labValues: 0, corrections: 0, documents: 1 });
+    // And once the row exists, an empty commit of a payload naming that file is the true no-op.
+    const filed = declined.status === 'ok' ? declined.file! : base();
+    const again = importDocumentsCommit(filed, payloadFor(filed, [extracted('new.pdf', labReport())]), { receipt: 'r', accept: [], replace: [] }, NOW);
+    expect(again.status === 'ok' && again.file).toBeUndefined();
+  });
+
+  it('cannot introduce a value the receipt does not carry, and held_equal accepts write nothing', () => {
+    const file = filed(base(), 'same.pdf');
     const payload = payloadFor(file, [extracted('same.pdf', ldlOnly(3.4, '2026-07-14'))]);
     expect(importDocumentsCommit(file, payload, { receipt: 'r', accept: ['c9'], replace: [] }, NOW)).toMatchObject({ status: 'rejected', text: expect.stringContaining('not a candidate') });
     const equal = importDocumentsCommit(file, payload, { receipt: 'r', accept: ['c1'], replace: [] }, NOW);
@@ -1099,7 +1137,7 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
   });
 
   it('replace corrects through correctsId and flips the old row; accept alone on held_different is silence, not consent', () => {
-    const file = base();
+    const file = filed(base(), 'diff.pdf');
     file.measurements[0].recordedAt = '2026-08-30';
     const payload = payloadFor(file, [extracted('diff.pdf', ldlOnly(3.1, '2026-08-30'))]);
     expect(payload.candidates[0].slot.state).toBe('held_different');
@@ -1133,8 +1171,8 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     expect(importDocumentsCommit(corrected.status === 'ok' ? corrected.file! : file, held, { receipt: 'r', accept: ['c1'], replace: [] }, NOW).status).toBe('rejected');
   });
 
-  it('an empty selection writes nothing and says so', () => {
-    const file = base();
+  it('an empty selection writes nothing and says so, once the file itself is on record', () => {
+    const file = filed(base(), 'new.pdf');
     const outcome = importDocumentsCommit(file, payloadFor(file, [extracted('new.pdf', labReport())]), { receipt: 'r', accept: [], replace: [] }, NOW);
     expect(outcome).toMatchObject({ status: 'ok', text: expect.stringContaining('Nothing was selected') });
     expect(outcome.status === 'ok' && outcome.file).toBeUndefined();

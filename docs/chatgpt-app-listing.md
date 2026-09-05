@@ -8,10 +8,10 @@
 > (approved or rejected), submit **1.0.1** as "Health by Dr Brad" with
 > `import_documents` and its justification (below). Tracked in
 > [issue #60](https://github.com/DrBradStanfield/roadmap/issues/60).
-> Still on the old name: the **Dropbox app** is "Health Roadmap by Dr Brad", so every user's folder
-> is `Apps/Health Roadmap by Dr Brad` (confirmed live 2026-09-05). Renaming it is a Dropbox App
-> Console action for Brad, and it renames every existing user's folder, so the docs and guides name
-> the live folder until that is done.
+> Dropbox folder names differ by connection age: a NEW connection lands in `Apps/Health Plan by Dr Brad`
+> (live on a fresh account 2026-09-05), while a connection made before the app was renamed keeps
+> `Apps/Health Roadmap by Dr Brad` (Brad's own). Dropbox names the folder at first connect and never
+> renames it, so both names are live and the guides say so.
 
 Everything the OpenAI submission form asks for, so Brad only fills in fields. 1.0.0 has been
 submitted and is in review (see above); 1.0.1 has not. Requirements read 2026-09-02 from `developers.openai.com/plugins/deploy/submission`,
