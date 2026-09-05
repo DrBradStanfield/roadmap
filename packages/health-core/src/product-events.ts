@@ -86,7 +86,7 @@ export const MCP_TOOL_NAMES = [
 export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
 
 /** The `mcp_import` counter's three closed vocabularies (US-35 usage signal). */
-export const MCP_IMPORT_ROUTES = ['dropbox', 'chatgpt_file', 'drive_refused'] as const;
+export const MCP_IMPORT_ROUTES = ['dropbox', 'chatgpt_file', 'chatgpt_refused', 'drive_refused'] as const;
 export const MCP_IMPORT_PHASES = ['extract', 'commit'] as const;
 export const MCP_IMPORT_FILE_BUCKETS = ['0', '1', '2-5', '6-20'] as const;
 export type McpImportRoute = (typeof MCP_IMPORT_ROUTES)[number];

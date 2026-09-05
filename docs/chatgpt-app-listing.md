@@ -3,6 +3,10 @@
 > **Name change pending.** The connector is renamed from "Health Roadmap" to "Health by Dr Brad".
 > The listing below already uses the new name; it ships with the NEXT submitted version. Nothing
 > submitted so far carries it.
+> Still on the old name: the **Dropbox app** is "Health Roadmap by Dr Brad", so every user's folder
+> is `Apps/Health Roadmap by Dr Brad` (confirmed live 2026-09-05). Renaming it is a Dropbox App
+> Console action for Brad, and it renames every existing user's folder, so the docs and guides name
+> the live folder until that is done.
 
 Everything the OpenAI submission form asks for, so Brad only fills in fields. Nothing here has been
 submitted. Requirements read 2026-09-02 from `developers.openai.com/plugins/deploy/submission`,
@@ -78,7 +82,8 @@ user's own `health-roadmap.json`, in that user's own Dropbox or Google Drive, ov
 credential. Never the open web, never another user's record. Two are the exception. `report_feedback`
 is marked open-world: it touches no health record, and it files an issue on GitHub. `import_documents`
 is marked open-world too: it sends a file to Anthropic's API for extraction, and on the ChatGPT file
-route it first fetches that file from OpenAI's own file host, `files.oaiusercontent.com`.
+route it first fetches that file from OpenAI's own file hosts (`files.oaiusercontent.com`, or the
+`oaisdmntprn*.blob.core.windows.net` blob store ChatGPT hands out).
 
 - **`read_record`**
   - *Read-only:* Reads only. It fetches the record, filters it and returns rows. Nothing is written back.
@@ -105,7 +110,7 @@ route it first fetches that file from OpenAI's own file host, `files.oaiusercont
 - **`import_documents`**
   - *Read-only:* Not read-only. Its extract phase writes nothing to the record but does park candidate values in the user's own folder; its commit phase appends values and files documents, and can correct a value through the same guard as `correct_value`.
   - *Destructive:* Destructive. A `replace` in commit flips a superseded row to `entered-in-error` permanently, exactly like `correct_value`, guarded the same way.
-  - *Open-world:* Open-world. It sends the user's file — never the record — to Anthropic's API for extraction under our key, and on the ChatGPT file route it first fetches that file from OpenAI's `files.oaiusercontent.com`. Nothing is kept after extraction.
+  - *Open-world:* Open-world. It sends the user's file — never the record — to Anthropic's API for extraction under our key, and on the ChatGPT file route it first fetches that file from OpenAI's own file host (`files.oaiusercontent.com` or its `oaisdmntprn*.blob.core.windows.net` blob store). Nothing is kept after extraction.
 
 ## Starter prompts
 
@@ -132,7 +137,7 @@ account's own file, starting empty. Seven positive:
 6. **"Import the lab results in my Dropbox folder."** `import_documents` lists the folder root,
    extracts a test PDF, and returns candidates and a receipt; accepting them commits the values.
 7. **A file dragged into the ChatGPT conversation.** `import_documents` reads the descriptor's
-   `_meta["openai/fileParams"]` file, fetches it from `files.oaiusercontent.com`, and extracts it
+   `_meta["openai/fileParams"]` file, fetches it from OpenAI's file host, and extracts it
    the same way as the folder route.
 
 Three negative:

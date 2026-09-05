@@ -9,6 +9,12 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import JSZip from 'jszip';
+import { recordServerEvent } from './product-events.server';
+
+vi.mock('./product-events.server', async (importOriginal) => {
+  const original = await importOriginal<typeof import('./product-events.server')>();
+  return { ...original, recordServerEvent: vi.fn(async () => {}) };
+});
 import {
   CHATGPT_FETCH_TIMEOUT_MS,
   fetchChatgptFile,
@@ -143,10 +149,55 @@ describe('US-35 AC4 — the ChatGPT file fetch', () => {
     expect('refusal' in (await fetchChatgptFile('https://files.oaiusercontent.com/x'))).toBe(true);
   });
 
-  it('honours CHATGPT_FILE_HOSTS so a second host is one env change, not a deploy', async () => {
+  it('accepts OpenAI’s two host forms and refuses every look-alike — live 2026-09-05 the URL was a region-suffixed Azure blob', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(PDF)));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    for (const url of [
+      'https://files.oaiusercontent.com/file-abc?sig=1',
+      'https://oaisdmntprnznorth.blob.core.windows.net/files/file-abc?sv=1&sig=2',
+      'https://oaisdmntprn.blob.core.windows.net/x',
+      'https://oaisdmntprn-west-2.blob.core.windows.net/x',
+    ]) expect('bytes' in (await fetchChatgptFile(url)), url).toBe(true);
+    for (const url of [
+      'https://evil-oaisdmntprn.blob.core.windows.net/x',
+      'https://oaisdmntprn.blob.core.windows.net.evil.com/x',
+      'https://oaisdmntprnznorth.blob.core.windows.net.evil.com/x',
+      'https://xoaisdmntprn.blob.core.windows.net/x',
+      'https://oaisdmntprn.blob.core.windows.com/x',
+      'https://files.oaiusercontent.com.evil.com/x',
+      'http://oaisdmntprnznorth.blob.core.windows.net/x',
+    ]) expect('refusal' in (await fetchChatgptFile(url)), url).toBe(true);
+    // The family is whole hostnames: two accepted fetches per URL above, none for the refused.
+    expect((fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls).toHaveLength(4);
+  });
+
+  it('honours CHATGPT_FILE_HOSTS as extra exact hosts, so a third host is one env change, not a deploy', async () => {
     process.env.CHATGPT_FILE_HOSTS = 'files.oaiusercontent.com, files.example.test';
     vi.stubGlobal('fetch', vi.fn(async () => new Response(PDF)));
     expect('bytes' in (await fetchChatgptFile('https://files.example.test/x'))).toBe(true);
+    // The env adds; the built-in family stays.
+    expect('bytes' in (await fetchChatgptFile('https://oaisdmntprnznorth.blob.core.windows.net/x'))).toBe(true);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect('refusal' in (await fetchChatgptFile('https://sub.files.example.test/x'))).toBe(true);
+  });
+
+  it('a dragged file that was not read is still counted: mcp_import chatgpt_refused, value-free (usage signal)', async () => {
+    resetMcpMemory();
+    vi.mocked(recordServerEvent).mockClear();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    const surface = hostedImporter({ token: { clientId: 'c.test', provider: 'dropbox', rt: 'rt', exp: 0 }, adapter: new MemoryAdapter(new MemoryCloud()), client: 'chatgpt', maxCorrectionAgeDays: 90 });
+    const file = createEmptyFile({ deviceId: 'test', now: '2026-09-05T00:00:00.000Z' });
+    const answer = await surface.extract(
+      { file: { download_url: 'https://evil.example/secret-name.pdf?sig=abc', file_id: 'f1', file_name: 'my-clinic-letter.pdf' } },
+      file, '2026-09-05T00:00:00.000Z', Date.now() + MCP_IMPORT_BUDGET_MS,
+    );
+    expect('refusal' in answer).toBe(true);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const events = vi.mocked(recordServerEvent).mock.calls;
+    expect(events).toEqual([['mcp_import', { route: 'chatgpt_refused', phase: 'extract', files: '0' }]]);
+    expect(JSON.stringify(events)).not.toMatch(/secret-name|clinic-letter|evil\.example/);
   });
 });
 

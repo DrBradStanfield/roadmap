@@ -65,13 +65,25 @@ of truth for acceptance criteria and the schemas live in
 8. Google Drive folder route: refused per client (ChatGPT desktop: drag the
    file in; ChatGPT mobile and Claude: the website upload). ChatGPT route:
    `_meta['openai/fileParams']`, exact four-property `file` schema, fetch
-   only from `CHATGPT_FILE_HOSTS` over https, no redirects, 10 s.
+   only from OpenAI's file hosts over https, no redirects, 10 s. Two forms,
+   both from field reports: `files.oaiusercontent.com` exactly, or the
+   region-suffixed Azure blob family `^oaisdmntprn[a-z0-9-]*\.blob\.core\.windows\.net$`
+   (live 2026-09-05 the URL was `oaisdmntprnznorth.blob.core.windows.net`,
+   and the exact-host list refused it). `CHATGPT_FILE_HOSTS` adds exact
+   hosts on top. A refused drag counts as `mcp_import {route: chatgpt_refused}`.
 9. Honesty: consent page, privacy addendum, agent-access, listing, guides,
    architecture map, READMEs and `.env.example` say the connector route sends
    the file through Brad's server and to the extraction model and keeps
    nothing; the website route keeps the PDF in the browser.
 10. Telemetry: `import_documents` in `MCP_TOOL_NAMES`; `mcp_import {route,
-    phase, files: bucket}`, value-free.
+    phase, files: bucket}`, value-free. Routes: `dropbox`, `chatgpt_file`,
+    `chatgpt_refused` (a drag the server would not read: host, size, timeout),
+    `drive_refused`.
+12. Document-only extracts (2026-09-05): a clinic letter yields no candidates,
+    and the first live run read as "0 values, nothing to do". The extract now
+    lists `documents` (source name, bounded title, type, date) and `next`
+    says how many can be filed and that an empty commit files them. Titles
+    stay out of `next`: it is the field the assistant follows.
 11. stdio: the tool is listed and refuses ("hosted only") — a local path was
     not taken up: the local server has no model.
 

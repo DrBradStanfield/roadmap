@@ -82,9 +82,9 @@ export async function dispatchRpc(incoming: unknown, surface: RpcSurface): Promi
     case 'ping':
       return rpcResult(id, {});
     case 'tools/list':
-      // `cost` is the hosted server's own write-budget weight, not part of a
-      // tool definition — it never goes on the wire.
-      return rpcResult(id, { tools: MCP_TOOLS.map(({ cost, ...tool }) => tool) });
+      // `cost` (the hosted server's write-budget weight) and `run` (how the
+      // loop dispatches the tool) are ours, not tool facts — never on the wire.
+      return rpcResult(id, { tools: MCP_TOOLS.map(({ cost, run, ...tool }) => tool) });
     case 'prompts/list':
       return rpcResult(id, { prompts: MCP_PROMPTS.map(({ name, title }) => ({ name, title })) });
     case 'prompts/get': {

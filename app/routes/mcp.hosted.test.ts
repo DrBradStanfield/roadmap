@@ -1316,7 +1316,8 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     }));
     const answer = await callTool(access, 'import_documents', {});
     expect(answer.isError).toBe(false);
-    expect(answer.text.length).toBeLessThan(1500);
+    // The 120-char title rides in two bounded places (files[], documents[]); the rest is fixed prose.
+    expect(answer.text.length).toBeLessThan(2000);
     expect(answer.text).not.toContain('contentMarkdown');
     expect(answer.text).not.toContain('note');
     const data = OUTPUTS.import_documents.parse(answer.structured);

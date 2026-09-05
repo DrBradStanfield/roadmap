@@ -987,7 +987,7 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(payload.candidates[2].slot).toEqual({ state: 'held_equal', existingRowId: 'm1', existingValue: 3.4 });
     expect(payload.candidates[1]).toMatchObject({ value: 210, unit: 'ug/L', referenceLow: 30, referenceHigh: 300, recordedAt: LAB_DAY });
     expect(unrecognized).toEqual(['vitamin D: 45 ng/mL']);
-    expect(importDocumentsOutput.safeParse({ phase: 'extracted', route: 'dropbox', files, candidates: payload.candidates, unrecognized, remaining: [], next: 'x' }).success).toBe(true);
+    expect(importDocumentsOutput.safeParse({ phase: 'extracted', route: 'dropbox', files, candidates: payload.candidates, documents: [], unrecognized, remaining: [], next: 'x' }).success).toBe(true);
   });
 
   it('a differing value on a held slot is replaceable inside the age limit and not past it', () => {
@@ -1196,6 +1196,34 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(base()), version: 1 });
     return recordSync(new MemoryAdapter(cloud), 'test', NOW);
   }
+
+  it('AC8 — a document-only extract names the documents to file and tells the assistant to offer an empty commit', async () => {
+    // Live 2026-09-05: a clinic letter came back as "0 value(s) are new" and
+    // ChatGPT never offered to file it. The result must carry the documents
+    // and say what to do with them.
+    const cloud = new MemoryCloud();
+    const sync = syncOver(cloud);
+    const letters: ImportSurface = { ...surface, async extract() { return { route: 'chatgpt_file', remaining: [], files: [letter('Discharge summary')] }; } };
+    const answer = await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: letters, latestDay: TODAY });
+    expect(answer.isError).toBe(false);
+    const data = OUTPUTS.import_documents.parse(answer.structured);
+    expect(data.candidates).toEqual([]);
+    expect(data.documents).toEqual([{ sourceFileName: 'letter.pdf', title: 'Discharge summary', type: 'clinic_letter', date: '2026-05-01' }]);
+    expect(data.receipt).toMatch(/^receipt-/);
+    expect(data.next).toMatch(/1 document\(s\) can be filed/);
+    // Document text never rides in the instruction field (AC9).
+    expect(data.next).not.toContain('Discharge summary');
+    expect(data.next).toMatch(/Offer to file them; a commit with empty accept and replace files the documents alone/);
+    // The document's text never rides along (AC9).
+    expect(JSON.stringify(data)).not.toContain('body');
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
+
+    // And the empty commit it recommends files the letter.
+    const commit = await runToolOverSync(sync, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [] } }, NOW, { importer: letters, latestDay: TODAY });
+    expect(commit.isError).toBe(false);
+    expect(OUTPUTS.import_documents.parse(commit.structured).written).toEqual({ measurements: 0, labValues: 0, corrections: 0, documents: 1 });
+    expect(OUTPUTS.import_documents.parse(commit.structured).documents).toEqual([]);
+  });
 
   it('an extract leaves the file bytes untouched and answers candidates plus a receipt', async () => {
     const cloud = new MemoryCloud();

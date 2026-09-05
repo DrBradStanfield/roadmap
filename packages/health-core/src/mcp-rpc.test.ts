@@ -31,12 +31,14 @@ describe('US-32 — the shared dispatch', () => {
     expect((await send('initialize', { protocolVersion: '1999-01-01' }))!.result!.protocolVersion).toBe('2025-11-25');
   });
 
-  it('lists the tools with the two words ChatGPT shows, and never the write cost', async () => {
+  it('lists the tools with the two words ChatGPT shows, and never the write cost or the run mode', async () => {
     const listed = (await send('tools/list'))!.result!.tools as Array<Partial<(typeof MCP_TOOLS)[number]>>;
     expect(listed).toHaveLength(MCP_TOOLS.length);
     for (const tool of listed) {
-      // `cost` is the hosted server's own budget weight; it is not a tool fact.
+      // `cost` is the hosted server's own budget weight and `run` its dispatch
+      // mode; neither is a tool fact (US-35 live verify 2026-09-05 saw `run` leak).
       expect(Object.keys(tool), tool.name).not.toContain('cost');
+      expect(Object.keys(tool), tool.name).not.toContain('run');
       expect(tool._meta!['openai/toolInvocation/invoking'].length, tool.name).toBeLessThanOrEqual(64);
       expect(tool._meta!['openai/toolInvocation/invoked'].length, tool.name).toBeLessThanOrEqual(64);
     }

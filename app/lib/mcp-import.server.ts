@@ -84,9 +84,19 @@ const EXTRACT_CONCURRENCY = 3;
 /** One model call, HTTP. Inside the budget by construction; a hung call fails, never waits. */
 const EXTRACT_TIMEOUT_MS = 20_000;
 
-/** OpenAI's file host, from field reports — the docs name none. A second one shows up as a refusal count. */
-function chatgptFileHosts(): Set<string> {
-  return new Set((process.env.CHATGPT_FILE_HOSTS || 'files.oaiusercontent.com').split(',').map((h) => h.trim()).filter(Boolean));
+/**
+ * OpenAI's file hosts, from field reports — the docs name none. Two forms so
+ * far: `files.oaiusercontent.com`, and the region-suffixed Azure blob store
+ * ChatGPT hands out for a dragged-in file (`oaisdmntprnznorth.blob.core.windows.net`,
+ * seen live 2026-09-05). The blob family is matched whole, anchored at both
+ * ends: a prefix, a suffix or a look-alike domain is not a match. A host
+ * outside both shows up as a `chatgpt_refused` count and a hostname warning,
+ * and `CHATGPT_FILE_HOSTS` adds exact hosts without a deploy.
+ */
+const CHATGPT_BLOB_HOST = /^oaisdmntprn[a-z0-9-]*\.blob\.core\.windows\.net$/;
+export function isChatgptFileHost(hostname: string): boolean {
+  if (hostname === 'files.oaiusercontent.com' || CHATGPT_BLOB_HOST.test(hostname)) return true;
+  return (process.env.CHATGPT_FILE_HOSTS || '').split(',').map((h) => h.trim()).includes(hostname);
 }
 
 // ---------------------------------------------------------------------------
@@ -227,7 +237,7 @@ export async function fetchChatgptFile(downloadUrl: string, signal?: AbortSignal
   } catch {
     return { refusal: 'That file reference is not a URL this server can fetch. Drag the file in from a browser, or put it in the connected folder. Nothing was read.' };
   }
-  if (url.protocol !== 'https:' || !chatgptFileHosts().has(url.hostname)) {
+  if (url.protocol !== 'https:' || !isChatgptFileHost(url.hostname)) {
     console.warn('import: file host refused', url.hostname);
     return { refusal: 'That file is not on a host this server will fetch from. Drag the file in from a browser, or put it in the connected folder. Nothing was read.' };
   }
@@ -338,7 +348,11 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       if (request.file) {
         route = 'chatgpt_file';
         const fetched = await fetchChatgptFile(request.file.download_url, signal);
-        if ('refusal' in fetched) return fetched;
+        if ('refusal' in fetched) {
+          // A drag that was not read is still a drag: counted, so the route's demand is visible.
+          count('chatgpt_refused', 'extract', 0);
+          return fetched;
+        }
         units.push({ name: cleanName(request.file.file_name ?? 'file'), fetch: async () => fetched.bytes });
       } else {
         if (token.provider === 'google' || !adapter.list) {
