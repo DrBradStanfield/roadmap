@@ -5,7 +5,7 @@
  * network arrives as a StorageError, so the hosted server can tell the
  * provider's failure from its own (AC17).
  */
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, StorageError } from './adapter';
 import { describeStorageFailure } from './sync-manager';
 import { DropboxAdapter } from './dropbox-rest';
@@ -116,7 +116,7 @@ describe('a runtime without `AbortSignal.timeout` still saves (US-32 AC17)', () 
  */
 describe('a rev-conditional write refuses to re-create a deleted record (US-32 AC16)', () => {
   /** The `Dropbox-API-Arg` header of the last upload, parsed. */
-  function uploadArg(fetchSpy: ReturnType<typeof vi.fn>): Record<string, unknown> {
+  function uploadArg(fetchSpy: Mock<any[], Promise<Response>>): Record<string, unknown> {
     const init = fetchSpy.mock.calls.at(-1)![1] as RequestInit;
     return JSON.parse((init.headers as Record<string, string>)['Dropbox-API-Arg']);
   }
