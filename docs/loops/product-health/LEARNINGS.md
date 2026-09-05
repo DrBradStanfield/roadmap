@@ -18,27 +18,17 @@ duplicates.
   weeks as no-data, not zero-usage. lab_rows_viewed/lab_row_added went live
   2026-08-07 (US-21 phase 1).
 - **2026-08-10 [funnel]** A funnel event reading 0 can be dead instrumentation,
-  not zero usage: `chat_opened` never fired (158 chat messages that same week)
-  because every live surface mounts ChatSection `startExpanded`, making its only
-  emit site unreachable. Rule now in the charter: classify every zero (inspect
-  the emit site) before reporting it. Verify each NEW event fires in production
-  within its first week. **Confirmed again 2026-08-16, second layer:** the
-  08-10 ChatSection fix reached only the widget bundle — side bundles
-  (site-chat, chatbot) have their OWN vite configs and never define
-  `VITE_SHOPIFY_SURFACE`, so `trackProductEvent` no-ops in the bundle carrying
-  most chat traffic. A shared-component event fix ships only where each
-  bundle's config defines the flag: check every bundle that mounts the component.
-  **Closed 2026-08-22:** PR #23's define deployed 08-15T22:49Z; `chat_opened`
-  fired 29 times in W34, first event 22:52:36Z (~3 min later) — when a
-  container can't reach the live site, production telemetry with a tight
-  deploy-to-first-event timestamp IS the live verification.
-- **2026-08-10 [usage]** First instrumented week (W32, ~4 days): 190
-  results_viewed; uploads complete at 100% (7/7); corrections (9) and
-  additional-lab expansion (15, ~8% of viewers) both have real usage;
-  reminder_optin fired 0 times ever — the strongest kill-signal yet (US-17).
-  *(Superseded 2026-08-16: the zero measured reach, not demand — default-on +
-  the typed lane shipped 08-13/14 and the first week brought 18 enrolments,
-  0 opt-outs.)*
+  not zero usage (`chat_opened`: unreachable emit site, then a second layer —
+  side bundles with their own vite configs never define `VITE_SHOPIFY_SURFACE`,
+  so shared-component events no-op there; check every bundle that mounts the
+  component). Charter rules born here: classify every zero at its emit site;
+  verify each NEW event fires in production within its first week. Closed
+  2026-08-22 — a tight deploy-to-first-event timestamp IS the live verification
+  when a container can't reach the site. (Full saga: W32–W34 reports.)
+- **2026-08-10 [usage]** W32's "reminder_optin 0 ever = kill-signal" was wrong
+  in a durable way: the zero measured REACH, not demand — default-on + the
+  typed lane (08-13/14) brought 18 enrolments in a week. A zero on an
+  opt-in-shaped event indicts the surface before the feature.
 - **2026-08-16 [tooling]** Sentry per-issue event COUNTS are not reproducible
   across pulls: the same two chat issues returned 86/24 (W32), then 1/1 in two
   W33 pulls (identical under statsPeriod=14d and 90d), and summed `stats`
@@ -73,9 +63,10 @@ duplicates.
   fingerprint — Chrome+macOS+PC+no-referrer, ~22s engagement, US/BR/VN/MX —
   a scraper wave, with Clarity's own bot filter catching only ~3%. Before
   trusting a Clarity session count, check Browser/OS/referrer concentration;
-  a flooded pull is a named gap, not a data point. **Confirmed again
-  2026-08-29 (week 2):** 200k sessions/3d, same ~98% fingerprint, country mix
-  shifted (Singapore #2) — persistent infrastructure-level load, not a blip.
+  a flooded pull is a named gap, not a data point. Confirmed 08-29 (200k/3d,
+  same fingerprint). **Receded by 2026-09-05:** 4,133 sessions/3d, organic
+  mobile/Google-led shape, `/pages/roadmap` extractable again — floods can
+  end on their own; re-check shape every pull rather than carrying the gap.
 - **2026-08-16 [usage]** First week of the email machine (US-17/22/23): 18
   enrolments — 17 typed vs 3 cloud rows all-time, so the ~10:1 typed-lane bet
   held almost exactly; 40% plan-ready click rate; 1/25 bounce; 0 opt-outs.
@@ -94,5 +85,20 @@ duplicates.
   inside the PGRST303 cron-fault window. Verify any "nothing due" claim
   against live `reminder_optin_v2` schedules, not memory of the old cohort.
   `reminder_sent` instrumented 2026-08-30 (server-only, forge-rejected at the
-  client route): W36 classifies its first number like any new event; sends are
-  rare by design (90/180/365d cooldowns), so a small count is expected, not a bug.
+  client route); sends are rare by design (90/180/365d cooldowns). **Verified
+  2026-09-05 (W36):** 2 fires, matching the window's only 2 `last_sent`
+  stamps exactly — the event and the stamp now corroborate each other.
+- **2026-09-05 [bug-class]** A docs-rewrite commit can silently delete a third
+  of the product spec: `2285724` (09-01, message describes only US-32 edits)
+  removed US-12–US-28 + Epics D–G from `user-stories.md` (+18/−221) and
+  regenerated the HTML in the same commit, so both copies agreed and nothing
+  errored for 4 days. Detection was dangling US-id references in prose/tests.
+  Tripwire worth building: the HTML generator failing on referenced-but-
+  undefined US-ids (W36 backlog #1 rider). Recovery: git archaeology via the
+  GitHub API — shallow session clones (this one starts 09-02) cannot see it.
+- **2026-09-05 [usage]** First MCP-instrumented week (US-32/34/35 events live
+  09-02/09-04): treat the counts as Brad's verification traffic, not adoption
+  — `client` resolved to `other` on 45/50 tool calls because MCP Inspector /
+  Claude Code CLI sit outside the closed chatgpt/claude enum. Until the enum
+  widens and the ChatGPT app verdict lands, per-assistant adoption is
+  unreadable and any MCP trend line starts at W37, not W36.
