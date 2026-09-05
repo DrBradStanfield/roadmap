@@ -124,8 +124,8 @@ Tags: `[retrieval] [classifier] [latency] [content] [loop]`
   top-level "practical questions route" rule fixed all five known-fails +
   four compliance guards (suite 89.3%→91.7%). Position was the mechanism —
   the same carve-outs buried inside Rule 7's empty-list bullets were inert.
-  W36 verified live: 4/5 fixtures pass and no practical-shape empty recurred
-  in production. Rule of thumb stands: 3/3-∅ with terms visible → router
+  W36 verified live: 4/5 fixtures pass; none of the five fixed shapes
+  recurred in production. Rule of thumb stands: 3/3-∅ with terms visible → router
   territory, skip the summary edit. RESIDUE (W36, all fixtures): third-party-
   recommender disagreement, should-I-stop-taking-X, how-do-I-start/obtain,
   and pure mechanism-depth questions still refuse; tirzepatide-company still

@@ -37,5 +37,5 @@ week,metric,count_7d,count_prior_7d,delta_pct,source,note
 2026-W36,router_latency_median_ms,1494,1322,13,chat_match_events,n=42
 2026-W36,router_latency_p90_ms,1920,1861,3,chat_match_events,n=42
 2026-W36,router_cache_hit_rate_pct,31,27,15,chat_match_events,13/42
-2026-W36,yt_reply_median_words,70,67,4,chat_messages,"n=27 incl 3 SKIP_NO_REPLY sentinel rows stored as 1-word assistant messages; excluding sentinels median 74.5 (n=24); cap ≤90 holding"
+2026-W36,yt_reply_median_words,70,67,4,chat_messages,"n=27 incl 3 SKIP_NO_REPLY sentinel rows stored as 1-word assistant messages; excluding sentinels median 72.5 (n=24); cap ≤90 holding"
 2026-W36,yt_reply_gt90w_count_7d,2,4,-50,chat_messages,"2/27 (7.4%), max 123; >5-sentence breaches 0"
