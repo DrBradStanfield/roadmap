@@ -1,15 +1,20 @@
 # ChatGPT app listing: Health by Dr Brad
 
-> **Name change pending.** The connector is renamed from "Health Roadmap" to "Health by Dr Brad".
-> The listing below already uses the new name; it ships with the NEXT submitted version. Nothing
-> submitted so far carries it.
+> **Pending: v1.0.1 resubmission.** "Health Roadmap" v1.0.0 (submission
+> `C-Ggl3RkPf6el6`) has been in status Review since 2026-09-02. Do not touch
+> 1.0.0 while it's under review. Our live MCP server now has eight tools
+> (`import_documents` added 2026-09-04) against the seven 1.0.0 described, and
+> OpenAI requires a new version for an added tool. When the verdict lands
+> (approved or rejected), submit **1.0.1** as "Health by Dr Brad" with
+> `import_documents` and its justification (below). Tracked in
+> [issue #60](https://github.com/DrBradStanfield/roadmap/issues/60).
 > Still on the old name: the **Dropbox app** is "Health Roadmap by Dr Brad", so every user's folder
 > is `Apps/Health Roadmap by Dr Brad` (confirmed live 2026-09-05). Renaming it is a Dropbox App
 > Console action for Brad, and it renames every existing user's folder, so the docs and guides name
 > the live folder until that is done.
 
-Everything the OpenAI submission form asks for, so Brad only fills in fields. Nothing here has been
-submitted. Requirements read 2026-09-02 from `developers.openai.com/plugins/deploy/submission`,
+Everything the OpenAI submission form asks for, so Brad only fills in fields. 1.0.0 has been
+submitted and is in review (see above); 1.0.1 has not. Requirements read 2026-09-02 from `developers.openai.com/plugins/deploy/submission`,
 `.../apps-sdk/app-submission-guidelines` and `.../plugins/reference`. Server:
 `https://mcp.drstanfield.com/mcp` (Fly app `health-tool-edu`); design in [mcp-architecture.md](mcp-architecture.md).
 

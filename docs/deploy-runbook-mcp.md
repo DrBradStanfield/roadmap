@@ -196,6 +196,11 @@ each write: `read_record` → `get_plan` → `add_measurement` → a correction 
 `expectedValue` → a correction WITHOUT it (must refuse) → a correction on a row older
 than 90 days (must refuse).
 
+**Scratch accounts (Brad, 2026-09-05).** The Dropbox and Google Drive accounts under
+`brad@microvitamin.com` are SCRATCH for testing: write, delete, corrupt anything there
+freely. Brad's own accounts (`brad@drstanfield.com`, `b.d.stanfield@gmail.com`) are REAL
+records — extract-only, never write test data, never commit their contents.
+
 **8a. `import_documents` (US-35).** `tools/list` shows `import_documents` with
 `_meta["openai/fileParams"]`. With a test PDF sitting in a connected Dropbox account's
 folder root, `import_documents {}` returns candidates plus a receipt. Then

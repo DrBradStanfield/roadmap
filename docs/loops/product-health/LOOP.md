@@ -42,6 +42,10 @@ unacted for a quarter, say so in the retro and propose the fleet review.
   `https://www.clarity.ms/export-data/api/v1/project-live-insights?numOfDays=3`,
   Bearer auth. Its window is ~1–3 days: a sample, not the week — trends come
   from metrics.csv, not any single pull.
+- **OpenAI plugin review status** (Gmail MCP + `platform.openai.com/plugins`):
+  search for a verdict on submission `C-Ggl3RkPf6el6` ("Health Roadmap"
+  v1.0.0). If it has moved out of Review (approved or rejected), surface
+  issue #60 as the next action in the report.
 
 Conventions: the report/metrics week label is the COMPLETED ISO data week (the
 7d window ending at run time). Any funnel event reporting 0 must be classified
