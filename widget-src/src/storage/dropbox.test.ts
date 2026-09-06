@@ -205,3 +205,26 @@ describe('DropboxAdapter.read — absent secondary file', () => {
     expect(urlsOf(fetchMock)).toEqual(['https://content.dropboxapi.com/2/files/download']);
   });
 });
+
+describe('DropboxAdapter.writeDocument — a non-ASCII path (US-13 AC1)', () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  // Sentry 7715862604: the em dash in an AI-extracted letter title reached the
+  // Dropbox-API-Arg header raw and `fetch` threw "String contains non
+  // ISO-8859-1 code point" before any request left the browser.
+  it.each([
+    ['em dash', 'Clinic letters/2026-08-25 GP Consultation Letter — Dr A. Example.pdf'],
+    ['macron', 'Clinic letters/2026-08-25 Letter for Hēmi Māori.pdf'],
+    ['emoji', 'Other documents/2026-08-25 Notes 🩺.pdf'],
+  ])('sends the %s path as an ASCII-only header that decodes to the same path', async (_, ref) => {
+    const adapter = connectedAdapter();
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ rev: 'r1' }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await adapter.writeDocument(ref, new Blob(['%PDF'], { type: 'application/pdf' }));
+
+    const headers = (fetchMock.mock.calls as unknown as RequestInit[][])[0][1].headers as Record<string, string>;
+    expect(headers['Dropbox-API-Arg']).toMatch(/^[\x20-\x7e]*$/);
+    expect(uploadArg(fetchMock).path).toBe(`/${ref}`);
+  });
+});

@@ -30,6 +30,10 @@ describe('sanitizeTitle', () => {
   it('falls back when nothing survives', () => {
     expect(sanitizeTitle('///???')).toBe('Document');
   });
+  it('keeps non-ASCII — an em dash or a macron is a fine file name once the Dropbox header escapes it', () => {
+    expect(sanitizeTitle('GP Consultation Letter — Dr A. Example')).toBe('GP Consultation Letter — Dr A. Example');
+    expect(sanitizeTitle('Letter for Hēmi Māori')).toBe('Letter for Hēmi Māori');
+  });
 });
 
 describe('extensionOf', () => {

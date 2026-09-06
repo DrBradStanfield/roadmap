@@ -42,6 +42,18 @@ function parseApiResult(res: Response): Record<string, unknown> | null {
   }
 }
 
+/**
+ * The `Dropbox-API-Arg` header value for `arg`. HTTP headers carry ISO-8859-1
+ * only, and `fetch` throws on anything else before a request leaves the
+ * browser (Sentry 7715862604: an em dash in a letter's title). Dropbox's rule
+ * for this header is JSON with every non-ASCII code point as `\uXXXX`, which
+ * keeps the pretty file name intact. Every content-endpoint call, here and in
+ * the widget adapter, builds the header through this — never `JSON.stringify`.
+ */
+export function dropboxApiArg(arg: object): string {
+  return JSON.stringify(arg).replace(/[\u0080-\uffff]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`);
+}
+
 /** A Dropbox `path` argument: an `id:…` from a listing as is, else a folder-relative name. */
 function pathArg(ref: string): string {
   return ref.startsWith('id:') ? ref : `/${ref}`;
@@ -53,7 +65,7 @@ function download(accessToken: string, ref: string, signal?: AbortSignal): Promi
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'Dropbox-API-Arg': JSON.stringify({ path: pathArg(ref) }),
+      'Dropbox-API-Arg': dropboxApiArg({ path: pathArg(ref) }),
     },
     signal,
   });
@@ -176,7 +188,7 @@ export async function dropboxWrite(
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/octet-stream',
-      'Dropbox-API-Arg': JSON.stringify(arg),
+      'Dropbox-API-Arg': dropboxApiArg(arg),
     },
     body: JSON.stringify(body),
     signal,

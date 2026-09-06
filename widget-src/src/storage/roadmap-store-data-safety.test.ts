@@ -367,7 +367,7 @@ describe('RoadmapStore document archive (US-14)', () => {
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     const file = new Blob(['%PDF-1.4 fake lipid panel bytes'], { type: 'application/pdf' });
 
-    const [saved] = await store.bulkSaveDocuments([
+    const { saved: [saved] } = await store.bulkSaveDocuments([
       {
         documentType: 'pathology_report',
         title: 'Lipid panel',
@@ -402,11 +402,11 @@ describe('RoadmapStore document archive (US-14)', () => {
     const payload = { documentType: 'pathology_report', title: 'Lipid panel', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'results.pdf', file: new Blob(['identical bytes'], { type: 'application/pdf' }) };
 
     const first = await store.bulkSaveDocuments([payload]);
-    expect(first).toHaveLength(1);
+    expect(first.saved).toHaveLength(1);
     await store.flush();
 
     const second = await store.bulkSaveDocuments([{ ...payload, title: 'Lipid panel (re-upload)' }]);
-    expect(second).toHaveLength(0);
+    expect(second).toEqual({ saved: [], errorCount: 0 });
     await store.flush();
 
     const file = readCloudFile(cloud);
@@ -430,7 +430,7 @@ describe('RoadmapStore document archive (US-14)', () => {
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
     const payload = { documentType: type, title: 'Lipid panel', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'results.pdf', file: blob };
 
-    const [saved] = await store.bulkSaveDocuments([payload]);
+    const { saved: [saved] } = await store.bulkSaveDocuments([payload]);
     expect(saved.fileRef).not.toBe('');
     await store.flush();
     const file = readCloudFile(cloud);
@@ -440,37 +440,54 @@ describe('RoadmapStore document archive (US-14)', () => {
     expect(live[0]).toMatchObject({ type, contentHash: hash, fileRef: saved.fileRef, extractedText: 'md' });
 
     // Now archived: the same bytes again are a no-op.
-    expect(await store.bulkSaveDocuments([payload])).toHaveLength(0);
+    expect((await store.bulkSaveDocuments([payload])).saved).toHaveLength(0);
   });
 
-  it('keeps the connector row live when the archiving blob write fails — the hash key is not lost (US-35 AC6)', async () => {
+  it('a failed archive behind a connector row files NO second row: the connector row stays live and the failure is counted (US-13 AC1, US-35 AC8)', async () => {
+    // Sentry 7715862604: the em dash in this title broke the Dropbox header, and
+    // the old "degrade to metadata-only" branch then filed a plain row BESIDE the
+    // connector's — the Documents list showed the letter twice, and every
+    // re-upload offered "Save 1 Original" and added another.
     const blob = new Blob(['connector bytes'], { type: 'application/pdf' });
     const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
     const hash = `sha256-${[...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')}`;
+    const title = 'GP Consultation Letter — Dr A. Example';
     const seeded = createEmptyFile({ deviceId: 'phone', now: '2026-01-01T00:00:00.000Z' });
     seeded.documents.push({
-      id: 'imported', title: 'Lipid panel', type: 'pathology_report', date: '2024-05-10', fileRef: '', contentHash: hash, mimeType: 'application/pdf',
-      extractedText: '', addedAt: '2026-01-01T00:00:00.000Z', metadata: { importedVia: 'connector' }, sourceFileName: 'results.pdf',
+      id: 'imported', title, type: 'clinic_letter', date: '2026-08-25', fileRef: '', contentHash: hash, mimeType: 'application/pdf',
+      extractedText: '', addedAt: '2026-01-01T00:00:00.000Z', metadata: { importedVia: 'connector' }, sourceFileName: 'clinic-letter.pdf',
     });
     const cloud = new MemoryCloud();
     cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(seeded), version: 1 });
     const adapter = new MemoryAdapter(cloud);
-    adapter.writeDocument = async () => { throw new Error('quota'); };
+    adapter.writeDocument = async () => { throw new TypeError('String contains non ISO-8859-1 code point.'); };
     const store = await RoadmapStore.create(adapter);
-    const payload = { documentType: 'pathology_report', title: 'Lipid panel', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'results.pdf', file: blob };
+    const payload = { documentType: 'clinic_letter', title, documentDate: '2026-08-25', contentMd: 'md', metadata: {}, sourceFileName: 'clinic-letter.pdf', file: blob };
 
-    const [saved] = await store.bulkSaveDocuments([payload]);
-    expect(saved.fileRef).toBeNull(); // degraded to metadata-only
+    expect(await store.bulkSaveDocuments([payload])).toEqual({ saved: [], errorCount: 1 });
     await store.flush();
     const file = readCloudFile(cloud);
-    expect(file.documents.find((d) => d.id === 'imported')!.deleted).toBeUndefined();
-    expect(file.documents.filter((d) => !d.deleted && d.contentHash === hash)).toHaveLength(1);
+    const live = file.documents.filter((d) => !d.deleted);
+    expect(live.map((d) => d.id)).toEqual(['imported']); // no duplicate, not tombstoned
+    expect(live[0].contentHash).toBe(hash); // the hash key survives for the retry
+  });
+
+  it('without a connector row a failed blob write still degrades to metadata-only — the reviewed values are never lost with the file', async () => {
+    const cloud = new MemoryCloud();
+    const adapter = new MemoryAdapter(cloud);
+    adapter.writeDocument = async () => { throw new Error('quota'); };
+    const store = await RoadmapStore.create(adapter);
+
+    const result = await store.bulkSaveDocuments([{ documentType: 'pathology_report', title: 'Lipid panel', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'results.pdf', file: new Blob(['bytes'], { type: 'application/pdf' }) }]);
+    expect(result.errorCount).toBe(0);
+    expect(result.saved).toHaveLength(1);
+    expect(result.saved[0].fileRef).toBeNull();
   });
 
   it('deleteDocument tombstones (keeps the row, flips deleted) and hides it from reads', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    const [saved] = await store.bulkSaveDocuments([
+    const { saved: [saved] } = await store.bulkSaveDocuments([
       { documentType: 'scan_result', title: 'Chest X-ray', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'xray.jpg' },
     ]);
     await store.flush();
@@ -488,7 +505,7 @@ describe('RoadmapStore document archive (US-14)', () => {
   it('deleting an unknown id, and re-deleting an already-deleted id, both return false without corrupting state', async () => {
     const cloud = new MemoryCloud();
     const store = await RoadmapStore.create(new MemoryAdapter(cloud));
-    const [saved] = await store.bulkSaveDocuments([
+    const { saved: [saved] } = await store.bulkSaveDocuments([
       { documentType: 'scan_result', title: 'Chest X-ray', documentDate: '2024-05-10', contentMd: 'md', metadata: {}, sourceFileName: 'xray.jpg' },
     ]);
     await store.flush();

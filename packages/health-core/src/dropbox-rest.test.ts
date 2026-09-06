@@ -8,7 +8,7 @@
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { ConflictError, fetchOrFail, ROADMAP_FILE_NAME, StorageError } from './adapter';
 import { describeStorageFailure } from './sync-manager';
-import { DropboxAdapter } from './dropbox-rest';
+import { dropboxApiArg, dropboxWrite, DropboxAdapter } from './dropbox-rest';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -241,5 +241,38 @@ describe('a caller’s signal reaches `fetch` on every call the import makes (US
       expect((fetchSpy.mock.calls.at(-1)![1] as RequestInit).signal!.aborted).toBe(true);
     }
     expect(fetchSpy).toHaveBeenCalledTimes(calls.length);
+  });
+});
+
+/**
+ * HTTP headers carry ISO-8859-1 only; `fetch` throws on anything else before
+ * a request leaves the browser (Sentry 7715862604, an em dash in a letter's
+ * title). Dropbox's documented rule for `Dropbox-API-Arg` is JSON with every
+ * non-ASCII code point escaped as `\uXXXX`, which keeps the pretty file name.
+ */
+describe('dropboxApiArg — an ASCII header for a non-ASCII path (US-13 AC1, US-35 AC2)', () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it.each([
+    ['em dash', '—', '\\u2014'],
+    ['macron', 'ā', '\\u0101'],
+    ['emoji', '🩺', '\\ud83e\\ude7a'],
+  ])('escapes a %s as \\uXXXX and JSON.parse gives the path back', (_, ch, escaped) => {
+    const header = dropboxApiArg({ path: `/a ${ch} b` });
+    expect(header).toContain(escaped);
+    expect(header).toMatch(/^[\x20-\x7e]*$/);
+    expect(JSON.parse(header)).toEqual({ path: `/a ${ch} b` });
+  });
+
+  it('every content call names its file through it (download by name, upload)', async () => {
+    const fetchSpy = vi.fn(async () => new Response('{"rev":"r1"}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchSpy);
+    await dropboxDownload('t', 'Lab results/2026-01-01 Hēmi.pdf');
+    await dropboxWrite('t', 'imports/pending-—.json', {}, null);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    for (const call of fetchSpy.mock.calls as unknown as RequestInit[][]) {
+      const headers = call[1].headers as Record<string, string>;
+      expect(headers['Dropbox-API-Arg']).toMatch(/^[\x20-\x7e]*$/);
+    }
   });
 });

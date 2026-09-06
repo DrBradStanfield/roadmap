@@ -159,8 +159,8 @@ export async function bulkSaveLabValues(values: BulkLabValueInput[]): Promise<Bu
 }
 export async function bulkSaveDocuments(
   documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,
-): Promise<ApiDocument[]> {
-  return store ? store.bulkSaveDocuments(documents) : [];
+): Promise<{ saved: ApiDocument[]; errorCount: number }> {
+  return store ? store.bulkSaveDocuments(documents) : { saved: [], errorCount: documents.length };
 }
 export async function deleteDocument(documentId: string): Promise<boolean> {
   return store ? store.deleteDocument(documentId) : false;

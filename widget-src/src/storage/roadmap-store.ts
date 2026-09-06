@@ -506,7 +506,9 @@ export class RoadmapStore {
    * documents[] reference commits via the JSON write — §5.3's order, so an
    * interrupted save leaves a harmless orphan blob, never a dangling ref.
    * A failed blob write (e.g. GitHub's ~1 MB cap, localStorage quota) degrades
-   * to metadata-only: the extracted values are never lost with the file.
+   * to metadata-only: the extracted values are never lost with the file. Except
+   * behind a connector row (below): there the metadata already exists, so the
+   * upload files nothing and reports the failure in `errorCount` for a retry.
    *
    * `contentHash` is ONE key for the website and the connector (US-35 AC6): a
    * live row that carries the hash AND a `fileRef` is the archived original,
@@ -517,7 +519,7 @@ export class RoadmapStore {
    */
   async bulkSaveDocuments(
     documents: Array<{ documentType: string; title: string; documentDate: string | null; contentMd: string; metadata: Record<string, unknown>; sourceFileName: string | null; file?: Blob }>,
-  ): Promise<ApiDocument[]> {
+  ): Promise<{ saved: ApiDocument[]; errorCount: number }> {
     const out: FileDocument[] = [];
     const existingRefs = new Set(this.file.documents.map((d) => d.fileRef).filter(Boolean));
     // Content-hash dedup: re-uploading a file the archive already holds (live,
@@ -529,7 +531,7 @@ export class RoadmapStore {
 
     // Phase 1 (serial, order-dependent): dedup by hash, assign collision-safe
     // refs, build the metadata rows.
-    const writes: Array<{ doc: FileDocument; ref: string; file: Blob; hash: string; supersedes?: FileDocument }> = [];
+    const writes: Array<{ doc: FileDocument; ref: string; file: Blob; hash: string; supersedes?: FileDocument; failed?: boolean }> = [];
     for (const d of documents) {
       const hash = d.file ? await sha256Blob(d.file) : null;
       if (hash) {
@@ -561,7 +563,9 @@ export class RoadmapStore {
     // ~40 sequential round trips (20-40s on a slow link). The FIRST write into
     // each folder still runs alone (concurrent find-or-create of the same new
     // folder would create duplicates); the rest pool. A failed write degrades
-    // to metadata-only, as before.
+    // to metadata-only — unless a connector row already holds these bytes: a
+    // plain row beside it would list the letter twice, and every later upload
+    // would offer to archive it again (Sentry 7715862604).
     const writeOne = async (w: (typeof writes)[number]) => {
       try {
         await this.adapter.writeDocument(w.ref, w.file);
@@ -574,6 +578,7 @@ export class RoadmapStore {
         Sentry.captureException(error, {
           tags: { area: 'cloud-sync', op: 'write-document', backend: this.adapter.id },
         });
+        w.failed = Boolean(w.supersedes);
       }
     };
     const seenFolders = new Set<string>();
@@ -594,9 +599,11 @@ export class RoadmapStore {
       }),
     );
 
-    this.file.documents.push(...out);
+    const failed = new Set(writes.filter((w) => w.failed).map((w) => w.doc));
+    const saved = out.filter((d) => !failed.has(d));
+    this.file.documents.push(...saved);
     this.touch();
-    return out.map(toApiDocument);
+    return { saved: saved.map(toApiDocument), errorCount: failed.size };
   }
 
   /** Read a stored document's bytes back (viewer). */

@@ -18,6 +18,7 @@
  * Brad supplies the app key (client id) via DropboxConfig; there is no secret.
  */
 import {
+  dropboxApiArg,
   dropboxDownload,
   dropboxListFolder,
   dropboxRead,
@@ -183,7 +184,7 @@ export class DropboxAdapter implements StorageAdapter {
       headers: {
         Authorization: `Bearer ${await this.accessToken()}`,
         'Content-Type': 'application/octet-stream',
-        'Dropbox-API-Arg': JSON.stringify(arg),
+        'Dropbox-API-Arg': dropboxApiArg(arg),
       },
       body: bytes,
     });

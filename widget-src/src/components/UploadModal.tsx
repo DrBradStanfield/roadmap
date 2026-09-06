@@ -592,19 +592,19 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
 
       const [savedValues, savedDocs, savedLabValues] = await Promise.all([
         measurements.length > 0 ? bulkSaveMeasurements(measurements) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
-        docPayloads.length > 0 ? bulkSaveDocuments(docPayloads) : Promise.resolve([]),
+        docPayloads.length > 0 ? bulkSaveDocuments(docPayloads) : Promise.resolve({ saved: [], errorCount: 0 }),
         labValuePayloads.length > 0 ? bulkSaveLabValues(labValuePayloads) : Promise.resolve({ saved: [], skippedDuplicates: 0, errorCount: 0 }),
       ]);
 
       setSavedCount(savedValues.saved.length);
       setSkippedMeasurements(savedValues.skippedDuplicates);
       setSkippedLabValues(savedLabValues.skippedDuplicates);
-      setSaveErrorCount(savedValues.errorCount + savedLabValues.errorCount);
-      setSavedDocCount(savedDocs.length);
+      setSaveErrorCount(savedValues.errorCount + savedLabValues.errorCount + savedDocs.errorCount);
+      setSavedDocCount(savedDocs.saved.length);
       setSavedLabCount(savedLabValues.saved.length);
       // 100% duplicates is still "ok" — DB already has the data. Only fail
       // if everything errored AND nothing was a known-duplicate.
-      const totalSaved = savedValues.saved.length + savedDocs.length + savedLabValues.saved.length;
+      const totalSaved = savedValues.saved.length + savedDocs.saved.length + savedLabValues.saved.length;
       const totalCompleted = totalSaved + savedValues.skippedDuplicates + savedLabValues.skippedDuplicates;
 
       // Update screening dates for documents with screening mappings
@@ -746,7 +746,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
               )}
               {saveErrorCount > 0 && (
                 <p className="upload-done-skipped">
-                  {saveErrorCount} value{saveErrorCount !== 1 ? 's' : ''} could not be saved due to a server error. Please try again.
+                  {saveErrorCount} item{saveErrorCount !== 1 ? 's' : ''} could not be saved. Please try again.
                 </p>
               )}
               <button className="btn-primary upload-done-btn" onClick={handleClose}>

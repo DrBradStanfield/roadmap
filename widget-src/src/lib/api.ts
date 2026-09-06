@@ -812,7 +812,8 @@ export async function bulkSaveDocuments(
      *  ignored here (v1 keeps extracted text only). */
     file?: Blob;
   }>,
-): Promise<ApiDocument[]> {
+): Promise<{ saved: ApiDocument[]; errorCount: number }> {
+  const failed = { saved: [], errorCount: documents.length };
   try {
     const bulkDocuments = documents.map(({ file: _file, ...d }) => d);
     const response = await fetch(`${PROXY_PATH}/api/health-documents`, {
@@ -820,13 +821,13 @@ export async function bulkSaveDocuments(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bulkDocuments }),
     });
-    if (!response.ok) return [];
+    if (!response.ok) return failed;
     const data = await parseJsonResponse<{ success: boolean; documents: ApiDocument[] }>(response);
-    return data?.success ? data.documents || [] : [];
+    return data?.success ? { saved: data.documents || [], errorCount: 0 } : failed;
   } catch (error) {
     console.warn('Bulk save documents error:', error);
     Sentry.captureException(error);
-    return [];
+    return failed;
   }
 }
 

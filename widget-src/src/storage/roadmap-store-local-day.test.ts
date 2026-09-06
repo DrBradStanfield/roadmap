@@ -33,7 +33,7 @@ describe('RoadmapStore — local calendar day', () => {
     vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-09-01T23:00:00.000Z') });
     const store = await RoadmapStore.create(new MemoryAdapter());
 
-    const [doc] = await store.bulkSaveDocuments([{
+    const { saved: [doc] } = await store.bulkSaveDocuments([{
       documentType: 'lab_result', title: 'Lipid panel', documentDate: null,
       contentMd: '# Lipids', metadata: {}, sourceFileName: 'lipids.pdf',
       file: new Blob(['lipids'], { type: 'application/pdf' }),
