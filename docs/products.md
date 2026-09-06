@@ -114,6 +114,9 @@ Everything in MicroVitamin core + 4 premium additions. $100 one-time / $90/mo su
 
 ### MicroVitamin+ Powder FAQ
 
+**Is MicroVitamin+ Powder third-party tested?**
+Not yet (Brad, 2026-09-07). Do not write "third-party tested" on any surface or ad that covers MicroVitamin+ (for example the Amazon Sponsored Brands banner, which advertises all three products). MicroVitamin capsules and Sleep are third-party tested; see their sections.
+
 **What is the difference between MicroVitamin capsules and MicroVitamin+ Powder?**
 MicroVitamin+ Powder contains all 26 core ingredients from MicroVitamin capsules plus four premium additions: Collagen Peptides 12.5g (for skin elasticity and joint support), Creatine Monohydrate 5g (the most studied performance supplement, also supports brain function), Psyllium Husk 2.5g (soluble fiber for gut health and cholesterol management), and extra Taurine 1g (metabolic health and cardiovascular support). Total: 30 ingredients in one daily scoop vs 26 ingredients in 5 daily capsules.
 
