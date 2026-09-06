@@ -411,6 +411,58 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     await surface.extract({}, file, NOW, deadline());
     expect(importFiles.remaining(key)).toBe(IMPORT_FILES_PER_DAY - 1);
   });
+
+  it('a file refused for quota or allowance is charged on no counter: no model call was made (AC10)', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('labs.pdf', new Blob([PDF]));
+    const surface = surfaceOver(new MemoryAdapter(cloud));
+    const key = connectionKey('rt');
+    machineFiles.reset();
+    const seam = vi.fn();
+    setImportSeams({ extract: seam });
+    const machineBefore = machineFiles.remaining('machine');
+    // The hourly write allowance is spent: the file's day charge must not stand on either counter.
+    expect(chargeWrites(key, WRITES_PER_HOUR)).toBeNull();
+    let bundle = await surface.extract({}, file, NOW, deadline());
+    expect('files' in bundle && bundle.files[0]).toMatchObject({ status: 'failed', reason: 'allowance' });
+    expect(importFiles.remaining(key)).toBe(IMPORT_FILES_PER_DAY);
+    expect(machineFiles.remaining('machine')).toBe(machineBefore);
+    // The connection's day quota is spent: the machine's cap is not charged for a file it never read.
+    resetMcpMemory();
+    expect(importFiles.take(key, IMPORT_FILES_PER_DAY)).toBe(true);
+    bundle = await surface.extract({}, file, NOW, deadline());
+    expect('files' in bundle && bundle.files[0]).toMatchObject({ status: 'failed', reason: 'quota' });
+    expect(machineFiles.remaining('machine')).toBe(machineBefore);
+    expect(seam).not.toHaveBeenCalled();
+  });
+
+  it('ZIP entries cut off by time on the folder route come back as the ZIP’s own name in remaining, so fileNames = remaining reads them next time (AC2)', async () => {
+    // JSZip inflates on real timers; only the clock is faked here, which is all the deadline reads.
+    vi.useRealTimers();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(NOW));
+    const zip = new JSZip();
+    zip.file('labs/a.pdf', PDF);
+    zip.file('labs/b.pdf', new Uint8Array([...PDF, 1]));
+    zip.file('labs/c.pdf', new Uint8Array([...PDF, 2]));
+    const cloud = new MemoryCloud();
+    cloud.docs.set('bundle.zip', new Blob([new Uint8Array(await zip.generateAsync({ type: 'uint8array' }))]));
+    const surface = surfaceOver(new MemoryAdapter(cloud));
+    // The first entry's model call runs the clock out; the entries behind it are skipped for time.
+    setImportSeams({ extract: async () => { await vi.advanceTimersByTimeAsync(MCP_IMPORT_BUDGET_MS); throw new DOMException('signal timed out', 'TimeoutError'); } });
+    const cut = await surface.extract({}, file, NOW, deadline());
+    if (!('files' in cut)) throw new Error(cut.refusal);
+    expect(cut.files.map((f) => [f.name, f.status, f.reason])).toEqual([
+      ['labs/a.pdf', 'failed', 'time'], ['labs/b.pdf', 'skipped', 'time'], ['labs/c.pdf', 'skipped', 'time'],
+    ]);
+    // An entry's inner path is not a file in the folder root: naming it would make the next call refuse whole.
+    expect(cut.remaining).toEqual(['bundle.zip']);
+    const letter = { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null };
+    setImportSeams({ extract: async () => letter });
+    const again = await surface.extract({ fileNames: cut.remaining }, file, NOW, deadline());
+    if (!('files' in again)) throw new Error(again.refusal);
+    expect(again.files.map((f) => [f.name, f.status])).toEqual([['labs/a.pdf', 'extracted'], ['labs/b.pdf', 'extracted'], ['labs/c.pdf', 'extracted']]);
+  });
 });
 
 describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be read', () => {

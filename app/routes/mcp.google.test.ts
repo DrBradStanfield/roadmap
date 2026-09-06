@@ -201,6 +201,8 @@ describe('the consent screen offers only configured providers (US-32 phase 2)', 
     expect(html).toContain('Continue to Dropbox');
     expect(html).toContain('Continue to Google Drive');
     expect(html).toContain('myaccount.google.com/connections');
+    // The Drive import limit is said up front, in words that hold for every client (Claude has no drag route).
+    expect(html).toContain('With Google Drive the folder cannot be read: drop the file into the chat (ChatGPT, from a computer), or use the website’s upload.');
   });
 
   it('shows Dropbox alone until the Google secrets exist — merging is inert', async () => {

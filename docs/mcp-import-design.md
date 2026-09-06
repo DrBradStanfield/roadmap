@@ -127,3 +127,11 @@ of truth for acceptance criteria and the schemas live in
     `sameDayAs`; a commit accepting both is refused in words. Sentry gets a
     fixed message and the error class, never a parse message.
 
+16. Charges (2026-09-07 adversarial pass): the three counters a file spends —
+    connection day quota, machine day cap, hourly write allowance — are
+    charged in turn and a refusal by a later one refunds the earlier, so a
+    file the model never saw costs nothing anywhere (before, an `allowance`
+    refusal left both day counters charged). On the folder route a ZIP entry
+    cut off by time is named in `remaining` by the ZIP's own name, since the
+    entry's inner path is not a folder-root file and `fileNames` would refuse
+    it; the re-read skips filed entries by hash.

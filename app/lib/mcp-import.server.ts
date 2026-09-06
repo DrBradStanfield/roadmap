@@ -414,8 +414,12 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         const contentHash = contentHashOf(bytes);
         const base = { name, contentHash, mimeType };
         if (isAlreadyImported(file, name, contentHash)) return { ...base, status: 'already_imported' };
-        if (!machineFiles.take('machine', 1) || !importFiles.take(connection, 1)) return { ...base, status: 'failed', reason: 'quota' };
-        if (chargeWrites(connection, WRITE_COST.add)) return { ...base, status: 'failed', reason: 'allowance' };
+        // Three counters, charged in turn; a refusal by a later one hands the earlier charge back, so a file the
+        // model never saw costs nothing on any of them (AC10).
+        const refundFile = () => { machineFiles.refund('machine', 1); importFiles.refund(connection, 1); };
+        if (!importFiles.take(connection, 1)) return { ...base, status: 'failed', reason: 'quota' };
+        if (!machineFiles.take('machine', 1)) { importFiles.refund(connection, 1); return { ...base, status: 'failed', reason: 'quota' }; }
+        if (chargeWrites(connection, WRITE_COST.add)) { refundFile(); return { ...base, status: 'failed', reason: 'allowance' }; }
         const content = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString('base64');
         const pages: PageContent[] = mimeType === 'application/pdf' ? [{ type: 'pdf', content }] : [{ type: 'image', content, mimeType }];
         try {
@@ -426,8 +430,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
           const reason = failureReason(error);
           if (reason === 'time') {
             // The model never answered, so the file was not read: its day's charge comes back.
-            machineFiles.refund('machine', 1);
-            importFiles.refund(connection, 1);
+            refundFile();
           } else if (reason === 'unreadable') {
             // The error CLASS and the file kind, nothing else (AC9): a parse
             // error's message quotes the model's output, which is document text.
@@ -500,9 +503,16 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       await sweep;
 
       const files = results.flat();
-      // What time cut off is `remaining` on every route: the folder route names it in `fileNames`,
-      // the drag route asks for the ZIP again, and either way the assistant is told (AC2).
-      for (const f of files) if (f.status === 'skipped' && f.reason === 'time' && !remaining.includes(f.name)) remaining.push(f.name);
+      // What time cut off is `remaining` on every route, and the assistant is told (AC2). The folder route
+      // names it in `fileNames`, and a ZIP's entry is not in the folder root, so the ZIP's own name stands
+      // for it there (filed entries are skipped by hash on the re-read); the drag route asks for the ZIP again.
+      results.forEach((r, i) => {
+        for (const f of [r].flat()) {
+          if (f.status !== 'skipped' || f.reason !== 'time') continue;
+          const name = Array.isArray(r) && route === 'dropbox' ? units[i].name : f.name;
+          if (!remaining.includes(name)) remaining.push(name);
+        }
+      });
       count(route, 'extract', files.filter((f) => f.contentHash).length);
       return { route, files, remaining };
     },

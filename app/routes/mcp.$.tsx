@@ -476,7 +476,7 @@ function consentPage(clientName: string, offers: Array<{ provider: McpProvider; 
     `<p class="lede"><span class="who">${escapeHtml(clientName)}</span> wants to connect to your health record.</p>
 <p class="lede">Your health record is yours, and yours alone. Keep it in your own ${escapeHtml(clouds)}. Your assistant reads and writes one file there, plus a temporary imports folder while an import is pending. Nothing is stored on our server.</p>
 <div class="pick">${buttons}</div>
-${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Importing lab files: with Dropbox you can drop them in the folder or into the chat; with Google Drive, drag the file into ChatGPT instead — the folder cannot be read.</p>' : ''}
+${offers.some(({ provider }) => provider === 'google') ? '<p class="lede">Importing lab files: with Dropbox you can put them in the folder or drop them into the chat. With Google Drive the folder cannot be read: drop the file into the chat (ChatGPT, from a computer), or use the website’s upload.</p>' : ''}
 <h2>What the assistant can do</h2>
 <ul>
 <li>Read your record and produce your plan.</li>
