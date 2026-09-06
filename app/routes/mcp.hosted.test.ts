@@ -1435,7 +1435,7 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     expect(undated.files[0]).toMatchObject({ status: 'failed', reason: 'no_date' });
     expect(undated.files[0].hint).toMatch(/Ask the user what date the test was taken/);
     expect(undated.candidates).toEqual([]);
-    const dated = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fileDates: { 'photo.png': '2026-08-12' } })).structured);
+    const dated = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fileDates: [{ file: 'photo.png', date: '2026-08-12' }] })).structured);
     expect(dated.files[0]).toMatchObject({ status: 'extracted', documentDate: '2026-08-12' });
     expect(dated.candidates.map((c) => c.recordedAt)).toEqual(['2026-08-12', '2026-08-12']);
   });

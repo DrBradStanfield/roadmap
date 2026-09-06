@@ -26,6 +26,9 @@ export const IMPORT_ACCEPTED_TYPES = 'PDF, JPEG, PNG or ZIP';
 /** The folder route, in one clause, for every sentence that offers it as the way round. */
 const FOLDER_ROUTE = `put the file in the Dropbox folder ${DROPBOX_APP_FOLDER} and ask again`;
 
+/** The `fileDates` argument, shown verbatim: a list of pairs, because ChatGPT drops a map-shaped param (live 2026-09-07). */
+const FILE_DATES_SHAPE = 'fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]';
+
 export const IMPORT_FILE_REASONS = ['unsupported', 'nested_zip', 'too_large', 'no_date', 'bad_date', 'quota', 'allowance', 'time', 'unreadable', 'too_many'] as const;
 export type ImportFileReason = (typeof IMPORT_FILE_REASONS)[number];
 
@@ -35,14 +38,14 @@ const FILE_HINTS: Record<ImportFileReason, string> = {
   nested_zip:
     'A ZIP inside a ZIP is not opened. Unzip it and import the files inside.',
   too_large:
-    `Over the size limit: ${IMPORT_LIMITS.fileMb} MB per PDF or image, ${IMPORT_LIMITS.zipMb} MB per ZIP. ` +
-    `The website's upload takes files up to ${IMPORT_LIMITS.websiteFileMb} MB.`,
+    `Over ${IMPORT_LIMITS.fileMb} MB (${IMPORT_LIMITS.zipMb} MB for a ZIP). ` +
+    `The website's upload takes files up to ${IMPORT_LIMITS.websiteFileMb} MB: drstanfield.com/pages/roadmap. The Dropbox folder has the same ${IMPORT_LIMITS.fileMb} MB limit.`,
   no_date:
     'No collection date was found in the file, so its values were not offered. Ask the user what date the test was taken, ' +
-    'then call again with the same source and fileDates naming this file and that date (YYYY-MM-DD).',
+    `then call again with the same source and ${FILE_DATES_SHAPE}.`,
   bad_date:
     'The date given for this file was not accepted. Ask the user for the correct date the test was taken, ' +
-    'then call again with the same source and fileDates naming this file and that date (YYYY-MM-DD).',
+    `then call again with the same source and ${FILE_DATES_SHAPE}.`,
   quota:
     `This connection has read its ${IMPORT_LIMITS.filesPerDay} files for today; the count resets a day after the first. ` +
     'The website’s upload still works.',
@@ -82,7 +85,7 @@ export const IMPORT_REFUSALS = {
     'The commit was malformed. Pass the receipt exactly as the extract returned it, with accept and replace as lists of candidate ids. Nothing was written.',
   /** Anything else that does not parse: a fileNames or fileDates shape. */
   arguments:
-    'The call was malformed: fileNames is a list of file names as listed, fileDates maps a file name to a YYYY-MM-DD date. Nothing was read.',
+    `The call was malformed: fileNames is a list of file names as listed, fileDates is a list of {file, date} pairs (${FILE_DATES_SHAPE}). Nothing was read.`,
   /** A drag ChatGPT refused or paused (its file limit): the folder route needs no file turn at all. */
   dragFallback: `If the chat cannot take the file, ${FOLDER_ROUTE}.`,
 } as const;

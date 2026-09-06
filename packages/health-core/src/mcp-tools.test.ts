@@ -568,6 +568,24 @@ describe('US-32 — the dispatcher', () => {
       .toEqual(['correct_value', 'update_profile', 'import_documents']);
     for (const tool of MCP_TOOLS) {
       expect(tool.inputSchema.additionalProperties, tool.name).toBe(false);
+      // ChatGPT's tool renderer drops an object declared only by
+      // `additionalProperties` (a map), and the model then says the field "isn't
+      // exposed" (live 2026-09-07, `fileDates`): every object names its properties.
+      const walk = (node: unknown, path: string) => {
+        if (!node || typeof node !== 'object') return;
+        const schema = node as Record<string, unknown>;
+        if (schema.type === 'object' && typeof schema.additionalProperties === 'object') {
+          expect.fail(`${tool.name} ${path}: a map-shaped object (additionalProperties only); declare an array of named pairs instead`);
+        }
+        for (const key of ['properties', 'items']) {
+          const child = schema[key];
+          if (child && typeof child === 'object') {
+            if (key === 'items') walk(child, `${path}[]`);
+            else for (const [name, sub] of Object.entries(child as object)) walk(sub, `${path}.${name}`);
+          }
+        }
+      };
+      walk(tool.inputSchema, 'input');
     }
     // Only report_feedback reaches outside the one user's own file: it writes
     // an issue on GitHub, which is someone else's system (US-32 AC9).
@@ -1044,8 +1062,16 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     // The file's own bad print, with no answer from the user, is still no_date.
     const printed = prepareImport(base(), bundleOf([extracted('p.pdf', labReport({ reportDate: '2099-01-01' }))]), IMPORT_CTX);
     expect(printed.files[0]).toMatchObject({ status: 'failed', reason: 'no_date' });
-    expect(importDocumentsInput.safeParse({ fileDates: { 'a.pdf': '12 Aug 2026' } }).success).toBe(false);
-    expect(importDocumentsInput.safeParse({ fileDates: { 'a.pdf': '2026-08-12' } }).success).toBe(true);
+    // The input is a list of {file, date} pairs, never a map (ChatGPT drops map-shaped params; live 2026-09-07).
+    expect(importDocumentsInput.safeParse({ fileDates: [{ file: 'a.pdf', date: '12 Aug 2026' }] }).success).toBe(false);
+    expect(importDocumentsInput.safeParse({ fileDates: { 'a.pdf': '2026-08-12' } }).success).toBe(false);
+    expect(importDocumentsInput.safeParse({ fileDates: [{ file: 'a.pdf', date: '2026-08-12' }] }).success).toBe(true);
+    expect(importDocumentsInput.safeParse({ fileDates: Array.from({ length: 21 }, (_, i) => ({ file: `${i}.pdf`, date: '2026-08-12' })) }).success).toBe(false);
+    expect(IMPORT_REFUSALS.arguments).toContain('fileDates is a list of {file, date}');
+    const fileDates = MCP_TOOLS.find((t) => t.name === 'import_documents')!.inputSchema.properties.fileDates as { type: string; items: { required: string[] } };
+    expect(fileDates.type).toBe('array');
+    expect(fileDates.items.required).toEqual(['file', 'date']);
+    expect(importHint('no_date')).toContain('fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]');
   });
 
   it('AC6 — candidates are shown in the record’s own unit system and stored canonical; equality is judged in that system', () => {
@@ -1149,8 +1175,9 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     }
     expect(importHint('unsupported')).toContain('PDF, JPEG, PNG or ZIP');
     expect(importHint('unsupported')).toMatch(/HEIC.*JPEG.*screenshot/);
-    expect(importHint('too_large')).toContain(`${IMPORT_LIMITS.fileMb} MB per PDF or image, ${IMPORT_LIMITS.zipMb} MB per ZIP`);
-    expect(importHint('too_large')).toContain(`up to ${IMPORT_LIMITS.websiteFileMb} MB`);
+    // Size: the way round is the website, named by URL; the folder route has the same cap (live 2026-09-07 sent the user to Dropbox).
+    expect(importHint('too_large')).toMatch(new RegExp(`^Over ${IMPORT_LIMITS.fileMb} MB`));
+    expect(importHint('too_large')).toContain(`The website's upload takes files up to ${IMPORT_LIMITS.websiteFileMb} MB: drstanfield.com/pages/roadmap. The Dropbox folder has the same ${IMPORT_LIMITS.fileMb} MB limit.`);
     expect(importHint('no_date')).toMatch(/what date the test was taken.*fileDates/);
     expect(importHint('quota')).toContain(`${IMPORT_LIMITS.filesPerDay} files for today`);
     expect(importHint('allowance')).toMatch(/allowance for the hour/);
@@ -1270,6 +1297,26 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     const held = payloadFor(file, [extracted('same.pdf', ldlOnly(3.4, '2026-07-14'))]);
     const corrected = correctValueTool(file, { id: 'm1', newValue: 3.0 }, NOW);
     expect(importDocumentsCommit(corrected.status === 'ok' ? corrected.file! : file, held, { receipt: 'r', accept: ['c1'], replace: [] }, NOW).status).toBe('rejected');
+  });
+
+  it('two files dropped as two calls (two receipts) offering the same metric and day: the first commit files it, the second is refused in words', () => {
+    // ChatGPT hands a multi-file drop over one file per call (live 2026-09-07),
+    // so sameDayAs never sees both; the moved-slot guard is what stops the second write.
+    const file = base();
+    const first = payloadFor(file, [extracted('march.pdf', ldlOnly(2.8, LAB_DAY))]);
+    const second = payloadFor(file, [extracted('march (1).pdf', ldlOnly(3.1, LAB_DAY), 'sha256-other-bytes')]);
+    expect(first.candidates[0].sameDayAs).toBeUndefined();
+    expect(second.candidates[0].sameDayAs).toBeUndefined();
+    const filedFirst = importDocumentsCommit(file, first, { receipt: 'r1', accept: ['c1'], replace: [] }, NOW);
+    expect(filedFirst.status).toBe('ok');
+    const after = filedFirst.status === 'ok' ? filedFirst.file! : file;
+    expect(after.measurements.filter((m) => m.recordedAt === LAB_DAY).map((m) => m.value)).toEqual([2.8]);
+    const refused = importDocumentsCommit(after, second, { receipt: 'r2', accept: ['c1'], replace: [] }, NOW);
+    expect(refused).toMatchObject({ status: 'rejected', text: `ldl on ${LAB_DAY} changed in the record since these files were read. Nothing was written. Extract again and show the user the fresh candidates.` });
+    expect(after.measurements.filter((m) => m.recordedAt === LAB_DAY)).toHaveLength(1);
+    // The tool tells the assistant so, on the param ChatGPT fills.
+    const fileParam = MCP_TOOLS.find((t) => t.name === 'import_documents')!.inputSchema.properties.file as { description: string };
+    expect(fileParam.description).toMatch(/several files.*once per file.*same metric and day.*conflict.*before any commit/);
   });
 
   it('an empty selection writes nothing and says so, once the file itself is on record', () => {
@@ -1423,6 +1470,13 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(data.next).toContain('1 candidate(s) share a day with another (sameDayAs)');
     expect(data.next).toContain('2 value(s) could not be filed: show unrecognized.');
     expect(data.next).toContain("2 file(s) were not read: relay each file's hint to the user in plain words. " + IMPORT_REFUSALS.dragFallback);
+    // When every failure is size or type, the folder has the same limits: no fallback to a route that refuses again (live 2026-09-07).
+    const sized: ImportSurface = { ...surface, async extract() {
+      return { route: 'chatgpt_file', remaining: [], files: [{ name: 'big.pdf', status: 'failed', reason: 'too_large' }, { name: 'photo.heic', status: 'failed', reason: 'unsupported' }] };
+    } };
+    const refused = OUTPUTS.import_documents.parse((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: sized, latestDay: TODAY })).structured);
+    expect(refused.next).toBe("Nothing was imported.\n2 file(s) were not read: relay each file's hint to the user in plain words.");
+    expect(refused.files[0].hint).toBe(importHint('too_large'));
     expect(data.next).toMatch(/1 file\(s\) in the ZIP were not reached: commit this receipt first, then ask the user to drop the ZIP in again/);
     // The question itself stays on the candidate (AC9): the instruction field carries no document text.
     expect(data.next).not.toContain('Smudged');
