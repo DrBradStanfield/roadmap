@@ -4,7 +4,7 @@ import type { UnitSystem, MetricType } from '@roadmap/health-core';
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, trackProductEvent } from '../lib/api';
 import type { PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
-import { attachOriginals, synthesizeLabArchiveEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
+import { attachOriginals, synthesizeLabArchiveEntries, connectorDocumentEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
@@ -575,7 +575,10 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         sourceFileName: d.sourceFileName,
         file: d.file,
       }));
-      docPayloads.push(...synthesizeLabArchiveEntries(results, new Set(documents.map(d => d.sourceFileName))));
+      const covered = new Set(documents.map(d => d.sourceFileName));
+      docPayloads.push(...synthesizeLabArchiveEntries(results, covered));
+      // A letter the connector filed metadata-only: unselected here, still archived (US-35 AC8).
+      docPayloads.push(...connectorDocumentEntries(results, history.documents, covered));
       const labValuePayloads = labValues.map(lv => ({
         metricName: lv.name,
         value: lv.value,
@@ -621,7 +624,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
     } finally {
       setIsSaving(false);
     }
-  }, [onComplete, onScreeningUpdate, results]);
+  }, [onComplete, onScreeningUpdate, results, history.documents]);
 
   // Portal to body so position:fixed resolves against the viewport — the
   // .health-tool container has a transform/contain that would otherwise pin

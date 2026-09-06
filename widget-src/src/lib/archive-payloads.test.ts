@@ -3,6 +3,7 @@ import {
   isLabArchiveDocument,
   synthesizeLabArchiveEntries,
   countConnectorOriginals,
+  connectorDocumentEntries,
   LAB_ARCHIVE_FLAG,
 } from './archive-payloads';
 import type { FileResult } from '../components/ReviewTable';
@@ -102,5 +103,32 @@ describe('countConnectorOriginals', () => {
     expect(countConnectorOriginals([result({ file: blob(), contentHash: 'sha256-b' })], [doc({})])).toBe(0);
     expect(countConnectorOriginals([result({ contentHash: 'sha256-a' })], [doc({})])).toBe(0); // no blob (device-only)
     expect(countConnectorOriginals([result({ file: blob(), contentHash: 'sha256-a', values: [] })], [doc({})])).toBe(0);
+  });
+
+  it('counts an unselected document (any type) whose hash matches a row without a fileRef, not one already selected', () => {
+    const letter = result({ fileName: 'letter.pdf', values: [], file: blob(), contentHash: 'sha256-a', document: LETTER });
+    expect(countConnectorOriginals([letter], [doc({})])).toBe(1);
+    expect(countConnectorOriginals([letter], [doc({})], new Set(['letter.pdf']))).toBe(0);
+    expect(countConnectorOriginals([letter], [doc({ fileRef: 'Letters/a.pdf' })])).toBe(0);
+  });
+});
+
+const LETTER = { classification: 'clinic_letter' as const, title: 'Cardiology follow-up', documentDate: '2024-06-10', contentMarkdown: '# Letter', metadata: { clinic: 'x' } };
+
+describe('connectorDocumentEntries', () => {
+  const pending = [{ contentHash: 'sha256-a', fileRef: null }];
+  const letter = result({ fileName: 'letter.pdf', values: [], file: blob(), contentHash: 'sha256-a', document: LETTER });
+
+  it('files an unselected connector-held letter with its reviewed content and bytes', () => {
+    const out = connectorDocumentEntries([letter], pending, new Set());
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ documentType: 'clinic_letter', title: 'Cardiology follow-up', documentDate: '2024-06-10', contentMd: '# Letter', metadata: { clinic: 'x' }, sourceFileName: 'letter.pdf' });
+    expect(out[0].file).toBeInstanceOf(Blob);
+  });
+
+  it('skips a selected letter (saved as a document already), a lab file, and a letter the record holds no hash for', () => {
+    expect(connectorDocumentEntries([letter], pending, new Set(['letter.pdf']))).toHaveLength(0);
+    expect(connectorDocumentEntries([result({ file: blob(), contentHash: 'sha256-a' })], pending, new Set())).toHaveLength(0);
+    expect(connectorDocumentEntries([letter], [], new Set())).toHaveLength(0);
   });
 });

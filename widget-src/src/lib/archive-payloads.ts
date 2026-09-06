@@ -68,24 +68,58 @@ export async function attachOriginals(results: FileResult[], blobs: Map<string, 
   }));
 }
 
-/** A value-bearing lab file with its bytes in hand: the archive step files it. */
-function isArchivableLabFile(r: FileResult, alreadyCovered: Set<string | null>): boolean {
-  if (r.error || r.document || alreadyCovered.has(r.fileName) || !r.file) return false;
-  return r.values.length > 0 || r.additionalValues.length > 0;
+/** A file the archive step can file: bytes in hand, and either a reviewed
+ *  document or extracted values. `alreadyCovered` names the files the save
+ *  already carries as reviewed documents. */
+function isArchivableFile(r: FileResult, alreadyCovered: Set<string | null>): boolean {
+  if (r.error || alreadyCovered.has(r.fileName) || !r.file) return false;
+  return !!r.document || r.values.length > 0 || r.additionalValues.length > 0;
 }
 
 /**
- * Lab files whose bytes the connector filed metadata-only (hash, no fileRef —
- * US-35 AC8). Saving archives the original behind the values already in the
- * record (US-13 AC1), so the review offers Save even with nothing selected.
+ * Files whose bytes the connector filed metadata-only (hash, no fileRef —
+ * US-35 AC8), lab report or letter alike, that this save would not otherwise
+ * file. Saving archives the original behind the row already in the record
+ * (US-13 AC1), so the review offers Save even with nothing selected.
  */
+function connectorOriginals(
+  results: FileResult[],
+  existing: ReadonlyArray<Pick<ApiDocument, 'contentHash' | 'fileRef'>>,
+  alreadyCovered: Set<string | null>,
+): FileResult[] {
+  const pending = new Set(existing.filter((d) => d.contentHash && !d.fileRef).map((d) => d.contentHash));
+  return results.filter((r) => isArchivableFile(r, alreadyCovered) && pending.has(r.contentHash));
+}
+
 export function countConnectorOriginals(
   results: FileResult[],
   existing: ReadonlyArray<Pick<ApiDocument, 'contentHash' | 'fileRef'>>,
+  alreadyCovered: Set<string | null> = new Set(),
 ): number {
-  const pending = new Set(existing.filter((d) => d.contentHash && !d.fileRef).map((d) => d.contentHash));
-  const none = new Set<string | null>();
-  return results.filter((r) => isArchivableLabFile(r, none) && pending.has(r.contentHash)).length;
+  return connectorOriginals(results, existing, alreadyCovered).length;
+}
+
+/**
+ * Documents the review left unselected (name-deduped against the connector's
+ * row) whose bytes that row holds metadata-only: filed with their reviewed
+ * content so the blob lands and the store tombstones the hash-only row.
+ */
+export function connectorDocumentEntries(
+  results: FileResult[],
+  existing: ReadonlyArray<Pick<ApiDocument, 'contentHash' | 'fileRef'>>,
+  alreadyCovered: Set<string | null>,
+): ArchiveDocPayload[] {
+  return connectorOriginals(results, existing, alreadyCovered)
+    .filter((r) => r.document)
+    .map((r) => ({
+      documentType: r.document!.classification,
+      title: r.document!.title,
+      documentDate: r.document!.documentDate,
+      contentMd: r.document!.contentMarkdown,
+      metadata: r.document!.metadata,
+      sourceFileName: r.fileName,
+      file: r.file,
+    }));
 }
 
 /** Synthesized entries for lab files whose originals would otherwise be lost. */
@@ -95,7 +129,7 @@ export function synthesizeLabArchiveEntries(
 ): ArchiveDocPayload[] {
   const out: ArchiveDocPayload[] = [];
   for (const r of results) {
-    if (!isArchivableLabFile(r, alreadyCovered)) continue;
+    if (r.document || !isArchivableFile(r, alreadyCovered)) continue;
     out.push({
       documentType: 'pathology_report',
       title: 'Blood test results',

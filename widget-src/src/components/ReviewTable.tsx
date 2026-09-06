@@ -560,9 +560,13 @@ export function ReviewTable({
     return n;
   }, [matrix]);
   const selectedDocCount = useMemo(() => Object.values(docChecked).filter(Boolean).length, [docChecked]);
-  // Originals the connector imported metadata-only: Save archives them even
-  // when every value is already recorded (US-13 AC1 / US-35 AC8).
-  const archiveCount = useMemo(() => countConnectorOriginals(results, history.documents), [results, history.documents]);
+  // Originals the connector imported metadata-only (a lab PDF, or a letter the
+  // name-dedup left unselected): Save archives them even when nothing is
+  // selected (US-13 AC1 / US-35 AC8).
+  const archiveCount = useMemo(() => {
+    const selectedDocs = new Set(results.filter((r, fi) => r.document && docChecked[fi]).map((r) => r.fileName));
+    return countConnectorOriginals(results, history.documents, selectedDocs);
+  }, [results, history.documents, docChecked]);
   const nothingSelected = selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0;
 
   /** A column with no date isn't saveable. Existing-history columns always

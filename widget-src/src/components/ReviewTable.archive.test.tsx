@@ -32,11 +32,27 @@ const connectorRow: ApiDocument = {
   createdAt: '2024-06-02T00:00:00.000Z', fileRef: null, contentHash: HASH,
 };
 
-function renderReview(documents: ApiDocument[]) {
+const LETTER_HASH = 'sha256-letter';
+const letterResults: FileResult[] = [{
+  fileName: 'clinic-letter.pdf',
+  reportDate: null,
+  values: [],
+  additionalValues: [],
+  document: { classification: 'clinic_letter', title: 'Cardiology follow-up', documentDate: '2024-06-10', contentMarkdown: '# Letter', metadata: {} },
+  file: new Blob(['letter bytes'], { type: 'application/pdf' }),
+  contentHash: LETTER_HASH,
+}];
+const connectorLetter: ApiDocument = {
+  id: 'imported-letter', documentType: 'clinic_letter', title: 'Cardiology follow-up', documentDate: '2024-06-10',
+  contentMd: '', metadata: { importedVia: 'connector' }, sourceFileName: 'clinic-letter.pdf',
+  createdAt: '2024-06-11T00:00:00.000Z', fileRef: null, contentHash: LETTER_HASH,
+};
+
+function renderReview(documents: ApiDocument[], files: FileResult[] = results) {
   const onSave = vi.fn();
   const utils = render(
     <ReviewTable
-      results={results}
+      results={files}
       history={{ bloodTests, labValues: [], documents }}
       unitSystem="si"
       onSave={onSave}
@@ -67,5 +83,26 @@ describe('ReviewTable — archiving the original behind a connector row (US-13 A
 
   it('keeps Save disabled when the record holds no row for these bytes and nothing is selected', () => {
     expect(renderReview([]).button.disabled).toBe(true);
+  });
+
+  it('offers Save for a clinic letter the connector filed: name-deduped to an unselected row, yet still an original to archive', () => {
+    const { button, onSave, container } = renderReview([connectorLetter], letterResults);
+    expect(container.querySelector<HTMLInputElement>('.review-row-check input')!.checked).toBe(false);
+    expect(button.disabled).toBe(false);
+    expect(button.textContent).toBe('Save 1 Original');
+    expect(container.querySelector('.review-summary')?.textContent)
+      .toBe('Nothing new to save. Save will archive the original PDF behind the values already in your record.');
+    fireEvent.click(button);
+    expect(onSave).toHaveBeenCalledWith({ values: [], documents: [], labValues: [] });
+  });
+
+  it('does not double-count a connector letter the user re-selects: it saves as a document, not also an original', () => {
+    const { button, container } = renderReview([connectorLetter], letterResults);
+    fireEvent.click(container.querySelector<HTMLInputElement>('.review-row-check input')!);
+    expect(button.textContent).toBe('Save 1 Document');
+  });
+
+  it('keeps Save disabled for a name-deduped letter whose bytes the record does not hold', () => {
+    expect(renderReview([{ ...connectorLetter, contentHash: null }], letterResults).button.disabled).toBe(true);
   });
 });
