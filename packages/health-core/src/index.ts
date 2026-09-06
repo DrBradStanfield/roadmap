@@ -371,3 +371,4 @@ export {
 export { bulkAppendValues, slotKey, slotState, type BulkRow, type SlotState } from './record-edits';
 export { createLabValue } from './roadmap-file';
 export { isImportableEntryName } from './lab-extraction';
+export { IMPORT_LIMITS } from './import-hints';

@@ -207,7 +207,7 @@ async function extractOrClassifyOnce(
   content: Array<Record<string, unknown>>,
   timeoutMs?: number,
   httpAttempts?: number,
-  documentMode: DocumentPromptMode = 'full',
+  documentMode: DocumentPromptMode,
 ): Promise<UnifiedExtractionResult> {
   const body = {
     model: EXTRACTION_MODEL,

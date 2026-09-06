@@ -14,7 +14,7 @@ export const IMPORT_LIMITS = {
   zipMb: 20,
   /** Files one connection may read in a day. */
   filesPerDay: 30,
-  /** What the website's own upload takes (`UploadModal.tsx` MAX_FILE_SIZE) — named so the user hears the difference. */
+  /** What the website's own upload takes (`UploadModal.tsx` derives its cap from this) — named so the user hears the difference. */
   websiteFileMb: 10,
 } as const;
 

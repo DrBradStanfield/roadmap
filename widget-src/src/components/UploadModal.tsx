@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { UnitSystem, MetricType } from '@roadmap/health-core';
+import { IMPORT_LIMITS, type UnitSystem, type MetricType } from '@roadmap/health-core';
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, trackProductEvent } from '../lib/api';
 import type { PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
@@ -100,7 +100,7 @@ interface HealthUploadAPI {
 }
 
 const MAX_FILES = 200;
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = IMPORT_LIMITS.websiteFileMb * 1024 * 1024; // the connector's hint names this number
 
 export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit, history, onComplete, onStart, onClose, onScreeningUpdate, birthYear, sex, hidden, onProcessingStart, onProcessingEnd, onProgressUpdate }: UploadModalProps) {
   const [state, setState] = useState<ModalState>('select');
