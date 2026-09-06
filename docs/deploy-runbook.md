@@ -8,7 +8,7 @@
 
 **Preferred path (since 2026-08-10): the CI pipeline.** `.github/workflows/deploy.yml`
 runs the whole sequence below deterministically — gate → GitHub Pages WebKit smoke →
-full test suite → builds → Sentry maps → Shopify deploy ×2 → Fly deploy ×2
+full test suite → tsc typecheck (widget-src + health-core) → builds → Sentry maps → Shopify deploy ×2 → Fly deploy ×2
 (`--strategy canary`) → health gates → live WebKit verify — with all deploy
 credentials in GitHub Actions secrets (proven end-to-end: run 31332275404,
 fly-only, shipped v396/v30). Trigger: Actions → Deploy → Run workflow (choose

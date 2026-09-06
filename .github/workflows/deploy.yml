@@ -251,6 +251,11 @@ jobs:
       - name: Full test suite (final gate on the exact deployed commit)
         run: npm run test:all
 
+      - name: Typecheck (widget-src + health-core)
+        run: |
+          npx tsc --noEmit -p widget-src/tsconfig.json
+          npx tsc --noEmit -p packages/health-core/tsconfig.json
+
       - name: Build widget bundles (main v2 + upload + side bundles)
         run: |
           npm run build:shopify-prod
