@@ -15,6 +15,8 @@ vi.mock('./product-events.server', async (importOriginal) => {
   const original = await importOriginal<typeof import('./product-events.server')>();
   return { ...original, recordServerEvent: vi.fn(async () => {}) };
 });
+vi.mock('@sentry/react-router', () => ({ captureException: vi.fn() }));
+import * as Sentry from '@sentry/react-router';
 import {
   CHATGPT_FETCH_TIMEOUT_MS,
   fetchChatgptFile,
@@ -27,9 +29,12 @@ import {
   unzip,
 } from './mcp-import.server';
 import { resourceUrl } from './mcp-config.server';
-import { chargeWrites, connectionKey, resetMcpMemory, WRITES_PER_HOUR } from './mcp-grants.server';
+import { chargeWrites, connectionKey, IMPORT_FILES_PER_DAY, importFiles, resetMcpMemory, WRITES_PER_HOUR } from './mcp-grants.server';
 import { hash, seal } from './mcp-seal.server';
+import { machineFiles } from './rate-limiter';
 import { type ImportPayload, MAX_IMPORT_FILES_PER_CALL, MAX_RECEIPT_LENGTH } from '../../packages/health-core/src/mcp-tools';
+import { IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
+import { StorageError } from '../../packages/health-core/src/adapter';
 import { MemoryAdapter, MemoryCloud } from '../../packages/health-core/src/memory-adapter';
 import { createEmptyFile } from '../../packages/health-core/src/roadmap-file';
 
@@ -81,7 +86,7 @@ describe('US-35 AC5 — a ZIP is opened under caps, by position, with a counted 
       ['scan.jpg', 'image/jpeg'],
     ]);
     expect(skipped).toEqual([
-      { name: 'inner.zip', reason: 'unsupported' },
+      { name: 'inner.zip', reason: 'nested_zip' },
       { name: 'renamed.pdf', reason: 'unsupported' },
     ]);
   });
@@ -156,10 +161,11 @@ describe('US-35 AC4 — the ChatGPT file fetch', () => {
       'https://files.oaiusercontent.com/file-abc?sig=1',
       'https://oaisdmntprnznorth.blob.core.windows.net/files/file-abc?sv=1&sig=2',
       'https://oaisdmntprn.blob.core.windows.net/x',
-      'https://oaisdmntprn-west-2.blob.core.windows.net/x',
+      'https://oaisdmntprnuseast2.blob.core.windows.net/x',
     ]) expect('bytes' in (await fetchChatgptFile(url)), url).toBe(true);
     for (const url of [
       'https://evil-oaisdmntprn.blob.core.windows.net/x',
+      'https://oaisdmntprn-west-2.blob.core.windows.net/x', // Azure storage accounts carry no hyphen, so the pattern matches none
       'https://oaisdmntprn.blob.core.windows.net.evil.com/x',
       'https://oaisdmntprnznorth.blob.core.windows.net.evil.com/x',
       'https://xoaisdmntprn.blob.core.windows.net/x',
@@ -328,6 +334,8 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     setImportSeams({ extract: seam });
     const bundle = await atDeadline(surfaceOver(adapter).extract({}, file, NOW, deadline()));
     expect('files' in bundle && bundle.files).toEqual([{ name: 'labs.pdf', status: 'skipped', reason: 'time' }]);
+    // What time cut off is `remaining`, so the assistant is told to ask again for it (AC2).
+    expect('remaining' in bundle && bundle.remaining).toEqual(['labs.pdf']);
     abortedOnce(seen);
     expect(seam).not.toHaveBeenCalled();
   });
@@ -382,7 +390,125 @@ describe('US-35 AC5 — every I/O in the call is aborted at the deadline, not ab
     } });
     await surface.extract({}, file, NOW, deadline());
     expect(seen).toHaveLength(1);
-    expect(seen[0]).toMatchObject({ attempts: 1, httpAttempts: 1 });
+    // Metadata only for a letter: the connector files no text, so it asks for none (AC5).
+    expect(seen[0]).toMatchObject({ attempts: 1, httpAttempts: 1, documentMode: 'metadata' });
     expect(seen[0].timeoutMs).toBeLessThanOrEqual(MCP_IMPORT_BUDGET_MS);
+  });
+
+  it('a model call that timed out hands the file’s day charge back — machine and connection counters both (AC10)', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('labs.pdf', new Blob([PDF]));
+    const surface = surfaceOver(new MemoryAdapter(cloud));
+    const key = connectionKey('rt');
+    machineFiles.reset();
+    setImportSeams({ extract: async () => { throw new DOMException('signal timed out', 'TimeoutError'); } });
+    const bundle = await surface.extract({}, file, NOW, deadline());
+    expect('files' in bundle && bundle.files[0]).toMatchObject({ status: 'failed', reason: 'time' });
+    expect(importFiles.remaining(key)).toBe(IMPORT_FILES_PER_DAY);
+    expect(machineFiles.remaining('machine')).toBe(machineFiles.remaining('never-spent'));
+    // A read that failed for any other reason stays charged: the model did the work.
+    setImportSeams({ extract: async () => { throw new Error('boom'); } });
+    await surface.extract({}, file, NOW, deadline());
+    expect(importFiles.remaining(key)).toBe(IMPORT_FILES_PER_DAY - 1);
+  });
+});
+
+describe('US-35 AC13 / AC9 — what the surface answers when a file cannot be read', () => {
+  const NOW = '2026-09-02T10:00:00.000Z';
+  const file = createEmptyFile({ deviceId: 'test', now: NOW });
+  const token = { clientId: 'c.test', provider: 'dropbox' as const, rt: 'rt', exp: 0 };
+  const deadline = () => Date.now() + MCP_IMPORT_BUDGET_MS;
+  function surfaceOver(adapter: MemoryAdapter) {
+    return hostedImporter({ token, adapter, client: 'chatgpt', maxCorrectionAgeDays: 90 });
+  }
+  const letter = { classification: 'clinic_letter', reportDate: null, values: [], additionalValues: [], unrecognized: [], document: null };
+  beforeEach(() => { resetMcpMemory(); vi.clearAllMocks(); });
+  afterEach(() => setImportSeams(null));
+
+  it('a folder with nothing it reads refuses in words naming the folder and the four types, before any model call', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('notes.txt', new Blob([new Uint8Array(3)]));
+    const seam = vi.fn();
+    setImportSeams({ extract: seam });
+    expect(await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline())).toEqual({ refusal: IMPORT_REFUSALS.emptyFolder });
+    expect(seam).not.toHaveBeenCalled();
+  });
+
+  it('a download the provider refuses with 401/403 is rethrown as the StorageError it is, so the route answers with the reconnect hint (finding 15)', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('labs.pdf', new Blob([PDF]));
+    const adapter = new MemoryAdapter(cloud);
+    adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401); };
+    await expect(surfaceOver(adapter).extract({}, file, NOW, deadline())).rejects.toMatchObject({ name: 'StorageError', status: 401 });
+    // Any other download failure is that file's own problem, not the connection's.
+    adapter.readDocument = async () => { throw new Error('socket hang up'); };
+    const bundle = await surfaceOver(adapter).extract({}, file, NOW, deadline());
+    expect('files' in bundle && bundle.files).toEqual([{ name: 'labs.pdf', status: 'failed', reason: 'unreadable' }]);
+  });
+
+  it('Sentry gets a fixed message and the error class only — never the parse error’s text, which quotes the document (AC9)', async () => {
+    const cloud = new MemoryCloud();
+    cloud.docs.set('labs.pdf', new Blob([PDF]));
+    const zodLike = Object.assign(new Error("Invalid enum value. Received 'ldl 3.4 mmol/L SECRET-PATIENT'"), { name: 'ZodError' });
+    setImportSeams({ extract: async () => { throw zodLike; } });
+    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    expect('files' in bundle && bundle.files[0]).toMatchObject({ status: 'failed', reason: 'unreadable' });
+    const calls = (Sentry.captureException as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    expect(calls).toHaveLength(1);
+    const [captured, context] = calls[0] as [Error, Record<string, unknown>];
+    expect(captured).not.toBe(zodLike);
+    expect(captured.message).toBe('import_documents: extraction failed');
+    expect(captured.name).toBe('ZodError');
+    expect(context).toEqual({ tags: { feature: 'mcp_import', errorName: 'ZodError' }, extra: { kind: 'application/pdf' } });
+    expect(JSON.stringify([captured.message, captured.name, captured.stack, context])).not.toMatch(/SECRET|Received|3\.4/);
+  });
+
+  it('a dragged file with no name gets one from its bytes, so two nameless drags never dedup against each other', async () => {
+    const other = new Uint8Array([...PDF, 1]);
+    const bytesByUrl: Record<string, Uint8Array> = { 'https://files.oaiusercontent.com/a': PDF, 'https://files.oaiusercontent.com/b': other };
+    vi.stubGlobal('fetch', vi.fn(async (url: URL) => new Response(Buffer.from(bytesByUrl[url.toString()]))));
+    setImportSeams({ extract: async () => letter });
+    const surface = surfaceOver(new MemoryAdapter(new MemoryCloud()));
+    const names: string[] = [];
+    for (const [download_url, name] of [['https://files.oaiusercontent.com/a', undefined], ['https://files.oaiusercontent.com/b', undefined], ['https://files.oaiusercontent.com/a', 'Results.pdf']] as const) {
+      const bundle = await surface.extract({ file: { download_url, file_id: 'f', ...(name ? { file_name: name } : null) } }, file, NOW, deadline());
+      if (!('files' in bundle)) throw new Error(bundle.refusal);
+      names.push(bundle.files[0].name);
+    }
+    expect(names[0]).toMatch(/^file-[0-9a-f]{8}\.pdf$/);
+    expect(names[1]).toMatch(/^file-[0-9a-f]{8}\.pdf$/);
+    expect(names[0]).not.toBe(names[1]);
+    expect(names[2]).toBe('Results.pdf');
+  });
+
+  it('a ZIP flows through extract(): entries in order under the same file, each typed, charged and hashed; junk and a nested zip named (AC5)', async () => {
+    const zip = new JSZip();
+    zip.file('labs/2026-a.pdf', PDF);
+    zip.file('labs/scan.jpg', JPEG);
+    zip.file('labs/inner.zip', new Uint8Array([0x50, 0x4b, 0x03, 0x04]));
+    zip.file('__MACOSX/._x.pdf', PDF);
+    zip.file('labs/notes.txt', new Uint8Array(2));
+    const bytes = new Uint8Array(await zip.generateAsync({ type: 'uint8array' }));
+    const cloud = new MemoryCloud();
+    cloud.docs.set('bundle.zip', new Blob([bytes]));
+    cloud.docs.set('a.pdf', new Blob([PDF]));
+    const kinds: string[] = [];
+    setImportSeams({ extract: async (pages) => { kinds.push(pages[0].type); return letter; } });
+    const key = connectionKey('rt');
+    const bundle = await surfaceOver(new MemoryAdapter(cloud)).extract({}, file, NOW, deadline());
+    if (!('files' in bundle)) throw new Error(bundle.refusal);
+    // The listing's order: a.pdf, then the ZIP's entries flattened in the archive's order, then what it skipped.
+    expect(bundle.files.map((f) => [f.name, f.status, f.reason])).toEqual([
+      ['a.pdf', 'extracted', undefined],
+      ['labs/2026-a.pdf', 'extracted', undefined],
+      ['labs/scan.jpg', 'extracted', undefined],
+      ['labs/inner.zip', 'skipped', 'nested_zip'],
+    ]);
+    expect(bundle.files.slice(0, 3).map((f) => [f.mimeType, f.contentHash?.slice(0, 7)])).toEqual([
+      ['application/pdf', 'sha256-'], ['application/pdf', 'sha256-'], ['image/jpeg', 'sha256-'],
+    ]);
+    expect(kinds.sort()).toEqual(['image', 'pdf', 'pdf']);
+    expect(importFiles.remaining(key)).toBe(IMPORT_FILES_PER_DAY - 3);
+    expect(bundle.remaining).toEqual([]);
   });
 });

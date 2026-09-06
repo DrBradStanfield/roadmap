@@ -10,6 +10,7 @@ import { resetCimdCache } from './mcp-clients.server';
 import { resetGithubIssues } from './github-issues.server';
 import { hash, packSealed } from './mcp-seal.server';
 import type { McpProvider } from './mcp-providers.server';
+import { IMPORT_LIMITS } from '../../packages/health-core/src/import-hints';
 
 export const CODE_LIFETIME_SECONDS = 60;
 export const ACCESS_LIFETIME_SECONDS = 60 * 60;
@@ -31,8 +32,8 @@ export const REFRESH_LIFETIME_SECONDS = 90 * 24 * 60 * 60;
 export const WRITES_PER_HOUR = 60;
 export const WRITE_COST = { add: 1, correct: 5 } as const;
 const WRITE_WINDOW_MS = 60 * 60 * 1000;
-/** Files one connection may send to the extraction model in a day, per machine (US-35 AC10). */
-export const IMPORT_FILES_PER_DAY = 30;
+/** Files one connection may send to the extraction model in a day, per machine (US-35 AC10) — the number the quota hint names. */
+export const IMPORT_FILES_PER_DAY = IMPORT_LIMITS.filesPerDay;
 
 export interface StatePayload {
   clientId: string;

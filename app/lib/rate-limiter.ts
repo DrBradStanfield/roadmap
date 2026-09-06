@@ -62,6 +62,11 @@ export function createQuotaCounter(limit: number, windowMs: number, cleanupMs: n
       entry.count += n;
       return true;
     },
+    /** Hand `n` units back — a file charged before a model call that never got to run (US-35 AC10). */
+    refund(key: string, n: number): void {
+      const entry = live(key);
+      if (entry) entry.count = Math.max(0, entry.count - n);
+    },
     remaining(key: string): number {
       const entry = live(key);
       return Math.max(0, limit - (entry?.count ?? 0));

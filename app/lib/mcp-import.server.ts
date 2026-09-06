@@ -31,8 +31,10 @@ import { type AccessPayload, chargeWrites, connectionKey, importFiles, nowSecond
 import { hash, seal, unseal } from './mcp-seal.server';
 import { recordServerEvent } from './product-events.server';
 import { DAY_MS, machineFiles } from './rate-limiter';
-import { deadlineSignal, type StorageAdapter } from '../../packages/health-core/src/adapter';
+import { deadlineSignal, StorageError, type StorageAdapter } from '../../packages/health-core/src/adapter';
+import { IMPORT_LIMITS, IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import {
+  type DocumentPromptMode,
   IMPORTABLE_EXTENSIONS,
   isImportableEntryName,
   type PageContent,
@@ -71,10 +73,10 @@ export const MCP_IMPORT_BUDGET_MS = Number(process.env.MCP_IMPORT_BUDGET_MS || 4
 const BUDGET_RESERVE_MS = 4_000;
 /** Folder files one call attempts by default; the rest come back as `remaining`. */
 export const IMPORT_FILES_PER_CALL = 5;
-/** One PDF or image. Pages reach the model as images, so 5 MB of scans is already many pages. */
-export const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
+/** One PDF or image. Pages reach the model as images, so 5 MB of scans is already many pages. The hint table names the number. */
+export const MAX_IMPORT_FILE_BYTES = IMPORT_LIMITS.fileMb * 1024 * 1024;
 /** One ZIP, as downloaded — and the most one ChatGPT file may be. */
-export const MAX_IMPORT_ZIP_BYTES = 20 * 1024 * 1024;
+export const MAX_IMPORT_ZIP_BYTES = IMPORT_LIMITS.zipMb * 1024 * 1024;
 export const CHATGPT_FETCH_TIMEOUT_MS = 10_000;
 export const RECEIPT_LIFETIME_SECONDS = 60 * 60;
 /** Where a pending payload lives in the user's folder, and how long before an extract sweeps it. */
@@ -88,12 +90,17 @@ const EXTRACT_TIMEOUT_MS = 20_000;
  * OpenAI's file hosts, from field reports — the docs name none. Two forms so
  * far: `files.oaiusercontent.com`, and the region-suffixed Azure blob store
  * ChatGPT hands out for a dragged-in file (`oaisdmntprnznorth.blob.core.windows.net`,
- * seen live 2026-09-05). The blob family is matched whole, anchored at both
- * ends: a prefix, a suffix or a look-alike domain is not a match. A host
- * outside both shows up as a `chatgpt_refused` count and a hostname warning,
- * and `CHATGPT_FILE_HOSTS` adds exact hosts without a deploy.
+ * seen live 2026-09-05). Honestly: the blob form is a NAMESPACE, not a closed
+ * list — any Azure storage account named `oaisdmntprn…` (3–24 lowercase
+ * letters and digits; Azure allows no hyphen, so none is matched) would pass.
+ * What bounds the route is not the host: it is the per-connection file quota
+ * and that fetched bytes only ever become candidates the same user must
+ * confirm. The match is anchored at both ends so a prefix, a suffix or a
+ * look-alike domain fails; a refused host shows up as a `chatgpt_refused`
+ * count and a hostname warning, and `CHATGPT_FILE_HOSTS` adds exact hosts
+ * without a deploy.
  */
-const CHATGPT_BLOB_HOST = /^oaisdmntprn[a-z0-9-]*\.blob\.core\.windows\.net$/;
+const CHATGPT_BLOB_HOST = /^oaisdmntprn[a-z0-9]*\.blob\.core\.windows\.net$/;
 export function isChatgptFileHost(hostname: string): boolean {
   if (hostname === 'files.oaiusercontent.com' || CHATGPT_BLOB_HOST.test(hostname)) return true;
   return (process.env.CHATGPT_FILE_HOSTS || '').split(',').map((h) => h.trim()).includes(hostname);
@@ -103,7 +110,7 @@ export function isChatgptFileHost(hostname: string): boolean {
 // Test seam — the model call
 // ---------------------------------------------------------------------------
 
-type Extractor = (pages: PageContent[], opts: { timeoutMs: number; attempts: number; httpAttempts: number }) => Promise<UnifiedExtractionResult>;
+type Extractor = (pages: PageContent[], opts: { timeoutMs: number; attempts: number; httpAttempts: number; documentMode: DocumentPromptMode }) => Promise<UnifiedExtractionResult>;
 
 let extract: Extractor = extractOrClassify;
 
@@ -126,9 +133,16 @@ export function sniff(bytes: Uint8Array): SniffedType | null {
   return null;
 }
 
-/** A file's own name as `sourceFileName`: printable, bounded, never a path. */
+/** A file's own name as `sourceFileName`: printable, bounded, never a path. Empty stays empty — a made-up name would dedup every nameless file against the first. */
 function cleanName(name: string): string {
-  return oneLine(name).slice(0, 255) || 'file';
+  return oneLine(name).slice(0, 255);
+}
+
+const EXTENSION: Record<SniffedType, string> = { 'application/pdf': '.pdf', 'application/zip': '.zip', 'image/jpeg': '.jpg', 'image/png': '.png' };
+
+/** A name for bytes that came without one (a ChatGPT drag with no `file_name`): from the bytes, so two different files never share it. */
+function nameFromBytes(bytes: Uint8Array, type: SniffedType | null): string {
+  return `file-${sha256Hex(bytes).slice(0, 8)}${type ? EXTENSION[type] : ''}`;
 }
 
 export interface ZipEntryBytes {
@@ -156,7 +170,7 @@ export async function unzip(bytes: Uint8Array): Promise<{ entries: ZipEntryBytes
   });
   for (const { name, entry } of listed) {
     if (!isImportableEntryName(name)) {
-      if (name.toLowerCase().endsWith('.zip')) skipped.push({ name, reason: 'unsupported' });
+      if (name.toLowerCase().endsWith('.zip')) skipped.push({ name, reason: 'nested_zip' });
       continue;
     }
     if (entries.length >= MAX_IMPORT_FILES_PER_CALL) {
@@ -170,7 +184,7 @@ export async function unzip(bytes: Uint8Array): Promise<{ entries: ZipEntryBytes
     }
     const mimeType = sniff(inflated);
     if (!mimeType || mimeType === 'application/zip') {
-      skipped.push({ name, reason: 'unsupported' });
+      skipped.push({ name, reason: mimeType ? 'nested_zip' : 'unsupported' });
       continue;
     }
     entries.push({ name, bytes: inflated, mimeType });
@@ -353,7 +367,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
           count('chatgpt_refused', 'extract', 0);
           return fetched;
         }
-        units.push({ name: cleanName(request.file.file_name ?? 'file'), fetch: async () => fetched.bytes });
+        units.push({ name: cleanName(request.file.file_name ?? '') || nameFromBytes(fetched.bytes, sniff(fetched.bytes)), fetch: async () => fetched.bytes });
       } else {
         if (token.provider === 'google' || !adapter.list) {
           count('drive_refused', 'extract', 0);
@@ -382,6 +396,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
             if (!chosen.includes(found)) chosen.push(found);
           }
         }
+        if (chosen.length === 0) return { refusal: IMPORT_REFUSALS.emptyFolder };
         for (const entry of chosen.slice(0, IMPORT_FILES_PER_CALL)) {
           // By the listing's own ref, never by a name an assistant supplied.
           units.push({ name: entry.name, size: entry.size, fetch: async () => new Uint8Array(await (await adapter.readDocument(entry.ref, signal)).arrayBuffer()) });
@@ -405,11 +420,20 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         const pages: PageContent[] = mimeType === 'application/pdf' ? [{ type: 'pdf', content }] : [{ type: 'image', content, mimeType }];
         try {
           // One HTTP attempt, inside what is left: no retry, inner or outer, can run past the deadline.
-          return { ...base, status: 'extracted', result: await extract(pages, { timeoutMs: Math.min(EXTRACT_TIMEOUT_MS, left), attempts: 1, httpAttempts: 1 }) };
+          // Metadata only for a letter: the connector files no text, so none is asked for.
+          return { ...base, status: 'extracted', result: await extract(pages, { timeoutMs: Math.min(EXTRACT_TIMEOUT_MS, left), attempts: 1, httpAttempts: 1, documentMode: 'metadata' }) };
         } catch (error) {
           const reason = failureReason(error);
-          if (reason === 'unreadable') {
-            Sentry.captureException(error, { tags: { feature: 'mcp_import', errorName: error instanceof Error ? error.name : 'unknown' }, extra: { kind: mimeType } });
+          if (reason === 'time') {
+            // The model never answered, so the file was not read: its day's charge comes back.
+            machineFiles.refund('machine', 1);
+            importFiles.refund(connection, 1);
+          } else if (reason === 'unreadable') {
+            // The error CLASS and the file kind, nothing else (AC9): a parse
+            // error's message quotes the model's output, which is document text.
+            const scrubbed = new Error('import_documents: extraction failed');
+            scrubbed.name = error instanceof Error ? error.name : 'unknown';
+            Sentry.captureException(scrubbed, { tags: { feature: 'mcp_import', errorName: scrubbed.name }, extra: { kind: mimeType } });
           }
           return { ...base, status: 'failed', reason };
         }
@@ -433,7 +457,10 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         let bytes: Uint8Array;
         try {
           bytes = await unit.fetch();
-        } catch {
+        } catch (error) {
+          // A token the provider now refuses is not an unreadable file: the
+          // route's own catch turns it into the reconnect hint.
+          if (error instanceof StorageError && (error.status === 401 || error.status === 403)) throw error;
           results[i] = signal.aborted ? fail(unit.name, 'skipped', 'time') : fail(unit.name, 'failed', 'unreadable');
           return;
         }
@@ -473,6 +500,9 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
       await sweep;
 
       const files = results.flat();
+      // What time cut off is `remaining` on every route: the folder route names it in `fileNames`,
+      // the drag route asks for the ZIP again, and either way the assistant is told (AC2).
+      for (const f of files) if (f.status === 'skipped' && f.reason === 'time' && !remaining.includes(f.name)) remaining.push(f.name);
       count(route, 'extract', files.filter((f) => f.contentHash).length);
       return { route, files, remaining };
     },

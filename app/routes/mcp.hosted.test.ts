@@ -1128,6 +1128,8 @@ describe('OpenAI domain verification (docs/chatgpt-app-listing.md)', () => {
 // ---------------------------------------------------------------------------
 import { setImportSeams } from '../lib/mcp-import.server';
 import { IMPORT_FILES_PER_DAY } from '../lib/mcp-grants.server';
+import { machineFiles } from '../lib/rate-limiter';
+import { StorageError } from '../../packages/health-core/src/adapter';
 import { recordServerEvent } from '../lib/product-events.server';
 import type { UnifiedExtractionResult } from '../../packages/health-core/src/lab-extraction';
 
@@ -1339,6 +1341,117 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     // The pending payload in the folder is metadata only too.
     const pending = JSON.parse(cloud.files.get(pendingFiles()[0])!.json) as { documents: Array<Record<string, unknown>> };
     expect(Object.keys(pending.documents[0]).sort()).toEqual(['contentHash', 'date', 'mimeType', 'sourceFileName', 'title', 'type']);
+  });
+
+  it('AC4/AC13 — the ChatGPT file route end to end: fetched from the file host, extracted, committed; the same bytes again are already_imported with a reason; a different file with the same name is new', async () => {
+    seedRecord();
+    const { access } = await connect();
+    const first = new Uint8Array([...PDF_BYTES, 1]);
+    const second = new Uint8Array([...PDF_BYTES, 2]);
+    const hosted: Record<string, Uint8Array> = { 'https://files.oaiusercontent.com/one?sig=a': first, 'https://files.oaiusercontent.com/two?sig=b': second };
+    // ChatGPT's file host answers by URL; the only other fetch is Dropbox's token renewal on each call.
+    const token = global.fetch;
+    const fetchMock = vi.fn(async (url: URL | string, init?: RequestInit) => (url.toString() in hosted ? new Response(Buffer.from(hosted[url.toString()])) : token(url, init)));
+    vi.stubGlobal('fetch', fetchMock);
+    const extracted = stubImport({ 'Results.pdf': first, 'Results-2.pdf': second }, (name) => labReport({ reportDate: name === 'Results.pdf' ? LAB_DAY : '2026-08-21' }));
+    cloud.docs.clear(); // the drag route lists no folder: the bytes come from the host
+
+    const drag = (download_url: string) => callTool(access, 'import_documents', { file: { download_url, file_id: 'file-1', mime_type: 'application/pdf', file_name: 'Results.pdf' } });
+    const answer = await drag('https://files.oaiusercontent.com/one?sig=a');
+    expect(answer.isError).toBe(false);
+    const data = OUTPUTS.import_documents.parse(answer.structured);
+    expect(data.route).toBe('chatgpt_file');
+    expect(data.files).toEqual([{ name: 'Results.pdf', status: 'extracted', classification: 'lab_report', documentDate: LAB_DAY }]);
+    expect(data.candidates.map((c) => [c.id, c.metric, c.displayValue, c.displayUnit])).toEqual([['c1', 'ldl', '2.8', 'mmol/L'], ['c2', 'ferritin', '210', 'ug/L']]);
+    const fileFetches = fetchMock.mock.calls.filter(([url]) => url.toString().startsWith('https://files.'));
+    expect(fileFetches.map(([url]) => url.toString())).toEqual(['https://files.oaiusercontent.com/one?sig=a']);
+    expect(fileFetches[0][1]).toMatchObject({ redirect: 'error' });
+    expect(extracted).toEqual(['Results.pdf']);
+
+    const commit = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1', 'c2'], replace: [] } });
+    expect(commit.isError).toBe(false);
+    expect(storedRecord().documents.map((d) => [d.sourceFileName, d.contentHash.slice(0, 7)])).toEqual([['Results.pdf', 'sha256-']]);
+    expect(storedRecord().measurements.find((m) => m.source === 'lab_import')).toMatchObject({ metricType: 'ldl', value: 2.8 });
+
+    // The same bytes again: known by hash, no model call, and the hint says which row and when.
+    const again = OUTPUTS.import_documents.parse((await drag('https://files.oaiusercontent.com/one?sig=a')).structured);
+    expect(again.files).toEqual([{ name: 'Results.pdf', status: 'already_imported', hint: `Already in the record: the same file was filed on ${LAB_DAY} as Results.pdf. Nothing to do.` }]);
+    expect(again.receipt).toBeUndefined();
+    expect(again.next).toMatch(/^Nothing was imported\.\n1 file\(s\) were not read: relay each file's hint/);
+    expect(extracted).toEqual(['Results.pdf']);
+
+    // A lab portal that names every download Results.pdf: the second report is a new file, read and offered (Blocker 1).
+    const other = OUTPUTS.import_documents.parse((await drag('https://files.oaiusercontent.com/two?sig=b')).structured);
+    expect(other.files).toEqual([{ name: 'Results.pdf', status: 'extracted', classification: 'lab_report', documentDate: '2026-08-21' }]);
+    expect(other.candidates).toHaveLength(2);
+    expect(extracted).toEqual(['Results.pdf', 'Results-2.pdf']);
+
+    const events = (recordServerEvent as unknown as { mock: { calls: unknown[][] } }).mock.calls.filter(([name]) => name === 'mcp_import');
+    expect(events.slice(-4).map(([, meta]) => meta)).toEqual([
+      { route: 'chatgpt_file', phase: 'extract', files: '1' },
+      { route: 'chatgpt_file', phase: 'commit', files: '1' },
+      { route: 'chatgpt_file', phase: 'extract', files: '1' },
+      { route: 'chatgpt_file', phase: 'extract', files: '1' },
+    ]);
+  });
+
+  it('AC2 — five folder files a call: the rest come back as remaining with the commit-first instruction, and a second call with those names reads them (AC10: the machine cap the website spends from moves too)', async () => {
+    seedRecord();
+    const { access } = await connect();
+    const files: Record<string, Uint8Array> = {};
+    for (let i = 0; i < 7; i++) files[`f${i}.pdf`] = new Uint8Array([...PDF_BYTES, i]);
+    const extracted = stubImport(files, (name) => labReport({ reportDate: `2026-08-0${Number(name[1]) + 1}` }));
+    machineFiles.reset();
+    const before = machineFiles.remaining('machine');
+    const first = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {})).structured);
+    expect(first.files.map((f) => f.name)).toEqual(['f0.pdf', 'f1.pdf', 'f2.pdf', 'f3.pdf', 'f4.pdf']);
+    expect(first.remaining).toEqual(['f5.pdf', 'f6.pdf']);
+    expect(first.next).toContain('2 file(s) were not reached: commit this receipt first, then call again with fileNames set to remaining.');
+    // One counter for both callers: the website's upload route takes from the same key.
+    expect(before - machineFiles.remaining('machine')).toBe(5);
+    const rest = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fileNames: first.remaining })).structured);
+    expect(rest.files.map((f) => [f.name, f.status])).toEqual([['f5.pdf', 'extracted'], ['f6.pdf', 'extracted']]);
+    expect(rest.remaining).toEqual([]);
+    expect(extracted).toHaveLength(7);
+    expect(before - machineFiles.remaining('machine')).toBe(7);
+  });
+
+  it('AC6 — a US-unit record is asked to confirm the numbers its report printed, stored canonical', async () => {
+    seedRecord((file) => { file.profile.unitSystem = 'conventional'; return file; });
+    const { access } = await connect();
+    stubImport({ 'us.pdf': PDF_BYTES }, () => labReport());
+    const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {})).structured);
+    expect(data.candidates[0]).toMatchObject({ metric: 'ldl', value: 2.8, unit: 'mmol/L', displayValue: '108', displayUnit: 'mg/dL' });
+    const commit = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    expect(commit.isError).toBe(false);
+    expect(storedRecord().measurements.find((m) => m.source === 'lab_import')).toMatchObject({ metricType: 'ldl', value: 2.8 });
+  });
+
+  it('AC13 — a lab file with no printed date is failed with the ask-the-user hint, and the user’s date on the next call files it', async () => {
+    seedRecord();
+    const { access } = await connect();
+    stubImport({ 'photo.png': new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1]) }, () => labReport({ reportDate: null }));
+    const undated = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', {})).structured);
+    expect(undated.files[0]).toMatchObject({ status: 'failed', reason: 'no_date' });
+    expect(undated.files[0].hint).toMatch(/Ask the user what date the test was taken/);
+    expect(undated.candidates).toEqual([]);
+    const dated = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fileDates: { 'photo.png': '2026-08-12' } })).structured);
+    expect(dated.files[0]).toMatchObject({ status: 'extracted', documentDate: '2026-08-12' });
+    expect(dated.candidates.map((c) => c.recordedAt)).toEqual(['2026-08-12', '2026-08-12']);
+  });
+
+  it('a Dropbox token the provider now refuses on a download ends the call with the reconnect hint, not "unreadable" (finding 15)', async () => {
+    seedRecord();
+    const { access } = await connect();
+    stubImport({ 'labs.pdf': PDF_BYTES }, () => labReport());
+    setAdapterFactory(() => {
+      const adapter = new MemoryAdapter(cloud);
+      adapter.readDocument = async () => { throw new StorageError('Dropbox download failed (401)', undefined, undefined, 401); };
+      return adapter;
+    });
+    const answer = await callTool(access, 'import_documents', {});
+    expect(answer.isError).toBe(true);
+    expect(answer.text).toMatch(/refused this connection’s access to the record.*reconnect the connector/);
   });
 
   it('never logs a file name or a value during an import', async () => {
