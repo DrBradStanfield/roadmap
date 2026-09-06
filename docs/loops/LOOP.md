@@ -39,8 +39,7 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## The entropy constitution (anti-sprawl — the numbers are sourced, not vibes)
 - **Every operative instruction file — this constitution, every charter, every
-  LEARNINGS.md — is capped at 200 lines / 25KB** (the always-loaded ceiling;
-  past it, models silently drop rules).
+  LEARNINGS.md — is capped at 200 lines / 25KB** (past it, models silently drop rules).
 - **The on-demand tier has budgets too — nothing is uncapped**:
   `notes/<slug>.md` ≤500 lines (one topic per file, SPLIT at the cap); reports
   ≤150. Changelogs keep their last ~10 entries (git is the archive); CSV
@@ -105,11 +104,10 @@ The fleet index is [REGISTRY.md](REGISTRY.md).
   charter or this constitution is drift — move it to `changelog.md` same run.
 
 ## Reporting
-- One report per run: `docs/loops/<name>/YYYY-'W'WW.md`, ≤150 lines. Charter
-  defines sections; every report includes week-over-week deltas, a retro, and
-  the data-gap list.
-- **An unreachable source is a NAMED gap — silence is never success. Never
-  fabricate numbers.** Distinguish signal (repeated, actionable) from noise.
+- One report per run: `docs/loops/<name>/YYYY-'W'WW.md`, ≤150 lines — charter
+  defines sections; every report includes deltas, a retro, and data gaps. **An
+  unreachable source is a NAMED gap — silence is never success; never fabricate
+  numbers.** Distinguish signal (repeated, actionable) from noise.
 - **No email by default (Brad, 2026-08-10): the committed report IS the
   delivery.** Contact Brad ONLY when a run needs his decision: open a GitHub
   issue "🎯 Decision needed: <topic>" — decision, options, recommendation,
