@@ -76,7 +76,7 @@ export const Website: React.FC<{frame: number; from: number; to: number; fps: nu
                   {DATES.map((d) => {
                     const c = cells.find((x) => x.metric === m && x.date === d);
                     return (
-                      <div key={d} style={{padding: '9px 0', borderTop: '1px solid #eef0ef', textAlign: 'right', opacity: o, color: c ? T.ink : '#c8cdcc', fontVariantNumeric: 'tabular-nums', background: c && d === DATES[DATES.length - 2] ? '#e6f4f0' : 'transparent'}}>
+                      <div key={d} style={{padding: '9px 0', borderTop: '1px solid #eef0ef', textAlign: 'right', opacity: o, color: c ? T.ink : '#c8cdcc', fontVariantNumeric: 'tabular-nums'}}>
                         {c ? c.value : '·'}
                       </div>
                     );
@@ -88,7 +88,7 @@ export const Website: React.FC<{frame: number; from: number; to: number; fps: nu
         </div>
       </div>
       {/* overlay */}
-      <div style={{position: 'absolute', inset: 0, background: `rgba(23,36,34,${0.55 * pop})`}} />
+      <div style={{position: 'absolute', inset: 0, background: `rgba(23,36,34,${0.5 * pop})`}} />
       <div
         style={{
           position: 'absolute',

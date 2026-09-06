@@ -1,44 +1,65 @@
 # Demo Video
 
-A code-rendered, ChatGPT-style demo of the hosted MCP connector (mcp.drstanfield.com),
-built with Remotion. It shows a fake chat session asking the connector about ApoB
-trend, plan suggestions, and other health suggestions, and answers streaming back
-with charts, citations, and tool calls. No real chat product or model is recorded —
-every frame is drawn from data and animated in code.
+Code-rendered, ChatGPT-style demos of the hosted MCP connector (mcp.drstanfield.com),
+built with Remotion. The main cut is a 70 s import explainer: why a structured record
+beats pasting PDFs, connect, drag a ZIP in, read and check, save, ask the plan. No real
+chat product or model is recorded; every frame is drawn from data and animated in code.
 
-## Storyboard (five beats, about 40 s)
+## Compositions
 
-Import flows lead; the ApoB beats follow. Chat title: "Import my lab files".
+- `ImportExplainer` (70 s, 2100 frames) and `ImportExplainer60` (64 s, same cut
+  without the website beat) follow storyboard revision 3 (the `Import Demo
+  Storyboard`, 7 September 2026): eight beats, captions burned into a 150 px band
+  at the foot of the frame, and beat starts read from `src/vo.json`.
+- `ApobDemo` (40 s) is the earlier import + ApoB demo, kept as is.
 
-- A. Drag route — an attached "health.zip" chip and "Import this file into my health
-  record." An `import_documents` tool row (spinner, then check), a one-line answer, and
-  a compact File / Result table: four fictional files with statuses ("12 values, 3 new",
-  "8 values, already recorded", "Clinic letter, filed", "1 value differs"). "Save the 3
-  new values and file the letter?" — "Yes" — a second `import_documents commit` row —
-  "Saved 3 values and 1 letter to your health record."
-- B. Folder route — "Import the lab files in my Health by Dr Brad folder in Dropbox."
-  Tool row, one-liner, a two-row table ("10 values, 10 new", "Filed"), and it ends on
-  "Nothing has been saved yet. Want me to save them?" No second commit.
-1. "What's the trend in my ApoB?" — a tool call, then a streamed answer with a chart.
-2. "What does my plan say to reduce my ApoB?" — tool call, streamed answer, a card
-   of plan text with citations.
-3. "Based on my medical record, what other suggestions are there to improve my
-   health?" — tool call, streamed answer, three suggestion cards.
+### ImportExplainer beats
 
-The table wording in A and B mirrors the real `import_documents` result shape
-(`packages/health-core/src/mcp-tools.ts`): per-file status (`extracted` /
-`already_imported`), candidate slot state (`free` / `held_equal` / `held_different`)
-and `documents[]` for filed letters. File names and counts are invented; no lab values
-are shown.
+0. Why a record, not a paste (0 to 10 s): hook line alone, the two-column contrast
+   row by row, then Brad's line held.
+1. Connect (10 to 18): the consent page recreated from the live capture (heading,
+   lede, "ChatGPT wants to connect", two teal buttons), cursor to Dropbox, a blurred
+   Dropbox permission placeholder, back to the chat.
+2. Drag your health data in (18 to 26): file chip, bubble, the permission card
+   "Allow ChatGPT to use Health by Dr Brad?" with the tool's own first line as its
+   second sentence (`packages/health-core/src/mcp-tools.ts`); "Always allow" chosen.
+3. Read and check (26 to 40): tool row, answer, four-row File / Result table, then
+   the assistant's question.
+4. Saved (40 to 48): "Yes", commit row, result.
+5. What does my plan say now? (48 to 60): the ezetimibe card from real `get_plan`
+   output, title, description and first citation verbatim.
+6. The website (60 to 66; cut in the 60 s version): a stylised, clearly-mock results
+   matrix built from `record.json` only, with "Same file. Same record." over it.
+7. Close (last 4 s).
 
-Stills for the two import beats: `npx remotion still src/index.ts ApobDemo out/beatA.png --frame=170`
-and `--frame=430` for `out/beatB.png`.
+Every scene lives in `src/explainer/`; `src/timing.ts` holds the beat starts and the
+caption chunks (at most two lines each); `src/ui.tsx` holds the caption band and cursor.
+
+### Voice-over hook
+
+`src/vo.json` is an array of `{beat, start, text}`: the caption script per beat and its
+start in seconds (beat 8 is the end marker). The compositions take their beat timings
+from it, so once a voice track exists, align each beat's `start` to the sentence that
+introduces it and the video follows the audio. Put the track at `public/vo.mp3` and
+flip `hasVo` in `src/timing.ts` to true; the `<Audio>` layer is already wired. No audio
+is generated here.
+
+The table wording mirrors the real `import_documents` result shape: per-file status
+(`extracted` / `already_imported`), candidate slot state (`free` / `held_equal` /
+`held_different`) and `documents[]` for filed letters. File names and counts are
+invented; no lab values are shown in the chat.
+
+Stills: `npx remotion still src/index.ts ImportExplainer out/beat2.png --frame=760`
+(beats 0, 1, 2, 3, 6 at frames 150, 330, 760, 1150, 1900). `./render.sh` renders both
+cuts and those stills.
 
 ## Install and render
 
 ```bash
 cd tools/demo-video
 npm install
+npx remotion render src/index.ts ImportExplainer out/import-explainer.mp4 --codec h264
+npx remotion render src/index.ts ImportExplainer60 out/import-explainer-60.mp4 --codec h264
 npx remotion render src/index.ts ApobDemo out/apob-demo.mp4 --codec h264
 ```
 
@@ -48,18 +69,17 @@ For a still frame (e.g. a thumbnail):
 npx remotion still src/index.ts ApobDemo out/still.png --frame=300
 ```
 
-`npm install` and `out/` are gitignored here. The last rendered file is checked
-into `renders/` (one file, replaced or added to as new renders happen), so the
-video is always available without re-rendering.
+`npm install` and `out/` are gitignored here. Rendered files are checked into
+`renders/` (dated), so the video is always available without re-rendering.
 
 ## Where the data comes from
 
 - `record.json` is a fictional health record — no real patient data.
-- `plan.json`, `plan-base.json`, and `src/plan-data.json` are the output of
-  `npx tsx tools/get-plan.ts record.json --json` run against `record.json`. They
-  are generated, not hand-edited. Regenerate them whenever the plan engine
-  (health-core suggestions/evidence) changes, so the demo never shows stale
-  reasoning or citations.
+- `plan.json` and `plan-base.json` are the output of
+  `npx tsx tools/get-plan.ts tools/demo-video/record.json --json` (run from the repo
+  root) against `record.json`; `node build-plan-data.mjs` then derives
+  `src/plan-data.json` from it. All generated, never hand-edited. Regenerate before
+  every render so the demo never shows stale reasoning or citations.
 
 ## Trademark rule
 

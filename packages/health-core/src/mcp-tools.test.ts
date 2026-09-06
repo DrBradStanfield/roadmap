@@ -1105,6 +1105,28 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(isAlreadyImported(file, 'letter.pdf', 'sha256-abc')).toBeNull();
   });
 
+  it('AC6 — the same bytes under two names in one call file one document row, and the twin says which file it is', () => {
+    // A browser names a re-download "Results (1).pdf": two names, one contentHash. Two rows would share the
+    // archive key, so the website's upload could tombstone only one and would offer the other forever.
+    const twin = { ...extracted('Results (1).pdf', labReport(), 'sha256-same'), name: 'Results (1).pdf' };
+    const { payload, files } = prepareImport(base(), bundleOf([
+      extracted('Results.pdf', labReport(), 'sha256-same'),
+      twin,
+      { ...letter('Letter'), name: 'Letter (1).pdf', contentHash: 'sha256-abc' },
+      letter('Letter'),
+    ]), IMPORT_CTX);
+    expect(files.map((f) => [f.name, f.status])).toEqual([
+      ['Results.pdf', 'extracted'], ['Results (1).pdf', 'already_imported'],
+      ['Letter (1).pdf', 'extracted'], ['letter.pdf', 'already_imported'],
+    ]);
+    expect(files[1].hint).toBe('The same file as Results.pdf in this call. Nothing to do.');
+    expect(payload.documents.map((d) => d.sourceFileName)).toEqual(['Results.pdf', 'Letter (1).pdf']);
+    expect(payload.candidates.every((c) => c.sourceFileName === 'Results.pdf')).toBe(true);
+    const out = importDocumentsCommit(base(), payload, { receipt: 'r', accept: [], replace: [] }, NOW);
+    expect(out.status).toBe('ok');
+    expect((out as { file: RoadmapFile }).file.documents.map((d) => d.contentHash)).toEqual(['sha256-same', 'sha256-abc']);
+  });
+
   it('AC13 — an already_imported entry says which row, when, and the way past it — a file name, never a title', () => {
     const file = base();
     file.documents.push({ id: 'd1', title: 'Secret title', type: 'other', date: '2026-06-01', fileRef: '', contentHash: 'sha256-abc', mimeType: 'application/pdf', extractedText: '', addedAt: NOW, sourceFileName: 'Results.pdf', metadata: {} });

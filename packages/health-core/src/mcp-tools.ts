@@ -1002,6 +1002,8 @@ export function prepareImport(
   const held = slotIndex(file);
   /** Slot → the id of the first candidate this call put there; a second one is offered too, marked. */
   const seenSlots = new Map<string, string>();
+  /** contentHash → the first file this call read with those bytes: a twin ("Results (1).pdf") files nothing (AC6). */
+  const seenBytes = new Map<string, string>();
 
   for (const read of bundle.files) {
     const name = read.name;
@@ -1013,6 +1015,12 @@ export function prepareImport(
       files.push({ name, status: read.status, ...(read.reason ? { reason: read.reason } : null), hint: importHint(read.reason) });
       continue;
     }
+    const twin = read.contentHash ? seenBytes.get(read.contentHash) : undefined;
+    if (twin) {
+      files.push({ name, status: 'already_imported', hint: `The same file as ${oneLine(twin)} in this call. Nothing to do.` });
+      continue;
+    }
+    if (read.contentHash) seenBytes.set(read.contentHash, name);
     const result = read.result;
     const report: z.infer<typeof importFileOutput> = { name, status: 'extracted', classification: result.classification };
     // Every file read lands as a document: metadata only, its text left
