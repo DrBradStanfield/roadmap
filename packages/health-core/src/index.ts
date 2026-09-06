@@ -346,7 +346,7 @@ export {
 } from './sync-manager';
 export { ROADMAP_DOC } from './roadmap-doc';
 export { MemoryAdapter, MemoryCloud } from './memory-adapter';
-export { dropboxDownload, dropboxRead, dropboxWrite, DropboxAdapter, DROPBOX_TOKEN_URL } from './dropbox-rest';
+export { dropboxDownload, dropboxListFolder, dropboxRead, dropboxWrite, DropboxAdapter, DROPBOX_TOKEN_URL } from './dropbox-rest';
 // Google Drive v3 as plain fetch calls: the folder/file discovery the browser
 // adapter and the hosted MCP server MUST agree on, plus the server's adapter.
 export {

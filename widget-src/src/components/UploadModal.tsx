@@ -4,7 +4,7 @@ import type { UnitSystem, MetricType } from '@roadmap/health-core';
 import { labImport, labImportBatch, pollBatchStatus, checkLabImportQuota, bulkSaveMeasurements, bulkSaveDocuments, bulkSaveLabValues, getDocumentArchiveMode, trackProductEvent } from '../lib/api';
 import type { PageContent, UploadErrorCode, UploadHistory } from '../lib/api-types';
 import { ReviewTable, type FileResult, type DocumentToSave, type ReviewedValue, type ReviewedLabValue } from './ReviewTable';
-import { synthesizeLabArchiveEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
+import { attachOriginals, synthesizeLabArchiveEntries, type ArchiveDocPayload } from '../lib/archive-payloads';
 import { useIsMobile } from '../lib/useIsMobile';
 import { Sentry } from '../lib/sentry';
 import { openBackendPicker, UPLOAD_STORAGE_NOTICE } from '../lib/storage-notice';
@@ -285,7 +285,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
         const batchBlobs = keepBlobs
           ? new Map<string, Blob>(allFileObjects.map((f) => [f.fileName, f.file as Blob]))
           : new Map<string, Blob>();
-        setResults(allResults.map((r) => ({ ...r, file: batchBlobs.get(r.fileName) })));
+        setResults(await attachOriginals(allResults, batchBlobs));
         setState('review');
         return;
       }
@@ -303,7 +303,7 @@ export function UploadModal({ unitSystem, metricUnitOverrides, onToggleFieldUnit
       }
       const allResults = await processPipeline(upload, zipEntryLists, otherFiles, totalFiles, abort, updateProgress, unitSystem);
       if (abort.signal.aborted) return;
-      setResults(allResults.map((r) => ({ ...r, file: fileBlobs.get(r.fileName) })));
+      setResults(await attachOriginals(allResults, fileBlobs));
       setState('review');
     } catch (err) {
       if (!abort.signal.aborted) {

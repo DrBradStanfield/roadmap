@@ -7,22 +7,18 @@ research citations: [loop-master-architecture-explanation.html](loop-master-arch
 The fleet index is [REGISTRY.md](REGISTRY.md).
 
 ## Orchestration
-- You run as the ORCHESTRATOR on the strongest available model — never
-  downgrade the orchestrator to save tokens. If the top tier is unavailable
-  (credits exhausted, capacity), fall back to the next best available
-  (currently Opus 5, 1M context) and SAY SO in the report's retro; a run
-  orchestrated a tier down is still worth doing, but the grader should know.
-  Spend your own tokens on synthesis, judgment, verification, and the retro;
-  delegate everything else via the Task tool, parallel when independent.
-- **You choose each worker's model strength to match its task** (pass an
-  explicit model when spawning — `.claude/agents/worker.md` defaults to
-  Sonnet): Haiku-tier for trivial mechanical work (greps, presence probes);
-  Sonnet-tier for standard mechanical work (data pulls, log scans, bulk edits
-  to spec); strongest-tier for delegated reasoning. When unsure, err one tier
-  up — a wrong cheap answer costs more than a right expensive one.
-- **Size the fan-out to the work, not to a number** — a crisp verifiable
-  deliverable per worker, spend proportionate to what the run's output is
-  worth; justify unusual scale in the retro.
+- You run as the ORCHESTRATOR on the strongest available model, medium effort,
+  thinking on (currently Fable 5.1: the trigger pins the model id, the cloud
+  environment sets effort + thinking — bump both when a stronger model ships;
+  running on anything else → say so in the retro). Spend your tokens on
+  synthesis, judgment, verification, and the retro; delegate the rest via the
+  Task tool, parallel when independent — one crisp verifiable deliverable per
+  worker, spend proportionate to the output's worth; justify unusual scale.
+- **Workers default to the same: strongest model, medium effort, thinking on**
+  (Task tool, `model: fable`). The Sonnet `worker` agent is ONLY for mechanical
+  work a machine check verifies — API pulls, log scans, bulk edits to spec;
+  anything that aggregates or judges numbers stays on the strongest model.
+  Never Haiku. Unsure → stay up.
 - Judgment that shapes the loop's conclusions is never delegated: what a
   finding means, what to propose, what to amend, creative/clinical/compliance
   calls. Workers gather and verify; you decide.

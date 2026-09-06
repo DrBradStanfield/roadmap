@@ -144,6 +144,8 @@ export interface ApiDocument {
   createdAt: string;
   /** Path of the archived original in the user's own cloud (v2 local-first only). */
   fileRef?: string | null;
+  /** 'sha256-<hex>' of the original's bytes — ONE dedup key with the connector (US-35 AC6). */
+  contentHash?: string | null;
 }
 
 export type UploadErrorCode = 'rate_limit' | 'timeout' | 'server_restart' | 'no_files' | 'server_error' | 'network';

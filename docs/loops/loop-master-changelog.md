@@ -5,6 +5,24 @@ ledgers). Every Brad-applied constitution change gets a dated entry, newest
 first. The one-in-one-out rule applies to the constitution itself, never to
 this record.
 
+- **2026-09-07 (Brad-directed — model, effort, thinking):** Orchestration
+  rewritten: orchestrator AND workers default to the strongest model at medium
+  effort with thinking on; Sonnet only for machine-verified mechanical work;
+  Haiku tier removed. Why: the whole fleet ran the 2026-09-05/06 weekend on
+  Fable 5 after 5.1 shipped — triggers pin a concrete model id that never
+  upgrades itself (the API rejects aliases such as `fable`). Fix applied
+  outside the constitution: all six triggers pinned to `claude-fable-5-1`;
+  effort + thinking set as `CLAUDE_EFFORT_LEVEL=medium` /
+  `CLAUDE_ALWAYS_THINKING=1` on the shared cloud environment (routines have no
+  effort field and ignore the repo's settings.json); `tools/fleet-doctor.js`
+  now holds `STRONGEST_MODEL` and fails any trigger or registry row behind it,
+  ignores the cron month field (sanctioned temporary scoping) and downgrades a
+  DISABLED trigger to a warning when the registry row says PAUSED (until its
+  stated re-enable date). `worker.md` gains `effort: medium` in both repos.
+  Business constitution trimmed 200→198 lines (entropy-cap, landing-check,
+  product-facts and scratch-path bullets compressed, no rule dropped); roadmap
+  200→196, its fall-back-to-Opus bullet retired (the pin makes it moot; the
+  "say so in the retro" clause survives in the new first bullet).
 - **2026-08-29 (Brad-directed session — landing check):** new Repo-rules
   line: a run's LAST git act is `git rev-list --count origin/main..HEAD` = 0,
   or the commits sit in an open Tier 3 PR. Born from chat-health W34 stranding

@@ -219,7 +219,9 @@ same commit).
   LEARNINGS.md.
 - **Model delegation:** Sonnet sessions escalate ONCE to `fable-advisor`
   before architecture/clinical/security/merge decisions; Fable sessions
-  delegate mechanical work to `worker` (Sonnet). Never set
+  delegate mechanical work to `worker` (Sonnet) — in autonomous loops the
+  constitution's Orchestration section governs (workers default to the
+  strongest model; Sonnet only for machine-verified mechanical work). Never set
   `CLAUDE_CODE_SUBAGENT_MODEL`. Clinical logic, merge semantics, security,
   FHIR shapes always get Fable-level judgment.
 

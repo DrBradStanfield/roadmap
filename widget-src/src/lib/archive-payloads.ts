@@ -8,6 +8,7 @@
  * (getDocumentArchiveMode() === 'cloud'), so off-cloud this returns [].
  */
 import type { FileResult } from '../components/ReviewTable';
+import type { ApiDocument } from './api-types';
 
 export interface ArchiveDocPayload {
   documentType: string;
@@ -52,6 +53,41 @@ export function isLabArchiveDocument(doc: {
   );
 }
 
+/** 'sha256-<hex>' content fingerprint — names the blob + detects corruption. */
+export async function sha256Blob(blob: Blob): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+  const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `sha256-${hex}`;
+}
+
+/** Attach each result's original bytes and their hash (absent off-cloud). */
+export async function attachOriginals(results: FileResult[], blobs: Map<string, Blob>): Promise<FileResult[]> {
+  return Promise.all(results.map(async (r) => {
+    const file = blobs.get(r.fileName);
+    return file ? { ...r, file, contentHash: await sha256Blob(file) } : r;
+  }));
+}
+
+/** A value-bearing lab file with its bytes in hand: the archive step files it. */
+function isArchivableLabFile(r: FileResult, alreadyCovered: Set<string | null>): boolean {
+  if (r.error || r.document || alreadyCovered.has(r.fileName) || !r.file) return false;
+  return r.values.length > 0 || r.additionalValues.length > 0;
+}
+
+/**
+ * Lab files whose bytes the connector filed metadata-only (hash, no fileRef —
+ * US-35 AC8). Saving archives the original behind the values already in the
+ * record (US-13 AC1), so the review offers Save even with nothing selected.
+ */
+export function countConnectorOriginals(
+  results: FileResult[],
+  existing: ReadonlyArray<Pick<ApiDocument, 'contentHash' | 'fileRef'>>,
+): number {
+  const pending = new Set(existing.filter((d) => d.contentHash && !d.fileRef).map((d) => d.contentHash));
+  const none = new Set<string | null>();
+  return results.filter((r) => isArchivableLabFile(r, none) && pending.has(r.contentHash)).length;
+}
+
 /** Synthesized entries for lab files whose originals would otherwise be lost. */
 export function synthesizeLabArchiveEntries(
   results: FileResult[],
@@ -59,8 +95,7 @@ export function synthesizeLabArchiveEntries(
 ): ArchiveDocPayload[] {
   const out: ArchiveDocPayload[] = [];
   for (const r of results) {
-    if (r.error || r.document || alreadyCovered.has(r.fileName) || !r.file) continue;
-    if (r.values.length === 0 && r.additionalValues.length === 0) continue;
+    if (!isArchivableLabFile(r, alreadyCovered)) continue;
     out.push({
       documentType: 'pathology_report',
       title: 'Blood test results',

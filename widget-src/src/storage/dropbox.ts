@@ -19,9 +19,11 @@
  */
 import {
   dropboxDownload,
+  dropboxListFolder,
   dropboxRead,
   dropboxWrite,
   DROPBOX_TOKEN_URL,
+  ROADMAP_FILE_NAME,
   sleepUntilAborted,
   StorageError,
   type ReadResult,
@@ -155,7 +157,15 @@ export class DropboxAdapter implements StorageAdapter {
   // --- file ops -------------------------------------------------------------
 
   async read(fileName: string): Promise<ReadResult> {
-    return dropboxRead(await this.accessToken(), fileName);
+    const token = await this.accessToken();
+    // A secondary file (chat-history.json before the first chat) is often
+    // absent, and files/download answers absence with a 409 the browser logs
+    // as a console error on every load. The root listing says so with a 200.
+    // The record is never probed: hot path, and present after the first write.
+    if (fileName !== ROADMAP_FILE_NAME && !(await dropboxListFolder(token, '')).some((e) => e.name === fileName)) {
+      return { body: null, version: null };
+    }
+    return dropboxRead(token, fileName);
   }
 
   async write(fileName: string, body: object, expectedVersion: string | null): Promise<WriteResult> {

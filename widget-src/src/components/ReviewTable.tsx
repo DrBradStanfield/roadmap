@@ -18,6 +18,7 @@ import {
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
 import { labValueLabel } from '../lib/lab-value-labels';
+import { countConnectorOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
@@ -34,6 +35,8 @@ export interface FileResult {
   document?: DocumentResult;
   /** The original uploaded bytes — saved into the user's cloud archive (v2). */
   file?: Blob;
+  /** 'sha256-<hex>' of `file` — matched against the record's document rows. */
+  contentHash?: string;
 }
 
 /** Document to be saved, assembled from review state */
@@ -557,6 +560,10 @@ export function ReviewTable({
     return n;
   }, [matrix]);
   const selectedDocCount = useMemo(() => Object.values(docChecked).filter(Boolean).length, [docChecked]);
+  // Originals the connector imported metadata-only: Save archives them even
+  // when every value is already recorded (US-13 AC1 / US-35 AC8).
+  const archiveCount = useMemo(() => countConnectorOriginals(results, history.documents), [results, history.documents]);
+  const nothingSelected = selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0;
 
   /** A column with no date isn't saveable. Existing-history columns always
    *  have a YYYY-MM-DD date; new (upload) columns require day+month+year so
@@ -662,13 +669,19 @@ export function ReviewTable({
   return (
     <div className="review-table">
       <div className="review-summary">
-        {selectedCount > 0 && `${selectedCount} value${selectedCount !== 1 ? 's' : ''}`}
-        {selectedCount > 0 && selectedAdditionalCount > 0 && ' + '}
-        {selectedAdditionalCount > 0 && `${selectedAdditionalCount} additional`}
-        {(selectedCount > 0 || selectedAdditionalCount > 0) && selectedDocCount > 0 && ' + '}
-        {selectedDocCount > 0 && `${selectedDocCount} document${selectedDocCount !== 1 ? 's' : ''}`}
-        {selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0 && 'No items selected'}
-        {' '}from {results.length} file{results.length !== 1 ? 's' : ''} · {totalEditableCells} extracted
+        {nothingSelected && archiveCount > 0 ? (
+          `Nothing new to save. Save will archive the original PDF${archiveCount !== 1 ? 's' : ''} behind the values already in your record.`
+        ) : (
+          <>
+            {selectedCount > 0 && `${selectedCount} value${selectedCount !== 1 ? 's' : ''}`}
+            {selectedCount > 0 && selectedAdditionalCount > 0 && ' + '}
+            {selectedAdditionalCount > 0 && `${selectedAdditionalCount} additional`}
+            {(selectedCount > 0 || selectedAdditionalCount > 0) && selectedDocCount > 0 && ' + '}
+            {selectedDocCount > 0 && `${selectedDocCount} document${selectedDocCount !== 1 ? 's' : ''}`}
+            {nothingSelected && 'No items selected'}
+            {' '}from {results.length} file{results.length !== 1 ? 's' : ''} · {totalEditableCells} extracted
+          </>
+        )}
       </div>
 
       {(matrix.coreRows.length > 0 || matrix.additionalRows.length > 0) && (
@@ -782,12 +795,13 @@ export function ReviewTable({
         <button
           className="btn-primary review-save-btn"
           onClick={handleSave}
-          disabled={(selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0) || !allDatesSet || isSaving}
+          disabled={(nothingSelected && archiveCount === 0) || !allDatesSet || isSaving}
         >
           {isSaving ? 'Saving...' : `Save ${[
             selectedCount > 0 && `${selectedCount} Value${selectedCount !== 1 ? 's' : ''}`,
             selectedAdditionalCount > 0 && `${selectedAdditionalCount} Additional`,
             selectedDocCount > 0 && `${selectedDocCount} Document${selectedDocCount !== 1 ? 's' : ''}`,
+            archiveCount > 0 && `${archiveCount} Original${archiveCount !== 1 ? 's' : ''}`,
           ].filter(Boolean).join(' + ')}`}
         </button>
         <button className="review-cancel-btn" onClick={onCancel}>

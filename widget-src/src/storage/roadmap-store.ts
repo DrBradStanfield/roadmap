@@ -19,6 +19,7 @@
  *    build hides them.
  *  - Medication-history chart annotations are derived from lightweight snapshots.
  */
+import { sha256Blob } from '../lib/archive-payloads';
 import {
   buildDocumentRef,
   type BulkRow,
@@ -970,13 +971,6 @@ export class RoadmapStore {
   }
 }
 
-/** 'sha256-<hex>' content fingerprint — names the blob + detects corruption. */
-async function sha256Blob(blob: Blob): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
-  const hex = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-  return `sha256-${hex}`;
-}
-
 /**
  * Merge a raw roadmap-file body into `target` (migrate + read-merge-write).
  * The one cross-adapter transfer primitive: the connect-time lift-up and the
@@ -1000,5 +994,6 @@ function toApiDocument(d: FileDocument): ApiDocument {
     sourceFileName: d.sourceFileName ?? null,
     createdAt: d.addedAt,
     fileRef: d.fileRef || null,
+    contentHash: d.contentHash || null,
   };
 }

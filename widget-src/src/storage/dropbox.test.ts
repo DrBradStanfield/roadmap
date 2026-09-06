@@ -155,3 +155,53 @@ describe('SyncManager.save against a DELETED Dropbox file', () => {
     expect(result.file.measurements.map((m) => m.id)).toEqual(['meas-1']);
   });
 });
+
+/**
+ * A secondary file that does not exist (chat-history.json before the first
+ * chat) used to be probed with files/download, whose 409 path/not_found the
+ * browser logs as a console error on every page load even though the adapter
+ * already treats it as "no file". The root listing answers absence with a 200.
+ * The record itself is never probed: it is the hot path and exists after the
+ * first write.
+ */
+describe('DropboxAdapter.read — absent secondary file', () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  const listing = (names: string[]) => new Response(JSON.stringify({
+    entries: names.map((name) => ({ '.tag': 'file', id: `id:${name}`, name, size: 1, server_modified: '' })),
+    cursor: 'c', has_more: false,
+  }), { status: 200 });
+  const urlsOf = (fetchMock: ReturnType<typeof vi.fn>) => fetchMock.mock.calls.map((c) => String(c[0]));
+
+  it('answers "no file" from the root listing without a download', async () => {
+    const adapter = connectedAdapter();
+    const fetchMock = vi.fn(async () => listing([ROADMAP_FILE_NAME]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await adapter.read('chat-history.json')).toEqual({ body: null, version: null });
+    expect(urlsOf(fetchMock)).toEqual(['https://api.dropboxapi.com/2/files/list_folder']);
+  });
+
+  it('downloads as before when the listing holds the file', async () => {
+    const adapter = connectedAdapter();
+    const fetchMock = vi.fn(async (url: string) => url.includes('list_folder')
+      ? listing(['chat-history.json'])
+      : new Response('{"conversations":[]}', { status: 200, headers: { 'Dropbox-API-Result': JSON.stringify({ rev: 'r1' }) } }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await adapter.read('chat-history.json')).toEqual({ body: { conversations: [] }, version: 'r1' });
+    expect(urlsOf(fetchMock)).toEqual([
+      'https://api.dropboxapi.com/2/files/list_folder',
+      'https://content.dropboxapi.com/2/files/download',
+    ]);
+  });
+
+  it('never lists before reading the record itself', async () => {
+    const adapter = connectedAdapter();
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200, headers: { 'Dropbox-API-Result': JSON.stringify({ rev: 'r1' }) } }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await adapter.read(ROADMAP_FILE_NAME);
+    expect(urlsOf(fetchMock)).toEqual(['https://content.dropboxapi.com/2/files/download']);
+  });
+});
