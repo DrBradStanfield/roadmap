@@ -26,7 +26,7 @@ export const IMPORT_ACCEPTED_TYPES = 'PDF, JPEG, PNG or ZIP';
 /** The folder route, in one clause, for every sentence that offers it as the way round. */
 const FOLDER_ROUTE = `put the file in the Dropbox folder ${DROPBOX_APP_FOLDER} and ask again`;
 
-export const IMPORT_FILE_REASONS = ['unsupported', 'nested_zip', 'too_large', 'no_date', 'quota', 'allowance', 'time', 'unreadable', 'too_many'] as const;
+export const IMPORT_FILE_REASONS = ['unsupported', 'nested_zip', 'too_large', 'no_date', 'bad_date', 'quota', 'allowance', 'time', 'unreadable', 'too_many'] as const;
 export type ImportFileReason = (typeof IMPORT_FILE_REASONS)[number];
 
 const FILE_HINTS: Record<ImportFileReason, string> = {
@@ -39,6 +39,9 @@ const FILE_HINTS: Record<ImportFileReason, string> = {
     `The website's upload takes files up to ${IMPORT_LIMITS.websiteFileMb} MB.`,
   no_date:
     'No collection date was found in the file, so its values were not offered. Ask the user what date the test was taken, ' +
+    'then call again with the same source and fileDates naming this file and that date (YYYY-MM-DD).',
+  bad_date:
+    'The date given for this file was not accepted. Ask the user for the correct date the test was taken, ' +
     'then call again with the same source and fileDates naming this file and that date (YYYY-MM-DD).',
   quota:
     `This connection has read its ${IMPORT_LIMITS.filesPerDay} files for today; the count resets a day after the first. ` +
@@ -53,9 +56,15 @@ const FILE_HINTS: Record<ImportFileReason, string> = {
     'A ZIP is read twenty files at a time and this entry was past the twentieth. Split the ZIP and import the rest.',
 };
 
-/** The sentence for a file entry's `reason`; a reason outside the table (a bug, not a user problem) gets the generic one. */
-export function importHint(reason: string | undefined): string {
-  return FILE_HINTS[reason as ImportFileReason] ?? FILE_HINTS.unreadable;
+/**
+ * The sentence for a file entry's `reason`; a reason outside the table (a bug,
+ * not a user problem) gets the generic one. `detail` is the record's own
+ * refusal ("2030-01-01 has not happened yet"), said first so the assistant
+ * relays what was wrong with the date the user gave instead of asking again.
+ */
+export function importHint(reason: string | undefined, detail?: string): string {
+  const hint = FILE_HINTS[reason as ImportFileReason] ?? FILE_HINTS.unreadable;
+  return detail ? `${detail}. ${hint}` : hint;
 }
 
 /** The whole-call refusals that are not about one file. */

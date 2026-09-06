@@ -7,13 +7,13 @@
  * `correct_value`, and `expectedValue` refuses a stale correction.
  */
 import { describe, it, expect } from 'vitest';
+import Ajv2020 from 'ajv/dist/2020';
 import { MCP_TOOL_NAMES } from './product-events';
 import { z } from 'zod';
 import {
   addLabValues,
   addLabValuesInput,
   chatgptFileInput,
-  importCommitInput,
   importDocumentsInput,
   addMeasurement,
   addMeasurementInput,
@@ -28,7 +28,6 @@ import {
   correctValueTool,
   getPlan,
   getPlanInput,
-  labRowOutput,
   labValueInput,
   MAX_LAB_ROWS_PER_CALL,
   MCP_TOOLS,
@@ -42,7 +41,6 @@ import {
   reportFeedbackInput,
   updateProfile,
   updateProfileInput,
-  updateProfileOutput,
   SERVER_VERSION,
   TOOL_LAYER_VERSION,
 } from './mcp-tools';
@@ -426,25 +424,39 @@ describe('US-34 — update_profile changes who the record is about', () => {
 });
 
 /** A client obeys the schema; zod is what actually refuses. Drift is a lie. */
-function expectParity(
-  shape: z.ZodRawShape,
-  schema: { properties: Record<string, unknown>; required?: string[] },
-  where: string,
-) {
+/** The wrappers that carry no shape of their own, stripped. */
+function bare(schema: z.ZodTypeAny): z.ZodTypeAny {
+  let inner = schema;
+  while (inner instanceof z.ZodOptional || inner instanceof z.ZodNullable || inner instanceof z.ZodDefault) inner = inner._def.innerType;
+  return inner;
+}
+
+type ObjectSchema = { properties: Record<string, unknown>; required?: string[] };
+
+/**
+ * Every property and every required field, then the same again inside each
+ * nested object and each array of objects. A field added to a row is exactly
+ * where a hand-written schema goes stale while every top-level key still
+ * agrees (live 2026-09-06: `hint` and `sameDayAs` missing from import_documents).
+ */
+function expectParity(shape: z.ZodRawShape, schema: ObjectSchema, where: string) {
   expect(Object.keys(schema.properties).sort(), where).toEqual(Object.keys(shape).sort());
   expect([...(schema.required ?? [])].sort(), `${where} required`)
     .toEqual(Object.keys(shape).filter((key) => !shape[key].isOptional()).sort());
-}
-
-/** One level down: the item schema of an array property, against its zod element. */
-function expectItemParity(
-  schema: { properties: Record<string, unknown> },
-  property: string,
-  element: z.ZodObject<z.ZodRawShape>,
-  where: string,
-) {
-  const array = schema.properties[property] as { items: { properties: Record<string, unknown>; required?: string[] } };
-  expectParity(element.shape, array.items, where);
+  for (const key of Object.keys(shape)) {
+    let zod = bare(shape[key]);
+    let json = schema.properties[key] as Record<string, unknown>;
+    let path = `${where}.${key}`;
+    if (zod instanceof z.ZodArray) {
+      zod = bare(zod.element);
+      json = json.items as Record<string, unknown>;
+      path += '[]';
+    }
+    if (zod instanceof z.ZodObject && Object.keys(zod.shape).length > 0) {
+      expect(json, path).toHaveProperty('properties');
+      expectParity(zod.shape, json as unknown as ObjectSchema, path);
+    }
+  }
 }
 
 describe('US-32 — the published JSON Schema and the zod gate say the same thing', () => {
@@ -461,16 +473,6 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
 
   it('agrees on every property and every required field, nested rows included', () => {
     for (const tool of MCP_TOOLS) expectParity(ZOD[tool.name].shape, tool.inputSchema, tool.name);
-
-    // US-35 AC4/AC8: the two nested objects a file import takes.
-    const importProps = MCP_TOOLS.find((t) => t.name === 'import_documents')!.inputSchema.properties as
-      Record<string, { properties: Record<string, unknown>; required?: string[] }>;
-    expectParity(chatgptFileInput.shape, importProps.file, 'import_documents.file');
-    expectParity(importCommitInput.shape, importProps.commit, 'import_documents.commit');
-
-    const values = MCP_TOOLS.find((t) => t.name === 'add_lab_values')!.inputSchema.properties.values as
-      { items: { properties: Record<string, unknown>; required?: string[] } };
-    expectParity(labValueInput.shape, values.items, 'add_lab_values.values[]');
   });
 
   it('backs every published maxLength with a zod bound that actually refuses', () => {
@@ -741,17 +743,6 @@ describe('US-32 — every tool answers with structured content that fits its out
       expect(tool.outputSchema.additionalProperties, tool.name)
         .toBe(tool.name === 'read_record' ? undefined : false);
     }
-
-    // The nested item schemas too: a field added to a row is exactly where the
-    // published schema can go stale while every top-level key still agrees.
-    const byName = (name: string) => MCP_TOOLS.find((t) => t.name === name)!.outputSchema;
-    expectItemParity(byName('add_lab_values'), 'rows', labRowOutput, 'add_lab_values.rows[]');
-    expectItemParity(
-      byName('update_profile'),
-      'changed',
-      updateProfileOutput.shape.changed.element as z.ZodObject<z.ZodRawShape>,
-      'update_profile.changed[]',
-    );
   });
 
   it('publishes the record’s own keys, so a new section cannot go unannounced', () => {
@@ -1040,9 +1031,19 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
       ['photo.jpg', '2026-08-12'], ['photo.jpg', '2026-08-12'], ['misread.pdf', '2026-08-02'], ['misread.pdf', '2026-08-02'],
     ]);
     expect(payload.documents.map((d) => d.date)).toEqual(['2026-08-12', '2026-08-02']);
-    // A date the record refuses (the future) is no date at all.
+    // A date the record refuses is said back with the refusal, so the assistant
+    // never asks for the date the user just gave (live 2026-09-06: "2030-01-01" came back as no_date).
     const future = prepareImport(base(), bundleOf([undated]), { ...IMPORT_CTX, fileDates: { 'photo.jpg': '2099-01-01' } });
-    expect(future.files[0]).toMatchObject({ status: 'failed', reason: 'no_date' });
+    expect(future.files[0]).toMatchObject({ status: 'failed', reason: 'bad_date', hint: importHint('bad_date', '2099-01-01 has not happened yet') });
+    expect(future.files[0].hint).toMatch(/^2099-01-01 has not happened yet\. .*correct date.*fileDates/);
+    expect(future.files[0].hint).not.toContain('No collection date was found');
+    // Schema-valid but not a day: the same, in resolveRecordedAt's words.
+    const rolled = prepareImport(base(), bundleOf([undated]), { ...IMPORT_CTX, fileDates: { 'photo.jpg': '2026-02-30' } });
+    expect(rolled.files[0]).toMatchObject({ status: 'failed', reason: 'bad_date' });
+    expect(rolled.files[0].hint).toMatch(/^"2026-02-30" is not a date\. /);
+    // The file's own bad print, with no answer from the user, is still no_date.
+    const printed = prepareImport(base(), bundleOf([extracted('p.pdf', labReport({ reportDate: '2099-01-01' }))]), IMPORT_CTX);
+    expect(printed.files[0]).toMatchObject({ status: 'failed', reason: 'no_date' });
     expect(importDocumentsInput.safeParse({ fileDates: { 'a.pdf': '12 Aug 2026' } }).success).toBe(false);
     expect(importDocumentsInput.safeParse({ fileDates: { 'a.pdf': '2026-08-12' } }).success).toBe(true);
   });
@@ -1324,6 +1325,35 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     return recordSync(new MemoryAdapter(cloud), 'test', NOW);
   }
 
+  /**
+   * The published `outputSchema`, as a strict client applies it (US-35, live
+   * 2026-09-06: the hand-written schema omitted `hint` and `sameDayAs` under
+   * `additionalProperties: false`, so such a client rejected every failure
+   * entry and every same-day candidate).
+   */
+  const ajv = new Ajv2020({ allErrors: true, validateFormats: false });
+  const published = ajv.compile(MCP_TOOLS.find((t) => t.name === 'import_documents')!.outputSchema);
+  function fits(structured: unknown) {
+    expect(published(structured) ? null : ajv.errorsText(published.errors)).toBeNull();
+    return OUTPUTS.import_documents.parse(structured);
+  }
+
+  it('AC13 — a failed file, a same-day candidate and a commit each validate against the published outputSchema', async () => {
+    const sync = syncOver(new MemoryCloud());
+    const mixed: ImportSurface = { ...surface, async extract() {
+      return { route: 'chatgpt_file', remaining: [], files: [
+        extracted('prelim.pdf', ldlOnly(3.9, LAB_DAY)), extracted('final.pdf', ldlOnly(3.7, LAB_DAY)),
+        { name: 'photo.heic', status: 'failed', reason: 'unsupported' },
+        letter('Discharge summary'),
+      ] };
+    } };
+    const data = fits((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: mixed, latestDay: TODAY })).structured);
+    expect(data.files.find((f) => f.name === 'photo.heic')!.hint).toBe(importHint('unsupported'));
+    expect(data.candidates.map((c) => c.sameDayAs)).toEqual([undefined, 'c1']);
+    const commit = await runToolOverSync(sync, 'import_documents', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } }, NOW, { importer: mixed, latestDay: TODAY });
+    expect(fits(commit.structured).written).toEqual({ measurements: 1, labValues: 0, corrections: 0, documents: 3 });
+  });
+
   it('AC8 — a document-only extract names the documents to file and tells the assistant to offer an empty commit', async () => {
     // Live 2026-09-05: a clinic letter came back as "0 value(s) are new" and
     // ChatGPT never offered to file it. The result must carry the documents
@@ -1333,7 +1363,7 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     const letters: ImportSurface = { ...surface, async extract() { return { route: 'chatgpt_file', remaining: [], files: [letter('Discharge summary')] }; } };
     const answer = await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: letters, latestDay: TODAY });
     expect(answer.isError).toBe(false);
-    const data = OUTPUTS.import_documents.parse(answer.structured);
+    const data = fits(answer.structured);
     expect(data.candidates).toEqual([]);
     expect(data.documents).toEqual([{ sourceFileName: 'letter.pdf', title: 'Discharge summary', type: 'clinic_letter', date: '2026-05-01' }]);
     expect(data.receipt).toMatch(/^receipt-/);
@@ -1348,8 +1378,8 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     // And the empty commit it recommends files the letter.
     const commit = await runToolOverSync(sync, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [] } }, NOW, { importer: letters, latestDay: TODAY });
     expect(commit.isError).toBe(false);
-    expect(OUTPUTS.import_documents.parse(commit.structured).written).toEqual({ measurements: 0, labValues: 0, corrections: 0, documents: 1 });
-    expect(OUTPUTS.import_documents.parse(commit.structured).documents).toEqual([]);
+    expect(fits(commit.structured).written).toEqual({ measurements: 0, labValues: 0, corrections: 0, documents: 1 });
+    expect(fits(commit.structured).documents).toEqual([]);
   });
 
   it('AC13 — next counts the questions, the shared days and the dropped values, names where each lives, and on a drag names the folder as the way round', async () => {
