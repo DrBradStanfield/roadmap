@@ -141,6 +141,8 @@ export interface ApiDocument {
   createdAt: string;
   /** Cloud/device ref of the original uploaded file (mirrors api-types.ApiDocument). */
   fileRef?: string | null;
+  /** 'sha256-<hex>' of the original's bytes (mirrors api-types.ApiDocument). */
+  contentHash?: string | null;
 }
 export interface ApiLabValue {
   id: string;

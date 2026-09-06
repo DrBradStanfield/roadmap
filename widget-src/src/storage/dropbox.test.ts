@@ -171,7 +171,7 @@ describe('DropboxAdapter.read — absent secondary file', () => {
     entries: names.map((name) => ({ '.tag': 'file', id: `id:${name}`, name, size: 1, server_modified: '' })),
     cursor: 'c', has_more: false,
   }), { status: 200 });
-  const urlsOf = (fetchMock: ReturnType<typeof vi.fn>) => fetchMock.mock.calls.map((c) => String(c[0]));
+  const urlsOf = (fetchMock: { mock: { calls: unknown[][] } }) => fetchMock.mock.calls.map((c) => String(c[0]));
 
   it('answers "no file" from the root listing without a download', async () => {
     const adapter = connectedAdapter();
