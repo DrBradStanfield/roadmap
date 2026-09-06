@@ -185,22 +185,28 @@ MicroVitamin+ Powder has 83+ reviews with a 4.70 average rating. Customers parti
 
 ## Sleep by Dr Brad
 
-"Fall Asleep Faster, Sleep Deeper, Wake Refreshed." $40 one-time / $36/mo subscription. 120 capsules (4/day, 30 servings). 3 ingredients. 46 reviews, 4.78 average rating.
+"Fall Asleep Faster, Sleep Deeper, Wake Refreshed." $40 one-time / $36/mo subscription. 120 capsules (4/day, 30 servings). 3 ingredients. 46 reviews, 4.78 average rating. **Suggested use: 4 capsules about 3 hours before wanting to fall asleep** (v2 label; v1 said 2 hours).
 
-**V2 formula (launched 2026-08; batch BN-C461).** V1 (300mcg immediate-release melatonin, 2,500mg glycine, magnesium glycinate) is superseded — do not quote V1 doses.
+**V2 formula (launched 2026-08; batch BN-C461, batch sheet dated Feb 2026).** V1 (300mcg immediate-release melatonin, 2,500mg glycine, magnesium glycinate not fully chelated, "2 hours before" timing) is superseded — quote V1 doses only when explaining what changed. Web surfaces moved to v2 2026-09-07 (product template, /pages/sleep-faq, llms.txt).
 
 - Melatonin 0.8mg, 8-hour sustained release (Melotime®) — releases steadily through the night rather than the all-at-once spike of typical products, closer to the body's own overnight melatonin curve. Still a deliberately low dose: most competitors use 3-5mg immediate-release, far more than the body produces naturally, which can cause next-day grogginess and daytime melatonin elevation.
 - Magnesium Bisglycinate 126mg elemental, fully chelated — each magnesium bound to glycine, a highly absorbable form that supports relaxation and reduces time to fall asleep by ~17 min (meta-analysis). No laxative effect unlike other magnesium forms.
 - Glycine 2,400mg — calming neuromodulator that lowers core body temperature at bedtime. Three RCTs show improved sleep quality, faster sleep onset, reduced next-day fatigue. (Total includes the glycine delivered by the magnesium chelate.)
 
-Third-party tested: certified by Labdoor (cert LTSCERT-151, released 2026-07, independent analysis by Eurofins) — label accuracy (all three actives at full labelled dose), purity (heavy metals far below USP daily limits), and microbiology all passed.
+Third-party tested: certified by Labdoor (cert LTSCERT-151, released 2026-07, independent analysis by Eurofins) — label accuracy (all three actives at full labelled dose), purity (heavy metals far below USP daily limits), and microbiology all passed. Public report: https://labdoor.com/review/dr-brad-stanfield-sleep
 
 Clean: plant-based (spirulina extract for color), no artificial colors, no fillers, no titanium dioxide, non-habit-forming. Value: $38.09/mo separately vs $36/mo subscription.
 
 ### Sleep by Dr Brad FAQ
 
 **Why does Sleep by Dr Brad use 0.8mg of sustained-release melatonin?**
-Most competitor supplements use 3-5mg of immediate-release melatonin — far more than the body produces overnight — which hits all at once, then fades, and can cause next-day grogginess, daytime melatonin elevation, and receptor desensitization. Sleep instead uses 0.8mg of sustained-release melatonin (Melotime®), which releases steadily for up to 8 hours — a low dose delivered on a curve closer to the body's own overnight pattern. An umbrella review of melatonin efficacy confirmed low-dose melatonin is effective for sleep onset without significant adverse effects (Low et al., J Psychiatr Res, 2020).
+The body makes roughly 10-80mcg of melatonin a night; direct measurement puts most adults at 20-35mcg (Fourtillan et al., Am J Physiol Endocrinol Metab, 2001; Mahle et al., 2004; range statement in Kor et al., Indian J Endocrinol Metab, 2014). Only ~15% of oral melatonin is absorbed (DeMuro et al., J Clin Pharmacol, 2000), so 0.8mg delivers ~120mcg to the bloodstream, released across the evening and night rather than in one spike. Sustained-release (Melotime®) pharmacokinetics: half the peak of immediate-release, half-life ~5.1h vs ~1.0h (Thanawala et al., Pharmaceutics, 2024). Most competitor supplements use 3-5mg of immediate-release melatonin, which hits all at once, then fades, and can cause next-day grogginess, daytime melatonin elevation, and receptor desensitization (Zhdanova et al., J Clin Endocrinol Metab, 2001: 3mg kept melatonin elevated into daylight and lowered body temperature; 0.3mg restored sleep efficiency). An umbrella review confirmed low-dose melatonin is effective for sleep onset without significant adverse effects (Low et al., J Psychiatr Res, 2020).
+
+**What changed in Sleep version 2 (vs version 1)?**
+Three changes, batch dated Feb 2026, on sale from Aug 2026; price, 4-capsule serving and 30-serving bottle unchanged. (1) Melatonin 0.3mg immediate-release → 0.8mg sustained-release (Melotime®): immediate-release is mostly gone within a few hours, so v1 did nothing for people who woke mid-night; v2 releases gradually over ~8 hours, and the nominal dose rose because only ~15% is absorbed and it is now spread across the night (~120mcg absorbed, still far below a 3mg capsule). (2) Magnesium now fully chelated bisglycinate (each Mg bound to two glycines); v1 magnesium glycinate was not fully chelated; elemental Mg unchanged at 126mg. (3) Glycine 2,500mg → 2,400mg: the label now counts the glycine in the magnesium chelate, and 2,400mg is the most that fits in 4 capsules (glycine trials used 3g). Suggested timing moved from 2 hours to 3 hours before wanting to fall asleep. v2 is Labdoor-certified (LTSCERT-151).
+
+**When should I take Sleep by Dr Brad?**
+4 capsules about 3 hours before you want to fall asleep. Melatonin works best taken before the body's own evening melatonin rises, which shifts the sleep-wake cycle earlier; the sustained-release form then keeps a low level going through the night.
 
 **Will Sleep by Dr Brad make me groggy in the morning?**
 The low 0.8mg dose is designed to finish releasing within the night, unlike 3-5mg doses that keep melatonin levels elevated into daylight hours. Additionally, Glycine (2,400mg) specifically reduces next-day fatigue — three randomized controlled trials showed glycine (3g before bed) improved subjective sleep quality, reduced daytime fatigue, and shortened time to deep sleep (Inagawa et al., 2006; Yamadera et al., 2007; Bannai et al., 2012). Customers report waking with greater energy and mental clarity.
@@ -212,7 +218,7 @@ Glycine (2,400mg) is a calming neuromodulator that lowers core body temperature 
 No. The low-dose sustained-release melatonin (0.8mg) works with your body's natural sleep cycle rather than overriding it. Unlike high-dose melatonin supplements (3-5mg) which can cause tolerance buildup, the low dose in Sleep by Dr Brad supports your existing circadian rhythm without creating reliance.
 
 **How is Sleep by Dr Brad different from other sleep supplements?**
-Three key differences: (1) Low-dose sustained-release melatonin — 0.8mg Melotime® releasing over up to 8 hours, vs the industry standard 3-5mg immediate-release spike; low-dose melatonin is effective without the side effects of high doses (Low et al., J Psychiatr Res, 2020). (2) Three complementary ingredients that target different sleep mechanisms: melatonin for circadian signaling, fully chelated magnesium bisglycinate for relaxation and reduced sleep latency (~17 min per meta-analysis — Arab et al., Biol Trace Elem Res, 2023; Schuster et al., Nat Sci Sleep, 2025), and glycine for core temperature regulation. (3) Clean, verified formula — plant-based capsules colored with spirulina extract, no artificial colors, no fillers, no titanium dioxide; third-party tested by Labdoor with analysis by Eurofins.
+Three key differences: (1) Low-dose sustained-release melatonin — 0.8mg Melotime® releasing over up to 8 hours (half-life ~5h vs ~1h immediate-release, Thanawala et al., 2024), vs the industry standard 3-5mg immediate-release spike; low-dose melatonin is effective without the side effects of high doses (Low et al., J Psychiatr Res, 2020). (2) Three complementary ingredients that target different sleep mechanisms: melatonin for circadian signaling, fully chelated magnesium bisglycinate for relaxation and reduced sleep latency (~17 min per meta-analysis — Arab et al., Biol Trace Elem Res, 2023; Schuster et al., Nat Sci Sleep, 2025), and glycine for core temperature regulation. (3) Clean, verified formula — plant-based capsules colored with spirulina extract, no artificial colors, no fillers, no titanium dioxide; third-party tested by Labdoor with analysis by Eurofins (https://labdoor.com/review/dr-brad-stanfield-sleep).
 
 **How much does Sleep by Dr Brad cost compared to buying the ingredients separately?**
 Sleep by Dr Brad costs $36/month on subscription ($40 one-time). Buying the three ingredients separately from quality supplement brands would cost approximately $38.09/month. You save $2.09/month plus the convenience of one product instead of three separate bottles.
@@ -265,8 +271,8 @@ Use this guide to match a shopper's primary concern to the right product.
 | Low energy / fatigue | MicroVitamin or MicroVitamin+ Powder | Full B-complex for energy metabolism + magnesium for cellular energy + bioavailable trace minerals. Not a stimulant — sustainable energy from filling nutrient gaps |
 | Can't fall asleep | Sleep by Dr Brad | Melatonin 0.8mg sustained release (circadian signal) + Magnesium Bisglycinate (reduces sleep latency ~17 min) + Glycine (lowers core temperature) |
 | Poor sleep quality / waking at night | Sleep by Dr Brad | Glycine 2,400mg promotes deeper sleep architecture with fewer wake-ups; 8-hour sustained-release melatonin covers the whole night. Magnesium supports sustained relaxation |
-| Melatonin grogginess / dependency fears | Sleep by Dr Brad | Only 0.8mg sustained-release melatonin vs industry standard 3-5mg immediate-release. No receptor desensitization, no next-day grogginess, non-habit-forming |
-| Morning fatigue / waking tired | Sleep by Dr Brad | Glycine reduces next-day fatigue (3 RCTs). Micro-dose melatonin clears by morning unlike high-dose products |
+| Melatonin grogginess / dependency fears | Sleep by Dr Brad | Only 0.8mg sustained-release melatonin (~120mcg absorbed) vs industry standard 3-5mg immediate-release. Low level throughout, faded by morning; non-habit-forming |
+| Morning fatigue / waking tired | Sleep by Dr Brad | Glycine reduces next-day fatigue (3 RCTs). Low-dose sustained-release melatonin stays low and has faded by morning, unlike high-dose products |
 
 ### Capsules vs Powder — how to decide
 
@@ -751,6 +757,7 @@ These may reflect differences between the formula files (design intent) and what
 - Low-dose melatonin efficacy: Low et al., 2020 — https://doi.org/10.1016/j.jpsychires.2019.11.001
 - Glycine sleep RCTs: Inagawa 2006, Yamadera 2007, Bannai 2012
 - Magnesium sleep: Arab et al., 2023 — https://doi.org/10.1007/s12011-022-03232-w; Schuster et al., 2025 — https://doi.org/10.2147/NSS.S524348
+- Melatonin physiology + pharmacokinetics (Sleep v2): Fourtillan 2001 — https://doi.org/10.1152/ajpendo.2001.280.1.E11; DeMuro 2000 (15% bioavailability) — https://doi.org/10.1177/009127000004000712; Zhdanova 2001 (0.1/0.3/3mg) — https://doi.org/10.1210/jcem.86.10.7901; Thanawala 2024 (sustained- vs immediate-release PK) — https://doi.org/10.3390/pharmaceutics16101248; Kor 2014 (10-80mcg range statement) — https://doi.org/10.4103/2230-8210.137521
 - Creatine (performance): Kreider et al., 2017 — https://doi.org/10.1186/s12970-017-0173-z
 - Creatine (cognition, 16 RCTs meta-analysis): Xu et al., 2024 — memory SMD=0.31, effects strongest in older adults and females
 - Collagen peptides: Kim et al., 2022 — https://doi.org/10.1089/jmf.2022.0039; Pu et al., 2023 — https://doi.org/10.3390/nu15092080
