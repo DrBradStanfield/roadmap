@@ -36,6 +36,7 @@ import type { FileDocument, FileLabValue, FileMeasurement, FileReminderOptIn, Ro
 import type { SyncManager } from './sync-manager';
 import { formatDisplayValue, getDisplayLabel, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
 import { DROPBOX_APP_FOLDER, IMPORT_ACCEPTED_TYPES, IMPORT_FILE_REASONS, IMPORT_REFUSALS, importHint } from './import-hints';
+import { LAB_ARCHIVE_TITLE } from './document-path';
 import { DOCUMENT_TYPES, type DocumentType, healthInputSchema, METRIC_TYPES } from './validation';
 import { z } from 'zod';
 
@@ -867,9 +868,6 @@ export const IMPORT_HOSTED_ONLY =
   'import_documents needs a server that can read files and reach the extraction model, and this one cannot. ' +
   'Use the website’s upload, or connect the hosted connector. Nothing was read and nothing was written.';
 
-/** Title of the row the website's upload writes for a lab PDF it archives; the connector writes the same row without the blob. */
-const LAB_ARCHIVE_TITLE = 'Blood test results';
-
 /** The live row a file already has in the record, and which key found it. */
 export interface ImportedMatch {
   row: FileDocument;
@@ -1029,13 +1027,11 @@ export function prepareImport(
       // `no_date` here would ask for the date the user just gave.
       const given = ctx.fileDates?.[name];
       const own = given === undefined ? null : resolveRecordedAt(given, ctx);
-      if (own && typeof own !== 'string') {
-        files.push({ ...report, status: 'failed', reason: 'bad_date', hint: importHint('bad_date', own.message) });
-        continue;
-      }
-      const day = own ?? validDay(result.reportDate, ctx);
+      const refused = typeof own === 'string' ? null : own;
+      const day = typeof own === 'string' ? own : refused ? null : validDay(result.reportDate, ctx);
       if (!day) {
-        files.push({ ...report, status: 'failed', reason: 'no_date', hint: importHint('no_date') });
+        const reason = refused ? 'bad_date' : 'no_date';
+        files.push({ ...report, status: 'failed', reason, hint: importHint(reason, refused?.message) });
         continue;
       }
       report.documentDate = day;

@@ -18,7 +18,7 @@ import {
 import { getCurrentDateValue } from './DatePicker';
 import type { ExtractedValue, AdditionalLabValue, ApiDocument, ApiLabValue, DocumentResult, UploadHistory } from '../lib/api-types';
 import { labValueLabel } from '../lib/lab-value-labels';
-import { countConnectorOriginals } from '../lib/archive-payloads';
+import { connectorOriginals } from '../lib/archive-payloads';
 import { useMatrixScrollSync } from '../lib/useMatrixScrollSync';
 import { NumericInputCell } from './NumericInputCell';
 import { DraftDateCell } from './DraftDateCell';
@@ -565,7 +565,7 @@ export function ReviewTable({
   // selected (US-13 AC1 / US-35 AC8).
   const archiveCount = useMemo(() => {
     const selectedDocs = new Set(results.filter((r, fi) => r.document && docChecked[fi]).map((r) => r.fileName));
-    return countConnectorOriginals(results, history.documents, selectedDocs);
+    return connectorOriginals(results, history.documents, selectedDocs).length;
   }, [results, history.documents, docChecked]);
   const nothingSelected = selectedCount === 0 && selectedAdditionalCount === 0 && selectedDocCount === 0;
 

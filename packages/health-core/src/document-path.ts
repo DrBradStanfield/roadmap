@@ -14,6 +14,14 @@
  */
 import type { DocumentType } from './validation';
 
+/**
+ * Title of the row the website's upload writes for a lab PDF it archives
+ * (`synthesizeLabArchiveEntries`), which its Documents list hides: the values
+ * are the record, the row is the file. The connector writes the same row
+ * without the blob, and the widget's `isLabArchiveDocument` recognises it.
+ */
+export const LAB_ARCHIVE_TITLE = 'Blood test results';
+
 /** AI classification → human folder. Few folders, deliberately. */
 export const DOCUMENT_FOLDERS: Record<DocumentType, string> = {
   pathology_report: 'Lab results',

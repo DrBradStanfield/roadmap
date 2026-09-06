@@ -7,6 +7,7 @@
  * Blobs are only attached to results when the backend can archive them
  * (getDocumentArchiveMode() === 'cloud'), so off-cloud this returns [].
  */
+import { LAB_ARCHIVE_TITLE } from '@roadmap/health-core';
 import type { FileResult } from '../components/ReviewTable';
 import type { ApiDocument } from './api-types';
 
@@ -48,7 +49,7 @@ export function isLabArchiveDocument(doc: {
   if (doc.metadata?.[LAB_ARCHIVE_FLAG] === true) return true;
   return (
     doc.documentType === 'pathology_report' &&
-    doc.title === 'Blood test results' &&
+    doc.title === LAB_ARCHIVE_TITLE &&
     doc.contentMd.trim() === ''
   );
 }
@@ -82,21 +83,13 @@ function isArchivableFile(r: FileResult, alreadyCovered: Set<string | null>): bo
  * file. Saving archives the original behind the row already in the record
  * (US-13 AC1), so the review offers Save even with nothing selected.
  */
-function connectorOriginals(
+export function connectorOriginals(
   results: FileResult[],
   existing: ReadonlyArray<Pick<ApiDocument, 'contentHash' | 'fileRef'>>,
   alreadyCovered: Set<string | null>,
 ): FileResult[] {
   const pending = new Set(existing.filter((d) => d.contentHash && !d.fileRef).map((d) => d.contentHash));
   return results.filter((r) => isArchivableFile(r, alreadyCovered) && pending.has(r.contentHash));
-}
-
-export function countConnectorOriginals(
-  results: FileResult[],
-  existing: ReadonlyArray<Pick<ApiDocument, 'contentHash' | 'fileRef'>>,
-  alreadyCovered: Set<string | null> = new Set(),
-): number {
-  return connectorOriginals(results, existing, alreadyCovered).length;
 }
 
 /**
@@ -132,7 +125,7 @@ export function synthesizeLabArchiveEntries(
     if (r.document || !isArchivableFile(r, alreadyCovered)) continue;
     out.push({
       documentType: 'pathology_report',
-      title: 'Blood test results',
+      title: LAB_ARCHIVE_TITLE,
       documentDate: r.reportDate,
       contentMd: '',
       metadata: { [LAB_ARCHIVE_FLAG]: true },

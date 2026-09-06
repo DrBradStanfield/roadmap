@@ -1,8 +1,8 @@
 {
   "instruction": "Present this plan in your own words if you like, but keep it faithful: each suggestion’s hedged wording (\"may support\", \"evidence suggests\") is calibrated — never upgrade it into a recommendation — and every reference stays attached to the suggestion it belongs to. This is educational, not medical advice: say so, and tell the user to take it to their doctor.",
   "schemaVersion": 1,
-  "generatedAt": "2026-09-04T01:23:20.786Z",
-  "today": "2026-09-04",
+  "generatedAt": "2026-09-06T22:27:59.938Z",
+  "today": "2026-09-07",
   "unitSystem": "si",
   "profile": {
     "sex": "male",
@@ -15,6 +15,7 @@
     "proteinTargetG": 92
   },
   "inputs": {
+    "apoB": 0.92,
     "waistCm": 103,
     "diastolicBp": 86,
     "hdlC": 1.2,
@@ -23,7 +24,6 @@
     "triglycerides": 1.9,
     "totalCholesterol": 4.4,
     "creatinine": 88,
-    "apoB": 0.92,
     "systolicBp": 138,
     "ldlC": 2.1,
     "weightKg": 92.4,

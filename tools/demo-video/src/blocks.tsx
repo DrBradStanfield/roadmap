@@ -244,17 +244,19 @@ export type ResultRow = {file: string; status: string; tone?: 'new' | 'same' | '
 const STATUS_COLOR = {new: T.accent, same: T.ink3, differ: T.amber, filed: T.ink2};
 
 /** Compact File / Result table; rows stagger in after `at`. */
-export const ResultsTable: React.FC<{rows: ResultRow[]; frame: number; at: number; fps: number}> = ({
-  rows,
-  frame,
-  at,
-  fps,
-}) => (
+export const ResultsTable: React.FC<{
+  rows: ResultRow[];
+  frame: number;
+  at: number;
+  fps: number;
+  stagger?: number;
+  statusW?: number;
+}> = ({rows, frame, at, fps, stagger = 6, statusW = 250}) => (
   <Card frame={frame} at={at} fps={fps} style={{padding: '6px 20px 8px'}}>
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 250px',
+        gridTemplateColumns: `1fr ${statusW}px`,
         gap: 12,
         padding: '10px 0 8px',
         borderBottom: `1px solid ${T.line}`,
@@ -267,7 +269,7 @@ export const ResultsTable: React.FC<{rows: ResultRow[]; frame: number; at: numbe
       <div>Result</div>
     </div>
     {rows.map((r, i) => {
-      const {opacity, s} = enter(frame, at + 8 + i * 6, fps);
+      const {opacity, s} = enter(frame, at + 8 + i * stagger, fps);
       return (
         <div
           key={r.file}
@@ -275,7 +277,7 @@ export const ResultsTable: React.FC<{rows: ResultRow[]; frame: number; at: numbe
             opacity,
             transform: `translateY(${interpolate(s, [0, 1], [6, 0])}px)`,
             display: 'grid',
-            gridTemplateColumns: '1fr 250px',
+            gridTemplateColumns: `1fr ${statusW}px`,
             gap: 12,
             alignItems: 'center',
             padding: '9px 0',

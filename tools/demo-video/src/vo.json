@@ -1,0 +1,11 @@
+[
+  {"beat": 0, "start": 0, "text": "Every new chat starts from nothing. Your health record should not. AI assistants give better answers from structured data. Health by Dr Brad keeps your blood tests, clinic letters, height, weight and more as one structured record, updated whenever you add to it. One file, owned only by you, in your own Dropbox. Every assistant, every chat, the same record. And Dr Brad's protocol behind every suggestion, with the citations."},
+  {"beat": 1, "start": 10, "text": "First, connect. You choose Dropbox or Google Drive. Your assistant reads and writes one file there. Nothing is stored on our server."},
+  {"beat": 2, "start": 18, "text": "Drag your ZIP file of your health data, such as blood test results and clinic letters, into the chat and ask for an import. The first time, the assistant asks your permission to run the tool."},
+  {"beat": 3, "start": 26, "text": "The file passes through Dr Brad's server and the extraction model, and is not kept. The assistant checks every value against what your record already holds: new, already recorded, or different. Nothing is filed yet."},
+  {"beat": 4, "start": 40, "text": "You say yes, and the values and the letter go into the one file in your Dropbox, as structured data your assistant can use next time. Nothing is written until you say so, and nothing is ever deleted."},
+  {"beat": 5, "start": 48, "text": "Ask what your plan says. It is Dr Brad's own protocol, computed from your file, with the reason and the citation behind each suggestion."},
+  {"beat": 6, "start": 60, "text": "Open the website and the same values are already there, because it is one file, not a copy."},
+  {"beat": 7, "start": 66, "text": ""},
+  {"beat": 8, "start": 70, "text": ""}
+]

@@ -278,6 +278,7 @@ export {
   buildDocumentRef,
   DOCUMENT_FOLDERS,
   extensionOf,
+  LAB_ARCHIVE_TITLE,
   sanitizeTitle,
   splitDocumentRef,
 } from './document-path';

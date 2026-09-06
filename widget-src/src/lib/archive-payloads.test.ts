@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   isLabArchiveDocument,
   synthesizeLabArchiveEntries,
-  countConnectorOriginals,
+  connectorOriginals,
   connectorDocumentEntries,
   LAB_ARCHIVE_FLAG,
 } from './archive-payloads';
@@ -90,26 +90,26 @@ describe('isLabArchiveDocument', () => {
 
 // US-13 AC1 / US-35 AC8 — the connector's metadata-only row (hash, no fileRef)
 // is what a website upload of the same bytes archives behind.
-describe('countConnectorOriginals', () => {
+describe('connectorOriginals', () => {
   const doc = (over: Partial<{ contentHash: string | null; fileRef: string | null }>) =>
     ({ contentHash: 'sha256-a', fileRef: null, ...over });
 
   it('counts a value-bearing file whose hash matches a row without a fileRef', () => {
-    expect(countConnectorOriginals([result({ file: blob(), contentHash: 'sha256-a' })], [doc({})])).toBe(1);
+    expect(connectorOriginals([result({ file: blob(), contentHash: 'sha256-a' })], [doc({})], new Set()).length).toBe(1);
   });
 
   it('ignores an archived row, a different hash, and files the archive step would skip', () => {
-    expect(countConnectorOriginals([result({ file: blob(), contentHash: 'sha256-a' })], [doc({ fileRef: 'Lab results/a.pdf' })])).toBe(0);
-    expect(countConnectorOriginals([result({ file: blob(), contentHash: 'sha256-b' })], [doc({})])).toBe(0);
-    expect(countConnectorOriginals([result({ contentHash: 'sha256-a' })], [doc({})])).toBe(0); // no blob (device-only)
-    expect(countConnectorOriginals([result({ file: blob(), contentHash: 'sha256-a', values: [] })], [doc({})])).toBe(0);
+    expect(connectorOriginals([result({ file: blob(), contentHash: 'sha256-a' })], [doc({ fileRef: 'Lab results/a.pdf' })], new Set()).length).toBe(0);
+    expect(connectorOriginals([result({ file: blob(), contentHash: 'sha256-b' })], [doc({})], new Set()).length).toBe(0);
+    expect(connectorOriginals([result({ contentHash: 'sha256-a' })], [doc({})], new Set()).length).toBe(0); // no blob (device-only)
+    expect(connectorOriginals([result({ file: blob(), contentHash: 'sha256-a', values: [] })], [doc({})], new Set()).length).toBe(0);
   });
 
   it('counts an unselected document (any type) whose hash matches a row without a fileRef, not one already selected', () => {
     const letter = result({ fileName: 'letter.pdf', values: [], file: blob(), contentHash: 'sha256-a', document: LETTER });
-    expect(countConnectorOriginals([letter], [doc({})])).toBe(1);
-    expect(countConnectorOriginals([letter], [doc({})], new Set(['letter.pdf']))).toBe(0);
-    expect(countConnectorOriginals([letter], [doc({ fileRef: 'Letters/a.pdf' })])).toBe(0);
+    expect(connectorOriginals([letter], [doc({})], new Set()).length).toBe(1);
+    expect(connectorOriginals([letter], [doc({})], new Set(['letter.pdf'])).length).toBe(0);
+    expect(connectorOriginals([letter], [doc({ fileRef: 'Letters/a.pdf' })], new Set()).length).toBe(0);
   });
 });
 
