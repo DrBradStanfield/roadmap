@@ -52,12 +52,19 @@ Claude needs no equivalent step. If you use both, [connecting Claude](/blogs/gui
 
 It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same one the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. It corrects a value that went in wrong. It changes four things about you: your sex, your birth year, your birth month and your height, the four your plan is worked out from. And if a tool refuses something you reasonably expected, it reports the problem for you: a public issue on the project's GitHub, filed as you ask, carrying its description and nothing about you or your values.
 
-It can now import lab files, too. On the web, in a browser, ask it to import the lab
-files sitting in your Dropbox folder and it reads the PDFs and images there. On
-ChatGPT's desktop app you can instead drag a file straight into the conversation.
-Either way it shows you candidate values before anything is saved: accept the ones
-that look right and it writes them, filing the document itself as a record with no
-text or image kept, just its name and date. The file you import goes through our
+It can now import lab files, too. Two ways in. In a desktop browser you can drop a
+file straight into the conversation: a PDF, a JPEG or PNG photo, or a ZIP of them.
+Or put the files in your Dropbox folder (`Apps/Health Plan by Dr Brad`) and ask it to
+import them: it reads five folder files at a time, or one ZIP of up to twenty, and
+tells you what is left. The folder route works from any device, needs no file in the
+chat, and is the way round two limits of ChatGPT's own: its phone apps do not hand
+files to apps yet, and its free tier pauses chats with files after a few in a row.
+An iPhone HEIC photo is not read either way; share it as a JPEG, or take a screenshot.
+Whatever it cannot read, it tells you why and what to do. Either way it shows you
+candidate values, in the units your record uses, before anything is saved: accept the
+ones that look right and it writes them, filing the document itself as a record with
+no text or image kept, just its name and date. A report with no printed date is not
+lost: it asks you when the test was taken and files it on that day. The file you import goes through our
 server to Anthropic's API for extraction and is kept nowhere — a different path from
 the website's own upload, which reads the PDF in your browser and sends only the
 extracted text to our server.

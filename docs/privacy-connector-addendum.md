@@ -19,8 +19,9 @@ length of that request and nowhere else.
 If you ask your assistant to import a lab file, that file — not your record — is held
 in server memory for one request and sent to Anthropic's API for extraction, then kept
 nowhere. The candidate values it finds are written to YOUR folder, as
-`imports/pending-<id>.json`, until you confirm them or an hour passes, whichever comes
-first.
+`imports/pending-<id>.json`, until you confirm them. A pending file you never confirm
+stays up to 24 hours and is swept on the next import; the receipt that names it expires
+after an hour.
 
 ## What we store
 

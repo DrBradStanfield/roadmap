@@ -88,7 +88,9 @@ credential. Never the open web, never another user's record. Two are the excepti
 is marked open-world: it touches no health record, and it files an issue on GitHub. `import_documents`
 is marked open-world too: it sends a file to Anthropic's API for extraction, and on the ChatGPT file
 route it first fetches that file from OpenAI's own file hosts (`files.oaiusercontent.com`, or the
-`oaisdmntprn*.blob.core.windows.net` blob store ChatGPT hands out).
+`oaisdmntprn*.blob.core.windows.net` blob store ChatGPT hands out — a namespace, not a closed list, so
+what bounds that fetch is the per-connection daily file quota and that the bytes only ever become
+candidates the same user must confirm).
 
 - **`read_record`**
   - *Read-only:* Reads only. It fetches the record, filters it and returns rows. Nothing is written back.

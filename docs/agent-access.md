@@ -161,9 +161,11 @@ user connects once and then asks in words. It offers eight tools — `read_recor
 `report_feedback`, `import_documents` —
 over the user's own Dropbox or Google Drive folder, and it enforces the rules above in
 code rather than asking you to keep them. `import_documents` reads lab PDFs or images
-(or a ZIP of them) and proposes values for you to accept — the file itself is sent to
-Anthropic's API for extraction, under our key, and is not kept; nothing else here
-reaches a model we run.
+(or a ZIP of them) and proposes values for you to accept, in the record's own unit
+system — the file itself is sent to Anthropic's API for extraction, under our key, and
+is not kept; nothing else here reaches a model we run. A file it cannot read comes back
+with a `hint` in plain words (the type, the size limit, the day's quota, a missing date
+— answered with `fileDates`), and `next` says what to do with what it found.
 Every tool declares an `outputSchema` and answers with `structuredContent` beside the
 text: the same answer typed, so a row id is read, not parsed out of a sentence. A refusal
 carries none — it is an error result.

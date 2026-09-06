@@ -44,8 +44,15 @@ of truth for acceptance criteria and the schemas live in
    read and delete — and the REST adapters hand it to `fetch`. 5 folder
    files per call by default with `remaining` naming the rest, per-file
    partial results, extraction HTTP timeout min(20 s, what is left) with no
-   retry, inner or outer, on this path; an extract's I/O ends 4 s before
-   the deadline so slotting and the stash fit inside it. PDFs/images ≤5 MB, ZIP ≤20 MB, ≤20 entries,
+   retry, inner or outer, on this path, and the `{`-prefill second call
+   shares the first call's deadline (`extractOrClassifyOnce` computes one
+   `until` for the pair); an extract's I/O ends 4 s before the deadline so
+   slotting and the stash fit inside it. What time cut off is `remaining` on
+   BOTH routes and its day's charge is refunded (`createQuotaCounter.refund`);
+   `next` says commit first, then ask again. Non-lab documents are asked for
+   metadata only (`documentMode: 'metadata'`: title, date, a one-line
+   summary, 2048 tokens) — the connector files no text, so a four-page
+   letter no longer runs past the budget; the website keeps the full prompt. PDFs/images ≤5 MB, ZIP ≤20 MB, ≤20 entries,
    inflate counted on the stream, type by magic bytes per entry, entries by
    position. Dropbox: list the root, download by `id`, files only, names
    control-stripped.
@@ -72,10 +79,15 @@ of truth for acceptance criteria and the schemas live in
    `_meta['openai/fileParams']`, exact four-property `file` schema, fetch
    only from OpenAI's file hosts over https, no redirects, 10 s. Two forms,
    both from field reports: `files.oaiusercontent.com` exactly, or the
-   region-suffixed Azure blob family `^oaisdmntprn[a-z0-9-]*\.blob\.core\.windows\.net$`
+   region-suffixed Azure blob family `^oaisdmntprn[a-z0-9]*\.blob\.core\.windows\.net$`
    (live 2026-09-05 the URL was `oaisdmntprnznorth.blob.core.windows.net`,
-   and the exact-host list refused it). `CHATGPT_FILE_HOSTS` adds exact
+   and the exact-host list refused it). Honestly a namespace, not a closed
+   list (2026-09-07 review): any Azure account named `oaisdmntprn…` passes,
+   so the real bound is the daily file quota and that fetched bytes only ever
+   become candidates the same user confirms. `CHATGPT_FILE_HOSTS` adds exact
    hosts on top. A refused drag counts as `mcp_import {route: chatgpt_refused}`.
+   The phone apps hand over a bare `chat_upload://` reference: the schema
+   refuses it with the mobile sentence (use a computer, or the folder).
 9. Honesty: consent page, privacy addendum, agent-access, listing, guides,
    architecture map, READMEs and `.env.example` say the connector route sends
    the file through Brad's server and to the extraction model and keeps
@@ -91,4 +103,27 @@ of truth for acceptance criteria and the schemas live in
     stay out of `next`: it is the field the assistant follows.
 11. stdio: the tool is listed and refuses ("hosted only") — a local path was
     not taken up: the local server has no model.
+13. Plain words for every failure (2026-09-07 heavy review, 20 findings +
+    a live ChatGPT drag trial): `packages/health-core/src/import-hints.ts`
+    is ONE closed table — reason → a sentence naming the limit and the way
+    round it (accepted types + HEIC, 5/20 MB caps vs the website's 10, the
+    30-a-day quota, the hour's allowance, time, unreadable, too_many) — plus
+    the whole-call refusals (mobile drag, empty folder, malformed commit or
+    arguments). Every `files[]` entry that was not read carries `hint`;
+    `next` is short (counts, one instruction, the continuation) and points at
+    `hint`, `question`, `unrecognized` and `sameDayAs` rather than repeating
+    them, so document text never rides in it; a raw zod message is never
+    shown. The limits are defined in the table (`IMPORT_LIMITS`) and the
+    server's caps derive from it.
+14. Dedup is hash-first: `isAlreadyImported` matches `contentHash`, and a
+    name alone only against a row that has no hash; the reason names the row's
+    file and date. A nameless ChatGPT drag is named from its bytes
+    (`file-<sha8>.pdf`), never the shared word `file`.
+15. Units: candidates are shown in the record's `profile.unitSystem`
+    (`displayValue`/`displayUnit`), stored canonical, and slot equality is
+    judged in that system. A missing collection date is answered by the
+    caller's `fileDates: {name: 'YYYY-MM-DD'}`, which wins over the print.
+    Two files offering one (metric, day) are both shown, the second marked
+    `sameDayAs`; a commit accepting both is refused in words. Sentry gets a
+    fixed message and the error class, never a parse message.
 
