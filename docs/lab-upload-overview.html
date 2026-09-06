@@ -269,7 +269,7 @@
   <!-- HERO                                                            -->
   <!-- ============================================================== -->
   <header class="hero">
-    <div class="eyebrow">Architecture overview · Extraction pipeline (v1 storage path shown)</div>
+    <div class="eyebrow">Architecture overview · Extraction pipeline (v2 local-first, audited against the code 2026-09-07)</div>
     <h1>Lab Upload — how it works</h1>
     <p class="lead">
       Users drag a lab PDF/image/ZIP into the widget. Claude Haiku calls extract target metrics in
@@ -279,7 +279,7 @@
     </p>
     <div class="meta">
       <span><strong>Shipped:</strong> v341 (March 2026, initial) · redesign May 2026 — commits <code>052ada1</code>, <code>5ab25ad</code>, <code>8f428cb</code>, <code>0f795d7</code>, <code>6a56814</code>, <code>2bce3bf</code></span>
-      <span><strong>Companion doc:</strong> <a href="lab-upload.md">docs/lab-upload.md</a> (implementation detail)</span>
+      <span><strong>Companion docs:</strong> <a href="lab-upload.md">docs/lab-upload.md</a> (implementation detail) · <a href="lab-upload-connector.md">docs/lab-upload-connector.md</a> (the assistant route)</span>
       <span><strong>Status:</strong> <span class="pill pill-good">Shipped</span></span>
     </div>
   </header>
@@ -343,6 +343,7 @@
       <li><a href="#conflict">9 · Upload conflicts — the document vs. the record</a></li>
       <li><a href="#schema">10 · FHIR invariants (status, correctsId, one active row)</a></li>
       <li><a href="#decisions">11 · Design decisions (post-ship)</a></li>
+      <li><a href="#connector">12 · The connector route and a proposal that is NOT built</a></li>
     </ol>
   </nav>
 
@@ -371,12 +372,13 @@
 
       <!-- Zone backgrounds -->
       <rect x="10"  y="20" width="320" height="320" rx="10" fill="#f3f7fb" stroke="#cfdcea" stroke-dasharray="3 3"/>
-      <rect x="340" y="20" width="320" height="320" rx="10" fill="#fbf6ef" stroke="#e6d8b8" stroke-dasharray="3 3"/>
+      <rect x="340" y="20" width="320" height="238" rx="10" fill="#fbf6ef" stroke="#e6d8b8" stroke-dasharray="3 3"/>
+      <rect x="340" y="264" width="320" height="76" rx="10" fill="#f3f7fb" stroke="#cfdcea" stroke-dasharray="3 3"/>
       <rect x="670" y="20" width="320" height="320" rx="10" fill="#f0f7f0" stroke="#cae0ca" stroke-dasharray="3 3"/>
 
       <text x="170" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#3a5a78" letter-spacing="0.06em">BROWSER (widget)</text>
       <text x="500" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#8a6515" letter-spacing="0.06em">REMIX BACKEND (Fly.io)</text>
-      <text x="830" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#2c6b2c" letter-spacing="0.06em">SUPABASE</text>
+      <text x="830" y="42" text-anchor="middle" font-size="12" font-weight="700" fill="#2c6b2c" letter-spacing="0.06em">THE USER'S OWN health-roadmap.json</text>
 
       <!-- Boxes (browser) -->
       <g font-size="12.5" fill="#1a1a1a" text-anchor="middle">
@@ -394,26 +396,26 @@
 
         <rect x="40"  y="274" width="240" height="46" rx="6" fill="#fff" stroke="#7a9bbd"/>
         <text x="160" y="296">Review table</text>
-        <text x="160" y="310" font-size="10" fill="#767676">read-only value · checkbox</text>
+        <text x="160" y="310" font-size="10" fill="#767676">editable cell · conflict = Replace box</text>
       </g>
 
       <!-- Boxes (backend) -->
       <g font-size="12.5" fill="#1a1a1a" text-anchor="middle">
         <rect x="370" y="70"  width="240" height="46" rx="6" fill="#fff" stroke="#c9a85b"/>
-        <text x="490" y="92">api.lab-import</text>
-        <text x="490" y="106" font-size="10" fill="#767676">HMAC · rate-limit 200/day</text>
+        <text x="490" y="92">api.lab-import-v2</text>
+        <text x="490" y="106" font-size="10" fill="#767676">app-proxy HMAC · 60 files/day per IP · machine cap</text>
 
         <rect x="370" y="138" width="240" height="46" rx="6" fill="#fff" stroke="#c9a85b"/>
         <text x="490" y="160">Claude Haiku 4.5</text>
-        <text x="490" y="174" font-size="10" fill="#767676">system prompt hardcoded</text>
+        <text x="490" y="174" font-size="10" fill="#767676">prompt from lab-extraction.ts, never client-supplied</text>
 
         <rect x="370" y="206" width="240" height="46" rx="6" fill="#fff" stroke="#c9a85b"/>
         <text x="490" y="228">resolveLabValues()</text>
-        <text x="490" y="242" font-size="10" fill="#767676">unit lookup + range fallback</text>
+        <text x="490" y="242" font-size="10" fill="#767676">lab-extraction.ts · unit lookup + range fallback</text>
 
-        <rect x="370" y="274" width="240" height="46" rx="6" fill="#fff" stroke="#c9a85b"/>
-        <text x="490" y="296">RoadmapStore bulk save</text>
-        <text x="490" y="310" font-size="10" fill="#767676">in the browser · source: 'lab_import'</text>
+        <rect x="370" y="274" width="240" height="46" rx="6" fill="#fff" stroke="#7a9bbd"/>
+        <text x="490" y="296">RoadmapStore bulk save (BROWSER)</text>
+        <text x="490" y="310" font-size="10" fill="#767676">bulkAppendValues · source: 'lab_import'</text>
       </g>
 
       <!-- Boxes (the user's health-roadmap.json, in their own cloud) -->
@@ -451,7 +453,8 @@
     </svg>
     <div class="diagram-caption">
       The three right-hand boxes are arrays in the user's own <code>health-roadmap.json</code>, not server tables.
-      Hardcoded system prompt + server-side unit resolution mean the client never sees extraction logic.
+      The bulk-save box sits in a browser-coloured strip: it runs in the widget, the backend never sees a save.
+      The prompt and unit resolution live in <code>packages/health-core/src/lab-extraction.ts</code>, imported by the server and the BYOK build alike.
       The dashed return arrow carries <code>{ metric, valueSI, displayValue, displayUnit, confidence, question? }</code>.
     </div>
   </div>
@@ -465,7 +468,7 @@
     <code>UploadModal.tsx</code>). <strong>3 parallel pdf.js extractors</strong> feed a queue;
     <strong>5 LLM workers</strong> drain it. Wall-clock for a 12-file ZIP drops from
     ~50s (concurrency 1) to ~12s (the longest-LLM-call + queue drain). Verified live in
-    Chrome DevTools: max 5 concurrent <code>/api/lab-import</code> calls in flight.
+    Chrome DevTools: max 5 concurrent <code>/api/lab-import-v2</code> calls in flight.
   </p>
 
   <div class="diagram">
@@ -531,7 +534,7 @@
   <ul style="font-size: 14px;">
     <li><strong>Anthropic Build Tier 2 cap.</strong> 80K output tokens/min. Lab-report extraction emits ~500–1,500 output tokens per call (scan/letter markdown conversion is the worst case at ~4K). 5 concurrent calls × 1.5K avg ≈ 7.5K/min — comfortable.</li>
     <li><strong>Extraction parallelism unblocks the pipeline.</strong> pdf.js extraction is CPU-bound on the main thread (~2–3s per file). With 1 extractor, LLM workers starve — they finish in ~5s but the next item isn't ready. 3 extractors keep the queue feeding 5 workers without UI jank.</li>
-    <li><strong>Server-side retry on 429.</strong> <code>callAnthropic()</code> in <code>anthropic.server.ts</code> retries twice with exponential backoff. Absorbs occasional bursts above the per-second cap.</li>
+    <li><strong>Server-side retry.</strong> <code>callAnthropic()</code> in <code>anthropic.server.ts</code> makes at most 2 HTTP attempts (flat 1 s) on 502/503/504/529 and network errors; <code>extractOrClassify()</code> wraps that in 2 outer attempts, each a call plus a <code>{</code>-prefill retry sharing one deadline. The client never retries.</li>
     <li><strong>Verified in production:</strong> 13-call upload on 12-file ZIP showed <code>maxConcurrent = 5</code> in DevTools timing (commit <code>052ada1</code>).</li>
   </ul>
 
@@ -541,7 +544,7 @@
     <code>processBatch()</code> → Anthropic Batch API instead of the interactive pipeline. This
     is <strong>50% cheaper per call</strong> but <strong>async with up to 24h SLA</strong>
     (typically minutes). Used for bulk historical imports (ZIP of a decade of lab reports),
-    not the common 1–5 file case. Polled via <code>/api/lab-import?batchId=&lt;id&gt;</code>.
+    not the common 1–5 file case. Polled via <code>/api/lab-import-v2?batchId=&lt;id&gt;</code>; poll state is per Fly machine, a miss 404s and the client falls back.
   </p>
 
   <!-- ============================================================== -->
@@ -561,7 +564,7 @@
         <rect x="20"  y="60" width="200" height="80" rx="8" fill="#e8f1fb" stroke="#0066cc"/>
         <text x="120" y="92" font-weight="700">1 · Select</text>
         <text x="120" y="110" font-size="11" fill="#4a4a4a">drag-drop · file browser</text>
-        <text x="120" y="124" font-size="11" fill="#4a4a4a">max 20 files · 10MB each</text>
+        <text x="120" y="124" font-size="11" fill="#4a4a4a">max 200 files · 10MB each</text>
 
         <rect x="260" y="60" width="200" height="80" rx="8" fill="#fff4e5" stroke="#b54708"/>
         <text x="360" y="92" font-weight="700">2 · Processing</text>
@@ -570,8 +573,8 @@
 
         <rect x="500" y="60" width="200" height="80" rx="8" fill="#fff" stroke="#1a1a1a" stroke-width="1.5"/>
         <text x="600" y="92" font-weight="700">3 · Review</text>
-        <text x="600" y="110" font-size="11" fill="#4a4a4a">check / uncheck rows</text>
-        <text x="600" y="124" font-size="11" fill="#b42318">value is read-only ←</text>
+        <text x="600" y="110" font-size="11" fill="#4a4a4a">edit / clear cells · tick documents</text>
+        <text x="600" y="124" font-size="11" fill="#4a4a4a">Replace box on conflicts</text>
 
         <rect x="740" y="60" width="200" height="80" rx="8" fill="#e6f4ec" stroke="#027a48"/>
         <text x="840" y="92" font-weight="700">4 · Done</text>
@@ -588,9 +591,11 @@
       </g>
     </svg>
     <div class="diagram-caption">
-      <strong>The redesign-relevant fact:</strong> at state 3, the value is rendered as a
-      <code>&lt;span&gt;</code>, not an input. The user can only check, uncheck, or change the date.
-      See <code>ReviewTable.tsx:428</code>.
+      States are <code>'select' | 'processing' | 'review' | 'done'</code> in <code>UploadModal.tsx</code>.
+      At review, every upload value is an editable input (D1); there is no per-value checkbox. A cell
+      saves when its text is non-empty and clearing it skips the value. Documents have a checkbox.
+      Save is offered even with nothing selected when the bytes match a connector-imported row
+      ("Save 1 Original", §7).
     </div>
   </div>
 
@@ -599,10 +604,12 @@
   <!-- ============================================================== -->
   <h2 id="contract">4 · LLM extraction contract</h2>
   <p>
-    The system prompt lives in <code>app/lib/anthropic.server.ts</code> (hardcoded server-side
-    so a malicious PDF can't override it). One LLM call per file. Two prompts exist:
-    <code>SYSTEM_PROMPT</code> (lab-only, legacy) and <code>UNIFIED_SYSTEM_PROMPT</code>
-    (classify + extract or convert to markdown). Both target the same 11 core metrics.
+    The system prompt is <code>unifiedSystemPrompt(mode)</code> in
+    <code>packages/health-core/src/lab-extraction.ts</code>, imported by the server and the BYOK
+    build; the document only ever rides in the user message, so a malicious PDF can't override it.
+    One LLM call per file. Two modes: <code>'full'</code> (the website: classify, then extract lab
+    values or convert the document to markdown, 8192 tokens) and <code>'metadata'</code> (the
+    connector: title, date, one-line summary, 2048 tokens). Both target the same 11 core metrics.
   </p>
 
   <div class="grid-2">
@@ -631,7 +638,7 @@
   </div>
 
   <h3>Output schema (after server-side unit resolution)</h3>
-  <pre><span class="c">// per file, returned by /api/lab-import</span>
+  <pre><span class="c">// per file, returned by /api/lab-import-v2</span>
 {
   <span class="kv">"reportDate"</span>: <span class="s">"2024-11-21"</span>,
   <span class="kv">"values"</span>: [
@@ -655,7 +662,7 @@
   <h2 id="units">5 · Unit resolution decision tree</h2>
   <p>
     The LLM returns a unit string like <code>"mg/dL"</code> or <code>"g/L"</code>. The backend
-    converts to SI canonical via <code>resolveUnit()</code> in <code>app/lib/anthropic.server.ts</code>.
+    converts to SI canonical via <code>resolveUnit()</code> in <code>packages/health-core/src/lab-extraction.ts</code>.
     The lookup table is built from <code>UNIT_DEFS</code> (auto-populated) plus a handful of
     manual aliases.
   </p>
@@ -731,17 +738,17 @@
       <tr>
         <td><span class="dot dot-high"></span>high</td>
         <td>LLM self-rated "high" <em>and</em> the unit was a direct lookup hit</td>
-        <td>Row pre-checked. No <code>question</code> shown.</td>
+        <td>Plain editable cell. No <code>question</code> shown.</td>
       </tr>
       <tr>
         <td><span class="dot dot-med"></span>medium</td>
         <td>LLM rated "medium", OR LLM rated "high" but unit was inferred via range fallback</td>
-        <td>Row pre-checked. <code>question</code> string shown below row if present.</td>
+        <td>Plain editable cell. <code>question</code> shown if present.</td>
       </tr>
       <tr>
         <td><span class="dot dot-low"></span>low</td>
         <td>LLM rated "low" (ambiguous date, both current+previous visible, etc.)</td>
-        <td>Row <strong>pre-unchecked</strong>. <code>question</code> string shown.</td>
+        <td>Cell <strong>highlighted</strong> (<code>bt-cell-low-confidence</code>), <code>question</code> shown. Still saves unless the user clears it.</td>
       </tr>
     </tbody>
   </table>
@@ -779,7 +786,7 @@
       </tr>
       <tr>
         <td><code>documents[]</code> (+ the original blob)</td>
-        <td>Non-lab classifications (scans, clinic letters, discharge summaries…) and the archived original file</td>
+        <td>Non-lab classifications (scans, clinic letters…) and the archived original file. A lab PDF gets a synthesized <code>pathology_report</code> row with <code>metadata.labArchive: true</code>, hidden from the Documents list. A connector import lands metadata-only: <code>fileRef: ''</code> + <code>contentHash</code>; the next website upload of the same bytes archives the blob into a new row and tombstones that one ("Save 1 Original")</td>
         <td><code>type</code>, <code>title</code>, <code>date</code>, <code>extractedText</code>, <code>metadata</code>, <code>fileRef</code>, <code>contentHash</code>, <code>sourceFileName</code>, <code>deleted</code> tombstone</td>
         <td><span class="pill pill-warn">Tombstone-only</span></td>
       </tr>
@@ -1116,7 +1123,7 @@
       </tr>
       <tr>
         <td><strong>Server-side unit resolution</strong></td>
-        <td>Centralises all unit logic in <code>units.ts</code> + <code>anthropic.server.ts</code>. Client receives values ready to save.</td>
+        <td>Centralises all unit logic in <code>units.ts</code> + <code>lab-extraction.ts</code>. Client receives values ready to save.</td>
         <td>Duplicated logic, more places to drift. Preserve.</td>
       </tr>
       <tr>
@@ -1131,16 +1138,40 @@
       </tr>
       <tr>
         <td><strong>No raw PDF storage</strong></td>
-        <td>Privacy-first. Files never leave the browser; only extracted text/images reach the backend. Backend never persists the file.</td>
+        <td>Privacy-first. On the website route files never leave the browser; only extracted text/images reach the backend. The connector route sends the whole file through the server for one request; nothing is persisted on either route.</td>
         <td>Storing PDFs opens HIPAA scope, S3 costs, encryption-at-rest requirements. Don't overturn lightly.</td>
       </tr>
       <tr>
         <td><strong>Confidence is advisory, not gating</strong></td>
-        <td>Low-confidence rows are pre-unchecked but still visible — the user can override and save them. The system never silently drops a value.</td>
+        <td>Low-confidence cells are highlighted but still editable and still save — the user can clear them. The system never silently drops a value.</td>
         <td>Switching to "gating" (refuse to display low-confidence values) would prevent some bad saves but force users to re-upload more often. Status quo treats the user as the final arbiter.</td>
       </tr>
     </tbody>
   </table>
+
+  <!-- ============================================================== -->
+  <!-- SECTION 12 — CONNECTOR ROUTE + PROPOSAL                          -->
+  <!-- ============================================================== -->
+  <h2 id="connector">12 · The connector route, and a proposal that is NOT built</h2>
+  <p>
+    <strong>Built (US-35, September 2026):</strong> a user's own assistant calls <code>import_documents</code> on
+    mcp.drstanfield.com. Brad's server fetches the file (from the connected Dropbox folder, or a file dragged into
+    ChatGPT on a computer), sends the whole file to the same Haiku pipeline in <code>'metadata'</code> mode with a 40 s
+    budget, slots the values with the same <code>record-edits.ts</code> functions the website uses, parks the
+    candidates in the user's folder and hands back a sealed receipt; a second call commits what the user confirmed.
+    5 files a call, 30 a day per connection, the machine cap shared with the website. Full detail:
+    <a href="lab-upload-connector.md">lab-upload-connector.md</a>.
+  </p>
+  <section style="border:1px solid #e6d8b8;border-left:5px solid #b54708;background:#fff4e5;border-radius:10px;padding:14px 18px;margin:12px 0 24px;">
+    <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#b54708;font-weight:700;margin-bottom:6px;">Proposed, not built · assistant-side extraction (7 September 2026)</div>
+    <p style="margin:6px 0;font-size:13.5px;">
+      The user's own assistant reads the file in its own context and calls the existing write tools with structured
+      rows; our server validates and writes only. Pro: no health file transits Brad's server, no per-file model spend,
+      no receipt machinery. Con: extraction quality and injection resistance become the assistant's, and there is no
+      <code>contentHash</code> for the archive to key on. <strong>Decision pending Brad; an adversarial review is in
+      progress. Nothing in this diagram set describes it.</strong> Detail: lab-upload.md, "Proposed, not built".
+    </p>
+  </section>
 
   <p style="margin-top: 32px; font-size: 12.5px; color: var(--ink-3); border-top: 1px solid var(--line); padding-top: 16px;">
     Canonical sources:
@@ -1151,7 +1182,10 @@
     <code>widget-src/src/storage/roadmap-store.ts</code> (bulk saves, supersede, document archive),
     <code>packages/health-core/src/{merge,roadmap-file,document-path,validation,units}.ts</code>,
     <code>widget-src/src/components/UploadModal.tsx</code> (pipeline + done-screen),
-    <code>widget-src/src/components/ReviewTable.tsx</code> (matrix, inline-edit, conflict cell).
+    <code>widget-src/src/components/ReviewTable.tsx</code> (matrix, inline-edit, conflict cell),
+    <code>widget-src/src/lib/archive-payloads.ts</code> (archive policy, the Original path),
+    <code>packages/health-core/src/record-edits.ts</code> (slot rule, <code>bulkAppendValues</code>),
+    <code>app/lib/mcp-import.server.ts</code> + <code>packages/health-core/src/mcp-tools.ts</code> (the connector route).
   </p>
 
 </div>

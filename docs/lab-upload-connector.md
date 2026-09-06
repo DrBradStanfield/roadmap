@@ -26,7 +26,7 @@ keeps nothing. Consent page, privacy addendum and the tool listing all say so.
 | Route | How | Bound |
 |---|---|---|
 | Folder | The file sits in the root of the connected Dropbox app folder (`Apps/Health Plan by Dr Brad` for new connections). The tool lists the root through the `StorageAdapter`, downloads by id. `fileNames` picks specific files. | 5 files per call (`IMPORT_FILES_PER_CALL`); the rest are named in `remaining` |
-| ChatGPT file | A file dragged into ChatGPT on a computer arrives as `_meta['openai/fileParams']` with a `download_url`. Fetched `https:` only, from OpenAI's file hosts (`files.oaiusercontent.com`, or the `oaisdmntprn*.blob.core.windows.net` family), no redirects, 10 s. | One file (a ZIP counts as one); mobile hands over a bare `chat_upload://` reference and is refused in words |
+| ChatGPT file | A file dragged into ChatGPT on a computer arrives as `_meta['openai/fileParams']` with a `download_url`. Fetched `https:` only, from OpenAI's file hosts (`files.oaiusercontent.com`, or the `oaisdmntprn*.blob.core.windows.net` family), no redirects, 10 s. | One file per call (a ZIP counts as one; several drops = several calls); mobile hands over a bare `chat_upload://` reference and is refused in words |
 
 Google Drive is refused per client before any Drive call: the permission the
 connector holds cannot see files dropped into the folder.
@@ -93,9 +93,13 @@ the first. A nameless drag is named from its bytes (`file-<sha8>.pdf`).
 ## Dates and same-day pairs
 
 No collection date in the file → the value is not offered (`no_date`), and
-the hint asks the assistant to call again with `fileDates: {name: 'YYYY-MM-DD'}`,
-which wins over any printed date; a refused date is `bad_date` with the
-record's own reason first. Two files offering one (metric, day) are both shown,
+the hint asks the assistant to call again with
+`fileDates: [{ "file": "<name as listed>", "date": "YYYY-MM-DD" }]` (a list of
+pairs, not a map: ChatGPT's renderer dropped the map-shaped param, live
+2026-09-07), which wins over any printed date; a refused date is `bad_date`
+with the record's own reason first. Several files dragged into ChatGPT mean
+one call per file; a value already extracted this chat for the same
+(metric, day) is a conflict the moved-slot guard refuses at commit. Two files offering one (metric, day) are both shown,
 the second marked `sameDayAs`; a commit accepting both is refused.
 
 ## Hints
