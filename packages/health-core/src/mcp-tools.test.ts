@@ -928,6 +928,7 @@ import { MemoryAdapter, MemoryCloud } from './memory-adapter';
 import { recordSync } from './roadmap-doc';
 import { ROADMAP_FILE_NAME } from './adapter';
 import type { UnifiedExtractionResult } from './lab-extraction';
+import { IMPORT_FILE_REASONS, IMPORT_LIMITS, IMPORT_REFUSALS, importHint } from './import-hints';
 
 const LAB_DAY = '2026-08-20';
 
@@ -972,7 +973,7 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     const { payload, files, unrecognized } = prepareImport(file, bundleOf([
       extracted('new.pdf', labReport()),
       extracted('same.pdf', ldlOnly(3.4000000001, '2026-07-14')),
-      extracted('twice.pdf', ldlOnly(3.9, '2026-07-14')), // the slot this call already carries: not a second candidate
+      extracted('twice.pdf', ldlOnly(3.9, '2026-07-14')), // the slot this call already carries: offered too, marked (AC6)
     ]), IMPORT_CTX);
     expect(files).toEqual([
       { name: 'new.pdf', status: 'extracted', classification: 'lab_report', documentDate: LAB_DAY },
@@ -983,8 +984,13 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
       ['c1', 'measurement', 'ldl', 'free', 'new.pdf'],
       ['c2', 'lab', 'ferritin', 'free', 'new.pdf'],
       ['c3', 'measurement', 'ldl', 'held_equal', 'same.pdf'],
+      ['c4', 'measurement', 'ldl', 'held_different', 'twice.pdf'],
     ]);
     expect(payload.candidates[2].slot).toEqual({ state: 'held_equal', existingRowId: 'm1', existingValue: 3.4 });
+    // Two files, one day: both are shown, the second names the first, and the user picks one (AC6).
+    expect(payload.candidates[2].sameDayAs).toBeUndefined();
+    expect(payload.candidates[3].sameDayAs).toBe('c3');
+    expect(payload.candidates[3].slot.state).toBe('held_different');
     expect(payload.candidates[1]).toMatchObject({ value: 210, unit: 'ug/L', referenceLow: 30, referenceHigh: 300, recordedAt: LAB_DAY });
     expect(unrecognized).toEqual(['vitamin D: 45 ng/mL']);
     expect(importDocumentsOutput.safeParse({ phase: 'extracted', route: 'dropbox', files, candidates: payload.candidates, documents: [], unrecognized, remaining: [], next: 'x' }).success).toBe(true);
@@ -1020,6 +1026,38 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(unrecognized[0]).toMatch(/^ldl: /);
     expect(unrecognized[1]).toMatch(/core metric/);
     expect(files.slice(1).map((f) => [f.status, f.reason])).toEqual([['failed', 'no_date'], ['failed', 'no_date'], ['failed', 'unreadable']]);
+    // Every file that was not read carries the sentence the assistant relays (AC13).
+    expect(files.slice(1).map((f) => f.hint)).toEqual([importHint('no_date'), importHint('no_date'), importHint('unreadable')]);
+    expect(files[0].hint).toBeUndefined();
+  });
+
+  it('AC13 — the user’s own date for a file that printed none makes its values candidates, and wins over the file’s date', () => {
+    const undated = extracted('photo.jpg', labReport({ reportDate: null }));
+    const dated = extracted('misread.pdf', labReport({ reportDate: '2026-08-01' }));
+    const { payload, files } = prepareImport(base(), bundleOf([undated, dated]), { ...IMPORT_CTX, fileDates: { 'photo.jpg': '2026-08-12', 'misread.pdf': '2026-08-02' } });
+    expect(files.map((f) => [f.name, f.status, f.documentDate])).toEqual([['photo.jpg', 'extracted', '2026-08-12'], ['misread.pdf', 'extracted', '2026-08-02']]);
+    expect(payload.candidates.map((c) => [c.sourceFileName, c.recordedAt])).toEqual([
+      ['photo.jpg', '2026-08-12'], ['photo.jpg', '2026-08-12'], ['misread.pdf', '2026-08-02'], ['misread.pdf', '2026-08-02'],
+    ]);
+    expect(payload.documents.map((d) => d.date)).toEqual(['2026-08-12', '2026-08-02']);
+    // A date the record refuses (the future) is no date at all.
+    const future = prepareImport(base(), bundleOf([undated]), { ...IMPORT_CTX, fileDates: { 'photo.jpg': '2099-01-01' } });
+    expect(future.files[0]).toMatchObject({ status: 'failed', reason: 'no_date' });
+    expect(importDocumentsInput.safeParse({ fileDates: { 'a.pdf': '12 Aug 2026' } }).success).toBe(false);
+    expect(importDocumentsInput.safeParse({ fileDates: { 'a.pdf': '2026-08-12' } }).success).toBe(true);
+  });
+
+  it('AC6 — candidates are shown in the record’s own unit system and stored canonical; equality is judged in that system', () => {
+    const us = base();
+    us.profile.unitSystem = 'conventional';
+    // m1: ldl 3.4 mmol/L on 2026-07-14 — a US report prints it as 131 mg/dL.
+    const { payload } = prepareImport(us, bundleOf([extracted('us.pdf', ldlOnly(3.4, '2026-07-14')), extracted('new.pdf', ldlOnly(2.8, LAB_DAY))]), IMPORT_CTX);
+    expect(payload.candidates[0]).toMatchObject({ value: 3.4, unit: 'mmol/L', displayValue: '131', displayUnit: 'mg/dL', slot: { state: 'held_equal', existingRowId: 'm1' } });
+    expect(payload.candidates[1]).toMatchObject({ value: 2.8, unit: 'mmol/L', displayValue: '108', displayUnit: 'mg/dL', slot: { state: 'free' } });
+    // The default is SI, and a lab value outside the core metrics keeps the lab's own unit either way.
+    const si = prepareImport(base(), bundleOf([extracted('new.pdf', labReport())]), IMPORT_CTX);
+    expect(si.payload.candidates[0]).toMatchObject({ displayValue: '2.8', displayUnit: 'mmol/L' });
+    expect(si.payload.candidates[1]).toMatchObject({ displayValue: '210', displayUnit: 'ug/L' });
   });
 
   it('caps the unrecognized lines a call carries, so a noisy file cannot flood the answer (AC10)', () => {
@@ -1048,18 +1086,58 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     expect(prepareImport(base(), bundleOf([odd]), IMPORT_CTX).payload.documents[0].type).toBe('other');
   });
 
-  it('isAlreadyImported answers by name or by the record’s own contentHash, and ignores a tombstoned row', () => {
+  it('isAlreadyImported answers by the record’s own contentHash first, by name only against a row with no hash, and ignores a tombstoned row (AC6)', () => {
     const file = base();
     // The key the website writes when it archives a blob — one dedup key for both writers (AC6).
     file.documents.push({ id: 'd1', title: 't', type: 'other', date: null, fileRef: 'Lab results/letter.pdf', contentHash: 'sha256-abc', mimeType: 'application/pdf', extractedText: 'md', addedAt: NOW, sourceFileName: 'letter.pdf', metadata: {} });
-    expect(isAlreadyImported(file, 'letter.pdf', 'sha256-zzz')).toBe(true);
-    expect(isAlreadyImported(file, 'renamed.pdf', 'sha256-abc')).toBe(true);
-    expect(isAlreadyImported(file, 'renamed.pdf', 'sha256-zzz')).toBe(false);
+    expect(isAlreadyImported(file, 'renamed.pdf', 'sha256-abc')).toMatchObject({ by: 'hash', row: { id: 'd1' } });
+    // A lab portal that names every download the same: a DIFFERENT file with a held name is new, not "already imported".
+    expect(isAlreadyImported(file, 'letter.pdf', 'sha256-zzz')).toBeNull();
+    expect(isAlreadyImported(file, 'renamed.pdf', 'sha256-zzz')).toBeNull();
+    // A row from before hashes has only its name to go on.
+    file.documents.push({ id: 'd2', title: 't', type: 'other', date: null, fileRef: '', contentHash: '', mimeType: '', extractedText: 'md', addedAt: NOW, sourceFileName: 'old.pdf', metadata: {} });
+    expect(isAlreadyImported(file, 'old.pdf', 'sha256-zzz')).toMatchObject({ by: 'name', row: { id: 'd2' } });
     // A text-only row (no hash) never matches an empty hash.
-    file.documents.push({ id: 'd2', title: 't', type: 'other', date: null, fileRef: '', contentHash: '', mimeType: '', extractedText: 'md', addedAt: NOW, sourceFileName: null, metadata: {} });
-    expect(isAlreadyImported(file, 'other.pdf', '')).toBe(false);
+    file.documents.push({ id: 'd3', title: 't', type: 'other', date: null, fileRef: '', contentHash: '', mimeType: '', extractedText: 'md', addedAt: NOW, sourceFileName: null, metadata: {} });
+    expect(isAlreadyImported(file, 'other.pdf', '')).toBeNull();
     file.documents[0].deleted = true;
-    expect(isAlreadyImported(file, 'letter.pdf', 'sha256-abc')).toBe(false);
+    expect(isAlreadyImported(file, 'letter.pdf', 'sha256-abc')).toBeNull();
+  });
+
+  it('AC13 — an already_imported entry says which row, when, and the way past it — a file name, never a title', () => {
+    const file = base();
+    file.documents.push({ id: 'd1', title: 'Secret title', type: 'other', date: '2026-06-01', fileRef: '', contentHash: 'sha256-abc', mimeType: 'application/pdf', extractedText: '', addedAt: NOW, sourceFileName: 'Results.pdf', metadata: {} });
+    file.documents.push({ id: 'd2', title: 'Old title', type: 'other', date: null, fileRef: '', contentHash: '', mimeType: '', extractedText: 'md', addedAt: '2026-05-05T00:00:00Z', sourceFileName: 'old.pdf', metadata: {} });
+    const { files } = prepareImport(file, bundleOf([
+      { name: 'Renamed.pdf', contentHash: 'sha256-abc', mimeType: 'application/pdf', status: 'already_imported' },
+      { name: 'old.pdf', contentHash: 'sha256-new', mimeType: 'application/pdf', status: 'already_imported' },
+    ]), IMPORT_CTX);
+    expect(files[0].hint).toBe('Already in the record: the same file was filed on 2026-06-01 as Results.pdf. Nothing to do.');
+    expect(files[1].hint).toMatch(/^A file with this name was filed on 2026-05-05 as old.pdf, and that row carries no fingerprint/);
+    expect(files[1].hint).toMatch(/Rename the file to import it\.$/);
+    expect(JSON.stringify(files)).not.toMatch(/title/i);
+  });
+
+  it('AC13 — every reason in the table is a sentence that names the limit and the way round it', () => {
+    for (const reason of IMPORT_FILE_REASONS) {
+      const hint = importHint(reason);
+      expect(hint.length, reason).toBeGreaterThan(40);
+      expect(hint, reason).toMatch(/[.!]$/);
+    }
+    expect(importHint('unsupported')).toContain('PDF, JPEG, PNG or ZIP');
+    expect(importHint('unsupported')).toMatch(/HEIC.*JPEG.*screenshot/);
+    expect(importHint('too_large')).toContain(`${IMPORT_LIMITS.fileMb} MB per PDF or image, ${IMPORT_LIMITS.zipMb} MB per ZIP`);
+    expect(importHint('too_large')).toContain(`up to ${IMPORT_LIMITS.websiteFileMb} MB`);
+    expect(importHint('no_date')).toMatch(/what date the test was taken.*fileDates/);
+    expect(importHint('quota')).toContain(`${IMPORT_LIMITS.filesPerDay} files for today`);
+    expect(importHint('allowance')).toMatch(/allowance for the hour/);
+    expect(importHint('time')).toMatch(/Ask again.*already filed are skipped/);
+    expect(importHint('too_many')).toMatch(/twenty/);
+    // A reason outside the table is a bug in us, worded as unreadable rather than a bare token.
+    expect(importHint('something_else')).toBe(importHint('unreadable'));
+    expect(importHint(undefined)).toBe(importHint('unreadable'));
+    expect(IMPORT_REFUSALS.mobile).toMatch(/ChatGPT on mobile does not hand files to apps yet.*computer.*Apps\/Health Plan by Dr Brad.*Nothing was read\./);
+    expect(IMPORT_REFUSALS.emptyFolder).toMatch(/no PDF, JPEG, PNG or ZIP files in the folder root \(Apps\/Health Plan by Dr Brad\)/);
   });
 });
 
@@ -1112,8 +1190,8 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
       sourceFileName: 'new.pdf', metadata: { importedVia: 'connector' },
     });
     expect((outcome as { data: { written: unknown } }).data.written).toEqual({ measurements: 1, labValues: 1, corrections: 0, documents: 1 });
-    expect(isAlreadyImported(written, 'new.pdf', 'sha256-zzz')).toBe(true);
-    expect(isAlreadyImported(written, 'renamed.pdf', 'sha256-new.pdf')).toBe(true);
+    expect(isAlreadyImported(written, 'renamed.pdf', 'sha256-new.pdf')).toMatchObject({ by: 'hash' });
+    expect(isAlreadyImported(written, 'new.pdf', 'sha256-zzz')).toBeNull(); // a different file with the same name is new
 
     // Declining every value still files the document: a row records the
     // file, not the user's acceptance of what was read from it.
@@ -1206,6 +1284,17 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     const outcome = importDocumentsCommit(file, payload, { receipt: 'r', accept: ['c1'], replace: [] }, NOW);
     expect(outcome.status === 'ok' && outcome.file!.documents).toHaveLength(1);
   });
+
+  it('AC6/AC8 — two candidates for one (metric, day) are both offered, and a commit that accepts both is refused in words', () => {
+    const file = base();
+    const payload = payloadFor(file, [extracted('prelim.pdf', ldlOnly(3.9, LAB_DAY)), extracted('final.pdf', ldlOnly(3.7, LAB_DAY))]);
+    expect(payload.candidates.map((c) => [c.id, c.sourceFileName, c.sameDayAs])).toEqual([['c1', 'prelim.pdf', undefined], ['c2', 'final.pdf', 'c1']]);
+    const both = importDocumentsCommit(file, payload, { receipt: 'r', accept: ['c1', 'c2'], replace: [] }, NOW);
+    expect(both).toMatchObject({ status: 'rejected', text: 'c2 and c1 both name ldl on 2026-08-20, and the record keeps one value per metric per day. Pick one. Nothing was written.' });
+    const one = importDocumentsCommit(file, payload, { receipt: 'r', accept: ['c2'], replace: [] }, NOW);
+    expect(one.status).toBe('ok');
+    expect(one.status === 'ok' && one.file!.measurements.filter((m) => m.recordedAt === LAB_DAY).map((m) => m.value)).toEqual([3.7]);
+  });
 });
 
 describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves, no surface refuses', () => {
@@ -1248,10 +1337,10 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(data.candidates).toEqual([]);
     expect(data.documents).toEqual([{ sourceFileName: 'letter.pdf', title: 'Discharge summary', type: 'clinic_letter', date: '2026-05-01' }]);
     expect(data.receipt).toMatch(/^receipt-/);
-    expect(data.next).toMatch(/1 document\(s\) can be filed/);
+    expect(data.next).toMatch(/1 document\(s\) to file/);
     // Document text never rides in the instruction field (AC9).
     expect(data.next).not.toContain('Discharge summary');
-    expect(data.next).toMatch(/Offer to file them; a commit with empty accept and replace files the documents alone/);
+    expect(data.next).toMatch(/A commit with empty accept and replace files the documents/);
     // The document's text never rides along (AC9).
     expect(JSON.stringify(data)).not.toContain('body');
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
@@ -1261,6 +1350,33 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(commit.isError).toBe(false);
     expect(OUTPUTS.import_documents.parse(commit.structured).written).toEqual({ measurements: 0, labValues: 0, corrections: 0, documents: 1 });
     expect(OUTPUTS.import_documents.parse(commit.structured).documents).toEqual([]);
+  });
+
+  it('AC13 — next counts the questions, the shared days and the dropped values, names where each lives, and on a drag names the folder as the way round', async () => {
+    const sync = syncOver(new MemoryCloud());
+    const noisy: ImportSurface = { ...surface, async extract() {
+      return { route: 'chatgpt_file', remaining: ['inner/b.pdf'], files: [
+        extracted('a.pdf', labReport({ values: [
+          { metric: 'ldl', valueSI: 2.8, displayValue: 2.8, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'low', question: 'Smudged: 2.8 or 2.3?' },
+          { metric: 'hdl', valueSI: 99, displayValue: 99, displayUnit: 'mmol/L', displaySystem: 'si', confidence: 'high' },
+        ] })),
+        extracted('b.pdf', ldlOnly(3.0, LAB_DAY)),
+        { name: 'photo.heic', status: 'failed', reason: 'unsupported' },
+        { name: 'inner/b.pdf', status: 'skipped', reason: 'time' },
+      ] };
+    } };
+    const answer = await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: noisy, latestDay: TODAY });
+    const data = OUTPUTS.import_documents.parse(answer.structured);
+    expect(data.next).toContain('1 candidate(s) carry a question from the extractor (c1): show it beside the value.');
+    expect(data.next).toContain('1 candidate(s) share a day with another (sameDayAs)');
+    expect(data.next).toContain('2 value(s) could not be filed: show unrecognized.');
+    expect(data.next).toContain("2 file(s) were not read: relay each file's hint to the user in plain words. " + IMPORT_REFUSALS.dragFallback);
+    expect(data.next).toMatch(/1 file\(s\) in the ZIP were not reached: commit this receipt first, then ask the user to drop the ZIP in again/);
+    // The question itself stays on the candidate (AC9): the instruction field carries no document text.
+    expect(data.next).not.toContain('Smudged');
+    expect(data.candidates[0].question).toBe('Smudged: 2.8 or 2.3?');
+    expect(data.files.find((f) => f.name === 'photo.heic')!.hint).toBe(importHint('unsupported'));
+    expect(data.next.split('\n').length).toBeLessThanOrEqual(6);
   });
 
   it('an extract leaves the file bytes untouched and answers candidates plus a receipt', async () => {
@@ -1274,8 +1390,11 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(data.candidates.map((c) => c.id)).toEqual(['c1', 'c2']);
     expect(data.receipt).toMatch(/^receipt-/);
     expect(data.remaining).toEqual(['later.pdf']);
-    expect(data.next).toMatch(/WAIT for their answer/);
-    expect(data.next).toMatch(/call again with fileNames/);
+    expect(data.next).toMatch(/WAIT for their own answer/);
+    // The order that keeps one receipt at a time: commit, then the rest (finding 16).
+    expect(data.next).toMatch(/commit this receipt first, then call again with fileNames set to remaining/);
+    // Short: the counts, one instruction and the continuation; detail rides on the things themselves (live 2026-09-07 it ran past 600 with the counts said twice).
+    expect(data.next.length).toBeLessThan(650);
     expect(cloud.files.get(ROADMAP_FILE_NAME)).toBe(before);
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
   });
@@ -1301,8 +1420,17 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     const sync = syncOver(cloud);
     const both = await runToolOverSync(sync, 'import_documents', { fileNames: ['a.pdf'], commit: { receipt: 'r', accept: [], replace: [] } }, NOW, { importer: surface });
     expect(both).toMatchObject({ isError: true, text: expect.stringContaining('on its own') });
-    const malformed = await runToolOverSync(sync, 'import_documents', { file: { download_url: 'http://x/y', file_id: 'f' } }, NOW, { importer: surface });
-    expect(malformed).toMatchObject({ isError: true, text: expect.stringContaining('https') });
+    // AC4/AC13: the phone apps hand over a bare reference; the answer is the mobile sentence, never a raw schema message.
+    for (const download_url of ['chat_upload://abc', 'http://x/y']) {
+      const malformed = await runToolOverSync(sync, 'import_documents', { file: { download_url, file_id: 'f' } }, NOW, { importer: surface });
+      expect(malformed).toEqual({ isError: true, text: IMPORT_REFUSALS.mobile });
+    }
+    expect(chatgptFileInput.safeParse({ download_url: 'chat_upload://abc', file_id: 'f' }).error!.issues[0].message).toBe(IMPORT_REFUSALS.mobile);
+    const badCommit = await runToolOverSync(sync, 'import_documents', { commit: { receipt: 'r', accept: 'c1', replace: [] } }, NOW, { importer: surface });
+    expect(badCommit).toEqual({ isError: true, text: IMPORT_REFUSALS.commit });
+    const badNames = await runToolOverSync(sync, 'import_documents', { fileNames: 'a.pdf' }, NOW, { importer: surface });
+    expect(badNames).toEqual({ isError: true, text: IMPORT_REFUSALS.arguments });
+    expect(JSON.stringify([badCommit, badNames])).not.toMatch(/Expected|Received|invalid_type/);
     const bad = await runToolOverSync(sync, 'import_documents', { commit: { receipt: 'forged', accept: ['c1'], replace: [] } }, NOW, { importer: surface });
     expect(bad).toMatchObject({ isError: true, text: expect.stringContaining('not valid') });
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);

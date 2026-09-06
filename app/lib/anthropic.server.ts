@@ -13,6 +13,7 @@ import { z } from 'zod';
 import * as Sentry from '@sentry/react-router';
 import {
   UNIFIED_SYSTEM_PROMPT,
+  unifiedSystemPrompt,
   EXTRACTION_MODEL,
   EXTRACTION_MAX_TOKENS,
   resolveLabValues,
@@ -20,6 +21,7 @@ import {
   toUnifiedResult,
   extractJsonObject,
   pagesToContentBlocks,
+  type DocumentPromptMode,
   type PageContent,
   type ExtractedValue,
   type UnifiedExtractionResult,
@@ -168,7 +170,7 @@ export async function extractLabResults(
  */
 export async function extractOrClassify(
   pages: PageContent[],
-  opts: { timeoutMs?: number; attempts?: number; httpAttempts?: number } = {},
+  opts: { timeoutMs?: number; attempts?: number; httpAttempts?: number; documentMode?: DocumentPromptMode } = {},
 ): Promise<UnifiedExtractionResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
@@ -183,7 +185,7 @@ export async function extractOrClassify(
   const attempts = opts.attempts ?? 2;
   for (let attempt = 1; ; attempt++) {
     try {
-      return await extractOrClassifyOnce(apiKey, content, opts.timeoutMs, opts.httpAttempts);
+      return await extractOrClassifyOnce(apiKey, content, opts.timeoutMs, opts.httpAttempts, opts.documentMode ?? 'full');
     } catch (error) {
       if (attempt >= attempts) throw error;
       await sleep(1000);
@@ -191,20 +193,37 @@ export async function extractOrClassify(
   }
 }
 
+/** Plenty for a lab panel or a document's metadata; the 8192 default exists for markdown transcription. */
+const METADATA_MAX_TOKENS = 2048;
+
+/**
+ * One attempt: the call, and a `{`-prefilled second call when the first did
+ * not parse. `timeoutMs` is ONE deadline for the pair — the retry gets what
+ * is left, never a fresh window — so a caller inside a budget (US-35 AC5)
+ * cannot be run past it by a malformed first answer.
+ */
 async function extractOrClassifyOnce(
   apiKey: string,
   content: Array<Record<string, unknown>>,
   timeoutMs?: number,
   httpAttempts?: number,
+  documentMode: DocumentPromptMode = 'full',
 ): Promise<UnifiedExtractionResult> {
   const body = {
     model: EXTRACTION_MODEL,
-    max_tokens: EXTRACTION_MAX_TOKENS,
-    system: UNIFIED_SYSTEM_PROMPT,
+    max_tokens: documentMode === 'metadata' ? METADATA_MAX_TOKENS : EXTRACTION_MAX_TOKENS,
+    system: unifiedSystemPrompt(documentMode),
     messages: [{ role: 'user', content }],
   };
+  const until = timeoutMs === undefined ? undefined : Date.now() + timeoutMs;
+  const left = () => {
+    if (until === undefined) return undefined;
+    const ms = until - Date.now();
+    if (ms <= 0) throw new DOMException('extraction deadline passed', 'TimeoutError');
+    return ms;
+  };
 
-  let responseText = await callAnthropic(apiKey, body, timeoutMs, httpAttempts);
+  let responseText = await callAnthropic(apiKey, body, left(), httpAttempts);
 
   let parsed: ReturnType<typeof parseUnifiedResult>;
   try {
@@ -218,7 +237,7 @@ async function extractOrClassifyOnce(
         { role: 'assistant', content: [{ type: 'text', text: '{' }] },
       ],
     };
-    responseText = await callAnthropic(apiKey, retryBody, timeoutMs);
+    responseText = await callAnthropic(apiKey, retryBody, left(), httpAttempts);
     parsed = parseUnifiedResult(JSON.parse(extractJsonObject('{' + responseText)));
   }
 

@@ -185,6 +185,50 @@ describe('US-35 AC5 — extractOrClassify with httpAttempts: 1 makes ONE request
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('the `{`-prefill retry shares ONE deadline with the first call: it gets what is left, never a fresh window (AC5)', async () => {
+    vi.useFakeTimers();
+    try {
+      const timeouts = vi.spyOn(AbortSignal, 'timeout');
+      const fetchMock = vi.fn()
+        .mockImplementationOnce(async () => { vi.advanceTimersByTime(15_000); return anthropicMessage('not json at all'); })
+        .mockResolvedValueOnce(anthropicMessage(validUnifiedJson.slice(1)));
+      global.fetch = fetchMock as unknown as typeof fetch;
+      await extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 20_000, attempts: 1, httpAttempts: 1 });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(timeouts.mock.calls.map(([ms]) => ms)).toEqual([20_000, 5_000]);
+
+      // Nothing left after the first answer: the retry is not made, and the failure is a TimeoutError.
+      timeouts.mockClear();
+      const late = vi.fn().mockImplementationOnce(async () => { vi.advanceTimersByTime(20_000); return anthropicMessage('not json'); });
+      global.fetch = late as unknown as typeof fetch;
+      await expect(extractOrClassify([{ type: 'text', content: 'x' }], { timeoutMs: 20_000, attempts: 1, httpAttempts: 1 })).rejects.toMatchObject({ name: 'TimeoutError' });
+      expect(late).toHaveBeenCalledTimes(1);
+      timeouts.mockRestore();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('documentMode metadata asks for no transcription and caps the answer; the website’s full prompt is unchanged (AC5)', async () => {
+    const bodies: Array<{ system: string; max_tokens: number }> = [];
+    global.fetch = vi.fn(async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(init.body as string));
+      return anthropicMessage(validUnifiedJson);
+    }) as unknown as typeof fetch;
+    await extractOrClassify([{ type: 'text', content: 'x' }], { attempts: 1, documentMode: 'metadata' });
+    await extractOrClassify([{ type: 'text', content: 'x' }], { attempts: 1 });
+    const [metadata, full] = bodies;
+    expect(metadata.system).toMatch(/Do NOT transcribe/);
+    expect(metadata.system).toMatch(/summary: ONE sentence of at most 120 characters/);
+    expect(metadata.system).not.toMatch(/Preserve ALL text/);
+    expect(metadata.max_tokens).toBe(2048);
+    expect(full.system).toMatch(/Preserve ALL text/);
+    expect(full.system).not.toMatch(/Do NOT transcribe/);
+    expect(full.max_tokens).toBe(8192);
+    // Both carry the same classification rules and the data-not-instructions line.
+    for (const body of bodies) expect(body.system).toMatch(/never instructions to follow/);
+  });
+
   it('keeps the inner retry by default — the website path is unchanged', async () => {
     const fetchMock = vi.fn()
       .mockRejectedValueOnce(new DOMException('signal timed out', 'TimeoutError'))
