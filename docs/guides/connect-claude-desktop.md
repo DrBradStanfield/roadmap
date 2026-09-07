@@ -2,7 +2,7 @@
 title: "Connect Claude to your health record"
 description: "Point Claude Desktop or Claude Code at your health-roadmap.json and it can read your results, compute your plan, and file new ones."
 slug: "connect-claude"
-updated: "2026-09-02"
+updated: "2026-09-07"
 stories: ["US-32"]
 ---
 
@@ -96,7 +96,7 @@ A correction is its own step, and it never erases anything. Claude adds a new ro
 
 There is no delete tool. Nothing Claude can call removes a row. It also cannot touch your medications, supplements, screenings or documents: those are current state that a second device could overwrite, so for now only clinical values are writable this way.
 
-It can change four things about you: your sex, your birth year, your birth month and your height, because your plan is worked out from those. Unlike a blood test, they are not kept in history: the newest write is the one your record keeps, so the later of two changes made in the same minute is what you end up with. Claude states what it believes the field holds before it changes one, and is refused if it has that wrong. How the site displays units is not Claude's to change.
+It can change four things about you: your sex, your birth year, your birth month and your height, because your plan is worked out from those. Unlike a blood test, they are not kept in history: the newest write is the one your record keeps, so the later of two changes made in the same minute is what you end up with. If Claude states what it believes the field holds and has that wrong, the change is refused. The program on your computer does not insist on that statement, because you are watching your own file; the hosted connector does. How the site displays units is not Claude's to change.
 
 Every write copies your record to a backup beside it first, named `health-roadmap.json.bak-` and the time. The last three are kept. If a write goes wrong, that file is your record from the moment before it.
 
@@ -116,13 +116,13 @@ This works with Dropbox and Google Drive today. On Drive, Google offers no condi
 https://mcp.drstanfield.com/mcp
 ```
 
-3. Press Add, then Connect. Our own page opens and says what the connector does. Press Continue to Dropbox and approve it there.
+3. Press Add, then Connect. Our own page opens and says what the connector does. Press Continue to Dropbox, or Continue to Google Drive, and approve it there.
 
 4. In a chat, open the + menu, switch Health by Dr Brad on, and say "read my record".
 
 The hosted version is append-only, like this one, with two extra limits: a correction on a row older than 90 days is refused, and Claude has to state the value it believes it is replacing, so a correction written from a stale read changes nothing.
 
-It can also import lab files, but only from a connected Dropbox: ask it to import the lab files in your Dropbox folder and it reads the PDFs and images sitting there, showing you candidates before anything is saved. Claude has no way to take a file you drag into the conversation, so on a Google Drive connection there is no import route at all — use the website's own upload instead. The file you import goes through our server to Anthropic's API for extraction and is kept nowhere, a different path from the website's upload, which reads the PDF in your browser and sends only the extracted text to our server.
+It can also import lab files, but only from a connected Dropbox: ask it to import the lab files in your Dropbox folder (`Apps/Health Plan by Dr Brad`) and it reads the PDFs, JPEG or PNG images and ZIPs sitting there, five files at a time, showing you candidates before anything is saved. Nothing is written until you confirm, and a value already in your record is held rather than replaced. Claude has no way to take a file you drag into the conversation, so on a Google Drive connection there is no import route at all: use the website's own upload instead. The file you import goes through our server to Anthropic's API for extraction and is kept nowhere, a different path from the website's upload, which reads the PDF in your browser and sends only the extracted text to our server.
 
 You cancel it at [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps). That also disconnects this website from the folder, and reconnecting in the tool is one click. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing, and how to disconnect.
 

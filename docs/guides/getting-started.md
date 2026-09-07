@@ -2,7 +2,7 @@
 title: "How to let an AI read and update your health record"
 description: "Your blood tests live in one file in your own cloud storage. Connect ChatGPT or Claude to it, or point an AI on your computer at it."
 slug: "ai-health-record"
-updated: "2026-09-02"
+updated: "2026-09-07"
 stories: ["US-29", "US-30", "US-31", "US-32"]
 ---
 
@@ -43,7 +43,7 @@ Four steps, on any Claude plan. Nothing to install and no special mode to turn o
 
 2. Fill it in and add it. Name it Health by Dr Brad. Paste `https://mcp.drstanfield.com/mcp` as the server address. Press Add.
 
-3. Connect it. Press Connect. Our own page opens and says what the connector does and what it cannot do. Press Continue to Dropbox, and Dropbox asks whether to link the app. Approve it, and you land back in Claude, connected.
+3. Connect it. Press Connect. Our own page opens and says what the connector does and what it cannot do. Press Continue to Dropbox, or Continue to Google Drive, and that provider asks whether to link the app. Approve it, and you land back in Claude, connected.
 
 4. Turn it on in a chat. Open the + menu in the conversation, switch Health by Dr Brad on, and say "read my record".
 
@@ -57,7 +57,7 @@ Five steps, on a paid ChatGPT plan, on the web. There is one extra step compared
 
 3. Fill it in. Name it Health by Dr Brad. Paste `https://mcp.drstanfield.com/mcp` as the server URL. Set Authentication to OAuth. Tick the box acknowledging the risk of connecting a server, which OpenAI asks for on anything added this way. Press Create.
 
-4. Sign in. Press Sign in with Health by Dr Brad. Our own page opens, then Continue to Dropbox, then approve it in Dropbox. The app shows as installed.
+4. Sign in. Press Sign in with Health by Dr Brad. Our own page opens, then Continue to Dropbox or Continue to Google Drive, then approve it there. The app shows as installed.
 
 5. Turn it on in a chat. Open the + menu, then More, then Developer mode, and pick Health by Dr Brad for that conversation. ChatGPT asks each conversation separately.
 
@@ -65,9 +65,9 @@ The longer version, including what to do when a step goes wrong, is in [connect 
 
 ## What your assistant can do
 
-It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same plan the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. And it corrects a value that went in wrong. On a connected Dropbox, it can also import the lab files sitting in that folder, showing you candidate values before anything is saved; on ChatGPT desktop you can instead drag a file into the conversation. If a tool refuses something you reasonably expected, it can report it. Which of two things happens depends on where the assistant is connected from. The program on your own computer holds no key to anything, so it hands you a prefilled GitHub issue link and nothing is filed until you click it. The hosted connectors, Claude on the web and ChatGPT, file the issue themselves as you ask, with no further step: a public issue on the project's GitHub carrying the assistant's description of the problem and nothing about you or your values.
+It reads your record: every value in the file, including ones the tool does not show on the front page. It works out your plan, the same plan the web tool shows, with the reason and the citations behind each suggestion. It adds a value, or a whole lab panel in one call, up to 50 tests. And it corrects a value that went in wrong. On a connected Dropbox, it can also import the lab files sitting in that folder, showing you candidate values before anything is saved; on ChatGPT in a desktop browser you can instead drag a file into the conversation. On a Google Drive record it refuses to import, because the permission it holds cannot see files you drop in that folder, and points you at the website upload. The file it imports goes through our server to an extraction model and is kept nowhere, a different path from the website upload, which reads the PDF in your browser and sends only the extracted text to our server. If a tool refuses something you reasonably expected, it can report it. Which of two things happens depends on where the assistant is connected from. The program on your own computer holds no key to anything, so it hands you a prefilled GitHub issue link and nothing is filed until you click it. The hosted connectors, Claude on the web and ChatGPT, file the issue themselves as you ask, with no further step: a public issue on the project's GitHub carrying the assistant's description of the problem and nothing about you or your values.
 
-It cannot delete anything, because there is no delete tool. A correction never erases either: the assistant adds a new row with the right number and marks the old row "entered-in-error", so both stay in your file for good. That is how a hospital record works, and it is why you can always see what you were told and when. It also cannot touch your medications, supplements, screenings or documents. It can change four things about you: your sex, your birth year, your birth month and your height. Your plan is worked out from those. Those four are not kept in history the way a blood test is: the newest write is the one your record keeps, so of two changes made in the same minute, the later one is what you end up with. The assistant has to state what it believes a field holds before it changes it, and is refused if it has that wrong.
+It cannot delete anything, because there is no delete tool. A correction never erases either: the assistant adds a new row with the right number and marks the old row "entered-in-error", so both stay in your file for good. That is how a hospital record works, and it is why you can always see what you were told and when. It also cannot touch your medications, supplements or screenings. Documents it touches only through import: what it imports is filed as a record with a name and a date, never the text or the image. It can change four things about you: your sex, your birth year, your birth month and your height. Your plan is worked out from those. Those four are not kept in history the way a blood test is: the newest write is the one your record keeps, so of two changes made in the same minute, the later one is what you end up with. The assistant has to state what it believes a field holds before it changes it, and is refused if it has that wrong.
 
 Your record holds one value per test per day. Ask for a second weight on a day that already has one and the call is refused by name, and the refusal points the assistant at a correction instead of an overwrite.
 

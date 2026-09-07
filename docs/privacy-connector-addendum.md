@@ -1,8 +1,14 @@
 # Privacy policy addendum: the AI connector
 
-DRAFT. Not published. Written 2026-09-02 from the code at `app/lib/mcp.server.ts`,
-`app/lib/mcp-*.server.ts`, `app/routes/mcp.$.tsx` and
+DRAFT. Not published. Written 2026-09-02, re-audited 2026-09-07, from the code at
+`app/lib/mcp.server.ts`, `app/lib/mcp-*.server.ts`, `app/routes/mcp.$.tsx` and
 `packages/health-core/src/mcp-tools.ts`.
+
+> **Pending change (noted 2026-09-07).** Brad decided that assistant-side extraction
+> (the assistant reads the lab file itself; our server never receives it) becomes the
+> default. The design is in progress and NOT built. Every sentence below about a file
+> going to our server or to Anthropic's API describes the connector as it runs today,
+> and will be rewritten when the design ships. Do not publish this draft before that.
 
 This section covers one optional feature: connecting an AI assistant, such as ChatGPT
 or Claude, to your health record. It applies only if you connect one. If you never do,
@@ -16,9 +22,11 @@ question, our server at `mcp.drstanfield.com` opens that file from your cloud, a
 the one request, and drops it. The file's contents exist in server memory for the
 length of that request and nowhere else.
 
-If you ask your assistant to import a lab file, that file — not your record — is held
+If you ask your assistant to import a lab file, that file, not your record, is held
 in server memory for one request and sent to Anthropic's API for extraction, then kept
-nowhere. The candidate values it finds are written to YOUR folder, as
+nowhere. The server reads it from your Dropbox folder, or, for a file dropped into a
+ChatGPT conversation, fetches it from OpenAI's file host. On a Google Drive record the
+connector cannot see such a file and refuses without reading anything. The candidate values it finds are written to YOUR folder, as
 `imports/pending-<id>.json`, until you confirm them. A pending file you never confirm
 stays up to 24 hours and is swept on the next import; the receipt that names it expires
 after an hour.
@@ -51,9 +59,12 @@ Access credentials expire after one hour. The credential your assistant refreshe
 expires 90 days after it is issued.
 
 One thing is kept: a count of connector activity. Each row says which tool was called,
-which assistant called it, whether it succeeded, and when; the one row that marks a
-new connection also says which storage provider it uses. No values, no metric names, no row ids, no identifier, and nothing
-that links two calls to one person. We keep it because a feature nobody uses should be
+which assistant called it, whether it succeeded, was refused or failed, and when. The
+row that marks a new connection also says which storage provider it uses. An import
+adds a row saying which route it took (the Dropbox folder, a ChatGPT file, or a Google
+Drive refusal), which phase (extract or commit), and how many files, as a bucket such as
+"1" or "2-5". No values, no metric names, no file names, no row ids, no identifier, and
+nothing that links two calls to one person. We keep it because a feature nobody uses should be
 retired rather than maintained, and we have no other way to know.
 
 Said plainly, because it is the honest version: value-free is not the same as
@@ -87,7 +98,7 @@ because both use the same app identity. You can reconnect in one click.
 
 If you ask your assistant to report a bug, it files one for you: our server opens a
 public issue on the project's GitHub repository. What goes in it is the assistant's own
-description of the problem, and nothing about you — no name, no email, no address, and
+description of the problem, and nothing about you: no name, no email, no address, and
 no part of your health record. The tool refuses any report that reads as a health value.
 The issue is public, so your assistant should tell you before it files one. (Software you
 run yourself has no way to file anything: it hands you a link to submit instead.)

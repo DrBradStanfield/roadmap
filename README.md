@@ -14,16 +14,20 @@ Supabase holds operational rows only, never health values.
 
 The same file, the same write path, three ways in.
 
-1. **Widget** — the React app in the storefront or on the self-hosted page.
+1. **Widget**: the React app in the storefront or on the self-hosted page.
    Reads and writes through `RoadmapStore`.
-2. **CLI and stdio MCP** — `tools/get-plan.ts`, `tools/edit-record.ts` and
+2. **CLI and stdio MCP**: `tools/get-plan.ts`, `tools/edit-record.ts` and
    `tools/mcp-server.ts`, running on the user's own machine against their own
    file. See [docs/guides/command-line.md](docs/guides/command-line.md) and
    [docs/guides/connect-claude-desktop.md](docs/guides/connect-claude-desktop.md).
-3. **Hosted MCP** — `https://mcp.drstanfield.com/mcp`, live since 2026-09-02 on
+3. **Hosted MCP**: `https://mcp.drstanfield.com/mcp`, live since 2026-09-02 on
    the Fly app `health-tool-edu`, over Dropbox and Google Drive. Eight tools as
    of 2026-09-04, including the hosted-only `import_documents` (US-35), which
-   reads lab files from Dropbox or a dragged ChatGPT upload.
+   reads lab files from the Dropbox app folder or a file dropped into
+   ChatGPT (desktop only; Drive's `drive.file` scope cannot see dropped
+   files). Extraction runs on our server today; Brad decided 2026-09-07 that
+   assistant-side extraction becomes the default (design in progress, not
+   built).
 
 Every non-browser writer goes through the same `SyncManager`
 (`packages/health-core/src/sync-manager.ts`), which merges on conflict and
@@ -76,16 +80,16 @@ environment. Manual and emergency steps, plus the two-app Fly split, are in
 
 ## Where to read next
 
-- [CLAUDE.md](CLAUDE.md) — the working contract for this repo.
-- [docs/architecture-v2.html](docs/architecture-v2.html) — the visual system
+- [CLAUDE.md](CLAUDE.md): the working contract for this repo.
+- [docs/architecture-v2.html](docs/architecture-v2.html): the visual system
   map, and the best entry point.
-- [docs/reference.md](docs/reference.md) — file inventory, data model,
+- [docs/reference.md](docs/reference.md): file inventory, data model,
   endpoints, gotcha archive.
-- [docs/user-stories.md](docs/user-stories.md) — every behavior change starts
+- [docs/user-stories.md](docs/user-stories.md): every behavior change starts
   as a story here.
 - [docs/agent-access.md](docs/agent-access.md) and
-  [docs/mcp-architecture.md](docs/mcp-architecture.md) — the agent contract and
+  [docs/mcp-architecture.md](docs/mcp-architecture.md): the agent contract and
   the MCP map.
-- [docs/guides/](docs/guides/) — the user-facing guides.
-- [docs/privacy-connector-addendum.md](docs/privacy-connector-addendum.md) —
+- [docs/guides/](docs/guides/): the user-facing guides.
+- [docs/privacy-connector-addendum.md](docs/privacy-connector-addendum.md):
   draft privacy language for the AI connector.

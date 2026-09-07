@@ -2,11 +2,11 @@
 title: "Connect ChatGPT to your health record"
 description: "Add the Health by Dr Brad connector to ChatGPT on the web, and it can read your blood tests, work out your plan and file new results."
 slug: "connect-chatgpt"
-updated: "2026-09-02"
+updated: "2026-09-07"
 stories: ["US-32"]
 ---
 
-Your record from the Health by Dr Brad tool is one file, `health-roadmap.json`, in your own Dropbox. ChatGPT in a browser cannot open a file on your computer, so we run a small connector between the two. You authorize it once and ChatGPT can then read your results, work out your plan and add new values, from your phone or any browser.
+Your record from the Health by Dr Brad tool is one file, `health-roadmap.json`, in your own Dropbox or Google Drive. ChatGPT in a browser cannot open a file on your computer, so we run a small connector between the two. You authorize it once and ChatGPT can then read your results, work out your plan and add new values, from your phone or any browser.
 
 This takes about five minutes. Everything happens in ChatGPT's own settings; there is nothing to install.
 
@@ -30,7 +30,7 @@ https://mcp.drstanfield.com/mcp
 
 3. Fill it in. Name it Health by Dr Brad. Paste the address above as the server URL. Set Authentication to OAuth. Tick the box acknowledging the risk of connecting a server, which OpenAI asks for on anything added this way. Press Create.
 
-4. Sign in. Press Sign in with Health by Dr Brad. Our own page opens and says what the connector does. Press Continue to Dropbox. Dropbox asks whether to link the app. Approve it, and the app shows as installed.
+4. Sign in. Press Sign in with Health by Dr Brad. Our own page opens and says what the connector does. Press Continue to Dropbox, or Continue to Google Drive. That provider asks whether to link the app. Approve it, and the app shows as installed.
 
 5. Turn it on in a chat. Open the + menu, then More, then Developer mode, and pick Health by Dr Brad. ChatGPT asks for this in each conversation, so do it again in the next chat.
 
@@ -64,8 +64,13 @@ Whatever it cannot read, it tells you why and what to do. Either way it shows yo
 candidate values, in the units your record uses, before anything is saved: accept the
 ones that look right and it writes them, filing the document itself as a record with
 no text or image kept, just its name and date. A report with no printed date is not
-lost: it asks you when the test was taken and files it on that day. The file you import goes through our
-server to Anthropic's API for extraction and is kept nowhere — a different path from
+lost: it asks you when the test was taken and files it on that day. A value your record
+already holds for that day is held, not replaced; if it differs, ChatGPT can offer a
+correction for a recent value, and an older one you correct in the app. A file it has
+already imported comes back as already imported, and is not read again. On a Google
+Drive record it refuses to import at all, because the permission it holds cannot see
+files you drop in that folder, and points you at the website upload instead. The file you import goes through our
+server to Anthropic's API for extraction and is kept nowhere, a different path from
 the website's own upload, which reads the PDF in your browser and sends only the
 extracted text to our server.
 
@@ -87,7 +92,7 @@ It cannot see the token that runs your email reminders, if you use them. That to
 
 ## What we can see
 
-Your record still lives only in your Dropbox. Our server reads it, in memory, to answer ChatGPT, and keeps no copy. We store nothing about you: no account, no row, no session. What ChatGPT holds is a sealed credential that only we can open, and what we hold is the key and no credential.
+Your record still lives only in your Dropbox or Google Drive. Our server reads it, in memory, to answer ChatGPT, and keeps no copy. We store nothing about you: no account, no row, no session. What ChatGPT holds is a sealed credential that only we can open, and what we hold is the key and no credential.
 
 Check what it files. An AI can misread a lab report the same way a person can, and the record is yours, so the last look at a new value should be yours too.
 
@@ -95,17 +100,17 @@ Take care with the web tool open in another tab while ChatGPT is writing. The pa
 
 ## How to cancel it
 
-Go to [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps) and unlink Health by Dr Brad. That is the real switch, and it is yours, not ours. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing, and how to disconnect.
+Go to [dropbox.com/account/connected_apps](https://www.dropbox.com/account/connected_apps), or [myaccount.google.com/connections](https://myaccount.google.com/connections) for Google Drive, and unlink Health by Dr Brad. That is the real switch, and it is yours, not ours. The [Connector Privacy Notice](https://drstanfield.com/pages/connector-privacy) explains what the connector stores, which is nothing, and how to disconnect.
 
-One thing to know before you press it: Dropbox ties the folder to the app, so unlinking also disconnects this website from your record. The tool will ask you to connect Dropbox again next time you open it, which is one click.
+One thing to know before you press it: the provider ties the folder to the app, so unlinking also disconnects this website from your record. The tool will ask you to connect again next time you open it, which is one click.
 
-Removing the app inside ChatGPT stops ChatGPT reaching the connector, which is worth doing too. It does not unlink Dropbox by itself.
+Removing the app inside ChatGPT stops ChatGPT reaching the connector, which is worth doing too. It does not unlink your storage by itself.
 
 ## If something goes wrong
 
 The connector does not appear in a chat: developer mode is per conversation. Open the + menu, then More, then Developer mode, and pick it again.
 
-ChatGPT says it cannot find your record: open [the tool](https://drstanfield.com/pages/roadmap) and check Dropbox is connected and a value is saved. The connector reads the same file the tool writes.
+ChatGPT says it cannot find your record: open [the tool](https://drstanfield.com/pages/roadmap) and check your cloud provider is connected and a value is saved. The connector reads the same file the tool writes.
 
 Something looks wrong in your data: open the tool and correct the value there. The app appends the correction and marks the old row as an error, which is the safest undo you have.
 

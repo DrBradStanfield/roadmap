@@ -1,6 +1,6 @@
 # Reading and writing a health record with an AI agent
 
-Your health record is one file: `health-roadmap.json`. It lives in **your** storage —
+Your health record is one file: `health-roadmap.json`. It lives in **your** storage,
 your Dropbox, your Google Drive, your GitHub repo, or your browser. It is never on our
 server, so there is no API to call and no key to get. Any agent with filesystem access
 can open the file, read it, and write it back.
@@ -9,17 +9,17 @@ This page is the contract for doing that safely.
 
 Tools that enforce this contract for you: `tools/get-plan.ts`, `tools/edit-record.ts`, `tools/mcp-server.ts`; the hosted server: [mcp-architecture.md](mcp-architecture.md).
 
-- Format: JSON Schema (draft 2020-12) —
+- Format: JSON Schema (draft 2020-12),
   [`docs/health-roadmap-file.schema.json`](health-roadmap-file.schema.json),
   published at
   `https://raw.githubusercontent.com/DrBradStanfield/roadmap/main/docs/health-roadmap-file.schema.json`
 - Current `schemaVersion`: **1**
 - TypeScript source of truth: `packages/health-core/src/roadmap-file.ts`
-- Compute the plan from the file: `npx tsx tools/get-plan.ts <file>` (in this repo) — see `--help`
+- Compute the plan from the file: `npx tsx tools/get-plan.ts <file>` (in this repo), see `--help`
 - Something wrong or missing? The MCP server's `report_feedback` tool reports it. On the
   hosted server it FILES the GitHub issue itself, with no user action, and the issue is
   public; a server with no GitHub token prepares a link the user submits instead. Tell the
-  user before you call it, and put no health value in it — one is refused.
+  user before you call it, and put no health value in it, one is refused.
 
 ## Where the file is
 
@@ -30,25 +30,25 @@ so this is the whole footprint.
 | Backend | Location | Local path with desktop sync |
 | --- | --- | --- |
 | Dropbox | App-folder app, so everything sits under `Apps/Health Plan by Dr Brad/` (a connection made before the app was renamed keeps `Apps/Health Roadmap by Dr Brad/`; Dropbox never renames an existing user's folder) | `~/Dropbox/Apps/Health Plan by Dr Brad/health-roadmap.json` (older connections: `…/Apps/Health Roadmap by Dr Brad/…`) |
-| Google Drive | Folder `Health Plan by Dr Brad` in My Drive | Wherever Drive for desktop mounts My Drive — on macOS usually `~/Library/CloudStorage/GoogleDrive-<email>/My Drive/`, elsewhere often `~/Google Drive/My Drive/`. Set the folder "Available offline", or Drive streams it rather than storing it |
+| Google Drive | Folder `Health Plan by Dr Brad` in My Drive (an older connection may still use `Health Roadmap by Dr Brad`; the app finds either, `DRIVE_LEGACY_FOLDER_NAME` in `drive-rest.ts`) | Wherever Drive for desktop mounts My Drive, on macOS usually `~/Library/CloudStorage/GoogleDrive-<email>/My Drive/`, elsewhere often `~/Google Drive/My Drive/`. Set the folder "Available offline", or Drive streams it rather than storing it |
 | GitHub | Default branch of the one repo the token is scoped to, at the repo root | your clone: `health-roadmap.json` |
 | WebDAV / self-host | Relative to the configured base URL | wherever you mounted it |
-| Browser only | `localStorage` key `health_roadmap_file_v2` | no file on disk — export from the app instead |
+| Browser only | `localStorage` key `health_roadmap_file_v2` | no file on disk, export from the app instead |
 
 Uploaded reports sit beside the JSON in human folders: `Lab results/`, `Scans/`,
 `Clinic letters/`, `Other documents/`, named `YYYY-MM-DD Title.ext`. Each
-`documents[].fileRef` is that path — but treat it as an opaque relative path, not
+`documents[].fileRef` is that path, but treat it as an opaque relative path, not
 a pattern: older rows use other shapes (`documents/doc_1.pdf`), and a text-only
 document has `fileRef: ""`.
 
 ## How to read
 
 1. Parse the JSON.
-2. Check `schemaVersion`. If it is greater than 1, stop — a newer app wrote this file and
+2. Check `schemaVersion`. If it is greater than 1, stop, a newer app wrote this file and
    you may not understand every field. Read if you like; do not write.
 3. Current values live in the arrays, not in a separate "current" object.
    - `measurements` (core metrics) and `labValues` (everything else) are **append-only
-     history**. A row's slot is `(metric, calendar day of recordedAt)` — `metricType` for
+     history**. A row's slot is `(metric, calendar day of recordedAt)`, `metricType` for
      measurements, `metricName` for lab values.
    - Within a slot, at most one row has `status: "active"`. That is the current value.
      If several are active, the newest `createdAt` wins (larger `id` breaks a tie).
@@ -60,7 +60,7 @@ document has `fileRef: ""`.
 5. Skip any document with `deleted: true`. The row stays in the file forever; the user
    deleted it.
 
-## How to write — the hard rules
+## How to write: the hard rules
 
 The file follows FHIR `Observation` discipline. Break these and you silently corrupt
 someone's medical history, or lose their data at the next device sync.
@@ -70,29 +70,29 @@ someone's medical history, or lose their data at the next device sync.
 2. **A correction is an append.** Add a new row with a fresh id and
    `correctsId` set to the old row's id, then set the old row's `status` to
    `"entered-in-error"`. That status flip is the only edit ever permitted to an existing
-   row, and it is one-way — `entered-in-error` never goes back to `active`. The
-   correction row keeps the original row's `recordedAt` — a correction changes the
+   row, and it is one-way, `entered-in-error` never goes back to `active`. The
+   correction row keeps the original row's `recordedAt`, a correction changes the
    value, never the date.
 3. **Check the slot before you append.** Look for an active row in the same
    `(metric, calendar day)` slot. If one exists you have exactly two options: flip it to
    `"entered-in-error"` (setting `correctsId` on your new row if you are correcting it),
-   or write nothing. **Never leave two active rows in one slot** — nothing reconciles
+   or write nothing. **Never leave two active rows in one slot**: nothing reconciles
    them for you (see Caveats).
 4. **If the value is already there, write nothing.** Before appending, check whether the
    active row for that slot already carries this value. Re-importing the same lab report
    is the most dangerous thing an agent can do here: fresh ids and a fresh `createdAt`
-   make your rows win every slot, permanently demoting the user's originals — including
+   make your rows win every slot, permanently demoting the user's originals, including
    the manual corrections they made by hand. Import is not idempotent unless you make it
    so.
 5. **Fresh UUID per row, always.** Never reuse an id, never renumber. Ids are the merge
    identity across devices. Treat ids you read as opaque strings: an id containing
    `#dup-` is a quarantined duplicate the merge created after an id was reused with
    different content. Never write a `#dup-` id yourself.
-6. **Leave `meta` alone — except `meta.updatedAt`, which you MUST set to now (ISO 8601),
+6. **Leave `meta` alone, except `meta.updatedAt`, which you MUST set to now (ISO 8601),
    using the same clock as your rows' `createdAt`/`updatedAt`.** It is the anchor of the
    clamp below: leave it stale and every row you just wrote is rewound to it on the next
    load, and can lose its slot or its record to an older entry. Never touch
-   `meta.lamport`, `meta.eraseEpoch`, or `meta.lastDeviceId` — they are the sync engine's
+   `meta.lamport`, `meta.eraseEpoch`, or `meta.lastDeviceId`, they are the sync engine's
    clocks. Garbage there is clamped or reset to 0 on read, and a reset `eraseEpoch` makes
    the next merge discard your whole copy wholesale (`eraseEpoch` is what makes "delete
    all my data" stick).
@@ -100,23 +100,23 @@ someone's medical history, or lose their data at the next device sync.
    Updating a current-state row you legitimately own (a medication, supplement, or
    reminder preference) means setting that row's `updatedAt` to now and leaving its
    `lamport` exactly as you found it, or absent.
-8. **Units.** `measurements[].value` is the SI canonical unit — kg, cm, mmHg, mmol/mol
+8. **Units.** `measurements[].value` is the SI canonical unit, kg, cm, mmHg, mmol/mol
    for HbA1c, mmol/L for lipids, g/L for ApoB, µmol/L for creatinine, ng/mL for PSA,
    nmol/L for Lp(a). Convert before you write. `labValues[].value` keeps the lab's own
    number and its reported `unit` string verbatim; no conversion.
 9. **Timestamps are ISO 8601, and never in the future.** On every load the app clamps a
-   row's write-clocks — `createdAt` on measurements and lab values, `updatedAt`/`lamport`
-   on current-state rows — to the file's own last write (the later of `meta.createdAt`
+   row's write-clocks, `createdAt` on measurements and lab values, `updatedAt`/`lamport`
+   on current-state rows, to the file's own last write (the later of `meta.createdAt`
    and `meta.updatedAt`), so a future stamp is rewound, not rejected. `recordedAt` is
    never clamped: it is the clinical date, and a future one still puts a value on a day
-   that has not happened — that mistake is yours to avoid. `recordedAt` may be
-   `YYYY-MM-DD` or a full timestamp — only the day is used for slotting.
+   that has not happened, that mistake is yours to avoid. `recordedAt` may be
+   `YYYY-MM-DD` or a full timestamp, only the day is used for slotting.
 10. **Use catalogue keys for `metricName`.** If the test is in
     `packages/health-core/src/lab-catalog.ts` (ferritin, tsh, alt, …), use that `key`.
     Matching happens on those keys. Catalogue spellings, aliases and
     underscore/space variants all converge on the catalogue key at merge time, so
     "Vitamin D", `vitamin_d` and "vitamin  d" land in one slot; only a name that is
-    genuinely uncatalogued beyond that fold stays a separate row. Core metrics — LDL, HDL, HbA1c, creatinine and the rest — belong in
+    genuinely uncatalogued beyond that fold stays a separate row. Core metrics (LDL, HDL, HbA1c, creatinine and the rest) belong in
     `measurements` with a `metricType` from `METRIC_TYPES`, not here.
 11. **Deleting a document** means setting `deleted: true` on its row. A removed row comes
     straight back from any other device.
@@ -125,9 +125,9 @@ someone's medical history, or lose their data at the next device sync.
 
 Validate your result against the schema before you write it back.
 
-## Caveats — read these before you automate anything
+## Caveats: read these before you automate anything
 
-- **A write you make is now visible almost at once in an open browser tab** (US-34, 2026-09-02). The widget no longer waits for a timer: on Dropbox it holds a `list_folder/longpoll` open on the app folder and re-reads within about a second of your write; on Google Drive it walks the changes feed every 3 seconds. That is a reason to write the whole record in one go rather than in pieces — a half-finished sequence is on the user's screen while you are still writing it.
+- **A write you make is now visible almost at once in an open browser tab** (US-34, 2026-09-02). The widget no longer waits for a timer: on Dropbox it holds a `list_folder/longpoll` open on the app folder and re-reads within about a second of your write; on Google Drive it walks the changes feed every 3 seconds. That is a reason to write the whole record in one go rather than in pieces, a half-finished sequence is on the user's screen while you are still writing it.
 - **There is no lock and no version guard on a filesystem write.** The web app writes
   with an optimistic-concurrency check; you do not have one. Read, modify, and write back
   promptly. Do not hold the file open across a long task, and do not write while the user
@@ -135,16 +135,16 @@ Validate your result against the schema before you write it back.
 - **The merge is not a cleanup pass, and it does not run on load.** Opening the app
   reads and normalises the file; nothing reconciles slots until the app writes, which
   needs a second device or a user edit. Two active rows in one slot therefore stay
-  visible. When a merge does run it never deletes — a slot loser becomes
+  visible. When a merge does run it never deletes, a slot loser becomes
   `entered-in-error`, and an id reused with different content becomes two rows, the extra
-  one quarantined under `<id>#dup-…` — but that is a safety net for concurrent devices,
+  one quarantined under `<id>#dup-…`, but that is a safety net for concurrent devices,
   not a licence to write sloppily. Rule 3 is yours to enforce.
 - **Malformed rows may be dropped, ignored, or have their clocks rewritten.** The app
-  normalises an untrusted file on every read — a non-array where an array belongs becomes
+  normalises an untrusted file on every read, a non-array where an array belongs becomes
   an empty array, out-of-range counters and future write-stamps are clamped (see the
   timestamps rule), and a row missing fields the UI needs simply will not render. Beyond
   those clamps it does not repair rows, and it does not warn.
-- **Unknown fields survive at the top level and inside rows** — migrate and merge both
+- **Unknown fields survive at the top level and inside rows**: migrate and merge both
   spread what they do not recognise, so an older app will not strip something a newer
   one added. **`meta` is the exception:** `mergeFiles` rebuilds it from its five known
   fields, so anything else you put there is dropped at the next sync. Do not use this
@@ -156,19 +156,24 @@ Validate your result against the schema before you write it back.
 
 Everything above describes an agent holding the FILE. There is a second way in: a
 hosted MCP server at `https://mcp.drstanfield.com/mcp`, which a web ChatGPT or Claude
-user connects once and then asks in words. It offers eight tools — `read_record`,
+user connects once and then asks in words. It offers eight tools, `read_record`,
 `get_plan`, `add_measurement`, `add_lab_values`, `correct_value`, `update_profile`,
-`report_feedback`, `import_documents` —
+`report_feedback`, `import_documents`,
 over the user's own Dropbox or Google Drive folder, and it enforces the rules above in
 code rather than asking you to keep them. `import_documents` reads lab PDFs or images
-(or a ZIP of them) and proposes values for you to accept, in the record's own unit
-system — the file itself is sent to Anthropic's API for extraction, under our key, and
-is not kept; nothing else here reaches a model we run. A file it cannot read comes back
+(or a ZIP of them; 5 MB per file, 20 MB per ZIP, 30 files a day; no HEIC) from the root
+of the Dropbox app folder, or a file dropped into ChatGPT on a computer, and proposes
+values for you to accept, in the record's own unit system. Google Drive's folder cannot
+be read that way (`drive.file` scope), so the tool refuses and points at the website
+upload. The file itself is sent to Anthropic's API for extraction, under our key, and
+is not kept; nothing else here reaches a model we run. Pending: assistant-side
+extraction (the assistant reads the file, not Brad's server) is the planned default,
+decided 2026-09-07, design in progress. A file it cannot read comes back
 with a `hint` in plain words (the type, the size limit, the day's quota, a missing date
-— answered with `fileDates: [{ file, date }]`), and `next` says what to do with what it found.
+, answered with `fileDates: [{ file, date }]`), and `next` says what to do with what it found.
 Every tool declares an `outputSchema` and answers with `structuredContent` beside the
 text: the same answer typed, so a row id is read, not parsed out of a sentence. A refusal
-carries none — it is an error result.
+carries none, it is an error result.
 
 A command-line assistant can connect to the same server: `claude mcp add --transport http
 drstanfield https://mcp.drstanfield.com/mcp`, or `gemini mcp add -s user --transport http
@@ -183,10 +188,10 @@ there are best-effort. A user revokes a Drive connection at
 
 Six things differ from the local path, and they are differences you will hit:
 
-- **`correct_value` requires `expectedValue`** — the number you believe the row holds
+- **`correct_value` requires `expectedValue`**: the number you believe the row holds
   right now. It is optional locally. A mismatch refuses the call and writes nothing, so
   read the record immediately before correcting.
-- **`update_profile` requires `expected` for every field it changes** — the value you
+- **`update_profile` requires `expected` for every field it changes**: the value you
   believe the record holds now, or `null` if you believe it holds none. Optional locally,
   for the same reason. A profile field is not append-only: there is no superseded copy to
   read back, so the claim is what stands between a stale read and a wrong plan. A profile
@@ -197,7 +202,7 @@ Six things differ from the local path, and they are differences you will hit:
   When the budget runs out the refusal says so and reading still works. `add_lab_values`
   also carries its own per-call cap of 50 rows, regardless of budget.
 - **A record whose `schemaVersion` is newer than the server understands is out of reach
-  entirely — reads refuse too**, because the record is migrated before any tool sees it.
+  entirely: reads refuse too**, because the record is migrated before any tool sees it.
 - **Provider calls time out and surface as "did not answer".** A cloud provider that
   accepts the connection and then goes quiet fails the call rather than hanging it.
   Reading and saving a record gets 30 s; a larger upload gets proportionally longer, so
@@ -208,16 +213,17 @@ Trust model, revocation, and the residual risks we accepted knowingly:
 [mcp-architecture.md](mcp-architecture.md). The short version: your record
 still lives only in your cloud storage, our server reads it in memory to answer one call
 and keeps no copy, and you cancel the whole thing at your provider's connected-apps
-settings — which also disconnects the website from the folder, because both providers
+settings, which also disconnects the website from the folder, because both providers
 scope the folder to the app, not to the surface.
 
 ## No telemetry
 
-Reading or writing this file DIRECTLY contacts none of our servers — no sync endpoint,
+Reading or writing this file DIRECTLY contacts none of our servers, no sync endpoint,
 no analytics hook on the file, by design. We cannot see that you did this, and we do not
 want to. The hosted path above is the one exception, and it is one by construction: it
 is a request to our server, so we see that a call happened, and we count it. What the
-count holds is which tool ran, which assistant asked, which provider holds the record,
-and whether it worked. Never the values, never a metric name, never anything that says
+counts hold: per call, which tool ran, which assistant asked, and whether it worked; per
+connection, which assistant and which provider; per import, the route, the phase and a
+file-count bucket. Never the values, never a metric name, never anything that says
 which person it was. With very few users, a timestamped row is still a thin activity
 log of somebody; it just cannot say what they measured.

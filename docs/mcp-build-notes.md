@@ -1,11 +1,11 @@
 # MCP build notes
 
-The dated build logs behind [mcp-architecture.md](mcp-architecture.md) — what was
+The dated build logs behind [mcp-architecture.md](mcp-architecture.md), what was
 actually built, in what order, and what each decision cost. Split out of that file on
 2026-09-03, when it passed the 500-line cap. The map lives there; the receipts live
-here. Everything below is verbatim from that file.
+here. Everything below was moved from that file; later audits corrected it in place.
 
-## Build notes — Phase 1, 2026-09-02
+## Build notes: Phase 1, 2026-09-02
 
 Written by the implementation, not by the decision. Four places where the build
 departed from the text above, each toward the stricter reading.
@@ -19,7 +19,7 @@ work, and "seal with the first, accept any" is literally true. A rotation test i
 found it.
 
 **Every issued value carries its client id in front of the sealed blob.** The AAD binds
-a blob to one client (§4), and unsealing therefore needs to know which client — but a
+a blob to one client (§4), and unsealing therefore needs to know which client, but a
 bearer token arrives alone and Dropbox echoes exactly one opaque `state`. The id travels
 with the blob as `<client id>~<blob>`. It feeds the AAD, so it is bound rather than
 trusted; at `/token`, where the request states `client_id` independently, the two are
@@ -31,7 +31,7 @@ stolen bearer token, and no framing fixes that.
 client has no callback host of its own: it listens on an ephemeral port on the user's own
 machine, and cannot know the port until it binds one. So `redirectMatches(registered,
 requested)` in `app/lib/mcp-clients.server.ts` tries an exact string first, then allows a
-loopback pair to differ in the PORT and in nothing else — both `http:`, host exactly
+loopback pair to differ in the PORT and in nothing else, both `http:`, host exactly
 `127.0.0.1`, `[::1]` or `localhost` and identical on both sides, same path, same query, no
 userinfo, no fragment. It is the only redirect comparison in the codebase, used at
 `/authorize` and at `/token`. `https://localhost` is refused: the exemption exists because
@@ -40,7 +40,7 @@ match is exact, so `localhost.evil.com` and `127.0.0.1.evil.com` are ordinary pu
 and get nothing.
 
 Why this is safe, and why it does not contradict CLAUDE.md's "localhost is never on an
-allow-list": that rule is about CORS — granting a browser origin access to our endpoints.
+allow-list": that rule is about CORS, granting a browser origin access to our endpoints.
 This grants nothing. It is where the user's own browser carries an authorization code back
 to a process on the user's own machine, and that code is worthless without the PKCE
 verifier, which never left the process that asked for it. PKCE S256 is mandatory on every
@@ -48,11 +48,11 @@ authorization, and our consent screen names the client before anything is grante
 
 Claude Code publishes a second metadata document,
 `https://claude.ai/oauth/claude-code-client-metadata`, behind the same Cloudflare challenge
-as the web one, so it is pinned in `KNOWN_CLIENTS` too — `client_name` "Claude Code",
+as the web one, so it is pinned in `KNOWN_CLIENTS` too, `client_name` "Claude Code",
 redirects `http://localhost/callback` and `http://127.0.0.1/callback`, copied verbatim.
 Gemini CLI registers dynamically with `http://localhost:<port>/oauth/callback`.
 
-**A fifth padding bucket, 4096.** §4 names 256/512/1024/2048. A provider refresh token
+**A fifth padding bucket, 4096.** §4 originally named 256/512/1024/2048 (since corrected). A provider refresh token
 longer than the 2048 rung would otherwise fail to seal at all; the extra rung means it
 fails to leak instead of failing to work.
 
@@ -79,9 +79,9 @@ The behaviour changes worth naming here:
   `getClientIp(request, 'fly' | 'shopify')`, so the storefront's own app-proxy callers
   keep trusting `X-Forwarded-For` and only the MCP routes trust `Fly-Client-IP`.
 - **`providerRevokeUrl()` is surfaced on the consent and callback pages**
-  (`app/routes/mcp.$.tsx`), not just documented here — the page that grants access also
+  (`app/routes/mcp.$.tsx`), not just documented here, the page that grants access also
   names the exact provider page that revokes it.
-- **Bodies are capped** — 64 KB at the OAuth doors, 1 MB at `/mcp`, 413 over — and
+- **Bodies are capped**: 64 KB at the OAuth doors, 1 MB at `/mcp`, 413 over, and
   `/token` (per IP) and `tools/call` (per connection) are rate-limited. The limits are
   deliberately generous: a whole vendor's users share one egress range, so a tight per-IP
   limit would lock out honest traffic rather than an attacker.
@@ -90,7 +90,7 @@ The behaviour changes worth naming here:
   every route into a 500.
 - **Not done, deliberately: no Dropbox access-token cache.** Every `tools/call` refreshes
   one. A memory cache keyed by connection would cut that to one per four hours, but it
-  would put live provider credentials in a process-wide map — a new thing to leak, and a
+  would put live provider credentials in a process-wide map, a new thing to leak, and a
   new line in §1's inventory of what we hold. The per-connection rate limit bounds the
   refresh rate instead.
 
@@ -103,8 +103,8 @@ canonical ids now resolve from `KNOWN_CLIENTS` before any fetch, which the draft
 apply its own policy" explicitly allows. Two things follow. The pinned redirect URIs must
 also pass `isAllowedRedirect`, and a test asserts that so the pins and the policy cannot drift.
 And the failure mode of pinning is a vendor changing its callback: the user sees a plain
-refusal at `/mcp/authorize` — never a redirect, because that would make us an open
-redirector — and we see one `console.error` naming the reason and the client HOST only, no
+refusal at `/mcp/authorize`, never a redirect, because that would make us an open
+redirector, and we see one `console.error` naming the reason and the client HOST only, no
 URL and no query. That log line is the whole detection mechanism, and it is enough,
 because the user's report and Sentry's line arrive together.
 
@@ -117,30 +117,30 @@ because the user's report and Sentry's line arrive together.
   machines multiply it by N. The 5× weighting still bounds the falsification attack, but
   by 5×-per-machine-per-hour. Stated in §3 rather than only here.
 - **Dropbox's 500-byte `state` limit is believed, not verified.** The nonce is 43 chars,
-  so the constraint no longer binds, but the first live connection is still the test —
+  so the constraint no longer binds, but the first live connection is still the test,
   the runbook asks for it explicitly.
 
 ---
 
-## Build notes — Phase 2, 2026-09-02
+## Build notes: Phase 2, 2026-09-02
 
 Two places where the build departed from the text above.
 
 **`prompt=consent` is unconditional, and "only when needed" was the wrong shape.** The
 brief asked for the prompt only when a refresh token is actually needed. For a stateless
 server it is needed every time: Google issues a refresh token on a first authorization or
-an explicit re-consent, and never on a silent re-authorization — and a connection with no
+an explicit re-consent, and never on a silent re-authorization, and a connection with no
 refresh token cannot be sealed, so it cannot exist. Omitting the prompt would fail for
 every user who has ever connected the widget, and then need a second trip through Google
 with the prompt anyway: two redirects for the same token. So we ask once. What that costs
 is one of the account's 100 refresh-token slots per connection, shared with the widget,
-and §4 already says never to mint a SPARE — which we do not: one token, inside a flow the
+and §4 already says never to mint a SPARE, which we do not: one token, inside a flow the
 user just consented to. The runbook says what to check if a user reports the website
 quietly disconnecting.
 
 **A failed verify is now retryable for EVERY backend, not just Drive.** §7 step 3 is
 `SyncManager.verifyAfterWrite`, which detected a lost update and then threw a fatal
-error — detection with no step 4. It now throws `LostUpdateError extends ConflictError`,
+error, detection with no step 4. It now throws `LostUpdateError extends ConflictError`,
 so the existing retry loop re-reads, re-merges and writes again; the arrays are
 append-only, so writing the same rows twice is the same as writing them once. Dropbox and
 the local file adapter inherit this and are better for it. The one thing that changed for
@@ -151,7 +151,7 @@ something plainly was.
 but the blobs phase 1 already handed out carry no such field, and a blob in a vendor's
 token store can never be updated by us (§7). Reading `undefined` as a provider would have
 500ed every tool call on Brad's own live connections the moment this deployed. So
-`unpackSealed` — the one place a sealed payload is ever opened — defaults a missing or
+`unpackSealed`, the one place a sealed payload is ever opened, defaults a missing or
 invalid provider to `dropbox`, which is what every one of those connections is. Two tests
 pin it: an old access blob works, and an old refresh blob mints an access blob that names
 Dropbox. It is not migration code; it is the only honest reading of a credential we
@@ -167,11 +167,11 @@ match to anything it had sent.
 `describeStorageFailure`, whose fallback message is "The record did not answer. Nothing
 was written." A `TypeError` inside a tool, inside the corrections guards, or inside merge
 therefore reached the assistant worded as a refusal against a cloud folder that was fine
-— and nothing was logged. The nuance that hid it: both REST adapters called bare `fetch`,
+, and nothing was logged. The nuance that hid it: both REST adapters called bare `fetch`,
 which throws a raw `TypeError` on a dead network, so the catch-all was also the only thing
 correctly turning a real provider outage into "did not answer." Deleting the catch-all
 outright would have mislabelled every outage as a bug. The fix is `fetchOrFail()`
-(`packages/health-core/src/adapter.ts`) — one function the adapters' own network calls go
+(`packages/health-core/src/adapter.ts`), one function the adapters' own network calls go
 through, so a dead connection becomes a typed storage failure at the source rather than
 an ordinary exception at the top. `callHostedTool` now checks `isStorageFailure(error)`
 before deciding: true still becomes a worded refusal, false is logged (tool name and error
@@ -179,7 +179,7 @@ name only, no health values) and rethrown as `-32603`.
 
 **And a provider that never answers is now bounded.** `fetchOrFail` had no timeout, so a
 cloud provider that accepted the socket and then went silent hung the tool call until the
-platform killed it — no error, no id, nothing for the assistant to say. It now runs every
+platform killed it, no error, no id, nothing for the assistant to say. It now runs every
 provider call under `AbortSignal.timeout(FETCH_TIMEOUT_MS)` (30 s), merged with any
 caller signal via `AbortSignal.any`, with the body read inside the same bound. The abort
 throws the same `StorageError('<Provider> did not answer', UNREACHABLE_HINT)`, so silence
@@ -188,56 +188,66 @@ widget's Sentry `/did not answer/` ignore.
 
 **`fetchOrFail`'s bound is feature-detected, and document uploads get a longer one.**
 `fetchOrFail` also runs in the browser (the widget's Drive and Dropbox adapters import it
-through the health-core barrel), where the Vite target is `modules` — Safari 14/15 has no
+through the health-core barrel), where the Vite target is `modules`: Safari 14/15 has no
 `AbortSignal.timeout` and 16–17.3 no `AbortSignal.any`, so calling either unguarded made
 the bound itself the outage and killed every read and save there. Both are now
 feature-detected; missing either, the call runs unbounded as it did before. And the flat
 30 s is a record-file bound: `driveCreateFile` scales it with the body size (30 s + 1 s
 per 10 KB, capped at 5 min) so a 10 MB upload is not aborted mid-send on a slow uplink.
 
-## Build note — the widget's end of the loop, 2026-09-02
+## Build note: the widget's end of the loop, 2026-09-02
 
 **A connector's write is now pushed to the open page, not polled for** (US-34). The
 60-second timer was the visible half of the round trip: an assistant wrote, and the user
 waited up to a minute or reloaded. `StorageAdapter` gained an OPTIONAL
 `watch(fileName, onChange, signal)`, and `RoadmapStore.startLiveRefresh` uses it in place
-of the poll wherever an adapter has one — Dropbox through `files/list_folder/longpoll` on
+of the poll wherever an adapter has one: Dropbox through `files/list_folder/longpoll` on
 the `notify` host (no access token: the cursor is the credential), Google Drive through
 `changes.list` on a 3-second beat, because a browser cannot receive Drive's push channel.
 The poll survives only for adapters with no watch. The tab's visibility still governs
 everything: hidden aborts the watch, visible takes it up again. Nothing about the hosted
-server changed — this is the widget hearing what the server already writes.
+server changed, this is the widget hearing what the server already writes.
 
-## Build note — structured tool results, 2026-09-03
+## Build note: structured tool results, 2026-09-03
 
 **Every tool now declares an `outputSchema` and answers with `structuredContent`**
-(spec 2025-06-18 §Tools). The words each tool returns are unchanged — guides and tests
+(spec 2025-06-18 §Tools). The words each tool returns are unchanged, guides and tests
 pin them, and they stay in `content` as the serialized JSON the spec asks for on
 compatibility grounds. What is new is the same answer typed: `mcp-tools.ts` holds a zod
 output schema beside each input one, and the published JSON Schema mirrors it, checked by
 the same parity test that already guards the inputs. A record and a plan keep their shape
-loosely — both are published in full elsewhere, and restating them here would be a second
+loosely, both are published in full elsewhere, and restating them here would be a second
 definition to drift. Both servers pass the structure through untouched; the stdio
 server's saved-backup note stays in the text, where it belongs. A refusal is an error
 result and carries no structure.
 
-## Build note — `import_documents`, 2026-09-04 (US-35)
+## Build note: `import_documents`, 2026-09-04 (US-35)
 
 **Shipped.** The eighth tool, hosted-only: extract (read files, no write) and commit
-(write, guarded) as two calls sharing one signed receipt. Two sources — a Dropbox
-folder listing, and a ChatGPT-dragged file fetched from `files.oaiusercontent.com` —
-both landing in the same extraction pipeline the website's upload route already uses.
-A Google Drive connection refuses the folder route outright: `drive.file` cannot see a
-file the user did not create through this app, so there is nothing to list.
+(write, guarded) as two calls sharing one sealed receipt (`RECEIPT_LIFETIME_SECONDS`,
+one hour). Two sources: the root of the Dropbox app folder (`DROPBOX_APP_FOLDER`,
+`Apps/Health Plan by Dr Brad`), and a file dropped into ChatGPT on a computer, fetched
+by `download_url` from ChatGPT's file hosts (`files.oaiusercontent.com` or its Azure blob
+store; a phone hands over a bare reference and is refused). Both land in the same
+extraction pipeline the website's upload route already uses, and extract parks its
+candidates as `imports/pending-<id>.json` in the user's folder until commit removes it.
+Caps: 5 MB per PDF or image, 20 MB per ZIP, 20 files a call, 30 a day per connection;
+HEIC is not read. A Google Drive connection refuses the folder route outright:
+`drive.file` cannot see a file the user did not create through this app, so there is
+nothing to list. Pending: assistant-side extraction (the assistant reads the file, not
+Brad's server) is the planned default, decided 2026-09-07, design in progress.
 
 **The Haiku PDF document-block check passed.** One real call, a 1-page PDF sent whole
 as a base64 `document` block rather than as extracted text or a page image: 3,369 input
 tokens. Confirms the `pdf` page type in `lab-extraction.ts` is viable cost-wise before
 it carries production traffic.
 
-**The 40 s budget is ChatGPT's constraint, not ours** — bounds and the partial-result
+**The 40 s budget is ChatGPT's constraint, not ours**: bounds and the partial-result
 contract are US-35 AC10 in `docs/user-stories.md`.
 
-**What remains: live verification.** Runbook step 8a is written but not yet run against
-a real Dropbox account and a real ChatGPT drag — that needs a deployed server and a
-human at the keyboard, same as every other hosted-MCP verify step.
+**Verified live 2026-09-05** on the scratch Dropbox (`brad@microvitamin.com`), runbook
+step 8a: connect, extract, commit, replay refused, `held_different` replace, the 90-day
+guard, the Drive refusal, and value-free `mcp_import` rows. One defect found and fixed:
+the lab-report branch skipped the `documents[]` push, so the same PDF extracted twice
+was `held_equal` per value instead of `already_imported`. Details: `docs/user-stories.md`
+US-35.

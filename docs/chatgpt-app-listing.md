@@ -12,6 +12,15 @@
 > (live on a fresh account 2026-09-05), while a connection made before the app was renamed keeps
 > `Apps/Health Roadmap by Dr Brad` (Brad's own). Dropbox names the folder at first connect and never
 > renames it, so both names are live and the guides say so.
+>
+> **Pending change to the listing copy (noted 2026-09-07).** Brad decided that
+> assistant-side extraction (the assistant reads the file itself; our server never
+> receives it) becomes the default for `import_documents`. The design is in progress
+> and NOT built (see `lab-upload.md`, "Proposed, not built"). The Compliance paragraph
+> and the `import_documents` and open-world justifications below say the file goes to
+> our server and to Anthropic's API. That is true today and is what 1.0.1 must say if it
+> is submitted before the design ships; rewrite those lines in the same commit that ships
+> the new route, not before.
 
 Everything the OpenAI submission form asks for, so Brad only fills in fields. 1.0.0 has been
 submitted and is in review (see above); 1.0.1 has not. Requirements read 2026-09-02 from `developers.openai.com/plugins/deploy/submission`,
@@ -40,7 +49,7 @@ record, add measurements and lab results, correct a value you entered wrongly, a
 from it: what is due for screening, and evidence-based suggestions with the citation behind each
 one. Values are never deleted; a correction appends the new number and marks the old row
 `entered-in-error`, so your history stays auditable. If something is wrong, ask it to file a bug
-report and it will, as a public issue on the project's GitHub — carrying its description of the
+report and it will, as a public issue on the project's GitHub, carrying its description of the
 problem and nothing about you. We store nothing. Disconnect at
 `dropbox.com/account/connected_apps` or `myaccount.google.com/connections`. This is educational
 information, not medical advice, and does not replace your doctor.
@@ -55,7 +64,8 @@ Nothing is logged: health values are excluded from logs, Sentry and product anal
 reminder capability token is stripped from every read. We send nothing to a model ourselves,
 except when the user asks to import a file: that file (never the record) then goes to
 Anthropic's API for extraction and is not kept there, subject to Anthropic's own
-data-retention terms. Otherwise the only model that sees the record is the user's own ChatGPT
+data-retention terms. (Pending change, see the note at the top: this sentence is what
+the assistant-side design would remove.) Otherwise the only model that sees the record is the user's own ChatGPT
 session.
 
 ## Tool annotations
@@ -88,7 +98,7 @@ credential. Never the open web, never another user's record. Two are the excepti
 is marked open-world: it touches no health record, and it files an issue on GitHub. `import_documents`
 is marked open-world too: it sends a file to Anthropic's API for extraction, and on the ChatGPT file
 route it first fetches that file from OpenAI's own file hosts (`files.oaiusercontent.com`, or the
-`oaisdmntprn*.blob.core.windows.net` blob store ChatGPT hands out — a namespace, not a closed list, so
+`oaisdmntprn*.blob.core.windows.net` blob store ChatGPT hands out, a namespace, not a closed list, so
 what bounds that fetch is the per-connection daily file quota and that the bytes only ever become
 candidates the same user must confirm).
 
@@ -113,11 +123,11 @@ candidates the same user must confirm).
 - **`report_feedback`**
   - *Read-only:* Not read-only. It never opens the health record, but it files a public GitHub issue on the project's repository for the user.
   - *Destructive:* Not destructive. It creates an issue and takes nothing away. Nothing in the health record is read or changed.
-  - *Open-world:* Open-world. This is the one tool that reaches outside the user's own file: it posts to GitHub's API, on our own repository, under our own token. It carries the assistant's description of the problem and nothing about the user — no name, no email, no address, and any text that reads as a health value is refused before anything is sent.
+  - *Open-world:* Open-world. This is the one tool that reaches outside the user's own file: it posts to GitHub's API, on our own repository, under our own token. It carries the assistant's description of the problem and nothing about the user: no name, no email, no address, and any text that reads as a health value is refused before anything is sent.
 - **`import_documents`**
   - *Read-only:* Not read-only. Its extract phase writes nothing to the record but does park candidate values in the user's own folder; its commit phase appends values and files documents, and can correct a value through the same guard as `correct_value`.
   - *Destructive:* Destructive. A `replace` in commit flips a superseded row to `entered-in-error` permanently, exactly like `correct_value`, guarded the same way.
-  - *Open-world:* Open-world. It sends the user's file — never the record — to Anthropic's API for extraction under our key, and on the ChatGPT file route it first fetches that file from OpenAI's own file host (`files.oaiusercontent.com` or its `oaisdmntprn*.blob.core.windows.net` blob store). Nothing is kept after extraction.
+  - *Open-world:* Open-world. It sends the user's file, never the record, to Anthropic's API for extraction under our key, and on the ChatGPT file route it first fetches that file from OpenAI's own file host (`files.oaiusercontent.com` or its `oaisdmntprn*.blob.core.windows.net` blob store). Nothing is kept after extraction.
 
 ## Starter prompts
 
@@ -169,6 +179,6 @@ private network. An empty account runs every test case: the writes create the fi
 3. At https://platform.openai.com/plugins, click Create plugin, choose "With MCP" (not Skills only), enter `https://mcp.drstanfield.com/mcp`. Brad's dev-mode connector id `asdk_app_…` is not a platform app record; this creates a real one.
 4. Copy the domain-verification token from that flow, run `fly secrets set OPENAI_APPS_CHALLENGE=<token> -a health-tool-edu`, confirm `curl .../.well-known/openai-apps-challenge` returns it alone as `text/plain`, then click Verify.
 5. Paste the listing fields, descriptions, category, countries and starter prompts. Upload the logo (size requirement not reachable as of 2026-09-02).
-6. Paste the eight test cases, the demo-credentials answer and the 21 tool justifications above.
+6. Paste the ten test cases (seven positive, three negative), the demo-credentials answer and the tool justifications above (three per tool; the shared open-world line serves six of them).
 7. Read the developer policy questions honestly (the Compliance section settles the PHI question; if OpenAI reads it differently, ask them).
 8. Submit. Approval does not publish the app. Brad chooses when it goes live.

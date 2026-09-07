@@ -1,4 +1,4 @@
-# Reference — detail moved out of CLAUDE.md (on-demand tier)
+# Reference: detail moved out of CLAUDE.md (on-demand tier)
 
 > Moved 2026-08-10 (entropy pass). CLAUDE.md keeps the operative rules and points here
 > for depth. Sections below are verbatim from the pre-cleanup CLAUDE.md; update them
@@ -23,152 +23,108 @@
 **Rules:**
 - Store actual drug name and dose when taking a medication (never 'yes')
 - Use 'none', 'not_yet', 'not_tolerated' only for status (no dose data)
-- `status` auto-derived from `drug_name` by `deriveMedicationStatus()` in `supabase.server.ts`
+- `status` is derived from `drug_name` client-side when the medication is saved (v1's server `deriveMedicationStatus()` is gone)
 
 ### Measurement Storage (FHIR Observation + replaces)
 
-> **v2 note:** these FHIR semantics are now enforced **client-side in the user's `health-roadmap.json` file** ([RoadmapStore](widget-src/src/storage/roadmap-store.ts) + [mergeFiles](packages/health-core/src/merge.ts)), **not** by Supabase RLS/RPC/triggers. The server-side machinery described below (the `correct_measurement` RPC, the BEFORE-UPDATE/INSERT triggers, the partial UNIQUE index, the 409 responses) is **retired** — it lived on the v1 `health_measurements` table that was purged June 2026. It's documented here because the *file* preserves the same Observation shape; read "server" as "the RoadmapStore + merge logic."
+> **v2 note:** these FHIR semantics are now enforced **client-side in the user's `health-roadmap.json` file** ([RoadmapStore](widget-src/src/storage/roadmap-store.ts) + [mergeFiles](packages/health-core/src/merge.ts)), **not** by Supabase RLS/RPC/triggers. The server-side machinery described below (the `correct_measurement` RPC, the BEFORE-UPDATE/INSERT triggers, the partial UNIQUE index, the 409 responses) is **retired**, it lived on the v1 `health_measurements` table that was purged June 2026. It's documented here because the *file* preserves the same Observation shape; read "server" as "the RoadmapStore + merge logic."
 
 Stored values are **never mutated**. The file's `measurements`/`labValues` arrays are append-only with FHIR R4 `Observation` semantics:
 
-- **`status`** (`'active' | 'entered-in-error'`) — only `active` rows feed `getLatestMeasurements()`/results. `entered-in-error` rows are kept for audit. Sticky: no revert to `active`.
-- **`corrects_id`** — when this row is a correction, points at the row it replaces (self-FK, `ON DELETE SET NULL`). NULL on original inserts.
+- **`status`** (`'active' | 'entered-in-error'`): only `active` rows feed `getLatestMeasurements()`/results. `entered-in-error` rows are kept for audit. Sticky: no revert to `active`.
+- **`corrects_id`**: when this row is a correction, points at the row it replaces (self-FK, `ON DELETE SET NULL`). NULL on original inserts.
 - **`source`** (`MEASUREMENT_SOURCES` enum in `validation.ts`):
-  - `manual` — user typed into the form
-  - `lab_import` — LLM-extracted, not edited
-  - `lab_import_edited` — LLM-extracted then user-corrected at review time
-  - `manual_correction` — inserted by the `correct_measurement` RPC
-  - `apple_health`, `fitbit` — future HealthKit-style imports
+  - `manual`: user typed into the form
+  - `lab_import`: LLM-extracted, not edited
+  - `lab_import_edited`: LLM-extracted then user-corrected at review time
+  - `manual_correction`: inserted by the `correct_measurement` RPC
+  - `apple_health`, `fitbit`: future HealthKit-style imports
 
 **Correction flow (the only path that flips a row's status):**
 
 1. User clicks an existing value in `BloodTestTimeline`, types a new one, presses Enter or clicks away.
-2. Widget calls `RoadmapStore.correctMeasurement(oldId, newValueSI)` — a purely client-side mutation of the in-memory file, persisted via the normal `flush()` (read-merge-write to the user's cloud). No server round-trip.
+2. Widget calls `RoadmapStore.correctMeasurement(oldId, newValueSI)`, a purely client-side mutation of the in-memory file, persisted via the normal `flush()` (read-merge-write to the user's cloud). No server round-trip.
 3. It atomically marks the old row `status='entered-in-error'` and appends a new row with `source='manual_correction'` + `correctsId=oldId` ([roadmap-store.ts](widget-src/src/storage/roadmap-store.ts)).
 
 **Client-side invariants (RoadmapStore + `mergeFiles`):**
 
-- Arrays are append-only; corrections never edit a row in place — they add a new row and flip the old row's `status`.
-- At most one `active` row per `(metric, day)` slot — enforced in `RoadmapStore.addMeasurement()` (the old DB partial-unique-index guarantee, moved client-side).
+- Arrays are append-only; corrections never edit a row in place, they add a new row and flip the old row's `status`.
+- At most one `active` row per `(metric, day)` slot, enforced in `RoadmapStore.addMeasurement()` (the old DB partial-unique-index guarantee, moved client-side).
 - `mergeFiles()` makes `status` **monotonic / sticky**: if one device marks a row `entered-in-error` and another still has it `active`, the merge converges to `entered-in-error`.
 - A `correctsId` always points within the same file (single-owner), so the old cross-user-ownership trigger is moot.
 
-**Bulk save (lab import review)** is also client-side: `RoadmapStore` appends each reviewed row, skipping `(metric, recorded_at)` duplicates. Re-uploading unchanged lab data is a no-op (all-duplicate is success, not error). (The server `api.lab-import-v2.ts` only *extracts* values from the uploaded file via Claude and returns them — it stores nothing.)
+**Bulk save (lab import review)** is also client-side: `RoadmapStore` appends each reviewed row, skipping `(metric, recorded_at)` duplicates. Re-uploading unchanged lab data is a no-op (all-duplicate is success, not error). (The server `api.lab-import-v2.ts` only *extracts* values from the uploaded file via Claude and returns them, it stores nothing.)
 
 ## Important Files
 
-**Backend — live server routes (`app/routes/`).** All storefront routes reach the Fly app *through* the Shopify app proxy `/apps/health-tool-1/...` (HMAC-verified). The app stores **no health data** — these are AI / email / tracking endpoints only.
-- `api.chat.ts` — Chatbot endpoint (app-proxy HMAC + optional guest session). GET list/load conversations, POST send (→ Anthropic Haiku via `chat.server.ts`, with `CHAT_EDIT_TOOLS` tool-use), DELETE conversation.
-- `api.lab-import-v2.ts` — Lab-document extraction (app-proxy HMAC + per-IP daily file cap + per-machine $ cap). Calls Claude Opus to extract values/images; **stores nothing**.
-- `api.measurements.ts` — **Klaviyo guest email capture ONLY** (`{ klaviyoCapture: { email } }`, 5/day/email). All v1 measurement/profile/medication CRUD was torn down. **No account-deletion endpoint exists** (deletion is client-side; the old `api.user-data.ts` is deleted).
-- `api.reminders-v2.ts` + `reminders-v2.unsubscribe.tsx` — v2 email-reminder opt-in/update/cancel (cross-origin CORS allow-list + IP rate limit; provider proof via Google ID token / cloud token) + token unsubscribe page.
-- `api.feedback.ts` — Feedback form → email (app-proxy HMAC + honeypot + 3/hour/IP).
-- `api.google-token.ts` — Stateless Google OAuth code/refresh↔token exchange (cross-origin CORS; stores no tokens).
-- `api.ab.ts` — A/B impression/conversion tracking → Supabase (app-proxy HMAC, rate-limited).
-- `webhooks.orders-paid.ts` — `orders/paid` webhook: adds chat message credits on Appstle variant purchase (idempotent per `order_id`). `webhooks.app.{uninstalled,scopes_update}.tsx` — session housekeeping. `healthz.ts` — Fly health check.
-- `app.ab-testing.tsx` — A/B testing admin dashboard (Polaris UI).
-- `api.events.ts` — app-proxy product-events sink (bot-filtered, rate-limited); `api.resend-webhook.ts` — Resend bounce/complaint webhook (Svix-signed, no app-proxy HMAC), unsubscribes + suppresses in Klaviyo. `roadmap.open.tsx` — the plan-ready email's CTA target: counts the click, redirects to one hardcoded tool URL.
-- `mcp.$.tsx` — every hosted-MCP door behind one splat: `POST /mcp` (JSON-RPC), `/mcp/authorize`, `/mcp/callback`, `/mcp/token`, `/mcp/register`. `[.]well-known.$.tsx` — the two unauthenticated discovery documents (`oauth-protected-resource`, `oauth-authorization-server`), also served at their `/mcp`-suffixed forms, plus the OpenAI challenge token that proves we own the domain.
+Compact inventory. Tests sit beside their file (`*.test.ts`) and are not listed. Verified against `git ls-files` 2026-09-07.
 
-**Backend — server libs (`app/lib/`):**
-- `supabase.server.ts` — Supabase dual-client, guest-session creation, audit logging, A/B + chat helpers. (`deleteAllUserData()` survives but is v2-unreachable.)
-- `email.server.ts` — Welcome + reminder emails via Resend. `suggestionEvidence()` renders evidence fields (reason, guidelines, references) inline.
-- `reminder-v2.server.ts` + `reminder-v2-cron.server.ts` — v2 reminder scheduler + daily cron (batches of 50; server is a "dumb scheduler", schedule computed client-side).
-- `ab-stats.ts` — Statistical significance (normalCDF, two-proportion z-test). `rate-limiter.ts` — shared in-memory rate limiter factory.
-- `route-helpers.server.ts` / `local-first-route.server.ts` / `shopify.server.ts` — app-proxy HMAC verification, CORS allow-list (localhost NEVER approved), guest-session resolution. `local-first-route.server.ts` also exports `getClientIp(request, 'fly' | 'shopify')` — reads the trusted hop per route shape (see the app-proxy-IP gotcha below).
-- `mcp-config.server.ts` (secrets, on switch, URLs) · `mcp-seal.server.ts` (seal/unseal, per-type keys, AAD, kid) · `mcp-clients.server.ts` (`KNOWN_CLIENTS` pinning, CIMD, DCR, capped reads) — the hosted MCP server's OAuth 2.1 authorization server, no storage: every piece of state (code, access token, refresh token) is sealed into the value handed to the client.
-- `mcp-grants.server.ts` (blob payloads, `/token`, `WRITES_PER_HOUR`=60 allowance, rate limits) · `mcp-authorize.server.ts` (`/authorize` checks, consent state, PKCE) · `mcp-providers.server.ts` (Dropbox/Google confidential clients).
-- `mcp.server.ts` — the hosted MCP server: JSON-RPC over one `POST /mcp`, against the user's own Dropbox/Drive folder. Runs the same `mcp-tools.ts` pure functions as the local stdio server.
-- `mcp-import.server.ts` (US-35) — `import_documents`'s I/O: the folder listing through the `StorageAdapter`, the ChatGPT-file fetcher, the ZIP unpack + caps, the sealed receipt, and the `ImportSurface` the tool runs against. Its quotas live with the others: `importFiles` (per connection, `mcp-grants.server.ts`) and `machineFiles` (per machine, `rate-limiter.ts`, shared with the website's upload route).
-- `klaviyo.server.ts` — Klaviyo profile subscribe (`subscribeToKlaviyo`), suppress (`suppressInKlaviyo`), and capture-stats helpers.
-- `anthropic.server.ts` — Anthropic wrapper for health-document processing: `extractLabResults()`, `processHealthDocument()`, and the unified `extractOrClassify()` that auto-classifies and routes to one in a single LLM call.
+**Server routes (`app/routes/`).** Storefront routes reach Fly through the Shopify app proxy `/apps/health-tool-1/...` (HMAC-verified). The app stores NO health data: AI, email, tracking and MCP only.
 
-**Chatbot pipeline:**
-- `app/routes/api.chat.ts` → `app/lib/chat.server.ts` (Anthropic call) — system prompt assembled from `app/lib/chat-system-prompt.md` + posture files `chat-posture-doctor.md` / `chat-posture-brand.md`.
-- `app/lib/chat-router.server.ts` / `chat-classifier.server.ts` / `chat-dedup.server.ts` — query routing/classification/dedup. `platform-chat.server.ts` — Discord/YouTube bots (prod Fly app only; edu omits the tokens).
-- `packages/health-core/src/chat-edits.ts` — tool-use form edits (`propose_field_edit` / `propose_medication_edit`, `parseProposedEdits()`).
-- `widget-src/src/lib/assistant-config.ts` — per-store assistant display name (metafield → boot). `components/ChatMessageBubble.tsx` — single name render site for ALL chat surfaces. `lib/chat-sync.ts` — chat-history.json sync.
+| Route | Auth | Does |
+| --- | --- | --- |
+| `api.chat.ts` | app-proxy HMAC, optional guest session | GET list/load, POST send (Claude Sonnet 5 via `chat.server.ts`, `CHAT_EDIT_TOOLS` tool-use), DELETE conversation |
+| `api.lab-import-v2.ts` | app-proxy HMAC, 60 files/day/IP, `machineFiles` $-cap | extracts values from browser-extracted page text or page images (Claude Haiku 4.5, `extractOrClassify`); stores nothing |
+| `api.measurements.ts` | app-proxy HMAC | Klaviyo guest email capture ONLY (`{ klaviyoCapture: { email } }`, 5/day/email); v1 CRUD torn down, no deletion endpoint |
+| `api.feedback.ts` | app-proxy HMAC, honeypot, 3/hour/IP | feedback form to email |
+| `api.ab.ts` · `api.events.ts` | app-proxy HMAC, rate-limited (events 20/min/visitor, bot-filtered) | A/B impressions/conversions · product-events sink |
+| `api.google-token.ts` | CORS allow-list, rate limit, no HMAC | stateless Google OAuth code/refresh to token exchange (GET is 405) |
+| `api.reminders-v2.ts` · `reminders-v2.unsubscribe.tsx` | CORS allow-list + IP rate limit, provider proof (Google ID token / cloud token) · capability token | reminder opt-in/update/cancel · one-click unsubscribe page |
+| `api.resend-webhook.ts` | Svix signature | Resend bounce/complaint: unsubscribe + suppress in Klaviyo |
+| `roadmap.open.tsx` | public | plan-ready email CTA: counts the click, redirects to one hardcoded tool URL |
+| `mcp.$.tsx` | bearer (sealed token) on `POST /mcp`; OAuth flow on the rest | `POST /mcp` JSON-RPC, `GET+POST /mcp/authorize`, `GET /mcp/callback`, `POST /mcp/token`, `POST /mcp/register` (DCR); off unless `isMcpEnabled()` |
+| `[.]well-known.$.tsx` | public | `oauth-protected-resource` and `oauth-authorization-server` (also at `/mcp`-suffixed paths) + `openai-apps-challenge` |
+| `webhooks.orders-paid.ts` · `webhooks.app.{uninstalled,scopes_update}.tsx` | Shopify webhook HMAC | message credits on Appstle purchase (idempotent per `order_id`) · session housekeeping |
+| `app.tsx` · `app._index.tsx` · `app.ab-testing.tsx` · `app.*-test.tsx` | `authenticate.admin` (embedded admin) | admin shell, A/B dashboard (Polaris), manual cron triggers (chat-summary, reminders-v2, trending, youtube-bot-summary) |
+| `auth.$.tsx` · `auth.login/` · `_index/` · `healthz.ts` | Shopify OAuth · public | install/login · landing · Fly health check |
 
-**Health Core Library (`packages/health-core/src/`):**
-- `calculations.ts` — Health formulas (IBW, BMI, protein, eGFR)
-- `suggestions.ts` — Recommendation generation, medication cascade, on-treatment lipid targets
-- `validation.ts` — Zod schemas for inputs, measurements, profiles, medications
-- `units.ts` — Unit definitions, SI↔conventional conversions, locale detection, clinical thresholds
-- `mappings.ts` — Field↔metric mappings, `measurementsToInputs()`, `diffInputsToMeasurements()`, field categories
-- `types.ts` — TypeScript interfaces, statin config, potency helpers
-- `evidence.ts` — Clinical evidence map: reasons, guideline tags, and DOI references for each suggestion ID
-- `reminders.ts` — Pure reminder logic: `computeDueReminders()`, cooldowns, category groups
-- `file-adapter.ts` — `StorageAdapter` over one local file: read, back up, atomic replace, refuse a write whose precondition moved (a `.lock` sibling makes that mean something across processes). Node-only; never bundled into the widget.
-- `sync-manager.ts` — `SyncManager`: the optimistic-concurrency read-merge-write loop over one named document (read → migrate → merge → write with a version precondition → verify-after-write). Used by the CLI and the MCP writers.
-- `roadmap-doc.ts` — `health-roadmap.json` as a `DocumentSpec`: the migrate/merge schema half of `sync-manager.ts`, shared so the widget's `RoadmapStore` and the hosted MCP server agree on what a write means.
-- `memory-adapter.ts` — in-memory `StorageAdapter` simulating optimistic concurrency (version tokens, `ConflictError`) so two adapters can model two devices syncing through one cloud. Test-only, not a user-selectable backend.
-- `adapter.ts` — the cloud-storage adapter interface every backend implements. Also exports `fetchOrFail()`, a `fetch` wrapper that turns a provider's HTTP failure into a storage failure (so a bug doesn't get worded as an outage).
-- `document-path.ts` — the organised-archive path scheme for raw uploads: human folders by AI classification, date-first naming so cloud file listings sort chronologically.
-- `dropbox-rest.ts` — Dropbox content-API calls (three `fetch`s), shared byte-for-byte by the browser adapter and the hosted MCP server, including the `strict_conflict` conditional write. US-35 added `dropboxListFolder`, `dropboxDownload`, `dropboxDelete` for `import_documents`'s folder route; the adapter interfaces (`adapter.ts`) gained matching optional `list`/`remove` members.
-- `drive-rest.ts` — Google Drive v3 calls + adapter, shared by the browser adapter and the hosted MCP server. `drive.file` scope only.
-- `lab-catalog.ts` — the additional blood-test catalogue (US-21): stable-ID registry, canonical units, aliases, no clinical thresholds.
-- `mcp-tools.ts` — the eight MCP tools as pure functions (US-32, US-34, US-35): takes a `RoadmapFile`, returns a new one. I/O (open/backup/write) belongs to the caller. `update_profile` is the one that overwrites rather than appends (sex, birth year, birth month, height), guarded by `expected`. `import_documents` is the two-phase one (extract, then a separate guarded commit) and the only one with I/O of its own — fetching and extracting files — that the caller does not do for it.
+**Server libs (`app/lib/`):**
+- `supabase.server.ts` (dual-client, guest sessions, audit log, A/B + chat helpers; `deleteAllUserData()` survives but is v2-unreachable) · `route-helpers.server.ts` / `local-first-route.server.ts` / `../shopify.server.ts` (app-proxy HMAC, CORS allow-list where localhost is NEVER approved, guest-session resolution, `getClientIp(request, 'fly' | 'shopify')`) · `rate-limiter.ts` (in-memory limiter factory, `createQuotaCounter`, `machineFiles`) · `bot-detect.ts` · `product-events.server.ts` (value-free `product_events` rows, incl. `mcp_connect` / `mcp_tool_call` / `mcp_import`).
+- `anthropic.server.ts`: `extractLabResults()`, `processHealthDocument()`, `extractOrClassify()` (one call classifies and routes; model + prompt from health-core `lab-extraction.ts`). Pending: Brad decided 2026-09-07 that assistant-side extraction becomes the default for the connector import; design in progress, not built.
+- Chat: `chat.server.ts` (Anthropic call; prompt = `chat-system-prompt.md` + `chat-posture-doctor.md` / `chat-posture-brand.md`), `chat-router.server.ts` / `chat-classifier.server.ts` / `chat-dedup.server.ts` (+ their `.md` prompts), `chat-summary-cron.server.ts`, `blog-index.server.ts`, `message-packs.ts`. `platform-chat.server.ts` + `discord-bot.server.ts` / `youtube-bot.server.ts` / `youtube-bot-summary-cron.server.ts` / `trending-cron.server.ts` (commerce Fly app only; edu omits the tokens).
+- Email + reminders: `email.server.ts` (Resend; `suggestionEvidence()` renders reasons/guidelines/references), `reminder-v2.server.ts` + `reminder-v2-cron.server.ts` (daily, batches of 50, "dumb scheduler"), `resend-webhook.server.ts`, `klaviyo.server.ts` (`subscribeToKlaviyo`, `suppressInKlaviyo`), `cron-helpers.server.ts` (`tryAcquireCronLock`), `github-issues.server.ts` (`report_feedback` files an issue; absent token = hand the user a link).
+- Hosted MCP (OAuth 2.1 server with no storage; all state is sealed into the values handed to the client): `mcp-config.server.ts` (secrets, on switch, URLs) · `mcp-seal.server.ts` (seal/unseal, per-type keys, AAD, kid) · `mcp-clients.server.ts` (`KNOWN_CLIENTS` pinning, CIMD, DCR) · `mcp-grants.server.ts` (blob payloads, `/token`, `WRITES_PER_HOUR` = 60, rate limits) · `mcp-authorize.server.ts` (`/authorize` checks, consent, PKCE) · `mcp-providers.server.ts` (Dropbox/Google confidential clients) · `mcp.server.ts` (JSON-RPC over one `POST /mcp` against the user's own Dropbox/Drive folder; same `mcp-tools.ts` functions as the stdio server) · `mcp-import.server.ts` (US-35: `import_documents` I/O, folder listing via `StorageAdapter`, ChatGPT-file fetch, ZIP unpack + caps, pending payload `imports/pending-<id>.json` in the user's folder until commit, sealed receipt ~1 h; quotas `importFiles` per connection + `machineFiles` per machine, shared with the website upload).
+- `ab-stats.ts` (two-proportion z-test, `normalCDF`).
 
-**Widget Source (`widget-src/src/`):**
-- `components/HealthTool.tsx` — Main widget (auth, unit system, measurement sync, mobile tabs)
-- `components/InputPanel.tsx` — Form inputs with unit conversion. Uses render functions (not components) to avoid prop-drilling 15+ shared state variables. Longitudinal fields are config-driven.
-- `components/ResultsPanel.tsx` — Results display with unit formatting
-- `components/MobileTabBar.tsx` — Mobile tab bar (exports `TabId`, `Tab` types)
-- `components/HistoryPanel.tsx` — Health history page (charts, filter, pagination)
-- `components/BloodTestTimeline.tsx` — Live metric×date matrix on the main widget. FHIR-correct values via click-to-edit on saved cells.
-- `components/ReviewTable.tsx` — Lab-upload review modal's metric×date matrix. Mirrors BloodTestTimeline's visual + cell logic. Dedups documents on `sourceFileName`, lab values on `(metric, date)`.
-- `components/UploadModal.tsx` — File picker → LLM extraction → ReviewTable. Auto-processes on file select (no manual button). Sticky save/cancel bar at the modal bottom.
-- `components/NumericInputCell.tsx` — Shared input cell (matrix + draft column). Validates against metric range, renders status tick (ok/warn/bad).
-- `components/UnitChip.tsx` — Pill rendered next to a row's metric label. `<button>` when `onToggle` is given (core rows), `<span>` otherwise (additional rows).
-- `components/DraftDateCell.tsx` — Compact "DD Mon / 'YY" button + native date picker. Used by the timeline draft column + the review-matrix column headers + document-card date inputs.
-- `components/DatePicker.tsx` — Reusable month/year date picker (legacy; matrix uses DraftDateCell instead).
-- `lib/lab-rows.ts` — Pure grouping/series logic (US-21) for surfacing stored `labValues` beyond the core 8 metrics beneath the blood-test matrix. Read-only: no editing, no unit conversion.
-- `lib/constants.ts` — Shared UI constants (month arrays for date pickers).
-- `lib/blood-test-cell.ts` — Pure helpers shared by the live timeline + review matrix: `validateTypedValue`, `statusOf`, `previewStatus`, `blockBadNumericKeys`.
-- `lib/useMatrixScrollSync.ts` — Horizontal-scroll sync across rows so dragging row 3 also moves the date header + every other row. Both matrix consumers register their rows/header.
-- `lib/useIsMobile.ts` — `useIsMobile(breakpoint)` hook
-- `lib/storage.ts` — localStorage helpers (guest cache + provider-connection state)
-- `lib/api.ts` — legacy API client; **in v2 builds it is module-swapped to `lib/roadmap-data.ts`** (vite `resolveId`), so the live data path is the local file, not this.
-- `lib/roadmap-data.ts` — local-first data shim: implements the api.ts surface against the user's file via `RoadmapStore` (the live read/write path on every v2 build).
-- `storage/roadmap-store.ts` — `RoadmapStore`: the in-memory file model + `flush()` (read-merge-write), `addMeasurement`/`correctMeasurement`/`deleteUserData`, cloud-adapter wiring (Drive/Dropbox/GitHub/local), and `refreshFromRemote()`/`startLiveRefresh()` (US-34) — the provider's change signal where the adapter has one, the 60-second poll only where it does not. The signals themselves are the adapters': `storage/dropbox.ts` `watch()` holds a `list_folder/longpoll` open on the app folder root, `storage/drive.ts` `watch()` walks `changes.list` on a 3-second beat.
-- `packages/health-core/src/roadmap-file.ts` — the `health-roadmap.json` schema (FileMeasurement/FileLabValue with FHIR `status`/`correctsId`/`source`). `merge.ts` — `mergeFiles()` conflict-free cross-device merge.
-- `standalone/app.tsx` — shared entry for BOTH the Shopify-prod and Pages builds (mounts the app + `HistoryLightboxHost`). `site-chat.tsx` / `chatbot-embed.tsx` — the side-bundle chat entries.
+**Health core (`packages/health-core/src/`, pure, shared by widget, server, CLI, MCP):**
+- Clinical: `calculations.ts` (IBW, BMI, protein, eGFR) · `suggestions.ts` (recommendations, medication cascade, on-treatment lipid targets) · `evidence.ts` (reasons, guideline tags, DOIs per suggestion; three-file sync rule) · `units.ts` (SI/conventional, locale, thresholds) · `reference-hints.ts` (range hints under unit chips) · `lab-catalog.ts` (US-21 additional-test registry, stable IDs, no thresholds) · `plan.ts` (record file to plan; one pipeline for CLI + MCP) · `types.ts` · `validation.ts` (Zod) · `mappings.ts` (field/metric maps, `measurementsToInputs()`, `diffInputsToMeasurements()`, `computeFormStage()`) · `file-inputs.ts` · `measurement-history.ts` (`latestActivePerMetric`) · `history-change.ts` · `parseNumber.ts`.
+- Record file: `roadmap-file.ts` (schema, FHIR `status`/`correctsId`/`source`) · `merge.ts` (`mergeFiles()`, append-only arrays, LWW scalars, sticky status, monotonic `eraseEpoch`) · `migrate.ts` (untrusted-bytes boundary, schema versions) · `roadmap-doc.ts` (the file as a `DocumentSpec`) · `record-edits.ts` (US-31 write rules as code: add/correct, `findActiveInSlot`, `slotState`, `bulkAppendValues`) · `document-path.ts` (archive folder/date-first naming) · `chat-history.ts` (separate `chat-history.json`).
+- Storage: `adapter.ts` (`StorageAdapter` interface + `fetchOrFail()`) · `sync-manager.ts` (read, migrate, merge, write with precondition, verify; `MAX_SAVE_ATTEMPTS` = 5) · `file-adapter.ts` (Node-only: `.lock`, `LOCK_STALE_MS` = 10 s, `BACKUPS_KEPT` = 3, tmp-then-rename, SHA-256 precondition) · `memory-adapter.ts` (test-only) · `dropbox-rest.ts` (`strict_conflict` write, `dropboxListFolder`/`dropboxDownload`/`dropboxDelete`) · `drive-rest.ts` (Drive v3, `drive.file` scope, `DRIVE_FOLDER_NAME`).
+- Agents: `mcp-tools.ts` (the eight tools as pure functions: `read_record`, `get_plan`, `add_measurement`, `add_lab_values`, `correct_value`, `update_profile`, `report_feedback`, `import_documents`; four `MCP_PROMPTS`; `update_profile` overwrites under `expected`; `import_documents` is two-phase, extract then guarded commit) · `mcp-rpc.ts` (one JSON-RPC dispatch for both servers) · `import-hints.ts` (US-35 AC13: the closed table of why a file was not read) · `lab-extraction.ts` (extraction prompt, response schema, unit tables, `EXTRACTION_MODEL`, `pdf` page type, `isImportableEntryName`) · `chat-edits.ts` (`propose_field_edit` / `propose_medication_edit`) · `reminders.ts` + `reminder-schedule.ts` · `product-events.ts` (event-name registry) · `sentry-scrub.ts`.
 
-**CLI + agent surfaces (`tools/`):**
-- `mcp-server.ts` — the health record as a local stdio MCP server (US-32 phase 0): one file path, no server, no OAuth, no network.
-- `edit-record.ts` — `edit_record` CLI: add/correct values in a record file. Thin shell; the write rules live in `record-edits.ts`, shared with the hosted MCP server. US-35 added `source` to the three edit requests, plus `findActiveInSlot`, `slotState` and `bulkAppendValues` (the website's own bulk save now calls the last of these too). `lab-extraction.ts` gained a `pdf` page type — a whole PDF as one base64 `document` block — and `isImportableEntryName`, both for `import_documents`.
-- `get-plan.ts` — `get_plan` CLI: turns `health-roadmap.json` into suggestions/evidence/citations, offline, read-only.
-- `demo-video/` — Remotion project rendering a code-drawn, ChatGPT-style demo of the hosted MCP connector; `renders/` holds the last mp4, `node_modules`/`out/` gitignored (see `demo-video/README.md`).
+**Widget (`widget-src/src/`):**
+- Components: `HealthTool.tsx` (main widget: auth, units, sync, mobile tabs) · `InputPanel.tsx` (render functions, config-driven longitudinal fields) · `ResultsPanel.tsx` · `MobileTabBar.tsx` · `HistoryPanel.tsx` (charts, filter, pagination; own chunk) · `BloodTestTimeline.tsx` + `StartingInfoVitals.tsx` (metric×date matrices, click-to-correct) · `AdditionalLabRows.tsx` + `AddLabTest.tsx` (US-21) · `UploadModal.tsx` (picker, browser extraction, server extract, then `ReviewTable.tsx`, which dedups documents on `sourceFileName` and values on `(metric, date)`; bulk save via `bulkAppendValues`) · `DocumentLightbox.tsx` · `NumericInputCell.tsx` · `UnitChip.tsx` · `DraftDateCell.tsx` · `DatePicker.tsx` (legacy) · `FeedbackForm.tsx` · chat: `ChatSection.tsx`, `ChatEmbed.tsx`, `ChatKeyGate.tsx` (standalone only), `ChatMessageBubble.tsx` (single assistant-name render site), `ChatThreadList.tsx`; `hooks/useChatState.ts`.
+- Lib: `api.ts` (legacy client; v2 builds swap it to `roadmap-data.ts` via vite `resolveId`; still owns A/B tracking + `getDocumentArchiveMode()`) · `roadmap-data.ts` · `upload-api.ts` (POST to `api/lab-import-v2`; swapped to `byok-upload.ts` on Pages) · `chat-api.ts` (swapped to `byok-chat.ts`; `byok-anthropic.ts` is the shared direct transport) · `pdf-extract.ts` (pdfjs-dist in the browser) · `zip-extract.ts` · `image-resize.ts` · `archive-payloads.ts` (every processed original is archived in the user's cloud; a re-upload of a file the connector already imported attaches the original to the existing row) · `lab-rows.ts` · `blood-test-cell.ts` · `matrix-save.ts` · `remote-replay.ts` (US-34 AC4) · `chat-sync.ts` · `assistant-config.ts` · `build-flags.ts` · `storage.ts` · `sentry.ts` · `useMatrixScrollSync.ts` · `useIsMobile.ts`.
+- Storage: `roadmap-store.ts` (`RoadmapStore`: in-memory file + `flush()`, `addMeasurement`/`correctMeasurement`/`deleteUserData`, `refreshFromRemote()`/`startLiveRefresh()`: Dropbox `list_folder/longpoll`, Drive `changes.list` on a 3 s beat, 60 s poll elsewhere) · adapters `drive.ts`, `dropbox.ts`, `github.ts` (pasted token), `webdav.ts` (self-host), `local-storage-adapter.ts` · `chat-history-store.ts` · `pkce.ts` · `device-id.ts`.
+- Entries: `../standalone/app.tsx` (shared entry for Shopify-prod AND Pages; `HistoryLightboxHost`) with `backend-picker.tsx`, `connect.ts`, `reminders.ts`, `sync-control.tsx` · `upload-entry.ts` (`health-upload.js` IIFE: `window.HealthUpload`) · `site-chat.tsx` / `chatbot-embed.tsx` (side bundles). Vite configs: `vite.config.{shopify-prod,standalone,upload,site-chat,chatbot}.ts`.
 
-**Build scripts (`scripts/`):**
-- `build-guide-html.mjs` — builds a Shopify article body from a guide markdown master; copy-box fences get a clipboard button, `--no-script` degrades to select-all.
+**CLI + agent surfaces (`tools/`, shipped):** `mcp-server.ts` (stdio MCP over one file path; no network, no model, so `import_documents` is listed but refuses) · `edit-record.ts` (`add` / `correct`, one value per call; rules in `record-edits.ts`) · `get-plan.ts` (prose, `--json`, `--html`; offline, read-only) · `demo-video/` (Remotion project: ChatGPT-style connector demo + import explainer; `renders/` holds the mp4s, own `package.json`). Internal: `webkit-verify*.mjs`, `test-queries.json` / `test-chatbot-matching.ts` / `test-classifier.ts` (router fixtures), `test-tool-edits.{json,ts}` (tool-use harness), `chat-audit-pull.ts`, `youtube-comment-dryrun.ts`.
 
-**Shopify Extensions (`extensions/health-tool-widget/blocks/`):**
-- `app-block.liquid` — Passes customer data to widget; static HTML skeleton with pulse animation
+**Scripts (`scripts/`):** `build-guide-html.mjs` (guide markdown to Shopify article HTML; copy-box fences get a clipboard button, `--no-script` degrades to select-all) · `build-user-stories-html.ts` · `build-fleet-dashboard.mjs` · `check-symlinks.mjs` (products.md guard) · `rebuild-blog-index.ts`.
 
-**Infrastructure:**
-- `supabase/rls-policies.sql` — Schema, RLS policies, auth trigger, `get_latest_measurements()` RPC
-- `.github/workflows/ci.yml` — CI pipeline (tests on PRs and pushes to main)
+**Shopify extension (`extensions/health-tool-widget/`):** `blocks/app-block.liquid` (skeleton + A/B inline script, passes customer data) · `chat-embed.liquid` · `chatbot-embed.liquid` · `clarity-embed.liquid` · built `assets/` (`health-plan-v2.js/.css`, `health-plan-v2-HistoryPanel.js`, `health-upload.js`, `health-site-chat.*`, `health-chatbot-embed.*`).
+
+**Infrastructure:** `supabase/rls-policies.sql` (operational schema + RLS; retired v1 tables still declared) · `.github/workflows/`: `ci.yml` (tests on PRs + pushes to main), `deploy.yml` (gate, Pages WebKit smoke, full suite, `tsc --noEmit` for widget-src + health-core, builds, Sentry maps, Shopify ×2, Fly ×2 canary, health gates, live WebKit verify), `pages.yml`, `claude-review.yml` + `auto-ship.yml` (Tier 3 loop pipeline), `loop-issue-notify.yml`, `stranded-branch-watch.yml`, `workflow-integrity.yml` · `fly.toml` / `fly.edu.toml`, `shopify.app.toml` / `shopify.app.edu.toml`.
 
 ## Data Model
 
 ### Local-first file collections (`health-roadmap.json`)
 
-Health data lives in the user's own file ([roadmap-file.ts](packages/health-core/src/roadmap-file.ts)) — **not** Supabase. The collections (append-only unless noted):
+Health data lives in the user's own file ([roadmap-file.ts](packages/health-core/src/roadmap-file.ts)), **not** Supabase. The collections (append-only unless noted):
 
-- `measurements` — Immutable time-series records (metric_type, value in SI, recorded_at, `source`, `status`, `correctsId`). Same FHIR Observation shape the old `health_measurements` table had.
-- `medications` — FHIR-compatible (medication_key, drug_name, dose_value, dose_unit, status, started_at). Keys: `statin`, `ezetimibe`, `statin_escalation`, `pcsk9i`, `bempedoic_acid`, `glp1`, `glp1_escalation`, `sglt2i`, `metformin`. `medicationHistory` — append-only change log (FHIR MedicationStatement: effective_start/end, change_type started/stopped/dose_changed/switched/initial).
-- `supplements` (+ `supplementHistory`) — supplement records (supplement_key, name, dose, status, started_at), same history pattern.
-- `labValues` — Free-form lab results beyond the core metrics (sodium, ALT, MCV, …). FHIR shape: `status` (`active`|`entered-in-error`), `source` (`lab_import`|`lab_import_edited`|`manual`|`manual_correction`); value+unit as reported by the lab (no SI conversion — units aren't canonical across labs). Dedup on `(metric_name, recorded_at)`.
-- `healthDocuments` — Scan results, clinic letters, discharge/pathology reports, vaccination records (markdown + metadata). Dedup on `sourceFileName` (stable) not title+date (LLM-generated, drifts).
-- `reminderOptIn` — mirrored client copy of the user's reminder schedule (the server's `reminder_optin_v2` row is the delivery source of truth).
+- `measurements`: Immutable time-series records (metric_type, value in SI, recorded_at, `source`, `status`, `correctsId`). Same FHIR Observation shape the old `health_measurements` table had.
+- `medications`: FHIR-compatible (medication_key, drug_name, dose_value, dose_unit, status, started_at). Keys: `statin`, `ezetimibe`, `statin_escalation`, `pcsk9i`, `bempedoic_acid`, `glp1`, `glp1_escalation`, `sglt2i`, `metformin`. `medicationHistory`, append-only change log (FHIR MedicationStatement: effective_start/end, change_type started/stopped/dose_changed/switched/initial).
+- `supplements` (+ `supplementHistory`): supplement records (supplement_key, name, dose, status, started_at), same history pattern.
+- `labValues`: Free-form lab results beyond the core metrics (sodium, ALT, MCV, …). FHIR shape: `status` (`active`|`entered-in-error`), `source` (`lab_import`|`lab_import_edited`|`manual`|`manual_correction`); value+unit as reported by the lab (no SI conversion, units aren't canonical across labs). Dedup on `(metric_name, recorded_at)`.
+- `healthDocuments`: Scan results, clinic letters, discharge/pathology reports, vaccination records (markdown + metadata). Dedup on `sourceFileName` (stable) not title+date (LLM-generated, drifts).
+- `reminderOptIn`: mirrored client copy of the user's reminder schedule (the server's `reminder_optin_v2` row is the delivery source of truth).
 
-### Live Supabase tables (operational only — no health data)
+### Live Supabase tables (operational only, no health data)
 
-- `profiles` — pseudonymous anchors for chat FKs (demographics scrubbed in the June-2026 purge; `shopify_customer_id` may link a logged-in customer).
-- `chat_conversations` / `chat_messages` / `chat_match_events` / `guest_chat_sessions` — chatbot history + guest sessions (IPs anonymized).
-- `reminder_optin_v2` — service-role only: `email`, `provider`, capability `token` (for the unsubscribe link), `schedule`, `last_sent`. v2 reminder delivery reads this.
-- `ab_tests` / `ab_events` — A/B testing. `audit_logs` — HIPAA audit trail (user_id nullable, anonymized). `cron_lock`, `youtube_bot_log` — ops. Plus Shopify session storage (`SESSION_DATABASE_URL`).
+- `profiles`: pseudonymous anchors for chat FKs (demographics scrubbed in the June-2026 purge; `shopify_customer_id` may link a logged-in customer).
+- `chat_conversations` / `chat_messages` / `chat_match_events` / `guest_chat_sessions`: chatbot history + guest sessions (IPs anonymized).
+- `reminder_optin_v2`: service-role only: `email`, `provider`, capability `token` (for the unsubscribe link), `schedule`, `last_sent`. v2 reminder delivery reads this.
+- `ab_tests` / `ab_events`: A/B testing. `audit_logs`: HIPAA audit trail (user_id nullable, anonymized). `cron_lock`, `youtube_bot_log`: ops. Plus Shopify session storage (`SESSION_DATABASE_URL`).
 - **Retired/purged June 2026:** `health_measurements`, `medications`, `medication_history`, `supplements`, `supplement_history`, `lab_values`, `health_documents`, `screenings`, and the v1 reminder tables `reminder_preferences` / `reminder_log`. Their CREATE TABLE statements still sit in `rls-policies.sql` but the rows are gone and v2 never touches them.
 
 Run `supabase/rls-policies.sql` in the SQL Editor to set up the operational schema + RLS.
@@ -201,10 +157,10 @@ Results use `effectiveInputs` (current form + fallback to previous measurements)
 
 1. **Static skeleton** (`app-block.liquid`): CSS + pulsing placeholder before JS loads
 2. **Phase 1 (instant)**: Reads cached data from localStorage
-3. **Phase 2 (async)**: `RoadmapStore` loads the authoritative file from the user's cloud (Drive/Dropbox/GitHub), merges, and overwrites the cache
+3. **Phase 2 (async)**: `RoadmapStore` loads the authoritative file from the user's cloud (Drive/Dropbox/GitHub/WebDAV), merges, and overwrites the cache
 4. **Auto-save safety**: a "hydrated" flag prevents writes to the cloud file until Phase 2's authoritative load completes (so a fast edit can't clobber unseen cloud data)
 
-`RoadmapStore` (`widget-src/src/storage/roadmap-store.ts`) is the browser's own writer for this loop; the CLI and MCP writers use `SyncManager` (`packages/health-core/src/sync-manager.ts`) instead, which merges on conflict and then verifies after the write (the re-read must parse, its `meta.lamport` must not have regressed, and every row id it wrote must be present). The lock file and the rotated backups are `file-adapter.ts`'s doing, not `SyncManager`'s — `LOCK_STALE_MS = 10_000` before a lock is treated as abandoned, `BACKUPS_KEPT = 3`. The hosted MCP runs the same `SyncManager` over the REST adapters, which have neither a lock file nor backups: the provider's conditional write supplies the precondition instead.
+`RoadmapStore` (`widget-src/src/storage/roadmap-store.ts`) is the browser's own writer for this loop; the CLI and MCP writers use `SyncManager` (`packages/health-core/src/sync-manager.ts`) instead, which merges on conflict and then verifies after the write (the re-read must parse, its `meta.lamport` must not have regressed, and every row id it wrote must be present). The lock file and the rotated backups are `file-adapter.ts`'s doing, not `SyncManager`'s, `LOCK_STALE_MS = 10_000` before a lock is treated as abandoned, `BACKUPS_KEPT = 3`. The hosted MCP runs the same `SyncManager` over the REST adapters, which have neither a lock file nor backups: the provider's conditional write supplies the precondition instead.
 
 ### Progressive Disclosure
 
@@ -220,34 +176,32 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. On mobil
 
 ## API Endpoints
 
-**There are NO health-data CRUD endpoints in v2** — measurements/profile/medications/supplements all read & write the user's local file via `RoadmapStore`, never the server. The live server surface is AI / email / tracking only:
+**There are NO health-data CRUD endpoints in v2.** Measurements, profile, medications and supplements read and write the user's local file via `RoadmapStore`, never the server. Auth per route is also in the routes table above.
 
 **Storefront (Shopify app proxy `/apps/health-tool-1/...`, HMAC-verified):**
-- `POST api/chat` — send a chat message (→ Anthropic Haiku, tool-use form edits); `GET api/chat` — list/load conversations; `DELETE api/chat` — delete a conversation.
-- `GET/POST api/lab-import-v2` — lab-document extraction quota preflight / single-file or batch extract (Claude Opus; returns values, stores nothing).
-- `POST api/measurements` — **`{ klaviyoCapture: { email } }` only** (guest report-email capture, 5/day/email).
-- `POST api/feedback` — feedback form → email (honeypot, 3/hour/IP).
-- `POST api/ab` — A/B impression/conversion events.
-- `POST api/events` — product-events sink (bot-filtered, rate-limited 20/min/visitor).
+- `POST api/chat` send (Claude Sonnet 5, tool-use form edits) · `GET api/chat` list/load · `DELETE api/chat` delete a conversation.
+- `GET api/lab-import-v2` quota preflight · `POST api/lab-import-v2` extract from page text or page images sent by the browser (pdf.js runs client-side; Claude Haiku 4.5 server-side; returns values, stores nothing; 60 files/day/IP + per-machine cap).
+- `POST api/measurements`: `{ klaviyoCapture: { email } }` only (guest report-email capture, 5/day/email).
+- `POST api/feedback` (honeypot, 3/hour/IP) · `POST api/ab` (A/B events) · `POST api/events` (product events, bot-filtered, 20/min/visitor).
 
 **Cross-origin (CORS allow-list, no HMAC; localhost never approved):**
-- `POST api/google-token` — Google OAuth code/refresh↔token exchange (stateless).
-- `POST api/reminders-v2` — reminder opt-in / update / cancel (provider proof via Google ID token or cloud token). `GET/POST /reminders-v2.unsubscribe?token=…` — one-click unsubscribe page.
+- `POST api/google-token`: stateless Google OAuth code/refresh to token exchange (GET returns 405).
+- `POST api/reminders-v2`: opt-in / update / cancel (provider proof via Google ID token or cloud token). `GET/POST /reminders-v2.unsubscribe?token=…`: one-click unsubscribe page.
 
-**MCP (`mcp.drstanfield.com`, hosted server, US-32):**
-- `POST /mcp` — the JSON-RPC endpoint, bearer-authenticated with sealed access tokens (no server-side token storage). `GET` and `DELETE /mcp` return 405 — there's no event stream and no session to delete.
-- `GET/POST /mcp/authorize`, `GET /mcp/callback`, `POST /mcp/token`, `POST /mcp/register` — the OAuth 2.1 door, all in `mcp.$.tsx`. Clients are identified by client-ID metadata (CIMD) first, with redirect URIs pinned in `KNOWN_CLIENTS` for the known clients (Claude, ChatGPT); dynamic client registration (`/mcp/register`) is the fallback for everyone else.
-- Writes are capped by an hourly weighted allowance (`WRITES_PER_HOUR = 60`) per connection per machine; a correction costs more than a plain add.
-- `GET /.well-known/oauth-authorization-server` and `GET /.well-known/oauth-protected-resource` (RFC 8414 / RFC 9728) — discovery, unauthenticated, also served at their `/mcp`-suffixed forms (`…/oauth-protected-resource/mcp`).
-- `GET /.well-known/openai-apps-challenge`: the domain-ownership token OpenAI fetches for the ChatGPT app listing. Bare `text/plain`, one line, `Cache-Control: no-store` so a rotated secret takes effect on the next GET; 404 when `OPENAI_APPS_CHALLENGE` is unset. It answers from that secret alone, not from `isMcpEnabled()`.
-- `POST api/resend-webhook` — Resend bounce/complaint webhook (Svix signature, not app-proxy HMAC). On a permanent bounce or complaint: unsubscribe + suppress in Klaviyo.
-- `GET roadmap.open` — plan-ready email CTA: counts the click (no address, no query echo), redirects to one hardcoded tool URL.
+**Hosted MCP (`https://mcp.drstanfield.com`, Fly app `health-tool-edu`, US-32/US-35):**
+- `POST /mcp`: JSON-RPC, bearer-authenticated with sealed access tokens (no server-side token storage). `GET` and `DELETE /mcp` return 405: no event stream, no session to delete.
+- `GET+POST /mcp/authorize`, `GET /mcp/callback`, `POST /mcp/token`, `POST /mcp/register`: the OAuth 2.1 door, all in `mcp.$.tsx`. Clients are identified by client-ID metadata (CIMD) first, redirect URIs pinned in `KNOWN_CLIENTS` for Claude and ChatGPT; dynamic client registration is the fallback.
+- Writes are capped by an hourly weighted allowance (`WRITES_PER_HOUR` = 60) per connection per machine; a correction costs more than an add.
+- `import_documents` reads files from the Dropbox app folder root `Apps/Health Plan by Dr Brad` or from a file dropped into ChatGPT (desktop only). Google Drive (`drive.file` scope) cannot list dropped files, so it refuses and points to the website upload. The pending payload sits at `imports/pending-<id>.json` in the user's folder until commit; the sealed receipt lasts about an hour. Value-free `product_events` rows: `mcp_connect`, `mcp_tool_call`, `mcp_import`.
+- `GET /.well-known/oauth-authorization-server` and `GET /.well-known/oauth-protected-resource` (RFC 8414 / RFC 9728): discovery, unauthenticated, also served at their `/mcp`-suffixed forms.
+- `GET /.well-known/openai-apps-challenge`: the domain-ownership token OpenAI fetches for the ChatGPT app listing. One `text/plain` line, `Cache-Control: no-store`; 404 when `OPENAI_APPS_CHALLENGE` is unset. Answers from that secret alone, not from `isMcpEnabled()`.
 
-**Webhooks (Shopify HMAC):** `orders/paid` (message credits), `app/uninstalled`, `app/scopes_update`.
+**Other public:** `POST api/resend-webhook` (Svix signature, not app-proxy HMAC; permanent bounce or complaint = unsubscribe + suppress in Klaviyo) · `GET roadmap.open` (plan-ready email CTA: counts the click, no address, no query echo, redirects to one hardcoded tool URL) · `GET healthz`.
 
+**Webhooks (Shopify HMAC):** `orders/paid` (message credits), `app/uninstalled`, `app/scopes_update`. **Admin (`authenticate.admin`):** `/app`, `/app/ab-testing`, `/app/*-test` cron triggers.
 ## Backend Features
 
-**Email (Resend)**: `email.server.ts` sends welcome + reminder emails. The v1 welcome triggers (sync-embed / first server measurement save) are retired with the CRUD API — welcome/transactional email in v2 is tied to the reminder-opt-in path. Env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SHOPIFY_STORE_URL`. (HIPAA-aware: no health *values* in emails.)
+**Email (Resend)**: `email.server.ts` sends welcome + reminder emails. The v1 welcome triggers (sync-embed / first server measurement save) are retired with the CRUD API; welcome/transactional email in v2 is tied to the reminder-opt-in path. Env: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SHOPIFY_STORE_URL`. (HIPAA-aware: no health *values* in emails.)
 
 **Reminder emails (v2)**: The browser computes the user's reminder schedule from their local file and opts in via `POST api/reminders-v2`, which stores `{ email, provider, token, schedule, last_sent }` in `reminder_optin_v2`. A daily cron (`reminder-v2-cron.server.ts`, batches of 50) reads due items and sends consolidated reminders; the server is a "dumb scheduler" (no health data, no per-category preference table). Unsubscribe is the token link. (The v1 `reminder_preferences`/`reminder_log` tables + their cron are deleted.)
 
@@ -255,9 +209,9 @@ Pulsing `.field-attention` CSS class highlights the next field to fill. On mobil
 
 **Account/data deletion**: **Client-side, no server endpoint.** `RoadmapStore.deleteUserData()` bumps `eraseEpoch` and flushes an empty file; `mergeFiles()` then treats the empty file as the wholesale winner on every device. A reminder opt-in row (if any) is orphaned until the user clicks unsubscribe or it decays. (The v1 server cascade `deleteAllUserData()` survives in `supabase.server.ts` but is unreachable in v2.)
 
-**Data sync** (v1 legacy): `sync-embed.liquid` was deleted in the v2 teardown. The widget-side sync path in `HealthTool.tsx` survives in shared source but is now effectively dead — the legacy `health-tool.js` bundle that was its only live consumer was retired 2026-06-15; the v2 builds route around it (`LOCAL_FIRST` + hardcoded `data-logged-in="true"`).
+**Data sync** (v1 legacy): `sync-embed.liquid` was deleted in the v2 teardown. The widget-side sync path in `HealthTool.tsx` survives in shared source but is now effectively dead: the legacy `health-tool.js` bundle that was its only live consumer was retired 2026-06-15; the v2 builds route around it (`LOCAL_FIRST` + hardcoded `data-logged-in="true"`).
 
-**Auto-redirect** (removed from production): there is no longer any live auto-redirect. The last one lived in `history-block.liquid` on `/pages/health-history`, both of which were deleted on 2026-06-14 (the page on Shopify; the block from this repo). The v2 widget still *sets* the `health_roadmap_authenticated` flag whenever the data layer reports saved data (`setAuthenticatedFlag()` in `HealthTool.tsx`), but on the v2 surfaces the flag is now purely write-only — nothing reads it. With the legacy `health-tool.js` bundle retired (2026-06-15), no live build reads it at all; the writes are dead-but-harmless.
+**Auto-redirect** (removed from production): there is no longer any live auto-redirect. The last one lived in `history-block.liquid` on `/pages/health-history`, both of which were deleted on 2026-06-14 (the page on Shopify; the block from this repo). The v2 widget still *sets* the `health_roadmap_authenticated` flag whenever the data layer reports saved data (`setAuthenticatedFlag()` in `HealthTool.tsx`), but on the v2 surfaces the flag is now purely write-only, nothing reads it. With the legacy `health-tool.js` bundle retired (2026-06-15), no live build reads it at all; the writes are dead-but-harmless.
 
 ## A/B Testing
 
@@ -266,17 +220,17 @@ Managed from the Shopify app dashboard at `/app/ab-testing`. Full design rationa
 **How it works**: Each test targets a single element (`heading` or `subheading`) with two or more text variants. Test config is stored in Supabase (`ab_tests` table), delivered to the storefront via a Shopify shop metafield (`health_roadmap.ab_config`), and rendered in `app-block.liquid` with all variants in the HTML. A synchronous inline script picks one variant from localStorage before first paint (zero flash). Impressions and conversions are tracked in `ab_events` and displayed with statistical significance (two-proportion z-test) in the admin dashboard.
 
 **Key files:**
-- `app/routes/app.ab-testing.tsx` — Admin dashboard (Polaris UI: create/activate/pause/complete tests, view results)
-- `app/routes/api.ab.ts` — Storefront endpoint for impression/conversion events (HMAC-verified, rate-limited)
-- `app/lib/ab-stats.ts` — Statistical significance functions (`normalCDF`, `calculateSignificance`)
-- `app/lib/supabase.server.ts` — AB query helpers (`getABTests`, `createABTest`, `recordABEvent`, `getABTestResults`, etc.)
-- `extensions/health-tool-widget/blocks/app-block.liquid` — Metafield-driven variant rendering + inline assignment script
-- `widget-src/src/lib/api.ts` — Client-side `trackABImpression()`, `trackABConversion()`, `getVisitorId()`
+- `app/routes/app.ab-testing.tsx`: Admin dashboard (Polaris UI: create/activate/pause/complete tests, view results)
+- `app/routes/api.ab.ts`: Storefront endpoint for impression/conversion events (HMAC-verified, rate-limited)
+- `app/lib/ab-stats.ts`: Statistical significance functions (`normalCDF`, `calculateSignificance`)
+- `app/lib/supabase.server.ts`: AB query helpers (`getABTests`, `createABTest`, `recordABEvent`, `getABTestResults`, etc.)
+- `extensions/health-tool-widget/blocks/app-block.liquid`: Metafield-driven variant rendering + inline assignment script
+- `widget-src/src/lib/api.ts`: Client-side `trackABImpression()`, `trackABConversion()`, `getVisitorId()`
 
 **localStorage keys** (shared between inline Liquid script and React):
-- `hr_ab` — variant assignment: `{ t: testId, v: variantId }`. Written by inline script in `app-block.liquid`, read by `getABAssignment()` in `api.ts`.
-- `hr_vid` — anonymous visitor UUID for event deduplication
-- `hr_ab_imp_<testId>` — flag to skip redundant impression network calls
+- `hr_ab`: variant assignment: `{ t: testId, v: variantId }`. Written by inline script in `app-block.liquid`, read by `getABAssignment()` in `api.ts`.
+- `hr_vid`: anonymous visitor UUID for event deduplication
+- `hr_ab_imp_<testId>`: flag to skip redundant impression network calls
 
 **Adding new testable elements**: Add the target value to `ABTestTarget` type in `supabase.server.ts`, add it to the Zod enum in `app.ab-testing.tsx`, add a `{% if ab.target == 'new_element' %}` block in `app-block.liquid`, and add a button to the admin create form.
 

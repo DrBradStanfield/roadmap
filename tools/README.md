@@ -7,7 +7,7 @@ users and agents to run against their own `health-roadmap.json`:
 - **`mcp-server.ts`**: a stdio MCP server. Point Claude Desktop or Claude
   Code at it and it exposes the record as named tools (read, compute plan,
   add a value, add a lab panel, correct a value, change one of the four
-  profile fields, report a problem — eight in all). The eighth,
+  profile fields, report a problem: eight in all). The eighth,
   `import_documents`, is hosted-only: this local server lists it but refuses
   it, having no model and no network. Setup:
   [docs/guides/connect-claude-desktop.md](../docs/guides/connect-claude-desktop.md).
@@ -26,4 +26,4 @@ router fixtures; `chat-audit-pull.ts` and `youtube-comment-dryrun.ts` are
 one-off ops scripts. Each `*.test.ts` file is Vitest coverage for the file
 next to it. `demo-video/` is a standalone Remotion project (own
 `package.json`, gitignored `node_modules`/`out/`) for the ChatGPT-style
-connector demo video — see its own README.
+connector demo video and the import explainer; see its own README.
