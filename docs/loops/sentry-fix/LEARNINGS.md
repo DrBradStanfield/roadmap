@@ -82,18 +82,22 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   capture-hygiene change would be propose-only — not worth it at probe volume.
 - `[gap][sentry]` 2026-09-07 — Production `allowUrls` in
   `widget-src/src/lib/sentry.ts` still names the retired `health-tool.js`, so
-  the SDK has been DROPPING every exception from `health-plan-v2.js`, its
-  HistoryPanel chunk, `health-upload.js` and `health-chatbot-embed.js`
-  (only `health-site-chat.js` and Pages hashed chunks get through). Every
-  widget-side "no-op" day in metrics.csv is therefore a lower bound, not
-  evidence of health; the `[noise][widget]` foreign-origin priors are what
-  survived the filter, not the whole picture. Fix is Brad's PR #73 (`hold`,
-  unmerged as of this run). When it deploys, expect a burst of "new" widget
-  issues that are really old — triage each on its own evidence, one per run
-  as the charter says, and read their `stats` from the deploy date, not
-  lifetime. How long the filter has been wrong is undatable from a shallow
-  clone (see the gotcha below) — a full clone or Sentry's issue history for
-  `health-tool.js` frames can answer it.
+  the SDK drops every exception whose top URL-bearing frame is in
+  `health-plan-v2.js`, its HistoryPanel chunk, `health-upload.js`,
+  `health-chatbot-embed.js`, or the Pages root `health-upload.js` (only
+  `health-site-chat.js` and Pages hashed chunks pass). PARTIAL blind spot:
+  `_isAllowedUrl` walks frames from the last one back, skips `<anonymous>` /
+  `[native code]`, and passes events with no URL at all — which is why the
+  unresolved list is all native-frame noise. Every widget-side "no-op" day in
+  metrics.csv is a lower bound, not evidence of health. Fix is Brad's PR #73
+  (`hold`, unmerged as of 09-07). When it deploys, expect a burst of "new"
+  widget issues that are really old — one per run, rank by `stats` since the
+  deploy date, not lifetime. Two cautions from #73's bot review: `scrubEvent`
+  does not scrub `exception.values[].value`, and storage adapters interpolate
+  document refs (date + sanitized title) into thrown messages — READ TITLES
+  BEFORE pasting them into a report or ledger note; and the probe supplied its
+  stack URLs, so it proved filename acceptance, not live frame shape. Filter
+  start date is undatable from a shallow clone (gotcha below).
 - `[gotcha][process]` 2026-08-14 — Fresh cloud containers start on a detached
   HEAD at origin/main's tip while the local `main` REF lags: diff/typecheck
   comparisons against `main` silently use stale code. `git checkout -B main
