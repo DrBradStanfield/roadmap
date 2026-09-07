@@ -391,6 +391,14 @@ describe('US-36 AC9 — a permanent write takes two calls, identical arguments, 
     expect(filed.filed).toBe(false);
     expect(filed.proposal).toBeUndefined();
     expect(drifted.text).toContain('github.com');
+
+    // A confirm call that does not even parse (no detail) is refused in words, never answered as an
+    // internal error: the receipt's identity is computed before the schema runs (adversarial review 2026-09-07).
+    seedEmpty();
+    const fresh = OUTPUTS.report_feedback.parse((await callToolAt(access, 'report_feedback', report, at(20))).structured).confirm!;
+    const malformed = await callToolAt(access, 'report_feedback', { kind: 'bug', title: report.title, confirm: fresh }, at(31));
+    expect(malformed.isError).toBe(true);
+    expect(malformed.text).toContain('different arguments');
   });
 
   it('a stale receipt against the tool list: `confirm` is published on exactly the three permanent tools', async () => {

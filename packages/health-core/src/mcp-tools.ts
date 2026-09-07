@@ -791,8 +791,9 @@ function fenced(text: string): string {
  * confirms, while a different report does not. What is FILED is the confirm
  * call's own text; this is only the identity.
  */
-export function canonicalFeedback(request: { kind: string; title: string; detail: string }): { kind: string; title: string; detail: string } {
-  const fold = (text: string) => printable(text).replace(/\s+/g, ' ').trim().toLowerCase();
+export function canonicalFeedback(request: Record<string, unknown>): Record<string, unknown> {
+  // Runs before the schema does (the receipt is checked first), so a missing or non-string field is folded as itself, not thrown on.
+  const fold = (text: unknown) => (typeof text === 'string' ? printable(text).replace(/\s+/g, ' ').trim().toLowerCase() : text);
   return { kind: request.kind, title: fold(request.title), detail: fold(request.detail) };
 }
 
@@ -1326,6 +1327,12 @@ export function fileResultsBundle(request: FileResultsSource, file: RoadmapFile,
   const isLab = classification === 'lab_report';
   if (isLab && !request.collectedOn) {
     return { refusal: 'A lab report needs collectedOn: the date the sample was taken, YYYY-MM-DD. If the report prints none, ask the user — never guess. Nothing was read.' };
+  }
+  // The file's own day is the call's to get right: refused here in its own name, or the file would fail
+  // downstream with the folder route's `fileDates` advice, an argument this tool has not got.
+  const collected = isLab ? resolveRecordedAt(request.collectedOn, ctx) : null;
+  if (collected !== null && typeof collected !== 'string') {
+    return { refusal: `collectedOn: ${oneLine(collected.message)}. Ask the user for the date the sample was taken, then re-send. Nothing was read.` };
   }
   if (isLab && !request.values?.length && !request.document) {
     return { refusal: 'The file was read as a lab report but no value was sent. Read every line of results on every page and send each one, or tell the user what the file was. Nothing was written.' };
@@ -2159,7 +2166,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     name: 'report_feedback',
     cost: 'correct',
     run: 'record-free',
-    canonicalArgs: (args) => canonicalFeedback(args as { kind: string; title: string; detail: string }),
+    canonicalArgs: canonicalFeedback,
     _meta: invocation('Preparing your report…', 'Prepared your report'),
     title: 'File a bug report or feature request',
     description:

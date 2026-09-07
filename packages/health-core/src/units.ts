@@ -333,6 +333,8 @@ const CONVENTIONAL: UnitAlias = { system: 'conventional' };
 const UNIT_ALIASES: Partial<Record<MetricType, Record<string, UnitAlias>>> = {
   creatinine: { 'umol/l': SI, 'micromol/l': SI },
   hba1c: { 'mmol/mol': SI, '%': CONVENTIONAL },
+  // PSA — NZ/AU labs print µg/L, the same number as ng/mL.
+  psa: { 'ug/l': SI },
   apob: { 'mg/dl': CONVENTIONAL, 'mg/l': { system: 'si', scale: 0.001 } },
   // Lp(a) — NZ/AU/UK labs report in mg/L, US labs in mg/dL; guidelines prefer nmol/L.
   lpa: { 'mg/l': CONVENTIONAL, 'mg/dl': { system: 'conventional', scale: 10 } },

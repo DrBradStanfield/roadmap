@@ -1729,6 +1729,12 @@ describe('US-36 AC1 — file_results takes one file per call, and refuses in wor
     const undated = await runToolOverSync(sync(), 'file_results', labCall([row('ldl', 'LDL Cholesterol', 2.8, 'mmol/L')], { collectedOn: undefined }), NOW, { importer: memory });
     expect(undated).toMatchObject({ isError: true, text: expect.stringMatching(/collectedOn.*ask the user.*never guess.*Nothing was read/) });
 
+    // A date the record refuses is the call's, not a row's: the way round names collectedOn, never
+    // fileDates, an argument this tool has not got (adversarial review 2026-09-07).
+    const future = await runToolOverSync(sync(), 'file_results', labCall([row('ldl', 'LDL Cholesterol', 2.8, 'mmol/L')], { collectedOn: '2030-01-01' }), NOW, { importer: memory });
+    expect(future).toMatchObject({ isError: true, text: expect.stringMatching(/collectedOn: 2030-01-01 has not happened yet.*Ask the user.*Nothing was read/) });
+    expect(future.text).not.toContain('fileDates');
+
     const empty = await runToolOverSync(sync(), 'file_results', labCall([]), NOW, { importer: memory });
     expect(empty).toMatchObject({ isError: true, text: expect.stringMatching(/read as a lab report but no value was sent.*every line of results.*tell the user what the file was/) });
 
@@ -1836,10 +1842,12 @@ describe('US-36 AC4 — units: one table, converted to canonical, refused by nam
       row('lpa', 'Lp(a)', 10, 'mg/dL'),
       row('apob', 'ApoB', 900, 'mg/L'),
       row('creatinine', 'Creatinine', 80, 'micromol/L'),
+      row('psa', 'PSA', 1.2, 'µg/L'), // the NZ/AU print: 1 µg/L is 1 ng/mL
       row('ferritin', 'Ferritin', 210, 'ug/L'),
     ]));
     expect(out.unrecognized).toEqual([]);
     const by = Object.fromEntries(out.payload.candidates.map((c) => [c.metric, c]));
+    expect(by.psa.value).toBe(1.2);
     expect(by.ldl.value).toBeCloseTo(2.586, 2);
     expect(by.ldl.unit).toBe('mmol/L');
     expect(by.hba1c.value).toBeCloseTo(42, 0);
