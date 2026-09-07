@@ -390,6 +390,7 @@ As a user, I can send Brad feedback from the widget; it reaches his inbox (Resen
 - Tests: 🟡 sendFeedbackEmail + route helpers tested; mirror insert untested (accepted — verified live).
 
 ### US-20 · Mobile
+- AC2 (2026-09-07): Sentry accepts errors from the current Shopify main widget, lazy chunks, upload and chat bundles, and our Pages scripts. Unrelated scripts and misleading/rehosted URLs remain excluded. `sentry-bundles.test.ts` exercises the actual SDK filter using the production init options and emitted build names.
 As a mobile user, I get a tabbed layout (input/plan/chat) with CSS scroll-snap swiping, and every layout works in real iOS WebKit (not just Chrome emulation).
 - Evidence: mobile engagement is much shallower than desktop (2.6 vs 7.4+ min new-user averages) — worth watching in funnel data.
 - AC1 (2026-09-07): The deployment WebKit check fails on a missing seeded matrix, missing values, collapsed/content-box cells or page overflow, on both desktop and iPhone.

@@ -161,14 +161,12 @@ export function initSentry() {
       /Unexpected private name #/,
     ],
     allowUrls: [
-      // Only capture errors originating from our own widget bundles…
-      /health-tool\.js/,
-      /health-site-chat\.js/,
-      // …or the standalone (GitHub Pages) build's hashed bundles. Pinned to OUR
-      // origin: a re-hosted copy of the bundle produces stack URLs that don't
-      // match, so its errors are dropped (anti-spam). Without this entry, ALL
-      // standalone errors were silently filtered out.
-      /https:\/\/drbradstanfield\.github\.io\/roadmap\/assets\//,
+      // Current extension entry points and lazy chunks. Match the CDN origin
+      // and complete filename so unrelated scripts and lookalike URLs stay out.
+      /^https:\/\/cdn\.shopify\.com\/extensions\/[^?#]+\/assets\/(?:health-plan-v2(?:-[\w-]+)?|health-site-chat|health-chatbot-embed|health-upload)\.js(?:[?#].*)?$/,
+      // Pages emits hashed chunks under assets/, but its lazy upload IIFE
+      // lives beside index.html. Rehosted copies do not report to our project.
+      /^https:\/\/drbradstanfield\.github\.io\/roadmap\/(?:assets\/[^/?#]+\.js|health-upload\.js)(?:[?#].*)?$/,
     ],
     beforeSend: scrubEvent,
     beforeBreadcrumb: scrubBreadcrumb,
