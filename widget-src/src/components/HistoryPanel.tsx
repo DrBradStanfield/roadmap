@@ -23,9 +23,11 @@ import {
 import annotationPlugin from 'chartjs-plugin-annotation';
 import 'chartjs-adapter-date-fns';
 import { loadAllHistory, loadLabValues, loadMedicationHistory } from '../lib/roadmap-data';
+import { trackProductEvent } from '../lib/server-api';
 import type { ApiLabValue, ApiMedicationHistory } from '../lib/api-types';
 import { loadUnitPreference } from '../lib/storage';
 import { groupLabHistory } from '../lib/lab-rows';
+import { medicationAnnotations, MED_ANNOTATION_COLOR, type ChartAnnotation } from '../lib/medication-annotations';
 import { chartTimestamp, formatShortDate } from '../lib/constants';
 
 // Register only what we need
@@ -47,27 +49,6 @@ const METRIC_COLORS: Record<string, string> = {
   psa: '#d946ef',
   lpa: '#e11d48',
 };
-
-// Map medication keys to the chart metrics they affect
-const MED_CHART_MAP: Record<string, string[]> = {
-  statin: ['ldl', 'apob', 'total_cholesterol'],
-  ezetimibe: ['ldl', 'apob', 'total_cholesterol'],
-  bempedoic_acid: ['ldl', 'apob', 'total_cholesterol'],
-  pcsk9i: ['ldl', 'apob', 'total_cholesterol'],
-  statin_escalation: ['ldl', 'apob', 'total_cholesterol'],
-  glp1: ['hba1c', 'weight', 'triglycerides'],
-  glp1_escalation: ['hba1c', 'weight', 'triglycerides'],
-  sglt2i: ['hba1c', 'weight'],
-  metformin: ['hba1c'],
-};
-
-interface ChartAnnotation {
-  date: number;
-  label: string;
-  color: string;
-}
-
-const MED_ANNOTATION_COLOR = '#6366f1';
 
 function toDisplayValue(metricType: string, value: number, unitSystem: UnitSystem): number {
   const field = METRIC_TO_FIELD[metricType];
@@ -117,8 +98,9 @@ function TimeSeriesChart({
     const sorted = [...data].sort((a, b) => a.x - b.x);
 
     const DAY = 86400000;
-    const xMin = sorted.length === 1 ? sorted[0].x - 7 * DAY : undefined;
-    const xMax = sorted.length === 1 ? sorted[0].x + 7 * DAY : undefined;
+    const dates = [...sorted.map(point => point.x), ...(annotations ?? []).map(a => a.date)];
+    const xMin = Math.min(...dates) - (sorted.length === 1 ? 7 * DAY : 0);
+    const xMax = Math.max(...dates) + (sorted.length === 1 ? 7 * DAY : 0);
 
     if (chartRef.current) {
       chartRef.current.destroy();
@@ -161,15 +143,6 @@ function TimeSeriesChart({
               borderColor: a.color,
               borderDash: [4, 4],
               borderWidth: 1,
-              label: {
-                content: a.label,
-                display: true,
-                position: 'start' as const,
-                font: { size: 10 },
-                backgroundColor: a.color + 'dd',
-                color: '#fff',
-                padding: 3,
-              },
             }])),
           } : undefined,
         },
@@ -213,6 +186,13 @@ function TimeSeriesChart({
       <div className="metric-chart-canvas-wrap">
         <canvas ref={canvasRef} />
       </div>
+      {annotations && annotations.length > 0 && (
+        <ul aria-label={`${title} recorded medication changes`}>
+          {annotations.map((annotation, index) => (
+            <li key={index}>{formatShortDate(annotation.date)}: {annotation.label}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -281,34 +261,16 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
     });
   };
 
-  // Build annotations per metric type from medication history
-  const annotationsByMetric = useMemo(() => {
-    if (!showMedAnnotations || medHistory.length === 0) return {};
-    const map: Record<string, ChartAnnotation[]> = {};
-    for (const h of medHistory) {
-      const metrics = MED_CHART_MAP[h.medicationKey];
-      if (!metrics) continue;
-      // Skip status-only entries that aren't meaningful chart events
-      if (h.drugName === 'none' || h.drugName === 'not_yet') continue;
-      const displayName = h.drugName === 'not_tolerated'
-        ? h.medicationKey.replace(/_/g, ' ')
-        : h.drugName.charAt(0).toUpperCase() + h.drugName.slice(1).replace(/_/g, ' ');
-      const dose = h.doseValue ? ` ${h.doseValue}${h.doseUnit || ''}` : '';
-      const label = h.changeType === 'stopped'
-        ? `Stopped ${displayName}`
-        : `${displayName}${dose}`;
-      const ann: ChartAnnotation = {
-        date: chartTimestamp(h.effectiveStart),
-        label,
-        color: MED_ANNOTATION_COLOR,
-      };
-      for (const mt of metrics) {
-        if (!map[mt]) map[mt] = [];
-        map[mt].push(ann);
-      }
+  const annotationsByMetric = useMemo(
+    () => showMedAnnotations ? medicationAnnotations(medHistory) : {},
+    [medHistory, showMedAnnotations],
+  );
+
+  useEffect(() => {
+    if (Object.keys(annotationsByMetric).some(metric => selectedMetrics.has(metric) && measurements.some(row => row.metricType === metric))) {
+      trackProductEvent('medication_history_viewed');
     }
-    return map;
-  }, [medHistory, showMedAnnotations]);
+  }, [annotationsByMetric, selectedMetrics, measurements]);
 
   // Group measurements by metricType (memoized)
   const { grouped, metricTypes } = useMemo(() => {
@@ -365,8 +327,12 @@ export function HistoryPanel({ initialMetric }: HistoryPanelProps) {
                 onChange={() => setShowMedAnnotations(p => !p)}
               />
               <span className="metric-color-dot" style={{ background: MED_ANNOTATION_COLOR }} />
-              Show medication changes
+              Show recorded medication changes
             </label>
+          )}
+
+          {medHistory.length > 0 && showMedAnnotations && (
+            <p className="history-note">Markers show when you recorded a change, which may differ from when treatment changed.</p>
           )}
 
           {metricTypes

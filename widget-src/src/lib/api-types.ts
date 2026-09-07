@@ -48,7 +48,7 @@ export type AddMeasurementResult =
   | { status: 'duplicate' }
   | { status: 'error' };
 
-/** Medication history record (from medication_history table). */
+/** Recorded medication change projected from the append-only file history. */
 export interface ApiMedicationHistory {
   id: string;
   medicationKey: string;

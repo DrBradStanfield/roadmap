@@ -76,7 +76,9 @@ As a user, I record what I actually take (real drug + dose, or none/not-tolerate
 - AC1: FHIR MedicationStatement semantics per CLAUDE.md table; history is append-only change log.
 - AC2: Brad's products appear as quick-add supplement chips.
 - AC3: New screening types must round-trip through the file (7-step checklist in CLAUDE.md).
-- Tests: ✅ suggestions/cascade logic in health-core; 🟡 roadmap-store covers med/supplement history appends; screening round-trip tests exist in mappings.test.ts.
+- AC4: History charts show recorded medication starts, stops, switches and dose changes. Dates mean when the change was recorded, not a claimed treatment start date. Legacy rows without a change type stay stored but produce no invented event. Stops with a status placeholder identify the medication category. Chart ranges include recorded events even with one old result; dated text keeps same-time changes readable.
+- Usage signal: `medication_history_viewed` measures annotated-chart reach; no medication names, doses or dates enter telemetry.
+- Tests: ✅ suggestions/cascade logic in health-core; ✅ roadmap-store covers med/supplement history appends and US-06 AC4 projection; medication-annotations tests cover labels/stops/legacy rows (live verification pending); screening round-trip tests exist in mappings.test.ts.
 
 ## Epic B — Getting the plan
 
