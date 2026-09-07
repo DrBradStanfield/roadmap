@@ -36,7 +36,12 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
 - `[expected][sentry]` 2026-08-12 — The info-level issue titled
   "Chat transient upstream 5xx, retrying once" IS the retry instrumentation
   from PR #11 — ledger it `wontfix` (expected) on first appearance; its rate
-  is the transient-failure trend, worth reading, never "fixing".
+  is the transient-failure trend, worth reading, never "fixing". Same on
+  sight for self-generated probes: `level=info` + a non-production
+  `environment` tag (e.g. `bundle-filter-verification`, 2026-09-07, PR #73's
+  five synthetic events) — match the event ids to the verification doc on
+  the authoring branch, then `wontfix`; regrowth past the documented count is
+  the only thing worth a second look.
 - `[process][review]` 2026-08-12 — Verify a safety claim at the CALL SITE
   that enforces it, not the helper that implements it (round-1 REJECT: dedup
   helper was sound, but the route gates it behind `if (conversationId)`).
@@ -75,6 +80,20 @@ place, depth goes to `notes/<slug>.md`, raw pulls stay worker-local.)
   `sanitizeRedirectUrl` REJECTING the payload, i.e. the defense firing, not a
   defect. Ledger `wontfix` on sight; the auth route is grant-excluded, so any
   capture-hygiene change would be propose-only — not worth it at probe volume.
+- `[gap][sentry]` 2026-09-07 — Production `allowUrls` in
+  `widget-src/src/lib/sentry.ts` still names the retired `health-tool.js`, so
+  the SDK has been DROPPING every exception from `health-plan-v2.js`, its
+  HistoryPanel chunk, `health-upload.js` and `health-chatbot-embed.js`
+  (only `health-site-chat.js` and Pages hashed chunks get through). Every
+  widget-side "no-op" day in metrics.csv is therefore a lower bound, not
+  evidence of health; the `[noise][widget]` foreign-origin priors are what
+  survived the filter, not the whole picture. Fix is Brad's PR #73 (`hold`,
+  unmerged as of this run). When it deploys, expect a burst of "new" widget
+  issues that are really old — triage each on its own evidence, one per run
+  as the charter says, and read their `stats` from the deploy date, not
+  lifetime. How long the filter has been wrong is undatable from a shallow
+  clone (see the gotcha below) — a full clone or Sentry's issue history for
+  `health-tool.js` frames can answer it.
 - `[gotcha][process]` 2026-08-14 — Fresh cloud containers start on a detached
   HEAD at origin/main's tip while the local `main` REF lags: diff/typecheck
   comparisons against `main` silently use stale code. `git checkout -B main
