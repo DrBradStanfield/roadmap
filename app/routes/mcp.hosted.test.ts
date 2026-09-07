@@ -1175,12 +1175,12 @@ function pendingFiles(): string[] {
 describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, AC9, AC10)', () => {
   afterEach(() => setImportSeams(null));
 
-  it('lists the tool with openai/fileParams, extracts without writing, then commits what was accepted', async () => {
+  it('lists the tool without openai/fileParams (US-36 AC7), extracts without writing, then commits what was accepted', async () => {
     seedRecord();
     const { access } = await connect();
     const listed = await rpc(access, 'tools/list');
     const tool = listed.result!.tools!.find((t) => (t as { name: string }).name === 'import_documents') as { _meta: Record<string, unknown> };
-    expect(tool._meta['openai/fileParams']).toEqual(['file']);
+    expect(tool._meta['openai/fileParams']).toBeUndefined();
 
     const extracted = stubImport({ 'labs.pdf': PDF_BYTES, 'notes.txt': new Uint8Array(1) }, () => labReport());
     // A pending payload older than a day, left by an extract whose commit never came, is swept by this one.
@@ -1555,4 +1555,114 @@ describe('US-37 — a Dropbox read lists folder files that are not in the record
     expect(OUTPUTS.read_record.parse(timedOut.structured).folder).toBeUndefined();
     expect(importEvents().filter((e) => (e as { phase: string }).phase === 'nudge')).toHaveLength(0);
   }, 10_000);
+});
+
+// ---------------------------------------------------------------------------
+// US-36 — file_results over the hosted surface
+// ---------------------------------------------------------------------------
+import { WRITES_PER_HOUR as HOURLY } from '../lib/mcp-grants.server';
+
+describe('US-36 — file_results: propose parks a receipt and charges one, commit writes and spends it (AC5, AC6, usage signal)', () => {
+  afterEach(() => setImportSeams(null));
+  const rows = (day = LAB_DAY) => ({
+    sourceFileName: 'Results.pdf', classification: 'lab_report', collectedOn: day,
+    values: [
+      { metric: 'ldl', printedName: 'LDL Cholesterol', value: 100, unit: 'mg/dL' },
+      { metric: 'ferritin', printedName: 'Ferritin', value: 210, unit: 'ug/L', referenceLow: 30, referenceHigh: 300 },
+    ],
+  });
+
+  it('never calls the extractor, writes nothing at propose, then commits what was accepted with importedVia assistant', async () => {
+    seedRecord();
+    const { access } = await connect();
+    const extracted = stubImport({}, () => labReport());
+    (recordServerEvent as unknown as { mockClear(): void }).mockClear();
+
+    const propose = await callTool(access, 'file_results', rows());
+    expect(propose.isError).toBe(false);
+    const data = OUTPUTS.file_results.parse(propose.structured);
+    expect(data.route).toBe('assistant');
+    expect(data.candidates.map((c) => [c.id, c.metric, c.printedName, c.slot.state])).toEqual([['c1', 'ldl', 'LDL Cholesterol', 'free'], ['c2', 'ferritin', 'Ferritin', 'free']]);
+    expect(data.candidates[0].value).toBeCloseTo(2.586, 2);
+    expect(data.next).toContain('call file_results with commit');
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
+    expect(pendingFiles()).toHaveLength(1);
+    expect(extracted).toEqual([]); // no model, so no file quota and no machine cap spent
+
+    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1', 'c2'], replace: [] } });
+    expect(commit.isError).toBe(false);
+    const stored = storedRecord();
+    expect(stored.measurements.find((m) => m.metricType === 'ldl')).toMatchObject({ source: 'lab_import', recordedAt: LAB_DAY });
+    expect(stored.labValues[0]).toMatchObject({ metricName: 'ferritin', value: 210, unit: 'µg/L', source: 'lab_import' });
+    // A DCR-registered test client is not a pinned one, so its label is `other` — which is also what tells the harness apart from a real ChatGPT (AC12).
+    expect(stored.documents[0]).toMatchObject({ sourceFileName: 'Results.pdf', contentHash: '', metadata: { importedVia: 'assistant', client: 'other' } });
+    expect(pendingFiles()).toHaveLength(0);
+    const spent = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    expect(spent.isError).toBe(true);
+
+    // The same file re-sent is already_imported by name and date; another date files.
+    const again = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows())).structured);
+    expect(again.files[0]).toMatchObject({ status: 'already_imported' });
+    expect(again.receipt).toBeUndefined();
+    const other = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows('2026-08-27'))).structured);
+    expect(other.candidates).toHaveLength(2);
+
+    // Value-free counters: route, phase, bucket; never a name or a value.
+    const events = importEvents();
+    expect(events).toEqual([
+      { route: 'assistant', phase: 'extract', files: '1' },
+      { route: 'assistant', phase: 'commit', files: '1' },
+      { route: 'assistant', phase: 'extract', files: '1' },
+    ]);
+    expect(JSON.stringify(events)).not.toMatch(/Results\.pdf|210|2\.58/);
+  });
+
+  it('charges one write at propose whatever the row count, and the commit one plus five per replace (AC6)', async () => {
+    seedRecord((file) => ({ ...file, measurements: [createMeasurement({ id: 'old', metricType: 'ldl', value: 3.4, recordedAt: `${LAB_DAY}T00:00:00.000Z`, createdAt: NOW })] }));
+    const { access } = await connect();
+    const data = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows())).structured);
+    expect(data.candidates[0].slot).toMatchObject({ state: 'held_different', existingRowId: 'old', replaceable: true });
+    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c2'], replace: ['c1'] } });
+    expect(commit.isError).toBe(false);
+    expect(storedRecord().measurements.find((m) => m.id === 'old')!.status).toBe('entered-in-error');
+    // 1 (propose) + 1 + 5 (commit with one replace) = 7 spent; 53 adds remain of the hour.
+    let adds = 0;
+    for (let i = 0; i < HOURLY; i++) {
+      const answer = await callTool(access, 'add_measurement', { metricType: 'hdl', value: 1.2, recordedAt: dayNumber(i) });
+      if (answer.isError) break;
+      adds++;
+    }
+    expect(adds).toBe(HOURLY - 1 - WRITE_COST.add - WRITE_COST.correct);
+  });
+
+  it('refuses a replace of a value older than the 90-day rule, and files a letter by an empty commit', async () => {
+    seedRecord((file) => ({ ...file, measurements: [createMeasurement({ id: 'old', metricType: 'ldl', value: 3.4, recordedAt: '2026-01-10T00:00:00.000Z', createdAt: NOW })] }));
+    const { access } = await connect();
+    const data = OUTPUTS.file_results.parse((await callTool(access, 'file_results', rows('2026-01-10'))).structured);
+    expect(data.candidates[0].slot.replaceable).toBe(false);
+    const refused = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: [], replace: ['c1'] } });
+    expect(refused.isError).toBe(true);
+    expect(refused.text).toContain('too old to replace');
+    expect(storedRecord().measurements.find((m) => m.id === 'old')!.status).toBe('active');
+
+    const letter = OUTPUTS.file_results.parse((await callTool(access, 'file_results', { sourceFileName: 'letter.pdf', classification: 'clinic_letter', document: { title: 'Cardiology review', type: 'clinic_letter', date: '2026-08-01' } })).structured);
+    expect(letter.documents).toEqual([{ sourceFileName: 'letter.pdf', title: 'Cardiology review', type: 'clinic_letter', date: '2026-08-01' }]);
+    const filed = await callTool(access, 'file_results', { commit: { receipt: letter.receipt, accept: [], replace: [] } });
+    expect(filed.isError).toBe(false);
+    expect(storedRecord().documents.map((d) => d.title)).toEqual(['Cardiology review']);
+  });
+
+  it('a file dropped through a cached tool list still routes as chatgpt_file, and its next carries the refresh sentence (AC12)', async () => {
+    seedRecord();
+    const { access } = await connect();
+    stubImport({ 'Results.pdf': PDF_BYTES }, () => labReport());
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => (String(url).includes('oaiusercontent')
+      ? new Response(PDF_BYTES as Uint8Array<ArrayBuffer>)
+      : Response.json({ refresh_token: 'dropbox-refresh-token-x', access_token: 'dropbox-access-token', expires_in: 14400 }))));
+    const drag = await callTool(access, 'import_documents', { file: { download_url: 'https://files.oaiusercontent.com/one?sig=a', file_id: 'file-1', file_name: 'Results.pdf' } });
+    expect(drag.isError).toBe(false);
+    const data = OUTPUTS.import_documents.parse(drag.structured);
+    expect(data.route).toBe('chatgpt_file');
+    expect(data.next).toContain('refresh the connector');
+  });
 });

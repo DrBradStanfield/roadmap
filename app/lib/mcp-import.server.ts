@@ -2,7 +2,8 @@
  * `import_documents` on the hosted server (US-35): the half of the import the
  * tool layer cannot do — read a file from somewhere, send it to the extraction
  * model, park the result where the commit can find it, and hand back a
- * receipt that names it.
+ * receipt that names it. `file_results` (US-36) uses the same park-and-receipt
+ * half and none of the reading: the assistant read the file.
  *
  * The tool layer (`mcp-tools.ts`) slots what comes back and applies the
  * user's selection; this module is the `ImportSurface` it is handed. Nothing
@@ -348,6 +349,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
 
   return {
     maxCorrectionAgeDays: options.maxCorrectionAgeDays,
+    client,
     budgetMs: MCP_IMPORT_BUDGET_MS,
 
     async extract(request: ImportRequest, file: RoadmapFile, now: string, deadline: number): Promise<ImportBundle | ImportRefusal> {
@@ -518,6 +520,8 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
     },
 
     async stash(payload: ImportPayload, deadline: number) {
+      // The assistant route has no extract of its own to count (US-36 usage signal): every propose that read something parks here.
+      if (payload.route === 'assistant') count('assistant', 'extract', 1);
       const exp = nowSeconds(Date.parse(payload.createdAt)) + RECEIPT_LIFETIME_SECONDS;
       const claims: ReceiptClaims = { id: payload.id, exp, conn: hash(connection), sha256: sha256Hex(JSON.stringify(payload)) };
       try {

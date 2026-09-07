@@ -15,6 +15,8 @@ import {
   addLabValuesInput,
   chatgptFileInput,
   importDocumentsInput,
+  fileResultRow,
+  fileResultsInput,
   addMeasurement,
   addMeasurementInput,
   callTool,
@@ -473,6 +475,7 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
     update_profile: updateProfileInput,
     report_feedback: reportFeedbackInput,
     import_documents: importDocumentsInput,
+    file_results: fileResultsInput,
   };
 
   it('agrees on every property and every required field, nested rows included', () => {
@@ -483,8 +486,9 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
     let checked = 0;
     for (const tool of MCP_TOOLS) {
       const schemas: Array<[z.ZodRawShape, Record<string, unknown>]> = [[ZOD[tool.name].shape, tool.inputSchema.properties]];
-      if (tool.name === 'add_lab_values') {
-        schemas.push([labValueInput.shape, (tool.inputSchema.properties.values as { items: { properties: Record<string, unknown> } }).items.properties]);
+      if (tool.name === 'add_lab_values' || tool.name === 'file_results') {
+        const rowShape = tool.name === 'add_lab_values' ? labValueInput.shape : fileResultRow.shape;
+        schemas.push([rowShape, (tool.inputSchema.properties.values as { items: { properties: Record<string, unknown> } }).items.properties]);
       }
       for (const [shape, properties] of schemas) {
         for (const [key, property] of Object.entries(properties)) {
@@ -496,7 +500,7 @@ describe('US-32 — the published JSON Schema and the zod gate say the same thin
         }
       }
     }
-    expect(checked).toBe(9); // every string a tool takes is bounded
+    expect(checked).toBe(13); // every string a tool takes is bounded
   });
 
   it('diverges in exactly one place, on purpose: add_measurement.metricType', () => {
@@ -557,19 +561,21 @@ describe('US-32 — the dispatcher', () => {
     expect(outcome.status === 'ok' && outcome.file).toBeUndefined();
   });
 
-  it('publishes eight tools, and marks only the reads read-only', () => {
+  it('publishes nine tools, and marks only the reads read-only', () => {
     expect(MCP_TOOLS.map((t) => t.name)).toEqual([
       'read_record', 'get_plan', 'add_measurement', 'add_lab_values', 'correct_value', 'update_profile', 'report_feedback',
-      'import_documents',
+      'import_documents', 'file_results',
     ]);
     // report_feedback files a public issue, so it is a write like any other.
     expect(MCP_TOOLS.filter((t) => t.annotations.readOnlyHint).map((t) => t.name))
       .toEqual(['read_record', 'get_plan']);
     // A correction supersedes a row for good, and a profile write overwrites
     // the only copy there is; both claim to destroy, and nothing else does.
-    // An import's `replace` is a correction (US-35 AC12).
+    // An import's `replace` is a correction (US-35 AC12, US-36 AC7).
     expect(MCP_TOOLS.filter((t) => t.annotations.destructiveHint).map((t) => t.name))
-      .toEqual(['correct_value', 'update_profile', 'import_documents']);
+      .toEqual(['correct_value', 'update_profile', 'import_documents', 'file_results']);
+    // file_results is closed-world: no file host, no model — nothing leaves the record (US-36 AC7).
+    expect(MCP_TOOLS.filter((t) => t.annotations.openWorldHint).map((t) => t.name)).toEqual(['report_feedback', 'import_documents']);
     for (const tool of MCP_TOOLS) {
       expect(tool.inputSchema.additionalProperties, tool.name).toBe(false);
       // ChatGPT's tool renderer drops an object declared only by
@@ -1191,7 +1197,9 @@ describe('US-35 AC6 — prepareImport slots every candidate against the record',
     // A reason outside the table is a bug in us, worded as unreadable rather than a bare token.
     expect(importHint('something_else')).toBe(importHint('unreadable'));
     expect(importHint(undefined)).toBe(importHint('unreadable'));
-    expect(IMPORT_REFUSALS.mobile).toMatch(/ChatGPT on mobile does not hand files to apps yet.*computer.*Apps\/Health Plan by Dr Brad.*Nothing was read\./);
+    // US-36 AC8: a drop the server cannot fetch is the assistant's to read.
+    expect(IMPORT_REFUSALS.mobile).toMatch(/could not fetch that file.*Read the file yourself and call file_results.*Apps\/Health Plan by Dr Brad.*Nothing was read\./);
+    expect(IMPORT_REFUSALS.dragFallback).toContain('file_results');
     expect(IMPORT_REFUSALS.emptyFolder).toMatch(/no PDF, JPEG, PNG or ZIP files in the folder root \(Apps\/Health Plan by Dr Brad\)/);
   });
 });
@@ -1319,9 +1327,9 @@ describe('US-35 AC7/AC8 — importDocumentsCommit applies a selection, all or no
     const refused = importDocumentsCommit(after, second, { receipt: 'r2', accept: ['c1'], replace: [] }, NOW);
     expect(refused).toMatchObject({ status: 'rejected', text: `ldl on ${LAB_DAY} changed in the record since these files were read. Nothing was written. Extract again and show the user the fresh candidates.` });
     expect(after.measurements.filter((m) => m.recordedAt === LAB_DAY)).toHaveLength(1);
-    // The tool tells the assistant so, on the param ChatGPT fills.
+    // The param an older ChatGPT tool list still fills is marked retiring and points at file_results (US-36 AC12).
     const fileParam = MCP_TOOLS.find((t) => t.name === 'import_documents')!.inputSchema.properties.file as { description: string };
-    expect(fileParam.description).toMatch(/several files.*once per file.*same metric and day.*conflict.*before any commit/);
+    expect(fileParam.description).toMatch(/Retiring.*file_results/);
   });
 
   it('an empty selection writes nothing and says so, once the file itself is on record', () => {
@@ -1480,14 +1488,15 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
       return { route: 'chatgpt_file', remaining: [], files: [{ name: 'big.pdf', status: 'failed', reason: 'too_large' }, { name: 'photo.heic', status: 'failed', reason: 'unsupported' }] };
     } };
     const refused = OUTPUTS.import_documents.parse((await runToolOverSync(sync, 'import_documents', {}, NOW, { importer: sized, latestDay: TODAY })).structured);
-    expect(refused.next).toBe("Nothing was imported.\n2 file(s) were not read: relay each file's hint to the user in plain words.");
+    // On the drag route the last line is the refresh sentence: the drop reached us from a cached tool list (US-36 AC12).
+    expect(refused.next).toBe(`Nothing was imported.\n2 file(s) were not read: relay each file's hint to the user in plain words.\n${IMPORT_REFUSALS.refresh}`);
     expect(refused.files[0].hint).toBe(importHint('too_large'));
     expect(data.next).toMatch(/1 file\(s\) in the ZIP were not reached: commit this receipt first, then ask the user to drop the ZIP in again/);
     // The question itself stays on the candidate (AC9): the instruction field carries no document text.
     expect(data.next).not.toContain('Smudged');
     expect(data.candidates[0].question).toBe('Smudged: 2.8 or 2.3?');
     expect(data.files.find((f) => f.name === 'photo.heic')!.hint).toBe(importHint('unsupported'));
-    expect(data.next.split('\n').length).toBeLessThanOrEqual(6);
+    expect(data.next.split('\n').length).toBeLessThanOrEqual(7); // + the refresh line on the drag route (US-36 AC12)
   });
 
   it('an extract leaves the file bytes untouched and answers candidates plus a receipt', async () => {
@@ -1570,9 +1579,10 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     expect(callTool('import_documents', {}, { file: base(), now: NOW }).status).toBe('rejected');
   });
 
-  it('publishes openai/fileParams on the descriptor, naming the file argument (AC4)', () => {
+  it('no longer publishes openai/fileParams, but keeps the file argument callable for cached tool lists (US-36 AC7, AC12)', () => {
     const tool = MCP_TOOLS.find((t) => t.name === 'import_documents')!;
-    expect(tool._meta['openai/fileParams']).toEqual(['file']);
+    expect(tool._meta['openai/fileParams']).toBeUndefined();
+    expect(MCP_TOOLS.some((t) => t._meta['openai/fileParams'])).toBe(false);
     const file = tool.inputSchema.properties.file as { required: string[]; properties: Record<string, unknown> };
     expect(file.required).toEqual(['download_url', 'file_id']);
     expect(Object.keys(file.properties)).toEqual(['download_url', 'file_id', 'mime_type', 'file_name']);
@@ -1635,5 +1645,271 @@ describe('US-37 AC1 — the nudge names folder files no live document row names'
       expect(OUTPUTS[name].shape.folder.isOptional()).toBe(true);
     }
     expect(OUTPUTS.get_plan.safeParse({ ...(getPlan(base(), NOW) as { data: object }).data, folder: { unimported: ['a.pdf'], hint: 'x' } }).success).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-36 — file_results: the assistant read the file, the server checks every row
+// ---------------------------------------------------------------------------
+import { CORE_METRIC_ALIASES, resolveCoreMetricName, UNIFIED_SYSTEM_PROMPT } from './lab-extraction';
+import { fileResultsBundle, type FileResultsRequest, type ImportBundle, type ReceiptSurface } from './mcp-tools';
+import { reportedToCanonical } from './units';
+
+/** One row as the assistant would send it; the report's own spelling, the core key it thinks it is. */
+function row(metric: string, printedName: string, value: number, unit: string, extra: Partial<z.infer<typeof fileResultRow>> = {}) {
+  return { metric, printedName, value, unit, ...extra };
+}
+
+function labCall(values: ReturnType<typeof row>[], over: Partial<FileResultsRequest> = {}): FileResultsRequest {
+  return { sourceFileName: 'labs.pdf', classification: 'lab_report', collectedOn: LAB_DAY, values, ...over };
+}
+
+/** The bundle, or a failed expectation naming the refusal. */
+function bundleOk(request: FileResultsRequest, file = base()): ImportBundle {
+  const bundle = fileResultsBundle(request, file, { now: NOW });
+  if ('refusal' in bundle) throw new Error(`refused: ${bundle.refusal}`);
+  return bundle;
+}
+
+function prepared(request: FileResultsRequest, file = base()) {
+  return prepareImport(file, bundleOk(request, file), { now: NOW, maxCorrectionAgeDays: 90, payloadId: 'p1', client: 'claude' });
+}
+
+describe('US-36 AC1 — file_results takes one file per call, and refuses in words, never as a schema message', () => {
+  const memory: ReceiptSurface = {
+    budgetMs: 40_000,
+    async stash(payload) { return { receipt: `r-${payload.id}`, expiresAt: '2026-09-01T10:00:00Z' }; },
+    async open() { return { refusal: 'not held' }; },
+    async discard() {},
+  };
+  function sync() {
+    const cloud = new MemoryCloud();
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(base()), version: 1 });
+    return recordSync(new MemoryAdapter(cloud), 'test', NOW);
+  }
+
+  it('refuses commit beside a source, a lab report with no date, a lab report that read nothing, and a letter with no document block', async () => {
+    const both = await runToolOverSync(sync(), 'file_results', { ...labCall([row('ldl', 'LDL Cholesterol', 2.8, 'mmol/L')]), commit: { receipt: 'r', accept: [], replace: [] } }, NOW, { importer: memory });
+    expect(both).toMatchObject({ isError: true, text: expect.stringContaining('pass commit on its own') });
+
+    const undated = await runToolOverSync(sync(), 'file_results', labCall([row('ldl', 'LDL Cholesterol', 2.8, 'mmol/L')], { collectedOn: undefined }), NOW, { importer: memory });
+    expect(undated).toMatchObject({ isError: true, text: expect.stringMatching(/collectedOn.*ask the user.*never guess.*Nothing was read/) });
+
+    const empty = await runToolOverSync(sync(), 'file_results', labCall([]), NOW, { importer: memory });
+    expect(empty).toMatchObject({ isError: true, text: expect.stringMatching(/read as a lab report but no value was sent.*every line of results.*tell the user what the file was/) });
+
+    const letter = await runToolOverSync(sync(), 'file_results', { sourceFileName: 'letter.pdf', classification: 'clinic_letter' }, NOW, { importer: memory });
+    expect(letter).toMatchObject({ isError: true, text: expect.stringMatching(/clinic letter is filed from its document block.*title, type and date/) });
+
+    // Malformed (51 rows; a missing classification) is the table's sentence, not a zod message.
+    const over = await runToolOverSync(sync(), 'file_results', labCall(Array.from({ length: MAX_LAB_ROWS_PER_CALL + 1 }, (_, i) => row('ferritin', `Test ${i}`, 1, 'x'))), NOW, { importer: memory });
+    expect(over).toMatchObject({ isError: true, text: IMPORT_REFUSALS.fileResults });
+    const bare = await runToolOverSync(sync(), 'file_results', { values: [row('ldl', 'LDL', 2, 'mmol/L')] }, NOW, { importer: memory });
+    expect(bare).toMatchObject({ isError: true, text: IMPORT_REFUSALS.fileResults });
+  });
+
+  it('runs over any ReceiptSurface — no extract needed — while import_documents on the same surface still refuses as hosted-only', async () => {
+    const filed = await runToolOverSync(sync(), 'file_results', labCall([row('ldl', 'LDL Cholesterol', 2.8, 'mmol/L')]), NOW, { importer: memory });
+    expect(filed.isError).toBe(false);
+    expect(OUTPUTS.file_results.parse(filed.structured).receipt).toMatch(/^r-/);
+    const folder = await runToolOverSync(sync(), 'import_documents', {}, NOW, { importer: memory });
+    expect(folder).toMatchObject({ isError: true, text: expect.stringContaining('hosted connector') });
+    // Without any surface the tool refuses too, in words.
+    expect(callTool('file_results', labCall([]), { file: base(), now: NOW })).toMatchObject({ status: 'rejected', text: expect.stringContaining('Nothing was written') });
+  });
+});
+
+describe('US-36 AC2 — every row runs the record’s own dry run; a bad row is one line, never a refused call', () => {
+  it('refuses an out-of-range core value with both ranges and "check the unit", a future day, and a core metric under a lab name', () => {
+    const out = prepared(labCall([
+      row('ldl', 'LDL Cholesterol', 320, 'mmol/L'),
+      row('hdl', 'HDL Cholesterol', 1.3, 'mmol/L', { recordedAt: '2030-01-01' }),
+      row('ferritin', 'LDL Cholesterol', 2.8, 'mmol/L'),
+      row('ferritin', 'Ferritin', 210, 'ug/L'),
+    ]));
+    expect(out.unrecognized).toEqual([
+      expect.stringMatching(/^LDL Cholesterol 320 mmol\/L: LDL-c must be at most 12.9 mmol\/L \(got 320\) \(0–12.9 mmol\/L; 0–500 mg\/dL\)\. Check the unit; if the report really says that, tell the user and do not file it\.$/),
+      expect.stringMatching(/^HDL Cholesterol 1.3 mmol\/L: .*2030-01-01.*Ask the user for the date, then re-send\.$/),
+      'LDL Cholesterol 2.8 mmol/L: printed name LDL Cholesterol is the core metric ldl. Re-send it with metric ldl.',
+    ]);
+    // The good row still files: a refusal is per row.
+    expect(out.payload.candidates.map((c) => [c.metric, c.slot.state])).toEqual([['ferritin', 'free']]);
+  });
+});
+
+describe('US-36 AC3 — the printed name must agree with the claimed metric', () => {
+  it('refuses Lipoprotein(a) filed as apob — the misread this design exists for — and says how to re-send it', () => {
+    const out = prepared(labCall([row('apob', 'Lipoprotein(a)', 93, 'nmol/L')]));
+    expect(out.unrecognized).toEqual(['Lipoprotein(a) 93 nmol/L: printed name Lipoprotein(a) is lpa, not apob. Re-send it as lpa.']);
+    expect(out.payload.candidates).toEqual([]);
+  });
+
+  it('accepts the spellings labs print, exactly, and shows the printed name beside the key on the candidate', () => {
+    const out = prepared(labCall([
+      row('ldl', 'LDL Cholesterol (calc)', 2.8, 'mmol/L'),
+      row('total_cholesterol', 'Cholesterol', 5.2, 'mmol/L'),
+      row('hdl', 'HDL Cholesterol', 1.3, 'mmol/L'),
+      row('lpa', 'Lipoprotein(a)', 93, 'nmol/L'),
+    ]));
+    expect(out.unrecognized).toEqual([]);
+    expect(out.payload.candidates.map((c) => [c.metric, c.printedName])).toEqual([
+      ['ldl', 'LDL Cholesterol (calc)'], ['total_cholesterol', 'Cholesterol'], ['hdl', 'HDL Cholesterol'], ['lpa', 'Lipoprotein(a)'],
+    ]);
+  });
+
+  it('is exact, never a substring: the ratios and Non-HDL resolve to nothing, and are refused under a core key', () => {
+    for (const name of ['Non-HDL Cholesterol', 'Chol/HDL ratio', 'Total/HDL ratio']) expect(resolveCoreMetricName(name), name).toBeNull();
+    const out = prepared(labCall([row('hdl', 'Non-HDL Cholesterol', 3.9, 'mmol/L'), row('total_cholesterol', 'Chol/HDL ratio', 4.0, 'ratio')]));
+    expect(out.unrecognized).toEqual([
+      'Non-HDL Cholesterol 3.9 mmol/L: printed name Non-HDL Cholesterol is not a name this record knows for hdl. If the report really calls hdl that, tell the user and add it with add_measurement.',
+      'Chol/HDL ratio 4 ratio: printed name Chol/HDL ratio is not a name this record knows for total_cholesterol. If the report really calls total_cholesterol that, tell the user and add it with add_measurement.',
+    ]);
+    // Sent as a lab under its printed name, an unknown test still files (labSlotKey), so nothing the report holds is lost.
+    const asLab = prepared(labCall([row('Non-HDL Cholesterol', 'Non-HDL Cholesterol', 3.9, 'mmol/L')]));
+    expect(asLab.payload.candidates.map((c) => [c.kind, c.metric])).toEqual([['lab', 'non-hdl cholesterol']]);
+  });
+
+  it('refuses the lazy pairing (printedName is the bare key), and a claimed lab key whose printed name is another test', () => {
+    const out = prepared(labCall([row('apob', 'apob', 0.9, 'g/L'), row('ferritin', 'TSH', 1.8, 'mIU/L')]));
+    expect(out.unrecognized).toEqual([
+      'apob 0.9 g/L: printedName is the name as the report prints it, not the key apob. Re-send with the printed name.',
+      'TSH 1.8 mIU/L: printed name TSH is tsh, not ferritin. Re-send it as tsh.',
+    ]);
+  });
+
+  it('renders the extraction prompt’s TARGET METRICS block from the same alias table (one list)', () => {
+    for (const metric of ['ldl', 'hba1c', 'lpa'] as const) {
+      expect(UNIFIED_SYSTEM_PROMPT).toContain(`- "${metric}" — ${CORE_METRIC_ALIASES[metric].join(', ')}`);
+    }
+    expect(CORE_METRIC_ALIASES.total_cholesterol).toContain('Cholesterol');
+  });
+});
+
+describe('US-36 AC4 — units: one table, converted to canonical, refused by name, and a wrong direction is a question', () => {
+  it('converts mg/dL LDL, % HbA1c, mg/dL Lp(a) and mg/L ApoB; keeps a lab’s unit as printed with the catalogue relabel', () => {
+    const out = prepared(labCall([
+      row('ldl', 'LDL Cholesterol', 100, 'mg/dL'),
+      row('hba1c', 'HbA1c', 6.0, '%'),
+      row('lpa', 'Lp(a)', 10, 'mg/dL'),
+      row('apob', 'ApoB', 900, 'mg/L'),
+      row('creatinine', 'Creatinine', 80, 'micromol/L'),
+      row('ferritin', 'Ferritin', 210, 'ug/L'),
+    ]));
+    expect(out.unrecognized).toEqual([]);
+    const by = Object.fromEntries(out.payload.candidates.map((c) => [c.metric, c]));
+    expect(by.ldl.value).toBeCloseTo(2.586, 2);
+    expect(by.ldl.unit).toBe('mmol/L');
+    expect(by.hba1c.value).toBeCloseTo(42, 0);
+    expect(by.lpa.value).toBeCloseTo(240, 5); // 10 mg/dL = 100 mg/L × 2.4
+    expect(by.apob.value).toBeCloseTo(0.9, 6);
+    expect(by.creatinine.value).toBe(80);
+    expect(by.ferritin).toMatchObject({ kind: 'lab', value: 210, unit: 'µg/L', printedName: 'Ferritin' });
+    // The same table serves add_measurement (review 1.3): micromol/L is one spelling, not two answers.
+    expect(addMeasurement(base(), { metricType: 'creatinine', value: 80, unit: 'micromol/L', recordedAt: TODAY }, CTX).status).toBe('ok');
+    expect(reportedToCanonical('lpa', 10, 'mg/dL')).toBeCloseTo(240, 5);
+  });
+
+  it('refuses a unit the metric is not measured in, naming both labels', () => {
+    const out = prepared(labCall([row('hba1c', 'HbA1c', 6.0, 'g/dL')]));
+    expect(out.unrecognized).toEqual(['HbA1c 6 g/dL: hba1c is measured in mmol/mol or %, not "g/dL". Check the unit column; if the report really prints that, tell the user and do not file it.']);
+  });
+
+  it('offers an SI number sent under the conventional label as low confidence with a question, not as a silent value (review blocker 1.1)', () => {
+    const out = prepared(labCall([
+      row('ldl', 'LDL Cholesterol', 3.4, 'mg/dL'),
+      row('total_cholesterol', 'Cholesterol', 5.2, 'mg/dL'),
+      row('hdl', 'HDL Cholesterol', 1.3, 'mg/dL'),
+      row('apob', 'ApoB', 0.9, 'mg/dL'),
+      row('lpa', 'Lp(a)', 2, 'mg/L'),
+    ]), { ...base(), measurements: [] });
+    expect(out.unrecognized).toEqual([]);
+    expect(out.payload.candidates.map((c) => c.confidence)).toEqual(['low', 'low', 'low', 'low', 'low']);
+    expect(out.payload.candidates[0].question).toBe('3.4 mg/dL is 0.09 mmol/L, below any usual result; was the printed unit mmol/L?');
+    // A real conventional value is not questioned.
+    const fine = prepared(labCall([row('ldl', 'LDL Cholesterol', 130, 'mg/dL')]), { ...base(), measurements: [] });
+    expect(fine.payload.candidates[0].confidence).toBe('high');
+  });
+
+  it('displays candidates in the record’s own unit system', () => {
+    const us = { ...base(), measurements: [], profile: { ...base().profile, unitSystem: 'conventional' as const } };
+    const out = prepared(labCall([row('ldl', 'LDL Cholesterol', 2.6, 'mmol/L')]), us);
+    expect(out.payload.candidates[0]).toMatchObject({ displayValue: '101', displayUnit: 'mg/dL', unit: 'mmol/L' });
+  });
+});
+
+describe('US-36 AC5 — slots, dedup and the commit are import_documents’ own', () => {
+  const HELD_DAY = '2026-07-14'; // base() holds ldl 3.4 and ferritin 210 that day
+
+  it('slots held_equal, held_different (replaceable under 90 days) and sameDayAs against a fresh read', () => {
+    const out = prepared(labCall([
+      row('ldl', 'LDL Cholesterol', 3.4, 'mmol/L', { recordedAt: HELD_DAY }),
+      row('ferritin', 'Ferritin', 180, 'ug/L', { recordedAt: HELD_DAY }),
+      row('hdl', 'HDL Cholesterol', 1.2, 'mmol/L'),
+      row('hdl', 'HDL Cholesterol', 1.3, 'mmol/L'),
+    ]));
+    // Core rows first, then lab rows — `prepareImport`'s own order.
+    expect(out.payload.candidates.map((c) => [c.id, c.metric, c.slot.state, c.slot.replaceable, c.sameDayAs])).toEqual([
+      ['c1', 'ldl', 'held_equal', undefined, undefined],
+      ['c2', 'hdl', 'free', undefined, undefined],
+      ['c3', 'hdl', 'free', undefined, 'c2'],
+      ['c4', 'ferritin', 'held_different', true, undefined],
+    ]);
+  });
+
+  it('is already_imported by sha256 when given, else by name AND date; the same name on another date files', () => {
+    const hash = 'a'.repeat(64);
+    const file = base();
+    file.documents.push({
+      id: 'd1', title: 'Lab results', type: 'pathology_report', date: LAB_DAY, fileRef: '', contentHash: `sha256-${hash}`, mimeType: 'application/pdf',
+      extractedText: '', addedAt: NOW, metadata: {}, sourceFileName: 'Results.pdf',
+    });
+    const byHash = bundleOk(labCall([row('ldl', 'LDL', 2.8, 'mmol/L')], { sourceFileName: 'renamed.pdf', document: { title: 'x', type: 'other', date: null, sha256: hash } }), file);
+    expect(byHash.files[0]).toMatchObject({ name: 'renamed.pdf', status: 'already_imported' });
+    const byNameDate = bundleOk(labCall([row('ldl', 'LDL', 2.8, 'mmol/L')], { sourceFileName: 'Results.pdf' }), file);
+    expect(byNameDate.files[0].status).toBe('already_imported');
+    expect(prepareImport(file, byNameDate, { now: NOW, payloadId: 'p' }).files[0].hint).toBe(`Already in the record: a file with this name and date was filed on ${LAB_DAY} as Results.pdf. Nothing to do.`);
+    const otherDate = bundleOk(labCall([row('ldl', 'LDL', 2.8, 'mmol/L')], { sourceFileName: 'Results.pdf', collectedOn: '2026-08-27' }), file);
+    expect(otherDate.files[0].status).toBe('extracted');
+  });
+
+  it('commits rows as lab_import with the document row marked importedVia assistant and the client; the result fits the published schema', async () => {
+    const out = prepared(labCall([row('ldl', 'LDL Cholesterol', 2.8, 'mmol/L'), row('ferritin', 'Ferritin', 180, 'ug/L', { recordedAt: HELD_DAY })]));
+    const ajv = new Ajv2020({ allErrors: true, validateFormats: false });
+    const published = ajv.compile(MCP_TOOLS.find((t) => t.name === 'file_results')!.outputSchema);
+    const answer = { phase: 'extracted', route: 'assistant', files: out.files, candidates: out.payload.candidates, documents: [], unrecognized: out.unrecognized, remaining: [], next: 'x' };
+    expect(published(answer) ? null : ajv.errorsText(published.errors)).toBeNull();
+    expect(OUTPUTS.file_results.parse(answer).route).toBe('assistant');
+
+    const committed = importDocumentsCommit(base(), out.payload, { receipt: 'r', accept: ['c1'], replace: ['c2'] }, NOW);
+    expect(committed.status).toBe('ok');
+    const file = committed.status === 'ok' ? committed.file! : base();
+    expect(file.measurements.find((m) => m.recordedAt === LAB_DAY)).toMatchObject({ metricType: 'ldl', value: 2.8, source: 'lab_import' });
+    expect(file.labValues.find((l) => l.value === 180)).toMatchObject({ metricName: 'ferritin', source: 'lab_import', correctsId: 'l1' });
+    expect(file.documents.at(-1)).toMatchObject({ sourceFileName: 'labs.pdf', type: 'pathology_report', date: LAB_DAY, contentHash: '', metadata: { importedVia: 'assistant', client: 'claude' } });
+    expect((committed as { data: { written: unknown } }).data.written).toEqual({ measurements: 1, labValues: 0, corrections: 1, documents: 1 });
+  });
+
+  it('files a letter from its document block, carries the summary bounded, and files it by an empty commit', () => {
+    const out = prepareImport(base(), bundleOk({ sourceFileName: 'letter.pdf', classification: 'clinic_letter', document: { title: 'Cardiology review', type: 'clinic_letter', date: '2026-08-01', summary: 'Follow-up in 6 months' } }), { now: NOW, payloadId: 'p' });
+    expect(out.payload.documents).toEqual([{ sourceFileName: 'letter.pdf', contentHash: '', mimeType: '', type: 'clinic_letter', title: 'Cardiology review', summary: 'Follow-up in 6 months', date: '2026-08-01' }]);
+    const committed = importDocumentsCommit(base(), out.payload, { receipt: 'r', accept: [], replace: [] }, NOW);
+    expect((committed as { data: { written: { documents: number } } }).data.written.documents).toBe(1);
+  });
+
+  it('declares cost add, run surface, honest annotations and the ChatGPT strings (AC6, AC7)', () => {
+    const tool = MCP_TOOLS.find((t) => t.name === 'file_results')!;
+    expect(tool).toMatchObject({ cost: 'add', run: 'surface', annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false } });
+    expect(tool._meta).toEqual({ 'openai/toolInvocation/invoking': 'Filing what you read…', 'openai/toolInvocation/invoked': 'Filing step done' });
+    for (const rule of ['never inferred', 'reference', 'previous', 'every result line', 'sample date', 'DD/MM', 'ASK the user', '< or >', 'WAIT for the user', 'never reaches our server']) {
+      expect(tool.description, rule).toContain(rule);
+    }
+    expect(TOOL_LAYER_VERSION).toBe(2);
+  });
+});
+
+describe('US-36 AC11 — tools/list stays inside ChatGPT’s budget', () => {
+  it('keeps name + description + inputSchema under 16,000 characters across all nine tools (≈4,000 tokens of the 5,000 cap)', () => {
+    const chars = MCP_TOOLS.reduce((sum, { name, description, inputSchema }) => sum + JSON.stringify({ name, description, inputSchema }).length, 0);
+    expect(chars).toBeLessThanOrEqual(16_000);
   });
 });

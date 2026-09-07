@@ -14,7 +14,7 @@
  *    extraction, not clinical IP (the algorithm doc never leaves the server).
  */
 import { z } from 'zod';
-import { toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
+import { lookupUnit, toCanonicalValue, UNIT_DEFS, type MetricType, type UnitSystem } from './units';
 import { DOCUMENT_TYPES } from './validation';
 
 // ---------------------------------------------------------------------------
@@ -32,6 +32,10 @@ export interface ExtractedValue {
   displaySystem: UnitSystem;
   confidence: 'high' | 'medium' | 'low';
   question?: string;
+  /** The name as the report printed it, when a caller read the report itself (US-36 AC3). */
+  printedName?: string;
+  /** This value's own day, when it differs from the file's (US-36 AC1 `recordedAt`). */
+  recordedAt?: string;
 }
 
 /**
@@ -71,6 +75,8 @@ export interface AdditionalLabValue {
   unit: string;
   referenceLow?: number | null;
   referenceHigh?: number | null;
+  printedName?: string;
+  recordedAt?: string;
 }
 
 export interface UnifiedExtractionResult {
@@ -94,38 +100,43 @@ export const VALID_METRICS: MetricType[] = [
 ];
 
 /**
- * Deterministic lookup: (metric, normalized unit string) → UnitSystem.
- * Auto-populated from UNIT_DEFS labels + manual aliases for common variations.
+ * Every spelling of a core metric a report prints, as the extractor's prompt
+ * lists them and as `file_results` resolves a printed name (US-36 AC3). One
+ * table: the prompt's TARGET METRICS block is rendered from it. Matching is
+ * exact after folding (case, whitespace), never a substring — "Non-HDL
+ * Cholesterol" and "Chol/HDL ratio" must resolve to nothing, not to `hdl`.
  */
-const UNIT_LOOKUP: Record<string, Record<string, UnitSystem>> = {};
+export const CORE_METRIC_ALIASES: Record<MetricType, string[]> = {
+  ldl: ['LDL', 'LDL-C', 'LDL Cholesterol', 'LDL Cholesterol (calc)', 'LDL Cholesterol (calculated)', 'LDL Chol Calc', 'Low Density Lipoprotein'],
+  hdl: ['HDL', 'HDL-C', 'HDL Cholesterol', 'High Density Lipoprotein'],
+  total_cholesterol: ['Total Cholesterol', 'TC', 'Cholesterol Total', 'Cholesterol', 'Cholesterol, Total', 'Total Chol'],
+  triglycerides: ['Triglycerides', 'TG', 'Trigs', 'Triglyceride'],
+  hba1c: ['HbA1c', 'Hemoglobin A1c', 'Glycated Hemoglobin', 'A1C', 'Glycated Haemoglobin', 'Haemoglobin A1c'],
+  creatinine: ['Creatinine', 'Creat', 'Cr', 'Serum Creatinine'],
+  apob: ['ApoB', 'Apolipoprotein B', 'Apo B'],
+  psa: ['PSA', 'Prostate Specific Antigen', 'Prostate-Specific Antigen'],
+  lpa: ['Lp(a)', 'Lipoprotein(a)', 'Lipoprotein little a', 'Lipoprotein (a)'],
+  systolic_bp: ['Systolic Blood Pressure', 'Systolic BP', 'SBP'],
+  diastolic_bp: ['Diastolic Blood Pressure', 'Diastolic BP', 'DBP'],
+  weight: ['Weight', 'Body Weight'],
+  waist: ['Waist', 'Waist Circumference'],
+  height: ['Height'],
+};
 
-function norm(s: string): string {
-  return s.toLowerCase().replace(/\s+/g, '').replace('µ', 'u');
+function foldName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-// Auto-populate from UNIT_DEFS
-for (const metric of VALID_METRICS) {
-  const def = UNIT_DEFS[metric];
-  UNIT_LOOKUP[metric] = {};
-  UNIT_LOOKUP[metric][norm(def.label.si)] = 'si';
-  UNIT_LOOKUP[metric][norm(def.label.conventional)] = 'conventional';
+const CORE_NAME_INDEX = new Map<string, MetricType>();
+for (const metric of Object.keys(CORE_METRIC_ALIASES) as MetricType[]) {
+  CORE_NAME_INDEX.set(foldName(metric), metric);
+  for (const alias of CORE_METRIC_ALIASES[metric]) CORE_NAME_INDEX.set(foldName(alias), metric);
 }
 
-// Manual aliases for common variations found in lab reports
-function addAlias(metric: string, alias: string, system: UnitSystem): void {
-  if (!UNIT_LOOKUP[metric]) UNIT_LOOKUP[metric] = {};
-  UNIT_LOOKUP[metric][alias] = system;
+/** The core metric a printed name is, or null — exact after folding, never a substring. */
+export function resolveCoreMetricName(name: string): MetricType | null {
+  return CORE_NAME_INDEX.get(foldName(name)) ?? null;
 }
-addAlias('creatinine', 'umol/l', 'si');
-addAlias('creatinine', 'micromol/l', 'si');
-addAlias('hba1c', 'mmol/mol', 'si');
-addAlias('hba1c', '%', 'conventional');
-addAlias('apob', 'mg/dl', 'conventional');
-// Lp(a) — NZ/AU/UK labs report in mg/L, guidelines prefer nmol/L
-addAlias('lpa', 'mg/l', 'conventional');
-// BP aliases (already mmHg in both systems, but lab reports sometimes use variations)
-addAlias('systolic_bp', 'mmhg', 'si');
-addAlias('diastolic_bp', 'mmhg', 'si');
 
 /** Exported for testing */
 export function resolveUnit(metric: MetricType, unitStr: string, value: number): {
@@ -133,13 +144,9 @@ export function resolveUnit(metric: MetricType, unitStr: string, value: number):
   system: UnitSystem;
   confident: boolean;
 } {
-  const normalized = norm(unitStr);
-  const lookup = UNIT_LOOKUP[metric];
-
-  if (lookup && lookup[normalized]) {
-    const system = lookup[normalized];
-    const valueSI = system === 'si' ? value : toCanonicalValue(metric, value, 'conventional');
-    return { valueSI, system, confident: true };
+  const alias = lookupUnit(metric, unitStr);
+  if (alias) {
+    return { valueSI: toCanonicalValue(metric, value * (alias.scale ?? 1), alias.system), system: alias.system, confident: true };
   }
 
   // Fallback: check which validation range the value fits
@@ -205,17 +212,7 @@ IF "lab_report":
   Extract blood test values using TARGET METRICS below. Set "document" to null.
 
   TARGET METRICS (use these exact keys):
-  - "ldl" — LDL, LDL-C, LDL Cholesterol, Low Density Lipoprotein
-  - "hdl" — HDL, HDL-C, HDL Cholesterol, High Density Lipoprotein
-  - "total_cholesterol" — Total Cholesterol, TC, Cholesterol Total
-  - "triglycerides" — Triglycerides, TG, Trigs
-  - "hba1c" — HbA1c, Hemoglobin A1c, Glycated Hemoglobin, A1C, Glycated Haemoglobin
-  - "creatinine" — Creatinine, Creat, Cr, Serum Creatinine
-  - "apob" — ApoB, Apolipoprotein B, Apo B
-  - "psa" — PSA, Prostate Specific Antigen
-  - "lpa" — Lp(a), Lipoprotein(a), Lipoprotein little a
-  - "systolic_bp" — Systolic Blood Pressure, Systolic BP, SBP
-  - "diastolic_bp" — Diastolic Blood Pressure, Diastolic BP, DBP
+${VALID_METRICS.map((metric) => `  - "${metric}" — ${CORE_METRIC_ALIASES[metric].join(', ')}`).join('\n')}
 
   CRITICAL RULES:
   1. Extract ACTUAL measured result values ONLY. NEVER extract reference ranges, target values, or normal limits.

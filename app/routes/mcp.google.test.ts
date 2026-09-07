@@ -202,7 +202,8 @@ describe('the consent screen offers only configured providers (US-32 phase 2)', 
     expect(html).toContain('Continue to Google Drive');
     expect(html).toContain('myaccount.google.com/connections');
     // The Drive import limit is said up front, in words that hold for every client (Claude has no drag route).
-    expect(html).toContain('With Google Drive the folder cannot be read: drop the file into the chat (ChatGPT, from a computer), or use the website’s upload.');
+    // US-36 AC10: with file_results the chat route works on Drive, on a phone and on Claude.
+    expect(html).toContain('with Google Drive the folder cannot be read, so the chat or the website’s upload are the ways in.');
   });
 
   it('shows Dropbox alone until the Google secrets exist — merging is inert', async () => {
@@ -507,6 +508,24 @@ describe('US-37 AC1 — no folder nudge on Google Drive', () => {
     expect(answer.isError).toBe(false);
     expect(JSON.parse(answer.text).folder).toBeUndefined();
     expect(list).not.toHaveBeenCalled();
+  });
+});
+
+describe('US-36 AC8 — file_results works on a Google Drive record, where the folder route cannot', () => {
+  it('proposes and commits over Drive: the assistant read the file, so no folder listing is needed', async () => {
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(createEmptyFile({ deviceId: 'd', now: NOW })), version: 1 });
+    const { access } = await connect('Google Drive');
+    const propose = await callTool(access, 'file_results', {
+      sourceFileName: 'Results.pdf', classification: 'lab_report', collectedOn: '2026-08-20',
+      values: [{ metric: 'ferritin', printedName: 'Ferritin', value: 210, unit: 'ug/L' }],
+    });
+    expect(propose.isError).toBe(false);
+    const data = JSON.parse(propose.text) as { receipt: string; candidates: Array<{ id: string }> };
+    expect(data.candidates).toHaveLength(1);
+    const commit = await callTool(access, 'file_results', { commit: { receipt: data.receipt, accept: ['c1'], replace: [] } });
+    expect(commit.isError).toBe(false);
+    expect(commit.text).toContain('Saved to the user’s Google Drive');
+    expect(storedRecord().labValues[0]).toMatchObject({ metricName: 'ferritin', value: 210 });
   });
 });
 

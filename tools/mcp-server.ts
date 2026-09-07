@@ -17,7 +17,7 @@
  */
 import { pathToFileURL } from 'node:url';
 import { FileAdapter } from '../packages/health-core/src/file-adapter';
-import { MCP_TOOLS, runToolOverSync, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
+import { type ImportCommit, type ImportPayload, MCP_TOOLS, type ReceiptSurface, runToolOverSync, type ToolAnswer } from '../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PARSE_ERROR, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../packages/health-core/src/mcp-rpc';
 import { recordSync } from '../packages/health-core/src/roadmap-doc';
 import { describeStorageFailure, isStorageFailure } from '../packages/health-core/src/sync-manager';
@@ -31,7 +31,8 @@ const INSTRUCTIONS =
   'If a tool refuses something the user reasonably expected, the record cannot hold what they want to track, or a ' +
   'result looks wrong, offer report_feedback: it prepares a GitHub issue link, carrying no health values, that the ' +
   'user reviews and submits themselves. import_documents is listed but refuses here: this server has no model and ' +
-  'no network; lab files go through the website’s upload or the hosted connector.';
+  'no network; folder files go through the website’s upload or the hosted connector. A file the user gives YOU is ' +
+  'file_results: read it, send every value it prints, show the candidates, and commit only what the user confirms.';
 
 export const HELP = `mcp-server — your health record as an MCP server, over stdio.
 
@@ -53,8 +54,50 @@ In Claude Desktop, add this to claude_desktop_config.json:
 The file is read fresh on every call, backed up before every write, and
 replaced atomically — the same read-merge-write path the hosted server uses
 over a cloud folder. No network, no model, no telemetry — so import_documents
-refuses here; use the website's upload or the hosted connector for lab files.
+refuses here; use the website's upload or the hosted connector for folder
+files. file_results works: the assistant reads a file you give it and this
+server checks and files the values you confirm (the pending candidates live
+in this process's memory between the two calls; a restart loses them).
 `;
+
+// ---------------------------------------------------------------------------
+// Pending imports, in memory (US-36 AC1)
+// ---------------------------------------------------------------------------
+
+/** How long a parked `file_results` payload waits for its commit. */
+export const LOCAL_RECEIPT_LIFETIME_MS = 60 * 60 * 1000;
+
+/**
+ * The `ReceiptSurface` for one process: `FileAdapter` serves the record and
+ * nothing beside it, so a pending payload cannot be parked in the folder the
+ * way the hosted server does. One user, one process, so the id is the
+ * receipt and the map is the folder; a restart loses a pending import, and
+ * the answer is to extract again. Nothing here needs a key or a network.
+ */
+export function localReceipts(): ReceiptSurface {
+  const pending = new Map<string, { payload: ImportPayload; expiresAt: number }>();
+  return {
+    budgetMs: 30_000,
+    async stash(payload) {
+      const expiresAt = Date.parse(payload.createdAt) + LOCAL_RECEIPT_LIFETIME_MS;
+      pending.set(payload.id, { payload, expiresAt });
+      return { receipt: payload.id, expiresAt: new Date(expiresAt).toISOString() };
+    },
+    async open(commit: ImportCommit, _file, now) {
+      const entry = pending.get(commit.receipt);
+      if (!entry || entry.expiresAt <= Date.parse(now)) {
+        return { refusal: 'That receipt is not one this server is holding, or it has expired (the server keeps a pending import in memory for an hour, and loses it on restart). Nothing was written. Extract again and show the user the fresh candidates.' };
+      }
+      return entry.payload;
+    },
+    async discard(payload) {
+      pending.delete(payload.id);
+    },
+  };
+}
+
+/** One surface per process: the pending map must outlive a single call. */
+const receipts = localReceipts();
 
 // ---------------------------------------------------------------------------
 // Tool calls against the file
@@ -70,6 +113,7 @@ async function callAgainstFile(path: string, name: string, args: unknown): Promi
   const adapter = new FileAdapter(path);
   return runToolOverSync(recordSync(adapter, 'mcp-stdio', now), name, args, now, {
     savedNote: () => `Saved (backup: ${adapter.lastBackup}).`,
+    importer: receipts,
   });
 }
 

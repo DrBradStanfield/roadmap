@@ -306,20 +306,80 @@ function normaliseUnit(raw: string): string {
 }
 
 /**
- * Resolve a stated unit string against a metric's two known unit labels (si /
- * conventional). Returns the matching UnitSystem, or null if it matches neither
- * — every caller refuses rather than guesses, because a silently mis-scaled
- * value is worse than a rejected one. Shared by the chatbot's proposed edits
- * (chat-edits.ts) and the agent write ops (record-edits.ts), so the two cannot
- * accept different spellings of the same unit.
+ * A unit spelling a report may print, and how to read the number under it:
+ * which of the metric's two systems it belongs to, and `scale` when the
+ * printed unit is a multiple of that system's label (Lp(a) in mg/dL is ten
+ * times mg/L; ApoB in mg/L is a thousandth of g/L).
  */
-export function resolveUnitSystem(metric: MetricType, statedUnit: string): UnitSystem | null {
+export interface UnitAlias {
+  system: UnitSystem;
+  /** Multiply the printed number by this to put it in the system's own label. Absent: 1. */
+  scale?: number;
+}
+
+const SI: UnitAlias = { system: 'si' };
+const CONVENTIONAL: UnitAlias = { system: 'conventional' };
+
+/**
+ * THE unit table — every spelling of a core metric's unit any writer accepts,
+ * keyed by `normaliseUnit`. The two labels of every metric are in it by
+ * construction; the aliases are the spellings lab reports print. One table so
+ * the website's extractor, the connector's `file_results`, `add_measurement`
+ * and the chatbot cannot accept different spellings of the same unit (US-36
+ * AC4). The Lp(a) mass→molar factor behind `conventional` is a population
+ * average (see `UNIT_DEFS.lpa`), so a candidate built from it keeps the
+ * printed value and unit beside the converted one.
+ */
+const UNIT_ALIASES: Partial<Record<MetricType, Record<string, UnitAlias>>> = {
+  creatinine: { 'umol/l': SI, 'micromol/l': SI },
+  hba1c: { 'mmol/mol': SI, '%': CONVENTIONAL },
+  apob: { 'mg/dl': CONVENTIONAL, 'mg/l': { system: 'si', scale: 0.001 } },
+  // Lp(a) — NZ/AU/UK labs report in mg/L, US labs in mg/dL; guidelines prefer nmol/L.
+  lpa: { 'mg/l': CONVENTIONAL, 'mg/dl': { system: 'conventional', scale: 10 } },
+  systolic_bp: { mmhg: SI },
+  diastolic_bp: { mmhg: SI },
+};
+
+/** How a printed unit is read for a metric, or null when no writer accepts that spelling. Never guesses from the number. */
+export function lookupUnit(metric: MetricType, statedUnit: string): UnitAlias | null {
   const def = UNIT_DEFS[metric];
   const wanted = normaliseUnit(statedUnit);
-  if (normaliseUnit(def.label.si) === wanted) return 'si';
-  if (normaliseUnit(def.label.conventional) === wanted) return 'conventional';
-  return null;
+  if (normaliseUnit(def.label.si) === wanted) return SI;
+  if (normaliseUnit(def.label.conventional) === wanted) return CONVENTIONAL;
+  return UNIT_ALIASES[metric]?.[wanted] ?? null;
 }
+
+/** A printed number under a printed unit, as the record stores it (SI canonical); null when the unit is not one this metric is measured in. */
+export function reportedToCanonical(metric: MetricType, value: number, statedUnit: string): number | null {
+  const alias = lookupUnit(metric, statedUnit);
+  if (!alias) return null;
+  return toCanonicalValue(metric, value * (alias.scale ?? 1), alias.system);
+}
+
+/**
+ * Which of a metric's two systems a stated unit names, over the same table
+ * as `lookupUnit`. A SCALED alias answers null here: this signature cannot
+ * carry the scale, and a caller converting by system alone would mis-scale
+ * the value. Every caller refuses rather than guesses, because a silently
+ * mis-scaled value is worse than a rejected one.
+ */
+export function resolveUnitSystem(metric: MetricType, statedUnit: string): UnitSystem | null {
+  const alias = lookupUnit(metric, statedUnit);
+  return alias && alias.scale === undefined ? alias.system : null;
+}
+
+/**
+ * Below these canonical values a core result is not a result but a unit
+ * swap: an SI number sent under the conventional label (LDL "3.4 mg/dL" is
+ * 0.09 mmol/L). `healthInputSchema` floors these metrics at 0, so the range
+ * check passes them; a writer that offers candidates marks such a value low
+ * confidence with a question instead (US-36 AC4). Not a clinical range —
+ * a display floor, one decimal of the SI label — and not in the three-file
+ * sync. HbA1c and creatinine need none: their ranges have real floors.
+ */
+export const UNIT_SWAP_FLOORS: Partial<Record<MetricType, number>> = {
+  ldl: 0.3, total_cholesterol: 0.3, hdl: 0.3, triglycerides: 0.3, apob: 0.1, lpa: 5,
+};
 
 // ---------------------------------------------------------------------------
 // Locale detection

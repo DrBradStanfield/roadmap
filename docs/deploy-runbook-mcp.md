@@ -214,6 +214,19 @@ again is `already_imported`, and an empty commit of a file already on record is 
 true no-op. On a Google Drive connection, the same call is refused, naming the website
 upload or a ChatGPT drag as the way in.
 
+**8b. `file_results` (US-36) and the nudge (US-37). NOT YET VERIFIED LIVE (built
+2026-09-07).** On the scratch Dropbox: `tools/list` shows nine tools and no
+`openai/fileParams`; `file_results` with two rows answers candidates plus a receipt and
+writes nothing; `commit` writes them and the document row carries
+`metadata.importedVia: assistant`; the same file re-sent is `already_imported`; a
+`replace` on a held value passes the 90-day guard; a row named "Lipoprotein(a)" under
+`apob` is refused; `correct_value` without `confirm` answers a proposal and writes
+nothing, `confirm` inside 10 s is refused, after 10 s it writes once, a replay is
+refused; `get_plan` with a PDF in the folder root lists it under `folder`. Then ChatGPT
+on Brad's record, propose only (never commit), a real PDF and a photo, desktop AND
+phone, after a Refresh of the connector; Claude web on the scratch Dropbox, one commit;
+one commit on the scratch Drive.
+
 **Step 8 over Drive: PASSED 2026-09-02, ~14:25 NZ.** The hosted MCP, via Claude.ai,
 wrote a measurement to `My Drive / Health Plan by Dr Brad / health-roadmap.json`; a
 Drive search found exactly one file of that name, so discovery did not diverge. The
@@ -257,7 +270,7 @@ keeps unreviewed connectors behind it. Claude needs no equivalent: a custom conn
 available on any plan. Publishing through OpenAI's review is what removes that step.
 **Nothing here has been submitted.** Every field the form asks for is written out in
 **[chatgpt-app-listing.md](chatgpt-app-listing.md)**: descriptions, category, tool
-annotations, starter prompts, the eight test cases, the demo-credentials answer, the PHI
+annotations, starter prompts, the eleven test cases, the demo-credentials answer, the PHI
 compliance statement, and a numbered dashboard checklist. That file is the working
 document; this section holds only what it depends on.
 

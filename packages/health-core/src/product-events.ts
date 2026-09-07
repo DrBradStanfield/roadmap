@@ -82,6 +82,7 @@ export const MCP_TOOL_NAMES = [
   'update_profile',
   'report_feedback',
   'import_documents',
+  'file_results',
 ] as const;
 
 export type McpToolName = (typeof MCP_TOOL_NAMES)[number];

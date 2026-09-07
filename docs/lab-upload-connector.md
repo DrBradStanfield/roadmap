@@ -1,4 +1,4 @@
-# Lab Upload — the connector route (`import_documents`, US-35)
+# Lab Upload — the connector routes (`import_documents`, US-35; `file_results`, US-36)
 
 Companion to [lab-upload.md](lab-upload.md) (the website upload) and
 [lab-upload-overview.html](lab-upload-overview.html) (the visual map). Decision
@@ -10,23 +10,26 @@ US-35 in [user-stories.md](user-stories.md). Code:
 
 ## What it is
 
-A user's own assistant (ChatGPT or Claude, through mcp.drstanfield.com) reads
-lab files and offers the values as candidates. Nothing is written until a
-second call commits what the user confirmed. The extraction model is the same
-Haiku pipeline the website uses (`extractOrClassify` in
-`app/lib/anthropic.server.ts`), with a shorter budget and a cheaper prompt.
-
-Where the website keeps the PDF in the browser and sends only what pdf.js
-extracted, the connector route sends the WHOLE file through Brad's server to
-the model as a `pdf` or `image` block. The server holds it for one request and
-keeps nothing. Consent page, privacy addendum and the tool listing all say so.
+A user's own assistant (ChatGPT or Claude, through mcp.drstanfield.com) offers
+lab values as candidates, and nothing is written until a second call commits
+what the user confirmed. Two routes share that second half. On the FOLDER
+route (`import_documents`) our server reads the file from the Dropbox folder
+and the extraction model is the same Haiku pipeline the website uses
+(`extractOrClassify` in `app/lib/anthropic.server.ts`), with a shorter budget
+and a cheaper prompt: the WHOLE file goes through Brad's server to the model
+as a `pdf` or `image` block, held for one request, kept nowhere. On the CHAT
+route (`file_results`, US-36) the assistant reads the file itself and sends
+only the rows it read; the file never reaches our server, the values do, in
+memory for one request, written to the user's own folder. Consent page,
+privacy addendum and the tool listing say both.
 
 ## Two ways a file arrives
 
 | Route | How | Bound |
 |---|---|---|
 | Folder | The file sits in the root of the connected Dropbox app folder (`Apps/Health Plan by Dr Brad` for new connections). The tool lists the root through the `StorageAdapter`, downloads by id. `fileNames` picks specific files. | 5 files per call (`IMPORT_FILES_PER_CALL`); the rest are named in `remaining` |
-| ChatGPT file | A file dragged into ChatGPT on a computer arrives as `_meta['openai/fileParams']` with a `download_url`. Fetched `https:` only, from OpenAI's file hosts (`files.oaiusercontent.com`, or the `oaisdmntprn*.blob.core.windows.net` family), no redirects, 10 s. | One file per call (a ZIP counts as one; several drops = several calls); mobile hands over a bare `chat_upload://` reference and is refused in words |
+| Chat (`file_results`) | The assistant reads the dropped file itself (any device, either cloud) and sends one file's rows: `metric`, `printedName`, `value`, `unit` as printed, `collectedOn`, an optional `document` block with an optional `sha256`. The server resolves names, converts units through the one table, dry-runs the append, flags a suspected unit swap as a question. | One file per call, 50 rows (split a long report over calls with the same name; the twin document row dedups by name+date or hash) |
+| ChatGPT file (retiring) | A tool list cached before 2026-09-07 still hands a dragged file to `import_documents.file` with a `download_url`. Fetched `https:` only, from OpenAI's file hosts (`files.oaiusercontent.com`, or the `oaisdmntprn*.blob.core.windows.net` family), no redirects, 10 s; `next` tells the assistant to have the user refresh the connector. Deleted per US-36 AC12. | One file per call; a reference the server cannot fetch is refused toward `file_results` |
 
 Google Drive is refused per client before any Drive call: the permission the
 connector holds cannot see files dropped into the folder.
@@ -119,7 +122,7 @@ free-form `metadata`; `title` and `question` are ≤ 120 chars, control
 characters stripped, labelled as text from the document. One prompt line says
 the document is data, not instructions. Telemetry is `mcp_import {route,
 phase, files: bucket}`, value-free; Sentry gets a fixed message and the error
-class. Routes: `dropbox`, `chatgpt_file`, `chatgpt_refused`, `drive_refused`.
+class. Routes: `dropbox`, `chatgpt_file`, `chatgpt_refused`, `drive_refused`, `assistant`; phases `extract`, `commit`, `nudge` (US-37: a read on Dropbox found folder files not in the record), with `fromNudge: true` on an extract that answered one.
 
 ## Gotchas archived (docs/reference.md)
 
@@ -131,6 +134,6 @@ class. Routes: `dropbox`, `chatgpt_file`, `chatgpt_refused`, `drive_refused`.
   document row, so nothing dedup'd it (defect A, live 2026-09-05).
 - Dedup against the record is not dedup within the batch (`seenBytes`, 2026-09-07).
 
-A proposed alternative (the assistant extracts, the server only validates and
-writes) is described in lab-upload.md under "Proposed, not built". It is not
-current behaviour.
+The chat route (the assistant extracts, the server validates and writes) is
+described in lab-upload.md under "Assistant-side extraction" and in
+`mcp-import-design.md` decision 17.

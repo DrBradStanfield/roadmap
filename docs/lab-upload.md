@@ -76,7 +76,7 @@ only server call an upload makes is the extraction call.
 
 Raw files never leave the browser on the website route. Only extracted text (via `page.getTextContent()`) or page images (rendered to canvas, converted to JPEG base64) are sent to the LLM via the backend proxy. No files are stored on the server. The backend sees content but not the original file.
 
-**The connector route is different**: `import_documents` sends the WHOLE file through Brad's server to the model as a `pdf`/`image` block, holds it for one request and keeps nothing. Detail: [`lab-upload-connector.md`](lab-upload-connector.md).
+**The connector's folder route is different**: `import_documents` sends the WHOLE folder file through Brad's server to the model as a `pdf`/`image` block, holds it for one request and keeps nothing. **The connector's chat route sends no file at all**: the assistant reads it and `file_results` carries only the values it read (US-36). Detail: [`lab-upload-connector.md`](lab-upload-connector.md).
 
 ---
 
@@ -472,23 +472,24 @@ Tests: `ReviewTable.conflict.test.ts` (the conflict cell),
 
 ---
 
-## Proposed, not built: assistant-side extraction (7 September 2026)
+## Assistant-side extraction: the connector's chat route (built 7 September 2026, US-36)
 
-**Status: a proposal. Decision pending Brad; an adversarial review is in progress. Nothing below describes current behaviour.**
-
-The idea: instead of Brad's server fetching the file and calling Haiku
-(`import_documents` today), the user's OWN assistant reads the file in its own
-context and calls the existing write tools (`add_lab_values`, `add_measurement`,
-`correct_value`) with structured rows. Our server would validate and write
-only: slot rule, unit resolution, provenance, the 90-day correction guard.
-
-- Pro: no health file ever transits Brad's server on the connector route, and the privacy addendum simplifies to "we never see the file".
-- Pro: no per-file model spend, no 40 s budget, no ChatGPT file-host allow-list, no pending-file/receipt machinery to maintain.
-- Pro: the assistant already has the document open and can ask the user about ambiguities before writing.
-- Con: extraction quality becomes the assistant's, not ours — no fixed prompt, no confidence flags, no `unrecognized` list, no regression fixtures.
-- Con: the assistant can be prompt-injected by the document and we lose the "data, not instructions" line and the bounded result shape.
-- Con: no `contentHash`, so the documents archive and the website's "Save 1 Original" dedup have nothing to key on unless the assistant supplies a hash.
-- Con: a value the assistant misreads carries `source: 'lab_import'`-grade trust with none of the pipeline behind it; provenance would need a new `source`.
-- Open: whether the two routes coexist (assistant-side for Claude/ChatGPT with file access, server-side as fallback) or one replaces the other.
-
-If adopted, this doc, `lab-upload-connector.md`, `mcp-import-design.md`, US-35 and the consent/privacy text all change in the same commit.
+Instead of Brad's server fetching a dropped file and calling Haiku, the user's OWN
+assistant reads the file in its own context and calls `file_results` with one file's
+rows: `metric`, `printedName` and `unit` as printed, `value`, the collection date.
+Our server validates and writes only: it resolves the printed name (`CORE_METRIC_ALIASES`
+in `lab-extraction.ts`, the same table the extraction prompt is rendered from; the lab
+catalogue) and refuses a row whose name disagrees with its metric ("Lipoprotein(a)" is
+not ApoB); converts the unit through the one table (`lookupUnit` in `units.ts`, which
+`add_measurement` and the website's extractor consult too); dry-runs the real append
+(range, day, slot); and marks a value under the metric's display floor (`UNIT_SWAP_FLOORS`)
+as a low-confidence question, because a unit swap on a floor-0 lipid passes every range.
+The candidates, the receipt, the commit and the 90-day guard are `import_documents`' own
+code; the document row carries `metadata.importedVia: 'assistant'` and the client label,
+and `contentHash` only when the assistant supplied a `sha256`. Otherwise dedup is by
+(`sourceFileName`, date). The trade-offs that were weighed: extraction quality is the
+assistant's (the review measured Sonnet- and Haiku-class assistants matching the Haiku
+pipeline on 13 synthetic and 6 real reports), and the assistant can be prompt-injected by
+the document (which is why the three permanent tools are two-phase on the hosted
+server, US-36 AC9). The folder route stays as the server-side path for files that sit in
+the Dropbox folder; the ChatGPT drag route (`openai/fileParams`) is retired per AC12.

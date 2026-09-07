@@ -74,8 +74,16 @@ export function importHint(reason: string | undefined, detail?: string): string 
 export const IMPORT_REFUSALS = {
   /** A `file` descriptor the server cannot fetch — the phone apps hand over a bare `chat_upload://` reference (AC4). */
   mobile:
-    'ChatGPT on mobile does not hand files to apps yet. Use ChatGPT on a computer and drop the file into the chat, ' +
+    'This server could not fetch that file. Read the file yourself and call file_results with what it says, ' +
     `or ${FOLDER_ROUTE}. Nothing was read.`,
+  /** A cached ChatGPT tool list still hands dropped files to `file` (US-36 AC12): the way out is a refresh, said once per extract. */
+  refresh:
+    'This connector now reads dropped files through you: ask the user to refresh the connector in ChatGPT’s settings, ' +
+    'then read the next dropped file yourself and call file_results.',
+  /** A `file_results` call that does not parse, or names a source beside a commit (US-36 AC1). */
+  fileResults:
+    'The call was malformed: one file per call — sourceFileName, classification, collectedOn (YYYY-MM-DD, required for a lab report), ' +
+    'values as a list of {metric, printedName, value, unit} rows, an optional document block; or commit on its own. Nothing was read.',
   /** The folder route found nothing it reads. */
   emptyFolder:
     `There are no ${IMPORT_ACCEPTED_TYPES} files in the folder root (${DROPBOX_APP_FOLDER}). ` +
@@ -86,6 +94,6 @@ export const IMPORT_REFUSALS = {
   /** Anything else that does not parse: a fileNames or fileDates shape. */
   arguments:
     `The call was malformed: fileNames is a list of file names as listed, fileDates is a list of {file, date} pairs (${FILE_DATES_SHAPE}). Nothing was read.`,
-  /** A drag ChatGPT refused or paused (its file limit): the folder route needs no file turn at all. */
-  dragFallback: `If the chat cannot take the file, ${FOLDER_ROUTE}.`,
+  /** A drag ChatGPT refused or paused (its file limit): read it yourself, or the folder route needs no file turn at all. */
+  dragFallback: `If the chat cannot take the file, read it yourself and call file_results, or ${FOLDER_ROUTE}.`,
 } as const;

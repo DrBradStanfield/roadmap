@@ -50,8 +50,9 @@ const INSTRUCTIONS =
   'never added to twice. Nothing is ever deleted; a superseded row stays as "entered-in-error". Correcting a ' +
   'value is permanent and needs the value you expect to find, so read the record first and correct only what ' +
   'the user asked you to. The plan from get_plan is educational, not medical advice, and its hedged wording ' +
-  'and citations are calibrated — pass them on as written. import_documents reads lab files and writes nothing ' +
-  'until its commit, which needs the user’s own confirmation of what it found.';
+  'and citations are calibrated — pass them on as written. import_documents reads lab files from the Dropbox folder and ' +
+  'writes nothing until its commit, which needs the user’s own confirmation of what it found; a file dropped into the chat ' +
+  'is read by you and filed through file_results the same way.';
 
 /**
  * A correction fixes a recent mistake. A result from three years ago is
