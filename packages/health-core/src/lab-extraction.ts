@@ -443,6 +443,8 @@ export function pagesToContentBlocks(pages: PageContent[]): Array<Record<string,
 /** What a lab file is, by name: the website's ZIP unpacker and the connector's
  *  folder listing (US-35 AC2) agree on it here. */
 export const IMPORTABLE_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png'] as const;
+/** What the connector's folder route reads: the same, plus a ZIP of them (US-35 AC2; the nudge lists by it too, US-37 AC1). */
+export const FOLDER_IMPORT_EXTENSIONS = [...IMPORTABLE_EXTENSIONS, '.zip'] as const;
 
 const JUNK_PATTERNS = ['__macosx/', '.ds_store', 'thumbs.db'];
 

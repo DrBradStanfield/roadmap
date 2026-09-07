@@ -1471,3 +1471,88 @@ describe('US-35 — the folder route, extract then commit (AC1, AC2, AC7, AC8, A
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// US-37 — the folder nudge on a read
+// ---------------------------------------------------------------------------
+import { FOLDER_LIST_TIMEOUT_MS } from '../lib/mcp.server';
+import { FOLDER_NUDGE_HINT } from '../../packages/health-core/src/mcp-tools';
+
+function importEvents(): unknown[] {
+  return (recordServerEvent as unknown as { mock: { calls: unknown[][] } }).mock.calls.filter(([name]) => name === 'mcp_import').map(([, meta]) => meta);
+}
+
+describe('US-37 — a Dropbox read lists folder files that are not in the record (AC1, AC2, AC3, usage signal)', () => {
+  afterEach(() => setImportSeams(null));
+  /** A record `get_plan` can compute from; the nudge rides on a successful read. */
+  const withProfile = (file: RoadmapFile): RoadmapFile => ({ ...file, profile: { ...file.profile, sex: 'male', birthYear: 1971, heightCm: 178 } });
+
+  it('get_plan and an un-narrowed read_record carry `folder`; a narrowed read does not; the record is not written', async () => {
+    seedRecord(withProfile);
+    cloud.docs.set('labs.pdf', new Blob([PDF_BYTES as Uint8Array<ArrayBuffer>]));
+    cloud.docs.set('batch.zip', new Blob([new Uint8Array(4)]));
+    cloud.docs.set('notes.txt', new Blob([new Uint8Array(1)]));
+    const { access } = await connect();
+    (recordServerEvent as unknown as { mockClear(): void }).mockClear();
+
+    const plan = await callTool(access, 'get_plan', {});
+    expect(plan.isError).toBe(false);
+    const planData = OUTPUTS.get_plan.parse(plan.structured);
+    expect(planData.folder).toEqual({ unimported: ['batch.zip', 'labs.pdf'], hint: FOLDER_NUDGE_HINT });
+    // The text half is still JSON, and the same JSON: older clients parse it.
+    expect(JSON.parse(plan.text).folder).toEqual(planData.folder);
+
+    const whole = OUTPUTS.read_record.parse((await callTool(access, 'read_record', {})).structured);
+    expect(whole.folder?.unimported).toEqual(['batch.zip', 'labs.pdf']);
+    const narrowed = OUTPUTS.read_record.parse((await callTool(access, 'read_record', { metric: 'ldl' })).structured);
+    expect(narrowed.folder).toBeUndefined();
+
+    // Once per read that found something, value-free: route, phase, a bucket.
+    expect(importEvents()).toEqual([
+      { route: 'dropbox', phase: 'nudge', files: '2-5' },
+      { route: 'dropbox', phase: 'nudge', files: '2-5' },
+    ]);
+    expect(JSON.stringify(importEvents())).not.toContain('labs.pdf');
+    expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
+  });
+
+  it('a declined file is filed as a document by the empty commit and is silent on the next read; the extract carries fromNudge (AC3)', async () => {
+    seedRecord(withProfile);
+    const { access } = await connect();
+    stubImport({ 'labs.pdf': PDF_BYTES }, () => labReport());
+    expect(OUTPUTS.get_plan.parse((await callTool(access, 'get_plan', {})).structured).folder?.unimported).toEqual(['labs.pdf']);
+    (recordServerEvent as unknown as { mockClear(): void }).mockClear();
+
+    const data = OUTPUTS.import_documents.parse((await callTool(access, 'import_documents', { fromNudge: true })).structured);
+    expect(data.next).toContain('empty accept and replace');
+    expect(importEvents()).toEqual([{ route: 'dropbox', phase: 'extract', files: '1', fromNudge: true }]);
+    const declined = await callTool(access, 'import_documents', { commit: { receipt: data.receipt, accept: [], replace: [] } });
+    expect(declined.isError).toBe(false);
+    // The row the empty commit wrote carries a hash — exactly the row the nudge must honour (review 3.1).
+    expect(storedRecord().documents[0].contentHash).toMatch(/^sha256-/);
+    expect(OUTPUTS.get_plan.parse((await callTool(access, 'get_plan', {})).structured).folder).toBeUndefined();
+    expect(OUTPUTS.read_record.parse((await callTool(access, 'read_record', {})).structured).folder).toBeUndefined();
+  });
+
+  it('a listing that fails, or does not answer inside two seconds, leaves the read intact with `folder` absent (AC2)', async () => {
+    seedRecord(withProfile);
+    cloud.docs.set('labs.pdf', new Blob([PDF_BYTES as Uint8Array<ArrayBuffer>]));
+    const broken = new MemoryAdapter(cloud);
+    broken.list = async () => { throw new StorageError('Dropbox list failed (500)', undefined, undefined, 500); };
+    setAdapterFactory(() => broken);
+    const { access } = await connect();
+    const failed = await callTool(access, 'get_plan', {});
+    expect(failed.isError).toBe(false);
+    expect(OUTPUTS.get_plan.parse(failed.structured).folder).toBeUndefined();
+
+    const slow = new MemoryAdapter(cloud);
+    slow.list = (_folder, signal) => new Promise((_, reject) => signal?.addEventListener('abort', () => reject(signal.reason)));
+    setAdapterFactory(() => slow);
+    const started = Date.now();
+    const timedOut = await callTool(access, 'read_record', {});
+    expect(Date.now() - started).toBeGreaterThanOrEqual(FOLDER_LIST_TIMEOUT_MS - 50);
+    expect(timedOut.isError).toBe(false);
+    expect(OUTPUTS.read_record.parse(timedOut.structured).folder).toBeUndefined();
+    expect(importEvents().filter((e) => (e as { phase: string }).phase === 'nudge')).toHaveLength(0);
+  }, 10_000);
+});

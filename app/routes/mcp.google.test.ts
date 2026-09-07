@@ -495,6 +495,21 @@ describe('an internal failure is an error with an id, never a 500 (US-32 phase 2
 // US-35 AC3 — the folder route on a Drive connection is refused, honestly
 // ---------------------------------------------------------------------------
 
+describe('US-37 AC1 — no folder nudge on Google Drive', () => {
+  it('a read on a Drive connection lists nothing and carries no `folder` field — absent, not empty', async () => {
+    cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(createEmptyFile({ deviceId: 'd', now: NOW })), version: 1 });
+    cloud.docs.set('labs.pdf', new Blob([new Uint8Array(4)]));
+    const listing = new MemoryAdapter(cloud);
+    const list = vi.spyOn(listing, 'list');
+    setAdapterFactory(() => listing);
+    const { access } = await connect('Google Drive');
+    const answer = await callTool(access, 'read_record', {});
+    expect(answer.isError).toBe(false);
+    expect(JSON.parse(answer.text).folder).toBeUndefined();
+    expect(list).not.toHaveBeenCalled();
+  });
+});
+
 describe('US-35 AC3 — import_documents on Google Drive', () => {
   it('refuses the folder route in words before any Drive call, naming the website (and the drag, for ChatGPT)', async () => {
     cloud.files.set(ROADMAP_FILE_NAME, { json: JSON.stringify(createEmptyFile({ deviceId: 'd', now: NOW })), version: 1 });

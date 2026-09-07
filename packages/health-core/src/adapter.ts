@@ -206,9 +206,10 @@ export interface StorageAdapter {
    * needs either (US-35): it lists the root for lab files and parks a pending
    * payload as `imports/pending-<id>.json` until the commit removes it. The
    * record's deletion is an `eraseEpoch` bump, a document's is a tombstone —
-   * never this.
+   * never this. `limit` stops a paged listing once that many entries are in
+   * hand (US-37 AC1); a provider without pages may ignore it.
    */
-  list?(folder: string, signal?: AbortSignal): Promise<StoredFile[]>;
+  list?(folder: string, signal?: AbortSignal, limit?: number): Promise<StoredFile[]>;
   remove?(fileName: string, signal?: AbortSignal): Promise<void>;
 
   /**

@@ -21,9 +21,9 @@ import { recordSync } from '../../packages/health-core/src/roadmap-doc';
 
 import { StorageError, type StorageAdapter } from '../../packages/health-core/src/adapter';
 import { describeStorageFailure, isStorageFailure } from '../../packages/health-core/src/sync-manager';
-import { isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
+import { folderNudge, isToolName, MCP_TOOLS, PROFILE_FIELDS, RECORD_FREE_TOOLS, runToolOverSync, type ToolAnswer } from '../../packages/health-core/src/mcp-tools';
 import { dispatchRpc, INVALID_REQUEST, PROTOCOL_VERSION, rpcFailure, SERVER_INFO, type RpcToolOutcome } from '../../packages/health-core/src/mcp-rpc';
-import { MCP_TOOL_NAMES, type McpToolName } from '../../packages/health-core/src/product-events';
+import { importFilesBucket, MCP_TOOL_NAMES, type McpToolName } from '../../packages/health-core/src/product-events';
 import { KNOWN_CLIENTS, readCapped, type McpClientLabel } from './mcp-clients.server';
 import { hostedImporter } from './mcp-import.server';
 import { recordServerEvent } from './product-events.server';
@@ -60,6 +60,16 @@ const INSTRUCTIONS =
  * of design §3 (mitigation 2).
  */
 export const MAX_CORRECTION_AGE_DAYS = 90;
+
+/**
+ * The folder nudge (US-37): a read on Dropbox lists the folder root under its
+ * own short clock, and a listing that errors or runs out of time leaves the
+ * read exactly as it was. Two seconds is longer than one Dropbox page takes
+ * and shorter than a reader notices; 200 entries is twenty times the names
+ * a nudge shows.
+ */
+export const FOLDER_LIST_TIMEOUT_MS = 2_000;
+export const FOLDER_LIST_MAX_ENTRIES = 200;
 
 // ---------------------------------------------------------------------------
 // The user's folder, as a StorageAdapter
@@ -187,6 +197,8 @@ async function callHostedTool(
   now: string,
 ): Promise<ToolAnswer> {
   if (!isToolName(name)) return refuse(`No tool named ${name}.`);
+  /** The record as the loop opened it, kept for the nudge so the folder check costs no second read. */
+  let opened: RoadmapFile | undefined;
 
   const provider = providerLabel(token.provider);
 
@@ -210,8 +222,11 @@ async function callHostedTool(
 
   const adapter = makeAdapter(token.provider, accessToken);
   try {
-    return await runToolOverSync(recordSync(adapter, 'mcp', now), name, args, now, {
-      beforeCall: (file) => beforeHostedCall(token, name, file, args, now),
+    const answer = await runToolOverSync(recordSync(adapter, 'mcp', now), name, args, now, {
+      beforeCall: (file) => {
+        opened = file;
+        return beforeHostedCall(token, name, file, args, now);
+      },
       // This server runs in UTC and cannot know the user's timezone, so the
       // future check is the widest day anyone has reached (US-31 AC6/AC11).
       latestDay: latestDayOnEarth(now),
@@ -224,6 +239,9 @@ async function callHostedTool(
       // is built for every call; which tool uses it is the tool's declaration.
       importer: hostedImporter({ token, adapter, client: mcpClientLabel(token.clientId), maxCorrectionAgeDays: MAX_CORRECTION_AGE_DAYS }),
     });
+    return opened && isFolderVisit(name, args) && token.provider === 'dropbox' && !answer.isError
+      ? withFolderNudge(answer, adapter, opened)
+      : answer;
   } catch (error) {
     // Storage is allowed to fail, and the user can act on that, so it is worded
     // as a refusal. Anything else is a bug in us: dressing one up as "the
@@ -246,6 +264,44 @@ async function callHostedTool(
     const failed = describeStorageFailure(error, `The record in ${provider}`);
     return refuse(`${failed.message}. ${failed.hint}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// The folder nudge (US-37)
+// ---------------------------------------------------------------------------
+
+/**
+ * Which reads look at the folder: `get_plan`, and a `read_record` with no
+ * `metric` and no `since`. A narrowed read is a lookup, not a visit, and the
+ * write flows that read first would otherwise list the folder twice a turn.
+ */
+function isFolderVisit(name: string, args: unknown): boolean {
+  if (name === 'get_plan') return true;
+  if (name !== 'read_record') return false;
+  const request = (args ?? {}) as { metric?: unknown; since?: unknown };
+  return request.metric === undefined && request.since === undefined;
+}
+
+/**
+ * List the folder root and, if it holds files the record does not, say so in
+ * the answer. The text is the structured answer re-serialised, so older
+ * clients that parse the text still read JSON. Any failure — a Dropbox error,
+ * the two-second clock — leaves the answer untouched: a nudge is never worth
+ * a failed read (AC2).
+ */
+async function withFolderNudge(answer: ToolAnswer, adapter: StorageAdapter, file: RoadmapFile): Promise<ToolAnswer> {
+  if (!adapter.list) return answer;
+  let listed: Awaited<ReturnType<NonNullable<StorageAdapter['list']>>>;
+  try {
+    listed = await adapter.list('', AbortSignal.timeout(FOLDER_LIST_TIMEOUT_MS), FOLDER_LIST_MAX_ENTRIES);
+  } catch {
+    return answer;
+  }
+  const folder = folderNudge(file, listed.map((entry) => entry.name));
+  if (!folder) return answer;
+  void recordServerEvent('mcp_import', { route: 'dropbox', phase: 'nudge', files: importFilesBucket(folder.unimported.length) });
+  const structured = { ...(answer.structured as Record<string, unknown>), folder };
+  return { ...answer, structured, text: JSON.stringify(structured) };
 }
 
 // ---------------------------------------------------------------------------

@@ -35,7 +35,7 @@ import { deadlineSignal, StorageError, type StorageAdapter } from '../../package
 import { IMPORT_LIMITS, IMPORT_REFUSALS } from '../../packages/health-core/src/import-hints';
 import {
   type DocumentPromptMode,
-  IMPORTABLE_EXTENSIONS,
+  FOLDER_IMPORT_EXTENSIONS,
   isImportableEntryName,
   type PageContent,
   type UnifiedExtractionResult,
@@ -342,8 +342,8 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
     }
   }
 
-  function count(route: McpImportRoute, phase: 'extract' | 'commit', files: number): void {
-    void recordServerEvent('mcp_import', { route, phase, files: importFilesBucket(files) });
+  function count(route: McpImportRoute, phase: 'extract' | 'commit', files: number, fromNudge = false): void {
+    void recordServerEvent('mcp_import', { route, phase, files: importFilesBucket(files), ...(fromNudge ? { fromNudge: true } : null) });
   }
 
   return {
@@ -383,7 +383,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
         }
         const listing = listed
           .map((entry) => ({ ...entry, name: cleanName(entry.name) }))
-          .filter((entry) => isImportableEntryName(entry.name, [...IMPORTABLE_EXTENSIONS, '.zip']))
+          .filter((entry) => isImportableEntryName(entry.name, FOLDER_IMPORT_EXTENSIONS))
           .sort((a, b) => a.name.localeCompare(b.name));
         let chosen = listing;
         if (request.fileNames) {
@@ -513,7 +513,7 @@ export function hostedImporter(options: HostedImporterOptions): ImportSurface {
           if (!remaining.includes(name)) remaining.push(name);
         }
       });
-      count(route, 'extract', files.filter((f) => f.contentHash).length);
+      count(route, 'extract', files.filter((f) => f.contentHash).length, request.fromNudge === true);
       return { route, files, remaining };
     },
 

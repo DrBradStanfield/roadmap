@@ -43,7 +43,8 @@ export const PRODUCT_EVENT_NAMES = [
   'mcp_connect',
   // US-35 import_documents: which route people use (Dropbox folder, a file
   // dragged into ChatGPT, or a Drive user refused), which phase, and how many
-  // files as a bucket. Never a file name, never a value.
+  // files as a bucket; US-36 adds the `assistant` route and US-37 the `nudge`
+  // phase plus `fromNudge` on an extract. Never a file name, never a value.
   'mcp_import',
 ] as const;
 
@@ -86,8 +87,9 @@ export const MCP_TOOL_NAMES = [
 export type McpToolName = (typeof MCP_TOOL_NAMES)[number];
 
 /** The `mcp_import` counter's three closed vocabularies (US-35 usage signal). */
-export const MCP_IMPORT_ROUTES = ['dropbox', 'chatgpt_file', 'chatgpt_refused', 'drive_refused'] as const;
-export const MCP_IMPORT_PHASES = ['extract', 'commit'] as const;
+export const MCP_IMPORT_ROUTES = ['dropbox', 'chatgpt_file', 'chatgpt_refused', 'drive_refused', 'assistant'] as const;
+/** `nudge`: a read found folder files not in the record and said so (US-37). */
+export const MCP_IMPORT_PHASES = ['extract', 'commit', 'nudge'] as const;
 export const MCP_IMPORT_FILE_BUCKETS = ['0', '1', '2-5', '6-20'] as const;
 export type McpImportRoute = (typeof MCP_IMPORT_ROUTES)[number];
 export type McpImportFileBucket = (typeof MCP_IMPORT_FILE_BUCKETS)[number];

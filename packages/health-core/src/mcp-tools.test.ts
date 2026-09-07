@@ -20,6 +20,10 @@ import {
   callTool,
   correctValueInput,
   fileFeedback,
+  folderNudge,
+  FOLDER_NUDGE_HINT,
+  FOLDER_NUDGE_MAX,
+  isAlreadyImportedByName,
   runToolOverSync,
   MAX_NAME_LENGTH,
   type FeedbackFiler,
@@ -766,7 +770,8 @@ describe('US-32 — every tool answers with structured content that fits its out
   it('publishes the record’s own keys, so a new section cannot go unannounced', () => {
     const keys = Object.keys(createEmptyFile({ deviceId: 'd', now: NOW }));
     const published = Object.keys(OUTPUTS.read_record.shape);
-    expect(published.filter((k) => k !== 'reminderOptIn').sort()).toEqual(keys.sort());
+    // `folder` is the nudge (US-37), a read's addition, not a section of the record.
+    expect(published.filter((k) => k !== 'reminderOptIn' && k !== 'folder').sort()).toEqual(keys.sort());
   });
 });
 
@@ -1500,7 +1505,7 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     // The order that keeps one receipt at a time: commit, then the rest (finding 16).
     expect(data.next).toMatch(/commit this receipt first, then call again with fileNames set to remaining/);
     // Short: the counts, one instruction and the continuation; detail rides on the things themselves (live 2026-09-07 it ran past 600 with the counts said twice).
-    expect(data.next.length).toBeLessThan(650);
+    expect(data.next.length).toBeLessThan(800);
     expect(cloud.files.get(ROADMAP_FILE_NAME)).toBe(before);
     expect(cloud.files.get(ROADMAP_FILE_NAME)!.version).toBe(1);
   });
@@ -1571,5 +1576,64 @@ describe('US-35 AC1/AC11 — runToolOverSync: extract never writes, commit saves
     const file = tool.inputSchema.properties.file as { required: string[]; properties: Record<string, unknown> };
     expect(file.required).toEqual(['download_url', 'file_id']);
     expect(Object.keys(file.properties)).toEqual(['download_url', 'file_id', 'mime_type', 'file_name']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// US-37 — the folder nudge, pure
+// ---------------------------------------------------------------------------
+
+describe('US-37 AC1 — the nudge names folder files no live document row names', () => {
+  function withDocuments(rows: Array<{ sourceFileName: string; contentHash: string; deleted?: boolean }>): RoadmapFile {
+    const file = base();
+    file.documents = rows.map((row, i) => ({
+      id: `doc-${i}`, title: 'Lab results', type: 'pathology_report', date: '2026-08-01', fileRef: '', mimeType: 'application/pdf',
+      extractedText: '', addedAt: NOW, metadata: { importedVia: 'connector' }, ...row,
+    })) as RoadmapFile['documents'];
+    return file;
+  }
+
+  it('matches by name against HASHED rows too — a folder-imported file is never nagged (the review’s blocker 3.1)', () => {
+    // The folder route and the website both write rows WITH a hash;
+    // `isAlreadyImported`'s name rule deliberately ignores those (twins named
+    // Results.pdf), so the nudge needs its own rule or it lists every
+    // imported file on every read.
+    const file = withDocuments([{ sourceFileName: 'labs.pdf', contentHash: 'sha256-abc' }]);
+    expect(isAlreadyImportedByName(file, 'labs.pdf')).toBe(true);
+    expect(isAlreadyImportedByName(file, 'other.pdf')).toBe(false);
+    expect(folderNudge(file, ['labs.pdf', 'health-roadmap.json'])).toBeUndefined();
+  });
+
+  it('is absent when every importable file has a row, and ignores a tombstoned row', () => {
+    const live = withDocuments([{ sourceFileName: 'a.pdf', contentHash: '' }]);
+    expect(folderNudge(live, ['a.pdf', 'notes.txt', 'imports/pending-x.json'])).toBeUndefined();
+    const deleted = withDocuments([{ sourceFileName: 'a.pdf', contentHash: 'sha256-1', deleted: true }]);
+    expect(folderNudge(deleted, ['a.pdf'])!.unimported).toEqual(['a.pdf']);
+  });
+
+  it('lists a ZIP (the folder route reads them), sorts, bounds the count and the names, and carries the one fixed sentence', () => {
+    const names = Array.from({ length: FOLDER_NUDGE_MAX + 3 }, (_, i) => `scan-${String(i).padStart(2, '0')}.png`);
+    const nudge = folderNudge(base(), [...names, 'batch.zip', `${'x'.repeat(300)}.pdf`, 'evil\n.pdf', '.hidden.pdf', 'letter.docx'])!;
+    expect(nudge.unimported).toHaveLength(FOLDER_NUDGE_MAX);
+    expect(nudge.unimported[0]).toBe('batch.zip');
+    expect(nudge.unimported.every((n) => n.length <= MAX_NAME_LENGTH && !n.includes('\n'))).toBe(true);
+    expect(nudge.unimported).not.toContain('.hidden.pdf');
+    expect(nudge.unimported).not.toContain('letter.docx');
+    expect(nudge.hint).toBe(FOLDER_NUDGE_HINT);
+    // The sentence teaches the way in and the way to stop being offered (AC3); never "updates itself".
+    expect(nudge.hint).toContain('fromNudge');
+    expect(nudge.hint).toContain('empty accept and replace');
+    expect(nudge.hint).not.toMatch(/updates itself|new files/);
+  });
+
+  it('publishes `folder` as optional on both reads, in the same shape (AC4)', () => {
+    for (const name of ['read_record', 'get_plan'] as const) {
+      const tool = MCP_TOOLS.find((t) => t.name === name)!;
+      expect(tool.outputSchema.properties).toHaveProperty('folder');
+      expect(tool.outputSchema.required).not.toContain('folder');
+      expect(tool.description).toContain('never do it unasked');
+      expect(OUTPUTS[name].shape.folder.isOptional()).toBe(true);
+    }
+    expect(OUTPUTS.get_plan.safeParse({ ...(getPlan(base(), NOW) as { data: object }).data, folder: { unimported: ['a.pdf'], hint: 'x' } }).success).toBe(true);
   });
 });

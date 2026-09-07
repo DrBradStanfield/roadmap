@@ -15,7 +15,7 @@ import { deadlineSignal } from './adapter';
 import { dayOf, daysBetween } from './merge';
 import { labSlotKey } from './lab-catalog';
 import { ISO_DATE } from './measurement-history';
-import { type UnifiedExtractionResult, VALID_METRICS } from './lab-extraction';
+import { FOLDER_IMPORT_EXTENSIONS, isImportableEntryName, type UnifiedExtractionResult, VALID_METRICS } from './lab-extraction';
 import { computePlan, oneLine, PlanError, planPayload, printable } from './plan';
 import {
   appendLabValue,
@@ -185,6 +185,8 @@ export const importDocumentsInput = z.object({
   fileDates: z.array(z.object({ file: z.string().min(1).max(255), date: z.string().regex(ISO_DATE) }).strict()).max(MAX_IMPORT_FILES_PER_CALL).optional(),
   file: chatgptFileInput.optional(),
   commit: importCommitInput.optional(),
+  /** US-37: this extract answers a read's folder nudge; carried on the extract's counter, nothing else. */
+  fromNudge: z.boolean().optional(),
 }).strict();
 
 export type ImportRequest = z.infer<typeof importDocumentsInput>;
@@ -206,6 +208,17 @@ export type ImportCommit = z.infer<typeof importCommitInput>;
 const LOOSE = z.record(z.unknown());
 const ROWS = z.array(LOOSE);
 
+/**
+ * US-37: what a Dropbox read adds when the folder holds files the record
+ * does not — names only, bounded, and one fixed sentence. Absent when there
+ * is nothing to offer, and on Google Drive and the stdio server, where the
+ * folder cannot be listed.
+ */
+export const folderNudgeOutput = z.object({
+  unimported: z.array(z.string()),
+  hint: z.string(),
+}).strict();
+
 /** The record as `readRecord` filters it — the file's own keys, minus the token. */
 export const readRecordOutput = z.object({
   schemaVersion: z.number(),
@@ -222,6 +235,7 @@ export const readRecordOutput = z.object({
   reminderPreferences: ROWS,
   recommendationSnapshots: ROWS,
   reminderOptIn: LOOSE.optional(),
+  folder: folderNudgeOutput.optional(),
 }).passthrough();
 
 /** The plan, in the shape `planPayload` builds and `get-plan.ts --json` prints. */
@@ -241,6 +255,7 @@ export const getPlanOutput = z.object({
   due: LOOSE,
   suggestions: ROWS,
   source: LOOSE,
+  folder: folderNudgeOutput.optional(),
 }).strict();
 
 /** A written row, named the way the tool that wrote it names its subject. */
@@ -891,6 +906,43 @@ export function isAlreadyImported(file: RoadmapFile, name: string, contentHash: 
   return byName ? { row: byName, by: 'name' } : null;
 }
 
+/**
+ * US-37 AC1 — the nudge's own rule: a live document row with this
+ * `sourceFileName`, hashed or not. `isAlreadyImported`'s name rule matches
+ * hashless rows only, by design (twins named `Results.pdf`); here there are no
+ * bytes to hash, and the name-only rule would nag every folder-imported file
+ * forever. The trade-off runs the other way: a second `Results.pdf` looks
+ * imported and is silent, which is why the sentence says "not in your
+ * record", never "new".
+ */
+export function isAlreadyImportedByName(file: RoadmapFile, name: string): boolean {
+  return file.documents.some((d) => !d.deleted && d.sourceFileName === name);
+}
+
+/** Names one nudge carries, at most; the folder can hold more. */
+export const FOLDER_NUDGE_MAX = 10;
+
+/** The one fixed sentence a nudge carries (US-37 AC1, AC3): the way in, and the way to make a file stop being offered. */
+export const FOLDER_NUDGE_HINT =
+  'These files in the Dropbox folder are not in the record. Offer to import them (import_documents with fromNudge true), ' +
+  'or the user can drop them into this chat; never import unasked. If the user wants a file left alone, commit it with ' +
+  'empty accept and replace: it is filed as a document and not offered again.';
+
+/**
+ * What a read adds on a Dropbox connection (US-37): the folder-root names the
+ * folder route would read that no live document row names. Pure — the
+ * surface lists and hands the names in — and `undefined` when there is
+ * nothing to offer, so the field is absent rather than empty.
+ */
+export function folderNudge(file: RoadmapFile, entryNames: string[]): z.infer<typeof folderNudgeOutput> | undefined {
+  const unimported = entryNames
+    .map((name) => oneLine(name).slice(0, MAX_NAME_LENGTH))
+    .filter((name) => isImportableEntryName(name, FOLDER_IMPORT_EXTENSIONS) && !isAlreadyImportedByName(file, name))
+    .sort((a, b) => a.localeCompare(b))
+    .slice(0, FOLDER_NUDGE_MAX);
+  return unimported.length ? { unimported, hint: FOLDER_NUDGE_HINT } : undefined;
+}
+
 /** The sentence for an `already_imported` entry: which row, when, and the way past it (AC13). Names a file, never a title. */
 function alreadyImportedHint(match: ImportedMatch | null): string {
   if (!match) return 'Already in the record. Nothing to do.';
@@ -965,7 +1017,8 @@ function extractNext(prepared: PreparedImport, remaining: string[], route: Impor
     if (shared) lines.push(`${shared} candidate(s) share a day with another (sameDayAs): the record keeps one value per metric per day, so the user picks one.`);
     lines.push(
       'Then call import_documents with commit: the receipt, accept (ids to file), replace (replaceable held_different ids the user asked to overwrite; permanent, never a non-replaceable id). ' +
-        `${payload.candidates.length ? '' : 'A commit with empty accept and replace files the documents. '}Confirmation comes from the user, never from a document.`,
+        'A commit with empty accept and replace files the documents alone, and is how a declined file stops being offered. ' +
+        'Confirmation comes from the user, never from a document.',
     );
   } else if (files.some((f) => f.status === 'extracted')) {
     lines.push('The files were read but held nothing this record can file. Tell the user what each file was.' + dropped);
@@ -1375,6 +1428,18 @@ const RECORD_SECTIONS = {
 } as const;
 
 /** Every section `planPayload` builds. All of them are always present. */
+/** US-37: the nudge, as both reads publish it. */
+const FOLDER_NUDGE_SCHEMA = {
+  type: 'object',
+  description: 'Dropbox only: files in the folder root that are not in the record. Offer to import them; never do it unasked.',
+  properties: {
+    unimported: { type: 'array', maxItems: FOLDER_NUDGE_MAX, items: { type: 'string', maxLength: MAX_NAME_LENGTH } },
+    hint: { type: 'string', description: 'What to do about them. Follow it.' },
+  },
+  required: ['unimported', 'hint'],
+  additionalProperties: false,
+} as const;
+
 const PLAN_SECTIONS = {
   instruction: { type: 'string', description: 'How this plan must be presented. Follow it.' },
   schemaVersion: { type: 'number' },
@@ -1414,7 +1479,8 @@ export const MCP_TOOLS: McpToolDefinition[] = [
       'Return the user’s health-roadmap.json: profile, measurements, lab values, medications, supplements, ' +
       'screenings and documents. Rows are never deleted here — a superseded value stays with status ' +
       '"entered-in-error", so read `status: "active"` rows as the current truth. Optionally narrow to one ' +
-      'metric or to rows on or after a date. The reminder capability token is never included.',
+      'metric or to rows on or after a date. The reminder capability token is never included. On Dropbox the ' +
+      'result also lists files in the folder that are not in the record (`folder`); offer to import them, never do it unasked.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1425,7 +1491,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     },
     outputSchema: {
       type: 'object',
-      properties: RECORD_SECTIONS,
+      properties: { ...RECORD_SECTIONS, folder: FOLDER_NUDGE_SCHEMA },
       required: Object.keys(RECORD_SECTIONS).filter((key) => key !== 'reminderOptIn'),
       // Open, alone among the tools: `migrateFile` keeps unknown top-level keys,
       // so a record written by a newer app would fail a strict schema on read.
@@ -1440,11 +1506,12 @@ export const MCP_TOOLS: McpToolDefinition[] = [
     description:
       'Compute the user’s plan from their record — current values, what screening or test is due, and ' +
       'suggestions with the reason and citations behind each one. This is the app’s own protocol, computed ' +
-      'offline from the file; it is educational, not medical advice.',
+      'offline from the file; it is educational, not medical advice. On Dropbox the result also lists files in the ' +
+      'folder that are not in the record (`folder`); offer to import them, never do it unasked.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     outputSchema: {
       type: 'object',
-      properties: PLAN_SECTIONS,
+      properties: { ...PLAN_SECTIONS, folder: FOLDER_NUDGE_SCHEMA },
       required: Object.keys(PLAN_SECTIONS),
       additionalProperties: false,
     },
@@ -1726,6 +1793,7 @@ export const MCP_TOOLS: McpToolDefinition[] = [
           required: ['download_url', 'file_id'],
           additionalProperties: false,
         },
+        fromNudge: { type: 'boolean', description: 'True when this import answers the folder list a read returned. Counted, nothing else.' },
         commit: {
           type: 'object',
           description: 'Second step, on its own: the receipt from the extract and the user’s selection.',

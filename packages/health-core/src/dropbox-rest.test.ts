@@ -188,6 +188,17 @@ describe('US-35 AC2 — dropboxListFolder lists files only, and follows has_more
     expect(calls[1].body).toEqual({ cursor: 'c1' });
   });
 
+  it('stops following has_more once `limit` entries are in hand (US-37 AC1)', async () => {
+    let pages = 0;
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      pages++;
+      return Response.json({ entries: [{ '.tag': 'file', id: `id:${pages}`, name: `scan-${pages}.png`, size: 1 }], cursor: `c${pages}`, has_more: true });
+    }));
+    const entries = await dropboxListFolder('token', '', undefined, 2);
+    expect(entries.map((e) => e.name)).toEqual(['scan-1.png', 'scan-2.png']);
+    expect(pages).toBe(2);
+  });
+
   it('lists a folder that does not exist as empty, and a subfolder by name', async () => {
     const paths: unknown[] = [];
     vi.stubGlobal('fetch', vi.fn(async (_url: string, init: RequestInit) => {
