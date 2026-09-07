@@ -60,6 +60,16 @@ const TRIGLYCERIDES_FACTOR = 88.57;
 
 const APOB_FACTOR = 100; // g/L ↔ mg/dL
 const CREATININE_FACTOR = 88.4; // µmol/L ↔ mg/dL
+/**
+ * Lp(a) mass → molar: ~2.4 nmol/L per mg/dL, so 0.24 per mg/L (NZ/AU/UK
+ * labs print mg/L; US labs mg/dL). Approximate: the true factor runs ~2.0–2.5
+ * with apo(a) isoform size, which is why guidelines prefer nmol/L. Sources:
+ * Kronenberg et al., EAS consensus, Eur Heart J 2022 (pairs 180 mg/dL with
+ * 430 nmol/L and 300 mg/dL with 750 nmol/L); Marcovina & Albers, J Lipid Res
+ * 2016;57:526. Not 2.4 per mg/L: that stored every mg/L reading 10× high
+ * (found live 2026-09-07).
+ */
+const LPA_FACTOR = 0.24; // nmol/L per mg/L
 
 // Feet/inches conversion
 const INCHES_PER_FOOT = 12;
@@ -236,15 +246,15 @@ export const UNIT_DEFS: Record<MetricType, UnitDef> = {
     label: { si: 'nmol/L', conventional: 'mg/L' },
     toCanonical: {
       si: identity,
-      conventional: (v) => v * 2.4, // mg/L → nmol/L (population average; Marcovina et al., Clin Chem 1995. Varies ~1.6-3.2 by apo(a) isoform — nmol/L is preferred)
+      conventional: (v) => v * LPA_FACTOR, // mg/L → nmol/L
     },
     fromCanonical: {
       si: identity,
-      conventional: (v) => v / 2.4, // nmol/L → mg/L
+      conventional: (v) => v / LPA_FACTOR, // nmol/L → mg/L
     },
     validationRange: {
-      si: { min: 0, max: 750 },       // nmol/L
-      conventional: { min: 0, max: 300 }, // mg/L
+      si: { min: 0, max: 750 },                      // nmol/L (EAS 2022: >300 mg/dL ≈ 750 nmol/L)
+      conventional: { min: 0, max: 750 / LPA_FACTOR }, // 3125 mg/L, the same bound
     },
     decimalPlaces: { si: 0, conventional: 0 },
   },
@@ -380,7 +390,7 @@ export function resolveUnitSystem(metric: MetricType, statedUnit: string): UnitS
  * sync. HbA1c and creatinine need none: their ranges have real floors.
  */
 export const UNIT_SWAP_FLOORS: Partial<Record<MetricType, number>> = {
-  ldl: 0.3, total_cholesterol: 0.3, hdl: 0.3, triglycerides: 0.3, apob: 0.1, lpa: 5,
+  ldl: 0.3, total_cholesterol: 0.3, hdl: 0.3, triglycerides: 0.3, apob: 0.1, lpa: 0.5, // Lp(a) 0.5 nmol/L ≈ 2 mg/L
 };
 
 // ---------------------------------------------------------------------------

@@ -139,7 +139,7 @@ Source: `units.ts`
 | systolic_bp | mmHg | mmHg | (same) |
 | diastolic_bp | mmHg | mmHg | (same) |
 | psa | ng/mL | ng/mL | (same) |
-| lpa | nmol/L | nmol/L | (same) |
+| lpa | nmol/L | mg/L | / 0.24 (nmol/L ≈ 2.4 × mg/dL = 0.24 × mg/L; approximate, see Lp(a) below) |
 
 ### Height Display (Conventional)
 
@@ -258,11 +258,13 @@ Normal upper limit: 4.0 ng/mL.
 
 ### Lp(a) (nmol/L)
 
-| Level | nmol/L |
-|-------|--------|
-| Normal | < 75 |
-| Borderline | 75–125 |
-| Elevated | >= 125 |
+| Level | nmol/L | ≈ mg/dL | ≈ mg/L |
+|-------|--------|---------|--------|
+| Normal | < 75 | < 30 | < 300 |
+| Borderline | 75–125 | 30–50 | 300–500 |
+| Elevated | >= 125 | >= 50 | >= 500 |
+
+Mass → molar is approximate: nmol/L ≈ 2.4 × mg/dL, so 0.24 × mg/L (NZ/AU/UK labs print mg/L; US labs mg/dL). The true factor runs ~2.0–2.5 with apo(a) isoform size, which is why guidelines prefer nmol/L (Kronenberg et al., EAS consensus, Eur Heart J 2022, pairs 180 mg/dL with 430 nmol/L and 300 mg/dL with 750 nmol/L; Marcovina & Albers, J Lipid Res 2016;57:526). Corrected 2026-09-07: the code had applied 2.4 per mg/L, storing every mg/L reading 10× high.
 
 ### On-Treatment Lipid Targets
 
@@ -748,7 +750,7 @@ Source: `units.ts` (UNIT_DEFS) + `validation.ts`
 | systolic_bp | 60 mmHg | 250 mmHg | 60 mmHg | 250 mmHg |
 | diastolic_bp | 40 mmHg | 150 mmHg | 40 mmHg | 150 mmHg |
 | psa | 0 ng/mL | 100 ng/mL | 0 ng/mL | 100 ng/mL |
-| lpa | 0 nmol/L | 750 nmol/L | 0 nmol/L | 750 nmol/L |
+| lpa | 0 nmol/L | 750 nmol/L | 0 mg/L | 3125 mg/L (= 750 / 0.24) |
 
 ### Profile Validation
 

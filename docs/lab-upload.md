@@ -247,9 +247,11 @@ picker and lost the day; `FullDate` with an explicit `day` field fixed it.)
 
 ## Lp(a) Unit Conversion
 
-The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: "lpa", value: 93, unit: "mg/L" }`. But `UNIT_DEFS.lpa` was an identity unit (both SI and conventional nmol/L). The resolver couldn't match "mg/L", fell back to the range heuristic (93 fits 0-750 nmol/L), and stored 93 as nmol/L. The correct value was ~223 nmol/L.
+The lipoprotein(a) PDF showed `93 mg/L`. The LLM correctly extracted `{ metric: "lpa", value: 93, unit: "mg/L" }`. But `UNIT_DEFS.lpa` was an identity unit (both SI and conventional nmol/L). The resolver couldn't match "mg/L", fell back to the range heuristic (93 fits 0-750 nmol/L), and stored 93 as nmol/L. The correct value is ~22 nmol/L.
 
-**Fix**: `lpa` in `units.ts` is a dual-unit definition — SI nmol/L, conventional mg/L, nmol/L = mg/L × 2.4 (Marcovina et al., Clinical Chemistry 1995) — plus the `mg/l` alias in `lab-extraction.ts`. Lp(a) molecular weight varies (300-800 kDa) with kringle IV repeats, which is why WHO and IFCC recommend nmol/L; 2.4 is the average-weight approximation most labs use, a documented limitation.
+**Fix**: `lpa` in `units.ts` is a dual-unit definition — SI nmol/L, conventional mg/L, nmol/L = mg/L × 0.24 — plus the `mg/l` alias and a scaled `mg/dl` alias (×10) in `units.ts`. The population factor is ~2.4 nmol/L per **mg/dL** (EAS 2022 consensus; Marcovina & Albers 2016), so 0.24 per mg/L. Lp(a) molecular weight varies (300-800 kDa) with kringle IV repeats, which is why WHO and IFCC recommend nmol/L; the factor is an average (~2.0–2.5), a documented limitation.
+
+**Data impact (2026-09-07)**: from the first fix until this one the code applied 2.4 per mg/L, so every Lp(a) entered in mg/L (the usual NZ/AU print, by upload, chatbot or connector) was stored 10× high, and the plan fired `lpa-elevated` on normal results. There is no migration (house rule): each affected row needs a correction row — the website's fix-this-value on the Lp(a) cell, or the connector's `correct_value` with `expectedValue` set to the stored number. Brad's own record holds one: lpa 223 nmol/L on 2023-01-24 from a report printing "Lipoprotein(a) 93 mg/L"; the right value is 22.3 nmol/L. Values entered in nmol/L were never affected.
 
 ---
 
@@ -327,7 +329,7 @@ Found with Brad's real lab reports and fixed before shipping:
 |---|---|---|
 | 1 | Unsaved weight wiped after upload | `onStart` persists longitudinal form values before extraction |
 | 2 | Blood-test section hidden after upload | `formStage` forced to 4 when saved blood-test metrics exist |
-| 3 | Lp(a) 93 mg/L stored as 93 nmol/L | dual-unit `lpa` definition (see above) |
+| 3 | Lp(a) 93 mg/L stored as 93 nmol/L, then as 223 (×2.4 per mg/L) | dual-unit `lpa` definition at 0.24 nmol/L per mg/L (see above) |
 | 4 | Day precision lost (always saved as 01) | `FullDate` with a day field + `buildRecordedAt()` |
 | 5 | ZIP progress stuck at 100% | two-phase progress (extract, then process) |
 | 6 | Letter with an em dash in its title filed twice, no blob (2026-09-06) | `dropboxApiArg()` + no metadata-only fallback behind a connector row (§1) |

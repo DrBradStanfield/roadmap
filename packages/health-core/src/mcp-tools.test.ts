@@ -1851,14 +1851,16 @@ describe('US-36 AC4 — units: one table, converted to canonical, refused by nam
     expect(by.ldl.value).toBeCloseTo(2.586, 2);
     expect(by.ldl.unit).toBe('mmol/L');
     expect(by.hba1c.value).toBeCloseTo(42, 0);
-    expect(by.lpa.value).toBeCloseTo(240, 5); // 10 mg/dL = 100 mg/L × 2.4
+    expect(by.lpa.value).toBeCloseTo(24, 5); // 10 mg/dL = 100 mg/L × 0.24 (≈ 2.4 nmol/L per mg/dL)
     expect(by.apob.value).toBeCloseTo(0.9, 6);
     expect(by.creatinine.value).toBe(80);
     expect(by.ferritin).toMatchObject({ kind: 'lab', value: 210, unit: 'µg/L', printedName: 'Ferritin' });
     // The same table serves add_measurement (review 1.3): micromol/L is one spelling, not two answers.
     expect(addMeasurement(base(), { metricType: 'creatinine', value: 80, unit: 'micromol/L', recordedAt: TODAY }, CTX).status).toBe('ok');
     expect(reportedToCanonical('lpa', 10, 'mg/dL')).toMatchObject({ system: 'conventional' });
-    expect(reportedToCanonical('lpa', 10, 'mg/dL')!.valueSI).toBeCloseTo(240, 5);
+    expect(reportedToCanonical('lpa', 10, 'mg/dL')!.valueSI).toBeCloseTo(24, 5);
+    // A normal US print is accepted, not refused as out of range (live 2026-09-07: 45 mg/dL was read as 1080 nmol/L).
+    expect(prepared(labCall([row('lpa', 'Lp(a)', 45, 'mg/dL')])).payload.candidates[0]).toMatchObject({ value: 108, confidence: 'high' });
   });
 
   it('refuses a unit the metric is not measured in, naming both labels', () => {

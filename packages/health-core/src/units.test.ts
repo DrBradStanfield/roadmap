@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   resolveUnitSystem,
+  reportedToCanonical,
   toCanonicalValue,
   fromCanonicalValue,
   formatDisplayValue,
@@ -22,7 +23,7 @@ import { METRIC_TYPES } from './validation';
 describe('Unit conversions — round-trip accuracy', () => {
   const metrics: MetricType[] = [
     'height', 'weight', 'waist', 'hba1c', 'ldl', 'total_cholesterol', 'hdl',
-    'triglycerides', 'systolic_bp', 'diastolic_bp', 'apob', 'creatinine',
+    'triglycerides', 'systolic_bp', 'diastolic_bp', 'apob', 'creatinine', 'lpa',
   ];
 
   for (const metric of metrics) {
@@ -96,6 +97,41 @@ describe('Known clinical value conversions', () => {
   it('BP: same in both systems', () => {
     expect(toCanonicalValue('systolic_bp', 120, 'conventional')).toBe(120);
     expect(fromCanonicalValue('systolic_bp', 120, 'conventional')).toBe(120);
+  });
+});
+
+// Lp(a): the ~2.4 mass→molar factor is per mg/dL (EAS 2022 consensus pairs
+// 300 mg/dL with 750 nmol/L). NZ/AU labs print mg/L, a tenth of that, so the
+// conventional label converts at 0.24. Found live 2026-09-07: 93 mg/L had been
+// stored as 223 nmol/L (10× high), which fired `lpa-elevated` on a normal result.
+describe('Lp(a) mass → molar conversion (per mg/dL, not per mg/L)', () => {
+  it('93 mg/L (the NZ print) → ~22.3 nmol/L', () => {
+    expect(toCanonicalValue('lpa', 93, 'conventional')).toBeCloseTo(22.32, 2);
+    expect(reportedToCanonical('lpa', 93, 'mg/L')!.valueSI).toBeCloseTo(22.32, 2);
+  });
+
+  it('45 mg/dL (the US print, via the scaled alias) → 108 nmol/L, inside the 750 nmol/L range', () => {
+    const r = reportedToCanonical('lpa', 45, 'mg/dL')!;
+    expect(r.system).toBe('conventional');
+    expect(r.valueSI).toBeCloseTo(108, 5);
+    expect(r.valueSI).toBeLessThan(UNIT_DEFS.lpa.validationRange.si.max);
+  });
+
+  it('nmol/L passes through untouched in both directions', () => {
+    expect(toCanonicalValue('lpa', 125, 'si')).toBe(125);
+    expect(fromCanonicalValue('lpa', 125, 'si')).toBe(125);
+    expect(reportedToCanonical('lpa', 125, 'nmol/L')).toEqual({ valueSI: 125, system: 'si' });
+  });
+
+  it('displays a stored 22.32 nmol/L as the 93 mg/L that was entered', () => {
+    expect(formatDisplayValue('lpa', 22.32, 'conventional')).toBe('93');
+    expect(formatDisplayValue('lpa', 22.32, 'si')).toBe('22');
+  });
+
+  it('the conventional validation bound is the canonical 750 nmol/L bound, converted', () => {
+    const { si, conventional } = UNIT_DEFS.lpa.validationRange;
+    expect(toCanonicalValue('lpa', conventional.max, 'conventional')).toBeCloseTo(si.max, 5);
+    expect(getDisplayRange('lpa', 'conventional')).toEqual({ min: 0, max: conventional.max });
   });
 });
 
